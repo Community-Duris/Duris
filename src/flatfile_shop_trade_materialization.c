@@ -675,6 +675,54 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	return flatfile_shop_trade_materialization_result::ok;
 }
 
+flatfile_shop_trade_materialization_result flatfile_corpse_resurrection_materialization_prepare(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation_id, uint32_t player_pid,
+	const std::vector<player_item_snapshot> &items,
+	flatfile_shop_trade_materialization_mutation *mutation, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || critical_operation_id_is_zero(operation_id) ||
+	    !player_pid || !mutation)
+		return flatfile_shop_trade_materialization_result::invalid;
+	*mutation = {};
+	if (items.empty())
+		return flatfile_shop_trade_materialization_result::unchanged;
+	std::vector<uint8_t> item_blob;
+	if (player_item_snapshot_list_encode(items, &item_blob) !=
+		    player_snapshot_codec_result::ok ||
+	    item_blob.empty() || item_blob.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+		return flatfile_shop_trade_materialization_result::invalid;
+	materialization_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shop_trade_materialization_result::ok)
+		return loaded;
+	if (std::any_of(
+		    catalog.events.begin(), catalog.events.end(), [&](const auto &existing)
+		    { return critical_operation_id_equal(existing.operation_id, operation_id); }) ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_shop_trade_materialization_result::invalid;
+	size_t removed = 0;
+	if (!compact_catalog(&catalog, &removed) || catalog.events.size() >= catalog_maximum_events)
+		return flatfile_shop_trade_materialization_result::invalid;
+	try
+	{
+		catalog.events.push_back({ operation_id, shop_trade_action::buy_existing,
+					   player_pid, std::move(item_blob) });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shop_trade_materialization_result::io_error;
+	}
+	if (!compact_catalog(&catalog, &removed))
+		return flatfile_shop_trade_materialization_result::io_error;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_shop_trade_materialization_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(bytes) };
+	return flatfile_shop_trade_materialization_result::ok;
+}
+
 flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_read_health(
 	const std::string &root, const flatfile_authority_lock &lock,
 	flatfile_shop_trade_materialization_health *health, std::string *error)

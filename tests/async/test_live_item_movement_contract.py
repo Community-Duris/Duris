@@ -63,6 +63,17 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("Durable items must be dropped one at a time", actobj)
         self.assertNotIn("Durable items must be put away one at a time", actobj)
 
+    def test_pc_corpse_roots_bypass_generic_ownership_transfers(self):
+        actobj = (SRC / "actobj.c").read_text()
+        helper = actobj[actobj.index("static bool uses_generic_item_ownership") :]
+        helper = helper[: helper.index("#define GETDBG_LOG")]
+        self.assertIn("ITEM_CORPSE", helper)
+        self.assertIn("PC_CORPSE", helper)
+        self.assertGreaterEqual(actobj.count("uses_generic_item_ownership("), 10)
+        get_body = actobj[actobj.index("void get(P_char ch") :]
+        get_body = get_body[: get_body.index("int fight_in_room")]
+        self.assertIn("IS_PC(ch) && uses_generic_item_ownership(o_obj)", get_body)
+
     def test_death_items_are_chained_after_ack_and_failure_is_preserved(self):
         fight = (SRC / "fight.c").read_text()
         make_corpse = fight[fight.index("P_obj make_corpse"):]
@@ -141,6 +152,27 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("corpse_loot_transfer(payload)", supported)
         self.assertIn("corpse_create_transfer(payload)", supported)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION", supported)
+
+    def test_flat_room_item_moves_are_composite(self):
+        repository = (SRC / "flatfile_item_repository.c").read_text()
+        world = (SRC / "flatfile_world_item_repository.c").read_text()
+        artifact = (SRC / "flatfile_artifact_repository.c").read_text()
+        self.assertIn("flatfile_world_item_prepare_room_transfer", world)
+        self.assertIn("flatfile_artifact_prepare_room_transfer", artifact)
+        supported = repository[repository.index("bool generic_transfer_supported") :]
+        supported = supported[:supported.index("bool locker_custody_matches")]
+        self.assertIn("room_transfer(payload)", supported)
+        apply = repository[repository.index(
+            "critical_apply_result flatfile_item_repository_apply") :]
+        prepare = apply.index("flatfile_world_item_prepare_room_transfer")
+        artifact_prepare = apply.index("flatfile_artifact_prepare_room_transfer", prepare)
+        image = apply.index("room.after_image", prepare)
+        artifact_image = apply.index("room_artifacts.after_image", artifact_prepare)
+        commit = apply.index("flatfile_authority_transaction_commit", image)
+        self.assertLess(prepare, image)
+        self.assertLess(artifact_prepare, artifact_image)
+        self.assertLess(image, commit)
+        self.assertLess(artifact_image, commit)
 
 
 if __name__ == "__main__":

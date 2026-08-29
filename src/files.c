@@ -23,6 +23,7 @@
 #include "corpse_lifecycle_transaction.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_corpse_restore.h"
+#include "item_ownership_runtime.h"
 #include "justice.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -4589,6 +4590,26 @@ void writeSavedItem(P_obj item)
 	if (item->cost < 100)
 		return;
 
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		item_ownership_runtime_entry runtime = {};
+		const bool tracked = item_ownership_runtime_lookup(item->obj_uid, &runtime);
+		const bool room_matches =
+			OBJ_ROOM(item) && item->loc.room > NOWHERE &&
+			item->loc.room <= top_of_world && tracked &&
+			runtime.state == item_custody_state::active &&
+			runtime.owner.type == item_owner_type::room &&
+			runtime.owner.id == static_cast<uint64_t>(world[item->loc.room].number) &&
+			!runtime.owner.context_id;
+		const bool destroyed = tracked && runtime.state == item_custody_state::destroyed &&
+				       runtime.owner.type == item_owner_type::destruction;
+		if (!room_matches && !destroyed)
+			persistence_alert(AVATAR, "saved_item", "flatfile_write", "none", "none",
+					  "untracked_live_mutation", "item_uid=%llu",
+					  static_cast<unsigned long long>(item->obj_uid));
+		return;
+	}
+
 	char item_key[MAX_STRING_LENGTH];
 	snprintf(item_key, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
 
@@ -4611,6 +4632,11 @@ void writeSavedItem(P_obj item)
 
 void restoreSavedItems(void)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		/* restoreCorpses() has already staged and published the shared room catalog. */
+		return;
+	}
 #ifndef __NO_MYSQL__
 	sql_restore_saved_items();
 #endif
@@ -4623,10 +4649,23 @@ void PurgeSavedItemFile(P_obj item)
 
 	if (!item)
 		return;
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		item_ownership_runtime_entry runtime = {};
+		if (!item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+		    runtime.state != item_custody_state::destroyed ||
+		    runtime.owner.type != item_owner_type::destruction)
+			persistence_alert(AVATAR, "saved_item", "flatfile_purge", "none", "none",
+					  "untracked_live_mutation", "item_uid=%llu",
+					  static_cast<unsigned long long>(item->obj_uid));
+		return;
+	}
 
 	snprintf(Gbuf2, MAX_STRING_LENGTH, "item.%s.%ld", FirstWord(item->name), (long)item);
 	for (tmp = Gbuf2; *tmp; tmp++)
 		*tmp = LOWER(*tmp);
+	if (!sql_delete_saved_item(Gbuf2))
+		logit(LOG_FILE, "sql_delete_saved_item failed");
 
 	checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "%s/SavedItems/%s", SAVE_DIR, Gbuf2);
 	strcpy(Gbuf2, Gbuf1);

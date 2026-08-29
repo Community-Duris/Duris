@@ -3865,3 +3865,472 @@ action" text below remains historical and does not authorize work.
 - **Next action:** implement the room aggregate and compose corpse-to-room item/money transfer with
   corpse removal for non-empty decay/extraction, then route saved floor-item live save and restore
   through that same world authority.
+
+### Checkpoint 88 - atomic corpse-to-room release authority
+
+- **Bounded release protocol:** corpse-lifecycle payload version 2 adds a `release` action and the
+  expected destination-room revision. Release commands fence canonical corpse and room entity keys,
+  while payload/result decoders retain version 1 and 32-byte result compatibility. Successful
+  results expose the world-catalog, corpse-owner, room-owner, maximum item, and item-count revisions
+  needed for deterministic completion and replay.
+- **Revisioned room aggregate:** world-item catalog version 3 adds sorted room records containing a
+  room VNUM, revision, four money denominations, and exact detached item snapshots. Version 2 money
+  catalogs and version 1 catalogs remain readable. A held-lock release proves the corpse identity,
+  revision, placement, and destination revision; preserves nested topology while appending to an
+  existing room; accumulates money with overflow checks; and removes the corpse only in its prepared
+  after-image.
+- **Cross-authority composition:** item ownership proves every active corpse UID, VNUM, root, and
+  parent against the world aggregate, advances both owner revisions, and moves the complete custody
+  set to the room. Registered artifacts move from corpse custody to `ON_GROUND` in the same room at
+  the command's accepted time. Ownership, world aggregate, optional artifact state, and the corpse
+  operation ledger publish in one recoverable authority transaction; semantic stale/not-found
+  failures and operation-ID reuse retain the existing exactly-once behavior.
+- **Crash and compatibility coverage:** the focused repository regression interrupts publication
+  after the ownership and world images, then verifies recovery removes the corpse, preserves exact
+  nested room snapshots and money, transfers ownership revisions, grounds the artifact, and returns
+  `already_applied`. It also covers a money-only corpse appended to an existing room and exact replay
+  failures. Command coverage exercises release keys/results plus legacy payload/result decoding, and
+  the world catalog fixture proves version 1 compatibility after the version 3 extension.
+- **Checks passed:** changed-line formatting, `git diff --check`, the strict normal C++20 server
+  build, and the focused command, world-item, artifact, item-ownership, corpse repository, lifecycle
+  transaction, corpse ownership/restore, character deletion, world recovery, live routing contract,
+  and retired SQL-corpse cleanup tests.
+- **Exposure:** no live game path submits `release` yet, and room aggregates are not restored into the
+  live world at boot. Non-empty decay/extraction therefore remains fail-closed rather than using this
+  primitive. General player drop/get and saved floor-item persistence are still fenced because their
+  corresponding room mutation and restart materialization have not been connected.
+- **Next action:** extend the live lifecycle transaction with a non-coalescing release completion,
+  route corpse decay/destructive extraction through it so live movement occurs only after durable
+  success, and restore version 3 room aggregates at boot. Then connect historical saved floor-item
+  save/restore to the same room authority.
+
+### Checkpoint 89 - authoritative room aggregate boot restore
+
+- **Exact cross-authority restore:** the existing corpse ownership reconciler now exposes its narrow
+  world-item core so room records can prove every snapshot UID, VNUM, root, parent, and revision
+  against active item custody. Money-only rooms still require their persisted room-owner revision;
+  missing or contradictory ownership fails boot closed.
+- **Whole-catalog staging:** flat boot reads version 3 room aggregates, validates their room and
+  money fields, detached-materializes exact nested object graphs, and stages their currency. Every
+  corpse and room aggregate is materialized before any live publication begins, and a failed item
+  placement removes already-published staged objects rather than leaving a partial restored world.
+- **Side-effect-safe publication:** restored room roots and all four money denominations publish only
+  after fallible staging succeeds. Corpse-save and artifact-location callbacks are suppressed during
+  restore so the durable authorities being loaded are not redundantly rewritten, then their prior
+  runtime settings are restored.
+- **Checks passed:** focused room/corpse ownership reconciliation and boot materialization tests,
+  world-item and corpse repositories, immutable world-recovery contracts, live routing source
+  contracts, changed-line formatting, and the strict normal C++20 server build.
+- **Exposure:** live decay and destructive extraction do not yet submit the atomic release command,
+  so gameplay cannot create these room aggregates through the normal corpse lifecycle. General
+  player drop/get and historical saved floor-item persistence also remain unconnected.
+- **Next action:** extend the lifecycle transaction with release submission/completion, route live
+  corpse decay through it, and mutate the live object graph only after durable success. Audit the
+  remaining destructive extraction callers separately before broadening that route.
+
+### Checkpoint 90 - durable live corpse decay publication
+
+- **Non-coalescing release completion:** the existing lifecycle tracker now admits a release only
+  when the corpse has a committed revision and neither the corpse nor destination room is fenced.
+  It captures both revisions, rejects competing lifecycle stages while release is in flight, calls
+  its game-thread completion exactly once, and permits a new attempt after an `ESTALE` room race.
+- **Durability-before-mutation:** flat-primary decay for ground, carried, and worn player corpses
+  returns before emitting messages or touching the object graph. On committed release, publication
+  finds the stable PID/save-ID corpse, verifies every live durable UID/VNUM/root/parent against its
+  runtime custody, advances the complete custody set from corpse to room, then moves contents and
+  money and extracts the corpse with corpse-save and artifact callbacks suppressed.
+- **In-flight topology protection:** corpse get and put operations refuse briefly while lifecycle
+  work is pending, covering direct coin movement as well as ownership-backed items. Submission
+  failure rearms the decay event, a stale durable comparison rearms through the completion callback,
+  and permanent integrity failures preserve the live corpse for operator recovery.
+- **Runtime reconciliation:** the ownership cache applies a release atomically only when prior owner
+  revisions, item count, and maximum post-transfer item revision match the durable result. It covers
+  nested items and money-only corpses without inventing another movement subsystem.
+- **Checks passed:** lifecycle completion/retry, runtime nested and money-only custody publication,
+  command/repository, artifact, corpse ownership/restore, world-item, item-ownership, and live source
+  contracts; changed-line formatting, `git diff --check`, and the strict normal C++20 server build.
+- **Exposure:** generic `extract_obj` still cannot become asynchronous without breaking its many
+  synchronous callers. Explicit destructive player-corpse callers require a bounded audit, and a
+  corpse nested inside another object remains fail-closed because release currently targets rooms.
+  General saved floor-item persistence is also still unconnected.
+- **Next action:** classify and route explicit destructive corpse-extraction entry points without
+  altering generic extraction semantics, then connect historical saved floor-item save/restore to
+  the revisioned room aggregate.
+
+### Checkpoint 91 - audited destructive corpse release routing
+
+- **Narrow deferred contract:** `persistence_defer_corpse_room_release` is the single public guard
+  for explicit callers whose historical result is an empty corpse removed after its contents are
+  dropped in the same room. In flat-primary mode it recognizes an already-busy lifecycle as handled,
+  stages the existing atomic release when possible, and retains/rearms the corpse with an operator
+  alert when staging fails. It returns false for food, NPC corpses, and every MariaDB mode so their
+  established synchronous behavior is unchanged.
+- **Release-compatible callers:** the generic mobile devour proc, both Verzanan dog procs, Lightning
+  Sword, flying daggers, and ochre jelly now consult the guard before their first content movement.
+  A handled flat-primary corpse returns from the special without logging, messaging, moving a child,
+  or extracting the root; the lifecycle completion performs the already-validated room publication
+  only after durable success. Ordinary decay uses the same guard instead of duplicating submission
+  and failure handling.
+- **Bounded audit result:** generic `extract_obj` remains synchronous because recursive container
+  teardown and numerous non-corpse callers depend on that contract. Resurrection and necromancy
+  transfer contents to a player or created follower, unmaking and wall-of-bones couple corpse
+  consumption to gameplay effects, and `very_angry_npc` intentionally destroys contained gear.
+  None of those operations can be represented honestly by corpse-to-room release, so this checkpoint
+  does not invent a generalized extraction transaction for them.
+- **Checks passed:** the live source contract proves every routed special checks the deferred release
+  before its first `obj_from_obj`, changed-line formatting and `git diff --check` pass, and the strict
+  normal C++20 server build compiles and links successfully.
+- **Exposure:** routed specials publish the existing durable decay messages after completion rather
+  than their historical proc-specific flavor text. Immediate post-death release can also encounter
+  the corpse-establishment fence and therefore retains the corpse for a later lifecycle attempt.
+  Player/follower transfers, coupled spell effects, intentional contained-gear destruction, and
+  nested-corpse extraction still need operation-specific durability sequencing before flat-primary
+  mode can execute them safely.
+- **Next action:** restore historical saved floor-item capture and restart materialization through the
+  revisioned room aggregate, then return to the audited non-room corpse operations with the ownership
+  destinations required by those concrete gameplay paths.
+
+### Checkpoint 92 - atomic live room item transfers
+
+- **Historical behavior restored:** the existing deferred player `drop`, floor/container `get`, and
+  cross-owner `put` paths can now persist durable non-money items in flat-primary rooms instead of
+  receiving the ownership repository's `EOPNOTSUPP` fence. MariaDB routing and same-owner inventory
+  reparenting remain unchanged.
+- **One recoverable publication:** the item repository composes ownership, the version 3 world-room
+  aggregate, player materialization events, and any artifact catalog change under the existing
+  authority lock. The room preparer compares the complete pre-move UID/VNUM/root/parent custody,
+  advances the same room revision as ownership, canonicalizes live slot-zero snapshots to detached
+  slot `-1`, and records the exact moved subtree before the completion mutates live pointers.
+- **Nested container fidelity:** puts attach the transported root to the proven room-owned parent;
+  gets remove only the selected subtree. Both directions reproduce the live handler's positive-weight
+  propagation through all room-owned ancestors with checked arithmetic, preventing a restored floor
+  container from carrying stale weight after content movement.
+- **Artifact custody:** registered artifacts move atomically between `ON_PLAYER` and `ON_GROUND` at
+  the command acceptance time while their timer and binding fields remain intact. The established
+  live artifact callback can still perform its normal post-publication soul semantics.
+- **Crash and regression coverage:** a focused isolated fixture interrupts a player-to-room drop
+  between authority images, recovers it exactly once, then exercises nested put/get and confirms room
+  topology, owner revisions, detached snapshots, and ancestor weights. Artifact coverage proves both
+  room directions and binding preservation; the live source contract requires both room preparers and
+  their after-images before the shared commit.
+- **Checks passed:** focused item-ownership, world-item, artifact/runtime, and live movement suites;
+  changed-line formatting, `git diff --check`, the strict normal C++20 server build, and the isolated
+  client-free game-loop boot/clean-shutdown preflight.
+- **Exposure:** money objects still use their historical cash path rather than item custody. This
+  checkpoint does not establish or delete an administrative saved-storage root, so the historical
+  `writeSavedItem`/`PurgeSavedItemFile` adapter and explicit saved-item restore entry point remain.
+- **Next action:** give administrative `ITEM_STORAGE` roots stable-UID, revisioned room
+  establishment/removal and route the three historical saved-item entry points through it. Reuse the
+  room transfer above for all subsequent player content changes rather than adding another catalog.
+
+### Checkpoint 93 - restored administrative saved world items
+
+- **Historical lifecycle restored:** flat-primary `storage new`, `storage delete`, and `storage
+  remove` now submit the existing item movement transaction before touching the live object graph.
+  Establishment adopts a stable-UID storage subtree from system custody into its room; deletion moves
+  the exact subtree to destruction custody; removal serially detaches each child to the room floor and
+  destroys the empty root. Failed submissions and completions retain the live authority rather than
+  reporting a discarded mutation as successful.
+- **Shared room authority:** the item and world repositories admit only those three bounded room
+  transfer shapes in addition to the checkpoint 92 player movements. Establishment appends an exact
+  detached subtree, deletion removes that exact subtree, and same-room child detachment preserves
+  nested topology while subtracting weight through every former ancestor. The adoption runtime now
+  completes a same-owner system-to-room establishment without manufacturing a second no-op command.
+- **Artifact and cleanup semantics:** an artifact-bearing establishment fails closed, same-room
+  detachment leaves ground artifact custody unchanged, and deletion clears every selected registered
+  artifact's ownership, location, and binding state in the same recoverable authority transaction.
+  Recursive live cleanup recognizes already-destroyed item custody, avoiding false mutation alerts.
+- **Historical entry-point routing:** `writeSavedItem` validates that flat storage is already tracked
+  by room authority and returns before SQL; `restoreSavedItems` relies on the shared room catalog that
+  boot has already staged; and `PurgeSavedItemFile` verifies destruction custody and returns before
+  SQL. MariaDB behavior stays synchronous, while saved-item deletion now occurs before the live object
+  is freed, repairing the prior use-after-free and missing SQL-row purge.
+- **Restart and regression coverage:** repository fixtures establish and delete a nested storage
+  subtree and detach a nested child with exact revision, topology, and ancestor-weight assertions.
+  Artifact coverage exercises same-room detachment and room destruction. The boot harness restores an
+  `ITEM_STORAGE` root and nested container from the room catalog, and a focused source contract proves
+  all three legacy saved-item entry points branch before SQL and all admin mutations wait for durable
+  acknowledgment.
+- **Checks passed:** saved-item routing, item/world-item repositories, artifact/runtime, room/corpse
+  boot restore, live movement, item ownership/runtime, and transfer-version compatibility suites;
+  changed-line formatting, `git diff --check`, the strict normal C++20 server build, and the isolated
+  client-free game-loop boot/clean-shutdown preflight.
+- **Exposure:** the unsafe pointer-named native `Players/SavedItems` format is not revived as a writer;
+  authoritative saved world items now use the bounded shared room catalog. Money objects retain their
+  historical cash path. The checkpoint 91 non-room corpse operations remain fail-closed until their
+  actual player, follower, destruction, effect, or nested-container destinations are represented.
+- **Next action:** implement the smallest operation-specific durability boundary from the checkpoint
+  91 corpse audit, beginning with intentional corpse-and-contents destruction, then return to the
+  player/follower and coupled-effect transfers without broadening generic `extract_obj` semantics.
+
+### Checkpoint 94 - atomic intentional corpse-and-contents destruction
+
+- **Historical behavior restored:** the `very_angry_npc` special can again destroy a player corpse
+  and all contained equipment in flat-primary mode. It now asks the persistence layer to defer that
+  one explicit operation before reaching synchronous `extract_obj`; NPC corpses, MariaDB modes, and
+  all other generic extraction callers keep their existing behavior.
+- **Bounded lifecycle extension:** corpse-lifecycle payload version 3 adds a `destroy` action while
+  retaining version 1 and 2 decoders and the existing fixed-size result. The command fences the
+  stable corpse and canonical destruction owner, compares both revisions, and retains the corpse's
+  current room as a stale-live-placement proof rather than treating destruction as a room release.
+- **One recoverable authority change:** under the shared authority lock, destruction proves the
+  exact corpse identity, revision, placement, nested world snapshots, and active item custody. Its
+  after-images remove the corpse aggregate without publishing contents or money to a room, advance
+  every durable item into destroyed custody, clear registered artifact ownership/location/binding,
+  and record the lifecycle result. Forced interruption between those images recovers and replays the
+  same result exactly once.
+- **Durability-before-live extraction:** an immediate post-death request can queue behind the
+  corpse-establishment command and waits on existing corpse and destruction-owner fences. Repeated
+  special-proc calls recognize the queued or in-flight intent. Only a committed completion with an
+  exact live room and custody graph advances the runtime revisions and extracts the corpse with
+  legacy persistence callbacks suppressed; failures retain the live corpse and alert operators.
+- **Restart correctness:** flat boot now hydrates the canonical destruction-owner revision even
+  though destroyed items are intentionally excluded from active-owner loads. Unexpected active
+  destruction custody fails boot closed, preventing post-restart destruction from retrying forever
+  against an assumed revision zero.
+- **Checks passed:** payload compatibility and keys, lifecycle queueing and duplicate attachment,
+  forced-interruption repository recovery, nested runtime destruction, artifact cleanup, live source
+  routing, and boot revision hydration regressions; changed-line formatting, `git diff --check`, the
+  strict normal C++20 server build, and the isolated client-free game-loop boot/clean-shutdown
+  preflight.
+- **Exposure:** this command intentionally destroys money and items with the corpse and therefore is
+  not a general corpse-transfer primitive. Resurrection, necromancy, coupled spell effects, and a
+  corpse nested inside another object still need their exact historical destinations and sequencing.
+- **Next action:** restore resurrection's corpse-to-player transfer as the next concrete audited
+  operation, reusing the existing player ownership/materialization authorities and leaving generic
+  extraction semantics unchanged.
+
+### Checkpoint 95 - durability-gated corpse unmaking
+
+- **Historical behavior restored:** flat-primary `unmaking` and its `return soul` alias now retain
+  their exact corpse-to-room result and caster heal. The spell checks the dedicated guard before its
+  first content move; MariaDB and non-player corpses continue through the synchronous historical
+  implementation.
+- **Existing authority reused:** no command, payload, catalog, or repository was added. The guarded
+  path submits checkpoint 88's atomic release, which already removes the corpse aggregate, appends
+  nested items and all four money denominations to the room, advances exact ownership revisions,
+  grounds artifacts, and records an idempotent lifecycle result in one recoverable publication.
+- **Post-commit effect sequencing:** a small in-memory context records the spell level, normalized
+  corpse level, caster flavor, pointer, and process-local runtime ID under the stable corpse key.
+  Only a committed release with an exact live item graph grants the historical heal and messages;
+  allocation, submission, stale revision, and repository failures leave the live corpse untouched
+  and tell the caster the spell did not take effect. Duplicate casts recognize the pending intent
+  without submitting another release.
+- **Stronger release publication:** all release callers now prove that the live corpse still resolves
+  to the room VNUM committed by the command before changing runtime custody. This closes a movement
+  race for carried corpses as well as unmaking; a stale topology alerts and retains live state rather
+  than publishing contents into a different room.
+- **Checks passed:** the focused live routing contract proves the guard precedes `obj_from_obj`, the
+  room proof precedes runtime custody advancement, and healing follows that advancement. Existing
+  lifecycle-command, release-transaction, forced-recovery repository, world-item, artifact, and
+  ownership-runtime regressions pass, as do changed-line formatting, `git diff --check`, the strict
+  normal C++20 server build, and the client-free build/game-loop boot/clean-shutdown preflight.
+- **Exposure:** the heal and flavor text are transient live effects. If the process dies after the
+  durable release commits but before its completion is published, restart recovers the exact
+  corpse/item/money/artifact state but does not replay that heal. Resurrection cannot reuse this
+  narrow path: it also ejects the target's current inventory and wallet into the old room, moves the
+  target, claims every corpse item and coin, updates character state, and saves the player.
+- **Next action:** define the smallest recoverable resurrection sequence from the existing room,
+  player-item materialization, wallet, and corpse authorities before changing either resurrect spell;
+  do not collapse it into ordinary release or add a generic spell transaction framework.
+
+### Checkpoint 96 - durability-gated wall of bones
+
+- **Historical behavior restored:** the player-corpse branch of `wall of bones` now checks the flat
+  persistence guard after its existing corpse-strength, direction, exit, and component validation but
+  before creating either wall, moving a corpse item, or extracting the corpse. Compact bones, dragon
+  scales, NPC corpses, and MariaDB modes continue through the synchronous historical path.
+- **Existing authority reused:** the guarded branch submits checkpoint 88's atomic corpse-to-room
+  release. No command, payload, catalog, or generic effect framework was added. The only new state is
+  a bounded process-local context containing the stable corpse key, caster pointer and runtime ID,
+  spell level, and exit direction.
+- **Acknowledgment ordering:** release publication still proves the committed room and exact live item
+  graph, then advances item custody before calling the extracted historical wall helper. A valid
+  completion creates both wall objects, marks both exits breakable, emits the original room messages,
+  drops exact corpse contents and money, and extracts the corpse. Submission and durable failures
+  retain the corpse and create no wall; duplicate casts recognize the pending wall intent.
+- **Transient-effect exposure:** wall objects and exit bits are live gameplay state rather than durable
+  corpse authority. A process death after release commit can recover the exact released items, money,
+  artifacts, and removed corpse without replaying the wall. If the caster or exit becomes stale before
+  publication, the release still completes, the wall effect is skipped, and an operator alert records
+  the mismatch.
+- **Remaining design boundary:** the audited resurrection path must exchange the target's current
+  player inventory and wallet with the old room before transferring the corpse aggregate; follower
+  raising needs durable pet-item materialization; nested decay targets the containing object's owner.
+  None is an ordinary room release, and each would require a new composite cross-authority protocol.
+  The directive requires explicit owner approval before that material expansion.
+- **Checks passed:** the focused live routing contract proves the wall guard precedes wall creation and
+  the first content move, and that runtime custody advances before the wall helper. Existing lifecycle
+  command, transaction, forced-recovery corpse repository, room, artifact, and ownership-runtime
+  regressions pass, as do changed-line formatting, `git diff --check`, the strict normal C++20 server
+  build, and the client-free build/game-loop boot/clean-shutdown preflight.
+- **Next action:** obtain an owner decision on whether to add the dedicated composite authority needed
+  for the remaining resurrection, follower, and nested-container corpse paths; if approved, start with
+  the shared full/lesser resurrection exchange rather than a generalized extraction framework.
+
+### Checkpoint 97 - durability-gated corpse compaction
+
+- **Historical behavior restored:** flat-primary `compact corpse` now checks a dedicated guard after
+  its existing corpse and mutilation validation but before the first content move. A successful cast
+  still drops every corpse item and coin, removes the corpse, emits the crunch message, and creates a
+  pile of bones carrying the corpse's level. NPC corpses and MariaDB modes remain synchronous.
+- **Fail-before-mutate staging:** the replacement pile is allocated with its stable item UID while
+  still off-world and recorded under the stable corpse key before release submission. Allocation,
+  context-allocation, submission, and durable failures discard that invisible pile and retain the
+  intact corpse. This repairs the historical failure order, which emptied the corpse before checking
+  whether the pile prototype could be loaded.
+- **Existing authority reused:** the operation adds no command, payload, catalog, or general effect
+  abstraction. Checkpoint 88's release still atomically removes the corpse aggregate, advances exact
+  nested item ownership into the room, accumulates all four money denominations, grounds artifacts,
+  and records the lifecycle result. Only after runtime custody accepts that result does the staged pile
+  become visible in the committed room.
+- **Bounded live identity:** the process-local context stores the caster pointer/runtime ID and staged
+  pile pointer/UID. Completion resolves both through live registries rather than dereferencing stale
+  storage. Failed or stale publication cleans up the staged object; duplicate casts recognize the
+  pending compaction without submitting another release.
+- **Transient-result exposure:** the bone pile is generated gameplay state rather than part of the
+  corpse release authority. A process death after durable release commit but before live completion
+  recovers the released items, room money, grounded artifacts, and removed corpse without recreating
+  the pile. Making generated spell objects durable would require a different composite creation
+  command and is not introduced here.
+- **Checks passed:** the focused live routing contract proves the compaction guard precedes the first
+  content move, the replacement pile is staged before release submission and cleaned on failure, and
+  runtime custody advances before the pile reaches the room. Existing lifecycle command, transaction,
+  forced-recovery corpse repository, room, artifact, and ownership-runtime regressions pass, as do
+  changed-line formatting, `git diff --check`, the strict normal C++20 server build, and the
+  client-free build/game-loop boot/clean-shutdown preflight.
+- **Remaining approval boundary:** resurrection, follower raising, and nested-container decay each
+  cross a destination authority that ordinary release cannot represent. Per the directive, adding
+  those composite protocols still awaits explicit owner approval; resurrection remains the first
+  proposed operation if approved.
+
+### Checkpoint 98 - recoverable full and lesser player resurrection
+
+- **Historical behavior restored:** full and lesser resurrection in flat-primary mode now retain
+  their eligibility, consent, identity, mutilation, chance, movement, item, money, effect, recovery,
+  and save behavior. Both spells stop before their first target or corpse mutation and defer only
+  the player-corpse branch; NPC corpses and MariaDB modes retain the synchronous historical path.
+- **Bounded two-stage exchange:** the target's current durable inventory and equipment roots use the
+  existing player-to-room movement transaction one at a time. After those acknowledgments, corpse
+  lifecycle payload version 4 adds one `resurrect` action containing the target player, old room,
+  wallet, and exact expected revisions. Versions 1-3 and their result layouts remain readable.
+- **One final atomic publication:** under the existing shared authority lock, the resurrection
+  action proves the corpse placement and nested item graph, deposits the target's old four-
+  denomination wallet into the old room, replaces the player wallet with the corpse wallet, moves
+  corpse item custody and artifact location to the player without changing artifact soul binding,
+  removes the corpse aggregate, records inbound player materialization, and stores the idempotent
+  lifecycle result. No general spell transaction, extraction hook, or new authority catalog was
+  introduced.
+- **Durability-before-live mutation:** only committed item moves strip live target roots. The final
+  acknowledgment must prove the same caster, target, rooms, corpse, and contents and advance runtime
+  custody before publishing the old money pile, moving the target, transferring live corpse items,
+  applying the original full/lesser effects, saving the character, and extracting the corpse.
+- **Recovery evidence:** a forced interruption among the composite after-images recovers the corpse
+  removal, old-room money, player wallet, nested player custody, artifact placement, materialization,
+  and operation result exactly once. A process failure during the preceding root moves leaves the
+  completed roots durably in the old room and the intact corpse available for a safe retry.
+- **Checks passed:** lifecycle codec compatibility and key fencing, transaction completion, nested
+  runtime ownership, live guard ordering, composite repository interruption/replay, world-item,
+  artifact, player-domain, corpse restoration, and player-corpse contract regressions; changed-line
+  formatting, `git diff --check`, the strict normal C++20 server build, and the isolated client-free
+  build/game-loop boot/clean-shutdown preflight.
+- **Remaining restoration:** follower raising and nested-container corpse decay still need their
+  exact durable destinations. Historical mixed-format siege-state compatibility remains required.
+
+### Checkpoint 99 - recoverable follower raising
+
+- **Historical behavior restored:** flat-primary ordinary undead, titan, dracolich, golem, avatar,
+  and greater-dracolich creation now retain their existing eligibility, follower construction,
+  corpse-item transfer, decay-derived duration, control or hostility roll, effects, and pet save.
+  Each player-corpse path stops with its follower still off-world before `char_to_room`, the
+  historical backup-corpse clone, the first content move, or corpse extraction. NPC casters,
+  non-player corpses, and MariaDB modes retain the synchronous historical implementation.
+- **Narrow lifecycle extension:** payload version 4 gains one `raise_follower` action using the
+  already-present corpse, player, item, wallet, artifact, materialization, and operation-ledger
+  authorities. It fences only the corpse and caster player revisions. No pet identity repository,
+  storage format, authority catalog, generalized spell transaction, or extraction framework was
+  added.
+- **One recoverable publication:** the action proves exact corpse placement and nested item custody,
+  removes the corpse aggregate, moves durable item custody and artifact location to the caster
+  without changing artifact binding, adds every corpse denomination to the caster wallet, records
+  inbound materialization, and stores the result atomically. Overflow and stale revisions fail
+  before publication. Forced interruption among the after-images recovers and replays that result
+  exactly once without changing room authority.
+- **Durability-before-live publication:** only a committed completion advances runtime custody and
+  the wallet, strips live corpse contents, removes nested money objects already represented by the
+  wallet credit, extracts the corpse, and publishes the staged follower. Controlled followers keep
+  the historical items and are immediately included in a crash checkpoint. On the historical rare
+  hostile roll, the items go directly to the caster so live placement stays consistent with the
+  committed player authority and cannot duplicate across relog.
+- **Recovery evidence:** the repository regression forces an interrupted multi-image write and
+  proves one corpse removal, additive wallet credit, exact nested player custody, preserved artifact
+  binding, restart materialization, a zero room revision, and idempotent replay. Command codec,
+  transaction completion, runtime ownership, all six live guard-order contracts, corpse ownership,
+  corpse restore, player-domain, and player-corpse regressions pass.
+- **Build evidence:** changed-line formatting, `git diff --check`, and the strict normal C++20 server
+  build pass. The isolated client-free build/game-loop boot/clean-shutdown preflight also passes.
+- **Remaining restoration:** nested-container corpse decay must preserve its containing item
+  topology. Historical mixed-format siege-state compatibility remains required.
+
+### Checkpoint 100 - recoverable nested-container corpse decay
+
+- **Historical container result restored:** flat-primary decay now distinguishes a player corpse
+  nested inside an object from ordinary room release. It proves the immediate containing item, its
+  root and revision, the containing owner, and the outer room before submitting. MariaDB modes,
+  non-player corpses, and every other decay location retain their established paths.
+- **One narrow lifecycle action:** payload version 5 adds `release_nested` plus only the three item
+  topology fields required to name the existing root, parent, and parent revision. Versions 1-4
+  remain readable. The action supports the two live authoritative destinations: a player-owned
+  container and a room-owned container. It adds no catalog, general extraction hook, container
+  authority, or callback framework.
+- **Atomic topology publication:** the shared authority transaction removes the corpse aggregate,
+  changes every durable corpse item's owner and root, attaches each former corpse root directly
+  beneath the proven container, updates artifact location, and records inbound player
+  materialization when the container belongs to a player. Room snapshots append the exact nested
+  item trees under the existing room item. Player restart reconciliation reconstructs the same
+  parent chain beneath the existing inventory container.
+- **Currency safety:** currency continues through its existing special authorities rather than
+  becoming a second kind of ownership-backed item. Player-container decay adds corpse money to the
+  wallet and discards the corresponding live money objects after commit. Room-container decay adds
+  the durable value to the room aggregate while retaining the historical live containing placement.
+  This is a bounded safety correction for the existing aggregate currency model and prevents
+  process interruption from duplicating value.
+- **Durability-before-mutation:** decay returns before logging, moving a child, or extracting the
+  corpse. A committed completion rechecks the same live parent, outer room, owner, root, revision,
+  and complete corpse item graph, advances runtime custody, then moves contents to the immediate
+  parent and extracts the empty corpse. A failed or stale command preserves and rearms the corpse.
+- **Recovery and validation evidence:** forced interruptions cover both room and player containers,
+  including exact nested ownership, room topology and money, additive player wallet credit,
+  artifact movement, restart materialization, and idempotent replay. Lifecycle codec and key
+  compatibility, transaction completion, runtime ownership, live routing, the strict normal C++20
+  server build, the isolated client-free build/game-loop boot/clean-shutdown preflight,
+  changed-line formatting, and `git diff --check` pass.
+- **Remaining restoration:** historical mixed-format siege-state compatibility remains required.
+
+### Checkpoint 101 - historical siege import and project completion
+
+- **Historical compatibility restored:** when the current `metadata/siege` authority is absent,
+  the client-free boot path imports the version-35 mixed text/binary `Players/siege` format written
+  at the reference revision. Historical room indexes become durable room vnums, and the existing
+  one-object reader reconstructs the four historical siege object types before the existing item
+  snapshot codec captures them.
+- **Narrow bounded reader:** the compatibility code is confined to `src/siege.c`. It validates the
+  exact old object layout and derives its binary record length, so newline bytes inside ordinary
+  numeric fields are not mistaken for record separators. It does not add a general legacy-object
+  importer, new catalog, repository, transaction framework, or writer for the unsafe old format.
+- **Safe one-way publication:** import reads an owned regular file without following a final
+  symlink, enforces file, record, string, and object bounds, validates every room and object before
+  publication, then uses the existing locked, checksummed, atomic siege authority. A malformed,
+  truncated, oversized, unknown-room, or symlinked source publishes nothing and leaves live state
+  empty. Once current authority exists it takes precedence, making import idempotent without
+  deleting the historical source.
+- **Validation evidence:** `python3 tests/async/test_flatfile_siege.py` covers exact version-35
+  import, a numeric field containing an embedded newline byte, typed-authority precedence,
+  truncation, symlink refusal, current-format round trips, corruption refusal, unknown rooms, and
+  SQL-free routing. The strict normal server build, strict client-free siege compilation, and the
+  isolated client-free build/game-loop boot/clean-shutdown preflight pass, together with
+  changed-line formatting and `git diff --check`.
+- **Final directive audit:** this closes the directive's sole remaining explicit restoration item.
+  The earlier siege/kingdom removal memo remains non-authoritative research and adds no work. Older
+  changelog next-action statements remain historical checkpoint notes. Checkpoint 101 completes the
+  flat-file restoration directive without expanding the architecture.

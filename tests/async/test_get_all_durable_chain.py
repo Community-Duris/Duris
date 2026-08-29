@@ -75,8 +75,9 @@ ok &= check(
     and "source is no longer here" in continue_bulk,
 )
 ok &= check(
-    "currency and transient floor items retain synchronous pickup",
-    "object->type != ITEM_MONEY" in continue_bulk
+    "currency and lifecycle-owned floor items retain synchronous pickup",
+    "uses_generic_item_ownership(object)" in continue_bulk
+    and "PC_CORPSE" in ACTOBJ
     and "do_get_finalize_room_item(actor, object" in continue_bulk,
 )
 ok &= check(

@@ -2,6 +2,7 @@
 
 #include "corpse_lifecycle_transaction.h"
 #include "flatfile_corpse_ownership.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_world_item_repository.h"
 #include "item_ownership_runtime.h"
 #include "necromancy.h"
@@ -16,21 +17,29 @@
 #include <vector>
 
 extern int skip_corpse_save;
+extern bool updateArtis;
 
 namespace
 {
-class corpse_save_guard
+class restore_side_effect_guard
 {
     public:
-	corpse_save_guard()
-		: previous(skip_corpse_save)
+	restore_side_effect_guard()
+		: previous_corpse_save(skip_corpse_save)
+		, previous_artifact_update(updateArtis)
 	{
 		skip_corpse_save = 1;
+		updateArtis = false;
 	}
-	~corpse_save_guard() { skip_corpse_save = previous; }
+	~restore_side_effect_guard()
+	{
+		skip_corpse_save = previous_corpse_save;
+		updateArtis = previous_artifact_update;
+	}
 
     private:
-	int previous;
+	int previous_corpse_save;
+	bool previous_artifact_update;
 };
 
 struct staged_corpse
@@ -40,6 +49,13 @@ struct staged_corpse
 	uint32_t owner_pid = 0;
 	uint32_t save_id = 0;
 	bool lifecycle_hydrated = false;
+};
+
+struct staged_room
+{
+	std::vector<P_obj> roots;
+	P_obj money = nullptr;
+	int room_rnum = NOWHERE;
 };
 
 void clear_item_uids(P_obj object)
@@ -59,6 +75,14 @@ void forget_record_items(const flatfile_corpse_record &record)
 		flatfile_corpse_item_owner(record.owner_pid, record.save_id));
 }
 
+void forget_record_items(const flatfile_room_item_record &record)
+{
+	for (const auto &item : record.items)
+		item_ownership_runtime_forget(item.object_uid);
+	item_ownership_runtime_forget_owner(
+		{ item_owner_type::room, static_cast<uint64_t>(record.room_vnum), 0 });
+}
+
 void discard_staged(std::vector<staged_corpse> *staged,
 		    const std::vector<flatfile_corpse_record> &records)
 {
@@ -75,6 +99,29 @@ void discard_staged(std::vector<staged_corpse> *staged,
 			clear_item_uids(entry.object->contains);
 			extract_obj(entry.object, FALSE);
 			entry.object = nullptr;
+		}
+	}
+}
+
+void discard_staged(std::vector<staged_room> *staged,
+		    const std::vector<flatfile_room_item_record> &records)
+{
+	if (!staged)
+		return;
+	for (size_t index = 0; index < staged->size(); ++index)
+	{
+		staged_room &entry = (*staged)[index];
+		forget_record_items(records[index]);
+		for (P_obj item : entry.roots)
+		{
+			clear_item_uids(item);
+			extract_obj(item, FALSE);
+		}
+		entry.roots.clear();
+		if (entry.money)
+		{
+			extract_obj(entry.money, FALSE);
+			entry.money = nullptr;
 		}
 	}
 }
@@ -206,6 +253,62 @@ flatfile_corpse_restore_result materialize_corpse(const std::string &root,
 	*output = { corpse, room_rnum, record.owner_pid, record.save_id, true };
 	return flatfile_corpse_restore_result::ok;
 }
+
+flatfile_corpse_restore_result materialize_room(const std::string &root,
+						const flatfile_room_item_record &record,
+						staged_room *output, std::string *error)
+{
+	if (!output || record.room_vnum <= 0 || !record.revision ||
+	    !std::all_of(record.money.begin(), record.money.end(),
+			 [](int32_t amount) { return amount >= 0; }))
+		return flatfile_corpse_restore_result::invalid;
+	const int room_rnum = real_room(record.room_vnum);
+	if (room_rnum == NOWHERE)
+		return flatfile_corpse_restore_result::unknown_room;
+	const item_owner_identity owner = { item_owner_type::room,
+					    static_cast<uint64_t>(record.room_vnum), 0 };
+	uint64_t owner_revision = 0;
+	std::vector<player_load_item_identity> identities;
+	const auto ownership = flatfile_room_load_item_ownership(root, record, &owner_revision,
+								 &identities, error);
+	if (ownership != flatfile_corpse_ownership_result::ok)
+		return ownership == flatfile_corpse_ownership_result::not_found ?
+			       flatfile_corpse_restore_result::item_failure :
+		       ownership == flatfile_corpse_ownership_result::io_error ?
+			       flatfile_corpse_restore_result::io_error :
+			       flatfile_corpse_restore_result::invalid;
+	std::vector<P_obj> roots;
+	player_load_item_materialize_metrics metrics = {};
+	if (!record.items.empty() &&
+	    !player_load_item_graph_materialize_detached(
+		    record.items, identities, owner, owner_revision, true, true, &roots, &metrics))
+		return metrics.outcome == player_load_item_materialize_outcome::allocation_failure ?
+			       flatfile_corpse_restore_result::allocation_failure :
+			       flatfile_corpse_restore_result::item_failure;
+	if (record.items.empty() && !item_ownership_runtime_hydrate_owner(owner, owner_revision))
+		return flatfile_corpse_restore_result::item_failure;
+	P_obj money = nullptr;
+	if (std::any_of(record.money.begin(), record.money.end(),
+			[](int32_t amount) { return amount != 0; }))
+	{
+		money = create_money(record.money[0], record.money[1], record.money[2],
+				     record.money[3]);
+		if (!money)
+		{
+			forget_record_items(record);
+			for (P_obj item : roots)
+			{
+				clear_item_uids(item);
+				extract_obj(item, FALSE);
+			}
+			return flatfile_corpse_restore_result::allocation_failure;
+		}
+	}
+	output->roots = std::move(roots);
+	output->money = money;
+	output->room_rnum = room_rnum;
+	return flatfile_corpse_restore_result::ok;
+}
 } // namespace
 
 flatfile_corpse_restore_result flatfile_corpse_restore_catalog(const std::string &root,
@@ -213,7 +316,7 @@ flatfile_corpse_restore_result flatfile_corpse_restore_catalog(const std::string
 {
 	if (root.empty())
 		return flatfile_corpse_restore_result::invalid;
-	corpse_save_guard guard;
+	restore_side_effect_guard guard;
 	std::vector<flatfile_corpse_record> records;
 	std::vector<flatfile_saved_world_item_record> saved_items;
 	const auto listed = flatfile_world_item_list(root, &records, &saved_items, error);
@@ -221,6 +324,14 @@ flatfile_corpse_restore_result flatfile_corpse_restore_catalog(const std::string
 		return listed == flatfile_world_item_result::not_found ?
 			       flatfile_corpse_restore_result::not_found :
 		       listed == flatfile_world_item_result::io_error ?
+			       flatfile_corpse_restore_result::io_error :
+			       flatfile_corpse_restore_result::invalid;
+	std::vector<flatfile_room_item_record> room_records;
+	const auto rooms_listed = flatfile_world_item_list_rooms(root, &room_records, error);
+	if (rooms_listed != flatfile_world_item_result::ok)
+		return rooms_listed == flatfile_world_item_result::not_found ?
+			       flatfile_corpse_restore_result::not_found :
+		       rooms_listed == flatfile_world_item_result::io_error ?
 			       flatfile_corpse_restore_result::io_error :
 			       flatfile_corpse_restore_result::invalid;
 
@@ -256,19 +367,103 @@ flatfile_corpse_restore_result flatfile_corpse_restore_catalog(const std::string
 			return flatfile_corpse_restore_result::io_error;
 		}
 	}
+	std::vector<staged_room> staged_rooms;
+	try
+	{
+		staged_rooms.reserve(room_records.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		discard_staged(&staged, records);
+		return flatfile_corpse_restore_result::io_error;
+	}
+	for (const auto &record : room_records)
+	{
+		staged_room room = {};
+		const auto materialized = materialize_room(root, record, &room, error);
+		if (materialized != flatfile_corpse_restore_result::ok)
+		{
+			discard_staged(&staged_rooms, room_records);
+			discard_staged(&staged, records);
+			return materialized;
+		}
+		try
+		{
+			staged_rooms.push_back(std::move(room));
+		}
+		catch (const std::bad_alloc &)
+		{
+			forget_record_items(record);
+			for (P_obj item : room.roots)
+			{
+				clear_item_uids(item);
+				extract_obj(item, FALSE);
+			}
+			if (room.money)
+				extract_obj(room.money, FALSE);
+			discard_staged(&staged_rooms, room_records);
+			discard_staged(&staged, records);
+			return flatfile_corpse_restore_result::io_error;
+		}
+	}
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	uint64_t destruction_revision = 0;
+	std::vector<flatfile_item_ownership_record> destruction_items;
+	const auto destruction_loaded = flatfile_item_repository_load_owner(
+		root, destruction, &destruction_revision, &destruction_items, error);
+	if ((destruction_loaded != flatfile_item_repository_result::ok &&
+	     destruction_loaded != flatfile_item_repository_result::not_found) ||
+	    !destruction_items.empty() ||
+	    !item_ownership_runtime_hydrate_owner(
+		    destruction, destruction_loaded == flatfile_item_repository_result::ok ?
+					 destruction_revision :
+					 0))
+	{
+		discard_staged(&staged_rooms, room_records);
+		discard_staged(&staged, records);
+		return destruction_loaded == flatfile_item_repository_result::io_error ?
+			       flatfile_corpse_restore_result::io_error :
+			       flatfile_corpse_restore_result::item_failure;
+	}
 	for (size_t index = 0; index < staged.size(); ++index)
 	{
 		obj_to_room(staged[index].object, staged[index].room_rnum);
 		if (!OBJ_ROOM(staged[index].object) ||
 		    staged[index].object->loc.room != staged[index].room_rnum)
 		{
+			item_ownership_runtime_forget_owner(destruction);
+			discard_staged(&staged_rooms, room_records);
 			discard_staged(&staged, records);
 			return flatfile_corpse_restore_result::publish_failure;
 		}
 		persistence_refresh_restored_corpse(staged[index].object,
 						    "flatfile_corpse_restore_catalog");
 	}
+	for (size_t index = 0; index < staged_rooms.size(); ++index)
+	{
+		for (P_obj item : staged_rooms[index].roots)
+		{
+			obj_to_room(item, staged_rooms[index].room_rnum);
+			if (!OBJ_ROOM(item) || item->loc.room != staged_rooms[index].room_rnum)
+			{
+				item_ownership_runtime_forget_owner(destruction);
+				discard_staged(&staged_rooms, room_records);
+				discard_staged(&staged, records);
+				return flatfile_corpse_restore_result::publish_failure;
+			}
+		}
+	}
+	for (size_t index = 0; index < staged_rooms.size(); ++index)
+	{
+		if (staged_rooms[index].money)
+		{
+			obj_to_room(staged_rooms[index].money, staged_rooms[index].room_rnum);
+			staged_rooms[index].money = nullptr;
+		}
+	}
 	for (auto &entry : staged)
 		entry.object = nullptr;
+	for (auto &entry : staged_rooms)
+		entry.roots.clear();
 	return flatfile_corpse_restore_result::ok;
 }

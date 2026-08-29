@@ -206,6 +206,120 @@ int main(int argc, char **argv)
 			records[0].bind_timer == 10000 && records[0].revision == 2,
 		"cross-race artifact loot did not preserve feed and binding semantics");
 
+	const fs::path room_transfer_root = fs::path(argv[1]) / "room-transfer";
+	prepare_root(room_transfer_root);
+	const flatfile_artifact_record room_artifact = {
+		500, true, FLATFILE_ARTIFACT_ON_PLAYER, 77, 9000, 1, 1000, 77, 8000, 1
+	};
+	require(flatfile_artifact_establish(room_transfer_root.string(), { room_artifact },
+					    &error) == flatfile_artifact_result::ok,
+		"room transfer artifact establishment failed");
+	item_transfer_payload room_drop = {};
+	room_drop.from_owner = { item_owner_type::player, 77, 0 };
+	room_drop.to_owner = { item_owner_type::room, 9001, 0 };
+	room_drop.reason = item_transfer_reason::player_drop;
+	set_transfer_item(&room_drop, 500, true);
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire room artifact transfer authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_drop, 11000000, &mutation,
+				&error) == flatfile_artifact_result::ok,
+			"artifact drop did not prepare its room authority image");
+		require(flatfile_authority_transaction_commit(room_transfer_root.string(), lock,
+							      { mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"artifact drop transaction failed: " + error);
+	}
+	require(flatfile_artifact_list(room_transfer_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_ON_GROUND &&
+			records[0].location == 9001 && records[0].last_update == 11 &&
+			records[0].bind_owner_pid == 77 && records[0].bind_timer == 8000 &&
+			records[0].revision == 2,
+		"artifact drop did not preserve binding state while moving to the room");
+	item_transfer_payload room_get = room_drop;
+	room_get.from_owner = room_drop.to_owner;
+	room_get.to_owner = { item_owner_type::player, 42, 0 };
+	room_get.reason = item_transfer_reason::player_get;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not reacquire room artifact transfer authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_get, 12000000, &mutation,
+				&error) == flatfile_artifact_result::ok,
+			"artifact get did not prepare its player authority image");
+		require(flatfile_authority_transaction_commit(room_transfer_root.string(), lock,
+							      { mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"artifact get transaction failed: " + error);
+	}
+	require(flatfile_artifact_list(room_transfer_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 &&
+			records[0].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			records[0].location == 42 && records[0].last_update == 12 &&
+			records[0].bind_owner_pid == 77 && records[0].bind_timer == 8000 &&
+			records[0].revision == 3,
+		"artifact get did not atomically move room authority to the player");
+	room_drop.from_owner = room_get.to_owner;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire second room artifact transfer authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_drop, 13000000, &mutation,
+				&error) == flatfile_artifact_result::ok &&
+				flatfile_authority_transaction_commit(
+					room_transfer_root.string(), lock, { mutation.after_image },
+					&error) == flatfile_authority_transaction_result::ok,
+			"second artifact drop did not commit: " + error);
+	}
+	item_transfer_payload room_reparent = room_drop;
+	room_reparent.from_owner = room_drop.to_owner;
+	room_reparent.to_owner = room_drop.to_owner;
+	room_reparent.reason = item_transfer_reason::operator_repair;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire room artifact reparent authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_reparent, 14000000,
+				&mutation, &error) == flatfile_artifact_result::unchanged,
+			"same-room artifact reparent changed artifact location authority");
+	}
+	item_transfer_payload room_destroy = room_reparent;
+	room_destroy.to_owner = { item_owner_type::destruction, 0, 0 };
+	room_destroy.reason = item_transfer_reason::destruction;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire room artifact destruction authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_destroy, 15000000,
+				&mutation, &error) == flatfile_artifact_result::ok &&
+				flatfile_authority_transaction_commit(
+					room_transfer_root.string(), lock, { mutation.after_image },
+					&error) == flatfile_authority_transaction_result::ok,
+			"room artifact destruction did not commit: " + error);
+	}
+	require(flatfile_artifact_list(room_transfer_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && !records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			records[0].location == -1 && records[0].last_update == 15 &&
+			records[0].bind_owner_pid == -1 && records[0].bind_timer == 0 &&
+			records[0].revision == 5,
+		"room artifact destruction did not clear durable gameplay custody");
+
 	const fs::path corpse_root = fs::path(argv[1]) / "corpse";
 	prepare_root(corpse_root);
 	require(flatfile_artifact_establish(corpse_root.string(), { corpse }, &error) ==

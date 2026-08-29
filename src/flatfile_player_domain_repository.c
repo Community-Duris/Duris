@@ -982,6 +982,53 @@ flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
 	return flatfile_player_domain_result::ok;
 }
 
+flatfile_player_domain_result flatfile_player_domain_prepare_resurrection_wallet(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	uint64_t expected_wallet_revision, const std::array<int32_t, 4> &expected_wallet,
+	const std::array<int32_t, 4> &replacement_wallet, flatfile_wallet_mutation *mutation,
+	std::string *error)
+{
+	if (!mutation || !pid || !lock.matches(root) ||
+	    std::any_of(expected_wallet.begin(), expected_wallet.end(),
+			[](int32_t amount) { return amount < 0; }) ||
+	    std::any_of(replacement_wallet.begin(), replacement_wallet.end(),
+			[](int32_t amount) { return amount < 0; }))
+		return flatfile_player_domain_result::invalid;
+	*mutation = {};
+	const auto recovered = recover_authority(root, lock, error);
+	if (recovered != flatfile_player_domain_result::ok)
+		return recovered;
+	player_authority player;
+	const auto loaded = load_player_authority(root, pid, &player, error);
+	if (loaded != flatfile_player_domain_result::ok)
+		return loaded;
+	if (player.record.domains.wallet_revision != expected_wallet_revision ||
+	    player.record.domains.wallet_revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_player_domain_result::conflict;
+	for (size_t index = 0; index < expected_wallet.size(); ++index)
+	{
+		if (player.record.domains.wallet[index] !=
+		    static_cast<uint64_t>(expected_wallet[index]))
+			return flatfile_player_domain_result::conflict;
+		player.record.domains.wallet[index] =
+			static_cast<uint64_t>(replacement_wallet[index]);
+		mutation->wallet.amount[index] = replacement_wallet[index];
+	}
+	++player.record.domains.wallet_revision;
+	mutation->wallet_revision = player.record.domains.wallet_revision;
+	try
+	{
+		mutation->after_images.push_back({ player_filename(pid), {} });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	if (!encode_player_authority(player, &mutation->after_images[0].bytes))
+		return flatfile_player_domain_result::invalid;
+	return flatfile_player_domain_result::ok;
+}
+
 flatfile_player_domain_result flatfile_player_domain_prepare_base_stat(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	uint8_t stat_index, bool apply_increment, flatfile_base_stat_mutation *mutation,

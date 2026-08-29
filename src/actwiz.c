@@ -18,6 +18,7 @@
 #include <stdarg.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -34,11 +35,13 @@
 #include "epic_transaction.h"
 #include "files.h"
 #include "gmcp.h"
+#include "item_movement_transaction.h"
 #include "justice.h"
 #include "listen.h"
 #include "map.h"
 #include "mm.h"
 #include "objmisc.h"
+#include "persistence_mode.h"
 #include "ships/ships.h"
 #include "specs.prototypes.h"
 #include "spells.h"
@@ -10224,6 +10227,188 @@ void do_tranquilize(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
+namespace
+{
+enum class flat_storage_action : uint8_t
+{
+	establish = 1,
+	destroy,
+	remove_child,
+	remove_root,
+};
+
+struct flat_storage_context
+{
+	uint64_t storage_uid;
+	uint64_t item_uid;
+	int32_t room;
+	flat_storage_action action;
+};
+
+P_obj find_flat_storage_object(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+bool flat_storage_room_owner(P_obj storage, int32_t room, item_owner_identity *owner = nullptr)
+{
+	if (!storage || storage->type != ITEM_STORAGE || !OBJ_ROOM(storage) ||
+	    storage->loc.room != room || room <= NOWHERE || room > top_of_world)
+		return false;
+	if (owner)
+		*owner = { item_owner_type::room, static_cast<uint64_t>(world[room].number), 0 };
+	return true;
+}
+
+void log_flat_storage_change(P_char actor, const char *verb, const std::string &description,
+			     int32_t room)
+{
+	if (!actor || !verb)
+		return;
+	wizlog(GET_LEVEL(actor), "%s %s storage item %s in room %d.", J_NAME(actor), verb,
+	       description.c_str(), world[room].number);
+	logit(LOG_WIZ, "%s %s storage item %s in room %d.", J_NAME(actor), verb,
+	      description.c_str(), world[room].number);
+}
+
+bool submit_flat_storage_remove_next(P_char actor, P_obj storage, int32_t room);
+
+void flat_storage_completion(P_char actor, bool committed, const item_transfer_result &,
+			     unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	flat_storage_context context = {};
+	if (encoded && encoded_size == sizeof(context))
+		memcpy(&context, encoded, sizeof(context));
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return;
+	P_obj storage = find_flat_storage_object(context.storage_uid);
+	if (!committed)
+	{
+		send_to_char("The storage change did not commit; the live object was retained.\r\n",
+			     actor);
+		if (context.action == flat_storage_action::establish && storage &&
+		    OBJ_NOWHERE(storage))
+			extract_obj(storage, FALSE);
+		return;
+	}
+	if (context.action == flat_storage_action::establish)
+	{
+		if (!storage || !OBJ_NOWHERE(storage) || context.room <= NOWHERE ||
+		    context.room > top_of_world)
+		{
+			logit(LOG_FILE,
+			      "storage establish committed but live publication was stale (uid=%llu)",
+			      context.storage_uid);
+			send_to_char(
+				"The storage authority committed, but live publication failed.\r\n",
+				actor);
+			return;
+		}
+		const std::string description =
+			storage->short_description ? storage->short_description : "(unnamed)";
+		obj_to_room(storage, context.room);
+		send_to_char(
+			"This object now loads here without being in a .zon file.  Please remove it from the .zon file if necessessary to prevent double loading and confusion.\n",
+			actor);
+		log_flat_storage_change(actor, "loads", description, context.room);
+		return;
+	}
+	if (!flat_storage_room_owner(storage, context.room))
+	{
+		logit(LOG_FILE,
+		      "storage mutation committed but live publication was stale (uid=%llu)",
+		      context.storage_uid);
+		send_to_char("The storage authority committed, but live publication failed.\r\n",
+			     actor);
+		return;
+	}
+	if (context.action == flat_storage_action::remove_child)
+	{
+		P_obj item = find_flat_storage_object(context.item_uid);
+		if (!item || !OBJ_INSIDE(item) || item->loc.inside != storage)
+		{
+			logit(LOG_FILE,
+			      "storage child move committed but live topology was stale (uid=%llu)",
+			      context.item_uid);
+			send_to_char("A storage item committed, but live publication failed.\r\n",
+				     actor);
+			return;
+		}
+		obj_from_obj(item);
+		obj_to_room(item, context.room);
+		if (!submit_flat_storage_remove_next(actor, storage, context.room))
+			send_to_char(
+				"The moved contents are safe, but the remaining storage change is busy.\r\n",
+				actor);
+		return;
+	}
+	if (context.action == flat_storage_action::remove_root && storage->contains)
+	{
+		logit(LOG_FILE,
+		      "empty storage removal committed while live contents remained (uid=%llu)",
+		      context.storage_uid);
+		send_to_char("The storage authority committed, but live contents changed.\r\n",
+			     actor);
+		return;
+	}
+	const std::string description = storage->short_description ? storage->short_description :
+								     "(unnamed)";
+	const char *verb = context.action == flat_storage_action::destroy ? "deletes" : "removes";
+	log_flat_storage_change(actor, verb, description, context.room);
+	extract_obj(storage, context.action == flat_storage_action::destroy);
+}
+
+bool submit_flat_storage_destroy(P_char actor, P_obj storage, int32_t room,
+				 flat_storage_action action)
+{
+	item_owner_identity source = {};
+	if (!actor || !flat_storage_room_owner(storage, room, &source) ||
+	    (action != flat_storage_action::destroy && action != flat_storage_action::remove_root))
+		return false;
+	const item_owner_identity destination = { item_owner_type::destruction, 0, 0 };
+	const flat_storage_context context = { storage->obj_uid, storage->obj_uid, room, action };
+	return item_movement_transaction_submit(actor, storage, NULL, source, destination,
+						item_transfer_reason::destruction,
+						static_cast<int64_t>(storage->obj_uid),
+						flat_storage_completion, &context, sizeof(context));
+}
+
+bool submit_flat_storage_remove_next(P_char actor, P_obj storage, int32_t room)
+{
+	item_owner_identity owner = {};
+	if (!actor || !flat_storage_room_owner(storage, room, &owner))
+		return false;
+	if (!storage->contains)
+		return submit_flat_storage_destroy(actor, storage, room,
+						   flat_storage_action::remove_root);
+	P_obj item = storage->contains;
+	const flat_storage_context context = { storage->obj_uid, item->obj_uid, room,
+					       flat_storage_action::remove_child };
+	return item_movement_transaction_submit(actor, item, NULL, owner, owner,
+						item_transfer_reason::operator_repair,
+						static_cast<int64_t>(storage->obj_uid),
+						flat_storage_completion, &context, sizeof(context));
+}
+
+bool submit_flat_storage_establish(P_char actor, P_obj storage, int32_t room)
+{
+	if (!actor || !storage || storage->type != ITEM_STORAGE || !OBJ_NOWHERE(storage) ||
+	    !storage->obj_uid || room <= NOWHERE || room > top_of_world)
+		return false;
+	const item_owner_identity owner = { item_owner_type::room,
+					    static_cast<uint64_t>(world[room].number), 0 };
+	const flat_storage_context context = { storage->obj_uid, storage->obj_uid, room,
+					       flat_storage_action::establish };
+	return item_movement_transaction_submit(actor, storage, NULL, owner, owner,
+						item_transfer_reason::operator_repair,
+						world[room].number, flat_storage_completion,
+						&context, sizeof(context));
+}
+} // namespace
+
 /* Storage command:
  * Item needs to be a type of ITEM_CONTAINER or ITEM_STORAGE
  * storage new <item vnum> - loads a new object setup to store through boots in room.
@@ -10263,6 +10448,20 @@ void do_storage(P_char ch, char *arg, int /*cmd*/)
 			REMOVE_BIT(s_obj->wear_flags, ITEM_TAKE);
 			// Just making sure.
 			REMOVE_BIT(s_obj->extra_flags, ITEM_ARTIFACT);
+			if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+			{
+				if (!submit_flat_storage_establish(ch, s_obj, ch->in_room))
+				{
+					send_to_char(
+						"The storage authority is busy; no object was created.\r\n",
+						ch);
+					extract_obj(s_obj, FALSE);
+				}
+				else
+					send_to_char("The storage creation is being committed.\r\n",
+						     ch);
+				return;
+			}
 			obj_to_room(s_obj, ch->in_room);
 			writeSavedItem(s_obj);
 			send_to_char(
@@ -10290,12 +10489,23 @@ void do_storage(P_char ch, char *arg, int /*cmd*/)
 		if ((s_obj = get_obj_in_list(objarg, world[ch->in_room].contents)) &&
 		    (s_obj->type == ITEM_STORAGE))
 		{
-			extract_obj(s_obj);
-			PurgeSavedItemFile(s_obj);
+			if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+			{
+				if (!submit_flat_storage_destroy(ch, s_obj, ch->in_room,
+								 flat_storage_action::destroy))
+					send_to_char(
+						"The storage authority is busy; nothing was deleted.\r\n",
+						ch);
+				else
+					send_to_char("The storage deletion is being committed.\r\n",
+						     ch);
+				return;
+			}
 			wizlog(GET_LEVEL(ch), "%s deletes storage item %s from room %d.",
 			       J_NAME(ch), s_obj->short_description, world[ch->in_room].number);
 			logit(LOG_WIZ, "%s deletes storage item %s from room %d.", J_NAME(ch),
 			      s_obj->short_description, world[ch->in_room].number);
+			extract_obj(s_obj);
 			return;
 		}
 		else
@@ -10311,18 +10521,28 @@ void do_storage(P_char ch, char *arg, int /*cmd*/)
 		if ((s_obj = get_obj_in_list(objarg, world[ch->in_room].contents)) &&
 		    (s_obj->type == ITEM_STORAGE))
 		{
+			if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+			{
+				if (!submit_flat_storage_remove_next(ch, s_obj, ch->in_room))
+					send_to_char(
+						"The storage authority is busy; nothing was removed.\r\n",
+						ch);
+				else
+					send_to_char("The storage removal is being committed.\r\n",
+						     ch);
+				return;
+			}
 			for (tmpobj = s_obj->contains; tmpobj; tmpobj = next_obj)
 			{
 				next_obj = tmpobj->next_content;
 				obj_from_obj(tmpobj);
 				obj_to_room(tmpobj, ch->in_room);
 			}
-			extract_obj(s_obj, FALSE);
-			PurgeSavedItemFile(s_obj);
 			wizlog(GET_LEVEL(ch), "%s removes storage item %s from room %d.",
 			       J_NAME(ch), s_obj->short_description, world[ch->in_room].number);
 			logit(LOG_WIZ, "%s remove storage item %s from room %d.", J_NAME(ch),
 			      s_obj->short_description, world[ch->in_room].number);
+			extract_obj(s_obj, FALSE);
 			return;
 		}
 		else

@@ -62,6 +62,11 @@ flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
 	const std::string &account_name, int8_t racewar, uint64_t expected_wallet_revision,
 	uint64_t expected_bank_revision, int64_t value_delta, bool apply_delta,
 	flatfile_wallet_mutation *mutation, unsigned int *result_code, std::string *error);
+flatfile_player_domain_result flatfile_player_domain_prepare_resurrection_wallet(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	uint64_t expected_wallet_revision, const std::array<int32_t, 4> &expected_wallet,
+	const std::array<int32_t, 4> &replacement_wallet, flatfile_wallet_mutation *mutation,
+	std::string *error);
 flatfile_player_domain_result flatfile_player_domain_prepare_base_stat(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	uint8_t stat_index, bool apply_increment, flatfile_base_stat_mutation *mutation,

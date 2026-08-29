@@ -13,6 +13,7 @@
 #include "comm.h"
 #include "db.h"
 #include "events.h"
+#include "files.h"
 #include "interp.h"
 #include "utils.h"
 #include "handler.h"
@@ -22,14 +23,20 @@
 #include <time.h>
 #include "account.h"
 #include "arena.h"
+#include "corpse_lifecycle_transaction.h"
+#include "currency_transaction.h"
 #include "ctf.h"
 #include "redis_floor_runtime.h"
 #include "damage.h"
 #include "gmcp.h"
+#include "item_ownership_runtime.h"
+#include "item_movement_transaction.h"
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
+#include "necromancy.h"
 #include "persistence_checkpoint.h"
+#include "persistence_mode.h"
 #include "world_recovery_pipeline.h"
 #include "ships/ships.h"
 #include "spells.h"
@@ -38,6 +45,11 @@
 #include "weather.h"
 #include "ws_handlers.h"
 #include "safe_format.h"
+#include <algorithm>
+#include <cerrno>
+#include <cstdint>
+#include <new>
+#include <unordered_map>
 
 /*
  *
@@ -69,6 +81,8 @@ extern struct time_info_data time_info;
 extern struct arena_data arena;
 extern const int dam_cap_data[];
 extern const char *connected_types[];
+extern int skip_corpse_save;
+extern bool updateArtis;
 
 static char buf[MAX_INPUT_LENGTH];
 
@@ -3094,6 +3108,1216 @@ bool obj_is_in_container(P_obj obj, P_obj container)
 	return FALSE;
 }
 
+namespace
+{
+constexpr int CORPSE_RELEASE_RETRY_DELAY = 5 * WAIT_SEC;
+
+struct corpse_unmaking_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	int level = 0;
+	int corpse_level = 0;
+	bool theurgist = false;
+};
+
+struct corpse_wall_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	int level = 0;
+	int exit_dir = -1;
+};
+
+struct corpse_compaction_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	P_obj pile = nullptr;
+	uint64_t pile_uid = 0;
+};
+
+struct corpse_resurrection_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	P_char target = nullptr;
+	uint64_t target_runtime_id = 0;
+	int old_room = NOWHERE;
+	bool lesser = false;
+};
+
+struct corpse_resurrection_item_context
+{
+	uint64_t corpse_key = 0;
+	uint64_t item_uid = 0;
+};
+
+struct corpse_raise_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	P_char follower = nullptr;
+	uint64_t follower_runtime_id = 0;
+	corpse_raise_kind kind = corpse_raise_kind::undead;
+	int level = 0;
+	int variant = 0;
+	bool globe = false;
+	const char *message = nullptr;
+};
+
+std::unordered_map<uint64_t, corpse_unmaking_context> corpse_unmakings;
+std::unordered_map<uint64_t, corpse_wall_context> corpse_walls;
+std::unordered_map<uint64_t, corpse_compaction_context> corpse_compactions;
+std::unordered_map<uint64_t, corpse_resurrection_context> corpse_resurrections;
+std::unordered_map<uint64_t, corpse_raise_context> corpse_raises;
+
+class corpse_release_side_effect_guard
+{
+    public:
+	corpse_release_side_effect_guard();
+	~corpse_release_side_effect_guard();
+
+    private:
+	int previous_corpse_save;
+	bool previous_artifact_update;
+};
+
+corpse_release_side_effect_guard::corpse_release_side_effect_guard()
+	: previous_corpse_save(skip_corpse_save)
+	, previous_artifact_update(updateArtis)
+{
+	skip_corpse_save = 1;
+	updateArtis = false;
+}
+
+corpse_release_side_effect_guard::~corpse_release_side_effect_guard()
+{
+	skip_corpse_save = previous_corpse_save;
+	updateArtis = previous_artifact_update;
+}
+
+P_obj find_live_corpse(uint32_t owner_pid, uint32_t save_id)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE) &&
+		    object->value[CORPSE_PID] == static_cast<int32_t>(owner_pid) &&
+		    object->value[CORPSE_SAVEID] == static_cast<int32_t>(save_id))
+			return object;
+	return nullptr;
+}
+
+P_obj find_live_object(P_obj expected, uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object == expected && object->obj_uid == uid)
+			return object;
+	return nullptr;
+}
+
+P_char find_live_character(P_char expected, uint64_t runtime_id)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (character == expected && character->runtime_id == runtime_id)
+			return character;
+	return nullptr;
+}
+
+bool corpse_release_room(P_obj corpse, int *room)
+{
+	if (!corpse || !room)
+		return false;
+	if (OBJ_ROOM(corpse))
+		*room = corpse->loc.room;
+	else if (OBJ_CARRIED(corpse) && corpse->loc.carrying)
+		*room = corpse->loc.carrying->in_room;
+	else if (OBJ_WORN(corpse) && corpse->loc.wearing)
+		*room = corpse->loc.wearing->in_room;
+	else
+		return false;
+	return *room > NOWHERE && *room <= top_of_world && world[*room].number > 0;
+}
+
+bool corpse_nested_release_room(P_obj corpse, int *room)
+{
+	if (!corpse || !room || !OBJ_INSIDE(corpse) || !corpse->loc.inside)
+		return false;
+	P_obj outer = corpse;
+	while (OBJ_INSIDE(outer) && outer->loc.inside)
+		outer = outer->loc.inside;
+	if (OBJ_ROOM(outer))
+		*room = outer->loc.room;
+	else if (OBJ_CARRIED(outer) && outer->loc.carrying)
+		*room = outer->loc.carrying->in_room;
+	else if (OBJ_WORN(outer) && outer->loc.wearing)
+		*room = outer->loc.wearing->in_room;
+	else
+		return false;
+	return *room > NOWHERE && *room <= top_of_world && world[*room].number > 0;
+}
+
+bool validate_corpse_release_item(P_obj item, const item_owner_identity &owner, uint64_t root_uid,
+				  uint64_t parent_uid, uint32_t *count)
+{
+	if (!item || !count)
+		return false;
+	if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
+		return true;
+	item_ownership_runtime_entry runtime = {};
+	if (!item->obj_uid || !item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+	    !item_owner_identity_equal(runtime.owner, owner) ||
+	    runtime.state != item_custody_state::active || runtime.vnum != OBJ_VNUM(item) ||
+	    runtime.root_item_uid != root_uid || runtime.parent_item_uid != parent_uid ||
+	    *count == UINT32_MAX)
+		return false;
+	++*count;
+	for (P_obj child = item->contains; child; child = child->next_content)
+		if (!validate_corpse_release_item(child, owner, root_uid, item->obj_uid, count))
+			return false;
+	return true;
+}
+
+bool validate_corpse_release_items(P_obj corpse, const corpse_lifecycle_result &result)
+{
+	const item_owner_identity owner = { item_owner_type::corpse,
+					    item_corpse_owner_id(result.owner_pid, result.save_id),
+					    0 };
+	uint32_t count = 0;
+	for (P_obj item = corpse->contains; item; item = item->next_content)
+		if (!validate_corpse_release_item(item, owner, item->obj_uid, 0, &count))
+			return false;
+	return count == result.item_count;
+}
+
+P_char corpse_release_carrier(P_obj corpse)
+{
+	P_obj outer = corpse;
+	while (OBJ_INSIDE(outer) && outer->loc.inside)
+		outer = outer->loc.inside;
+	if (OBJ_CARRIED(outer))
+		return outer->loc.carrying;
+	if (OBJ_WORN(outer))
+		return outer->loc.wearing;
+	return nullptr;
+}
+
+void rearm_corpse_release(P_obj corpse)
+{
+	if (corpse && !get_obj_affect(corpse, TAG_OBJ_DECAY))
+		set_obj_affected(corpse, CORPSE_RELEASE_RETRY_DELAY, TAG_OBJ_DECAY, 0);
+}
+
+bool publish_corpse_wallet(P_char character, const corpse_lifecycle_result &result)
+{
+	currency_vector wallet = {};
+	for (size_t index = 0; index < result.wallet.size(); ++index)
+		wallet.amount[index] = result.wallet[index];
+	return currency_transaction_publish_wallet(character, wallet, result.wallet_revision);
+}
+
+void publish_corpse_release(bool committed, const corpse_lifecycle_result &result,
+			    unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	corpse_unmaking_context unmaking_context = {};
+	const auto unmaking = corpse_unmakings.find(key);
+	const bool unmade = unmaking != corpse_unmakings.end();
+	if (unmade)
+	{
+		unmaking_context = unmaking->second;
+		corpse_unmakings.erase(unmaking);
+	}
+	corpse_wall_context wall_context = {};
+	const auto wall = corpse_walls.find(key);
+	const bool walled = wall != corpse_walls.end();
+	if (walled)
+	{
+		wall_context = wall->second;
+		corpse_walls.erase(wall);
+	}
+	corpse_compaction_context compaction_context = {};
+	const auto compaction = corpse_compactions.find(key);
+	const bool compacted = compaction != corpse_compactions.end();
+	if (compacted)
+	{
+		compaction_context = compaction->second;
+		corpse_compactions.erase(compaction);
+	}
+	P_obj compact_pile =
+		compacted ? find_live_object(compaction_context.pile, compaction_context.pile_uid) :
+			    nullptr;
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	if (!committed)
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+				  "commit_failed", "save_id=%u error=%u", payload.save_id,
+				  error_code);
+		if (unmade)
+		{
+			if (P_char caster = find_live_character(unmaking_context.caster,
+								unmaking_context.caster_runtime_id))
+				send_to_char(
+					"The corpse resists your unmaking and remains intact.\r\n",
+					caster);
+		}
+		else if (walled)
+		{
+			if (P_char caster = find_live_character(wall_context.caster,
+								wall_context.caster_runtime_id))
+			{
+				send_to_char("Something prevents you from making a wall there.\r\n",
+					     caster);
+				act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0,
+				    TO_ROOM);
+			}
+		}
+		else if (compacted)
+		{
+			if (P_char caster =
+				    find_live_character(compaction_context.caster,
+							compaction_context.caster_runtime_id))
+				send_to_char(
+					"Your spell fails to compact the corpse; it remains intact.\r\n",
+					caster);
+		}
+		else if (error_code == ESTALE)
+			rearm_corpse_release(corpse);
+		if (compact_pile)
+			extract_obj(compact_pile);
+		return;
+	}
+	const int room = real_room(payload.room_vnum);
+	int live_room = NOWHERE;
+	if (!corpse || room == NOWHERE || !corpse_release_room(corpse, &live_room) ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_release(payload.owner_pid, payload.save_id,
+							 payload.room_vnum, result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
+				  payload.room_vnum);
+		if (compact_pile)
+			extract_obj(compact_pile);
+		return;
+	}
+	P_char carrier = corpse ? corpse_release_carrier(corpse) : nullptr;
+	const int old_load = carrier ? total_carried_weight(carrier) : 0;
+	if (unmade)
+	{
+		P_char caster = find_live_character(unmaking_context.caster,
+						    unmaking_context.caster_runtime_id);
+		if (!caster || caster->in_room != room)
+			persistence_alert(AVATAR, "corpse", "flatfile_unmaking", "none", "none",
+					  "stale_caster", "save_id=%u room=%d", payload.save_id,
+					  payload.room_vnum);
+		else
+		{
+			if (unmaking_context.theurgist)
+			{
+				act("The $p turns to &+ydust&n and &+wb&+Llow&+ws&n away as its &+Wsoul&n is returned to whence it came.",
+				    FALSE, caster, corpse, 0, TO_CHAR);
+				act("The $p turns to &+ydust&n and &+wb&+Llow&+ws&n away as its &+Wsoul&n is returned to whence it came.",
+				    FALSE, caster, corpse, 0, TO_ROOM);
+			}
+			else
+			{
+				act("&+L$p&+L begins to &n&+gwither&+L and &n&+yrot&+L as you absorb its essence.",
+				    FALSE, caster, corpse, 0, TO_CHAR);
+				act("&+L$p&+L begins to &n&+gwither&+L and &n&+yrot&+L as $n&+L absorbs its essence.",
+				    FALSE, caster, corpse, 0, TO_ROOM);
+			}
+			const int64_t restored =
+				static_cast<int64_t>(unmaking_context.corpse_level) * 4 +
+				static_cast<int64_t>(unmaking_context.level) * 2;
+			if (restored > 0 && GET_MAX_HIT(caster) > GET_HIT(caster))
+				GET_HIT(caster) = static_cast<int>(std::min<int64_t>(
+					GET_MAX_HIT(caster),
+					static_cast<int64_t>(GET_HIT(caster)) + restored));
+			update_pos(caster);
+		}
+	}
+	else if (walled)
+	{
+		P_char caster =
+			find_live_character(wall_context.caster, wall_context.caster_runtime_id);
+		if (!caster || caster->in_room != room ||
+		    !complete_corpse_wall_of_bones(caster, corpse, wall_context.level,
+						   wall_context.exit_dir))
+		{
+			persistence_alert(AVATAR, "corpse", "flatfile_wall_of_bones", "none",
+					  "none", "effect_failed", "save_id=%u room=%d",
+					  payload.save_id, payload.room_vnum);
+			if (caster)
+			{
+				send_to_char("Something prevents you from making a wall there.\r\n",
+					     caster);
+				act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0,
+				    TO_ROOM);
+			}
+		}
+	}
+	else if (compacted)
+	{
+		if (!compact_pile)
+			persistence_alert(AVATAR, "corpse", "flatfile_compact_corpse", "none",
+					  "none", "staged_pile_missing", "save_id=%u room=%d",
+					  payload.save_id, payload.room_vnum);
+		else
+		{
+			char message[MAX_STRING_LENGTH];
+			snprintf(message, sizeof(message),
+				 "&+WCrunching&n sounds are heard as $p collapses into %s.",
+				 OBJ_SHORT(compact_pile));
+			act(message, FALSE, NULL, corpse, NULL, TO_ROOM);
+			obj_to_room(compact_pile, room);
+			if (!OBJ_ROOM(compact_pile) || compact_pile->loc.room != room)
+				persistence_alert(AVATAR, "corpse", "flatfile_compact_corpse",
+						  "none", "none", "pile_location_mismatch",
+						  "save_id=%u room=%d", payload.save_id,
+						  payload.room_vnum);
+		}
+	}
+	else if (OBJ_ROOM(corpse) && world[corpse->loc.room].people)
+	{
+		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
+		    corpse, 0, TO_ROOM);
+		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
+		    corpse, 0, TO_CHAR);
+		act("$p crumbles to dust and blows away.", TRUE, world[corpse->loc.room].people,
+		    corpse, 0, TO_ROOM);
+		act("$p crumbles to dust and blows away.", TRUE, world[corpse->loc.room].people,
+		    corpse, 0, TO_CHAR);
+	}
+	else if (carrier)
+	{
+		if (corpse->contains)
+			act("$p decays in your hands, dumping its contents on the ground.", FALSE,
+			    carrier, corpse, 0, TO_CHAR);
+		else
+			act("$p decays in your hands, leaving no trace.", FALSE, carrier, corpse, 0,
+			    TO_CHAR);
+	}
+	const char *log_action = unmade	   ? "was unmade" :
+				 walled	   ? "became a wall of bones" :
+				 compacted ? "was compacted into bones" :
+					     "decayed";
+	logit(LOG_CORPSE, "%s %s in room %d.", corpse->short_description, log_action,
+	      payload.room_vnum);
+	corpse_release_side_effect_guard guard;
+	while (corpse->contains)
+	{
+		P_obj item = corpse->contains;
+		const bool money = GET_ITEM_TYPE(item) == ITEM_MONEY;
+		obj_from_obj(item);
+		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
+			logit(LOG_CORPSE,
+			      unmade	? "%s Unmaking drop: [%d] %s" :
+			      walled	? "%s Wall drop: [%d] %s" :
+			      compacted ? "%s Compaction drop: [%d] %s" :
+					  "%s Decay drop: [%d] %s",
+			      corpse->short_description, obj_index[item->R_num].virtual_number,
+			      item->name);
+		obj_to_room(item, room);
+		if (!money && (!OBJ_ROOM(item) || item->loc.room != room))
+			persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+					  "publish_location_mismatch", "save_id=%u item_uid=%lu",
+					  payload.save_id, item->obj_uid);
+	}
+	extract_obj(corpse, TRUE);
+	if (carrier)
+	{
+		if (old_load > total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels lighter!\r\n", carrier);
+		if (old_load < total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels heavier!\r\n", carrier);
+	}
+}
+
+void fail_corpse_resurrection(uint64_t key, const char *reason)
+{
+	auto found = corpse_resurrections.find(key);
+	if (found == corpse_resurrections.end())
+		return;
+	const corpse_resurrection_context context = found->second;
+	corpse_resurrections.erase(found);
+	persistence_alert(AVATAR, "corpse", "flatfile_resurrection", "none", "none",
+			  reason ? reason : "failed_preserved", "corpse_key=%llu", key);
+	if (P_char caster = find_live_character(context.caster, context.caster_runtime_id))
+		send_to_char(
+			"The resurrection cannot finish safely. The corpse remains intact.\r\n",
+			caster);
+}
+
+void fail_corpse_raise(uint64_t key, const char *reason)
+{
+	auto found = corpse_raises.find(key);
+	if (found == corpse_raises.end())
+		return;
+	const corpse_raise_context context = found->second;
+	corpse_raises.erase(found);
+	persistence_alert(AVATAR, "corpse", "flatfile_raise", "none", "none",
+			  reason ? reason : "failed_preserved", "corpse_key=%llu", key);
+	if (P_char caster = find_live_character(context.caster, context.caster_runtime_id))
+		send_to_char("The corpse resists the raising and remains intact.\r\n", caster);
+	if (P_char follower = find_live_character(context.follower, context.follower_runtime_id))
+		extract_char(follower);
+}
+
+void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
+			  unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	auto found = corpse_raises.find(key);
+	if (found == corpse_raises.end())
+		return;
+	const corpse_raise_context context = found->second;
+	if (!committed)
+	{
+		fail_corpse_raise(key, error_code == ESTALE ? "raise_revision_stale" :
+							      "raise_commit_failed");
+		return;
+	}
+	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
+	P_char follower = find_live_character(context.follower, context.follower_runtime_id);
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	int corpse_room = NOWHERE;
+	if (!caster || !follower || !corpse || follower->in_room != NOWHERE ||
+	    !corpse_release_room(corpse, &corpse_room) ||
+	    world[corpse_room].number != payload.room_vnum ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
+						       payload.destination_player_pid, result))
+	{
+		fail_corpse_raise(key, "raise_live_topology_stale");
+		return;
+	}
+	if (!publish_corpse_wallet(caster, result))
+	{
+		fail_corpse_raise(key, "raise_wallet_invalid");
+		return;
+	}
+	corpse_raises.erase(found);
+	corpse_release_side_effect_guard guard;
+	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
+					   context.variant, context.globe, context.message);
+}
+
+P_obj find_resurrection_item(P_char target, const item_owner_identity &owner)
+{
+	if (!target)
+		return nullptr;
+	auto durable = [&](P_obj item)
+	{
+		if (!item || GET_ITEM_TYPE(item) == ITEM_MONEY ||
+		    IS_SET(item->extra_flags, ITEM_TRANSIENT))
+			return false;
+		item_ownership_runtime_entry runtime = {};
+		return item->obj_uid && (!item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+					 item_owner_identity_equal(runtime.owner, owner));
+	};
+	for (P_obj item = target->carrying; item; item = item->next_content)
+		if (durable(item))
+			return item;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (durable(target->equipment[slot]))
+			return target->equipment[slot];
+	return nullptr;
+}
+
+void continue_corpse_resurrection(uint64_t key);
+
+void publish_corpse_resurrection_item(P_char actor, bool committed, const item_transfer_result &,
+				      unsigned int error_code, const uint8_t *encoded,
+				      size_t encoded_size)
+{
+	if (!encoded || encoded_size != sizeof(corpse_resurrection_item_context))
+		return;
+	corpse_resurrection_item_context item_context = {};
+	memcpy(&item_context, encoded, sizeof(item_context));
+	auto found = corpse_resurrections.find(item_context.corpse_key);
+	if (!committed || !actor || found == corpse_resurrections.end())
+	{
+		if (found != corpse_resurrections.end())
+			fail_corpse_resurrection(item_context.corpse_key,
+						 error_code == ESTALE ? "item_revision_stale" :
+									"item_move_failed");
+		return;
+	}
+	const corpse_resurrection_context &context = found->second;
+	if (actor != context.target || actor->runtime_id != context.target_runtime_id)
+	{
+		fail_corpse_resurrection(item_context.corpse_key, "target_moved_during_item_drop");
+		return;
+	}
+	P_obj item = nullptr;
+	for (P_obj candidate = object_list; candidate; candidate = candidate->next)
+		if (candidate->obj_uid == item_context.item_uid)
+		{
+			item = candidate;
+			break;
+		}
+	if (!item)
+	{
+		fail_corpse_resurrection(item_context.corpse_key, "dropped_item_missing");
+		return;
+	}
+	if (OBJ_CARRIED_BY(item, actor))
+		obj_from_char(item);
+	else if (OBJ_WORN_BY(item, actor))
+	{
+		int slot = 0;
+		while (slot < MAX_WEAR && actor->equipment[slot] != item)
+			++slot;
+		if (slot == MAX_WEAR || unequip_char(actor, slot) != item)
+		{
+			fail_corpse_resurrection(item_context.corpse_key, "equipped_item_mismatch");
+			return;
+		}
+	}
+	else
+	{
+		fail_corpse_resurrection(item_context.corpse_key, "dropped_item_topology_stale");
+		return;
+	}
+	{
+		corpse_release_side_effect_guard guard;
+		obj_to_room(item, context.old_room);
+	}
+	if (!OBJ_ROOM(item) || item->loc.room != context.old_room)
+	{
+		fail_corpse_resurrection(item_context.corpse_key, "item_drop_publish_failed");
+		return;
+	}
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+	continue_corpse_resurrection(item_context.corpse_key);
+}
+
+void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &result,
+				 unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	auto found = corpse_resurrections.find(key);
+	if (found == corpse_resurrections.end())
+		return;
+	const corpse_resurrection_context context = found->second;
+	if (!committed)
+	{
+		fail_corpse_resurrection(key, error_code == ESTALE ? "claim_revision_stale" :
+								     "claim_commit_failed");
+		return;
+	}
+	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
+	P_char target = find_live_character(context.target, context.target_runtime_id);
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	int corpse_room = NOWHERE;
+	if (!caster || !target || !corpse || context.old_room <= NOWHERE ||
+	    !corpse_release_room(corpse, &corpse_room) ||
+	    world[corpse_room].number != payload.room_vnum ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_resurrection(payload.owner_pid, payload.save_id,
+							      payload.destination_player_pid,
+							      payload.old_room_vnum, result))
+	{
+		fail_corpse_resurrection(key, "claim_live_topology_stale");
+		return;
+	}
+	if (!publish_corpse_wallet(target, result))
+	{
+		fail_corpse_resurrection(key, "claim_wallet_invalid");
+		return;
+	}
+	if (std::any_of(payload.money.begin(), payload.money.end(),
+			[](int32_t amount) { return amount > 0; }))
+	{
+		P_obj money = create_money(payload.money[0], payload.money[1], payload.money[2],
+					   payload.money[3]);
+		if (money)
+		{
+			corpse_release_side_effect_guard guard;
+			obj_to_room(money, context.old_room);
+		}
+	}
+	corpse_resurrections.erase(found);
+	corpse_release_side_effect_guard guard;
+	complete_player_resurrection_after_commit(caster, target, corpse, context.lesser,
+						  context.old_room);
+}
+
+void continue_corpse_resurrection(uint64_t key)
+{
+	auto found = corpse_resurrections.find(key);
+	if (found == corpse_resurrections.end())
+		return;
+	const corpse_resurrection_context &context = found->second;
+	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
+	P_char target = find_live_character(context.target, context.target_runtime_id);
+	P_obj corpse =
+		find_live_corpse(static_cast<uint32_t>(key >> 32), static_cast<uint32_t>(key));
+	int corpse_room = NOWHERE;
+	if (!caster || !target || !corpse || target->in_room != context.old_room ||
+	    !corpse_release_room(corpse, &corpse_room) || caster->in_room != corpse_room)
+	{
+		fail_corpse_resurrection(key, "resurrection_context_stale");
+		return;
+	}
+	const item_owner_identity player = { item_owner_type::player,
+					     static_cast<uint64_t>(GET_PID(target)), 0 };
+	const item_owner_identity room = { item_owner_type::room,
+					   static_cast<uint64_t>(world[context.old_room].number),
+					   0 };
+	if (P_obj item = find_resurrection_item(target, player))
+	{
+		const corpse_resurrection_item_context item_context = { key, item->obj_uid };
+		if (!item_movement_transaction_submit(
+			    target, item, nullptr, player, room, item_transfer_reason::player_drop,
+			    world[context.old_room].number, publish_corpse_resurrection_item,
+			    &item_context, sizeof(item_context)))
+			fail_corpse_resurrection(key, "item_drop_submission_failed");
+		return;
+	}
+	uint64_t room_revision = 0;
+	uint64_t player_revision = 0;
+	if (!item_ownership_runtime_owner_revision(room, &room_revision) ||
+	    !item_ownership_runtime_owner_revision(player, &player_revision))
+	{
+		fail_corpse_resurrection(key, "owner_revision_missing");
+		return;
+	}
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::resurrect;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.expected_room_revision = room_revision;
+	payload.destination_player_pid = static_cast<uint32_t>(GET_PID(target));
+	payload.old_room_vnum = world[context.old_room].number;
+	payload.expected_player_revision = player_revision;
+	payload.expected_wallet_revision = target->only.pc->wallet_revision;
+	payload.room_vnum = world[corpse_room].number;
+	payload.money = { GET_COPPER(target), GET_SILVER(target), GET_GOLD(target),
+			  GET_PLATINUM(target) };
+	payload.owner_name = corpse->action_description ? corpse->action_description : "";
+	if (!corpse_lifecycle_transaction_resurrect(payload, publish_corpse_resurrection))
+		fail_corpse_resurrection(key, "claim_submission_failed");
+}
+
+bool submit_corpse_release(P_obj corpse)
+{
+	if (!corpse || !corpse->action_description || !*corpse->action_description ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room))
+		return false;
+	const item_owner_identity room_owner = { item_owner_type::room,
+						 static_cast<uint64_t>(world[room].number), 0 };
+	uint64_t room_revision = 0;
+	if (!item_ownership_runtime_owner_revision(room_owner, &room_revision))
+		return false;
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::release;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.expected_room_revision = room_revision;
+	payload.room_vnum = world[room].number;
+	payload.owner_name = corpse->action_description;
+	return corpse_lifecycle_transaction_release(payload, publish_corpse_release);
+}
+
+void discard_corpse_release_money(P_obj container)
+{
+	for (P_obj item = container ? container->contains : nullptr, next = nullptr; item;
+	     item = next)
+	{
+		next = item->next_content;
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		{
+			obj_from_obj(item);
+			extract_obj(item);
+		}
+		else
+			discard_corpse_release_money(item);
+	}
+}
+
+void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result &result,
+				   unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	if (!committed)
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
+				  "commit_failed", "save_id=%u error=%u", payload.save_id,
+				  error_code);
+		if (error_code == ESTALE)
+			rearm_corpse_release(corpse);
+		return;
+	}
+	const item_owner_identity destination =
+		payload.destination_player_pid ?
+			item_owner_identity{ item_owner_type::player,
+					     static_cast<uint64_t>(payload.destination_player_pid),
+					     0 } :
+			item_owner_identity{ item_owner_type::room,
+					     static_cast<uint64_t>(payload.room_vnum), 0 };
+	P_obj parent = corpse && OBJ_INSIDE(corpse) ? corpse->loc.inside : nullptr;
+	item_ownership_runtime_entry parent_runtime = {};
+	int room = NOWHERE;
+	P_char carrier = corpse ? corpse_release_carrier(corpse) : nullptr;
+	if (!corpse || !parent || parent->obj_uid != payload.target_parent_item_uid ||
+	    !corpse_nested_release_room(corpse, &room) ||
+	    (!payload.destination_player_pid && world[room].number != payload.room_vnum) ||
+	    !item_ownership_runtime_lookup(parent->obj_uid, &parent_runtime) ||
+	    parent_runtime.root_item_uid != payload.target_root_item_uid ||
+	    parent_runtime.item_revision != payload.expected_target_parent_revision ||
+	    !item_owner_identity_equal(parent_runtime.owner, destination) ||
+	    (payload.destination_player_pid &&
+	     (!carrier || IS_NPC(carrier) ||
+	      GET_PID(carrier) != static_cast<int32_t>(payload.destination_player_pid))) ||
+	    (!payload.destination_player_pid && carrier) ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_nested_release(
+		    payload.owner_pid, payload.save_id, destination, payload.target_root_item_uid,
+		    payload.target_parent_item_uid, payload.expected_target_parent_revision,
+		    result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
+				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
+				  payload.room_vnum);
+		return;
+	}
+	if (payload.destination_player_pid && !publish_corpse_wallet(carrier, result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
+				  "wallet_invalid", "save_id=%u", payload.save_id);
+		return;
+	}
+	const int old_load = carrier ? total_carried_weight(carrier) : 0;
+	logit(LOG_CORPSE, "%s decayed inside %s in room %d.", corpse->short_description,
+	      parent->short_description, payload.room_vnum);
+	corpse_release_side_effect_guard guard;
+	while (corpse->contains)
+	{
+		P_obj item = corpse->contains;
+		obj_from_obj(item);
+		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
+			logit(LOG_CORPSE, "%s Decay drop: [%d] %s", corpse->short_description,
+			      obj_index[item->R_num].virtual_number, item->name);
+		if (payload.destination_player_pid)
+		{
+			if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+				extract_obj(item);
+			else
+			{
+				discard_corpse_release_money(item);
+				obj_to_obj(item, parent);
+			}
+		}
+		else
+			obj_to_obj(item, parent);
+	}
+	extract_obj(corpse, TRUE);
+	if (payload.destination_player_pid)
+	{
+		writeCharacter(carrier, RENT_CRASH, carrier->in_room);
+	}
+	if (carrier)
+	{
+		if (old_load > total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels lighter!\r\n", carrier);
+		if (old_load < total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels heavier!\r\n", carrier);
+	}
+}
+
+bool submit_corpse_nested_release(P_obj corpse)
+{
+	if (!corpse || !OBJ_INSIDE(corpse) || !corpse->loc.inside || !corpse->action_description ||
+	    !*corpse->action_description || corpse->value[CORPSE_PID] <= 0 ||
+	    corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	P_obj parent = corpse->loc.inside;
+	item_ownership_runtime_entry parent_runtime = {};
+	int room = NOWHERE;
+	if (!parent->obj_uid || !corpse_nested_release_room(corpse, &room) ||
+	    !item_ownership_runtime_lookup(parent->obj_uid, &parent_runtime) ||
+	    (parent_runtime.owner.type != item_owner_type::player &&
+	     parent_runtime.owner.type != item_owner_type::room))
+		return false;
+	if (parent_runtime.owner.type == item_owner_type::room &&
+	    parent_runtime.owner.id != static_cast<uint64_t>(world[room].number))
+		return false;
+	P_char carrier = corpse_release_carrier(corpse);
+	if (parent_runtime.owner.type == item_owner_type::room && carrier)
+		return false;
+	if (parent_runtime.owner.type == item_owner_type::player &&
+	    (!carrier || IS_NPC(carrier) || !carrier->only.pc || GET_PID(carrier) <= 0 ||
+	     parent_runtime.owner.id != static_cast<uint64_t>(GET_PID(carrier))))
+		return false;
+	uint64_t destination_revision = 0;
+	if (!item_ownership_runtime_owner_revision(parent_runtime.owner, &destination_revision))
+		return false;
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::release_nested;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.room_vnum = world[room].number;
+	payload.target_root_item_uid = parent_runtime.root_item_uid;
+	payload.target_parent_item_uid = parent_runtime.item_uid;
+	payload.expected_target_parent_revision = parent_runtime.item_revision;
+	payload.owner_name = corpse->action_description;
+	if (parent_runtime.owner.type == item_owner_type::player)
+	{
+		payload.destination_player_pid = static_cast<uint32_t>(GET_PID(carrier));
+		payload.expected_player_revision = destination_revision;
+		payload.expected_wallet_revision = carrier->only.pc->wallet_revision;
+		payload.money = { GET_COPPER(carrier), GET_SILVER(carrier), GET_GOLD(carrier),
+				  GET_PLATINUM(carrier) };
+	}
+	else
+		payload.expected_room_revision = destination_revision;
+	return corpse_lifecycle_transaction_release(payload, publish_corpse_nested_release);
+}
+
+bool submit_corpse_destruction(P_obj corpse);
+
+void publish_corpse_destruction(bool committed, const corpse_lifecycle_result &result,
+				unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	if (!committed)
+	{
+		if (error_code == ESTALE && corpse && submit_corpse_destruction(corpse))
+			return;
+		persistence_alert(AVATAR, "corpse", "flatfile_destroy", "none", "none",
+				  "commit_failed", "save_id=%u error=%u", payload.save_id,
+				  error_code);
+		return;
+	}
+	int room = NOWHERE;
+	if (!corpse || !corpse_release_room(corpse, &room) ||
+	    world[room].number != payload.room_vnum ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_destruction(payload.owner_pid, payload.save_id,
+							     result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_destroy", "none", "none",
+				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
+				  payload.room_vnum);
+		return;
+	}
+	logit(LOG_CORPSE, "%s and its contents were destroyed in room %d.",
+	      corpse->short_description, payload.room_vnum);
+	corpse_release_side_effect_guard guard;
+	extract_obj(corpse, TRUE);
+}
+
+bool submit_corpse_destruction(P_obj corpse)
+{
+	if (!corpse || !corpse->action_description || !*corpse->action_description ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room))
+		return false;
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	uint64_t destruction_revision = 0;
+	if (!item_ownership_runtime_owner_revision(destruction, &destruction_revision))
+		return false;
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::destroy;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.expected_room_revision = destruction_revision;
+	payload.room_vnum = world[room].number;
+	payload.owner_name = corpse->action_description;
+	return corpse_lifecycle_transaction_destroy(payload, publish_corpse_destruction);
+}
+} // namespace
+
+bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower,
+				    corpse_raise_kind kind, int level, int variant, bool globe,
+				    const char *message)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    !follower || IS_NPC(caster) || !caster->only.pc || !IS_NPC(follower) ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	int corpse_room = NOWHERE;
+	if (GET_PID(caster) <= 0 || follower->in_room != NOWHERE ||
+	    !corpse_release_room(corpse, &corpse_room) || corpse_room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0 ||
+	    !corpse->action_description || !*corpse->action_description)
+	{
+		send_to_char("The corpse cannot be raised safely.\r\n", caster);
+		if (follower->in_room == NOWHERE)
+			extract_char(follower);
+		return true;
+	}
+	const uint32_t owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	const uint32_t save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	const uint64_t key = item_corpse_owner_id(owner_pid, save_id);
+	if (corpse_raises.contains(key) || corpse_lifecycle_transaction_busy(owner_pid, save_id))
+	{
+		send_to_char("That corpse is already caught in a persistence change.\r\n", caster);
+		extract_char(follower);
+		return true;
+	}
+	const item_owner_identity player = { item_owner_type::player,
+					     static_cast<uint64_t>(GET_PID(caster)), 0 };
+	uint64_t player_revision = 0;
+	if (!item_ownership_runtime_owner_revision(player, &player_revision))
+	{
+		send_to_char("The corpse cannot be raised safely.\r\n", caster);
+		extract_char(follower);
+		return true;
+	}
+	try
+	{
+		corpse_raises.emplace(key,
+				      corpse_raise_context{ caster, caster->runtime_id, follower,
+							    follower->runtime_id, kind, level,
+							    variant, globe, message });
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("The corpse cannot be raised safely.\r\n", caster);
+		extract_char(follower);
+		return true;
+	}
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::raise_follower;
+	payload.owner_pid = owner_pid;
+	payload.save_id = save_id;
+	payload.destination_player_pid = static_cast<uint32_t>(GET_PID(caster));
+	payload.expected_player_revision = player_revision;
+	payload.expected_wallet_revision = caster->only.pc->wallet_revision;
+	payload.room_vnum = world[corpse_room].number;
+	payload.money = { GET_COPPER(caster), GET_SILVER(caster), GET_GOLD(caster),
+			  GET_PLATINUM(caster) };
+	payload.owner_name = corpse->action_description;
+	if (!corpse_lifecycle_transaction_raise_follower(payload, publish_corpse_raise))
+		fail_corpse_raise(key, "raise_submission_failed");
+	return true;
+}
+
+bool persistence_defer_corpse_resurrection(P_obj corpse, P_char caster, P_char target, bool lesser)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    !target || corpse->type != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	int corpse_room = NOWHERE;
+	if (IS_NPC(target) || GET_PID(target) <= 0 || !target->only.pc ||
+	    !corpse_release_room(corpse, &corpse_room) || corpse_room != caster->in_room ||
+	    target->in_room <= NOWHERE || target->in_room > top_of_world ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0 ||
+	    !corpse->action_description || !*corpse->action_description)
+	{
+		send_to_char("The resurrection cannot safely take hold of that corpse.\r\n",
+			     caster);
+		return true;
+	}
+	const uint32_t owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	const uint32_t save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	const uint64_t key = item_corpse_owner_id(owner_pid, save_id);
+	if (corpse_resurrections.contains(key) ||
+	    corpse_lifecycle_transaction_busy(owner_pid, save_id))
+	{
+		send_to_char("That corpse is already caught in a persistence change.\r\n", caster);
+		return true;
+	}
+	try
+	{
+		corpse_resurrections.emplace(
+			key,
+			corpse_resurrection_context{ caster, caster->runtime_id, target,
+						     target->runtime_id, target->in_room, lesser });
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char(
+			"The resurrection cannot finish safely. The corpse remains intact.\r\n",
+			caster);
+		return true;
+	}
+	continue_corpse_resurrection(key);
+	return true;
+}
+
+bool persistence_defer_corpse_room_release(P_obj corpse)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
+	{
+		rearm_corpse_release(corpse);
+		return true;
+	}
+	const bool submitted = OBJ_INSIDE(corpse) ? submit_corpse_nested_release(corpse) :
+						    submit_corpse_release(corpse);
+	if (!submitted)
+	{
+		rearm_corpse_release(corpse);
+		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_unmaking(P_obj corpse, P_char caster, int level, int corpse_level)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	if (!OBJ_ROOM(corpse) || corpse->loc.room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	{
+		send_to_char("That corpse cannot be unmade from its current location.\r\n", caster);
+		return true;
+	}
+	const uint64_t key =
+		item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
+	if (corpse_unmakings.contains(key))
+	{
+		send_to_char("That corpse is already being unmade.\r\n", caster);
+		return true;
+	}
+	try
+	{
+		corpse_unmakings.emplace(
+			key,
+			corpse_unmaking_context{ caster, caster->runtime_id, level, corpse_level,
+						 GET_CLASS(caster, CLASS_THEURGIST) != 0 });
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("The corpse resists your unmaking and remains intact.\r\n", caster);
+		return true;
+	}
+	if (!submit_corpse_release(corpse))
+	{
+		corpse_unmakings.erase(key);
+		persistence_alert(AVATAR, "corpse", "flatfile_unmaking", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		send_to_char("The corpse resists your unmaking and remains intact.\r\n", caster);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_wall_of_bones(P_obj corpse, P_char caster, int level, int exit_dir)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room) || room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	{
+		send_to_char("Something prevents you from making a wall there.\r\n", caster);
+		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
+		return true;
+	}
+	const uint64_t key =
+		item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
+	if (corpse_walls.contains(key))
+	{
+		send_to_char("That corpse is already becoming a wall of bones.\r\n", caster);
+		return true;
+	}
+	try
+	{
+		corpse_walls.emplace(key, corpse_wall_context{ caster, caster->runtime_id, level,
+							       exit_dir });
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("Something prevents you from making a wall there.\r\n", caster);
+		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
+		return true;
+	}
+	if (!submit_corpse_release(corpse))
+	{
+		corpse_walls.erase(key);
+		persistence_alert(AVATAR, "corpse", "flatfile_wall_of_bones", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		send_to_char("Something prevents you from making a wall there.\r\n", caster);
+		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_compaction(P_obj corpse, P_char caster)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room) || room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	{
+		send_to_char("That corpse cannot be compacted from its current location.\r\n",
+			     caster);
+		return true;
+	}
+	const uint64_t key =
+		item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
+	if (corpse_compactions.contains(key))
+	{
+		send_to_char("That corpse is already being compacted.\r\n", caster);
+		return true;
+	}
+	P_obj pile = read_object(VOBJ_PILE_BONES, VIRTUAL);
+	if (!pile)
+	{
+		send_to_char("Your spell fails to form the pile of bones. Tell an Imm.\r\n",
+			     caster);
+		return true;
+	}
+	pile->value[CORPSE_LEVEL] = corpse->value[CORPSE_LEVEL];
+	try
+	{
+		corpse_compactions.emplace(key,
+					   corpse_compaction_context{ caster, caster->runtime_id,
+								      pile, pile->obj_uid });
+	}
+	catch (const std::bad_alloc &)
+	{
+		extract_obj(pile);
+		send_to_char("Your spell fails to compact the corpse; it remains intact.\r\n",
+			     caster);
+		return true;
+	}
+	if (!submit_corpse_release(corpse))
+	{
+		corpse_compactions.erase(key);
+		extract_obj(pile);
+		persistence_alert(AVATAR, "corpse", "flatfile_compact_corpse", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		send_to_char("Your spell fails to compact the corpse; it remains intact.\r\n",
+			     caster);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_destruction(P_obj corpse)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	if (!submit_corpse_destruction(corpse))
+		persistence_alert(AVATAR, "corpse", "flatfile_destroy", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+	return true;
+}
+
 /*
  * replaces major part of point_update, called by Events() to make an
  * object decay and be extracted.  Mainly for use on corpses of course,
@@ -3112,6 +4336,8 @@ void Decay(P_obj obj)
 		logit(LOG_DEBUG, "Decay:  NULL obj");
 		return;
 	}
+	if (persistence_defer_corpse_room_release(obj))
+		return;
 
 	if (OBJ_ROOM(obj))
 	{

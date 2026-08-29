@@ -67,6 +67,35 @@ void persistence_assign_item_uid(P_obj object, const char *)
 		object->obj_uid = next_test_uid++;
 }
 
+P_obj read_one_object(char *data)
+{
+	if (!data || static_cast<uint8_t>(data[0]) != flat_siege_legacy_version)
+		return nullptr;
+	int32_t count = 0;
+	int32_t vnum = 0;
+	int16_t craftsmanship = 0;
+	int16_t condition = 0;
+	uint32_t unique = 0;
+	int32_t marker = 0;
+	memcpy(&count, data + 1, sizeof(count));
+	const uint8_t flags = static_cast<uint8_t>(data[5]);
+	memcpy(&vnum, data + 6, sizeof(vnum));
+	memcpy(&craftsmanship, data + 10, sizeof(craftsmanship));
+	memcpy(&condition, data + 12, sizeof(condition));
+	memcpy(&unique, data + 14, sizeof(unique));
+	memcpy(&marker, data + 18, sizeof(marker));
+	if (count != 1 || flags != O_F_UNIQUE || !flat_siege_legacy_vnum(vnum) ||
+	    unique != O_U_VAL0 || static_cast<uint8_t>(data[22]) != O_F_EOL)
+		return nullptr;
+	P_obj object = new obj_data{};
+	object->R_num = vnum;
+	object->type = ITEM_CONTAINER;
+	object->craftsmanship = craftsmanship;
+	object->condition = condition;
+	object->value[0] = marker;
+	return object;
+}
+
 player_snapshot_capture_result
 player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> *items, size_t *)
 {
@@ -182,6 +211,29 @@ P_obj make_object(int vnum, int room, int condition, int marker)
 	return object;
 }
 
+template <typename T> void append_native(std::vector<uint8_t> *bytes, T value)
+{
+	const uint8_t *raw = reinterpret_cast<const uint8_t *>(&value);
+	bytes->insert(bytes->end(), raw, raw + sizeof(value));
+}
+
+std::vector<uint8_t> legacy_siege_file(int room, int vnum, int condition, int marker)
+{
+	const std::string header = "#" + std::to_string(room) + "\n";
+	std::vector<uint8_t> bytes(header.begin(), header.end());
+	append_native<uint8_t>(&bytes, flat_siege_legacy_version);
+	append_native<int32_t>(&bytes, 1);
+	append_native<uint8_t>(&bytes, O_F_UNIQUE);
+	append_native<int32_t>(&bytes, vnum);
+	append_native<int16_t>(&bytes, 7);
+	append_native<int16_t>(&bytes, condition);
+	append_native<uint32_t>(&bytes, O_U_VAL0);
+	append_native<int32_t>(&bytes, marker);
+	append_native<uint8_t>(&bytes, O_F_EOL);
+	append_native<uint8_t>(&bytes, '\n');
+	return bytes;
+}
+
 void discard_live_siege()
 {
 	while (siege_objects)
@@ -251,9 +303,34 @@ int main(int argc, char **argv)
 	rooms_available = true;
 
 	fs::remove(authority);
-	write_file(base / "Players/siege", { '#', '1', '\n' });
-	require(!flat_siege_load(&error), "legacy siege data was silently discarded");
-	require(!siege_objects, "legacy-data refusal changed live state");
+	const fs::path legacy_path = base / "Players/siege";
+	write_file(legacy_path, legacy_siege_file(1, 464, 66, 10));
+	require(flat_siege_load(&error), "legacy siege state did not import: " + error);
+	require(fs::is_regular_file(authority), "legacy import did not publish typed authority");
+	require(siege_objects && !siege_objects->next_siege && siege_objects->obj->loc.room == 1 &&
+			siege_objects->obj->R_num == 464 && siege_objects->obj->condition == 66 &&
+			siege_objects->obj->value[0] == 10,
+		"legacy siege object did not import exactly");
+
+	discard_live_siege();
+	write_file(legacy_path, { '#', '1', '\n' });
+	require(flat_siege_load(&error), "typed siege authority did not take import precedence");
+	require(siege_objects && siege_objects->obj->value[0] == 10,
+		"typed authority did not preserve imported siege state");
+
+	discard_live_siege();
+	fs::remove(authority);
+	require(!flat_siege_load(&error), "truncated legacy siege state was accepted");
+	require(!fs::exists(authority), "failed legacy import published typed authority");
+	require(!siege_objects, "failed legacy import changed live state");
+
+	fs::remove(legacy_path);
+	const fs::path symlink_target = base / "legacy-siege-target";
+	write_file(symlink_target, legacy_siege_file(1, 461, 50, 12));
+	fs::create_symlink(symlink_target, legacy_path);
+	require(!flat_siege_load(&error), "legacy siege symlink was accepted");
+	require(!fs::exists(authority), "legacy symlink import published typed authority");
+	require(!siege_objects, "legacy symlink import changed live state");
 
 	std::cout << "flat-file siege passed\n";
 	return 0;

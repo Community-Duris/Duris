@@ -13,11 +13,19 @@ HARNESS = r'''
 
 #include <algorithm>
 #include <cassert>
+#include <cerrno>
 #include <utility>
 #include <vector>
 
 static std::vector<critical_command> submitted;
 static bool externally_fenced = false;
+static bool release_completed = false;
+static bool retryable_release_failed = false;
+static bool retryable_release_completed = false;
+static bool queued_destruction_completed = false;
+static bool resurrection_completed = false;
+static bool raise_completed = false;
+static bool nested_completed = false;
 
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
@@ -60,6 +68,64 @@ static corpse_lifecycle_payload remove(uint32_t owner_pid, uint32_t save_id)
 	return payload;
 }
 
+static corpse_lifecycle_payload release(uint32_t owner_pid, uint32_t save_id, int room,
+					uint64_t room_revision)
+{
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::release;
+	payload.owner_pid = owner_pid;
+	payload.save_id = save_id;
+	payload.expected_room_revision = room_revision;
+	payload.room_vnum = room;
+	payload.owner_name = "Hero";
+	return payload;
+}
+
+static corpse_lifecycle_payload destroy(uint32_t owner_pid, uint32_t save_id, int room,
+					uint64_t destruction_revision)
+{
+	corpse_lifecycle_payload payload = release(owner_pid, save_id, room,
+						 destruction_revision);
+	payload.action = corpse_lifecycle_action::destroy;
+	return payload;
+}
+
+static corpse_lifecycle_payload resurrect(uint32_t owner_pid, uint32_t save_id)
+{
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::resurrect;
+	payload.owner_pid = owner_pid;
+	payload.save_id = save_id;
+	payload.expected_room_revision = 4;
+	payload.destination_player_pid = 88;
+	payload.old_room_vnum = 903;
+	payload.expected_player_revision = 6;
+	payload.expected_wallet_revision = 8;
+	payload.room_vnum = 904;
+	payload.money = { 1, 2, 3, 4 };
+	payload.owner_name = "Hero";
+	return payload;
+}
+
+static corpse_lifecycle_payload raise_follower(uint32_t owner_pid, uint32_t save_id)
+{
+	auto payload = resurrect(owner_pid, save_id);
+	payload.action = corpse_lifecycle_action::raise_follower;
+	payload.expected_room_revision = 0;
+	payload.old_room_vnum = 0;
+	return payload;
+}
+
+static corpse_lifecycle_payload release_nested(uint32_t owner_pid, uint32_t save_id)
+{
+	auto payload = release(owner_pid, save_id, 906, 5);
+	payload.action = corpse_lifecycle_action::release_nested;
+	payload.target_root_item_uid = 700;
+	payload.target_parent_item_uid = 701;
+	payload.expected_target_parent_revision = 8;
+	return payload;
+}
+
 static corpse_lifecycle_payload decode(size_t index)
 {
 	corpse_lifecycle_payload payload = {};
@@ -82,6 +148,170 @@ static critical_completion completion(size_t index, corpse_lifecycle_action acti
 	value.result_size = encoded.size();
 	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
 	return value;
+}
+
+static critical_completion release_completion(size_t index, uint32_t owner_pid,
+					       uint32_t save_id, uint64_t catalog_revision)
+{
+	critical_completion value = {};
+	value.operation_id = submitted[index].operation_id;
+	value.outcome = critical_apply_outcome::applied;
+	corpse_lifecycle_result result = {};
+	result.owner_pid = owner_pid;
+	result.save_id = save_id;
+	result.action = corpse_lifecycle_action::release;
+	result.catalog_revision = catalog_revision;
+	result.corpse_owner_revision = 3;
+	result.room_owner_revision = 5;
+	result.max_item_revision = 8;
+	result.item_count = 2;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	value.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
+static critical_completion destroy_completion(size_t index, uint32_t owner_pid,
+				       uint32_t save_id, uint64_t catalog_revision)
+{
+	critical_completion value = {};
+	value.operation_id = submitted[index].operation_id;
+	value.outcome = critical_apply_outcome::applied;
+	corpse_lifecycle_result result = {};
+	result.owner_pid = owner_pid;
+	result.save_id = save_id;
+	result.action = corpse_lifecycle_action::destroy;
+	result.catalog_revision = catalog_revision;
+	result.corpse_owner_revision = 1;
+	result.room_owner_revision = 1;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	value.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
+static critical_completion resurrection_completion(size_t index, uint32_t owner_pid,
+					    uint32_t save_id, uint64_t catalog_revision)
+{
+	critical_completion value = {};
+	value.operation_id = submitted[index].operation_id;
+	value.outcome = critical_apply_outcome::applied;
+	corpse_lifecycle_result result = {};
+	result.owner_pid = owner_pid;
+	result.save_id = save_id;
+	result.action = corpse_lifecycle_action::resurrect;
+	result.catalog_revision = catalog_revision;
+	result.corpse_owner_revision = 2;
+	result.room_owner_revision = 5;
+	result.player_owner_revision = 7;
+	result.wallet_revision = 9;
+	result.max_item_revision = 10;
+	result.item_count = 2;
+	result.wallet = { 9, 8, 7, 6 };
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	value.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
+static critical_completion raise_completion(size_t index, uint32_t owner_pid,
+				     uint32_t save_id, uint64_t catalog_revision)
+{
+	auto value = resurrection_completion(index, owner_pid, save_id, catalog_revision);
+	corpse_lifecycle_result result = {};
+	assert(corpse_lifecycle_command_decode_result(value.result_payload.data(), value.result_size,
+					      &result));
+	result.action = corpse_lifecycle_action::raise_follower;
+	result.room_owner_revision = 0;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
+static critical_completion nested_completion(size_t index, uint32_t owner_pid,
+				      uint32_t save_id, uint64_t catalog_revision)
+{
+	auto value = release_completion(index, owner_pid, save_id, catalog_revision);
+	corpse_lifecycle_result result = {};
+	assert(corpse_lifecycle_command_decode_result(value.result_payload.data(), value.result_size,
+					      &result));
+	result.action = corpse_lifecycle_action::release_nested;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
+static void on_release(bool committed, const corpse_lifecycle_result &result,
+			       unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 && result.item_count == 2 &&
+	       payload.action == corpse_lifecycle_action::release && payload.room_vnum == 777 &&
+	       payload.expected_corpse_revision == 1 && payload.expected_room_revision == 4);
+	release_completed = true;
+}
+
+static void on_retryable_release(bool committed, const corpse_lifecycle_result &,
+				 unsigned int error_code,
+				 const corpse_lifecycle_payload &payload)
+{
+	assert(!committed && error_code == ESTALE && payload.expected_corpse_revision == 3);
+	retryable_release_failed = true;
+}
+
+static void on_retryable_release_success(bool committed, const corpse_lifecycle_result &result,
+					 unsigned int error_code,
+					 const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 && result.owner_pid == 44 &&
+	       payload.expected_corpse_revision == 3 && payload.expected_room_revision == 1);
+	retryable_release_completed = true;
+}
+
+static void on_queued_destruction(bool committed, const corpse_lifecycle_result &result,
+				  unsigned int error_code,
+				  const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 && result.action == corpse_lifecycle_action::destroy &&
+	       payload.action == corpse_lifecycle_action::destroy &&
+	       payload.expected_corpse_revision == 1 && payload.room_vnum == 902);
+	queued_destruction_completed = true;
+}
+
+static void on_resurrection(bool committed, const corpse_lifecycle_result &result,
+			    unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 && result.action == corpse_lifecycle_action::resurrect &&
+	       result.player_owner_revision == 7 && result.wallet[0] == 9 &&
+	       payload.destination_player_pid == 88 && payload.old_room_vnum == 903 &&
+	       payload.expected_corpse_revision == 1);
+	resurrection_completed = true;
+}
+
+static void on_raise(bool committed, const corpse_lifecycle_result &result,
+		     unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 &&
+	       result.action == corpse_lifecycle_action::raise_follower &&
+	       !result.room_owner_revision && result.player_owner_revision == 7 &&
+	       payload.destination_player_pid == 88 && !payload.old_room_vnum &&
+	       payload.expected_corpse_revision == 1);
+	raise_completed = true;
+}
+
+static void on_nested(bool committed, const corpse_lifecycle_result &result,
+			      unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 &&
+	       result.action == corpse_lifecycle_action::release_nested &&
+	       result.room_owner_revision == 5 && payload.expected_corpse_revision == 1 &&
+	       payload.target_root_item_uid == 700 && payload.target_parent_item_uid == 701 &&
+	       payload.expected_target_parent_revision == 8);
+	nested_completed = true;
 }
 
 int main()
@@ -118,23 +348,103 @@ int main()
 	       decoded.expected_corpse_revision == 0 && decoded.room_vnum == 777);
 	done = completion(3, corpse_lifecycle_action::upsert, 42, 20, 1, 13);
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(corpse_lifecycle_transaction_release(release(42, 20, 777, 4), on_release));
+	assert(submitted.size() == 5);
+	decoded = decode(4);
+	assert(decoded.action == corpse_lifecycle_action::release &&
+	       decoded.expected_corpse_revision == 1 && decoded.expected_room_revision == 4);
+	assert(!corpse_lifecycle_transaction_stage(upsert(42, 20, 778, 4)));
+	done = release_completion(4, 42, 20, 14);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(release_completed && !corpse_lifecycle_transaction_busy(42, 20));
 
 	externally_fenced = true;
 	assert(corpse_lifecycle_transaction_stage(upsert(43, 21, 900, 4)));
-	assert(submitted.size() == 4);
+	assert(submitted.size() == 5);
 	assert(corpse_lifecycle_transaction_note_item_transfer(43, 21, 5));
-	assert(submitted.size() == 4);
+	assert(submitted.size() == 5);
 	externally_fenced = false;
 	corpse_lifecycle_transaction_pulse();
-	assert(submitted.size() == 5 && decode(4).expected_corpse_revision == 5);
-	done = completion(4, corpse_lifecycle_action::upsert, 43, 21, 6, 14);
+	assert(submitted.size() == 6 && decode(5).expected_corpse_revision == 5);
+	done = completion(5, corpse_lifecycle_action::upsert, 43, 21, 6, 15);
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 
+	assert(corpse_lifecycle_transaction_hydrate(44, 22, 3));
+	assert(corpse_lifecycle_transaction_release(release(44, 22, 901, 0),
+						     on_retryable_release));
+	assert(submitted.size() == 7);
+	critical_completion stale_release = {};
+	stale_release.operation_id = submitted[6].operation_id;
+	stale_release.outcome = critical_apply_outcome::terminal_failure;
+	stale_release.error_code = ESTALE;
+	corpse_lifecycle_transaction_handle_completions(&stale_release, 1);
+	assert(retryable_release_failed);
+	assert(corpse_lifecycle_transaction_release(release(44, 22, 901, 1),
+						     on_retryable_release_success));
+	assert(submitted.size() == 8 && decode(7).expected_corpse_revision == 3 &&
+	       decode(7).expected_room_revision == 1);
+	done = release_completion(7, 44, 22, 16);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(retryable_release_completed);
+
+	assert(corpse_lifecycle_transaction_stage(upsert(45, 23, 902, 5)));
+	assert(submitted.size() == 9);
+	assert(corpse_lifecycle_transaction_destroy(destroy(45, 23, 902, 0),
+						    on_queued_destruction));
+	assert(corpse_lifecycle_transaction_destroy(destroy(45, 23, 902, 0),
+						    on_queued_destruction));
+	assert(submitted.size() == 9 && corpse_lifecycle_transaction_busy(45, 23));
+	done = completion(8, corpse_lifecycle_action::upsert, 45, 23, 1, 17);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(submitted.size() == 10 && decode(9).action == corpse_lifecycle_action::destroy &&
+	       decode(9).expected_corpse_revision == 1);
+	assert(corpse_lifecycle_transaction_destroy(destroy(45, 23, 902, 0),
+						    on_queued_destruction));
+	done = destroy_completion(9, 45, 23, 18);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(queued_destruction_completed && !corpse_lifecycle_transaction_busy(45, 23));
+
+	assert(corpse_lifecycle_transaction_stage(upsert(46, 24, 904, 6)));
+	assert(submitted.size() == 11);
+	done = completion(10, corpse_lifecycle_action::upsert, 46, 24, 1, 19);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(corpse_lifecycle_transaction_resurrect(resurrect(46, 24), on_resurrection));
+	assert(submitted.size() == 12 && decode(11).action == corpse_lifecycle_action::resurrect &&
+	       decode(11).expected_corpse_revision == 1 && submitted[11].keys.size() == 3);
+	done = resurrection_completion(11, 46, 24, 20);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(resurrection_completed && !corpse_lifecycle_transaction_busy(46, 24));
+
+	assert(corpse_lifecycle_transaction_stage(upsert(47, 25, 905, 7)));
+	assert(submitted.size() == 13);
+	done = completion(12, corpse_lifecycle_action::upsert, 47, 25, 1, 21);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(corpse_lifecycle_transaction_raise_follower(raise_follower(47, 25), on_raise));
+	assert(submitted.size() == 14 &&
+	       decode(13).action == corpse_lifecycle_action::raise_follower &&
+	       decode(13).expected_corpse_revision == 1 && submitted[13].keys.size() == 2);
+	done = raise_completion(13, 47, 25, 22);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(raise_completed && !corpse_lifecycle_transaction_busy(47, 25));
+
+	assert(corpse_lifecycle_transaction_stage(upsert(48, 26, 906, 8)));
+	assert(submitted.size() == 15);
+	done = completion(14, corpse_lifecycle_action::upsert, 48, 26, 1, 23);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(corpse_lifecycle_transaction_release(release_nested(48, 26), on_nested));
+	assert(submitted.size() == 16 &&
+	       decode(15).action == corpse_lifecycle_action::release_nested &&
+	       decode(15).expected_corpse_revision == 1 && submitted[15].keys.size() == 2);
+	done = nested_completion(15, 48, 26, 24);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(nested_completed && !corpse_lifecycle_transaction_busy(48, 26));
+
 	const auto health = corpse_lifecycle_transaction_health_copy();
-	assert(health.submitted == 5 && health.committed == 5 && health.rejected == 0 &&
+	assert(health.submitted == 16 && health.committed == 15 && health.rejected == 1 &&
 	       health.pending == 0 && health.dirty == 0);
 	assert(corpse_lifecycle_transaction_forget(42, 20));
 	assert(corpse_lifecycle_transaction_forget(43, 21));
+	assert(corpse_lifecycle_transaction_forget(44, 22));
 	return 0;
 }
 '''

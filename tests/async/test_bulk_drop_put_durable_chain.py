@@ -10,8 +10,8 @@ removed three fundamental commands from the game.
 
 They now use the same serialized chain `get all` uses: snapshot the durable item
 uids up front, submit one transaction, and let the completion advance the chain.
-Currency and objects that never entered the ownership ledger still move
-synchronously once the durable chain has drained.
+Currency, transient objects, and PC corpse roots still use their dedicated paths
+once the generic ownership chain has drained.
 """
 
 from pathlib import Path
@@ -140,11 +140,12 @@ ok &= check(
     and "CONT_CLOSED" in continue_put,
 )
 
-# --- non-durable objects keep their synchronous path ------------------------
+# --- objects outside generic ownership keep their synchronous path ----------
 ok &= check(
-    "coins and unledgered objects still move synchronously after the chain",
-    "object->obj_uid > 0 && object->type != ITEM_MONEY" in continue_drop
-    and "object->obj_uid > 0 && object->type != ITEM_MONEY" in continue_put,
+    "coins, corpse roots, and unledgered objects still use their lifecycle paths",
+    "uses_generic_item_ownership(object)" in continue_drop
+    and "uses_generic_item_ownership(object)" in continue_put
+    and "PC_CORPSE" in ACTOBJ,
 )
 
 # --- preserved semantics ----------------------------------------------------

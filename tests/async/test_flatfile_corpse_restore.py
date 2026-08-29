@@ -11,6 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "flatfile_corpse_restore.h"
 #include "flatfile_corpse_ownership.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_world_item_repository.h"
 #include "necromancy.h"
 #include "player_load_items.h"
@@ -23,9 +24,12 @@ HARNESS = r'''
 #include <cstring>
 
 int skip_corpse_save = 0;
+bool updateArtis = true;
 static P_obj published = nullptr;
+static std::vector<P_obj> published_room_items;
 static uint64_t hydrated_revision = 0;
 static int refreshes = 0;
+static bool destruction_hydrated = false;
 
 char *str_dup(const char *source)
 {
@@ -103,7 +107,10 @@ void obj_to_room(P_obj object, int room)
 {
 	object->loc_p = LOC_ROOM;
 	object->loc.room = room;
-	published = object;
+	if (object->type == ITEM_CORPSE)
+		published = object;
+	else
+		published_room_items.push_back(object);
 }
 
 static void release(P_obj object)
@@ -161,6 +168,40 @@ flatfile_world_item_list(const std::string &, std::vector<flatfile_corpse_record
 	return flatfile_world_item_result::ok;
 }
 
+flatfile_world_item_result flatfile_world_item_list_rooms(
+	const std::string &, std::vector<flatfile_room_item_record> *rooms, std::string *)
+{
+	flatfile_room_item_record room = {};
+	room.room_vnum = 500;
+	room.revision = 2;
+	room.money = { 5, 6, 7, 8 };
+	player_item_snapshot root = {};
+	root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	root.equipment_slot = -1;
+	root.object_uid = 100;
+	root.vnum = 1900;
+	root.type = ITEM_STORAGE;
+	player_item_snapshot child = root;
+	child.parent_index = 0;
+	child.object_uid = 101;
+	child.vnum = 1901;
+	child.type = ITEM_CONTAINER;
+	room.items = { root, child };
+	rooms->push_back(room);
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_item_repository_result flatfile_item_repository_load_owner(
+	const std::string &, const item_owner_identity &owner, uint64_t *owner_revision,
+	std::vector<flatfile_item_ownership_record> *items, std::string *)
+{
+	assert(owner.type == item_owner_type::destruction && !owner.id && !owner.context_id &&
+	       owner_revision && items);
+	*owner_revision = 7;
+	items->clear();
+	return flatfile_item_repository_result::ok;
+}
+
 item_owner_identity flatfile_corpse_item_owner(uint32_t owner_pid, uint32_t save_id)
 {
 	return { item_owner_type::corpse,
@@ -176,16 +217,41 @@ flatfile_corpse_ownership_result flatfile_corpse_load_item_ownership(
 	return flatfile_corpse_ownership_result::ok;
 }
 
-bool player_load_item_graph_materialize_detached(
-	const std::vector<player_item_snapshot> &,
-	const std::vector<player_load_item_identity> &, const item_owner_identity &, uint64_t, bool,
-	bool, std::vector<P_obj> *, player_load_item_materialize_metrics *)
+flatfile_corpse_ownership_result flatfile_room_load_item_ownership(
+	const std::string &, const flatfile_room_item_record &record, uint64_t *owner_revision,
+	std::vector<player_load_item_identity> *identities, std::string *)
 {
-	return false;
+	assert(record.room_vnum == 500 && record.items.size() == 2);
+	*owner_revision = 2;
+	identities->resize(2);
+	return flatfile_corpse_ownership_result::ok;
 }
 
-bool item_ownership_runtime_hydrate_owner(const item_owner_identity &, uint64_t)
+bool player_load_item_graph_materialize_detached(
+	const std::vector<player_item_snapshot> &snapshots,
+	const std::vector<player_load_item_identity> &, const item_owner_identity &owner,
+	uint64_t owner_revision, bool, bool, std::vector<P_obj> *roots,
+	player_load_item_materialize_metrics *)
 {
+	assert(snapshots.size() == 2 && owner.type == item_owner_type::room && owner.id == 500 &&
+	       owner_revision == 2 && roots);
+	P_obj root = read_object(1900, REAL);
+	root->obj_uid = snapshots[0].object_uid;
+	root->type = snapshots[0].type;
+	P_obj child = read_object(1901, REAL);
+	child->obj_uid = snapshots[1].object_uid;
+	child->type = snapshots[1].type;
+	child->loc_p = LOC_INSIDE;
+	child->loc.inside = root;
+	root->contains = child;
+	roots->push_back(root);
+	return true;
+}
+
+bool item_ownership_runtime_hydrate_owner(const item_owner_identity &owner, uint64_t revision)
+{
+	assert(owner.type == item_owner_type::destruction && revision == 7);
+	destruction_hydrated = true;
 	return true;
 }
 
@@ -215,7 +281,8 @@ int main()
 	std::string error;
 	assert(flatfile_corpse_restore_catalog("state", &error) ==
 	       flatfile_corpse_restore_result::ok);
-	assert(skip_corpse_save == 0 && published && refreshes == 1 && hydrated_revision == 7);
+	assert(skip_corpse_save == 0 && updateArtis && published && refreshes == 1 &&
+	       hydrated_revision == 7 && destruction_hydrated);
 	assert(published->type == ITEM_CORPSE && published->weight == 75 &&
 	       published->value[CORPSE_PID] == 42 && published->loc.room == 5);
 	assert(std::strcmp(published->action_description, "hero") == 0 &&
@@ -223,7 +290,17 @@ int main()
 	assert(published->contains && published->contains->type == ITEM_MONEY &&
 	       published->contains->value[0] == 1 && published->contains->value[3] == 4 &&
 	       published->contains->loc.inside == published);
+	assert(published_room_items.size() == 2 && published_room_items[0]->obj_uid == 100 &&
+	       published_room_items[0]->type == ITEM_STORAGE &&
+	       published_room_items[0]->loc.room == 5 && published_room_items[0]->contains &&
+	       published_room_items[0]->contains->obj_uid == 101 &&
+	       published_room_items[0]->contains->type == ITEM_CONTAINER &&
+	       published_room_items[1]->type == ITEM_MONEY &&
+	       published_room_items[1]->value[0] == 5 &&
+	       published_room_items[1]->value[3] == 8);
 	release(published);
+	for (P_obj item : published_room_items)
+		release(item);
 	return 0;
 }
 '''

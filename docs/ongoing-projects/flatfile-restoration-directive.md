@@ -1,12 +1,34 @@
 # Flat-file restoration project directive
 
 **Effective date:** 2026-08-28
-**Status:** authoritative direction for all remaining flat-file work
+**Status:** completed at checkpoint 101
 
 ## Completed work
 
 Completed implementation history is maintained in
 [`flatfile-changelog.md`](./flatfile-changelog.md).
+
+## Current progress
+
+As of 2026-08-29, checkpoint 101 completes the final explicit restoration item. When no
+current siege authority exists, the client-free boot path now imports the historical
+version-35 `Players/siege` file produced at the reference revision. The bounded reader
+accepts only the four historical siege object types, converts historical room indexes
+to durable room vnums, validates each complete object record without treating embedded
+binary newline bytes as delimiters, and publishes the result through the existing
+checksummed atomic siege authority. Current authority always takes precedence.
+
+Truncated, malformed, oversized, unowned, non-regular, and symlinked legacy files fail
+without publishing authority or changing live state. Focused compatibility tests cover
+exact import, an embedded newline byte, idempotent current-authority precedence,
+truncation, and symlink refusal. Strict MariaDB and client-free compilation, the
+isolated client-free build/game-loop boot/clean shutdown, formatting, and diff checks
+pass.
+
+The final scope audit found no other explicit work authorized by this directive. The
+earlier siege/kingdom removal memo remains research only and does not add a removal or
+redesign requirement. Older changelog “remaining” statements record their checkpoints
+and do not reopen completed scope. The flat-file restoration project is complete.
 
 ## Owner intent
 

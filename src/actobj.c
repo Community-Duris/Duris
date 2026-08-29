@@ -124,6 +124,12 @@ static bool get_trace_enabled(void)
 	return cached != 0;
 }
 
+static bool uses_generic_item_ownership(P_obj object)
+{
+	return object && object->obj_uid > 0 && object->type != ITEM_MONEY &&
+	       !(object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE));
+}
+
 #define GETDBG_LOG(...)                                \
 	do                                             \
 	{                                              \
@@ -451,7 +457,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int showit)
 {
 	item_put_deferred = false;
-	if (item_put_ack_publication || !IS_PC(actor) || !object->obj_uid || !container->obj_uid)
+	if (item_put_ack_publication || !IS_PC(actor) || !uses_generic_item_ownership(object) ||
+	    !container->obj_uid)
 		return false;
 	item_ownership_runtime_entry item_runtime = {}, container_runtime = {};
 	const bool item_known = item_ownership_runtime_lookup(object->obj_uid, &item_runtime);
@@ -545,6 +552,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		logit(LOG_EXIT, "call to get with NULL obj or ch");
 		GETDBG_LOG("GETDBG[get-null-args]: ch=%p obj=%p container=%p showit=%d", (void *)ch,
 			   (void *)o_obj, (void *)s_obj, showit ? 1 : 0);
+		return;
+	}
+	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
+					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
+	{
+		send_to_char("That corpse is settling into the world; try again shortly.\r\n", ch);
 		return;
 	}
 
@@ -655,7 +669,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (s_obj && IS_OBJ_STAT(s_obj, ITEM_NOSHOW))
 		showit = TRUE;
 
-	if (IS_PC(ch) && o_obj->obj_uid > 0 && o_obj->type != ITEM_MONEY)
+	if (IS_PC(ch) && uses_generic_item_ownership(o_obj))
 	{
 		item_ownership_runtime_entry runtime = {};
 		item_owner_identity source = {};
@@ -1571,7 +1585,7 @@ void continue_bulk_get(P_char actor, bool previous_succeeded)
 		state.failed = true;
 	}
 
-	/* Currency and transient objects do not use the durable ownership path.
+	/* Currency, transient objects, and PC corpse roots do not use generic ownership.
 	 * Collect them synchronously after the durable chain has advanced. */
 	P_obj next_object = NULL;
 	bool found_item = false;
@@ -1581,7 +1595,7 @@ void continue_bulk_get(P_char actor, bool previous_succeeded)
 	     object = next_object)
 	{
 		next_object = object->next_content;
-		if ((object->obj_uid > 0 && object->type != ITEM_MONEY) ||
+		if (uses_generic_item_ownership(object) ||
 		    (state.filter.size() &&
 		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
 		    (!container_local && !CAN_SEE_OBJ(actor, object)))
@@ -1636,7 +1650,7 @@ static void start_floor_bulk_get(P_char actor, const char *filter)
 		for (P_obj object = world[actor->in_room].contents; object;
 		     object = object->next_content)
 		{
-			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			if (uses_generic_item_ownership(object) &&
 			    (state.filter.empty() ||
 			     (object->name && isname(state.filter.c_str(), object->name))))
 				state.durable_items.push_back(object->obj_uid);
@@ -1666,7 +1680,7 @@ static void start_container_bulk_get(P_char actor, P_obj container, const char *
 	int container_safety = top_of_objt + 1;
 	for (P_obj object = container->contains; object && container_safety-- > 0;
 	     object = object->next_content)
-		if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+		if (uses_generic_item_ownership(object) &&
 		    (!filter || (object->name && isname(filter, object->name))))
 		{
 			has_durable_items = true;
@@ -1686,7 +1700,7 @@ static void start_container_bulk_get(P_char actor, P_obj container, const char *
 		container_safety = top_of_objt + 1;
 		for (P_obj object = container->contains; object && container_safety-- > 0;
 		     object = object->next_content)
-			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			if (uses_generic_item_ownership(object) &&
 			    (state.filter.empty() ||
 			     (object->name && isname(state.filter.c_str(), object->name))))
 				state.durable_items.push_back(object->obj_uid);
@@ -2707,11 +2721,11 @@ void continue_bulk_drop(P_char actor, bool previous_succeeded)
 		state.failed = true;
 	}
 
-	/* Coins and objects that never entered the ownership ledger move directly. */
+	/* Coins, transient objects, and PC corpse roots do not use generic ownership. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
-		if ((object->obj_uid > 0 && object->type != ITEM_MONEY) ||
+		if (uses_generic_item_ownership(object) ||
 		    (state.filter.size() &&
 		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
 		    !bulk_drop_permitted(actor, object, state))
@@ -2747,7 +2761,7 @@ void start_bulk_drop(P_char actor, const char *filter, bool alldot)
 	try
 	{
 		for (P_obj object = actor->carrying; object; object = object->next_content)
-			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			if (uses_generic_item_ownership(object) &&
 			    (state.filter.empty() ||
 			     (object->name && isname(state.filter.c_str(), object->name))))
 				state.durable_items.push_back(object->obj_uid);
@@ -3147,7 +3161,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 						      world[ch->in_room].number);
 					}
 					obj_to_room(tmp_object, ch->in_room);
-					if (IS_PC(ch) && tmp_object->obj_uid > 0)
+					if (IS_PC(ch) && uses_generic_item_ownership(tmp_object))
 						redis_log_floor_drop(tmp_object,
 								     world[ch->in_room].number);
 					dropped_any = true;
@@ -3199,7 +3213,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 				else if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) ||
 					 IS_TRUSTED(ch))
 				{
-					if (IS_PC(ch) && tmp_object->obj_uid > 0)
+					if (IS_PC(ch) && uses_generic_item_ownership(tmp_object))
 					{
 						if (!submit_player_drop(ch, tmp_object))
 							send_to_char(
@@ -3384,11 +3398,11 @@ void continue_bulk_put(P_char actor, bool previous_succeeded)
 			state.failed = true;
 	}
 
-	/* Coins and objects outside the ownership ledger move straight across. */
+	/* Coins, transient objects, and PC corpse roots do not use generic ownership. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
-		if (object == container || (object->obj_uid > 0 && object->type != ITEM_MONEY) ||
+		if (object == container || uses_generic_item_ownership(object) ||
 		    (state.alldot && (!CAN_SEE_OBJ(actor, object) || !object->name ||
 				      !isname(state.filter.c_str(), object->name))))
 			continue;
@@ -3415,8 +3429,7 @@ void start_bulk_put(P_char actor, P_obj container, const char *filter, bool alld
 	try
 	{
 		for (P_obj object = actor->carrying; object; object = object->next_content)
-			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
-			    object != container &&
+			if (uses_generic_item_ownership(object) && object != container &&
 			    (!alldot ||
 			     (object->name && isname(state.filter.c_str(), object->name))))
 				state.durable_items.push_back(object->obj_uid);
@@ -3662,6 +3675,16 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	char Gbuf3[MAX_STRING_LENGTH];
 
 	item_put_deferred = false;
+	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
+					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
+	{
+		if (showit)
+			send_to_char(
+				"That corpse is settling into the world; try again shortly.\r\n",
+				ch);
+		return FALSE;
+	}
 
 	if (IS_ARTIFACT(o_obj) && !IS_TRUSTED(ch))
 	{
@@ -4111,7 +4134,7 @@ void do_give(P_char ch, char *argument, int cmd)
 		       vict->player.name);
 		return;
 	}
-	if (IS_PC(ch) && IS_PC(vict) && ch != vict && obj->obj_uid > 0)
+	if (IS_PC(ch) && IS_PC(vict) && ch != vict && uses_generic_item_ownership(obj))
 	{
 		const item_owner_identity source = { item_owner_type::player,
 						     static_cast<uint64_t>(GET_PID(ch)), 0 };

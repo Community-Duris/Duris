@@ -18,11 +18,13 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'W', 'R', 'L', 'D', 0 };
-constexpr uint32_t catalog_version = 2;
+constexpr uint32_t catalog_version = 3;
+constexpr uint32_t catalog_money_version = 2;
 constexpr uint32_t catalog_legacy_version = 1;
 constexpr size_t catalog_maximum_bytes = 256 * 1024 * 1024;
 constexpr size_t corpse_maximum = 262144;
 constexpr size_t saved_item_maximum = 262144;
+constexpr size_t room_maximum = 262144;
 constexpr size_t name_maximum = 255;
 constexpr size_t key_maximum = 100;
 constexpr size_t short_description_maximum = 512;
@@ -35,6 +37,7 @@ struct world_item_catalog
 	uint64_t revision = 1;
 	std::vector<flatfile_corpse_record> corpses;
 	std::vector<flatfile_saved_world_item_record> saved_items;
+	std::vector<flatfile_room_item_record> rooms;
 };
 
 struct encoder
@@ -185,6 +188,11 @@ bool saved_item_less(const flatfile_saved_world_item_record &left,
 	return left.item_key < right.item_key;
 }
 
+bool room_less(const flatfile_room_item_record &left, const flatfile_room_item_record &right)
+{
+	return left.room_vnum < right.room_vnum;
+}
+
 bool valid_item_list(const std::vector<player_item_snapshot> &items, bool require_one_root,
 		     std::unordered_set<uint64_t> *item_uids)
 {
@@ -207,9 +215,11 @@ bool valid_catalog(const world_item_catalog &catalog)
 {
 	if (!catalog.revision || catalog.corpses.size() > corpse_maximum ||
 	    catalog.saved_items.size() > saved_item_maximum ||
+	    catalog.rooms.size() > room_maximum ||
 	    !std::is_sorted(catalog.corpses.begin(), catalog.corpses.end(), corpse_less) ||
 	    !std::is_sorted(catalog.saved_items.begin(), catalog.saved_items.end(),
-			    saved_item_less))
+			    saved_item_less) ||
+	    !std::is_sorted(catalog.rooms.begin(), catalog.rooms.end(), room_less))
 		return false;
 	std::unordered_set<std::string> owner_names;
 	std::unordered_set<std::string> item_keys;
@@ -251,6 +261,16 @@ bool valid_catalog(const world_item_catalog &catalog)
 			    !valid_item_list(saved.items, true, &item_uids))
 				return false;
 		}
+		for (size_t index = 0; index < catalog.rooms.size(); ++index)
+		{
+			const auto &room = catalog.rooms[index];
+			if (room.room_vnum <= 0 || !room.revision ||
+			    (index && !room_less(catalog.rooms[index - 1], room)) ||
+			    !std::all_of(room.money.begin(), room.money.end(),
+					 [](int32_t value) { return value >= 0; }) ||
+			    !valid_item_list(room.items, false, &item_uids))
+				return false;
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -285,6 +305,7 @@ bool encode_catalog(const world_item_catalog &catalog, std::vector<uint8_t> *byt
 	encoder payload;
 	payload.number<uint32_t>(catalog.corpses.size());
 	payload.number<uint32_t>(catalog.saved_items.size());
+	payload.number<uint32_t>(catalog.rooms.size());
 	for (const auto &corpse : catalog.corpses)
 	{
 		payload.number(corpse.owner_pid);
@@ -309,6 +330,15 @@ bool encode_catalog(const world_item_catalog &catalog, std::vector<uint8_t> *byt
 		payload.number(saved.room_vnum);
 		payload.number(saved.revision);
 		if (!encode_items(payload, saved.items))
+			return false;
+	}
+	for (const auto &room : catalog.rooms)
+	{
+		payload.number(room.room_vnum);
+		payload.number(room.revision);
+		for (int32_t value : room.money)
+			payload.number(value);
+		if (!encode_items(payload, room.items))
 			return false;
 	}
 	if (!payload.valid || payload.bytes.size() > catalog_maximum_bytes)
@@ -339,8 +369,9 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
 	    !header.number(&revision) ||
-	    (version != catalog_version && version != catalog_legacy_version) || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    (version != catalog_version && version != catalog_money_version &&
+	     version != catalog_legacy_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -348,9 +379,11 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
 		return false;
 	decoder payload{ payload_bytes, payload_size };
-	uint32_t corpse_count = 0, saved_count = 0;
+	uint32_t corpse_count = 0, saved_count = 0, room_count = 0;
 	if (!payload.number(&corpse_count) || !payload.number(&saved_count) ||
-	    corpse_count > corpse_maximum || saved_count > saved_item_maximum)
+	    (version >= catalog_version && !payload.number(&room_count)) ||
+	    corpse_count > corpse_maximum || saved_count > saved_item_maximum ||
+	    room_count > room_maximum)
 		return false;
 	world_item_catalog decoded;
 	decoded.revision = revision;
@@ -371,7 +404,7 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 			for (int32_t &value : corpse.values)
 				if (!payload.number(&value))
 					return false;
-			if (version >= catalog_version)
+			if (version >= catalog_money_version)
 				for (int32_t &value : corpse.money)
 					if (!payload.number(&value))
 						return false;
@@ -385,6 +418,17 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 			    !payload.number(&saved.room_vnum) || !payload.number(&saved.revision) ||
 			    !decode_items(payload, &saved.items))
 				return false;
+		decoded.rooms.resize(room_count);
+		for (auto &room : decoded.rooms)
+		{
+			if (!payload.number(&room.room_vnum) || !payload.number(&room.revision))
+				return false;
+			for (int32_t &value : room.money)
+				if (!payload.number(&value))
+					return false;
+			if (!decode_items(payload, &room.items))
+				return false;
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -470,6 +514,133 @@ bool canonicalize_detached_items(std::vector<player_item_snapshot> *items)
 	return true;
 }
 
+bool room_transfer_deposit(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::player &&
+	       payload.to_owner.type == item_owner_type::room &&
+	       ((payload.reason == item_transfer_reason::player_drop &&
+		 !payload.target_parent_item_uid) ||
+		(payload.reason == item_transfer_reason::player_put &&
+		 payload.target_parent_item_uid));
+}
+
+bool room_transfer_withdraw(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::room &&
+	       payload.to_owner.type == item_owner_type::player &&
+	       payload.reason == item_transfer_reason::player_get &&
+	       !payload.target_parent_item_uid;
+}
+
+bool room_transfer_create(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::system &&
+	       payload.to_owner.type == item_owner_type::room &&
+	       payload.reason == item_transfer_reason::creation && !payload.target_parent_item_uid;
+}
+
+bool room_transfer_destroy(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::room &&
+	       payload.to_owner.type == item_owner_type::destruction &&
+	       payload.reason == item_transfer_reason::destruction &&
+	       !payload.target_parent_item_uid;
+}
+
+bool room_transfer_reparent(const item_transfer_payload &payload)
+{
+	return item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
+	       payload.from_owner.type == item_owner_type::room &&
+	       payload.reason == item_transfer_reason::operator_repair &&
+	       !payload.target_parent_item_uid;
+}
+
+bool room_custody(const std::vector<player_item_snapshot> &items,
+		  std::vector<flatfile_corpse_custody_item> *custody)
+{
+	if (!custody)
+		return false;
+	custody->clear();
+	try
+	{
+		custody->reserve(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const auto &item = items[index];
+			uint64_t root_uid = item.object_uid;
+			int32_t parent_index = item.parent_index;
+			for (size_t depth = 0; parent_index != PLAYER_SNAPSHOT_NO_PARENT; ++depth)
+			{
+				if (depth >= items.size() || parent_index < 0 ||
+				    static_cast<size_t>(parent_index) >= items.size())
+					return false;
+				const auto &parent = items[static_cast<size_t>(parent_index)];
+				root_uid = parent.object_uid;
+				parent_index = parent.parent_index;
+			}
+			custody->push_back({ item.object_uid, item.vnum, root_uid,
+					     item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+						     0 :
+						     items[static_cast<size_t>(item.parent_index)]
+							     .object_uid });
+		}
+		std::sort(custody->begin(), custody->end(), [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+size_t room_item_index(const std::vector<player_item_snapshot> &items, uint64_t item_uid)
+{
+	const auto found = std::find_if(items.begin(), items.end(), [&](const auto &item)
+					{ return item.object_uid == item_uid; });
+	return found == items.end() ? items.size() : static_cast<size_t>(found - items.begin());
+}
+
+bool room_item_root_matches(const std::vector<player_item_snapshot> &items, size_t index,
+			    uint64_t expected_root_uid)
+{
+	if (index >= items.size())
+		return false;
+	for (size_t depth = 0; depth <= items.size(); ++depth)
+	{
+		const auto &item = items[index];
+		if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+			return item.object_uid == expected_root_uid;
+		if (item.parent_index < 0 || static_cast<size_t>(item.parent_index) >= items.size())
+			return false;
+		index = static_cast<size_t>(item.parent_index);
+	}
+	return false;
+}
+
+bool apply_room_weight_delta(std::vector<player_item_snapshot> *items, size_t index, int64_t delta)
+{
+	if (!items || index >= items->size())
+		return false;
+	for (size_t depth = 0; delta && depth <= items->size(); ++depth)
+	{
+		auto &item = (*items)[index];
+		const int64_t previous = item.weight;
+		const int64_t next = previous + delta;
+		if (next < INT32_MIN || next > INT32_MAX)
+			return false;
+		item.weight = static_cast<int32_t>(next);
+		delta = std::max<int64_t>(next, 0) - std::max<int64_t>(previous, 0);
+		if (!delta || item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+			return true;
+		if (item.parent_index < 0 ||
+		    static_cast<size_t>(item.parent_index) >= items->size())
+			return false;
+		index = static_cast<size_t>(item.parent_index);
+	}
+	return !delta;
+}
+
 void apply_corpse_metadata(flatfile_corpse_record *corpse, const item_corpse_metadata &metadata)
 {
 	corpse->owner_name = canonical_name(metadata.owner_name);
@@ -539,6 +710,7 @@ flatfile_world_item_result flatfile_world_item_establish(
 		std::sort(candidate.corpses.begin(), candidate.corpses.end(), corpse_less);
 		std::sort(candidate.saved_items.begin(), candidate.saved_items.end(),
 			  saved_item_less);
+		std::sort(candidate.rooms.begin(), candidate.rooms.end(), room_less);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -565,6 +737,26 @@ flatfile_world_item_result flatfile_world_item_establish(
 		return flatfile_world_item_result::invalid;
 	if (!flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error))
 		return flatfile_world_item_result::io_error;
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result
+flatfile_world_item_list_rooms(const std::string &root,
+			       std::vector<flatfile_room_item_record> *rooms, std::string *error)
+{
+	if (root.empty() || !rooms)
+		return flatfile_world_item_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_world_item_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_world_item_result::ok)
+		return recovered;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	*rooms = std::move(catalog.rooms);
 	return flatfile_world_item_result::ok;
 }
 
@@ -862,5 +1054,309 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 		return flatfile_world_item_result::invalid;
 	mutation->after_image = { catalog_filename, std::move(encoded) };
 	mutation->corpse_revision = corpse->revision;
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const item_transfer_payload &payload, flatfile_room_transfer_mutation *mutation,
+	std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !payload.item_count ||
+	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return flatfile_world_item_result::invalid;
+	*mutation = {};
+	const bool deposit = room_transfer_deposit(payload);
+	const bool withdraw = room_transfer_withdraw(payload);
+	const bool create = room_transfer_create(payload);
+	const bool destroy = room_transfer_destroy(payload);
+	const bool reparent = room_transfer_reparent(payload);
+	if (static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
+		    static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
+		    static_cast<unsigned int>(reparent) !=
+	    1)
+		return flatfile_world_item_result::invalid;
+	const bool append = deposit || create;
+	const item_owner_identity &room_owner = append ? payload.to_owner : payload.from_owner;
+	if (!room_owner.id || room_owner.id > INT32_MAX || room_owner.context_id)
+		return flatfile_world_item_result::invalid;
+	std::vector<player_item_snapshot> exact_items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &exact_items) != player_snapshot_codec_result::ok ||
+	    !payload_items_match(payload, exact_items) ||
+	    exact_items.front().parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		return flatfile_world_item_result::invalid;
+	std::vector<uint8_t> transport_blob;
+	if (player_item_snapshot_list_encode(exact_items, &transport_blob) !=
+		    player_snapshot_codec_result::ok ||
+	    transport_blob.size() != payload.item_blob_size ||
+	    !std::equal(transport_blob.begin(), transport_blob.end(), payload.item_blob.begin()) ||
+	    !canonicalize_detached_items(&exact_items))
+		return flatfile_world_item_result::invalid;
+	std::vector<uint8_t> exact_blob;
+	if (player_item_snapshot_list_encode(exact_items, &exact_blob) !=
+	    player_snapshot_codec_result::ok)
+		return flatfile_world_item_result::invalid;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	flatfile_room_item_record key = {};
+	key.room_vnum = static_cast<int32_t>(room_owner.id);
+	auto room = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), key, room_less);
+	const bool found = room != catalog.rooms.end() && room->room_vnum == key.room_vnum;
+	const uint64_t expected_revision = append ? payload.expected_to_revision :
+						    payload.expected_from_revision;
+	if ((!found && (!append || expected_revision)) ||
+	    (found && room->revision != expected_revision) || catalog.revision == UINT64_MAX ||
+	    (found && room->revision == UINT64_MAX) ||
+	    (!found && catalog.rooms.size() >= room_maximum))
+		return flatfile_world_item_result::conflict;
+	if (found && !room_custody(room->items, &mutation->expected_items))
+		return flatfile_world_item_result::invalid;
+	try
+	{
+		if (!found)
+		{
+			flatfile_room_item_record created = {};
+			created.room_vnum = key.room_vnum;
+			created.revision = 1;
+			room = catalog.rooms.insert(room, std::move(created));
+			mutation->created = true;
+		}
+		else
+			++room->revision;
+		if (append)
+		{
+			const size_t parent_index =
+				payload.target_parent_item_uid ?
+					room_item_index(room->items,
+							payload.target_parent_item_uid) :
+					room->items.size();
+			if (payload.target_parent_item_uid &&
+			    (parent_index == room->items.size() ||
+			     !room_item_root_matches(room->items, parent_index,
+						     payload.target_root_item_uid) ||
+			     !apply_room_weight_delta(&room->items, parent_index,
+						      exact_items.front().weight)))
+				return flatfile_world_item_result::conflict;
+			const int32_t offset = static_cast<int32_t>(room->items.size());
+			for (size_t index = 0; index < exact_items.size(); ++index)
+			{
+				auto item = exact_items[index];
+				if (!index && payload.target_parent_item_uid)
+					item.parent_index = static_cast<int32_t>(parent_index);
+				else if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += offset;
+				room->items.push_back(std::move(item));
+			}
+		}
+		else
+		{
+			const size_t selected_index =
+				room_item_index(room->items, payload.selected_item_uid);
+			if (selected_index == room->items.size())
+				return flatfile_world_item_result::conflict;
+			const int32_t parent_index = room->items[selected_index].parent_index;
+			if (parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+			    !apply_room_weight_delta(
+				    &room->items, static_cast<size_t>(parent_index),
+				    -static_cast<int64_t>(exact_items.front().weight)))
+				return flatfile_world_item_result::conflict;
+			std::vector<player_item_snapshot> selected;
+			std::vector<player_item_snapshot> remaining;
+			if (player_item_snapshot_extract_subtree(
+				    room->items, payload.selected_item_uid, &selected,
+				    &remaining) != player_snapshot_codec_result::ok)
+				return flatfile_world_item_result::conflict;
+			std::vector<uint8_t> selected_blob;
+			if (player_item_snapshot_list_encode(selected, &selected_blob) !=
+				    player_snapshot_codec_result::ok ||
+			    selected_blob != exact_blob)
+				return flatfile_world_item_result::conflict;
+			if (reparent)
+			{
+				const int32_t offset = static_cast<int32_t>(remaining.size());
+				for (auto item : selected)
+				{
+					if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+						item.parent_index += offset;
+					remaining.push_back(std::move(item));
+				}
+			}
+			room->items = std::move(remaining);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_world_item_result::io_error;
+	}
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_world_item_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(encoded) };
+	mutation->room_revision = room->revision;
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload, flatfile_corpse_release_mutation *mutation,
+	std::string *error)
+{
+	const bool release = payload.action == corpse_lifecycle_action::release;
+	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
+	const bool resurrect = payload.action == corpse_lifecycle_action::resurrect;
+	const bool raise_follower = payload.action == corpse_lifecycle_action::raise_follower;
+	const bool release_nested = payload.action == corpse_lifecycle_action::release_nested;
+	const bool nested_room = release_nested && !payload.destination_player_pid;
+	if (root.empty() || !lock.matches(root) || !mutation ||
+	    static_cast<unsigned int>(release) + static_cast<unsigned int>(destroy) +
+			    static_cast<unsigned int>(resurrect) +
+			    static_cast<unsigned int>(raise_follower) +
+			    static_cast<unsigned int>(release_nested) !=
+		    1 ||
+	    !payload.owner_pid || !payload.save_id || !payload.expected_corpse_revision ||
+	    payload.room_vnum <= 0 ||
+	    (resurrect && (!payload.destination_player_pid || payload.old_room_vnum <= 0 ||
+			   !payload.expected_player_revision ||
+			   std::any_of(payload.money.begin(), payload.money.end(),
+				       [](int32_t amount) { return amount < 0; }))) ||
+	    (raise_follower &&
+	     (!payload.destination_player_pid || payload.old_room_vnum ||
+	      !payload.expected_player_revision || payload.expected_room_revision ||
+	      std::any_of(payload.money.begin(), payload.money.end(),
+			  [](int32_t amount) { return amount < 0; }))) ||
+	    (release_nested &&
+	     (!payload.target_root_item_uid || !payload.target_parent_item_uid ||
+	      !payload.expected_target_parent_revision ||
+	      (payload.destination_player_pid ?
+		       (!payload.expected_player_revision || payload.expected_room_revision) :
+		       !payload.expected_room_revision))) ||
+	    !valid_printable(payload.owner_name, name_maximum, true))
+		return flatfile_world_item_result::invalid;
+	*mutation = {};
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	flatfile_corpse_record corpse_key = {};
+	corpse_key.owner_pid = payload.owner_pid;
+	corpse_key.save_id = payload.save_id;
+	auto corpse = std::lower_bound(catalog.corpses.begin(), catalog.corpses.end(), corpse_key,
+				       corpse_less);
+	if (corpse == catalog.corpses.end() || corpse->owner_pid != payload.owner_pid ||
+	    corpse->save_id != payload.save_id)
+		return flatfile_world_item_result::not_found;
+	if (corpse->revision != payload.expected_corpse_revision ||
+	    corpse->owner_name != canonical_name(payload.owner_name) ||
+	    corpse->room_vnum != payload.room_vnum || catalog.revision == UINT64_MAX)
+		return flatfile_world_item_result::conflict;
+	flatfile_room_item_record room_key = {};
+	room_key.room_vnum = resurrect ? payload.old_room_vnum : payload.room_vnum;
+	auto room =
+		std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), room_key, room_less);
+	const bool room_found = room != catalog.rooms.end() &&
+				room->room_vnum == room_key.room_vnum;
+	if ((release || resurrect || nested_room) &&
+	    ((room_found && room->revision != payload.expected_room_revision) ||
+	     (!room_found && payload.expected_room_revision) ||
+	     (room_found && room->revision == UINT64_MAX) ||
+	     (!room_found && catalog.rooms.size() >= room_maximum)))
+		return flatfile_world_item_result::conflict;
+	try
+	{
+		mutation->items = corpse->items;
+		mutation->money = corpse->money;
+		mutation->expected_items.reserve(corpse->items.size());
+		for (size_t index = 0; index < corpse->items.size(); ++index)
+		{
+			const auto &item = corpse->items[index];
+			uint64_t actual_root_uid = item.object_uid;
+			int32_t parent_index = item.parent_index;
+			while (parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				const auto &parent =
+					corpse->items[static_cast<size_t>(parent_index)];
+				actual_root_uid = parent.object_uid;
+				parent_index = parent.parent_index;
+			}
+			mutation->expected_items.push_back(
+				{ item.object_uid, item.vnum, actual_root_uid,
+				  item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					  0 :
+					  corpse->items[static_cast<size_t>(item.parent_index)]
+						  .object_uid });
+		}
+		std::sort(mutation->expected_items.begin(), mutation->expected_items.end(),
+			  [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+		if (release || resurrect || nested_room)
+		{
+			if (!room_found)
+			{
+				if (nested_room)
+					return flatfile_world_item_result::conflict;
+				flatfile_room_item_record created = {};
+				created.room_vnum = room_key.room_vnum;
+				created.revision = 1;
+				room = catalog.rooms.insert(room, std::move(created));
+			}
+			else
+				++room->revision;
+			if (release)
+			{
+				const int32_t offset = static_cast<int32_t>(room->items.size());
+				for (auto item : corpse->items)
+				{
+					if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+						item.parent_index += offset;
+					room->items.push_back(std::move(item));
+				}
+			}
+			else if (nested_room)
+			{
+				const size_t parent_index = room_item_index(
+					room->items, payload.target_parent_item_uid);
+				if (parent_index == room->items.size() ||
+				    !room_item_root_matches(room->items, parent_index,
+							    payload.target_root_item_uid))
+					return flatfile_world_item_result::conflict;
+				for (const auto &item : corpse->items)
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+					    !apply_room_weight_delta(&room->items, parent_index,
+								     item.weight))
+						return flatfile_world_item_result::conflict;
+				const int32_t offset = static_cast<int32_t>(room->items.size());
+				for (auto item : corpse->items)
+				{
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+						item.parent_index =
+							static_cast<int32_t>(parent_index);
+					else
+						item.parent_index += offset;
+					room->items.push_back(std::move(item));
+				}
+			}
+			// Floor money is published to the live room after this commit, but is not
+			// part of the durable room aggregate.  Pickup uses the currency authority
+			// directly and cannot atomically withdraw this world-domain snapshot; if it
+			// were persisted, every reboot after pickup would recreate the same coins.
+			mutation->room_revision = room->revision;
+		}
+		catalog.corpses.erase(corpse);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_world_item_result::io_error;
+	}
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_world_item_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(encoded) };
+	mutation->catalog_revision = catalog.revision;
 	return flatfile_world_item_result::ok;
 }

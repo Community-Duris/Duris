@@ -3,6 +3,7 @@
 #include "comm.h"
 #include "db.h"
 #include "events.h"
+#include "files.h"
 #include "utils.h"
 #include "necromancy.h"
 #include <signal.h>
@@ -648,6 +649,10 @@ void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 		undead->player.long_descr = str_dup(Gbuf1);
 	}
 
+	if (persistence_defer_corpse_raise(obj, ch, undead, corpse_raise_kind::undead, level, typ,
+					   globe != nullptr, nullptr))
+		return;
+
 	if (IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
 	{
 		logit(LOG_CORPSE, "%s got raised while equipped ( by %s in room %d ).",
@@ -1104,6 +1109,10 @@ void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 		}
 	}
 
+	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::titan, level, sum,
+					   globe != nullptr, summons[sum].message))
+		return;
+
 	char_to_room(mob, ch->in_room, 0);
 
 	if (IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
@@ -1240,6 +1249,198 @@ void create_saved_corpse(P_obj obj, P_char mob)
 	savedCorpseData.corpse = savecorpse;
 	add_event(event_saved_corpse, 0, mob, NULL, NULL, 0, &savedCorpseData,
 		  sizeof(SavedCorpseData));
+}
+
+namespace
+{
+void discard_nested_money(P_obj container)
+{
+	for (P_obj item = container ? container->contains : nullptr, next = nullptr; item;
+	     item = next)
+	{
+		next = item->next_content;
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		{
+			obj_from_obj(item);
+			extract_obj(item);
+		}
+		else
+			discard_nested_money(item);
+	}
+}
+} // namespace
+
+void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj corpse,
+					corpse_raise_kind kind, int level, int variant, bool globe,
+					const char *message)
+{
+	if (!caster || !follower || !corpse || caster->in_room <= NOWHERE)
+		return;
+
+	const char *raise_name = nullptr;
+	switch (kind)
+	{
+	case corpse_raise_kind::undead:
+		raise_name = "raised while equipped";
+		break;
+	case corpse_raise_kind::titan:
+		raise_name = "raised as titan";
+		break;
+	case corpse_raise_kind::dracolich:
+		raise_name = "raised as dracolich";
+		break;
+	case corpse_raise_kind::avatar:
+		raise_name = "raised as avatar while equipped";
+		break;
+	case corpse_raise_kind::greater_dracolich:
+		raise_name = "raised as greater dracolich while equipped";
+		break;
+	case corpse_raise_kind::golem:
+		break;
+	}
+	if (raise_name)
+	{
+		logit(LOG_CORPSE, "%s got %s ( by %s in room %d ).", corpse->short_description,
+		      raise_name, GET_NAME(caster), world[caster->in_room].number);
+		wizlog(57, "%s got %s ( by %s in room %d ).", corpse->short_description, raise_name,
+		       GET_NAME(caster), world[caster->in_room].number);
+	}
+
+	int timeToDecay = 0;
+	if (struct obj_affect *afDecay = get_obj_affect(corpse, TAG_OBJ_DECAY))
+		timeToDecay = obj_affect_time(corpse, afDecay) / (60 * WAIT_SEC);
+	if (kind == corpse_raise_kind::dracolich && corpse_trace_enabled())
+		logit(LOG_DEBUG,
+		      "corpse_trace dracolich_prepare corpse_vnum=%d corpse_level=%d remaining_minutes=%d caster_level=%d",
+		      OBJ_VNUM(corpse), corpse->value[CORPSE_LEVEL], timeToDecay, level);
+
+	bool hostile = false;
+	if (kind == corpse_raise_kind::titan || kind == corpse_raise_kind::avatar)
+		hostile = IS_PC(caster) && !number(0, 12);
+	else if (kind == corpse_raise_kind::dracolich)
+		hostile = IS_PC(caster) && !number(0, 12) && !globe;
+	else if (kind == corpse_raise_kind::greater_dracolich)
+		hostile = IS_PC(caster) && !number(0, 9) && !globe;
+
+	while (corpse->contains)
+	{
+		P_obj item = corpse->contains;
+		if (raise_name)
+			logit(LOG_CORPSE, "%s raised with eq: [%d] %s", corpse->short_description,
+			      obj_index[item->R_num].virtual_number, item->name);
+		obj_from_obj(item);
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+			extract_obj(item);
+		else
+		{
+			discard_nested_money(item);
+			if (hostile)
+				obj_to_char_at_end(item, caster);
+			else
+				obj_to_char(item, follower);
+		}
+	}
+
+	if (kind == corpse_raise_kind::undead)
+	{
+		if (variant >= THEURPET_START && variant <= THEURPET_END)
+		{
+			act("After a short &+yr&+Yi&+Wtu&+Ya&+yl&n, the &+Wsoul&n of $N&n is called to inhabit the $p.",
+			    FALSE, caster, corpse, follower, TO_CHAR);
+			act("The $p &+btr&+Ban&+Csf&+Bor&+bms&n into $N&n and awaits instructions from &n&n.",
+			    FALSE, caster, corpse, follower, TO_ROOM);
+		}
+		else
+		{
+			act("You breathe life into $p with the awesome power of your art.", FALSE,
+			    caster, corpse, 0, TO_CHAR);
+			act("You see $p take a deep breath, and suddenly come to life again.",
+			    FALSE, caster, corpse, 0, TO_NOTVICT);
+		}
+	}
+
+	extract_obj(corpse);
+	char_to_room(follower, caster->in_room, 0);
+
+	if (kind != corpse_raise_kind::undead)
+		remove_plushit_bits(follower);
+	if (kind == corpse_raise_kind::golem)
+		SET_BIT(follower->only.npc->aggro_flags, AGGR_ALL);
+	if (kind != corpse_raise_kind::undead)
+		balance_affects(follower);
+	if (message)
+		act(message, TRUE, follower, 0, 0, TO_ROOM);
+
+	int duration = -1;
+	if (hostile)
+	{
+		act("$N is NOT pleased at being returned to life!", TRUE, caster, 0, follower,
+		    TO_ROOM);
+		act("$N is NOT pleased with you at all!", TRUE, caster, 0, follower, TO_CHAR);
+		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, follower, NULL, NULL, 0,
+			  NULL, 0);
+		MobStartFight(follower, caster);
+	}
+	else if (kind == corpse_raise_kind::undead)
+	{
+		duration = setup_pet(follower, caster, MAX(4, timeToDecay), PET_NOCASH);
+		add_follower(follower, caster);
+	}
+	else if (kind == corpse_raise_kind::golem)
+	{
+		duration = setup_pet(follower, caster,
+				     (timeToDecay / 2) + (6000 / STAT_INDEX(GET_C_INT(follower))),
+				     PET_NOCASH);
+		act("&+LDark shadows engulf the &+bcorpse &+Las you weave a spell of &+Wreanimation&+L,\r\n"
+		    "&+Ltransforming the corpse into an &+wundead &+rminion&+L.",
+		    FALSE, caster, 0, 0, TO_CHAR);
+		act("&+LDark shadows fill the room as $n &+Lchants and descend upon the\r\n"
+		    "&+wrecently &+Wdeceased &+Ltransforming the corpse into an &+wundead &+rminion&+L.",
+		    FALSE, caster, 0, 0, TO_ROOM);
+		add_follower(follower, caster);
+	}
+	else
+	{
+		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, caster, 0, follower, TO_ROOM);
+		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, caster, 0, follower, TO_CHAR);
+		if (kind == corpse_raise_kind::titan || kind == corpse_raise_kind::dracolich)
+			radiate_message_from_room(
+				caster->in_room, "&+cYou hear a loud roar in the distance.\r\n", 3,
+				(RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL |
+					     RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER),
+				0);
+		if (kind == corpse_raise_kind::titan)
+			GET_AC(follower) -= 50;
+		else if (kind == corpse_raise_kind::dracolich)
+			GET_AC(follower) -= GET_LEVEL(caster) * 7;
+		else if (kind == corpse_raise_kind::greater_dracolich)
+			GET_AC(follower) -= level * 4;
+		duration = setup_pet(follower, caster,
+				     timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(follower))),
+				     PET_NOCASH);
+		if (kind == corpse_raise_kind::dracolich && corpse_trace_enabled())
+			logit(LOG_DEBUG,
+			      "corpse_trace dracolich_created mob_vnum=%d charm_minutes=%d corpse_remaining_minutes=%d",
+			      GET_VNUM(follower), duration, timeToDecay);
+		add_follower(follower, caster);
+	}
+
+	if (duration >= 0)
+	{
+		if (kind == corpse_raise_kind::greater_dracolich ||
+		    kind == corpse_raise_kind::dracolich)
+			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, follower, NULL,
+				  NULL, 0, NULL, 0);
+		else
+		{
+			duration += number(1, 10);
+			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, follower, NULL,
+				  NULL, 0, NULL, 0);
+		}
+	}
+	if (!writeCharacter(caster, RENT_CRASH, caster->in_room))
+		logit(LOG_FILE, "Could not checkpoint %s after raising a corpse.",
+		      GET_NAME(caster));
 }
 
 void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -1406,6 +1607,10 @@ void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		// 60 - 80 (actual 15 - 20) at level 56.
 		mob->points.base_damroll = mob->points.damroll = level + number(4, 24);
 	}
+
+	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::dracolich, level, sum,
+					   globe != nullptr, summons[sum].message))
+		return;
 
 	char_to_room(mob, ch->in_room, 0);
 
@@ -1682,6 +1887,10 @@ void create_golem(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 	mob->points.base_damroll = mob->points.damroll = (int)(0.70 * GET_LEVEL(mob));
 	mob->points.damnodice = (mob->points.damnodice / 2 + 2);
 
+	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::golem, level,
+					   which_type, globe != nullptr, nullptr))
+		return;
+
 	char_to_room(mob, ch->in_room, 0);
 
 	if (obj->contains)
@@ -1887,6 +2096,10 @@ void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		mob->base_stats.Str = 100;
 		mob->base_stats.Dex = 100;
 	}
+
+	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::avatar, level, sum,
+					   globe != nullptr, summons[sum].message))
+		return;
 
 	char_to_room(mob, ch->in_room, 0);
 
@@ -2131,6 +2344,10 @@ void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[mayb
 		mob->base_stats.Str = 100;
 		mob->base_stats.Dex = 100;
 	}
+
+	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::greater_dracolich,
+					   level, sum, globe != nullptr, summons[sum].message))
+		return;
 
 	char_to_room(mob, ch->in_room, 0);
 
@@ -2863,6 +3080,35 @@ P_obj get_globe(P_char ch)
 	return globe;
 }
 
+bool complete_corpse_wall_of_bones(P_char caster, P_obj corpse, int level, int exit_dir)
+{
+	if (!caster || !corpse || caster->in_room == NOWHERE || exit_dir < 0 ||
+	    exit_dir >= NUM_EXITS || !EXIT(caster, exit_dir) ||
+	    !exit_wallable(caster->in_room, exit_dir, caster) ||
+	    !create_walls(caster->in_room, exit_dir, caster, level, WALL_OF_BONES, level / 2, 1800,
+			  "&+La wall of &+wbones&n",
+			  "&+LA large wall of &+wbones&+L is here to the %s.&n", 0))
+		return false;
+
+	SET_BIT(EXIT(caster, exit_dir)->exit_info, EX_BREAKABLE);
+	SET_BIT(VIRTUAL_EXIT((world[caster->in_room].dir_option[exit_dir])->to_room,
+			     rev_dir[exit_dir])
+			->exit_info,
+		EX_BREAKABLE);
+
+	char message[MAX_STRING_LENGTH];
+	snprintf(
+		message, sizeof(message),
+		"&+LInfused by a powerful magic, %s &+Lmagically transforms into a wall of bones, blocking the %s exit!&n\r\n",
+		corpse->short_description, dirs[exit_dir]);
+	send_to_room(message, caster->in_room);
+	snprintf(message, sizeof(message),
+		 "&+LA pile of bones magically assembles to the %s!&n\r\n",
+		 dirs[rev_dir[exit_dir]]);
+	send_to_room(message, (world[caster->in_room].dir_option[exit_dir])->to_room);
+	return true;
+}
+
 void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int type,
 			 P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
@@ -2973,26 +3219,11 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 		return;
 	}
 
-	if (corpse && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, level / 2, 1800,
-				   "&+La wall of &+wbones&n",
-				   "&+LA large wall of &+wbones&+L is here to the %s.&n", 0))
+	if (corpse && persistence_defer_corpse_wall_of_bones(corpse, ch, level, exit_dir))
+		return;
+
+	if (corpse && complete_corpse_wall_of_bones(ch, corpse, level, exit_dir))
 	{
-		SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
-				     rev_dir[exit_dir])
-				->exit_info,
-			EX_BREAKABLE);
-
-		snprintf(
-			buf1, MAX_STRING_LENGTH,
-			"&+LInfused by a powerful magic, %s &+Lmagically transforms into a wall of bones, blocking the %s exit!&n\r\n",
-			corpse->short_description, dirs[exit_dir]);
-		send_to_room(buf1, ch->in_room);
-		snprintf(buf1, MAX_STRING_LENGTH,
-			 "&+LA pile of bones magically assembles to the %s!&n\r\n",
-			 dirs[rev_dir[exit_dir]]);
-		send_to_room(buf1, (world[ch->in_room].dir_option[exit_dir])->to_room);
-
 		for (obj_in_corpse = corpse->contains; obj_in_corpse; obj_in_corpse = next_obj)
 		{
 			next_obj = obj_in_corpse->next_content;
@@ -3048,6 +3279,8 @@ void spell_compact_corpse(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 		send_to_char("This corpse is too mutilated.\n", ch);
 		return;
 	}
+	if (persistence_defer_corpse_compaction(obj, ch))
+		return;
 
 	while ((content = obj->contains) != NULL)
 	{

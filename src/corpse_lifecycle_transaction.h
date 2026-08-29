@@ -9,6 +9,11 @@
 
 constexpr size_t CORPSE_LIFECYCLE_PENDING_MAX = 1024;
 
+using corpse_lifecycle_release_completion_fn = void (*)(bool committed,
+							const corpse_lifecycle_result &result,
+							unsigned int error_code,
+							const corpse_lifecycle_payload &payload);
+
 struct corpse_lifecycle_transaction_health
 {
 	uint64_t tracked = 0;
@@ -22,6 +27,14 @@ struct corpse_lifecycle_transaction_health
 };
 
 bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload);
+bool corpse_lifecycle_transaction_release(const corpse_lifecycle_payload &payload,
+					  corpse_lifecycle_release_completion_fn completion);
+bool corpse_lifecycle_transaction_destroy(const corpse_lifecycle_payload &payload,
+					  corpse_lifecycle_release_completion_fn completion);
+bool corpse_lifecycle_transaction_resurrect(const corpse_lifecycle_payload &payload,
+					    corpse_lifecycle_release_completion_fn completion);
+bool corpse_lifecycle_transaction_raise_follower(const corpse_lifecycle_payload &payload,
+						 corpse_lifecycle_release_completion_fn completion);
 bool corpse_lifecycle_transaction_hydrate(uint32_t owner_pid, uint32_t save_id,
 					  uint64_t corpse_revision);
 bool corpse_lifecycle_transaction_note_item_transfer(uint32_t owner_pid, uint32_t save_id,
