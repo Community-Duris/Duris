@@ -547,6 +547,13 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			   (void *)o_obj, (void *)s_obj, showit ? 1 : 0);
 		return;
 	}
+	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
+					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
+	{
+		send_to_char("That corpse is settling into the world; try again shortly.\r\n", ch);
+		return;
+	}
 
 	if (account_bound_reward_owner(ch, o_obj) == false &&
 	    IS_OBJ_STAT2(o_obj, ITEM2_ACCOUNT_BOUND))
@@ -3662,6 +3669,16 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	char Gbuf3[MAX_STRING_LENGTH];
 
 	item_put_deferred = false;
+	if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[CORPSE_FLAGS], PC_CORPSE) &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(s_obj->value[CORPSE_PID]),
+					      static_cast<uint32_t>(s_obj->value[CORPSE_SAVEID])))
+	{
+		if (showit)
+			send_to_char(
+				"That corpse is settling into the world; try again shortly.\r\n",
+				ch);
+		return FALSE;
+	}
 
 	if (IS_ARTIFACT(o_obj) && !IS_TRUSTED(ch))
 	{

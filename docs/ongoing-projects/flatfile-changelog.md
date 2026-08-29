@@ -3927,3 +3927,32 @@ action" text below remains historical and does not authorize work.
 - **Next action:** extend the lifecycle transaction with release submission/completion, route live
   corpse decay through it, and mutate the live object graph only after durable success. Audit the
   remaining destructive extraction callers separately before broadening that route.
+
+### Checkpoint 90 - durable live corpse decay publication
+
+- **Non-coalescing release completion:** the existing lifecycle tracker now admits a release only
+  when the corpse has a committed revision and neither the corpse nor destination room is fenced.
+  It captures both revisions, rejects competing lifecycle stages while release is in flight, calls
+  its game-thread completion exactly once, and permits a new attempt after an `ESTALE` room race.
+- **Durability-before-mutation:** flat-primary decay for ground, carried, and worn player corpses
+  returns before emitting messages or touching the object graph. On committed release, publication
+  finds the stable PID/save-ID corpse, verifies every live durable UID/VNUM/root/parent against its
+  runtime custody, advances the complete custody set from corpse to room, then moves contents and
+  money and extracts the corpse with corpse-save and artifact callbacks suppressed.
+- **In-flight topology protection:** corpse get and put operations refuse briefly while lifecycle
+  work is pending, covering direct coin movement as well as ownership-backed items. Submission
+  failure rearms the decay event, a stale durable comparison rearms through the completion callback,
+  and permanent integrity failures preserve the live corpse for operator recovery.
+- **Runtime reconciliation:** the ownership cache applies a release atomically only when prior owner
+  revisions, item count, and maximum post-transfer item revision match the durable result. It covers
+  nested items and money-only corpses without inventing another movement subsystem.
+- **Checks passed:** lifecycle completion/retry, runtime nested and money-only custody publication,
+  command/repository, artifact, corpse ownership/restore, world-item, item-ownership, and live source
+  contracts; changed-line formatting, `git diff --check`, and the strict normal C++20 server build.
+- **Exposure:** generic `extract_obj` still cannot become asynchronous without breaking its many
+  synchronous callers. Explicit destructive player-corpse callers require a bounded audit, and a
+  corpse nested inside another object remains fail-closed because release currently targets rooms.
+  General saved floor-item persistence is also still unconnected.
+- **Next action:** classify and route explicit destructive corpse-extraction entry points without
+  altering generic extraction semantics, then connect historical saved floor-item save/restore to
+  the revisioned room aggregate.

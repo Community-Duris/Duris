@@ -23,6 +23,7 @@ struct corpse_state
 	bool dirty = false;
 	bool pending = false;
 	bool fenced = false;
+	corpse_lifecycle_release_completion_fn release_completion = nullptr;
 };
 
 enum class submit_outcome
@@ -49,11 +50,21 @@ uint64_t corpse_key(uint32_t owner_pid, uint32_t save_id)
 
 bool valid_staged_payload(const corpse_lifecycle_payload &payload)
 {
-	if (payload.expected_corpse_revision)
+	if (payload.expected_corpse_revision || payload.action == corpse_lifecycle_action::release)
 		return false;
 	corpse_lifecycle_payload candidate = payload;
 	if (candidate.action == corpse_lifecycle_action::remove)
 		candidate.expected_corpse_revision = 1;
+	std::vector<uint8_t> ignored;
+	return corpse_lifecycle_command_encode_payload(candidate, &ignored);
+}
+
+bool valid_release_payload(const corpse_lifecycle_payload &payload)
+{
+	if (payload.action != corpse_lifecycle_action::release || payload.expected_corpse_revision)
+		return false;
+	corpse_lifecycle_payload candidate = payload;
+	candidate.expected_corpse_revision = 1;
 	std::vector<uint8_t> ignored;
 	return corpse_lifecycle_command_encode_payload(candidate, &ignored);
 }
@@ -77,7 +88,9 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 {
 	if (!state || state->pending || !state->dirty || state->fenced || !state->has_desired)
 		return submit_outcome::deferred;
-	if (state->desired.action == corpse_lifecycle_action::remove && !state->revision)
+	if ((state->desired.action == corpse_lifecycle_action::remove ||
+	     state->desired.action == corpse_lifecycle_action::release) &&
+	    !state->revision)
 	{
 		state->dirty = false;
 		state->has_desired = false;
@@ -86,6 +99,11 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	const critical_entity_key entity = { critical_entity_type::corpse, key };
 	critical_operation_id blocking = {};
 	if (critical_command_coordinator_is_fenced(entity, &blocking))
+		return submit_outcome::deferred;
+	if (state->desired.action == corpse_lifecycle_action::release &&
+	    critical_command_coordinator_is_fenced(
+		    { critical_entity_type::room, static_cast<uint64_t>(state->desired.room_vnum) },
+		    &blocking))
 		return submit_outcome::deferred;
 
 	corpse_lifecycle_payload payload = state->desired;
@@ -144,7 +162,10 @@ bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload)
 	auto found = states.find(key);
 	if (found != states.end() &&
 	    (found->second.owner_pid != payload.owner_pid ||
-	     found->second.save_id != payload.save_id || found->second.fenced))
+	     found->second.save_id != payload.save_id || found->second.fenced ||
+	     found->second.release_completion ||
+	     (found->second.pending &&
+	      found->second.inflight.action == corpse_lifecycle_action::release)))
 		return false;
 	if (found == states.end() && states.size() >= CORPSE_LIFECYCLE_PENDING_MAX)
 		return false;
@@ -168,6 +189,44 @@ bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload)
 	state.dirty = true;
 	if (payload.action == corpse_lifecycle_action::upsert && !state.pending)
 		(void)submit(key, &state);
+	account_health();
+	return true;
+}
+
+bool corpse_lifecycle_transaction_release(const corpse_lifecycle_payload &payload,
+					  corpse_lifecycle_release_completion_fn completion)
+{
+	if (!completion || !valid_release_payload(payload))
+		return false;
+	const uint64_t key = corpse_key(payload.owner_pid, payload.save_id);
+	auto found = states.find(key);
+	if (!key || found == states.end())
+		return false;
+	corpse_state &state = found->second;
+	if (state.owner_pid != payload.owner_pid || state.save_id != payload.save_id ||
+	    !state.revision || state.pending || state.dirty || state.has_desired || state.fenced ||
+	    state.release_completion)
+		return false;
+	try
+	{
+		state.desired = payload;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	state.has_desired = true;
+	state.dirty = true;
+	state.release_completion = completion;
+	const auto outcome = submit(key, &state);
+	if (outcome != submit_outcome::submitted)
+	{
+		state.has_desired = false;
+		state.dirty = false;
+		state.release_completion = nullptr;
+		account_health();
+		return false;
+	}
 	account_health();
 	return true;
 }
@@ -294,6 +353,13 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 			 completions[index].outcome == critical_apply_outcome::already_applied) &&
 			result.owner_pid == state.owner_pid && result.save_id == state.save_id &&
 			result.action == state.inflight.action;
+		const unsigned int error_code = decoded || completions[index].error_code ?
+							completions[index].error_code :
+							EBADMSG;
+		const corpse_lifecycle_payload inflight = state.inflight;
+		const corpse_lifecycle_release_completion_fn release_completion =
+			state.release_completion;
+		state.release_completion = nullptr;
 		if (committed)
 		{
 			state.revision = result.corpse_revision;
@@ -305,6 +371,9 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 			if (state.inflight.action == corpse_lifecycle_action::remove &&
 			    completions[index].error_code == ENOENT)
 				state.revision = 0;
+			else if (state.inflight.action == corpse_lifecycle_action::release &&
+				 completions[index].error_code == ESTALE)
+				state.fenced = false;
 			else if (!(state.inflight.action == corpse_lifecycle_action::remove &&
 				   completions[index].error_code == ENOTEMPTY))
 				state.fenced = true;
@@ -313,6 +382,9 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 			(void)submit(found->first, &state);
 		if (!state.pending && !state.dirty && !state.revision && !state.has_desired)
 			states.erase(found);
+		if (release_completion)
+			release_completion(committed, decoded ? result : corpse_lifecycle_result{},
+					   error_code, inflight);
 	}
 	account_health();
 }

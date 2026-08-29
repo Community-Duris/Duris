@@ -1,6 +1,7 @@
 #ifndef ITEM_OWNERSHIP_RUNTIME_H
 #define ITEM_OWNERSHIP_RUNTIME_H
 
+#include "corpse_lifecycle_command.h"
 #include "item_transfer_command.h"
 
 #include <cstddef>
@@ -27,6 +28,9 @@ bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_ent
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision);
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result);
+bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t save_id,
+						 int32_t room_vnum,
+						 const corpse_lifecycle_result &result);
 void item_ownership_runtime_forget(uint64_t item_uid);
 void item_ownership_runtime_forget_owner(const item_owner_identity &owner);
 void item_ownership_runtime_reset(void);

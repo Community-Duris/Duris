@@ -1,5 +1,6 @@
 #include "item_ownership_runtime.h"
 
+#include <algorithm>
 #include <limits>
 #include <new>
 #include <unordered_map>
@@ -364,6 +365,76 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	}
 	owner_revisions[payload.from_owner] = result.from_owner_revision;
 	owner_revisions[payload.to_owner] = result.to_owner_revision;
+	return true;
+}
+
+bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t save_id,
+						 int32_t room_vnum,
+						 const corpse_lifecycle_result &result)
+{
+	if (!owner_pid || !save_id || room_vnum <= 0 || result.owner_pid != owner_pid ||
+	    result.save_id != save_id || result.action != corpse_lifecycle_action::release ||
+	    result.corpse_revision || !result.corpse_owner_revision ||
+	    !result.room_owner_revision ||
+	    ((!result.item_count && result.max_item_revision) ||
+	     (result.item_count && !result.max_item_revision)))
+		return false;
+	const item_owner_identity corpse = { item_owner_type::corpse,
+					     item_corpse_owner_id(owner_pid, save_id), 0 };
+	const item_owner_identity room = { item_owner_type::room, static_cast<uint64_t>(room_vnum),
+					   0 };
+	const auto corpse_revision = owner_revisions.find(corpse);
+	const auto room_revision = owner_revisions.find(room);
+	const bool corpse_existed = corpse_revision != owner_revisions.end();
+	const bool room_existed = room_revision != owner_revisions.end();
+	const uint64_t expected_corpse_revision = result.corpse_owner_revision - 1;
+	const uint64_t expected_room_revision = result.room_owner_revision - 1;
+	if ((corpse_existed ? corpse_revision->second : 0) != expected_corpse_revision ||
+	    (room_existed ? room_revision->second : 0) != expected_room_revision)
+		return false;
+	size_t item_count = 0;
+	uint64_t max_item_revision = 0;
+	for (const auto &[uid, entry] : entries)
+	{
+		(void)uid;
+		if (!item_owner_identity_equal(entry.owner, corpse))
+			continue;
+		if (entry.state != item_custody_state::active ||
+		    entry.item_revision == std::numeric_limits<uint64_t>::max())
+			return false;
+		++item_count;
+		max_item_revision = std::max(max_item_revision, entry.item_revision + 1);
+	}
+	if (item_count != result.item_count || max_item_revision != result.max_item_revision)
+		return false;
+	try
+	{
+		owner_revisions.reserve(owner_revisions.size() + (corpse_existed ? 0 : 1) +
+					(room_existed ? 0 : 1));
+		owner_revisions.insert_or_assign(corpse, result.corpse_owner_revision);
+		owner_revisions.insert_or_assign(room, result.room_owner_revision);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (!corpse_existed)
+			owner_revisions.erase(corpse);
+		else
+			owner_revisions[corpse] = expected_corpse_revision;
+		if (!room_existed)
+			owner_revisions.erase(room);
+		else
+			owner_revisions[room] = expected_room_revision;
+		return false;
+	}
+	for (auto &[uid, entry] : entries)
+	{
+		(void)uid;
+		if (!item_owner_identity_equal(entry.owner, corpse))
+			continue;
+		++entry.item_revision;
+		entry.owner = room;
+		entry.owner_revision = result.room_owner_revision;
+	}
 	return true;
 }
 

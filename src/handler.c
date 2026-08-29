@@ -22,14 +22,18 @@
 #include <time.h>
 #include "account.h"
 #include "arena.h"
+#include "corpse_lifecycle_transaction.h"
 #include "ctf.h"
 #include "redis_floor_runtime.h"
 #include "damage.h"
 #include "gmcp.h"
+#include "item_ownership_runtime.h"
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
+#include "necromancy.h"
 #include "persistence_checkpoint.h"
+#include "persistence_mode.h"
 #include "world_recovery_pipeline.h"
 #include "ships/ships.h"
 #include "spells.h"
@@ -38,6 +42,7 @@
 #include "weather.h"
 #include "ws_handlers.h"
 #include "safe_format.h"
+#include <cerrno>
 
 /*
  *
@@ -69,6 +74,8 @@ extern struct time_info_data time_info;
 extern struct arena_data arena;
 extern const int dam_cap_data[];
 extern const char *connected_types[];
+extern int skip_corpse_save;
+extern bool updateArtis;
 
 static char buf[MAX_INPUT_LENGTH];
 
@@ -3094,6 +3101,206 @@ bool obj_is_in_container(P_obj obj, P_obj container)
 	return FALSE;
 }
 
+namespace
+{
+constexpr int CORPSE_RELEASE_RETRY_DELAY = 5 * WAIT_SEC;
+
+class corpse_release_side_effect_guard
+{
+    public:
+	corpse_release_side_effect_guard();
+	~corpse_release_side_effect_guard();
+
+    private:
+	int previous_corpse_save;
+	bool previous_artifact_update;
+};
+
+corpse_release_side_effect_guard::corpse_release_side_effect_guard()
+	: previous_corpse_save(skip_corpse_save)
+	, previous_artifact_update(updateArtis)
+{
+	skip_corpse_save = 1;
+	updateArtis = false;
+}
+
+corpse_release_side_effect_guard::~corpse_release_side_effect_guard()
+{
+	skip_corpse_save = previous_corpse_save;
+	updateArtis = previous_artifact_update;
+}
+
+P_obj find_live_corpse(uint32_t owner_pid, uint32_t save_id)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE) &&
+		    object->value[CORPSE_PID] == static_cast<int32_t>(owner_pid) &&
+		    object->value[CORPSE_SAVEID] == static_cast<int32_t>(save_id))
+			return object;
+	return nullptr;
+}
+
+bool corpse_release_room(P_obj corpse, int *room)
+{
+	if (!corpse || !room)
+		return false;
+	if (OBJ_ROOM(corpse))
+		*room = corpse->loc.room;
+	else if (OBJ_CARRIED(corpse) && corpse->loc.carrying)
+		*room = corpse->loc.carrying->in_room;
+	else if (OBJ_WORN(corpse) && corpse->loc.wearing)
+		*room = corpse->loc.wearing->in_room;
+	else
+		return false;
+	return *room > NOWHERE && *room <= top_of_world && world[*room].number > 0;
+}
+
+bool validate_corpse_release_item(P_obj item, const item_owner_identity &owner, uint64_t root_uid,
+				  uint64_t parent_uid, uint32_t *count)
+{
+	if (!item || !count)
+		return false;
+	if (GET_ITEM_TYPE(item) == ITEM_MONEY || IS_SET(item->extra_flags, ITEM_TRANSIENT))
+		return true;
+	item_ownership_runtime_entry runtime = {};
+	if (!item->obj_uid || !item_ownership_runtime_lookup(item->obj_uid, &runtime) ||
+	    !item_owner_identity_equal(runtime.owner, owner) ||
+	    runtime.state != item_custody_state::active || runtime.vnum != OBJ_VNUM(item) ||
+	    runtime.root_item_uid != root_uid || runtime.parent_item_uid != parent_uid ||
+	    *count == UINT32_MAX)
+		return false;
+	++*count;
+	for (P_obj child = item->contains; child; child = child->next_content)
+		if (!validate_corpse_release_item(child, owner, root_uid, item->obj_uid, count))
+			return false;
+	return true;
+}
+
+bool validate_corpse_release_items(P_obj corpse, const corpse_lifecycle_result &result)
+{
+	const item_owner_identity owner = { item_owner_type::corpse,
+					    item_corpse_owner_id(result.owner_pid, result.save_id),
+					    0 };
+	uint32_t count = 0;
+	for (P_obj item = corpse->contains; item; item = item->next_content)
+		if (!validate_corpse_release_item(item, owner, item->obj_uid, 0, &count))
+			return false;
+	return count == result.item_count;
+}
+
+P_char corpse_release_carrier(P_obj corpse)
+{
+	P_obj outer = corpse;
+	while (OBJ_INSIDE(outer) && outer->loc.inside)
+		outer = outer->loc.inside;
+	if (OBJ_CARRIED(outer))
+		return outer->loc.carrying;
+	if (OBJ_WORN(outer))
+		return outer->loc.wearing;
+	return nullptr;
+}
+
+void rearm_corpse_release(P_obj corpse)
+{
+	if (corpse && !get_obj_affect(corpse, TAG_OBJ_DECAY))
+		set_obj_affected(corpse, CORPSE_RELEASE_RETRY_DELAY, TAG_OBJ_DECAY, 0);
+}
+
+void publish_corpse_release(bool committed, const corpse_lifecycle_result &result,
+			    unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	if (!committed)
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+				  "commit_failed", "save_id=%u error=%u", payload.save_id,
+				  error_code);
+		if (error_code == ESTALE)
+			rearm_corpse_release(corpse);
+		return;
+	}
+	const int room = real_room(payload.room_vnum);
+	if (!corpse || room == NOWHERE || !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_release(payload.owner_pid, payload.save_id,
+							 payload.room_vnum, result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
+				  payload.room_vnum);
+		return;
+	}
+	P_char carrier = corpse_release_carrier(corpse);
+	const int old_load = carrier ? total_carried_weight(carrier) : 0;
+	if (OBJ_ROOM(corpse) && world[corpse->loc.room].people)
+	{
+		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
+		    corpse, 0, TO_ROOM);
+		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
+		    corpse, 0, TO_CHAR);
+		act("$p crumbles to dust and blows away.", TRUE, world[corpse->loc.room].people,
+		    corpse, 0, TO_ROOM);
+		act("$p crumbles to dust and blows away.", TRUE, world[corpse->loc.room].people,
+		    corpse, 0, TO_CHAR);
+	}
+	else if (carrier)
+	{
+		if (corpse->contains)
+			act("$p decays in your hands, dumping its contents on the ground.", FALSE,
+			    carrier, corpse, 0, TO_CHAR);
+		else
+			act("$p decays in your hands, leaving no trace.", FALSE, carrier, corpse, 0,
+			    TO_CHAR);
+	}
+	logit(LOG_CORPSE, "%s decayed in room %d.", corpse->short_description, payload.room_vnum);
+	corpse_release_side_effect_guard guard;
+	while (corpse->contains)
+	{
+		P_obj item = corpse->contains;
+		const bool money = GET_ITEM_TYPE(item) == ITEM_MONEY;
+		obj_from_obj(item);
+		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
+			logit(LOG_CORPSE, "%s Decay drop: [%d] %s", corpse->short_description,
+			      obj_index[item->R_num].virtual_number, item->name);
+		obj_to_room(item, room);
+		if (!money && (!OBJ_ROOM(item) || item->loc.room != room))
+			persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+					  "publish_location_mismatch", "save_id=%u item_uid=%lu",
+					  payload.save_id, item->obj_uid);
+	}
+	extract_obj(corpse, TRUE);
+	if (carrier)
+	{
+		if (old_load > total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels lighter!\r\n", carrier);
+		if (old_load < total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels heavier!\r\n", carrier);
+	}
+}
+
+bool submit_corpse_release(P_obj corpse)
+{
+	if (!corpse || !corpse->action_description || !*corpse->action_description ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room))
+		return false;
+	const item_owner_identity room_owner = { item_owner_type::room,
+						 static_cast<uint64_t>(world[room].number), 0 };
+	uint64_t room_revision = 0;
+	if (!item_ownership_runtime_owner_revision(room_owner, &room_revision))
+		return false;
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::release;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.expected_room_revision = room_revision;
+	payload.room_vnum = world[room].number;
+	payload.owner_name = corpse->action_description;
+	return corpse_lifecycle_transaction_release(payload, publish_corpse_release);
+}
+} // namespace
+
 /*
  * replaces major part of point_update, called by Events() to make an
  * object decay and be extracted.  Mainly for use on corpses of course,
@@ -3110,6 +3317,17 @@ void Decay(P_obj obj)
 	if (!obj)
 	{
 		logit(LOG_DEBUG, "Decay:  NULL obj");
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    obj->type == ITEM_CORPSE && IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
+	{
+		if (!submit_corpse_release(obj))
+		{
+			rearm_corpse_release(obj);
+			persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+					  "stage_failed", "save_id=%d", obj->value[CORPSE_SAVEID]);
+		}
 		return;
 	}
 

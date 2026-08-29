@@ -96,6 +96,58 @@ int main()
 	assert(absent.owner.type == item_owner_type::room && absent.owner.id == 1200);
 	assert(item_ownership_runtime_lookup(203, &absent));
 	assert(absent.owner.type == item_owner_type::locker && absent.owner.id == 77);
+
+	item_ownership_runtime_reset();
+	const item_owner_identity corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(42, 20), 0
+	};
+	const item_owner_identity release_room = { item_owner_type::room, 500, 0 };
+	const item_ownership_runtime_entry corpse_items[] = {
+		{ 300, 300, 0, corpse, 4, 2, 20, item_custody_state::active },
+		{ 301, 300, 300, corpse, 7, 2, 21, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(corpse_items, 2));
+	assert(item_ownership_runtime_hydrate_owner(release_room, 4));
+	corpse_lifecycle_result released = {};
+	released.owner_pid = 42;
+	released.save_id = 20;
+	released.action = corpse_lifecycle_action::release;
+	released.catalog_revision = 10;
+	released.corpse_owner_revision = 3;
+	released.room_owner_revision = 5;
+	released.max_item_revision = 8;
+	released.item_count = 2;
+	corpse_lifecycle_result mismatched_release = released;
+	mismatched_release.max_item_revision = 9;
+	assert(!item_ownership_runtime_apply_corpse_release(42, 20, 500,
+							   mismatched_release));
+	assert(item_ownership_runtime_lookup(300, &absent) && absent.item_revision == 4 &&
+	       item_owner_identity_equal(absent.owner, corpse));
+	assert(item_ownership_runtime_apply_corpse_release(42, 20, 500, released));
+	assert(item_ownership_runtime_lookup(300, &absent));
+	assert(item_owner_identity_equal(absent.owner, release_room) &&
+	       absent.item_revision == 5 && absent.owner_revision == 5);
+	assert(item_ownership_runtime_lookup(301, &absent));
+	assert(item_owner_identity_equal(absent.owner, release_room) &&
+	       absent.item_revision == 8 && absent.parent_item_uid == 300);
+	uint64_t owner_revision = 0;
+	assert(item_ownership_runtime_owner_revision(corpse, &owner_revision) &&
+	       owner_revision == 3);
+	assert(item_ownership_runtime_owner_revision(release_room, &owner_revision) &&
+	       owner_revision == 5);
+	assert(!item_ownership_runtime_apply_corpse_release(42, 20, 500, released));
+
+	item_ownership_runtime_reset();
+	released.owner_pid = 43;
+	released.save_id = 21;
+	released.corpse_owner_revision = 1;
+	released.room_owner_revision = 1;
+	released.max_item_revision = 0;
+	released.item_count = 0;
+	assert(item_ownership_runtime_apply_corpse_release(43, 21, 501, released));
+	const item_owner_identity empty_room = { item_owner_type::room, 501, 0 };
+	assert(item_ownership_runtime_owner_revision(empty_room, &owner_revision) &&
+	       owner_revision == 1);
 	return 0;
 }
 '''

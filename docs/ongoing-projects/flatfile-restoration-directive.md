@@ -10,18 +10,21 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 89 restores revisioned room aggregates at boot. Restore now
-reconciles their exact nested snapshots with item-ownership authority, stages every
-corpse and room aggregate before publishing any of them, and rebuilds room items and all
-money denominations with persistence side effects suppressed. A malformed aggregate,
-missing custody, unknown room, allocation failure, or failed item placement rolls the
-whole restore attempt back instead of exposing a partial world.
+As of 2026-08-29, checkpoint 90 routes supported live player-corpse decay through the
+atomic corpse-to-room release. Ground, carried, and worn corpses now remain intact until
+the durable command completes; only then does the game thread advance runtime custody,
+move exact contents and money into the committed room, and remove the corpse. Loot and
+put operations are briefly gated while the lifecycle is busy, transient submission
+failures retain and rearm the corpse, and stale room revisions retry without exposing a
+partial live mutation.
 
-The next restoration boundary is to submit the existing atomic corpse-to-room release
-from live corpse decay and destructive extraction paths, then defer live graph mutation
-until durable completion. Saved floor-item save/restore should subsequently reuse the
-same room authority. The siege/kingdom removal memo remains research only; it does not
-amend this directive's explicit requirement to restore historical siege state.
+The next restoration boundary is to audit explicit destructive corpse-extraction callers
+and decide their required synchronous/deferred contract without changing generic
+`extract_obj` semantics. Corpse nesting remains fail-closed because the historical decay
+destination is another container rather than the available room aggregate. Saved
+floor-item save/restore should subsequently reuse the same room authority. The
+siege/kingdom removal memo remains research only; it does not amend this directive's
+explicit requirement to restore historical siege state.
 
 ## Owner intent
 
