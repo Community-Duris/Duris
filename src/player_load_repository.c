@@ -774,6 +774,11 @@ bool load_items(MYSQL *connection, player_load_result *result)
 			++result->promoted_item_rows;
 			continue;
 		}
+		// A parent that is neither present nor skipped means its payload row is gone
+		// while this one survived, and that is still fatal. fk_player_items_container
+		// is ON DELETE CASCADE, so deleting a container takes its contents with it and
+		// the case cannot arise from the schema; it is reachable only by a hand-edited
+		// row or a database missing that constraint.
 		const auto database_parent =
 			item_by_database_id.find(identity.serialized_parent_id);
 		const auto uid_parent = item_by_uid.find(identity.parent_item_uid);

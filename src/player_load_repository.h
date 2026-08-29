@@ -16,6 +16,12 @@ constexpr size_t PLAYER_LOAD_NAME_MAX = 32;
 constexpr size_t PLAYER_LOAD_QUERY_MAX = 22;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
+// A payload row the ownership ledger no longer backs is skipped rather than refusing the
+// load, and the next full save rewrites player_items from the snapshot, so a skipped row
+// is a deleted item. One such row is a data glitch worth absorbing; this many is a
+// systemic ledger fault, and refusing the load so staff can repair it loses nothing,
+// while skipping would destroy the inventory silently and for good.
+constexpr size_t PLAYER_LOAD_ITEM_SKIP_MAX = 32;
 constexpr size_t PLAYER_LOAD_ITEM_AFFECT_MAX = 4;
 constexpr size_t PLAYER_LOAD_ITEM_DESCRIPTION_MAX = 64;
 constexpr size_t PLAYER_LOAD_ITEM_OPERATIONS_PER_ITEM = 96;

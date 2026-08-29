@@ -110,14 +110,32 @@ bool valid_snapshot(const player_load_result &result)
 	     result.snapshot.pets.size() != result.pet_identities.size() ||
 	     result.authoritative_item_count > PLAYER_LOAD_ITEM_MAX))
 		return false;
+	// Skipping is only ever the lesser evil in small numbers: the next full save rewrites
+	// player_items from the snapshot, so past this many rows the tolerant path would
+	// silently delete most of an inventory. Refuse instead and let staff repair it.
 	if (result.read_components != PLAYER_LOAD_SESSION04_READS ||
-	    result.stale_item_rows > PLAYER_LOAD_ITEM_MAX ||
+	    result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX ||
 	    result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX ||
 	    result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX ||
 	    result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX ||
 	    result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX)
 		return false;
 	return true;
+}
+
+// Remembers the characters already announced this boot so a retried login cannot flood the
+// wizard channel with the same refusal.
+bool alert_refusal_once(int pid)
+{
+	static std::unordered_set<int> announced;
+	try
+	{
+		return announced.insert(pid).second;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return true;
+	}
 }
 
 bool apply_string(P_char ch, const player_snapshot_string &entry)
@@ -359,10 +377,23 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      "player_load_materialize: refused pid=%d component=%s outcome=%u error=%u",
 		      result.pid, result.failed_component ? result.failed_component : "none",
 		      static_cast<unsigned int>(result.outcome), result.error_code);
-		wizlog(OVERLORD,
-		       "Character load refused for pid %d (component %s); the player "
-		       "cannot enter the game until the data is repaired.",
-		       result.pid, result.failed_component ? result.failed_component : "none");
+		// The generic line above does not say which limit tripped, and this one is the
+		// only refusal a healthy ledger cannot produce, so name it.
+		if (result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX)
+			logit(LOG_SYS,
+			      "player_load_materialize: component=items pid=%d "
+			      "outcome=skip_limit_exceeded count=%zu limit=%zu "
+			      "recovery=repair_item_current_owner",
+			      result.pid, result.stale_item_rows, PLAYER_LOAD_ITEM_SKIP_MAX);
+		// A refused login is retried, by the player and by any reconnecting client, and
+		// the condition is worth exactly one alert per character rather than one per
+		// attempt. Materialization runs on the game thread, so a plain set is enough.
+		if (alert_refusal_once(result.pid))
+			wizlog(OVERLORD,
+			       "Character load refused for pid %d (component %s); the player "
+			       "cannot enter the game until the data is repaired.",
+			       result.pid,
+			       result.failed_component ? result.failed_component : "none");
 		return false;
 	}
 	if (ZONE_TROPHY(ch))
