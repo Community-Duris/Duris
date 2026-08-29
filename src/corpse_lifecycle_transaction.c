@@ -24,6 +24,7 @@ struct corpse_state
 	bool pending = false;
 	bool fenced = false;
 	corpse_lifecycle_release_completion_fn release_completion = nullptr;
+	corpse_lifecycle_release_completion_fn queued_destruction_completion = nullptr;
 };
 
 enum class submit_outcome
@@ -50,7 +51,9 @@ uint64_t corpse_key(uint32_t owner_pid, uint32_t save_id)
 
 bool valid_staged_payload(const corpse_lifecycle_payload &payload)
 {
-	if (payload.expected_corpse_revision || payload.action == corpse_lifecycle_action::release)
+	if (payload.expected_corpse_revision ||
+	    payload.action == corpse_lifecycle_action::release ||
+	    payload.action == corpse_lifecycle_action::destroy)
 		return false;
 	corpse_lifecycle_payload candidate = payload;
 	if (candidate.action == corpse_lifecycle_action::remove)
@@ -62,6 +65,16 @@ bool valid_staged_payload(const corpse_lifecycle_payload &payload)
 bool valid_release_payload(const corpse_lifecycle_payload &payload)
 {
 	if (payload.action != corpse_lifecycle_action::release || payload.expected_corpse_revision)
+		return false;
+	corpse_lifecycle_payload candidate = payload;
+	candidate.expected_corpse_revision = 1;
+	std::vector<uint8_t> ignored;
+	return corpse_lifecycle_command_encode_payload(candidate, &ignored);
+}
+
+bool valid_destroy_payload(const corpse_lifecycle_payload &payload)
+{
+	if (payload.action != corpse_lifecycle_action::destroy || payload.expected_corpse_revision)
 		return false;
 	corpse_lifecycle_payload candidate = payload;
 	candidate.expected_corpse_revision = 1;
@@ -89,7 +102,8 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	if (!state || state->pending || !state->dirty || state->fenced || !state->has_desired)
 		return submit_outcome::deferred;
 	if ((state->desired.action == corpse_lifecycle_action::remove ||
-	     state->desired.action == corpse_lifecycle_action::release) &&
+	     state->desired.action == corpse_lifecycle_action::release ||
+	     state->desired.action == corpse_lifecycle_action::destroy) &&
 	    !state->revision)
 	{
 		state->dirty = false;
@@ -100,11 +114,18 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	critical_operation_id blocking = {};
 	if (critical_command_coordinator_is_fenced(entity, &blocking))
 		return submit_outcome::deferred;
-	if (state->desired.action == corpse_lifecycle_action::release &&
-	    critical_command_coordinator_is_fenced(
-		    { critical_entity_type::room, static_cast<uint64_t>(state->desired.room_vnum) },
-		    &blocking))
-		return submit_outcome::deferred;
+	if (state->desired.action == corpse_lifecycle_action::release ||
+	    state->desired.action == corpse_lifecycle_action::destroy)
+	{
+		critical_entity_key destination = {};
+		if (state->desired.action == corpse_lifecycle_action::release)
+			destination = { critical_entity_type::room,
+					static_cast<uint64_t>(state->desired.room_vnum) };
+		else if (!item_owner_key({ item_owner_type::destruction, 0, 0 }, &destination))
+			return submit_outcome::failed;
+		if (critical_command_coordinator_is_fenced(destination, &blocking))
+			return submit_outcome::deferred;
+	}
 
 	corpse_lifecycle_payload payload = state->desired;
 	payload.expected_corpse_revision = state->revision;
@@ -147,6 +168,11 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	state->pending = true;
 	state->dirty = false;
 	state->has_desired = false;
+	if (state->inflight.action == corpse_lifecycle_action::destroy)
+	{
+		state->release_completion = state->queued_destruction_completion;
+		state->queued_destruction_completion = nullptr;
+	}
 	++health.submitted;
 	return submit_outcome::submitted;
 }
@@ -163,9 +189,10 @@ bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload)
 	if (found != states.end() &&
 	    (found->second.owner_pid != payload.owner_pid ||
 	     found->second.save_id != payload.save_id || found->second.fenced ||
-	     found->second.release_completion ||
+	     found->second.release_completion || found->second.queued_destruction_completion ||
 	     (found->second.pending &&
-	      found->second.inflight.action == corpse_lifecycle_action::release)))
+	      (found->second.inflight.action == corpse_lifecycle_action::release ||
+	       found->second.inflight.action == corpse_lifecycle_action::destroy))))
 		return false;
 	if (found == states.end() && states.size() >= CORPSE_LIFECYCLE_PENDING_MAX)
 		return false;
@@ -189,6 +216,52 @@ bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload)
 	state.dirty = true;
 	if (payload.action == corpse_lifecycle_action::upsert && !state.pending)
 		(void)submit(key, &state);
+	account_health();
+	return true;
+}
+
+bool corpse_lifecycle_transaction_destroy(const corpse_lifecycle_payload &payload,
+					  corpse_lifecycle_release_completion_fn completion)
+{
+	if (!completion || !valid_destroy_payload(payload))
+		return false;
+	const uint64_t key = corpse_key(payload.owner_pid, payload.save_id);
+	auto found = states.find(key);
+	if (!key || found == states.end())
+		return false;
+	corpse_state &state = found->second;
+	if ((state.queued_destruction_completion == completion && state.dirty &&
+	     state.has_desired && state.desired.action == corpse_lifecycle_action::destroy) ||
+	    (state.release_completion == completion && state.pending &&
+	     state.inflight.action == corpse_lifecycle_action::destroy))
+		return true;
+	if (state.owner_pid != payload.owner_pid || state.save_id != payload.save_id ||
+	    state.fenced || state.release_completion || state.queued_destruction_completion ||
+	    (!state.revision && !state.pending) ||
+	    (state.pending && state.inflight.action != corpse_lifecycle_action::upsert) ||
+	    (state.dirty && state.has_desired &&
+	     state.desired.action != corpse_lifecycle_action::upsert))
+		return false;
+	try
+	{
+		state.desired = payload;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	state.has_desired = true;
+	state.dirty = true;
+	state.queued_destruction_completion = completion;
+	const auto outcome = submit(key, &state);
+	if (outcome == submit_outcome::failed)
+	{
+		state.has_desired = false;
+		state.dirty = false;
+		state.queued_destruction_completion = nullptr;
+		account_health();
+		return false;
+	}
 	account_health();
 	return true;
 }
@@ -359,6 +432,8 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 		const corpse_lifecycle_payload inflight = state.inflight;
 		const corpse_lifecycle_release_completion_fn release_completion =
 			state.release_completion;
+		corpse_lifecycle_release_completion_fn queued_failure = nullptr;
+		corpse_lifecycle_payload queued_failure_payload = {};
 		state.release_completion = nullptr;
 		if (committed)
 		{
@@ -371,7 +446,8 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 			if (state.inflight.action == corpse_lifecycle_action::remove &&
 			    completions[index].error_code == ENOENT)
 				state.revision = 0;
-			else if (state.inflight.action == corpse_lifecycle_action::release &&
+			else if ((state.inflight.action == corpse_lifecycle_action::release ||
+				  state.inflight.action == corpse_lifecycle_action::destroy) &&
 				 completions[index].error_code == ESTALE)
 				state.fenced = false;
 			else if (!(state.inflight.action == corpse_lifecycle_action::remove &&
@@ -380,11 +456,21 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 		}
 		if (state.dirty && !state.fenced)
 			(void)submit(found->first, &state);
+		if (state.queued_destruction_completion && state.fenced)
+		{
+			queued_failure = state.queued_destruction_completion;
+			queued_failure_payload = state.desired;
+			state.queued_destruction_completion = nullptr;
+			state.dirty = false;
+			state.has_desired = false;
+		}
 		if (!state.pending && !state.dirty && !state.revision && !state.has_desired)
 			states.erase(found);
 		if (release_completion)
 			release_completion(committed, decoded ? result : corpse_lifecycle_result{},
 					   error_code, inflight);
+		if (queued_failure)
+			queued_failure(false, {}, error_code, queued_failure_payload);
 	}
 	account_health();
 }

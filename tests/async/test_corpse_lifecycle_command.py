@@ -106,6 +106,7 @@ int main()
 	assert(corpse_lifecycle_command_build(&command, operation(5), release,
 					      critical_source_site::command,
 					      critical_deadline_class::terminal));
+	const auto release_command = command;
 	assert(command.keys.size() == 2 && command.expected_revisions.size() == 2);
 	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
 	assert(decoded.action == corpse_lifecycle_action::release &&
@@ -124,8 +125,31 @@ int main()
 						      &decoded_result));
 	assert(decoded_result.action == corpse_lifecycle_action::release &&
 	       decoded_result.room_owner_revision == 5 && decoded_result.item_count == 2);
+	auto previous_release = release_command;
+	previous_release.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+	assert(corpse_lifecycle_command_decode_payload(previous_release, &decoded));
+	corpse_lifecycle_payload destroy = release;
+	destroy.action = corpse_lifecycle_action::destroy;
+	destroy.expected_room_revision = 2;
+	assert(corpse_lifecycle_command_build(&command, operation(6), destroy,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(command.keys.size() == 2 && command.expected_revisions.size() == 2);
+	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
+	assert(decoded.action == corpse_lifecycle_action::destroy && decoded.room_vnum == 500 &&
+	       decoded.expected_room_revision == 2);
+	auto unsupported_previous_destroy = command;
+	unsupported_previous_destroy.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+	assert(!corpse_lifecycle_command_decode_payload(unsupported_previous_destroy, &decoded));
+	corpse_lifecycle_result destroy_result = release_result;
+	destroy_result.action = corpse_lifecycle_action::destroy;
+	assert(corpse_lifecycle_command_encode_result(destroy_result, &encoded_result));
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
+						      &decoded_result));
+	assert(decoded_result.action == corpse_lifecycle_action::destroy &&
+	       decoded_result.corpse_owner_revision == 5 && decoded_result.item_count == 2);
 	release.money[0] = 1;
-	assert(!corpse_lifecycle_command_build(&command, operation(6), release,
+	assert(!corpse_lifecycle_command_build(&command, operation(7), release,
 					       critical_source_site::command,
 					       critical_deadline_class::terminal));
 	return 0;

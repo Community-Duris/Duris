@@ -1283,6 +1283,7 @@ int get_number(char **);
 int room_light(int, int);
 void resolve_poison(P_char, int);
 bool persistence_defer_corpse_room_release(P_obj corpse);
+bool persistence_defer_corpse_destruction(P_obj corpse);
 void Decay(P_obj);
 void ac_stopAllFromConsenting(P_char);
 void ac_stopAllFromIgnoring(P_char);

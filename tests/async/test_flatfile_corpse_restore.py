@@ -11,6 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "flatfile_corpse_restore.h"
 #include "flatfile_corpse_ownership.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_world_item_repository.h"
 #include "necromancy.h"
 #include "player_load_items.h"
@@ -28,6 +29,7 @@ static P_obj published = nullptr;
 static std::vector<P_obj> published_room_items;
 static uint64_t hydrated_revision = 0;
 static int refreshes = 0;
+static bool destruction_hydrated = false;
 
 char *str_dup(const char *source)
 {
@@ -189,6 +191,17 @@ flatfile_world_item_result flatfile_world_item_list_rooms(
 	return flatfile_world_item_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_load_owner(
+	const std::string &, const item_owner_identity &owner, uint64_t *owner_revision,
+	std::vector<flatfile_item_ownership_record> *items, std::string *)
+{
+	assert(owner.type == item_owner_type::destruction && !owner.id && !owner.context_id &&
+	       owner_revision && items);
+	*owner_revision = 7;
+	items->clear();
+	return flatfile_item_repository_result::ok;
+}
+
 item_owner_identity flatfile_corpse_item_owner(uint32_t owner_pid, uint32_t save_id)
 {
 	return { item_owner_type::corpse,
@@ -235,8 +248,10 @@ bool player_load_item_graph_materialize_detached(
 	return true;
 }
 
-bool item_ownership_runtime_hydrate_owner(const item_owner_identity &, uint64_t)
+bool item_ownership_runtime_hydrate_owner(const item_owner_identity &owner, uint64_t revision)
 {
+	assert(owner.type == item_owner_type::destruction && revision == 7);
+	destruction_hydrated = true;
 	return true;
 }
 
@@ -267,7 +282,7 @@ int main()
 	assert(flatfile_corpse_restore_catalog("state", &error) ==
 	       flatfile_corpse_restore_result::ok);
 	assert(skip_corpse_save == 0 && updateArtis && published && refreshes == 1 &&
-	       hydrated_revision == 7);
+	       hydrated_revision == 7 && destruction_hydrated);
 	assert(published->type == ITEM_CORPSE && published->weight == 75 &&
 	       published->value[CORPSE_PID] == 42 && published->loc.room == 5);
 	assert(std::strcmp(published->action_description, "hero") == 0 &&

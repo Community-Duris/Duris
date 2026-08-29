@@ -31,6 +31,8 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t save_id,
 						 int32_t room_vnum,
 						 const corpse_lifecycle_result &result);
+bool item_ownership_runtime_apply_corpse_destruction(uint32_t owner_pid, uint32_t save_id,
+						     const corpse_lifecycle_result &result);
 void item_ownership_runtime_forget(uint64_t item_uid);
 void item_ownership_runtime_forget_owner(const item_owner_identity &owner);
 void item_ownership_runtime_reset(void);

@@ -368,12 +368,13 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	return true;
 }
 
-bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t save_id,
-						 int32_t room_vnum,
-						 const corpse_lifecycle_result &result)
+static bool item_ownership_runtime_apply_corpse_disposition(uint32_t owner_pid, uint32_t save_id,
+							    const item_owner_identity &destination,
+							    corpse_lifecycle_action action,
+							    const corpse_lifecycle_result &result)
 {
-	if (!owner_pid || !save_id || room_vnum <= 0 || result.owner_pid != owner_pid ||
-	    result.save_id != save_id || result.action != corpse_lifecycle_action::release ||
+	if (!owner_pid || !save_id || !item_owner_identity_valid(destination) ||
+	    result.owner_pid != owner_pid || result.save_id != save_id || result.action != action ||
 	    result.corpse_revision || !result.corpse_owner_revision ||
 	    !result.room_owner_revision ||
 	    ((!result.item_count && result.max_item_revision) ||
@@ -381,16 +382,15 @@ bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t sa
 		return false;
 	const item_owner_identity corpse = { item_owner_type::corpse,
 					     item_corpse_owner_id(owner_pid, save_id), 0 };
-	const item_owner_identity room = { item_owner_type::room, static_cast<uint64_t>(room_vnum),
-					   0 };
 	const auto corpse_revision = owner_revisions.find(corpse);
-	const auto room_revision = owner_revisions.find(room);
+	const auto destination_revision = owner_revisions.find(destination);
 	const bool corpse_existed = corpse_revision != owner_revisions.end();
-	const bool room_existed = room_revision != owner_revisions.end();
+	const bool destination_existed = destination_revision != owner_revisions.end();
 	const uint64_t expected_corpse_revision = result.corpse_owner_revision - 1;
-	const uint64_t expected_room_revision = result.room_owner_revision - 1;
+	const uint64_t expected_destination_revision = result.room_owner_revision - 1;
 	if ((corpse_existed ? corpse_revision->second : 0) != expected_corpse_revision ||
-	    (room_existed ? room_revision->second : 0) != expected_room_revision)
+	    (destination_existed ? destination_revision->second : 0) !=
+		    expected_destination_revision)
 		return false;
 	size_t item_count = 0;
 	uint64_t max_item_revision = 0;
@@ -410,9 +410,9 @@ bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t sa
 	try
 	{
 		owner_revisions.reserve(owner_revisions.size() + (corpse_existed ? 0 : 1) +
-					(room_existed ? 0 : 1));
+					(destination_existed ? 0 : 1));
 		owner_revisions.insert_or_assign(corpse, result.corpse_owner_revision);
-		owner_revisions.insert_or_assign(room, result.room_owner_revision);
+		owner_revisions.insert_or_assign(destination, result.room_owner_revision);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -420,10 +420,10 @@ bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t sa
 			owner_revisions.erase(corpse);
 		else
 			owner_revisions[corpse] = expected_corpse_revision;
-		if (!room_existed)
-			owner_revisions.erase(room);
+		if (!destination_existed)
+			owner_revisions.erase(destination);
 		else
-			owner_revisions[room] = expected_room_revision;
+			owner_revisions[destination] = expected_destination_revision;
 		return false;
 	}
 	for (auto &[uid, entry] : entries)
@@ -432,10 +432,31 @@ bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t sa
 		if (!item_owner_identity_equal(entry.owner, corpse))
 			continue;
 		++entry.item_revision;
-		entry.owner = room;
+		entry.owner = destination;
 		entry.owner_revision = result.room_owner_revision;
+		if (action == corpse_lifecycle_action::destroy)
+			entry.state = item_custody_state::destroyed;
 	}
 	return true;
+}
+
+bool item_ownership_runtime_apply_corpse_release(uint32_t owner_pid, uint32_t save_id,
+						 int32_t room_vnum,
+						 const corpse_lifecycle_result &result)
+{
+	if (room_vnum <= 0)
+		return false;
+	return item_ownership_runtime_apply_corpse_disposition(
+		owner_pid, save_id, { item_owner_type::room, static_cast<uint64_t>(room_vnum), 0 },
+		corpse_lifecycle_action::release, result);
+}
+
+bool item_ownership_runtime_apply_corpse_destruction(uint32_t owner_pid, uint32_t save_id,
+						     const corpse_lifecycle_result &result)
+{
+	return item_ownership_runtime_apply_corpse_disposition(
+		owner_pid, save_id, { item_owner_type::destruction, 0, 0 },
+		corpse_lifecycle_action::destroy, result);
 }
 
 void item_ownership_runtime_forget(uint64_t item_uid)

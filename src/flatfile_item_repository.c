@@ -1134,8 +1134,9 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	const std::vector<flatfile_corpse_custody_item> &expected_items,
 	flatfile_item_corpse_release_mutation *mutation, std::string *error)
 {
-	if (!mutation || !lock.matches(root) ||
-	    payload.action != corpse_lifecycle_action::release || !payload.owner_pid ||
+	const bool release = payload.action == corpse_lifecycle_action::release;
+	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
+	if (!mutation || !lock.matches(root) || release == destroy || !payload.owner_pid ||
 	    !payload.save_id || payload.room_vnum <= 0 ||
 	    expected_items.size() > ownership_maximum_entries ||
 	    !std::is_sorted(expected_items.begin(), expected_items.end(),
@@ -1162,13 +1163,15 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	const item_owner_identity corpse_owner = {
 		item_owner_type::corpse, item_corpse_owner_id(payload.owner_pid, payload.save_id), 0
 	};
-	const item_owner_identity room_owner = { item_owner_type::room,
-						 static_cast<uint64_t>(payload.room_vnum), 0 };
+	const item_owner_identity destination_owner =
+		release ? item_owner_identity{ item_owner_type::room,
+					       static_cast<uint64_t>(payload.room_vnum), 0 } :
+			  item_owner_identity{ item_owner_type::destruction, 0, 0 };
 	owner_state *corpse = find_owner(&catalog, corpse_owner);
-	owner_state *room = find_owner(&catalog, room_owner);
+	owner_state *destination = find_owner(&catalog, destination_owner);
 	if ((!corpse && !expected_items.empty()) ||
-	    (room && room->revision != payload.expected_room_revision) ||
-	    (!room && payload.expected_room_revision) ||
+	    (destination && destination->revision != payload.expected_room_revision) ||
+	    (!destination && payload.expected_room_revision) ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_item_repository_result::invalid;
 	size_t item_index = 0;
@@ -1187,23 +1190,25 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 			return flatfile_item_repository_result::invalid;
 	}
 	if (item_index != expected_items.size() || !ensure_owner(&catalog, corpse_owner) ||
-	    !ensure_owner(&catalog, room_owner))
+	    !ensure_owner(&catalog, destination_owner))
 		return flatfile_item_repository_result::invalid;
 	corpse = find_owner(&catalog, corpse_owner);
-	room = find_owner(&catalog, room_owner);
-	if (!corpse || !room || corpse->revision == std::numeric_limits<uint64_t>::max() ||
-	    room->revision == std::numeric_limits<uint64_t>::max())
+	destination = find_owner(&catalog, destination_owner);
+	if (!corpse || !destination || corpse->revision == std::numeric_limits<uint64_t>::max() ||
+	    destination->revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_item_repository_result::invalid;
 	++corpse->revision;
-	++room->revision;
+	++destination->revision;
 	mutation->corpse_owner_revision = corpse->revision;
-	mutation->room_owner_revision = room->revision;
+	mutation->room_owner_revision = destination->revision;
 	mutation->item_count = expected_items.size();
 	for (auto &item : catalog.items)
 	{
 		if (!item_owner_identity_equal(item.owner, corpse_owner))
 			continue;
-		item.owner = room_owner;
+		item.owner = destination_owner;
+		if (destroy)
+			item.state = item_custody_state::destroyed;
 		++item.item_revision;
 		mutation->max_item_revision =
 			std::max(mutation->max_item_revision, item.item_revision);

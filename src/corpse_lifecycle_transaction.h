@@ -29,6 +29,8 @@ struct corpse_lifecycle_transaction_health
 bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload);
 bool corpse_lifecycle_transaction_release(const corpse_lifecycle_payload &payload,
 					  corpse_lifecycle_release_completion_fn completion);
+bool corpse_lifecycle_transaction_destroy(const corpse_lifecycle_payload &payload,
+					  corpse_lifecycle_release_completion_fn completion);
 bool corpse_lifecycle_transaction_hydrate(uint32_t owner_pid, uint32_t save_id,
 					  uint64_t corpse_revision);
 bool corpse_lifecycle_transaction_note_item_transfer(uint32_t owner_pid, uint32_t save_id,

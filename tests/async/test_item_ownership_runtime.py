@@ -148,6 +148,37 @@ int main()
 	const item_owner_identity empty_room = { item_owner_type::room, 501, 0 };
 	assert(item_ownership_runtime_owner_revision(empty_room, &owner_revision) &&
 	       owner_revision == 1);
+
+	item_ownership_runtime_reset();
+	const item_owner_identity destroyed_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(50, 30), 0
+	};
+	const item_ownership_runtime_entry destroyed_corpse_items[] = {
+		{ 400, 400, 0, destroyed_corpse, 2, 4, 30, item_custody_state::active },
+		{ 401, 400, 400, destroyed_corpse, 6, 4, 31, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(destroyed_corpse_items, 2));
+	corpse_lifecycle_result destroyed = {};
+	destroyed.owner_pid = 50;
+	destroyed.save_id = 30;
+	destroyed.action = corpse_lifecycle_action::destroy;
+	destroyed.catalog_revision = 11;
+	destroyed.corpse_owner_revision = 5;
+	destroyed.room_owner_revision = 1;
+	destroyed.max_item_revision = 7;
+	destroyed.item_count = 2;
+	assert(item_ownership_runtime_apply_corpse_destruction(50, 30, destroyed));
+	assert(item_ownership_runtime_lookup(400, &absent) &&
+	       absent.owner.type == item_owner_type::destruction &&
+	       absent.state == item_custody_state::destroyed && absent.item_revision == 3 &&
+	       absent.owner_revision == 1);
+	assert(item_ownership_runtime_lookup(401, &absent) &&
+	       absent.owner.type == item_owner_type::destruction &&
+	       absent.state == item_custody_state::destroyed && absent.item_revision == 7);
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	assert(item_ownership_runtime_owner_revision(destruction, &owner_revision) &&
+	       owner_revision == 1);
+	assert(!item_ownership_runtime_apply_corpse_destruction(50, 30, destroyed));
 	return 0;
 }
 '''

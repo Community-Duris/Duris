@@ -2,6 +2,7 @@
 
 #include "corpse_lifecycle_transaction.h"
 #include "flatfile_corpse_ownership.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_world_item_repository.h"
 #include "item_ownership_runtime.h"
 #include "necromancy.h"
@@ -405,12 +406,32 @@ flatfile_corpse_restore_result flatfile_corpse_restore_catalog(const std::string
 			return flatfile_corpse_restore_result::io_error;
 		}
 	}
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	uint64_t destruction_revision = 0;
+	std::vector<flatfile_item_ownership_record> destruction_items;
+	const auto destruction_loaded = flatfile_item_repository_load_owner(
+		root, destruction, &destruction_revision, &destruction_items, error);
+	if ((destruction_loaded != flatfile_item_repository_result::ok &&
+	     destruction_loaded != flatfile_item_repository_result::not_found) ||
+	    !destruction_items.empty() ||
+	    !item_ownership_runtime_hydrate_owner(
+		    destruction, destruction_loaded == flatfile_item_repository_result::ok ?
+					 destruction_revision :
+					 0))
+	{
+		discard_staged(&staged_rooms, room_records);
+		discard_staged(&staged, records);
+		return destruction_loaded == flatfile_item_repository_result::io_error ?
+			       flatfile_corpse_restore_result::io_error :
+			       flatfile_corpse_restore_result::item_failure;
+	}
 	for (size_t index = 0; index < staged.size(); ++index)
 	{
 		obj_to_room(staged[index].object, staged[index].room_rnum);
 		if (!OBJ_ROOM(staged[index].object) ||
 		    staged[index].object->loc.room != staged[index].room_rnum)
 		{
+			item_ownership_runtime_forget_owner(destruction);
 			discard_staged(&staged_rooms, room_records);
 			discard_staged(&staged, records);
 			return flatfile_corpse_restore_result::publish_failure;
@@ -425,6 +446,7 @@ flatfile_corpse_restore_result flatfile_corpse_restore_catalog(const std::string
 			obj_to_room(item, staged_rooms[index].room_rnum);
 			if (!OBJ_ROOM(item) || item->loc.room != staged_rooms[index].room_rnum)
 			{
+				item_ownership_runtime_forget_owner(destruction);
 				discard_staged(&staged_rooms, room_records);
 				discard_staged(&staged, records);
 				return flatfile_corpse_restore_result::publish_failure;

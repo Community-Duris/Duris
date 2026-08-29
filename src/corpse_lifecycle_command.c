@@ -94,7 +94,8 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 {
 	if ((payload.action != corpse_lifecycle_action::upsert &&
 	     payload.action != corpse_lifecycle_action::remove &&
-	     payload.action != corpse_lifecycle_action::release) ||
+	     payload.action != corpse_lifecycle_action::release &&
+	     payload.action != corpse_lifecycle_action::destroy) ||
 	    !payload.owner_pid || payload.owner_pid > INT32_MAX || !payload.save_id ||
 	    payload.save_id > INT32_MAX ||
 	    !valid_text(payload.owner_name, CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES, true))
@@ -108,7 +109,8 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 				   [](int32_t value) { return value == 0; }) &&
 		       payload.short_description.empty() && payload.description.empty() &&
 		       payload.keywords.empty();
-	if (payload.action == corpse_lifecycle_action::release)
+	if (payload.action == corpse_lifecycle_action::release ||
+	    payload.action == corpse_lifecycle_action::destroy)
 		return payload.expected_corpse_revision && payload.room_vnum > 0 &&
 		       !payload.weight &&
 		       std::all_of(payload.values.begin(), payload.values.end(),
@@ -141,8 +143,10 @@ bool valid_result(const corpse_lifecycle_result &result)
 		return !result.corpse_revision && !result.corpse_owner_revision &&
 		       !result.room_owner_revision && !result.max_item_revision &&
 		       !result.item_count;
-	return result.action == corpse_lifecycle_action::release && !result.corpse_revision &&
-	       result.corpse_owner_revision && result.room_owner_revision &&
+	return (result.action == corpse_lifecycle_action::release ||
+		result.action == corpse_lifecycle_action::destroy) &&
+	       !result.corpse_revision && result.corpse_owner_revision &&
+	       result.room_owner_revision &&
 	       ((!result.item_count && !result.max_item_revision) ||
 		(result.item_count && result.max_item_revision));
 }
@@ -186,12 +190,13 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 {
 	if (!payload || command.type != critical_command_type::corpse_lifecycle ||
 	    (command.payload_version != CORPSE_LIFECYCLE_PAYLOAD_VERSION &&
+	     command.payload_version != CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION &&
 	     command.payload_version != CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION))
 		return false;
 	const size_t payload_fixed_bytes = command.payload_version ==
-							   CORPSE_LIFECYCLE_PAYLOAD_VERSION ?
-						   fixed_payload_bytes :
-						   legacy_fixed_payload_bytes;
+							   CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION ?
+						   legacy_fixed_payload_bytes :
+						   fixed_payload_bytes;
 	if (command.payload.size() < payload_fixed_bytes + sizeof(uint32_t) * 4)
 		return false;
 	const uint8_t *input = command.payload.data();
@@ -211,7 +216,7 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 	for (size_t index = 0; index < payload->money.size(); ++index)
 		payload->money[index] =
 			get_number<int32_t>(input + money_offset + index * sizeof(int32_t));
-	if (command.payload_version == CORPSE_LIFECYCLE_PAYLOAD_VERSION)
+	if (command.payload_version != CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION)
 		payload->expected_room_revision =
 			get_number<uint64_t>(input + expected_room_revision_offset);
 	size_t offset = payload_fixed_bytes;
@@ -226,7 +231,11 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 	    offset != command.payload.size() || !valid_payload(*payload))
 		return false;
 	if (command.payload_version == CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION &&
-	    payload->action == corpse_lifecycle_action::release)
+	    (payload->action == corpse_lifecycle_action::release ||
+	     payload->action == corpse_lifecycle_action::destroy))
+		return false;
+	if (command.payload_version == CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION &&
+	    payload->action == corpse_lifecycle_action::destroy)
 		return false;
 	critical_command expected = {};
 	critical_operation_id operation = {};
@@ -320,12 +329,18 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 		     .keys = { corpse_key },
 		     .expected_revisions = { { corpse_key, payload.expected_corpse_revision } },
 		     .payload = std::move(encoded) };
-	if (payload.action == corpse_lifecycle_action::release)
+	if (payload.action == corpse_lifecycle_action::release ||
+	    payload.action == corpse_lifecycle_action::destroy)
 	{
-		const critical_entity_key room_key = { critical_entity_type::room,
-						       static_cast<uint64_t>(payload.room_vnum) };
-		command->keys.push_back(room_key);
-		command->expected_revisions.push_back({ room_key, payload.expected_room_revision });
+		critical_entity_key destination_key = {};
+		if (payload.action == corpse_lifecycle_action::release)
+			destination_key = { critical_entity_type::room,
+					    static_cast<uint64_t>(payload.room_vnum) };
+		else if (!item_owner_key({ item_owner_type::destruction, 0, 0 }, &destination_key))
+			return false;
+		command->keys.push_back(destination_key);
+		command->expected_revisions.push_back(
+			{ destination_key, payload.expected_room_revision });
 		std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
 		std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
 			  [](const auto &left, const auto &right)

@@ -352,6 +352,73 @@ int main(int argc, char **argv)
 			rooms[0].money == std::array<int32_t, 4>{ 11, 22, 33, 44 } &&
 			rooms[0].items.size() == 2,
 		"money-only corpse release did not accumulate the existing room aggregate");
+
+	const fs::path destruction_root = fs::path(argv[1]) / "destruction";
+	prepare_root(destruction_root);
+	require(flatfile_world_item_establish(destruction_root.string(), { released_corpse }, {},
+					      &error) == flatfile_world_item_result::ok,
+		"could not establish destructible corpse: " + error);
+	require(flatfile_item_repository_establish_owner(
+			destruction_root.string(), corpse_owner,
+			{ { 900, 900, 0, corpse_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, corpse_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish destructible corpse custody: " + error);
+	flatfile_artifact_record destructible_artifact = corpse_artifact;
+	destructible_artifact.bind_owner_pid = 42;
+	destructible_artifact.bind_timer = 6000;
+	require(flatfile_artifact_establish(destruction_root.string(), { destructible_artifact },
+					    &error) == flatfile_artifact_result::ok,
+		"could not establish destructible corpse artifact: " + error);
+	corpse_lifecycle_payload destruction_payload = release_payload;
+	destruction_payload.action = corpse_lifecycle_action::destroy;
+	auto destruction_command = command(11, destruction_payload);
+	destruction_command.accepted_at_usec = 13000000;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "2", 1);
+	applied = flatfile_corpse_repository_apply(destruction_root.string(), destruction_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted corpse destruction did not retain recoverable composite intent");
+	applied = flatfile_corpse_repository_apply(destruction_root.string(), destruction_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"corpse destruction did not recover and replay exactly");
+	result = {};
+	require(corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+						       applied.result_size, &result) &&
+			result.action == corpse_lifecycle_action::destroy &&
+			result.corpse_revision == 0 && result.catalog_revision == 2 &&
+			result.corpse_owner_revision == 2 && result.room_owner_revision == 1 &&
+			result.max_item_revision == 2 && result.item_count == 2,
+		"corpse destruction result did not expose destruction revisions");
+	corpses.clear();
+	saved.clear();
+	require(flatfile_world_item_list(destruction_root.string(), &corpses, &saved, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty(),
+		"recovered corpse destruction retained the corpse aggregate");
+	rooms.clear();
+	require(flatfile_world_item_list_rooms(destruction_root.string(), &rooms, &error) ==
+				flatfile_world_item_result::ok &&
+			rooms.empty(),
+		"corpse destruction incorrectly published contents or money to a room");
+	uint64_t destruction_revision = 0;
+	std::vector<flatfile_item_ownership_record> destroyed_items;
+	require(flatfile_item_repository_load_owner(
+			destruction_root.string(), { item_owner_type::destruction, 0, 0 },
+			&destruction_revision, &destroyed_items,
+			&error) == flatfile_item_repository_result::ok &&
+			destruction_revision == 1 && destroyed_items.empty(),
+		"recovered corpse destruction retained active destination item custody");
+	flatfile_artifact_record destroyed_artifact;
+	require(flatfile_artifact_get(destruction_root.string(), 1901, &destroyed_artifact,
+				      &error) == flatfile_artifact_result::ok &&
+			!destroyed_artifact.owned &&
+			destroyed_artifact.location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			destroyed_artifact.location == -1 && destroyed_artifact.last_update == 13 &&
+			destroyed_artifact.bind_owner_pid == -1 &&
+			destroyed_artifact.bind_timer == 0 && destroyed_artifact.revision == 2,
+		"recovered corpse destruction did not clear artifact custody and binding");
 	std::cout << "flat-file corpse lifecycle repository passed\n";
 	return 0;
 }

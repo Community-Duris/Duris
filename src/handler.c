@@ -3299,6 +3299,61 @@ bool submit_corpse_release(P_obj corpse)
 	payload.owner_name = corpse->action_description;
 	return corpse_lifecycle_transaction_release(payload, publish_corpse_release);
 }
+
+bool submit_corpse_destruction(P_obj corpse);
+
+void publish_corpse_destruction(bool committed, const corpse_lifecycle_result &result,
+				unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	if (!committed)
+	{
+		if (error_code == ESTALE && corpse && submit_corpse_destruction(corpse))
+			return;
+		persistence_alert(AVATAR, "corpse", "flatfile_destroy", "none", "none",
+				  "commit_failed", "save_id=%u error=%u", payload.save_id,
+				  error_code);
+		return;
+	}
+	int room = NOWHERE;
+	if (!corpse || !corpse_release_room(corpse, &room) ||
+	    world[room].number != payload.room_vnum ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_destruction(payload.owner_pid, payload.save_id,
+							     result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_destroy", "none", "none",
+				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
+				  payload.room_vnum);
+		return;
+	}
+	logit(LOG_CORPSE, "%s and its contents were destroyed in room %d.",
+	      corpse->short_description, payload.room_vnum);
+	corpse_release_side_effect_guard guard;
+	extract_obj(corpse, TRUE);
+}
+
+bool submit_corpse_destruction(P_obj corpse)
+{
+	if (!corpse || !corpse->action_description || !*corpse->action_description ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room))
+		return false;
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	uint64_t destruction_revision = 0;
+	if (!item_ownership_runtime_owner_revision(destruction, &destruction_revision))
+		return false;
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::destroy;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.expected_room_revision = destruction_revision;
+	payload.room_vnum = world[room].number;
+	payload.owner_name = corpse->action_description;
+	return corpse_lifecycle_transaction_destroy(payload, publish_corpse_destruction);
+}
 } // namespace
 
 bool persistence_defer_corpse_room_release(P_obj corpse)
@@ -3316,6 +3371,17 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 	}
+	return true;
+}
+
+bool persistence_defer_corpse_destruction(P_obj corpse)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	if (!submit_corpse_destruction(corpse))
+		persistence_alert(AVATAR, "corpse", "flatfile_destroy", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 	return true;
 }
 

@@ -22,6 +22,7 @@ static bool externally_fenced = false;
 static bool release_completed = false;
 static bool retryable_release_failed = false;
 static bool retryable_release_completed = false;
+static bool queued_destruction_completed = false;
 
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
@@ -77,6 +78,15 @@ static corpse_lifecycle_payload release(uint32_t owner_pid, uint32_t save_id, in
 	return payload;
 }
 
+static corpse_lifecycle_payload destroy(uint32_t owner_pid, uint32_t save_id, int room,
+					uint64_t destruction_revision)
+{
+	corpse_lifecycle_payload payload = release(owner_pid, save_id, room,
+						 destruction_revision);
+	payload.action = corpse_lifecycle_action::destroy;
+	return payload;
+}
+
 static corpse_lifecycle_payload decode(size_t index)
 {
 	corpse_lifecycle_payload payload = {};
@@ -123,6 +133,26 @@ static critical_completion release_completion(size_t index, uint32_t owner_pid,
 	return value;
 }
 
+static critical_completion destroy_completion(size_t index, uint32_t owner_pid,
+				       uint32_t save_id, uint64_t catalog_revision)
+{
+	critical_completion value = {};
+	value.operation_id = submitted[index].operation_id;
+	value.outcome = critical_apply_outcome::applied;
+	corpse_lifecycle_result result = {};
+	result.owner_pid = owner_pid;
+	result.save_id = save_id;
+	result.action = corpse_lifecycle_action::destroy;
+	result.catalog_revision = catalog_revision;
+	result.corpse_owner_revision = 1;
+	result.room_owner_revision = 1;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	value.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
 static void on_release(bool committed, const corpse_lifecycle_result &result,
 			       unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
@@ -147,6 +177,16 @@ static void on_retryable_release_success(bool committed, const corpse_lifecycle_
 	assert(committed && error_code == 0 && result.owner_pid == 44 &&
 	       payload.expected_corpse_revision == 3 && payload.expected_room_revision == 1);
 	retryable_release_completed = true;
+}
+
+static void on_queued_destruction(bool committed, const corpse_lifecycle_result &result,
+				  unsigned int error_code,
+				  const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 && result.action == corpse_lifecycle_action::destroy &&
+	       payload.action == corpse_lifecycle_action::destroy &&
+	       payload.expected_corpse_revision == 1 && payload.room_vnum == 902);
+	queued_destruction_completed = true;
 }
 
 int main()
@@ -222,8 +262,25 @@ int main()
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 	assert(retryable_release_completed);
 
+	assert(corpse_lifecycle_transaction_stage(upsert(45, 23, 902, 5)));
+	assert(submitted.size() == 9);
+	assert(corpse_lifecycle_transaction_destroy(destroy(45, 23, 902, 0),
+						    on_queued_destruction));
+	assert(corpse_lifecycle_transaction_destroy(destroy(45, 23, 902, 0),
+						    on_queued_destruction));
+	assert(submitted.size() == 9 && corpse_lifecycle_transaction_busy(45, 23));
+	done = completion(8, corpse_lifecycle_action::upsert, 45, 23, 1, 17);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(submitted.size() == 10 && decode(9).action == corpse_lifecycle_action::destroy &&
+	       decode(9).expected_corpse_revision == 1);
+	assert(corpse_lifecycle_transaction_destroy(destroy(45, 23, 902, 0),
+						    on_queued_destruction));
+	done = destroy_completion(9, 45, 23, 18);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(queued_destruction_completed && !corpse_lifecycle_transaction_busy(45, 23));
+
 	const auto health = corpse_lifecycle_transaction_health_copy();
-	assert(health.submitted == 8 && health.committed == 7 && health.rejected == 1 &&
+	assert(health.submitted == 10 && health.committed == 9 && health.rejected == 1 &&
 	       health.pending == 0 && health.dirty == 0);
 	assert(corpse_lifecycle_transaction_forget(42, 20));
 	assert(corpse_lifecycle_transaction_forget(43, 21));

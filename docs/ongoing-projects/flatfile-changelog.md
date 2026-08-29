@@ -4062,3 +4062,40 @@ action" text below remains historical and does not authorize work.
 - **Next action:** implement the smallest operation-specific durability boundary from the checkpoint
   91 corpse audit, beginning with intentional corpse-and-contents destruction, then return to the
   player/follower and coupled-effect transfers without broadening generic `extract_obj` semantics.
+
+### Checkpoint 94 - atomic intentional corpse-and-contents destruction
+
+- **Historical behavior restored:** the `very_angry_npc` special can again destroy a player corpse
+  and all contained equipment in flat-primary mode. It now asks the persistence layer to defer that
+  one explicit operation before reaching synchronous `extract_obj`; NPC corpses, MariaDB modes, and
+  all other generic extraction callers keep their existing behavior.
+- **Bounded lifecycle extension:** corpse-lifecycle payload version 3 adds a `destroy` action while
+  retaining version 1 and 2 decoders and the existing fixed-size result. The command fences the
+  stable corpse and canonical destruction owner, compares both revisions, and retains the corpse's
+  current room as a stale-live-placement proof rather than treating destruction as a room release.
+- **One recoverable authority change:** under the shared authority lock, destruction proves the
+  exact corpse identity, revision, placement, nested world snapshots, and active item custody. Its
+  after-images remove the corpse aggregate without publishing contents or money to a room, advance
+  every durable item into destroyed custody, clear registered artifact ownership/location/binding,
+  and record the lifecycle result. Forced interruption between those images recovers and replays the
+  same result exactly once.
+- **Durability-before-live extraction:** an immediate post-death request can queue behind the
+  corpse-establishment command and waits on existing corpse and destruction-owner fences. Repeated
+  special-proc calls recognize the queued or in-flight intent. Only a committed completion with an
+  exact live room and custody graph advances the runtime revisions and extracts the corpse with
+  legacy persistence callbacks suppressed; failures retain the live corpse and alert operators.
+- **Restart correctness:** flat boot now hydrates the canonical destruction-owner revision even
+  though destroyed items are intentionally excluded from active-owner loads. Unexpected active
+  destruction custody fails boot closed, preventing post-restart destruction from retrying forever
+  against an assumed revision zero.
+- **Checks passed:** payload compatibility and keys, lifecycle queueing and duplicate attachment,
+  forced-interruption repository recovery, nested runtime destruction, artifact cleanup, live source
+  routing, and boot revision hydration regressions; changed-line formatting, `git diff --check`, the
+  strict normal C++20 server build, and the isolated client-free game-loop boot/clean-shutdown
+  preflight.
+- **Exposure:** this command intentionally destroys money and items with the corpse and therefore is
+  not a general corpse-transfer primitive. Resurrection, necromancy, coupled spell effects, and a
+  corpse nested inside another object still need their exact historical destinations and sequencing.
+- **Next action:** restore resurrection's corpse-to-player transfer as the next concrete audited
+  operation, reusing the existing player ownership/materialization authorities and leaving generic
+  extraction semantics unchanged.

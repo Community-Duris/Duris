@@ -357,8 +357,10 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	flatfile_item_corpse_release_mutation release_items;
 	flatfile_artifact_transfer_mutation release_artifacts;
 	const bool releases_custody = payload.action == corpse_lifecycle_action::release;
+	const bool destroys_custody = payload.action == corpse_lifecycle_action::destroy;
+	const bool disposes_custody = releases_custody || destroys_custody;
 	const auto prepared =
-		releases_custody ?
+		disposes_custody ?
 			flatfile_world_item_prepare_corpse_release(root, authority, payload,
 								   &release, &error) :
 			flatfile_world_item_prepare_corpse_lifecycle(root, authority, payload,
@@ -369,10 +371,10 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	    prepared == flatfile_world_item_result::already_exists ||
 	    prepared == flatfile_world_item_result::unchanged ||
 	    (prepared == flatfile_world_item_result::ok &&
-	     !(releases_custody ? release.catalog_revision : mutation.catalog_revision)))
+	     !(disposes_custody ? release.catalog_revision : mutation.catalog_revision)))
 		return { critical_apply_outcome::terminal_failure, catalog.revision, EILSEQ };
 	bool include_release_artifacts = false;
-	if (prepared == flatfile_world_item_result::ok && releases_custody)
+	if (prepared == flatfile_world_item_result::ok && disposes_custody)
 	{
 		const auto item_prepared = flatfile_item_repository_prepare_corpse_release(
 			root, authority, payload, release.expected_items, &release_items, &error);
@@ -386,12 +388,18 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 							 flatfile_item_repository_result::io_error ?
 						 EIO :
 						 EILSEQ) };
-		if (release_items.room_owner_revision != release.room_revision)
+		if (releases_custody && release_items.room_owner_revision != release.room_revision)
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
-		const auto artifact_prepared = flatfile_artifact_prepare_corpse_release(
-			root, authority, payload.owner_pid, payload.room_vnum,
-			command.accepted_at_usec, release.items, &release_artifacts, &error);
+		const auto artifact_prepared =
+			releases_custody ? flatfile_artifact_prepare_corpse_release(
+						   root, authority, payload.owner_pid,
+						   payload.room_vnum, command.accepted_at_usec,
+						   release.items, &release_artifacts, &error) :
+					   flatfile_artifact_prepare_corpse_destruction(
+						   root, authority, payload.owner_pid,
+						   command.accepted_at_usec, release.items,
+						   &release_artifacts, &error);
 		if (artifact_prepared != flatfile_artifact_result::ok &&
 		    artifact_prepared != flatfile_artifact_result::unchanged)
 			return { artifact_prepared == flatfile_artifact_result::io_error ?
@@ -411,7 +419,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 									     result_code(prepared);
 	operation.durable_revision =
 		prepared == flatfile_world_item_result::ok ?
-			(releases_custody ? release.catalog_revision : mutation.catalog_revision) :
+			(disposes_custody ? release.catalog_revision : mutation.catalog_revision) :
 			catalog.revision + 1;
 	if (!operation.result_code)
 	{
@@ -420,9 +428,9 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 		result.save_id = payload.save_id;
 		result.action = payload.action;
 		result.corpse_revision = mutation.corpse_revision;
-		result.catalog_revision = releases_custody ? release.catalog_revision :
+		result.catalog_revision = disposes_custody ? release.catalog_revision :
 							     mutation.catalog_revision;
-		if (releases_custody)
+		if (disposes_custody)
 		{
 			result.corpse_owner_revision = release_items.corpse_owner_revision;
 			result.room_owner_revision = release_items.room_owner_revision;
@@ -451,7 +459,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	{
 		if (!operation.result_code)
 		{
-			if (releases_custody)
+			if (disposes_custody)
 			{
 				images.push_back(std::move(release_items.after_image));
 				images.push_back(std::move(release.after_image));

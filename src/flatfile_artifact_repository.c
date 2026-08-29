@@ -1327,14 +1327,15 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 	return flatfile_artifact_result::ok;
 }
 
-flatfile_artifact_result flatfile_artifact_prepare_corpse_release(
+static flatfile_artifact_result flatfile_artifact_prepare_corpse_disposition(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t corpse_pid,
-	int32_t room_vnum, uint64_t accepted_at_usec,
+	int32_t room_vnum, uint64_t accepted_at_usec, bool destroy,
 	const std::vector<player_item_snapshot> &items,
 	flatfile_artifact_transfer_mutation *mutation, std::string *error)
 {
 	if (root.empty() || !lock.matches(root) || !mutation || !corpse_pid ||
-	    corpse_pid > INT32_MAX || room_vnum <= 0 || accepted_at_usec / 1000000 > INT64_MAX)
+	    corpse_pid > INT32_MAX || (!destroy && room_vnum <= 0) ||
+	    accepted_at_usec / 1000000 > INT64_MAX)
 		return flatfile_artifact_result::invalid;
 	*mutation = {};
 	artifact_catalog catalog;
@@ -1374,8 +1375,19 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_release(
 		    record.location != static_cast<int32_t>(corpse_pid) ||
 		    record.revision == UINT64_MAX)
 			return flatfile_artifact_result::conflict;
-		record.location_type = FLATFILE_ARTIFACT_ON_GROUND;
-		record.location = room_vnum;
+		if (destroy)
+		{
+			record.owned = false;
+			record.location_type = FLATFILE_ARTIFACT_NOT_IN_GAME;
+			record.location = -1;
+			record.bind_owner_pid = -1;
+			record.bind_timer = 0;
+		}
+		else
+		{
+			record.location_type = FLATFILE_ARTIFACT_ON_GROUND;
+			record.location = room_vnum;
+		}
 		record.last_update = event_time;
 		++record.revision;
 		changed = true;
@@ -1390,4 +1402,23 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_release(
 		return flatfile_artifact_result::invalid;
 	mutation->after_image = { catalog_filename, std::move(bytes) };
 	return flatfile_artifact_result::ok;
+}
+
+flatfile_artifact_result flatfile_artifact_prepare_corpse_release(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t corpse_pid,
+	int32_t room_vnum, uint64_t accepted_at_usec,
+	const std::vector<player_item_snapshot> &items,
+	flatfile_artifact_transfer_mutation *mutation, std::string *error)
+{
+	return flatfile_artifact_prepare_corpse_disposition(
+		root, lock, corpse_pid, room_vnum, accepted_at_usec, false, items, mutation, error);
+}
+
+flatfile_artifact_result flatfile_artifact_prepare_corpse_destruction(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t corpse_pid,
+	uint64_t accepted_at_usec, const std::vector<player_item_snapshot> &items,
+	flatfile_artifact_transfer_mutation *mutation, std::string *error)
+{
+	return flatfile_artifact_prepare_corpse_disposition(
+		root, lock, corpse_pid, 0, accepted_at_usec, true, items, mutation, error);
 }

@@ -7,7 +7,8 @@
 #include <cstdint>
 #include <string>
 
-constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 2;
+constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 3;
+constexpr uint16_t CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION = 2;
 constexpr uint16_t CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION = 1;
 constexpr size_t CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES = 255;
 constexpr size_t CORPSE_LIFECYCLE_SHORT_DESCRIPTION_MAX_BYTES = 512;
@@ -21,6 +22,7 @@ enum class corpse_lifecycle_action : uint8_t
 	upsert = 1,
 	remove = 2,
 	release = 3,
+	destroy = 4,
 };
 
 struct corpse_lifecycle_payload
