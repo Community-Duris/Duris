@@ -3062,6 +3062,8 @@ void spell_compact_corpse(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unus
 		send_to_char("This corpse is too mutilated.\n", ch);
 		return;
 	}
+	if (persistence_defer_corpse_compaction(obj, ch))
+		return;
 
 	while ((content = obj->contains) != NULL)
 	{

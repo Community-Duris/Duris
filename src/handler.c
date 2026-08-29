@@ -3126,8 +3126,17 @@ struct corpse_wall_context
 	int exit_dir = -1;
 };
 
+struct corpse_compaction_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	P_obj pile = nullptr;
+	uint64_t pile_uid = 0;
+};
+
 std::unordered_map<uint64_t, corpse_unmaking_context> corpse_unmakings;
 std::unordered_map<uint64_t, corpse_wall_context> corpse_walls;
+std::unordered_map<uint64_t, corpse_compaction_context> corpse_compactions;
 
 class corpse_release_side_effect_guard
 {
@@ -3160,6 +3169,14 @@ P_obj find_live_corpse(uint32_t owner_pid, uint32_t save_id)
 		if (object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE) &&
 		    object->value[CORPSE_PID] == static_cast<int32_t>(owner_pid) &&
 		    object->value[CORPSE_SAVEID] == static_cast<int32_t>(save_id))
+			return object;
+	return nullptr;
+}
+
+P_obj find_live_object(P_obj expected, uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object == expected && object->obj_uid == uid)
 			return object;
 	return nullptr;
 }
@@ -3258,6 +3275,17 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		wall_context = wall->second;
 		corpse_walls.erase(wall);
 	}
+	corpse_compaction_context compaction_context = {};
+	const auto compaction = corpse_compactions.find(key);
+	const bool compacted = compaction != corpse_compactions.end();
+	if (compacted)
+	{
+		compaction_context = compaction->second;
+		corpse_compactions.erase(compaction);
+	}
+	P_obj compact_pile =
+		compacted ? find_live_object(compaction_context.pile, compaction_context.pile_uid) :
+			    nullptr;
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	if (!committed)
 	{
@@ -3283,8 +3311,19 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 				    TO_ROOM);
 			}
 		}
+		else if (compacted)
+		{
+			if (P_char caster =
+				    find_live_character(compaction_context.caster,
+							compaction_context.caster_runtime_id))
+				send_to_char(
+					"Your spell fails to compact the corpse; it remains intact.\r\n",
+					caster);
+		}
 		else if (error_code == ESTALE)
 			rearm_corpse_release(corpse);
+		if (compact_pile)
+			extract_obj(compact_pile);
 		return;
 	}
 	const int room = real_room(payload.room_vnum);
@@ -3297,6 +3336,8 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
 				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
 				  payload.room_vnum);
+		if (compact_pile)
+			extract_obj(compact_pile);
 		return;
 	}
 	P_char carrier = corpse_release_carrier(corpse);
@@ -3355,6 +3396,27 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 			}
 		}
 	}
+	else if (compacted)
+	{
+		if (!compact_pile)
+			persistence_alert(AVATAR, "corpse", "flatfile_compact_corpse", "none",
+					  "none", "staged_pile_missing", "save_id=%u room=%d",
+					  payload.save_id, payload.room_vnum);
+		else
+		{
+			char message[MAX_STRING_LENGTH];
+			snprintf(message, sizeof(message),
+				 "&+WCrunching&n sounds are heard as $p collapses into %s.",
+				 OBJ_SHORT(compact_pile));
+			act(message, FALSE, NULL, corpse, NULL, TO_ROOM);
+			obj_to_room(compact_pile, room);
+			if (!OBJ_ROOM(compact_pile) || compact_pile->loc.room != room)
+				persistence_alert(AVATAR, "corpse", "flatfile_compact_corpse",
+						  "none", "none", "pile_location_mismatch",
+						  "save_id=%u room=%d", payload.save_id,
+						  payload.room_vnum);
+		}
+	}
 	else if (OBJ_ROOM(corpse) && world[corpse->loc.room].people)
 	{
 		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
@@ -3375,9 +3437,10 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 			act("$p decays in your hands, leaving no trace.", FALSE, carrier, corpse, 0,
 			    TO_CHAR);
 	}
-	const char *log_action = unmade ? "was unmade" :
-				 walled ? "became a wall of bones" :
-					  "decayed";
+	const char *log_action = unmade	   ? "was unmade" :
+				 walled	   ? "became a wall of bones" :
+				 compacted ? "was compacted into bones" :
+					     "decayed";
 	logit(LOG_CORPSE, "%s %s in room %d.", corpse->short_description, log_action,
 	      payload.room_vnum);
 	corpse_release_side_effect_guard guard;
@@ -3388,9 +3451,10 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		obj_from_obj(item);
 		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
 			logit(LOG_CORPSE,
-			      unmade ? "%s Unmaking drop: [%d] %s" :
-			      walled ? "%s Wall drop: [%d] %s" :
-				       "%s Decay drop: [%d] %s",
+			      unmade	? "%s Unmaking drop: [%d] %s" :
+			      walled	? "%s Wall drop: [%d] %s" :
+			      compacted ? "%s Compaction drop: [%d] %s" :
+					  "%s Decay drop: [%d] %s",
 			      corpse->short_description, obj_index[item->R_num].virtual_number,
 			      item->name);
 		obj_to_room(item, room);
@@ -3586,6 +3650,60 @@ bool persistence_defer_corpse_wall_of_bones(P_obj corpse, P_char caster, int lev
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 		send_to_char("Something prevents you from making a wall there.\r\n", caster);
 		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_compaction(P_obj corpse, P_char caster)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room) || room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	{
+		send_to_char("That corpse cannot be compacted from its current location.\r\n",
+			     caster);
+		return true;
+	}
+	const uint64_t key =
+		item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
+	if (corpse_compactions.contains(key))
+	{
+		send_to_char("That corpse is already being compacted.\r\n", caster);
+		return true;
+	}
+	P_obj pile = read_object(VOBJ_PILE_BONES, VIRTUAL);
+	if (!pile)
+	{
+		send_to_char("Your spell fails to form the pile of bones. Tell an Imm.\r\n",
+			     caster);
+		return true;
+	}
+	pile->value[CORPSE_LEVEL] = corpse->value[CORPSE_LEVEL];
+	try
+	{
+		corpse_compactions.emplace(key,
+					   corpse_compaction_context{ caster, caster->runtime_id,
+								      pile, pile->obj_uid });
+	}
+	catch (const std::bad_alloc &)
+	{
+		extract_obj(pile);
+		send_to_char("Your spell fails to compact the corpse; it remains intact.\r\n",
+			     caster);
+		return true;
+	}
+	if (!submit_corpse_release(corpse))
+	{
+		corpse_compactions.erase(key);
+		extract_obj(pile);
+		persistence_alert(AVATAR, "corpse", "flatfile_compact_corpse", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		send_to_char("Your spell fails to compact the corpse; it remains intact.\r\n",
+			     caster);
 	}
 	return true;
 }

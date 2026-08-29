@@ -37,6 +37,8 @@ destruction_publication = body(HANDLER, "void publish_corpse_destruction(",
                                "bool submit_corpse_destruction")
 deferred_destruction = body(HANDLER, "bool persistence_defer_corpse_destruction(",
                             "void Decay(P_obj obj)")
+deferred_compaction = body(HANDLER, "bool persistence_defer_corpse_compaction(",
+                           "bool persistence_defer_corpse_destruction(")
 get_item = body(ACTOBJ, "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
                 "int fight_in_room")
 put_item = body(ACTOBJ, "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
@@ -52,6 +54,7 @@ very_angry = LOHRR_SPECS[LOHRR_SPECS.index("int very_angry_npc("):]
 unmaking = body(MAGIC, "void spell_unmaking(", "void spell_enchant_weapon(")
 wall_of_bones = body(NECROMANCY, "void spell_wall_of_bones(",
                      "void spell_compact_corpse(")
+compact_corpse = NECROMANCY[NECROMANCY.index("void spell_compact_corpse("):]
 
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in write_corpse
 assert "stage_corpse_lifecycle" in write_corpse
@@ -110,6 +113,15 @@ assert wall_of_bones.index("persistence_defer_corpse_wall_of_bones") < \
 assert "corpse_walls" in HANDLER
 assert release_publication.index("item_ownership_runtime_apply_corpse_release") < \
        release_publication.index("complete_corpse_wall_of_bones")
+assert "persistence_defer_corpse_compaction(obj, ch)" in compact_corpse
+assert compact_corpse.index("persistence_defer_corpse_compaction") < \
+       compact_corpse.index("obj_from_obj(content)")
+assert "corpse_compactions" in HANDLER
+assert deferred_compaction.index("read_object(VOBJ_PILE_BONES, VIRTUAL)") < \
+       deferred_compaction.index("submit_corpse_release(corpse)")
+assert "extract_obj(pile)" in deferred_compaction
+assert release_publication.index("item_ownership_runtime_apply_corpse_release") < \
+       release_publication.index("obj_to_room(compact_pile, room)")
 assert "corpse_lifecycle_transaction_busy" in get_item
 assert "corpse_lifecycle_transaction_busy" in put_item
 
@@ -124,4 +136,4 @@ for release_caller, first_mutation in (
     assert release_caller.index("persistence_defer_corpse_room_release") < \
            release_caller.index(first_mutation)
 
-print("[PASS] live corpse save, remove, release, unmaking, wall, destruction, restore, and revision routing are wired")
+print("[PASS] live corpse save, remove, release, effects, destruction, restore, and revision routing are wired")

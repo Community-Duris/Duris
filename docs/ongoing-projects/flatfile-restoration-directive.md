@@ -10,22 +10,24 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 96 restores the historical player-corpse branch of `wall of
-bones` in flat-primary mode. After the spell's existing corpse and exit checks, it now
-stops before creating the wall or moving contents and submits the existing atomic
-corpse-to-room release. Durable acknowledgment must prove the same live corpse, room,
-and item graph and advance runtime custody before the historical paired wall objects,
-breakable exits, room messages, item drops, and corpse extraction are published.
-Submission or durable failure retains the corpse and creates no wall. Named compact
-bones, dragon scales, NPC corpses, and every MariaDB mode retain their synchronous path.
+As of 2026-08-29, checkpoint 97 restores the historical player-corpse branch of `compact
+corpse` in flat-primary mode. After the existing corpse and mutilation checks, the spell
+now allocates its replacement bone pile off-world and stops before moving any contents.
+It then submits the existing atomic corpse-to-room release. Durable acknowledgment must
+prove the same live corpse, room, and item graph and advance runtime custody before the
+historical crunch message and level-bearing bone pile become visible, exact contents and
+money reach the room, and the corpse is extracted. Submission or durable failure removes
+the staged pile and retains the intact corpse. This also corrects the historical failure
+order that dumped contents before discovering the bone prototype could not load. NPC
+corpses and every MariaDB mode retain their synchronous path.
 
-No command, payload, catalog, or generic spell framework was added. A bounded,
-process-local context records only stable corpse identity, a non-reusable caster runtime
-ID, level, and exit direction; all durable corpse, item, room-money, and artifact recovery
-continues to use the checkpoint 88 release authority. The wall is a transient gameplay
-effect: a process death after the release commits does not replay it, and a stale caster
-or exit can leave the durably released contents in the room without a wall while raising
-an operator alert.
+No command, payload, catalog, or generic spell framework was added. The bounded,
+process-local context records only stable corpse identity, the staged pile identity, and
+a non-reusable caster runtime ID; all durable corpse, item, room-money, and artifact
+recovery continues to use the checkpoint 88 release authority. The replacement pile,
+like checkpoint 96's wall, is transient gameplay state: a process death after the
+release commits does not replay it, while the exact released durable custody still
+recovers.
 
 The remaining audited player-corpse paths have no equally narrow authority. Resurrection
 exchanges the target's current inventory and wallet with the old room before moving the

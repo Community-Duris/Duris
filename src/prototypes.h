@@ -1285,6 +1285,7 @@ void resolve_poison(P_char, int);
 bool persistence_defer_corpse_room_release(P_obj corpse);
 bool persistence_defer_corpse_unmaking(P_obj corpse, P_char caster, int level, int corpse_level);
 bool persistence_defer_corpse_wall_of_bones(P_obj corpse, P_char caster, int level, int exit_dir);
+bool persistence_defer_corpse_compaction(P_obj corpse, P_char caster);
 bool persistence_defer_corpse_destruction(P_obj corpse);
 void Decay(P_obj);
 void ac_stopAllFromConsenting(P_char);

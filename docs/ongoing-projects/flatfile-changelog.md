@@ -4167,3 +4167,39 @@ action" text below remains historical and does not authorize work.
 - **Next action:** obtain an owner decision on whether to add the dedicated composite authority needed
   for the remaining resurrection, follower, and nested-container corpse paths; if approved, start with
   the shared full/lesser resurrection exchange rather than a generalized extraction framework.
+
+### Checkpoint 97 - durability-gated corpse compaction
+
+- **Historical behavior restored:** flat-primary `compact corpse` now checks a dedicated guard after
+  its existing corpse and mutilation validation but before the first content move. A successful cast
+  still drops every corpse item and coin, removes the corpse, emits the crunch message, and creates a
+  pile of bones carrying the corpse's level. NPC corpses and MariaDB modes remain synchronous.
+- **Fail-before-mutate staging:** the replacement pile is allocated with its stable item UID while
+  still off-world and recorded under the stable corpse key before release submission. Allocation,
+  context-allocation, submission, and durable failures discard that invisible pile and retain the
+  intact corpse. This repairs the historical failure order, which emptied the corpse before checking
+  whether the pile prototype could be loaded.
+- **Existing authority reused:** the operation adds no command, payload, catalog, or general effect
+  abstraction. Checkpoint 88's release still atomically removes the corpse aggregate, advances exact
+  nested item ownership into the room, accumulates all four money denominations, grounds artifacts,
+  and records the lifecycle result. Only after runtime custody accepts that result does the staged pile
+  become visible in the committed room.
+- **Bounded live identity:** the process-local context stores the caster pointer/runtime ID and staged
+  pile pointer/UID. Completion resolves both through live registries rather than dereferencing stale
+  storage. Failed or stale publication cleans up the staged object; duplicate casts recognize the
+  pending compaction without submitting another release.
+- **Transient-result exposure:** the bone pile is generated gameplay state rather than part of the
+  corpse release authority. A process death after durable release commit but before live completion
+  recovers the released items, room money, grounded artifacts, and removed corpse without recreating
+  the pile. Making generated spell objects durable would require a different composite creation
+  command and is not introduced here.
+- **Checks passed:** the focused live routing contract proves the compaction guard precedes the first
+  content move, the replacement pile is staged before release submission and cleaned on failure, and
+  runtime custody advances before the pile reaches the room. Existing lifecycle command, transaction,
+  forced-recovery corpse repository, room, artifact, and ownership-runtime regressions pass, as do
+  changed-line formatting, `git diff --check`, the strict normal C++20 server build, and the
+  client-free build/game-loop boot/clean-shutdown preflight.
+- **Remaining approval boundary:** resurrection, follower raising, and nested-container decay each
+  cross a destination authority that ordinary release cannot represent. Per the directive, adding
+  those composite protocols still awaits explicit owner approval; resurrection remains the first
+  proposed operation if approved.
