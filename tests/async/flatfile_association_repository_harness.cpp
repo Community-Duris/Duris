@@ -53,6 +53,33 @@ static flatfile_association_record guild()
 	return value;
 }
 
+static flatfile_guildhall_record guildhall()
+{
+	flatfile_guildhall_record value = {};
+	value.guildhall_id = 12;
+	value.association_id = 7;
+	value.type = 1;
+	value.outside_vnum = 588184;
+	value.racewar = 2;
+	flatfile_guildhall_room_record entrance = {};
+	entrance.room_id = 42;
+	entrance.vnum = 48020;
+	entrance.name = "Test Entrance&n";
+	entrance.type = 1;
+	entrance.values[0] = 2;
+	entrance.exits.fill(-1);
+	entrance.exits[0] = 48021;
+	flatfile_guildhall_room_record heartstone = {};
+	heartstone.room_id = 41;
+	heartstone.vnum = 48021;
+	heartstone.type = 2;
+	heartstone.values[1] = 3;
+	heartstone.exits.fill(-1);
+	heartstone.exits[2] = 48020;
+	value.rooms = { entrance, heartstone };
+	return value;
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -216,6 +243,95 @@ int main(int argc, char **argv)
 			flatfile_association_result::ok,
 		"alliance authority could not be restored for corruption test");
 
+	std::vector<flatfile_guildhall_record> guildhall_records;
+	require(flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+			flatfile_association_result::not_found,
+		"missing guildhall authority did not report not found");
+	const auto guildhall_source = guildhall();
+	require(flatfile_guildhall_save(root.string(), guildhall_source, &error) ==
+			flatfile_association_result::ok,
+		"guildhall authority creation failed: " + error);
+	require(flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+				flatfile_association_result::ok &&
+			guildhall_records.size() == 1 && guildhall_records[0].guildhall_id == 12 &&
+			guildhall_records[0].association_id == 7 &&
+			guildhall_records[0].outside_vnum == 588184 &&
+			guildhall_records[0].rooms.size() == 2 &&
+			guildhall_records[0].rooms[0].room_id == 41 &&
+			guildhall_records[0].rooms[0].values[1] == 3 &&
+			guildhall_records[0].rooms[1].name == "Test Entrance&n" &&
+			guildhall_records[0].rooms[1].exits[0] == 48021,
+		"guildhall authority was not canonical or did not round trip");
+	require(flatfile_guildhall_save(root.string(), guildhall_source, &error) ==
+			flatfile_association_result::unchanged,
+		"unchanged guildhall save advanced authority");
+	const fs::path guildhall_file = root / "domains/association_guildhalls";
+	const auto guildhall_permissions = fs::status(guildhall_file).permissions();
+	require((guildhall_permissions & (fs::perms::group_all | fs::perms::others_all)) ==
+			fs::perms::none,
+		"guildhall authority permissions are not private");
+	auto changed_guildhall = guildhall_source;
+	changed_guildhall.outside_vnum++;
+	changed_guildhall.rooms[0].name = "Renamed Entrance&n";
+	require(flatfile_guildhall_save(root.string(), changed_guildhall, &error) ==
+			flatfile_association_result::ok,
+		"guildhall authority update failed: " + error);
+	auto duplicate_room = guildhall_source;
+	duplicate_room.rooms[1].room_id = duplicate_room.rooms[0].room_id;
+	require(flatfile_guildhall_save(root.string(), duplicate_room, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted duplicate room IDs");
+	auto duplicate_vnum = guildhall_source;
+	duplicate_vnum.rooms[1].vnum = duplicate_vnum.rooms[0].vnum;
+	require(flatfile_guildhall_save(root.string(), duplicate_vnum, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted duplicate room vnums");
+	auto second_guildhall = guildhall_source;
+	second_guildhall.guildhall_id = 13;
+	second_guildhall.association_id = 8;
+	second_guildhall.rooms.resize(1);
+	require(flatfile_guildhall_save(root.string(), second_guildhall, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted a room ID and vnum owned by another hall");
+	auto invalid_name = guildhall_source;
+	invalid_name.rooms[0].name = "forged\nroom";
+	require(flatfile_guildhall_save(root.string(), invalid_name, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted a control character in a room name");
+	auto too_many_rooms = guildhall_source;
+	too_many_rooms.rooms.clear();
+	for (int index = 0; index < 51; ++index)
+	{
+		auto room = guildhall_source.rooms[0];
+		room.room_id = 100 + index;
+		room.vnum = 48100 + index;
+		too_many_rooms.rooms.push_back(room);
+	}
+	require(flatfile_guildhall_save(root.string(), too_many_rooms, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall authority accepted more than 50 rooms");
+	require(flatfile_guildhall_room_erase(root.string(), 12, 42, &error) ==
+				flatfile_association_result::ok &&
+			flatfile_guildhall_room_erase(root.string(), 12, 42, &error) ==
+				flatfile_association_result::unchanged &&
+			flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+				flatfile_association_result::ok &&
+			guildhall_records[0].rooms.size() == 1,
+		"guildhall room erase was not durable and idempotent");
+	require(flatfile_guildhall_save(root.string(), guildhall_source, &error) ==
+				flatfile_association_result::ok &&
+			flatfile_guildhall_erase(root.string(), 12, &error) ==
+				flatfile_association_result::ok &&
+			flatfile_guildhall_erase(root.string(), 12, &error) ==
+				flatfile_association_result::unchanged &&
+			flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+				flatfile_association_result::ok &&
+			guildhall_records.empty(),
+		"guildhall erase was not complete and idempotent");
+	require(flatfile_guildhall_save(root.string(), guildhall_source, &error) ==
+			flatfile_association_result::ok,
+		"guildhall authority could not be restored for corruption test");
+
 	flatfile_authority_operation operation;
 	{
 		flatfile_authority_lock lock;
@@ -289,6 +405,25 @@ int main(int argc, char **argv)
 	require(flatfile_alliance_replace(root.string(), alliance_source, &error) ==
 			flatfile_association_result::invalid,
 		"alliance replacement overwrote corrupt authority");
+	{
+		std::fstream file(guildhall_file, std::ios::in | std::ios::out | std::ios::binary);
+		require(file.good(), "could not open guildhall authority for corruption");
+		file.seekg(-1, std::ios::end);
+		char byte = 0;
+		file.read(&byte, 1);
+		byte ^= 0x27;
+		file.seekp(-1, std::ios::end);
+		file.write(&byte, 1);
+	}
+	require(flatfile_guildhall_list(root.string(), &guildhall_records, &error) ==
+			flatfile_association_result::invalid,
+		"corrupt guildhall authority was exposed");
+	require(flatfile_guildhall_save(root.string(), guildhall_source, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall save overwrote corrupt authority");
+	require(flatfile_guildhall_erase(root.string(), 12, &error) ==
+			flatfile_association_result::invalid,
+		"guildhall erase overwrote corrupt authority");
 
 	const fs::path catalog = root / "domains/association_catalog";
 	{

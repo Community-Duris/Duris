@@ -74,9 +74,15 @@ for token in (
     "flatfile_association_ledger_append(root, id_number",
     "flatfile_association_ledger_list(root, id_number, system_entries",
     "missing = load_guild(id) ? 0 : missing + 1",
+    "const bool destroyed = owned->destroy()",
+    "hall = Guildhall::guildhalls.erase(hall)",
 ):
     if token not in preprocess.stdout:
         raise SystemExit(f"client-free guild runtime route is missing {token}")
+if preprocess.stdout.index("const bool destroyed = owned->destroy()") > preprocess.stdout.index(
+    "flatfile_association_erase(root, id_number, &error)"
+):
+    raise SystemExit("client-free guild deletion does not erase guildhalls before guild authority")
 for query in (
     "SELECT id, name FROM associations WHERE id",
     "SELECT id, name, prestige, construction_points FROM associations",
@@ -128,3 +134,46 @@ for query in (
 ):
     if query in alliance_preprocess.stdout:
         raise SystemExit(f"client-free alliance runtime still contains SQL: {query}")
+
+guildhall_preprocess = subprocess.run(
+    [
+        "g++",
+        "-std=c++20",
+        "-D__NO_MYSQL__",
+        "-Isrc/no_mysql",
+        "-Isrc",
+        "-Isrc/ships",
+        "-I/usr/include/libxml2",
+        "-E",
+        "-P",
+        "src/guildhall_db.c",
+        "src/guildhall.c",
+    ],
+    cwd=ROOT,
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+)
+if guildhall_preprocess.returncode:
+    raise SystemExit(guildhall_preprocess.stdout)
+for token in (
+    "flatfile_guildhall_list(root, &records, &error)",
+    "flatfile_guildhall_save(root, record, &error)",
+    "flatfile_guildhall_erase(root, gh->id, &error)",
+    "flatfile_guildhall_room_erase(",
+):
+    if token not in guildhall_preprocess.stdout:
+        raise SystemExit(f"client-free guildhall runtime route is missing {token}")
+for query in (
+    "select coalesce(max(id), 0) from guildhalls",
+    "select id, assoc_id, type, outside_vnum, racewar from guildhalls",
+    "select id, vnum, guildhall_id, name, type",
+    "replace into guildhalls",
+    "replace into guildhall_rooms",
+    "delete from guildhalls",
+    "delete from guildhall_rooms",
+):
+    if query in guildhall_preprocess.stdout:
+        raise SystemExit(f"client-free guildhall runtime still contains SQL: {query}")
+if "this->rooms[i]->save()" in guildhall_preprocess.stdout:
+    raise SystemExit("client-free guildhall save is not a single catalog snapshot")

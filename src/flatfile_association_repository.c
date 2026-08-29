@@ -18,12 +18,15 @@ namespace
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'A', 'S', 'S', 'C', 0 };
 constexpr std::array<uint8_t, 8> ledger_magic = { 'D', 'U', 'R', 'G', 'L', 'D', 'G', 0 };
 constexpr std::array<uint8_t, 8> alliance_magic = { 'D', 'U', 'R', 'A', 'L', 'L', 'Y', 0 };
+constexpr std::array<uint8_t, 8> guildhall_magic = { 'D', 'U', 'R', 'G', 'H', 'A', 'L', 'L' };
 constexpr uint32_t catalog_version = 1;
 constexpr uint32_t ledger_version = 1;
 constexpr uint32_t alliance_version = 1;
+constexpr uint32_t guildhall_version = 1;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t ledger_maximum_bytes = 128 * 1024;
 constexpr size_t alliance_maximum_bytes = 1024 * 1024;
+constexpr size_t guildhall_maximum_bytes = 4 * 1024 * 1024;
 constexpr size_t association_maximum = 65536;
 constexpr size_t member_maximum = 1048576;
 constexpr size_t association_name_maximum = 80;
@@ -32,8 +35,12 @@ constexpr size_t rank_name_maximum = 80;
 constexpr size_t top_fragger_maximum = 64;
 constexpr size_t ledger_message_maximum = 255;
 constexpr size_t ledger_kind_maximum = 100;
+constexpr size_t guildhall_maximum = 4096;
+constexpr size_t guildhall_room_maximum = 50;
+constexpr size_t guildhall_room_name_maximum = 255;
 constexpr const char *catalog_filename = "association_catalog";
 constexpr const char *alliance_filename = "association_alliances";
+constexpr const char *guildhall_filename = "association_guildhalls";
 
 struct association_catalog
 {
@@ -57,6 +64,12 @@ struct alliance_catalog
 {
 	uint64_t revision = 1;
 	std::vector<flatfile_alliance_record> alliances;
+};
+
+struct guildhall_catalog
+{
+	uint64_t revision = 1;
+	std::vector<flatfile_guildhall_record> guildhalls;
 };
 
 struct encoder
@@ -684,6 +697,223 @@ flatfile_association_result load_alliance_catalog(const std::string &root,
 	}
 	return flatfile_association_result::ok;
 }
+
+bool guildhall_less(const flatfile_guildhall_record &left, const flatfile_guildhall_record &right)
+{
+	return left.guildhall_id < right.guildhall_id;
+}
+
+bool guildhall_room_less(const flatfile_guildhall_room_record &left,
+			 const flatfile_guildhall_room_record &right)
+{
+	return left.room_id < right.room_id;
+}
+
+bool valid_guildhall_room_name(const std::string &name)
+{
+	if (name.size() > guildhall_room_name_maximum)
+		return false;
+	for (const unsigned char character : name)
+		if (character < 0x20 || character == 0x7f)
+			return false;
+	return true;
+}
+
+bool guildhall_room_equal(const flatfile_guildhall_room_record &left,
+			  const flatfile_guildhall_room_record &right)
+{
+	return left.room_id == right.room_id && left.vnum == right.vnum &&
+	       left.name == right.name && left.type == right.type && left.values == right.values &&
+	       left.exits == right.exits;
+}
+
+bool guildhall_equal(const flatfile_guildhall_record &left, const flatfile_guildhall_record &right)
+{
+	if (left.guildhall_id != right.guildhall_id ||
+	    left.association_id != right.association_id || left.type != right.type ||
+	    left.outside_vnum != right.outside_vnum || left.racewar != right.racewar ||
+	    left.rooms.size() != right.rooms.size())
+		return false;
+	for (size_t index = 0; index < left.rooms.size(); ++index)
+		if (!guildhall_room_equal(left.rooms[index], right.rooms[index]))
+			return false;
+	return true;
+}
+
+bool normalize_guildhall(flatfile_guildhall_record *guildhall)
+{
+	if (!guildhall)
+		return false;
+	try
+	{
+		std::sort(guildhall->rooms.begin(), guildhall->rooms.end(), guildhall_room_less);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool valid_guildhalls(const guildhall_catalog &catalog)
+{
+	if (!catalog.revision || catalog.guildhalls.size() > guildhall_maximum ||
+	    !std::is_sorted(catalog.guildhalls.begin(), catalog.guildhalls.end(), guildhall_less))
+		return false;
+	std::unordered_set<int32_t> hall_ids, room_ids, room_vnums;
+	try
+	{
+		for (const auto &guildhall : catalog.guildhalls)
+		{
+			if (guildhall.guildhall_id <= 0 || !guildhall.association_id ||
+			    guildhall.association_id >
+				    static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) ||
+			    guildhall.outside_vnum < 0 ||
+			    guildhall.rooms.size() > guildhall_room_maximum ||
+			    !hall_ids.insert(guildhall.guildhall_id).second ||
+			    !std::is_sorted(guildhall.rooms.begin(), guildhall.rooms.end(),
+					    guildhall_room_less))
+				return false;
+			for (const auto &room : guildhall.rooms)
+				if (room.room_id <= 0 || room.vnum <= 0 || room.type < 0 ||
+				    room.type > 10 || !valid_guildhall_room_name(room.name) ||
+				    !room_ids.insert(room.room_id).second ||
+				    !room_vnums.insert(room.vnum).second)
+					return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool encode_guildhalls(const guildhall_catalog &catalog, std::vector<uint8_t> *bytes)
+{
+	if (!bytes || !valid_guildhalls(catalog))
+		return false;
+	encoder payload;
+	payload.number<uint32_t>(catalog.guildhalls.size());
+	for (const auto &guildhall : catalog.guildhalls)
+	{
+		payload.number(guildhall.guildhall_id);
+		payload.number(guildhall.association_id);
+		payload.number(guildhall.type);
+		payload.number(guildhall.outside_vnum);
+		payload.number(guildhall.racewar);
+		payload.number<uint32_t>(guildhall.rooms.size());
+		for (const auto &room : guildhall.rooms)
+		{
+			payload.number(room.room_id);
+			payload.number(room.vnum);
+			payload.text(room.name, guildhall_room_name_maximum);
+			payload.number(room.type);
+			for (const auto value : room.values)
+				payload.number(value);
+			for (const auto exit : room.exits)
+				payload.number(exit);
+		}
+	}
+	if (!payload.valid || payload.bytes.size() > guildhall_maximum_bytes)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.bytes.data(), payload.bytes.size(), digest.data());
+	encoder file;
+	file.raw(guildhall_magic.data(), guildhall_magic.size());
+	file.number(guildhall_version);
+	file.number<uint32_t>(payload.bytes.size());
+	file.number(catalog.revision);
+	file.raw(digest.data(), digest.size());
+	file.raw(payload.bytes.data(), payload.bytes.size());
+	if (!file.valid || file.bytes.size() > guildhall_maximum_bytes)
+		return false;
+	*bytes = std::move(file.bytes);
+	return true;
+}
+
+bool decode_guildhalls(const std::vector<uint8_t> &bytes, guildhall_catalog *catalog)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), guildhall_magic.data(), guildhall_magic.size()))
+		return false;
+	decoder header{ bytes.data() + guildhall_magic.size(),
+			bytes.size() - guildhall_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || version != guildhall_version || !revision ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload_bytes, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > guildhall_maximum)
+		return false;
+	guildhall_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.guildhalls.resize(count);
+		for (auto &guildhall : decoded.guildhalls)
+		{
+			uint32_t room_count = 0;
+			if (!payload.number(&guildhall.guildhall_id) ||
+			    !payload.number(&guildhall.association_id) ||
+			    !payload.number(&guildhall.type) ||
+			    !payload.number(&guildhall.outside_vnum) ||
+			    !payload.number(&guildhall.racewar) || !payload.number(&room_count) ||
+			    room_count > guildhall_room_maximum)
+				return false;
+			guildhall.rooms.resize(room_count);
+			for (auto &room : guildhall.rooms)
+			{
+				if (!payload.number(&room.room_id) || !payload.number(&room.vnum) ||
+				    !payload.text(&room.name, guildhall_room_name_maximum) ||
+				    !payload.number(&room.type))
+					return false;
+				for (auto &value : room.values)
+					if (!payload.number(&value))
+						return false;
+				for (auto &exit : room.exits)
+					if (!payload.number(&exit))
+						return false;
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (payload.offset != payload.size || !valid_guildhalls(decoded))
+		return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+
+flatfile_association_result load_guildhall_catalog(const std::string &root,
+						   guildhall_catalog *catalog, std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto loaded = flatfile_read(domains_directory(root), guildhall_filename,
+					  guildhall_maximum_bytes, &bytes, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_association_result::not_found;
+	if (loaded == flatfile_read_result::io_error)
+		return flatfile_association_result::io_error;
+	if (loaded != flatfile_read_result::ok || !decode_guildhalls(bytes, catalog))
+	{
+		if (error && error->empty())
+			*error = "guildhall catalog is corrupt";
+		return flatfile_association_result::invalid;
+	}
+	return flatfile_association_result::ok;
+}
 } // namespace
 
 flatfile_association_result
@@ -1040,6 +1270,175 @@ flatfile_alliance_replace(const std::string &root,
 	if (!encode_alliances(desired, &encoded))
 		return flatfile_association_result::invalid;
 	return flatfile_atomic_write(domains_directory(root), alliance_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result
+flatfile_guildhall_list(const std::string &root, std::vector<flatfile_guildhall_record> *guildhalls,
+			std::string *error)
+{
+	if (root.empty() || !guildhalls)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	guildhall_catalog catalog;
+	const auto loaded = load_guildhall_catalog(root, &catalog, error);
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	*guildhalls = std::move(catalog.guildhalls);
+	return flatfile_association_result::ok;
+}
+
+flatfile_association_result flatfile_guildhall_save(const std::string &root,
+						    const flatfile_guildhall_record &guildhall,
+						    std::string *error)
+{
+	if (root.empty())
+		return flatfile_association_result::invalid;
+	flatfile_guildhall_record desired;
+	try
+	{
+		desired = guildhall;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (!normalize_guildhall(&desired))
+		return flatfile_association_result::io_error;
+	guildhall_catalog probe;
+	try
+	{
+		probe.guildhalls.push_back(desired);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (!valid_guildhalls(probe))
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	guildhall_catalog catalog;
+	const auto loaded = load_guildhall_catalog(root, &catalog, error);
+	if (loaded != flatfile_association_result::ok &&
+	    loaded != flatfile_association_result::not_found)
+		return loaded;
+	auto existing = std::lower_bound(catalog.guildhalls.begin(), catalog.guildhalls.end(),
+					 desired.guildhall_id, [](const auto &entry, int32_t id)
+					 { return entry.guildhall_id < id; });
+	if (existing != catalog.guildhalls.end() && existing->guildhall_id == desired.guildhall_id)
+	{
+		if (guildhall_equal(*existing, desired))
+			return flatfile_association_result::unchanged;
+		*existing = std::move(desired);
+	}
+	else
+	{
+		try
+		{
+			catalog.guildhalls.insert(existing, std::move(desired));
+		}
+		catch (const std::bad_alloc &)
+		{
+			return flatfile_association_result::io_error;
+		}
+	}
+	if (loaded == flatfile_association_result::ok)
+	{
+		if (catalog.revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_association_result::conflict;
+		++catalog.revision;
+	}
+	if (!valid_guildhalls(catalog))
+		return flatfile_association_result::invalid;
+	std::vector<uint8_t> encoded;
+	if (!encode_guildhalls(catalog, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), guildhall_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result flatfile_guildhall_erase(const std::string &root, int32_t guildhall_id,
+						     std::string *error)
+{
+	if (root.empty() || guildhall_id <= 0)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	guildhall_catalog catalog;
+	const auto loaded = load_guildhall_catalog(root, &catalog, error);
+	if (loaded == flatfile_association_result::not_found)
+		return flatfile_association_result::unchanged;
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	auto existing = std::lower_bound(catalog.guildhalls.begin(), catalog.guildhalls.end(),
+					 guildhall_id, [](const auto &entry, int32_t id)
+					 { return entry.guildhall_id < id; });
+	if (existing == catalog.guildhalls.end() || existing->guildhall_id != guildhall_id)
+		return flatfile_association_result::unchanged;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_association_result::conflict;
+	catalog.guildhalls.erase(existing);
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_guildhalls(catalog, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), guildhall_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result flatfile_guildhall_room_erase(const std::string &root,
+							  int32_t guildhall_id, int32_t room_id,
+							  std::string *error)
+{
+	if (root.empty() || guildhall_id <= 0 || room_id <= 0)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	guildhall_catalog catalog;
+	const auto loaded = load_guildhall_catalog(root, &catalog, error);
+	if (loaded == flatfile_association_result::not_found)
+		return flatfile_association_result::unchanged;
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	auto guildhall = std::lower_bound(catalog.guildhalls.begin(), catalog.guildhalls.end(),
+					  guildhall_id, [](const auto &entry, int32_t id)
+					  { return entry.guildhall_id < id; });
+	if (guildhall == catalog.guildhalls.end() || guildhall->guildhall_id != guildhall_id)
+		return flatfile_association_result::unchanged;
+	auto room = std::lower_bound(guildhall->rooms.begin(), guildhall->rooms.end(), room_id,
+				     [](const auto &entry, int32_t id)
+				     { return entry.room_id < id; });
+	if (room == guildhall->rooms.end() || room->room_id != room_id)
+		return flatfile_association_result::unchanged;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_association_result::conflict;
+	guildhall->rooms.erase(room);
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_guildhalls(catalog, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), guildhall_filename, encoded, error) ?
 		       flatfile_association_result::ok :
 		       flatfile_association_result::io_error;
 }

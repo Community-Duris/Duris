@@ -658,6 +658,38 @@
   persistence mode. Guildhalls and outposts remain separate demonstrated gaps; the
   global incomplete-domain boot fence remains.
 
+### 2026-08-29 - restored database-only guildhalls in flat mode
+
+- **Concrete gap:** guildhalls and their generated rooms were historically stored only
+  in the `guildhalls` and `guildhall_rooms` tables. In a client-free build, both loaders
+  returned empty state, save and delete hooks reported success without persistence, and
+  fresh ID allocation began at an invalid value. Construction appeared to work but could
+  not survive reload or restart.
+- **Restoration:** the existing association repository now stores the two tables' exact
+  hall and room fields as one bounded guildhall catalog. A hall mutation publishes the
+  hall and its at-most-50 rooms atomically under the existing authority lock, version,
+  checksum, private permissions, and corruption refusal. Boot restores owning guilds,
+  specialized room types, values, exits, names, and next IDs; missing authority means no
+  halls, while corrupt or dangling ownership aborts boot. Create, room construction,
+  upgrades, renames, moves, reloads, golem state, and deletion use the existing live
+  hooks. Flat guild deletion erases owned halls before guild authority so it cannot
+  create a dangling durable reference. The MariaDB path remains unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_association_repository.py`
+  covers missing state, canonical full-field round trips, idempotence, updates, private
+  permissions, per-hall room limits, duplicate room ID/vnum rejection within and across
+  halls, control-character rejection, room and hall erasure, checksum corruption, and
+  read/write/delete refusal after corruption. Client-free source contracts verify every
+  live load/save/delete route, ordered guild cleanup, one-snapshot saves, and the absence
+  of guildhall SQL from the no-database build.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_character_delete.py`,
+  `python3 tests/async/test_flatfile_character_delete_manifest.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** guildhall construction and administration are now durable in either
+  persistence mode. Outposts remain a separate, broader database-only gap; the global
+  incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

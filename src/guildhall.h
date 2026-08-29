@@ -402,6 +402,7 @@ struct Guildhall
 
 	Guildhall()
 		: id(0)
+		, assoc_id(0)
 		, guild(NULL)
 		, type(0)
 		, outside_vnum(0)

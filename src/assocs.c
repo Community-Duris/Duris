@@ -803,15 +803,38 @@ Guild::~Guild()
 	sever_alliance(this);
 
 #ifdef __NO_MYSQL__
-	const char *root = persistence_mode_flatfile_root();
 	std::string error;
-	const auto erased = root ? flatfile_association_erase(root, id_number, &error) :
-				   flatfile_association_result::invalid;
+	bool guildhalls_erased = true;
+	for (auto hall = Guildhall::guildhalls.begin(); hall != Guildhall::guildhalls.end();)
+	{
+		Guildhall *owned = *hall;
+		if (!owned || owned->get_assoc() != this)
+		{
+			++hall;
+			continue;
+		}
+		const bool deinitialized = owned->deinit();
+		const bool destroyed = owned->destroy();
+		if (!deinitialized || !destroyed)
+			guildhalls_erased = false;
+		delete owned;
+		hall = Guildhall::guildhalls.erase(hall);
+	}
+	if (!guildhalls_erased)
+		error = "one or more guildhalls could not be erased";
+	const char *root = persistence_mode_flatfile_root();
+	const auto erased = root && guildhalls_erased ?
+				    flatfile_association_erase(root, id_number, &error) :
+				    flatfile_association_result::invalid;
 	if (erased != flatfile_association_result::ok &&
 	    erased != flatfile_association_result::unchanged &&
 	    erased != flatfile_association_result::not_found)
-		persistence_alert(AVATAR, "associations", name, "none", "none", "delete",
-				  "flat guild delete failed: %s", error.c_str());
+		persistence_alert(
+			AVATAR, "associations", name, "none", "none", "delete",
+			guildhalls_erased ?
+				"flat guild delete failed: %s" :
+				"flat guild delete retained authority because guildhall cleanup failed: %s",
+			error.c_str());
 #endif
 
 	snprintf(filename, MAX_STRING_LENGTH, "%sasc.%u", ASC_DIR, id_number);
