@@ -10,23 +10,23 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 91 routes the audited, release-to-room player-corpse
-destruction procs through the atomic lifecycle boundary. The generic devour proc, both
-Verzanan dogs, Lightning Sword, flying daggers, and ochre jelly now leave a flat-primary
-corpse and its contents untouched until the durable corpse-to-room release completes.
-The shared guard treats an already-busy lifecycle as handled without unsafe mutation,
-fails malformed or unstageable releases closed, and leaves NPC corpses, food,
-MariaDB-mode behavior, and generic `extract_obj` semantics unchanged.
+As of 2026-08-29, checkpoint 92 connects durable player drop, get, and cross-owner put
+operations to the revisioned room aggregate restored at boot. Flat-primary movement now
+publishes exact item ownership, detached room snapshots, player materialization events,
+and artifact location changes in one recoverable authority transaction before the live
+object graph moves. Nested floor-container changes preserve topology and apply the same
+bounded ancestor-weight propagation as the live object handlers. Exact retries and an
+interruption between authority images cannot lose or duplicate the moved subtree.
 
-The audit also separated operations that cannot use room release without changing their
-historical meaning: resurrection moves custody to a player, necromancy moves it to a
-created follower, some spells have completion effects coupled to consumption, and the
-very-angry-NPC path intentionally destroys the contained gear. Those require their own
-durability-before-mutation sequencing rather than a broader extraction hook. Corpse
-nesting likewise remains fail-closed because its destination is another container. The
-next historical restoration boundary is saved floor-item save/restore using the existing
-revisioned room authority. The siege/kingdom removal memo remains research only; it does
-not amend this directive's explicit requirement to restore historical siege state.
+This completes the shared live room-mutation prerequisite for historical saved world
+items, but it does not yet recreate the administrative `ITEM_STORAGE` root lifecycle.
+The next boundary is a stable-UID establishment/removal adapter for those roots and the
+flat-primary `writeSavedItem`, `PurgeSavedItemFile`, and restore routing; ordinary content
+put/get is already covered by the room transaction. The checkpoint 91 audit remains in
+force for non-room corpse operations: player/follower transfers, coupled spell effects,
+intentional contained-gear destruction, and nested corpses still require their own
+semantics. The siege/kingdom removal memo remains research only and does not amend this
+directive's explicit requirement to restore historical siege state.
 
 ## Owner intent
 

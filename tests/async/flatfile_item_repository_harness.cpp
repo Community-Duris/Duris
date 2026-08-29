@@ -446,38 +446,173 @@ int main(int argc, char **argv)
 			"restart reconciliation did not reconstruct the exact destination transfer: " +
 				error);
 	}
-	item_transfer_payload uncoupled = move;
-	uncoupled.from_owner = { item_owner_type::player, 77, 0 };
-	uncoupled.to_owner = { item_owner_type::room, 9001, 0 };
-	uncoupled.reason = item_transfer_reason::player_drop;
-	uncoupled.reason_id = 9001;
-	uncoupled.expected_from_revision = 1;
-	uncoupled.expected_to_revision = 0;
-	for (size_t index = 0; index < items.size(); ++index)
-		uncoupled.items[index] = { items[index].item_uid,
-					   items[index].root_item_uid,
-					   items[index].parent_item_uid,
-					   items[index].item_revision,
-					   items[index].vnum,
-					   items[index].state };
-	critical_command uncoupled_command = {};
-	require(item_transfer_command_build(&uncoupled_command, operation(5), uncoupled,
+	const fs::path room_root = root / "room-transfer";
+	fs::create_directories(room_root / "domains");
+	fs::permissions(room_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(room_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity room_player = { item_owner_type::player, 77, 0 };
+	const item_owner_identity room_owner = { item_owner_type::room, 9001, 0 };
+	const std::vector<flatfile_item_ownership_record> room_player_items = {
+		{ 100, 100, 0, room_player, 1, 500, item_custody_state::active },
+		{ 101, 100, 100, room_player, 1, 501, item_custody_state::active },
+	};
+	require(flatfile_item_repository_establish_owner(room_root.string(), room_player,
+							 room_player_items, &error) ==
+				flatfile_item_baseline_result::applied &&
+			flatfile_world_item_establish(room_root.string(), {}, {}, &error) ==
+				flatfile_world_item_result::ok,
+		"could not establish isolated room transfer authority: " + error);
+	std::vector<player_item_snapshot> room_container = movement_items();
+	room_container[0].equipment_slot = 0;
+	room_container[0].weight = 9;
+	room_container[1].equipment_slot = 0;
+	room_container[1].weight = 4;
+	std::vector<uint8_t> room_container_blob;
+	require(player_item_snapshot_list_encode(room_container, &room_container_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode room container transfer");
+	item_transfer_payload room_drop = {};
+	room_drop.from_owner = room_player;
+	room_drop.to_owner = room_owner;
+	room_drop.reason = item_transfer_reason::player_drop;
+	room_drop.reason_id = 9001;
+	room_drop.expected_from_revision = 1;
+	room_drop.expected_to_revision = 0;
+	room_drop.selected_item_uid = 100;
+	room_drop.target_root_item_uid = 100;
+	room_drop.item_count = 2;
+	room_drop.items[0] = { 100, 100, 0, 1, 500, item_custody_state::active };
+	room_drop.items[1] = { 101, 100, 100, 1, 501, item_custody_state::active };
+	room_drop.item_blob_size = static_cast<uint32_t>(room_container_blob.size());
+	std::copy(room_container_blob.begin(), room_container_blob.end(),
+		  room_drop.item_blob.begin());
+	critical_command room_drop_command = {};
+	require(item_transfer_command_build(&room_drop_command, operation(5), room_drop,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive),
-		"could not build uncoupled room transfer");
-	uncoupled_command.accepted_at_usec = 5;
-	applied = flatfile_item_repository_apply(root.string(), uncoupled_command);
-	require(applied.outcome == critical_apply_outcome::terminal_failure &&
-			applied.error_code == EOPNOTSUPP &&
-			flatfile_item_repository_apply(root.string(), uncoupled_command)
-					.error_code == EOPNOTSUPP,
-		"uncoupled room aggregate transfer did not fail closed and replay exactly");
+		"could not build room drop transfer");
+	room_drop_command.accepted_at_usec = 5;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_item_repository_apply(room_root.string(), room_drop_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted room drop did not retain composite intent");
+	applied = flatfile_item_repository_apply(room_root.string(), room_drop_command);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			result_of(applied).from_owner_revision == 2 &&
+			result_of(applied).to_owner_revision == 1,
+		"room drop did not recover atomically");
+	std::vector<flatfile_room_item_record> room_records;
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records.size() == 1 && room_records[0].revision == 1 &&
+			room_records[0].items.size() == 2 &&
+			room_records[0].items[0].equipment_slot == -1 &&
+			room_records[0].items[1].parent_index == 0,
+		"room drop did not publish the exact room aggregate: " + error);
+	uint64_t room_revision = 0;
+	std::vector<flatfile_item_ownership_record> owned_room_items;
+	require(flatfile_item_repository_load_owner(room_root.string(), room_owner, &room_revision,
+						    &owned_room_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			room_revision == 1 && owned_room_items.size() == 2,
+		"room drop did not publish matching ownership custody");
+
+	const item_owner_identity insert_player = { item_owner_type::player, 88, 0 };
+	require(flatfile_item_repository_establish_owner(
+			room_root.string(), insert_player,
+			{ { 200, 200, 0, insert_player, 1, 600, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish room-container insertion item: " + error);
+	player_item_snapshot inserted_item = {};
+	inserted_item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	inserted_item.equipment_slot = 0;
+	inserted_item.object_uid = 200;
+	inserted_item.generated_key = 1200;
+	inserted_item.vnum = 600;
+	inserted_item.name = "inserted item";
+	inserted_item.short_description = "an inserted item";
+	inserted_item.weight = 3;
+	std::vector<uint8_t> inserted_blob;
+	require(player_item_snapshot_list_encode({ inserted_item }, &inserted_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode room-container insertion item");
+	item_transfer_payload room_put = {};
+	room_put.from_owner = insert_player;
+	room_put.to_owner = room_owner;
+	room_put.reason = item_transfer_reason::player_put;
+	room_put.reason_id = 100;
+	room_put.expected_from_revision = 1;
+	room_put.expected_to_revision = 1;
+	room_put.selected_item_uid = 200;
+	room_put.target_root_item_uid = 100;
+	room_put.target_parent_item_uid = 100;
+	room_put.expected_target_parent_revision = 2;
+	room_put.item_count = 1;
+	room_put.items[0] = { 200, 200, 0, 1, 600, item_custody_state::active };
+	room_put.item_blob_size = static_cast<uint32_t>(inserted_blob.size());
+	std::copy(inserted_blob.begin(), inserted_blob.end(), room_put.item_blob.begin());
+	critical_command room_put_command = {};
+	require(item_transfer_command_build(&room_put_command, operation(6), room_put,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build room-container put transfer");
+	room_put_command.accepted_at_usec = 6;
+	applied = flatfile_item_repository_apply(room_root.string(), room_put_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"room-container put did not apply");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records[0].revision == 2 && room_records[0].items.size() == 3 &&
+			room_records[0].items[0].weight == 12 &&
+			room_records[0].items[2].parent_index == 0,
+		"room-container put did not persist topology and propagated weight");
+
+	std::vector<flatfile_item_ownership_record> inserted_ownership;
+	uint64_t insert_revision = 0;
+	require(flatfile_item_repository_load_owner(room_root.string(), room_owner, &room_revision,
+						    &owned_room_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			flatfile_item_repository_load_owner(room_root.string(), insert_player,
+							    &insert_revision, &inserted_ownership,
+							    &error) ==
+				flatfile_item_repository_result::ok &&
+			room_revision == 2 && insert_revision == 2 && inserted_ownership.empty(),
+		"room-container put did not publish expected owner revisions");
+	item_transfer_payload room_get = room_put;
+	room_get.from_owner = room_owner;
+	room_get.to_owner = insert_player;
+	room_get.reason = item_transfer_reason::player_get;
+	room_get.reason_id = 200;
+	room_get.expected_from_revision = 2;
+	room_get.expected_to_revision = 2;
+	room_get.target_root_item_uid = 200;
+	room_get.target_parent_item_uid = 0;
+	room_get.expected_target_parent_revision = 0;
+	room_get.items[0] = { 200, 100, 100, 2, 600, item_custody_state::active };
+	critical_command room_get_command = {};
+	require(item_transfer_command_build(&room_get_command, operation(7), room_get,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build room-container get transfer");
+	room_get_command.accepted_at_usec = 7;
+	applied = flatfile_item_repository_apply(room_root.string(), room_get_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"room-container get did not apply");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records[0].revision == 3 && room_records[0].items.size() == 2 &&
+			room_records[0].items[0].weight == 9,
+		"room-container get did not remove only the subtree and restore ancestor weight");
 	items.clear();
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::ok &&
 			owner_revision == 1 && items.size() == 2,
-		"failed room transfer changed player ownership");
+		"isolated room transfer changed the primary transfer fixture");
 	const item_owner_identity locker_owner = { item_owner_type::locker, 2, 11 };
 	require(flatfile_locker_establish(root.string(), { transfer_locker() }, {}, &error) ==
 			flatfile_locker_result::ok,
@@ -488,11 +623,20 @@ int main(int argc, char **argv)
 			  { 901, 900, 900, locker_owner, 1, 1901, item_custody_state::active } },
 			&error) == flatfile_item_baseline_result::applied,
 		"could not establish existing locker custody: " + error);
-	item_transfer_payload deposit = uncoupled;
+	item_transfer_payload deposit = move;
+	deposit.from_owner = { item_owner_type::player, 77, 0 };
 	deposit.to_owner = locker_owner;
 	deposit.reason = item_transfer_reason::locker_deposit;
 	deposit.reason_id = 11;
+	deposit.expected_from_revision = 1;
 	deposit.expected_to_revision = 1;
+	for (size_t index = 0; index < items.size(); ++index)
+		deposit.items[index] = { items[index].item_uid,
+					 items[index].root_item_uid,
+					 items[index].parent_item_uid,
+					 items[index].item_revision,
+					 items[index].vnum,
+					 items[index].state };
 	critical_command deposit_command = {};
 	require(item_transfer_command_build(&deposit_command, operation(6), deposit,
 					    critical_source_site::command,

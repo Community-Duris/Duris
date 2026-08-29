@@ -1180,6 +1180,123 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
 	return flatfile_artifact_result::ok;
 }
 
+flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const item_transfer_payload &payload, uint64_t accepted_at_usec,
+	flatfile_artifact_transfer_mutation *mutation, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !payload.item_count ||
+	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size() ||
+	    accepted_at_usec / 1000000 > INT64_MAX)
+		return flatfile_artifact_result::invalid;
+	*mutation = {};
+	const bool deposit = payload.from_owner.type == item_owner_type::player &&
+			     payload.to_owner.type == item_owner_type::room &&
+			     ((payload.reason == item_transfer_reason::player_drop &&
+			       !payload.target_parent_item_uid) ||
+			      (payload.reason == item_transfer_reason::player_put &&
+			       payload.target_parent_item_uid));
+	const bool withdraw = payload.from_owner.type == item_owner_type::room &&
+			      payload.to_owner.type == item_owner_type::player &&
+			      payload.reason == item_transfer_reason::player_get &&
+			      !payload.target_parent_item_uid;
+	if (deposit == withdraw)
+		return flatfile_artifact_result::invalid;
+	const uint64_t player_id = deposit ? payload.from_owner.id : payload.to_owner.id;
+	const uint64_t room_id = deposit ? payload.to_owner.id : payload.from_owner.id;
+	if (!player_id || player_id > INT32_MAX || !room_id || room_id > INT32_MAX ||
+	    payload.from_owner.context_id || payload.to_owner.context_id)
+		return flatfile_artifact_result::invalid;
+	std::vector<player_item_snapshot> exact_items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &exact_items) != player_snapshot_codec_result::ok ||
+	    exact_items.size() != payload.item_count || exact_items.empty() ||
+	    exact_items.front().object_uid != payload.selected_item_uid ||
+	    !std::all_of(exact_items.begin(), exact_items.end(),
+			 [&](const auto &item)
+			 {
+				 return std::count_if(payload.items.begin(),
+						      payload.items.begin() + payload.item_count,
+						      [&](const auto &entry) {
+							      return entry.item_uid ==
+									     item.object_uid &&
+								     entry.vnum == item.vnum;
+						      }) == 1;
+			 }) ||
+	    !std::all_of(payload.items.begin(), payload.items.begin() + payload.item_count,
+			 [&](const auto &entry)
+			 {
+				 return std::count_if(exact_items.begin(), exact_items.end(),
+						      [&](const auto &item) {
+							      return entry.item_uid ==
+									     item.object_uid &&
+								     entry.vnum == item.vnum;
+						      }) == 1;
+			 }))
+		return flatfile_artifact_result::invalid;
+	if (std::none_of(exact_items.begin(), exact_items.end(),
+			 [](const auto &item) { return item.extra_flags & artifact_extra_flag; }))
+		return flatfile_artifact_result::unchanged;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	for (size_t index = 0; index < exact_items.size(); ++index)
+	{
+		const auto &item = exact_items[index];
+		if (!(item.extra_flags & artifact_extra_flag))
+			continue;
+		if (std::any_of(exact_items.begin(), exact_items.begin() + index,
+				[&](const auto &prior) {
+					return (prior.extra_flags & artifact_extra_flag) &&
+					       prior.vnum == item.vnum;
+				}))
+			return flatfile_artifact_result::conflict;
+		flatfile_artifact_record key = {};
+		key.vnum = item.vnum;
+		const auto record = std::lower_bound(catalog.records.begin(), catalog.records.end(),
+						     key, record_less);
+		const int32_t expected_type = deposit ? FLATFILE_ARTIFACT_ON_PLAYER :
+							FLATFILE_ARTIFACT_ON_GROUND;
+		const int32_t expected_location =
+			static_cast<int32_t>(deposit ? player_id : room_id);
+		if (record == catalog.records.end() || record->vnum != item.vnum ||
+		    !record->owned || record->location_type != expected_type ||
+		    record->location != expected_location || record->revision == UINT64_MAX)
+			return flatfile_artifact_result::conflict;
+	}
+	const int64_t event_time = static_cast<int64_t>(accepted_at_usec / 1000000);
+	bool changed = false;
+	for (auto &record : catalog.records)
+	{
+		const bool selected =
+			std::any_of(exact_items.begin(), exact_items.end(),
+				    [&](const auto &item) {
+					    return (item.extra_flags & artifact_extra_flag) &&
+						   item.vnum == record.vnum;
+				    });
+		if (!selected)
+			continue;
+		record.location_type = deposit ? FLATFILE_ARTIFACT_ON_GROUND :
+						 FLATFILE_ARTIFACT_ON_PLAYER;
+		record.location = static_cast<int32_t>(deposit ? room_id : player_id);
+		record.last_update = event_time;
+		++record.revision;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_artifact_result::unchanged;
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_artifact_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(bytes) };
+	return flatfile_artifact_result::ok;
+}
+
 flatfile_artifact_result flatfile_artifact_prepare_corpse_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t corpse_pid,
 	int32_t room_vnum, uint64_t accepted_at_usec,

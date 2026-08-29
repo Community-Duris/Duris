@@ -71,6 +71,14 @@ struct flatfile_corpse_transfer_mutation
 	bool created = false;
 };
 
+struct flatfile_room_transfer_mutation
+{
+	flatfile_authority_after_image after_image;
+	std::vector<flatfile_corpse_custody_item> expected_items;
+	uint64_t room_revision = 0;
+	bool created = false;
+};
+
 struct flatfile_corpse_lifecycle_mutation
 {
 	flatfile_authority_after_image after_image;
@@ -116,6 +124,10 @@ flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_transfer_payload &payload, flatfile_corpse_transfer_mutation *mutation,
+	std::string *error);
+flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const item_transfer_payload &payload, flatfile_room_transfer_mutation *mutation,
 	std::string *error);
 flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
 	const std::string &root, const flatfile_authority_lock &lock,

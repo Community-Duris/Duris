@@ -3989,3 +3989,36 @@ action" text below remains historical and does not authorize work.
 - **Next action:** restore historical saved floor-item capture and restart materialization through the
   revisioned room aggregate, then return to the audited non-room corpse operations with the ownership
   destinations required by those concrete gameplay paths.
+
+### Checkpoint 92 - atomic live room item transfers
+
+- **Historical behavior restored:** the existing deferred player `drop`, floor/container `get`, and
+  cross-owner `put` paths can now persist durable non-money items in flat-primary rooms instead of
+  receiving the ownership repository's `EOPNOTSUPP` fence. MariaDB routing and same-owner inventory
+  reparenting remain unchanged.
+- **One recoverable publication:** the item repository composes ownership, the version 3 world-room
+  aggregate, player materialization events, and any artifact catalog change under the existing
+  authority lock. The room preparer compares the complete pre-move UID/VNUM/root/parent custody,
+  advances the same room revision as ownership, canonicalizes live slot-zero snapshots to detached
+  slot `-1`, and records the exact moved subtree before the completion mutates live pointers.
+- **Nested container fidelity:** puts attach the transported root to the proven room-owned parent;
+  gets remove only the selected subtree. Both directions reproduce the live handler's positive-weight
+  propagation through all room-owned ancestors with checked arithmetic, preventing a restored floor
+  container from carrying stale weight after content movement.
+- **Artifact custody:** registered artifacts move atomically between `ON_PLAYER` and `ON_GROUND` at
+  the command acceptance time while their timer and binding fields remain intact. The established
+  live artifact callback can still perform its normal post-publication soul semantics.
+- **Crash and regression coverage:** a focused isolated fixture interrupts a player-to-room drop
+  between authority images, recovers it exactly once, then exercises nested put/get and confirms room
+  topology, owner revisions, detached snapshots, and ancestor weights. Artifact coverage proves both
+  room directions and binding preservation; the live source contract requires both room preparers and
+  their after-images before the shared commit.
+- **Checks passed:** focused item-ownership, world-item, artifact/runtime, and live movement suites;
+  changed-line formatting, `git diff --check`, the strict normal C++20 server build, and the isolated
+  client-free game-loop boot/clean-shutdown preflight.
+- **Exposure:** money objects still use their historical cash path rather than item custody. This
+  checkpoint does not establish or delete an administrative saved-storage root, so the historical
+  `writeSavedItem`/`PurgeSavedItemFile` adapter and explicit saved-item restore entry point remain.
+- **Next action:** give administrative `ITEM_STORAGE` roots stable-UID, revisioned room
+  establishment/removal and route the three historical saved-item entry points through it. Reuse the
+  room transfer above for all subsequent player content changes rather than adding another catalog.

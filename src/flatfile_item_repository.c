@@ -477,11 +477,27 @@ bool corpse_create_transfer(const item_transfer_payload &payload)
 	       payload.reason == item_transfer_reason::corpse_create;
 }
 
+bool room_transfer(const item_transfer_payload &payload)
+{
+	const bool deposit = payload.from_owner.type == item_owner_type::player &&
+			     payload.to_owner.type == item_owner_type::room &&
+			     ((payload.reason == item_transfer_reason::player_drop &&
+			       !payload.target_parent_item_uid) ||
+			      (payload.reason == item_transfer_reason::player_put &&
+			       payload.target_parent_item_uid));
+	const bool withdraw = payload.from_owner.type == item_owner_type::room &&
+			      payload.to_owner.type == item_owner_type::player &&
+			      payload.reason == item_transfer_reason::player_get &&
+			      !payload.target_parent_item_uid;
+	return deposit != withdraw;
+}
+
 bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t payload_version)
 {
 	return (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
 	       locker_transfer(payload) || corpse_loot_transfer(payload) ||
+	       (payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION && room_transfer(payload)) ||
 	       (payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
 		corpse_create_transfer(payload));
 }
@@ -521,6 +537,30 @@ bool corpse_custody_matches(ownership_catalog &catalog, const item_owner_identit
 			continue;
 		if (index >= expected.size() || expected[index].item_uid != item.item_uid ||
 		    expected[index].vnum != item.vnum)
+			return false;
+		++index;
+	}
+	return index == expected.size();
+}
+
+bool room_custody_matches(ownership_catalog &catalog, const item_owner_identity &owner,
+			  const std::vector<flatfile_corpse_custody_item> &expected, bool created)
+{
+	const owner_state *stored_owner = find_owner(&catalog, owner);
+	if (!stored_owner)
+		return created && expected.empty();
+	if (created && (stored_owner->revision || !expected.empty()))
+		return false;
+	size_t index = 0;
+	for (const auto &item : catalog.items)
+	{
+		if (item.state != item_custody_state::active ||
+		    !item_owner_identity_equal(item.owner, owner))
+			continue;
+		if (index >= expected.size() || expected[index].item_uid != item.item_uid ||
+		    expected[index].vnum != item.vnum ||
+		    expected[index].root_item_uid != item.root_item_uid ||
+		    expected[index].parent_item_uid != item.parent_item_uid)
 			return false;
 		++index;
 	}
@@ -1501,7 +1541,9 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	flatfile_shop_trade_materialization_mutation materialization;
 	flatfile_locker_transfer_mutation locker;
 	flatfile_corpse_transfer_mutation corpse;
+	flatfile_room_transfer_mutation room;
 	flatfile_artifact_transfer_mutation corpse_artifacts;
+	flatfile_artifact_transfer_mutation room_artifacts;
 	bool include_locker = false;
 	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
 	    locker_transfer(payload))
@@ -1550,6 +1592,33 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		candidate.operations.back().result = result;
 		include_corpse = true;
 	}
+	bool include_room = false;
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	    room_transfer(payload))
+	{
+		const auto prepared = flatfile_world_item_prepare_room_transfer(
+			root, authority, payload, &room, &error);
+		if (prepared != flatfile_world_item_result::ok)
+			return { prepared == flatfile_world_item_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_world_item_result::io_error ?
+						 EIO :
+						 EILSEQ) };
+		const item_owner_identity &room_owner =
+			payload.from_owner.type == item_owner_type::room ? payload.from_owner :
+									   payload.to_owner;
+		const uint64_t result_revision = payload.from_owner.type == item_owner_type::room ?
+							 result.from_owner_revision :
+							 result.to_owner_revision;
+		if (!room_custody_matches(catalog, room_owner, room.expected_items, room.created) ||
+		    room.room_revision != result_revision)
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EILSEQ };
+		include_room = true;
+	}
 	bool include_corpse_artifacts = false;
 	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
 	    (corpse_loot_transfer(payload) || corpse_create_transfer(payload)))
@@ -1567,6 +1636,24 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 					 prepared == flatfile_artifact_result::io_error ? EIO :
 											  EILSEQ) };
 		include_corpse_artifacts = prepared == flatfile_artifact_result::ok;
+	}
+	bool include_room_artifacts = false;
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	    room_transfer(payload))
+	{
+		const auto prepared = flatfile_artifact_prepare_room_transfer(
+			root, authority, payload, command.accepted_at_usec, &room_artifacts,
+			&error);
+		if (prepared != flatfile_artifact_result::ok &&
+		    prepared != flatfile_artifact_result::unchanged)
+			return { prepared == flatfile_artifact_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_artifact_result::io_error ? EIO :
+											  EILSEQ) };
+		include_room_artifacts = prepared == flatfile_artifact_result::ok;
 	}
 	bool include_materialization = false;
 	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
@@ -1599,8 +1686,12 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 			images.push_back(std::move(locker.after_image));
 		if (include_corpse)
 			images.push_back(std::move(corpse.after_image));
+		if (include_room)
+			images.push_back(std::move(room.after_image));
 		if (include_corpse_artifacts)
 			images.push_back(std::move(corpse_artifacts.after_image));
+		if (include_room_artifacts)
+			images.push_back(std::move(room_artifacts.after_image));
 		if (include_materialization)
 			images.push_back(std::move(materialization.after_image));
 	}

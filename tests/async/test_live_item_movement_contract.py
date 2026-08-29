@@ -142,6 +142,27 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("corpse_create_transfer(payload)", supported)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION", supported)
 
+    def test_flat_room_item_moves_are_composite(self):
+        repository = (SRC / "flatfile_item_repository.c").read_text()
+        world = (SRC / "flatfile_world_item_repository.c").read_text()
+        artifact = (SRC / "flatfile_artifact_repository.c").read_text()
+        self.assertIn("flatfile_world_item_prepare_room_transfer", world)
+        self.assertIn("flatfile_artifact_prepare_room_transfer", artifact)
+        supported = repository[repository.index("bool generic_transfer_supported") :]
+        supported = supported[:supported.index("bool locker_custody_matches")]
+        self.assertIn("room_transfer(payload)", supported)
+        apply = repository[repository.index(
+            "critical_apply_result flatfile_item_repository_apply") :]
+        prepare = apply.index("flatfile_world_item_prepare_room_transfer")
+        artifact_prepare = apply.index("flatfile_artifact_prepare_room_transfer", prepare)
+        image = apply.index("room.after_image", prepare)
+        artifact_image = apply.index("room_artifacts.after_image", artifact_prepare)
+        commit = apply.index("flatfile_authority_transaction_commit", image)
+        self.assertLess(prepare, image)
+        self.assertLess(artifact_prepare, artifact_image)
+        self.assertLess(image, commit)
+        self.assertLess(artifact_image, commit)
+
 
 if __name__ == "__main__":
     unittest.main()
