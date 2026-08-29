@@ -139,6 +139,12 @@ struct player_load_result
 	uint64_t item_owner_revision = 0;
 	size_t authoritative_item_count = 0;
 	size_t stale_item_rows = 0;
+	// Authoritative custody rows for this player whose payload row is gone. The item
+	// cannot be rebuilt, but one such row must not make the character unloadable.
+	size_t missing_payload_rows = 0;
+	// Items whose container row was skipped and which were moved to the top level
+	// rather than dropped along with it.
+	size_t promoted_item_rows = 0;
 	std::vector<player_load_item_identity> item_identities;
 	std::vector<player_load_pet_identity> pet_identities;
 	player_load_read_mask_t read_components = 0;

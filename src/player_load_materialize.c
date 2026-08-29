@@ -112,6 +112,8 @@ bool valid_snapshot(const player_load_result &result)
 		return false;
 	if (result.read_components != PLAYER_LOAD_SESSION04_READS ||
 	    result.stale_item_rows > PLAYER_LOAD_ITEM_MAX ||
+	    result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX ||
+	    result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX ||
 	    result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX ||
 	    result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX)
 		return false;
@@ -351,6 +353,16 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      result.failed_component ? result.failed_component : "none",
 		      result.metrics.query_count, result.metrics.row_count,
 		      result.snapshot.items.size());
+		// A refused load locks the account out of that character until someone repairs
+		// the data, so it has to reach staff rather than sitting in the debug log.
+		logit(LOG_SYS,
+		      "player_load_materialize: refused pid=%d component=%s outcome=%u error=%u",
+		      result.pid, result.failed_component ? result.failed_component : "none",
+		      static_cast<unsigned int>(result.outcome), result.error_code);
+		wizlog(OVERLORD,
+		       "Character load refused for pid %d (component %s); the player "
+		       "cannot enter the game until the data is repaired.",
+		       result.pid, result.failed_component ? result.failed_component : "none");
 		return false;
 	}
 	if (ZONE_TROPHY(ch))
@@ -374,6 +386,16 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      "player_load_materialize: component=items pid=%d outcome=stale_rows_skipped "
 		      "count=%zu recovery=next_full_save",
 		      result.pid, result.stale_item_rows);
+	if (result.promoted_item_rows)
+		logit(LOG_SYS,
+		      "player_load_materialize: component=items pid=%d outcome=contents_promoted "
+		      "count=%zu recovery=next_full_save",
+		      result.pid, result.promoted_item_rows);
+	if (result.missing_payload_rows)
+		logit(LOG_SYS,
+		      "player_load_materialize: component=items pid=%d outcome=missing_payload_rows "
+		      "count=%zu recovery=next_full_save",
+		      result.pid, result.missing_payload_rows);
 	reset_char(ch);
 	int hit_difference = 0;
 	for (const player_snapshot_string &entry : result.snapshot.status_strings)
