@@ -41,6 +41,13 @@ struct flatfile_association_record
 	std::vector<flatfile_association_member_record> members;
 };
 
+struct flatfile_alliance_record
+{
+	uint32_t forging_association_id = 0;
+	uint32_t joining_association_id = 0;
+	int32_t tribute_owed = 0;
+};
+
 enum class flatfile_association_result
 {
 	ok,
@@ -75,6 +82,13 @@ flatfile_association_result flatfile_association_ledger_list(const std::string &
 							     bool system_entries,
 							     std::vector<std::string> *messages,
 							     std::string *error);
+flatfile_association_result flatfile_alliance_list(const std::string &root,
+						   std::vector<flatfile_alliance_record> *alliances,
+						   std::string *error);
+flatfile_association_result
+flatfile_alliance_replace(const std::string &root,
+			  const std::vector<flatfile_alliance_record> &alliances,
+			  std::string *error);
 flatfile_association_result flatfile_association_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_authority_operation *operation,

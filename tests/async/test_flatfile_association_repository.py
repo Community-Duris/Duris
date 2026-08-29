@@ -93,3 +93,38 @@ for token in (
 ):
     if token not in source:
         raise SystemExit(f"historical guild parser safety is missing {token}")
+
+alliance_preprocess = subprocess.run(
+    [
+        "g++",
+        "-std=c++20",
+        "-D__NO_MYSQL__",
+        "-Isrc/no_mysql",
+        "-Isrc",
+        "-Isrc/ships",
+        "-I/usr/include/libxml2",
+        "-E",
+        "-P",
+        "src/alliances.c",
+    ],
+    cwd=ROOT,
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+)
+if alliance_preprocess.returncode:
+    raise SystemExit(alliance_preprocess.stdout)
+for token in (
+    "flatfile_alliance_list(root, &records, &error)",
+    "flatfile_alliance_replace(root, records, &error)",
+    "alliance.tribute_owed = record.tribute_owed",
+):
+    if token not in alliance_preprocess.stdout:
+        raise SystemExit(f"client-free alliance runtime route is missing {token}")
+for query in (
+    "SELECT forging_assoc_id",
+    "DELETE FROM alliances",
+    "INSERT INTO alliances",
+):
+    if query in alliance_preprocess.stdout:
+        raise SystemExit(f"client-free alliance runtime still contains SQL: {query}")

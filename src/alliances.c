@@ -13,6 +13,11 @@ using namespace std;
 #include "sql.h"
 #include "sql_player.h"
 
+#ifdef __NO_MYSQL__
+#include "flatfile_association_repository.h"
+#include "persistence_mode.h"
+#endif
+
 extern P_desc descriptor_list;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
@@ -36,6 +41,31 @@ void load_alliances()
 	}
 
 #ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+		fatal_boot_error("alliances", "flat-file state root is unavailable");
+	std::string error;
+	std::vector<flatfile_alliance_record> records;
+	const auto listed = flatfile_alliance_list(root, &records, &error);
+	if (listed == flatfile_association_result::not_found)
+		return;
+	if (listed != flatfile_association_result::ok)
+		fatal_boot_error("alliances", "could not load flat alliance authority: %s",
+				 error.c_str());
+	for (const auto &record : records)
+	{
+		Alliance alliance;
+		alliance.forging_assoc = get_guild_from_id(record.forging_association_id);
+		alliance.joining_assoc = get_guild_from_id(record.joining_association_id);
+		alliance.tribute_owed = record.tribute_owed;
+		if (!alliance.forging_assoc || !alliance.joining_assoc)
+			fatal_boot_error("alliances",
+					 "flat alliance references missing guild %u or %u",
+					 record.forging_association_id,
+					 record.joining_association_id);
+		alliances.push_back(alliance);
+	}
+	logit(LOG_STATUS, "Alliances loaded from flat-file authority.");
 	return;
 #else
 	if (!qry("SELECT forging_assoc_id, joining_assoc_id, tribute_owed FROM alliances"))
@@ -73,6 +103,31 @@ void save_alliances()
 	// save the current alliance list to database
 
 #ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+	{
+		persistence_alert(AVATAR, "alliances", "global", "none", "none", "save",
+				  "flat alliance save has no state root");
+		return;
+	}
+	std::vector<flatfile_alliance_record> records;
+	for (const auto &alliance : alliances)
+	{
+		if (!alliance.forging_assoc || !alliance.joining_assoc)
+		{
+			persistence_alert(AVATAR, "alliances", "global", "none", "none", "save",
+					  "flat alliance contains a missing guild pointer");
+			return;
+		}
+		records.push_back({ alliance.forging_assoc->get_id(),
+				    alliance.joining_assoc->get_id(), alliance.tribute_owed });
+	}
+	std::string error;
+	const auto saved = flatfile_alliance_replace(root, records, &error);
+	if (saved != flatfile_association_result::ok &&
+	    saved != flatfile_association_result::unchanged)
+		persistence_alert(AVATAR, "alliances", "global", "none", "none", "save",
+				  "flat alliance save failed: %s", error.c_str());
 	return;
 #else
 	bool own_txn = false;
@@ -115,12 +170,13 @@ void save_alliances()
 #endif // __NO_MYSQL__
 }
 
-Alliance::Alliance(P_Guild forgers, P_Guild joiners, int /*tribute_owed*/)
+Alliance::Alliance(P_Guild forgers, P_Guild joiners, int owed)
 {
 	char buff[MAX_STRING_LENGTH];
 
 	forging_assoc = forgers;
 	joining_assoc = joiners;
+	tribute_owed = owed;
 
 	alliances.push_back(*this);
 	save_alliances();

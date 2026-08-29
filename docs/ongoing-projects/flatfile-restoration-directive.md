@@ -630,6 +630,34 @@
   historically database-only ledger are routed, but alliances, guildhalls, and outposts
   remain separate gaps; the global incomplete-domain boot fence remains.
 
+### 2026-08-29 - restored database-only alliances in flat mode
+
+- **Concrete gap:** alliances were historically stored only in the `alliances` table;
+  both `load_alliances()` and `save_alliances()` returned without doing anything in a
+  client-free build. Forged alliances therefore disappeared on restart, and severing an
+  alliance could not durably update flat-only state.
+- **Restoration:** the existing association repository now stores the complete set of
+  forging/joining guild pairs and their tribute values alongside flat guild authority.
+  Boot resolves every stored ID after guilds load and aborts on corrupt state or a
+  missing guild reference. Replacement enforces the live rules that no guild appears in
+  more than one alliance and no guild allies with itself, while retaining the existing
+  authority lock, versioning, checksum, private atomic publication, and corruption
+  refusal. Missing state means no alliances. The MariaDB load/save path remains
+  unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_association_repository.py`
+  covers missing state, canonical round trips, tribute preservation, idempotence, empty
+  replacement, duplicate-guild and self-alliance rejection, checksum corruption, and
+  refusal to overwrite corrupt authority. Its client-free source contract verifies the
+  live load/save routes and rejects all alliance queries from that build path.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_character_delete.py`,
+  `python3 tests/async/test_flatfile_character_delete_manifest.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** alliances now survive forging, severing, and restart in either
+  persistence mode. Guildhalls and outposts remain separate demonstrated gaps; the
+  global incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

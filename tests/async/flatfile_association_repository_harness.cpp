@@ -180,6 +180,42 @@ int main(int argc, char **argv)
 			flatfile_association_result::invalid,
 		"association ledger accepted a control character");
 
+	std::vector<flatfile_alliance_record> alliance_records;
+	require(flatfile_alliance_list(root.string(), &alliance_records, &error) ==
+			flatfile_association_result::not_found,
+		"missing alliance authority did not report not found");
+	const std::vector<flatfile_alliance_record> alliance_source = { { 9, 10, 20 },
+									{ 7, 8, -5 } };
+	require(flatfile_alliance_replace(root.string(), alliance_source, &error) ==
+			flatfile_association_result::ok,
+		"alliance authority creation failed: " + error);
+	require(flatfile_alliance_list(root.string(), &alliance_records, &error) ==
+				flatfile_association_result::ok &&
+			alliance_records.size() == 2 &&
+			alliance_records[0].forging_association_id == 7 &&
+			alliance_records[0].joining_association_id == 8 &&
+			alliance_records[0].tribute_owed == -5 &&
+			alliance_records[1].forging_association_id == 9,
+		"alliance authority was not canonical or did not round trip");
+	require(flatfile_alliance_replace(root.string(), alliance_source, &error) ==
+			flatfile_association_result::unchanged,
+		"unchanged alliance rewrite advanced authority");
+	require(flatfile_alliance_replace(root.string(), { { 7, 8, 0 }, { 7, 9, 0 } }, &error) ==
+			flatfile_association_result::invalid,
+		"alliance authority accepted a guild in two alliances");
+	require(flatfile_alliance_replace(root.string(), { { 7, 7, 0 } }, &error) ==
+			flatfile_association_result::invalid,
+		"alliance authority accepted a self-alliance");
+	require(flatfile_alliance_replace(root.string(), {}, &error) ==
+				flatfile_association_result::ok &&
+			flatfile_alliance_list(root.string(), &alliance_records, &error) ==
+				flatfile_association_result::ok &&
+			alliance_records.empty(),
+		"alliance authority did not persist an empty replacement");
+	require(flatfile_alliance_replace(root.string(), alliance_source, &error) ==
+			flatfile_association_result::ok,
+		"alliance authority could not be restored for corruption test");
+
 	flatfile_authority_operation operation;
 	{
 		flatfile_authority_lock lock;
@@ -236,6 +272,23 @@ int main(int argc, char **argv)
 	require(flatfile_association_ledger_append(root.string(), 7, false, "overwrite", &error) ==
 			flatfile_association_result::invalid,
 		"association ledger append overwrote corrupt history");
+	const fs::path alliance_file = root / "domains/association_alliances";
+	{
+		std::fstream file(alliance_file, std::ios::in | std::ios::out | std::ios::binary);
+		require(file.good(), "could not open alliance authority for corruption");
+		file.seekg(-1, std::ios::end);
+		char byte = 0;
+		file.read(&byte, 1);
+		byte ^= 0x71;
+		file.seekp(-1, std::ios::end);
+		file.write(&byte, 1);
+	}
+	require(flatfile_alliance_list(root.string(), &alliance_records, &error) ==
+			flatfile_association_result::invalid,
+		"corrupt alliance authority was exposed");
+	require(flatfile_alliance_replace(root.string(), alliance_source, &error) ==
+			flatfile_association_result::invalid,
+		"alliance replacement overwrote corrupt authority");
 
 	const fs::path catalog = root / "domains/association_catalog";
 	{

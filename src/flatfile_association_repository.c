@@ -17,10 +17,13 @@ namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'A', 'S', 'S', 'C', 0 };
 constexpr std::array<uint8_t, 8> ledger_magic = { 'D', 'U', 'R', 'G', 'L', 'D', 'G', 0 };
+constexpr std::array<uint8_t, 8> alliance_magic = { 'D', 'U', 'R', 'A', 'L', 'L', 'Y', 0 };
 constexpr uint32_t catalog_version = 1;
 constexpr uint32_t ledger_version = 1;
+constexpr uint32_t alliance_version = 1;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t ledger_maximum_bytes = 128 * 1024;
+constexpr size_t alliance_maximum_bytes = 1024 * 1024;
 constexpr size_t association_maximum = 65536;
 constexpr size_t member_maximum = 1048576;
 constexpr size_t association_name_maximum = 80;
@@ -30,6 +33,7 @@ constexpr size_t top_fragger_maximum = 64;
 constexpr size_t ledger_message_maximum = 255;
 constexpr size_t ledger_kind_maximum = 100;
 constexpr const char *catalog_filename = "association_catalog";
+constexpr const char *alliance_filename = "association_alliances";
 
 struct association_catalog
 {
@@ -47,6 +51,12 @@ struct association_ledger
 {
 	uint64_t revision = 1;
 	std::vector<ledger_entry> entries;
+};
+
+struct alliance_catalog
+{
+	uint64_t revision = 1;
+	std::vector<flatfile_alliance_record> alliances;
 };
 
 struct encoder
@@ -546,6 +556,134 @@ flatfile_association_result load_ledger(const std::string &root, uint32_t associ
 	}
 	return flatfile_association_result::ok;
 }
+
+bool alliance_less(const flatfile_alliance_record &left, const flatfile_alliance_record &right)
+{
+	if (left.forging_association_id != right.forging_association_id)
+		return left.forging_association_id < right.forging_association_id;
+	return left.joining_association_id < right.joining_association_id;
+}
+
+bool alliance_equal(const flatfile_alliance_record &left, const flatfile_alliance_record &right)
+{
+	return left.forging_association_id == right.forging_association_id &&
+	       left.joining_association_id == right.joining_association_id &&
+	       left.tribute_owed == right.tribute_owed;
+}
+
+bool valid_alliances(const alliance_catalog &catalog)
+{
+	if (!catalog.revision || catalog.alliances.size() > association_maximum / 2 ||
+	    !std::is_sorted(catalog.alliances.begin(), catalog.alliances.end(), alliance_less))
+		return false;
+	std::unordered_set<uint32_t> guild_ids;
+	try
+	{
+		for (const auto &alliance : catalog.alliances)
+			if (!alliance.forging_association_id || !alliance.joining_association_id ||
+			    alliance.forging_association_id == alliance.joining_association_id ||
+			    !guild_ids.insert(alliance.forging_association_id).second ||
+			    !guild_ids.insert(alliance.joining_association_id).second)
+				return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool encode_alliances(const alliance_catalog &catalog, std::vector<uint8_t> *bytes)
+{
+	if (!bytes || !valid_alliances(catalog))
+		return false;
+	encoder payload;
+	payload.number<uint32_t>(catalog.alliances.size());
+	for (const auto &alliance : catalog.alliances)
+	{
+		payload.number(alliance.forging_association_id);
+		payload.number(alliance.joining_association_id);
+		payload.number(alliance.tribute_owed);
+	}
+	if (!payload.valid || payload.bytes.size() > alliance_maximum_bytes)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.bytes.data(), payload.bytes.size(), digest.data());
+	encoder file;
+	file.raw(alliance_magic.data(), alliance_magic.size());
+	file.number(alliance_version);
+	file.number<uint32_t>(payload.bytes.size());
+	file.number(catalog.revision);
+	file.raw(digest.data(), digest.size());
+	file.raw(payload.bytes.data(), payload.bytes.size());
+	if (!file.valid || file.bytes.size() > alliance_maximum_bytes)
+		return false;
+	*bytes = std::move(file.bytes);
+	return true;
+}
+
+bool decode_alliances(const std::vector<uint8_t> &bytes, alliance_catalog *catalog)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), alliance_magic.data(), alliance_magic.size()))
+		return false;
+	decoder header{ bytes.data() + alliance_magic.size(),
+			bytes.size() - alliance_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || version != alliance_version || !revision ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload_bytes, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > association_maximum / 2)
+		return false;
+	alliance_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.alliances.resize(count);
+		for (auto &alliance : decoded.alliances)
+			if (!payload.number(&alliance.forging_association_id) ||
+			    !payload.number(&alliance.joining_association_id) ||
+			    !payload.number(&alliance.tribute_owed))
+				return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (payload.offset != payload.size || !valid_alliances(decoded))
+		return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+
+flatfile_association_result load_alliance_catalog(const std::string &root,
+						  alliance_catalog *catalog, std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto loaded = flatfile_read(domains_directory(root), alliance_filename,
+					  alliance_maximum_bytes, &bytes, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_association_result::not_found;
+	if (loaded == flatfile_read_result::io_error)
+		return flatfile_association_result::io_error;
+	if (loaded != flatfile_read_result::ok || !decode_alliances(bytes, catalog))
+	{
+		if (error && error->empty())
+			*error = "alliance catalog is corrupt";
+		return flatfile_association_result::invalid;
+	}
+	return flatfile_association_result::ok;
+}
 } // namespace
 
 flatfile_association_result
@@ -836,6 +974,74 @@ flatfile_association_result flatfile_association_ledger_list(const std::string &
 	}
 	*messages = std::move(selected);
 	return flatfile_association_result::ok;
+}
+
+flatfile_association_result flatfile_alliance_list(const std::string &root,
+						   std::vector<flatfile_alliance_record> *alliances,
+						   std::string *error)
+{
+	if (root.empty() || !alliances)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	alliance_catalog catalog;
+	const auto loaded = load_alliance_catalog(root, &catalog, error);
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	*alliances = std::move(catalog.alliances);
+	return flatfile_association_result::ok;
+}
+
+flatfile_association_result
+flatfile_alliance_replace(const std::string &root,
+			  const std::vector<flatfile_alliance_record> &alliances,
+			  std::string *error)
+{
+	if (root.empty())
+		return flatfile_association_result::invalid;
+	alliance_catalog desired;
+	try
+	{
+		desired.alliances = alliances;
+		std::sort(desired.alliances.begin(), desired.alliances.end(), alliance_less);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (!valid_alliances(desired))
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	alliance_catalog existing;
+	const auto loaded = load_alliance_catalog(root, &existing, error);
+	if (loaded == flatfile_association_result::ok)
+	{
+		bool equal = existing.alliances.size() == desired.alliances.size();
+		for (size_t index = 0; equal && index < existing.alliances.size(); ++index)
+			equal = alliance_equal(existing.alliances[index], desired.alliances[index]);
+		if (equal)
+			return flatfile_association_result::unchanged;
+		if (existing.revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_association_result::conflict;
+		desired.revision = existing.revision + 1;
+	}
+	else if (loaded != flatfile_association_result::not_found)
+		return loaded;
+	std::vector<uint8_t> encoded;
+	if (!encode_alliances(desired, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), alliance_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
 }
 
 flatfile_association_result flatfile_association_prepare_player_remove(
