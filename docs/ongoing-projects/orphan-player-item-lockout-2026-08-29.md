@@ -109,21 +109,45 @@ In the observed session the character:
 3. destroyed one with `junk` and one with `purge`,
 4. saved, and quit.
 
-The result was two `player_items` rows and one `item_current_owner` row: item
-destruction removed the ownership row but left the payload row behind. Nothing
-reconciles the two afterwards, and the next save wrote the inconsistent pair.
+The result was two `player_items` rows and one `item_current_owner` row.
 
-**Scope is not established.** This reproduction used wizard-loaded objects and
-staff destruction commands. Whether the ordinary mortal paths — `junk`,
-`sacrifice`, selling to a shop, corpse decay, destruction of a container holding
-items — can leave the same orphan has **not** been tested. That question now
-decides how often the skip path fires, not whether players get locked out.
+**The original reading of this — that destruction removed the ownership row —
+is wrong.** The ownership row was never created. Traced 2026-08-29:
+
+- `item_current_owner` is written from exactly one place, the transfer pipeline
+  in `src/item_transfer_repository.c:281`. Nothing else inserts into it.
+- `read_object()` allocates a fresh `obj_uid` (`src/db.c:2745`) and registers no
+  ownership at all.
+- `do_load` puts the new object straight into the wizard's inventory with
+  `obj_to_char()` (`src/actwiz.c:5296`) and submits no transfer. The object is
+  now carried, has a uid, and has no ledger row.
+- `get`, `put` and `drop` all go through `item_movement_transaction_submit()`
+  (`src/actobj.c:477`, `:502`, `:525`), which is what creates the ledger row.
+
+So the object that stayed in inventory from the moment it was created (…026)
+never had an ownership row, and the one that reached the floor and was picked
+back up (…027) got one from the `get`. `extract_obj()` never touches the ledger
+either (`src/handler.c:2994`), so `junk` and `purge` did not remove anything —
+they only removed the live object, leaving the save to write the payload row for
+whichever one the character was still carrying.
+
+That makes the trigger *object creation without an ownership record*, not object
+destruction, and it means any path that hands a player an object without a
+transfer produces the same orphan.
 
 A full save rewrites the whole payload side (`DELETE FROM player_items WHERE
 pid=…` followed by re-inserts, `src/player_snapshot_repository.c:434`), so the
-orphan row was written *by* a save: the character's in-memory inventory still
-held an object the ownership ledger had already destroyed. That points at the
-runtime destruction path, not at the persistence layer.
+orphan row was written *by* a save: the character's inventory held an object the
+ledger had never heard of.
+
+**Scope is bounded but not enumerated.** The question is no longer "which
+destruction path drops the ledger row" but "which paths put an object into a
+player's inventory without submitting a transfer". `do_load` is one, confirmed.
+There are 12 `item_movement_transaction_submit()` call sites in total
+(`handler.c`, `fight.c`, `actwiz.c`, `actobj.c`) against 16 `obj_to_char()`
+calls in `actobj.c` alone, so the audit is a real piece of work rather than a
+glance. Mob loot, corpse looting, quest and reward grants, and shop purchases
+each need checking.
 
 ## Repair (no longer required to unlock a character)
 
@@ -238,14 +262,18 @@ one would destroy or duplicate a real item. Only *missing* rows are tolerated.
 
 ## Still open
 
-1. **Root-cause the writer.** A save serialized an object the ledger had already
-   destroyed. Reproduce with `load obj` → get → `junk` / `purge` → save, and find
-   where the object survives in the character's inventory list after its custody
-   row is gone. Not attempted here; it needs a live session.
-2. **Determine the blast radius.** Test whether mortal destruction paths —
-   `junk`, `sacrifice`, selling to a shop, corpse decay, destroying a full
-   container — leave the same orphan. This no longer decides whether players get
-   locked out; it decides how much silent item loss the skip path is absorbing.
+1. **Give `do_load` an ownership record.** A staff-created object carried
+   straight out of `do_load` has no `item_current_owner` row. The establish
+   pattern already exists — `submit_flat_storage_establish()`
+   (`src/actwiz.c:10399`) submits a same-owner transfer for exactly this purpose
+   — so the shape of the fix is known. It was not written here because it puts a
+   new submission on a live transaction path and deserves its own change and its
+   own test.
+2. **Audit the other inventory-granting paths** for the same gap: mob loot,
+   corpse looting, quest and reward grants, shop purchases, anything else that
+   calls `obj_to_char()` without a transfer. This decides how much silent item
+   loss the skip path is now absorbing; it no longer decides whether players get
+   locked out.
 3. **A maintenance sweep** reporting orphan payload rows is now optional rather
    than urgent: a character with an orphan loads, and its next full save removes
    the row. It would still be useful for spotting item loss.
