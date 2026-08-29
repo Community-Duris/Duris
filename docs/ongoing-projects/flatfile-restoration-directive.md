@@ -119,7 +119,7 @@ required behavior.
 
 ## Explicitly out of scope
 
-Do not undertake any of the following without the owner's explicit approval:
+Do not undertake any of the following:
 
 - redesigning the persistence system again;
 - adding speculative architecture, generalized frameworks, or future-proofing;
