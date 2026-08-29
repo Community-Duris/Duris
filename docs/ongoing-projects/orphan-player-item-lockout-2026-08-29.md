@@ -317,8 +317,21 @@ does not have to be rediscovered.
 
 ## Still open
 
-Verified against this branch. **14 of the 19 items in the previous revision are
-resolved**; what is left is listed here and nothing else.
+### Start here
+
+| | |
+| --- | --- |
+| Work lives on | branch `docs-open-register`, PR #23 (`LuminariMUD/DurisMUD`) |
+| Base | `master` at `5359723fb` (PR #22, the reader-side fix) |
+| State when written | PR #23 open, not merged; full suite 335 passed / 0 failed |
+
+Check whether #23 merged before doing anything: `gh pr view 23 --repo
+LuminariMUD/DurisMUD --json state`. If it merged, the "resolved" list below is
+in `master` and only the three items here remain. If it did not, read the PR
+body first — it explains the changes in more detail than this file does.
+
+**14 of the 19 items in the previous revision are resolved**; what is left is
+listed here and nothing else.
 
 ### Open
 
@@ -337,9 +350,26 @@ resolved**; what is left is listed here and nothing else.
      uid=<uid> vnum=<vnum> recovery=audit_grant_path
    ```
 
-   Run the game, play normally, and the vnums in that log name the paths. That
-   turns an open-ended read into a bounded list. **The audit itself still has to
-   happen.**
+   To collect it:
+
+   ```bash
+   ./scripts/cycle_mud.sh --minimal        # or ./scripts/start_mud.sh for the full world
+   # log in with GAME_ACCOUNT_NAME / GAME_ACCOUNT_PASSWORD / GAME_ACCOUNT_CHARACTER_NAME
+   # from .env, then exercise grants: buy, loot a corpse, complete a quest,
+   # craft, salvage, get a mob drop. Save (`save`) after each - the detector
+   # fires at snapshot capture, not at the grant.
+   grep unowned_object logs/log/debug
+   ```
+
+   Each line's `vnum` identifies the object; `grep -rn "<vnum>" areas/` and the
+   command you just ran together name the granting path. Fix each by submitting a
+   transfer the way `do_load` now does (see `submit_wizard_load_establish()` in
+   `src/actwiz.c` for the same-owner establish pattern).
+
+   **Done when:** a full pass over the grant surface — mob loot, corpse looting,
+   quest and reward grants, shop purchases, crafting, salvage — produces no
+   `unowned_object` lines, and `./scripts/item_ownership_audit.sh` reports no
+   orphan payload rows afterwards.
 
 2. **Coverage this session never reached.** Needs a running game and, for the
    first item, a throwaway database - none of it is resolvable from source.
@@ -357,9 +387,43 @@ resolved**; what is left is listed here and nothing else.
 3. **The `do_load` ownership establish has not been exercised in a live game.**
    The change is covered by source contracts in
    `tests/async/test_orphan_item_session_regressions.py` and the server boots
-   with it, but `load obj` was not driven end to end against a running world in
-   this session. It moves object creation onto the async transfer pipeline, so
-   it deserves a live pass before anyone relies on it.
+   with it, but `load obj` was not driven end to end against a running world.
+   It moves object creation onto the async transfer pipeline — the object is no
+   longer placed by `do_load` itself but by `wizard_load_completion()` once the
+   transfer commits — so this is the one change here that can misbehave without
+   any test noticing.
+
+   **The failure mode to watch for:** the wizard types `load obj <vnum>` and
+   *nothing appears*. That means the transfer never committed and the completion
+   discarded the object (by design — leaving it would recreate the orphan), or
+   the completion ran but found the object no longer `OBJ_NOWHERE`. Both paths
+   log to `logs/log/file`; look for `wizard load committed but live publication
+   was stale`.
+
+   **To verify:**
+
+   ```bash
+   ./scripts/cycle_mud.sh --minimal
+   # log in as the staff character from .env, then in-game:
+   #   load obj <a takeable vnum>     -> should appear in inventory
+   #   load obj <a non-takeable vnum> -> should appear in the room
+   ```
+
+   Then confirm the ledger row exists, which is the entire point of the change:
+
+   ```sql
+   SELECT item_uid, owner_type, owner_id, state
+     FROM item_current_owner
+    WHERE item_uid = <the new obj_uid>;
+   ```
+
+   `owner_type` 1 is player, 2 is room. A takeable object loaded into inventory
+   must be owned by the wizard's pid; a non-takeable one by the room's vnum.
+   Finally `save`, quit, and log back in — the character must load, and
+   `./scripts/item_ownership_audit.sh` must report no orphan payload rows.
+
+   I got as far as booting the server to do this and ran out of context before
+   driving the commands; nothing about the result is known either way.
 
 ### Resolved on this branch
 
