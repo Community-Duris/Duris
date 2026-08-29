@@ -14,6 +14,25 @@
 #include "spells.h"
 #include "sql_player.h"
 
+#ifdef __NO_MYSQL__
+#include "flatfile_store.h"
+#include "persistence_mode.h"
+#include "player_load_items.h"
+#include "player_snapshot_capture.h"
+#include "player_snapshot_codec.h"
+
+#include <array>
+#include <cerrno>
+#include <new>
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
+#include <string>
+#include <sys/stat.h>
+#include <type_traits>
+#include <unordered_set>
+#include <vector>
+#endif
+
 P_siege siege_objects; /* List of siege objects to save   */
 
 extern P_room world;
@@ -21,6 +40,566 @@ extern int top_of_objt;
 extern P_town towns;
 extern P_char destroying_list;
 extern int top_of_zone_table;
+extern int top_of_world;
+
+#ifdef __NO_MYSQL__
+namespace
+{
+constexpr std::array<uint8_t, 8> flat_siege_magic = { 'D', 'U', 'R', 'S', 'I', 'E', 'G', 'E' };
+constexpr uint32_t flat_siege_version = 1;
+constexpr size_t flat_siege_maximum_file_size = 64 * 1024 * 1024;
+constexpr size_t flat_siege_maximum_records = 4096;
+const char flat_siege_filename[] = "siege";
+const char flat_siege_lock_filename[] = "siege.lock";
+
+struct flat_siege_record
+{
+	int32_t room_vnum = 0;
+	std::vector<player_item_snapshot> items;
+};
+
+struct flat_siege_encoder
+{
+	std::vector<uint8_t> bytes;
+	bool valid = true;
+
+	template <typename T> void number(T value)
+	{
+		using U = std::make_unsigned_t<T>;
+		U bits = static_cast<U>(value);
+		try
+		{
+			for (size_t index = 0; index < sizeof(T); ++index)
+			{
+				bytes.push_back(static_cast<uint8_t>(bits & 0xff));
+				bits >>= 8;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			valid = false;
+		}
+	}
+
+	void raw(const uint8_t *data, size_t size)
+	{
+		if (!valid || (!data && size) || bytes.size() > flat_siege_maximum_file_size ||
+		    size > flat_siege_maximum_file_size - bytes.size())
+		{
+			valid = false;
+			return;
+		}
+		if (!size)
+			return;
+		try
+		{
+			bytes.insert(bytes.end(), data, data + size);
+		}
+		catch (const std::bad_alloc &)
+		{
+			valid = false;
+		}
+	}
+};
+
+struct flat_siege_decoder
+{
+	const uint8_t *data;
+	size_t size;
+	size_t offset = 0;
+
+	template <typename T> bool number(T *value)
+	{
+		if (!value || offset > size || size - offset < sizeof(T))
+			return false;
+		using U = std::make_unsigned_t<T>;
+		U bits = 0;
+		for (size_t index = 0; index < sizeof(T); ++index)
+			bits |= static_cast<U>(data[offset++]) << (index * 8);
+		*value = static_cast<T>(bits);
+		return true;
+	}
+
+	bool raw(const uint8_t *expected, size_t length)
+	{
+		if (!expected || offset > size || size - offset < length ||
+		    memcmp(data + offset, expected, length))
+			return false;
+		offset += length;
+		return true;
+	}
+};
+
+std::string flat_siege_directory()
+{
+	const char *root = persistence_mode_flatfile_root();
+	return root && *root ? std::string(root) + "/metadata" : std::string();
+}
+
+bool flat_siege_valid_records(const std::vector<flat_siege_record> &records, std::string *error)
+{
+	if (records.size() > flat_siege_maximum_records)
+	{
+		if (error)
+			*error = "too many siege records";
+		return false;
+	}
+	std::unordered_set<uint64_t> item_uids;
+	for (const flat_siege_record &record : records)
+	{
+		if (record.room_vnum <= 0 || record.items.empty() ||
+		    record.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		{
+			if (error)
+				*error = "invalid siege room or item count";
+			return false;
+		}
+		size_t roots = 0;
+		for (const player_item_snapshot &item : record.items)
+		{
+			roots += item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ? 1 : 0;
+			if (!item.object_uid || item.vnum <= 0 || item.equipment_slot != -1 ||
+			    !item_uids.insert(item.object_uid).second)
+			{
+				if (error)
+					*error = "invalid or duplicate siege item identity";
+				return false;
+			}
+		}
+		if (roots != 1)
+		{
+			if (error)
+				*error = "siege record does not contain exactly one root object";
+			return false;
+		}
+	}
+	return true;
+}
+
+bool flat_siege_encode(const std::vector<flat_siege_record> &records, std::vector<uint8_t> *bytes,
+		       std::string *error)
+{
+	if (!bytes || !flat_siege_valid_records(records, error))
+		return false;
+	try
+	{
+		flat_siege_encoder encoded;
+		encoded.raw(flat_siege_magic.data(), flat_siege_magic.size());
+		encoded.number<uint32_t>(flat_siege_version);
+		encoded.number<uint32_t>(records.size());
+		for (const flat_siege_record &record : records)
+		{
+			std::vector<uint8_t> item_bytes;
+			if (player_item_snapshot_list_encode(record.items, &item_bytes) !=
+				    player_snapshot_codec_result::ok ||
+			    item_bytes.empty() || item_bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+			{
+				if (error)
+					*error = "could not encode siege item tree";
+				return false;
+			}
+			encoded.number<int32_t>(record.room_vnum);
+			encoded.number<uint32_t>(item_bytes.size());
+			encoded.raw(item_bytes.data(), item_bytes.size());
+		}
+		if (!encoded.valid ||
+		    encoded.bytes.size() > flat_siege_maximum_file_size - SHA256_DIGEST_LENGTH)
+		{
+			if (error)
+				*error = "siege authority exceeds its size limit";
+			return false;
+		}
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+		SHA256(encoded.bytes.data(), encoded.bytes.size(), digest.data());
+		encoded.raw(digest.data(), digest.size());
+		if (!encoded.valid)
+			return false;
+		*bytes = std::move(encoded.bytes);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (error)
+			*error = "could not allocate siege authority";
+		return false;
+	}
+	return true;
+}
+
+bool flat_siege_decode(const std::vector<uint8_t> &bytes, std::vector<flat_siege_record> *records,
+		       std::string *error)
+{
+	if (!records ||
+	    bytes.size() < flat_siege_magic.size() + sizeof(uint32_t) * 2 + SHA256_DIGEST_LENGTH)
+	{
+		if (error)
+			*error = "siege authority is truncated";
+		return false;
+	}
+	const size_t payload_size = bytes.size() - SHA256_DIGEST_LENGTH;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(bytes.data(), payload_size, digest.data());
+	if (CRYPTO_memcmp(digest.data(), bytes.data() + payload_size, digest.size()))
+	{
+		if (error)
+			*error = "siege authority checksum mismatch";
+		return false;
+	}
+
+	try
+	{
+		flat_siege_decoder decoded = { bytes.data(), payload_size };
+		uint32_t version = 0;
+		uint32_t count = 0;
+		if (!decoded.raw(flat_siege_magic.data(), flat_siege_magic.size()) ||
+		    !decoded.number(&version) || version != flat_siege_version ||
+		    !decoded.number(&count) || count > flat_siege_maximum_records)
+		{
+			if (error)
+				*error = "invalid siege authority header";
+			return false;
+		}
+		std::vector<flat_siege_record> loaded;
+		loaded.reserve(count);
+		for (uint32_t index = 0; index < count; ++index)
+		{
+			flat_siege_record record;
+			uint32_t item_size = 0;
+			if (!decoded.number(&record.room_vnum) || !decoded.number(&item_size) ||
+			    !item_size || item_size > PLAYER_SNAPSHOT_MAX_BYTES ||
+			    decoded.offset > decoded.size ||
+			    decoded.size - decoded.offset < item_size ||
+			    player_item_snapshot_list_decode(bytes.data() + decoded.offset,
+							     item_size, &record.items) !=
+				    player_snapshot_codec_result::ok)
+			{
+				if (error)
+					*error = "invalid siege item record";
+				return false;
+			}
+			decoded.offset += item_size;
+			loaded.push_back(std::move(record));
+		}
+		if (decoded.offset != decoded.size || !flat_siege_valid_records(loaded, error))
+			return false;
+		*records = std::move(loaded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (error)
+			*error = "could not allocate decoded siege authority";
+		return false;
+	}
+	return true;
+}
+
+bool flat_siege_assign_item_uids(P_obj root, std::string *error)
+{
+	std::vector<P_obj> pending = { root };
+	std::unordered_set<P_obj> seen;
+	while (!pending.empty())
+	{
+		P_obj object = pending.back();
+		pending.pop_back();
+		if (!object || !seen.insert(object).second ||
+		    seen.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+		{
+			if (error)
+				*error = "siege item tree is invalid or cyclic";
+			return false;
+		}
+		persistence_assign_item_uid(object, "flat siege save");
+		if (!object->obj_uid)
+		{
+			if (error)
+				*error = "could not allocate siege item identity";
+			return false;
+		}
+		for (P_obj content = object->contains; content; content = content->next_content)
+			pending.push_back(content);
+	}
+	return true;
+}
+
+bool flat_siege_capture(std::vector<flat_siege_record> *records, std::string *error)
+{
+	if (!records)
+		return false;
+	try
+	{
+		std::vector<flat_siege_record> captured;
+		std::unordered_set<P_siege> seen;
+		for (P_siege siege = siege_objects; siege; siege = siege->next_siege)
+		{
+			if (!seen.insert(siege).second ||
+			    seen.size() > flat_siege_maximum_records || !siege->obj ||
+			    !OBJ_ROOM(siege->obj) || siege->obj->loc.room <= NOWHERE ||
+			    siege->obj->loc.room > top_of_world)
+			{
+				if (error)
+					*error = "live siege list or room is invalid";
+				return false;
+			}
+			flat_siege_record record;
+			record.room_vnum = world[siege->obj->loc.room].number;
+			if (record.room_vnum <= 0 ||
+			    !flat_siege_assign_item_uids(siege->obj, error) ||
+			    player_item_snapshot_tree_capture(siege->obj, &record.items, nullptr) !=
+				    player_snapshot_capture_result::ok)
+			{
+				if (error && error->empty())
+					*error = "could not capture live siege object";
+				return false;
+			}
+			for (player_item_snapshot &item : record.items)
+				item.equipment_slot = -1;
+			captured.push_back(std::move(record));
+		}
+		if (!flat_siege_valid_records(captured, error))
+			return false;
+		*records = std::move(captured);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (error)
+			*error = "could not allocate live siege snapshot";
+		return false;
+	}
+	return true;
+}
+
+bool flat_siege_identities(const flat_siege_record &record,
+			   std::vector<player_load_item_identity> *identities)
+{
+	if (!identities)
+		return false;
+	try
+	{
+		const item_owner_identity owner = { item_owner_type::room,
+						    static_cast<uint64_t>(record.room_vnum), 0 };
+		std::vector<player_load_item_identity> built;
+		built.reserve(record.items.size());
+		for (size_t index = 0; index < record.items.size(); ++index)
+		{
+			const player_item_snapshot &item = record.items[index];
+			uint64_t parent_uid = 0;
+			uint64_t root_uid = item.object_uid;
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				if (item.parent_index < 0 ||
+				    static_cast<size_t>(item.parent_index) >= built.size())
+					return false;
+				const auto &parent = built[static_cast<size_t>(item.parent_index)];
+				parent_uid = parent.item_uid;
+				root_uid = parent.root_item_uid;
+			}
+			player_load_item_identity identity = {};
+			identity.database_id = index + 1;
+			identity.serialized_parent_id =
+				item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					static_cast<uint64_t>(item.parent_index) + 1;
+			identity.quantity = 1;
+			identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+			identity.item_uid = item.object_uid;
+			identity.root_item_uid = root_uid;
+			identity.parent_item_uid = parent_uid;
+			identity.owner = owner;
+			identity.item_revision = 1;
+			identity.owner_revision = 1;
+			identity.state = item_custody_state::active;
+			built.push_back(identity);
+		}
+		*identities = std::move(built);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+void flat_siege_discard(std::vector<P_obj> *objects)
+{
+	if (!objects)
+		return;
+	for (P_obj object : *objects)
+		if (object)
+			extract_obj(object, FALSE);
+	objects->clear();
+}
+
+void flat_siege_free_nodes(P_siege list)
+{
+	while (list)
+	{
+		P_siege next = list->next_siege;
+		delete list;
+		list = next;
+	}
+}
+
+bool flat_siege_materialize(const std::vector<flat_siege_record> &records, std::string *error)
+{
+	if (siege_objects)
+	{
+		if (error)
+			*error = "live siege list is already populated";
+		return false;
+	}
+	std::vector<P_obj> objects;
+	std::vector<int> rooms;
+	try
+	{
+		objects.reserve(records.size());
+		rooms.reserve(records.size());
+		for (const flat_siege_record &record : records)
+		{
+			const int room = real_room(record.room_vnum);
+			if (room == NOWHERE)
+			{
+				if (error)
+					*error = "siege authority references an unknown room";
+				flat_siege_discard(&objects);
+				return false;
+			}
+			std::vector<player_load_item_identity> identities;
+			std::vector<P_obj> roots;
+			player_load_item_materialize_metrics metrics = {};
+			const item_owner_identity owner = { item_owner_type::room,
+							    static_cast<uint64_t>(record.room_vnum),
+							    0 };
+			if (!flat_siege_identities(record, &identities) ||
+			    !player_load_item_graph_materialize_detached(record.items, identities,
+									 owner, 1, false, true,
+									 &roots, &metrics) ||
+			    roots.size() != 1)
+			{
+				flat_siege_discard(&roots);
+				flat_siege_discard(&objects);
+				if (error)
+					*error = "could not materialize siege item tree";
+				return false;
+			}
+			objects.push_back(roots[0]);
+			rooms.push_back(room);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		flat_siege_discard(&objects);
+		if (error)
+			*error = "could not allocate restored siege state";
+		return false;
+	}
+
+	P_siege replacement = NULL;
+	P_siege *tail = &replacement;
+	for (P_obj object : objects)
+	{
+		P_siege node = new (std::nothrow) struct siege;
+		if (!node)
+		{
+			flat_siege_free_nodes(replacement);
+			flat_siege_discard(&objects);
+			if (error)
+				*error = "could not allocate restored siege list";
+			return false;
+		}
+		node->obj = object;
+		node->next_siege = NULL;
+		*tail = node;
+		tail = &node->next_siege;
+	}
+	for (size_t index = 0; index < objects.size(); ++index)
+	{
+		obj_to_room(objects[index], rooms[index]);
+		if (!OBJ_ROOM(objects[index]) || objects[index]->loc.room != rooms[index])
+		{
+			flat_siege_free_nodes(replacement);
+			flat_siege_discard(&objects);
+			if (error)
+				*error = "could not place restored siege object";
+			return false;
+		}
+	}
+	siege_objects = replacement;
+	return true;
+}
+
+bool flat_siege_save(std::string *error)
+{
+	const std::string directory = flat_siege_directory();
+	if (directory.empty())
+	{
+		if (error)
+			*error = "flat-file state root is unavailable";
+		return false;
+	}
+	int lock_fd = -1;
+	if (!flatfile_lock_acquire(directory, flat_siege_lock_filename, &lock_fd, error))
+		return false;
+	std::vector<uint8_t> existing;
+	const auto existing_result = flatfile_read(directory, flat_siege_filename,
+						   flat_siege_maximum_file_size, &existing, error);
+	std::vector<flat_siege_record> parsed;
+	bool saved = (existing_result == flatfile_read_result::not_found ||
+		      (existing_result == flatfile_read_result::ok &&
+		       flat_siege_decode(existing, &parsed, error)));
+	std::vector<flat_siege_record> records;
+	std::vector<uint8_t> bytes;
+	if (saved)
+		saved = flat_siege_capture(&records, error) &&
+			flat_siege_encode(records, &bytes, error) &&
+			flatfile_atomic_write(directory, flat_siege_filename, bytes, error);
+	flatfile_lock_release(lock_fd);
+	return saved;
+}
+
+bool flat_siege_load(std::string *error)
+{
+	const std::string directory = flat_siege_directory();
+	if (directory.empty())
+	{
+		if (error)
+			*error = "flat-file state root is unavailable";
+		return false;
+	}
+	int lock_fd = -1;
+	if (!flatfile_lock_acquire(directory, flat_siege_lock_filename, &lock_fd, error))
+		return false;
+	std::vector<uint8_t> bytes;
+	const auto loaded = flatfile_read(directory, flat_siege_filename,
+					  flat_siege_maximum_file_size, &bytes, error);
+	if (loaded == flatfile_read_result::not_found)
+	{
+		struct stat legacy = {};
+		const int inspected = lstat(SAVE_DIR "/siege", &legacy);
+		const int inspection_errno = inspected < 0 ? errno : 0;
+		flatfile_lock_release(lock_fd);
+		if (inspected == 0)
+		{
+			if (error)
+				*error = "legacy Players/siege requires safe import";
+			return false;
+		}
+		if (inspection_errno != ENOENT)
+		{
+			if (error)
+				*error = std::string("could not inspect legacy Players/siege: ") +
+					 strerror(inspection_errno);
+			return false;
+		}
+		return true;
+	}
+	std::vector<flat_siege_record> records;
+	const bool restored = loaded == flatfile_read_result::ok &&
+			      flat_siege_decode(bytes, &records, error) &&
+			      flat_siege_materialize(records, error);
+	flatfile_lock_release(lock_fd);
+	return restored;
+}
+} // namespace
+#endif
 
 // Dependent on ch's str and weight.  Pretty simple atm.
 int siege_move_wait(P_char ch)
@@ -1761,6 +2340,7 @@ void remove_siege(P_obj siege)
 		siege_objects = siege_objects->next_siege;
 		sieges->next_siege = NULL;
 		delete sieges;
+		save_siege_list();
 		return;
 	}
 	while (sieges->next_siege)
@@ -1772,6 +2352,7 @@ void remove_siege(P_obj siege)
 			siege2->next_siege = NULL;
 			siege2->obj = NULL;
 			delete siege2;
+			save_siege_list();
 			return;
 		}
 		sieges = sieges->next_siege;
@@ -1781,7 +2362,12 @@ void remove_siege(P_obj siege)
 
 void save_siege_list()
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	std::string error;
+	if (!flat_siege_save(&error))
+		logit(LOG_SYS, "save_siege_list(): failed to save flat siege state: %s",
+		      error.c_str());
+#else
 	if (!sql_begin_transaction())
 		return;
 
@@ -1793,7 +2379,9 @@ void save_siege_list()
 
 	for (P_siege siege = siege_objects; siege != NULL; siege = siege->next_siege)
 	{
-		if (!sql_save_siege_item(siege->obj, siege->obj->loc.room))
+		if (!siege->obj || !OBJ_ROOM(siege->obj) || siege->obj->loc.room <= NOWHERE ||
+		    siege->obj->loc.room > top_of_world ||
+		    !sql_save_siege_item(siege->obj, world[siege->obj->loc.room].number))
 		{
 			sql_rollback();
 			return;
@@ -1831,7 +2419,14 @@ void list_siege(P_char ch)
 
 void init_siege()
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	std::string error;
+	if (!flat_siege_load(&error))
+	{
+		logit(LOG_SYS, "init_siege(): failed to load flat siege state: %s", error.c_str());
+		exit(EXIT_FAILURE);
+	}
+#else
 	sql_load_siege_list();
 #endif
 

@@ -5,6 +5,37 @@
 
 ## Progress ledger
 
+### 2026-08-29 - connected safe flat siege-object persistence
+
+- **Concrete gap:** the historical siege subsystem saved its live object list to
+  `Players/siege`, but the SQL conversion compiled both load and save completely out of
+  client-free builds. Purchased and deployed siege objects therefore disappeared on
+  restart, while destroyed objects were removed only from memory and could reappear in
+  either persistence mode.
+- **Restoration:** the existing siege hooks now save and load in client-free mode using
+  one bounded authority record in the private metadata directory. It retains durable
+  room vnums and reuses the existing item snapshot codec and detached materializer for
+  each complete object tree; no new repository, transaction framework, or generalized
+  subsystem was added. Publication uses the existing lock and atomic store, validates a
+  version and checksum, refuses to overwrite corrupt authority, and stages every object
+  before changing live rooms or the siege list. Removal now saves the replacement list,
+  and the MariaDB saver now passes a durable room vnum to its existing loader rather
+  than an in-memory room index.
+- **Focused evidence:** `python3 tests/async/test_flatfile_siege.py` covers missing state,
+  nested-object and room round trips, owner-only permissions, checksum corruption,
+  overwrite refusal, live-state preservation, unknown-room rejection, destruction-save
+  routing, and the absence of siege database calls from the client-free path. The test
+  is included in the client-free CI job.
+- **Build evidence:** a complete `SIEGE_ENABLED` server build passes with
+  `PERSISTENCE_BACKEND=flatfile`, the changed siege translation unit passes with
+  `PERSISTENCE_BACKEND=mariadb`, and the normal client-free boot preflight and
+  persistence-mode contracts pass. Formatting and `git diff --check` also pass.
+- **Overall state:** fresh and current-format siege persistence is connected in both
+  modes. Automatic import of the historical unlengthened mixed text/binary
+  `Players/siege` format remains unresolved and fails closed instead of discarding or
+  unsafely parsing data. The `siege` boot-fence entry therefore remains until that
+  compatibility question is completed.
+
 ### 2026-08-29 - restored historical flat town persistence
 
 - **Concrete gap:** towns originally used the eight-line-per-town `Players/towns`
