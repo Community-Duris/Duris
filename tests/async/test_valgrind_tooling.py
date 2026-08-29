@@ -30,6 +30,9 @@ assert "--suppressions=" in body and "scripts/valgrind.supp" in body, (
     "the runner no longer applies scripts/valgrind.supp"
 )
 assert "logs/valgrind" in body, "reports must be written under logs/valgrind/"
+assert '--minimal)          SERVER_ARGS+=("--minimal")' in body
+assert '--server-arg=*)     SERVER_ARGS+=("${1#*=}")' in body
+assert '${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"} "$PORT"' in body
 
 subprocess.run(["bash", "-n", str(SCRIPT)], check=True)
 

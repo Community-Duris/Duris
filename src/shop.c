@@ -1969,7 +1969,7 @@ static FILE *open_shop_stream(void)
 
 void boot_the_shops(void)
 {
-	char tbuf, *buf;
+	char tbuf;
 	int temp, tmp, count;
 	float t_buy, t_sell;
 	FILE *shop_f;
@@ -1986,11 +1986,11 @@ void boot_the_shops(void)
 
 	for (;;)
 	{
-		buf = fread_string(shop_f);
+		char *shop_record = fread_string(shop_f);
 
-		if (*buf == '#')
+		if (*shop_record == '#')
 		{ /* a new shop */
-			//      fprintf(stderr, "boot_the_shops: Booting shop: '%s'.\r\n", buf);
+			//      fprintf(stderr, "boot_the_shops: Booting shop: '%s'.\r\n", shop_record);
 			shop_end = FALSE;
 
 			// first shop
@@ -2012,10 +2012,10 @@ void boot_the_shops(void)
 			}
 			else
 			{
-				fprintf(stderr, "boot_the_shops: Old shop: '%s'!\r\n", buf);
+				fprintf(stderr, "boot_the_shops: Old shop: '%s'!\r\n", shop_record);
 				perror("Old shop exists!");
 				fatal_boot_error("shop", "boot_the_shops: old shop format in '%s'",
-						 buf);
+						 shop_record);
 			}
 
 			for (count = 0; count < MAX_PROD; count++)
@@ -2041,7 +2041,7 @@ void boot_the_shops(void)
 				{
 					fprintf(stderr,
 						"boot_the_shops: Shop '%s' has too many items: Item %d.\n\r",
-						buf, temp);
+						shop_record, temp);
 					REQUIRED_FSCANF(shop_f, "%d \n", &temp);
 				}
 			}
@@ -2049,14 +2049,17 @@ void boot_the_shops(void)
 			/* Load in the percentages that the shop will use to make a profit. */
 			if (fscanf(shop_f, "%f \n", &t_buy) != 1)
 			{
-				fprintf(stderr, "boot_the_shops: '%s' has bad t_buy!\r\n", buf);
-				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_buy", buf);
+				fprintf(stderr, "boot_the_shops: '%s' has bad t_buy!\r\n",
+					shop_record);
+				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_buy",
+						 shop_record);
 			}
 			if (fscanf(shop_f, "%f \n", &t_sell) != 1)
 			{
-				fprintf(stderr, "boot_the_shops: '%s' has bad t_sell!\r\n", buf);
+				fprintf(stderr, "boot_the_shops: '%s' has bad t_sell!\r\n",
+					shop_record);
 				fatal_boot_error("shop", "boot_the_shops: '%s' has bad t_sell",
-						 buf);
+						 shop_record);
 			}
 
 			shop_index[number_of_shops].sell_percent = t_sell;
@@ -2099,8 +2102,9 @@ void boot_the_shops(void)
 			if ((shop_index[number_of_shops].sell_percent != t_sell) ||
 			    (shop_index[number_of_shops].buy_percent != t_buy))
 			{
-				logit(LOG_DEBUG, "Shop %s: Old buy/sell: %f/%f, New: %f/%f.", buf,
-				      t_buy, t_sell, shop_index[number_of_shops].buy_percent,
+				logit(LOG_DEBUG, "Shop %s: Old buy/sell: %f/%f, New: %f/%f.",
+				      shop_record, t_buy, t_sell,
+				      shop_index[number_of_shops].buy_percent,
 				      shop_index[number_of_shops].sell_percent);
 			}
 			/*
@@ -2187,24 +2191,27 @@ void boot_the_shops(void)
 			tmp = 0;
 			REQUIRED_FSCANF(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].shopkeeper_race = tmp;
-			buf = fread_string(shop_f);
-			shop_index[number_of_shops].racist_message = buf;
+			shop_index[number_of_shops].racist_message = fread_string(shop_f);
 
 			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'X')
 				shop_end = TRUE;
 
 			number_of_shops++;
+			FREE(shop_record);
 
 			/*
 			 * End load of New shop, ready to bounce to next shop or quit if EOF
 			 */
 		}
-		else if (*buf == '$')
+		else if (*shop_record == '$')
 		{ /* EOF */
 			fprintf(stderr, "-- Shop loading complete.\r\n");
+			FREE(shop_record);
 			break;
 		}
+		else
+			FREE(shop_record);
 	}
 
 	if (shop_end == FALSE)
@@ -2214,6 +2221,29 @@ void boot_the_shops(void)
 		fatal_boot_error("shop", "boot_the_shops: shop file ended unexpectedly");
 	}
 	fclose(shop_f);
+}
+
+void free_shops(void)
+{
+	for (int shop = 0; shop < number_of_shops; shop++)
+	{
+		for (int type = 0; type < shop_index[shop].number_types_traded; type++)
+			str_free(shop_index[shop].type[type].keywords);
+		FREE(shop_index[shop].type);
+		str_free(shop_index[shop].close_message);
+		str_free(shop_index[shop].do_not_buy);
+		str_free(shop_index[shop].message_buy);
+		str_free(shop_index[shop].message_sell);
+		str_free(shop_index[shop].missing_cash1);
+		str_free(shop_index[shop].missing_cash2);
+		str_free(shop_index[shop].no_such_item1);
+		str_free(shop_index[shop].no_such_item2);
+		str_free(shop_index[shop].open_message);
+		str_free(shop_index[shop].racist_message);
+	}
+	if (shop_index)
+		FREE(shop_index);
+	number_of_shops = 0;
 }
 
 void assign_the_shopkeepers(void)

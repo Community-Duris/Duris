@@ -840,6 +840,7 @@ P_char find_character_by_runtime_id(uint64_t);
 void clear_object(P_obj);
 void ensure_pconly_pool(void);
 void free_char(P_char);
+void free_social_messages(void);
 void free_obj(P_obj);
 void init_char(P_char);
 void renum_world(void);
@@ -862,6 +863,7 @@ void do_debug(P_char, char *, int);
 void do_mreport(P_char, char *, int);
 void hour_debug(void);
 void init_cmdlog(void);
+void close_cmdlog(void);
 void loop_debug(void);
 
 /* drannak.c */
@@ -2290,6 +2292,7 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg);
 int add_to_list(struct shop_buy_data *list, int type, int *len, int *val);
 int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max);
 void boot_the_shops(void);
+void free_shops(void);
 void assign_the_shopkeepers(void);
 
 /* signals.c */

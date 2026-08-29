@@ -182,6 +182,7 @@ int initialize_mysql()
 {
 	return -1;
 }
+void shutdown_mysql(void) {}
 void do_sql(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 int sql_save_player_core(P_char /*ch*/)
 {
@@ -1426,6 +1427,21 @@ int initialize_mysql()
 	}
 
 	return 1;
+}
+
+void shutdown_mysql(void)
+{
+	sql_pool_shutdown();
+	if (persistenceDB)
+	{
+		mysql_close(persistenceDB);
+		persistenceDB = NULL;
+	}
+	if (DB)
+	{
+		mysql_close(DB);
+		DB = NULL;
+	}
 }
 
 /* Handle a query, log possible errors and return results (if available) */

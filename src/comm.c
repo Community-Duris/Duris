@@ -537,6 +537,8 @@ int main(int argc, char **argv)
 	init_cmdlog(); /* init cmd.debug file - DCL */
 
 	run_the_game(port, sslport);
+	shutdown_mysql();
+	close_cmdlog();
 
 	return (0);
 }
@@ -1980,6 +1982,14 @@ resume_game_loop:
 			}
 		}
 	}
+
+	close_sockets(s);
+	if (S >= 0)
+		close(S);
+	websocket_shutdown();
+	mother_desc = -1;
+	mother_desc_ssl = -1;
+	ws_desc = -1;
 }
 
 /*

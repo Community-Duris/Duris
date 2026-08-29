@@ -59,6 +59,7 @@ bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 			     uint64_t *operation_id);
 
 int initialize_mysql();
+void shutdown_mysql(void);
 bool sql_populate_lookup_tables();
 int sql_save_player_core(P_char ch);
 bool sql_load_player_items(P_char ch);

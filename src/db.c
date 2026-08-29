@@ -40,6 +40,7 @@
 #include "trophy.h"
 #include "weather.h"
 #include <string>
+#include <unordered_set>
 
 /*
  * external variables
@@ -1327,17 +1328,25 @@ void boot_world(int mini_mode)
 
 void free_world()
 {
-	// XXXXX
+	std::unordered_set<char *> freed_room_strings;
 	for (int room = 0; room <= top_of_world; room++)
 	{
-		if (world[room].ex_description)
-		{
-			if (world[room].ex_description->keyword)
-				FREE(world[room].ex_description->keyword);
-			if (world[room].ex_description->description)
-				FREE(world[room].ex_description->description);
+		if (world[room].name && freed_room_strings.insert(world[room].name).second)
+			FREE(world[room].name);
+		if (world[room].description &&
+		    freed_room_strings.insert(world[room].description).second)
+			FREE(world[room].description);
 
-			FREE(world[room].ex_description);
+		while (world[room].ex_description)
+		{
+			struct extra_descr_data *description = world[room].ex_description;
+			world[room].ex_description = description->next;
+			if (description->keyword)
+				FREE(description->keyword);
+			if (description->description)
+				FREE(description->description);
+
+			FREE(description);
 		}
 
 		for (int dir = 0; dir < NUM_EXITS; dir++)
@@ -1355,6 +1364,7 @@ void free_world()
 	}
 
 	FREE(world);
+	freed_room_strings.clear();
 
 	for (int mob = 0; mob <= top_of_mobt; mob++)
 	{
@@ -1388,7 +1398,8 @@ void free_world()
 	}
 	FREE(obj_index);
 
-	FREE(soc_mess_list);
+	free_social_messages();
+	free_shops();
 
 	for (int zone = 0; zone <= top_of_zone_table; zone++)
 	{
@@ -1403,6 +1414,17 @@ void free_world()
 	FREE(zone_table);
 
 	FREE(sector_table);
+
+	if (mob_f)
+	{
+		fclose(mob_f);
+		mob_f = NULL;
+	}
+	if (obj_f)
+	{
+		fclose(obj_f);
+		obj_f = NULL;
+	}
 }
 
 /* read direction data */
@@ -1413,16 +1435,15 @@ void setup_dir(FILE *fl, int room, int dir)
 
 	general_description = fread_string(fl);
 	keyword = fread_string(fl);
-	if (dir < 0 || dir >= NUM_EXITS)
+	if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0 || dir < 0 ||
+	    dir >= NUM_EXITS)
 	{
-		if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0)
-			return;
-		FREE(general_description);
-		FREE(keyword);
+		if (general_description)
+			FREE(general_description);
+		if (keyword)
+			FREE(keyword);
 		return;
 	}
-	if (fscanf(fl, " %d %d %d ", &state, &key, &to_room) != 3 || to_room < 0)
-		return;
 
 	CREATE(world[room].dir_option[dir], room_direction_data, 1, MEM_TAG_DIRDATA);
 
@@ -1462,7 +1483,13 @@ void renum_world(void)
 					world[room].dir_option[door]->to_room = to_room;
 				else
 				{
-					FREE(world[room].dir_option[door]);
+					struct room_direction_data *invalid_exit =
+						world[room].dir_option[door];
+					if (invalid_exit->general_description)
+						FREE(invalid_exit->general_description);
+					if (invalid_exit->keyword)
+						FREE(invalid_exit->keyword);
+					FREE(invalid_exit);
 					world[room].dir_option[door] = NULL;
 				}
 			}

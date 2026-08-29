@@ -82,6 +82,14 @@ void init_cmdlog(void)
 	cmdfile = fopen("logs/log/cmd.debug", "w");
 }
 
+void close_cmdlog(void)
+{
+	if (!cmdfile)
+		return;
+	fclose(cmdfile);
+	cmdfile = NULL;
+}
+
 void cmdlog(P_char ch, char *str)
 {
 	char tbuf[30];

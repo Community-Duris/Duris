@@ -1548,6 +1548,7 @@ void boot_social_messages(void)
 		{
 			RECREATE(soc_mess_list, social_messg, (++list_top + 1));
 		}
+		soc_mess_list[list_top] = {};
 		/*
 		 * read the stuff
 		 */
@@ -1576,6 +1577,24 @@ void boot_social_messages(void)
 		soc_mess_list[list_top].others_auto = fread_action(fl);
 	}
 	fclose(fl);
+}
+
+void free_social_messages(void)
+{
+	for (int social = 0; social <= list_top; social++)
+	{
+		str_free(soc_mess_list[social].char_no_arg);
+		str_free(soc_mess_list[social].others_no_arg);
+		str_free(soc_mess_list[social].char_found);
+		str_free(soc_mess_list[social].others_found);
+		str_free(soc_mess_list[social].vict_found);
+		str_free(soc_mess_list[social].not_found);
+		str_free(soc_mess_list[social].char_auto);
+		str_free(soc_mess_list[social].others_auto);
+	}
+	if (soc_mess_list)
+		FREE(soc_mess_list);
+	list_top = -1;
 }
 
 // Standard log n hunt for cmd.

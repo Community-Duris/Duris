@@ -4,9 +4,47 @@ Working notes from a full Memcheck session against a minimal-world boot, in
 which the staff character executed the entire in-game command list and every
 privileged (`wizhelp`) command.
 
-**These are findings as observed, not a register of current work.** Findings 1,
-2, and 3 have since been fixed; Finding 5 is intentional behaviour. The
-findings below are recorded as observed at the time, not as current state.
+**These are historical findings.** All actionable defects identified by the
+sweep have been fixed and reverified. Finding 4 is a command-driver requirement
+and Finding 5 is intentional behaviour. The detailed findings below preserve
+what was observed at the time, not the current state.
+
+## Remediation status - 2026-08-30
+
+| Item | Current status | Evidence / next check |
+| --- | --- | --- |
+| Finding 1, `deathsdoor` abort | Fixed | The closing append is bounds-aware, the all-stats-complete case is guarded, the command has an explicit table entry, and `tests/async/test_append_bounds.py` covers the regression. |
+| Finding 2, orphan item lockout | Fixed | Loads skip invalid orphan payload rows; player publication is fenced through serialized ownership grants; focused persistence tests cover both sides. |
+| Finding 3, repeatable command/login leaks | Fixed and verified | `generate_modif()`, `generate_desc()`, player string materialization/freeing, and `do_build()` now release rejected or replaced allocations. |
+| Finding 3, boot allocations and runtime resources | Fixed and verified | Final shutdown releases shared room strings, all extra descriptions, exits rejected during renumbering, socials, shops, prototype files, listeners, client sockets, SQL handles, and the command log. |
+| Finding 4, position-gated sweep coverage | Harness requirement, not a server defect | A command driver must restore standing position after `recline`, `kneel`, `sit`, `rest`, or `sleep`. |
+| Finding 5, issuer-bound scheduled shutdown | Intentional | The command help documents cancellation when the issuing character disconnects. |
+| Valgrind wrapper minimal-world support | Fixed | `scripts/valgrind_mud.sh --minimal` and repeatable `--server-arg` pass server arguments after the binary; `tests/async/test_valgrind_tooling.py` covers the wrapper guardrails. |
+
+### Verification after remediation
+
+The final clean minimal-world boot, prompt-driven login, and in-game shutdown
+was run on 2026-08-30 with:
+
+```
+./scripts/valgrind_mud.sh --minimal --port 4000 -- \
+  --show-leak-kinds=all --show-reachable=yes --track-fds=all
+```
+
+It exited normally with 0 Memcheck errors, 0 definitely lost bytes, and 0
+indirectly lost bytes. Four descriptors were open at process exit: standard
+input/output/error and Valgrind's inherited report descriptor. The report also
+listed 2,535,931 bytes as possibly lost and 0 bytes as still reachable. Duris's
+debug allocator reserves an `ALLOCATION_HEADER` and returns the interior body
+pointer, so Valgrind reports referenced process-lifetime allocations as
+possibly lost rather than still reachable. A dropped body pointer would instead
+be definitely lost; that category is now zero. The generated report remains
+under ignored `logs/valgrind/` and is not a project artifact.
+
+The source changes also pass `make -C src`, changed-line formatting validation,
+the focused append, orphan-item, player-load, Valgrind wrapper, and shutdown
+ownership regressions, and the complete `make test-all` gate (337 Python tests
+plus the native signal-handler test).
 
 ## Session setup
 
@@ -26,10 +64,11 @@ or the staff character. It was left stopped afterwards, as requested.
 
 ### Detector invocation
 
-`scripts/valgrind_mud.sh` was not used directly because it has no way to pass
-`--minimal` through to the server (everything after `--` goes to Valgrind, not
-to `dms`). The session used the wrapper's option set, widened to "record
-everything", plus the server's minimal-world flag:
+At the time of the original session, `scripts/valgrind_mud.sh` had no way to
+pass `--minimal` through to the server (everything after `--` went to Valgrind,
+not to `dms`). The original session therefore reproduced the wrapper's option
+set manually, widened to "record everything", and added the server's
+minimal-world flag:
 
 ```
 valgrind --tool=memcheck \
@@ -47,17 +86,19 @@ valgrind --tool=memcheck \
 (`definite,indirect`) so the report also carries still-reachable and possibly
 lost blocks; `--track-fds=all` records every descriptor, not just leaked ones.
 
-### Reports
+### Historical reports
 
-Both Memcheck reports are kept next to this document:
+The original Memcheck reports were temporary investigation artifacts and have
+since been removed. Their historical names and results are retained here:
 
 | Report | Run | Size |
 | --- | --- | --- |
-| [`memcheck-minimal-run1-crash.log`](memcheck-minimal-run1-crash.log) | run 1, ends at the `deathsdoor` abort | 534 KB |
-| [`memcheck-minimal-20260829-203738.log`](memcheck-minimal-20260829-203738.log) | run 2, boot to clean shutdown | 159 KB |
+| `memcheck-minimal-run1-crash.log` | run 1, ends at the `deathsdoor` abort | 534 KB |
+| `memcheck-minimal-20260829-203738.log` | run 2, boot to clean shutdown | 159 KB |
 
 The core dump Valgrind wrote alongside run 1 was 211 MB and has been deleted;
-the abort reproduces on demand (see [Finding 1](#finding-1--deathsdoor-aborts-the-whole-server-critical)).
+the abort reproduced on demand during the original investigation (see
+[Finding 1](#finding-1--deathsdoor-aborts-the-whole-server-critical-fixed)).
 
 ## Workload
 
@@ -76,7 +117,7 @@ the abort reproduces on demand (see [Finding 1](#finding-1--deathsdoor-aborts-th
 
 | | Run 1 | Run 2 |
 | --- | --- | --- |
-| Log | [`memcheck-minimal-run1-crash.log`](memcheck-minimal-run1-crash.log) | [`memcheck-minimal-20260829-203738.log`](memcheck-minimal-20260829-203738.log) |
+| Log | `memcheck-minimal-run1-crash.log` | `memcheck-minimal-20260829-203738.log` |
 | Ended by | **server abort (SIGABRT)** on the `deathsdoor` command | clean in-game `shutdown ok` |
 | Commands driven | 401 of 427 before the abort | 426 argument-free + 111 with arguments + 4 login cycles |
 | Memcheck errors | 6 (all leak records) | 20 (all leak records) |
@@ -96,7 +137,7 @@ Memcheck flagged is a leak.
 
 ---
 
-## Finding 1 — `deathsdoor` aborts the whole server (critical)
+## Finding 1 — `deathsdoor` aborts the whole server (critical, fixed)
 
 Typing `deathsdoor` with no argument killed the process. It is a plain,
 non-privileged entry in the `commands` list, so any character at or above
@@ -139,12 +180,11 @@ Two secondary problems in the same block:
   through the achievement/spec path — but it has no level or position guard of
   its own.
 
-Reproduce: log in any character of sufficient level that lacks the
-`ACH_DEATHSDOOR` affect and type `deathsdoor`. The full abort, with the
-surrounding descriptor and leak state, is in
-[`memcheck-minimal-run1-crash.log`](memcheck-minimal-run1-crash.log); search it
-for `Process terminating`. Valgrind also dumped a 211 MB core beside that log,
-which has since been deleted as too large to keep.
+Reproduce historically: log in any character of sufficient level that lacks
+the `ACH_DEATHSDOOR` affect and type `deathsdoor`. The removed investigation
+report was named `memcheck-minimal-run1-crash.log`; its relevant abort stack is
+preserved above. Valgrind also dumped a 211 MB core beside that log, which was
+deleted as too large to keep.
 
 ---
 
@@ -177,7 +217,7 @@ path, with focused coverage in
 
 ---
 
-## Finding 3 — repeatable leaks with Duris frames
+## Finding 3 — repeatable leaks with Duris frames (fixed)
 
 These are the leak records whose stack is Duris code and whose allocation is
 tied to a repeatable action rather than to one-time boot data.
@@ -224,17 +264,21 @@ runs on every character load, so it scales with logins rather than with uptime.
 
 **`do_build()` — `src/buildings.c:213`** leaks 112 bytes per invocation.
 
-**Boot-time one-shots** (each allocated once and never freed; visible only in the
-clean-shutdown run): `boot_social_messages()` via `fread_action()`
-(~106 KB across `actcomm.c:1559/1572/1576`), `boot_world()` string and exit data
+**Boot-time one-shots** (each allocated once and never freed in the original
+run): `boot_social_messages()` via `fread_action()` (~106 KB across
+`actcomm.c:1559/1572/1576`), `boot_world()` string and exit data
 (`db.c:1170/1177/1268-1270`), `setup_dir()` and `boot_the_shops()` via
-`fread_string()`. These are world data that lives for the process lifetime;
-they are only worth touching if a zero-leak shutdown is wanted.
+`fread_string()`.
 
-**Descriptors at exit**: 16 open, of which the interesting ones are
-`areas_mini/mini.mob` and `areas_mini/mini.obj` — the boot reader never closes
-the world files. The rest are the listeners (4000/4001/4050), the accepted
-client socket, five MySQL connections and the Redis worker sockets.
+**Descriptors at exit**: the original clean run left 16 open, including
+`areas_mini/mini.mob`, `areas_mini/mini.obj`, the listeners (4000/4001/4050),
+the accepted client socket, five MySQL connections and the Redis worker
+sockets.
+
+The remediation releases the repeatable allocations and adds complete normal
+shutdown ownership for the listed world data and runtime handles. The final
+verification run has no definite or indirect leaks, no Memcheck errors, and no
+server-owned descriptor open at exit.
 
 ---
 
@@ -309,6 +353,6 @@ session had to reconnect and hold the link open until the process exited.
   load and newly materialized player items receive ownership records.
 - The Memcheck logs and run-1 core retained during the investigation have since
   been removed.
-- `scripts/valgrind_mud.sh` still cannot start a minimal-world boot: everything
-  after `--` is passed to Valgrind, not to `dms`. A `--minimal` pass-through
-  would make this session reproducible with the checked-in wrapper alone.
+- `scripts/valgrind_mud.sh --minimal` now starts a minimal-world boot directly;
+  repeatable `--server-arg` options pass other server arguments before the
+  port, while everything after `--` remains a Valgrind argument.

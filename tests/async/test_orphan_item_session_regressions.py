@@ -17,8 +17,8 @@ rather than a runtime check because the code paths need a live world.
 4. free_char() released every player string except long_descr, so each login that
    set one leaked it.
 5. do_build() leaked the Building it declined to keep.
-6. The world prototype files stay open on purpose; a reader who "fixes" the
-   descriptors Valgrind reports at exit breaks mob and object instantiation.
+6. The world prototype files stay open while the game runs, then close during
+   final world teardown after object instantiation has ended.
 """
 from pathlib import Path
 
@@ -105,9 +105,13 @@ build = buildings[buildings.index("void do_build("):]
 build = build[:build.index("\n// Called in place of die()")]
 check("do_build deletes a building nothing took ownership of", "delete building;" in build)
 
-# 6. The world prototype files are held open on purpose.
-check("boot records why mob_f and obj_f are never closed",
+# 6. The world prototype files stay available for runtime instantiation and
+# close only in the final world teardown.
+check("boot records why mob_f and obj_f stay open during runtime",
       "read_object() fseek into them" in db and "not descriptors to close after boot" in db)
+free_world = db[db.index("void free_world("):db.index("/* read direction data */")]
+check("final world teardown closes both prototype files",
+      "fclose(mob_f);" in free_world and "fclose(obj_f);" in free_world)
 
 # The save-time detector that turns the remaining grant-path audit into data.
 check("the save path reports an object the ownership ledger does not know",
