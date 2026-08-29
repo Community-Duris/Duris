@@ -2478,8 +2478,32 @@ void Guild::challenge(P_char member, P_char victim)
 void Guild::write_transaction_to_ledger(const char *name, const char *trans_type,
 					const char *coin_str)
 {
+#ifdef __NO_MYSQL__
+	char message[256];
+	const int written =
+		snprintf(message, sizeof(message), "&+y%s %s %s&+y.&n", name, trans_type, coin_str);
+	if (written < 0 || static_cast<size_t>(written) >= sizeof(message))
+	{
+		persistence_alert(AVATAR, "association_ledger", this->name, "none", "none",
+				  "append", "guild ledger entry exceeds storage limit");
+		return;
+	}
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+	{
+		persistence_alert(AVATAR, "association_ledger", this->name, "none", "none",
+				  "append", "flat guild ledger has no state root");
+		return;
+	}
+	std::string error;
+	if (flatfile_association_ledger_append(root, id_number, !strcasecmp(name, "System"),
+					       message, &error) != flatfile_association_result::ok)
+		persistence_alert(AVATAR, "association_ledger", this->name, "none", "none",
+				  "append", "flat guild ledger append failed: %s", error.c_str());
+#else
 	qry("INSERT INTO guild_transactions (date, soc_id, transaction_info) VALUES (unix_timestamp(), %d, '&+y%s %s %s&+y.&n')",
 	    id_number, name, trans_type, coin_str);
+#endif
 }
 
 // The coins are valid (positive numbers) via checks in do_society().
@@ -2721,9 +2745,6 @@ void Guild::home(P_char member)
 void Guild::ledger(P_char member, char *args)
 {
 	int member_bits = GET_A_BITS(member);
-	char buff[MAX_STRING_LENGTH];
-	MYSQL_RES *res;
-	MYSQL_ROW row;
 
 	if (!IS_LEADER(member_bits) && !IS_TRUSTED(member))
 	{
@@ -2736,23 +2757,33 @@ void Guild::ledger(P_char member, char *args)
 		args++;
 	}
 
+#ifdef __NO_MYSQL__
+	bool system_entries = false;
+#endif
 	if (is_abbrev(args, "player"))
 	{
+#ifndef __NO_MYSQL__
 		if (!qry("SELECT transaction_info FROM guild_transactions WHERE soc_id = %d AND transaction_info NOT LIKE '%%System withdrew%%' ORDER BY date DESC LIMIT 100",
 			 id_number))
 		{
 			send_to_char("No transactions found..\n", member);
 			return;
 		}
+#endif
 	}
 	else if (is_abbrev(args, "system") || is_abbrev(args, "guild"))
 	{
+#ifdef __NO_MYSQL__
+		system_entries = true;
+#endif
+#ifndef __NO_MYSQL__
 		if (!qry("SELECT transaction_info FROM guild_transactions WHERE soc_id = %d AND (transaction_info LIKE '%%System %%') ORDER BY date DESC LIMIT 100",
 			 id_number))
 		{
 			send_to_char("No transactions found...\n", member);
 			return;
 		}
+#endif
 	}
 	else
 	{
@@ -2764,6 +2795,32 @@ void Guild::ledger(P_char member, char *args)
 
 	send_to_char("&+YGuild Ledger:\r\n------------------------------\r\n", member);
 
+#ifdef __NO_MYSQL__
+	std::string error;
+	std::vector<std::string> messages;
+	const char *root = persistence_mode_flatfile_root();
+	const auto listed = root ? flatfile_association_ledger_list(root, id_number, system_entries,
+								    &messages, &error) :
+				   flatfile_association_result::invalid;
+	if (listed == flatfile_association_result::not_found ||
+	    (listed == flatfile_association_result::ok && messages.empty()))
+	{
+		send_to_char("&+yNo transactions on record.\r\n", member);
+		return;
+	}
+	if (listed != flatfile_association_result::ok)
+	{
+		send_to_char("The guild ledger could not be read right now.\r\n", member);
+		persistence_alert(AVATAR, "association_ledger", name, "none", "none", "list",
+				  "flat guild ledger read failed: %s", error.c_str());
+		return;
+	}
+	for (const auto &message : messages)
+		send_to_char_f(member, "%s\r\n", message.c_str());
+#else
+	char buff[MAX_STRING_LENGTH];
+	MYSQL_RES *res;
+	MYSQL_ROW row;
 	res = mysql_store_result(DB);
 	if (!res)
 	{
@@ -2784,6 +2841,7 @@ void Guild::ledger(P_char member, char *args)
 	}
 
 	mysql_free_result(res);
+#endif
 }
 
 // While this theoretically works, it has not been tested since

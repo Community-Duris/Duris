@@ -136,6 +136,50 @@ int main(int argc, char **argv)
 			flatfile_association_result::unchanged,
 		"association erase retry was not idempotent");
 
+	std::vector<std::string> messages;
+	require(flatfile_association_ledger_list(root.string(), 7, false, &messages, &error) ==
+			flatfile_association_result::not_found,
+		"missing association ledger did not report not found");
+	require(flatfile_association_ledger_append(root.string(), 7, false, "Player first",
+						   &error) == flatfile_association_result::ok &&
+			flatfile_association_ledger_append(root.string(), 7, true,
+							   "System withdrew coins", &error) ==
+				flatfile_association_result::ok &&
+			flatfile_association_ledger_append(root.string(), 7, false, "Player second",
+							   &error) ==
+				flatfile_association_result::ok,
+		"association ledger append failed: " + error);
+	require(flatfile_association_ledger_list(root.string(), 7, false, &messages, &error) ==
+				flatfile_association_result::ok &&
+			messages == std::vector<std::string>{ "Player second", "Player first" },
+		"player association ledger did not list newest first");
+	require(flatfile_association_ledger_list(root.string(), 7, true, &messages, &error) ==
+				flatfile_association_result::ok &&
+			messages == std::vector<std::string>{ "System withdrew coins" },
+		"system association ledger was not filtered independently");
+	for (int index = 0; index <= 100; ++index)
+		require(flatfile_association_ledger_append(
+				root.string(), 7, false, "Player " + std::to_string(index),
+				&error) == flatfile_association_result::ok,
+			"association ledger retention append failed: " + error);
+	require(flatfile_association_ledger_list(root.string(), 7, false, &messages, &error) ==
+				flatfile_association_result::ok &&
+			messages.size() == 100 && messages.front() == "Player 100" &&
+			messages.back() == "Player 1",
+		"association ledger did not retain the newest 100 player entries");
+	require(flatfile_association_ledger_list(root.string(), 7, true, &messages, &error) ==
+				flatfile_association_result::ok &&
+			messages == std::vector<std::string>{ "System withdrew coins" },
+		"player ledger retention removed system history");
+	const fs::path ledger = root / "domains/association_ledger_7";
+	const auto ledger_permissions = fs::status(ledger).permissions();
+	require((ledger_permissions & (fs::perms::group_all | fs::perms::others_all)) ==
+			fs::perms::none,
+		"association ledger permissions are not private");
+	require(flatfile_association_ledger_append(root.string(), 7, false, "bad\nentry", &error) ==
+			flatfile_association_result::invalid,
+		"association ledger accepted a control character");
+
 	flatfile_authority_operation operation;
 	{
 		flatfile_authority_lock lock;
@@ -175,6 +219,23 @@ int main(int argc, char **argv)
 				flatfile_association_result::unchanged,
 			"association removal retry was not idempotent");
 	}
+
+	{
+		std::fstream file(ledger, std::ios::in | std::ios::out | std::ios::binary);
+		require(file.good(), "could not open association ledger for corruption");
+		file.seekg(-1, std::ios::end);
+		char byte = 0;
+		file.read(&byte, 1);
+		byte ^= 0x33;
+		file.seekp(-1, std::ios::end);
+		file.write(&byte, 1);
+	}
+	require(flatfile_association_ledger_list(root.string(), 7, false, &messages, &error) ==
+			flatfile_association_result::invalid,
+		"corrupt association ledger was exposed");
+	require(flatfile_association_ledger_append(root.string(), 7, false, "overwrite", &error) ==
+			flatfile_association_result::invalid,
+		"association ledger append overwrote corrupt history");
 
 	const fs::path catalog = root / "domains/association_catalog";
 	{

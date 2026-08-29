@@ -71,6 +71,8 @@ for token in (
     "flatfile_association_establish(root, {}, &error)",
     "flatfile_association_save(root, record, &error)",
     "flatfile_association_erase(root, id_number, &error)",
+    "flatfile_association_ledger_append(root, id_number",
+    "flatfile_association_ledger_list(root, id_number, system_entries",
     "missing = load_guild(id) ? 0 : missing + 1",
 ):
     if token not in preprocess.stdout:
@@ -78,6 +80,7 @@ for token in (
 for query in (
     "SELECT id, name FROM associations WHERE id",
     "SELECT id, name, prestige, construction_points FROM associations",
+    "guild_transactions",
 ):
     if query in preprocess.stdout:
         raise SystemExit(f"client-free guild runtime still contains SQL: {query}")

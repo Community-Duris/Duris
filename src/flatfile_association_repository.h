@@ -65,6 +65,16 @@ flatfile_association_save(const std::string &root, const flatfile_association_re
 			  std::string *error);
 flatfile_association_result flatfile_association_erase(const std::string &root,
 						       uint32_t association_id, std::string *error);
+flatfile_association_result flatfile_association_ledger_append(const std::string &root,
+							       uint32_t association_id,
+							       bool system_entry,
+							       const std::string &message,
+							       std::string *error);
+flatfile_association_result flatfile_association_ledger_list(const std::string &root,
+							     uint32_t association_id,
+							     bool system_entries,
+							     std::vector<std::string> *messages,
+							     std::string *error);
 flatfile_association_result flatfile_association_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_authority_operation *operation,

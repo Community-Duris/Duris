@@ -601,6 +601,35 @@
   cluster in client-free `assocs.c`; alliances, guildhalls, and outposts remain separate
   demonstrated gaps. The global incomplete-domain boot fence therefore remains.
 
+### 2026-08-29 - restored the database-only guild ledger in flat mode
+
+- **Concrete gap:** guild deposit and withdrawal history was always stored in the
+  `guild_transactions` table. A client-free build sent each transaction to the inert SQL
+  stub, and the leader-only `soc ledger` command could neither retrieve player activity
+  nor automated system withdrawals.
+- **Restoration:** the existing association repository now stores the ledger alongside
+  flat guild authority. Writes retain the established visible transaction text and
+  player/system classification; reads return newest first and retain the command-visible
+  latest 100 entries for each category. The record is bounded, versioned, checksummed,
+  owner-only, locked with the existing authority, and atomically replaced. Missing history
+  is an empty ledger, while corrupt history cannot be read or overwritten. The MariaDB
+  insert and query paths remain unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_association_repository.py`
+  covers missing history, append, player/system filtering, newest-first ordering, the
+  per-category 100-entry retention boundary, category independence, control-character
+  rejection, checksum corruption, and write refusal after corruption. Its client-free
+  source contract verifies both live ledger routes and rejects every remaining
+  `guild_transactions` query.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_character_delete.py`,
+  `python3 tests/async/test_flatfile_character_delete_manifest.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** preprocessing `assocs.c` for `__NO_MYSQL__` now leaves no executable
+  `qry_at`, `db_query_at`, or `sql_trace_exec_at` calls. Guild core state and its
+  historically database-only ledger are routed, but alliances, guildhalls, and outposts
+  remain separate gaps; the global incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

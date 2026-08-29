@@ -16,20 +16,37 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'A', 'S', 'S', 'C', 0 };
+constexpr std::array<uint8_t, 8> ledger_magic = { 'D', 'U', 'R', 'G', 'L', 'D', 'G', 0 };
 constexpr uint32_t catalog_version = 1;
+constexpr uint32_t ledger_version = 1;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
+constexpr size_t ledger_maximum_bytes = 128 * 1024;
 constexpr size_t association_maximum = 65536;
 constexpr size_t member_maximum = 1048576;
 constexpr size_t association_name_maximum = 80;
 constexpr size_t member_name_maximum = 64;
 constexpr size_t rank_name_maximum = 80;
 constexpr size_t top_fragger_maximum = 64;
+constexpr size_t ledger_message_maximum = 255;
+constexpr size_t ledger_kind_maximum = 100;
 constexpr const char *catalog_filename = "association_catalog";
 
 struct association_catalog
 {
 	uint64_t revision = 1;
 	std::vector<flatfile_association_record> associations;
+};
+
+struct ledger_entry
+{
+	bool system = false;
+	std::string message;
+};
+
+struct association_ledger
+{
+	uint64_t revision = 1;
+	std::vector<ledger_entry> entries;
 };
 
 struct encoder
@@ -415,6 +432,120 @@ bool normalize_record(flatfile_association_record *record)
 	}
 	return true;
 }
+
+std::string ledger_filename(uint32_t association_id)
+{
+	return "association_ledger_" + std::to_string(association_id);
+}
+
+bool valid_ledger(const association_ledger &ledger)
+{
+	if (!ledger.revision || ledger.entries.size() > ledger_kind_maximum * 2)
+		return false;
+	size_t player_count = 0, system_count = 0;
+	for (const auto &entry : ledger.entries)
+	{
+		if (!valid_text(entry.message, ledger_message_maximum, true, true))
+			return false;
+		size_t &count = entry.system ? system_count : player_count;
+		if (++count > ledger_kind_maximum)
+			return false;
+	}
+	return true;
+}
+
+bool encode_ledger(const association_ledger &ledger, std::vector<uint8_t> *bytes)
+{
+	if (!bytes || !valid_ledger(ledger))
+		return false;
+	encoder payload;
+	payload.number<uint32_t>(ledger.entries.size());
+	for (const auto &entry : ledger.entries)
+	{
+		payload.number<uint8_t>(entry.system ? 1 : 0);
+		payload.text(entry.message, ledger_message_maximum);
+	}
+	if (!payload.valid || payload.bytes.size() > ledger_maximum_bytes)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.bytes.data(), payload.bytes.size(), digest.data());
+	encoder file;
+	file.raw(ledger_magic.data(), ledger_magic.size());
+	file.number(ledger_version);
+	file.number<uint32_t>(payload.bytes.size());
+	file.number(ledger.revision);
+	file.raw(digest.data(), digest.size());
+	file.raw(payload.bytes.data(), payload.bytes.size());
+	if (!file.valid || file.bytes.size() > ledger_maximum_bytes)
+		return false;
+	*bytes = std::move(file.bytes);
+	return true;
+}
+
+bool decode_ledger(const std::vector<uint8_t> &bytes, association_ledger *ledger)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!ledger || bytes.size() < header_size ||
+	    memcmp(bytes.data(), ledger_magic.data(), ledger_magic.size()))
+		return false;
+	decoder header{ bytes.data() + ledger_magic.size(), bytes.size() - ledger_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || version != ledger_version || !revision ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload_bytes, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count > ledger_kind_maximum * 2)
+		return false;
+	association_ledger decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.entries.resize(count);
+		for (auto &entry : decoded.entries)
+		{
+			uint8_t system = 0;
+			if (!payload.number(&system) || system > 1 ||
+			    !payload.text(&entry.message, ledger_message_maximum))
+				return false;
+			entry.system = system != 0;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (payload.offset != payload.size || !valid_ledger(decoded))
+		return false;
+	*ledger = std::move(decoded);
+	return true;
+}
+
+flatfile_association_result load_ledger(const std::string &root, uint32_t association_id,
+					association_ledger *ledger, std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto loaded = flatfile_read(domains_directory(root), ledger_filename(association_id),
+					  ledger_maximum_bytes, &bytes, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_association_result::not_found;
+	if (loaded == flatfile_read_result::io_error)
+		return flatfile_association_result::io_error;
+	if (loaded != flatfile_read_result::ok || !decode_ledger(bytes, ledger))
+	{
+		if (error && error->empty())
+			*error = "association ledger is corrupt";
+		return flatfile_association_result::invalid;
+	}
+	return flatfile_association_result::ok;
+}
 } // namespace
 
 flatfile_association_result
@@ -618,6 +749,93 @@ flatfile_association_result flatfile_association_erase(const std::string &root,
 	return flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error) ?
 		       flatfile_association_result::ok :
 		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result flatfile_association_ledger_append(const std::string &root,
+							       uint32_t association_id,
+							       bool system_entry,
+							       const std::string &message,
+							       std::string *error)
+{
+	if (root.empty() || !association_id ||
+	    !valid_text(message, ledger_message_maximum, true, true))
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	association_ledger ledger;
+	const auto loaded = load_ledger(root, association_id, &ledger, error);
+	if (loaded != flatfile_association_result::ok &&
+	    loaded != flatfile_association_result::not_found)
+		return loaded;
+	if (loaded == flatfile_association_result::ok &&
+	    ledger.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_association_result::conflict;
+	try
+	{
+		ledger.entries.push_back({ system_entry, message });
+		std::vector<ledger_entry> retained;
+		retained.reserve(ledger_kind_maximum * 2);
+		size_t player_count = 0, system_count = 0;
+		for (auto entry = ledger.entries.rbegin(); entry != ledger.entries.rend(); ++entry)
+		{
+			size_t &count = entry->system ? system_count : player_count;
+			if (count++ < ledger_kind_maximum)
+				retained.push_back(*entry);
+		}
+		std::reverse(retained.begin(), retained.end());
+		ledger.entries = std::move(retained);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (loaded == flatfile_association_result::ok)
+		++ledger.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_ledger(ledger, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), ledger_filename(association_id),
+				     encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result flatfile_association_ledger_list(const std::string &root,
+							     uint32_t association_id,
+							     bool system_entries,
+							     std::vector<std::string> *messages,
+							     std::string *error)
+{
+	if (root.empty() || !association_id || !messages)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	association_ledger ledger;
+	const auto loaded = load_ledger(root, association_id, &ledger, error);
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	std::vector<std::string> selected;
+	try
+	{
+		selected.reserve(ledger_kind_maximum);
+		for (auto entry = ledger.entries.rbegin(); entry != ledger.entries.rend(); ++entry)
+			if (entry->system == system_entries)
+				selected.push_back(entry->message);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	*messages = std::move(selected);
+	return flatfile_association_result::ok;
 }
 
 flatfile_association_result flatfile_association_prepare_player_remove(
