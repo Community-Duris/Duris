@@ -221,6 +221,41 @@ int main()
 	       owner_revision == 9);
 	assert(!item_ownership_runtime_apply_corpse_resurrection(60, 40, 70, 600,
 								resurrected));
+
+	item_ownership_runtime_reset();
+	const item_owner_identity raised_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(61, 41), 0
+	};
+	const item_owner_identity raising_player = { item_owner_type::player, 71, 0 };
+	const item_ownership_runtime_entry raised_items[] = {
+		{ 510, 510, 0, raised_corpse, 2, 3, 42, item_custody_state::active },
+		{ 511, 510, 510, raised_corpse, 4, 3, 43, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(raised_items, 2));
+	assert(item_ownership_runtime_hydrate_owner(raising_player, 5));
+	corpse_lifecycle_result raised = {};
+	raised.owner_pid = 61;
+	raised.save_id = 41;
+	raised.action = corpse_lifecycle_action::raise_follower;
+	raised.catalog_revision = 13;
+	raised.corpse_owner_revision = 4;
+	raised.player_owner_revision = 6;
+	raised.wallet_revision = 3;
+	raised.max_item_revision = 5;
+	raised.item_count = 2;
+	raised.wallet = { 5, 6, 7, 8 };
+	assert(item_ownership_runtime_apply_corpse_raise(61, 41, 71, raised));
+	assert(item_ownership_runtime_lookup(510, &absent) &&
+	       item_owner_identity_equal(absent.owner, raising_player) &&
+	       absent.item_revision == 3 && absent.owner_revision == 6);
+	assert(item_ownership_runtime_lookup(511, &absent) &&
+	       item_owner_identity_equal(absent.owner, raising_player) &&
+	       absent.item_revision == 5 && absent.parent_item_uid == 510);
+	assert(item_ownership_runtime_owner_revision(raised_corpse, &owner_revision) &&
+	       owner_revision == 4);
+	assert(item_ownership_runtime_owner_revision(raising_player, &owner_revision) &&
+	       owner_revision == 6);
+	assert(!item_ownership_runtime_apply_corpse_raise(61, 41, 71, raised));
 	return 0;
 }
 '''

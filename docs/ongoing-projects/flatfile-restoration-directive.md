@@ -10,30 +10,29 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 98 restores full and lesser player resurrection in
-flat-primary mode. Each spell now stops after its historical eligibility and chance
-checks but before changing the target, corpse, items, or money. The target's durable
-inventory roots are moved one at a time through the existing player-to-room command.
-The final resurrection-only lifecycle action then atomically deposits the target's old
-wallet in that room, replaces it with the corpse wallet, transfers the exact nested
-corpse item graph and artifacts to the player, removes the corpse, and records restart
-materialization. Only its durable acknowledgment moves the live target and corpse
-contents and applies the original spell effects. MariaDB modes and NPC resurrection
-retain their synchronous behavior.
+As of 2026-08-29, checkpoint 99 restores the six historical follower-raising paths in
+flat-primary mode: ordinary undead, titans, dracoliches, golems, avatars, and greater
+dracoliches. Each path now stops after constructing its off-world follower but before
+publishing the follower, cloning a backup corpse, moving contents, or extracting the
+corpse. One final `raise_follower` lifecycle action atomically removes the corpse, moves
+its exact nested item graph and artifacts to the caster's existing player authority,
+adds corpse money to the caster wallet, and records restart materialization. Only its
+durable acknowledgment publishes the follower, moves the live contents, applies the
+historical control or hostility result, and checkpoints the caster and pets. MariaDB
+modes and NPC-caster behavior retain the synchronous historical path.
 
-The payload and result extension is limited to the identities and revisions required by
-that final exchange. It composes the existing world-item, item-ownership, player-wallet,
-artifact, materialization, and operation-ledger after-images under the existing shared
-authority transaction; it does not add a general spell or extraction framework. Forced
-interruption recovers and replays the same result exactly once. A crash during the
-preceding item drops leaves already committed roots safely in the old room and the
-corpse intact, so the operation can be resumed without item or currency duplication.
+The action reuses the existing world-item, player-item, wallet, artifact,
+materialization, and operation-ledger after-images under the shared authority lock. It
+does not add pet identity storage, a new catalog, or a general spell callback system.
+Forced interruption recovers and replays the same result exactly once. A crash after
+the commit but before live follower publication safely materializes the items for the
+caster on restart, while nested money objects are discarded from the live item graph
+because their value was already credited atomically.
 
-The remaining audited corpse paths are follower raising, which needs a durable pet-item
-destination, and decay of a corpse nested inside another object, which must retain the
-containing topology. Historical mixed-format siege-state compatibility also remains to
-be restored. The earlier siege/kingdom removal memo remains research only and does not
-amend this directive's explicit siege requirement.
+The remaining audited corpse path is decay of a corpse nested inside another object,
+which must retain the containing topology. Historical mixed-format siege-state
+compatibility also remains to be restored. The earlier siege/kingdom removal memo
+remains research only and does not amend this directive's explicit siege requirement.
 
 ## Owner intent
 

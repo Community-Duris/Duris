@@ -1209,9 +1209,11 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 	const bool release = payload.action == corpse_lifecycle_action::release;
 	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
 	const bool resurrect = payload.action == corpse_lifecycle_action::resurrect;
+	const bool raise_follower = payload.action == corpse_lifecycle_action::raise_follower;
 	if (root.empty() || !lock.matches(root) || !mutation ||
 	    static_cast<unsigned int>(release) + static_cast<unsigned int>(destroy) +
-			    static_cast<unsigned int>(resurrect) !=
+			    static_cast<unsigned int>(resurrect) +
+			    static_cast<unsigned int>(raise_follower) !=
 		    1 ||
 	    !payload.owner_pid || !payload.save_id || !payload.expected_corpse_revision ||
 	    payload.room_vnum <= 0 ||
@@ -1219,6 +1221,11 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 			   !payload.expected_player_revision ||
 			   std::any_of(payload.money.begin(), payload.money.end(),
 				       [](int32_t amount) { return amount < 0; }))) ||
+	    (raise_follower &&
+	     (!payload.destination_player_pid || payload.old_room_vnum ||
+	      !payload.expected_player_revision || payload.expected_room_revision ||
+	      std::any_of(payload.money.begin(), payload.money.end(),
+			  [](int32_t amount) { return amount < 0; }))) ||
 	    !valid_printable(payload.owner_name, name_maximum, true))
 		return flatfile_world_item_result::invalid;
 	*mutation = {};

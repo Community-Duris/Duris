@@ -36,6 +36,9 @@ bool item_ownership_runtime_apply_corpse_destruction(uint32_t owner_pid, uint32_
 bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32_t save_id,
 						      uint32_t player_pid, int32_t old_room_vnum,
 						      const corpse_lifecycle_result &result);
+bool item_ownership_runtime_apply_corpse_raise(uint32_t owner_pid, uint32_t save_id,
+					       uint32_t player_pid,
+					       const corpse_lifecycle_result &result);
 void item_ownership_runtime_forget(uint64_t item_uid);
 void item_ownership_runtime_forget_owner(const item_owner_identity &owner);
 void item_ownership_runtime_reset(void);

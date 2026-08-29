@@ -4236,3 +4236,38 @@ action" text below remains historical and does not authorize work.
   build/game-loop boot/clean-shutdown preflight.
 - **Remaining restoration:** follower raising and nested-container corpse decay still need their
   exact durable destinations. Historical mixed-format siege-state compatibility remains required.
+
+### Checkpoint 99 - recoverable follower raising
+
+- **Historical behavior restored:** flat-primary ordinary undead, titan, dracolich, golem, avatar,
+  and greater-dracolich creation now retain their existing eligibility, follower construction,
+  corpse-item transfer, decay-derived duration, control or hostility roll, effects, and pet save.
+  Each player-corpse path stops with its follower still off-world before `char_to_room`, the
+  historical backup-corpse clone, the first content move, or corpse extraction. NPC casters,
+  non-player corpses, and MariaDB modes retain the synchronous historical implementation.
+- **Narrow lifecycle extension:** payload version 4 gains one `raise_follower` action using the
+  already-present corpse, player, item, wallet, artifact, materialization, and operation-ledger
+  authorities. It fences only the corpse and caster player revisions. No pet identity repository,
+  storage format, authority catalog, generalized spell transaction, or extraction framework was
+  added.
+- **One recoverable publication:** the action proves exact corpse placement and nested item custody,
+  removes the corpse aggregate, moves durable item custody and artifact location to the caster
+  without changing artifact binding, adds every corpse denomination to the caster wallet, records
+  inbound materialization, and stores the result atomically. Overflow and stale revisions fail
+  before publication. Forced interruption among the after-images recovers and replays that result
+  exactly once without changing room authority.
+- **Durability-before-live publication:** only a committed completion advances runtime custody and
+  the wallet, strips live corpse contents, removes nested money objects already represented by the
+  wallet credit, extracts the corpse, and publishes the staged follower. Controlled followers keep
+  the historical items and are immediately included in a crash checkpoint. On the historical rare
+  hostile roll, the items go directly to the caster so live placement stays consistent with the
+  committed player authority and cannot duplicate across relog.
+- **Recovery evidence:** the repository regression forces an interrupted multi-image write and
+  proves one corpse removal, additive wallet credit, exact nested player custody, preserved artifact
+  binding, restart materialization, a zero room revision, and idempotent replay. Command codec,
+  transaction completion, runtime ownership, all six live guard-order contracts, corpse ownership,
+  corpse restore, player-domain, and player-corpse regressions pass.
+- **Build evidence:** changed-line formatting, `git diff --check`, and the strict normal C++20 server
+  build pass. The isolated client-free build/game-loop boot/clean-shutdown preflight also passes.
+- **Remaining restoration:** nested-container corpse decay must preserve its containing item
+  topology. Historical mixed-format siege-state compatibility remains required.

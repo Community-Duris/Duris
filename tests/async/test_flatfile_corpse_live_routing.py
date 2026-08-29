@@ -60,6 +60,19 @@ lesser_resurrect = body(MAGIC, "void spell_lesser_resurrect(",
                         "void spell_mass_invisibility(")
 resurrection_publication = body(HANDLER, "void publish_corpse_resurrection(",
                                 "void continue_corpse_resurrection(")
+raise_publication = body(HANDLER, "void publish_corpse_raise(",
+                         "P_obj find_resurrection_item(")
+raise_undead = body(NECROMANCY, "void raise_undead(", "#undef UNDEAD_TYPES")
+call_titan = body(NECROMANCY, "void spell_call_titan(", "struct SavedCorpseData")
+create_dracolich = body(NECROMANCY, "void spell_create_dracolich(",
+                        "void spell_create_golem(")
+create_golem = body(NECROMANCY, "void create_golem(", "void spell_call_avatar(")
+call_avatar = body(NECROMANCY, "void spell_call_avatar(",
+                   "void spell_create_greater_dracolich(")
+create_greater_dracolich = body(NECROMANCY, "void spell_create_greater_dracolich(",
+                                "void do_exhume(")
+raise_completion = body(NECROMANCY, "void complete_corpse_raise_after_commit(",
+                        "void spell_create_dracolich(")
 
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in write_corpse
 assert "stage_corpse_lifecycle" in write_corpse
@@ -141,6 +154,19 @@ assert HANDLER.index("item_movement_transaction_submit(",
                      HANDLER.index("void continue_corpse_resurrection(")) < \
        HANDLER.index("corpse_lifecycle_transaction_resurrect(",
                      HANDLER.index("void continue_corpse_resurrection("))
+for raise_spell in (raise_undead, call_titan, create_dracolich, create_golem,
+                    call_avatar, create_greater_dracolich):
+    assert "persistence_defer_corpse_raise" in raise_spell
+    assert raise_spell.index("persistence_defer_corpse_raise") < \
+           raise_spell.index("char_to_room")
+    assert raise_spell.index("persistence_defer_corpse_raise") < \
+           raise_spell.index("create_saved_corpse")
+assert "corpse_lifecycle_transaction_raise_follower" in HANDLER
+assert "item_ownership_runtime_apply_corpse_raise" in raise_publication
+assert raise_publication.index("item_ownership_runtime_apply_corpse_raise") < \
+       raise_publication.index("complete_corpse_raise_after_commit")
+assert "discard_nested_money" in raise_completion
+assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),

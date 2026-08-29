@@ -549,6 +549,128 @@ int main(int argc, char **argv)
 			"restart reconciliation did not materialize resurrected corpse items: " +
 				error);
 	}
+
+	const fs::path raise_root = fs::path(argv[1]) / "raise";
+	prepare_root(raise_root);
+	flatfile_corpse_record raised_corpse = released_corpse;
+	raised_corpse.money = { 40, 30, 20, 10 };
+	require(flatfile_world_item_establish(raise_root.string(), { raised_corpse }, {}, &error) ==
+			flatfile_world_item_result::ok,
+		"could not establish raiseable corpse: " + error);
+	require(flatfile_item_repository_establish_owner(
+			raise_root.string(), corpse_owner,
+			{ { 900, 900, 0, corpse_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, corpse_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish raiseable corpse custody: " + error);
+	const item_owner_identity raising_player_owner = { item_owner_type::player, 71, 0 };
+	require(flatfile_item_repository_establish_owner(raise_root.string(), raising_player_owner,
+							 { { 810, 810, 0, raising_player_owner, 1,
+							     1810, item_custody_state::active } },
+							 &error) ==
+			flatfile_item_baseline_result::applied,
+		"could not establish raising player custody: " + error);
+	flatfile_player_domain_record raising_player = {};
+	raising_player.pid = 71;
+	raising_player.account_name = "raising-account";
+	raising_player.racewar = 1;
+	raising_player.domains.wallet = { 5, 6, 7, 8 };
+	require(flatfile_player_domain_establish(raise_root.string(), raising_player, &error) ==
+			flatfile_player_domain_result::ok,
+		"could not establish raising player wallet: " + error);
+	flatfile_artifact_record raised_artifact = corpse_artifact;
+	raised_artifact.bind_owner_pid = 42;
+	raised_artifact.bind_timer = 6000;
+	require(flatfile_artifact_establish(raise_root.string(), { raised_artifact }, &error) ==
+			flatfile_artifact_result::ok,
+		"could not establish raised corpse artifact: " + error);
+	corpse_lifecycle_payload raise_payload = {};
+	raise_payload.action = corpse_lifecycle_action::raise_follower;
+	raise_payload.owner_pid = 42;
+	raise_payload.save_id = 20;
+	raise_payload.expected_corpse_revision = 3;
+	raise_payload.destination_player_pid = 71;
+	raise_payload.expected_player_revision = 1;
+	raise_payload.expected_wallet_revision = 0;
+	raise_payload.room_vnum = 500;
+	raise_payload.money = { 5, 6, 7, 8 };
+	raise_payload.owner_name = "Hero";
+	auto raise_command = command(15, raise_payload);
+	raise_command.accepted_at_usec = 15000000;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "3", 1);
+	applied = flatfile_corpse_repository_apply(raise_root.string(), raise_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted corpse raise did not retain recoverable composite intent");
+	applied = flatfile_corpse_repository_apply(raise_root.string(), raise_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"corpse raise did not recover and replay exactly");
+	result = {};
+	require(corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+						       applied.result_size, &result) &&
+			result.action == corpse_lifecycle_action::raise_follower &&
+			result.catalog_revision == 2 && result.corpse_owner_revision == 2 &&
+			result.room_owner_revision == 0 && result.player_owner_revision == 2 &&
+			result.wallet_revision == 1 && result.max_item_revision == 2 &&
+			result.item_count == 2 &&
+			result.wallet == std::array<int32_t, 4>{ 45, 36, 27, 18 },
+		"corpse raise result did not expose all committed revisions");
+	corpses.clear();
+	saved.clear();
+	require(flatfile_world_item_list(raise_root.string(), &corpses, &saved, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty(),
+		"recovered corpse raise retained the corpse aggregate");
+	rooms.clear();
+	require(flatfile_world_item_list_rooms(raise_root.string(), &rooms, &error) ==
+				flatfile_world_item_result::ok &&
+			rooms.empty(),
+		"recovered corpse raise unexpectedly changed room authority");
+	uint64_t raising_player_revision = 0;
+	std::vector<flatfile_item_ownership_record> raising_player_items;
+	require(flatfile_item_repository_load_owner(
+			raise_root.string(), raising_player_owner, &raising_player_revision,
+			&raising_player_items, &error) == flatfile_item_repository_result::ok &&
+			raising_player_revision == 2 && raising_player_items.size() == 3 &&
+			raising_player_items[1].item_uid == 900 &&
+			raising_player_items[1].item_revision == 2 &&
+			raising_player_items[2].parent_item_uid == 900,
+		"recovered corpse raise did not transfer player item custody");
+	flatfile_player_domain_record loaded_raising_player;
+	require(flatfile_player_domain_load(raise_root.string(), 71, "raising-account", 1,
+					    &loaded_raising_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_raising_player.domains.wallet_revision == 1 &&
+			loaded_raising_player.domains.wallet ==
+				std::array<uint64_t, 4>{ 45, 36, 27, 18 },
+		"recovered corpse raise did not credit corpse money");
+	flatfile_artifact_record raised_player_artifact;
+	require(flatfile_artifact_get(raise_root.string(), 1901, &raised_player_artifact, &error) ==
+				flatfile_artifact_result::ok &&
+			raised_player_artifact.owned &&
+			raised_player_artifact.location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			raised_player_artifact.location == 71 &&
+			raised_player_artifact.bind_owner_pid == 42 &&
+			raised_player_artifact.bind_timer == 6000 &&
+			raised_player_artifact.last_update == 15 &&
+			raised_player_artifact.revision == 2,
+		"recovered corpse raise did not move the artifact without changing its binding");
+	player_snapshot stale_raise_snapshot = {};
+	stale_raise_snapshot.pid = 71;
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(raise_root.string(), &error),
+			"could not lock raise materialization: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				raise_root.string(), reconciliation_lock, 71, raising_player_items,
+				&stale_raise_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_raise_snapshot.items.size() == 2 &&
+				stale_raise_snapshot.items[0].object_uid == 900 &&
+				stale_raise_snapshot.items[1].parent_index == 0,
+			"restart reconciliation did not materialize raised corpse items: " + error);
+	}
 	std::cout << "flat-file corpse lifecycle repository passed\n";
 	return 0;
 }

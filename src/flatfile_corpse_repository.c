@@ -363,7 +363,9 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	const bool releases_custody = payload.action == corpse_lifecycle_action::release;
 	const bool destroys_custody = payload.action == corpse_lifecycle_action::destroy;
 	const bool resurrects_custody = payload.action == corpse_lifecycle_action::resurrect;
-	const bool disposes_custody = releases_custody || destroys_custody || resurrects_custody;
+	const bool raises_follower = payload.action == corpse_lifecycle_action::raise_follower;
+	const bool disposes_custody = releases_custody || destroys_custody || resurrects_custody ||
+				      raises_follower;
 	const auto prepared =
 		disposes_custody ?
 			flatfile_world_item_prepare_corpse_release(root, authority, payload,
@@ -425,11 +427,20 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	}
 	bool include_resurrection_wallet = false;
 	bool include_resurrection_materialization = false;
-	if (prepared == flatfile_world_item_result::ok && resurrects_custody)
+	if (prepared == flatfile_world_item_result::ok && (resurrects_custody || raises_follower))
 	{
+		std::array<int32_t, 4> replacement_wallet = release.money;
+		if (raises_follower)
+			for (size_t index = 0; index < replacement_wallet.size(); ++index)
+			{
+				if (release.money[index] > INT32_MAX - payload.money[index])
+					return { critical_apply_outcome::terminal_failure,
+						 catalog.revision, EOVERFLOW };
+				replacement_wallet[index] += payload.money[index];
+			}
 		const auto wallet_prepared = flatfile_player_domain_prepare_resurrection_wallet(
 			root, authority, payload.destination_player_pid,
-			payload.expected_wallet_revision, payload.money, release.money,
+			payload.expected_wallet_revision, payload.money, replacement_wallet,
 			&resurrection_wallet, &error);
 		if (wallet_prepared != flatfile_player_domain_result::ok ||
 		    resurrection_wallet.after_images.size() != 1)
@@ -496,7 +507,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 			result.wallet_revision = resurrection_wallet.wallet_revision;
 			result.max_item_revision = release_items.max_item_revision;
 			result.item_count = static_cast<uint32_t>(release_items.item_count);
-			if (resurrects_custody)
+			if (resurrects_custody || raises_follower)
 				for (size_t index = 0; index < result.wallet.size(); ++index)
 					result.wallet[index] = static_cast<int32_t>(
 						resurrection_wallet.wallet.amount[index]);

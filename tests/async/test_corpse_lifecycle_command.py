@@ -201,8 +201,34 @@ int main()
 	assert(decoded_result.action == corpse_lifecycle_action::resurrect &&
 	       decoded_result.player_owner_revision == 10 && decoded_result.wallet_revision == 12 &&
 	       decoded_result.wallet[3] == 4);
+	corpse_lifecycle_payload raise = resurrect;
+	raise.action = corpse_lifecycle_action::raise_follower;
+	raise.expected_room_revision = 0;
+	raise.old_room_vnum = 0;
+	assert(corpse_lifecycle_command_build(&command, operation(8), raise,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(command.keys.size() == 2 && command.expected_revisions.size() == 2);
+	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
+	assert(decoded.action == corpse_lifecycle_action::raise_follower &&
+	       decoded.destination_player_pid == 77 && decoded.expected_player_revision == 9 &&
+	       decoded.expected_wallet_revision == 11 && decoded.room_vnum == 500);
+	auto unsupported_previous_raise = command;
+	unsupported_previous_raise.payload.erase(unsupported_previous_raise.payload.begin() + 88,
+					 unsupported_previous_raise.payload.begin() + 112);
+	unsupported_previous_raise.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+	assert(!corpse_lifecycle_command_decode_payload(unsupported_previous_raise, &decoded));
+	corpse_lifecycle_result raise_result = resurrect_result;
+	raise_result.action = corpse_lifecycle_action::raise_follower;
+	raise_result.room_owner_revision = 0;
+	assert(corpse_lifecycle_command_encode_result(raise_result, &encoded_result));
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
+					      &decoded_result));
+	assert(decoded_result.action == corpse_lifecycle_action::raise_follower &&
+	       decoded_result.room_owner_revision == 0 &&
+	       decoded_result.player_owner_revision == 10 && decoded_result.wallet[0] == 1);
 	release.money[0] = 1;
-	assert(!corpse_lifecycle_command_build(&command, operation(8), release,
+	assert(!corpse_lifecycle_command_build(&command, operation(9), release,
 					       critical_source_site::command,
 					       critical_deadline_class::terminal));
 	return 0;

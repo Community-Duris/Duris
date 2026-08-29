@@ -26,6 +26,7 @@ enum class corpse_lifecycle_action : uint8_t
 	release = 3,
 	destroy = 4,
 	resurrect = 5,
+	raise_follower = 6,
 };
 
 struct corpse_lifecycle_payload

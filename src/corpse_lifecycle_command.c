@@ -101,7 +101,8 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 	     payload.action != corpse_lifecycle_action::remove &&
 	     payload.action != corpse_lifecycle_action::release &&
 	     payload.action != corpse_lifecycle_action::destroy &&
-	     payload.action != corpse_lifecycle_action::resurrect) ||
+	     payload.action != corpse_lifecycle_action::resurrect &&
+	     payload.action != corpse_lifecycle_action::raise_follower) ||
 	    !payload.owner_pid || payload.owner_pid > INT32_MAX || !payload.save_id ||
 	    payload.save_id > INT32_MAX ||
 	    !valid_text(payload.owner_name, CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES, true))
@@ -133,6 +134,17 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 		return payload.expected_corpse_revision && payload.room_vnum > 0 &&
 		       payload.destination_player_pid &&
 		       payload.destination_player_pid <= INT32_MAX && payload.old_room_vnum > 0 &&
+		       payload.expected_player_revision && !payload.weight &&
+		       std::all_of(payload.values.begin(), payload.values.end(),
+				   [](int32_t value) { return value == 0; }) &&
+		       std::all_of(payload.money.begin(), payload.money.end(),
+				   [](int32_t value) { return value >= 0; }) &&
+		       payload.short_description.empty() && payload.description.empty() &&
+		       payload.keywords.empty();
+	if (payload.action == corpse_lifecycle_action::raise_follower)
+		return payload.expected_corpse_revision && !payload.expected_room_revision &&
+		       payload.room_vnum > 0 && payload.destination_player_pid &&
+		       payload.destination_player_pid <= INT32_MAX && !payload.old_room_vnum &&
 		       payload.expected_player_revision && !payload.weight &&
 		       std::all_of(payload.values.begin(), payload.values.end(),
 				   [](int32_t value) { return value == 0; }) &&
@@ -179,9 +191,16 @@ bool valid_result(const corpse_lifecycle_result &result)
 		       !result.wallet_revision && item_result &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
-	return result.action == corpse_lifecycle_action::resurrect && !result.corpse_revision &&
-	       result.corpse_owner_revision && result.room_owner_revision &&
-	       result.player_owner_revision && result.wallet_revision && item_result &&
+	if (result.action == corpse_lifecycle_action::resurrect)
+		return !result.corpse_revision && result.corpse_owner_revision &&
+		       result.room_owner_revision && result.player_owner_revision &&
+		       result.wallet_revision && item_result &&
+		       std::all_of(result.wallet.begin(), result.wallet.end(),
+				   [](int32_t value) { return value >= 0; });
+	return result.action == corpse_lifecycle_action::raise_follower &&
+	       !result.corpse_revision && result.corpse_owner_revision &&
+	       !result.room_owner_revision && result.player_owner_revision &&
+	       result.wallet_revision && item_result &&
 	       std::all_of(result.wallet.begin(), result.wallet.end(),
 			   [](int32_t value) { return value >= 0; });
 }
@@ -293,7 +312,8 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 	    payload->action == corpse_lifecycle_action::destroy)
 		return false;
 	if (command.payload_version != CORPSE_LIFECYCLE_PAYLOAD_VERSION &&
-	    payload->action == corpse_lifecycle_action::resurrect)
+	    (payload->action == corpse_lifecycle_action::resurrect ||
+	     payload->action == corpse_lifecycle_action::raise_follower))
 		return false;
 	critical_command expected = {};
 	critical_operation_id operation = {};
@@ -408,7 +428,8 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 		     .payload = std::move(encoded) };
 	if (payload.action == corpse_lifecycle_action::release ||
 	    payload.action == corpse_lifecycle_action::destroy ||
-	    payload.action == corpse_lifecycle_action::resurrect)
+	    payload.action == corpse_lifecycle_action::resurrect ||
+	    payload.action == corpse_lifecycle_action::raise_follower)
 	{
 		critical_entity_key destination_key = {};
 		if (payload.action == corpse_lifecycle_action::release)
@@ -430,6 +451,16 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 			command->keys.push_back(player_key);
 			command->expected_revisions.push_back(
 				{ room_key, payload.expected_room_revision });
+			command->expected_revisions.push_back(
+				{ player_key, payload.expected_player_revision });
+		}
+		else if (payload.action == corpse_lifecycle_action::raise_follower)
+		{
+			const critical_entity_key player_key = {
+				critical_entity_type::player,
+				static_cast<uint64_t>(payload.destination_player_pid)
+			};
+			command->keys.push_back(player_key);
 			command->expected_revisions.push_back(
 				{ player_key, payload.expected_player_revision });
 		}
