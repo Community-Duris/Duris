@@ -5,6 +5,33 @@
 
 ## Progress ledger
 
+### 2026-08-29 - restored historical flat town persistence
+
+- **Concrete gap:** towns originally used the eight-line-per-town `Players/towns`
+  format, but the SQL conversion replaced both client-free compatibility functions with
+  unconditional failure. In a `SIEGE_ENABLED` client-free build, town state could not
+  load, and donations, deployment changes, and staff adjustments could not save.
+- **Restoration:** the existing compatibility functions now read and atomically replace
+  that exact historical text format in the private flat metadata directory. A missing
+  authority imports an existing `Players/towns` first or establishes the restored ten
+  tracked `defaults/towns` records. Parsing is bounded and complete before live state is
+  replaced; unknown or duplicate zones, partial records, unsafe files, and corrupt
+  authority fail without overwriting disk, and client-free town boot stops on failure.
+  The MariaDB table path is unchanged, and no new repository or generalized subsystem
+  was introduced.
+- **Focused evidence:** `python3 tests/async/test_flatfile_towns.py` exercises fresh
+  defaults, all historical fields, exact-format publication, owner-only permissions,
+  mutation/reload, legacy `Players/towns` import precedence, partial-record corruption,
+  overwrite refusal, live-state preservation, symlink refusal, and the absence of town
+  SQL from the client-free path. The test is included in the client-free CI job.
+- **Build evidence:** complete `SIEGE_ENABLED` server builds pass with both
+  `PERSISTENCE_BACKEND=flatfile` and `PERSISTENCE_BACKEND=mariadb`; the normal
+  client-free boot preflight, persistence-mode contracts, formatting check, and
+  `git diff --check` also pass.
+- **Overall state:** persistent town resources, offense, defense, and deployment state
+  are restored in both modes. Persisted siege objects and other incomplete domains
+  remain separate work, so the global incomplete-domain boot fence remains.
+
 ### 2026-08-29 - database-independent global timers
 
 - **Concrete gap:** under `__NO_MYSQL__`, `set_timer` discarded every write and

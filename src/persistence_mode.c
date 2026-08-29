@@ -29,7 +29,7 @@ static const char unimplemented_domains[] =
 	"character rename/delete completion, non-item critical operations, "
 	"lockers/private chests, "
 	"corpses/saved items/shopkeepers/pets/shapes/recipes/spellbooks, "
-	"guilds/alliances/halls/outposts/towns/siege/nexus, ships/cargo/markets, "
+	"guilds/alliances/halls/outposts/siege/nexus, ships/cargo/markets, "
 	"artifacts/economy";
 
 static bool fail(char *error, size_t error_size, const char *format, ...)

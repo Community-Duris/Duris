@@ -1518,7 +1518,13 @@ void multihit_siege(P_char ch)
 
 void init_towns()
 {
-	sql_load_towns();
+	if (!sql_load_towns())
+	{
+		logit(LOG_SYS, "init_towns(): failed to load town state");
+#ifdef __NO_MYSQL__
+		exit(EXIT_FAILURE);
+#endif
+	}
 
 	/* initialize warmaster specs */
 	mob_index[real_mobile0(401000)].func.mob = warmaster;
