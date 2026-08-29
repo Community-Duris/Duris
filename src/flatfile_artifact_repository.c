@@ -1201,12 +1201,27 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 			      payload.to_owner.type == item_owner_type::player &&
 			      payload.reason == item_transfer_reason::player_get &&
 			      !payload.target_parent_item_uid;
-	if (deposit == withdraw)
+	const bool create = payload.from_owner.type == item_owner_type::system &&
+			    payload.to_owner.type == item_owner_type::room &&
+			    payload.reason == item_transfer_reason::creation &&
+			    !payload.target_parent_item_uid;
+	const bool destroy = payload.from_owner.type == item_owner_type::room &&
+			     payload.to_owner.type == item_owner_type::destruction &&
+			     payload.reason == item_transfer_reason::destruction &&
+			     !payload.target_parent_item_uid;
+	const bool reparent = item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
+			      payload.from_owner.type == item_owner_type::room &&
+			      payload.reason == item_transfer_reason::operator_repair &&
+			      !payload.target_parent_item_uid;
+	if (static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
+		    static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
+		    static_cast<unsigned int>(reparent) !=
+	    1)
 		return flatfile_artifact_result::invalid;
 	const uint64_t player_id = deposit ? payload.from_owner.id : payload.to_owner.id;
-	const uint64_t room_id = deposit ? payload.to_owner.id : payload.from_owner.id;
-	if (!player_id || player_id > INT32_MAX || !room_id || room_id > INT32_MAX ||
-	    payload.from_owner.context_id || payload.to_owner.context_id)
+	const uint64_t room_id = deposit || create ? payload.to_owner.id : payload.from_owner.id;
+	if (((deposit || withdraw) && (!player_id || player_id > INT32_MAX)) || !room_id ||
+	    room_id > INT32_MAX || payload.from_owner.context_id || payload.to_owner.context_id)
 		return flatfile_artifact_result::invalid;
 	std::vector<player_item_snapshot> exact_items;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
@@ -1237,6 +1252,10 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 		return flatfile_artifact_result::invalid;
 	if (std::none_of(exact_items.begin(), exact_items.end(),
 			 [](const auto &item) { return item.extra_flags & artifact_extra_flag; }))
+		return flatfile_artifact_result::unchanged;
+	if (create)
+		return flatfile_artifact_result::conflict;
+	if (reparent)
 		return flatfile_artifact_result::unchanged;
 	artifact_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
@@ -1278,9 +1297,20 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 				    });
 		if (!selected)
 			continue;
-		record.location_type = deposit ? FLATFILE_ARTIFACT_ON_GROUND :
-						 FLATFILE_ARTIFACT_ON_PLAYER;
-		record.location = static_cast<int32_t>(deposit ? room_id : player_id);
+		if (destroy)
+		{
+			record.owned = false;
+			record.location_type = FLATFILE_ARTIFACT_NOT_IN_GAME;
+			record.location = -1;
+			record.bind_owner_pid = -1;
+			record.bind_timer = 0;
+		}
+		else
+		{
+			record.location_type = deposit ? FLATFILE_ARTIFACT_ON_GROUND :
+							 FLATFILE_ARTIFACT_ON_PLAYER;
+			record.location = static_cast<int32_t>(deposit ? room_id : player_id);
+		}
 		record.last_update = event_time;
 		++record.revision;
 		changed = true;

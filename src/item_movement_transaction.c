@@ -32,6 +32,7 @@ struct pending_movement
 	int64_t requested_reason_id;
 	uint64_t requested_corpse_uid;
 	bool adopting;
+	bool adoption_only;
 	item_movement_completion_fn completion;
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context;
 	size_t context_size;
@@ -182,6 +183,18 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		registry_applied = item_ownership_runtime_apply(entry.payload, result);
 	if (entry.adopting && committed && registry_applied)
 	{
+		if (entry.adoption_only)
+		{
+			const item_movement_completion_fn completion_fn = entry.completion;
+			const auto context = entry.context;
+			const size_t context_size = entry.context_size;
+			pending.erase(found);
+			if (completion_fn)
+				completion_fn(actor, true, result, 0, context.data(), context_size);
+			++health.committed;
+			account_health();
+			return;
+		}
 		const uint64_t root_uid = entry.payload.selected_item_uid;
 		const item_owner_identity source = entry.payload.to_owner;
 		const item_owner_identity destination = entry.requested_to_owner;
@@ -326,6 +339,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.requested_reason_id = reason_id,
 		.requested_corpse_uid = corpse_context ? corpse_context->obj_uid : 0,
 		.adopting = !adopted,
+		.adoption_only = !adopted && item_owner_identity_equal(from_owner, to_owner),
 		.completion = completion,
 		.context = {},
 		.context_size = context_size,

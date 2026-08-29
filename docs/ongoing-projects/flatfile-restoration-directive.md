@@ -10,23 +10,23 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 92 connects durable player drop, get, and cross-owner put
-operations to the revisioned room aggregate restored at boot. Flat-primary movement now
-publishes exact item ownership, detached room snapshots, player materialization events,
-and artifact location changes in one recoverable authority transaction before the live
-object graph moves. Nested floor-container changes preserve topology and apply the same
-bounded ancestor-weight propagation as the live object handlers. Exact retries and an
-interruption between authority images cannot lose or duplicate the moved subtree.
+As of 2026-08-29, checkpoint 93 restores the historical administrative `ITEM_STORAGE`
+lifecycle in flat-primary mode. `storage new`, `storage delete`, and `storage remove`
+now establish, destroy, or detach exact stable-UID subtrees through the revisioned room
+aggregate before changing the live object graph. The same recoverable authority update
+also advances item custody and artifact state, while ordinary player put/get continues
+to use the checkpoint 92 room transfer. Boot restores storage roots and nested contents
+from that shared room catalog rather than consulting SQL or creating another catalog.
 
-This completes the shared live room-mutation prerequisite for historical saved world
-items, but it does not yet recreate the administrative `ITEM_STORAGE` root lifecycle.
-The next boundary is a stable-UID establishment/removal adapter for those roots and the
-flat-primary `writeSavedItem`, `PurgeSavedItemFile`, and restore routing; ordinary content
-put/get is already covered by the room transaction. The checkpoint 91 audit remains in
-force for non-room corpse operations: player/follower transfers, coupled spell effects,
-intentional contained-gear destruction, and nested corpses still require their own
-semantics. The siege/kingdom removal memo remains research only and does not amend this
-directive's explicit requirement to restore historical siege state.
+The historical `writeSavedItem`, `PurgeSavedItemFile`, and `restoreSavedItems` entry
+points now stop before SQL in flat-primary mode and validate the already-committed room
+or destruction custody where appropriate. MariaDB mode retains its existing saved-item
+routes, with deletion repaired to occur while the object key is still valid. The next
+restoration boundary returns to the checkpoint 91 audit of non-room player-corpse
+operations: player/follower transfers, coupled spell effects, intentional contained-gear
+destruction, and nested corpses require their own semantics. The siege/kingdom removal
+memo remains research only and does not amend this directive's explicit requirement to
+restore historical siege state.
 
 ## Owner intent
 

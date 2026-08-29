@@ -4022,3 +4022,43 @@ action" text below remains historical and does not authorize work.
 - **Next action:** give administrative `ITEM_STORAGE` roots stable-UID, revisioned room
   establishment/removal and route the three historical saved-item entry points through it. Reuse the
   room transfer above for all subsequent player content changes rather than adding another catalog.
+
+### Checkpoint 93 - restored administrative saved world items
+
+- **Historical lifecycle restored:** flat-primary `storage new`, `storage delete`, and `storage
+  remove` now submit the existing item movement transaction before touching the live object graph.
+  Establishment adopts a stable-UID storage subtree from system custody into its room; deletion moves
+  the exact subtree to destruction custody; removal serially detaches each child to the room floor and
+  destroys the empty root. Failed submissions and completions retain the live authority rather than
+  reporting a discarded mutation as successful.
+- **Shared room authority:** the item and world repositories admit only those three bounded room
+  transfer shapes in addition to the checkpoint 92 player movements. Establishment appends an exact
+  detached subtree, deletion removes that exact subtree, and same-room child detachment preserves
+  nested topology while subtracting weight through every former ancestor. The adoption runtime now
+  completes a same-owner system-to-room establishment without manufacturing a second no-op command.
+- **Artifact and cleanup semantics:** an artifact-bearing establishment fails closed, same-room
+  detachment leaves ground artifact custody unchanged, and deletion clears every selected registered
+  artifact's ownership, location, and binding state in the same recoverable authority transaction.
+  Recursive live cleanup recognizes already-destroyed item custody, avoiding false mutation alerts.
+- **Historical entry-point routing:** `writeSavedItem` validates that flat storage is already tracked
+  by room authority and returns before SQL; `restoreSavedItems` relies on the shared room catalog that
+  boot has already staged; and `PurgeSavedItemFile` verifies destruction custody and returns before
+  SQL. MariaDB behavior stays synchronous, while saved-item deletion now occurs before the live object
+  is freed, repairing the prior use-after-free and missing SQL-row purge.
+- **Restart and regression coverage:** repository fixtures establish and delete a nested storage
+  subtree and detach a nested child with exact revision, topology, and ancestor-weight assertions.
+  Artifact coverage exercises same-room detachment and room destruction. The boot harness restores an
+  `ITEM_STORAGE` root and nested container from the room catalog, and a focused source contract proves
+  all three legacy saved-item entry points branch before SQL and all admin mutations wait for durable
+  acknowledgment.
+- **Checks passed:** saved-item routing, item/world-item repositories, artifact/runtime, room/corpse
+  boot restore, live movement, item ownership/runtime, and transfer-version compatibility suites;
+  changed-line formatting, `git diff --check`, the strict normal C++20 server build, and the isolated
+  client-free game-loop boot/clean-shutdown preflight.
+- **Exposure:** the unsafe pointer-named native `Players/SavedItems` format is not revived as a writer;
+  authoritative saved world items now use the bounded shared room catalog. Money objects retain their
+  historical cash path. The checkpoint 91 non-room corpse operations remain fail-closed until their
+  actual player, follower, destruction, effect, or nested-container destinations are represented.
+- **Next action:** implement the smallest operation-specific durability boundary from the checkpoint
+  91 corpse audit, beginning with intentional corpse-and-contents destruction, then return to the
+  player/follower and coupled-effect transfers without broadening generic `extract_obj` semantics.

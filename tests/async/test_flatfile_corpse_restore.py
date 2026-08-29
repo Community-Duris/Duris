@@ -178,10 +178,12 @@ flatfile_world_item_result flatfile_world_item_list_rooms(
 	root.equipment_slot = -1;
 	root.object_uid = 100;
 	root.vnum = 1900;
+	root.type = ITEM_STORAGE;
 	player_item_snapshot child = root;
 	child.parent_index = 0;
 	child.object_uid = 101;
 	child.vnum = 1901;
+	child.type = ITEM_CONTAINER;
 	room.items = { root, child };
 	rooms->push_back(room);
 	return flatfile_world_item_result::ok;
@@ -222,8 +224,10 @@ bool player_load_item_graph_materialize_detached(
 	       owner_revision == 2 && roots);
 	P_obj root = read_object(1900, REAL);
 	root->obj_uid = snapshots[0].object_uid;
+	root->type = snapshots[0].type;
 	P_obj child = read_object(1901, REAL);
 	child->obj_uid = snapshots[1].object_uid;
+	child->type = snapshots[1].type;
 	child->loc_p = LOC_INSIDE;
 	child->loc.inside = root;
 	root->contains = child;
@@ -272,8 +276,10 @@ int main()
 	       published->contains->value[0] == 1 && published->contains->value[3] == 4 &&
 	       published->contains->loc.inside == published);
 	assert(published_room_items.size() == 2 && published_room_items[0]->obj_uid == 100 &&
+	       published_room_items[0]->type == ITEM_STORAGE &&
 	       published_room_items[0]->loc.room == 5 && published_room_items[0]->contains &&
 	       published_room_items[0]->contains->obj_uid == 101 &&
+	       published_room_items[0]->contains->type == ITEM_CONTAINER &&
 	       published_room_items[1]->type == ITEM_MONEY &&
 	       published_room_items[1]->value[0] == 5 &&
 	       published_room_items[1]->value[3] == 8);

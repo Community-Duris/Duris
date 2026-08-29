@@ -489,7 +489,22 @@ bool room_transfer(const item_transfer_payload &payload)
 			      payload.to_owner.type == item_owner_type::player &&
 			      payload.reason == item_transfer_reason::player_get &&
 			      !payload.target_parent_item_uid;
-	return deposit != withdraw;
+	const bool create = payload.from_owner.type == item_owner_type::system &&
+			    payload.to_owner.type == item_owner_type::room &&
+			    payload.reason == item_transfer_reason::creation &&
+			    !payload.target_parent_item_uid;
+	const bool destroy = payload.from_owner.type == item_owner_type::room &&
+			     payload.to_owner.type == item_owner_type::destruction &&
+			     payload.reason == item_transfer_reason::destruction &&
+			     !payload.target_parent_item_uid;
+	const bool reparent = item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
+			      payload.from_owner.type == item_owner_type::room &&
+			      payload.reason == item_transfer_reason::operator_repair &&
+			      !payload.target_parent_item_uid;
+	return static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
+		       static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
+		       static_cast<unsigned int>(reparent) ==
+	       1;
 }
 
 bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t payload_version)

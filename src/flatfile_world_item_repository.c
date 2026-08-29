@@ -532,6 +532,29 @@ bool room_transfer_withdraw(const item_transfer_payload &payload)
 	       !payload.target_parent_item_uid;
 }
 
+bool room_transfer_create(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::system &&
+	       payload.to_owner.type == item_owner_type::room &&
+	       payload.reason == item_transfer_reason::creation && !payload.target_parent_item_uid;
+}
+
+bool room_transfer_destroy(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::room &&
+	       payload.to_owner.type == item_owner_type::destruction &&
+	       payload.reason == item_transfer_reason::destruction &&
+	       !payload.target_parent_item_uid;
+}
+
+bool room_transfer_reparent(const item_transfer_payload &payload)
+{
+	return item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
+	       payload.from_owner.type == item_owner_type::room &&
+	       payload.reason == item_transfer_reason::operator_repair &&
+	       !payload.target_parent_item_uid;
+}
+
 bool room_custody(const std::vector<player_item_snapshot> &items,
 		  std::vector<flatfile_corpse_custody_item> *custody)
 {
@@ -1046,9 +1069,16 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	*mutation = {};
 	const bool deposit = room_transfer_deposit(payload);
 	const bool withdraw = room_transfer_withdraw(payload);
-	if (deposit == withdraw)
+	const bool create = room_transfer_create(payload);
+	const bool destroy = room_transfer_destroy(payload);
+	const bool reparent = room_transfer_reparent(payload);
+	if (static_cast<unsigned int>(deposit) + static_cast<unsigned int>(withdraw) +
+		    static_cast<unsigned int>(create) + static_cast<unsigned int>(destroy) +
+		    static_cast<unsigned int>(reparent) !=
+	    1)
 		return flatfile_world_item_result::invalid;
-	const item_owner_identity &room_owner = deposit ? payload.to_owner : payload.from_owner;
+	const bool append = deposit || create;
+	const item_owner_identity &room_owner = append ? payload.to_owner : payload.from_owner;
 	if (!room_owner.id || room_owner.id > INT32_MAX || room_owner.context_id)
 		return flatfile_world_item_result::invalid;
 	std::vector<player_item_snapshot> exact_items;
@@ -1076,9 +1106,9 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	key.room_vnum = static_cast<int32_t>(room_owner.id);
 	auto room = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), key, room_less);
 	const bool found = room != catalog.rooms.end() && room->room_vnum == key.room_vnum;
-	const uint64_t expected_revision = deposit ? payload.expected_to_revision :
-						     payload.expected_from_revision;
-	if ((!found && (withdraw || expected_revision)) ||
+	const uint64_t expected_revision = append ? payload.expected_to_revision :
+						    payload.expected_from_revision;
+	if ((!found && (!append || expected_revision)) ||
 	    (found && room->revision != expected_revision) || catalog.revision == UINT64_MAX ||
 	    (found && room->revision == UINT64_MAX) ||
 	    (!found && catalog.rooms.size() >= room_maximum))
@@ -1097,7 +1127,7 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 		}
 		else
 			++room->revision;
-		if (deposit)
+		if (append)
 		{
 			const size_t parent_index =
 				payload.target_parent_item_uid ?
@@ -1145,6 +1175,16 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 				    player_snapshot_codec_result::ok ||
 			    selected_blob != exact_blob)
 				return flatfile_world_item_result::conflict;
+			if (reparent)
+			{
+				const int32_t offset = static_cast<int32_t>(remaining.size());
+				for (auto item : selected)
+				{
+					if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+						item.parent_index += offset;
+					remaining.push_back(std::move(item));
+				}
+			}
 			room->items = std::move(remaining);
 		}
 	}

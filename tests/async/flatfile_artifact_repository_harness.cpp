@@ -267,6 +267,58 @@ int main(int argc, char **argv)
 			records[0].bind_owner_pid == 77 && records[0].bind_timer == 8000 &&
 			records[0].revision == 3,
 		"artifact get did not atomically move room authority to the player");
+	room_drop.from_owner = room_get.to_owner;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire second room artifact transfer authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_drop, 13000000, &mutation,
+				&error) == flatfile_artifact_result::ok &&
+				flatfile_authority_transaction_commit(
+					room_transfer_root.string(), lock, { mutation.after_image },
+					&error) == flatfile_authority_transaction_result::ok,
+			"second artifact drop did not commit: " + error);
+	}
+	item_transfer_payload room_reparent = room_drop;
+	room_reparent.from_owner = room_drop.to_owner;
+	room_reparent.to_owner = room_drop.to_owner;
+	room_reparent.reason = item_transfer_reason::operator_repair;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire room artifact reparent authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_reparent, 14000000,
+				&mutation, &error) == flatfile_artifact_result::unchanged,
+			"same-room artifact reparent changed artifact location authority");
+	}
+	item_transfer_payload room_destroy = room_reparent;
+	room_destroy.to_owner = { item_owner_type::destruction, 0, 0 };
+	room_destroy.reason = item_transfer_reason::destruction;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(room_transfer_root.string(), &error),
+			"could not acquire room artifact destruction authority");
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_room_transfer(
+				room_transfer_root.string(), lock, room_destroy, 15000000,
+				&mutation, &error) == flatfile_artifact_result::ok &&
+				flatfile_authority_transaction_commit(
+					room_transfer_root.string(), lock, { mutation.after_image },
+					&error) == flatfile_authority_transaction_result::ok,
+			"room artifact destruction did not commit: " + error);
+	}
+	require(flatfile_artifact_list(room_transfer_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && !records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			records[0].location == -1 && records[0].last_update == 15 &&
+			records[0].bind_owner_pid == -1 && records[0].bind_timer == 0 &&
+			records[0].revision == 5,
+		"room artifact destruction did not clear durable gameplay custody");
 
 	const fs::path corpse_root = fs::path(argv[1]) / "corpse";
 	prepare_root(corpse_root);

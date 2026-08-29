@@ -1,3 +1,4 @@
+#include "defines.h"
 #include "flatfile_artifact_repository.h"
 #include "flatfile_item_repository.h"
 #include "flatfile_locker_repository.h"
@@ -607,6 +608,132 @@ int main(int argc, char **argv)
 			room_records[0].revision == 3 && room_records[0].items.size() == 2 &&
 			room_records[0].items[0].weight == 9,
 		"room-container get did not remove only the subtree and restore ancestor weight");
+	player_item_snapshot storage_root = {};
+	storage_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	storage_root.equipment_slot = 0;
+	storage_root.object_uid = 300;
+	storage_root.generated_key = 1300;
+	storage_root.vnum = 700;
+	storage_root.type = ITEM_STORAGE;
+	storage_root.name = "saved storage";
+	storage_root.short_description = "a saved storage container";
+	storage_root.weight = 2;
+	player_item_snapshot storage_child = storage_root;
+	storage_child.parent_index = 0;
+	storage_child.object_uid = 301;
+	storage_child.generated_key = 1301;
+	storage_child.vnum = 701;
+	storage_child.type = ITEM_CONTAINER;
+	storage_child.name = "stored container";
+	storage_child.short_description = "a stored container";
+	storage_child.weight = 1;
+	std::vector<uint8_t> storage_blob;
+	require(player_item_snapshot_list_encode({ storage_root, storage_child }, &storage_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode saved storage subtree");
+	item_transfer_payload room_create = {};
+	room_create.from_owner = { item_owner_type::system, 0, 0 };
+	room_create.to_owner = room_owner;
+	room_create.reason = item_transfer_reason::creation;
+	room_create.reason_id = 9001;
+	room_create.expected_from_revision = 0;
+	room_create.expected_to_revision = 3;
+	room_create.selected_item_uid = 300;
+	room_create.target_root_item_uid = 300;
+	room_create.item_count = 2;
+	room_create.items[0] = { 300, 300,
+				 0,   ITEM_TRANSFER_ABSENT_REVISION,
+				 700, item_custody_state::absent };
+	room_create.items[1] = { 301, 300,
+				 300, ITEM_TRANSFER_ABSENT_REVISION,
+				 701, item_custody_state::absent };
+	room_create.item_blob_size = static_cast<uint32_t>(storage_blob.size());
+	std::copy(storage_blob.begin(), storage_blob.end(), room_create.item_blob.begin());
+	critical_command room_create_command = {};
+	require(item_transfer_command_build(&room_create_command, operation(8), room_create,
+					    critical_source_site::operator_repair,
+					    critical_deadline_class::interactive),
+		"could not build saved storage establishment");
+	room_create_command.accepted_at_usec = 8;
+	applied = flatfile_item_repository_apply(room_root.string(), room_create_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).to_owner_revision == 4,
+		"saved storage establishment did not apply");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records[0].revision == 4 && room_records[0].items.size() == 4 &&
+			room_records[0].items[2].object_uid == 300 &&
+			room_records[0].items[2].type == ITEM_STORAGE &&
+			room_records[0].items[2].equipment_slot == -1 &&
+			room_records[0].items[3].object_uid == 301 &&
+			room_records[0].items[3].parent_index == 2,
+		"saved storage establishment did not append the exact detached subtree");
+
+	item_transfer_payload room_destroy = room_create;
+	room_destroy.from_owner = room_owner;
+	room_destroy.to_owner = { item_owner_type::destruction, 0, 0 };
+	room_destroy.reason = item_transfer_reason::destruction;
+	room_destroy.reason_id = 300;
+	room_destroy.expected_from_revision = 4;
+	room_destroy.expected_to_revision = 0;
+	room_destroy.items[0] = { 300, 300, 0, 1, 700, item_custody_state::active };
+	room_destroy.items[1] = { 301, 300, 300, 1, 701, item_custody_state::active };
+	critical_command room_destroy_command = {};
+	require(item_transfer_command_build(&room_destroy_command, operation(9), room_destroy,
+					    critical_source_site::operator_repair,
+					    critical_deadline_class::interactive),
+		"could not build saved storage destruction");
+	room_destroy_command.accepted_at_usec = 9;
+	applied = flatfile_item_repository_apply(room_root.string(), room_destroy_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).from_owner_revision == 5,
+		"saved storage destruction did not apply");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records[0].revision == 5 && room_records[0].items.size() == 2,
+		"saved storage destruction did not remove the exact room subtree");
+
+	player_item_snapshot detached_child = room_container[1];
+	detached_child.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	std::vector<uint8_t> detached_child_blob;
+	require(player_item_snapshot_list_encode({ detached_child }, &detached_child_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode saved storage child removal");
+	item_transfer_payload room_reparent = {};
+	room_reparent.from_owner = room_owner;
+	room_reparent.to_owner = room_owner;
+	room_reparent.reason = item_transfer_reason::operator_repair;
+	room_reparent.reason_id = 100;
+	room_reparent.expected_from_revision = 5;
+	room_reparent.expected_to_revision = 5;
+	room_reparent.selected_item_uid = 101;
+	room_reparent.target_root_item_uid = 101;
+	room_reparent.item_count = 1;
+	room_reparent.items[0] = { 101, 100, 100, 2, 501, item_custody_state::active };
+	room_reparent.item_blob_size = static_cast<uint32_t>(detached_child_blob.size());
+	std::copy(detached_child_blob.begin(), detached_child_blob.end(),
+		  room_reparent.item_blob.begin());
+	critical_command room_reparent_command = {};
+	require(item_transfer_command_build(&room_reparent_command, operation(10), room_reparent,
+					    critical_source_site::operator_repair,
+					    critical_deadline_class::interactive),
+		"could not build saved storage child removal");
+	room_reparent_command.accepted_at_usec = 10;
+	applied = flatfile_item_repository_apply(room_root.string(), room_reparent_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).from_owner_revision == 6 &&
+			result_of(applied).to_owner_revision == 6,
+		"saved storage child removal did not apply");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records[0].revision == 6 && room_records[0].items.size() == 2 &&
+			room_records[0].items[0].weight == 5 &&
+			room_records[0].items[1].object_uid == 101 &&
+			room_records[0].items[1].parent_index == PLAYER_SNAPSHOT_NO_PARENT,
+		"saved storage child removal did not detach the root or repair ancestor weight");
 	items.clear();
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
