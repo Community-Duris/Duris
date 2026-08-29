@@ -2631,8 +2631,14 @@ int assoc_founder(P_char mob, P_char pl, int cmd, char *arg)
 		}
 		// Skip the opening '.
 		snprintf(guild_name, MAX_INPUT_LENGTH, "%s", arg + 1);
-		// Overwrite the closing ' with a color normal.
-		snprintf(guild_name + strlen(guild_name) - 1, MAX_STRING_LENGTH, "&n");
+		// Drop the closing ' and append a colour normal in its place. Truncating
+		// first keeps the append a plain bounded write rather than one at an offset
+		// the compiler cannot bound.
+		const size_t quoted_length = strlen(guild_name);
+		if (quoted_length)
+			guild_name[quoted_length - 1] = '\0';
+		checked_snprintf(guild_name + strlen(guild_name),
+				 MAX_INPUT_LENGTH - strlen(guild_name), "&n");
 
 		if (sub_string_cs(guild_name, "&-") || sub_string_cs(guild_name, "&="))
 		{

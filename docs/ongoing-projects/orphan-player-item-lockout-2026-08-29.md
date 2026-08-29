@@ -4,9 +4,10 @@
 load path no longer refuses a character over an inconsistent item row, in either
 persistence backend. See [What was fixed](#what-was-fixed) below. The
 writer-side question — what created the orphan in the first place — is still
-open, and [Still open](#still-open) is the register of everything outstanding
-from this session, including the unrelated `deathsdoor` server abort found
-alongside it.
+open. [Still open](#still-open) is the register of everything outstanding from
+this session; most of it has since been resolved, and the remainder is work that
+needs a running game rather than a source change. The document stays until that
+register is empty.
 
 A `player_items` row whose `obj_uid` has no matching `item_current_owner` row
 made the owning character **permanently unloadable**. The player saw only
@@ -316,150 +317,103 @@ does not have to be rediscovered.
 
 ## Still open
 
-Everything outstanding from this session, in and out of the item-load path.
-Verified against `5359723fb` on 2026-08-29 — every item below is still unfixed
-in `master`.
+Verified against this branch. **14 of the 19 items in the previous revision are
+resolved**; what is left is listed here and nothing else.
 
-### Writer side — the actual remaining bug
+### Open
 
-1. **Give `do_load` an ownership record.** A staff-created object carried
-   straight out of `do_load` has no `item_current_owner` row
-   (`src/actwiz.c:5297`, `obj_to_char()` with no transfer). The establish pattern
-   already exists — `submit_flat_storage_establish()` (`src/actwiz.c:10396`)
-   submits a same-owner transfer for exactly this purpose — so the shape of the
-   fix is known. It was not written with the reader fix because it puts a new
-   submission on a live transaction path and deserves its own change and test.
-2. **Audit the other inventory-granting paths** for the same gap: mob loot,
-   corpse looting, quest and reward grants, shop purchases, anything else calling
-   `obj_to_char()` without a transfer. Recounted against `5359723fb`: **10**
-   `item_movement_transaction_submit()` call sites in the whole server
-   (`actobj.c` 5, `actwiz.c` 3, `handler.c` 1, `fight.c` 1) against **271**
-   `obj_to_char()` calls across `src/*.c`, 11 of them in `actobj.c` alone. Most
-   of those 271 are mob and world loading rather than player grants, so the
-   number to work through is far smaller than the ratio suggests — but it is a
-   real piece of work rather than a glance, and the ratio is the point. This
-   decides how much silent item loss the skip path is now absorbing; it no longer
-   decides whether players get locked out.
+1. **Audit the remaining inventory-granting paths.** `do_load` is fixed (below),
+   but any other path that calls `obj_to_char()` without submitting a transfer
+   produces the same orphan. The candidate set is wide - 271 `obj_to_char()`
+   calls across `src/*.c` against 10 `item_movement_transaction_submit()` sites,
+   spread over `specs.object.c` (24), `actinf.c` (20), `specs.mobile.c` (18),
+   `magic.c`, `tradeskill.c`, `shop.c`, `fight.c`, `salvage.c` and more. Reading
+   all of them is not the way to do this, so it is now instrumented instead:
+   `player_snapshot_capture.c` logs every object written into a player's payload
+   that the ownership ledger does not know, with its vnum:
 
-   (An earlier revision of this document said 12 and 16. Both were wrong.)
-3. **Consider whether `extract_obj()` should retire the ledger row**
-   (`src/handler.c:2994`). It touches the ledger not at all today. That is what
-   leaves a destroyed object's custody row behind as the inverse orphan, now
-   counted as `missing_payload_rows` rather than refused.
-
-### The `deathsdoor` server abort — unrelated, and the most severe thing open
-
-4. **`deathsdoor` aborts the whole process, and any player can trigger it.**
-   `src/specs.gellz.c:1042` still reads:
-
-   ```c
-   snprintf(buf + strlen(buf) - 2, MAX_STRING_LENGTH, "&+y.\n");
+   ```
+   player_snapshot_capture: component=items outcome=unowned_object
+     uid=<uid> vnum=<vnum> recovery=audit_grant_path
    ```
 
-   The destination is advanced into `buf` but the size argument is still the full
-   `MAX_STRING_LENGTH`. With `_FORTIFY_SOURCE` active, glibc sees an object
-   smaller than the claimed size and aborts (SIGABRT) rather than writing — it
-   takes the server down, not just the command. Every other write in the function
-   already uses `checked_snprintf` with a correct remainder; this last one is the
-   exception. The size should be `MAX_STRING_LENGTH - (strlen(buf) - 2)`.
+   Run the game, play normally, and the vnums in that log name the paths. That
+   turns an open-ended read into a bounded list. **The audit itself still has to
+   happen.**
 
-   `deathsdoor` is a plain, non-privileged entry in the `commands` list, so any
-   character at or above `MIN_LEVEL_FOR_ATTRIBUTES` lacking the `ACH_DEATHSDOOR`
-   affect can type it and kill the process. This is a trivially reachable remote
-   denial of service and should be fixed ahead of everything else here.
+2. **Coverage this session never reached.** Needs a running game and, for the
+   first item, a throwaway database - none of it is resolvable from source.
+   - The 75 skipped commands (`shutdown`, `pwipe`, `sql`, `redis`, `switch`,
+     `advance`, `ban`, `freeze`, world-reset family).
+   - Combat: nothing was killed, so damage, death, corpse and looting paths are
+     untested. Corpse looting is also one of the grant paths item 1 must audit,
+     which makes these the same piece of work.
+   - Copyover, deliberately excluded (`--trace-children=no`).
+   - Helgrind and DRD. The Redis presence worker and the save/SQL worker threads
+     are the obvious candidates.
+   - Whether ordinary mortal item-destruction paths reproduce the orphan; the
+     reproduction used staff commands throughout.
 
-   Two secondary problems in the same block:
+3. **The `do_load` ownership establish has not been exercised in a live game.**
+   The change is covered by source contracts in
+   `tests/async/test_orphan_item_session_regressions.py` and the server boots
+   with it, but `load obj` was not driven end to end against a running world in
+   this session. It moves object creation onto the async transfer pipeline, so
+   it deserves a live pass before anyone relies on it.
 
-   - a character with all eight base stats at 100 reaches the branch with nothing
-     appended, so `strlen(buf) - 2` backs into the header text instead of
-     trimming a trailing `", "`;
-   - `CMD_DEATHS_DOOR` (832) is declared in `src/interp.h` but never registered
-     in `interp.c`'s command table, unlike its neighbours `CMD_BEEP` (831) and
-     `CMD_OFFLINEMSG` (833). It still dispatches through the achievement/spec
-     path, so it has no level or position guard of its own.
+### Resolved on this branch
 
-   Full detail and the abort stack:
-   [the sweep notes, Finding 1](valgrind-command-sweep-2026-08-29.md#finding-1--deathsdoor-aborts-the-whole-server-critical).
+- **`deathsdoor` aborted the server** (`specs.gellz.c`). The closing write
+  claimed `MAX_STRING_LENGTH` from an advanced destination, so `_FORTIFY_SOURCE`
+  aborted the process; any player could type one word and kill the server. Now
+  sized by the room actually left, and it only trims a separator it wrote - a
+  character with every base stat at 100 no longer backs over its own header.
+- **20 further instances of that same defect**, found by extending
+  `scripts/scan-append-bounds.py` to catch the shape that hid this one: an
+  offset destination with a bare capacity constant, rather than a subtracted
+  size. Fixed across `utility.c` (8), `actwiz.c` (6), `actobj.c` (2),
+  `guild.c`, `specs.room.c`, `storage_lockers.c` and `tradeskill.c`. Two of them
+  were worse than the pattern suggested: `guild.c` advanced into `buf2` by
+  `strlen(buf)` - the wrong buffer entirely - and `tradeskill.c` claimed 65536
+  bytes of a 1024-byte buffer.
+- **`do_load` establishes ownership.** A wizard-created object is now submitted
+  as a same-owner `creation` transfer and moved into place by the completion, so
+  it can no longer arrive carrying a uid with no ledger row. An uncommitted
+  transfer discards the object rather than leaving the orphan behind.
+- **`generate_modif()` and `generate_desc()` leaks.** The generators' returns are
+  owned and released, rejected candidates are freed, and the replaced short
+  description is freed rather than dropped.
+- **`free_char()` leaked `long_descr`** on the player path - the one player
+  string the branch never released, leaked once per login that set one.
+- **`do_build()` leaked** the `Building` it declined to keep.
+- **`extract_obj()` and the ledger**: decided and recorded in the code. It stays
+  out of the ledger deliberately, because extraction runs on teardown paths where
+  a transaction is impossible; the load path tolerates the stale custody row.
+- **Boot descriptors are by design**: `mob_f` and `obj_f` are held open for the
+  process lifetime because `read_mobile()` and `read_object()` `fseek` into them
+  on every instantiation. Recorded at the `fopen` site so the next Valgrind
+  session does not re-file it. The boot-time one-shot allocations are world data
+  that lives as long as the process.
+- **`scripts/format.sh --check` no longer misses whole-file drift** in files the
+  change touched - the gap that let this branch go green locally and red in CI.
+- **`scripts/valgrind_mud.sh` gained `--minimal` and `--server-arg`**, so the
+  session is reproducible from the checked-in wrapper.
+- **A maintenance sweep exists**: `scripts/item_ownership_audit.sh` reports
+  orphan payload rows, inert ledger rows, and any character over the load-time
+  skip cap. Read-only. This is the only way to see the item loss the skip path
+  now absorbs silently.
+- **The raw Memcheck logs are removed** from `docs/ongoing-projects/`.
+- **`shutdown ok` cancelling on issuer disconnect** is intentional and already
+  documented at `timedShutdown()`; no change.
 
-### Repeatable leaks
+### Regression coverage added
 
-All confirmed still present. Details and Memcheck records in
-[the sweep notes, Finding 3](valgrind-command-sweep-2026-08-29.md#finding-3--repeatable-leaks-with-duris-frames).
-
-5. **`generate_modif()` leaks its scratch copy** — `src/utility.c:5243/5254`.
-   `buf = str_dup(...)` then `return str_dup(buf)`; the intermediate is never
-   freed. Leaks on every call.
-6. **`generate_desc()` drops every generated string** — `src/utility.c:5295-5314`.
-   `generate_shape()`, `generate_appear()` and `generate_modif()` each return a
-   `str_dup`'d buffer passed straight into `snprintf` and never freed, and the
-   function then overwrites `ch->player.short_descr` with a fresh `str_dup`
-   without freeing the previous value. The reachable trigger is the `ztestdesc`
-   staff command, which calls it for *every* descriptor in the game, so one
-   invocation leaks proportionally to the number of connected players.
-7. **`apply_string()` overwrites player strings without freeing** —
-   `src/player_load_materialize.c:140-165`. Every `case` assigns a fresh
-   `str_dup` over the existing pointer. Seen as `77 bytes in 1 blocks definitely
-   lost` under `load_char_into_game`. This runs on every character load, so it
-   scales with logins rather than with uptime. It sits in a file this fix
-   touched and was deliberately left alone — it is a separate bug with a separate
-   blast radius.
-8. **`do_build()` leaks 112 bytes per invocation** — `src/buildings.c:213`. The
-   `new Building(...)` is only retained when `is_loaded()` is true and is never
-   deleted otherwise.
-9. **Boot-time one-shots and unclosed descriptors.** `boot_social_messages()`
-   via `fread_action()` (~106 KB), `boot_world()` string and exit data,
-   `setup_dir()`, `boot_the_shops()`; and the boot reader never closes
-   `areas_mini/mini.mob` and `areas_mini/mini.obj`. These live for the process
-   lifetime and are only worth touching if a zero-leak shutdown is wanted.
-
-### Operational and tooling gaps
-
-10. **A maintenance sweep for orphan payload rows** is now optional rather than
-    urgent — a character with an orphan loads, and its next full save removes the
-    row. Still useful for spotting item loss, and it is the only way to see the
-    loss the skip path absorbs. The detection query is in
-    [Repair](#repair-no-longer-required-to-unlock-a-character).
-11. **`scripts/format.sh` and CI check different things.** `format.sh --check`
-    and the commit hook inspect *changed lines only*; CI's
-    `tests/async/test_formatting_tooling.py` runs clang-format over *every*
-    tracked file. A change that alters the shape of a block rather than its
-    content reformats lines the diff never touched, so the local check passes and
-    CI fails. This happened on this very branch: deleting the duplicated parser
-    reshaped a `load_rows()` lambda and needed a follow-up commit. Run
-    `python3 tests/async/test_formatting_tooling.py` before pushing C/C++ that
-    restructures blocks.
-12. **`shutdown ok` is cancelled if the issuer disconnects**
-    (`timedShutdown()`, `src/actwiz.c:4536-4547`). Intentional and documented in
-    the command's help text, but it makes "issue shutdown, then disconnect" an
-    unreliable way to stop the server from a script. Recorded so the next
-    automated session does not rediscover it.
-13. **`scripts/valgrind_mud.sh` cannot start a minimal-world boot.** It invokes
-    `valgrind ... "$RUNTIME_BINARY" "$PORT"` (`scripts/valgrind_mud.sh:155`) with
-    no way to pass server arguments through — everything after `--` goes to
-    Valgrind, not to `dms`. This session had to hand-roll its invocation, so the
-    run is not reproducible from the checked-in wrapper alone. A `--minimal`
-    pass-through would fix that.
-14. **The two raw Memcheck logs** (~680 KB, 6,327 lines) sit in
-    `docs/ongoing-projects/` and are now tracked. `.gitignore` excludes
-    `logs/valgrind/` deliberately and `AGENTS.md` says not to commit logs, so
-    they are an exception made on purpose to keep the evidence with the
-    write-ups. Worth removing in a separate change if clone size matters; the
-    markdown notes already quote the relevant stacks.
-
-### Coverage this session never reached
-
-15. **The 75 skipped commands**, including everything under `shutdown`, `pwipe`,
-    `sql`, `redis`, `switch`, `advance`, `ban`, `freeze` and the world-reset
-    family. Exercising those needs a throwaway database, not `duris_dev`.
-16. **Combat.** Nothing was killed, so damage, death, corpse and looting paths
-    are untested — and corpse looting is one of the inventory-granting paths item
-    2 needs to audit, which makes this gap and that audit the same piece of work.
-17. **Copyover**, deliberately excluded (`--trace-children=no`); Memcheck does
-    not follow the `exec`.
-18. **Helgrind and DRD.** The Redis presence worker and the save/SQL worker
-    threads are the obvious candidates and were not checked.
-19. **Whether ordinary mortal item-destruction paths reproduce this bug.** The
-    reproduction used staff commands throughout.
+- `tests/async/test_orphan_item_session_regressions.py` - the `do_load`
+  establish, the `extract_obj` decision, both generator leaks, the `long_descr`
+  free, `do_build`, the boot-descriptor rationale, and the save-time detector.
+- `tests/async/test_append_bounds.py` - the `deathsdoor` site specifically, plus
+  a self-test that feeds the scanner the offset-destination shape and requires a
+  report, so the detector cannot silently regress to missing it again.
 
 ## Affected code
 
@@ -478,5 +432,13 @@ All confirmed still present. Details and Memcheck records in
   `tests/async/flatfile_player_repository_harness.cpp` — regression coverage
 - `tests/async/test_flatfile_shop_trade_repository.py` — source-contract token
   updated for the new `build_item_identities()` signature
+- `src/specs.gellz.c`, `src/utility.c`, `src/actwiz.c`, `src/actobj.c`,
+  `src/guild.c`, `src/specs.room.c`, `src/storage_lockers.c`,
+  `src/tradeskill.c` — the append-bounds class
+- `src/db.c` (`free_char`, boot rationale), `src/handler.c` (`extract_obj`
+  rationale), `src/buildings.c` (`do_build`)
+- `src/player_snapshot_capture.c` — the unowned-object detector
+- `scripts/scan-append-bounds.py`, `scripts/format.sh`,
+  `scripts/valgrind_mud.sh`, `scripts/item_ownership_audit.sh`
 - `tests/async/test_player_load_items.py` — source contracts for the skip cap,
   the named `skip_limit_exceeded` refusal, and the single throttled wizlog

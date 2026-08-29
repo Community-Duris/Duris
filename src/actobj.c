@@ -2058,13 +2058,13 @@ void do_get(P_char ch, char *argument, int cmd)
 						// Set object to LOC_NOWHERE so we can give it to the char without errors: Applies to NULL location objects.
 						s_obj->loc_p = LOC_NOWHERE;
 						obj_to_char(s_obj, ch);
-						i += snprintf(Gbuf2 + i, MAX_STRING_LENGTH, "%s, ",
-							      OBJ_SHORT(s_obj));
+						i += snprintf(Gbuf2 + i, MAX_STRING_LENGTH - i,
+							      "%s, ", OBJ_SHORT(s_obj));
 					}
 				}
 				if (i > 0)
 				{
-					snprintf(Gbuf2 + i - 2, MAX_STRING_LENGTH, ".\n");
+					snprintf(Gbuf2 + i - 2, MAX_STRING_LENGTH - (i - 2), ".\n");
 				}
 				else
 				{

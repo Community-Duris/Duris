@@ -5235,11 +5235,14 @@ char *generate_appear(P_char /*ch*/)
 
 char *generate_modif(P_char ch)
 {
-	char *buf;
+	char *buf = NULL;
 	int flag = 0;
 
 	while (!flag)
 	{
+		// The previous candidate was rejected; it is this function's allocation and
+		// nothing else has seen it.
+		str_free(buf);
 		buf = str_dup(modifier_descs[number(0, num_modifiers - 1)]);
 		flag = 1;
 		/* no bearded elves */
@@ -5251,7 +5254,9 @@ char *generate_modif(P_char ch)
 		if ((GET_SEX(ch) == SEX_FEMALE) && strstr(buf, "beard"))
 			flag = 0;
 	}
-	return str_dup(buf);
+	// buf is already a fresh copy the caller owns; duplicating it again only leaked
+	// the original.
+	return buf;
 }
 
 void generate_desc(P_char ch)
@@ -5259,6 +5264,12 @@ void generate_desc(P_char ch)
 	char buf[80];
 	char buf2[40];
 	const char *prep;
+	// generate_shape/appear/modif each hand back an allocation. They used to be passed
+	// straight into snprintf and dropped, which leaked on every call - and do_testdesc
+	// calls this for every descriptor in the game.
+	char *shape = NULL;
+	char *appear = NULL;
+	char *modif = NULL;
 
 	if ((GET_RACE(ch) == RACE_ORC) || (GET_RACE(ch) == RACE_OGRE) ||
 	    (GET_RACE(ch) == RACE_OROG) || (GET_RACE(ch) == RACE_ILLITHID) ||
@@ -5273,44 +5284,62 @@ void generate_desc(P_char ch)
 	switch (number(0, 9))
 	{
 	case 0: /* just shape */
-		snprintf(buf2, 40, "%s", generate_shape(ch));
+		shape = generate_shape(ch);
+		snprintf(buf2, sizeof buf2, "%s", shape);
 		snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
 			 race_names_table[GET_RACE(ch)].ansi);
 		break;
 	case 1: /* just modif */
+		modif = generate_modif(ch);
 		snprintf(buf, 80, "%s %s with %s", prep, race_names_table[GET_RACE(ch)].ansi,
-			 generate_modif(ch));
+			 modif);
 		break;
 	case 2: /* just appearance */
-		snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
+		appear = generate_appear(ch);
+		snprintf(buf2, sizeof buf2, "%s", appear);
 		snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
 			 race_names_table[GET_RACE(ch)].ansi);
 		break;
 	case 3:
 	case 4: /* s+m */
-		snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
+		shape = generate_shape(ch);
+		modif = generate_modif(ch);
+		snprintf(buf2, sizeof buf2, "%s", shape);
 		snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
-			 race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
+			 race_names_table[GET_RACE(ch)].ansi, modif);
 		break;
 	case 5:
 	case 6: /*s+a */
-		snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
-		snprintf(buf, 80, "%s %s, %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
-			 generate_appear(ch), race_names_table[GET_RACE(ch)].ansi);
+		shape = generate_shape(ch);
+		appear = generate_appear(ch);
+		snprintf(buf2, sizeof buf2, "%s", shape);
+		snprintf(buf, 80, "%s %s, %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2, appear,
+			 race_names_table[GET_RACE(ch)].ansi);
 		break;
 	case 7:
 	case 8: /*m+a */
-		snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
+		appear = generate_appear(ch);
+		modif = generate_modif(ch);
+		snprintf(buf2, sizeof buf2, "%s", appear);
 		snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
-			 race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
+			 race_names_table[GET_RACE(ch)].ansi, modif);
 		break;
 	case 9: /*m+a+s */
-		snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
-		snprintf(buf, 80, "%s %s, %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
-			 generate_appear(ch), race_names_table[GET_RACE(ch)].ansi,
-			 generate_modif(ch));
+		shape = generate_shape(ch);
+		appear = generate_appear(ch);
+		modif = generate_modif(ch);
+		snprintf(buf2, sizeof buf2, "%s", shape);
+		snprintf(buf, 80, "%s %s, %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, appear,
+			 race_names_table[GET_RACE(ch)].ansi, modif);
 		break;
 	} /* case */
+	str_free(shape);
+	str_free(appear);
+	str_free(modif);
+	// A PC's short description is always its own allocation (db.c frees it
+	// unconditionally on the PC path), so the one being replaced has to go.
+	if (ch->only.pc)
+		str_free(ch->player.short_descr);
 	ch->player.short_descr = str_dup(buf);
 }
 
@@ -7312,7 +7341,8 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 	// "and" goes before gold.
 	if (and_pos == 2)
 	{
-		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "%sand ", color_string);
+		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "%sand ",
+				color_string);
 		pos1 += pos2;
 	}
 	// If we're printing gold.
@@ -7321,14 +7351,14 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 		// If we have another type, use a comma.
 		if (coins & (BIT_3 | BIT_4))
 		{
-			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+Y%dg%s, ", gold,
-					color_string);
+			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+Y%dg%s, ",
+					gold, color_string);
 			pos1 += pos2;
 		}
 		// Otherwise, just add gold and return it.
 		else
 		{
-			snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+Y%dg%s&n", gold,
+			snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+Y%dg%s&n", gold,
 				 color_string);
 			return ret_string;
 		}
@@ -7336,7 +7366,8 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 	// "and" goes before silver.
 	if (and_pos == 3)
 	{
-		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "%sand ", color_string);
+		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "%sand ",
+				color_string);
 		pos1 += pos2;
 	}
 	// If we're printing silver.
@@ -7345,14 +7376,14 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 		// If we have another type (copper), use a comma.
 		if (coins & BIT_4)
 		{
-			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+w%ds%s, ", silver,
-					color_string);
+			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+w%ds%s, ",
+					silver, color_string);
 			pos1 += pos2;
 		}
 		// Otherwise, just add silver and return it.
 		else
 		{
-			snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+w%ds%s&n", silver,
+			snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+w%ds%s&n", silver,
 				 color_string);
 			return ret_string;
 		}
@@ -7360,13 +7391,14 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 	// "and" goes before copper.
 	if (and_pos == 4)
 	{
-		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "%sand ", color_string);
+		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "%sand ",
+				color_string);
 		pos1 += pos2;
 	}
 	// If we're printing copper.
 	if (coins & BIT_4)
 	{
-		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+y%dc&n", copper);
+		pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+y%dc&n", copper);
 		pos1 += pos2;
 	}
 	else

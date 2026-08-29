@@ -18,11 +18,23 @@ the smaller buffer.
 
 They are now APPENDF(), which deduces the capacity from the array type so it
 cannot be stated wrongly.
+
+A second shape of the same defect survived that cleanup, because the scanner
+only matched a subtracted size:
+
+    snprintf(buf + strlen(buf) - 2, MAX_STRING_LENGTH, ".\n");
+
+The destination is advanced into the buffer while the size argument still claims
+the whole thing. This is wrong by construction - the room left at the offset is
+strictly less than the full capacity - and it is what took the server down
+through the `deathsdoor` command (specs.gellz.c). The scanner now catches both
+shapes; 20 further instances turned up when it did.
 """
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 root = Path(__file__).resolve().parents[2]
 header = (root / "src/safe_format.h").read_text()
@@ -66,6 +78,34 @@ offenders = [l for l in scan.stdout.splitlines() if l.startswith("src/")]
 check("no append claims more capacity than its buffer holds", not offenders)
 for o in offenders:
     print("       " + o)
+
+# The scanner must keep catching the offset-destination shape, not just the
+# subtracted-size one. Feed it the deathsdoor defect and require a report.
+with tempfile.TemporaryDirectory() as tmp:
+    fixture = Path(tmp) / "src"
+    fixture.mkdir()
+    (fixture / "probe.c").write_text(
+        "void probe(void)\n"
+        "{\n"
+        "\tchar buf[MAX_STRING_LENGTH];\n"
+        "\tsnprintf(buf, MAX_STRING_LENGTH, \"x\");\n"
+        "\tsnprintf(buf + strlen(buf) - 2, MAX_STRING_LENGTH, \".\\n\");\n"
+        "}\n")
+    probe = subprocess.run([sys.executable, str(root / "scripts/scan-append-bounds.py")],
+                           cwd=tmp, capture_output=True, text=True)
+    check("scanner reports an offset destination that claims the whole buffer",
+          "probe.c" in probe.stdout)
+
+# The specific site that aborted the server: deathsdoor must size its closing
+# write by the room actually left, and must not back over its own header.
+gellz = (root / "src/specs.gellz.c").read_text()
+door = gellz[gellz.index("void do_deaths_door("):]
+door = door[:door.index("\n\tif (!*arg)")]
+check("deathsdoor sizes its closing write by the remaining room",
+      "snprintf(buf + strlen(buf) - 2, MAX_STRING_LENGTH," not in door
+      and "MAX_STRING_LENGTH - length" in door)
+check("deathsdoor only trims a separator it actually wrote",
+      "header_length" in door and "if (length > header_length)" in door)
 
 # Two functions take a caller-owned char* whose size only the caller knows.
 # They must keep saying so, or a future reader will "fix" them wrongly.

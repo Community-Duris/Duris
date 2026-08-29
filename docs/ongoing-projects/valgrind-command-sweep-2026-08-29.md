@@ -8,8 +8,9 @@ privileged (`wizhelp`) command.
 outstanding — from this sweep and from the item-load work that came out of it —
 lives in
 [the orphan-row write-up](orphan-player-item-lockout-2026-08-29.md#still-open),
-so the two documents do not drift.** Findings 1, 3 and 5 below are all still
-unfixed as of `5359723fb`.
+so the two documents do not drift.** Findings 1 and 3 have since been fixed;
+Finding 5 is intentional behaviour. The findings below are recorded as observed
+at the time, not as current state.
 
 ## Session setup
 

@@ -1,7 +1,15 @@
 """Report appends that claim more room than their buffer has.
 
-Finds `snprintf(BUF + strlen(BUF), CAP - strlen(BUF), ...)` where BUF is declared
-smaller than CAP.  glibc's __snprintf_chk aborts the process outright when the
+Finds two shapes:
+
+  1. `snprintf(BUF + strlen(BUF), CAP - strlen(BUF), ...)` where BUF is declared
+     smaller than CAP.
+  2. `snprintf(BUF + <offset>, CAP, ...)` where CAP is BUF's full declared size.
+     Advancing the destination while still claiming the whole buffer is wrong by
+     construction: the space left at the offset is strictly less than CAP, no
+     matter how BUF was declared.  This is the shape that took the server down
+     through `deathsdoor` (specs.gellz.c) - the first pattern missed it because
+     the size argument was a bare constant rather than a subtraction.  glibc's __snprintf_chk aborts the process outright when the
 claimed size exceeds the object size it can determine - it does not wait for the
 output to actually be long - so each of these is a latent
 
@@ -66,6 +74,32 @@ for path in sorted(list(root.rglob("*.c")) + list(root.rglob("*.h"))):
             continue
         line = text.count("\n", 0, m.start()) + 1
         hits.append((str(path), line, buf, declared, cap, capval))
+
+    # Shape 2: destination advanced into the buffer, size still the full capacity.
+    for m in re.finditer(
+            r'snprintf\(\s*(\w+)\s*\+\s*([^,]+?)\s*,\s*([A-Za-z0-9_]+)\s*,',
+            text, re.S):
+        buf, offset, cap = m.group(1), m.group(2), m.group(3)
+        # The subtraction form is shape 1's business.
+        if "-" in cap or "strlen" in cap:
+            continue
+        capval = SIZES.get(cap)
+        if capval is None and cap.isdigit():
+            capval = int(cap)
+        if capval is None:
+            continue
+        fn = enclosing_function(text, m.start())
+        local = re.search(r'\bchar\s+[^;\n()]*?\b' + re.escape(buf) + r'\s*\[\s*([A-Za-z0-9_]+)\s*\]', fn)
+        if not local:
+            continue
+        declared = SIZES.get(local.group(1))
+        if declared is None and local.group(1).isdigit():
+            declared = int(local.group(1))
+        # Only a claim of the whole buffer from a non-zero offset is provably wrong.
+        if declared is None or capval < declared:
+            continue
+        line = text.count("\n", 0, m.start()) + 1
+        hits.append((str(path), line, buf + " + " + offset.strip(), declared, cap, capval))
 
 if hits:
     print("%-26s %6s  %-14s %-9s %s" % ("file", "line", "buffer", "declared", "claimed"))

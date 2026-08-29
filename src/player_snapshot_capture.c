@@ -11,6 +11,7 @@
 
 #include "assocs.h"
 #include "files.h"
+#include "item_ownership_runtime.h"
 #include "spells.h"
 #include "trophy.h"
 
@@ -310,6 +311,23 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	    !budget.add(sizeof(player_item_snapshot), 1))
 		return player_snapshot_capture_result::limit_exceeded;
 	++budget.objects;
+
+	// An object being written into a player's payload while the ownership ledger has no
+	// row for it is the orphan that used to make a character permanently unloadable, and
+	// that the load path now absorbs by silently dropping the item. The save is the last
+	// point where the object is still identifiable, so name it here: the vnum says which
+	// grant path handed it over without submitting a transfer, which is the only
+	// practical way to find those paths in a codebase with 271 obj_to_char() calls.
+	if (object->obj_uid)
+	{
+		item_ownership_runtime_entry ownership = {};
+		if (!item_ownership_runtime_lookup(object->obj_uid, &ownership))
+			logit(LOG_DEBUG,
+			      "player_snapshot_capture: component=items outcome=unowned_object "
+			      "uid=%llu vnum=%d recovery=audit_grant_path",
+			      (unsigned long long)object->obj_uid,
+			      obj_index[object->R_num].virtual_number);
+	}
 
 	player_item_snapshot row = {};
 	row.parent_index = parent_index;

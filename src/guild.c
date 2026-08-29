@@ -565,8 +565,9 @@ void do_spells(P_char ch, char *argument, int /*cmd*/)
 						 MAX_STRING_LENGTH - strlen(buf2),
 						 "&+LAP(&n&+C%d&+L)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_CLERIC) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf), MAX_STRING_LENGTH,
-					 "&+cCL(&n&+C%d&n&+y)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+cCL(&n&+C%d&n&+y)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_CONJURER) - 1].rlevel[0]))
 				checked_snprintf(buf2 + strlen(buf2),
 						 MAX_STRING_LENGTH - strlen(buf2),

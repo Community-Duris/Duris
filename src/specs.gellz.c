@@ -999,6 +999,7 @@ void do_deaths_door(P_char ch, char *arg, int /*cmd*/)
 			return;
 		}
 		snprintf(buf, MAX_STRING_LENGTH, "&+yYou still need&+W: ");
+		const size_t header_length = strlen(buf);
 		if (ch->base_stats.Str < 100)
 		{
 			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
@@ -1039,7 +1040,16 @@ void do_deaths_door(P_char ch, char *arg, int /*cmd*/)
 			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 					 "&+w%d &+LCha&+y, ", 100 - ch->base_stats.Cha);
 		}
-		snprintf(buf + strlen(buf) - 2, MAX_STRING_LENGTH, "&+y.\n");
+		// The size has to be the space left at the offset, not the size of the whole
+		// buffer: with _FORTIFY_SOURCE glibc sees an object smaller than the claimed
+		// size and aborts the process rather than writing. And the trailing ", " is
+		// only there if a stat was actually appended - a character with every base
+		// stat at 100 but without the achievement reaches here with just the header,
+		// and backing up two bytes would eat it.
+		size_t length = strlen(buf);
+		if (length > header_length)
+			length -= 2;
+		checked_snprintf(buf + length, MAX_STRING_LENGTH - length, "&+y.\n");
 		send_to_char(buf, ch);
 		return;
 	}
