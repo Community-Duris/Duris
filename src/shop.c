@@ -292,6 +292,7 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	}
 
 	act("$n sells $p.", FALSE, ch, object, 0, TO_ROOM);
+	sql_shop_sell(ch, object, payload.price);
 	if (keeper)
 	{
 		checked_substitute(message, MAX_STRING_LENGTH,

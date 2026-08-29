@@ -5,6 +5,35 @@
 
 ## Progress ledger
 
+### 2026-08-29 - restored database-only shop sale history in flat mode
+
+- **Concrete gap:** shop sale frequency was stored only in `shop_trophy`. Client-free
+  `sql_shop_trophy()` and `sql_shop_sell()` returned failure, so flat-mode appraisals
+  never reduced the value of repeatedly sold items and committed flat sales never
+  entered the seven-day history used by later appraisals.
+- **Restoration:** flat-primary mode now retains the table's item vnum, sale value,
+  seller PID, and sale time in one bounded rolling history under the existing private
+  metadata authority. It preserves the database query's seven-UTC-calendar-day item
+  count and its exclusions for mined ore and the 400000-400201 object range. A missing
+  record is empty; writes are locked and atomically published; corrupt, oversized,
+  unsafe, or symlinked authority cannot be read or overwritten. Only a successfully
+  committed flat sale is recorded. MariaDB mode keeps its existing table operations,
+  while a MySQL-capable binary configured as flat-primary uses the flat record rather
+  than contacting MariaDB.
+- **Focused evidence:** `python3 tests/async/test_flatfile_shop_trophy_history.py`
+  covers missing state, item separation, the exact calendar-day boundary, rolling
+  retention, private permissions, checksum corruption, overwrite refusal, and symlink
+  refusal. Its route contracts cover client-free compatibility functions, runtime
+  backend selection, and committed-sale publication. The shop command, live route,
+  runtime, and repository tests pass, and the new test is included in client-free CI.
+- **Build evidence:** complete builds pass with both
+  `PERSISTENCE_BACKEND=flatfile` (without MySQL headers or client library) and the
+  default MariaDB backend. The no-MySQL compatibility and persistence-mode contracts,
+  formatting check, and `git diff --check` pass.
+- **Overall state:** shop devaluation now operates in both persistence modes. This was
+  a historically database-only gap; it does not complete the prior flat-file
+  restoration mission or remove the global incomplete-domain boot fence.
+
 ### 2026-08-29 - restored historically database-only nexus persistence
 
 - **Concrete gap:** nexus stones were always stored in the `nexus_stones` table, and

@@ -18,6 +18,7 @@
 #include "flatfile_ip_activity_repository.h"
 #include "flatfile_offline_message_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
+#include "flatfile_shop_trophy_history.h"
 #include "flatfile_world_quest_history.h"
 #include "persistence_mode.h"
 #include "utils.h"
@@ -91,6 +92,48 @@ static bool sql_trace_active(void);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 static bool sql_verify_metadata_fingerprint(void);
 #endif
+
+static int flat_sql_shop_sell(P_char ch, P_obj obj, int value)
+{
+	if (!obj)
+		return 0;
+	const int item = obj->R_num >= 0 ? obj_index[obj->R_num].virtual_number : 0;
+	const int seller = ch && IS_PC(ch) ? GET_PID(ch) : 0;
+	std::string error;
+	if (flatfile_shop_trophy_record(persistence_mode_flatfile_root(), item, value, seller,
+					static_cast<int64_t>(time(nullptr)),
+					&error) != flatfile_shop_trophy_result::ok)
+	{
+		persistence_alert(AVATAR, "shop_trophy", "global", "none", "none", "record",
+				  "flat_write_failed", "item=%d seller=%d error=%s", item, seller,
+				  error.c_str());
+		return -1;
+	}
+	return 1;
+}
+
+static int flat_sql_shop_trophy(P_obj obj)
+{
+	if (!obj)
+		return 0;
+	if (obj->name && strstr(obj->name, "_ore_"))
+		return 0;
+	const int objvir = OBJ_VNUM(obj);
+	if (objvir >= 400000 && objvir < 400202)
+		return 0;
+	const int item = obj->R_num >= 0 ? obj_index[obj->R_num].virtual_number : 0;
+	int count = 0;
+	std::string error;
+	if (flatfile_shop_trophy_count(persistence_mode_flatfile_root(), item,
+				       static_cast<int64_t>(time(nullptr)), &count,
+				       &error) != flatfile_shop_trophy_result::ok)
+	{
+		persistence_alert(AVATAR, "shop_trophy", "global", "none", "none", "count",
+				  "flat_read_failed", "item=%d error=%s", item, error.c_str());
+		return -1;
+	}
+	return count;
+}
 
 #ifdef __NO_MYSQL__
 MYSQL *DB = NULL;
@@ -168,13 +211,13 @@ int sql_quest_trophy(P_char /*giver*/)
 {
 	return -1;
 }
-int sql_shop_trophy(P_obj /*obj*/)
+int sql_shop_trophy(P_obj obj)
 {
-	return -1;
+	return flat_sql_shop_trophy(obj);
 }
-int sql_shop_sell(P_char /*ch*/, P_obj /*obj*/, int /*value*/)
+int sql_shop_sell(P_char ch, P_obj obj, int value)
 {
-	return -1;
+	return flat_sql_shop_sell(ch, obj, value);
 }
 void sql_world_quest_finished(P_char ch, P_obj /*obj*/)
 {
@@ -3276,6 +3319,10 @@ void send_offline_messages(P_char ch)
 
 int sql_shop_sell(P_char ch, P_obj obj, int value)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return flat_sql_shop_sell(ch, obj, value);
+	if (!obj)
+		return 0;
 	int m_virtual = (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : 0;
 
 	int pid = (IS_PC(ch) ? GET_PID(ch) : 0);
@@ -3288,11 +3335,13 @@ int sql_shop_sell(P_char ch, P_obj obj, int value)
 
 int sql_shop_trophy(P_obj obj)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return flat_sql_shop_trophy(obj);
 	if (!obj)
 		return 0;
 
 	// mined ore doesnt devaule
-	if (strstr(obj->name, "_ore_"))
+	if (obj->name && strstr(obj->name, "_ore_"))
 		return 0;
 
 	int objvir = OBJ_VNUM(obj);

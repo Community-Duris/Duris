@@ -256,6 +256,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_shopkeeper_save.o \
 				 flatfile_shop_trade_repository.o \
 				 flatfile_shop_trade_materialization.o \
+				 flatfile_shop_trophy_history.o \
 				 flatfile_world_item_repository.o \
 				 flatfile_world_quest_history.o \
 				 corpse_lifecycle_transaction.o \
