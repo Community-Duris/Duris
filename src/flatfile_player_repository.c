@@ -182,53 +182,84 @@ player_load_result identity_failure(const player_load_request &request,
 	return result;
 }
 
-bool build_item_identities(const std::vector<player_item_snapshot> &items,
+// The ownership file is authoritative. A payload item it does not list, or lists as
+// somebody else's or as inactive, is one skippable row: refusing it here would make the
+// character permanently unloadable over a single inconsistent entry. Skipped rows are
+// compacted out and the contents of a skipped container move to the top level.
+bool build_item_identities(std::vector<player_item_snapshot> *items,
 			   const std::unordered_map<uint64_t, flatfile_item_ownership_record> &owned,
 			   const item_owner_identity &owner, uint64_t owner_revision,
 			   uint64_t *next_database_id, std::unordered_set<uint64_t> *consumed,
-			   std::vector<player_load_item_identity> *identities)
+			   std::vector<player_load_item_identity> *identities,
+			   player_load_result *result)
 {
-	if (!next_database_id || !consumed || !identities)
+	if (!items || !next_database_id || !consumed || !identities || !result)
 		return false;
+	constexpr size_t skipped_index = static_cast<size_t>(-1);
 	std::vector<uint64_t> database_ids;
+	std::vector<size_t> remap;
+	std::vector<player_item_snapshot> kept;
 	try
 	{
-		database_ids.reserve(items.size());
-		identities->reserve(items.size());
-		for (size_t index = 0; index < items.size(); ++index)
+		database_ids.reserve(items->size());
+		remap.reserve(items->size());
+		kept.reserve(items->size());
+		identities->reserve(items->size());
+		for (size_t index = 0; index < items->size(); ++index)
 		{
-			const player_item_snapshot &item = items[index];
+			player_item_snapshot item = std::move((*items)[index]);
 			if (!item.object_uid || item.vnum <= 0 ||
-			    *next_database_id > static_cast<uint64_t>(INT_MAX) ||
-			    !consumed->insert(item.object_uid).second)
+			    *next_database_id > static_cast<uint64_t>(INT_MAX))
 				return false;
-			const auto found = owned.find(item.object_uid);
-			if (found == owned.end())
-				return false;
-			const flatfile_item_ownership_record &record = found->second;
-			uint64_t parent_uid = 0, serialized_parent = 0;
+			size_t parent_new = skipped_index;
 			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
 			{
 				if (item.parent_index < 0 ||
 				    static_cast<size_t>(item.parent_index) >= index)
 					return false;
-				const size_t parent_index = static_cast<size_t>(item.parent_index);
-				parent_uid = items[parent_index].object_uid;
-				serialized_parent = database_ids[parent_index];
+				parent_new = remap[static_cast<size_t>(item.parent_index)];
 			}
-			if (record.vnum != item.vnum || record.parent_item_uid != parent_uid ||
-			    !item_owner_identity_equal(record.owner, owner) ||
-			    record.state != item_custody_state::active ||
-			    (!parent_uid && record.root_item_uid != record.item_uid))
+			const auto found = owned.find(item.object_uid);
+			if (found == owned.end() ||
+			    !item_owner_identity_equal(found->second.owner, owner) ||
+			    found->second.state != item_custody_state::active)
+			{
+				remap.push_back(skipped_index);
+				++result->stale_item_rows;
+				continue;
+			}
+			if (!consumed->insert(item.object_uid).second)
 				return false;
+			const flatfile_item_ownership_record &record = found->second;
+			const bool promoted = item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+					      parent_new == skipped_index;
+			uint64_t parent_uid = 0, serialized_parent = 0, root_uid = record.item_uid;
+			if (parent_new != skipped_index)
+			{
+				parent_uid = kept[parent_new].object_uid;
+				serialized_parent = database_ids[parent_new];
+				root_uid = (*identities)[parent_new].root_item_uid;
+			}
+			if (record.vnum != item.vnum ||
+			    (!promoted && record.parent_item_uid != parent_uid) ||
+			    (!promoted && !parent_uid && record.root_item_uid != record.item_uid))
+				return false;
+			if (promoted)
+				++result->promoted_item_rows;
+			item.parent_index = parent_new == skipped_index ?
+						    PLAYER_SNAPSHOT_NO_PARENT :
+						    static_cast<int32_t>(parent_new);
 			const uint64_t database_id = (*next_database_id)++;
 			database_ids.push_back(database_id);
+			remap.push_back(kept.size());
 			identities->push_back({ database_id, serialized_parent, 1,
 						PLAYER_LOAD_ITEM_OVERRIDE_ALL, record.item_uid,
-						record.root_item_uid, record.parent_item_uid,
+						root_uid, promoted ? 0 : record.parent_item_uid,
 						record.owner, record.item_revision, owner_revision,
 						record.state });
+			kept.push_back(std::move(item));
 		}
+		*items = std::move(kept);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -313,21 +344,24 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 		return false;
 	}
 	uint64_t next_database_id = 1;
-	if (!build_item_identities(result->snapshot.items, owned, owner, owner_revision,
-				   &next_database_id, &consumed, &result->item_identities))
+	if (!build_item_identities(&result->snapshot.items, owned, owner, owner_revision,
+				   &next_database_id, &consumed, &result->item_identities, result))
 		goto invalid;
 	for (size_t index = 0; index < result->snapshot.pets.size(); ++index)
 	{
 		result->pet_identities[index].database_id = index + 1;
-		if (!build_item_identities(result->snapshot.pets[index].items, owned, owner,
+		if (!build_item_identities(&result->snapshot.pets[index].items, owned, owner,
 					   owner_revision, &next_database_id, &consumed,
-					   &result->pet_identities[index].item_identities))
+					   &result->pet_identities[index].item_identities, result))
 			goto invalid;
 	}
-	if (consumed.size() != records.size())
+	if (consumed.size() > records.size())
 		goto invalid;
+	// An ownership record whose payload item is gone cannot be rebuilt, but it must not
+	// refuse the load either; the next full save reconciles the two files.
+	result->missing_payload_rows = records.size() - consumed.size();
 	result->item_owner_revision = owner_revision;
-	result->authoritative_item_count = records.size();
+	result->authoritative_item_count = consumed.size();
 	return true;
 
 invalid:

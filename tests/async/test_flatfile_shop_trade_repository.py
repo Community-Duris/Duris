@@ -17,7 +17,7 @@ for token in (
         raise SystemExit(f"shop trade authority transaction is missing {token}")
 locked_owner = PLAYER.index("flatfile_item_repository_load_owner_locked(")
 reconcile = PLAYER.index("flatfile_shop_trade_materialization_reconcile(")
-identities = PLAYER.index("build_item_identities(result->snapshot.items", reconcile)
+identities = PLAYER.index("build_item_identities(&result->snapshot.items", reconcile)
 if not locked_owner < reconcile < identities:
     raise SystemExit("player load does not reconcile shop materialization under ownership authority")
 

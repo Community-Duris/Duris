@@ -785,6 +785,17 @@ for contract in (
     assert contract in REPOSITORY
 assert REPOSITORY.count("load_items(connection") == 1
 assert "player_load_items_materialize" in MATERIALIZE
+
+# Skipping a payload row the ownership ledger no longer backs deletes the item at the next
+# full save, so the tolerant path has to stay bounded: past the cap the load must be refused
+# rather than quietly destroying most of an inventory, and the wizlog alert must not repeat
+# on every retried login.
+REPOSITORY_HEADER = (ROOT / "src/player_load_repository.h").read_text()
+assert "PLAYER_LOAD_ITEM_SKIP_MAX" in REPOSITORY_HEADER
+assert "result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX" in MATERIALIZE
+assert "outcome=skip_limit_exceeded" in MATERIALIZE
+assert MATERIALIZE.count("wizlog(OVERLORD") == 1
+assert "alert_refusal_once(result.pid)" in MATERIALIZE
 assert "request.include_items = false" in COPYOVER
 rtype_zero = NANNY[NANNY.index("else if (d->rtype == 0)") :]
 assert "sql_load_player_items(ch)" not in rtype_zero[:500]

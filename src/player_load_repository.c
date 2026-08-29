@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -493,53 +494,71 @@ bool load_bank(MYSQL *connection, const player_load_request &request, player_loa
 	return true;
 }
 
-bool parse_item_payload(MYSQL_ROW row, player_load_result *result, player_item_snapshot *item,
-			player_load_item_identity *identity)
+bool load_owner_identity_valid(const item_owner_identity &owner)
+{
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
+		return false;
+	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
+		return owner.id == 0 && owner.context_id == 0;
+	return owner.id != 0;
+}
+
+// A payload row is either usable, one the ownership ledger says is no longer part of
+// this character's inventory (skipped and counted, never fatal), or malformed.
+enum class item_row_outcome
+{
+	accepted,
+	skipped,
+	invalid,
+};
+
+item_row_outcome parse_item_payload(MYSQL_ROW row, player_load_result *result,
+				    player_item_snapshot *item, player_load_item_identity *identity)
 {
 	if (!row || !result || !item || !identity)
-		return false;
+		return item_row_outcome::invalid;
 	int64_t signed_field = 0;
 	uint64_t unsigned_field = 0;
 	if (!parse_unsigned(row[0], UINT64_MAX, &identity->database_id) || !identity->database_id ||
 	    !parse_signed(row[1], INT32_MIN, INT32_MAX, &signed_field))
-		return false;
+		return item_row_outcome::invalid;
 	item->vnum = static_cast<int32_t>(signed_field);
 	if (!parse_signed(row[2], INT16_MIN, INT16_MAX, &signed_field))
-		return false;
+		return item_row_outcome::invalid;
 	item->equipment_slot = static_cast<int16_t>(signed_field);
 	if (row[3] && !parse_unsigned(row[3], UINT64_MAX, &identity->serialized_parent_id))
-		return false;
+		return item_row_outcome::invalid;
 	if (!parse_unsigned(row[4], UINT32_MAX, &unsigned_field) || unsigned_field != 1)
-		return false;
+		return item_row_outcome::invalid;
 	identity->quantity = static_cast<uint32_t>(unsigned_field);
 	if (!parse_signed(row[5], INT32_MIN, INT32_MAX, &signed_field))
-		return false;
+		return item_row_outcome::invalid;
 	item->weight = static_cast<int32_t>(signed_field);
 	if (!parse_signed(row[6], INT32_MIN, INT32_MAX, &signed_field))
-		return false;
+		return item_row_outcome::invalid;
 	item->cost = static_cast<int32_t>(signed_field);
 	if (!parse_signed(row[7], INT64_MIN, INT64_MAX, &item->timers[0]) ||
 	    !parse_unsigned(row[8], UINT32_MAX, &unsigned_field))
-		return false;
+		return item_row_outcome::invalid;
 	item->extra_flags = static_cast<uint32_t>(unsigned_field);
 	if (row[9])
 	{
 		if (!parse_unsigned(row[9], UINT32_MAX, &unsigned_field))
-			return false;
+			return item_row_outcome::invalid;
 		item->wear_flags = static_cast<uint32_t>(unsigned_field);
 		identity->override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_WEAR_FLAGS;
 	}
 	if (row[10])
 	{
 		if (!parse_signed(row[10], INT8_MIN, INT8_MAX, &signed_field))
-			return false;
+			return item_row_outcome::invalid;
 		item->type = static_cast<int8_t>(signed_field);
 		identity->override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_TYPE;
 	}
 	for (size_t index = 0; index < item->values.size(); ++index)
 	{
 		if (!parse_signed(row[11 + index], INT32_MIN, INT32_MAX, &signed_field))
-			return false;
+			return item_row_outcome::invalid;
 		item->values[index] = static_cast<int32_t>(signed_field);
 	}
 	constexpr std::array<uint8_t, 4> string_masks = { 1, 4, 2, 8 };
@@ -555,7 +574,7 @@ bool parse_item_payload(MYSQL_ROW row, player_load_result *result, player_item_s
 			if (strlen(row[19 + index]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
 			{
 				result->outcome = player_load_outcome::limit_exceeded;
-				return false;
+				return item_row_outcome::invalid;
 			}
 			*strings[index] = row[19 + index];
 			item->string_mask |= string_masks[index];
@@ -569,42 +588,57 @@ bool parse_item_payload(MYSQL_ROW row, player_load_result *result, player_item_s
 		if (row[23 + index])
 		{
 			if (!parse_unsigned(row[23 + index], UINT64_MAX, &item->bitvectors[index]))
-				return false;
+				return item_row_outcome::invalid;
 			identity->override_mask |= bitvector_masks[index];
 		}
 	if (row[28])
 	{
 		if (!parse_signed(row[28], INT8_MIN, INT8_MAX, &signed_field))
-			return false;
+			return item_row_outcome::invalid;
 		item->material = static_cast<int8_t>(signed_field);
 		identity->override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_MATERIAL;
 	}
 	if (!parse_unsigned(row[29], UINT64_MAX, &item->object_uid) || !item->object_uid ||
 	    !parse_signed(row[30], INT16_MIN, INT16_MAX, &signed_field))
-		return false;
+		return item_row_outcome::invalid;
 	item->condition = static_cast<int16_t>(signed_field);
+	if (identity->override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL)
+		return item_row_outcome::invalid;
+	// The ownership join is a LEFT JOIN, so a payload row whose custody row was deleted
+	// still arrives here with every own.* column null. The ledger is authoritative: the
+	// orphan is one skippable row, not corruption of the whole component. Failing it
+	// would lock the character out of the game permanently.
+	if (!row[31])
+		return item_row_outcome::skipped;
 	if (!parse_unsigned(row[31], UINT64_MAX, &identity->item_uid) ||
 	    identity->item_uid != item->object_uid ||
 	    !parse_unsigned(row[32], UINT64_MAX, &identity->root_item_uid) ||
 	    !identity->root_item_uid)
-		return false;
+		return item_row_outcome::invalid;
 	if (row[33] && !parse_unsigned(row[33], UINT64_MAX, &identity->parent_item_uid))
-		return false;
+		return item_row_outcome::invalid;
 	if (!parse_unsigned(row[34], UINT8_MAX, &unsigned_field))
-		return false;
+		return item_row_outcome::invalid;
 	identity->owner.type = static_cast<item_owner_type>(unsigned_field);
 	if (!parse_unsigned(row[35], UINT64_MAX, &identity->owner.id) ||
 	    !parse_unsigned(row[36], UINT64_MAX, &identity->owner.context_id) ||
 	    !parse_unsigned(row[37], UINT64_MAX, &identity->item_revision) ||
 	    !parse_signed(row[38], INT32_MIN, INT32_MAX, &signed_field) ||
-	    signed_field != item->vnum || !parse_unsigned(row[39], UINT8_MAX, &unsigned_field))
-		return false;
+	    signed_field != item->vnum || !parse_unsigned(row[39], UINT8_MAX, &unsigned_field) ||
+	    unsigned_field > static_cast<uint64_t>(item_custody_state::quarantined) ||
+	    !load_owner_identity_valid(identity->owner))
+		return item_row_outcome::invalid;
 	identity->state = static_cast<item_custody_state>(unsigned_field);
-	return parse_unsigned(row[40], UINT64_MAX, &identity->owner_revision) &&
-	       identity->owner.type == item_owner_type::player &&
-	       identity->owner.id == static_cast<uint64_t>(result->pid) &&
-	       identity->owner.context_id == 0 && identity->state == item_custody_state::active &&
-	       !(identity->override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL);
+	// Someone else owns it now, or custody is not active. Same reasoning as the orphan
+	// above, and the same recovery: skip the row and let the next full save reconcile.
+	if (identity->owner.type != item_owner_type::player ||
+	    identity->owner.id != static_cast<uint64_t>(result->pid) ||
+	    identity->owner.context_id != 0 || identity->state != item_custody_state::active)
+		return item_row_outcome::skipped;
+	// Only an owned, active row needs a revision; a foreign owner may have none at all.
+	if (!parse_unsigned(row[40], UINT64_MAX, &identity->owner_revision))
+		return item_row_outcome::invalid;
+	return item_row_outcome::accepted;
 }
 
 // An exact duplicate (keyword, description) carries no information the first row does
@@ -617,15 +651,6 @@ bool duplicate_description(const std::vector<player_item_extra_description_snaps
 		if (existing.keyword == keyword && existing.description == text)
 			return true;
 	return false;
-}
-
-bool load_owner_identity_valid(const item_owner_identity &owner)
-{
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
-		return false;
-	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
-		return owner.id == 0 && owner.context_id == 0;
-	return owner.id != 0;
 }
 
 bool load_items(MYSQL *connection, player_load_result *result)
@@ -660,181 +685,69 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"AND owner_revision.owner_id=own.owner_id AND "
 		"owner_revision.owner_context_id=own.owner_context_id WHERE pi.pid=" +
 		pid + " ORDER BY pi.id";
-	if (!load_rows(
-		    connection, item_sql, result,
-		    [&](MYSQL_ROW row)
-		    {
-			    if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
-			    {
-				    result->outcome = player_load_outcome::limit_exceeded;
-				    return false;
-			    }
-			    int64_t signed_field = 0;
-			    uint64_t unsigned_field = 0;
-			    player_item_snapshot item = {};
-			    player_load_item_identity identity = {};
-			    if (!parse_unsigned(row[0], UINT64_MAX, &identity.database_id) ||
-				!identity.database_id ||
-				!parse_signed(row[1], INT32_MIN, INT32_MAX, &signed_field))
-				    return false;
-			    item.vnum = static_cast<int32_t>(signed_field);
-			    if (!parse_signed(row[2], INT16_MIN, INT16_MAX, &signed_field))
-				    return false;
-			    item.equipment_slot = static_cast<int16_t>(signed_field);
-			    if (row[3] &&
-				!parse_unsigned(row[3], UINT64_MAX, &identity.serialized_parent_id))
-				    return false;
-			    if (!parse_unsigned(row[4], UINT32_MAX, &unsigned_field) ||
-				unsigned_field != 1)
-				    return false;
-			    identity.quantity = static_cast<uint32_t>(unsigned_field);
-			    if (!parse_signed(row[5], INT32_MIN, INT32_MAX, &signed_field))
-				    return false;
-			    item.weight = static_cast<int32_t>(signed_field);
-			    if (!parse_signed(row[6], INT32_MIN, INT32_MAX, &signed_field))
-				    return false;
-			    item.cost = static_cast<int32_t>(signed_field);
-			    if (!parse_signed(row[7], INT64_MIN, INT64_MAX, &item.timers[0]) ||
-				!parse_unsigned(row[8], UINT32_MAX, &unsigned_field))
-				    return false;
-			    item.extra_flags = static_cast<uint32_t>(unsigned_field);
-			    if (row[9])
-			    {
-				    if (!parse_unsigned(row[9], UINT32_MAX, &unsigned_field))
-					    return false;
-				    item.wear_flags = static_cast<uint32_t>(unsigned_field);
-				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_WEAR_FLAGS;
-			    }
-			    if (row[10])
-			    {
-				    if (!parse_signed(row[10], INT8_MIN, INT8_MAX, &signed_field))
-					    return false;
-				    item.type = static_cast<int8_t>(signed_field);
-				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_TYPE;
-			    }
-			    for (size_t index = 0; index < item.values.size(); ++index)
-			    {
-				    if (!parse_signed(row[11 + index], INT32_MIN, INT32_MAX,
-						      &signed_field))
-					    return false;
-				    item.values[index] = static_cast<int32_t>(signed_field);
-			    }
-			    constexpr std::array<uint8_t, 4> string_masks = { 1, 4, 2, 8 };
-			    std::array<std::string *, 4> strings = {
-				    &item.name,
-				    &item.short_description,
-				    &item.description,
-				    &item.action_description,
-			    };
-			    for (size_t index = 0; index < strings.size(); ++index)
-				    if (row[19 + index])
-				    {
-					    if (strlen(row[19 + index]) >
-						PLAYER_SNAPSHOT_MAX_STRING_BYTES)
-					    {
-						    result->outcome =
-							    player_load_outcome::limit_exceeded;
-						    return false;
-					    }
-					    *strings[index] = row[19 + index];
-					    item.string_mask |= string_masks[index];
-				    }
-			    constexpr std::array<uint16_t, 5> bitvector_masks = {
-				    PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR1,
-				    PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR2,
-				    PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR3,
-				    PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR4,
-				    PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR5,
-			    };
-			    for (size_t index = 0; index < item.bitvectors.size(); ++index)
-				    if (row[23 + index])
-				    {
-					    if (!parse_unsigned(row[23 + index], UINT64_MAX,
-								&item.bitvectors[index]))
-						    return false;
-					    identity.override_mask |= bitvector_masks[index];
-				    }
-			    if (row[28])
-			    {
-				    if (!parse_signed(row[28], INT8_MIN, INT8_MAX, &signed_field))
-					    return false;
-				    item.material = static_cast<int8_t>(signed_field);
-				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_MATERIAL;
-			    }
-			    if (!parse_unsigned(row[29], UINT64_MAX, &item.object_uid) ||
-				!item.object_uid ||
-				!parse_signed(row[30], INT16_MIN, INT16_MAX, &signed_field))
-				    return false;
-			    item.condition = static_cast<int16_t>(signed_field);
-			    if (!parse_unsigned(row[31], UINT64_MAX, &identity.item_uid) ||
-				identity.item_uid != item.object_uid ||
-				!parse_unsigned(row[32], UINT64_MAX, &identity.root_item_uid) ||
-				!identity.root_item_uid)
-				    return false;
-			    if (row[33] &&
-				!parse_unsigned(row[33], UINT64_MAX, &identity.parent_item_uid))
-				    return false;
-			    if (!parse_unsigned(row[34], UINT8_MAX, &unsigned_field))
-				    return false;
-			    identity.owner.type = static_cast<item_owner_type>(unsigned_field);
-			    if (!parse_unsigned(row[35], UINT64_MAX, &identity.owner.id) ||
-				!parse_unsigned(row[36], UINT64_MAX, &identity.owner.context_id) ||
-				!parse_unsigned(row[37], UINT64_MAX, &identity.item_revision) ||
-				!parse_signed(row[38], INT32_MIN, INT32_MAX, &signed_field) ||
-				signed_field != item.vnum ||
-				!parse_unsigned(row[39], UINT8_MAX, &unsigned_field))
-				    return false;
-			    identity.state = static_cast<item_custody_state>(unsigned_field);
-			    if (!parse_unsigned(row[40], UINT64_MAX, &identity.owner_revision) ||
-				!load_owner_identity_valid(identity.owner) ||
-				(identity.state != item_custody_state::active &&
-				 identity.state != item_custody_state::destroyed) ||
-				identity.override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL ||
-				stale_database_ids.find(identity.database_id) !=
-					stale_database_ids.end())
-				    return false;
-			    const item_owner_identity expected_owner = {
-				    item_owner_type::player, static_cast<uint64_t>(result->pid), 0
-			    };
-			    if (identity.owner.type != expected_owner.type ||
-				identity.owner.id != expected_owner.id ||
-				identity.owner.context_id != expected_owner.context_id ||
-				identity.state != item_custody_state::active)
-			    {
-				    try
-				    {
-					    stale_database_ids.insert(identity.database_id);
-					    ++result->stale_item_rows;
-				    }
-				    catch (const std::bad_alloc &)
-				    {
-					    result->outcome =
-						    player_load_outcome::retryable_failure;
-					    return false;
-				    }
-				    return true;
-			    }
-			    if (item_by_database_id.find(identity.database_id) !=
-					item_by_database_id.end() ||
-				item_by_uid.find(identity.item_uid) != item_by_uid.end())
-				    return false;
-			    try
-			    {
-				    const size_t index = result->snapshot.items.size();
-				    item_by_database_id.emplace(identity.database_id, index);
-				    item_by_uid.emplace(identity.item_uid, index);
-				    result->snapshot.items.push_back(std::move(item));
-				    result->item_identities.push_back(identity);
-			    }
-			    catch (const std::bad_alloc &)
-			    {
-				    result->outcome = player_load_outcome::retryable_failure;
-				    return false;
-			    }
-			    return true;
-		    }))
+	if (!load_rows(connection, item_sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
+			       {
+				       result->outcome = player_load_outcome::limit_exceeded;
+				       return false;
+			       }
+			       player_item_snapshot item = {};
+			       player_load_item_identity identity = {};
+			       const item_row_outcome parsed =
+				       parse_item_payload(row, result, &item, &identity);
+			       if (parsed == item_row_outcome::invalid)
+				       return false;
+			       if (parsed == item_row_outcome::skipped)
+			       {
+				       try
+				       {
+					       stale_database_ids.insert(identity.database_id);
+					       ++result->stale_item_rows;
+				       }
+				       catch (const std::bad_alloc &)
+				       {
+					       result->outcome =
+						       player_load_outcome::retryable_failure;
+					       return false;
+				       }
+				       return true;
+			       }
+			       if (stale_database_ids.find(identity.database_id) !=
+				   stale_database_ids.end())
+				       return false;
+			       if (item_by_database_id.find(identity.database_id) !=
+					   item_by_database_id.end() ||
+				   item_by_uid.find(identity.item_uid) != item_by_uid.end())
+				       return false;
+			       try
+			       {
+				       const size_t index = result->snapshot.items.size();
+				       item_by_database_id.emplace(identity.database_id, index);
+				       item_by_uid.emplace(identity.item_uid, index);
+				       result->snapshot.items.push_back(std::move(item));
+				       result->item_identities.push_back(identity);
+			       }
+			       catch (const std::bad_alloc &)
+			       {
+				       result->outcome = player_load_outcome::retryable_failure;
+				       return false;
+			       }
+			       return true;
+		       }))
 		return false;
 
+	std::vector<bool> promoted;
+	try
+	{
+		promoted.resize(result->item_identities.size(), false);
+	}
+	catch (const std::bad_alloc &)
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		return false;
+	}
 	for (size_t index = 0; index < result->item_identities.size(); ++index)
 	{
 		player_load_item_identity &identity = result->item_identities[index];
@@ -844,6 +757,27 @@ bool load_items(MYSQL *connection, player_load_result *result)
 			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 			continue;
 		}
+		// A skipped row can be some other row's container. Dropping the contents with
+		// it, or refusing the load, would both punish the player for one bad row, so
+		// the contents move to the top level and the next full save rewrites the
+		// ledger to match.
+		if (identity.serialized_parent_id &&
+		    stale_database_ids.find(identity.serialized_parent_id) !=
+			    stale_database_ids.end())
+		{
+			identity.serialized_parent_id = 0;
+			identity.parent_item_uid = 0;
+			identity.root_item_uid = identity.item_uid;
+			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			promoted[index] = true;
+			++result->promoted_item_rows;
+			continue;
+		}
+		// A parent that is neither present nor skipped means its payload row is gone
+		// while this one survived, and that is still fatal. fk_player_items_container
+		// is ON DELETE CASCADE, so deleting a container takes its contents with it and
+		// the case cannot arise from the schema; it is reachable only by a hand-edited
+		// row or a database missing that constraint.
 		const auto database_parent =
 			item_by_database_id.find(identity.serialized_parent_id);
 		const auto uid_parent = item_by_uid.find(identity.parent_item_uid);
@@ -855,6 +789,24 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		    database_parent->second > static_cast<size_t>(INT32_MAX))
 			return false;
 		item.parent_index = static_cast<int32_t>(database_parent->second);
+	}
+	// Promotion gives the subtree a new root, and every item below it records that root.
+	for (bool changed = result->promoted_item_rows != 0; changed;)
+	{
+		changed = false;
+		for (size_t index = 0; index < result->item_identities.size(); ++index)
+		{
+			const int32_t parent = result->snapshot.items[index].parent_index;
+			if (parent == PLAYER_SNAPSHOT_NO_PARENT || promoted[index])
+				continue;
+			const size_t parent_index = static_cast<size_t>(parent);
+			if (!promoted[parent_index])
+				continue;
+			result->item_identities[index].root_item_uid =
+				result->item_identities[parent_index].root_item_uid;
+			promoted[index] = true;
+			changed = true;
+		}
 	}
 
 	const std::string ownership_summary_sql =
@@ -875,6 +827,9 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"pp.id=ppi.pet_id WHERE pp.owner_pid=" +
 		pid + ") payload ON payload.obj_uid=own.item_uid" +
 		" GROUP BY owner_revision.revision,owner_revision.owner_id";
+	// A custody row whose payload row is gone cannot be rebuilt into an object, but it
+	// must not refuse the whole load either: the character owns everything else in the
+	// ledger. Count it, load the rest, and let the next full save reconcile the ledger.
 	size_t ownership_summary_rows = 0;
 	if (!load_rows(
 		    connection, ownership_summary_sql, result,
@@ -892,10 +847,10 @@ bool load_items(MYSQL *connection, player_load_result *result)
 				   parse_unsigned(row[2], PLAYER_LOAD_ITEM_MAX, &missing_count) &&
 				   parse_unsigned(row[3], 1, &owner_revision_present) &&
 				   parse_unsigned(row[4], PLAYER_LOAD_ITEM_MAX, &payload_count) &&
-				   missing_count == 0 &&
 				   (owner_revision_present || owned_count == 0) &&
-				   owned_count == payload_count &&
-				   ((result->authoritative_item_count = payload_count), true);
+				   owned_count == payload_count + missing_count &&
+				   ((result->authoritative_item_count = payload_count),
+				    (result->missing_payload_rows = missing_count), true);
 		    }) ||
 	    ownership_summary_rows != 1)
 		return false;
@@ -1080,12 +1035,14 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 	std::vector<std::unordered_map<uint64_t, size_t>> uid_indices;
 	std::unordered_map<uint64_t, std::pair<size_t, size_t>> metadata_indices;
 	std::unordered_set<uint64_t> aggregate_uids;
+	std::unordered_set<uint64_t> stale_pet_item_ids;
 	try
 	{
 		database_indices.resize(result->snapshot.pets.size());
 		uid_indices.resize(result->snapshot.pets.size());
 		metadata_indices.reserve(PLAYER_LOAD_ITEM_MAX);
 		aggregate_uids.reserve(PLAYER_LOAD_ITEM_MAX);
+		stale_pet_item_ids.reserve(PLAYER_LOAD_ITEM_MAX);
 		for (const player_load_item_identity &identity : result->item_identities)
 			aggregate_uids.insert(identity.item_uid);
 	}
@@ -1125,8 +1082,30 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				       return false;
 			       player_item_snapshot item = {};
 			       player_load_item_identity identity = {};
-			       if (!parse_item_payload(row, result, &item, &identity) ||
-				   identity.owner_revision != result->item_owner_revision)
+			       const item_row_outcome parsed =
+				       parse_item_payload(row, result, &item, &identity);
+			       if (parsed == item_row_outcome::invalid)
+				       return false;
+			       // Pet inventories get the same tolerance as the character's own:
+			       // one orphaned or reassigned row is skipped, not fatal.
+			       if (parsed == item_row_outcome::skipped)
+			       {
+				       try
+				       {
+					       stale_pet_item_ids.insert(identity.database_id);
+					       ++result->stale_item_rows;
+				       }
+				       catch (const std::bad_alloc &)
+				       {
+					       result->outcome =
+						       player_load_outcome::retryable_failure;
+					       return false;
+				       }
+				       return true;
+			       }
+			       if (identity.owner_revision != result->item_owner_revision ||
+				   stale_pet_item_ids.find(identity.database_id) !=
+					   stale_pet_item_ids.end())
 				       return false;
 			       const size_t pet_index = pet_found->second;
 			       try
@@ -1161,17 +1140,43 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		return false;
 
 	for (size_t pet_index = 0; pet_index < result->snapshot.pets.size(); ++pet_index)
-		for (size_t item_index = 0;
-		     item_index < result->pet_identities[pet_index].item_identities.size();
-		     ++item_index)
+	{
+		std::vector<player_load_item_identity> &identities =
+			result->pet_identities[pet_index].item_identities;
+		std::vector<player_item_snapshot> &items = result->snapshot.pets[pet_index].items;
+		std::vector<bool> promoted;
+		size_t promotions = 0;
+		try
 		{
-			player_load_item_identity &identity =
-				result->pet_identities[pet_index].item_identities[item_index];
-			player_item_snapshot &item =
-				result->snapshot.pets[pet_index].items[item_index];
+			promoted.resize(identities.size(), false);
+		}
+		catch (const std::bad_alloc &)
+		{
+			result->outcome = player_load_outcome::retryable_failure;
+			return false;
+		}
+		for (size_t item_index = 0; item_index < identities.size(); ++item_index)
+		{
+			player_load_item_identity &identity = identities[item_index];
+			player_item_snapshot &item = items[item_index];
 			if (!identity.serialized_parent_id && !identity.parent_item_uid)
 			{
 				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				continue;
+			}
+			// Same reasoning as the character's own inventory: contents outlive a
+			// skipped container instead of taking the whole load down with them.
+			if (identity.serialized_parent_id &&
+			    stale_pet_item_ids.find(identity.serialized_parent_id) !=
+				    stale_pet_item_ids.end())
+			{
+				identity.serialized_parent_id = 0;
+				identity.parent_item_uid = 0;
+				identity.root_item_uid = identity.item_uid;
+				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				promoted[item_index] = true;
+				++promotions;
+				++result->promoted_item_rows;
 				continue;
 			}
 			const auto database_parent =
@@ -1187,6 +1192,24 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				return false;
 			item.parent_index = static_cast<int32_t>(database_parent->second);
 		}
+		for (bool changed = promotions != 0; changed;)
+		{
+			changed = false;
+			for (size_t item_index = 0; item_index < identities.size(); ++item_index)
+			{
+				const int32_t parent = items[item_index].parent_index;
+				if (parent == PLAYER_SNAPSHOT_NO_PARENT || promoted[item_index])
+					continue;
+				const size_t parent_index = static_cast<size_t>(parent);
+				if (!promoted[parent_index])
+					continue;
+				identities[item_index].root_item_uid =
+					identities[parent_index].root_item_uid;
+				promoted[item_index] = true;
+				changed = true;
+			}
+		}
+	}
 
 	std::vector<std::vector<std::unordered_set<uint64_t>>> affects;
 	try
@@ -1220,7 +1243,8 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				    return false;
 			    const auto found = metadata_indices.find(database_id);
 			    if (found == metadata_indices.end())
-				    return false;
+				    return stale_pet_item_ids.find(database_id) !=
+					   stale_pet_item_ids.end();
 			    const size_t pet_index = found->second.first;
 			    const size_t item_index = found->second.second;
 			    player_item_snapshot &item =

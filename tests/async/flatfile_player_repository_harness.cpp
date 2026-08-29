@@ -276,6 +276,64 @@ int main(int argc, char **argv)
 				flatfile_player_load_result::ok &&
 			loaded.revision == 5 && loaded.status_integers[0].signed_value == 55,
 		"concurrent player writers lost the highest revision");
+
+	// The ownership catalog is written once, at baseline, so a later save can leave the
+	// two files disagreeing. None of these disagreements may lock the character out.
+	auto reload = [&](const player_snapshot &snapshot, uint64_t request_id)
+	{
+		require(flatfile_player_snapshot_apply(root.string(), snapshot, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"item-consistency fixture save failed: " + error);
+		player_load_request items_request = {};
+		items_request.request_id = request_id;
+		items_request.pid = 42;
+		items_request.account_name = "account-one";
+		items_request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		return flatfile_player_load_repository_execute(root.string(), items_request);
+	};
+	player_item_snapshot orphan = {};
+	orphan.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	orphan.object_uid = 103;
+	orphan.vnum = 503;
+
+	player_snapshot extra_payload = make_full(6);
+	extra_payload.items.push_back(orphan);
+	player_load_result recovered = reload(extra_payload, 10);
+	require(recovered.outcome == player_load_outcome::applied &&
+			recovered.snapshot.items.size() == 2 && recovered.stale_item_rows == 1 &&
+			recovered.missing_payload_rows == 0 &&
+			recovered.authoritative_item_count == 3,
+		"a payload item missing from the ownership catalog refused the load");
+
+	player_snapshot dropped_payload = make_full(7);
+	dropped_payload.items.pop_back();
+	recovered = reload(dropped_payload, 11);
+	require(recovered.outcome == player_load_outcome::applied &&
+			recovered.snapshot.items.size() == 1 &&
+			recovered.missing_payload_rows == 1 && recovered.stale_item_rows == 0 &&
+			recovered.authoritative_item_count == 2,
+		"an ownership record without its payload item refused the load");
+
+	// The orphan is the container this time: its contents load at the top level rather
+	// than disappearing with it.
+	player_snapshot orphan_container = make_full(8);
+	orphan_container.items.insert(orphan_container.items.begin(), orphan);
+	orphan_container.items[1].parent_index = 0;
+	orphan_container.items[2].parent_index = 1;
+	recovered = reload(orphan_container, 12);
+	require(recovered.outcome == player_load_outcome::applied &&
+			recovered.snapshot.items.size() == 2 && recovered.stale_item_rows == 1 &&
+			recovered.promoted_item_rows == 1 && recovered.missing_payload_rows == 0 &&
+			recovered.snapshot.items[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			recovered.snapshot.items[1].parent_index == 0 &&
+			recovered.item_identities[0].root_item_uid == 100 &&
+			!recovered.item_identities[0].parent_item_uid &&
+			recovered.item_identities[1].root_item_uid == 100,
+		"contents of an orphaned container did not survive the load");
+	require(flatfile_player_snapshot_apply(root.string(), make_full(9), &error).outcome ==
+			player_save_apply_outcome::applied,
+		"could not restore the consistent item fixture: " + error);
 	{
 		flatfile_player_snapshot_lock snapshot_lock;
 		flatfile_authority_lock authority_lock;

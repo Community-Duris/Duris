@@ -237,6 +237,26 @@ int main()
 		    "DELETE FROM item_owner_revision WHERE owner_type=3 AND owner_id=1200 AND "
 		    "owner_context_id=0");
 
+	// Losing a container's payload row must not take its contents down with it: item
+	// 1002 sits inside 1001, and orphaning 1001 promotes 1002 to the top level.
+	execute_sql(connection, "DELETE FROM item_current_owner WHERE item_uid=900001");
+	player_load_result promoted = execute_load(connection, request, 92);
+	assert(promoted.outcome == player_load_outcome::applied);
+	assert(promoted.snapshot.items.size() == 2 && promoted.authoritative_item_count == 2);
+	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1);
+	for (size_t index = 0; index < promoted.item_identities.size(); ++index)
+	{
+		assert(promoted.snapshot.items[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT);
+		assert(!promoted.item_identities[index].parent_item_uid);
+		assert(promoted.item_identities[index].root_item_uid ==
+		       promoted.item_identities[index].item_uid);
+	}
+	execute_sql(connection,
+		    "INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,"
+		    "owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES"
+		    "(900001,900001,NULL,1," +
+			    std::to_string(pid) + ",0,2,100,1)");
+
 	// Pet payload and metadata share the player owner revision and add three queries,
 	// independent of pet and pet-item count.
 	execute_sql(connection,
@@ -273,20 +293,46 @@ int main()
 	assert(pet_fixture.snapshot.pets[0].items[1].affects[0][0] == 1);
 	assert(pet_fixture.authoritative_item_count == 5);
 
-	// Pet payload without authoritative custody fails without consuming recovery rows.
+	// A pet payload row whose custody row was reassigned is skipped, exactly as the
+	// character's own inventory rows are.
+	execute_sql(
+		connection,
+		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) "
+		"VALUES(3,1201,0,1)");
+	execute_sql(connection, "UPDATE item_current_owner SET owner_type=3,owner_id=1201,"
+				"owner_context_id=0 WHERE item_uid=910002");
+	player_load_result pet_reassigned = execute_load(connection, request, 91);
+	assert(pet_reassigned.outcome == player_load_outcome::applied);
+	assert(pet_reassigned.snapshot.pets.size() == 1 &&
+	       pet_reassigned.snapshot.pets[0].items.size() == 1);
+	assert(pet_reassigned.stale_item_rows == 1 && pet_reassigned.authoritative_item_count == 4);
+	execute_sql(connection,
+		    "DELETE FROM item_owner_revision WHERE owner_type=3 AND owner_id=1201 AND "
+		    "owner_context_id=0");
+
+	// Pet payload without any custody row at all is one skippable row, not a refusal:
+	// an orphan must never lock the owning character out of the game.
 	execute_sql(connection, "DELETE FROM item_current_owner WHERE item_uid=910002");
-	assert(execute_load(connection, request, 89).outcome ==
-	       player_load_outcome::component_failure);
+	player_load_result pet_orphan = execute_load(connection, request, 89);
+	assert(pet_orphan.outcome == player_load_outcome::applied);
+	assert(pet_orphan.snapshot.pets.size() == 1 &&
+	       pet_orphan.snapshot.pets[0].items.size() == 1);
+	assert(pet_orphan.stale_item_rows == 1 && pet_orphan.missing_payload_rows == 0);
+	assert(pet_orphan.authoritative_item_count == 4);
 	execute_sql(connection, "DELETE FROM player_pet_item_affects");
 	execute_sql(connection, "DELETE FROM player_pet_item_extra_descr");
 	execute_sql(connection, "DELETE FROM player_pet_items");
 	execute_sql(connection, "DELETE FROM player_pets");
 	execute_sql(connection, "DELETE FROM item_current_owner WHERE item_uid>=910000");
 
-	// Active custody without payload is an exact-bijection failure.
+	// Active custody whose payload row is gone cannot be rebuilt, but the rest of the
+	// inventory still loads; the count is reported instead of refusing the character.
 	execute_sql(connection, "DELETE FROM player_items WHERE id=1003");
-	assert(execute_load(connection, request, 82).outcome ==
-	       player_load_outcome::component_failure);
+	player_load_result missing_payload = execute_load(connection, request, 82);
+	assert(missing_payload.outcome == player_load_outcome::applied);
+	assert(missing_payload.snapshot.items.size() == 2 &&
+	       missing_payload.authoritative_item_count == 2);
+	assert(missing_payload.missing_payload_rows == 1 && missing_payload.stale_item_rows == 0);
 	execute_sql(connection,
 		    "INSERT INTO player_items(id,pid,vnum,equip_slot,quantity,weight,cost,timer,"
 		    "extra_flags,value0,value1,value2,value3,value4,value5,value6,value7,obj_uid,"
@@ -320,13 +366,17 @@ int main()
 	       never_owned.snapshot.items.empty());
 	assert(never_owned.item_owner_revision == 0 && never_owned.metrics.query_count == 22);
 
-	// Serialized payload without authoritative custody fails in the opposite direction.
+	// Serialized payload without any custody row is the orphan that used to lock the
+	// character out for good. It is skipped and counted, and the load still applies.
 	execute_sql(connection,
 		    "INSERT INTO player_items(id,pid,vnum,equip_slot,quantity,obj_uid) VALUES"
 		    "(2001," +
 			    std::to_string(pid) + ",101,0,1,900101)");
-	assert(execute_load(connection, request, 87).outcome ==
-	       player_load_outcome::component_failure);
+	player_load_result orphan_payload = execute_load(connection, request, 87);
+	assert(orphan_payload.outcome == player_load_outcome::applied);
+	assert(orphan_payload.snapshot.items.empty() && orphan_payload.item_identities.empty());
+	assert(orphan_payload.stale_item_rows == 1 && orphan_payload.missing_payload_rows == 0);
+	assert(orphan_payload.authoritative_item_count == 0);
 
 	request.request_id = 0;
 	assert(!player_load_request_valid(request, persistence_observability_now_usec()));

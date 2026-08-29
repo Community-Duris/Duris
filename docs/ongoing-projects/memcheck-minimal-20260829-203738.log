@@ -1,0 +1,1816 @@
+==00:00:00:00.000 1061276== Memcheck, a memory error detector
+==00:00:00:00.000 1061276== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==00:00:00:00.000 1061276== Using Valgrind-3.22.0-bd4db67b1d-20231031 and LibVEX; rerun with -h for copyright info
+==00:00:00:00.000 1061276== Command: bin/server/dms --minimal 4000
+==00:00:00:00.000 1061276== Parent PID: 1061272
+==00:00:00:00.000 1061276== 
+--00:00:00:00.000 1061276-- 
+--00:00:00:00.000 1061276-- Valgrind options:
+--00:00:00:00.000 1061276--    --tool=memcheck
+--00:00:00:00.000 1061276--    --log-file=/home/aiwithapex/projects/duris/logs/valgrind/memcheck-minimal-20260829-203738.log
+--00:00:00:00.000 1061276--    --suppressions=/home/aiwithapex/projects/duris/scripts/valgrind.supp
+--00:00:00:00.000 1061276--    --num-callers=50
+--00:00:00:00.000 1061276--    --error-limit=no
+--00:00:00:00.000 1061276--    --time-stamp=yes
+--00:00:00:00.000 1061276--    --trace-children=no
+--00:00:00:00.000 1061276--    --leak-check=full
+--00:00:00:00.000 1061276--    --show-leak-kinds=all
+--00:00:00:00.000 1061276--    --errors-for-leak-kinds=definite,indirect
+--00:00:00:00.000 1061276--    --track-origins=yes
+--00:00:00:00.000 1061276--    --track-fds=all
+--00:00:00:00.000 1061276--    --keep-stacktraces=alloc-and-free
+--00:00:00:00.000 1061276--    --show-reachable=yes
+--00:00:00:00.000 1061276--    --verbose
+--00:00:00:00.000 1061276-- Contents of /proc/version:
+--00:00:00:00.000 1061276--   Linux version 6.6.114.1-microsoft-standard-WSL2 (root@507f3e43091d) (gcc (GCC) 13.2.0, GNU ld (GNU Binutils) 2.41) #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025
+--00:00:00:00.000 1061276-- 
+--00:00:00:00.000 1061276-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand-rdseed
+--00:00:00:00.000 1061276-- Page sizes: currently 4096, max supported 4096
+--00:00:00:00.000 1061276-- Valgrind library directory: /usr/libexec/valgrind
+--00:00:00:00.137 1061276-- Reading syms from /home/aiwithapex/projects/duris/bin/server/dms
+--00:00:00:00.180 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+--00:00:00:00.180 1061276--   Considering /usr/lib/debug/.build-id/f5/8808c9c8a388055b126492a1706d732761f86e.debug ..
+--00:00:00:00.180 1061276--   .. build-id is valid
+--00:00:00:00.190 1061276-- Reading syms from /usr/libexec/valgrind/memcheck-amd64-linux
+--00:00:00:00.190 1061276--    object doesn't have a dynamic symbol table
+--00:00:00:00.193 1061276-- Scheduler: using generic scheduler lock implementation.
+--00:00:00:00.205 1061276-- Reading suppressions file: /home/aiwithapex/projects/duris/scripts/valgrind.supp
+--00:00:00:00.206 1061276-- Reading suppressions file: /usr/libexec/valgrind/default.supp
+==00:00:00:00.207 1061276== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-1061276-by-aiwithapex-on-???
+==00:00:00:00.207 1061276== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-1061276-by-aiwithapex-on-???
+==00:00:00:00.207 1061276== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-1061276-by-aiwithapex-on-???
+==00:00:00:00.207 1061276== 
+==00:00:00:00.207 1061276== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==00:00:00:00.207 1061276== don't want to do, unless you know exactly what you're doing,
+==00:00:00:00.207 1061276== or are doing some strange experiment):
+==00:00:00:00.207 1061276==   /usr/bin/vgdb --pid=1061276 ...command...
+==00:00:00:00.207 1061276== 
+==00:00:00:00.207 1061276== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==00:00:00:00.207 1061276==   /path/to/gdb bin/server/dms
+==00:00:00:00.207 1061276== and then give GDB the following command
+==00:00:00:00.207 1061276==   target remote | /usr/bin/vgdb --pid=1061276
+==00:00:00:00.207 1061276== --pid is optional if only one valgrind process is running
+==00:00:00:00.207 1061276== 
+--00:00:00:00.413 1061276-- REDIR: 0x4028b00 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c2e1a (???)
+--00:00:00:00.422 1061276-- REDIR: 0x40272b0 (ld-linux-x86-64.so.2:index) redirected to 0x580c2e34 (???)
+--00:00:00:00.444 1061276-- Reading syms from /usr/libexec/valgrind/vgpreload_core-amd64-linux.so
+--00:00:00:00.449 1061276-- Reading syms from /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so
+==00:00:00:00.450 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.450 1061276--     old: 0x04028b00 (strlen              ) R-> (0000.0) 0x580c2e1a ???
+--00:00:00:00.450 1061276--     new: 0x04028b00 (strlen              ) R-> (2007.0) 0x0484f340 strlen
+--00:00:00:00.476 1061276-- REDIR: 0x40274e0 (ld-linux-x86-64.so.2:strcmp) redirected to 0x4850460 (strcmp)
+--00:00:00:00.477 1061276-- REDIR: 0x4026910 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4853cd0 (mempcpy)
+--00:00:00:00.486 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33
+--00:00:00:00.508 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libz.so.1.3
+--00:00:00:00.510 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libxml2.so.2.9.14
+--00:00:00:00.514 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libcrypt.so.1.1.0
+--00:00:00:00.515 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libmariadb.so.3
+--00:00:00:00.517 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libgnutls.so.30.37.1
+--00:00:00:00.521 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libssl.so.3
+--00:00:00:00.527 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+--00:00:00:00.542 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libcjson.so.1.7.17
+--00:00:00:00.543 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libhiredis.so.1.1.0
+--00:00:00:00.543 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libhiredis_ssl.so.1.1.0
+--00:00:00:00.543 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libbsd.so.0.12.1
+--00:00:00:00.544 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libm.so.6
+--00:00:00:00.547 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+--00:00:00:00.550 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libc.so.6
+--00:00:00:00.554 1061276--   Considering /usr/lib/debug/.build-id/32/8820b908de8ea1ef79afa8995e302e819163d7.debug ..
+--00:00:00:00.554 1061276--   .. build-id is valid
+--00:00:00:00.687 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libicuuc.so.74.2
+--00:00:00:00.694 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
+--00:00:00:00.696 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libp11-kit.so.0.3.1
+--00:00:00:00.700 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libidn2.so.0.4.0
+--00:00:00:00.701 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libunistring.so.5.0.0
+--00:00:00:00.702 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.3
+--00:00:00:00.703 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libnettle.so.8.8
+--00:00:00:00.704 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libhogweed.so.6.8
+--00:00:00:00.705 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libgmp.so.10.5.0
+--00:00:00:00.706 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libmd.so.0.1.0
+--00:00:00:00.729 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libicudata.so.74.2
+--00:00:00:00.730 1061276-- Reading syms from /usr/lib/x86_64-linux-gnu/libffi.so.8.1.4
+--00:00:00:00.738 1061276-- REDIR: 0x4028ca0 (ld-linux-x86-64.so.2:strncmp) redirected to 0x484fc90 (strncmp)
+--00:00:00:00.751 1061276-- REDIR: 0x5743150 (libc.so.6:strnlen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.751 1061276-- REDIR: 0x57431e0 (libc.so.6:strpbrk) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.752 1061276-- REDIR: 0x57412a0 (libc.so.6:strcmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.752 1061276-- REDIR: 0x575a4b0 (libc.so.6:wcsnlen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.752 1061276-- REDIR: 0x5740390 (libc.so.6:memset) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.753 1061276-- REDIR: 0x5759c20 (libc.so.6:wcslen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.753 1061276-- REDIR: 0x57c54f0 (libc.so.6:__memcpy_chk) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.754 1061276-- REDIR: 0x5740300 (libc.so.6:memrchr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.754 1061276-- REDIR: 0x575a450 (libc.so.6:wcsncpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.754 1061276-- REDIR: 0x573f820 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.755 1061276-- REDIR: 0x57589e0 (libc.so.6:wcschr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.755 1061276-- REDIR: 0x5741190 (libc.so.6:index) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.757 1061276-- REDIR: 0x5743210 (libc.so.6:rindex) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.758 1061276-- REDIR: 0x5758a90 (libc.so.6:wcscmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.758 1061276-- REDIR: 0x57405b0 (libc.so.6:stpncpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.759 1061276-- REDIR: 0x5766fb0 (libc.so.6:wmemchr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.759 1061276-- REDIR: 0x5742ff0 (libc.so.6:strncmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.760 1061276-- REDIR: 0x5740610 (libc.so.6:strcasecmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.760 1061276-- REDIR: 0x5742410 (libc.so.6:strcspn) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.760 1061276-- REDIR: 0x57599f0 (libc.so.6:wcscpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.761 1061276-- REDIR: 0x5741120 (libc.so.6:strcat) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.761 1061276-- REDIR: 0x5742ef0 (libc.so.6:strncasecmp_l) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.762 1061276-- REDIR: 0x5741210 (libc.so.6:strchrnul) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.762 1061276-- REDIR: 0x573f730 (libc.so.6:bcmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.763 1061276-- REDIR: 0x57423a0 (libc.so.6:strcpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.764 1061276-- REDIR: 0x57406b0 (libc.so.6:strcasecmp_l) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.765 1061276-- REDIR: 0x5742dc0 (libc.so.6:strlen) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.765 1061276-- REDIR: 0x5743090 (libc.so.6:strncpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.766 1061276-- REDIR: 0x5767030 (libc.so.6:wmemcmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.767 1061276-- REDIR: 0x57c5610 (libc.so.6:__memmove_chk) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+==00:00:00:00.767 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.767 1061276--     old: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--00:00:00:00.767 1061276--     new: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+--00:00:00:00.767 1061276-- REDIR: 0x5740540 (libc.so.6:stpcpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.768 1061276-- REDIR: 0x57400c0 (libc.so.6:memmove) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+==00:00:00:00.768 1061276== Preferring higher priority redirection:
+--00:00:00:00.768 1061276--     old: 0x05816c00 (__memcpy_avx_unalign) R-> (2018.0) 0x04851580 __memcpy_avx_unaligned_erms
+--00:00:00:00.768 1061276--     new: 0x05816c00 (__memcpy_avx_unalign) R-> (2018.1) 0x04852d60 memmove
+--00:00:00:00.768 1061276-- REDIR: 0x573f6b0 (libc.so.6:memchr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.769 1061276-- REDIR: 0x57433e0 (libc.so.6:strspn) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.770 1061276-- REDIR: 0x57401e0 (libc.so.6:mempcpy) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.770 1061276-- REDIR: 0x5742e50 (libc.so.6:strncasecmp) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+--00:00:00:00.777 1061276-- REDIR: 0x5742f90 (libc.so.6:strncat) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+==00:00:00:00.778 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.778 1061276--     old: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--00:00:00:00.778 1061276--     new: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+--00:00:00:00.778 1061276-- REDIR: 0x5743ca0 (libc.so.6:strstr) redirected to 0x483d1c0 (_vgnU_ifunc_wrapper)
+==00:00:00:00.790 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.790 1061276--     old: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--00:00:00:00.790 1061276--     new: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+==00:00:00:00.797 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.797 1061276--     old: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--00:00:00:00.797 1061276--     new: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+==00:00:00:00.798 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.798 1061276--     old: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--00:00:00:00.798 1061276--     new: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+==00:00:00:00.800 1061276== WARNING: new redirection conflicts with existing -- ignoring it
+--00:00:00:00.800 1061276--     old: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853dd0 __memcpy_chk
+--00:00:00:00.800 1061276--     new: 0x05816bd0 (__memcpy_chk_avx_una) R-> (2024.0) 0x04853740 __memmove_chk
+--00:00:00:00.810 1061276-- REDIR: 0x581b7f0 (libc.so.6:__strrchr_avx2) redirected to 0x484ed20 (rindex)
+--00:00:00:00.811 1061276-- REDIR: 0x5819940 (libc.so.6:__strlen_avx2) redirected to 0x484f220 (strlen)
+--00:00:00:00.811 1061276-- REDIR: 0x581aa20 (libc.so.6:__strncmp_avx2) redirected to 0x484fab0 (strncmp)
+--00:00:00:00.812 1061276-- REDIR: 0x58164a0 (libc.so.6:__memcmp_avx2_movbe) redirected to 0x4852480 (bcmp)
+--00:00:00:00.815 1061276-- REDIR: 0x5818d60 (libc.so.6:__strchr_avx2) redirected to 0x484ef00 (index)
+--00:00:00:00.816 1061276-- REDIR: 0x5819190 (libc.so.6:__strcmp_avx2) redirected to 0x4850360 (strcmp)
+--00:00:00:00.816 1061276-- REDIR: 0x573b750 (libc.so.6:malloc) redirected to 0x48467b0 (malloc)
+--00:00:00:00.859 1061276-- REDIR: 0x5816bd0 (libc.so.6:__memcpy_chk_avx_unaligned_erms) redirected to 0x4853dd0 (__memcpy_chk)
+--00:00:00:00.862 1061276-- REDIR: 0x573c8a0 (libc.so.6:calloc) redirected to 0x484d8a0 (calloc)
+--00:00:00:00.863 1061276-- REDIR: 0x5816c00 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x4852d60 (memmove)
+--00:00:00:00.872 1061276-- REDIR: 0x573be30 (libc.so.6:free) redirected to 0x4849820 (free)
+--00:00:00:00.885 1061276-- REDIR: 0x5816200 (libc.so.6:__memchr_avx2) redirected to 0x48504e0 (memchr)
+--00:00:00:00.887 1061276-- REDIR: 0x581b080 (libc.so.6:__strncpy_avx2) redirected to 0x484f4f0 (strncpy)
+--00:00:00:00.893 1061276-- REDIR: 0x573c1a0 (libc.so.6:realloc) redirected to 0x484db00 (realloc)
+--00:00:00:00.901 1061276-- REDIR: 0x49298e0 (libstdc++.so.6:operator new(unsigned long)) redirected to 0x4846f30 (operator new(unsigned long))
+--00:00:00:01.186 1061276-- REDIR: 0x49278b0 (libstdc++.so.6:operator delete(void*, unsigned long)) redirected to 0x484a530 (operator delete(void*, unsigned long))
+--00:00:00:01.198 1061276-- REDIR: 0x5817600 (libc.so.6:__memset_avx2_unaligned_erms) redirected to 0x4852c50 (memset)
+--00:00:00:01.198 1061276-- REDIR: 0x5818040 (libc.so.6:__strcasecmp_avx2) redirected to 0x484fcf0 (strcasecmp)
+--00:00:00:01.212 1061276-- REDIR: 0x5818fa0 (libc.so.6:__strchrnul_avx2) redirected to 0x48537b0 (strchrnul)
+--00:00:00:01.213 1061276-- REDIR: 0x581b520 (libc.so.6:__strnlen_avx2) redirected to 0x484f1c0 (strnlen)
+--00:00:00:01.217 1061276-- REDIR: 0x57c60c0 (libc.so.6:__strcpy_chk) redirected to 0x4853830 (__strcpy_chk)
+--00:00:00:01.221 1061276-- REDIR: 0x5816bc0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x48538d0 (mempcpy)
+--00:00:00:01.226 1061276-- REDIR: 0x56d8d30 (libc.so.6:setenv) redirected to 0x48547d0 (setenv)
+--00:00:00:01.258 1061276-- REDIR: 0x5819ac0 (libc.so.6:__strncasecmp_avx2) redirected to 0x484fdd0 (strncasecmp)
+--00:00:00:01.279 1061276-- REDIR: 0x5838d10 (libc.so.6:__strpbrk_sse42) redirected to 0x4853fc0 (strpbrk)
+--00:00:00:01.347 1061276-- REDIR: 0x58196f0 (libc.so.6:__strcpy_avx2) redirected to 0x484f370 (strcpy)
+--00:00:00:01.382 1061276-- REDIR: 0x5755f10 (libc.so.6:__strstr_sse2_unaligned) redirected to 0x4853e40 (strstr)
+--00:00:00:02.041 1061276-- REDIR: 0x4929950 (libstdc++.so.6:operator new[](unsigned long)) redirected to 0x4848550 (operator new[](unsigned long))
+--00:00:00:02.053 1061276-- REDIR: 0x49278a0 (libstdc++.so.6:operator delete(void*)) redirected to 0x484a080 (operator delete(void*))
+--00:00:00:02.289 1061276-- REDIR: 0x49278d0 (libstdc++.so.6:operator delete[](void*)) redirected to 0x484bec0 (operator delete[](void*))
+--00:00:00:02.464 1061276-- REDIR: 0x5818a50 (libc.so.6:__strcat_avx2) redirected to 0x484ef30 (strcat)
+--00:00:00:11.009 1061276-- REDIR: 0x57c5fe0 (libc.so.6:__stpcpy_chk) redirected to 0x4853880 (__stpcpy_chk)
+--00:00:00:15.511 1061276-- REDIR: 0x5836170 (libc.so.6:__strcspn_sse42) redirected to 0x4854010 (strcspn)
+--00:00:00:20.923 1061276-- REDIR: 0x4929930 (libstdc++.so.6:operator new(unsigned long, std::nothrow_t const&)) redirected to 0x4847970 (operator new(unsigned long, std::nothrow_t const&))
+==00:00:25:27.741 1061276== 
+==00:00:25:27.741 1061276== FILE DESCRIPTORS: 16 open (3 std) at exit.
+==00:00:25:27.741 1061276== Open AF_INET6 socket 18: [::ffff:127.0.0.1]:4000 <-> [::ffff:127.0.0.1]:46506
+==00:00:25:27.741 1061276==    at 0x57B996D: accept (accept.c:26)
+==00:00:25:27.741 1061276==    by 0x3F28AA: new_connection(int) (comm.c:2406)
+==00:00:25:27.741 1061276==    by 0x3F4863: new_descriptor(int, int) (comm.c:2872)
+==00:00:25:27.741 1061276==    by 0x3F4CE0: drain_new_connections(int, int, char const*) (comm.c:906)
+==00:00:25:27.741 1061276==    by 0x3F83F6: game_loop(int, int) (comm.c:1235)
+==00:00:25:27.741 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.742 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET6 socket 17: [::ffff:127.0.0.1]:4050 <-> unbound
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x821C07: websocket_init(int) (websocket.c:406)
+==00:00:25:27.742 1061276==    by 0x3F7D61: game_loop(int, int) (comm.c:1063)
+==00:00:25:27.742 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.742 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET6 socket 16: [::]:4001 <-> unbound
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x3F2757: init_socket(int) (comm.c:2349)
+==00:00:25:27.742 1061276==    by 0x3F7D40: game_loop(int, int) (comm.c:1061)
+==00:00:25:27.742 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.742 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET6 socket 14: [::]:4000 <-> unbound
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x3F2757: init_socket(int) (comm.c:2349)
+==00:00:25:27.742 1061276==    by 0x3F7D21: game_loop(int, int) (comm.c:1059)
+==00:00:25:27.742 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.742 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 12: areas_mini/mini.obj
+==00:00:25:27.742 1061276==    at 0x57A9315: open (open64.c:41)
+==00:00:25:27.742 1061276==    by 0x571FBEE: _IO_file_open (fileops.c:188)
+==00:00:25:27.742 1061276==    by 0x571FF31: _IO_file_fopen@@GLIBC_2.2.5 (fileops.c:281)
+==00:00:25:27.742 1061276==    by 0x5713FC1: __fopen_internal (iofopen.c:75)
+==00:00:25:27.742 1061276==    by 0x5713FC1: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+==00:00:25:27.742 1061276==    by 0x4104C9: boot_db(int) (db.c:531)
+==00:00:25:27.742 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.742 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 11: areas_mini/mini.mob
+==00:00:25:27.742 1061276==    at 0x57A9315: open (open64.c:41)
+==00:00:25:27.742 1061276==    by 0x571FBEE: _IO_file_open (fileops.c:188)
+==00:00:25:27.742 1061276==    by 0x571FF31: _IO_file_fopen@@GLIBC_2.2.5 (fileops.c:281)
+==00:00:25:27.742 1061276==    by 0x5713FC1: __fopen_internal (iofopen.c:75)
+==00:00:25:27.742 1061276==    by 0x5713FC1: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+==00:00:25:27.742 1061276==    by 0x4104AA: boot_db(int) (db.c:525)
+==00:00:25:27.742 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.742 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 10: logs/log/cmd.debug
+==00:00:25:27.742 1061276==    at 0x57A9315: open (open64.c:41)
+==00:00:25:27.742 1061276==    by 0x571FBEE: _IO_file_open (fileops.c:188)
+==00:00:25:27.742 1061276==    by 0x571FF31: _IO_file_fopen@@GLIBC_2.2.5 (fileops.c:281)
+==00:00:25:27.742 1061276==    by 0x5713FC1: __fopen_internal (iofopen.c:75)
+==00:00:25:27.742 1061276==    by 0x5713FC1: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+==00:00:25:27.742 1061276==    by 0x410CC0: init_cmdlog() (debug.c:82)
+==00:00:25:27.742 1061276==    by 0x3FB369: main (comm.c:537)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET socket 8: 127.0.0.1:45246 <-> 127.0.0.1:3306
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x4D3F31C: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x4D49F5D: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x7A9F88: sql_open_configured_connection(unsigned long) (sql.c:1080)
+==00:00:25:27.742 1061276==    by 0x68DB41: sql_pool_create_connection(char const*, int) (sql_pool.c:49)
+==00:00:25:27.742 1061276==    by 0x68DC02: sql_pool_init (sql_pool.c:87)
+==00:00:25:27.742 1061276==    by 0x7ABEDA: initialize_mysql() (sql.c:1421)
+==00:00:25:27.742 1061276==    by 0x3FB422: main (comm.c:511)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET socket 7: 127.0.0.1:45232 <-> 127.0.0.1:3306
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x4D3F31C: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x4D49F5D: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x7A9F88: sql_open_configured_connection(unsigned long) (sql.c:1080)
+==00:00:25:27.742 1061276==    by 0x68DB41: sql_pool_create_connection(char const*, int) (sql_pool.c:49)
+==00:00:25:27.742 1061276==    by 0x68DC02: sql_pool_init (sql_pool.c:87)
+==00:00:25:27.742 1061276==    by 0x7ABEDA: initialize_mysql() (sql.c:1421)
+==00:00:25:27.742 1061276==    by 0x3FB422: main (comm.c:511)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET socket 6: 127.0.0.1:45228 <-> 127.0.0.1:3306
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x4D3F31C: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x4D49F5D: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x7A9F88: sql_open_configured_connection(unsigned long) (sql.c:1080)
+==00:00:25:27.742 1061276==    by 0x68DB41: sql_pool_create_connection(char const*, int) (sql_pool.c:49)
+==00:00:25:27.742 1061276==    by 0x68DC02: sql_pool_init (sql_pool.c:87)
+==00:00:25:27.742 1061276==    by 0x7ABEDA: initialize_mysql() (sql.c:1421)
+==00:00:25:27.742 1061276==    by 0x3FB422: main (comm.c:511)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET socket 5: 127.0.0.1:45216 <-> 127.0.0.1:3306
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x4D3F31C: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x4D49F5D: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x7A9F88: sql_open_configured_connection(unsigned long) (sql.c:1080)
+==00:00:25:27.742 1061276==    by 0x68DB41: sql_pool_create_connection(char const*, int) (sql_pool.c:49)
+==00:00:25:27.742 1061276==    by 0x68DC02: sql_pool_init (sql_pool.c:87)
+==00:00:25:27.742 1061276==    by 0x7ABEDA: initialize_mysql() (sql.c:1421)
+==00:00:25:27.742 1061276==    by 0x3FB422: main (comm.c:511)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open AF_INET socket 4: 127.0.0.1:45210 <-> 127.0.0.1:3306
+==00:00:25:27.742 1061276==    at 0x57BA41B: socket (syscall-template.S:120)
+==00:00:25:27.742 1061276==    by 0x4D3F31C: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x4D49F5D: ??? (in /usr/lib/x86_64-linux-gnu/libmariadb.so.3)
+==00:00:25:27.742 1061276==    by 0x7A9F88: sql_open_configured_connection(unsigned long) (sql.c:1080)
+==00:00:25:27.742 1061276==    by 0x7ABE6B: initialize_mysql() (sql.c:1373)
+==00:00:25:27.742 1061276==    by 0x3FB422: main (comm.c:511)
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 3: /home/aiwithapex/projects/duris/logs/valgrind/memcheck-minimal-20260829-203738.log
+==00:00:25:27.742 1061276==    <inherited from parent>
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 2: /tmp/claude-1000/-home-aiwithapex-projects-duris/4cdea39c-5065-4b14-80de-7e4bd8062e6d/scratchpad/valgrind-console2.log
+==00:00:25:27.742 1061276==    <inherited from parent>
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 1: /tmp/claude-1000/-home-aiwithapex-projects-duris/4cdea39c-5065-4b14-80de-7e4bd8062e6d/scratchpad/valgrind-console2.log
+==00:00:25:27.742 1061276==    <inherited from parent>
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== Open file descriptor 0: /dev/null
+==00:00:25:27.742 1061276==    <inherited from parent>
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== 
+==00:00:25:27.742 1061276== HEAP SUMMARY:
+==00:00:25:27.742 1061276==     in use at exit: 3,023,264 bytes in 6,033 blocks
+==00:00:25:27.742 1061276==   total heap usage: 193,815 allocs, 187,782 frees, 375,998,323 bytes allocated
+==00:00:25:27.742 1061276== 
+==00:00:25:27.743 1061276== Searching for pointers to 6,033 not-freed blocks
+==00:00:25:27.797 1061276== Checked 21,683,840 bytes
+==00:00:25:27.797 1061276== 
+==00:00:25:27.799 1061276== 49 bytes in 1 blocks are possibly lost in loss record 36 of 212
+==00:00:25:27.799 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.799 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.799 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.799 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.799 1061276==    by 0x40F9E8: boot_db(int) (db.c:447)
+==00:00:25:27.799 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.799 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.799 1061276== 
+==00:00:25:27.799 1061276== 49 bytes in 1 blocks are possibly lost in loss record 37 of 212
+==00:00:25:27.799 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.799 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.799 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.799 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.799 1061276==    by 0x40FC09: boot_db(int) (db.c:478)
+==00:00:25:27.799 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.799 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.799 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 38 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B8145: sql_load_player_status(char_data*, int) (sql_player.c:4679)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x389A83: do_finger(char_data*, char*, int) (actwiz.c:7808)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 39 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B8145: sql_load_player_status(char_data*, int) (sql_player.c:4679)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.800 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 40 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B8156: sql_load_player_status(char_data*, int) (sql_player.c:4680)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.800 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 41 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B8167: sql_load_player_status(char_data*, int) (sql_player.c:4681)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.800 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 42 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B889C: sql_load_player_status(char_data*, int) (sql_player.c:4813)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.800 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 43 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B88B1: sql_load_player_status(char_data*, int) (sql_player.c:4814)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.800 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 49 bytes in 1 blocks are possibly lost in loss record 44 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.800 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.800 1061276==    by 0x7B8145: sql_load_player_status(char_data*, int) (sql_player.c:4679)
+==00:00:25:27.800 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.800 1061276==    by 0x80183A: get_player_pid_from_name(char*) (utility.c:6589)
+==00:00:25:27.800 1061276==    by 0x399120: do_whois(char_data*, char*, int) (actwiz.c:12109)
+==00:00:25:27.800 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.800 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.800 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.800 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 50 bytes in 1 blocks are definitely lost in loss record 45 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.800 1061276==    by 0x6B1C36: boot_the_shops() (shop.c:1970)
+==00:00:25:27.800 1061276==    by 0x6EF677: assign_mobiles() (specs.assign.c:1256)
+==00:00:25:27.800 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.800 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.800 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.800 1061276== 
+==00:00:25:27.800 1061276== 51 bytes in 1 blocks are possibly lost in loss record 46 of 212
+==00:00:25:27.800 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.800 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.800 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.800 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.800 1061276==    by 0x40FBE2: boot_db(int) (db.c:476)
+==00:00:25:27.801 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 54 bytes in 1 blocks are possibly lost in loss record 48 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.801 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.801 1061276==    by 0x7B8123: sql_load_player_status(char_data*, int) (sql_player.c:4677)
+==00:00:25:27.801 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.801 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.801 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.801 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.801 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.801 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 54 bytes in 1 blocks are definitely lost in loss record 49 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.801 1061276==    by 0x7FCC00: generate_shape(char_data*) (utility.c:5228)
+==00:00:25:27.801 1061276==    by 0x7FCFC2: generate_desc(char_data*) (utility.c:5297)
+==00:00:25:27.801 1061276==    by 0x7FD1DC: do_testdesc(char_data*, char*, int) (utility.c:5173)
+==00:00:25:27.801 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.801 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.801 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 55 bytes in 1 blocks are possibly lost in loss record 50 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.801 1061276==    by 0x7BD49B: sql_load_account(char const*) (sql_player.c:5683)
+==00:00:25:27.801 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.801 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.801 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.801 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.801 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.801 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 56 bytes in 1 blocks are possibly lost in loss record 52 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x406986: init_rand_tables(int) (db.c:930)
+==00:00:25:27.801 1061276==    by 0x410029: boot_db(int) (db.c:569)
+==00:00:25:27.801 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 56 bytes in 1 blocks are possibly lost in loss record 53 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x43FD98: add_event_internal(void (*)(char_data*, char_data*, obj_data*, void*), int, char_data*, char_data*, obj_data*, void const*, int, void*, void (*)(void*)) (new_events.c:904)
+==00:00:25:27.801 1061276==    by 0x43FE68: add_event(void (*)(char_data*, char_data*, obj_data*, void*), int, char_data*, char_data*, obj_data*, int, void const*, int) (new_events.c:948)
+==00:00:25:27.801 1061276==    by 0x3AA811: add_event<obj_affect*> (prototypes.h:928)
+==00:00:25:27.801 1061276==    by 0x3AA811: set_obj_affected_extra(obj_data*, int, short, short, unsigned long) (affects.c:2547)
+==00:00:25:27.801 1061276==    by 0x3AA838: set_obj_affected(obj_data*, int, short, short) (affects.c:2553)
+==00:00:25:27.801 1061276==    by 0x2E2E61: spell_embalm(int, char_data*, char*, int, char_data*, obj_data*) (magic.c:16745)
+==00:00:25:27.801 1061276==    by 0x4FF38F: do_exhume(char_data*, char*, int) (necromancy.c:2504)
+==00:00:25:27.801 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.801 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.801 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 56 bytes in 1 blocks are definitely lost in loss record 54 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.801 1061276==    by 0x7FCC32: generate_appear(char_data*) (utility.c:5233)
+==00:00:25:27.801 1061276==    by 0x7FCFFA: generate_desc(char_data*) (utility.c:5298)
+==00:00:25:27.801 1061276==    by 0x7FD1DC: do_testdesc(char_data*, char*, int) (utility.c:5173)
+==00:00:25:27.801 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.801 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.801 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 58 bytes in 1 blocks are possibly lost in loss record 55 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.801 1061276==    by 0x7BD2E1: sql_load_account_ips(char const*) (sql_player.c:7713)
+==00:00:25:27.801 1061276==    by 0x7BD634: sql_load_account(char const*) (sql_player.c:5702)
+==00:00:25:27.801 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.801 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.801 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.801 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.801 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.801 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 58 bytes in 1 blocks are possibly lost in loss record 56 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.801 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.801 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.801 1061276==    by 0x7BD2F2: sql_load_account_ips(char const*) (sql_player.c:7714)
+==00:00:25:27.801 1061276==    by 0x7BD634: sql_load_account(char const*) (sql_player.c:5702)
+==00:00:25:27.801 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.801 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.801 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.801 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.801 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.801 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.801 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.801 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.801 1061276== 
+==00:00:25:27.801 1061276== 63 bytes in 1 blocks are possibly lost in loss record 57 of 212
+==00:00:25:27.801 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.801 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.802 1061276==    by 0x4FF33E: do_exhume(char_data*, char*, int) (necromancy.c:2500)
+==00:00:25:27.802 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.802 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.802 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.802 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are still reachable in loss record 58 of 212
+==00:00:25:27.802 1061276==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x68DBCB: sql_pool_init (sql_pool.c:75)
+==00:00:25:27.802 1061276==    by 0x7ABEDA: initialize_mysql() (sql.c:1421)
+==00:00:25:27.802 1061276==    by 0x3FB422: main (comm.c:511)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 60 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x4100D0: boot_db(int) (db.c:597)
+==00:00:25:27.802 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 61 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x410116: boot_db(int) (db.c:602)
+==00:00:25:27.802 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 62 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x43DD01: ne_init_event_pool() (new_events.c:1865)
+==00:00:25:27.802 1061276==    by 0x43FFC8: ne_init_events() (new_events.c:1886)
+==00:00:25:27.802 1061276==    by 0x4102DD: boot_db(int) (db.c:664)
+==00:00:25:27.802 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 63 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x4B79DC: mail_ensure_pools() (mail.c:99)
+==00:00:25:27.802 1061276==    by 0x4B7F64: scan_mail_file() (mail.c:263)
+==00:00:25:27.802 1061276==    by 0x41031F: boot_db(int) (db.c:696)
+==00:00:25:27.802 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 64 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x4B7A00: mail_ensure_pools() (mail.c:104)
+==00:00:25:27.802 1061276==    by 0x4B7F64: scan_mail_file() (mail.c:263)
+==00:00:25:27.802 1061276==    by 0x41031F: boot_db(int) (db.c:696)
+==00:00:25:27.802 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 65 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x3F75B9: game_loop(int, int) (comm.c:989)
+==00:00:25:27.802 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 66 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x2F5959: load_char_into_game(acct_chars*, descriptor_data*) (account.c:1890)
+==00:00:25:27.802 1061276==    by 0x2F8AF5: account_confirm_char(descriptor_data*, char*) (account.c:1117)
+==00:00:25:27.802 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.802 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.802 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 67 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x3A9A88: affect_to_char(char_data*, affected_type*) (affects.c:1837)
+==00:00:25:27.802 1061276==    by 0x6539AB: player_load_materialize(char_data*, player_load_result const&) (player_load_materialize.c:500)
+==00:00:25:27.802 1061276==    by 0x2F5982: load_char_into_game(acct_chars*, descriptor_data*) (account.c:1903)
+==00:00:25:27.802 1061276==    by 0x2F8AF5: account_confirm_char(descriptor_data*, char*) (account.c:1117)
+==00:00:25:27.802 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.802 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.802 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 68 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x4C65B3: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:46)
+==00:00:25:27.802 1061276==    by 0x3AA798: set_obj_affected_extra(obj_data*, int, short, short, unsigned long) (affects.c:2530)
+==00:00:25:27.802 1061276==    by 0x3AA838: set_obj_affected(obj_data*, int, short, short) (affects.c:2553)
+==00:00:25:27.802 1061276==    by 0x4FF367: do_exhume(char_data*, char*, int) (necromancy.c:2503)
+==00:00:25:27.802 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.802 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.802 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.802 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.802 1061276== 64 bytes in 1 blocks are possibly lost in loss record 69 of 212
+==00:00:25:27.802 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.802 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.802 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.802 1061276==    by 0x3F1C01: write_to_q(char const*, txt_q*, int) (comm.c:2089)
+==00:00:25:27.802 1061276==    by 0x3F38B7: send_to_all(char const*) (comm.c:3775)
+==00:00:25:27.802 1061276==    by 0x395415: timedShutdown(char_data*, char_data*, obj_data*, void*) (actwiz.c:4420)
+==00:00:25:27.802 1061276==    by 0x440976: ne_events() (new_events.c:1612)
+==00:00:25:27.802 1061276==    by 0x3F8F40: game_loop(int, int) (comm.c:1583)
+==00:00:25:27.802 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.802 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.802 1061276== 
+==00:00:25:27.803 1061276== 64 bytes in 1 blocks are possibly lost in loss record 70 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x3F1B4A: write_to_q(char const*, txt_q*, int) (comm.c:2111)
+==00:00:25:27.803 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.803 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.803 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.803 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.803 1061276==    by 0x3FA080: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 64 bytes in 1 blocks are possibly lost in loss record 71 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x3F1B4A: write_to_q(char const*, txt_q*, int) (comm.c:2111)
+==00:00:25:27.803 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.803 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.803 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.803 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.803 1061276==    by 0x3FA190: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 64 bytes in 1 blocks are possibly lost in loss record 72 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x3F1B4A: write_to_q(char const*, txt_q*, int) (comm.c:2111)
+==00:00:25:27.803 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.803 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.803 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.803 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.803 1061276==    by 0x3FA2A0: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 64 bytes in 1 blocks are possibly lost in loss record 73 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x3F1B4A: write_to_q(char const*, txt_q*, int) (comm.c:2111)
+==00:00:25:27.803 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.803 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.803 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.803 1061276==    by 0x43D6F8: save_func_call_info() (new_events.c:2695)
+==00:00:25:27.803 1061276==    by 0x3FA393: game_loop(int, int) (comm.c:1924)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 67 bytes in 1 blocks are possibly lost in loss record 75 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.803 1061276==    by 0x7BD4B0: sql_load_account(char const*) (sql_player.c:5684)
+==00:00:25:27.803 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.803 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.803 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.803 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.803 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.803 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 72 bytes in 1 blocks are possibly lost in loss record 77 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x4067CB: init_rand_tables(int) (db.c:897)
+==00:00:25:27.803 1061276==    by 0x410029: boot_db(int) (db.c:569)
+==00:00:25:27.803 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 72 bytes in 1 blocks are possibly lost in loss record 78 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x4067F9: init_rand_tables(int) (db.c:898)
+==00:00:25:27.803 1061276==    by 0x410029: boot_db(int) (db.c:569)
+==00:00:25:27.803 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 72 bytes in 1 blocks are possibly lost in loss record 79 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x406B8B: init_rand_tables(int) (db.c:962)
+==00:00:25:27.803 1061276==    by 0x410029: boot_db(int) (db.c:569)
+==00:00:25:27.803 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 77 bytes in 1 blocks are definitely lost in loss record 80 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.803 1061276==    by 0x65259C: (anonymous namespace)::apply_string(char_data*, player_snapshot_string const&) (player_load_materialize.c:123)
+==00:00:25:27.803 1061276==    by 0x6533A9: player_load_materialize(char_data*, player_load_result const&) (player_load_materialize.c:380)
+==00:00:25:27.803 1061276==    by 0x2F5982: load_char_into_game(acct_chars*, descriptor_data*) (account.c:1903)
+==00:00:25:27.803 1061276==    by 0x2F8AF5: account_confirm_char(descriptor_data*, char*) (account.c:1117)
+==00:00:25:27.803 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.803 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 80 bytes in 1 blocks are possibly lost in loss record 81 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x7BD2C7: sql_load_account_ips(char const*) (sql_player.c:7709)
+==00:00:25:27.803 1061276==    by 0x7BD634: sql_load_account(char const*) (sql_player.c:5702)
+==00:00:25:27.803 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.803 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.803 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.803 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.803 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.803 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 81 bytes in 1 blocks are possibly lost in loss record 82 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.803 1061276==    by 0x7BD4DC: sql_load_account(char const*) (sql_player.c:5686)
+==00:00:25:27.803 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.803 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.803 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.803 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.803 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.803 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.803 1061276== 85 bytes in 1 blocks are possibly lost in loss record 84 of 212
+==00:00:25:27.803 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.803 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.803 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.803 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.803 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.803 1061276==    by 0x7B8134: sql_load_player_status(char_data*, int) (sql_player.c:4678)
+==00:00:25:27.803 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.803 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.803 1061276==    by 0x389FCD: do_finger(char_data*, char*, int) (actwiz.c:7894)
+==00:00:25:27.803 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.803 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.803 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.803 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.803 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.803 1061276== 
+==00:00:25:27.804 1061276== 102 bytes in 1 blocks are possibly lost in loss record 90 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.804 1061276==    by 0x395499: timedShutdown(char_data*, char_data*, obj_data*, void*) (actwiz.c:4527)
+==00:00:25:27.804 1061276==    by 0x440976: ne_events() (new_events.c:1612)
+==00:00:25:27.804 1061276==    by 0x3F8F40: game_loop(int, int) (comm.c:1583)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 109 bytes in 1 blocks are possibly lost in loss record 91 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.804 1061276==    by 0x7BD4C6: sql_load_account(char const*) (sql_player.c:5685)
+==00:00:25:27.804 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.804 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.804 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.804 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.804 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.804 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 112 bytes in 1 blocks are definitely lost in loss record 94 of 212
+==00:00:25:27.804 1061276==    at 0x4846FA3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x3EDD18: do_build(char_data*, char*, int) (buildings.c:213)
+==00:00:25:27.804 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.804 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.804 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 95 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x4100D0: boot_db(int) (db.c:597)
+==00:00:25:27.804 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 96 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x410116: boot_db(int) (db.c:602)
+==00:00:25:27.804 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 97 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x43DD01: ne_init_event_pool() (new_events.c:1865)
+==00:00:25:27.804 1061276==    by 0x43FFC8: ne_init_events() (new_events.c:1886)
+==00:00:25:27.804 1061276==    by 0x4102DD: boot_db(int) (db.c:664)
+==00:00:25:27.804 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 98 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x4B79DC: mail_ensure_pools() (mail.c:99)
+==00:00:25:27.804 1061276==    by 0x4B7F64: scan_mail_file() (mail.c:263)
+==00:00:25:27.804 1061276==    by 0x41031F: boot_db(int) (db.c:696)
+==00:00:25:27.804 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 99 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x4B7A00: mail_ensure_pools() (mail.c:104)
+==00:00:25:27.804 1061276==    by 0x4B7F64: scan_mail_file() (mail.c:263)
+==00:00:25:27.804 1061276==    by 0x41031F: boot_db(int) (db.c:696)
+==00:00:25:27.804 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 100 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x3F75B9: game_loop(int, int) (comm.c:989)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 101 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x2F5959: load_char_into_game(acct_chars*, descriptor_data*) (account.c:1890)
+==00:00:25:27.804 1061276==    by 0x2F8AF5: account_confirm_char(descriptor_data*, char*) (account.c:1117)
+==00:00:25:27.804 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.804 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 102 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x3A9A88: affect_to_char(char_data*, affected_type*) (affects.c:1837)
+==00:00:25:27.804 1061276==    by 0x6539AB: player_load_materialize(char_data*, player_load_result const&) (player_load_materialize.c:500)
+==00:00:25:27.804 1061276==    by 0x2F5982: load_char_into_game(acct_chars*, descriptor_data*) (account.c:1903)
+==00:00:25:27.804 1061276==    by 0x2F8AF5: account_confirm_char(descriptor_data*, char*) (account.c:1117)
+==00:00:25:27.804 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.804 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.804 1061276== 120 bytes in 1 blocks are possibly lost in loss record 103 of 212
+==00:00:25:27.804 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.804 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.804 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.804 1061276==    by 0x4C6542: mm_create(char const*, unsigned long, unsigned long, unsigned int) (mm.c:35)
+==00:00:25:27.804 1061276==    by 0x3AA798: set_obj_affected_extra(obj_data*, int, short, short, unsigned long) (affects.c:2530)
+==00:00:25:27.804 1061276==    by 0x3AA838: set_obj_affected(obj_data*, int, short, short) (affects.c:2553)
+==00:00:25:27.804 1061276==    by 0x4FF367: do_exhume(char_data*, char*, int) (necromancy.c:2503)
+==00:00:25:27.804 1061276==    by 0x4AFB3F: command_interpreter(char_data*, char*) (interp.c:2001)
+==00:00:25:27.804 1061276==    by 0x3F1DBC: process_with_paging(char_data*, char*) (comm.c:553)
+==00:00:25:27.804 1061276==    by 0x3F8CA5: game_loop(int, int) (comm.c:1505)
+==00:00:25:27.804 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.804 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.804 1061276== 
+==00:00:25:27.805 1061276== 159 bytes in 3 blocks are possibly lost in loss record 107 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.805 1061276==    by 0x69FEA3: boot_the_quests() (quest.c:661)
+==00:00:25:27.805 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.805 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.805 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.805 1061276== 184 bytes in 1 blocks are possibly lost in loss record 110 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x2F4E96: allocate_account() (account.c:2713)
+==00:00:25:27.805 1061276==    by 0x2F6D7F: select_accountname(descriptor_data*, char*) (account.c:196)
+==00:00:25:27.805 1061276==    by 0x4FCEFA: nanny(descriptor_data*, char*) (nanny.c:5646)
+==00:00:25:27.805 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.805 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.805 1061276== 188 bytes in 2 blocks are definitely lost in loss record 111 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.805 1061276==    by 0x407AB0: setup_dir(_IO_FILE*, int, int) (db.c:1410)
+==00:00:25:27.805 1061276==    by 0x40F4F4: boot_world(int) (db.c:1265)
+==00:00:25:27.805 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.805 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.805 1061276== 192 bytes in 3 blocks are possibly lost in loss record 114 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x3F1C01: write_to_q(char const*, txt_q*, int) (comm.c:2089)
+==00:00:25:27.805 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.805 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.805 1061276==    by 0x7F95A6: loginlog(int, char const*, ...) (utility.c:1969)
+==00:00:25:27.805 1061276==    by 0x3F6EC3: close_socket(descriptor_data*) (comm.c:2573)
+==00:00:25:27.805 1061276==    by 0x3F859F: game_loop(int, int) (comm.c:1273)
+==00:00:25:27.805 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.805 1061276== 216 bytes in 4 blocks are possibly lost in loss record 118 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.805 1061276==    by 0x7B14C2: sql_load_account_characters(char const*) (sql_player.c:5796)
+==00:00:25:27.805 1061276==    by 0x7BD76D: sql_load_account(char const*) (sql_player.c:5717)
+==00:00:25:27.805 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.805 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.805 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.805 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.805 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.805 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.805 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.805 1061276== 221 bytes in 1 blocks are possibly lost in loss record 119 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.805 1061276==    by 0x6A00B5: boot_the_quests() (quest.c:689)
+==00:00:25:27.805 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.805 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.805 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.805 1061276== 240 bytes in 3 blocks are possibly lost in loss record 120 of 212
+==00:00:25:27.805 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.805 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.805 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.805 1061276==    by 0x69FE8F: boot_the_quests() (quest.c:659)
+==00:00:25:27.805 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.805 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.805 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.805 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.805 1061276== 
+==00:00:25:27.806 1061276== 256 bytes in 4 blocks are possibly lost in loss record 121 of 212
+==00:00:25:27.806 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.806 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.806 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.806 1061276==    by 0x6A0313: boot_the_quests() (quest.c:744)
+==00:00:25:27.806 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.806 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.806 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.806 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.806 1061276== 
+==00:00:25:27.806 1061276== 260 bytes in 5 blocks are possibly lost in loss record 123 of 212
+==00:00:25:27.806 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.806 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.806 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.806 1061276==    by 0x43FD98: add_event_internal(void (*)(char_data*, char_data*, obj_data*, void*), int, char_data*, char_data*, obj_data*, void const*, int, void*, void (*)(void*)) (new_events.c:904)
+==00:00:25:27.806 1061276==    by 0x43FE68: add_event(void (*)(char_data*, char_data*, obj_data*, void*), int, char_data*, char_data*, obj_data*, int, void const*, int) (new_events.c:948)
+==00:00:25:27.806 1061276==    by 0x4392A4: room_event(char_data*, char_data*, obj_data*, void*) (events.c:466)
+==00:00:25:27.806 1061276==    by 0x440976: ne_events() (new_events.c:1612)
+==00:00:25:27.806 1061276==    by 0x3F8F40: game_loop(int, int) (comm.c:1583)
+==00:00:25:27.806 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.806 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.806 1061276== 
+==00:00:25:27.806 1061276== 294 bytes in 6 blocks are possibly lost in loss record 124 of 212
+==00:00:25:27.806 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.806 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.806 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.806 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.806 1061276==    by 0x65259C: (anonymous namespace)::apply_string(char_data*, player_snapshot_string const&) (player_load_materialize.c:123)
+==00:00:25:27.806 1061276==    by 0x6533A9: player_load_materialize(char_data*, player_load_result const&) (player_load_materialize.c:380)
+==00:00:25:27.806 1061276==    by 0x2F5982: load_char_into_game(acct_chars*, descriptor_data*) (account.c:1903)
+==00:00:25:27.806 1061276==    by 0x2F8AF5: account_confirm_char(descriptor_data*, char*) (account.c:1117)
+==00:00:25:27.806 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.806 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.806 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.806 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.806 1061276== 
+==00:00:25:27.806 1061276== 294 bytes in 6 blocks are possibly lost in loss record 125 of 212
+==00:00:25:27.806 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.806 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.806 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.806 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.806 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.806 1061276==    by 0x7B8145: sql_load_player_status(char_data*, int) (sql_player.c:4679)
+==00:00:25:27.806 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.806 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.806 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.806 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.806 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.806 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.806 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.806 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.806 1061276== 
+==00:00:25:27.806 1061276== 294 bytes in 6 blocks are possibly lost in loss record 126 of 212
+==00:00:25:27.806 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.806 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.806 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.806 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.806 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.806 1061276==    by 0x7B8156: sql_load_player_status(char_data*, int) (sql_player.c:4680)
+==00:00:25:27.806 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.806 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.806 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.806 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.806 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.806 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.806 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.806 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.806 1061276== 
+==00:00:25:27.806 1061276== 294 bytes in 6 blocks are possibly lost in loss record 127 of 212
+==00:00:25:27.806 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.806 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.806 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.806 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.806 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.806 1061276==    by 0x7B8167: sql_load_player_status(char_data*, int) (sql_player.c:4681)
+==00:00:25:27.806 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.806 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.806 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.806 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.806 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.806 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.806 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.806 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.806 1061276== 
+==00:00:25:27.806 1061276== 294 bytes in 6 blocks are possibly lost in loss record 128 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.807 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.807 1061276==    by 0x7B889C: sql_load_player_status(char_data*, int) (sql_player.c:4813)
+==00:00:25:27.807 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.807 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.807 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.807 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.807 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.807 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.807 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 294 bytes in 6 blocks are possibly lost in loss record 129 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.807 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.807 1061276==    by 0x7B88B1: sql_load_player_status(char_data*, int) (sql_player.c:4814)
+==00:00:25:27.807 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.807 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.807 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.807 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.807 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.807 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.807 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 324 bytes in 6 blocks are possibly lost in loss record 130 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.807 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.807 1061276==    by 0x7B8123: sql_load_player_status(char_data*, int) (sql_player.c:4677)
+==00:00:25:27.807 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.807 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.807 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.807 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.807 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.807 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.807 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 346 bytes in 1 blocks are possibly lost in loss record 131 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.807 1061276==    by 0x40FD68: boot_db(int) (db.c:498)
+==00:00:25:27.807 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 390 bytes in 3 blocks are possibly lost in loss record 134 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x3F1C28: write_to_q(char const*, txt_q*, int) (comm.c:2090)
+==00:00:25:27.807 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.807 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.807 1061276==    by 0x7F95A6: loginlog(int, char const*, ...) (utility.c:1969)
+==00:00:25:27.807 1061276==    by 0x3F6EC3: close_socket(descriptor_data*) (comm.c:2573)
+==00:00:25:27.807 1061276==    by 0x3F859F: game_loop(int, int) (comm.c:1273)
+==00:00:25:27.807 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 409 bytes in 1 blocks are possibly lost in loss record 138 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.807 1061276==    by 0x40FD41: boot_db(int) (db.c:496)
+==00:00:25:27.807 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 427 bytes in 1 blocks are possibly lost in loss record 139 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.807 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.807 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.807 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.807 1061276==    by 0x40FCF3: boot_db(int) (db.c:492)
+==00:00:25:27.807 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.807 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.807 1061276== 
+==00:00:25:27.807 1061276== 472 bytes in 1 blocks are still reachable in loss record 141 of 212
+==00:00:25:27.807 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x5713F5E: __fopen_internal (iofopen.c:65)
+==00:00:25:27.808 1061276==    by 0x5713F5E: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+==00:00:25:27.808 1061276==    by 0x410CC0: init_cmdlog() (debug.c:82)
+==00:00:25:27.808 1061276==    by 0x3FB369: main (comm.c:537)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 472 bytes in 1 blocks are still reachable in loss record 142 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x5713F5E: __fopen_internal (iofopen.c:65)
+==00:00:25:27.808 1061276==    by 0x5713F5E: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+==00:00:25:27.808 1061276==    by 0x4104AA: boot_db(int) (db.c:525)
+==00:00:25:27.808 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 472 bytes in 1 blocks are still reachable in loss record 143 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x5713F5E: __fopen_internal (iofopen.c:65)
+==00:00:25:27.808 1061276==    by 0x5713F5E: fopen@@GLIBC_2.2.5 (iofopen.c:86)
+==00:00:25:27.808 1061276==    by 0x4104C9: boot_db(int) (db.c:531)
+==00:00:25:27.808 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 480 bytes in 4 blocks are possibly lost in loss record 144 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.808 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.808 1061276==    by 0x7B1486: sql_load_account_characters(char const*) (sql_player.c:5793)
+==00:00:25:27.808 1061276==    by 0x7BD76D: sql_load_account(char const*) (sql_player.c:5717)
+==00:00:25:27.808 1061276==    by 0x2F4490: read_account(acct_entry*) (account.c:2310)
+==00:00:25:27.808 1061276==    by 0x2F46D9: write_account(acct_entry*) (account.c:2403)
+==00:00:25:27.808 1061276==    by 0x2F4723: update_account_iplist(descriptor_data*) (account.c:790)
+==00:00:25:27.808 1061276==    by 0x2F527A: get_account_password(descriptor_data*, char*) (account.c:349)
+==00:00:25:27.808 1061276==    by 0x4FCF01: nanny(descriptor_data*, char*) (nanny.c:5650)
+==00:00:25:27.808 1061276==    by 0x3F8CC4: game_loop(int, int) (comm.c:1513)
+==00:00:25:27.808 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 502 bytes in 1 blocks are possibly lost in loss record 145 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.808 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.808 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.808 1061276==    by 0x40FD1A: boot_db(int) (db.c:494)
+==00:00:25:27.808 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 502 bytes in 6 blocks are possibly lost in loss record 146 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.808 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.808 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.808 1061276==    by 0x7AE559: sql_row_str(char**, int) (sql_player.c:4631)
+==00:00:25:27.808 1061276==    by 0x7B8134: sql_load_player_status(char_data*, int) (sql_player.c:4678)
+==00:00:25:27.808 1061276==    by 0x469BCE: restoreCharOnly(char_data*, char*) (files.c:2903)
+==00:00:25:27.808 1061276==    by 0x389300: GetMIA(char*, char*) (actwiz.c:7684)
+==00:00:25:27.808 1061276==    by 0x4FC47E: enter_game(descriptor_data*) (nanny.c:2807)
+==00:00:25:27.808 1061276==    by 0x2F8B71: account_confirm_char(descriptor_data*, char*) (account.c:1150)
+==00:00:25:27.808 1061276==    by 0x2F8D25: account_player_load_complete(descriptor_data*, player_load_result) (account.c:1951)
+==00:00:25:27.808 1061276==    by 0x3F9133: game_loop(int, int) (comm.c:1630)
+==00:00:25:27.808 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 552 bytes in 1 blocks are possibly lost in loss record 150 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.808 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.808 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.808 1061276==    by 0x40FD8F: boot_db(int) (db.c:500)
+==00:00:25:27.808 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 648 bytes in 9 blocks are indirectly lost in loss record 152 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.808 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.808 1061276==    by 0x40F55A: boot_world(int) (db.c:1268)
+==00:00:25:27.808 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.808 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 650 bytes in 1 blocks are possibly lost in loss record 153 of 212
+==00:00:25:27.808 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.808 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.808 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.808 1061276==    by 0x40FCCC: boot_db(int) (db.c:490)
+==00:00:25:27.808 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.808 1061276== 748 bytes in 1 blocks are possibly lost in loss record 154 of 212
+==00:00:25:27.808 1061276==    at 0x484DB80: realloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.808 1061276==    by 0x4C638E: changemem(void*, unsigned long, char const*, int) (memory.c:226)
+==00:00:25:27.808 1061276==    by 0x4C64E8: __realloc(void*, unsigned long, char const*, int) (memory.c:357)
+==00:00:25:27.808 1061276==    by 0x3F1CDC: write_to_q(char const*, txt_q*, int) (comm.c:2105)
+==00:00:25:27.808 1061276==    by 0x2F60B2: display_account_menu(descriptor_data*, char*) (account.c:381)
+==00:00:25:27.808 1061276==    by 0x490C55: extract_char(char_data*) (handler.c:4931)
+==00:00:25:27.808 1061276==    by 0x3FA443: game_loop(int, int) (comm.c:1978)
+==00:00:25:27.808 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.808 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.808 1061276== 
+==00:00:25:27.809 1061276== 756 bytes in 1 blocks are possibly lost in loss record 155 of 212
+==00:00:25:27.809 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.809 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.809 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.809 1061276==    by 0x40FC7E: boot_db(int) (db.c:486)
+==00:00:25:27.809 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 928 bytes in 15 blocks are indirectly lost in loss record 156 of 212
+==00:00:25:27.809 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.809 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.809 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.809 1061276==    by 0x40F56E: boot_world(int) (db.c:1269)
+==00:00:25:27.809 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.809 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 936 bytes in 9 blocks are possibly lost in loss record 157 of 212
+==00:00:25:27.809 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.809 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.809 1061276==    by 0x69FFC7: boot_the_quests() (quest.c:671)
+==00:00:25:27.809 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.809 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.809 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 1,041 bytes in 1 blocks are possibly lost in loss record 158 of 212
+==00:00:25:27.809 1061276==    at 0x484DB80: realloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C638E: changemem(void*, unsigned long, char const*, int) (memory.c:226)
+==00:00:25:27.809 1061276==    by 0x4C64E8: __realloc(void*, unsigned long, char const*, int) (memory.c:357)
+==00:00:25:27.809 1061276==    by 0x3F1CDC: write_to_q(char const*, txt_q*, int) (comm.c:2105)
+==00:00:25:27.809 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.809 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.809 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.809 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.809 1061276==    by 0x3FA16E: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.809 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 1,045 bytes in 1 blocks are possibly lost in loss record 159 of 212
+==00:00:25:27.809 1061276==    at 0x484DB80: realloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C638E: changemem(void*, unsigned long, char const*, int) (memory.c:226)
+==00:00:25:27.809 1061276==    by 0x4C64E8: __realloc(void*, unsigned long, char const*, int) (memory.c:357)
+==00:00:25:27.809 1061276==    by 0x3F1CDC: write_to_q(char const*, txt_q*, int) (comm.c:2105)
+==00:00:25:27.809 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.809 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.809 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.809 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.809 1061276==    by 0x3FA27E: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.809 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 1,047 bytes in 1 blocks are possibly lost in loss record 160 of 212
+==00:00:25:27.809 1061276==    at 0x484DB80: realloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C638E: changemem(void*, unsigned long, char const*, int) (memory.c:226)
+==00:00:25:27.809 1061276==    by 0x4C64E8: __realloc(void*, unsigned long, char const*, int) (memory.c:357)
+==00:00:25:27.809 1061276==    by 0x3F1CDC: write_to_q(char const*, txt_q*, int) (comm.c:2105)
+==00:00:25:27.809 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.809 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.809 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.809 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.809 1061276==    by 0x3FA05E: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.809 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 1,047 bytes in 1 blocks are possibly lost in loss record 161 of 212
+==00:00:25:27.809 1061276==    at 0x484DB80: realloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C638E: changemem(void*, unsigned long, char const*, int) (memory.c:226)
+==00:00:25:27.809 1061276==    by 0x4C64E8: __realloc(void*, unsigned long, char const*, int) (memory.c:357)
+==00:00:25:27.809 1061276==    by 0x3F1CDC: write_to_q(char const*, txt_q*, int) (comm.c:2105)
+==00:00:25:27.809 1061276==    by 0x3F53F8: send_to_char(char const*, char_data*, int) (comm.c:3717)
+==00:00:25:27.809 1061276==    by 0x3F5571: send_to_char(char const*, char_data*) (comm.c:3698)
+==00:00:25:27.809 1061276==    by 0x80416A: statuslog(int, char const*, ...) (utility.c:1993)
+==00:00:25:27.809 1061276==    by 0x43D561: save_profile_data(char const*, double, double, unsigned int) (new_events.c:2613)
+==00:00:25:27.809 1061276==    by 0x3FA38E: game_loop(int, int) (comm.c:1922)
+==00:00:25:27.809 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 1,224 bytes in 17 blocks are possibly lost in loss record 163 of 212
+==00:00:25:27.809 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.809 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.809 1061276==    by 0x3887EC: read_wizconnect_file() (actwiz.c:7506)
+==00:00:25:27.809 1061276==    by 0x4102A7: boot_db(int) (db.c:660)
+==00:00:25:27.809 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.809 1061276== 1,291 bytes in 23 blocks are possibly lost in loss record 165 of 212
+==00:00:25:27.809 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.809 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.809 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.809 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.809 1061276==    by 0x7FCA7B: boot_desc_data() (utility.c:5192)
+==00:00:25:27.809 1061276==    by 0x40FDF9: boot_db(int) (db.c:507)
+==00:00:25:27.809 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.809 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.809 1061276== 
+==00:00:25:27.810 1061276== 1,485 bytes in 1 blocks are possibly lost in loss record 167 of 212
+==00:00:25:27.810 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.810 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.810 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.810 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.810 1061276==    by 0x40FA83: boot_db(int) (db.c:458)
+==00:00:25:27.810 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.810 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.810 1061276== 
+==00:00:25:27.810 1061276== 1,528 bytes in 1 blocks are possibly lost in loss record 168 of 212
+==00:00:25:27.810 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.810 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.810 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.810 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.810 1061276==    by 0x40FBBB: boot_db(int) (db.c:474)
+==00:00:25:27.810 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.810 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.810 1061276== 
+==00:00:25:27.810 1061276== 1,636 bytes in 1 blocks are possibly lost in loss record 170 of 212
+==00:00:25:27.810 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.810 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.810 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.810 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.810 1061276==    by 0x40FCA5: boot_db(int) (db.c:488)
+==00:00:25:27.810 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.810 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.810 1061276== 
+==00:00:25:27.810 1061276== 1,664 bytes in 26 blocks are possibly lost in loss record 171 of 212
+==00:00:25:27.810 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.810 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.810 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.810 1061276==    by 0x6A013C: boot_the_quests() (quest.c:703)
+==00:00:25:27.810 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.810 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.810 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.810 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.810 1061276== 
+==00:00:25:27.810 1061276== 1,759 bytes in 29 blocks are possibly lost in loss record 173 of 212
+==00:00:25:27.810 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.810 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.810 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.810 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.810 1061276==    by 0x7FCB8A: boot_desc_data() (utility.c:5219)
+==00:00:25:27.810 1061276==    by 0x40FDF9: boot_db(int) (db.c:507)
+==00:00:25:27.810 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.810 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.810 1061276== 
+==00:00:25:27.810 1061276== 2,008 bytes in 3 blocks are possibly lost in loss record 174 of 212
+==00:00:25:27.811 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.811 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.811 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.811 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.811 1061276==    by 0x69FEAF: boot_the_quests() (quest.c:662)
+==00:00:25:27.811 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.811 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.811 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.811 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.811 1061276== 
+==00:00:25:27.811 1061276== 2,140 bytes in 39 blocks are possibly lost in loss record 175 of 212
+==00:00:25:27.811 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.811 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.811 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.811 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.811 1061276==    by 0x7FCB04: boot_desc_data() (utility.c:5206)
+==00:00:25:27.811 1061276==    by 0x40FDF9: boot_db(int) (db.c:507)
+==00:00:25:27.811 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.811 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.811 1061276== 
+==00:00:25:27.811 1061276== 2,434 bytes in 1 blocks are possibly lost in loss record 176 of 212
+==00:00:25:27.811 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.811 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.811 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.811 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.811 1061276==    by 0x40FC57: boot_db(int) (db.c:482)
+==00:00:25:27.811 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.811 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.811 1061276== 
+==00:00:25:27.811 1061276== 2,455 bytes in 1 blocks are possibly lost in loss record 177 of 212
+==00:00:25:27.811 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.811 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.811 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.811 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.811 1061276==    by 0x40FB94: boot_db(int) (db.c:472)
+==00:00:25:27.811 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.811 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.811 1061276== 
+==00:00:25:27.811 1061276== 2,652 bytes in 1 blocks are possibly lost in loss record 178 of 212
+==00:00:25:27.811 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.811 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.811 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.811 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.811 1061276==    by 0x40FAAA: boot_db(int) (db.c:460)
+==00:00:25:27.811 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.811 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.811 1061276== 
+==00:00:25:27.811 1061276== 2,873 bytes in 1 blocks are possibly lost in loss record 179 of 212
+==00:00:25:27.811 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.812 1061276==    by 0x40FC30: boot_db(int) (db.c:480)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 5,200 bytes in 100 blocks are possibly lost in loss record 181 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x43FD98: add_event_internal(void (*)(char_data*, char_data*, obj_data*, void*), int, char_data*, char_data*, obj_data*, void const*, int, void*, void (*)(void*)) (new_events.c:904)
+==00:00:25:27.812 1061276==    by 0x43FE68: add_event(void (*)(char_data*, char_data*, obj_data*, void*), int, char_data*, char_data*, obj_data*, int, void const*, int) (new_events.c:948)
+==00:00:25:27.812 1061276==    by 0x805DCD: add_event<int> (prototypes.h:928)
+==00:00:25:27.812 1061276==    by 0x805DCD: event_weather_change(char_data*, char_data*, obj_data*, void*) (weather.c:797)
+==00:00:25:27.812 1061276==    by 0x440976: ne_events() (new_events.c:1612)
+==00:00:25:27.812 1061276==    by 0x3F8F40: game_loop(int, int) (comm.c:1583)
+==00:00:25:27.812 1061276==    by 0x3FAB43: run_the_game(int, int) (comm.c:836)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 5,456 bytes in 62 blocks are definitely lost in loss record 182 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x40F10C: boot_world(int) (db.c:1170)
+==00:00:25:27.812 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 6,163 bytes in 1 blocks are possibly lost in loss record 184 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.812 1061276==    by 0x40FB1F: boot_db(int) (db.c:466)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 7,135 bytes in 14 blocks are indirectly lost in loss record 185 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.812 1061276==    by 0x40F579: boot_world(int) (db.c:1270)
+==00:00:25:27.812 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 7,425 bytes in 76 blocks are possibly lost in loss record 186 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.812 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.812 1061276==    by 0x308D60: boot_pose_messages() (actcomm.c:1811)
+==00:00:25:27.812 1061276==    by 0x4100A1: boot_db(int) (db.c:590)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 7,450 bytes in 76 blocks are possibly lost in loss record 187 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.812 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.812 1061276==    by 0x308D3C: boot_pose_messages() (actcomm.c:1810)
+==00:00:25:27.812 1061276==    by 0x4100A1: boot_db(int) (db.c:590)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 7,869 bytes in 9 blocks are possibly lost in loss record 188 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x407A0B: fread_string(_IO_FILE*) (db.c:3991)
+==00:00:25:27.812 1061276==    by 0x69FFD7: boot_the_quests() (quest.c:673)
+==00:00:25:27.812 1061276==    by 0x6EF6E3: assign_mobiles() (specs.assign.c:1263)
+==00:00:25:27.812 1061276==    by 0x4105D7: boot_db(int) (db.c:613)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 9,143 (432 direct, 8,711 indirect) bytes in 6 blocks are definitely lost in loss record 191 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x40F55A: boot_world(int) (db.c:1268)
+==00:00:25:27.812 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 9,410 bytes in 1 blocks are possibly lost in loss record 192 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.812 1061276==    by 0x40FAF8: boot_db(int) (db.c:464)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.812 1061276== 13,593 bytes in 1 blocks are possibly lost in loss record 193 of 212
+==00:00:25:27.812 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.812 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.812 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.812 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.812 1061276==    by 0x40FB46: boot_db(int) (db.c:468)
+==00:00:25:27.812 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.812 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.812 1061276== 
+==00:00:25:27.813 1061276== 14,642 bytes in 1 blocks are possibly lost in loss record 194 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.813 1061276==    by 0x40FB6D: boot_db(int) (db.c:470)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 14,734 bytes in 1 blocks are possibly lost in loss record 195 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x408A5D: file_to_string(char const*) (db.c:4283)
+==00:00:25:27.813 1061276==    by 0x40FAD1: boot_db(int) (db.c:462)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 25,694 bytes in 299 blocks are definitely lost in loss record 198 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x308404: boot_social_messages() (actcomm.c:1559)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 26,066 bytes in 325 blocks are definitely lost in loss record 199 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x308497: boot_social_messages() (actcomm.c:1572)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 26,792 bytes in 291 blocks are definitely lost in loss record 200 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x3084DB: boot_social_messages() (actcomm.c:1576)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 27,015 bytes in 45 blocks are definitely lost in loss record 201 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x40F1B4: boot_world(int) (db.c:1177)
+==00:00:25:27.813 1061276==    by 0x40FEEF: boot_db(int) (db.c:545)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 27,903 bytes in 326 blocks are definitely lost in loss record 202 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x308453: boot_social_messages() (actcomm.c:1569)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 28,004 bytes in 326 blocks are definitely lost in loss record 203 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x308426: boot_social_messages() (actcomm.c:1561)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 28,520 bytes in 315 blocks are definitely lost in loss record 204 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x3084B9: boot_social_messages() (actcomm.c:1574)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 29,896 bytes in 362 blocks are definitely lost in loss record 205 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x3083E2: boot_social_messages() (actcomm.c:1558)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 29,972 bytes in 326 blocks are definitely lost in loss record 206 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x308266: fread_action(_IO_FILE*) (actcomm.c:1459)
+==00:00:25:27.813 1061276==    by 0x308475: boot_social_messages() (actcomm.c:1570)
+==00:00:25:27.813 1061276==    by 0x41005F: boot_db(int) (db.c:579)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 186,077 bytes in 2,545 blocks are possibly lost in loss record 210 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x7F7EB5: str_dup(char const*) (utility.c:519)
+==00:00:25:27.813 1061276==    by 0x6957CF: parse_property(property*, char*) (properties.c:147)
+==00:00:25:27.813 1061276==    by 0x695866: load_properties(property*) (properties.c:169)
+==00:00:25:27.813 1061276==    by 0x695B8B: initialize_properties() (properties.c:235)
+==00:00:25:27.813 1061276==    by 0x3FB35F: main (comm.c:533)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 1,114,945 bytes in 17 blocks are possibly lost in loss record 211 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x388815: read_wizconnect_file() (actwiz.c:7507)
+==00:00:25:27.813 1061276==    by 0x4102A7: boot_db(int) (db.c:660)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== 1,114,945 bytes in 17 blocks are possibly lost in loss record 212 of 212
+==00:00:25:27.813 1061276==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==00:00:25:27.813 1061276==    by 0x4C62DC: getmem(unsigned long, char const*, char const*, int) (memory.c:163)
+==00:00:25:27.813 1061276==    by 0x4C64D6: __malloc(unsigned long, char const*, char const*, int) (memory.c:348)
+==00:00:25:27.813 1061276==    by 0x388873: read_wizconnect_file() (actwiz.c:7511)
+==00:00:25:27.813 1061276==    by 0x4102A7: boot_db(int) (db.c:660)
+==00:00:25:27.813 1061276==    by 0x3FA585: run_the_game(int, int) (comm.c:619)
+==00:00:25:27.813 1061276==    by 0x3FB372: main (comm.c:539)
+==00:00:25:27.813 1061276== 
+==00:00:25:27.813 1061276== LEAK SUMMARY:
+==00:00:25:27.813 1061276==    definitely lost: 256,287 bytes in 2,690 blocks
+==00:00:25:27.813 1061276==    indirectly lost: 8,711 bytes in 38 blocks
+==00:00:25:27.814 1061276==      possibly lost: 2,545,904 bytes in 3,138 blocks
+==00:00:25:27.814 1061276==    still reachable: 1,480 bytes in 4 blocks
+==00:00:25:27.814 1061276==         suppressed: 210,882 bytes in 163 blocks
+==00:00:25:27.814 1061276== 
+==00:00:25:27.814 1061276== ERROR SUMMARY: 20 errors from 20 contexts (suppressed: 0 from 0)
+--00:00:25:27.814 1061276-- 
+--00:00:25:27.814 1061276-- used_suppression:     48 mariadb-client-charset-cache /home/aiwithapex/projects/duris/scripts/valgrind.supp:95 suppressed: 187,299 bytes in 114 blocks
+--00:00:25:27.814 1061276-- used_suppression:     35 gnutls-global-init-one-time-state /home/aiwithapex/projects/duris/scripts/valgrind.supp:43 suppressed: 23,583 bytes in 49 blocks
+==00:00:25:27.814 1061276== 
+==00:00:25:27.814 1061276== ERROR SUMMARY: 20 errors from 20 contexts (suppressed: 0 from 0)
