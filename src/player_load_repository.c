@@ -685,58 +685,57 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"AND owner_revision.owner_id=own.owner_id AND "
 		"owner_revision.owner_context_id=own.owner_context_id WHERE pi.pid=" +
 		pid + " ORDER BY pi.id";
-	if (!load_rows(
-		    connection, item_sql, result,
-		    [&](MYSQL_ROW row)
-		    {
-			    if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
-			    {
-				    result->outcome = player_load_outcome::limit_exceeded;
-				    return false;
-			    }
-			    player_item_snapshot item = {};
-			    player_load_item_identity identity = {};
-			    const item_row_outcome parsed =
-				    parse_item_payload(row, result, &item, &identity);
-			    if (parsed == item_row_outcome::invalid)
-				    return false;
-			    if (parsed == item_row_outcome::skipped)
-			    {
-				    try
-				    {
-					    stale_database_ids.insert(identity.database_id);
-					    ++result->stale_item_rows;
-				    }
-				    catch (const std::bad_alloc &)
-				    {
-					    result->outcome =
-						    player_load_outcome::retryable_failure;
-					    return false;
-				    }
-				    return true;
-			    }
-			    if (stale_database_ids.find(identity.database_id) !=
-				stale_database_ids.end())
-				    return false;
-			    if (item_by_database_id.find(identity.database_id) !=
-					item_by_database_id.end() ||
-				item_by_uid.find(identity.item_uid) != item_by_uid.end())
-				    return false;
-			    try
-			    {
-				    const size_t index = result->snapshot.items.size();
-				    item_by_database_id.emplace(identity.database_id, index);
-				    item_by_uid.emplace(identity.item_uid, index);
-				    result->snapshot.items.push_back(std::move(item));
-				    result->item_identities.push_back(identity);
-			    }
-			    catch (const std::bad_alloc &)
-			    {
-				    result->outcome = player_load_outcome::retryable_failure;
-				    return false;
-			    }
-			    return true;
-		    }))
+	if (!load_rows(connection, item_sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
+			       {
+				       result->outcome = player_load_outcome::limit_exceeded;
+				       return false;
+			       }
+			       player_item_snapshot item = {};
+			       player_load_item_identity identity = {};
+			       const item_row_outcome parsed =
+				       parse_item_payload(row, result, &item, &identity);
+			       if (parsed == item_row_outcome::invalid)
+				       return false;
+			       if (parsed == item_row_outcome::skipped)
+			       {
+				       try
+				       {
+					       stale_database_ids.insert(identity.database_id);
+					       ++result->stale_item_rows;
+				       }
+				       catch (const std::bad_alloc &)
+				       {
+					       result->outcome =
+						       player_load_outcome::retryable_failure;
+					       return false;
+				       }
+				       return true;
+			       }
+			       if (stale_database_ids.find(identity.database_id) !=
+				   stale_database_ids.end())
+				       return false;
+			       if (item_by_database_id.find(identity.database_id) !=
+					   item_by_database_id.end() ||
+				   item_by_uid.find(identity.item_uid) != item_by_uid.end())
+				       return false;
+			       try
+			       {
+				       const size_t index = result->snapshot.items.size();
+				       item_by_database_id.emplace(identity.database_id, index);
+				       item_by_uid.emplace(identity.item_uid, index);
+				       result->snapshot.items.push_back(std::move(item));
+				       result->item_identities.push_back(identity);
+			       }
+			       catch (const std::bad_alloc &)
+			       {
+				       result->outcome = player_load_outcome::retryable_failure;
+				       return false;
+			       }
+			       return true;
+		       }))
 		return false;
 
 	std::vector<bool> promoted;
