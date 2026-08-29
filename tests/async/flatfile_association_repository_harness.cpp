@@ -70,6 +70,9 @@ int main(int argc, char **argv)
 	require(flatfile_association_establish(root.string(), { source }, &error) ==
 			flatfile_association_result::already_exists,
 		"association establishment retry was not idempotent");
+	require(flatfile_association_save(root.string(), source, &error) ==
+			flatfile_association_result::unchanged,
+		"unchanged association save advanced authority");
 	require(flatfile_association_list(root.string(), &records, &error) ==
 				flatfile_association_result::ok &&
 			records.size() == 1 && records[0].members.size() == 2 &&
@@ -97,6 +100,41 @@ int main(int argc, char **argv)
 	require(flatfile_association_establish(invalid_root.string(), { bad_top }, &error) ==
 			flatfile_association_result::invalid,
 		"inconsistent top-fragger aggregate was accepted");
+
+	auto updated = source;
+	updated.prestige = 101;
+	updated.members[1].debt = 51;
+	require(flatfile_association_save(root.string(), updated, &error) ==
+			flatfile_association_result::ok,
+		"association update failed: " + error);
+	require(flatfile_association_list(root.string(), &records, &error) ==
+				flatfile_association_result::ok &&
+			records.size() == 1 && records[0].prestige == 101 &&
+			records[0].revision == 10 && records[0].members[0].debt == 51 &&
+			records[0].members[0].revision == 5 && records[0].members[1].revision == 2,
+		"association update did not preserve and advance revisions exactly");
+	auto duplicate_save = source;
+	duplicate_save.association_id = 8;
+	duplicate_save.name = "Duplicate Member Guild";
+	require(flatfile_association_save(root.string(), duplicate_save, &error) ==
+			flatfile_association_result::invalid,
+		"association save accepted a member PID owned by another guild");
+	auto second = source;
+	second.association_id = 8;
+	second.name = "Second Guild";
+	second.frags = 0;
+	second.top_frags = 0;
+	second.top_fragger.clear();
+	second.members.clear();
+	require(flatfile_association_save(root.string(), second, &error) ==
+			flatfile_association_result::ok,
+		"new association save failed: " + error);
+	require(flatfile_association_erase(root.string(), 8, &error) ==
+			flatfile_association_result::ok,
+		"association erase failed: " + error);
+	require(flatfile_association_erase(root.string(), 8, &error) ==
+			flatfile_association_result::unchanged,
+		"association erase retry was not idempotent");
 
 	flatfile_authority_operation operation;
 	{
@@ -126,7 +164,7 @@ int main(int argc, char **argv)
 				flatfile_association_result::ok &&
 			records[0].members.size() == 1 && records[0].members[0].pid == 2 &&
 			records[0].frags == 300 && records[0].top_frags == 0 &&
-			records[0].top_fragger.empty() && records[0].revision == 10,
+			records[0].top_fragger.empty() && records[0].revision == 11,
 		"association removal did not update membership and frag aggregates");
 	{
 		flatfile_authority_lock lock;
@@ -152,6 +190,12 @@ int main(int argc, char **argv)
 	require(flatfile_association_list(root.string(), &records, &error) ==
 			flatfile_association_result::invalid,
 		"corrupt association authority was exposed");
+	require(flatfile_association_save(root.string(), source, &error) ==
+			flatfile_association_result::invalid,
+		"association save overwrote corrupt authority");
+	require(flatfile_association_erase(root.string(), 7, &error) ==
+			flatfile_association_result::invalid,
+		"association erase overwrote corrupt authority");
 	std::cout << "flat-file association repository passed\n";
 	return 0;
 }

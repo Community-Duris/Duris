@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "assocs.h"
 #include <string.h>
+#include <strings.h>
 #include "alliances.h"
 #include "epic.h"
 #include "files.h"
@@ -19,6 +20,16 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "safe_format.h"
+
+#ifdef __NO_MYSQL__
+#include "flatfile_association_repository.h"
+#include "flatfile_identity_repository.h"
+#include "persistence_mode.h"
+
+#include <algorithm>
+#include <limits.h>
+#include <vector>
+#endif
 
 // External variables & functions
 extern P_index mob_index;
@@ -72,6 +83,9 @@ P_Guild get_guild_from_id(int id_num)
 
 void sql_update_assoc_table()
 {
+#ifdef __NO_MYSQL__
+	return;
+#else
 	int i, j;
 	P_Guild guild;
 	string name;
@@ -117,6 +131,7 @@ void sql_update_assoc_table()
 		if (j > 20)
 			break;
 	}
+#endif
 }
 
 void Guild::add_points_from_epics(P_char ch, int epics, int epic_type)
@@ -462,14 +477,211 @@ Guild::Guild()
 
 void Guild::initialize()
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+		fatal_boot_error("associations", "flat-file state root is unavailable");
+	std::string error;
+	std::vector<flatfile_association_record> records;
+	const auto listed = flatfile_association_list(root, &records, &error);
+	if (listed == flatfile_association_result::not_found)
+	{
+		int missing = 0;
+		for (int id = 1; id < MAX_ASC && missing < 20; ++id)
+			missing = load_guild(id) ? 0 : missing + 1;
+		if (!guild_list)
+		{
+			const auto established = flatfile_association_establish(root, {}, &error);
+			if (established != flatfile_association_result::ok &&
+			    established != flatfile_association_result::already_exists)
+				fatal_boot_error(
+					"associations",
+					"could not establish empty flat guild authority: %s",
+					error.c_str());
+			return;
+		}
+		size_t legacy_count = 0;
+		for (P_Guild guild = guild_list; guild; guild = guild->next())
+		{
+			++legacy_count;
+			guild->save();
+		}
+		records.clear();
+		error.clear();
+		if (flatfile_association_list(root, &records, &error) !=
+			    flatfile_association_result::ok ||
+		    records.size() != legacy_count)
+			fatal_boot_error("associations",
+					 "could not import historical guild files: %s",
+					 error.c_str());
+		return;
+	}
+	if (listed != flatfile_association_result::ok)
+		fatal_boot_error("associations", "could not load flat guild authority: %s",
+				 error.c_str());
+
+	for (const auto &record : records)
+	{
+		if (!record.association_id || record.association_id >= MAX_ASC ||
+		    record.racewar > MAX_RACEWAR || record.prestige > ULONG_MAX ||
+		    record.construction > ULONG_MAX || record.frags < LONG_MIN ||
+		    record.frags > LONG_MAX || record.top_frags < 0 || record.top_frags > LONG_MAX)
+			fatal_boot_error("associations", "flat guild %u has invalid runtime values",
+					 record.association_id);
+		P_Guild guild = new Guild();
+		guild->id_number = record.association_id;
+		strlcpy(guild->name, record.name.c_str(), sizeof(guild->name));
+		guild->racewar = record.racewar;
+		guild->bits = record.bits;
+		guild->prestige = record.prestige;
+		guild->construction = record.construction;
+		guild->platinum = record.platinum;
+		guild->gold = record.gold;
+		guild->silver = record.silver;
+		guild->copper = record.copper;
+		guild->frags.frags = record.frags;
+		guild->frags.top_frags = record.top_frags;
+		for (size_t rank = 0; rank < record.ranks.size(); ++rank)
+			strlcpy(guild->titles[rank], record.ranks[rank].c_str(),
+				sizeof(guild->titles[rank]));
+
+		P_member tail = NULL;
+		for (const auto &stored_member : record.members)
+		{
+			flatfile_identity_record identity;
+			error.clear();
+			if (flatfile_identity_lookup_pid(root, stored_member.pid, &identity,
+							 &error) != flatfile_identity_result::ok ||
+			    !identity.active ||
+			    strcasecmp(identity.name.c_str(), stored_member.name.c_str()))
+				fatal_boot_error(
+					"associations",
+					"flat guild %u member %u has no matching active identity: %s",
+					record.association_id, stored_member.pid, error.c_str());
+			P_member member = new guild_member();
+			strlcpy(member->name, identity.name.c_str(), sizeof(member->name));
+			member->bits = stored_member.bits;
+			member->debt = stored_member.debt;
+			member->online_status = GSTAT_OFFLINE;
+			member->next = NULL;
+			if (tail)
+				tail->next = member;
+			else
+				guild->members = member;
+			tail = member;
+			++guild->member_count;
+		}
+
+		guild->frags.topfragger[0] = '\0';
+		if (!record.top_fragger.empty())
+		{
+			flatfile_identity_record identity;
+			error.clear();
+			if (flatfile_identity_lookup_name(root, record.top_fragger, &identity,
+							  &error) != flatfile_identity_result::ok)
+				fatal_boot_error("associations",
+						 "flat guild %u top fragger has no identity: %s",
+						 record.association_id, error.c_str());
+			strlcpy(guild->frags.topfragger, identity.name.c_str(),
+				sizeof(guild->frags.topfragger));
+		}
+		guild->next_guild = guild_list;
+		guild_list = guild;
+	}
+#else
 	sql_load_all_guilds();
 #endif
 }
 
 void Guild::save()
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+	{
+		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+				  "flat guild save has no state root");
+		return;
+	}
+	update_online_members();
+	std::string error;
+	std::vector<flatfile_association_record> records;
+	const auto listed = flatfile_association_list(root, &records, &error);
+	if (listed != flatfile_association_result::ok &&
+	    listed != flatfile_association_result::not_found)
+	{
+		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+				  "flat guild read failed: %s", error.c_str());
+		return;
+	}
+	const flatfile_association_record *existing = NULL;
+	if (listed == flatfile_association_result::ok)
+	{
+		auto found = std::lower_bound(records.begin(), records.end(), id_number,
+					      [](const auto &entry, uint32_t id)
+					      { return entry.association_id < id; });
+		if (found != records.end() && found->association_id == id_number)
+			existing = &*found;
+	}
+
+	flatfile_association_record record = {};
+	record.association_id = id_number;
+	record.name = name;
+	record.racewar = racewar;
+	record.bits = bits;
+	record.prestige = prestige;
+	record.construction = construction;
+	record.platinum = platinum;
+	record.gold = gold;
+	record.silver = silver;
+	record.copper = copper;
+	record.frags = frags.frags;
+	record.top_frags = frags.top_frags;
+	record.top_fragger = frags.topfragger;
+	for (size_t rank = 0; rank < record.ranks.size(); ++rank)
+		record.ranks[rank] = titles[rank];
+
+	for (P_member current = members; current; current = current->next)
+	{
+		const int pid = sql_get_player_pid(current->name);
+		if (pid <= 0)
+		{
+			persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+					  "flat guild member identity is unavailable: %s",
+					  current->name);
+			return;
+		}
+		flatfile_association_member_record member = {};
+		member.pid = pid;
+		member.name = current->name;
+		member.bits = current->bits;
+		member.debt = current->debt;
+		member.online_status = current->online_status;
+		if (existing)
+		{
+			auto stored = std::lower_bound(existing->members.begin(),
+						       existing->members.end(), member.pid,
+						       [](const auto &entry, uint32_t candidate)
+						       { return entry.pid < candidate; });
+			if (stored != existing->members.end() && stored->pid == member.pid)
+				member.contributed_frags = stored->contributed_frags;
+		}
+		for (P_char live = character_list; live; live = live->next)
+			if (IS_PC(live) && GET_PID(live) == pid && GET_ASSOC(live) == this)
+			{
+				member.contributed_frags = GET_FRAGS(live);
+				break;
+			}
+		record.members.push_back(std::move(member));
+	}
+
+	error.clear();
+	const auto saved = flatfile_association_save(root, record, &error);
+	if (saved != flatfile_association_result::ok &&
+	    saved != flatfile_association_result::unchanged)
+		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+				  "flat guild save failed: %s", error.c_str());
+#else
 	if (!sql_save_guild(this))
 		debug("Guild::save: sql_save_guild failed for guild %u", id_number);
 #endif
@@ -480,8 +692,8 @@ bool Guild::load_guild(int guild_num)
 	P_Guild new_guild;
 	P_member last_member, new_member;
 	FILE *file;
-	char filename[MAX_STR_NORMAL], buf[MAX_STR_NORMAL], mem_name[MAX_NAME_LENGTH + 1];
-	int mem_bits, mem_debt;
+	char filename[MAX_STR_NORMAL], buf[MAX_STR_NORMAL], mem_name[MAX_NAME_LENGTH + 2];
+	unsigned int mem_bits, mem_debt;
 
 	snprintf(filename, MAX_STR_NORMAL, "%sasc.%u", ASC_DIR, guild_num);
 	file = fopen(filename, "r");
@@ -492,41 +704,63 @@ bool Guild::load_guild(int guild_num)
 	new_guild = new Guild();
 
 	// Get the guild name.
-	REQUIRED_FGETS(new_guild->name, ASC_MAX_STR, file);
-	// Cut the carriage return off.
-	*strchrnul(new_guild->name, '\n') = '\0';
+	REQUIRED_FGETS(buf, sizeof(buf), file);
+	char *newline = strchr(buf, '\n');
+	if (!newline || static_cast<size_t>(newline - buf) >= sizeof(new_guild->name))
+		fatal_boot_error("associations", "invalid guild name in %s", filename);
+	*newline = '\0';
+	strlcpy(new_guild->name, buf, sizeof(new_guild->name));
 	// Then the guild number and frag info.
-	REQUIRED_FSCANF(file, "%u %ld %ld %s\n", &(new_guild->racewar), &(new_guild->frags.frags),
-			&(new_guild->frags.top_frags), new_guild->frags.topfragger);
+	REQUIRED_FGETS(buf, sizeof(buf), file);
+	char parsed_top[MAX_NAME_LENGTH + 2] = {};
+	char extra = '\0';
+	const int frag_fields = sscanf(buf, "%u %ld %ld %13s %c", &(new_guild->racewar),
+				       &(new_guild->frags.frags), &(new_guild->frags.top_frags),
+				       parsed_top, &extra);
+	if (frag_fields < 3 || frag_fields > 4 || strlen(parsed_top) > MAX_NAME_LENGTH ||
+	    new_guild->racewar > MAX_RACEWAR || new_guild->frags.top_frags < 0 ||
+	    ((frag_fields == 3) != (new_guild->frags.top_frags == 0)))
+		fatal_boot_error("associations", "invalid frag fields in %s", filename);
+	strlcpy(new_guild->frags.topfragger, parsed_top, sizeof(new_guild->frags.topfragger));
 
 	new_guild->id_number = guild_num;
 
 	// Then get the default guild titles.
 	for (int i = 0; i < ASC_NUM_RANKS; i++)
 	{
-		REQUIRED_FGETS(buf, ASC_MAX_STR_RANK + 1, file);
-		// Cut the carriage return off.
-		buf[strlen(buf) - 1] = '\0';
+		REQUIRED_FGETS(buf, sizeof(buf), file);
+		newline = strchr(buf, '\n');
+		if (!newline || static_cast<size_t>(newline - buf) >= sizeof(new_guild->titles[i]))
+			fatal_boot_error("associations", "invalid rank title in %s", filename);
+		*newline = '\0';
 		checked_snprintf(new_guild->titles[i], sizeof(new_guild->titles[i]), "%s", buf);
 	}
 	// Then get the guild bits, prestige and construction.
 	REQUIRED_FGETS(buf, MAX_STR_NORMAL, file);
-
-	sscanf(buf, "%u %lu %lu\n", &new_guild->bits, &new_guild->prestige,
-	       &new_guild->construction);
+	if (sscanf(buf, "%u %lu %lu %c", &new_guild->bits, &new_guild->prestige,
+		   &new_guild->construction, &extra) != 3)
+		fatal_boot_error("associations", "invalid guild totals in %s", filename);
 
 	// Then get the money for the guild...
-	REQUIRED_FSCANF(file, "%u %u %u %u\n", &(new_guild->platinum), &(new_guild->gold),
-			&(new_guild->silver), &(new_guild->copper));
+	REQUIRED_FGETS(buf, sizeof(buf), file);
+	if (sscanf(buf, "%u %u %u %u %c", &(new_guild->platinum), &(new_guild->gold),
+		   &(new_guild->silver), &(new_guild->copper), &extra) != 4)
+		fatal_boot_error("associations", "invalid guild money in %s", filename);
 
 	// Then get members.
 	last_member = NULL;
-	while (fscanf(file, "%s %d %d\n", mem_name, &mem_bits, &mem_debt) == 3)
+	while (fgets(buf, sizeof(buf), file))
 	{
+		if (!strchr(buf, '\n') && !feof(file))
+			fatal_boot_error("associations", "oversized member row in %s", filename);
+		if (sscanf(buf, "%13s %u %u %c", mem_name, &mem_bits, &mem_debt, &extra) != 3 ||
+		    strlen(mem_name) > MAX_NAME_LENGTH)
+			fatal_boot_error("associations", "invalid member row in %s", filename);
 		new_member = new guild_member();
-		snprintf(new_member->name, sizeof(new_member->name), "%s", mem_name);
+		strlcpy(new_member->name, mem_name, sizeof(new_member->name));
 		new_member->bits = mem_bits;
 		new_member->debt = mem_debt;
+		new_member->online_status = GSTAT_OFFLINE;
 		new_member->next = NULL;
 
 		if (last_member == NULL)
@@ -542,6 +776,8 @@ bool Guild::load_guild(int guild_num)
 
 		new_guild->member_count++;
 	}
+	if (ferror(file))
+		fatal_boot_error("associations", "could not finish reading %s", filename);
 	fclose(file);
 
 	new_guild->next_guild = guild_list;
@@ -565,6 +801,18 @@ Guild::~Guild()
 	}
 
 	sever_alliance(this);
+
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto erased = root ? flatfile_association_erase(root, id_number, &error) :
+				   flatfile_association_result::invalid;
+	if (erased != flatfile_association_result::ok &&
+	    erased != flatfile_association_result::unchanged &&
+	    erased != flatfile_association_result::not_found)
+		persistence_alert(AVATAR, "associations", name, "none", "none", "delete",
+				  "flat guild delete failed: %s", error.c_str());
+#endif
 
 	snprintf(filename, MAX_STRING_LENGTH, "%sasc.%u", ASC_DIR, id_number);
 	unlink(filename);
@@ -647,6 +895,7 @@ bool Guild::add_member(P_char ch, int rank)
 	strcpy(last_member->name, GET_NAME(ch));
 	last_member->bits = GET_A_BITS(ch);
 	last_member->debt = 0;
+	last_member->online_status = ch->desc ? GSTAT_ONLINE : GSTAT_LINKDEAD;
 	last_member->next = NULL;
 	member_count++;
 
@@ -1574,6 +1823,41 @@ void do_gmotd(P_char ch, char *argument, int /*cmd*/)
 
 void do_prestige(P_char ch, char * /*argument*/, int /*cmd*/)
 {
+#ifdef __NO_MYSQL__
+	std::vector<P_Guild> guilds;
+	for (P_Guild guild = guild_list; guild; guild = guild->next())
+		guilds.push_back(guild);
+	if (guilds.empty())
+	{
+		send_to_char("There are no prestigious associations.\n", ch);
+		return;
+	}
+	std::sort(guilds.begin(), guilds.end(),
+		  [](P_Guild left, P_Guild right)
+		  {
+			  if (left->get_prestige() != right->get_prestige())
+				  return left->get_prestige() > right->get_prestige();
+			  return left->get_id() < right->get_id();
+		  });
+	const int threshold = get_property("prestige.list.viewThreshold", 500);
+	send_to_char("&+bPrestigious Associations\n"
+		     "&+W--------------------------------------------------------------\n",
+		     ch);
+	for (P_Guild guild : guilds)
+	{
+		if (!IS_TRUSTED(ch) && threshold > 0 &&
+		    guild->get_prestige() < static_cast<unsigned long>(threshold))
+			continue;
+		const std::string name = pad_ansi(trim(guild->get_name(), " \t\n").c_str(), 40);
+		if (IS_TRUSTED(ch))
+			send_to_char_f(ch, "&+W%2u. &n%s &n(&+b%8lu&n:&+W%8lu&n)\n",
+				       guild->get_id(), name.c_str(), guild->get_prestige(),
+				       guild->get_construction());
+		else
+			send_to_char_f(ch, "%s\n", name.c_str());
+	}
+	return;
+#else
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	char buf[MAX_STRING_LENGTH];
@@ -1629,6 +1913,7 @@ void do_prestige(P_char ch, char * /*argument*/, int /*cmd*/)
 		send_to_char(buf, ch);
 	}
 	mysql_free_result(res);
+#endif
 }
 
 // This converts a string to money values.
@@ -2542,6 +2827,7 @@ void Guild::ostracize(P_char member, char *target)
 	strcpy(new_member->name, target);
 	new_member->bits = A_ENEMY;
 	new_member->debt = 0;
+	new_member->online_status = GSTAT_OFFLINE;
 	new_member->next = members;
 	members = new_member;
 	member_count++;

@@ -571,6 +571,36 @@
   database-only or incomplete persistence behavior still requires focused audit; the
   global incomplete-domain boot fence remains.
 
+### 2026-08-29 - restored live guild authority without MySQL
+
+- **Concrete gap:** the historical flat-file implementation loaded and saved guild state
+  through `Guild::initialize()` and `Guild::save()`, but both hooks had been changed to do
+  nothing in a client-free build. Guild creation and every later mutation therefore lost
+  their state, normal boot loaded no guilds, deletion did not affect the newer flat
+  authority, and the prestige list still executed SQL.
+- **Restoration:** client-free guild boot, mutation, creation, deletion, and prestige
+  display now use the existing association catalog already present in this worktree.
+  Missing authority establishes an empty catalog or imports the historical `asc.*` files;
+  the old parser was bounded and corrected so a legitimate empty top-fragger field cannot
+  consume the first rank title. Catalog materialization resolves canonical member IDs back
+  to their player-name case and fails boot on corrupt or mismatched authority. Saves and
+  deletes retain the catalog's existing locking, checksums, atomic publication, revisions,
+  and cross-guild PID uniqueness. Database-backed guild behavior remains unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_association_repository.py`
+  covers unchanged and changed saves, member/association revisions, create, delete retry,
+  duplicate-member refusal, corruption read/write refusal, historical-parser safety, and
+  the preprocessed live no-MySQL routes. Character-deletion repository and manifest tests
+  still pass with the same association authority.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_character_delete.py`,
+  `python3 tests/async/test_flatfile_character_delete_manifest.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** core guild state is now durable and loadable without MySQL. The
+  historically database-only guild transaction ledger is still the only executable SQL
+  cluster in client-free `assocs.c`; alliances, guildhalls, and outposts remain separate
+  demonstrated gaps. The global incomplete-domain boot fence therefore remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

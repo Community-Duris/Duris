@@ -371,6 +371,50 @@ bool catalog_equal(association_catalog left, association_catalog right)
 	return encode_catalog(left, &left_bytes) && encode_catalog(right, &right_bytes) &&
 	       left_bytes == right_bytes;
 }
+
+bool member_content_equal(const flatfile_association_member_record &left,
+			  const flatfile_association_member_record &right)
+{
+	return left.pid == right.pid && left.name == right.name && left.bits == right.bits &&
+	       left.debt == right.debt && left.online_status == right.online_status &&
+	       left.contributed_frags == right.contributed_frags;
+}
+
+bool association_content_equal(const flatfile_association_record &left,
+			       const flatfile_association_record &right)
+{
+	if (left.association_id != right.association_id || left.name != right.name ||
+	    left.racewar != right.racewar || left.bits != right.bits ||
+	    left.prestige != right.prestige || left.construction != right.construction ||
+	    left.platinum != right.platinum || left.gold != right.gold ||
+	    left.silver != right.silver || left.copper != right.copper ||
+	    left.frags != right.frags || left.top_frags != right.top_frags ||
+	    left.top_fragger != right.top_fragger || left.ranks != right.ranks ||
+	    left.members.size() != right.members.size())
+		return false;
+	for (size_t index = 0; index < left.members.size(); ++index)
+		if (!member_content_equal(left.members[index], right.members[index]))
+			return false;
+	return true;
+}
+
+bool normalize_record(flatfile_association_record *record)
+{
+	if (!record)
+		return false;
+	try
+	{
+		record->top_fragger = canonical_name(record->top_fragger);
+		for (auto &member : record->members)
+			member.name = canonical_name(member.name);
+		std::sort(record->members.begin(), record->members.end(), member_less);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
 } // namespace
 
 flatfile_association_result
@@ -441,6 +485,139 @@ flatfile_association_list(const std::string &root,
 		return loaded;
 	*associations = std::move(catalog.associations);
 	return flatfile_association_result::ok;
+}
+
+flatfile_association_result
+flatfile_association_save(const std::string &root, const flatfile_association_record &association,
+			  std::string *error)
+{
+	if (root.empty())
+		return flatfile_association_result::invalid;
+	flatfile_association_record desired;
+	try
+	{
+		desired = association;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (!normalize_record(&desired))
+		return flatfile_association_result::io_error;
+	desired.revision = 1;
+	for (auto &member : desired.members)
+		member.revision = 1;
+	association_catalog validation;
+	try
+	{
+		validation.associations = { desired };
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (!valid_catalog(validation))
+		return flatfile_association_result::invalid;
+
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+
+	association_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	const bool new_catalog = loaded == flatfile_association_result::not_found;
+	if (!new_catalog && loaded != flatfile_association_result::ok)
+		return loaded;
+
+	auto existing = std::lower_bound(catalog.associations.begin(), catalog.associations.end(),
+					 desired, association_less);
+	if (existing != catalog.associations.end() &&
+	    existing->association_id == desired.association_id)
+	{
+		for (auto &member : desired.members)
+		{
+			auto previous = std::lower_bound(existing->members.begin(),
+							 existing->members.end(), member.pid,
+							 [](const auto &entry, uint32_t pid)
+							 { return entry.pid < pid; });
+			if (previous == existing->members.end() || previous->pid != member.pid)
+				continue;
+			member.revision = previous->revision;
+			if (!member_content_equal(member, *previous))
+			{
+				if (member.revision == std::numeric_limits<uint64_t>::max())
+					return flatfile_association_result::conflict;
+				++member.revision;
+			}
+		}
+		if (association_content_equal(desired, *existing))
+			return flatfile_association_result::unchanged;
+		if (existing->revision == std::numeric_limits<uint64_t>::max() ||
+		    catalog.revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_association_result::conflict;
+		desired.revision = existing->revision + 1;
+		*existing = std::move(desired);
+		++catalog.revision;
+	}
+	else
+	{
+		try
+		{
+			catalog.associations.insert(existing, std::move(desired));
+		}
+		catch (const std::bad_alloc &)
+		{
+			return flatfile_association_result::io_error;
+		}
+		if (!new_catalog)
+		{
+			if (catalog.revision == std::numeric_limits<uint64_t>::max())
+				return flatfile_association_result::conflict;
+			++catalog.revision;
+		}
+	}
+
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result flatfile_association_erase(const std::string &root,
+						       uint32_t association_id, std::string *error)
+{
+	if (root.empty() || !association_id)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	association_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	auto found = std::lower_bound(catalog.associations.begin(), catalog.associations.end(),
+				      association_id, [](const auto &entry, uint32_t candidate)
+				      { return entry.association_id < candidate; });
+	if (found == catalog.associations.end() || found->association_id != association_id)
+		return flatfile_association_result::unchanged;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_association_result::conflict;
+	catalog.associations.erase(found);
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
 }
 
 flatfile_association_result flatfile_association_prepare_player_remove(

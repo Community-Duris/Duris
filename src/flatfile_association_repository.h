@@ -60,6 +60,11 @@ flatfile_association_result
 flatfile_association_list(const std::string &root,
 			  std::vector<flatfile_association_record> *associations,
 			  std::string *error);
+flatfile_association_result
+flatfile_association_save(const std::string &root, const flatfile_association_record &association,
+			  std::string *error);
+flatfile_association_result flatfile_association_erase(const std::string &root,
+						       uint32_t association_id, std::string *error);
 flatfile_association_result flatfile_association_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_authority_operation *operation,
