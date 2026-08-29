@@ -96,3 +96,6 @@ tests/db_write/*.h
 tests/db_write/Dockerfile.*
 tests/db_write/Makefile*
 tests/db_write/schema.sql
+
+# Database dumps written by scripts/backup_pfiles.sh (player/account data).
+db/Backup/
