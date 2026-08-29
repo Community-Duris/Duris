@@ -80,21 +80,21 @@ int main()
 
 	const item_owner_identity locker = { item_owner_type::locker, 77, 0 };
 	const item_ownership_runtime_entry rejected_atomic[] = {
-		{ 200, 200, 0, room, 1, 1, 9, item_custody_state::active },
+		{ 202, 202, 0, room, 1, 1, 9, item_custody_state::active },
 		{ 101, 101, 0, player, 3, 10, 8, item_custody_state::active },
 	};
 	assert(!item_ownership_runtime_hydrate_many_atomic(rejected_atomic, 2));
 	item_ownership_runtime_entry absent = {};
-	assert(!item_ownership_runtime_lookup(200, &absent));
+	assert(!item_ownership_runtime_lookup(202, &absent));
 
 	const item_ownership_runtime_entry accepted_atomic[] = {
-		{ 200, 200, 0, room, 1, 1, 9, item_custody_state::active },
-		{ 201, 201, 0, locker, 2, 4, 10, item_custody_state::active },
+		{ 202, 202, 0, room, 1, 1, 9, item_custody_state::active },
+		{ 203, 203, 0, locker, 2, 4, 10, item_custody_state::active },
 	};
 	assert(item_ownership_runtime_hydrate_many_atomic(accepted_atomic, 2));
-	assert(item_ownership_runtime_lookup(200, &absent));
+	assert(item_ownership_runtime_lookup(202, &absent));
 	assert(absent.owner.type == item_owner_type::room && absent.owner.id == 1200);
-	assert(item_ownership_runtime_lookup(201, &absent));
+	assert(item_ownership_runtime_lookup(203, &absent));
 	assert(absent.owner.type == item_owner_type::locker && absent.owner.id == 77);
 	return 0;
 }

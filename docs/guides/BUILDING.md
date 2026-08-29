@@ -22,15 +22,16 @@ make -C src PERSISTENCE_BACKEND=flatfile
 
 `mariadb` is the default and includes and links the MySQL-compatible client. The
 `flatfile` selection defines `__NO_MYSQL__` and does not add the MySQL include path or
-client library. The flat build is an implementation target and is not yet production
-ready; boot currently fails closed with the durable domains that remain unimplemented.
+client library. Each binary accepts only its matching primary runtime mode. The legacy
+`mariadb-primary-flatfile-fallback` token remains recognized but fails closed because
+mixed per-operation authority transfer is not supported.
 
 Mixed legacy modules still mention MySQL types while their durable operations are being
 moved behind backend repositories. Flat builds resolve those declarations through
 `src/no_mysql/`, a client-free compatibility surface whose connection, query, statement,
 and thread initialization calls always fail. It neither connects nor persists data and
-must not be treated as a backend; the boot-time domain inventory prevents those paths
-from becoming an accidental reduced-function mode.
+must not be treated as a backend; flat-file primary routes durable operations through
+the corresponding file repositories instead of this compatibility surface.
 
 The root `Makefile` is the maintained full-project entry point. `make clean`
 removes compiled server, editor, and area-tool artifacts but preserves generated

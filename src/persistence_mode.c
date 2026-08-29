@@ -19,18 +19,13 @@
 static enum persistence_mode active_mode = PERSISTENCE_MODE_MARIADB_PRIMARY;
 static const char *active_flatfile_root;
 
+#ifdef __NO_MYSQL__
 static const char *const flatfile_directories[] = {
 	"metadata",	    "identities", "identities/accounts",
 	"identities/names", "players",	  "operations",
 	"operations/wal",   "domains",	  "manifests",
 };
-
-static const char unimplemented_domains[] =
-	"character rename/delete completion, non-item critical operations, "
-	"lockers/private chests, "
-	"corpses/saved items/shopkeepers/pets/shapes/recipes/spellbooks, "
-	"guilds/alliances/halls/outposts/siege/nexus, ships/cargo/markets, "
-	"artifacts/economy";
+#endif
 
 static bool fail(char *error, size_t error_size, const char *format, ...)
 {
@@ -45,6 +40,7 @@ static bool fail(char *error, size_t error_size, const char *format, ...)
 	return false;
 }
 
+#ifdef __NO_MYSQL__
 static bool validate_private_directory(const char *path, char *error, size_t error_size)
 {
 	struct stat info;
@@ -95,6 +91,7 @@ static bool provision_flatfile_directories(const char *root, char *error, size_t
 	}
 	return true;
 }
+#endif
 
 bool persistence_mode_configure(char *error, size_t error_size)
 {
@@ -114,24 +111,36 @@ bool persistence_mode_configure(char *error, size_t error_size)
 			    configured);
 
 	if (active_mode == PERSISTENCE_MODE_MARIADB_PRIMARY)
+	{
+#ifdef __NO_MYSQL__
+		return fail(error, error_size,
+			    "persistence mode mariadb-primary requires a MariaDB client build");
+#else
 		return true;
+#endif
+	}
+
+	if (active_mode == PERSISTENCE_MODE_MARIADB_PRIMARY_FLATFILE_FALLBACK)
+		return fail(error, error_size,
+			    "persistence mode mariadb-primary-flatfile-fallback is not supported; "
+			    "select mariadb-primary or flatfile-primary explicitly");
+
+#ifndef __NO_MYSQL__
+	return fail(error, error_size,
+		    "persistence mode flatfile-primary requires a client-free flatfile build");
+#else
 
 	active_flatfile_root = getenv("FLATFILE_STATE_DIR");
 	if (!provision_flatfile_directories(active_flatfile_root, error, error_size))
 		return false;
 
-#ifdef __NO_MYSQL__
 	std::string activity_error;
-	if (active_mode == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
-	    flatfile_ip_activity_reset_active(active_flatfile_root, (int64_t)time(NULL),
+	if (flatfile_ip_activity_reset_active(active_flatfile_root, (int64_t)time(NULL),
 					      &activity_error) != flatfile_ip_activity_result::ok)
 		return fail(error, error_size, "cannot reset flat-file IP activity: %s",
 			    activity_error.c_str());
+	return true;
 #endif
-
-	return fail(error, error_size,
-		    "persistence mode %s is not ready; unimplemented durable domains: %s",
-		    persistence_mode_name(), unimplemented_domains);
 }
 
 enum persistence_mode persistence_mode_get(void)

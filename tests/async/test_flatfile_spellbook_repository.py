@@ -47,4 +47,3 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-spellbook-") as temporary:
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
-

@@ -23,23 +23,23 @@ beyond owner read/write (`0600`).
 
 `PERSISTENCE_MODE` selects one whole-server authority. It defaults to
 `mariadb-primary`. The accepted values are `mariadb-primary`,
-`mariadb-primary-flatfile-fallback`, and `flatfile-primary`. The two flat-file modes are
-currently fail-closed implementation targets: the server provisions and validates the
-state layout, then rejects boot with the durable domains that are not implemented. They
-must not be enabled in production yet.
+`mariadb-primary-flatfile-fallback`, and `flatfile-primary`. A MariaDB client build accepts
+`mariadb-primary`; a client-free flat build accepts `flatfile-primary`. The legacy mixed
+fallback token is recognized for a clear diagnostic but fails closed because mixed
+per-operation authority transfer is not supported.
 
 | Variable | Requirement | Meaning |
 | --- | --- | --- |
 | `PERSISTENCE_MODE` | Optional; defaults to `mariadb-primary` | Select the complete persistence authority; mixed per-write failover is not supported. |
-| `FLATFILE_STATE_DIR` | Required by either flat-file mode | Absolute server-user-owned directory with mode `0700` or stricter. |
+| `FLATFILE_STATE_DIR` | Required by `flatfile-primary` | Absolute server-user-owned directory with mode `0700` or stricter. |
 | `FLATFILE_BACKUP_DIR` | Optional in `flatfile-primary`; defaults to `backups/flatfile` | Absolute backup root outside `FLATFILE_STATE_DIR`; each pre-boot snapshot is owner-only. |
 | `ENVIRONMENT` | Required: `local` or `production` | Runtime trust role. |
-| `DB_HOST` | Required by either database-backed mode | MySQL/MariaDB host. |
+| `DB_HOST` | Required by `mariadb-primary` | MySQL/MariaDB host. |
 | `DB_PORT` | Optional; `1`-`65535` | Database TCP port; the client default applies when omitted. |
-| `DB_USER` | Required by either database-backed mode | Database account. |
-| `DB_PASSWD` | Required by either database-backed mode | Database password. |
-| `DB_NAME` | Required by either database-backed mode | Requested database name. |
-| `DB_ALLOWED_TARGETS` | Required by either database-backed mode | Comma-separated exact `host/database` pairs; the resolved pair must match. |
+| `DB_USER` | Required by `mariadb-primary` | Database account. |
+| `DB_PASSWD` | Required by `mariadb-primary` | Database password. |
+| `DB_NAME` | Required by `mariadb-primary` | Requested database name. |
+| `DB_ALLOWED_TARGETS` | Required by `mariadb-primary` | Comma-separated exact `host/database` pairs; the resolved pair must match. |
 | `DB_SOCKET` | Optional, local role only | Protected local Unix socket used instead of remote transport. |
 | `DB_TLS` | Required as `TRUE` for non-loopback hosts | Enforce encrypted database transport. |
 | `DB_SSL_CA` | Required for non-loopback hosts | Regular CA file used to verify the database server certificate. |

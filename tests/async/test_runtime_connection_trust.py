@@ -6,6 +6,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[2]
 sql_h = (root / "src/sql.h").read_text()
 sql = (root / "src/sql.c").read_text()
+env_file = (root / "src/env_file.c").read_text()
 runtime_contract = (root / "src/runtime_compatibility_contract.h").read_text()
 pool = (root / "src/sql_pool.c").read_text()
 player = (root / "src/sql_player.c").read_text()
@@ -36,7 +37,7 @@ for getter in ("get_db_host", "get_db_user", "get_db_passwd", "get_db_name"):
     assert 'return val ? val : "";' in body
 print("[PASS] compiled database credential and target defaults are gone")
 
-env_loader = section(sql, "int load_env_file(void)\n{", "int initialize_mysql()")
+env_loader = env_file
 assert 'open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW)' in env_loader
 assert "fstat(fd, &file_stat)" in env_loader
 assert "S_ISREG(file_stat.st_mode)" in env_loader

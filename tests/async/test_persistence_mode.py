@@ -13,10 +13,21 @@ MAKEFILE = (ROOT / "src/Makefile").read_text()
 
 PROBE = r'''
 #include "persistence_mode.h"
+#ifdef __NO_MYSQL__
+#include "flatfile_ip_activity_repository.h"
+#endif
 
 #include <cstdlib>
 #include <cstring>
 #include <string>
+
+#ifdef __NO_MYSQL__
+flatfile_ip_activity_result flatfile_ip_activity_reset_active(const char *, int64_t,
+                                                              std::string *)
+{
+    return flatfile_ip_activity_result::ok;
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -26,11 +37,17 @@ int main(int argc, char **argv)
     unsetenv("PERSISTENCE_MODE");
     unsetenv("FLATFILE_STATE_DIR");
 
-    if (!std::strcmp(scenario, "default"))
+    if (!std::strcmp(scenario, "default")) {
+#ifdef __NO_MYSQL__
+        return !persistence_mode_configure(error, sizeof(error)) &&
+               std::strstr(error, "requires a MariaDB client build") ? 0 : 1;
+#else
         return persistence_mode_configure(error, sizeof(error)) &&
                persistence_mode_get() == PERSISTENCE_MODE_MARIADB_PRIMARY &&
                persistence_mode_requires_mysql() &&
                !std::strcmp(persistence_mode_name(), "mariadb-primary") ? 0 : 1;
+#endif
+    }
 
     if (!std::strcmp(scenario, "invalid")) {
         setenv("PERSISTENCE_MODE", "automatic", 1);
@@ -39,10 +56,16 @@ int main(int argc, char **argv)
     }
 
     setenv("PERSISTENCE_MODE", scenario, 1);
+    if (!std::strcmp(scenario, "mariadb-primary-flatfile-fallback"))
+        return !persistence_mode_configure(error, sizeof(error)) &&
+               std::strstr(error, "is not supported") ? 0 : 1;
     if (argc > 2)
         setenv("FLATFILE_STATE_DIR", argv[2], 1);
-    if (persistence_mode_configure(error, sizeof(error)))
-        return 1;
+    const bool configured = persistence_mode_configure(error, sizeof(error));
+#ifndef __NO_MYSQL__
+    return !configured &&
+           std::strstr(error, "requires a client-free flatfile build") ? 0 : 1;
+#else
     if (argc == 2)
         return std::strstr(error, "FLATFILE_STATE_DIR is required") ? 0 : 1;
     if (argc > 3 && !std::strcmp(argv[3], "insecure"))
@@ -51,9 +74,9 @@ int main(int argc, char **argv)
         return std::strstr(error, "must be an absolute path") ? 0 : 1;
     if (argc > 3 && !std::strcmp(argv[3], "symlink"))
         return std::strstr(error, "is not a directory") ? 0 : 1;
-    const bool flatfile_primary = !std::strcmp(scenario, "flatfile-primary");
-    return std::strstr(error, "unimplemented durable domains") &&
-           persistence_mode_requires_mysql() == !flatfile_primary ? 0 : 1;
+    return configured && persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+           !persistence_mode_requires_mysql() && persistence_mode_flatfile_root() ? 0 : 1;
+#endif
 }
 '''
 
@@ -67,51 +90,48 @@ assert "$(MYSQL_LIBS)" in MAKEFILE
 with tempfile.TemporaryDirectory(prefix="persistence-mode-") as directory:
     temp = Path(directory)
     probe = temp / "probe.cpp"
-    binary = temp / "probe"
+    database_binary = temp / "database-probe"
+    flat_binary = temp / "flat-probe"
     probe.write_text(PROBE)
+    common_compile = [
+        "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", f"-I{HEADER_DIR}",
+        str(SOURCE), str(probe),
+    ]
+    subprocess.run([*common_compile, "-o", str(database_binary)], check=True)
     subprocess.run(
-        [
-            "g++",
-            "-std=c++20",
-            "-Wall",
-            "-Wextra",
-            "-Werror",
-            f"-I{HEADER_DIR}",
-            str(SOURCE),
-            str(probe),
-            "-o",
-            str(binary),
-        ],
-        check=True,
+        [*common_compile, "-D__NO_MYSQL__", "-o", str(flat_binary)], check=True
     )
-    subprocess.run([str(binary), "default"], check=True)
-    subprocess.run([str(binary), "invalid"], check=True)
-    subprocess.run([str(binary), "flatfile-primary"], check=True)
-    subprocess.run([str(binary), "mariadb-primary-flatfile-fallback"], check=True)
+    for binary in (database_binary, flat_binary):
+        subprocess.run([str(binary), "default"], check=True)
+        subprocess.run([str(binary), "invalid"], check=True)
+        subprocess.run([str(binary), "flatfile-primary"], check=True)
+        subprocess.run(
+            [str(binary), "mariadb-primary-flatfile-fallback"], check=True
+        )
     subprocess.run(
-        [str(binary), "flatfile-primary", "relative", "relative"], check=True
+        [str(flat_binary), "flatfile-primary", "relative", "relative"], check=True
     )
 
-    for mode in ("flatfile-primary", "mariadb-primary-flatfile-fallback"):
-        state = temp / mode
-        subprocess.run([str(binary), mode, str(state)], check=True)
-        expected = {
-            state / "metadata",
-            state / "identities/accounts",
-            state / "identities/names",
-            state / "players",
-            state / "operations/wal",
-            state / "domains",
-            state / "manifests",
-        }
-        assert all(path.is_dir() for path in expected)
-        assert all((path.stat().st_mode & 0o777) == 0o700 for path in expected)
+    state = temp / "flatfile-primary"
+    subprocess.run([str(flat_binary), "flatfile-primary", str(state)], check=True)
+    expected = {
+        state / "metadata",
+        state / "identities/accounts",
+        state / "identities/names",
+        state / "players",
+        state / "operations/wal",
+        state / "domains",
+        state / "manifests",
+    }
+    assert all(path.is_dir() for path in expected)
+    assert all((path.stat().st_mode & 0o777) == 0o700 for path in expected)
 
     insecure = temp / "insecure"
     insecure.mkdir(mode=0o755)
     os.chmod(insecure, 0o755)
     result = subprocess.run(
-        [str(binary), "flatfile-primary", str(insecure), "insecure"], capture_output=True
+        [str(flat_binary), "flatfile-primary", str(insecure), "insecure"],
+        capture_output=True,
     )
     assert result.returncode == 0
 
@@ -120,7 +140,7 @@ with tempfile.TemporaryDirectory(prefix="persistence-mode-") as directory:
     symlink = temp / "symlink"
     symlink.symlink_to(symlink_target, target_is_directory=True)
     subprocess.run(
-        [str(binary), "flatfile-primary", str(symlink), "symlink"], check=True
+        [str(flat_binary), "flatfile-primary", str(symlink), "symlink"], check=True
     )
 
     flat_build = temp / "flat-build"

@@ -50,6 +50,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "src/boon_shop_command.c",
             "src/persistence_observability.c",
             "src/persistence_mode.c",
+            "src/flatfile_ip_activity_repository.c",
             "-lcrypto",
             "-pthread",
             "-o",

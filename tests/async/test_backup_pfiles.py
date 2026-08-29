@@ -99,5 +99,5 @@ with tempfile.TemporaryDirectory(prefix="duris-backup-test-") as temp:
         assert not list(backup_dir.glob("*.tmp.*")), result.stdout
 
 assert "if ! ./scripts/backup_pfiles.sh; then" in CYCLE
-assert "Required database backup failed; refusing to continue the cycle" in CYCLE
-print("database backup atomicity and failure-propagation checks passed")
+assert 'echo "Required $PERSISTENCE_MODE backup failed; refusing to boot"' in CYCLE
+print("backend-selected backup atomicity and failure-propagation checks passed")

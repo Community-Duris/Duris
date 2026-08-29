@@ -48,7 +48,7 @@ class Phase02RawQueueRetirementTests(unittest.TestCase):
 
     def test_login_logout_use_typed_command_without_private_payload(self):
         sql = (SRC / "sql.c").read_text()
-        start = sql.index("void sql_log_player_login")
+        start = sql.rindex("void sql_log_player_login")
         end = sql.index("/* ---- Persistence DB connection ----", start)
         body = sql[start:end]
         self.assertIn("session_audit_transaction_submit", body)

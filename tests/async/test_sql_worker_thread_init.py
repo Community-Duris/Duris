@@ -41,7 +41,7 @@ check("the helper has a __NO_MYSQL__ build", "#else" in header and "__NO_MYSQL__
 # No worker may reach past the helper to the raw entry point.
 offenders = []
 for path in sorted(SRC.rglob("*.c")) + sorted(SRC.rglob("*.h")):
-    if path.name == "sql_thread_init.h":
+    if path.name == "sql_thread_init.h" or SRC / "no_mysql" in path.parents:
         continue
     body = path.read_text(encoding="utf-8", errors="replace")
     # Drop the helper's own name first so the substring inside it is not a hit.

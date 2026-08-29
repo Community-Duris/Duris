@@ -29,8 +29,8 @@ int main(int argc, char **argv)
 	setenv("PERSISTENCE_MODE", "flatfile-primary", 1);
 	setenv("FLATFILE_STATE_DIR", root.c_str(), 1);
 	char configure_error[2048] = {};
-	require(!persistence_mode_configure(configure_error, sizeof(configure_error)),
-		"incomplete flat backend unexpectedly passed boot preflight");
+	require(persistence_mode_configure(configure_error, sizeof(configure_error)),
+		"flat backend failed boot preflight: " + std::string(configure_error));
 	require(persistence_mode_flatfile_root() != nullptr,
 		"flat state root was not retained after preflight");
 

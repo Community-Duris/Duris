@@ -37,6 +37,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
         "src/boon_shop_command.c",
         "src/critical_command.c",
         "src/persistence_mode.c",
+        "src/flatfile_ip_activity_repository.c",
     ]
     compile_result = subprocess.run(
         [

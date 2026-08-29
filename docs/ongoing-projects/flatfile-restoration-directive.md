@@ -1,6 +1,6 @@
 # Flat-file restoration project directive
 
-**Effective date:** 2026-08-28  
+**Effective date:** 2026-08-28
 **Status:** authoritative direction for all remaining flat-file work
 
 ## Completed work

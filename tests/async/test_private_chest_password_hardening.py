@@ -19,7 +19,7 @@ header = (SRC / "password_hash.h").read_text()
 
 
 def section(text: str, start_marker: str, end_marker: str) -> str:
-    start = text.find(start_marker)
+    start = text.rfind(start_marker)
     assert start >= 0, start_marker
     end = text.find(end_marker, start)
     assert end >= 0, end_marker
