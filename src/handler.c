@@ -42,7 +42,11 @@
 #include "weather.h"
 #include "ws_handlers.h"
 #include "safe_format.h"
+#include <algorithm>
 #include <cerrno>
+#include <cstdint>
+#include <new>
+#include <unordered_map>
 
 /*
  *
@@ -3105,6 +3109,17 @@ namespace
 {
 constexpr int CORPSE_RELEASE_RETRY_DELAY = 5 * WAIT_SEC;
 
+struct corpse_unmaking_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	int level = 0;
+	int corpse_level = 0;
+	bool theurgist = false;
+};
+
+std::unordered_map<uint64_t, corpse_unmaking_context> corpse_unmakings;
+
 class corpse_release_side_effect_guard
 {
     public:
@@ -3137,6 +3152,14 @@ P_obj find_live_corpse(uint32_t owner_pid, uint32_t save_id)
 		    object->value[CORPSE_PID] == static_cast<int32_t>(owner_pid) &&
 		    object->value[CORPSE_SAVEID] == static_cast<int32_t>(save_id))
 			return object;
+	return nullptr;
+}
+
+P_char find_live_character(P_char expected, uint64_t runtime_id)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (character == expected && character->runtime_id == runtime_id)
+			return character;
 	return nullptr;
 }
 
@@ -3209,18 +3232,37 @@ void rearm_corpse_release(P_obj corpse)
 void publish_corpse_release(bool committed, const corpse_lifecycle_result &result,
 			    unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
+	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
+	corpse_unmaking_context unmaking_context = {};
+	const auto unmaking = corpse_unmakings.find(key);
+	const bool unmade = unmaking != corpse_unmakings.end();
+	if (unmade)
+	{
+		unmaking_context = unmaking->second;
+		corpse_unmakings.erase(unmaking);
+	}
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	if (!committed)
 	{
 		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
 				  "commit_failed", "save_id=%u error=%u", payload.save_id,
 				  error_code);
-		if (error_code == ESTALE)
+		if (unmade)
+		{
+			if (P_char caster = find_live_character(unmaking_context.caster,
+								unmaking_context.caster_runtime_id))
+				send_to_char(
+					"The corpse resists your unmaking and remains intact.\r\n",
+					caster);
+		}
+		else if (error_code == ESTALE)
 			rearm_corpse_release(corpse);
 		return;
 	}
 	const int room = real_room(payload.room_vnum);
-	if (!corpse || room == NOWHERE || !validate_corpse_release_items(corpse, result) ||
+	int live_room = NOWHERE;
+	if (!corpse || room == NOWHERE || !corpse_release_room(corpse, &live_room) ||
+	    live_room != room || !validate_corpse_release_items(corpse, result) ||
 	    !item_ownership_runtime_apply_corpse_release(payload.owner_pid, payload.save_id,
 							 payload.room_vnum, result))
 	{
@@ -3231,7 +3273,41 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 	}
 	P_char carrier = corpse_release_carrier(corpse);
 	const int old_load = carrier ? total_carried_weight(carrier) : 0;
-	if (OBJ_ROOM(corpse) && world[corpse->loc.room].people)
+	if (unmade)
+	{
+		P_char caster = find_live_character(unmaking_context.caster,
+						    unmaking_context.caster_runtime_id);
+		if (!caster || caster->in_room != room)
+			persistence_alert(AVATAR, "corpse", "flatfile_unmaking", "none", "none",
+					  "stale_caster", "save_id=%u room=%d", payload.save_id,
+					  payload.room_vnum);
+		else
+		{
+			if (unmaking_context.theurgist)
+			{
+				act("The $p turns to &+ydust&n and &+wb&+Llow&+ws&n away as its &+Wsoul&n is returned to whence it came.",
+				    FALSE, caster, corpse, 0, TO_CHAR);
+				act("The $p turns to &+ydust&n and &+wb&+Llow&+ws&n away as its &+Wsoul&n is returned to whence it came.",
+				    FALSE, caster, corpse, 0, TO_ROOM);
+			}
+			else
+			{
+				act("&+L$p&+L begins to &n&+gwither&+L and &n&+yrot&+L as you absorb its essence.",
+				    FALSE, caster, corpse, 0, TO_CHAR);
+				act("&+L$p&+L begins to &n&+gwither&+L and &n&+yrot&+L as $n&+L absorbs its essence.",
+				    FALSE, caster, corpse, 0, TO_ROOM);
+			}
+			const int64_t restored =
+				static_cast<int64_t>(unmaking_context.corpse_level) * 4 +
+				static_cast<int64_t>(unmaking_context.level) * 2;
+			if (restored > 0 && GET_MAX_HIT(caster) > GET_HIT(caster))
+				GET_HIT(caster) = static_cast<int>(std::min<int64_t>(
+					GET_MAX_HIT(caster),
+					static_cast<int64_t>(GET_HIT(caster)) + restored));
+			update_pos(caster);
+		}
+	}
+	else if (OBJ_ROOM(corpse) && world[corpse->loc.room].people)
 	{
 		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
 		    corpse, 0, TO_ROOM);
@@ -3251,7 +3327,8 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 			act("$p decays in your hands, leaving no trace.", FALSE, carrier, corpse, 0,
 			    TO_CHAR);
 	}
-	logit(LOG_CORPSE, "%s decayed in room %d.", corpse->short_description, payload.room_vnum);
+	logit(LOG_CORPSE, unmade ? "%s was unmade in room %d." : "%s decayed in room %d.",
+	      corpse->short_description, payload.room_vnum);
 	corpse_release_side_effect_guard guard;
 	while (corpse->contains)
 	{
@@ -3259,8 +3336,10 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		const bool money = GET_ITEM_TYPE(item) == ITEM_MONEY;
 		obj_from_obj(item);
 		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
-			logit(LOG_CORPSE, "%s Decay drop: [%d] %s", corpse->short_description,
-			      obj_index[item->R_num].virtual_number, item->name);
+			logit(LOG_CORPSE,
+			      unmade ? "%s Unmaking drop: [%d] %s" : "%s Decay drop: [%d] %s",
+			      corpse->short_description, obj_index[item->R_num].virtual_number,
+			      item->name);
 		obj_to_room(item, room);
 		if (!money && (!OBJ_ROOM(item) || item->loc.room != room))
 			persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
@@ -3370,6 +3449,47 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 		rearm_corpse_release(corpse);
 		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_unmaking(P_obj corpse, P_char caster, int level, int corpse_level)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	if (!OBJ_ROOM(corpse) || corpse->loc.room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	{
+		send_to_char("That corpse cannot be unmade from its current location.\r\n", caster);
+		return true;
+	}
+	const uint64_t key =
+		item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
+	if (corpse_unmakings.contains(key))
+	{
+		send_to_char("That corpse is already being unmade.\r\n", caster);
+		return true;
+	}
+	try
+	{
+		corpse_unmakings.emplace(
+			key,
+			corpse_unmaking_context{ caster, caster->runtime_id, level, corpse_level,
+						 GET_CLASS(caster, CLASS_THEURGIST) != 0 });
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("The corpse resists your unmaking and remains intact.\r\n", caster);
+		return true;
+	}
+	if (!submit_corpse_release(corpse))
+	{
+		corpse_unmakings.erase(key);
+		persistence_alert(AVATAR, "corpse", "flatfile_unmaking", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		send_to_char("The corpse resists your unmaking and remains intact.\r\n", caster);
 	}
 	return true;
 }

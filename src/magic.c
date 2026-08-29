@@ -6613,6 +6613,8 @@ void spell_unmaking(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /
 		clevel = obj->value[2];
 		if (IS_SET(obj->value[1], PC_CORPSE) && clevel < 0)
 			clevel = -clevel;
+		if (persistence_defer_corpse_unmaking(obj, ch, level, clevel))
+			return;
 		/* dump items on ground */
 		for (cobj = obj->contains; cobj; cobj = next_obj)
 		{

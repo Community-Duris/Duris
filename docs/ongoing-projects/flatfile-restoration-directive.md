@@ -10,23 +10,26 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 94 restores the historical intentional destruction of a
-player corpse and all of its contents by `very_angry_npc` in flat-primary mode. The
-operation proves the exact corpse placement and item custody, then atomically removes the
-world aggregate, advances every contained item into destruction custody, clears artifact
-ownership and binding, and records the lifecycle result before the live corpse is
-extracted. Immediate post-death destruction can queue behind the corpse's establishment
-command; duplicate special-proc calls attach to that same intent instead of submitting a
-second operation.
+As of 2026-08-29, checkpoint 95 restores the historical player-corpse path for
+`unmaking`/`return soul` in flat-primary mode. The spell now stops before moving any
+contents or granting its heal, submits the existing atomic corpse-to-room release, and
+applies its historical flavor and healing only after durable acknowledgment. Publication
+also verifies that the live corpse still resolves to the committed room before advancing
+runtime custody, dropping exact contents and money, and extracting the corpse. Failure
+retains the corpse and grants no effect; MariaDB behavior is unchanged.
 
-Corpse-lifecycle payload version 3 adds only this bounded destruction action while
-retaining version 1 and 2 decoding. The canonical destruction-owner revision is restored
-at boot so post-restart commands compare against durable state rather than revision zero.
-Generic `extract_obj` remains synchronous, and MariaDB behavior is unchanged. The next
-restoration boundary remains the other concrete checkpoint 91 corpse paths: resurrection
-to a player, necromancy transfer to a follower, coupled corpse-consuming spell effects,
-and nested corpses. The siege/kingdom removal memo remains research only and does not
-amend this directive's explicit requirement to restore historical siege state.
+This checkpoint deliberately adds no new command or catalog. Its bounded, process-local
+spell context is keyed by stable corpse identity and a non-reusable caster runtime ID.
+Durable corpse, item, room-money, and artifact recovery continues to come entirely from
+the checkpoint 88 release authority; a process crash after that authority commits can
+recover custody but does not replay the transient heal or flavor text. The remaining
+checkpoint 91 paths are materially broader: resurrection also exchanges the target's
+existing player/room inventory and wallet before claiming the corpse, follower raising
+requires an authoritative NPC destination, and wall/bone conversion creates a second
+game object or exit effect. Those operations must keep their own exact sequencing rather
+than being mislabeled as ordinary release. The siege/kingdom removal memo remains
+research only and does not amend this directive's explicit requirement to restore
+historical siege state.
 
 ## Owner intent
 

@@ -14,6 +14,7 @@ MOBILE_SPECS = (ROOT / "src/specs.mobile.c").read_text()
 UNDERMOUNTAIN_SPECS = (ROOT / "src/specs.undermountain.c").read_text()
 VERZANAN_SPECS = (ROOT / "src/specs.verzanan.c").read_text()
 LOHRR_SPECS = (ROOT / "src/specs.lohrr.c").read_text()
+MAGIC = (ROOT / "src/magic.c").read_text()
 
 
 def body(source: str, signature: str, next_signature: str) -> str:
@@ -47,6 +48,7 @@ lightning_sword = body(UNDERMOUNTAIN_SPECS, "int lightning_sword(",
 flying_dagger = body(UNDERMOUNTAIN_SPECS, "int flying_dagger(", "int ochre_jelly(")
 ochre_jelly = body(UNDERMOUNTAIN_SPECS, "int ochre_jelly(", "int animated_sword(")
 very_angry = LOHRR_SPECS[LOHRR_SPECS.index("int very_angry_npc("):]
+unmaking = body(MAGIC, "void spell_unmaking(", "void spell_enchant_weapon(")
 
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in write_corpse
 assert "stage_corpse_lifecycle" in write_corpse
@@ -87,6 +89,16 @@ assert "submit_corpse_destruction(corpse)" in deferred_destruction
 assert "persistence_defer_corpse_destruction(corpse)" in very_angry
 assert very_angry.index("persistence_defer_corpse_destruction(corpse)") < \
        very_angry.index("extract_obj(corpse, TRUE)")
+assert "persistence_defer_corpse_unmaking(obj, ch, level, clevel)" in unmaking
+assert unmaking.index("persistence_defer_corpse_unmaking(obj, ch, level, clevel)") < \
+       unmaking.index("obj_from_obj(cobj)")
+assert "corpse_unmakings" in HANDLER
+assert "caster->runtime_id" in HANDLER
+assert "live_room != room" in release_publication
+assert release_publication.index("live_room != room") < \
+       release_publication.index("item_ownership_runtime_apply_corpse_release")
+assert HANDLER.index("item_ownership_runtime_apply_corpse_release") < \
+       HANDLER.index("GET_HIT(caster) =")
 assert "corpse_lifecycle_transaction_busy" in get_item
 assert "corpse_lifecycle_transaction_busy" in put_item
 
@@ -101,4 +113,4 @@ for release_caller, first_mutation in (
     assert release_caller.index("persistence_defer_corpse_room_release") < \
            release_caller.index(first_mutation)
 
-print("[PASS] live corpse save, remove, release, destruction, restore, and revision routing are wired")
+print("[PASS] live corpse save, remove, release, unmaking, destruction, restore, and revision routing are wired")

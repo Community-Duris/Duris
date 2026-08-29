@@ -4099,3 +4099,37 @@ action" text below remains historical and does not authorize work.
 - **Next action:** restore resurrection's corpse-to-player transfer as the next concrete audited
   operation, reusing the existing player ownership/materialization authorities and leaving generic
   extraction semantics unchanged.
+
+### Checkpoint 95 - durability-gated corpse unmaking
+
+- **Historical behavior restored:** flat-primary `unmaking` and its `return soul` alias now retain
+  their exact corpse-to-room result and caster heal. The spell checks the dedicated guard before its
+  first content move; MariaDB and non-player corpses continue through the synchronous historical
+  implementation.
+- **Existing authority reused:** no command, payload, catalog, or repository was added. The guarded
+  path submits checkpoint 88's atomic release, which already removes the corpse aggregate, appends
+  nested items and all four money denominations to the room, advances exact ownership revisions,
+  grounds artifacts, and records an idempotent lifecycle result in one recoverable publication.
+- **Post-commit effect sequencing:** a small in-memory context records the spell level, normalized
+  corpse level, caster flavor, pointer, and process-local runtime ID under the stable corpse key.
+  Only a committed release with an exact live item graph grants the historical heal and messages;
+  allocation, submission, stale revision, and repository failures leave the live corpse untouched
+  and tell the caster the spell did not take effect. Duplicate casts recognize the pending intent
+  without submitting another release.
+- **Stronger release publication:** all release callers now prove that the live corpse still resolves
+  to the room VNUM committed by the command before changing runtime custody. This closes a movement
+  race for carried corpses as well as unmaking; a stale topology alerts and retains live state rather
+  than publishing contents into a different room.
+- **Checks passed:** the focused live routing contract proves the guard precedes `obj_from_obj`, the
+  room proof precedes runtime custody advancement, and healing follows that advancement. Existing
+  lifecycle-command, release-transaction, forced-recovery repository, world-item, artifact, and
+  ownership-runtime regressions pass, as do changed-line formatting, `git diff --check`, the strict
+  normal C++20 server build, and the client-free build/game-loop boot/clean-shutdown preflight.
+- **Exposure:** the heal and flavor text are transient live effects. If the process dies after the
+  durable release commits but before its completion is published, restart recovers the exact
+  corpse/item/money/artifact state but does not replay that heal. Resurrection cannot reuse this
+  narrow path: it also ejects the target's current inventory and wallet into the old room, moves the
+  target, claims every corpse item and coin, updates character state, and saves the player.
+- **Next action:** define the smallest recoverable resurrection sequence from the existing room,
+  player-item materialization, wallet, and corpse authorities before changing either resurrect spell;
+  do not collapse it into ordinary release or add a generic spell transaction framework.
