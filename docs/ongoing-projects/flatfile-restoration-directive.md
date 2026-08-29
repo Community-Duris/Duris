@@ -10,21 +10,23 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 90 routes supported live player-corpse decay through the
-atomic corpse-to-room release. Ground, carried, and worn corpses now remain intact until
-the durable command completes; only then does the game thread advance runtime custody,
-move exact contents and money into the committed room, and remove the corpse. Loot and
-put operations are briefly gated while the lifecycle is busy, transient submission
-failures retain and rearm the corpse, and stale room revisions retry without exposing a
-partial live mutation.
+As of 2026-08-29, checkpoint 91 routes the audited, release-to-room player-corpse
+destruction procs through the atomic lifecycle boundary. The generic devour proc, both
+Verzanan dogs, Lightning Sword, flying daggers, and ochre jelly now leave a flat-primary
+corpse and its contents untouched until the durable corpse-to-room release completes.
+The shared guard treats an already-busy lifecycle as handled without unsafe mutation,
+fails malformed or unstageable releases closed, and leaves NPC corpses, food,
+MariaDB-mode behavior, and generic `extract_obj` semantics unchanged.
 
-The next restoration boundary is to audit explicit destructive corpse-extraction callers
-and decide their required synchronous/deferred contract without changing generic
-`extract_obj` semantics. Corpse nesting remains fail-closed because the historical decay
-destination is another container rather than the available room aggregate. Saved
-floor-item save/restore should subsequently reuse the same room authority. The
-siege/kingdom removal memo remains research only; it does not amend this directive's
-explicit requirement to restore historical siege state.
+The audit also separated operations that cannot use room release without changing their
+historical meaning: resurrection moves custody to a player, necromancy moves it to a
+created follower, some spells have completion effects coupled to consumption, and the
+very-angry-NPC path intentionally destroys the contained gear. Those require their own
+durability-before-mutation sequencing rather than a broader extraction hook. Corpse
+nesting likewise remains fail-closed because its destination is another container. The
+next historical restoration boundary is saved floor-item save/restore using the existing
+revisioned room authority. The siege/kingdom removal memo remains research only; it does
+not amend this directive's explicit requirement to restore historical siege state.
 
 ## Owner intent
 

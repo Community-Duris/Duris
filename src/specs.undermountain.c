@@ -453,6 +453,14 @@ int lightning_sword(P_obj obj, P_char ch, int cmd, char *arg)
 				next_obj = corpse->next_content;
 				if (GET_ITEM_TYPE(corpse) == ITEM_CORPSE)
 				{
+					if (persistence_defer_corpse_room_release(corpse))
+					{
+						if (vict_level > (GET_LEVEL(ch) - 10))
+							spell_chain_lightning(16, ch, NULL,
+									      SPELL_TYPE_SPELL, 0,
+									      0);
+						return TRUE;
+					}
 					for (temp = corpse->contains; temp; temp = next_obj)
 					{
 						next_obj = temp->next_content;
@@ -1963,6 +1971,8 @@ int flying_dagger(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	{
 		if (GET_ITEM_TYPE(i) == ITEM_CORPSE)
 		{
+			if (persistence_defer_corpse_room_release(i))
+				return TRUE;
 			for (temp = i->contains; temp; temp = next_obj)
 			{
 				next_obj = temp->next_content;
@@ -1998,6 +2008,8 @@ int ochre_jelly(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	{
 		if (GET_ITEM_TYPE(i) == ITEM_CORPSE)
 		{
+			if (persistence_defer_corpse_room_release(i))
+				return TRUE;
 			for (temp = i->contains; temp; temp = next_obj)
 			{
 				next_obj = temp->next_content;

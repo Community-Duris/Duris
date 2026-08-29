@@ -3301,6 +3301,24 @@ bool submit_corpse_release(P_obj corpse)
 }
 } // namespace
 
+bool persistence_defer_corpse_room_release(P_obj corpse)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
+	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
+		return true;
+	if (!submit_corpse_release(corpse))
+	{
+		rearm_corpse_release(corpse);
+		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+	}
+	return true;
+}
+
 /*
  * replaces major part of point_update, called by Events() to make an
  * object decay and be extracted.  Mainly for use on corpses of course,
@@ -3319,17 +3337,8 @@ void Decay(P_obj obj)
 		logit(LOG_DEBUG, "Decay:  NULL obj");
 		return;
 	}
-	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
-	    obj->type == ITEM_CORPSE && IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
-	{
-		if (!submit_corpse_release(obj))
-		{
-			rearm_corpse_release(obj);
-			persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",
-					  "stage_failed", "save_id=%d", obj->value[CORPSE_SAVEID]);
-		}
+	if (persistence_defer_corpse_room_release(obj))
 		return;
-	}
 
 	if (OBJ_ROOM(obj))
 	{

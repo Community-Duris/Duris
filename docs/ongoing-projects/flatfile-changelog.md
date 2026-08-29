@@ -3956,3 +3956,36 @@ action" text below remains historical and does not authorize work.
 - **Next action:** classify and route explicit destructive corpse-extraction entry points without
   altering generic extraction semantics, then connect historical saved floor-item save/restore to
   the revisioned room aggregate.
+
+### Checkpoint 91 - audited destructive corpse release routing
+
+- **Narrow deferred contract:** `persistence_defer_corpse_room_release` is the single public guard
+  for explicit callers whose historical result is an empty corpse removed after its contents are
+  dropped in the same room. In flat-primary mode it recognizes an already-busy lifecycle as handled,
+  stages the existing atomic release when possible, and retains/rearms the corpse with an operator
+  alert when staging fails. It returns false for food, NPC corpses, and every MariaDB mode so their
+  established synchronous behavior is unchanged.
+- **Release-compatible callers:** the generic mobile devour proc, both Verzanan dog procs, Lightning
+  Sword, flying daggers, and ochre jelly now consult the guard before their first content movement.
+  A handled flat-primary corpse returns from the special without logging, messaging, moving a child,
+  or extracting the root; the lifecycle completion performs the already-validated room publication
+  only after durable success. Ordinary decay uses the same guard instead of duplicating submission
+  and failure handling.
+- **Bounded audit result:** generic `extract_obj` remains synchronous because recursive container
+  teardown and numerous non-corpse callers depend on that contract. Resurrection and necromancy
+  transfer contents to a player or created follower, unmaking and wall-of-bones couple corpse
+  consumption to gameplay effects, and `very_angry_npc` intentionally destroys contained gear.
+  None of those operations can be represented honestly by corpse-to-room release, so this checkpoint
+  does not invent a generalized extraction transaction for them.
+- **Checks passed:** the live source contract proves every routed special checks the deferred release
+  before its first `obj_from_obj`, changed-line formatting and `git diff --check` pass, and the strict
+  normal C++20 server build compiles and links successfully.
+- **Exposure:** routed specials publish the existing durable decay messages after completion rather
+  than their historical proc-specific flavor text. Immediate post-death release can also encounter
+  the corpse-establishment fence and therefore retains the corpse for a later lifecycle attempt.
+  Player/follower transfers, coupled spell effects, intentional contained-gear destruction, and
+  nested-corpse extraction still need operation-specific durability sequencing before flat-primary
+  mode can execute them safely.
+- **Next action:** restore historical saved floor-item capture and restart materialization through the
+  revisioned room aggregate, then return to the audited non-room corpse operations with the ownership
+  destinations required by those concrete gameplay paths.
