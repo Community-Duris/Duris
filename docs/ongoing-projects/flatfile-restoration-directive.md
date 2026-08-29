@@ -5,6 +5,47 @@
 
 ## Progress ledger
 
+### 2026-08-29 - restored live flat ship persistence
+
+- **Concrete gap:** ships were historically stored in `Ships/ship_index` plus one
+  version-3 text file per owner. Although the branch already contained a safer complete
+  ship catalog, live client-free `write_ship`, `read_ships`, and durable deletion all
+  returned failure or did nothing. Ships could neither load nor survive a save, sale,
+  re-owner, character deletion, or shutdown without MariaDB.
+- **Restoration:** the existing catalog is now connected directly to the old ship
+  runtime hooks; no replacement repository or generalized persistence layer was added.
+  It assigns durable ship IDs, preserves owner identity, class, name, anchor, combat and
+  sail state, armor, internal damage, crew, money, flags, and all 16 equipment/cargo
+  slots, and atomically publishes create, update, re-owner, and removal mutations under
+  the existing authority lock. Fresh state establishes an empty catalog. When the
+  catalog is absent but the historical `Ships/ship_index` exists, a bounded one-time
+  importer reads the exact version-3 owner files, applies the historical weapon/cargo
+  normalization, resolves owner PIDs, and publishes the safe catalog without deleting
+  the source files. Partial, oversized, unsafe, symlinked, duplicate, unknown-owner, or
+  invalid-slot input fails before publication. Corrupt current authority cannot be
+  overwritten. Flat boot now fails on an invalid ship authority; clean shutdown saves
+  without starting a SQL transaction; failed durable deletion preserves the live ship;
+  and committed flat character deletion also removes its live ship. The MariaDB
+  backend remains table-backed and its successful load/save/delete behavior is
+  unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_ship_repository.py` covers
+  current-format round trips, create/update/re-owner/remove behavior, durable ID and
+  revision allocation, ownership collisions, private permissions, checksum corruption,
+  overwrite refusal, exact legacy version-3 import and normalization, idempotent import,
+  missing legacy state, partial-record rejection, symlink refusal, and non-publication
+  after failed import. Its client-free preprocessing contract verifies live
+  load/save/delete/shutdown/import routes and rejects ship SQL calls. Existing ship save,
+  rename, transaction, shutdown, and character-delete regression tests also pass.
+- **Build evidence:** complete builds pass with both
+  `PERSISTENCE_BACKEND=flatfile` (without MySQL headers or client library) and
+  `PERSISTENCE_BACKEND=mariadb`; the client-free boot preflight, persistence-mode
+  contract, formatting check, and `git diff --check` pass.
+- **Overall state:** the historical per-owner ship aggregate and its current database
+  fields now have working live persistence in both modes. The global ship cargo-market
+  matrices were historically database-backed and their client-free read/write hooks
+  still return failure; that remains a separate concrete gap. The global
+  incomplete-domain boot fence remains.
+
 ### 2026-08-29 - connected safe flat siege-object persistence
 
 - **Concrete gap:** the historical siege subsystem saved its live object list to

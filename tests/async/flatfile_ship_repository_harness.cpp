@@ -1,5 +1,6 @@
 #include "flatfile_ship_repository.h"
 
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -54,6 +55,50 @@ static flatfile_ship_record ship(uint32_t id, uint32_t pid, const std::string &o
 	return value;
 }
 
+static bool resolve_legacy_owner(const char *owner, uint32_t *pid, std::string *error)
+{
+	if (!owner || !pid)
+		return false;
+	std::string name = owner;
+	for (char &character : name)
+		character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+	if (name == "player")
+	{
+		*pid = 42;
+		return true;
+	}
+	if (error)
+		*error = "unknown fixture owner";
+	return false;
+}
+
+static void write_legacy_ship(const fs::path &path, const std::string &owner)
+{
+	std::ofstream file(path);
+	require(file.good(), "could not create legacy ship fixture");
+	file << "version:3\n"
+	     << "3\n"
+	     << owner << "\n"
+	     << "The Legacy Ship\n"
+	     << "4\n"
+	     << "500 600\n"
+	     << "10 20\n11 21\n12 22\n13 23\n"
+	     << "70\n"
+	     << "5\n"
+	     << "1001 1002 1003 0 0 0\n"
+	     << "6 7 8 0 0 0 0 0 0 0\n";
+	for (int index = 0; index < 16; ++index)
+	{
+		if (index == 0)
+			file << "1 2\n0 -3\n44 45 46 47 48\n";
+		else if (index == 1)
+			file << "2 1\n4 0\n5 100 999 998 997\n";
+		else
+			file << "0 -1\n-1 0\n-1 -1 -1 -1 -1\n";
+	}
+	require(file.good(), "could not finish legacy ship fixture");
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -100,6 +145,38 @@ int main(int argc, char **argv)
 	require(flatfile_ship_establish(invalid_root.string(), { duplicate_slot }, &error) ==
 			flatfile_ship_result::invalid,
 		"duplicate ship slot was accepted");
+
+	auto created = ship(0, 88, "Newowner");
+	created.revision = 0;
+	require(flatfile_ship_upsert(root.string(), &created, &error) == flatfile_ship_result::ok &&
+			created.ship_id == 3 && created.revision == 1,
+		"new ship was not assigned a durable identity: " + error);
+	created.money = 901;
+	created.owner_pid = 89;
+	created.owner_name = "Replacement";
+	require(flatfile_ship_upsert(root.string(), &created, &error) == flatfile_ship_result::ok &&
+			created.revision == 2,
+		"ship update or re-owner failed: " + error);
+	require(flatfile_ship_list(root.string(), &records, &error) == flatfile_ship_result::ok &&
+			records.size() == 3 && records[2].ship_id == 3 &&
+			records[2].owner_pid == 89 && records[2].owner_name == "replacement" &&
+			records[2].money == 901,
+		"updated ship aggregate did not round trip");
+	auto collision = created;
+	collision.owner_pid = other.owner_pid;
+	collision.owner_name = other.owner_name;
+	require(flatfile_ship_upsert(root.string(), &collision, &error) ==
+			flatfile_ship_result::conflict,
+		"ship re-owner collision was accepted");
+	require(flatfile_ship_remove(root.string(), created.ship_id, "wrong", &error) ==
+			flatfile_ship_result::conflict,
+		"ship removal accepted the wrong owner");
+	require(flatfile_ship_remove(root.string(), created.ship_id, "rEpLaCeMeNt", &error) ==
+			flatfile_ship_result::ok,
+		"ship removal failed: " + error);
+	require(flatfile_ship_remove(root.string(), created.ship_id, "replacement", &error) ==
+			flatfile_ship_result::unchanged,
+		"ship removal retry was not idempotent");
 
 	flatfile_authority_operation operation;
 	{
@@ -149,6 +226,74 @@ int main(int argc, char **argv)
 	require(flatfile_ship_list(root.string(), &records, &error) ==
 			flatfile_ship_result::invalid,
 		"corrupt ship authority was exposed");
+	other.money++;
+	require(flatfile_ship_upsert(root.string(), &other, &error) ==
+			flatfile_ship_result::invalid,
+		"corrupt ship authority was overwritten by update");
+	require(flatfile_ship_remove(root.string(), other.ship_id, other.owner_name, &error) ==
+			flatfile_ship_result::invalid,
+		"corrupt ship authority was overwritten by removal");
+
+	const fs::path legacy_root = fs::path(argv[1]) / "legacy-state";
+	const fs::path legacy_directory = fs::path(argv[1]) / "Ships";
+	prepare_root(legacy_root);
+	fs::create_directories(legacy_directory);
+	{
+		std::ofstream index(legacy_directory / "ship_index");
+		index << "Player~\n$~";
+	}
+	write_legacy_ship(legacy_directory / "Player", "pLaYeR");
+	require(flatfile_ship_import_legacy(legacy_root.string(), legacy_directory.string(),
+					    resolve_legacy_owner,
+					    &error) == flatfile_ship_result::ok,
+		"legacy ship import failed: " + error);
+	require(flatfile_ship_list(legacy_root.string(), &records, &error) ==
+				flatfile_ship_result::ok &&
+			records.size() == 1 && records[0].ship_id == 1 &&
+			records[0].owner_pid == 42 && records[0].owner_name == "player" &&
+			records[0].ship_name == "The Legacy Ship" &&
+			records[0].slots.size() == 16 && records[0].slots[0].timer == 0 &&
+			records[0].slots[0].values[3] == -1 && records[0].slots[1].values[2] == -1,
+		"legacy ship did not preserve and normalize the version-3 fields");
+	require(flatfile_ship_import_legacy(legacy_root.string(), legacy_directory.string(),
+					    resolve_legacy_owner,
+					    &error) == flatfile_ship_result::already_exists,
+		"legacy ship import retry was not idempotent");
+
+	const fs::path broken_root = fs::path(argv[1]) / "broken-legacy-state";
+	const fs::path broken_directory = fs::path(argv[1]) / "broken-Ships";
+	prepare_root(broken_root);
+	fs::create_directories(broken_directory);
+	{
+		std::ofstream index(broken_directory / "ship_index");
+		index << "Player~\n$~";
+		std::ofstream partial(broken_directory / "Player");
+		partial << "version:3\n3\nPlayer\npartial\n";
+	}
+	require(flatfile_ship_import_legacy(broken_root.string(), broken_directory.string(),
+					    resolve_legacy_owner,
+					    &error) == flatfile_ship_result::invalid,
+		"partial legacy ship was imported");
+	require(flatfile_ship_list(broken_root.string(), &records, &error) ==
+			flatfile_ship_result::not_found,
+		"failed legacy import published partial authority");
+	require(flatfile_ship_import_legacy(
+			broken_root.string(), (fs::path(argv[1]) / "missing-Ships").string(),
+			resolve_legacy_owner, &error) == flatfile_ship_result::not_found,
+		"missing legacy ship tree was not distinguished from corruption");
+	const fs::path symlink_root = fs::path(argv[1]) / "symlink-legacy-state";
+	const fs::path symlink_directory = fs::path(argv[1]) / "symlink-Ships";
+	prepare_root(symlink_root);
+	fs::create_directories(symlink_directory);
+	{
+		std::ofstream index(symlink_directory / "ship_index");
+		index << "Player~\n$~";
+	}
+	fs::create_symlink(legacy_directory / "Player", symlink_directory / "Player");
+	require(flatfile_ship_import_legacy(symlink_root.string(), symlink_directory.string(),
+					    resolve_legacy_owner,
+					    &error) == flatfile_ship_result::invalid,
+		"legacy ship symlink was followed");
 	std::cout << "flat-file ship repository passed\n";
 	return 0;
 }

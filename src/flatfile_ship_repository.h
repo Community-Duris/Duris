@@ -61,12 +61,23 @@ enum class flatfile_ship_result
 	io_error
 };
 
+using flatfile_ship_owner_pid_resolver = bool (*)(const char *owner_name, uint32_t *pid,
+						  std::string *error);
+
 flatfile_ship_result flatfile_ship_establish(const std::string &root,
 					     const std::vector<flatfile_ship_record> &ships,
 					     std::string *error);
 flatfile_ship_result flatfile_ship_list(const std::string &root,
 					std::vector<flatfile_ship_record> *ships,
 					std::string *error);
+flatfile_ship_result flatfile_ship_upsert(const std::string &root, flatfile_ship_record *ship,
+					  std::string *error);
+flatfile_ship_result flatfile_ship_remove(const std::string &root, uint32_t ship_id,
+					  const std::string &expected_owner, std::string *error);
+flatfile_ship_result flatfile_ship_import_legacy(const std::string &root,
+						 const std::string &legacy_directory,
+						 flatfile_ship_owner_pid_resolver resolve_owner,
+						 std::string *error);
 flatfile_ship_result
 flatfile_ship_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
 				    uint32_t pid, const std::string &expected_name,

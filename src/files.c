@@ -1890,6 +1890,7 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 		if (ch->desc && ch->desc->account)
 			remove_char_from_list(ch->desc->account, ch->player.name);
 #endif
+		delete_ship(GET_NAME(ch));
 		return TRUE;
 	}
 
