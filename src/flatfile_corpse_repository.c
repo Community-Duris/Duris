@@ -4,6 +4,8 @@
 #include "flatfile_artifact_repository.h"
 #include "flatfile_authority_transaction.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_player_domain_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_store.h"
 #include "flatfile_world_item_repository.h"
 
@@ -356,9 +358,12 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	flatfile_corpse_release_mutation release;
 	flatfile_item_corpse_release_mutation release_items;
 	flatfile_artifact_transfer_mutation release_artifacts;
+	flatfile_wallet_mutation resurrection_wallet;
+	flatfile_shop_trade_materialization_mutation resurrection_materialization;
 	const bool releases_custody = payload.action == corpse_lifecycle_action::release;
 	const bool destroys_custody = payload.action == corpse_lifecycle_action::destroy;
-	const bool disposes_custody = releases_custody || destroys_custody;
+	const bool resurrects_custody = payload.action == corpse_lifecycle_action::resurrect;
+	const bool disposes_custody = releases_custody || destroys_custody || resurrects_custody;
 	const auto prepared =
 		disposes_custody ?
 			flatfile_world_item_prepare_corpse_release(root, authority, payload,
@@ -388,7 +393,8 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 							 flatfile_item_repository_result::io_error ?
 						 EIO :
 						 EILSEQ) };
-		if (releases_custody && release_items.room_owner_revision != release.room_revision)
+		if ((releases_custody || resurrects_custody) &&
+		    release_items.room_owner_revision != release.room_revision)
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
 		const auto artifact_prepared =
@@ -396,8 +402,13 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 						   root, authority, payload.owner_pid,
 						   payload.room_vnum, command.accepted_at_usec,
 						   release.items, &release_artifacts, &error) :
-					   flatfile_artifact_prepare_corpse_destruction(
+			destroys_custody ? flatfile_artifact_prepare_corpse_destruction(
 						   root, authority, payload.owner_pid,
+						   command.accepted_at_usec, release.items,
+						   &release_artifacts, &error) :
+					   flatfile_artifact_prepare_corpse_resurrection(
+						   root, authority, payload.owner_pid,
+						   payload.destination_player_pid,
 						   command.accepted_at_usec, release.items,
 						   &release_artifacts, &error);
 		if (artifact_prepared != flatfile_artifact_result::ok &&
@@ -411,6 +422,53 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 						 EIO :
 						 EILSEQ) };
 		include_release_artifacts = artifact_prepared == flatfile_artifact_result::ok;
+	}
+	bool include_resurrection_wallet = false;
+	bool include_resurrection_materialization = false;
+	if (prepared == flatfile_world_item_result::ok && resurrects_custody)
+	{
+		const auto wallet_prepared = flatfile_player_domain_prepare_resurrection_wallet(
+			root, authority, payload.destination_player_pid,
+			payload.expected_wallet_revision, payload.money, release.money,
+			&resurrection_wallet, &error);
+		if (wallet_prepared != flatfile_player_domain_result::ok ||
+		    resurrection_wallet.after_images.size() != 1)
+			return {
+				wallet_prepared == flatfile_player_domain_result::io_error ?
+					critical_apply_outcome::retryable_failure :
+					critical_apply_outcome::terminal_failure,
+				catalog.revision,
+				static_cast<unsigned int>(
+					wallet_prepared == flatfile_player_domain_result::io_error ?
+						EIO :
+					wallet_prepared == flatfile_player_domain_result::conflict ?
+						ESTALE :
+						EILSEQ)
+			};
+		include_resurrection_wallet = true;
+		const auto materialization_prepared =
+			flatfile_corpse_resurrection_materialization_prepare(
+				root, authority, command.operation_id,
+				payload.destination_player_pid, release.items,
+				&resurrection_materialization, &error);
+		if (materialization_prepared != flatfile_shop_trade_materialization_result::ok &&
+		    materialization_prepared !=
+			    flatfile_shop_trade_materialization_result::unchanged)
+			return {
+				materialization_prepared ==
+						flatfile_shop_trade_materialization_result::io_error ?
+					critical_apply_outcome::retryable_failure :
+					critical_apply_outcome::terminal_failure,
+				catalog.revision,
+				static_cast<unsigned int>(
+					materialization_prepared ==
+							flatfile_shop_trade_materialization_result::
+								io_error ?
+						EIO :
+						EILSEQ)
+			};
+		include_resurrection_materialization =
+			materialization_prepared == flatfile_shop_trade_materialization_result::ok;
 	}
 	corpse_operation operation = {};
 	operation.operation_id = command.operation_id;
@@ -434,8 +492,14 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 		{
 			result.corpse_owner_revision = release_items.corpse_owner_revision;
 			result.room_owner_revision = release_items.room_owner_revision;
+			result.player_owner_revision = release_items.player_owner_revision;
+			result.wallet_revision = resurrection_wallet.wallet_revision;
 			result.max_item_revision = release_items.max_item_revision;
 			result.item_count = static_cast<uint32_t>(release_items.item_count);
+			if (resurrects_custody)
+				for (size_t index = 0; index < result.wallet.size(); ++index)
+					result.wallet[index] = static_cast<int32_t>(
+						resurrection_wallet.wallet.amount[index]);
 		}
 		if (!corpse_lifecycle_command_encode_result(result, &operation.result_payload))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
@@ -465,6 +529,12 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 				images.push_back(std::move(release.after_image));
 				if (include_release_artifacts)
 					images.push_back(std::move(release_artifacts.after_image));
+				if (include_resurrection_wallet)
+					images.push_back(std::move(
+						resurrection_wallet.after_images.front()));
+				if (include_resurrection_materialization)
+					images.push_back(std::move(
+						resurrection_materialization.after_image));
 			}
 			else
 				images.push_back(std::move(mutation.after_image));

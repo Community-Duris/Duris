@@ -67,6 +67,7 @@ struct flatfile_item_corpse_release_mutation
 	flatfile_authority_after_image after_image;
 	uint64_t corpse_owner_revision = 0;
 	uint64_t room_owner_revision = 0;
+	uint64_t player_owner_revision = 0;
 	uint64_t max_item_revision = 0;
 	uint64_t item_count = 0;
 };

@@ -10,33 +10,30 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 97 restores the historical player-corpse branch of `compact
-corpse` in flat-primary mode. After the existing corpse and mutilation checks, the spell
-now allocates its replacement bone pile off-world and stops before moving any contents.
-It then submits the existing atomic corpse-to-room release. Durable acknowledgment must
-prove the same live corpse, room, and item graph and advance runtime custody before the
-historical crunch message and level-bearing bone pile become visible, exact contents and
-money reach the room, and the corpse is extracted. Submission or durable failure removes
-the staged pile and retains the intact corpse. This also corrects the historical failure
-order that dumped contents before discovering the bone prototype could not load. NPC
-corpses and every MariaDB mode retain their synchronous path.
+As of 2026-08-29, checkpoint 98 restores full and lesser player resurrection in
+flat-primary mode. Each spell now stops after its historical eligibility and chance
+checks but before changing the target, corpse, items, or money. The target's durable
+inventory roots are moved one at a time through the existing player-to-room command.
+The final resurrection-only lifecycle action then atomically deposits the target's old
+wallet in that room, replaces it with the corpse wallet, transfers the exact nested
+corpse item graph and artifacts to the player, removes the corpse, and records restart
+materialization. Only its durable acknowledgment moves the live target and corpse
+contents and applies the original spell effects. MariaDB modes and NPC resurrection
+retain their synchronous behavior.
 
-No command, payload, catalog, or generic spell framework was added. The bounded,
-process-local context records only stable corpse identity, the staged pile identity, and
-a non-reusable caster runtime ID; all durable corpse, item, room-money, and artifact
-recovery continues to use the checkpoint 88 release authority. The replacement pile,
-like checkpoint 96's wall, is transient gameplay state: a process death after the
-release commits does not replay it, while the exact released durable custody still
-recovers.
+The payload and result extension is limited to the identities and revisions required by
+that final exchange. It composes the existing world-item, item-ownership, player-wallet,
+artifact, materialization, and operation-ledger after-images under the existing shared
+authority transaction; it does not add a general spell or extraction framework. Forced
+interruption recovers and replays the same result exactly once. A crash during the
+preceding item drops leaves already committed roots safely in the old room and the
+corpse intact, so the operation can be resumed without item or currency duplication.
 
-The remaining audited player-corpse paths have no equally narrow authority. Resurrection
-exchanges the target's current inventory and wallet with the old room before moving the
-corpse aggregate to the player; follower raising needs a durable pet-item destination;
-and a nested corpse decays into its containing object rather than onto the room floor.
-Each requires a new composite cross-authority boundary. Per this directive's working
-rule, that material design expansion requires explicit owner approval before
-implementation. The siege/kingdom removal memo remains research only and does not amend
-this directive's explicit requirement to restore historical siege state.
+The remaining audited corpse paths are follower raising, which needs a durable pet-item
+destination, and decay of a corpse nested inside another object, which must retain the
+containing topology. Historical mixed-format siege-state compatibility also remains to
+be restored. The earlier siege/kingdom removal memo remains research only and does not
+amend this directive's explicit siege requirement.
 
 ## Owner intent
 

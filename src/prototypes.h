@@ -2582,6 +2582,8 @@ void spell_remove_curse(int, P_char, char *, int, P_char, P_obj);
 void spell_remove_poison(int, P_char, char *, int, P_char, P_obj);
 void spell_resurrect(int, P_char, char *, int, P_char, P_obj);
 void spell_lesser_resurrect(int, P_char, char *, int, P_char, P_obj);
+bool persistence_defer_corpse_resurrection(P_obj, P_char, P_char, bool);
+void complete_player_resurrection_after_commit(P_char, P_char, P_obj, bool, int);
 void spell_sense_life(int, P_char, char *, int, P_char, P_obj);
 void spell_sense_follower(int, P_char, char *, int, P_char, P_obj);
 void spell_slow(int, P_char, char *, int, P_char, P_obj);

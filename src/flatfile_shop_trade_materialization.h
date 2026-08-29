@@ -41,6 +41,11 @@ flatfile_shop_trade_materialization_result flatfile_item_transfer_materializatio
 	const std::string &root, const flatfile_authority_lock &lock,
 	const critical_operation_id &operation_id, const item_transfer_payload &payload,
 	flatfile_shop_trade_materialization_mutation *mutation, std::string *error);
+flatfile_shop_trade_materialization_result flatfile_corpse_resurrection_materialization_prepare(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation_id, uint32_t player_pid,
+	const std::vector<player_item_snapshot> &items,
+	flatfile_shop_trade_materialization_mutation *mutation, std::string *error);
 
 flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_reconcile(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,

@@ -15420,6 +15420,162 @@ bool isCarved(P_obj corpse)
 	return FALSE;
 }
 
+void complete_player_resurrection_after_commit(P_char ch, P_char t_ch, P_obj obj, bool lesser,
+					       int old_room)
+{
+	P_obj obj_in_corpse, next_obj, t_obj;
+	struct affected_type *af, *next_af;
+
+	if (!ch || !t_ch || !obj || old_room <= NOWHERE || old_room > top_of_world)
+		return;
+
+	if (!lesser && IS_PC(t_ch) && IS_RIDING(t_ch))
+		stop_riding(t_ch);
+
+	if (lesser)
+	{
+		act("$n &+Mhowls in pain&n as $s body &+Lcrumbles to dust.&n", FALSE, t_ch, 0, 0,
+		    TO_ROOM);
+		act("You &+Mhowl in pain&n as your &+wsoul&n leaves your body to return to your corpse.",
+		    FALSE, t_ch, 0, 0, TO_CHAR);
+	}
+	else
+	{
+		act("$n &+rhowls &+win pain as $s body crumbles to &+Ldust&+w.&n", FALSE, t_ch, 0,
+		    0, TO_ROOM);
+		act("&+wYou &+rhowl &+win pain as your soul leaves your body to return to your &+Lcorpse&+w.&n",
+		    FALSE, t_ch, 0, 0, TO_CHAR);
+	}
+
+	t_ch->only.pc->pc_timer[PC_TIMER_HEAVEN] = 0;
+	if (GET_OPPONENT(t_ch))
+		stop_fighting(t_ch);
+	if (IS_DESTROYING(t_ch))
+		stop_destroying(t_ch);
+	StopAllAttackers(t_ch);
+	if (lesser && IS_PC(t_ch) && IS_RIDING(t_ch))
+		stop_riding(t_ch);
+
+	for (af = t_ch->affected; af; af = next_af)
+	{
+		next_af = af->next;
+		if (!(af->flags & AFFTYPE_NODISPEL))
+			affect_remove(t_ch, af);
+	}
+
+	for (t_obj = t_ch->carrying; t_obj; t_obj = next_obj)
+	{
+		next_obj = t_obj->next_content;
+		if (IS_SET(obj->extra_flags, ITEM_TRANSIENT))
+			extract_obj(t_obj, TRUE);
+		else
+		{
+			obj_from_char(t_obj);
+			obj_to_room(t_obj, old_room);
+		}
+	}
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+	{
+		if (!t_ch->equipment[slot])
+			continue;
+		t_obj = unequip_char(t_ch, slot);
+		if (IS_SET(t_obj->extra_flags, ITEM_TRANSIENT))
+			extract_obj(t_obj, TRUE);
+		else
+			obj_to_room(t_obj, old_room);
+	}
+
+	char_from_room(t_ch);
+	char_to_room(t_ch, ch->in_room, -2);
+	for (obj_in_corpse = obj->contains; obj_in_corpse; obj_in_corpse = next_obj)
+	{
+		next_obj = obj_in_corpse->next_content;
+		obj_from_obj(obj_in_corpse);
+		if (obj_in_corpse->type == ITEM_MONEY)
+			extract_obj(obj_in_corpse);
+		else
+			obj_to_char(obj_in_corpse, t_ch);
+	}
+
+	if (lesser)
+	{
+		act("&+CAn aura of &+Wsoft&n &+Clight surrounds&n $n &+C for a moment.", TRUE, t_ch,
+		    0, 0, TO_ROOM);
+		act("$n &+Ccomes to life again!&+C Taking a deep breath,&n $n&+C opens $s eyes!",
+		    TRUE, t_ch, 0, 0, TO_ROOM);
+		act("&+LYou are extremely tired after resurrecting&n $N.", TRUE, ch, 0, t_ch,
+		    TO_CHAR);
+		act("You are &+yextremely tired&n after being resurrected!", TRUE, t_ch, 0, 0,
+		    TO_CHAR);
+	}
+	else
+	{
+		if (IS_EVIL(ch))
+			act("&+wAn aura of intense &+Lbitter darkness &+wsurrounds&n $n &+wfor a moment.&n",
+			    TRUE, t_ch, 0, 0, TO_ROOM);
+		else
+			act("&+wAn aura of intensely &+Ybright &+Wlight &+wsurrounds&n $n &+wfor a moment.&n",
+			    TRUE, t_ch, 0, 0, TO_ROOM);
+		act("$n &+wcomes to &+Wlife &+wagain! Taking a &+Cdeep breath&+W, $n opens $s eyes!&n",
+		    TRUE, t_ch, 0, 0, TO_ROOM);
+		act("&+wYou are &+cextremely tired &+wafter resurrecting $N.", TRUE, ch, 0, t_ch,
+		    TO_CHAR);
+		act("&+wYou are &+cextremely tired &+wafter being resurrected!&n", TRUE, t_ch, 0, 0,
+		    TO_CHAR);
+	}
+
+	GET_VITALITY(ch) = MIN(0, GET_VITALITY(ch));
+	StartRegen(ch, regen_resource::vitality);
+	if (!lesser && !IS_TRUSTED(t_ch))
+	{
+		long resu_exp = obj->value[4];
+		if (resu_exp == 0)
+			wizlog(56, "MEMORY ERROR: Player corpse with zero exp!");
+		if (!IS_TRUSTED(ch))
+		{
+			if (GET_LEVEL(t_ch) >= 56)
+				resu_exp = static_cast<long>(resu_exp * 0.500);
+			else if (EVIL_RACE(t_ch))
+				resu_exp = static_cast<long>(resu_exp * exp_mods[EXPMOD_RES_EVIL]);
+			else
+				resu_exp =
+					static_cast<long>(resu_exp * exp_mods[EXPMOD_RES_NORMAL]);
+		}
+		logit(LOG_EXP,
+		      "Resu debug: %s (%d) by %s (%d): old exp: %d, new exp: %ld, +exp: %ld",
+		      GET_NAME(t_ch), GET_LEVEL(t_ch), GET_NAME(ch), GET_LEVEL(ch), GET_EXP(t_ch),
+		      GET_EXP(t_ch) + resu_exp, resu_exp);
+		debug("&+RResurrect&n: %s (%d) by %s (%d): old exp: %d, new exp: %ld, +exp: %ld",
+		      GET_NAME(t_ch), GET_LEVEL(t_ch), GET_NAME(ch), GET_LEVEL(ch), GET_EXP(t_ch),
+		      GET_EXP(t_ch) + resu_exp, resu_exp);
+		gain_exp(t_ch, NULL, resu_exp, EXP_RESURRECT);
+	}
+
+	GET_HIT(t_ch) = GET_MAX_HIT(t_ch);
+	GET_MANA(t_ch) = MAX(0, GET_MAX_MANA(t_ch) >> 2);
+	GET_VITALITY(t_ch) = MIN(0, GET_MAX_VITALITY(t_ch));
+	if (GET_COND(t_ch, FULL) > 0)
+		GET_COND(t_ch, FULL) = 0;
+	if (GET_COND(t_ch, THIRST) > 0)
+		GET_COND(t_ch, THIRST) = 0;
+	if (!lesser)
+		SET_POS(ch, POS_STANDING + STAT_NORMAL);
+	StartRegen(t_ch, regen_resource::vitality);
+	StartRegen(t_ch, regen_resource::mana);
+	if (!lesser && affected_by_spell(t_ch, SPELL_POISON))
+		affect_from_char(t_ch, SPELL_POISON);
+	if (!lesser && IS_AFFECTED2(t_ch, AFF2_POISONED))
+		REMOVE_BIT(t_ch->specials.affected_by2, AFF2_POISONED);
+
+	if (!writeCharacter(t_ch, 1, t_ch->in_room))
+	{
+		logit(LOG_DEBUG, "Problem saving player %s in spell_resurrect()", GET_NAME(t_ch));
+		send_to_char("There was a problem saving your character!\n", t_ch);
+		send_to_char("Contact an Implementor ASAP.\n", t_ch);
+	}
+	extract_obj(obj);
+}
+
 void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		     P_char /*victim*/, P_obj obj)
 {
@@ -15578,6 +15734,9 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 				      GET_NAME(ch), GET_NAME(t_ch), ss_roll, chance, level);
 			}
 		}
+
+		if (persistence_defer_corpse_resurrection(obj, ch, t_ch, false))
+			return;
 
 		if (IS_PC(t_ch) && IS_RIDING(t_ch))
 		{
@@ -15986,6 +16145,9 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 				      GET_NAME(ch), GET_NAME(t_ch), ss_roll, chance, level);
 			}
 		}
+
+		if (persistence_defer_corpse_resurrection(obj, ch, t_ch, true))
+			return;
 
 		act("$n &+Mhowls in pain&n as $s body &+Lcrumbles to dust.&n", FALSE, t_ch, 0, 0,
 		    TO_ROOM);

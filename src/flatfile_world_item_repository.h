@@ -91,6 +91,7 @@ struct flatfile_corpse_release_mutation
 	flatfile_authority_after_image after_image;
 	std::vector<flatfile_corpse_custody_item> expected_items;
 	std::vector<player_item_snapshot> items;
+	std::array<int32_t, 4> money = {};
 	uint64_t room_revision = 0;
 	uint64_t catalog_revision = 0;
 };

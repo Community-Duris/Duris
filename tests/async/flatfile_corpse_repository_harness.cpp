@@ -2,6 +2,8 @@
 #include "flatfile_artifact_repository.h"
 #include "flatfile_corpse_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_player_domain_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_world_item_repository.h"
 
 #include <cerrno>
@@ -419,6 +421,134 @@ int main(int argc, char **argv)
 			destroyed_artifact.bind_owner_pid == -1 &&
 			destroyed_artifact.bind_timer == 0 && destroyed_artifact.revision == 2,
 		"recovered corpse destruction did not clear artifact custody and binding");
+
+	const fs::path resurrection_root = fs::path(argv[1]) / "resurrection";
+	prepare_root(resurrection_root);
+	flatfile_corpse_record resurrection_corpse = released_corpse;
+	resurrection_corpse.money = { 40, 30, 20, 10 };
+	require(flatfile_world_item_establish(resurrection_root.string(), { resurrection_corpse },
+					      {}, &error) == flatfile_world_item_result::ok,
+		"could not establish resurrectable corpse: " + error);
+	require(flatfile_item_repository_establish_owner(
+			resurrection_root.string(), corpse_owner,
+			{ { 900, 900, 0, corpse_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, corpse_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish resurrectable corpse custody: " + error);
+	const item_owner_identity resurrected_player_owner = { item_owner_type::player, 70, 0 };
+	require(flatfile_item_repository_establish_owner(
+			resurrection_root.string(), resurrected_player_owner,
+			{ { 800, 800, 0, resurrected_player_owner, 1, 1800,
+			    item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish resurrection target custody: " + error);
+	flatfile_player_domain_record resurrection_player = {};
+	resurrection_player.pid = 70;
+	resurrection_player.account_name = "resurrection-account";
+	resurrection_player.racewar = 1;
+	resurrection_player.domains.wallet = { 1, 2, 3, 4 };
+	require(flatfile_player_domain_establish(resurrection_root.string(), resurrection_player,
+						 &error) == flatfile_player_domain_result::ok,
+		"could not establish resurrection target wallet: " + error);
+	flatfile_artifact_record resurrection_artifact = corpse_artifact;
+	resurrection_artifact.bind_owner_pid = 42;
+	resurrection_artifact.bind_timer = 6000;
+	require(flatfile_artifact_establish(resurrection_root.string(), { resurrection_artifact },
+					    &error) == flatfile_artifact_result::ok,
+		"could not establish resurrectable corpse artifact: " + error);
+	corpse_lifecycle_payload resurrection_payload = {};
+	resurrection_payload.action = corpse_lifecycle_action::resurrect;
+	resurrection_payload.owner_pid = 42;
+	resurrection_payload.save_id = 20;
+	resurrection_payload.expected_corpse_revision = 3;
+	resurrection_payload.expected_room_revision = 0;
+	resurrection_payload.destination_player_pid = 70;
+	resurrection_payload.old_room_vnum = 600;
+	resurrection_payload.expected_player_revision = 1;
+	resurrection_payload.expected_wallet_revision = 0;
+	resurrection_payload.room_vnum = 500;
+	resurrection_payload.money = { 1, 2, 3, 4 };
+	resurrection_payload.owner_name = "Hero";
+	auto resurrection_command = command(12, resurrection_payload);
+	resurrection_command.accepted_at_usec = 14000000;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "3", 1);
+	applied =
+		flatfile_corpse_repository_apply(resurrection_root.string(), resurrection_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted corpse resurrection did not retain recoverable composite intent");
+	applied =
+		flatfile_corpse_repository_apply(resurrection_root.string(), resurrection_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"corpse resurrection did not recover and replay exactly");
+	result = {};
+	require(corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+						       applied.result_size, &result) &&
+			result.action == corpse_lifecycle_action::resurrect &&
+			result.catalog_revision == 2 && result.corpse_owner_revision == 2 &&
+			result.room_owner_revision == 1 && result.player_owner_revision == 2 &&
+			result.wallet_revision == 1 && result.max_item_revision == 2 &&
+			result.item_count == 2 && result.wallet == resurrection_corpse.money,
+		"corpse resurrection result did not expose all committed revisions");
+	corpses.clear();
+	saved.clear();
+	require(flatfile_world_item_list(resurrection_root.string(), &corpses, &saved, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty(),
+		"recovered corpse resurrection retained the corpse aggregate");
+	rooms.clear();
+	require(flatfile_world_item_list_rooms(resurrection_root.string(), &rooms, &error) ==
+				flatfile_world_item_result::ok &&
+			rooms.size() == 1 && rooms[0].room_vnum == 600 && rooms[0].revision == 1 &&
+			rooms[0].money == resurrection_payload.money && rooms[0].items.empty(),
+		"recovered corpse resurrection did not deposit the target's old wallet");
+	uint64_t resurrected_player_revision = 0;
+	std::vector<flatfile_item_ownership_record> resurrected_player_items;
+	require(flatfile_item_repository_load_owner(
+			resurrection_root.string(), resurrected_player_owner,
+			&resurrected_player_revision, &resurrected_player_items,
+			&error) == flatfile_item_repository_result::ok &&
+			resurrected_player_revision == 2 && resurrected_player_items.size() == 3 &&
+			resurrected_player_items[1].item_uid == 900 &&
+			resurrected_player_items[1].item_revision == 2 &&
+			resurrected_player_items[2].parent_item_uid == 900,
+		"recovered corpse resurrection did not transfer target item custody");
+	flatfile_player_domain_record loaded_resurrection_player;
+	require(flatfile_player_domain_load(resurrection_root.string(), 70, "resurrection-account",
+					    1, &loaded_resurrection_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_resurrection_player.domains.wallet_revision == 1 &&
+			loaded_resurrection_player.domains.wallet ==
+				std::array<uint64_t, 4>{ 40, 30, 20, 10 },
+		"recovered corpse resurrection did not exchange the target wallet");
+	flatfile_artifact_record resurrected_artifact;
+	require(flatfile_artifact_get(resurrection_root.string(), 1901, &resurrected_artifact,
+				      &error) == flatfile_artifact_result::ok &&
+			resurrected_artifact.owned &&
+			resurrected_artifact.location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			resurrected_artifact.location == 70 &&
+			resurrected_artifact.bind_owner_pid == 42 &&
+			resurrected_artifact.bind_timer == 6000 &&
+			resurrected_artifact.last_update == 14 &&
+			resurrected_artifact.revision == 2,
+		"recovered corpse resurrection did not move the artifact without changing its soul binding");
+	player_snapshot stale_resurrection_snapshot = {};
+	stale_resurrection_snapshot.pid = 70;
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(resurrection_root.string(), &error),
+			"could not lock resurrection materialization: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				resurrection_root.string(), reconciliation_lock, 70,
+				resurrected_player_items, &stale_resurrection_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_resurrection_snapshot.items.size() == 2 &&
+				stale_resurrection_snapshot.items[0].object_uid == 900 &&
+				stale_resurrection_snapshot.items[1].parent_index == 0,
+			"restart reconciliation did not materialize resurrected corpse items: " +
+				error);
+	}
 	std::cout << "flat-file corpse lifecycle repository passed\n";
 	return 0;
 }

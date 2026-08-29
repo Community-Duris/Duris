@@ -1208,9 +1208,18 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 {
 	const bool release = payload.action == corpse_lifecycle_action::release;
 	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
-	if (root.empty() || !lock.matches(root) || !mutation || release == destroy ||
+	const bool resurrect = payload.action == corpse_lifecycle_action::resurrect;
+	if (root.empty() || !lock.matches(root) || !mutation ||
+	    static_cast<unsigned int>(release) + static_cast<unsigned int>(destroy) +
+			    static_cast<unsigned int>(resurrect) !=
+		    1 ||
 	    !payload.owner_pid || !payload.save_id || !payload.expected_corpse_revision ||
-	    payload.room_vnum <= 0 || !valid_printable(payload.owner_name, name_maximum, true))
+	    payload.room_vnum <= 0 ||
+	    (resurrect && (!payload.destination_player_pid || payload.old_room_vnum <= 0 ||
+			   !payload.expected_player_revision ||
+			   std::any_of(payload.money.begin(), payload.money.end(),
+				       [](int32_t amount) { return amount < 0; }))) ||
+	    !valid_printable(payload.owner_name, name_maximum, true))
 		return flatfile_world_item_result::invalid;
 	*mutation = {};
 	world_item_catalog catalog;
@@ -1230,18 +1239,21 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 	    corpse->room_vnum != payload.room_vnum || catalog.revision == UINT64_MAX)
 		return flatfile_world_item_result::conflict;
 	flatfile_room_item_record room_key = {};
-	room_key.room_vnum = payload.room_vnum;
+	room_key.room_vnum = resurrect ? payload.old_room_vnum : payload.room_vnum;
 	auto room =
 		std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), room_key, room_less);
-	const bool room_found = room != catalog.rooms.end() && room->room_vnum == payload.room_vnum;
-	if (release && ((room_found && room->revision != payload.expected_room_revision) ||
-			(!room_found && payload.expected_room_revision) ||
-			(room_found && room->revision == UINT64_MAX) ||
-			(!room_found && catalog.rooms.size() >= room_maximum)))
+	const bool room_found = room != catalog.rooms.end() &&
+				room->room_vnum == room_key.room_vnum;
+	if ((release || resurrect) &&
+	    ((room_found && room->revision != payload.expected_room_revision) ||
+	     (!room_found && payload.expected_room_revision) ||
+	     (room_found && room->revision == UINT64_MAX) ||
+	     (!room_found && catalog.rooms.size() >= room_maximum)))
 		return flatfile_world_item_result::conflict;
 	try
 	{
 		mutation->items = corpse->items;
+		mutation->money = corpse->money;
 		mutation->expected_items.reserve(corpse->items.size());
 		for (size_t index = 0; index < corpse->items.size(); ++index)
 		{
@@ -1265,29 +1277,34 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 		std::sort(mutation->expected_items.begin(), mutation->expected_items.end(),
 			  [](const auto &left, const auto &right)
 			  { return left.item_uid < right.item_uid; });
-		if (release)
+		if (release || resurrect)
 		{
 			if (!room_found)
 			{
 				flatfile_room_item_record created = {};
-				created.room_vnum = payload.room_vnum;
+				created.room_vnum = room_key.room_vnum;
 				created.revision = 1;
 				room = catalog.rooms.insert(room, std::move(created));
 			}
 			else
 				++room->revision;
-			const int32_t offset = static_cast<int32_t>(room->items.size());
-			for (auto item : corpse->items)
+			if (release)
 			{
-				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
-					item.parent_index += offset;
-				room->items.push_back(std::move(item));
+				const int32_t offset = static_cast<int32_t>(room->items.size());
+				for (auto item : corpse->items)
+				{
+					if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+						item.parent_index += offset;
+					room->items.push_back(std::move(item));
+				}
 			}
 			for (size_t index = 0; index < room->money.size(); ++index)
 			{
-				if (corpse->money[index] > INT32_MAX - room->money[index])
+				const int32_t addition = release ? corpse->money[index] :
+								   payload.money[index];
+				if (addition > INT32_MAX - room->money[index])
 					return flatfile_world_item_result::conflict;
-				room->money[index] += corpse->money[index];
+				room->money[index] += addition;
 			}
 			mutation->room_revision = room->revision;
 		}

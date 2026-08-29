@@ -179,6 +179,48 @@ int main()
 	assert(item_ownership_runtime_owner_revision(destruction, &owner_revision) &&
 	       owner_revision == 1);
 	assert(!item_ownership_runtime_apply_corpse_destruction(50, 30, destroyed));
+
+	item_ownership_runtime_reset();
+	const item_owner_identity resurrected_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(60, 40), 0
+	};
+	const item_owner_identity resurrected_player = { item_owner_type::player, 70, 0 };
+	const item_owner_identity old_room = { item_owner_type::room, 600, 0 };
+	const item_ownership_runtime_entry resurrected_items[] = {
+		{ 500, 500, 0, resurrected_corpse, 3, 4, 40, item_custody_state::active },
+		{ 501, 500, 500, resurrected_corpse, 5, 4, 41, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(resurrected_items, 2));
+	assert(item_ownership_runtime_hydrate_owner(resurrected_player, 6));
+	assert(item_ownership_runtime_hydrate_owner(old_room, 8));
+	corpse_lifecycle_result resurrected = {};
+	resurrected.owner_pid = 60;
+	resurrected.save_id = 40;
+	resurrected.action = corpse_lifecycle_action::resurrect;
+	resurrected.catalog_revision = 12;
+	resurrected.corpse_owner_revision = 5;
+	resurrected.room_owner_revision = 9;
+	resurrected.player_owner_revision = 7;
+	resurrected.wallet_revision = 2;
+	resurrected.max_item_revision = 6;
+	resurrected.item_count = 2;
+	resurrected.wallet = { 1, 2, 3, 4 };
+	assert(item_ownership_runtime_apply_corpse_resurrection(60, 40, 70, 600,
+							       resurrected));
+	assert(item_ownership_runtime_lookup(500, &absent) &&
+	       item_owner_identity_equal(absent.owner, resurrected_player) &&
+	       absent.item_revision == 4 && absent.owner_revision == 7);
+	assert(item_ownership_runtime_lookup(501, &absent) &&
+	       item_owner_identity_equal(absent.owner, resurrected_player) &&
+	       absent.item_revision == 6 && absent.parent_item_uid == 500);
+	assert(item_ownership_runtime_owner_revision(resurrected_corpse, &owner_revision) &&
+	       owner_revision == 5);
+	assert(item_ownership_runtime_owner_revision(resurrected_player, &owner_revision) &&
+	       owner_revision == 7);
+	assert(item_ownership_runtime_owner_revision(old_room, &owner_revision) &&
+	       owner_revision == 9);
+	assert(!item_ownership_runtime_apply_corpse_resurrection(60, 40, 70, 600,
+								resurrected));
 	return 0;
 }
 '''

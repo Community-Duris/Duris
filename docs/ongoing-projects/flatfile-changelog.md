@@ -4203,3 +4203,36 @@ action" text below remains historical and does not authorize work.
   cross a destination authority that ordinary release cannot represent. Per the directive, adding
   those composite protocols still awaits explicit owner approval; resurrection remains the first
   proposed operation if approved.
+
+### Checkpoint 98 - recoverable full and lesser player resurrection
+
+- **Historical behavior restored:** full and lesser resurrection in flat-primary mode now retain
+  their eligibility, consent, identity, mutilation, chance, movement, item, money, effect, recovery,
+  and save behavior. Both spells stop before their first target or corpse mutation and defer only
+  the player-corpse branch; NPC corpses and MariaDB modes retain the synchronous historical path.
+- **Bounded two-stage exchange:** the target's current durable inventory and equipment roots use the
+  existing player-to-room movement transaction one at a time. After those acknowledgments, corpse
+  lifecycle payload version 4 adds one `resurrect` action containing the target player, old room,
+  wallet, and exact expected revisions. Versions 1-3 and their result layouts remain readable.
+- **One final atomic publication:** under the existing shared authority lock, the resurrection
+  action proves the corpse placement and nested item graph, deposits the target's old four-
+  denomination wallet into the old room, replaces the player wallet with the corpse wallet, moves
+  corpse item custody and artifact location to the player without changing artifact soul binding,
+  removes the corpse aggregate, records inbound player materialization, and stores the idempotent
+  lifecycle result. No general spell transaction, extraction hook, or new authority catalog was
+  introduced.
+- **Durability-before-live mutation:** only committed item moves strip live target roots. The final
+  acknowledgment must prove the same caster, target, rooms, corpse, and contents and advance runtime
+  custody before publishing the old money pile, moving the target, transferring live corpse items,
+  applying the original full/lesser effects, saving the character, and extracting the corpse.
+- **Recovery evidence:** a forced interruption among the composite after-images recovers the corpse
+  removal, old-room money, player wallet, nested player custody, artifact placement, materialization,
+  and operation result exactly once. A process failure during the preceding root moves leaves the
+  completed roots durably in the old room and the intact corpse available for a safe retry.
+- **Checks passed:** lifecycle codec compatibility and key fencing, transaction completion, nested
+  runtime ownership, live guard ordering, composite repository interruption/replay, world-item,
+  artifact, player-domain, corpse restoration, and player-corpse contract regressions; changed-line
+  formatting, `git diff --check`, the strict normal C++20 server build, and the isolated client-free
+  build/game-loop boot/clean-shutdown preflight.
+- **Remaining restoration:** follower raising and nested-container corpse decay still need their
+  exact durable destinations. Historical mixed-format siege-state compatibility remains required.

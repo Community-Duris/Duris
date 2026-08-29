@@ -459,6 +459,71 @@ bool item_ownership_runtime_apply_corpse_destruction(uint32_t owner_pid, uint32_
 		corpse_lifecycle_action::destroy, result);
 }
 
+bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32_t save_id,
+						      uint32_t player_pid, int32_t old_room_vnum,
+						      const corpse_lifecycle_result &result)
+{
+	if (!owner_pid || !save_id || !player_pid || old_room_vnum <= 0 ||
+	    result.owner_pid != owner_pid || result.save_id != save_id ||
+	    result.action != corpse_lifecycle_action::resurrect || result.corpse_revision ||
+	    !result.corpse_owner_revision || !result.room_owner_revision ||
+	    !result.player_owner_revision || !result.wallet_revision ||
+	    ((!result.item_count && result.max_item_revision) ||
+	     (result.item_count && !result.max_item_revision)))
+		return false;
+	const item_owner_identity corpse = { item_owner_type::corpse,
+					     item_corpse_owner_id(owner_pid, save_id), 0 };
+	const item_owner_identity player = { item_owner_type::player, player_pid, 0 };
+	const item_owner_identity room = { item_owner_type::room,
+					   static_cast<uint64_t>(old_room_vnum), 0 };
+	const auto corpse_revision = owner_revisions.find(corpse);
+	const auto player_revision = owner_revisions.find(player);
+	const auto room_revision = owner_revisions.find(room);
+	if ((corpse_revision == owner_revisions.end() ? 0 : corpse_revision->second) !=
+		    result.corpse_owner_revision - 1 ||
+	    (player_revision == owner_revisions.end() ? 0 : player_revision->second) !=
+		    result.player_owner_revision - 1 ||
+	    (room_revision == owner_revisions.end() ? 0 : room_revision->second) !=
+		    result.room_owner_revision - 1)
+		return false;
+	size_t item_count = 0;
+	uint64_t max_item_revision = 0;
+	for (const auto &[uid, entry] : entries)
+	{
+		(void)uid;
+		if (!item_owner_identity_equal(entry.owner, corpse))
+			continue;
+		if (entry.state != item_custody_state::active ||
+		    entry.item_revision == std::numeric_limits<uint64_t>::max())
+			return false;
+		++item_count;
+		max_item_revision = std::max(max_item_revision, entry.item_revision + 1);
+	}
+	if (item_count != result.item_count || max_item_revision != result.max_item_revision)
+		return false;
+	try
+	{
+		owner_revisions.reserve(owner_revisions.size() + 3);
+		owner_revisions.insert_or_assign(corpse, result.corpse_owner_revision);
+		owner_revisions.insert_or_assign(player, result.player_owner_revision);
+		owner_revisions.insert_or_assign(room, result.room_owner_revision);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (auto &[uid, entry] : entries)
+	{
+		(void)uid;
+		if (!item_owner_identity_equal(entry.owner, corpse))
+			continue;
+		++entry.item_revision;
+		entry.owner = player;
+		entry.owner_revision = result.player_owner_revision;
+	}
+	return true;
+}
+
 void item_ownership_runtime_forget(uint64_t item_uid)
 {
 	if (item_uid)

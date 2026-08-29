@@ -55,6 +55,11 @@ unmaking = body(MAGIC, "void spell_unmaking(", "void spell_enchant_weapon(")
 wall_of_bones = body(NECROMANCY, "void spell_wall_of_bones(",
                      "void spell_compact_corpse(")
 compact_corpse = NECROMANCY[NECROMANCY.index("void spell_compact_corpse("):]
+resurrect = body(MAGIC, "void spell_resurrect(", "void spell_preserve(")
+lesser_resurrect = body(MAGIC, "void spell_lesser_resurrect(",
+                        "void spell_mass_invisibility(")
+resurrection_publication = body(HANDLER, "void publish_corpse_resurrection(",
+                                "void continue_corpse_resurrection(")
 
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in write_corpse
 assert "stage_corpse_lifecycle" in write_corpse
@@ -124,6 +129,18 @@ assert release_publication.index("item_ownership_runtime_apply_corpse_release") 
        release_publication.index("obj_to_room(compact_pile, room)")
 assert "corpse_lifecycle_transaction_busy" in get_item
 assert "corpse_lifecycle_transaction_busy" in put_item
+for resurrection_spell in (resurrect, lesser_resurrect):
+    assert "persistence_defer_corpse_resurrection" in resurrection_spell
+    assert resurrection_spell.index("persistence_defer_corpse_resurrection") < \
+           resurrection_spell.index("stop_fighting(t_ch)")
+assert "corpse_lifecycle_transaction_resurrect" in HANDLER
+assert "item_ownership_runtime_apply_corpse_resurrection" in resurrection_publication
+assert resurrection_publication.index("item_ownership_runtime_apply_corpse_resurrection") < \
+       resurrection_publication.index("complete_player_resurrection_after_commit")
+assert HANDLER.index("item_movement_transaction_submit(",
+                     HANDLER.index("void continue_corpse_resurrection(")) < \
+       HANDLER.index("corpse_lifecycle_transaction_resurrect(",
+                     HANDLER.index("void continue_corpse_resurrection("))
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),

@@ -1136,8 +1136,14 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 {
 	const bool release = payload.action == corpse_lifecycle_action::release;
 	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
-	if (!mutation || !lock.matches(root) || release == destroy || !payload.owner_pid ||
-	    !payload.save_id || payload.room_vnum <= 0 ||
+	const bool resurrect = payload.action == corpse_lifecycle_action::resurrect;
+	if (!mutation || !lock.matches(root) ||
+	    static_cast<unsigned int>(release) + static_cast<unsigned int>(destroy) +
+			    static_cast<unsigned int>(resurrect) !=
+		    1 ||
+	    !payload.owner_pid || !payload.save_id || payload.room_vnum <= 0 ||
+	    (resurrect && (!payload.destination_player_pid || payload.old_room_vnum <= 0 ||
+			   !payload.expected_player_revision)) ||
 	    expected_items.size() > ownership_maximum_entries ||
 	    !std::is_sorted(expected_items.begin(), expected_items.end(),
 			    [](const auto &left, const auto &right)
@@ -1164,14 +1170,28 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 		item_owner_type::corpse, item_corpse_owner_id(payload.owner_pid, payload.save_id), 0
 	};
 	const item_owner_identity destination_owner =
-		release ? item_owner_identity{ item_owner_type::room,
-					       static_cast<uint64_t>(payload.room_vnum), 0 } :
-			  item_owner_identity{ item_owner_type::destruction, 0, 0 };
+		release ?
+			item_owner_identity{ item_owner_type::room,
+					     static_cast<uint64_t>(payload.room_vnum), 0 } :
+		destroy ?
+			item_owner_identity{ item_owner_type::destruction, 0, 0 } :
+			item_owner_identity{ item_owner_type::player,
+					     static_cast<uint64_t>(payload.destination_player_pid),
+					     0 };
+	const item_owner_identity old_room_owner = { item_owner_type::room,
+						     static_cast<uint64_t>(payload.old_room_vnum),
+						     0 };
 	owner_state *corpse = find_owner(&catalog, corpse_owner);
 	owner_state *destination = find_owner(&catalog, destination_owner);
+	owner_state *old_room = resurrect ? find_owner(&catalog, old_room_owner) : nullptr;
 	if ((!corpse && !expected_items.empty()) ||
-	    (destination && destination->revision != payload.expected_room_revision) ||
-	    (!destination && payload.expected_room_revision) ||
+	    (destination &&
+	     destination->revision != (resurrect ? payload.expected_player_revision :
+						   payload.expected_room_revision)) ||
+	    (!destination &&
+	     (resurrect ? payload.expected_player_revision : payload.expected_room_revision)) ||
+	    (resurrect && ((old_room && old_room->revision != payload.expected_room_revision) ||
+			   (!old_room && payload.expected_room_revision))) ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_item_repository_result::invalid;
 	size_t item_index = 0;
@@ -1190,17 +1210,24 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 			return flatfile_item_repository_result::invalid;
 	}
 	if (item_index != expected_items.size() || !ensure_owner(&catalog, corpse_owner) ||
-	    !ensure_owner(&catalog, destination_owner))
+	    !ensure_owner(&catalog, destination_owner) ||
+	    (resurrect && !ensure_owner(&catalog, old_room_owner)))
 		return flatfile_item_repository_result::invalid;
 	corpse = find_owner(&catalog, corpse_owner);
 	destination = find_owner(&catalog, destination_owner);
+	old_room = resurrect ? find_owner(&catalog, old_room_owner) : nullptr;
 	if (!corpse || !destination || corpse->revision == std::numeric_limits<uint64_t>::max() ||
-	    destination->revision == std::numeric_limits<uint64_t>::max())
+	    destination->revision == std::numeric_limits<uint64_t>::max() ||
+	    (resurrect &&
+	     (!old_room || old_room->revision == std::numeric_limits<uint64_t>::max())))
 		return flatfile_item_repository_result::invalid;
 	++corpse->revision;
 	++destination->revision;
+	if (resurrect)
+		++old_room->revision;
 	mutation->corpse_owner_revision = corpse->revision;
-	mutation->room_owner_revision = destination->revision;
+	mutation->room_owner_revision = resurrect ? old_room->revision : destination->revision;
+	mutation->player_owner_revision = resurrect ? destination->revision : 0;
 	mutation->item_count = expected_items.size();
 	for (auto &item : catalog.items)
 	{
