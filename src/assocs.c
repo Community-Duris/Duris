@@ -22,8 +22,10 @@
 #include "safe_format.h"
 
 #ifdef __NO_MYSQL__
+#include "buildings.h"
 #include "flatfile_association_repository.h"
 #include "flatfile_identity_repository.h"
+#include "outposts.h"
 #include "persistence_mode.h"
 
 #include <algorithm>
@@ -39,6 +41,9 @@ extern char guild_default_titles[ASC_NUM_RANKS][ASC_MAX_STR_RANK];
 int assoc_founder(P_char mob, P_char pl, int cmd, char *arg);
 string trim(string const &str, char const *sep_chars);
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
+#ifdef __NO_MYSQL__
+extern std::vector<Building *> buildings;
+#endif
 
 // Internal variables
 P_Guild guild_list = NULL;
@@ -820,10 +825,19 @@ Guild::~Guild()
 		delete owned;
 		hall = Guildhall::guildhalls.erase(hall);
 	}
-	if (!guildhalls_erased)
-		error = "one or more guildhalls could not be erased";
+	bool outposts_reset = true;
+	for (auto *building : buildings)
+		if (building && building->get_guild() == this)
+		{
+			if (!reset_one_outpost(building))
+				outposts_reset = false;
+			building->set_guild(NULL);
+		}
+	const bool dependents_erased = guildhalls_erased && outposts_reset;
+	if (!dependents_erased)
+		error = "one or more guildhalls or outposts could not be erased";
 	const char *root = persistence_mode_flatfile_root();
-	const auto erased = root && guildhalls_erased ?
+	const auto erased = root && dependents_erased ?
 				    flatfile_association_erase(root, id_number, &error) :
 				    flatfile_association_result::invalid;
 	if (erased != flatfile_association_result::ok &&
@@ -831,9 +845,9 @@ Guild::~Guild()
 	    erased != flatfile_association_result::not_found)
 		persistence_alert(
 			AVATAR, "associations", name, "none", "none", "delete",
-			guildhalls_erased ?
+			dependents_erased ?
 				"flat guild delete failed: %s" :
-				"flat guild delete retained authority because guildhall cleanup failed: %s",
+				"flat guild delete retained authority because dependent cleanup failed: %s",
 			error.c_str());
 #endif
 

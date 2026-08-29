@@ -70,6 +70,23 @@ struct flatfile_guildhall_record
 	std::vector<flatfile_guildhall_room_record> rooms;
 };
 
+struct flatfile_outpost_record
+{
+	int32_t outpost_id = 0;
+	uint32_t owner_association_id = 0;
+	int32_t level = 1;
+	int32_t walls = 0;
+	int32_t archers = 0;
+	int32_t resources = 0;
+	int32_t applied_resources = 100000;
+	int32_t hitpoints = 0;
+	int32_t territory = 0;
+	int32_t portal_room = 0;
+	int32_t golems = 0;
+	int32_t meurtriere = 0;
+	int32_t scouts = 0;
+};
+
 enum class flatfile_association_result
 {
 	ok,
@@ -122,6 +139,16 @@ flatfile_association_result flatfile_guildhall_erase(const std::string &root, in
 flatfile_association_result flatfile_guildhall_room_erase(const std::string &root,
 							  int32_t guildhall_id, int32_t room_id,
 							  std::string *error);
+flatfile_association_result
+flatfile_outpost_establish(const std::string &root,
+			   const std::vector<flatfile_outpost_record> &outposts,
+			   std::string *error);
+flatfile_association_result flatfile_outpost_list(const std::string &root,
+						  std::vector<flatfile_outpost_record> *outposts,
+						  std::string *error);
+flatfile_association_result flatfile_outpost_save(const std::string &root,
+						  const flatfile_outpost_record &outpost,
+						  std::string *error);
 flatfile_association_result flatfile_association_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_authority_operation *operation,

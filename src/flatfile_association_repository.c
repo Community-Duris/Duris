@@ -19,14 +19,17 @@ constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'A', 'S', 'S',
 constexpr std::array<uint8_t, 8> ledger_magic = { 'D', 'U', 'R', 'G', 'L', 'D', 'G', 0 };
 constexpr std::array<uint8_t, 8> alliance_magic = { 'D', 'U', 'R', 'A', 'L', 'L', 'Y', 0 };
 constexpr std::array<uint8_t, 8> guildhall_magic = { 'D', 'U', 'R', 'G', 'H', 'A', 'L', 'L' };
+constexpr std::array<uint8_t, 8> outpost_magic = { 'D', 'U', 'R', 'O', 'U', 'T', 'P', 0 };
 constexpr uint32_t catalog_version = 1;
 constexpr uint32_t ledger_version = 1;
 constexpr uint32_t alliance_version = 1;
 constexpr uint32_t guildhall_version = 1;
+constexpr uint32_t outpost_version = 1;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t ledger_maximum_bytes = 128 * 1024;
 constexpr size_t alliance_maximum_bytes = 1024 * 1024;
 constexpr size_t guildhall_maximum_bytes = 4 * 1024 * 1024;
+constexpr size_t outpost_maximum_bytes = 4096;
 constexpr size_t association_maximum = 65536;
 constexpr size_t member_maximum = 1048576;
 constexpr size_t association_name_maximum = 80;
@@ -41,6 +44,7 @@ constexpr size_t guildhall_room_name_maximum = 255;
 constexpr const char *catalog_filename = "association_catalog";
 constexpr const char *alliance_filename = "association_alliances";
 constexpr const char *guildhall_filename = "association_guildhalls";
+constexpr const char *outpost_filename = "association_outposts";
 
 struct association_catalog
 {
@@ -70,6 +74,12 @@ struct guildhall_catalog
 {
 	uint64_t revision = 1;
 	std::vector<flatfile_guildhall_record> guildhalls;
+};
+
+struct outpost_catalog
+{
+	uint64_t revision = 1;
+	std::vector<flatfile_outpost_record> outposts;
 };
 
 struct encoder
@@ -914,6 +924,150 @@ flatfile_association_result load_guildhall_catalog(const std::string &root,
 	}
 	return flatfile_association_result::ok;
 }
+
+bool outpost_less(const flatfile_outpost_record &left, const flatfile_outpost_record &right)
+{
+	return left.outpost_id < right.outpost_id;
+}
+
+bool outpost_equal(const flatfile_outpost_record &left, const flatfile_outpost_record &right)
+{
+	return left.outpost_id == right.outpost_id &&
+	       left.owner_association_id == right.owner_association_id &&
+	       left.level == right.level && left.walls == right.walls &&
+	       left.archers == right.archers && left.resources == right.resources &&
+	       left.applied_resources == right.applied_resources &&
+	       left.hitpoints == right.hitpoints && left.territory == right.territory &&
+	       left.portal_room == right.portal_room && left.golems == right.golems &&
+	       left.meurtriere == right.meurtriere && left.scouts == right.scouts;
+}
+
+bool valid_outposts(const outpost_catalog &catalog)
+{
+	if (!catalog.revision || catalog.outposts.size() != 3 ||
+	    !std::is_sorted(catalog.outposts.begin(), catalog.outposts.end(), outpost_less))
+		return false;
+	for (size_t index = 0; index < catalog.outposts.size(); ++index)
+	{
+		const auto &outpost = catalog.outposts[index];
+		if (outpost.outpost_id != static_cast<int32_t>(index) ||
+		    outpost.owner_association_id >
+			    static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) ||
+		    outpost.level <= 0 || outpost.walls < 0 || outpost.archers < 0 ||
+		    outpost.archers > 1 || outpost.resources < 0 || outpost.applied_resources < 0 ||
+		    outpost.hitpoints < 0 || outpost.territory < 0 || outpost.portal_room < 0 ||
+		    outpost.portal_room > 1 || outpost.golems < 0 || outpost.meurtriere < 0 ||
+		    outpost.meurtriere > 1 || outpost.scouts < 0)
+			return false;
+	}
+	return true;
+}
+
+bool encode_outposts(const outpost_catalog &catalog, std::vector<uint8_t> *bytes)
+{
+	if (!bytes || !valid_outposts(catalog))
+		return false;
+	encoder payload;
+	payload.number<uint32_t>(catalog.outposts.size());
+	for (const auto &outpost : catalog.outposts)
+	{
+		payload.number(outpost.outpost_id);
+		payload.number(outpost.owner_association_id);
+		payload.number(outpost.level);
+		payload.number(outpost.walls);
+		payload.number(outpost.archers);
+		payload.number(outpost.resources);
+		payload.number(outpost.applied_resources);
+		payload.number(outpost.hitpoints);
+		payload.number(outpost.territory);
+		payload.number(outpost.portal_room);
+		payload.number(outpost.golems);
+		payload.number(outpost.meurtriere);
+		payload.number(outpost.scouts);
+	}
+	if (!payload.valid || payload.bytes.size() > outpost_maximum_bytes)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.bytes.data(), payload.bytes.size(), digest.data());
+	encoder file;
+	file.raw(outpost_magic.data(), outpost_magic.size());
+	file.number(outpost_version);
+	file.number<uint32_t>(payload.bytes.size());
+	file.number(catalog.revision);
+	file.raw(digest.data(), digest.size());
+	file.raw(payload.bytes.data(), payload.bytes.size());
+	if (!file.valid || file.bytes.size() > outpost_maximum_bytes)
+		return false;
+	*bytes = std::move(file.bytes);
+	return true;
+}
+
+bool decode_outposts(const std::vector<uint8_t> &bytes, outpost_catalog *catalog)
+{
+	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
+	if (!catalog || bytes.size() < header_size ||
+	    memcmp(bytes.data(), outpost_magic.data(), outpost_magic.size()))
+		return false;
+	decoder header{ bytes.data() + outpost_magic.size(), bytes.size() - outpost_magic.size() };
+	uint32_t version = 0, payload_size = 0;
+	uint64_t revision = 0;
+	if (!header.number(&version) || !header.number(&payload_size) ||
+	    !header.number(&revision) || version != outpost_version || !revision ||
+	    payload_size != bytes.size() - header_size)
+		return false;
+	const uint8_t *payload_bytes = bytes.data() + header_size;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload_bytes, payload_size, digest.data());
+	if (CRYPTO_memcmp(bytes.data() + 24, digest.data(), digest.size()))
+		return false;
+	decoder payload{ payload_bytes, payload_size };
+	uint32_t count = 0;
+	if (!payload.number(&count) || count != 3)
+		return false;
+	outpost_catalog decoded;
+	decoded.revision = revision;
+	try
+	{
+		decoded.outposts.resize(count);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (auto &outpost : decoded.outposts)
+		if (!payload.number(&outpost.outpost_id) ||
+		    !payload.number(&outpost.owner_association_id) ||
+		    !payload.number(&outpost.level) || !payload.number(&outpost.walls) ||
+		    !payload.number(&outpost.archers) || !payload.number(&outpost.resources) ||
+		    !payload.number(&outpost.applied_resources) ||
+		    !payload.number(&outpost.hitpoints) || !payload.number(&outpost.territory) ||
+		    !payload.number(&outpost.portal_room) || !payload.number(&outpost.golems) ||
+		    !payload.number(&outpost.meurtriere) || !payload.number(&outpost.scouts))
+			return false;
+	if (payload.offset != payload.size || !valid_outposts(decoded))
+		return false;
+	*catalog = std::move(decoded);
+	return true;
+}
+
+flatfile_association_result load_outpost_catalog(const std::string &root, outpost_catalog *catalog,
+						 std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto loaded = flatfile_read(domains_directory(root), outpost_filename,
+					  outpost_maximum_bytes, &bytes, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_association_result::not_found;
+	if (loaded == flatfile_read_result::io_error)
+		return flatfile_association_result::io_error;
+	if (loaded != flatfile_read_result::ok || !decode_outposts(bytes, catalog))
+	{
+		if (error && error->empty())
+			*error = "outpost catalog is corrupt";
+		return flatfile_association_result::invalid;
+	}
+	return flatfile_association_result::ok;
+}
 } // namespace
 
 flatfile_association_result
@@ -1439,6 +1593,103 @@ flatfile_association_result flatfile_guildhall_room_erase(const std::string &roo
 	if (!encode_guildhalls(catalog, &encoded))
 		return flatfile_association_result::invalid;
 	return flatfile_atomic_write(domains_directory(root), guildhall_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result
+flatfile_outpost_establish(const std::string &root,
+			   const std::vector<flatfile_outpost_record> &outposts, std::string *error)
+{
+	if (root.empty())
+		return flatfile_association_result::invalid;
+	outpost_catalog candidate;
+	try
+	{
+		candidate.outposts = outposts;
+		std::sort(candidate.outposts.begin(), candidate.outposts.end(), outpost_less);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_association_result::io_error;
+	}
+	if (!valid_outposts(candidate))
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	outpost_catalog existing;
+	const auto loaded = load_outpost_catalog(root, &existing, error);
+	if (loaded == flatfile_association_result::ok)
+	{
+		bool equal = existing.outposts.size() == candidate.outposts.size();
+		for (size_t index = 0; equal && index < existing.outposts.size(); ++index)
+			equal = outpost_equal(existing.outposts[index], candidate.outposts[index]);
+		return equal ? flatfile_association_result::already_exists :
+			       flatfile_association_result::invalid;
+	}
+	if (loaded != flatfile_association_result::not_found)
+		return loaded;
+	std::vector<uint8_t> encoded;
+	if (!encode_outposts(candidate, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), outpost_filename, encoded, error) ?
+		       flatfile_association_result::ok :
+		       flatfile_association_result::io_error;
+}
+
+flatfile_association_result flatfile_outpost_list(const std::string &root,
+						  std::vector<flatfile_outpost_record> *outposts,
+						  std::string *error)
+{
+	if (root.empty() || !outposts)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	outpost_catalog catalog;
+	const auto loaded = load_outpost_catalog(root, &catalog, error);
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	*outposts = std::move(catalog.outposts);
+	return flatfile_association_result::ok;
+}
+
+flatfile_association_result flatfile_outpost_save(const std::string &root,
+						  const flatfile_outpost_record &outpost,
+						  std::string *error)
+{
+	if (root.empty() || outpost.outpost_id < 0 || outpost.outpost_id >= 3)
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_association_result::ok)
+		return recovered;
+	outpost_catalog catalog;
+	const auto loaded = load_outpost_catalog(root, &catalog, error);
+	if (loaded != flatfile_association_result::ok)
+		return loaded;
+	auto &existing = catalog.outposts[outpost.outpost_id];
+	if (outpost_equal(existing, outpost))
+		return flatfile_association_result::unchanged;
+	existing = outpost;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_association_result::conflict;
+	++catalog.revision;
+	if (!valid_outposts(catalog))
+		return flatfile_association_result::invalid;
+	std::vector<uint8_t> encoded;
+	if (!encode_outposts(catalog, &encoded))
+		return flatfile_association_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), outpost_filename, encoded, error) ?
 		       flatfile_association_result::ok :
 		       flatfile_association_result::io_error;
 }

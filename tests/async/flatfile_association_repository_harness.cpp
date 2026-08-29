@@ -80,6 +80,14 @@ static flatfile_guildhall_record guildhall()
 	return value;
 }
 
+static std::vector<flatfile_outpost_record> outposts()
+{
+	std::vector<flatfile_outpost_record> records(3);
+	for (int index = 0; index < 3; ++index)
+		records[index].outpost_id = index;
+	return records;
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -332,6 +340,72 @@ int main(int argc, char **argv)
 			flatfile_association_result::ok,
 		"guildhall authority could not be restored for corruption test");
 
+	std::vector<flatfile_outpost_record> outpost_records;
+	require(flatfile_outpost_list(root.string(), &outpost_records, &error) ==
+			flatfile_association_result::not_found,
+		"missing outpost authority did not report not found");
+	auto outpost_source = outposts();
+	require(flatfile_outpost_establish(root.string(), { outpost_source[0], outpost_source[1] },
+					   &error) == flatfile_association_result::invalid,
+		"outpost authority accepted an incomplete fixed record set");
+	require(flatfile_outpost_establish(
+			root.string(), { outpost_source[2], outpost_source[0], outpost_source[1] },
+			&error) == flatfile_association_result::ok,
+		"outpost authority creation failed: " + error);
+	require(flatfile_outpost_establish(root.string(), outpost_source, &error) ==
+			flatfile_association_result::already_exists,
+		"outpost authority establishment retry was not idempotent");
+	require(flatfile_outpost_list(root.string(), &outpost_records, &error) ==
+				flatfile_association_result::ok &&
+			outpost_records.size() == 3 && outpost_records[0].outpost_id == 0 &&
+			outpost_records[0].level == 1 &&
+			outpost_records[0].applied_resources == 100000 &&
+			outpost_records[2].outpost_id == 2,
+		"outpost authority was not canonical or did not retain schema defaults");
+	const fs::path outpost_file = root / "domains/association_outposts";
+	const auto outpost_permissions = fs::status(outpost_file).permissions();
+	require((outpost_permissions & (fs::perms::group_all | fs::perms::others_all)) ==
+			fs::perms::none,
+		"outpost authority permissions are not private");
+	auto changed_outpost = outpost_source[1];
+	changed_outpost.owner_association_id = 7;
+	changed_outpost.level = 8;
+	changed_outpost.walls = 1;
+	changed_outpost.archers = 1;
+	changed_outpost.resources = 11;
+	changed_outpost.applied_resources = 12;
+	changed_outpost.hitpoints = 250000;
+	changed_outpost.territory = 13;
+	changed_outpost.portal_room = 1;
+	changed_outpost.golems = 4;
+	changed_outpost.meurtriere = 1;
+	changed_outpost.scouts = 14;
+	require(flatfile_outpost_save(root.string(), changed_outpost, &error) ==
+				flatfile_association_result::ok &&
+			flatfile_outpost_save(root.string(), changed_outpost, &error) ==
+				flatfile_association_result::unchanged &&
+			flatfile_outpost_list(root.string(), &outpost_records, &error) ==
+				flatfile_association_result::ok &&
+			outpost_records[1].owner_association_id == 7 &&
+			outpost_records[1].level == 8 && outpost_records[1].walls == 1 &&
+			outpost_records[1].archers == 1 && outpost_records[1].resources == 11 &&
+			outpost_records[1].applied_resources == 12 &&
+			outpost_records[1].hitpoints == 250000 &&
+			outpost_records[1].territory == 13 && outpost_records[1].portal_room == 1 &&
+			outpost_records[1].golems == 4 && outpost_records[1].meurtriere == 1 &&
+			outpost_records[1].scouts == 14,
+		"outpost mutation did not preserve every table field or idempotence");
+	auto invalid_outpost = changed_outpost;
+	invalid_outpost.archers = 2;
+	require(flatfile_outpost_save(root.string(), invalid_outpost, &error) ==
+			flatfile_association_result::invalid,
+		"outpost authority accepted an invalid boolean field");
+	invalid_outpost = changed_outpost;
+	invalid_outpost.hitpoints = -1;
+	require(flatfile_outpost_save(root.string(), invalid_outpost, &error) ==
+			flatfile_association_result::invalid,
+		"outpost authority accepted negative hitpoints");
+
 	flatfile_authority_operation operation;
 	{
 		flatfile_authority_lock lock;
@@ -424,6 +498,25 @@ int main(int argc, char **argv)
 	require(flatfile_guildhall_erase(root.string(), 12, &error) ==
 			flatfile_association_result::invalid,
 		"guildhall erase overwrote corrupt authority");
+	{
+		std::fstream file(outpost_file, std::ios::in | std::ios::out | std::ios::binary);
+		require(file.good(), "could not open outpost authority for corruption");
+		file.seekg(-1, std::ios::end);
+		char byte = 0;
+		file.read(&byte, 1);
+		byte ^= 0x19;
+		file.seekp(-1, std::ios::end);
+		file.write(&byte, 1);
+	}
+	require(flatfile_outpost_list(root.string(), &outpost_records, &error) ==
+			flatfile_association_result::invalid,
+		"corrupt outpost authority was exposed");
+	require(flatfile_outpost_save(root.string(), changed_outpost, &error) ==
+			flatfile_association_result::invalid,
+		"outpost save overwrote corrupt authority");
+	require(flatfile_outpost_establish(root.string(), outpost_source, &error) ==
+			flatfile_association_result::invalid,
+		"outpost establishment overwrote corrupt authority");
 
 	const fs::path catalog = root / "domains/association_catalog";
 	{

@@ -76,6 +76,7 @@ for token in (
     "missing = load_guild(id) ? 0 : missing + 1",
     "const bool destroyed = owned->destroy()",
     "hall = Guildhall::guildhalls.erase(hall)",
+    "if (!reset_one_outpost(building))",
 ):
     if token not in preprocess.stdout:
         raise SystemExit(f"client-free guild runtime route is missing {token}")
@@ -83,6 +84,10 @@ if preprocess.stdout.index("const bool destroyed = owned->destroy()") > preproce
     "flatfile_association_erase(root, id_number, &error)"
 ):
     raise SystemExit("client-free guild deletion does not erase guildhalls before guild authority")
+if preprocess.stdout.index("if (!reset_one_outpost(building))") > preprocess.stdout.index(
+    "flatfile_association_erase(root, id_number, &error)"
+):
+    raise SystemExit("client-free guild deletion does not reset outposts before guild authority")
 for query in (
     "SELECT id, name FROM associations WHERE id",
     "SELECT id, name, prestige, construction_points FROM associations",
@@ -177,3 +182,50 @@ for query in (
         raise SystemExit(f"client-free guildhall runtime still contains SQL: {query}")
 if "this->rooms[i]->save()" in guildhall_preprocess.stdout:
     raise SystemExit("client-free guildhall save is not a single catalog snapshot")
+
+outpost_preprocess = subprocess.run(
+    [
+        "g++",
+        "-std=c++20",
+        "-D__NO_MYSQL__",
+        "-Isrc/no_mysql",
+        "-Isrc",
+        "-Isrc/ships",
+        "-I/usr/include/libxml2",
+        "-E",
+        "-P",
+        "src/outposts.c",
+        "src/buildings.c",
+    ],
+    cwd=ROOT,
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+)
+if outpost_preprocess.returncode:
+    raise SystemExit(outpost_preprocess.stdout)
+for token in (
+    "flatfile_outpost_list(root, &stored, &error)",
+    "flatfile_outpost_establish(root, defaults, &error)",
+    "flatfile_outpost_save(root, flat_outpost(record), &error)",
+    "record.portal_room = 1",
+    "record.golems = get_outpost_golems(building) + 1",
+    "record.archers = 1",
+    "record.meurtriere = 1",
+    "record.hitpoints = (",
+    "record.level = 8",
+    "record.owner_id = owner_id",
+    "persist_outpost_owner(this, new_guild)",
+    "void event_outposts_upkeep(",
+):
+    if token not in outpost_preprocess.stdout:
+        raise SystemExit(f"client-free outpost runtime route is missing {token}")
+for query in (
+    "INSERT IGNORE into outposts",
+    "SELECT id, owner_id, level, walls",
+    "UPDATE outposts SET",
+    "SELECT id, wood, stone FROM associations",
+    "UPDATE associations SET wood",
+):
+    if query in outpost_preprocess.stdout:
+        raise SystemExit(f"client-free outpost runtime still contains SQL: {query}")

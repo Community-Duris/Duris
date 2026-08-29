@@ -690,6 +690,40 @@
   persistence mode. Outposts remain a separate, broader database-only gap; the global
   incomplete-domain boot fence remains.
 
+### 2026-08-29 - restored database-only outposts in flat mode
+
+- **Concrete gap:** outposts were historically backed only by the fixed three-row
+  `outposts` table. The client-free build replaced the entire implementation with
+  do-nothing stubs: it loaded no towers, disabled the player/staff command and defenses,
+  returned zero health/ownership, discarded damage and resource updates, and skipped
+  upkeep. No outpost gameplay could operate without MariaDB.
+- **Restoration:** the existing association repository now retains all 13 table fields
+  for the three canonical outposts. Fresh flat boot establishes the schema defaults and
+  then runs the existing building, room, wall, portal, guard, combat, repair, reset,
+  command, and upkeep code. Ownership, hitpoints, golems, archers, meurtriere, portal,
+  and reset mutations use the bounded, versioned, checksummed, private atomic authority;
+  corrupt or incomplete state fails boot and cannot be overwritten. Neutral ownership
+  no longer dereferences a null guild, and flat guild deletion durably neutralizes owned
+  outposts before removing guild authority. The legacy wood/stone harvest branch remains
+  intentionally inactive in both modes because its only gameplay caller is commented
+  out. MariaDB retains the same table-backed behavior.
+- **Focused evidence:** `python3 tests/async/test_flatfile_association_repository.py`
+  covers missing authority, rejection of incomplete fixed sets, canonical establishment,
+  schema defaults, all-field mutation round trips, idempotence, private permissions,
+  invalid flag and negative-health rejection, checksum corruption, and read/write/create
+  refusal after corruption. Client-free source contracts verify fresh establishment,
+  every active mutation route, the full upkeep/gameplay implementation, ordered guild
+  cleanup, and the absence of outpost or legacy resource SQL from the no-database build.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_character_delete.py`,
+  `python3 tests/async/test_flatfile_character_delete_manifest.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** guilds, their historically database-only ledger, alliances,
+  guildhalls, and outposts now have live persistence routes in both modes. Other
+  incomplete domains remain under audit, so the global incomplete-domain boot fence
+  remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
