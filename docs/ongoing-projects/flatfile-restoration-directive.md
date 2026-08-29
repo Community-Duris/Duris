@@ -10,18 +10,18 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 88 provides the recoverable repository boundary for
-releasing a non-empty corpse into a revisioned room aggregate. One lifecycle command now
-atomically transfers exact nested items, all money denominations, item ownership, and
-artifact location before removing the corpse, with backward-compatible catalog and
-command decoding. The live decay/extraction path is not routed through that command yet,
-so this is an integrity primitive rather than completed gameplay support.
+As of 2026-08-29, checkpoint 89 restores revisioned room aggregates at boot. Restore now
+reconciles their exact nested snapshots with item-ownership authority, stages every
+corpse and room aggregate before publishing any of them, and rebuilds room items and all
+money denominations with persistence side effects suppressed. A malformed aggregate,
+missing custody, unknown room, allocation failure, or failed item placement rolls the
+whole restore attempt back instead of exposing a partial world.
 
-The next restoration boundary is to submit that release from the live corpse decay and
-destructive extraction paths, defer live graph mutation until durable completion, and
-restore the resulting room aggregates at boot. Saved floor-item save/restore should then
-reuse the same room authority. The siege/kingdom removal memo remains research only; it
-does not amend this directive's explicit requirement to restore historical siege state.
+The next restoration boundary is to submit the existing atomic corpse-to-room release
+from live corpse decay and destructive extraction paths, then defer live graph mutation
+until durable completion. Saved floor-item save/restore should subsequently reuse the
+same room authority. The siege/kingdom removal memo remains research only; it does not
+amend this directive's explicit requirement to restore historical siege state.
 
 ## Owner intent
 

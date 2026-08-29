@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-authority reconciliation regressions for restored corpse items."""
+"""Cross-authority reconciliation regressions for restored world items."""
 
 import pathlib
 import subprocess
@@ -32,11 +32,18 @@ bool item_owner_identity_equal(const item_owner_identity &left,
 	       left.context_id == right.context_id;
 }
 
+static item_owner_identity repository_owner = {};
+static uint64_t repository_revision = 0;
+static std::vector<flatfile_item_ownership_record> repository_custody;
+
 flatfile_item_repository_result flatfile_item_repository_load_owner(
-	const std::string &, const item_owner_identity &, uint64_t *,
-	std::vector<flatfile_item_ownership_record> *, std::string *)
+	const std::string &, const item_owner_identity &owner, uint64_t *revision,
+	std::vector<flatfile_item_ownership_record> *custody, std::string *)
 {
-	return flatfile_item_repository_result::not_found;
+	assert(item_owner_identity_equal(owner, repository_owner));
+	*revision = repository_revision;
+	*custody = repository_custody;
+	return flatfile_item_repository_result::ok;
 }
 
 int main()
@@ -69,6 +76,23 @@ int main()
 	       identities[1].parent_item_uid == 10 && identities[1].root_item_uid == 10 &&
 	       identities[1].owner_revision == 8 &&
 	       identities[1].override_mask == PLAYER_LOAD_ITEM_OVERRIDE_ALL);
+
+	flatfile_room_item_record room = {};
+	room.room_vnum = 500;
+	room.revision = 2;
+	room.items = record.items;
+	repository_owner = { item_owner_type::room, 500, 0 };
+	repository_revision = 9;
+	repository_custody = {
+		{ 10, 10, 0, repository_owner, 4, 100, item_custody_state::active },
+		{ 11, 10, 10, repository_owner, 6, 101, item_custody_state::active },
+	};
+	uint64_t room_owner_revision = 0;
+	assert(flatfile_room_load_item_ownership("unused", room, &room_owner_revision, &identities,
+						nullptr) ==
+	       flatfile_corpse_ownership_result::ok);
+	assert(room_owner_revision == 9 && identities.size() == 2 &&
+	       identities[1].parent_item_uid == 10 && identities[1].owner_revision == 9);
 
 	auto corrupted = custody;
 	corrupted[1].parent_item_uid = 0;
@@ -109,4 +133,4 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-corpse-ownership-") as t
     )
     subprocess.run([str(binary)], check=True)
 
-print("[PASS] corpse restore reconciles snapshot topology with item custody")
+print("[PASS] world restore reconciles snapshot topology with item custody")

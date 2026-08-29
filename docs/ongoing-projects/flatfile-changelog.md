@@ -3903,3 +3903,27 @@ action" text below remains historical and does not authorize work.
   route corpse decay/destructive extraction through it so live movement occurs only after durable
   success, and restore version 3 room aggregates at boot. Then connect historical saved floor-item
   save/restore to the same room authority.
+
+### Checkpoint 89 - authoritative room aggregate boot restore
+
+- **Exact cross-authority restore:** the existing corpse ownership reconciler now exposes its narrow
+  world-item core so room records can prove every snapshot UID, VNUM, root, parent, and revision
+  against active item custody. Money-only rooms still require their persisted room-owner revision;
+  missing or contradictory ownership fails boot closed.
+- **Whole-catalog staging:** flat boot reads version 3 room aggregates, validates their room and
+  money fields, detached-materializes exact nested object graphs, and stages their currency. Every
+  corpse and room aggregate is materialized before any live publication begins, and a failed item
+  placement removes already-published staged objects rather than leaving a partial restored world.
+- **Side-effect-safe publication:** restored room roots and all four money denominations publish only
+  after fallible staging succeeds. Corpse-save and artifact-location callbacks are suppressed during
+  restore so the durable authorities being loaded are not redundantly rewritten, then their prior
+  runtime settings are restored.
+- **Checks passed:** focused room/corpse ownership reconciliation and boot materialization tests,
+  world-item and corpse repositories, immutable world-recovery contracts, live routing source
+  contracts, changed-line formatting, and the strict normal C++20 server build.
+- **Exposure:** live decay and destructive extraction do not yet submit the atomic release command,
+  so gameplay cannot create these room aggregates through the normal corpse lifecycle. General
+  player drop/get and historical saved floor-item persistence also remain unconnected.
+- **Next action:** extend the lifecycle transaction with release submission/completion, route live
+  corpse decay through it, and mutate the live object graph only after durable success. Audit the
+  remaining destructive extraction callers separately before broadening that route.
