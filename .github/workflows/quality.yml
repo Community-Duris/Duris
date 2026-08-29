@@ -19,6 +19,7 @@ jobs:
           sudo apt-get install --yes \
             build-essential \
             python3 \
+            openssl \
             libxml2-dev \
             zlib1g-dev \
             gnutls-dev \
@@ -26,7 +27,7 @@ jobs:
             libssl-dev \
             libhiredis-dev \
             libbsd-dev
-      - name: Build without MySQL and verify fail-closed boot
+      - name: Build without MySQL and verify game-loop boot
         run: python3 tests/async/test_flatfile_boot_preflight.py
       - name: Verify flat-file account authority
         run: python3 tests/async/test_flatfile_account_repository.py

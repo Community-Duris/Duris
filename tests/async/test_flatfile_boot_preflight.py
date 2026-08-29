@@ -68,11 +68,25 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
             (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
             for directory in ("areas_mini", "lib"):
                 (run_root / directory).symlink_to(ROOT / directory, target_is_directory=True)
-            for filename in ("duris.crt", "duris.key"):
-                source = ROOT / filename
-                destination = run_root / filename
-                destination.write_bytes(source.read_bytes())
-                destination.chmod(stat.S_IMODE(source.stat().st_mode))
+            certificate = run_root / "duris.crt"
+            private_key = run_root / "duris.key"
+            generated_certificate = subprocess.run(
+                [
+                    "openssl", "req", "-x509", "-newkey", "rsa:2048", "-sha256",
+                    "-nodes", "-days", "1", "-subj", "/CN=localhost",
+                    "-keyout", str(private_key), "-out", str(certificate),
+                ],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=30,
+            )
+            require(
+                generated_certificate.returncode == 0,
+                "could not generate an isolated boot certificate:\n"
+                + generated_certificate.stdout,
+            )
+            private_key.chmod(0o600)
 
             journal_root = run_root / "journals"
             player_journal = journal_root / "players"
