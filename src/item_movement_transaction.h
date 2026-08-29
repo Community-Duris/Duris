@@ -33,6 +33,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context = NULL);
+bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
+					  P_obj target_container = NULL);
+bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room);
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
 void item_movement_transaction_player_ready(P_char actor);

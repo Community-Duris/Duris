@@ -2442,8 +2442,9 @@ void kill_gain(P_char ch, P_char victim);
 #define DEATH_EXTRACT_RETRY_MAX 60
 
 static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data);
+static void hold_for_death_extract_retry(P_char ch);
 
-static void schedule_death_extract_retry(P_char ch, int delay)
+static void schedule_death_extract_retry(P_char ch, P_obj corpse, int delay)
 {
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
@@ -2453,7 +2454,23 @@ static void schedule_death_extract_retry(P_char ch, int delay)
 	if (delay > DEATH_EXTRACT_RETRY_MAX)
 		delay = DEATH_EXTRACT_RETRY_MAX;
 
-	add_event(event_death_extract_retry, delay, ch, NULL, NULL, 0, &delay, sizeof(delay));
+	// add_event() rejects dead character owners. Briefly expose a live state while
+	// linking the private recovery event, then restore the pending death before
+	// returning to the game loop.
+	GET_HIT(ch) = 1;
+	SET_POS(ch, GET_POS(ch) + STAT_NORMAL);
+	const nevent_schedule_result scheduled = add_event(event_death_extract_retry, delay, ch,
+							   NULL, corpse, 0, &delay, sizeof(delay));
+	hold_for_death_extract_retry(ch);
+	if (!scheduled)
+		persistence_alert(AVATAR, "player_save", "death", "none", "none",
+				  "death_recovery_schedule_failed", "delay=%d", delay);
+}
+
+static void hold_for_death_extract_retry(P_char ch)
+{
+	GET_HIT(ch) = 1;
+	SET_POS(ch, GET_POS(ch) + STAT_DEAD);
 }
 
 static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data)
@@ -2461,13 +2478,11 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	const int previous_delay = data ? *((int *)data) : DEATH_EXTRACT_RETRY_INITIAL;
 
 	(void)victim;
-	(void)obj;
 
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
 		return;
 
-	// something brought them back (a god, a resurrect); the death is no longer pending
-	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
+	if (CHAR_IN_ARENA(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
@@ -2479,7 +2494,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_awaiting_corpse_items", "delay=%d",
 				  previous_delay * 2);
-		schedule_death_extract_retry(ch, previous_delay * 2);
+		schedule_death_extract_retry(ch, obj, previous_delay * 2);
 		return;
 	}
 
@@ -2487,7 +2502,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_retry", "delay=%d", previous_delay * 2);
-		schedule_death_extract_retry(ch, previous_delay * 2);
+		schedule_death_extract_retry(ch, obj, previous_delay * 2);
 		return;
 	}
 
@@ -3060,13 +3075,12 @@ void die(P_char ch, P_char killer)
 	if (IS_PC(ch))
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
-		GET_HIT(ch) = 1;
 		if (!CHAR_IN_ARENA(ch) && item_movement_transaction_player_busy(ch))
 		{
 			persistence_alert(AVATAR, "player_save", "death", "none", "none",
 					  "corpse_items_in_flight",
 					  "extract_refused=1 recovery_scheduled=1");
-			schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
+			schedule_death_extract_retry(ch, corpse, DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
 		if (!CHAR_IN_ARENA(ch) && !persistence_save_character_terminal(ch, RENT_DEATH))
@@ -3079,9 +3093,10 @@ void die(P_char ch, P_char killer)
 				ch);
 			// the save pipeline retries on its own, but nothing else ever retries
 			// the death itself; this completes the extraction once it succeeds
-			schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
+			schedule_death_extract_retry(ch, corpse, DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
+		GET_HIT(ch) = 1;
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	}
 
@@ -5956,17 +5971,19 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 					portal_description[MAX_STRING_LENGTH];
 
 				// send_to_char("no pvp here! die and make portal\r\n", victim);
-				P_obj portal;
-				portal = read_object(400220, VIRTUAL);
-				portal->value[0] = world[victim->in_room].number;
-				snprintf(bufpc, MAX_STRING_LENGTH, "%s %s", GET_NAME(victim),
-					 "corpseportal portal");
-				portal->name = str_dup(bufpc);
-				snprintf(portal_description, MAX_STRING_LENGTH, "%s %s&n",
-					 portal->description, GET_NAME(victim));
-				set_long_description(portal, portal_description);
-				set_short_description(portal, portal_description);
-				obj_to_room(portal, real_room(400000));
+				P_obj portal = read_object(400220, VIRTUAL);
+				if (portal)
+				{
+					portal->value[0] = world[victim->in_room].number;
+					snprintf(bufpc, MAX_STRING_LENGTH, "%s %s",
+						 GET_NAME(victim), "corpseportal portal");
+					portal->name = str_dup(bufpc);
+					snprintf(portal_description, MAX_STRING_LENGTH, "%s %s&n",
+						 portal->description, GET_NAME(victim));
+					set_long_description(portal, portal_description);
+					set_short_description(portal, portal_description);
+					obj_to_room(portal, real_room(400000));
+				}
 			}
 			if (victim && killer && IS_PC(victim) && opposite_racewar(killer, victim) &&
 			    !IS_TRUSTED(killer) && !IS_TRUSTED(victim) &&

@@ -25,10 +25,13 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[2]
 actwiz = (root / "src/actwiz.c").read_text()
 handler = (root / "src/handler.c").read_text()
+movement = (root / "src/item_movement_transaction.c").read_text()
+nanny = (root / "src/nanny.c").read_text()
 utility = (root / "src/utility.c").read_text()
 db = (root / "src/db.c").read_text()
 buildings = (root / "src/buildings.c").read_text()
 capture = (root / "src/player_snapshot_capture.c").read_text()
+fight = (root / "src/fight.c").read_text()
 
 failures = []
 
@@ -105,6 +108,43 @@ check("boot records why mob_f and obj_f are never closed",
 check("the save path reports an object the ownership ledger does not know",
       "outcome=unowned_object" in capture
       and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in capture)
+check("transfer serialization does not masquerade as an unowned player save",
+      "if (audit_ownership && object->obj_uid)" in capture
+      and "budget, seen, 1, false, false" in capture
+      and "true, true);" in capture)
+
+# Every remaining direct grant is fenced at the low-level player publication boundary.
+to_char = handler[handler.index("void obj_to_char("):]
+to_char = to_char[:to_char.index("void obj_from_char(")]
+check("obj_to_char defers every missing or mismatched player ownership row",
+      "GET_PID(ch) > 0" in to_char
+      and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in to_char
+      and "item_owner_identity_equal(ownership.owner, player)" in to_char
+      and "item_creation_grant_submit_to_player(ch, object, ch)" in to_char)
+check("new characters initialize their item-owner revision before receiving equipment",
+      "item_ownership_runtime_hydrate_owner(" in nanny
+      and "item_owner_type::player" in nanny[nanny.index("void init_char("):])
+check("creation grants publish only after the ownership commit",
+      "struct creation_grant_queue" in movement
+      and "creation_grant_completion" in movement
+      and movement.index("if (!committed)", movement.index("creation_grant_completion"))
+      < movement.index("obj_to_char(object, recipient)",
+                       movement.index("creation_grant_completion")))
+check("multi-item creation rewards serialize owner revisions",
+      "std::deque<pending_creation_grant> requests" in movement
+      and "queue.requests.pop_front()" in movement
+      and "start_creation_grant(actor, queue)" in movement)
+check("container placement waits before advancing a multi-item grant queue",
+      "movement_conflicts(owner, owner)" in movement
+      and "pump_creation_grants();" in movement)
+
+# Minimal-world death must remain valid when the optional corpse portal prototype
+# is absent. This was found while exercising the player-corpse transfer boundary.
+death_portal = fight[fight.index("P_obj portal = read_object(400220, VIRTUAL);"):]
+death_portal = death_portal[:death_portal.index("if (victim && killer")]
+check("death skips the optional corpse portal when its prototype is unavailable",
+      "if (portal)" in death_portal
+      and death_portal.index("if (portal)") < death_portal.index("portal->value[0]"))
 
 if failures:
     print("\nFailed regression checks:")

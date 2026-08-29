@@ -9,6 +9,7 @@
 #include "comm.h"
 #include "db.h"
 #include "interp.h"
+#include "item_movement_transaction.h"
 #include "utility.h"
 #include "utils.h"
 #include <ctype.h>
@@ -199,6 +200,7 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 		switch (gp->goal_type)
 		{
 		case QUEST_GOAL_ITEM:
+		{
 			obj = read_object(gp->number, VIRTUAL);
 
 			if (!obj)
@@ -215,16 +217,28 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 				break;
 			}
 
-			if ((IS_CARRYING_N(pl) < CAN_CARRY_N(pl)) &&
-			    ((total_carried_weight(pl) + GET_OBJ_WEIGHT(obj)) < CAN_CARRY_W(pl)))
+			const bool to_player = (IS_CARRYING_N(pl) < CAN_CARRY_N(pl)) &&
+					       ((total_carried_weight(pl) + GET_OBJ_WEIGHT(obj)) <
+						CAN_CARRY_W(pl));
+			const bool submitted =
+				to_player ?
+					item_creation_grant_submit_to_player(pl, obj, pl) :
+					item_creation_grant_submit_to_room(pl, obj, pl->in_room);
+			if (!submitted)
 			{
-				obj_to_char(obj, pl);
+				extract_obj(obj, FALSE);
+				send_to_char(
+					"The quest reward service is busy; no item was granted.\r\n",
+					pl);
+				break;
+			}
+			if (to_player)
+			{
 				act("$n gives you $p.", FALSE, mob, obj, pl, TO_VICT);
 				act("$n gives $p to $N.", FALSE, mob, obj, pl, TO_NOTVICT);
 			}
 			else
 			{
-				obj_to_room(obj, pl->in_room);
 				act("$n places $p on the ground in front of you.", FALSE, mob, obj,
 				    pl, TO_VICT);
 				act("$n places $p on the ground in front of $N.", FALSE, mob, obj,
@@ -237,6 +251,7 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 				obj_index[obj->R_num].virtual_number, mob->player.short_descr);
 			// sql_quest_finish(pl, mob, 1, obj_index[obj->R_num].virtual_number);
 			break;
+		}
 		case QUEST_GOAL_COINS:
 
 			/* if( (temp = sql_quest_trophy(mob)) > 1){

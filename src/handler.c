@@ -1790,6 +1790,35 @@ void obj_to_char(P_obj object, P_char ch)
 		return;
 	}
 
+	// A persisted player payload may only contain objects whose active ownership row already
+	// names that player. PID-zero PC shells are synthetic locker/loading characters and do
+	// not write player_items. Legacy reward and special-procedure paths still create objects
+	// with read_object() and call obj_to_char() directly; defer those publications through
+	// the creation-grant queue instead of allowing another orphan player_items row. Normal
+	// get, give, shop and load completions have already advanced the runtime ledger, so they
+	// pass straight through here.
+	if (IS_PC(ch) && GET_PID(ch) > 0 && object->obj_uid)
+	{
+		const item_owner_identity player = { item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(ch)), 0 };
+		item_ownership_runtime_entry ownership = {};
+		if (!item_ownership_runtime_lookup(object->obj_uid, &ownership) ||
+		    !item_owner_identity_equal(ownership.owner, player) ||
+		    ownership.state != item_custody_state::active)
+		{
+			if (item_creation_grant_submit_to_player(ch, object, ch))
+				return;
+			logit(LOG_FILE,
+			      "obj_to_char refused unowned player publication (uid=%llu vnum=%d pid=%d)",
+			      (unsigned long long)object->obj_uid, OBJ_VNUM(object), GET_PID(ch));
+			send_to_char(
+				"The ownership authority is busy; the item was not granted.\r\n",
+				ch);
+			extract_obj(object, FALSE);
+			return;
+		}
+	}
+
 	if (ch->carrying && (ch->carrying->R_num == object->R_num))
 	{
 		object->next_content = ch->carrying;

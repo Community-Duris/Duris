@@ -297,7 +297,8 @@ player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snaps
 player_snapshot_capture_result
 capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 		  std::vector<player_item_snapshot> &target, capture_budget &budget,
-		  std::unordered_set<const obj_data *> &seen, size_t depth, bool omit_norent)
+		  std::unordered_set<const obj_data *> &seen, size_t depth, bool omit_norent,
+		  bool audit_ownership)
 {
 	if (!object || (omit_norent && IS_SET(object->extra_flags, ITEM_NORENT)))
 		return player_snapshot_capture_result::ok;
@@ -318,7 +319,7 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	// point where the object is still identifiable, so name it here: the vnum says which
 	// grant path handed it over without submitting a transfer, which is the only
 	// practical way to find those paths in a codebase with 271 obj_to_char() calls.
-	if (object->obj_uid)
+	if (audit_ownership && object->obj_uid)
 	{
 		item_ownership_runtime_entry ownership = {};
 		if (!item_ownership_runtime_lookup(object->obj_uid, &ownership))
@@ -412,7 +413,7 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	for (const obj_data *content = object->contains; content; content = content->next_content)
 	{
 		const auto result = capture_item_tree(content, row_index, 0, target, budget, seen,
-						      depth + 1, omit_norent);
+						      depth + 1, omit_norent, audit_ownership);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 	}
@@ -422,7 +423,7 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 player_snapshot_capture_result capture_items(P_char owner,
 					     std::vector<player_item_snapshot> &target,
 					     capture_budget &budget, bool equipment, bool inventory,
-					     bool omit_norent)
+					     bool omit_norent, bool audit_ownership)
 {
 	std::unordered_set<const obj_data *> seen;
 	if (equipment)
@@ -431,7 +432,8 @@ player_snapshot_capture_result capture_items(P_char owner,
 		{
 			const auto result = capture_item_tree(owner->equipment[slot],
 							      PLAYER_SNAPSHOT_NO_PARENT, slot + 1,
-							      target, budget, seen, 1, omit_norent);
+							      target, budget, seen, 1, omit_norent,
+							      audit_ownership);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -442,7 +444,8 @@ player_snapshot_capture_result capture_items(P_char owner,
 		     object = object->next_content)
 		{
 			const auto result = capture_item_tree(object, PLAYER_SNAPSHOT_NO_PARENT, 0,
-							      target, budget, seen, 1, omit_norent);
+							      target, budget, seen, 1, omit_norent,
+							      audit_ownership);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -493,7 +496,8 @@ player_snapshot_capture_result capture_pets(P_char ch, int save_intent, player_s
 				break;
 			}
 		}
-		const auto item_result = capture_items(pet, row.items, budget, true, true, true);
+		const auto item_result =
+			capture_items(pet, row.items, budget, true, true, true, true);
 		if (item_result != player_snapshot_capture_result::ok)
 			return item_result;
 		snapshot.pets.push_back(std::move(row));
@@ -543,8 +547,8 @@ player_item_snapshot_list_capture(P_char owner, bool equipment, bool inventory, 
 	{
 		std::vector<player_item_snapshot> items;
 		capture_budget budget;
-		const auto result =
-			capture_items(owner, items, budget, equipment, inventory, omit_norent);
+		const auto result = capture_items(owner, items, budget, equipment, inventory,
+						  omit_norent, false);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 		*items_out = std::move(items);
@@ -570,7 +574,7 @@ player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> 
 		std::vector<player_item_snapshot> items;
 		std::unordered_set<const obj_data *> seen;
 		const auto result = capture_item_tree(root, PLAYER_SNAPSHOT_NO_PARENT, 0, items,
-						      budget, seen, 1, false);
+						      budget, seen, 1, false, false);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 		*items_out = std::move(items);
@@ -625,7 +629,7 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 			const auto result = capture_items(ch, snapshot.items, budget,
 							  components & PLAYER_COMPONENT_EQUIPMENT,
 							  components & PLAYER_COMPONENT_INVENTORY,
-							  true);
+							  true, true);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}

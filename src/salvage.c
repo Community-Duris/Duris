@@ -5,6 +5,7 @@
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "item_movement_transaction.h"
 #include "objmisc.h"
 #include "spells.h"
 #include "utility.h"
@@ -17,6 +18,19 @@
 extern P_room world;
 extern const int top_of_world;
 extern P_index obj_index;
+
+namespace
+{
+bool grant_salvage_item(P_char ch, P_obj object)
+{
+	if (object && item_creation_grant_submit_to_player(ch, object, ch))
+		return true;
+	if (object)
+		extract_obj(object, FALSE);
+	send_to_char("The ownership authority is busy; no salvage item was created.\r\n", ch);
+	return false;
+}
+}
 
 bool is_salvageable(P_obj temp)
 {
@@ -179,8 +193,8 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 
-		obj_to_char(read_object(--itemvnum, VIRTUAL), ch);
-		obj_to_char(read_object(itemvnum, VIRTUAL), ch);
+		grant_salvage_item(ch, read_object(--itemvnum, VIRTUAL));
+		grant_salvage_item(ch, read_object(itemvnum, VIRTUAL));
 		act("$n breaks down their $p into its &+ylesser&n material...", TRUE, ch, item, 0,
 		    TO_ROOM);
 		act("You break down your $p into its &+ylesser &+Ymaterial&n...", FALSE, ch, item,
@@ -425,7 +439,7 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 	    number(80, 500) < essence_luck &&
 	    number(1, 1000000) <= (int)(1000000.0 * crafting_salvage_essence_chance_multiplier()))
 	{
-		obj_to_char(read_object(MAG_ESSENCE_VNUM, VIRTUAL), ch);
+		grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));
 		send_to_char(
 			"...as you work, a small &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml&n object gently separates from your item!\r\n",
 			ch);
@@ -434,7 +448,7 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 	// Any affect which makes a recipe magical also yields its guaranteed essence.
 	if (has_affect(item))
 	{
-		obj_to_char(read_object(MAG_ESSENCE_VNUM, VIRTUAL), ch);
+		grant_salvage_item(ch, read_object(MAG_ESSENCE_VNUM, VIRTUAL));
 		send_to_char(
 			"...as you work, a small &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml&n object gently separates from your item!\r\n",
 			ch);
@@ -483,9 +497,9 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		else
 			salvaged->cost = newcost;
 
-		obj_to_char(salvaged, ch);
+		const bool first_granted = grant_salvage_item(ch, salvaged);
 
-		if (DEBUG)
+		if (DEBUG && first_granted)
 		{
 			checked_snprintf(debugBuf + strlen(debugBuf),
 					 MAX_STRING_LENGTH - strlen(debugBuf), ", Final cost: %d.",
@@ -507,7 +521,7 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		else
 			salvaged->cost = newcost;
 
-		obj_to_char(salvaged, ch);
+		grant_salvage_item(ch, salvaged);
 	}
 	else
 	{
@@ -525,9 +539,9 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 		else
 			salvaged->cost = newcost;
 
-		obj_to_char(salvaged, ch);
+		const bool granted = grant_salvage_item(ch, salvaged);
 
-		if (DEBUG)
+		if (DEBUG && granted)
 		{
 			checked_snprintf(debugBuf + strlen(debugBuf),
 					 MAX_STRING_LENGTH - strlen(debugBuf), ", Final cost: %d.",
@@ -603,20 +617,25 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			recipe->str_mask |= STRUNG_DESC2;
 			crafting_configure_recipe_scroll(recipe, item);
 
-			obj_to_char(recipe, ch);
-			if (DEBUG)
+			const bool recipe_granted = grant_salvage_item(ch, recipe);
+			if (DEBUG && recipe_granted)
 				debug("do_salvage: %s created '%s'.", J_NAME(ch),
 				      recipe->short_description);
-			act("As $n breaks down their $p, they are suddenly &+Yenlightened&n!\n"
-			    "$n quickly grabs a quill and &+yvellum paper&n and starts to write down the &+Cdetailed&n\n"
-			    "intricacies surrounding $p.\r\n",
-			    FALSE, ch, item, 0, TO_ROOM);
-			act("As you break down your $p, you are suddenly &+Yenlightened&n!\n"
-			    "You quickly grab a quill and &+yvellum paper&n and start to write down the &+Cdetailed&n\n"
-			    "intricacies surrounding $p.\r\n",
-			    FALSE, ch, item, 0, TO_CHAR);
-			act("$n has created $p!\r\n", FALSE, ch, recipe, 0, TO_ROOM);
-			act("You have created $p!\r\n", FALSE, ch, recipe, 0, TO_CHAR);
+			if (recipe_granted)
+				act("As $n breaks down their $p, they are suddenly &+Yenlightened&n!\n"
+				    "$n quickly grabs a quill and &+yvellum paper&n and starts to write down the &+Cdetailed&n\n"
+				    "intricacies surrounding $p.\r\n",
+				    FALSE, ch, item, 0, TO_ROOM);
+			if (recipe_granted)
+				act("As you break down your $p, you are suddenly &+Yenlightened&n!\n"
+				    "You quickly grab a quill and &+yvellum paper&n and start to write down the &+Cdetailed&n\n"
+				    "intricacies surrounding $p.\r\n",
+				    FALSE, ch, item, 0, TO_CHAR);
+			if (recipe_granted)
+			{
+				act("$n has created $p!\r\n", FALSE, ch, recipe, 0, TO_ROOM);
+				act("You have created $p!\r\n", FALSE, ch, recipe, 0, TO_CHAR);
+			}
 		}
 		else if (scitools)
 		{

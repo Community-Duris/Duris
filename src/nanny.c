@@ -28,6 +28,7 @@
 #include "epic_transaction.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "item_ownership_runtime.h"
 #include "shop_trade_transaction.h"
 #include "auction_transaction.h"
 #include "boon_reward_transaction.h"
@@ -5426,6 +5427,10 @@ void init_char(P_char ch)
 	clear_title(ch);
 
 	ch->only.pc->pid = getNewPCidNumb();
+	if (ch->only.pc->pid > 0 &&
+	    !item_ownership_runtime_hydrate_owner(
+		    { item_owner_type::player, static_cast<uint64_t>(ch->only.pc->pid), 0 }, 0))
+		logit(LOG_FILE, "could not initialize new player item ownership state");
 #ifdef __NO_MYSQL__
 	if (ch->only.pc->pid > 0 && !player_revision_hydrate(ch->only.pc->pid, 0))
 		logit(LOG_FILE, "could not initialize flat-file player revision state");
