@@ -4133,3 +4133,37 @@ action" text below remains historical and does not authorize work.
 - **Next action:** define the smallest recoverable resurrection sequence from the existing room,
   player-item materialization, wallet, and corpse authorities before changing either resurrect spell;
   do not collapse it into ordinary release or add a generic spell transaction framework.
+
+### Checkpoint 96 - durability-gated wall of bones
+
+- **Historical behavior restored:** the player-corpse branch of `wall of bones` now checks the flat
+  persistence guard after its existing corpse-strength, direction, exit, and component validation but
+  before creating either wall, moving a corpse item, or extracting the corpse. Compact bones, dragon
+  scales, NPC corpses, and MariaDB modes continue through the synchronous historical path.
+- **Existing authority reused:** the guarded branch submits checkpoint 88's atomic corpse-to-room
+  release. No command, payload, catalog, or generic effect framework was added. The only new state is
+  a bounded process-local context containing the stable corpse key, caster pointer and runtime ID,
+  spell level, and exit direction.
+- **Acknowledgment ordering:** release publication still proves the committed room and exact live item
+  graph, then advances item custody before calling the extracted historical wall helper. A valid
+  completion creates both wall objects, marks both exits breakable, emits the original room messages,
+  drops exact corpse contents and money, and extracts the corpse. Submission and durable failures
+  retain the corpse and create no wall; duplicate casts recognize the pending wall intent.
+- **Transient-effect exposure:** wall objects and exit bits are live gameplay state rather than durable
+  corpse authority. A process death after release commit can recover the exact released items, money,
+  artifacts, and removed corpse without replaying the wall. If the caster or exit becomes stale before
+  publication, the release still completes, the wall effect is skipped, and an operator alert records
+  the mismatch.
+- **Remaining design boundary:** the audited resurrection path must exchange the target's current
+  player inventory and wallet with the old room before transferring the corpse aggregate; follower
+  raising needs durable pet-item materialization; nested decay targets the containing object's owner.
+  None is an ordinary room release, and each would require a new composite cross-authority protocol.
+  The directive requires explicit owner approval before that material expansion.
+- **Checks passed:** the focused live routing contract proves the wall guard precedes wall creation and
+  the first content move, and that runtime custody advances before the wall helper. Existing lifecycle
+  command, transaction, forced-recovery corpse repository, room, artifact, and ownership-runtime
+  regressions pass, as do changed-line formatting, `git diff --check`, the strict normal C++20 server
+  build, and the client-free build/game-loop boot/clean-shutdown preflight.
+- **Next action:** obtain an owner decision on whether to add the dedicated composite authority needed
+  for the remaining resurrection, follower, and nested-container corpse paths; if approved, start with
+  the shared full/lesser resurrection exchange rather than a generalized extraction framework.

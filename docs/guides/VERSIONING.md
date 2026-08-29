@@ -1,7 +1,7 @@
 # Versioning
 
 DurisMUD follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
-The current project version is `1.81.105`. The version shown at the top of the
+The current project version is `1.81.106`. The version shown at the top of the
 root [README.md](../../README.md) is the canonical version marker.
 
 The repository's long development history informed the initial `1.81.8`

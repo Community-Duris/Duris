@@ -15,6 +15,7 @@ UNDERMOUNTAIN_SPECS = (ROOT / "src/specs.undermountain.c").read_text()
 VERZANAN_SPECS = (ROOT / "src/specs.verzanan.c").read_text()
 LOHRR_SPECS = (ROOT / "src/specs.lohrr.c").read_text()
 MAGIC = (ROOT / "src/magic.c").read_text()
+NECROMANCY = (ROOT / "src/necromancy.c").read_text()
 
 
 def body(source: str, signature: str, next_signature: str) -> str:
@@ -49,6 +50,8 @@ flying_dagger = body(UNDERMOUNTAIN_SPECS, "int flying_dagger(", "int ochre_jelly
 ochre_jelly = body(UNDERMOUNTAIN_SPECS, "int ochre_jelly(", "int animated_sword(")
 very_angry = LOHRR_SPECS[LOHRR_SPECS.index("int very_angry_npc("):]
 unmaking = body(MAGIC, "void spell_unmaking(", "void spell_enchant_weapon(")
+wall_of_bones = body(NECROMANCY, "void spell_wall_of_bones(",
+                     "void spell_compact_corpse(")
 
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in write_corpse
 assert "stage_corpse_lifecycle" in write_corpse
@@ -99,6 +102,14 @@ assert release_publication.index("live_room != room") < \
        release_publication.index("item_ownership_runtime_apply_corpse_release")
 assert HANDLER.index("item_ownership_runtime_apply_corpse_release") < \
        HANDLER.index("GET_HIT(caster) =")
+assert "persistence_defer_corpse_wall_of_bones(corpse, ch, level, exit_dir)" in wall_of_bones
+assert wall_of_bones.index("persistence_defer_corpse_wall_of_bones") < \
+       wall_of_bones.index("complete_corpse_wall_of_bones")
+assert wall_of_bones.index("persistence_defer_corpse_wall_of_bones") < \
+       wall_of_bones.index("obj_from_obj(obj_in_corpse)")
+assert "corpse_walls" in HANDLER
+assert release_publication.index("item_ownership_runtime_apply_corpse_release") < \
+       release_publication.index("complete_corpse_wall_of_bones")
 assert "corpse_lifecycle_transaction_busy" in get_item
 assert "corpse_lifecycle_transaction_busy" in put_item
 
@@ -113,4 +124,4 @@ for release_caller, first_mutation in (
     assert release_caller.index("persistence_defer_corpse_room_release") < \
            release_caller.index(first_mutation)
 
-print("[PASS] live corpse save, remove, release, unmaking, destruction, restore, and revision routing are wired")
+print("[PASS] live corpse save, remove, release, unmaking, wall, destruction, restore, and revision routing are wired")

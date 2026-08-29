@@ -10,26 +10,31 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 95 restores the historical player-corpse path for
-`unmaking`/`return soul` in flat-primary mode. The spell now stops before moving any
-contents or granting its heal, submits the existing atomic corpse-to-room release, and
-applies its historical flavor and healing only after durable acknowledgment. Publication
-also verifies that the live corpse still resolves to the committed room before advancing
-runtime custody, dropping exact contents and money, and extracting the corpse. Failure
-retains the corpse and grants no effect; MariaDB behavior is unchanged.
+As of 2026-08-29, checkpoint 96 restores the historical player-corpse branch of `wall of
+bones` in flat-primary mode. After the spell's existing corpse and exit checks, it now
+stops before creating the wall or moving contents and submits the existing atomic
+corpse-to-room release. Durable acknowledgment must prove the same live corpse, room,
+and item graph and advance runtime custody before the historical paired wall objects,
+breakable exits, room messages, item drops, and corpse extraction are published.
+Submission or durable failure retains the corpse and creates no wall. Named compact
+bones, dragon scales, NPC corpses, and every MariaDB mode retain their synchronous path.
 
-This checkpoint deliberately adds no new command or catalog. Its bounded, process-local
-spell context is keyed by stable corpse identity and a non-reusable caster runtime ID.
-Durable corpse, item, room-money, and artifact recovery continues to come entirely from
-the checkpoint 88 release authority; a process crash after that authority commits can
-recover custody but does not replay the transient heal or flavor text. The remaining
-checkpoint 91 paths are materially broader: resurrection also exchanges the target's
-existing player/room inventory and wallet before claiming the corpse, follower raising
-requires an authoritative NPC destination, and wall/bone conversion creates a second
-game object or exit effect. Those operations must keep their own exact sequencing rather
-than being mislabeled as ordinary release. The siege/kingdom removal memo remains
-research only and does not amend this directive's explicit requirement to restore
-historical siege state.
+No command, payload, catalog, or generic spell framework was added. A bounded,
+process-local context records only stable corpse identity, a non-reusable caster runtime
+ID, level, and exit direction; all durable corpse, item, room-money, and artifact recovery
+continues to use the checkpoint 88 release authority. The wall is a transient gameplay
+effect: a process death after the release commits does not replay it, and a stale caster
+or exit can leave the durably released contents in the room without a wall while raising
+an operator alert.
+
+The remaining audited player-corpse paths have no equally narrow authority. Resurrection
+exchanges the target's current inventory and wallet with the old room before moving the
+corpse aggregate to the player; follower raising needs a durable pet-item destination;
+and a nested corpse decays into its containing object rather than onto the room floor.
+Each requires a new composite cross-authority boundary. Per this directive's working
+rule, that material design expansion requires explicit owner approval before
+implementation. The siege/kingdom removal memo remains research only and does not amend
+this directive's explicit requirement to restore historical siege state.
 
 ## Owner intent
 

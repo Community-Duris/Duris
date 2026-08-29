@@ -82,5 +82,6 @@ void check_saved_corpse(P_char);
 void event_saved_corpse(P_char ch, P_char vict, P_obj obj, void *data);
 void create_saved_corpse(P_obj obj, P_char mob);
 void spell_compact_corpse(int, P_char, char *, int, P_char, P_obj);
+bool complete_corpse_wall_of_bones(P_char caster, P_obj corpse, int level, int exit_dir);
 
 #endif // __NECROMANCY_H__

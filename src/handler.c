@@ -3118,7 +3118,16 @@ struct corpse_unmaking_context
 	bool theurgist = false;
 };
 
+struct corpse_wall_context
+{
+	P_char caster = nullptr;
+	uint64_t caster_runtime_id = 0;
+	int level = 0;
+	int exit_dir = -1;
+};
+
 std::unordered_map<uint64_t, corpse_unmaking_context> corpse_unmakings;
+std::unordered_map<uint64_t, corpse_wall_context> corpse_walls;
 
 class corpse_release_side_effect_guard
 {
@@ -3241,6 +3250,14 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		unmaking_context = unmaking->second;
 		corpse_unmakings.erase(unmaking);
 	}
+	corpse_wall_context wall_context = {};
+	const auto wall = corpse_walls.find(key);
+	const bool walled = wall != corpse_walls.end();
+	if (walled)
+	{
+		wall_context = wall->second;
+		corpse_walls.erase(wall);
+	}
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	if (!committed)
 	{
@@ -3254,6 +3271,17 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 				send_to_char(
 					"The corpse resists your unmaking and remains intact.\r\n",
 					caster);
+		}
+		else if (walled)
+		{
+			if (P_char caster = find_live_character(wall_context.caster,
+								wall_context.caster_runtime_id))
+			{
+				send_to_char("Something prevents you from making a wall there.\r\n",
+					     caster);
+				act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0,
+				    TO_ROOM);
+			}
 		}
 		else if (error_code == ESTALE)
 			rearm_corpse_release(corpse);
@@ -3307,6 +3335,26 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 			update_pos(caster);
 		}
 	}
+	else if (walled)
+	{
+		P_char caster =
+			find_live_character(wall_context.caster, wall_context.caster_runtime_id);
+		if (!caster || caster->in_room != room ||
+		    !complete_corpse_wall_of_bones(caster, corpse, wall_context.level,
+						   wall_context.exit_dir))
+		{
+			persistence_alert(AVATAR, "corpse", "flatfile_wall_of_bones", "none",
+					  "none", "effect_failed", "save_id=%u room=%d",
+					  payload.save_id, payload.room_vnum);
+			if (caster)
+			{
+				send_to_char("Something prevents you from making a wall there.\r\n",
+					     caster);
+				act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0,
+				    TO_ROOM);
+			}
+		}
+	}
 	else if (OBJ_ROOM(corpse) && world[corpse->loc.room].people)
 	{
 		act("The winds of time have reclaimed $p.", 0, world[corpse->loc.room].people,
@@ -3327,8 +3375,11 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 			act("$p decays in your hands, leaving no trace.", FALSE, carrier, corpse, 0,
 			    TO_CHAR);
 	}
-	logit(LOG_CORPSE, unmade ? "%s was unmade in room %d." : "%s decayed in room %d.",
-	      corpse->short_description, payload.room_vnum);
+	const char *log_action = unmade ? "was unmade" :
+				 walled ? "became a wall of bones" :
+					  "decayed";
+	logit(LOG_CORPSE, "%s %s in room %d.", corpse->short_description, log_action,
+	      payload.room_vnum);
 	corpse_release_side_effect_guard guard;
 	while (corpse->contains)
 	{
@@ -3337,7 +3388,9 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		obj_from_obj(item);
 		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
 			logit(LOG_CORPSE,
-			      unmade ? "%s Unmaking drop: [%d] %s" : "%s Decay drop: [%d] %s",
+			      unmade ? "%s Unmaking drop: [%d] %s" :
+			      walled ? "%s Wall drop: [%d] %s" :
+				       "%s Decay drop: [%d] %s",
 			      corpse->short_description, obj_index[item->R_num].virtual_number,
 			      item->name);
 		obj_to_room(item, room);
@@ -3490,6 +3543,49 @@ bool persistence_defer_corpse_unmaking(P_obj corpse, P_char caster, int level, i
 		persistence_alert(AVATAR, "corpse", "flatfile_unmaking", "none", "none",
 				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 		send_to_char("The corpse resists your unmaking and remains intact.\r\n", caster);
+	}
+	return true;
+}
+
+bool persistence_defer_corpse_wall_of_bones(P_obj corpse, P_char caster, int level, int exit_dir)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY || !corpse || !caster ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+		return false;
+	int room = NOWHERE;
+	if (!corpse_release_room(corpse, &room) || room != caster->in_room ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	{
+		send_to_char("Something prevents you from making a wall there.\r\n", caster);
+		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
+		return true;
+	}
+	const uint64_t key =
+		item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
+	if (corpse_walls.contains(key))
+	{
+		send_to_char("That corpse is already becoming a wall of bones.\r\n", caster);
+		return true;
+	}
+	try
+	{
+		corpse_walls.emplace(key, corpse_wall_context{ caster, caster->runtime_id, level,
+							       exit_dir });
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("Something prevents you from making a wall there.\r\n", caster);
+		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
+		return true;
+	}
+	if (!submit_corpse_release(corpse))
+	{
+		corpse_walls.erase(key);
+		persistence_alert(AVATAR, "corpse", "flatfile_wall_of_bones", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		send_to_char("Something prevents you from making a wall there.\r\n", caster);
+		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, caster, 0, 0, TO_ROOM);
 	}
 	return true;
 }

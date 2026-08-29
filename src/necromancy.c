@@ -2863,6 +2863,35 @@ P_obj get_globe(P_char ch)
 	return globe;
 }
 
+bool complete_corpse_wall_of_bones(P_char caster, P_obj corpse, int level, int exit_dir)
+{
+	if (!caster || !corpse || caster->in_room == NOWHERE || exit_dir < 0 ||
+	    exit_dir >= NUM_EXITS || !EXIT(caster, exit_dir) ||
+	    !exit_wallable(caster->in_room, exit_dir, caster) ||
+	    !create_walls(caster->in_room, exit_dir, caster, level, WALL_OF_BONES, level / 2, 1800,
+			  "&+La wall of &+wbones&n",
+			  "&+LA large wall of &+wbones&+L is here to the %s.&n", 0))
+		return false;
+
+	SET_BIT(EXIT(caster, exit_dir)->exit_info, EX_BREAKABLE);
+	SET_BIT(VIRTUAL_EXIT((world[caster->in_room].dir_option[exit_dir])->to_room,
+			     rev_dir[exit_dir])
+			->exit_info,
+		EX_BREAKABLE);
+
+	char message[MAX_STRING_LENGTH];
+	snprintf(
+		message, sizeof(message),
+		"&+LInfused by a powerful magic, %s &+Lmagically transforms into a wall of bones, blocking the %s exit!&n\r\n",
+		corpse->short_description, dirs[exit_dir]);
+	send_to_room(message, caster->in_room);
+	snprintf(message, sizeof(message),
+		 "&+LA pile of bones magically assembles to the %s!&n\r\n",
+		 dirs[rev_dir[exit_dir]]);
+	send_to_room(message, (world[caster->in_room].dir_option[exit_dir])->to_room);
+	return true;
+}
+
 void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int type,
 			 P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
@@ -2973,26 +3002,11 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int t
 		return;
 	}
 
-	if (corpse && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, level / 2, 1800,
-				   "&+La wall of &+wbones&n",
-				   "&+LA large wall of &+wbones&+L is here to the %s.&n", 0))
+	if (corpse && persistence_defer_corpse_wall_of_bones(corpse, ch, level, exit_dir))
+		return;
+
+	if (corpse && complete_corpse_wall_of_bones(ch, corpse, level, exit_dir))
 	{
-		SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
-				     rev_dir[exit_dir])
-				->exit_info,
-			EX_BREAKABLE);
-
-		snprintf(
-			buf1, MAX_STRING_LENGTH,
-			"&+LInfused by a powerful magic, %s &+Lmagically transforms into a wall of bones, blocking the %s exit!&n\r\n",
-			corpse->short_description, dirs[exit_dir]);
-		send_to_room(buf1, ch->in_room);
-		snprintf(buf1, MAX_STRING_LENGTH,
-			 "&+LA pile of bones magically assembles to the %s!&n\r\n",
-			 dirs[rev_dir[exit_dir]]);
-		send_to_room(buf1, (world[ch->in_room].dir_option[exit_dir])->to_room);
-
 		for (obj_in_corpse = corpse->contains; obj_in_corpse; obj_in_corpse = next_obj)
 		{
 			next_obj = obj_in_corpse->next_content;
