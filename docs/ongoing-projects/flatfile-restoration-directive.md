@@ -724,6 +724,37 @@
   incomplete domains remain under audit, so the global incomplete-domain boot fence
   remains.
 
+### 2026-08-29 - restored database-only polls in flat mode
+
+- **Concrete gap:** polls were historically stored only in the `polls`, `poll_options`,
+  and `poll_votes` tables. In a client-free build, every list, lookup, create, close,
+  expiry, account-vote check, and vote mutation returned empty or failure. The websocket
+  vote handler separately rejected every request as database unavailable, so neither
+  the in-game nor web poll system could operate without MariaDB.
+- **Restoration:** the existing poll APIs now retain the same poll, option, and
+  account-level vote fields in one bounded flat authority record. It uses the existing
+  private metadata directory, an exclusive mutation lock, version and checksum
+  validation, and atomic replacement. Missing state is an empty poll list; corrupt state
+  is not accepted or overwritten. Poll and option IDs advance durably, active lists stay
+  newest-first, vote totals count distinct accounts, multi-select option totals survive
+  restart, and create, close, expiry, in-game voting, websocket voting, and websocket
+  broadcasts use the existing command paths. MariaDB behavior remains table-backed and
+  unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_polls.py` covers missing state,
+  invalid definitions, durable identity allocation, restart reads, active ordering,
+  case-insensitive account voting, multi-select totals, duplicate refusal, expiry,
+  private permissions, checksum corruption, and refusal to overwrite corrupt authority.
+  Its client-free preprocessing check also rejects every poll SQL statement, and the
+  test is included in the client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `python3 tests/async/test_websocket_protocol_contract.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** the active poll system now has live persistence routes in both
+  modes. Other incomplete domains remain under audit, so the global incomplete-domain
+  boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

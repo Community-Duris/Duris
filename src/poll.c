@@ -24,6 +24,21 @@
 #include "sql.h"
 #include "websocket.h"
 
+#ifdef __NO_MYSQL__
+#include "flatfile_store.h"
+#include "persistence_mode.h"
+
+#include <algorithm>
+#include <climits>
+#include <iomanip>
+#include <limits>
+#include <openssl/sha.h>
+#include <sstream>
+#include <strings.h>
+#include <unordered_map>
+#include <unordered_set>
+#endif
+
 using namespace std;
 
 /* in-memory wizard sessions */
@@ -40,6 +55,672 @@ static void poll_wizard_show_summary(P_char ch, poll_wizard_data *wiz);
 static void poll_display_bar(char *buf, int count, int max_count, int bar_width);
 static void poll_send_wrapped(P_char ch, const char *text, int width, const char *prefix,
 			      const char *suffix);
+
+#ifdef __NO_MYSQL__
+namespace
+{
+constexpr const char *flat_poll_filename = "polls";
+constexpr const char *flat_poll_lock_filename = "polls.lock";
+constexpr const char *flat_poll_magic = "DURIS-POLLS";
+constexpr unsigned int flat_poll_version = 1;
+constexpr size_t flat_poll_maximum_size = 64 * 1024 * 1024;
+constexpr size_t flat_poll_maximum_count = 10000;
+constexpr size_t flat_poll_maximum_votes = 200000;
+constexpr size_t flat_poll_creator_maximum = 32;
+constexpr size_t flat_poll_account_maximum = 64;
+constexpr size_t flat_poll_character_maximum = 32;
+
+struct flat_poll_vote
+{
+	int poll_id = 0;
+	int option_id = 0;
+	time_t voted_at = 0;
+	string account_name;
+	string character_name;
+};
+
+struct flat_poll_catalog
+{
+	uint64_t revision = 0;
+	uint32_t next_poll_id = 1;
+	uint32_t next_option_id = 1;
+	vector<poll_data> polls;
+	vector<flat_poll_vote> votes;
+};
+
+enum class flat_poll_load_result
+{
+	ok,
+	missing,
+	invalid,
+	io_error
+};
+
+enum class flat_poll_close_result
+{
+	ok,
+	not_found,
+	already_closed,
+	error
+};
+
+class flat_poll_lock
+{
+    public:
+	~flat_poll_lock() { flatfile_lock_release(fd); }
+
+	int *destination() { return &fd; }
+
+    private:
+	int fd = -1;
+};
+
+string flat_poll_directory()
+{
+	const char *root = persistence_mode_flatfile_root();
+	return root && *root ? string(root) + "/metadata" : string();
+}
+
+bool valid_flat_poll_string(const string &value, size_t maximum, bool allow_empty = false)
+{
+	return (allow_empty || !value.empty()) && value.size() <= maximum &&
+	       value.find('\0') == string::npos;
+}
+
+string flat_poll_account_key(const string &account)
+{
+	string key = account;
+	transform(key.begin(), key.end(), key.begin(),
+		  [](unsigned char value) { return static_cast<char>(tolower(value)); });
+	return key;
+}
+
+bool valid_flat_poll_definition(const poll_data &poll)
+{
+	if (!valid_flat_poll_string(poll.question, MAX_POLL_QUESTION) ||
+	    !valid_flat_poll_string(poll.created_by, flat_poll_creator_maximum) ||
+	    poll.created_at < 0 || poll.expires_at <= poll.created_at || poll.options.size() < 2 ||
+	    poll.options.size() > MAX_POLL_OPTIONS)
+		return false;
+	if ((!poll.multi_select && poll.max_choices != 1) ||
+	    (poll.multi_select &&
+	     (poll.max_choices < 2 || static_cast<size_t>(poll.max_choices) > poll.options.size())))
+		return false;
+
+	unordered_set<int> option_numbers;
+	for (const poll_option &option : poll.options)
+	{
+		if (option.option_num < 1 || option.option_num > MAX_POLL_OPTIONS ||
+		    !option_numbers.insert(option.option_num).second ||
+		    !valid_flat_poll_string(option.text, MAX_OPTION_TEXT))
+			return false;
+	}
+	return true;
+}
+
+bool validate_flat_poll_catalog(const flat_poll_catalog &catalog, string *error)
+{
+	if (!catalog.next_poll_id || !catalog.next_option_id ||
+	    catalog.polls.size() > flat_poll_maximum_count ||
+	    catalog.votes.size() > flat_poll_maximum_votes)
+	{
+		if (error)
+			*error = "invalid poll catalog header";
+		return false;
+	}
+
+	uint32_t maximum_poll_id = 0;
+	uint32_t maximum_option_id = 0;
+	unordered_set<int> poll_ids;
+	unordered_map<int, int> option_owners;
+	for (const poll_data &poll : catalog.polls)
+	{
+		if (poll.id < 1 || !valid_flat_poll_definition(poll) ||
+		    !poll_ids.insert(poll.id).second)
+		{
+			if (error)
+				*error = "invalid poll catalog entry";
+			return false;
+		}
+		maximum_poll_id = max(maximum_poll_id, static_cast<uint32_t>(poll.id));
+		for (const poll_option &option : poll.options)
+		{
+			if (option.id < 1 || !option_owners.emplace(option.id, poll.id).second)
+			{
+				if (error)
+					*error = "invalid poll option identity";
+				return false;
+			}
+			maximum_option_id =
+				max(maximum_option_id, static_cast<uint32_t>(option.id));
+		}
+	}
+	if (catalog.next_poll_id <= maximum_poll_id || catalog.next_option_id <= maximum_option_id)
+	{
+		if (error)
+			*error = "invalid poll identity allocator";
+		return false;
+	}
+
+	unordered_set<string> vote_keys;
+	for (const flat_poll_vote &vote : catalog.votes)
+	{
+		const auto owner = option_owners.find(vote.option_id);
+		if (poll_ids.find(vote.poll_id) == poll_ids.end() || owner == option_owners.end() ||
+		    owner->second != vote.poll_id ||
+		    !valid_flat_poll_string(vote.account_name, flat_poll_account_maximum) ||
+		    !valid_flat_poll_string(vote.character_name, flat_poll_character_maximum))
+		{
+			if (error)
+				*error = "invalid poll vote entry";
+			return false;
+		}
+		const string key = to_string(vote.poll_id) + ":" +
+				   flat_poll_account_key(vote.account_name) + ":" +
+				   to_string(vote.option_id);
+		if (!vote_keys.insert(key).second)
+		{
+			if (error)
+				*error = "duplicate poll vote entry";
+			return false;
+		}
+	}
+	return true;
+}
+
+string flat_poll_digest(const string &body)
+{
+	unsigned char digest[SHA256_DIGEST_LENGTH] = {};
+	SHA256(reinterpret_cast<const unsigned char *>(body.data()), body.size(), digest);
+	ostringstream encoded;
+	encoded << hex << setfill('0');
+	for (unsigned char byte : digest)
+		encoded << setw(2) << static_cast<unsigned int>(byte);
+	return encoded.str();
+}
+
+bool encode_flat_poll_catalog(const flat_poll_catalog &catalog, vector<uint8_t> *bytes,
+			      string *error)
+{
+	if (!bytes || !validate_flat_poll_catalog(catalog, error))
+		return false;
+
+	ostringstream output;
+	output << flat_poll_magic << ' ' << flat_poll_version << '\n';
+	output << catalog.revision << ' ' << catalog.next_poll_id << ' ' << catalog.next_option_id
+	       << '\n';
+	output << catalog.polls.size() << ' ' << catalog.votes.size() << '\n';
+	for (const poll_data &poll : catalog.polls)
+	{
+		output << "P " << poll.id << ' ' << static_cast<long long>(poll.created_at) << ' '
+		       << static_cast<long long>(poll.expires_at) << ' ' << (poll.is_active ? 1 : 0)
+		       << ' ' << (poll.multi_select ? 1 : 0) << ' ' << poll.max_choices << ' '
+		       << quoted(poll.question) << ' ' << quoted(poll.created_by) << ' '
+		       << poll.options.size() << '\n';
+		for (const poll_option &option : poll.options)
+			output << "O " << option.id << ' ' << option.option_num << ' '
+			       << quoted(option.text) << '\n';
+	}
+	for (const flat_poll_vote &vote : catalog.votes)
+		output << "V " << vote.poll_id << ' ' << vote.option_id << ' '
+		       << static_cast<long long>(vote.voted_at) << ' ' << quoted(vote.account_name)
+		       << ' ' << quoted(vote.character_name) << '\n';
+	if (!output)
+	{
+		if (error)
+			*error = "could not encode poll catalog";
+		return false;
+	}
+	const string body = output.str();
+	const string record = body + "S " + flat_poll_digest(body) + "\n";
+	if (record.size() > flat_poll_maximum_size)
+	{
+		if (error)
+			*error = "poll catalog exceeds storage limit";
+		return false;
+	}
+	bytes->assign(record.begin(), record.end());
+	return true;
+}
+
+bool decode_flat_poll_catalog(const vector<uint8_t> &bytes, flat_poll_catalog *catalog,
+			      string *error)
+{
+	if (!catalog || bytes.empty())
+	{
+		if (error)
+			*error = "empty poll catalog";
+		return false;
+	}
+	const string record(bytes.begin(), bytes.end());
+	const size_t checksum_marker = record.rfind("\nS ");
+	if (checksum_marker == string::npos || record.back() != '\n')
+	{
+		if (error)
+			*error = "poll catalog checksum is missing";
+		return false;
+	}
+	const string body = record.substr(0, checksum_marker + 1);
+	const string checksum =
+		record.substr(checksum_marker + 3, record.size() - checksum_marker - 4);
+	if (checksum.size() != SHA256_DIGEST_LENGTH * 2 || checksum != flat_poll_digest(body))
+	{
+		if (error)
+			*error = "poll catalog checksum mismatch";
+		return false;
+	}
+
+	istringstream input(body);
+	string magic;
+	unsigned int version = 0;
+	uint64_t poll_count = 0;
+	uint64_t vote_count = 0;
+	flat_poll_catalog decoded;
+	if (!(input >> magic >> version >> decoded.revision >> decoded.next_poll_id >>
+	      decoded.next_option_id >> poll_count >> vote_count) ||
+	    magic != flat_poll_magic || version != flat_poll_version ||
+	    poll_count > flat_poll_maximum_count || vote_count > flat_poll_maximum_votes)
+	{
+		if (error)
+			*error = "invalid poll catalog header";
+		return false;
+	}
+
+	decoded.polls.reserve(static_cast<size_t>(poll_count));
+	for (uint64_t index = 0; index < poll_count; ++index)
+	{
+		char marker = 0;
+		long long created_at = 0;
+		long long expires_at = 0;
+		unsigned int active = 0;
+		unsigned int multi = 0;
+		uint64_t option_count = 0;
+		poll_data poll = {};
+		if (!(input >> marker >> poll.id >> created_at >> expires_at >> active >> multi >>
+		      poll.max_choices >> quoted(poll.question) >> quoted(poll.created_by) >>
+		      option_count) ||
+		    marker != 'P' || active > 1 || multi > 1 || option_count > MAX_POLL_OPTIONS)
+		{
+			if (error)
+				*error = "invalid poll catalog entry";
+			return false;
+		}
+		poll.created_at = static_cast<time_t>(created_at);
+		poll.expires_at = static_cast<time_t>(expires_at);
+		if (static_cast<long long>(poll.created_at) != created_at ||
+		    static_cast<long long>(poll.expires_at) != expires_at)
+		{
+			if (error)
+				*error = "poll timestamp is out of range";
+			return false;
+		}
+		poll.is_active = active != 0;
+		poll.multi_select = multi != 0;
+		poll.total_votes = 0;
+		poll.options.reserve(static_cast<size_t>(option_count));
+		for (uint64_t option_index = 0; option_index < option_count; ++option_index)
+		{
+			poll_option option = {};
+			if (!(input >> marker >> option.id >> option.option_num >>
+			      quoted(option.text)) ||
+			    marker != 'O')
+			{
+				if (error)
+					*error = "invalid poll option entry";
+				return false;
+			}
+			option.vote_count = 0;
+			poll.options.push_back(option);
+		}
+		decoded.polls.push_back(poll);
+	}
+
+	decoded.votes.reserve(static_cast<size_t>(vote_count));
+	for (uint64_t index = 0; index < vote_count; ++index)
+	{
+		char marker = 0;
+		long long voted_at = 0;
+		flat_poll_vote vote;
+		if (!(input >> marker >> vote.poll_id >> vote.option_id >> voted_at >>
+		      quoted(vote.account_name) >> quoted(vote.character_name)) ||
+		    marker != 'V')
+		{
+			if (error)
+				*error = "invalid poll vote entry";
+			return false;
+		}
+		vote.voted_at = static_cast<time_t>(voted_at);
+		if (static_cast<long long>(vote.voted_at) != voted_at)
+		{
+			if (error)
+				*error = "poll vote timestamp is out of range";
+			return false;
+		}
+		decoded.votes.push_back(vote);
+	}
+	input >> ws;
+	if (!input.eof() || !validate_flat_poll_catalog(decoded, error))
+	{
+		if (error && error->empty())
+			*error = "poll catalog has trailing data";
+		return false;
+	}
+	*catalog = std::move(decoded);
+	return true;
+}
+
+flat_poll_load_result load_flat_poll_catalog(flat_poll_catalog *catalog, string *error)
+{
+	if (!catalog)
+		return flat_poll_load_result::invalid;
+	*catalog = {};
+	const string directory = flat_poll_directory();
+	if (directory.empty())
+	{
+		if (error)
+			*error = "flat-file state root is unavailable";
+		return flat_poll_load_result::io_error;
+	}
+	vector<uint8_t> bytes;
+	const flatfile_read_result loaded =
+		flatfile_read(directory, flat_poll_filename, flat_poll_maximum_size, &bytes, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flat_poll_load_result::missing;
+	if (loaded == flatfile_read_result::io_error)
+		return flat_poll_load_result::io_error;
+	if (loaded != flatfile_read_result::ok || !decode_flat_poll_catalog(bytes, catalog, error))
+		return flat_poll_load_result::invalid;
+	return flat_poll_load_result::ok;
+}
+
+bool save_flat_poll_catalog(const flat_poll_catalog &catalog, string *error)
+{
+	vector<uint8_t> bytes;
+	const string directory = flat_poll_directory();
+	return !directory.empty() && encode_flat_poll_catalog(catalog, &bytes, error) &&
+	       flatfile_atomic_write(directory, flat_poll_filename, bytes, error);
+}
+
+bool lock_flat_poll_catalog(flat_poll_lock *lock, string *error)
+{
+	const string directory = flat_poll_directory();
+	if (!lock || directory.empty())
+	{
+		if (error)
+			*error = "flat-file state root is unavailable";
+		return false;
+	}
+	return flatfile_lock_acquire(directory, flat_poll_lock_filename, lock->destination(),
+				     error);
+}
+
+void log_flat_poll_error(const char *operation, const string &error)
+{
+	logit(LOG_FILE, "poll %s failed: %s", operation,
+	      error.empty() ? "invalid state" : error.c_str());
+}
+
+void apply_flat_poll_vote_counts(const flat_poll_catalog &catalog, vector<poll_data> *polls)
+{
+	if (!polls)
+		return;
+	unordered_map<int, size_t> poll_positions;
+	unordered_map<int, pair<size_t, size_t>> option_positions;
+	vector<unordered_set<string>> voters(polls->size());
+	for (size_t poll_index = 0; poll_index < polls->size(); ++poll_index)
+	{
+		poll_data &poll = (*polls)[poll_index];
+		poll.total_votes = 0;
+		poll_positions.emplace(poll.id, poll_index);
+		for (size_t option_index = 0; option_index < poll.options.size(); ++option_index)
+		{
+			poll.options[option_index].vote_count = 0;
+			option_positions.emplace(poll.options[option_index].id,
+						 pair<size_t, size_t>{ poll_index, option_index });
+		}
+	}
+	for (const flat_poll_vote &vote : catalog.votes)
+	{
+		const auto poll_position = poll_positions.find(vote.poll_id);
+		const auto option_position = option_positions.find(vote.option_id);
+		if (poll_position == poll_positions.end() ||
+		    option_position == option_positions.end())
+			continue;
+		const size_t poll_index = poll_position->second;
+		if (voters[poll_index].insert(flat_poll_account_key(vote.account_name)).second)
+			++(*polls)[poll_index].total_votes;
+		++(*polls)[option_position->second.first]
+			  .options[option_position->second.second]
+			  .vote_count;
+	}
+}
+
+vector<poll_data> get_flat_polls(bool active_only, bool *loaded_ok)
+{
+	flat_poll_catalog catalog;
+	string error;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded_ok)
+		*loaded_ok = loaded == flat_poll_load_result::ok ||
+			     loaded == flat_poll_load_result::missing;
+	if (loaded != flat_poll_load_result::ok && loaded != flat_poll_load_result::missing)
+	{
+		log_flat_poll_error("read", error);
+		return {};
+	}
+	vector<poll_data> polls;
+	const time_t now = time(NULL);
+	for (const poll_data &poll : catalog.polls)
+		if (!active_only || (poll.is_active && poll.expires_at > now))
+			polls.push_back(poll);
+	apply_flat_poll_vote_counts(catalog, &polls);
+	sort(polls.begin(), polls.end(),
+	     [](const poll_data &left, const poll_data &right) { return left.id > right.id; });
+	return polls;
+}
+
+poll_data get_flat_poll_by_id(int poll_id, bool *loaded_ok)
+{
+	flat_poll_catalog catalog;
+	string error;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded_ok)
+		*loaded_ok = loaded == flat_poll_load_result::ok ||
+			     loaded == flat_poll_load_result::missing;
+	if (loaded != flat_poll_load_result::ok && loaded != flat_poll_load_result::missing)
+	{
+		log_flat_poll_error("read", error);
+		return {};
+	}
+	for (const poll_data &stored : catalog.polls)
+	{
+		if (stored.id != poll_id)
+			continue;
+		vector<poll_data> one{ stored };
+		apply_flat_poll_vote_counts(catalog, &one);
+		return one.front();
+	}
+	return {};
+}
+
+bool create_flat_poll(poll_data *poll)
+{
+	if (!poll || !valid_flat_poll_definition(*poll))
+		return false;
+	flat_poll_lock lock;
+	string error;
+	if (!lock_flat_poll_catalog(&lock, &error))
+	{
+		log_flat_poll_error("create lock", error);
+		return false;
+	}
+	flat_poll_catalog catalog;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded != flat_poll_load_result::ok && loaded != flat_poll_load_result::missing)
+	{
+		log_flat_poll_error("create read", error);
+		return false;
+	}
+	if (catalog.polls.size() >= flat_poll_maximum_count ||
+	    catalog.next_poll_id > static_cast<uint32_t>(INT_MAX) ||
+	    poll->options.size() > UINT32_MAX - catalog.next_option_id + 1 ||
+	    catalog.next_option_id > static_cast<uint32_t>(INT_MAX) - poll->options.size() + 1)
+	{
+		log_flat_poll_error("create", "poll identity or count limit reached");
+		return false;
+	}
+
+	poll_data created = *poll;
+	created.id = static_cast<int>(catalog.next_poll_id++);
+	created.total_votes = 0;
+	for (poll_option &option : created.options)
+	{
+		option.id = static_cast<int>(catalog.next_option_id++);
+		option.vote_count = 0;
+	}
+	catalog.polls.push_back(created);
+	++catalog.revision;
+	if (!save_flat_poll_catalog(catalog, &error))
+	{
+		log_flat_poll_error("create write", error);
+		return false;
+	}
+	*poll = created;
+	return true;
+}
+
+flat_poll_close_result close_flat_poll(int poll_id)
+{
+	flat_poll_lock lock;
+	string error;
+	if (!lock_flat_poll_catalog(&lock, &error))
+	{
+		log_flat_poll_error("close lock", error);
+		return flat_poll_close_result::error;
+	}
+	flat_poll_catalog catalog;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded != flat_poll_load_result::ok && loaded != flat_poll_load_result::missing)
+	{
+		log_flat_poll_error("close read", error);
+		return flat_poll_close_result::error;
+	}
+	for (poll_data &poll : catalog.polls)
+	{
+		if (poll.id != poll_id)
+			continue;
+		if (!poll.is_active)
+			return flat_poll_close_result::already_closed;
+		poll.is_active = false;
+		++catalog.revision;
+		if (!save_flat_poll_catalog(catalog, &error))
+		{
+			log_flat_poll_error("close write", error);
+			return flat_poll_close_result::error;
+		}
+		return flat_poll_close_result::ok;
+	}
+	return flat_poll_close_result::not_found;
+}
+
+int record_flat_poll_votes(const char *account_name, const char *character_name, int poll_id,
+			   const vector<int> &choices)
+{
+	if (!account_name || !character_name || poll_id < 1 || choices.empty() ||
+	    !valid_flat_poll_string(account_name, flat_poll_account_maximum) ||
+	    !valid_flat_poll_string(character_name, flat_poll_character_maximum))
+		return 0;
+	flat_poll_lock lock;
+	string error;
+	if (!lock_flat_poll_catalog(&lock, &error))
+	{
+		log_flat_poll_error("vote lock", error);
+		return 0;
+	}
+	flat_poll_catalog catalog;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded != flat_poll_load_result::ok)
+	{
+		if (loaded != flat_poll_load_result::missing)
+			log_flat_poll_error("vote read", error);
+		return 0;
+	}
+	const auto poll_position = find_if(catalog.polls.begin(), catalog.polls.end(),
+					   [poll_id](const poll_data &poll)
+					   { return poll.id == poll_id; });
+	if (poll_position == catalog.polls.end())
+		return 0;
+
+	int votes_cast = 0;
+	const string account_key = flat_poll_account_key(account_name);
+	for (int choice : choices)
+	{
+		const auto option = find_if(poll_position->options.begin(),
+					    poll_position->options.end(),
+					    [choice](const poll_option &candidate)
+					    { return candidate.option_num == choice; });
+		if (option == poll_position->options.end())
+			continue;
+		const bool duplicate = any_of(
+			catalog.votes.begin(), catalog.votes.end(),
+			[&](const flat_poll_vote &vote)
+			{
+				return vote.poll_id == poll_id && vote.option_id == option->id &&
+				       flat_poll_account_key(vote.account_name) == account_key;
+			});
+		if (duplicate || catalog.votes.size() >= flat_poll_maximum_votes)
+			continue;
+		catalog.votes.push_back(
+			{ poll_id, option->id, time(NULL), account_name, character_name });
+		++votes_cast;
+	}
+	if (!votes_cast)
+		return 0;
+	++catalog.revision;
+	if (!save_flat_poll_catalog(catalog, &error))
+	{
+		log_flat_poll_error("vote write", error);
+		return 0;
+	}
+	return votes_cast;
+}
+
+void expire_flat_polls()
+{
+	flat_poll_lock lock;
+	string error;
+	if (!lock_flat_poll_catalog(&lock, &error))
+	{
+		log_flat_poll_error("expiration lock", error);
+		return;
+	}
+	flat_poll_catalog catalog;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded == flat_poll_load_result::missing)
+		return;
+	if (loaded != flat_poll_load_result::ok)
+	{
+		log_flat_poll_error("expiration read", error);
+		return;
+	}
+	const time_t now = time(NULL);
+	bool changed = false;
+	for (poll_data &poll : catalog.polls)
+	{
+		if (poll.is_active && poll.expires_at < now)
+		{
+			poll.is_active = false;
+			changed = true;
+		}
+	}
+	if (!changed)
+		return;
+	++catalog.revision;
+	if (!save_flat_poll_catalog(catalog, &error))
+		log_flat_poll_error("expiration write", error);
+}
+} // namespace
+#endif
 
 /* send wrapped text */
 static void poll_send_wrapped(P_char ch, const char *text, int width, const char *prefix,
@@ -222,8 +903,23 @@ static void format_time_remaining(time_t expires_at, char *buf, size_t buflen)
 bool poll_has_voted(const char *account_name, int poll_id)
 {
 #ifdef __NO_MYSQL__
-	(void)account_name;
-	(void)poll_id;
+	if (!account_name || !*account_name || poll_id < 1)
+		return false;
+	flat_poll_catalog catalog;
+	string error;
+	const flat_poll_load_result loaded = load_flat_poll_catalog(&catalog, &error);
+	if (loaded == flat_poll_load_result::missing)
+		return false;
+	if (loaded != flat_poll_load_result::ok)
+	{
+		log_flat_poll_error("voter read", error);
+		return false;
+	}
+	const string account_key = flat_poll_account_key(account_name);
+	for (const flat_poll_vote &vote : catalog.votes)
+		if (vote.poll_id == poll_id &&
+		    flat_poll_account_key(vote.account_name) == account_key)
+			return true;
 	return false;
 #else
 	if (!account_name || !*account_name)
@@ -250,7 +946,7 @@ vector<poll_data> poll_get_all(bool active_only)
 	vector<poll_data> polls;
 
 #ifdef __NO_MYSQL__
-	(void)active_only;
+	return get_flat_polls(active_only, nullptr);
 #else
 	MYSQL_RES *res;
 
@@ -316,7 +1012,7 @@ poll_data poll_get_by_id(int poll_id)
 	poll.id = 0;
 
 #ifdef __NO_MYSQL__
-	(void)poll_id;
+	return get_flat_poll_by_id(poll_id, nullptr);
 #else
 	MYSQL_RES *res = db_query(
 		"SELECT id, question, created_by, UNIX_TIMESTAMP(created_at), UNIX_TIMESTAMP(expires_at), is_active, multi_select, max_choices "
@@ -399,8 +1095,7 @@ poll_data poll_get_by_id(int poll_id)
 bool poll_create(poll_data *poll)
 {
 #ifdef __NO_MYSQL__
-	(void)poll;
-	return false;
+	return create_flat_poll(poll);
 #else
 	string question_esc = escape_str(poll->question.c_str());
 	string creator_esc = escape_str(poll->created_by.c_str());
@@ -432,9 +1127,30 @@ bool poll_create(poll_data *poll)
 bool poll_close(int poll_id, P_char ch)
 {
 #ifdef __NO_MYSQL__
-	(void)poll_id;
-	(void)ch;
-	return false;
+	poll_data poll = poll_get_by_id(poll_id);
+	const flat_poll_close_result closed = close_flat_poll(poll_id);
+	if (closed == flat_poll_close_result::not_found)
+	{
+		send_to_char("That poll does not exist.\r\n", ch);
+		return false;
+	}
+	if (closed == flat_poll_close_result::already_closed)
+	{
+		send_to_char("That poll is already closed.\r\n", ch);
+		return false;
+	}
+	if (closed != flat_poll_close_result::ok)
+	{
+		send_to_char("Failed to close poll.\r\n", ch);
+		return false;
+	}
+
+	char buf[MAX_STRING_LENGTH];
+	snprintf(buf, MAX_STRING_LENGTH, "&+W[POLL]&n Poll #%d has been closed by %s.\r\n", poll_id,
+		 GET_NAME(ch));
+	send_to_all(buf);
+	poll_broadcast_close(poll_id, poll.question.c_str());
+	return true;
 #else
 	poll_data poll = poll_get_by_id(poll_id);
 	if (poll.id == 0)
@@ -469,12 +1185,6 @@ bool poll_close(int poll_id, P_char ch)
 /* cast vote */
 int poll_cast_vote(P_char ch, int poll_id, vector<int> &choices)
 {
-#ifdef __NO_MYSQL__
-	(void)ch;
-	(void)poll_id;
-	(void)choices;
-	return 0;
-#else
 	const char *acct = get_account_name_safe(ch);
 	if (!acct || !strcmp(acct, "Unknown"))
 	{
@@ -499,13 +1209,14 @@ int poll_cast_vote(P_char ch, int poll_id, vector<int> &choices)
 	}
 
 	return votes_cast;
-#endif
 }
 
 /* close expired polls */
 void poll_check_expirations(void)
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	expire_flat_polls();
+#else
 	qry("UPDATE polls SET is_active = 0 WHERE is_active = 1 AND expires_at < FROM_UNIXTIME(%ld)",
 	    (long)time(NULL));
 #endif
@@ -516,12 +1227,8 @@ int poll_record_votes(const char *acct_name, const char *char_name, int poll_id,
 		      vector<int> &choices)
 {
 #ifdef __NO_MYSQL__
-	(void)acct_name;
-	(void)char_name;
-	(void)poll_id;
 	(void)poll;
-	(void)choices;
-	return 0;
+	return record_flat_poll_votes(acct_name, char_name, poll_id, choices);
 #else
 	string acct_esc = escape_str(acct_name);
 	string char_esc = escape_str(char_name);
@@ -1161,11 +1868,6 @@ void poll_wizard_handle_input(P_char ch, char *input)
 /* broadcasts */
 void poll_broadcast_new(int poll_id, const char *question, const char *creator)
 {
-#ifdef __NO_MYSQL__
-	(void)poll_id;
-	(void)question;
-	(void)creator;
-#else
 	extern struct descriptor_data *descriptor_list;
 	struct descriptor_data *d;
 
@@ -1195,15 +1897,10 @@ void poll_broadcast_new(int poll_id, const char *question, const char *creator)
 	}
 
 	free(json);
-#endif
 }
 
 void poll_broadcast_vote(int poll_id, int total_votes)
 {
-#ifdef __NO_MYSQL__
-	(void)poll_id;
-	(void)total_votes;
-#else
 	extern struct descriptor_data *descriptor_list;
 	struct descriptor_data *d;
 
@@ -1232,15 +1929,10 @@ void poll_broadcast_vote(int poll_id, int total_votes)
 	}
 
 	free(json);
-#endif
 }
 
 void poll_broadcast_close(int poll_id, const char *question)
 {
-#ifdef __NO_MYSQL__
-	(void)poll_id;
-	(void)question;
-#else
 	extern struct descriptor_data *descriptor_list;
 	struct descriptor_data *d;
 
@@ -1269,7 +1961,6 @@ void poll_broadcast_close(int poll_id, const char *question)
 	}
 
 	free(json);
-#endif
 }
 
 /* main handler */
