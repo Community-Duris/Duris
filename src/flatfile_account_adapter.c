@@ -1,10 +1,12 @@
 #include "flatfile_account_adapter.h"
 
 #include "flatfile_account_repository.h"
+#include "flatfile_authority_transaction.h"
 #include "flatfile_identity_repository.h"
 #include "persistence_mode.h"
 
 #include <cstdlib>
+#include <new>
 #include <cstring>
 #include <utility>
 
@@ -205,16 +207,52 @@ bool flatfile_account_state_save(P_acct account, std::string *error)
 	flatfile_account_record record;
 	if (!root || !to_record(account, &record))
 		return false;
+	std::vector<flatfile_identity_record> memberships;
+	if (!membership_records(account, &memberships))
+		return false;
+
+	/*
+	 * Account scalars and identity membership are two authorities; publish
+	 * both after-images through one transaction so a failure between them
+	 * cannot leave the account revision acknowledged on its own.
+	 */
+	flatfile_identity_lock identity_lock;
+	if (!identity_lock.acquire(root, error))
+		return false;
+	flatfile_authority_lock authority_lock;
+	if (!authority_lock.acquire(root, error))
+		return false;
+	flatfile_account_lock account_lock;
+	if (!account_lock.acquire(root, error))
+		return false;
+
+	std::vector<flatfile_authority_operation> operations;
+	flatfile_authority_operation account_operation;
 	uint64_t committed_revision = 0;
-	if (flatfile_account_save(root, record, account->persistence_revision, &committed_revision,
-				  error) != flatfile_account_result::ok)
+	if (flatfile_account_prepare_save(
+		    root, account_lock, authority_lock, record, account->persistence_revision,
+		    &account_operation, &committed_revision, error) != flatfile_account_result::ok)
+		return false;
+	flatfile_authority_operation identity_operation;
+	const auto identity = flatfile_identity_prepare_sync_account(
+		root, identity_lock, authority_lock, account->acct_name, memberships,
+		&identity_operation, error);
+	if (identity != flatfile_identity_result::ok)
+		return false;
+	try
+	{
+		operations.push_back(std::move(account_operation));
+		operations.push_back(std::move(identity_operation));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (flatfile_authority_transaction_commit_operations(root, authority_lock, operations,
+							     error) !=
+	    flatfile_authority_transaction_result::ok)
 		return false;
 	account->persistence_revision = committed_revision;
-	std::vector<flatfile_identity_record> memberships;
-	if (!membership_records(account, &memberships) ||
-	    flatfile_identity_sync_account(root, account->acct_name, memberships, error) !=
-		    flatfile_identity_result::ok)
-		return false;
 	return true;
 }
 

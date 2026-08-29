@@ -59,6 +59,11 @@ class flatfile_identity_lock
 					 const flatfile_authority_lock &, int32_t,
 					 const std::string &, flatfile_authority_operation *,
 					 std::string *);
+	friend flatfile_identity_result
+	flatfile_identity_prepare_sync_account(const std::string &, const flatfile_identity_lock &,
+					       const flatfile_authority_lock &, const std::string &,
+					       const std::vector<flatfile_identity_record> &,
+					       flatfile_authority_operation *, std::string *);
 };
 
 flatfile_identity_result flatfile_identity_allocate_pid(const std::string &root, int32_t *pid,
@@ -82,6 +87,16 @@ flatfile_identity_result
 flatfile_identity_sync_account(const std::string &root, const std::string &account,
 			       const std::vector<flatfile_identity_record> &records,
 			       std::string *error);
+/*
+ * Encode the membership after-image for one authority transaction instead of
+ * publishing the catalog on its own; see flatfile_account_prepare_save().
+ * Returns unchanged when the catalog already matches the desired membership.
+ */
+flatfile_identity_result flatfile_identity_prepare_sync_account(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock, const std::string &account,
+	const std::vector<flatfile_identity_record> &records,
+	flatfile_authority_operation *operation, std::string *error);
 flatfile_identity_result flatfile_identity_rename(const std::string &root, int32_t pid,
 						  const std::string &expected_name,
 						  const std::string &new_name, std::string *error);

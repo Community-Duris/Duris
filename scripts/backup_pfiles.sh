@@ -79,12 +79,99 @@ if [[ "${PERSISTENCE_MODE:-mariadb-primary}" == "flatfile-primary" ]]; then
     echo "Could not create flat-file backup destination" >&2
     exit 1
   fi
+
+  LOCK_FDS=()
+
+  discard_backup() {
+    if [[ -n "${BACKUP_DESTINATION:-}" && -d "$BACKUP_DESTINATION" ]]; then
+      rm -rf -- "$BACKUP_DESTINATION"
+    fi
+  }
+
+  # Digest every durable file of a state or backup tree. Lock files carry no
+  # authority state and are excluded so a concurrent lock touch cannot look like
+  # a generation change.
+  tree_digests() {
+    (
+      cd "$1" &&
+      find . -type f \
+        ! -name '.identity.lock' \
+        ! -name '.accounts.lock' \
+        ! -name '.critical-authority.lock' \
+        ! -name 'MANIFEST.sha256' \
+        -print0 |
+        LC_ALL=C sort -z |
+        xargs -0 -r sha256sum
+    )
+  }
+
+  # A point-in-time snapshot, not a mixed-generation copy: hold the same locks the
+  # server publishes under (identity -> authority -> accounts, matching the code's
+  # acquisition order) so no domain can publish a new revision mid-copy.
+  # A root that predates provisioning has no publisher to quiesce, so only the
+  # authority directories that exist are locked.
+  FLATFILE_LOCK_WAIT="${FLATFILE_LOCK_WAIT:-120}"
+  if [[ -d "$FLATFILE_STATE_DIR/identities/names" ]]; then
+    exec 8>"$FLATFILE_STATE_DIR/identities/names/.identity.lock"
+    LOCK_FDS+=(8)
+  fi
+  if [[ -d "$FLATFILE_STATE_DIR/domains" ]]; then
+    exec 9>"$FLATFILE_STATE_DIR/domains/.critical-authority.lock"
+    LOCK_FDS+=(9)
+  fi
+  if [[ -d "$FLATFILE_STATE_DIR/identities/accounts" ]]; then
+    exec 7>"$FLATFILE_STATE_DIR/identities/accounts/.accounts.lock"
+    LOCK_FDS+=(7)
+  fi
+  for LOCK_FD in "${LOCK_FDS[@]}"; do
+    if ! flock -w "$FLATFILE_LOCK_WAIT" "$LOCK_FD"; then
+      discard_backup
+      echo "Could not quiesce the flat-file authorities within ${FLATFILE_LOCK_WAIT}s" >&2
+      exit 1
+    fi
+  done
+
+  SOURCE_DIGESTS="$(tree_digests "$FLATFILE_STATE_DIR")"
   if ! cp -a -- "$FLATFILE_STATE_DIR/." "$BACKUP_DESTINATION/"; then
+    discard_backup
     echo "Flat-file state backup failed" >&2
     exit 1
   fi
+  COPIED_DIGESTS="$(tree_digests "$BACKUP_DESTINATION")"
+  RECHECK_DIGESTS="$(tree_digests "$FLATFILE_STATE_DIR")"
+  if [[ "$SOURCE_DIGESTS" != "$RECHECK_DIGESTS" ]]; then
+    discard_backup
+    echo "Flat-file state changed during the backup; no generation was published" >&2
+    exit 1
+  fi
+  if [[ "$SOURCE_DIGESTS" != "$COPIED_DIGESTS" ]]; then
+    discard_backup
+    echo "Flat-file backup does not match the captured generation" >&2
+    exit 1
+  fi
+
+  PENDING_TRANSACTION=no
+  if [[ -e "$BACKUP_DESTINATION/domains/.critical-authority-transaction" ]]; then
+    PENDING_TRANSACTION=yes
+  fi
+  {
+    echo "# duris-flatfile-backup-manifest 1"
+    echo "# generation: $DATESTR"
+    echo "# captured-at: $DATESTR_FULL"
+    echo "# source-root: $STATE_REAL"
+    echo "# pending-transaction: $PENDING_TRANSACTION"
+    echo "$SOURCE_DIGESTS"
+  } >"$BACKUP_DESTINATION/MANIFEST.sha256"
+  chmod 0600 -- "$BACKUP_DESTINATION/MANIFEST.sha256"
   chmod 0700 -- "$BACKUP_DESTINATION"
+  sync -f "$BACKUP_DESTINATION/MANIFEST.sha256"
+  for LOCK_FD in "${LOCK_FDS[@]}"; do
+    eval "exec ${LOCK_FD}>&-"
+  done
   echo "Flat-file state backup complete: $BACKUP_DESTINATION ($DATESTR_FULL)"
+  if [[ "$PENDING_TRANSACTION" == "yes" ]]; then
+    echo "Captured generation carries a pending authority transaction; restore replays it at boot."
+  fi
   exit 0
 fi
 

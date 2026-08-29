@@ -1,10 +1,18 @@
 #ifndef DURIS_FLATFILE_AUTHORITY_TRANSACTION_H
 #define DURIS_FLATFILE_AUTHORITY_TRANSACTION_H
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
+
+/*
+ * Maximum after-images (or operations) a single authority transaction may carry.
+ * Callers that build a transaction from a fixed domain contract must assert their
+ * own maximum against this value at compile time.
+ */
+constexpr size_t flatfile_authority_transaction_maximum_operations = 32;
 
 struct flatfile_authority_after_image
 {
@@ -16,7 +24,8 @@ enum class flatfile_authority_store : uint8_t
 {
 	domains = 1,
 	players = 2,
-	identities = 3
+	identities = 3,
+	accounts = 4
 };
 
 enum class flatfile_authority_operation_kind : uint8_t

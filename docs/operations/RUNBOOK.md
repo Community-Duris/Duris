@@ -282,6 +282,7 @@ These are investigated and understood; they are not signs of a failed boot.
 | Script | Purpose |
 |--------|---------|
 | `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
+| `scripts/restore_flatfile_backup.sh` | Verify one flat-file backup generation against its manifest and restore it into an empty state root. |
 | `scripts/delete_corpses.sh` | Retired safety stub; exits nonzero without reading or changing MySQL or Redis. |
 | `scripts/clear-redis.sh` | With the game stopped, use the scoped maintenance ACL identity to delete only the configured `REDIS_NAMESPACE`, legacy `mud:*`, and retired `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
@@ -295,6 +296,21 @@ In `flatfile-primary`, `scripts/backup_pfiles.sh` snapshots the complete selecte
 `FLATFILE_STATE_DIR` instead of inferring database use from `REDIS`. Its backup root
 must be absolute and outside the state root. A missing state root on first boot is a
 clean no-op; an unsafe target or failed copy stops the supervised launch.
+
+The flat-file snapshot is a point-in-time generation, not a rolling copy. It holds the
+same publication locks the server writes under (`identities/names/.identity.lock`,
+`domains/.critical-authority.lock`, `identities/accounts/.accounts.lock`) for the whole
+copy, waiting at most `FLATFILE_LOCK_WAIT` seconds (default 120) before failing rather
+than publishing a mixed-generation backup. Each generation directory carries a
+`MANIFEST.sha256` recording the generation id, capture time, source root, whether a
+pending authority transaction was captured, and the digest of every file; the backup is
+discarded if the state changed mid-copy or the copy does not match the source.
+
+Restore with `scripts/restore_flatfile_backup.sh <generation-dir> <empty-state-dir>`. It
+verifies the generation against its manifest, refuses a non-empty target root, restores
+with owner-only modes, and re-verifies afterwards. If the manifest reports a pending
+authority transaction, the server replays it on the next boot — boot the restored root
+before comparing domain state.
 
 ### Migration procedure
 

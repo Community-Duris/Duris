@@ -44,18 +44,32 @@ struct ctfData ctfdata[] = { { 0, 0, 0, 0, 0, NULL },
 
 #ifdef __NO_MYSQL__
 
+/*
+ * Capture the flag has no client-free implementation: it is explicitly fenced
+ * rather than silently inert. A CTF build refuses to boot without a database
+ * backend, and players are told the system is unavailable instead of being
+ * ignored.
+ */
 int init_ctf()
 {
+#if defined(CTF_MUD) && (CTF_MUD == 1)
+	fatal_boot_error("ctf", "capture the flag has no client-free implementation; "
+				"build without CTF_MUD or run with the database backend");
+#endif
 	return 0;
 }
 
-void do_ctf(P_char /*ch*/, char * /*arg*/, int /*cmd*/) {}
+void do_ctf(P_char ch, char * /*arg*/, int /*cmd*/)
+{
+	send_to_char("Capture the flag is not available on this server.\r\n", ch);
+}
 size_t ctf_boon_state_snapshot(int64_t * /*values*/, size_t /*capacity*/)
 {
 	return 0;
 }
 int ctf_use_boon(BoonData * /*bdata*/)
 {
+	logit(LOG_DEBUG, "ctf_use_boon: capture the flag is fenced off in this build");
 	return FALSE;
 }
 void ctf_delete_flag(int /*id*/) {}

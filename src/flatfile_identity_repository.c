@@ -328,6 +328,60 @@ flatfile_identity_record *find_active_name(identity_catalog *catalog, const std:
 	}
 	return nullptr;
 }
+
+flatfile_identity_result apply_account_sync(identity_catalog *catalog,
+					    const std::string &account_key,
+					    const std::vector<flatfile_identity_record> &records)
+{
+	std::unordered_set<int32_t> desired_pids;
+	std::unordered_set<std::string> desired_names;
+	for (const flatfile_identity_record &desired : records)
+	{
+		std::string desired_account, desired_name;
+		if (desired.pid <= 0 || desired.pid >= catalog->next_pid ||
+		    !canonical_name(desired.account, &desired_account) ||
+		    desired_account != account_key ||
+		    !canonical_name(desired.name, &desired_name) ||
+		    !desired_pids.insert(desired.pid).second ||
+		    !desired_names.insert(desired_name).second)
+			return flatfile_identity_result::invalid;
+		flatfile_identity_record *existing = find_pid(catalog, desired.pid);
+		if (existing)
+		{
+			std::string existing_account;
+			if (!existing->active ||
+			    !canonical_name(existing->account, &existing_account) ||
+			    existing_account != account_key)
+				return flatfile_identity_result::conflict;
+		}
+	}
+
+	identity_catalog candidate = *catalog;
+	for (flatfile_identity_record &entry : candidate.entries)
+	{
+		std::string existing_account;
+		if (entry.active && canonical_name(entry.account, &existing_account) &&
+		    existing_account == account_key && !desired_pids.contains(entry.pid))
+		{
+			entry.active = false;
+			entry.blocked = true;
+		}
+	}
+	for (flatfile_identity_record desired : records)
+	{
+		desired.catalog_revision = 0;
+		desired.active = true;
+		flatfile_identity_record *existing = find_pid(&candidate, desired.pid);
+		if (existing)
+			*existing = std::move(desired);
+		else
+			candidate.entries.push_back(std::move(desired));
+	}
+	if (!validate_catalog(candidate))
+		return flatfile_identity_result::conflict;
+	*catalog = std::move(candidate);
+	return flatfile_identity_result::ok;
+}
 } // namespace
 
 struct flatfile_identity_lock::state
@@ -515,62 +569,43 @@ flatfile_identity_sync_account(const std::string &root, const std::string &accou
 	if (!canonical_name(account, &account_key) || records.size() > 1024)
 		return flatfile_identity_result::invalid;
 	return mutate_catalog(
-		root,
-		[&](identity_catalog *catalog)
-		{
-			std::unordered_set<int32_t> desired_pids;
-			std::unordered_set<std::string> desired_names;
-			for (const flatfile_identity_record &desired : records)
-			{
-				std::string desired_account, desired_name;
-				if (desired.pid <= 0 || desired.pid >= catalog->next_pid ||
-				    !canonical_name(desired.account, &desired_account) ||
-				    desired_account != account_key ||
-				    !canonical_name(desired.name, &desired_name) ||
-				    !desired_pids.insert(desired.pid).second ||
-				    !desired_names.insert(desired_name).second)
-					return flatfile_identity_result::invalid;
-				flatfile_identity_record *existing = find_pid(catalog, desired.pid);
-				if (existing)
-				{
-					std::string existing_account;
-					if (!existing->active ||
-					    !canonical_name(existing->account, &existing_account) ||
-					    existing_account != account_key)
-						return flatfile_identity_result::conflict;
-				}
-			}
+		root, [&](identity_catalog *catalog)
+		{ return apply_account_sync(catalog, account_key, records); }, error);
+}
 
-			identity_catalog candidate = *catalog;
-			for (flatfile_identity_record &entry : candidate.entries)
-			{
-				std::string existing_account;
-				if (entry.active &&
-				    canonical_name(entry.account, &existing_account) &&
-				    existing_account == account_key &&
-				    !desired_pids.contains(entry.pid))
-				{
-					entry.active = false;
-					entry.blocked = true;
-				}
-			}
-			for (flatfile_identity_record desired : records)
-			{
-				desired.catalog_revision = 0;
-				desired.active = true;
-				flatfile_identity_record *existing =
-					find_pid(&candidate, desired.pid);
-				if (existing)
-					*existing = std::move(desired);
-				else
-					candidate.entries.push_back(std::move(desired));
-			}
-			if (!validate_catalog(candidate))
-				return flatfile_identity_result::conflict;
-			*catalog = std::move(candidate);
-			return flatfile_identity_result::ok;
-		},
-		error);
+flatfile_identity_result flatfile_identity_prepare_sync_account(
+	const std::string &root, const flatfile_identity_lock &identity_lock,
+	const flatfile_authority_lock &authority_lock, const std::string &account,
+	const std::vector<flatfile_identity_record> &records,
+	flatfile_authority_operation *operation, std::string *error)
+{
+	std::string account_key;
+	if (!operation || !identity_lock.matches(root) || !authority_lock.matches(root) ||
+	    !canonical_name(account, &account_key) || records.size() > 1024)
+		return flatfile_identity_result::invalid;
+	*operation = {};
+	const auto recovered = flatfile_authority_transaction_recover(root, authority_lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_identity_result::io_error :
+			       flatfile_identity_result::invalid;
+	identity_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_identity_result::ok && loaded != flatfile_identity_result::not_found)
+		return loaded;
+	const auto changed = apply_account_sync(&catalog, account_key, records);
+	if (changed != flatfile_identity_result::ok)
+		return changed;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_identity_result::exhausted;
+	std::vector<uint8_t> bytes;
+	if (!encode_file(catalog, catalog.revision + 1, &bytes))
+		return flatfile_identity_result::invalid;
+	operation->store = flatfile_authority_store::identities;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = identity_filename;
+	operation->bytes = std::move(bytes);
+	return flatfile_identity_result::ok;
 }
 
 flatfile_identity_result flatfile_identity_rename(const std::string &root, int32_t pid,

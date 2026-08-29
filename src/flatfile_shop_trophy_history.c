@@ -81,6 +81,12 @@ bool valid_entry(const history_entry &entry)
 	return entry.item >= 0 && entry.value > 0 && entry.seller >= 0 && entry.occurred_at > 0;
 }
 
+/*
+ * Mirrors the SQL rule `TO_DAYS(NOW()) - TO_DAYS(timestamp) <= 7`: only the
+ * lower age boundary is checked, so a future-dated entry counts under both
+ * backends. Entries are always recorded with the current time, so this only
+ * matters for a clock that moved backwards.
+ */
 bool in_trophy_window(int64_t occurred_at, int64_t now)
 {
 	return now / seconds_per_day - occurred_at / seconds_per_day <= trophy_days;

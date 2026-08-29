@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -109,6 +110,39 @@ int main(int argc, char **argv)
 				flatfile_identity_result::ok &&
 			!identity.active,
 		"membership removal did not retain the PID tombstone");
+
+	/*
+	 * The account scalar write and the identity membership publication must
+	 * share one commit point: if the identity authority is unusable, the new
+	 * account scalars must not remain published on their own.
+	 */
+	flatfile_account_record before_failure;
+	require(flatfile_account_load(root.string(), "account-one", &before_failure, &error) ==
+			flatfile_account_result::ok,
+		"account authority unreadable before the split-brain probe: " + error);
+	const fs::path names = root / "identities" / "names";
+	const fs::path parked = root / "identities" / "names.parked";
+	fs::rename(names, parked);
+	{
+		std::ofstream blocker(names);
+		require(blocker.good(), "could not install the identity fault");
+	}
+	free(loaded->acct_email);
+	loaded->acct_email = strdup("split@example.test");
+	const uint64_t revision_before_failure = loaded->persistence_revision;
+	error.clear();
+	require(!flatfile_account_state_save(loaded, &error),
+		"account save reported success while the identity authority was unusable");
+	require(loaded->persistence_revision == revision_before_failure,
+		"account revision advanced despite a failed identity publication");
+	fs::remove(names);
+	fs::rename(parked, names);
+	flatfile_account_record after_failure;
+	require(flatfile_account_load(root.string(), "account-one", &after_failure, &error) ==
+				flatfile_account_result::ok &&
+			after_failure.revision == before_failure.revision &&
+			after_failure.email == before_failure.email,
+		"account scalars stayed published after the identity publication failed");
 
 	std::cout << "flat-file account membership authority passed\n";
 	return 0;

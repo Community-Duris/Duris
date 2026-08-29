@@ -76,6 +76,19 @@ int main(int argc, char **argv)
 			count == 2,
 		"later sale did not advance the rolling seven-day history");
 
+	/*
+	 * SQL counts a future-dated row (TO_DAYS difference goes negative, which
+	 * is still <= 7); the flat-file window must agree rather than silently
+	 * diverge from the player-facing rule.
+	 */
+	require(flatfile_shop_trophy_record(root.string().c_str(), 3003, 95, 13, 110 * day,
+					    &error) == flatfile_shop_trophy_result::ok &&
+			flatfile_shop_trophy_count(root.string().c_str(), 3003, 101 * day + 10,
+						   &count,
+						   &error) == flatfile_shop_trophy_result::ok &&
+			count == 1,
+		"future-dated sale did not follow the SQL TO_DAYS window");
+
 	const fs::path authority = root / "metadata" / "shop-trophy";
 	require(fs::is_regular_file(authority), "shop history authority was not created");
 	const auto permissions = fs::status(authority).permissions();

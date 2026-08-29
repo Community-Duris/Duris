@@ -17,8 +17,8 @@ namespace
 constexpr std::array<uint8_t, 8> transaction_magic = { 'D', 'U', 'R', 'A', 'U', 'T', 'H', 0 };
 constexpr uint32_t transaction_version = 2;
 constexpr uint32_t transaction_legacy_version = 1;
-constexpr size_t transaction_maximum_images = 16;
-constexpr size_t transaction_maximum_filename = 128;
+constexpr size_t transaction_maximum_images = flatfile_authority_transaction_maximum_operations;
+constexpr size_t transaction_maximum_filename = 192;
 constexpr size_t transaction_maximum_bytes = 256 * 1024 * 1024;
 constexpr const char *transaction_filename = ".critical-authority-transaction";
 constexpr const char *lock_filename = ".critical-authority.lock";
@@ -39,6 +39,8 @@ std::string operation_directory(const std::string &root, flatfile_authority_stor
 		return root + "/players";
 	case flatfile_authority_store::identities:
 		return root + "/identities/names";
+	case flatfile_authority_store::accounts:
+		return root + "/identities/accounts";
 	}
 	return {};
 }

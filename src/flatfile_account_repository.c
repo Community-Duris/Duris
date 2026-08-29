@@ -7,6 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <mutex>
+#include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 #include <type_traits>
@@ -319,6 +320,78 @@ flatfile_account_result flatfile_account_save(const std::string &root,
 	if (!flatfile_atomic_write(account_directory(root), account_filename(canonical), bytes,
 				   error))
 		return flatfile_account_result::io_error;
+	*committed_revision = revision;
+	return flatfile_account_result::ok;
+}
+
+struct flatfile_account_lock::state
+{
+	std::unique_lock<std::mutex> process_lock;
+	int fd = -1;
+	std::string root;
+
+	state()
+		: process_lock(account_mutex, std::defer_lock)
+	{
+	}
+	~state() { flatfile_lock_release(fd); }
+};
+
+flatfile_account_lock::flatfile_account_lock() noexcept
+	: state_(new(std::nothrow) state)
+{
+}
+flatfile_account_lock::~flatfile_account_lock() = default;
+
+bool flatfile_account_lock::acquire(const std::string &root, std::string *error)
+{
+	if (!state_ || state_->process_lock.owns_lock() || root.empty())
+		return false;
+	state_->process_lock.lock();
+	if (flatfile_lock_acquire(account_directory(root), ".accounts.lock", &state_->fd, error))
+	{
+		state_->root = root;
+		return true;
+	}
+	state_->process_lock.unlock();
+	return false;
+}
+
+bool flatfile_account_lock::matches(const std::string &root) const
+{
+	return state_ && state_->process_lock.owns_lock() && state_->fd >= 0 &&
+	       state_->root == root;
+}
+
+flatfile_account_result
+flatfile_account_prepare_save(const std::string &root, const flatfile_account_lock &account_lock,
+			      const flatfile_authority_lock &authority_lock,
+			      const flatfile_account_record &record, uint64_t expected_revision,
+			      flatfile_authority_operation *operation, uint64_t *committed_revision,
+			      std::string *error)
+{
+	std::string canonical;
+	if (!operation || !committed_revision || !account_lock.matches(root) ||
+	    !authority_lock.matches(root) || !canonical_name(record.name, &canonical) ||
+	    expected_revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_account_result::invalid;
+	*operation = {};
+	flatfile_account_record existing;
+	const flatfile_account_result current = load_unlocked(root, record.name, &existing, error);
+	if ((current == flatfile_account_result::not_found && expected_revision != 0) ||
+	    (current == flatfile_account_result::ok && existing.revision != expected_revision))
+		return flatfile_account_result::conflict;
+	if (current != flatfile_account_result::ok && current != flatfile_account_result::not_found)
+		return current;
+	bool valid = false;
+	const uint64_t revision = expected_revision + 1;
+	std::vector<uint8_t> bytes = encode_file(record, revision, &valid);
+	if (!valid)
+		return flatfile_account_result::invalid;
+	operation->store = flatfile_authority_store::accounts;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = account_filename(canonical);
+	operation->bytes = std::move(bytes);
 	*committed_revision = revision;
 	return flatfile_account_result::ok;
 }

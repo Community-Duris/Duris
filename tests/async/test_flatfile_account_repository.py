@@ -21,6 +21,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-account-test-") as temporary
             "-Isrc",
             "tests/async/flatfile_account_repository_harness.cpp",
             "src/flatfile_account_repository.c",
+            "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
             "-lcrypto",
             "-pthread",

@@ -57,6 +57,20 @@ flatfile_character_delete_result map_authority(Result result, Result not_found, 
 	return flatfile_character_delete_result::invalid;
 }
 
+/*
+ * Maximum authority operations one character deletion can stage: one per
+ * append_operation() call site below (account reward summon, artifact,
+ * frag leaderboard, association, ship, player snapshot, player domain,
+ * world quest, item repository, locker removal, world-item removal, shop
+ * trade materialization, boon, recipe, spellbook, offline message, identity).
+ * Keep this in step with the call sites so the transaction encoder can never
+ * reject a fully populated character.
+ */
+constexpr size_t character_delete_maximum_operations = 17;
+static_assert(character_delete_maximum_operations <=
+		      flatfile_authority_transaction_maximum_operations,
+	      "character deletion can stage more operations than one authority transaction holds");
+
 bool append_operation(std::vector<flatfile_authority_operation> *operations,
 		      flatfile_authority_operation *operation)
 {
@@ -102,7 +116,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(16);
+		operations.reserve(character_delete_maximum_operations);
 	}
 	catch (const std::bad_alloc &)
 	{

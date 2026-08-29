@@ -23,6 +23,7 @@
 #include "corpse_lifecycle_transaction.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_corpse_restore.h"
+#include "flatfile_shopkeeper_restore.h"
 #include "item_ownership_runtime.h"
 #include "justice.h"
 #include "mm.h"
@@ -4714,6 +4715,18 @@ P_char restoreShopKeeper(int id)
 
 void restore_shopkeepers(void)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		std::string error;
+		const char *root = persistence_mode_flatfile_root();
+		const auto restored = flatfile_shopkeeper_restore_catalog(root ? root : "", &error);
+		if (restored != flatfile_shopkeeper_restore_result::ok &&
+		    restored != flatfile_shopkeeper_restore_result::not_found)
+			fatal_boot_error("shopkeeper", "flat-file shopkeeper restore failed: %s",
+					 error.empty() ? "invalid authoritative state" :
+							 error.c_str());
+		return;
+	}
 #ifndef __NO_MYSQL__
 	sql_restore_shopkeepers();
 #endif

@@ -1,3 +1,4 @@
+#include "boon.h"
 #include "flatfile_boon_repository.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_artifact_repository.h"
@@ -207,9 +208,27 @@ static void establish(const fs::path &root, bool establish_boons)
 			&error) == flatfile_item_baseline_result::applied,
 		"corpse custody baseline failed: " + error);
 	if (establish_boons)
-		require(flatfile_boon_establish(root.string(), {}, &error) ==
+	{
+		/*
+		 * A boon targeting the deleted character makes this the maximal
+		 * fixture: every domain of the deletion contract stages an
+		 * after-image, so the whole call surface must fit one authority
+		 * transaction.
+		 */
+		flatfile_boon_definition boon = {};
+		boon.id = 60;
+		boon.type = BTYPE_POINT;
+		boon.option = BOPT_MOB;
+		boon.criteria = 2;
+		boon.criteria2 = -1;
+		boon.bonus = 5;
+		boon.active = true;
+		boon.target_pid = 1;
+		boon.author = "test";
+		require(flatfile_boon_establish(root.string(), { boon }, &error) ==
 				flatfile_boon_result::ok,
 			"boon baseline failed: " + error);
+	}
 	flatfile_offline_message_id message_id = {};
 	message_id[0] = 1;
 	require(flatfile_offline_message_enqueue(root.string(), 1, message_id, "pending", &error) ==
@@ -401,6 +420,11 @@ int main(int argc, char **argv)
 		"direct deletion retained shop materialization history");
 	require(!fs::exists(direct / "players/1.world-quests"),
 		"direct deletion retained world-quest history");
+	std::vector<flatfile_boon_definition> boons;
+	require(flatfile_boon_load_definitions(direct.string(), &boons, &error) ==
+				flatfile_boon_result::ok &&
+			boons.size() == 1 && boons[0].target_pid == 0 && !boons[0].active,
+		"maximal deletion did not release the player's boon: " + error);
 
 	std::cout << "flat-file character deletion passed\n";
 	return 0;
