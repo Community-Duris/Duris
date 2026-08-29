@@ -31,6 +31,7 @@ using namespace std;
 #include "epic.h"
 #include "epic_bonus.h"
 #include "epic_transaction.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "grapple.h"
 #include "guard.h"
 #include "hardcore_config.h"
@@ -41,6 +42,7 @@ using namespace std;
 #include "paladins.h"
 #include "persistence_checkpoint.h"
 #include "persistence_observability.h"
+#include "persistence_mode.h"
 #include "persistence_queue.h"
 #include "critical_command_coordinator.h"
 #include "critical_command_journal.h"
@@ -4057,6 +4059,22 @@ static void show_world_persistence(P_char ch)
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	const maintenance_scheduler_health maintenance =
 		maintenance_scheduler_health_copy(ne_event_tick);
+	flatfile_shop_trade_materialization_health materializations = {};
+	flatfile_shop_trade_materialization_result materialization_result =
+		flatfile_shop_trade_materialization_result::unchanged;
+	const char *flatfile_root = persistence_mode_flatfile_root();
+	if (flatfile_root)
+	{
+		flatfile_authority_lock materialization_lock;
+		std::string materialization_error;
+		if (materialization_lock.acquire(flatfile_root, &materialization_error))
+			materialization_result = flatfile_shop_trade_materialization_read_health(
+				flatfile_root, materialization_lock, &materializations,
+				&materialization_error);
+		else
+			materialization_result =
+				flatfile_shop_trade_materialization_result::io_error;
+	}
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
 
@@ -4078,6 +4096,22 @@ static void show_world_persistence(P_char ch)
 		world_persistence_max(oldest_save_age_msec, player_loads.oldest_age_msec);
 
 	send_to_char("Persistence health (metadata only)\n", ch);
+	if (!flatfile_root)
+		snprintf(line, sizeof(line), "shop_materialization state=disabled\n");
+	else if (materialization_result != flatfile_shop_trade_materialization_result::ok)
+		snprintf(line, sizeof(line), "shop_materialization state=unavailable\n");
+	else
+		snprintf(line, sizeof(line),
+			 "shop_materialization state=%s revision=%llu events=%llu/%llu "
+			 "bytes=%llu/%llu reclaimable=%llu\n",
+			 materializations.near_capacity ? "degraded" : "ready",
+			 (unsigned long long)materializations.revision,
+			 (unsigned long long)materializations.events,
+			 (unsigned long long)materializations.maximum_events,
+			 (unsigned long long)materializations.encoded_bytes,
+			 (unsigned long long)materializations.maximum_bytes,
+			 (unsigned long long)materializations.reclaimable_events);
+	send_to_char(line, ch);
 	if (query.total_calls == 0)
 		snprintf(line, sizeof(line),
 			 "queries state=empty calls=0 failures=0 registry_overflow=%llu\n",

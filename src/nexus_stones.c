@@ -4,6 +4,7 @@
 
 */
 
+#include <algorithm>
 #include <cstring>
 #include <stdlib.h>
 #include <vector>
@@ -27,6 +28,10 @@ using namespace std;
 #include "ship_npc.h"
 #include "spells.h"
 #include "sql.h"
+#ifdef __NO_MYSQL__
+#include "flatfile_nexus_repository.h"
+#include "persistence_mode.h"
+#endif
 
 extern P_index mob_index;
 extern P_index obj_index;
@@ -38,31 +43,6 @@ extern P_obj object_list;
 extern const char *apply_names[];
 
 sh_int *char_stat(P_char ch, int stat);
-
-#ifdef __NO_MYSQL__
-int init_nexus_stones()
-{
-	// load nothing
-}
-
-void do_nexus(P_char ch, char *arg, int cmd)
-{
-	// do nothing
-}
-P_obj get_random_enemy_nexus(P_char ch)
-{
-	return NULL;
-}
-
-P_obj get_nexus_stone(int stone_id)
-{
-	return NULL;
-}
-int check_nexus_bonus(P_char ch, int amount, int type)
-{
-	return 0;
-}
-#else
 
 // #include <mysql.h>
 
@@ -131,7 +111,51 @@ struct NexusBonusData
 			 { "exp", 1 }, //  2 Enki
 			 { "cargo", 10 }, { "prestige", 1 }, { "\0", 0 } };
 
+#ifndef __NO_MYSQL__
 extern MYSQL *DB;
+#else
+namespace
+{
+const char *flat_nexus_root()
+{
+	return persistence_mode_flatfile_root();
+}
+
+bool flat_nexus_records(std::vector<flatfile_nexus_record> *records, std::string *error)
+{
+	const char *root = flat_nexus_root();
+	if (!root || !records)
+		return false;
+	auto result = flatfile_nexus_list(root, records, error);
+	if (result == flatfile_nexus_result::not_found)
+	{
+		result = flatfile_nexus_establish(root, {}, error);
+		if (result == flatfile_nexus_result::ok ||
+		    result == flatfile_nexus_result::unchanged)
+			result = flatfile_nexus_list(root, records, error);
+	}
+	return result == flatfile_nexus_result::ok;
+}
+
+bool flat_nexus_record(int stone_id, flatfile_nexus_record *record, std::string *error)
+{
+	const char *root = flat_nexus_root();
+	return root &&
+	       flatfile_nexus_find(root, stone_id, record, error) == flatfile_nexus_result::ok;
+}
+
+void copy_nexus_info(const flatfile_nexus_record &record, NexusStoneInfo *info)
+{
+	info->id = record.id;
+	info->name = record.name;
+	info->room_vnum = record.room_vnum;
+	info->align = record.align;
+	info->stat_affect = record.stat_affect;
+	info->affect_amount = record.affect_amount;
+	info->last_touched_at = record.last_touched_at;
+}
+} // namespace
+#endif
 
 int init_nexus_stones()
 {
@@ -144,12 +168,35 @@ int init_nexus_stones()
 	obj_index[real_object(OBJ_NEXUS_STONE)].func.obj = nexus_stone;
 	obj_index[real_object(OBJ_GUARDIAN_MACE)].func.obj = nexus_guardian_pwn_mace;
 
-	load_nexus_stones();
+	if (!load_nexus_stones())
+	{
+#ifdef __NO_MYSQL__
+		fatal_boot_error("nexus_stones", "flat nexus authority could not be loaded");
+#else
+		logit(LOG_DEBUG, "init_nexus_stones(): nexus stones could not be loaded");
+#endif
+	}
 	return 0;
 }
 
 int load_nexus_stones()
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_nexus_record> records;
+	std::string error;
+	if (!flat_nexus_records(&records, &error))
+	{
+		logit(LOG_DEBUG, "load_nexus_stones(): %s",
+		      error.empty() ? "flat nexus authority failure" : error.c_str());
+		return FALSE;
+	}
+	for (const auto &record : records)
+		if (!load_nexus_stone(record.id, record.name.c_str(), record.room_vnum,
+				      record.align))
+			return FALSE;
+	update_nexus_stat_mods();
+	return TRUE;
+#else
 	// load nexus stones from DB
 	if (!qry("SELECT id, name, room_vnum, align FROM nexus_stones"))
 		return FALSE;
@@ -170,12 +217,23 @@ int load_nexus_stones()
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
+		if (!row[0] || !row[1] || !row[2] || !row[3])
+		{
+			mysql_free_result(res);
+			return FALSE;
+		}
 		int stone_id = atoi(row[0]);
 		char *stone_name = row[1];
 		int room_vnum = atoi(row[2]);
 		int align = atoi(row[3]);
 
-		load_nexus_stone(stone_id, stone_name, room_vnum, align);
+		if (stone_id <= 0 || !*stone_name || align < STONE_ALIGN_EVIL ||
+		    align > STONE_ALIGN_GOOD ||
+		    !load_nexus_stone(stone_id, stone_name, room_vnum, align))
+		{
+			mysql_free_result(res);
+			return FALSE;
+		}
 	}
 
 	mysql_free_result(res);
@@ -183,6 +241,7 @@ int load_nexus_stones()
 	update_nexus_stat_mods();
 
 	return TRUE;
+#endif
 }
 
 bool nexus_stone_info(int stone_id, NexusStoneInfo *info)
@@ -190,6 +249,14 @@ bool nexus_stone_info(int stone_id, NexusStoneInfo *info)
 	if (!info)
 		return FALSE;
 
+#ifdef __NO_MYSQL__
+	flatfile_nexus_record record;
+	std::string error;
+	if (!flat_nexus_record(stone_id, &record, &error))
+		return FALSE;
+	copy_nexus_info(record, info);
+	return TRUE;
+#else
 	// load nexus stones from DB
 	if (!qry("SELECT name, room_vnum, align, stat_affect, affect_amount, UNIX_TIMESTAMP(last_touched_at) FROM nexus_stones where id = %d",
 		 stone_id))
@@ -209,32 +276,56 @@ bool nexus_stone_info(int stone_id, NexusStoneInfo *info)
 	}
 
 	MYSQL_ROW row = mysql_fetch_row(res);
+	if (!row || !row[0] || !row[1] || !row[2] || !row[3] || !row[4])
+	{
+		mysql_free_result(res);
+		return FALSE;
+	}
 
 	info->id = stone_id;
 	info->name = row[0];
 	info->room_vnum = atoi(row[1]);
 	info->align = atoi(row[2]);
 	info->stat_affect = atoi(row[3]);
-	info->last_touched_at = atoi(row[4]);
+	info->affect_amount = atoi(row[4]);
+	info->last_touched_at = row[5] ? atoi(row[5]) : 0;
 
 	mysql_free_result(res);
 
 	return TRUE;
+#endif
 }
 
 int check_nexus_bonus(P_char ch, int amount, int type)
 {
 	char buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
 
-	if (!qry("SELECT align, bonus FROM nexus_stones WHERE align in ('%d', '%d') AND bonus = '%d'",
-		 STONE_ALIGN_GOOD, STONE_ALIGN_EVIL, type))
-		return amount;
-
 	if (!ch)
 	{
 		debug("check_nexus_bonus(): passed invalid ch pointer to function");
 		return amount;
 	}
+
+	int align = 0;
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_nexus_record> records;
+	std::string error;
+	if (!flat_nexus_records(&records, &error))
+		return amount;
+	const auto found = std::find_if(records.begin(), records.end(),
+					[type](const auto &record)
+					{
+						return (record.align == STONE_ALIGN_GOOD ||
+							record.align == STONE_ALIGN_EVIL) &&
+						       record.bonus == type;
+					});
+	if (found == records.end())
+		return amount;
+	align = found->align;
+#else
+	if (!qry("SELECT align, bonus FROM nexus_stones WHERE align in ('%d', '%d') AND bonus = '%d'",
+		 STONE_ALIGN_GOOD, STONE_ALIGN_EVIL, type))
+		return amount;
 
 	MYSQL_RES *res = mysql_store_result(DB);
 	if (!res)
@@ -250,11 +341,16 @@ int check_nexus_bonus(P_char ch, int amount, int type)
 	}
 
 	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int align = atoi(row[0]);
-	int racewar, newamnt;
+	if (!row || !row[0])
+	{
+		mysql_free_result(res);
+		return amount;
+	}
+	align = atoi(row[0]);
 
 	mysql_free_result(res);
+#endif
+	int racewar, newamnt;
 
 	if (align == STONE_ALIGN_GOOD)
 		racewar = RACEWAR_GOOD;
@@ -299,6 +395,7 @@ void update_nexus_stat_mods()
 	// Not using stat modifiers right now... -Venthix 3/29/09
 	return;
 
+#ifndef __NO_MYSQL__
 	if (!qry("SELECT align, stat_affect, affect_amount, FROM nexus_stones WHERE align in ('%d', '%d')",
 		 STONE_ALIGN_GOOD, STONE_ALIGN_EVIL))
 		return;
@@ -336,15 +433,29 @@ void update_nexus_stat_mods()
 	}
 
 	mysql_free_result(res);
+#endif
 }
 
 int update_nexus_stone_align(int stone_id, int align)
 {
+#ifdef __NO_MYSQL__
+	const char *root = flat_nexus_root();
+	std::string error;
+	const auto result =
+		root ? flatfile_nexus_update_state(root, stone_id, align, time(nullptr), &error) :
+		       flatfile_nexus_result::io_error;
+	if (result == flatfile_nexus_result::ok || result == flatfile_nexus_result::unchanged)
+		return TRUE;
+	logit(LOG_DEBUG, "update_nexus_stone_align(): %s",
+	      error.empty() ? "flat nexus authority failure" : error.c_str());
+	return FALSE;
+#else
 	if (!qry("UPDATE nexus_stones SET align = '%d', last_touched_at = NOW() WHERE id = '%d'",
 		 align, stone_id))
 		return FALSE;
 
 	return TRUE;
+#endif
 }
 
 bool nexus_stone_touch(P_obj stone, P_char ch)
@@ -457,7 +568,13 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 		world_echo(ns_messages[_GLOBAL_GOOD_TOUCH]);
 
 		STONE_ALIGN(stone)++;
-		update_nexus_stone_align(STONE_ID(stone), STONE_ALIGN(stone));
+		if (!update_nexus_stone_align(STONE_ID(stone), STONE_ALIGN(stone)))
+		{
+			STONE_ALIGN(stone)--;
+			send_to_char("The stone's state could not be preserved. Try again later.\n",
+				     ch);
+			return FALSE;
+		}
 
 		if (STONE_ALIGN(stone) >= STONE_ALIGN_GOOD)
 		{
@@ -483,7 +600,13 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 		world_echo(ns_messages[_GLOBAL_EVIL_TOUCH]);
 
 		STONE_ALIGN(stone)--;
-		update_nexus_stone_align(STONE_ID(stone), STONE_ALIGN(stone));
+		if (!update_nexus_stone_align(STONE_ID(stone), STONE_ALIGN(stone)))
+		{
+			STONE_ALIGN(stone)++;
+			send_to_char("The stone's state could not be preserved. Try again later.\n",
+				     ch);
+			return FALSE;
+		}
 
 		if (STONE_ALIGN(stone) <= STONE_ALIGN_EVIL)
 		{
@@ -1356,6 +1479,12 @@ bool load_nexus_stone(int stone_id, const char *stone_name, int room_vnum, int a
 		else
 			return false;
 	}
+	const int room = real_room(room_vnum);
+	if (room < 0)
+	{
+		logit(LOG_DEBUG, "load_nexus_stone(): room %d does not exist.", room_vnum);
+		return false;
+	}
 
 	P_obj stone = read_object(real_object(OBJ_NEXUS_STONE), REAL);
 
@@ -1386,7 +1515,7 @@ bool load_nexus_stone(int stone_id, const char *stone_name, int room_vnum, int a
 	snprintf(namebuff, MAX_STRING_LENGTH, "the nexus stone of %s", stone_name);
 	stone->short_description = str_dup(namebuff);
 
-	obj_to_room(stone, real_room(room_vnum));
+	obj_to_room(stone, room);
 
 	statuslog(57, "Nexus Stone (%d) loaded in [%d]", stone_id, room_vnum);
 	logit(LOG_STATUS, "Nexus Stone (%d) loaded in [%d]", stone_id, room_vnum);
@@ -1394,19 +1523,19 @@ bool load_nexus_stone(int stone_id, const char *stone_name, int room_vnum, int a
 	if (align <= STONE_ALIGN_EVIL)
 	{
 		STONE_TURN_TIMER(stone) = time(NULL);
-		load_guardian(stone_id, real_room(room_vnum), STONE_ALIGN_EVIL);
+		load_guardian(stone_id, room, STONE_ALIGN_EVIL);
 		// load_sage(stone_id, real_room(room_vnum), STONE_ALIGN_EVIL);
 	}
 	else if (align >= STONE_ALIGN_GOOD)
 	{
 		STONE_TURN_TIMER(stone) = time(NULL);
-		load_guardian(stone_id, real_room(room_vnum), STONE_ALIGN_GOOD);
+		load_guardian(stone_id, room, STONE_ALIGN_GOOD);
 		// load_sage(stone_id, real_room(room_vnum), STONE_ALIGN_GOOD);
 	}
 	else if (align == 0)
 	{
 		STONE_TURN_TIMER(stone) = time(NULL);
-		load_guardian(stone_id, real_room(room_vnum), 0);
+		load_guardian(stone_id, room, 0);
 	}
 
 	return TRUE;
@@ -1450,6 +1579,27 @@ void nexus_stone_list(P_char ch)
 {
 	char buff[MAX_STRING_LENGTH];
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_nexus_record> records;
+	std::string error;
+	if (!flat_nexus_records(&records, &error))
+		return;
+	snprintf(buff, MAX_STRING_LENGTH,
+		 "&+WNexus Stones &+G=================================\n\n");
+	send_to_char(buff, ch);
+	bool found = false;
+	for (const auto &record : records)
+	{
+		if (record.align != STONE_ALIGN_EVIL && record.align != STONE_ALIGN_GOOD)
+			continue;
+		found = true;
+		snprintf(buff, MAX_STRING_LENGTH, "  %s &n(%s&n)\n", record.name.c_str(),
+			 record.align == STONE_ALIGN_EVIL ? "&+Levil" : "&+Wgood");
+		send_to_char(buff, ch);
+	}
+	if (!found)
+		send_to_char("  All stones are neutral.\n", ch);
+#else
 	if (!qry("SELECT name, align FROM nexus_stones WHERE align IN ('%d', '%d') ORDER BY id",
 		 STONE_ALIGN_GOOD, STONE_ALIGN_EVIL))
 		return;
@@ -1492,12 +1642,36 @@ void nexus_stone_list(P_char ch)
 	}
 
 	mysql_free_result(res);
+#endif
 }
 
 void nexus_stone_god_list(P_char ch)
 {
 	char buff[MAX_STRING_LENGTH];
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_nexus_record> records;
+	std::string error;
+	if (!flat_nexus_records(&records, &error))
+		return;
+	snprintf(buff, MAX_STRING_LENGTH,
+		 "&+WNexus Stones &+G=================================\n\n");
+	send_to_char(buff, ch);
+	if (records.empty())
+	{
+		send_to_char(" (no nexus stones configured)\n", ch);
+		return;
+	}
+	for (const auto &record : records)
+	{
+		const char *color = record.align == STONE_ALIGN_EVIL ? "&+L" :
+				    record.align == STONE_ALIGN_GOOD ? "&+W" :
+								       "";
+		snprintf(buff, MAX_STRING_LENGTH, "  [&+W%d&n] %s &n(%s%d&n)\n", record.id,
+			 record.name.c_str(), color, record.align);
+		send_to_char(buff, ch);
+	}
+#else
 	if (!qry("SELECT id, name, align FROM nexus_stones ORDER BY id", STONE_ALIGN_GOOD,
 		 STONE_ALIGN_EVIL))
 		return;
@@ -1549,6 +1723,7 @@ void nexus_stone_god_list(P_char ch)
 	}
 
 	mysql_free_result(res);
+#endif
 }
 
 void reset_nexus_stones(P_char ch)
@@ -1596,6 +1771,13 @@ void reload_nexus_stone(P_char ch, int stone_id)
 	wizlog(57, "%s reloaded nexus stone (%d)", GET_NAME(ch), stone_id);
 	logit(LOG_WIZ, "%s reloaded nexus stone (%d)", GET_NAME(ch), stone_id);
 
+#ifdef __NO_MYSQL__
+	flatfile_nexus_record record;
+	std::string error;
+	if (!flat_nexus_record(stone_id, &record, &error))
+		return;
+#endif
+
 	vector<P_char> delete_chars;
 
 	for (P_char tch = character_list; tch; tch = tch->next)
@@ -1622,6 +1804,9 @@ void reload_nexus_stone(P_char ch, int stone_id)
 		}
 	}
 
+#ifdef __NO_MYSQL__
+	load_nexus_stone(record.id, record.name.c_str(), record.room_vnum, record.align);
+#else
 	// load nexus stones from DB
 	if (!qry("SELECT name, room_vnum, align FROM nexus_stones WHERE id = '%d'", stone_id))
 		return;
@@ -1647,6 +1832,7 @@ void reload_nexus_stone(P_char ch, int stone_id)
 	load_nexus_stone(stone_id, stone_name, room_vnum, align);
 
 	mysql_free_result(res);
+#endif
 
 	update_nexus_stat_mods();
 }
@@ -1655,6 +1841,14 @@ bool nexus_stone_expired(int stone_id)
 {
 	int threshold_secs = ((int)get_property("nexusStones.expireDays", 30)) * (24 * 60 * 60);
 
+#ifdef __NO_MYSQL__
+	flatfile_nexus_record record;
+	std::string error;
+	if (!flat_nexus_record(stone_id, &record, &error))
+		return false;
+	return record.last_touched_at && record.align != 0 &&
+	       record.last_touched_at < time(nullptr) - threshold_secs;
+#else
 	if (!qry("SELECT id FROM nexus_stones WHERE id = '%d' AND last_touched_at IS NOT NULL AND last_touched_at < DATE_SUB(NOW(), INTERVAL %d SECOND) AND align <> 0",
 		 stone_id, threshold_secs))
 		return false;
@@ -1671,12 +1865,30 @@ bool nexus_stone_expired(int stone_id)
 	mysql_free_result(res);
 
 	return expired;
+#endif
 }
 
 void expire_nexus_stone(int stone_id)
 {
 	wizlog(57, "nexus stone (%d) expired", stone_id);
 	logit(LOG_WIZ, "nexus stone (%d) expired", stone_id);
+
+#ifdef __NO_MYSQL__
+	const char *root = flat_nexus_root();
+	std::string error;
+	if (!root)
+		return;
+	const auto updated = flatfile_nexus_update_state(root, stone_id, 0, 0, &error);
+	if (updated != flatfile_nexus_result::ok && updated != flatfile_nexus_result::unchanged)
+	{
+		logit(LOG_DEBUG, "expire_nexus_stone(): %s",
+		      error.empty() ? "flat nexus authority failure" : error.c_str());
+		return;
+	}
+	flatfile_nexus_record record;
+	if (!flat_nexus_record(stone_id, &record, &error))
+		return;
+#endif
 
 	vector<P_char> delete_chars;
 
@@ -1708,6 +1920,9 @@ void expire_nexus_stone(int stone_id)
 
 	world_echo(ns_messages[_STONE_EXPIRED]);
 
+#ifdef __NO_MYSQL__
+	load_nexus_stone(record.id, record.name.c_str(), record.room_vnum, record.align);
+#else
 	if (!qry("UPDATE nexus_stones SET align = 0, last_touched_at = NULL WHERE id = '%d'",
 		 stone_id))
 		return;
@@ -1737,22 +1952,32 @@ void expire_nexus_stone(int stone_id)
 	load_nexus_stone(stone_id, stone_name, room_vnum, align);
 
 	mysql_free_result(res);
+#endif
 
 	update_nexus_stat_mods();
 }
 
 P_obj get_random_enemy_nexus(P_char ch)
 {
-	int stones[MAX_NEXUS_STONES];
-	int align;
-	P_obj stone = NULL;
-
-	if (!qry("SELECT id, align FROM nexus_stones") || !ch)
-	{
-		debug("failed1");
+	if (!ch)
 		return NULL;
-	}
+	struct nexus_alignment
+	{
+		int id;
+		int align;
+	};
+	std::vector<nexus_alignment> records;
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_nexus_record> flat_records;
+	std::string error;
+	if (!flat_nexus_records(&flat_records, &error))
+		return NULL;
+	for (const auto &record : flat_records)
+		records.push_back({ record.id, record.align });
+#else
+	if (!qry("SELECT id, align FROM nexus_stones"))
+		return NULL;
 	MYSQL_RES *res = mysql_store_result(DB);
 	if (!res)
 	{
@@ -1760,38 +1985,24 @@ P_obj get_random_enemy_nexus(P_char ch)
 		return NULL;
 	}
 
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return NULL;
-	}
-
-	int i = 1;
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
-	{
-		if (atoi(row[1]) == STONE_ALIGN_GOOD)
-			align = RACEWAR_GOOD;
-		else if (atoi(row[1]) == STONE_ALIGN_EVIL)
-			align = RACEWAR_EVIL;
-		else
-			align = 0;
-
-		if (GET_RACEWAR(ch) == align)
-			continue;
-
-		stones[i] = atoi(row[0]);
-		i++;
-	}
-
-	int j = number(1, i);
-
-	stone = get_nexus_stone(stones[j]);
+		if (row[0] && row[1] && records.size() < MAX_NEXUS_STONES)
+			records.push_back({ atoi(row[0]), atoi(row[1]) });
 
 	mysql_free_result(res);
-
-	return stone;
-}
-
-// endif define __NO_MYSQL__
 #endif
+
+	std::vector<int> candidates;
+	for (const auto &record : records)
+	{
+		const int racewar = record.align == STONE_ALIGN_GOOD ? RACEWAR_GOOD :
+				    record.align == STONE_ALIGN_EVIL ? RACEWAR_EVIL :
+								       0;
+		if (GET_RACEWAR(ch) != racewar)
+			candidates.push_back(record.id);
+	}
+	if (candidates.empty())
+		return NULL;
+	return get_nexus_stone(candidates[number(0, candidates.size() - 1)]);
+}

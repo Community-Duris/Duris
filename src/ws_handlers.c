@@ -3294,7 +3294,6 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 	}
 
 	/* record vote */
-#ifndef __NO_MYSQL__
 	int votes_cast = poll_record_votes(d->account->acct_name, "web", poll_id, poll, choices);
 
 	if (votes_cast > 0)
@@ -3323,9 +3322,6 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 	{
 		ws_send_system(d, "error", "Failed to record vote");
 	}
-#else
-	ws_send_system(d, "error", "Database not available");
-#endif
 }
 
 /* dispatch */

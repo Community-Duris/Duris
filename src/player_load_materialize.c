@@ -11,12 +11,15 @@
 #include <climits>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <new>
 #include <unordered_set>
 #include <vector>
 
 #include "assocs.h"
 #include "player_revision_state.h"
 #include "spells.h"
+#include "trophy.h"
 
 namespace
 {
@@ -42,6 +45,7 @@ bool valid_snapshot(const player_load_result &result)
 		return false;
 	std::unordered_set<unsigned int> integers;
 	std::unordered_set<unsigned int> strings;
+	std::unordered_set<int32_t> trophy_zones;
 	for (const player_snapshot_integer &entry : result.snapshot.status_integers)
 		if (entry.field < player_status_field::class_primary ||
 		    entry.field > player_status_field::last_ip ||
@@ -75,11 +79,21 @@ bool valid_snapshot(const player_load_result &result)
 		if (entry.wear_off_character.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
 		    entry.wear_off_room.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
 			return false;
+	for (const player_trophy_snapshot &entry : result.snapshot.trophies)
+		if (entry.zone_number <= 0 || entry.experience < 0 ||
+		    !trophy_zones.insert(entry.zone_number).second)
+			return false;
 	for (uint64_t balance : result.domains.wallet)
 		if (balance > INT_MAX)
 			return false;
 	for (uint64_t balance : result.domains.bank)
 		if (balance > INT_MAX)
+			return false;
+	if (!result.domains.base_stat_revision &&
+	    result.domains.base_stats != std::array<int16_t, 10>{})
+		return false;
+	for (int16_t stat : result.domains.base_stats)
+		if (stat < 0 || stat > 100)
 			return false;
 	if (result.snapshot.components == PLAYER_LOAD_SESSION01_COMPONENTS &&
 	    (!result.snapshot.items.empty() || !result.item_identities.empty() ||
@@ -339,6 +353,22 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      result.snapshot.items.size());
 		return false;
 	}
+	if (ZONE_TROPHY(ch))
+		return false;
+	std::unique_ptr<std::vector<zone_trophy_data>> zone_trophies(
+		new (std::nothrow) std::vector<zone_trophy_data>());
+	if (!zone_trophies)
+		return false;
+	try
+	{
+		zone_trophies->reserve(result.snapshot.trophies.size());
+		for (const player_trophy_snapshot &entry : result.snapshot.trophies)
+			zone_trophies->push_back({ entry.zone_number, entry.experience });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 	if (result.stale_item_rows)
 		logit(LOG_DEBUG,
 		      "player_load_materialize: component=items pid=%d outcome=stale_rows_skipped "
@@ -395,6 +425,19 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	ch->only.pc->frags = result.domains.frags;
 	ch->only.pc->oldfrags = result.domains.old_frags;
 	ch->only.pc->frag_revision = result.domains.frag_revision;
+	if (result.domains.base_stat_revision)
+	{
+		ch->base_stats.Str = result.domains.base_stats[0];
+		ch->base_stats.Dex = result.domains.base_stats[1];
+		ch->base_stats.Agi = result.domains.base_stats[2];
+		ch->base_stats.Con = result.domains.base_stats[3];
+		ch->base_stats.Pow = result.domains.base_stats[4];
+		ch->base_stats.Int = result.domains.base_stats[5];
+		ch->base_stats.Wis = result.domains.base_stats[6];
+		ch->base_stats.Cha = result.domains.base_stats[7];
+		ch->base_stats.Kar = result.domains.base_stats[8];
+		ch->base_stats.Luk = result.domains.base_stats[9];
+	}
 	for (size_t index = 0; index < result.snapshot.conditions.size(); ++index)
 		ch->specials.conditions[index] = result.snapshot.conditions[index];
 	int32_t *quest[] = {
@@ -456,6 +499,7 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		else
 			affect_to_char(ch, &affect);
 	}
+	ZONE_TROPHY(ch) = zone_trophies.release();
 	char_shapechange_data **shape = &ch->only.pc->knownShapes;
 	for (const player_shape_snapshot &entry : result.snapshot.shapes)
 	{

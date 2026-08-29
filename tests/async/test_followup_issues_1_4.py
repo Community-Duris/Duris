@@ -6,6 +6,8 @@ from contract_text import contains
 root = Path(__file__).resolve().parents[2]
 locker = (root / "src/storage_lockers.c").read_text()
 auction = (root / "src/auction_houses.c").read_text()
+auction_repository = (root / "src/auction_repository.c").read_text()
+critical_repository = (root / "src/critical_command_repository.c").read_text()
 ship = (root / "src/ships/ship_base.c").read_text()
 handler = (root / "src/handler.c").read_text()
 
@@ -17,15 +19,28 @@ assert contains(chest_body, 'snprintf(GBuf1, sizeof(GBuf1), "chest %s", this->m_
 assert contains(chest_body, 'snprintf(GBuf1, sizeof(GBuf1), "&+yAn ornate chest bearing items %s&+y.&n", this->m_chestDescText);')
 assert not contains(chest_body, "strcat(GBuf1, this->m_chestDescText);")
 
-# The mutable bid state must be read under a row lock after transaction start.
-bid_start = auction.index("bool auction_bid(")
-bid_end = auction.index("bool auction_pickup(", bid_start)
+# The active bid path must submit the typed command, whose MariaDB repository
+# reads mutable auction state under a row lock inside the coordinator transaction.
+bid_start = auction.rindex("bool auction_bid(")
+bid_end = auction.index("bool auction_bid_legacy(", bid_start)
 bid_body = auction[bid_start:bid_end]
-begin_pos = bid_body.index("sql_begin_transaction()")
-select_pos = bid_body.index("SELECT a.cur_price")
-assert begin_pos < select_pos
-assert contains(bid_body, "a.status = %d FOR UPDATE")
-assert contains(bid_body, "status = %d FOR UPDATE")
+assert contains(bid_body, "payload.action = auction_action::bid")
+assert contains(bid_body, "auction_transaction_submit")
+
+lock_start = auction_repository.index("bool lock_auction(")
+lock_end = auction_repository.index("bool ensure_owner_revision", lock_start)
+lock_body = auction_repository[lock_start:lock_end]
+assert contains(lock_body, "WHERE a.id=")
+assert contains(lock_body, "FOR UPDATE")
+
+apply_start = critical_repository.index("critical_apply_result critical_command_repository_apply")
+apply_body = critical_repository[apply_start:]
+assert apply_body.index('execute(connection, "START TRANSACTION")') < apply_body.index(
+    "auction_repository_execute"
+)
+assert apply_body.index("auction_repository_execute") < apply_body.index(
+    'execute(connection, "COMMIT")', apply_body.index("auction_repository_execute")
+)
 
 # A failed shutdown commit must rollback and terminate through the corruption path.
 shutdown_start = ship.index("void shutdown_ships()")

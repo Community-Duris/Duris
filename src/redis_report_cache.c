@@ -24,7 +24,7 @@
 #include <cstring>
 #include <ctime>
 
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 #include <hiredis/hiredis.h>
 #endif
 
@@ -79,7 +79,7 @@ const char *resolve_key(const char *key)
 
 bool cache_set_ex(const char *key, int seconds, const char *value)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)key;
 	(void)seconds;
 	(void)value;
@@ -94,7 +94,7 @@ bool cache_set_ex(const char *key, int seconds, const char *value)
 
 char *cache_get(const char *key)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)key;
 	return NULL;
 #else
@@ -107,7 +107,7 @@ char *cache_get(const char *key)
 
 bool cache_delete(const char *key)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)key;
 	return false;
 #else
@@ -125,7 +125,7 @@ const char *artifact_key(int type, bool godlist)
 	return artifact_keys[(type - 1) * 2 + (godlist ? 1 : 0)];
 }
 
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 redisReply *cache_prime_command(redisContext *context, const char *script, const char **keys)
 {
 	const uint64_t started_usec = redis_observability_now_usec();
@@ -265,7 +265,7 @@ char *generate_named_report(void)
 
 char *generate_fraglist_cache_payload(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return NULL;
 #else
 	char *output = static_cast<char *>(malloc(65536));
@@ -410,7 +410,7 @@ bool redis_report_cache_configure(const char *key_namespace, uint64_t epoch)
 
 bool redis_report_cache_start(const redis_connection_settings *connection)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)connection;
 	return false;
 #else
@@ -429,7 +429,7 @@ bool redis_report_cache_start(const redis_connection_settings *connection)
 void redis_report_cache_cancel(void)
 {
 	report_cache_enabled = false;
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	redis_cache_store_cancel();
 #endif
 }
@@ -437,7 +437,7 @@ void redis_report_cache_cancel(void)
 bool redis_report_cache_shutdown(uint64_t timeout_msec)
 {
 	report_cache_enabled = false;
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)timeout_msec;
 	return true;
 #else
@@ -469,7 +469,7 @@ const char *redis_report_cache_pattern(void)
 
 void redis_cache_named_report(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!report_cache_enabled)
 		return;
 	char *report = generate_named_report();
@@ -494,7 +494,7 @@ bool redis_invalidate_named_report(void)
 
 void redis_cache_fraglist(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!report_cache_enabled)
 		return;
 	char *output = generate_fraglist_cache_payload();
@@ -509,7 +509,7 @@ void redis_cache_fraglist(void)
 
 char *redis_get_fraglist(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return NULL;
 #else
 	if (!report_cache_enabled)
@@ -530,7 +530,7 @@ bool redis_invalidate_fraglist(void)
 
 void redis_cache_epic_zones(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!report_cache_enabled)
 		return;
 	char *output = generate_epic_zones_output();
@@ -560,7 +560,7 @@ bool redis_invalidate_epic_zones(void)
 
 void redis_cache_artifact_list(int type, bool godlist, const char *json)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!report_cache_enabled || type < 1 || type > 3 || !json)
 		return;
 	cache_set_ex(artifact_key(type, godlist), artifact_cache_ttl_seconds, json);
@@ -578,7 +578,7 @@ char *redis_get_artifact_list(int type, bool godlist)
 
 bool redis_invalidate_artifact_list(int type, bool godlist)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)type;
 	(void)godlist;
 	return false;
@@ -591,7 +591,7 @@ bool redis_invalidate_artifact_list(int type, bool godlist)
 
 bool redis_invalidate_artifact_cache(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return false;
 #else
 	if (!report_cache_enabled)

@@ -26,6 +26,7 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 # profile or the feature defines below.
 EXTRA_CFLAGS =
 EXTRA_LDFLAGS =
+PERSISTENCE_BACKEND ?= mariadb
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS)
 CFLAGS += -DTEST_MUD
@@ -33,11 +34,22 @@ CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
+ifeq ($(PERSISTENCE_BACKEND),mariadb)
+MYSQL_INCLUDES = -I/usr/include/mysql
+MYSQL_LIBS = -lmysqlclient
+else ifeq ($(PERSISTENCE_BACKEND),flatfile)
+CFLAGS += -D__NO_MYSQL__
+MYSQL_INCLUDES = -I./no_mysql
+MYSQL_LIBS =
+else
+$(error PERSISTENCE_BACKEND must be mariadb or flatfile)
+endif
+
 #CFLAGS += -DCTF_MUD=1
 
-INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
+INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 $(MYSQL_INCLUDES) -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt $(MYSQL_LIBS) -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
 
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
@@ -206,13 +218,58 @@ OBJS =  $(SHIP_OBJS) \
 				 outposts.o \
 				 persistence_checkpoint.o \
 				 persistence_observability.o \
+				 persistence_mode.o \
+				 env_file.o \
+				 flatfile_store.o \
+				 flatfile_authority_transaction.o \
+				 flatfile_account_repository.o \
+				 flatfile_account_reward_summon_repository.o \
+				 flatfile_account_adapter.o \
+				 flatfile_identity_repository.o \
+				 flatfile_identity_adapter.o \
+				 flatfile_character_delete.o \
+				 flatfile_player_repository.o \
+				 flatfile_item_uid_allocator.o \
+				 flatfile_item_repository.o \
+				 flatfile_artifact_repository.o \
+				 flatfile_corpse_repository.o \
+				 flatfile_corpse_ownership.o \
+				 flatfile_corpse_restore.o \
+				 flatfile_association_repository.o \
+				 flatfile_locker_repository.o \
+				 flatfile_frag_leaderboard_repository.o \
+				 flatfile_help_catalog.o \
+				 flatfile_ip_activity_repository.o \
+				 flatfile_nexus_repository.o \
+				 flatfile_auction_repository.o \
+				 flatfile_boon_repository.o \
+				 flatfile_offline_message_repository.o \
+				 flatfile_player_domain_repository.o \
+				 flatfile_recipe_repository.o \
+				 flatfile_spellbook_repository.o \
+				 flatfile_ship_repository.o \
+				 flatfile_shopkeeper_repository.o \
+				 flatfile_shopkeeper_capture.o \
+				 flatfile_shopkeeper_ownership.o \
+				 flatfile_shopkeeper_materialize.o \
+				 flatfile_shopkeeper_restore.o \
+				 flatfile_shopkeeper_save.o \
+				 flatfile_shop_trade_repository.o \
+				 flatfile_shop_trade_materialization.o \
+				 flatfile_shop_trophy_history.o \
+				 flatfile_world_item_repository.o \
+				 flatfile_world_quest_history.o \
+				 corpse_lifecycle_transaction.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
 				 critical_command_repository.o \
+				 corpse_lifecycle_command.o \
 				 item_transfer_command.o \
 				 item_ownership_runtime.o \
 				 item_movement_transaction.o \
+				 shop_trade_transaction.o \
+				 shop_trade_runtime.o \
 				 item_transfer_repository.o \
 				 item_transfer_synthetic.o \
 				 item_uid_allocator.o \
@@ -233,6 +290,9 @@ OBJS =  $(SHIP_OBJS) \
 				 boon_reward_command.o \
 				 boon_reward_repository.o \
 				 boon_reward_transaction.o \
+				 boon_shop_command.o \
+				 boon_shop_transaction.o \
+				 shop_trade_command.o \
 				 zone_touch_command.o \
 				 zone_touch_repository.o \
 				 zone_touch_transaction.o \

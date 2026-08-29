@@ -24,8 +24,10 @@
 //   being manually added, update the random_std array to include the new
 //   boon_data array number.
 
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
+#include <limits>
 #include <string>
 #include <time.h>
 using namespace std;
@@ -39,12 +41,15 @@ using namespace std;
 #include "auction_houses.h"
 #include "boon.h"
 #include "boon_reward_transaction.h"
+#include "boon_shop_transaction.h"
 #include "buildings.h"
 #include "ctf.h"
 #include "currency_transaction.h"
 #include "epic.h"
+#include "flatfile_boon_repository.h"
 #include "guildhall.h"
 #include "nexus_stones.h"
+#include "persistence_mode.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -165,6 +170,61 @@ static void boon_collect_ids(MYSQL_RES *res, int *id, const char *where)
 		logit(LOG_DEBUG, "%s: active boon list truncated at MAX_BOONS",
 		      where ? where : "boon");
 	}
+}
+
+static const char *flat_boon_root()
+{
+	return persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ?
+		       persistence_mode_flatfile_root() :
+		       nullptr;
+}
+
+static bool copy_flat_boon_definition(const flatfile_boon_definition &source, BoonData *target)
+{
+	if (!target || source.id > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
+	    source.start_time < std::numeric_limits<int>::min() ||
+	    source.start_time > std::numeric_limits<int>::max() ||
+	    source.duration < std::numeric_limits<int>::min() ||
+	    source.duration > std::numeric_limits<int>::max() ||
+	    source.target_pid > static_cast<uint32_t>(std::numeric_limits<int>::max()))
+		return false;
+	target->id = static_cast<int>(source.id);
+	target->time = static_cast<int>(source.start_time);
+	target->duration = static_cast<int>(source.duration);
+	target->racewar = source.racewar;
+	target->type = source.type;
+	target->option = source.option;
+	target->criteria = source.criteria;
+	target->criteria2 = source.criteria2;
+	target->bonus = source.bonus;
+	target->bonus2 = source.bonus2;
+	target->random = source.random;
+	target->author = source.author;
+	target->active = source.active;
+	target->pid = static_cast<int>(source.target_pid);
+	target->repeat = source.repeat;
+	return true;
+}
+
+static flatfile_boon_definition copy_boon_definition_to_flat(const BoonData &source,
+							     int64_t start_time)
+{
+	flatfile_boon_definition target;
+	target.start_time = start_time;
+	target.duration = source.duration;
+	target.racewar = static_cast<uint8_t>(source.racewar);
+	target.type = static_cast<uint8_t>(source.type);
+	target.option = static_cast<uint8_t>(source.option);
+	target.criteria = source.criteria;
+	target.criteria2 = source.criteria2;
+	target.bonus = source.bonus;
+	target.bonus2 = source.bonus2;
+	target.random = source.random;
+	target.active = true;
+	target.target_pid = static_cast<uint32_t>(source.pid);
+	target.repeat = source.repeat;
+	target.author = source.author;
+	return target;
 }
 
 static int boon_ctf_index(int flag_id)
@@ -351,6 +411,19 @@ int get_valid_boon_option(char *arg)
 
 int is_boon_valid(int id)
 {
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0)
+			return FALSE;
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return FALSE;
+		return std::any_of(definitions.begin(), definitions.end(),
+				   [&](const auto &definition)
+				   { return definition.id == static_cast<uint32_t>(id); });
+	}
 	if (!qry("SELECT id FROM boons WHERE id = '%d'", id))
 	{
 		return FALSE;
@@ -372,6 +445,20 @@ int is_boon_valid(int id)
 
 int count_boons(int active, int random)
 {
+	if (const char *root = flat_boon_root())
+	{
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return 0;
+		return static_cast<int>(std::count_if(definitions.begin(), definitions.end(),
+						      [&](const auto &definition) {
+							      return (!active ||
+								      definition.active) &&
+								     (!random || definition.random);
+						      }));
+	}
 	char dbqry[MAX_STRING_LENGTH];
 	int count = 0;
 
@@ -422,6 +509,22 @@ bool get_boon_data(int id, BoonData *bdata)
 {
 	if (!bdata)
 		return FALSE;
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0)
+			return FALSE;
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return FALSE;
+		const auto found = std::lower_bound(definitions.begin(), definitions.end(),
+						    static_cast<uint32_t>(id),
+						    [](const auto &definition, uint32_t key)
+						    { return definition.id < key; });
+		return found != definitions.end() && found->id == static_cast<uint32_t>(id) &&
+		       copy_flat_boon_definition(*found, bdata);
+	}
 
 	if (!qry("SELECT id, time, duration, racewar, type, opt, criteria, criteria2, bonus, bonus2, random, author, active, pid, rpt FROM boons WHERE id = '%d'",
 		 id))
@@ -473,6 +576,19 @@ bool get_boon_progress_data(int id, int pid, BoonProgress *bpg)
 {
 	if (!bpg)
 		return FALSE;
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0 || pid <= 0)
+			return FALSE;
+		std::string error;
+		double counter = 0;
+		if (flatfile_boon_load_progress(root, static_cast<uint32_t>(id),
+						static_cast<uint32_t>(pid), &counter,
+						&error) != flatfile_boon_result::ok)
+			return FALSE;
+		*bpg = { 0, id, pid, counter };
+		return TRUE;
+	}
 
 	if (!qry("SELECT id, boonid, pid, counter FROM boons_progress WHERE boonid = '%d' AND pid = '%d'",
 		 id, pid))
@@ -513,6 +629,23 @@ bool get_boon_shop_data(int pid, BoonShop *bshop)
 {
 	if (!bshop)
 		return FALSE;
+	if (const char *root = flat_boon_root())
+	{
+		if (pid <= 0)
+			return FALSE;
+		flatfile_boon_player_projection player;
+		std::string error;
+		if (flatfile_boon_load_player(root, static_cast<uint32_t>(pid), &player, &error) !=
+			    flatfile_boon_result::ok ||
+		    player.points < std::numeric_limits<int>::min() ||
+		    player.points > std::numeric_limits<int>::max() ||
+		    player.stats < std::numeric_limits<int>::min() ||
+		    player.stats > std::numeric_limits<int>::max())
+			return FALSE;
+		*bshop = { 0, pid, static_cast<int>(player.points), static_cast<int>(player.stats),
+			   0 };
+		return TRUE;
+	}
 
 	if (!qry("SELECT id, pid, points, stats from boons_shop WHERE pid = '%d'", pid))
 	{
@@ -1881,6 +2014,12 @@ void boon_shop(P_char ch, char *argument)
 				ch);
 			return;
 		}
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			if (!boon_shop_transaction_submit(ch, static_cast<uint8_t>(stat - 1)))
+				send_to_char("The boon shop is temporarily unavailable.\r\n", ch);
+			return;
+		}
 		else
 		{
 			bshop.stats--;
@@ -2064,19 +2203,378 @@ void boon_shop(P_char ch, char *argument)
 	}
 }
 
+struct flat_boon_display_filters
+{
+	bool active = false;
+	bool inactive = false;
+	bool random = false;
+	bool manual = false;
+	std::vector<uint32_t> player_ids;
+	std::vector<std::string> authors;
+	std::vector<uint8_t> types;
+	std::vector<uint8_t> options;
+};
+
+static bool boon_like_match(const std::string &value, const std::string &pattern)
+{
+	size_t value_at = 0, pattern_at = 0;
+	size_t wildcard = std::string::npos, retry = 0;
+	while (value_at < value.size())
+	{
+		if (pattern_at < pattern.size() &&
+		    (pattern[pattern_at] == '_' ||
+		     LOWER(pattern[pattern_at]) == LOWER(value[value_at])))
+		{
+			++value_at;
+			++pattern_at;
+		}
+		else if (pattern_at < pattern.size() && pattern[pattern_at] == '%')
+		{
+			wildcard = pattern_at++;
+			retry = value_at;
+		}
+		else if (wildcard != std::string::npos)
+		{
+			pattern_at = wildcard + 1;
+			value_at = ++retry;
+		}
+		else
+			return false;
+	}
+	while (pattern_at < pattern.size() && pattern[pattern_at] == '%')
+		++pattern_at;
+	return pattern_at == pattern.size();
+}
+
+template <typename T>
+static bool boon_filter_contains(const std::vector<T> &values, const T &candidate)
+{
+	return values.empty() || std::find(values.begin(), values.end(), candidate) != values.end();
+}
+
+static const char *boon_racewar_label(int racewar)
+{
+	if (!racewar)
+		return "All";
+	if (racewar == RACEWAR_GOOD)
+		return "Good";
+	if (racewar == RACEWAR_EVIL)
+		return "Evil";
+	if (racewar == RACEWAR_UNDEAD)
+		return "Undead";
+	if (racewar == RACEWAR_NEUTRAL)
+		return "Neutral";
+	return "Unknown";
+}
+
+static const char *boon_affect_label(int field, int bit)
+{
+	const flagDef *flags = nullptr;
+	if (field == 1)
+		flags = affected1_bits;
+	else if (field == 2)
+		flags = affected2_bits;
+	else if (field == 3)
+		flags = affected3_bits;
+	else if (field == 4)
+		flags = affected4_bits;
+	else if (field == 5)
+		flags = affected5_bits;
+	if (!flags || bit < 0)
+		return "Invalid Affect";
+	for (int index = 0; flags[index].flagLong; ++index)
+		if (index == bit)
+			return flags[index].flagLong;
+	return "Invalid Affect";
+}
+
+static void boon_type_description(const BoonData &boon, char *description)
+{
+	if (!description)
+		return;
+	*description = '\0';
+	switch (boon.type)
+	{
+	case BTYPE_LEVEL:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 static_cast<int>(boon.bonus));
+		if (static_cast<int>(boon.bonus) != -1)
+			checked_snprintf(description + strlen(description),
+					 MAX_STRING_LENGTH - strlen(description), " (up to %d)",
+					 static_cast<int>(boon.bonus));
+		if (boon.bonus2)
+			checked_snprintf(description + strlen(description),
+					 MAX_STRING_LENGTH - strlen(description),
+					 " and bypass epics");
+		break;
+	case BTYPE_EXP:
+		snprintf(description, MAX_STRING_LENGTH, "%s", boon_types[boon.type].desc);
+		break;
+	case BTYPE_EXPM:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 static_cast<int>(boon.bonus * 100));
+		break;
+	case BTYPE_EPIC:
+	case BTYPE_STATS:
+	case BTYPE_POINT:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 static_cast<int>(boon.bonus));
+		break;
+	case BTYPE_CASH:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 coin_stringv(boon.bonus));
+		break;
+	case BTYPE_POWER:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 boon_affect_label(static_cast<int>(boon.bonus),
+							   static_cast<int>(boon.bonus2)));
+		break;
+	case BTYPE_SPELL:
+	{
+		const int spell = static_cast<int>(boon.bonus);
+		const char *name = spell >= 0 && spell < MAX_SKILLS && skills[spell].name ?
+					   skills[spell].name :
+					   "Invalid Spell";
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 name);
+		break;
+	}
+	case BTYPE_STAT:
+	{
+		const int attribute = static_cast<int>(boon.bonus);
+		const char *name = attribute >= STR && attribute <= MAX_ATTRIBUTES ?
+					   attr_names[attribute].name :
+					   "Invalid Attribute";
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 name);
+		break;
+	}
+	case BTYPE_ITEM:
+	{
+		const int object = real_object(static_cast<int>(boon.bonus));
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 object >= 0 ? obj_index[object].desc2 :
+						       "&+RBUGGY ITEM VNUM&n");
+		break;
+	}
+	default:
+		if (boon.type >= 0 && boon.type < MAX_BTYPE)
+			snprintf(description, MAX_STRING_LENGTH, "%s", boon_types[boon.type].desc);
+		else
+			snprintf(description, MAX_STRING_LENGTH, "Error, type is invalid.");
+		break;
+	}
+}
+
+static void boon_option_description(const BoonData &boon, char *description)
+{
+	if (!description)
+		return;
+	*description = '\0';
+	switch (boon.option)
+	{
+	case BOPT_FRAG:
+	case BOPT_FRAGS:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc, boon.criteria);
+		break;
+	case BOPT_LEVEL:
+		if (!boon.criteria)
+			snprintf(description, MAX_STRING_LENGTH, " when you raise a level.");
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 static_cast<int>(boon.criteria));
+		break;
+	case BOPT_CARGO:
+	case BOPT_AUCTION:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc,
+					 static_cast<int>(boon.criteria));
+		break;
+	case BOPT_NONE:
+	case BOPT_ZONE:
+	{
+		int index = 0;
+		while (index <= top_of_zone_table &&
+		       zone_table[index].number != static_cast<int>(boon.criteria))
+			++index;
+		if (index > top_of_zone_table)
+			snprintf(description, MAX_STRING_LENGTH, "Error, invalid zone number.");
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 zone_table[index].name);
+		break;
+	}
+	case BOPT_MOB:
+	{
+		char label[MAX_STRING_LENGTH];
+		boon_mob_label(static_cast<int>(boon.criteria2), label, sizeof(label), TRUE);
+		if (!strcmp(label, "unknown mob"))
+			snprintf(description, MAX_STRING_LENGTH, "Error, can't read mobile.");
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 static_cast<int>(boon.criteria), label);
+		break;
+	}
+	case BOPT_RACE:
+	{
+		char label[MAX_STRING_LENGTH];
+		boon_race_label(static_cast<int>(boon.criteria2), label, sizeof(label));
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc,
+					 static_cast<int>(boon.criteria), label);
+		break;
+	}
+	case BOPT_GH:
+	{
+		Guildhall *hall = Guildhall::find_by_id(static_cast<int>(boon.criteria));
+		if (!hall)
+			snprintf(description, MAX_STRING_LENGTH,
+				 "&+W'%d' is not a valid guildhall ID.&n",
+				 static_cast<int>(boon.criteria));
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 hall->get_assoc()->get_name().c_str());
+		break;
+	}
+	case BOPT_NEXUS:
+	{
+		NexusStoneInfo nexus;
+		if (!nexus_stone_info(boon.criteria, &nexus))
+			snprintf(description, MAX_STRING_LENGTH,
+				 "&+W'%d' is not a valid nexus stone ID.&n",
+				 static_cast<int>(boon.criteria));
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 nexus.name.c_str());
+		break;
+	}
+	case BOPT_OP:
+	{
+		Building *building = get_building_from_id(static_cast<int>(boon.criteria));
+		if (!building)
+			snprintf(description, MAX_STRING_LENGTH,
+				 "&+W'%d' is not a valid outpost ID.&n",
+				 static_cast<int>(boon.criteria));
+		else
+			checked_snprintf_runtime(
+				description, MAX_STRING_LENGTH, boon_options[boon.option].desc,
+				continent_name(world[building->location()].continent));
+		break;
+	}
+	case BOPT_CTF:
+	case BOPT_CTFB:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc,
+					 static_cast<int>(boon.criteria));
+		break;
+	default:
+		snprintf(description, MAX_STRING_LENGTH, "Error, option is invalid.");
+		break;
+	}
+}
+
+static void boon_display_row(P_char ch, const BoonData &boon)
+{
+	char row[MAX_STRING_LENGTH], duration[MAX_STRING_LENGTH];
+	char type_description[MAX_STRING_LENGTH], option_description[MAX_STRING_LENGTH];
+	snprintf(row, sizeof(row), "%-6d %s ", boon.id, boon.repeat ? "R" : " ");
+	if (IS_TRUSTED(ch))
+		checked_snprintf(row + strlen(row), sizeof(row) - strlen(row), "%-10s ",
+				 boon.random ? "Yes" : boon.author.c_str());
+	if (boon.duration == -1)
+		snprintf(duration, sizeof(duration), "%-8s", "Forever");
+	else
+	{
+		const time_info_data remaining =
+			real_time_countdown(time(nullptr), boon.time, boon.duration * 60);
+		snprintf(duration, sizeof(duration), "%2d:%02d:%02d",
+			 remaining.day * 24 + remaining.hour, remaining.minute, remaining.second);
+	}
+	checked_snprintf(row + strlen(row), sizeof(row) - strlen(row), "%-8s %-7s ", duration,
+			 boon_racewar_label(boon.racewar));
+	if (IS_TRUSTED(ch))
+	{
+		const char *assigned = boon.pid ? get_player_name_from_pid(boon.pid) : "";
+		checked_snprintf(row + strlen(row), sizeof(row) - strlen(row),
+				 "%-6s %-9s %9.2f %9.2f %10.2f %7.2f %-10s \r\n &+CDescription&n: ",
+				 boon_types[boon.type].type, boon_options[boon.option].option,
+				 boon.criteria, boon.criteria2, boon.bonus, boon.bonus2,
+				 assigned ? assigned : "");
+	}
+	boon_type_description(boon, type_description);
+	boon_option_description(boon, option_description);
+	checked_snprintf(row + strlen(row), sizeof(row) - strlen(row), "%s %s&n\r\n",
+			 type_description, option_description);
+	send_to_char(row, ch);
+}
+
+static int boon_display_flat(P_char ch, const flat_boon_display_filters &filters)
+{
+	const char *root = flat_boon_root();
+	if (!root)
+		return -1;
+	std::vector<flatfile_boon_definition> definitions;
+	std::string error;
+	if (flatfile_boon_load_definitions(root, &definitions, &error) != flatfile_boon_result::ok)
+		return -1;
+	if (IS_TRUSTED(ch))
+		send_to_char_f(ch,
+			       "&+C%-6s   %-10s %-8s %-7s %-6s %-9s %9s %9s %10s %7s %-10s&n\r\n",
+			       "ID", "Random", "Duration", "Racewar", "Type", "Option", "Criteria",
+			       "Criteria2", "Bonus", "Bonus2", "Assigned");
+	else
+		send_to_char_f(ch, "&+C%-6s   %-8s %-7s %s&n\r\n", "ID", "Duration", "Racewar",
+			       "Description");
+	int count = 0;
+	for (const auto &definition : definitions)
+	{
+		const bool active_match = (!filters.active && !filters.inactive) ||
+					  (filters.active && definition.active) ||
+					  (filters.inactive && !definition.active);
+		const bool mode_match = (!filters.manual && !filters.random) ||
+					(filters.manual && !definition.random) ||
+					(filters.random && definition.random);
+		const bool author_match =
+			filters.authors.empty() ||
+			std::any_of(filters.authors.begin(), filters.authors.end(),
+				    [&](const auto &pattern)
+				    { return boon_like_match(definition.author, pattern); });
+		if (!active_match || !mode_match || !author_match ||
+		    !boon_filter_contains(filters.player_ids, definition.target_pid) ||
+		    !boon_filter_contains(filters.types, definition.type) ||
+		    !boon_filter_contains(filters.options, definition.option) ||
+		    (!IS_TRUSTED(ch) &&
+		     ((definition.racewar && definition.racewar != GET_RACEWAR(ch)) ||
+		      (definition.target_pid &&
+		       definition.target_pid != static_cast<uint32_t>(GET_PID(ch))))))
+			continue;
+		BoonData boon;
+		if (!copy_flat_boon_definition(definition, &boon))
+			continue;
+		boon_display_row(ch, boon);
+		++count;
+	}
+	send_to_char_f(ch, "Displaying %d result(s).\r\n", count);
+	return count ? TRUE : FALSE;
+}
+
 int boon_display(P_char ch, char *argument)
 {
 	char arg[MAX_STRING_LENGTH];
-	char buff[MAX_STRING_LENGTH], dbqry[MAX_STRING_LENGTH];
-	char bufftype[MAX_STRING_LENGTH], buffoption[MAX_STRING_LENGTH];
-	char cdtime[MAX_STRING_LENGTH], rw[MAX_STRING_LENGTH];
-	struct time_info_data timer;
-	int ct, i, pid = 0, count = 0;
+	char dbqry[MAX_STRING_LENGTH];
+	int i, pid = 0, count = 0;
 	int active = 0, inactive = 0, random = 0, manual = 0;
 	char name[MAX_STRING_LENGTH], type[MAX_STRING_LENGTH], option[MAX_STRING_LENGTH];
-	char player[MAX_STRING_LENGTH], pname[MAX_STRING_LENGTH];
+	char player[MAX_STRING_LENGTH];
+	flat_boon_display_filters flat_filters;
 
-	*name = *type = *option = *pname = *player = '\0';
+	*name = *type = *option = *player = '\0';
 
 	// Handle flags
 	while (*argument)
@@ -2101,6 +2599,7 @@ int boon_display(P_char ch, char *argument)
 						 "OR pid = '%d' ", pid);
 			else
 				snprintf(player, MAX_STRING_LENGTH, "pid = '%d' ", pid);
+			flat_filters.player_ids.push_back(static_cast<uint32_t>(pid));
 			break;
 		}
 		case 'u':
@@ -2112,6 +2611,7 @@ int boon_display(P_char ch, char *argument)
 						 "OR author LIKE '%s' ", arg);
 			else
 				checked_snprintf(name, MAX_STRING_LENGTH, "author LIKE '%s' ", arg);
+			flat_filters.authors.emplace_back(arg);
 			break;
 		}
 		case 't':
@@ -2127,14 +2627,15 @@ int boon_display(P_char ch, char *argument)
 			}
 			else
 			{
+				const int boon_type = get_valid_boon_type(arg);
 				if (*type)
 					checked_snprintf(type + strlen(type),
 							 MAX_STRING_LENGTH - strlen(type),
-							 "OR type = '%d' ",
-							 get_valid_boon_type(arg));
+							 "OR type = '%d' ", boon_type);
 				else
 					snprintf(type, MAX_STRING_LENGTH, "type = '%d' ",
-						 get_valid_boon_type(arg));
+						 boon_type);
+				flat_filters.types.push_back(static_cast<uint8_t>(boon_type));
 			}
 			break;
 		}
@@ -2152,14 +2653,15 @@ int boon_display(P_char ch, char *argument)
 			}
 			else
 			{
+				const int boon_option = get_valid_boon_option(arg);
 				if (*option)
 					checked_snprintf(option + strlen(option),
 							 MAX_STRING_LENGTH - strlen(option),
-							 "OR opt = '%d' ",
-							 get_valid_boon_option(arg));
+							 "OR opt = '%d' ", boon_option);
 				else
 					snprintf(option, MAX_STRING_LENGTH, "opt = '%d' ",
-						 get_valid_boon_option(arg));
+						 boon_option);
+				flat_filters.options.push_back(static_cast<uint8_t>(boon_option));
 			}
 			break;
 		}
@@ -2206,6 +2708,10 @@ int boon_display(P_char ch, char *argument)
 		random = 1;
 		manual = 1;
 	}
+	flat_filters.active = active;
+	flat_filters.inactive = inactive;
+	flat_filters.random = random;
+	flat_filters.manual = manual;
 
 	// debug("active: %d, inactive: %d, random: %d, manual: %d", active, inactive, random, manual);
 	// debug("name: %s, type: %s, option: %s", name, type, option);
@@ -2213,6 +2719,8 @@ int boon_display(P_char ch, char *argument)
 	send_to_char(
 		"&+WThe Gods of Duris have given you and your allies the following boons:&n\r\n",
 		ch);
+	if (flat_boon_root())
+		return boon_display_flat(ch, flat_filters);
 	// zone_table[zone_count].number = zone number
 	// pad_ansi(zone_table[zone_count].name, 45].c_str() = zone name
 	// zone_table[zone_count].avg_mob_level = way to find out range of zone
@@ -2317,319 +2825,22 @@ int boon_display(P_char ch, char *argument)
 			continue;
 
 		count++;
-
-		// interpret and display results
-		snprintf(buff, MAX_STRING_LENGTH, "%-6d %s ", id, (repeat ? "R" : " "));
-
-		if (IS_TRUSTED(ch))
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-10s ", row_random ? "Yes" : author);
-
-		if (duration != -1)
-		{
-			ct = time(0);
-			timer = real_time_countdown(ct, timethen, duration * 60);
-			snprintf(cdtime, MAX_STRING_LENGTH, "%2d:%02d:%02d",
-				 timer.day * 24 + timer.hour, timer.minute, timer.second);
-		}
-		else
-			snprintf(cdtime, MAX_STRING_LENGTH, "%-8s", "Forever");
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-8s ",
-				 cdtime);
-
-		if (racewar == 0)
-			strcpy(rw, "All");
-		else if (racewar == RACEWAR_GOOD)
-			strcpy(rw, "Good");
-		else if (racewar == RACEWAR_EVIL)
-			strcpy(rw, "Evil");
-		else if (racewar == RACEWAR_UNDEAD)
-			strcpy(rw, "Undead");
-		else if (racewar == RACEWAR_NEUTRAL)
-			strcpy(rw, "Neutral");
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-7s ",
-				 rw);
-
-		*pname = '\0';
-
-		if (IS_TRUSTED(ch))
-		{
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-6s ", boon_types[type].type);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-9s ", boon_options[option].option);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%9.2f ", criteria);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%9.2f ", criteria2);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%10.2f ", bonus);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%7.2f ", bonus2);
-			if (pid)
-				snprintf(pname, MAX_STRING_LENGTH, "%s",
-					 get_player_name_from_pid(pid));
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-10s ", pname);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "\r\n &+CDescription&n: ");
-		}
-
-		// Description of boon for mortal view
-		switch (type)
-		{
-		case BTYPE_LEVEL:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 (int)bonus);
-			if ((int)bonus != -1)
-				checked_snprintf(bufftype + strlen(bufftype),
-						 MAX_STRING_LENGTH - strlen(bufftype),
-						 " (up to %d)", (int)bonus);
-			if (bonus2)
-				checked_snprintf(bufftype + strlen(bufftype),
-						 MAX_STRING_LENGTH - strlen(bufftype),
-						 " and bypass epics");
-			break;
-		}
-		case BTYPE_EXP:
-		{
-			snprintf(bufftype, MAX_STRING_LENGTH, "%s", boon_types[type].desc);
-			break;
-		}
-		case BTYPE_EXPM:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 (int)(bonus * 100));
-			break;
-		}
-		case BTYPE_EPIC:
-		case BTYPE_STATS:
-		case BTYPE_POINT:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 (int)bonus);
-			break;
-		}
-		case BTYPE_CASH:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 coin_stringv(bonus));
-			break;
-		}
-		case BTYPE_POWER:
-		{
-			int aff = 0, bit = 0;
-			aff = (int)bonus;
-			bit = (int)bonus2;
-			if (aff == 1)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected1_bits[bit].flagLong);
-			else if (aff == 2)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected2_bits[bit].flagLong);
-			else if (aff == 3)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected3_bits[bit].flagLong);
-			else if (aff == 4)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected4_bits[bit].flagLong);
-			else if (aff == 5)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected5_bits[bit].flagLong);
-			else
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc, "Invalid Affect");
-			break;
-		}
-		case BTYPE_SPELL:
-		{
-			if (!skills[(int)bonus].name)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc, "Invalid Spell");
-			else
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 skills[(int)bonus].name);
-			break;
-		}
-		case BTYPE_STAT:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 attr_names[(int)bonus].name);
-			break;
-		}
-		case BTYPE_ITEM:
-		{
-			if (real_object((int)bonus) >= 0)
-			{
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 obj_index[real_object((int)bonus)].desc2);
-			}
-			else
-			{
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 "&+RBUGGY ITEM VNUM&n");
-			}
-			break;
-		}
-		default:
-		{
-			if (type >= MAX_BTYPE)
-			{
-				snprintf(bufftype, MAX_STRING_LENGTH, "Error, type is invalid.");
-				break;
-			}
-			snprintf(bufftype, MAX_STRING_LENGTH, "%s", boon_types[type].desc);
-			break;
-		}
-		}
-
-		switch (option)
-		{
-		case BOPT_FRAG:
-		case BOPT_FRAGS:
-		{
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, criteria);
-			break;
-		}
-		case BOPT_LEVEL:
-		{
-			if (criteria == 0)
-				snprintf(buffoption, MAX_STRING_LENGTH, " when you raise a level.");
-			else
-				checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-							 boon_options[option].desc, (int)criteria);
-			break;
-		}
-		case BOPT_CARGO:
-		case BOPT_AUCTION:
-		{
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria);
-			break;
-		}
-		case BOPT_NONE:
-		case BOPT_ZONE:
-		{
-			i = 0;
-			while (i <= top_of_zone_table)
-			{
-				if (zone_table[i].number == (int)criteria)
-					break;
-				else
-					i++;
-			}
-			if (i > top_of_zone_table)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "Error, invalid zone number.");
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, zone_table[i].name);
-			break;
-		}
-		case BOPT_MOB:
-		{
-			char mob_label[MAX_STRING_LENGTH];
-
-			boon_mob_label((int)criteria2, mob_label, sizeof(mob_label), TRUE);
-			if (!strcmp(mob_label, "unknown mob"))
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "Error, can't read mobile.");
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria,
-						 mob_label);
-			break;
-		}
-		case BOPT_RACE:
-		{
-			char race_label[MAX_STRING_LENGTH];
-
-			boon_race_label((int)criteria2, race_label, sizeof(race_label));
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria,
-						 race_label);
-			break;
-		}
-		case BOPT_GH:
-		{
-			Guildhall *gh;
-			if ((gh = Guildhall::find_by_id((int)criteria)) == NULL)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "&+W'%d' is not a valid guildhall ID.&n", (int)criteria);
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc,
-						 gh->get_assoc()->get_name().c_str());
-			break;
-		}
-		case BOPT_NEXUS:
-		{
-			// debug("type: %d, option: %d, criteria: %.2f, bonus: %.2f", type, option, criteria, bonus);
-			NexusStoneInfo nexus;
-			if (!nexus_stone_info(criteria, &nexus))
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "&+W'%d' is not a valid nexus stone ID.&n", (int)criteria);
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, nexus.name.c_str());
-			break;
-		}
-		case BOPT_OP:
-		{
-			Building *building;
-			if ((building = get_building_from_id((int)criteria)) == NULL)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "&+W'%d' is not a valid outpost ID.&n", (int)criteria);
-				break;
-			}
-			checked_snprintf_runtime(
-				buffoption, MAX_STRING_LENGTH, boon_options[option].desc,
-				continent_name(world[building->location()].continent));
-			break;
-		}
-		case BOPT_CTF:
-		case BOPT_CTFB:
-		{
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria);
-			break;
-		}
-		default:
-		{
-			if (option >= MAX_BOPT)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "Error, option is invalid.");
-				break;
-			}
-			snprintf(buffoption, MAX_STRING_LENGTH, "%s", boon_options[option].desc);
-			break;
-		}
-		}
-
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%s %s",
-				 bufftype, buffoption);
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&n\r\n");
-		send_to_char(buff, ch);
+		BoonData boon = { id,
+				  timethen,
+				  duration,
+				  racewar,
+				  type,
+				  option,
+				  criteria,
+				  criteria2,
+				  bonus,
+				  bonus2,
+				  row_random,
+				  1,
+				  author ? author : "",
+				  pid,
+				  repeat };
+		boon_display_row(ch, boon);
 	}
 
 	send_to_char_f(ch, "Displaying %d result(s).\r\n", count);
@@ -2651,6 +2862,22 @@ int create_boon(BoonData *bdata)
 	{
 		debug("Maximum number of boons has been reached.  Aborting create_boon().");
 		return FALSE;
+	}
+	if (const char *root = flat_boon_root())
+	{
+		if (bdata->racewar < 0 || bdata->racewar > UINT8_MAX || bdata->type < 0 ||
+		    bdata->type > UINT8_MAX || bdata->option < 0 || bdata->option > UINT8_MAX ||
+		    bdata->pid < 0)
+			return FALSE;
+		flatfile_boon_definition definition =
+			copy_boon_definition_to_flat(*bdata, time(nullptr));
+		std::string error;
+		if (flatfile_boon_create(root, &definition, &error) != flatfile_boon_result::ok ||
+		    definition.id > static_cast<uint32_t>(std::numeric_limits<int>::max()))
+			return FALSE;
+		bdata->id = static_cast<int>(definition.id);
+		boon_notify(bdata->id, nullptr, BN_CREATE);
+		return TRUE;
 	}
 
 	if (qry("INSERT INTO boons (time, duration, racewar, type, opt, criteria, criteria2, bonus, bonus2, random, author, active, pid, rpt) VALUES "
@@ -2712,6 +2939,14 @@ int create_boon_shop_entry(BoonShop *bshop)
 
 int remove_boon(int id)
 {
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0)
+			return 0;
+		std::string error;
+		return flatfile_boon_deactivate(root, static_cast<uint32_t>(id), &error) ==
+		       flatfile_boon_result::ok;
+	}
 	// if (!qry("DELETE FROM boons WHERE id = %d", id))
 	//  Gona leave boons on the DB for history lookup purposes
 	if (!qry("UPDATE boons SET active='0', duration='0' WHERE id='%d'", id))
@@ -2723,6 +2958,18 @@ int remove_boon(int id)
 
 int extend_boon(int id, int extend, const char *name)
 {
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0 || extend < 0 || !name || !*name)
+			return FALSE;
+		bool was_active = false;
+		std::string error;
+		if (flatfile_boon_extend(root, static_cast<uint32_t>(id), extend, time(nullptr),
+					 name, &was_active, &error) != flatfile_boon_result::ok)
+			return FALSE;
+		boon_notify(id, nullptr, was_active ? BN_EXTEND : BN_REACTIVATE);
+		return TRUE;
+	}
 	if (!qry("SELECT time, duration, active FROM boons WHERE id = %d", id))
 	{
 		debug("extend_boon() can't read from db");
@@ -2970,36 +3217,46 @@ void boon_randomize(P_char ch, char *argument)
 void boon_maintenance()
 {
 	BoonData bdata;
-	int i, expire;
+	int expire;
 	int id[MAX_BOONS];
+	std::vector<int> active_ids;
 
-	for (i = 0; i < MAX_BOONS; i++)
+	for (int i = 0; i < MAX_BOONS; i++)
 		id[i] = 0;
 
-	if (!qry("SELECT id FROM boons WHERE active = '1'"))
+	if (const char *root = flat_boon_root())
 	{
-		debug("boon_maintenance(): can't read from db");
-		return;
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return;
+		for (const auto &definition : definitions)
+			if (definition.active &&
+			    definition.id <= static_cast<uint32_t>(std::numeric_limits<int>::max()))
+				active_ids.push_back(static_cast<int>(definition.id));
 	}
-
-	MYSQL_RES *res = boon_store_result("boon_maintenance");
-	if (!res)
+	else
 	{
-		return;
-	}
-	if (mysql_num_rows(res) < 1)
-	{
+		if (!qry("SELECT id FROM boons WHERE active = '1'"))
+		{
+			debug("boon_maintenance(): can't read from db");
+			return;
+		}
+		MYSQL_RES *res = boon_store_result("boon_maintenance");
+		if (!res)
+			return;
+		boon_collect_ids(res, id, "boon_maintenance");
 		mysql_free_result(res);
-		return;
+		for (int i = 0; id[i]; ++i)
+			active_ids.push_back(id[i]);
 	}
 
-	boon_collect_ids(res, id, "boon_maintenance");
-	mysql_free_result(res);
-
-	for (i = 0; id[i]; i++)
+	for (int boon_id : active_ids)
 	{
 		zero_boon_data(&bdata);
-		get_boon_data(id[i], &bdata);
+		if (!get_boon_data(boon_id, &bdata))
+			continue;
 
 		// check durations and expire if necessesary
 		expire = FALSE;

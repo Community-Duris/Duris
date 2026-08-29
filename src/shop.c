@@ -23,6 +23,12 @@
 #include "salchemist.h"
 #include "specs.prototypes.h"
 #include "sql.h"
+#include "persistence_mode.h"
+#include "shop_trade_runtime.h"
+#include "shop_trade_transaction.h"
+#include <cerrno>
+#include <new>
+#include <unordered_map>
 
 /*
  * external variables
@@ -41,12 +47,274 @@ extern struct cha_app_type cha_app[];
 extern struct time_info_data time_info;
 extern struct zone_data *zone_table;
 extern int mini_mode;
+extern P_obj object_list;
 
 struct shop_data *shop_index;
 int number_of_shops = 0;
 const char *operator_str[] = { "[({", "])}", "|+", "&*", "^'" };
 
+struct produced_purchase_sequence
+{
+	uint32_t shop_id = 0;
+	uint64_t stock_item_uid = 0;
+	uint64_t container_item_uid = 0;
+	int remaining = 0;
+	int64_t price = 0;
+};
+
+static std::unordered_map<uint32_t, produced_purchase_sequence> produced_purchase_sequences;
+
 void lore_item(P_char ch, P_obj obj);
+
+static P_obj shop_trade_find_object(uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+			return object;
+	return NULL;
+}
+
+static P_char shop_trade_find_keeper(uint32_t shop_id)
+{
+	if (shop_id >= static_cast<uint32_t>(number_of_shops))
+		return NULL;
+	const int room_rnum = real_room(shop_index[shop_id].in_room);
+	if (room_rnum < 0 || room_rnum > top_of_world)
+		return NULL;
+	for (P_char candidate = world[room_rnum].people; candidate;
+	     candidate = candidate->next_in_room)
+		if (IS_NPC(candidate) && GET_RNUM(candidate) == shop_index[shop_id].keeper)
+			return candidate;
+	return NULL;
+}
+
+static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
+				  unsigned int error_code, const shop_trade_payload &payload);
+
+static bool shop_trade_container_accepts(P_char ch, P_obj object, P_obj container)
+{
+	if (!container)
+		return true;
+	if (!ch || !object || GET_ITEM_TYPE(container) != ITEM_CONTAINER ||
+	    IS_SET(container->value[1], CONT_CLOSED) || (IS_ARTIFACT(object) && !IS_TRUSTED(ch)) ||
+	    (IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(ch)) ||
+	    (container->value[0] != -1 &&
+	     container_total_weight(container) + GET_OBJ_WEIGHT(object) > container->value[0]))
+		return false;
+#ifdef USE_SPACE
+#if USE_SPACE
+	if (container->space != -1 &&
+	    GET_OBJ_SPACE(container) + GET_OBJ_SPACE(object) > container->value[3])
+		return false;
+#endif
+#endif
+	return true;
+}
+
+static bool shop_trade_submit_produced_continuation(P_char ch,
+						    const produced_purchase_sequence &sequence)
+{
+	P_char keeper = shop_trade_find_keeper(sequence.shop_id);
+	P_obj stock = shop_trade_find_object(sequence.stock_item_uid);
+	P_obj destination = sequence.container_item_uid ?
+				    shop_trade_find_object(sequence.container_item_uid) :
+				    NULL;
+	if (!keeper || !stock || !OBJ_CARRIED_BY(stock, keeper) ||
+	    !shop_producing(stock, static_cast<int>(sequence.shop_id)) ||
+	    (sequence.container_item_uid && (!destination || !OBJ_CARRIED_BY(destination, ch) ||
+					     GET_ITEM_TYPE(destination) != ITEM_CONTAINER)) ||
+	    IS_CARRYING_N(ch) + 1 > CAN_CARRY_N(ch))
+		return false;
+	P_obj selected = read_object(stock->R_num, REAL);
+	if (!selected)
+		return false;
+	if (!shop_trade_container_accepts(ch, selected, destination))
+	{
+		extract_obj(selected, FALSE);
+		return false;
+	}
+	shop_trade_payload payload = {};
+	if (shop_trade_runtime_build_payload(ch, selected, stock, destination, sequence.shop_id,
+					     shop_trade_action::buy_produced, sequence.price,
+					     &payload) != shop_trade_payload_build_result::ok ||
+	    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+	{
+		extract_obj(selected, FALSE);
+		return false;
+	}
+	return true;
+}
+
+static bool shop_trade_submit_invalid_cleanup(P_char ch, P_char keeper, P_obj object,
+					      uint32_t shop_id)
+{
+	if (!ch || !keeper || !object || !OBJ_CARRIED_BY(object, keeper))
+		return false;
+	shop_trade_payload payload = {};
+	return shop_trade_runtime_build_payload(ch, object, NULL, NULL, shop_id,
+						shop_trade_action::discard_invalid, 0,
+						&payload) == shop_trade_payload_build_result::ok &&
+	       shop_trade_transaction_submit(ch, payload, shop_trade_completion);
+}
+
+static bool shop_trade_route_invalid_cleanup(P_char ch, P_char keeper, P_obj object,
+					     uint32_t shop_id)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	if (shop_trade_transaction_player_busy(ch))
+		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
+	else if (shop_trade_submit_invalid_cleanup(ch, keeper, object, shop_id))
+		send_to_char("The shopkeeper is removing invalid stock.\r\n", ch);
+	else
+		send_to_char("The invalid stock could not be removed safely.\r\n", ch);
+	return true;
+}
+
+static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
+				  unsigned int error_code, const shop_trade_payload &payload)
+{
+	if (!ch)
+		return;
+	P_obj object = shop_trade_find_object(payload.selected_item_uid);
+	P_char keeper = shop_trade_find_keeper(payload.shop_id);
+	P_obj destination = payload.target_parent_item_uid ?
+				    shop_trade_find_object(payload.target_parent_item_uid) :
+				    NULL;
+	const bool produced = payload.action == shop_trade_action::buy_produced;
+	const bool buying = payload.action == shop_trade_action::buy_existing || produced;
+	const bool selling = payload.action == shop_trade_action::sell_store ||
+			     payload.action == shop_trade_action::sell_destroy;
+	const bool cleanup = payload.action == shop_trade_action::discard_invalid;
+	const bool correct_location =
+		object && (payload.action != shop_trade_action::sell_store || keeper) &&
+		((produced && keeper && OBJ_NOWHERE(object) &&
+		  (!payload.target_parent_item_uid ||
+		   (destination && OBJ_CARRIED_BY(destination, ch) &&
+		    GET_ITEM_TYPE(destination) == ITEM_CONTAINER))) ||
+		 (!produced && buying && keeper && OBJ_CARRIED(object) &&
+		  object->loc.carrying == keeper) ||
+		 (cleanup && keeper && OBJ_CARRIED_BY(object, keeper)) ||
+		 (selling && OBJ_CARRIED(object) && object->loc.carrying == ch));
+	const bool exact_object = correct_location &&
+				  shop_trade_runtime_object_matches_payload(object, payload);
+	if (!committed || !exact_object)
+	{
+		if (produced)
+			produced_purchase_sequences.erase(static_cast<uint32_t>(GET_PID(ch)));
+		const bool durable_commit = committed ||
+					    (result.shop_revision && result.item_count);
+		if (durable_commit)
+		{
+			statuslog(
+				56,
+				"&+RALERT&n: committed shop trade could not publish live object [%llu] at shop [%u]",
+				static_cast<unsigned long long>(payload.selected_item_uid),
+				payload.shop_id);
+			persistence_alert(AVATAR, "shop_trade", "redacted", "none", "none",
+					  "live_publish_failed", NULL);
+		}
+		else if (produced && object && OBJ_NOWHERE(object) &&
+			 shop_trade_runtime_object_matches_payload(object, payload))
+			extract_obj(object, FALSE);
+		if (!durable_commit && error_code == ENOSPC)
+			send_to_char("You don't have enough money for that purchase.\r\n", ch);
+		else if (!durable_commit && error_code == ESTALE)
+			send_to_char("That shop trade changed before it could complete.\r\n", ch);
+		else if (!durable_commit)
+			send_to_char("The shop could not complete that trade.\r\n", ch);
+		return;
+	}
+
+	char message[MAX_STRING_LENGTH];
+	if (cleanup)
+	{
+		wizlog(56, "(%s) shopkeeper durably destroyed invalid stock (%s %d).",
+		       GET_NAME(keeper), object->short_description, OBJ_VNUM(object));
+		extract_obj(object, TRUE);
+		send_to_char("The shopkeeper removed invalid stock; please try again.\r\n", ch);
+		return;
+	}
+	if (buying)
+	{
+		act("$n buys $p.", FALSE, ch, object, 0, TO_ROOM);
+		if (keeper)
+		{
+			checked_substitute(message, MAX_STRING_LENGTH,
+					   shop_index[payload.shop_id].message_buy, GET_NAME(ch),
+					   coin_stringv(payload.price));
+			do_tell(keeper, message, 0);
+			ADD_MONEY(keeper, payload.price);
+		}
+		if (!produced)
+			obj_from_char(object);
+		SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
+		obj_to_char(object, ch);
+		if (payload.target_parent_item_uid && !put(ch, object, destination, TRUE))
+		{
+			produced_purchase_sequences.erase(static_cast<uint32_t>(GET_PID(ch)));
+			statuslog(
+				56,
+				"&+RALERT&n: committed produced purchase could not publish container placement [%llu] into [%llu]",
+				static_cast<unsigned long long>(payload.selected_item_uid),
+				static_cast<unsigned long long>(payload.target_parent_item_uid));
+			persistence_alert(AVATAR, "shop_trade", "redacted", "none", "none",
+					  "container_publish_failed", NULL);
+			return;
+		}
+		snprintf(message, MAX_STRING_LENGTH, "You now have %s.\r\n",
+			 object->short_description);
+		send_to_char(message, ch);
+		if (produced)
+		{
+			const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
+			auto sequence = produced_purchase_sequences.find(pid);
+			if (sequence != produced_purchase_sequences.end() &&
+			    sequence->second.shop_id == payload.shop_id &&
+			    sequence->second.stock_item_uid == payload.stock_item_uid &&
+			    sequence->second.container_item_uid == payload.target_parent_item_uid)
+			{
+				if (--sequence->second.remaining <= 0)
+					produced_purchase_sequences.erase(sequence);
+				else if (!shop_trade_submit_produced_continuation(ch,
+										  sequence->second))
+				{
+					produced_purchase_sequences.erase(sequence);
+					send_to_char(
+						"Your remaining purchases could not be continued.\r\n",
+						ch);
+				}
+			}
+			else if (sequence != produced_purchase_sequences.end())
+				produced_purchase_sequences.erase(sequence);
+		}
+		return;
+	}
+
+	act("$n sells $p.", FALSE, ch, object, 0, TO_ROOM);
+	sql_shop_sell(ch, object, payload.price);
+	if (keeper)
+	{
+		checked_substitute(message, MAX_STRING_LENGTH,
+				   shop_index[payload.shop_id].message_sell, GET_NAME(ch),
+				   coin_stringv(payload.price));
+		do_tell(keeper, message, 0);
+		SUB_MONEY(keeper, payload.price, 0);
+	}
+	snprintf(message, MAX_STRING_LENGTH, "The shopkeeper gives you %s.\r\n",
+		 coin_stringv(payload.price));
+	send_to_char(message, ch);
+	obj_from_char(object);
+	if (payload.action == shop_trade_action::sell_destroy)
+		extract_obj(object, TRUE);
+	else
+	{
+		obj_to_char(object, keeper);
+		snprintf(message, MAX_STRING_LENGTH, "The shopkeeper now has %s.\r\n",
+			 object->short_description);
+		send_to_char(message, ch);
+	}
+}
 
 void push(struct stack_data *stack, int pushval)
 {
@@ -337,8 +605,15 @@ P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg
 			}
 			return NULL;
 		}
+		if ((IS_ARTIFACT(obj) || isname("encrust", obj->name)) &&
+		    shop_trade_route_invalid_cleanup(ch, keeper, obj,
+						     static_cast<uint32_t>(shop_nr)))
+			return NULL;
 		if (obj->cost <= 0)
 		{
+			if (shop_trade_route_invalid_cleanup(ch, keeper, obj,
+							     static_cast<uint32_t>(shop_nr)))
+				return NULL;
 			extract_obj(obj, TRUE); // Shopkeeper with cost 0 arti?
 			obj = NULL;
 		}
@@ -441,6 +716,12 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		return;
 	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    shop_trade_transaction_player_busy(ch))
+	{
+		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
+		return;
+	}
 
 	arg = one_argument(arg, argm);
 	if (!(*argm))
@@ -461,6 +742,10 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 			{
 				if (IS_ARTIFACT(temp1) || isname("encrust", temp1->name))
 				{
+					if (shop_trade_route_invalid_cleanup(
+						    ch, keeper, temp1,
+						    static_cast<uint32_t>(shop_nr)))
+						return;
 					wizlog(56, "(%s) shopkeeper just destroyed (%s).",
 					       GET_NAME(keeper), (temp1->short_description));
 					extract_obj(temp1, TRUE); // Bye arti.
@@ -490,9 +775,15 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
+		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
+						     static_cast<uint32_t>(shop_nr)))
+			return;
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
 	}
+	if ((IS_ARTIFACT(temp1) || isname("encrust", temp1->name)) &&
+	    shop_trade_route_invalid_cleanup(ch, keeper, temp1, static_cast<uint32_t>(shop_nr)))
+		return;
 
 	cost_factor = (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(ch)))].modifier;
 	if (GET_RACE(ch) != GET_RACE(keeper))
@@ -528,6 +819,13 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if ((GET_MONEY(ch) < sale) && !IS_TRUSTED(ch))
 	{
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+			mobsay(keeper, Gbuf1);
+			return;
+		}
 		gem = accept_gem_for_debt(ch, keeper, sale);
 	}
 
@@ -536,6 +834,103 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s : You can't carry that many items.\r\n",
 			 FirstWord(temp1->name));
 		send_to_char(Gbuf1, ch);
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		const int64_t transaction_price = IS_TRUSTED(ch) ? 0 : sale;
+		const bool produced = shop_producing(temp1, shop_nr);
+		P_obj destination = NULL;
+		int purchase_count = 1;
+		if (produced && *arg)
+		{
+			arg = one_argument(arg, arg2);
+			destination = get_obj_in_list(arg2, ch->carrying);
+			if (!destination)
+			{
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "You don't seem to have a '%s'.\r\n", arg2);
+				send_to_char(Gbuf1, ch);
+				return;
+			}
+			if (GET_ITEM_TYPE(destination) != ITEM_CONTAINER)
+			{
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n",
+					 destination->short_description);
+				send_to_char(Gbuf1, ch);
+				return;
+			}
+			arg = one_argument(arg, arg3);
+			if (*arg3 && atoi(arg3) > 1)
+				purchase_count = atoi(arg3);
+			if (purchase_count > 50 || *arg)
+			{
+				send_to_char("The limit for buying items is 50 at a time.\r\n", ch);
+				return;
+			}
+		}
+		const uint32_t player_pid = static_cast<uint32_t>(GET_PID(ch));
+		bool sequence_registered = false;
+		if (produced && purchase_count > 1)
+		{
+			try
+			{
+				sequence_registered =
+					produced_purchase_sequences
+						.emplace(player_pid,
+							 produced_purchase_sequence{
+								 static_cast<uint32_t>(shop_nr),
+								 temp1->obj_uid,
+								 destination->obj_uid,
+								 purchase_count,
+								 transaction_price })
+						.second;
+			}
+			catch (const std::bad_alloc &)
+			{
+				sequence_registered = false;
+			}
+			if (!sequence_registered)
+			{
+				send_to_char(
+					"The shop transaction service is busy. Please try again.\r\n",
+					ch);
+				return;
+			}
+		}
+		P_obj selected = temp1;
+		if (produced && !(selected = read_object(temp1->R_num, REAL)))
+		{
+			if (sequence_registered)
+				produced_purchase_sequences.erase(player_pid);
+			send_to_char("The shop could not create that item.\r\n", ch);
+			return;
+		}
+		if (produced && !shop_trade_container_accepts(ch, selected, destination))
+		{
+			if (sequence_registered)
+				produced_purchase_sequences.erase(player_pid);
+			extract_obj(selected, FALSE);
+			send_to_char("That item will not fit in the selected container.\r\n", ch);
+			return;
+		}
+		shop_trade_payload payload = {};
+		if (shop_trade_runtime_build_payload(
+			    ch, selected, produced ? temp1 : NULL, destination, shop_nr,
+			    produced ? shop_trade_action::buy_produced :
+				       shop_trade_action::buy_existing,
+			    transaction_price, &payload) != shop_trade_payload_build_result::ok ||
+		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+		{
+			if (produced)
+				extract_obj(selected, FALSE);
+			if (sequence_registered)
+				produced_purchase_sequences.erase(player_pid);
+			send_to_char("The shop transaction service is busy. Please try again.\r\n",
+				     ch);
+			return;
+		}
+		send_to_char("Your purchase is being processed.\r\n", ch);
 		return;
 	}
 	if (!IS_TRUSTED(ch))
@@ -625,6 +1020,12 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    shop_trade_transaction_player_busy(ch))
+	{
+		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
+		return;
+	}
 
 	one_argument(arg, argm);
 
@@ -707,11 +1108,6 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
-	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
-
-	checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell, GET_NAME(ch),
-			   coin_stringv(sale));
-
 	int temp = 0;
 
 	if ((temp = sql_shop_trophy(temp1)) > 1)
@@ -729,6 +1125,30 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 			"The shopkeeper says 'This item is rather common, you won't get as much for it.'\r\n");
 		send_to_char(Gbuf1, ch);
 	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		const shop_trade_action action = (get_obj_in_list(argm, keeper->carrying) ||
+						  GET_ITEM_TYPE(temp1) == ITEM_TRASH) ?
+							 shop_trade_action::sell_destroy :
+							 shop_trade_action::sell_store;
+		shop_trade_payload payload = {};
+		if (shop_trade_runtime_build_payload(ch, temp1, NULL, NULL, shop_nr, action, sale,
+						     &payload) !=
+			    shop_trade_payload_build_result::ok ||
+		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+		{
+			send_to_char("The shop transaction service is busy. Please try again.\r\n",
+				     ch);
+			return;
+		}
+		send_to_char("Your sale is being processed.\r\n", ch);
+		return;
+	}
+
+	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
+	if (temp <= 1)
+		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell,
+				   GET_NAME(ch), coin_stringv(sale));
 
 	do_tell(keeper, Gbuf1, 0);
 
@@ -912,9 +1332,15 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
+		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
+						     static_cast<uint32_t>(shop_nr)))
+			return;
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
 	}
+	if ((IS_ARTIFACT(temp1) || isname("encrust", temp1->name)) &&
+	    shop_trade_route_invalid_cleanup(ch, keeper, temp1, static_cast<uint32_t>(shop_nr)))
+		return;
 
 	sale = (int)get_property("shops.peruse.cost", 1000.000);
 
@@ -1010,6 +1436,9 @@ void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 		{
 			if (IS_ARTIFACT(obj1) || isname("encrust", obj1->name))
 			{
+				if (shop_trade_route_invalid_cleanup(
+					    ch, keeper, obj1, static_cast<uint32_t>(shop_nr)))
+					return;
 				wizlog(56, "(%s) shopkeeper just destroyed (%s %d).",
 				       GET_NAME(keeper), obj1->short_description, OBJ_VNUM(obj1));
 				extract_obj(obj1, TRUE); // Bye arti.

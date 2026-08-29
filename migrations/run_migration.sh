@@ -36,7 +36,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=141
+TOTAL=142
 FAILED=0
 
 run_sql() {
@@ -2944,6 +2944,7 @@ run_sql_file "apply account erasure schema" "$SCRIPT_DIR/account_erasure.sql"
 run_check "verify account erasure schema" "$SCRIPT_DIR/verify_account_erasure_schema.sh"
 run_sql_file "apply immutable migration ledger" "$SCRIPT_DIR/immutable_migration_ledger.sql"
 run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
+run_sql_file "permit shopkeeper item custody" "$SCRIPT_DIR/shopkeeper_item_owner.sql"
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"
 run_sql_file "normalize locker chest ownership identity" "$SCRIPT_DIR/locker_ownership_cutover.sql"

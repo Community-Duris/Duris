@@ -29,6 +29,7 @@ std::unordered_map<int32_t, cached_artifact> artifacts;
 std::unordered_map<uint32_t, uint64_t> guild_revisions;
 bool hydrated = false;
 
+#ifndef __NO_MYSQL__
 bool parse_i64(const char *text, int64_t *value)
 {
 	if (!text || !value)
@@ -54,6 +55,7 @@ bool parse_u64(const char *text, uint64_t *value)
 	*value = parsed;
 	return true;
 }
+#endif
 
 int artifact_feed_seconds(P_char character, int epics, int epic_type)
 {

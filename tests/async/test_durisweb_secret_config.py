@@ -8,6 +8,7 @@ WS = (ROOT / "src/ws_handlers.c").read_text()
 GMCP = (ROOT / "src/gmcp.c").read_text()
 AUTH = (ROOT / "src/ws_auth.h").read_text()
 SQL = (ROOT / "src/sql.c").read_text()
+ENV_FILE = (ROOT / "src/env_file.c").read_text()
 COMM = (ROOT / "src/comm.c").read_text()
 EXAMPLE = (ROOT / ".env.example").read_text()
 
@@ -29,8 +30,8 @@ assert '"%ld:%s", minute, challenge' in AUTH
 # The example contains a placeholder only; the runtime reads .env, never the
 # template. The server also loads .env when launched without cycle_mud.sh.
 assert "DURISWEB_SECRET=put-secret-here" in EXAMPLE
-assert 'open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW)' in SQL
-assert ".env.example" not in SQL
+assert 'open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW)' in ENV_FILE
+assert ".env.example" not in ENV_FILE
 assert "if (load_env_file() < 0)" in COMM
 
 print("DurisWeb secret configuration contracts passed")

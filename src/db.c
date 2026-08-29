@@ -26,16 +26,20 @@
 #include "copyover.h"
 #include "epic.h"
 #include "enhance.h"
+#include "flatfile_artifact_repository.h"
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
+#include "persistence_mode.h"
 #include "ships.h"
 #include "siege.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "sql.h"
 #include "studioproc.h"
+#include "trophy.h"
 #include "weather.h"
+#include <string>
 
 /*
  * external variables
@@ -418,6 +422,17 @@ void boot_db(int mini_mode)
 	logit(LOG_STATUS, "Boot db -- BEGIN.");
 	fprintf(stderr, "\nBoot db -- BEGIN.\r\n");
 	boot_time = time(0);
+	if (!persistence_mode_requires_mysql())
+	{
+		std::string error;
+		const auto ensured =
+			flatfile_artifact_ensure(persistence_mode_flatfile_root(), &error);
+		if (ensured != flatfile_artifact_result::ok &&
+		    ensured != flatfile_artifact_result::already_exists)
+			fatal_boot_error("db", "Could not establish flat artifact catalog: %s",
+					 error.empty() ? "invalid artifact authority" :
+							 error.c_str());
+	}
 
 	logit(LOG_STATUS, "Resetting the game time:");
 	fprintf(stderr, "Resetting the game time:\r\n");
@@ -4061,7 +4076,11 @@ void free_char(P_char ch)
 	disarm_char_nevents(ch, NULL);
 
 	if (IS_PC(ch) && ch->only.pc)
+	{
 		delete_knownShapes(ch);
+		delete ch->only.pc->zone_trophy;
+		ch->only.pc->zone_trophy = nullptr;
+	}
 
 	//  if (IS_PC(ch))                /* clear trophy */
 	//    for (tr1 = ch->only.pc->trophy; tr1; tr1 = tr2)

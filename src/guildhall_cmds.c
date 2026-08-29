@@ -1190,6 +1190,7 @@ bool construct_main_guildhall(P_Guild guild, int outside_vnum, int racewar)
 {
 	Guildhall *gh = new Guildhall();
 	gh->id = next_guildhall_id();
+	gh->assoc_id = guild->get_id();
 	gh->guild = guild;
 	gh->type = GH_TYPE_MAIN;
 	gh->outside_vnum = outside_vnum;

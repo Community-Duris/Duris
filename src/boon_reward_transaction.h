@@ -22,6 +22,7 @@ struct boon_reward_health
 bool boon_reward_transaction_submit(P_char character, P_char victim, double data, int option);
 void boon_reward_transaction_handle_completions(const critical_completion *completions,
 						size_t count);
+void boon_reward_transaction_player_ready(P_char character);
 critical_outbox_delivery_result
 boon_reward_transaction_outbox_delivery(const critical_outbox_record &record, void *context);
 boon_reward_health boon_reward_transaction_health_copy(void);

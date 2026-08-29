@@ -85,6 +85,8 @@
 #include "ws_handlers.h"
 #include "latency_trace.h"
 #include "persistence_queue.h"
+#include "persistence_mode.h"
+#include "env_file.h"
 #include "locker_async.h"
 #include "maintenance_repository.h"
 #include "maintenance_scheduler.h"
@@ -92,12 +94,17 @@
 #include "critical_command_coordinator.h"
 #include "critical_command_repository.h"
 #include "critical_outbox.h"
+#include "corpse_lifecycle_transaction.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "shop_trade_transaction.h"
+#include "item_uid_allocator.h"
+#include "flatfile_item_repository.h"
 #include "auction_transaction.h"
 #include "combat_outcome_transaction.h"
 #include "artifact_guild_transaction.h"
 #include "boon_reward_transaction.h"
+#include "boon_shop_transaction.h"
 #include "zone_touch_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
@@ -216,14 +223,18 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 {
 	epic_transaction_handle_completions(completions, count);
 	currency_transaction_handle_completions(completions, count);
+	corpse_lifecycle_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
+	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
 	combat_outcome_transaction_handle_completions(completions, count);
 	artifact_guild_transaction_handle_completions(completions, count);
 	boon_reward_transaction_handle_completions(completions, count);
+	boon_shop_transaction_handle_completions(completions, count);
 	zone_touch_transaction_handle_completions(completions, count);
 }
 
+#ifndef __NO_MYSQL__
 static critical_outbox_delivery_result
 critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *context)
 {
@@ -237,6 +248,7 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return zone_touch_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
+#endif
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
@@ -491,11 +503,19 @@ int main(int argc, char **argv)
 	if (load_env_file() < 0)
 		fatal_boot_error("comm", "Unsafe environment configuration file");
 
-	if (initialize_mysql() < 0)
+	char persistence_error[2048];
+	if (!persistence_mode_configure(persistence_error, sizeof(persistence_error)))
+		fatal_boot_error("comm", "%s", persistence_error);
+	logit(LOG_STATUS, "Persistence mode: %s.", persistence_mode_name());
+
+	if (persistence_mode_requires_mysql() && initialize_mysql() < 0)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
-	if (!sql_hydrate_item_owner_revisions())
+	if (!persistence_mode_requires_mysql() &&
+	    !item_uid_allocator_reserve(nullptr, ITEM_UID_BOOT_RESERVATION))
+		fatal_boot_error("comm", "Could not reserve a collision-free flat item UID range");
+	if (persistence_mode_requires_mysql() && !sql_hydrate_item_owner_revisions())
 		logit(LOG_STATUS,
 		      "Authoritative item owner revisions unavailable; movement fails closed.");
 
@@ -754,9 +774,19 @@ void run_the_game(int port, int sslport)
 				  "check PLAYER_SAVE_JOURNAL_DIR");
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
-	if (!critical_outbox_init(critical_gameplay_outbox_delivery, NULL) ||
-	    !critical_command_coordinator_init(critical_journal_directory,
-					       critical_command_repository_apply_from_pool, NULL))
+	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
+#ifdef __NO_MYSQL__
+	critical_apply = flatfile_critical_command_repository_apply_selected;
+#else
+	const bool critical_outbox_ready =
+		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
+#endif
+	if (
+#ifndef __NO_MYSQL__
+		!critical_outbox_ready ||
+#endif
+		!critical_command_coordinator_init(critical_journal_directory, critical_apply,
+						   NULL))
 	{
 		critical_command_coordinator_shutdown();
 		critical_outbox_shutdown();
@@ -1564,6 +1594,7 @@ resume_game_loop:
 			gmcp_flush_dirty_ship_info();
 			flush_pending_ship_saves();
 			locker_async_pulse();
+			corpse_lifecycle_transaction_pulse();
 			critical_completion critical_completions[64] = {};
 			const size_t critical_completion_count =
 				critical_command_coordinator_pulse(critical_completions, 64);

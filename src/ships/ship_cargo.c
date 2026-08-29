@@ -18,6 +18,21 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "timers.h"
+#ifdef __NO_MYSQL__
+#include "flatfile_store.h"
+#include "persistence_mode.h"
+
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cstdint>
+#include <limits>
+#include <new>
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
+#include <string>
+#include <vector>
+#endif
 
 float ship_cargo_market_mod[NUM_PORTS][NUM_PORTS];
 float ship_cargo_market_mod_delayed[NUM_PORTS][NUM_PORTS];
@@ -27,6 +42,245 @@ static int cargo_maintenance_last_delayed_update;
 static uint64_t cargo_maintenance_work_id;
 static size_t cargo_maintenance_value_count;
 static int64_t cargo_maintenance_values[3 + NUM_PORTS * NUM_PORTS * 4];
+
+#ifdef __NO_MYSQL__
+namespace
+{
+constexpr std::array<uint8_t, 8> cargo_magic = { 'D', 'U', 'R', 'C', 'A', 'R', 'G', 'O' };
+constexpr uint32_t cargo_version = 1;
+constexpr size_t cargo_value_count = NUM_PORTS * NUM_PORTS;
+constexpr size_t cargo_record_size = cargo_magic.size() + sizeof(uint32_t) + sizeof(uint64_t) +
+				     cargo_value_count * sizeof(uint32_t) * 2 +
+				     SHA256_DIGEST_LENGTH;
+constexpr const char *cargo_filename = "cargo_market";
+constexpr const char *cargo_lock_filename = "cargo_market.lock";
+
+enum class flat_cargo_result
+{
+	ok,
+	not_found,
+	invalid,
+	io_error
+};
+
+struct flat_cargo_record
+{
+	uint64_t revision = 0;
+	std::array<float, cargo_value_count> cargo = {};
+	std::array<float, cargo_value_count> contraband = {};
+};
+
+std::string flat_cargo_directory()
+{
+	const char *root = persistence_mode_flatfile_root();
+	return root ? std::string(root) + "/metadata" : std::string();
+}
+
+bool valid_market_modifier(float value)
+{
+	return std::isfinite(value) && value >= 0.0f && value <= 1000.0f;
+}
+
+void append_u32(std::vector<uint8_t> *bytes, uint32_t value)
+{
+	for (size_t offset = 0; offset < sizeof(value); ++offset)
+	{
+		bytes->push_back(static_cast<uint8_t>(value & 0xff));
+		value >>= 8;
+	}
+}
+
+void append_u64(std::vector<uint8_t> *bytes, uint64_t value)
+{
+	for (size_t offset = 0; offset < sizeof(value); ++offset)
+	{
+		bytes->push_back(static_cast<uint8_t>(value & 0xff));
+		value >>= 8;
+	}
+}
+
+uint32_t read_u32(const uint8_t *bytes)
+{
+	uint32_t value = 0;
+	for (size_t offset = 0; offset < sizeof(value); ++offset)
+		value |= static_cast<uint32_t>(bytes[offset]) << (offset * 8);
+	return value;
+}
+
+uint64_t read_u64(const uint8_t *bytes)
+{
+	uint64_t value = 0;
+	for (size_t offset = 0; offset < sizeof(value); ++offset)
+		value |= static_cast<uint64_t>(bytes[offset]) << (offset * 8);
+	return value;
+}
+
+bool valid_flat_cargo_record(const flat_cargo_record &record)
+{
+	if (!record.revision)
+		return false;
+	for (float value : record.cargo)
+		if (!valid_market_modifier(value))
+			return false;
+	for (float value : record.contraband)
+		if (!valid_market_modifier(value))
+			return false;
+	return true;
+}
+
+bool encode_flat_cargo(const flat_cargo_record &record, std::vector<uint8_t> *bytes)
+{
+	static_assert(sizeof(float) == sizeof(uint32_t));
+	if (!bytes || !valid_flat_cargo_record(record))
+		return false;
+	try
+	{
+		bytes->clear();
+		bytes->reserve(cargo_record_size);
+		bytes->insert(bytes->end(), cargo_magic.begin(), cargo_magic.end());
+		append_u32(bytes, cargo_version);
+		append_u64(bytes, record.revision);
+		for (float value : record.cargo)
+			append_u32(bytes, std::bit_cast<uint32_t>(value));
+		for (float value : record.contraband)
+			append_u32(bytes, std::bit_cast<uint32_t>(value));
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+		SHA256(bytes->data(), bytes->size(), digest.data());
+		bytes->insert(bytes->end(), digest.begin(), digest.end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		bytes->clear();
+		return false;
+	}
+	return bytes->size() == cargo_record_size;
+}
+
+bool decode_flat_cargo(const std::vector<uint8_t> &bytes, flat_cargo_record *record)
+{
+	if (!record || bytes.size() != cargo_record_size ||
+	    !std::equal(cargo_magic.begin(), cargo_magic.end(), bytes.begin()) ||
+	    read_u32(bytes.data() + cargo_magic.size()) != cargo_version)
+		return false;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(bytes.data(), bytes.size() - digest.size(), digest.data());
+	if (CRYPTO_memcmp(bytes.data() + bytes.size() - digest.size(), digest.data(),
+			  digest.size()))
+		return false;
+	flat_cargo_record decoded;
+	size_t offset = cargo_magic.size() + sizeof(uint32_t);
+	decoded.revision = read_u64(bytes.data() + offset);
+	offset += sizeof(uint64_t);
+	for (float &value : decoded.cargo)
+	{
+		value = std::bit_cast<float>(read_u32(bytes.data() + offset));
+		offset += sizeof(uint32_t);
+	}
+	for (float &value : decoded.contraband)
+	{
+		value = std::bit_cast<float>(read_u32(bytes.data() + offset));
+		offset += sizeof(uint32_t);
+	}
+	if (offset + digest.size() != bytes.size() || !valid_flat_cargo_record(decoded))
+		return false;
+	*record = decoded;
+	return true;
+}
+
+flat_cargo_result read_flat_cargo_unlocked(const std::string &directory, flat_cargo_record *record,
+					   std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto result =
+		flatfile_read(directory, cargo_filename, cargo_record_size, &bytes, error);
+	if (result == flatfile_read_result::not_found)
+		return flat_cargo_result::not_found;
+	if (result == flatfile_read_result::io_error)
+		return flat_cargo_result::io_error;
+	if (result != flatfile_read_result::ok || !decode_flat_cargo(bytes, record))
+	{
+		if (error && error->empty())
+			*error = "cargo market authority is corrupt";
+		return flat_cargo_result::invalid;
+	}
+	return flat_cargo_result::ok;
+}
+
+flat_cargo_result load_flat_cargo(flat_cargo_record *record, std::string *error)
+{
+	const std::string directory = flat_cargo_directory();
+	if (directory.empty() || !record)
+		return flat_cargo_result::invalid;
+	int lock_fd = -1;
+	if (!flatfile_lock_acquire(directory, cargo_lock_filename, &lock_fd, error))
+		return flat_cargo_result::io_error;
+	const auto result = read_flat_cargo_unlocked(directory, record, error);
+	flatfile_lock_release(lock_fd);
+	return result;
+}
+
+flat_cargo_result save_flat_cargo(flat_cargo_record record, std::string *error)
+{
+	const std::string directory = flat_cargo_directory();
+	if (directory.empty())
+		return flat_cargo_result::invalid;
+	int lock_fd = -1;
+	if (!flatfile_lock_acquire(directory, cargo_lock_filename, &lock_fd, error))
+		return flat_cargo_result::io_error;
+	flat_cargo_record existing;
+	const auto loaded = read_flat_cargo_unlocked(directory, &existing, error);
+	if (loaded == flat_cargo_result::ok)
+	{
+		if (existing.revision == std::numeric_limits<uint64_t>::max())
+		{
+			flatfile_lock_release(lock_fd);
+			return flat_cargo_result::invalid;
+		}
+		record.revision = existing.revision + 1;
+	}
+	else if (loaded == flat_cargo_result::not_found)
+		record.revision = 1;
+	else
+	{
+		flatfile_lock_release(lock_fd);
+		return loaded;
+	}
+	std::vector<uint8_t> bytes;
+	const bool encoded = encode_flat_cargo(record, &bytes);
+	const bool stored = encoded &&
+			    flatfile_atomic_write(directory, cargo_filename, bytes, error);
+	flatfile_lock_release(lock_fd);
+	return stored  ? flat_cargo_result::ok :
+	       encoded ? flat_cargo_result::io_error :
+			 flat_cargo_result::invalid;
+}
+
+flat_cargo_record capture_flat_cargo()
+{
+	flat_cargo_record record;
+	for (int port = 0; port < NUM_PORTS; ++port)
+		for (int type = 0; type < NUM_PORTS; ++type)
+		{
+			const size_t index = port * NUM_PORTS + type;
+			record.cargo[index] = ship_cargo_market_mod[port][type];
+			record.contraband[index] = ship_contra_market_mod[port][type];
+		}
+	return record;
+}
+
+void replace_live_cargo(const flat_cargo_record &record)
+{
+	for (int port = 0; port < NUM_PORTS; ++port)
+		for (int type = 0; type < NUM_PORTS; ++type)
+		{
+			const size_t index = port * NUM_PORTS + type;
+			ship_cargo_market_mod[port][type] = record.cargo[index];
+			ship_cargo_market_mod_delayed[port][type] = record.cargo[index];
+			ship_contra_market_mod[port][type] = record.contraband[index];
+		}
+}
+} // namespace
+#endif
 
 // This matrix shows the base cost in platinum for each port's cargo/contraband,
 // as well as the minimum number of ship frags required to be able to buy that
@@ -95,7 +349,11 @@ void initialize_ship_cargo()
 
 	if (!read_cargo())
 	{
+#ifdef __NO_MYSQL__
+		fatal_boot_error("ship_cargo", "flat cargo market authority could not be loaded");
+#else
 		logit(LOG_SHIP, "Error reading market values from database!");
+#endif
 	}
 	cargo_maintenance_last_update = get_timer("update_cargo");
 	cargo_maintenance_last_delayed_update = get_timer("update_delayed_cargo_prices");
@@ -104,7 +362,23 @@ void initialize_ship_cargo()
 int read_cargo()
 {
 #ifdef __NO_MYSQL__
-	return FALSE;
+	std::string error;
+	flat_cargo_record record;
+	auto result = load_flat_cargo(&record, &error);
+	if (result == flat_cargo_result::not_found)
+	{
+		record = capture_flat_cargo();
+		result = save_flat_cargo(record, &error);
+	}
+	if (result != flat_cargo_result::ok)
+	{
+		logit(LOG_SHIP, "Error reading flat cargo market values: %s",
+		      error.empty() ? "authority failure" : error.c_str());
+		return FALSE;
+	}
+	if (record.revision)
+		replace_live_cargo(record);
+	return TRUE;
 #else
 
 	if (!qry("select type, port_id, cargo_type, modifier from ship_cargo_market_mods"))
@@ -120,12 +394,16 @@ int read_cargo()
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
+		if (!row[0] || !row[1] || !row[2] || !row[3])
+			continue;
 		char *type = row[0];
 		int port_id = atoi(row[1]);
 		int cargo_type = atoi(row[2]);
 		float modifier = atof(row[3]);
 
-		if (port_id < 0 || port_id >= NUM_PORTS)
+		if (port_id < 0 || port_id >= NUM_PORTS || cargo_type < 0 ||
+		    cargo_type >= NUM_PORTS || !isfinite(modifier) || modifier < 0.0f ||
+		    modifier > 1000.0f)
 		{
 			logit(LOG_DEBUG, "read_cargo(): invalid cargo record: (%s, %d, %d, %f)",
 			      type, port_id, cargo_type, modifier);
@@ -156,6 +434,11 @@ int read_cargo()
 int write_cargo()
 {
 #ifdef __NO_MYSQL__
+	std::string error;
+	if (save_flat_cargo(capture_flat_cargo(), &error) == flat_cargo_result::ok)
+		return TRUE;
+	logit(LOG_SHIP, "Error writing flat cargo market values: %s",
+	      error.empty() ? "authority failure" : error.c_str());
 	return FALSE;
 #else
 	bool own_txn = false;
@@ -428,6 +711,45 @@ void cargo_activity()
 	update_cargo();
 	update_delayed_cargo_prices();
 }
+
+#ifdef __NO_MYSQL__
+bool flatfile_cargo_maintenance_apply(const int64_t *values, size_t count)
+{
+	constexpr size_t expected = 3 + NUM_PORTS * NUM_PORTS * 4;
+	if (!values || count != expected || values[0] <= 0 || values[0] > INT_MAX ||
+	    (values[1] != 0 && values[1] != 1) || (values[2] != 0 && values[2] != 1) ||
+	    (!values[1] && !values[2]))
+		return false;
+	flat_cargo_record record;
+	for (int port = 0; port < NUM_PORTS; ++port)
+		for (int type = 0; type < NUM_PORTS; ++type)
+		{
+			const size_t source = 3 + (port * NUM_PORTS + type) * 4;
+			const size_t destination = port * NUM_PORTS + type;
+			if (values[source] < 0 || values[source] > INT_MAX ||
+			    values[source + 1] < 0 || values[source + 1] > INT_MAX ||
+			    values[source + 2] < 0 || values[source + 2] > 1000000000LL ||
+			    values[source + 3] < 0 || values[source + 3] > 1000000000LL)
+				return false;
+			record.cargo[destination] = values[source + 2] / 1000000.0f;
+			record.contraband[destination] = values[source + 3] / 1000000.0f;
+		}
+	if (values[1])
+	{
+		std::string error;
+		if (save_flat_cargo(record, &error) != flat_cargo_result::ok)
+		{
+			logit(LOG_SHIP, "Error writing scheduled flat cargo market values: %s",
+			      error.empty() ? "authority failure" : error.c_str());
+			return false;
+		}
+		set_timer("update_cargo", static_cast<int>(values[0]));
+	}
+	if (values[2])
+		set_timer("update_delayed_cargo_prices", static_cast<int>(values[0]));
+	return true;
+}
+#endif
 
 size_t cargo_maintenance_snapshot(uint64_t work_id, int64_t *values, size_t capacity)
 {
@@ -935,7 +1257,7 @@ void do_world_cargo(P_char ch, char *arg)
 	}
 	else if (is_abbrev(arg, "reload"))
 	{
-		send_to_char("Reloading cargo mods from database...\r\n", ch);
+		send_to_char("Reloading cargo mods from persistent storage...\r\n", ch);
 		if (!read_cargo())
 			send_to_char("FAILED!\r\n", ch);
 	}
@@ -946,7 +1268,7 @@ void do_world_cargo(P_char ch, char *arg)
 	}
 	else if (is_abbrev(arg, "save"))
 	{
-		send_to_char("Writing cargo mods to database...\r\n", ch);
+		send_to_char("Writing cargo mods to persistent storage...\r\n", ch);
 		if (!write_cargo())
 			send_to_char("FAILED!\r\n", ch);
 	}

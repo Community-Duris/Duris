@@ -16,11 +16,19 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <algorithm>
+#include <charconv>
+#include <new>
 #include <string>
 #include <unordered_set>
+#include <vector>
 #include "account.h"
 #include "assocs.h"
 #include "files.h"
+#include "flatfile_store.h"
+#include "flatfile_identity_adapter.h"
+#include "flatfile_recipe_repository.h"
+#include "flatfile_spellbook_repository.h"
 #include "epic_bonus.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -32,6 +40,7 @@
 #include "player_name.h"
 #include "password_hash.h"
 #include "player_revision_state.h"
+#include "persistence_mode.h"
 #include "item_transfer_command.h"
 
 // external tables
@@ -51,7 +60,429 @@ void ensure_pconly_pool(void);
 
 #ifdef __NO_MYSQL__
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+extern int top_of_zone_table;
+extern struct zone_data *zone_table;
+extern P_town towns;
+
+namespace
+{
+constexpr size_t flat_town_maximum_file_size = 256 * 1024;
+constexpr size_t flat_town_maximum_records = 4096;
+constexpr size_t flat_town_maximum_line_size = 255;
+const char flat_town_filename[] = "towns";
+const char flat_town_lock_filename[] = "towns.lock";
+
+struct flat_town_record
+{
+	struct zone_data *zone = NULL;
+	int resources = 0;
+	int defense = 0;
+	int offense = 0;
+	bool deploy_guard = false;
+	int guard_vnum = 0;
+	int guard_max = 0;
+	int guard_load_room = 0;
+	bool deploy_cavalry = false;
+	int cavalry_vnum = 0;
+	int cavalry_max = 0;
+	int cavalry_load_room = 0;
+	bool deploy_portals = false;
+	int portal_vnum = 0;
+	int portal_load_room = 0;
+};
+
+enum class flat_town_seed_result
+{
+	ok,
+	not_found,
+	invalid
+};
+
+std::string flat_town_directory()
+{
+	const char *root = persistence_mode_flatfile_root();
+	return root && *root ? std::string(root) + "/metadata" : std::string();
+}
+
+void flat_town_error(const char *operation, const std::string &error)
+{
+	logit(LOG_SYS, "flat town persistence: operation=%s outcome=failed error=%s", operation,
+	      error.c_str());
+}
+
+bool flat_town_split_lines(const std::vector<uint8_t> &bytes, std::vector<std::string> *lines,
+			   std::string *error)
+{
+	if (!lines)
+	{
+		if (error)
+			*error = "missing town line output";
+		return false;
+	}
+	lines->clear();
+	if (bytes.empty())
+		return true;
+	if (std::find(bytes.begin(), bytes.end(), 0) != bytes.end())
+	{
+		if (error)
+			*error = "town file contains a NUL byte";
+		return false;
+	}
+
+	const std::string content(bytes.begin(), bytes.end());
+	size_t begin = 0;
+	while (begin < content.size())
+	{
+		const size_t newline = content.find('\n', begin);
+		const size_t end = newline == std::string::npos ? content.size() : newline;
+		std::string line = content.substr(begin, end - begin);
+		if (!line.empty() && line.back() == '\r')
+			line.pop_back();
+		if (line.size() > flat_town_maximum_line_size)
+		{
+			if (error)
+				*error = "town file line is too long";
+			return false;
+		}
+		lines->push_back(std::move(line));
+		if (newline == std::string::npos)
+			break;
+		begin = newline + 1;
+	}
+	return true;
+}
+
+bool flat_town_parse_integers(const std::string &line, int count, int *values, std::string *error)
+{
+	const char *cursor = line.data();
+	const char *end = cursor + line.size();
+	for (int i = 0; i < count; ++i)
+	{
+		while (cursor != end && (*cursor == ' ' || *cursor == '\t'))
+			++cursor;
+		if (cursor == end)
+		{
+			if (error)
+				*error = "town numeric line has too few values";
+			return false;
+		}
+		auto parsed = std::from_chars(cursor, end, values[i]);
+		if (parsed.ec != std::errc() || parsed.ptr == cursor)
+		{
+			if (error)
+				*error = "town numeric line contains an invalid integer";
+			return false;
+		}
+		cursor = parsed.ptr;
+	}
+	while (cursor != end && (*cursor == ' ' || *cursor == '\t'))
+		++cursor;
+	if (cursor != end)
+	{
+		if (error)
+			*error = "town numeric line has extra data";
+		return false;
+	}
+	return true;
+}
+
+bool flat_town_parse_boolean(const std::string &line, bool *value, std::string *error)
+{
+	if (line == "TRUE")
+	{
+		*value = true;
+		return true;
+	}
+	if (line == "FALSE")
+	{
+		*value = false;
+		return true;
+	}
+	if (error)
+		*error = "town deployment flag is not TRUE or FALSE";
+	return false;
+}
+
+struct zone_data *flat_town_find_zone(const std::string &filename)
+{
+	if (!zone_table || top_of_zone_table < 1)
+		return NULL;
+	for (int i = 1; i <= top_of_zone_table; ++i)
+	{
+		if (zone_table[i].filename && filename == zone_table[i].filename)
+			return &zone_table[i];
+	}
+	return NULL;
+}
+
+bool flat_town_parse(const std::vector<uint8_t> &bytes, std::vector<flat_town_record> *records,
+		     std::string *error)
+{
+	std::vector<std::string> lines;
+	if (!records || !flat_town_split_lines(bytes, &lines, error))
+		return false;
+	records->clear();
+	if (lines.size() % 8 != 0)
+	{
+		if (error)
+			*error = "town file contains a partial record";
+		return false;
+	}
+	if (lines.size() / 8 > flat_town_maximum_records)
+	{
+		if (error)
+			*error = "town file contains too many records";
+		return false;
+	}
+
+	std::unordered_set<std::string> filenames;
+	for (size_t offset = 0; offset < lines.size(); offset += 8)
+	{
+		const std::string &filename = lines[offset];
+		if (filename.empty() || !filenames.insert(filename).second)
+		{
+			if (error)
+				*error = filename.empty() ? "town filename is empty" :
+							    "town filename is duplicated";
+			return false;
+		}
+		struct zone_data *zone = flat_town_find_zone(filename);
+		if (!zone)
+		{
+			if (error)
+				*error = "town references an unknown zone: " + filename;
+			return false;
+		}
+
+		flat_town_record record;
+		record.zone = zone;
+		int values[3];
+		if (!flat_town_parse_integers(lines[offset + 1], 3, values, error))
+			return false;
+		record.offense = values[0];
+		record.defense = values[1];
+		record.resources = values[2];
+		if (!flat_town_parse_boolean(lines[offset + 2], &record.deploy_guard, error) ||
+		    !flat_town_parse_integers(lines[offset + 3], 3, values, error))
+			return false;
+		record.guard_vnum = values[0];
+		record.guard_max = values[1];
+		record.guard_load_room = values[2];
+		if (!flat_town_parse_boolean(lines[offset + 4], &record.deploy_cavalry, error) ||
+		    !flat_town_parse_integers(lines[offset + 5], 3, values, error))
+			return false;
+		record.cavalry_vnum = values[0];
+		record.cavalry_max = values[1];
+		record.cavalry_load_room = values[2];
+		if (!flat_town_parse_boolean(lines[offset + 6], &record.deploy_portals, error) ||
+		    !flat_town_parse_integers(lines[offset + 7], 2, values, error))
+			return false;
+		record.portal_vnum = values[0];
+		record.portal_load_room = values[1];
+		records->push_back(record);
+	}
+	return true;
+}
+
+bool flat_town_encode(const std::vector<flat_town_record> &records, std::vector<uint8_t> *bytes,
+		      std::string *error)
+{
+	if (!bytes || records.size() > flat_town_maximum_records)
+	{
+		if (error)
+			*error = "invalid town encode request";
+		return false;
+	}
+	std::string content;
+	for (const flat_town_record &record : records)
+	{
+		if (!record.zone || !record.zone->filename || !*record.zone->filename)
+		{
+			if (error)
+				*error = "town has no zone filename";
+			return false;
+		}
+		char fields[512];
+		const int length = snprintf(
+			fields, sizeof(fields),
+			"%s\n%d %d %d\n%s\n%d %d %d\n%s\n%d %d %d\n%s\n%d %d\n",
+			record.zone->filename, record.offense, record.defense, record.resources,
+			record.deploy_guard ? "TRUE" : "FALSE", record.guard_vnum, record.guard_max,
+			record.guard_load_room, record.deploy_cavalry ? "TRUE" : "FALSE",
+			record.cavalry_vnum, record.cavalry_max, record.cavalry_load_room,
+			record.deploy_portals ? "TRUE" : "FALSE", record.portal_vnum,
+			record.portal_load_room);
+		if (length < 0 || static_cast<size_t>(length) >= sizeof(fields) ||
+		    content.size() + static_cast<size_t>(length) > flat_town_maximum_file_size)
+		{
+			if (error)
+				*error = "town file exceeds its size limit";
+			return false;
+		}
+		content.append(fields, static_cast<size_t>(length));
+	}
+	bytes->assign(content.begin(), content.end());
+	return true;
+}
+
+bool flat_town_snapshot_live(std::vector<flat_town_record> *records, std::string *error)
+{
+	if (!records)
+		return false;
+	records->clear();
+	std::unordered_set<std::string> filenames;
+	for (P_town town = towns; town; town = town->next_town)
+	{
+		if (records->size() == flat_town_maximum_records || !town->zone ||
+		    !town->zone->filename || !*town->zone->filename)
+		{
+			if (error)
+				*error = "live town list is invalid or too large";
+			return false;
+		}
+		const std::string filename = town->zone->filename;
+		if (flat_town_find_zone(filename) != town->zone ||
+		    !filenames.insert(filename).second)
+		{
+			if (error)
+				*error = "live town has an unknown or duplicate zone";
+			return false;
+		}
+		flat_town_record record;
+		record.zone = town->zone;
+		record.resources = town->resources;
+		record.defense = town->defense;
+		record.offense = town->offense;
+		record.deploy_guard = town->deploy_guard;
+		record.guard_vnum = town->guard_vnum;
+		record.guard_max = town->guard_max;
+		record.guard_load_room = town->guard_load_room;
+		record.deploy_cavalry = town->deploy_cavalry;
+		record.cavalry_vnum = town->cavalry_vnum;
+		record.cavalry_max = town->cavalry_max;
+		record.cavalry_load_room = town->cavalry_load_room;
+		record.deploy_portals = town->deploy_portals;
+		record.portal_vnum = town->portal_vnum;
+		record.portal_load_room = town->portal_load_room;
+		records->push_back(record);
+	}
+	return true;
+}
+
+void flat_town_free_list(P_town list)
+{
+	while (list)
+	{
+		P_town next = list->next_town;
+		delete list;
+		list = next;
+	}
+}
+
+bool flat_town_replace_live(const std::vector<flat_town_record> &records, std::string *error)
+{
+	P_town replacement = NULL;
+	P_town *tail = &replacement;
+	for (const flat_town_record &record : records)
+	{
+		P_town town = new (std::nothrow) struct town;
+		if (!town)
+		{
+			flat_town_free_list(replacement);
+			if (error)
+				*error = "could not allocate town state";
+			return false;
+		}
+		town->resources = record.resources;
+		town->defense = record.defense;
+		town->offense = record.offense;
+		town->deploy_guard = record.deploy_guard;
+		town->deploy_cavalry = record.deploy_cavalry;
+		town->deploy_portals = record.deploy_portals;
+		town->guard_vnum = record.guard_vnum;
+		town->guard_max = record.guard_max;
+		town->guard_load_room = record.guard_load_room;
+		town->cavalry_vnum = record.cavalry_vnum;
+		town->cavalry_max = record.cavalry_max;
+		town->cavalry_load_room = record.cavalry_load_room;
+		town->portal_vnum = record.portal_vnum;
+		town->portal_load_room = record.portal_load_room;
+		town->zone = record.zone;
+		town->next_town = NULL;
+		*tail = town;
+		tail = &town->next_town;
+	}
+	P_town previous = towns;
+	towns = replacement;
+	flat_town_free_list(previous);
+	return true;
+}
+
+flat_town_seed_result flat_town_read_seed(const char *path, std::vector<uint8_t> *bytes,
+					  std::string *error)
+{
+	const int fd = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+	{
+		if (errno == ENOENT)
+			return flat_town_seed_result::not_found;
+		if (error)
+			*error = std::string("cannot open town seed ") + path + ": " +
+				 strerror(errno);
+		return flat_town_seed_result::invalid;
+	}
+	struct stat info;
+	if (fstat(fd, &info) < 0 || !S_ISREG(info.st_mode) || (info.st_mode & 0022) ||
+	    info.st_size < 0 || static_cast<uintmax_t>(info.st_size) > flat_town_maximum_file_size)
+	{
+		if (error)
+			*error = std::string("town seed has unsafe metadata: ") + path;
+		close(fd);
+		return flat_town_seed_result::invalid;
+	}
+	bytes->resize(static_cast<size_t>(info.st_size));
+	size_t offset = 0;
+	while (offset < bytes->size())
+	{
+		const ssize_t count = read(fd, bytes->data() + offset, bytes->size() - offset);
+		if (count < 0 && errno == EINTR)
+			continue;
+		if (count <= 0)
+		{
+			if (error)
+				*error = std::string("cannot read town seed ") + path;
+			close(fd);
+			return flat_town_seed_result::invalid;
+		}
+		offset += static_cast<size_t>(count);
+	}
+	close(fd);
+	return flat_town_seed_result::ok;
+}
+
+bool flat_town_load_seed(std::vector<uint8_t> *bytes, std::string *error)
+{
+	const auto legacy = flat_town_read_seed(SAVE_DIR "/towns", bytes, error);
+	if (legacy == flat_town_seed_result::ok)
+		return true;
+	if (legacy == flat_town_seed_result::invalid)
+		return false;
+	const auto defaults = flat_town_read_seed("defaults/towns", bytes, error);
+	if (defaults == flat_town_seed_result::ok)
+		return true;
+	if (defaults == flat_town_seed_result::not_found && error)
+		*error = "neither Players/towns nor defaults/towns exists";
+	return false;
+}
+} // namespace
+
 // stubs when mysql is disabled
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 bool sql_begin_transaction(void)
 {
@@ -100,25 +531,75 @@ bool sql_save_player_shapechanges(P_char ch)
 }
 bool sql_save_player_recipes(P_char ch)
 {
-	return false;
+	return ch && !IS_NPC(ch) && GET_PID(ch) > 0;
 }
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_recipe_add(root, pid, recipe_vnum, &error) :
+				   flatfile_recipe_result::invalid;
+	if (result == flatfile_recipe_result::ok)
+		return true;
+	persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "add", "flat_write_failed",
+			  "pid=%d recipe=%d error=%s", pid, recipe_vnum, error.c_str());
 	return false;
 }
 bool sql_delete_player_recipes(int pid)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_recipe_clear(root, pid, &error) :
+				   flatfile_recipe_result::invalid;
+	if (result == flatfile_recipe_result::ok)
+		return true;
+	persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "clear",
+			  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
 	return false;
 }
 bool sql_has_player_recipe(int pid, int recipe_vnum)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	bool contains = false;
+	const auto result =
+		root ? flatfile_recipe_contains(root, pid, recipe_vnum, &contains, &error) :
+		       flatfile_recipe_result::invalid;
+	if (result == flatfile_recipe_result::ok)
+		return contains;
+	persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "contains",
+			  "flat_read_failed", "pid=%d recipe=%d error=%s", pid, recipe_vnum,
+			  error.c_str());
 	return false;
 }
 int *sql_get_player_recipes(int pid, int *count)
 {
-	if (count)
-		*count = 0;
-	return NULL;
+	if (!count)
+		return NULL;
+	*count = 0;
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	std::vector<int32_t> recipes;
+	const auto result = root ? flatfile_recipe_list(root, pid, &recipes, &error) :
+				   flatfile_recipe_result::invalid;
+	if (result != flatfile_recipe_result::ok)
+	{
+		persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "list",
+				  "flat_read_failed", "pid=%d error=%s", pid, error.c_str());
+		return NULL;
+	}
+	if (recipes.empty())
+		return NULL;
+	int *result_recipes = static_cast<int *>(malloc(recipes.size() * sizeof(int)));
+	if (!result_recipes)
+	{
+		persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "list",
+				  "allocation_failed", "pid=%d recipes=%zu", pid, recipes.size());
+		return NULL;
+	}
+	std::copy(recipes.begin(), recipes.end(), result_recipes);
+	*count = static_cast<int>(recipes.size());
+	return result_recipes;
 }
 
 P_char sql_load_player(const char *name)
@@ -127,11 +608,19 @@ P_char sql_load_player(const char *name)
 }
 bool sql_player_exists(const char *name)
 {
-	return false;
+	bool exists = true;
+	std::string error;
+	if (!flatfile_player_identity_exists(name, &exists, &error))
+		return true;
+	return exists;
 }
 int sql_get_player_pid(const char *name)
 {
-	return -1;
+	int32_t pid = -1;
+	std::string error;
+	if (!flatfile_player_identity_pid(name, &pid, &error))
+		return -1;
+	return pid;
 }
 bool sql_load_player_status(P_char ch, int pid)
 {
@@ -290,11 +779,88 @@ void sql_load_siege_list(void) {}
 
 bool sql_save_towns(void)
 {
-	return false;
+	const std::string directory = flat_town_directory();
+	if (directory.empty())
+	{
+		flat_town_error("save", "flat-file state root is unavailable");
+		return false;
+	}
+	std::string error;
+	int lock_fd = -1;
+	if (!flatfile_lock_acquire(directory, flat_town_lock_filename, &lock_fd, &error))
+	{
+		flat_town_error("save", error);
+		return false;
+	}
+
+	std::vector<uint8_t> existing;
+	const auto existing_result = flatfile_read(directory, flat_town_filename,
+						   flat_town_maximum_file_size, &existing, &error);
+	std::vector<flat_town_record> parsed_existing;
+	if ((existing_result != flatfile_read_result::ok &&
+	     existing_result != flatfile_read_result::not_found) ||
+	    (existing_result == flatfile_read_result::ok &&
+	     !flat_town_parse(existing, &parsed_existing, &error)))
+	{
+		flatfile_lock_release(lock_fd);
+		flat_town_error("save", error);
+		return false;
+	}
+
+	std::vector<flat_town_record> records;
+	std::vector<uint8_t> bytes;
+	const bool saved = flat_town_snapshot_live(&records, &error) &&
+			   flat_town_encode(records, &bytes, &error) &&
+			   flatfile_atomic_write(directory, flat_town_filename, bytes, &error);
+	flatfile_lock_release(lock_fd);
+	if (!saved)
+		flat_town_error("save", error);
+	return saved;
 }
 bool sql_load_towns(void)
 {
-	return false;
+	const std::string directory = flat_town_directory();
+	if (directory.empty())
+	{
+		flat_town_error("load", "flat-file state root is unavailable");
+		return false;
+	}
+	std::string error;
+	int lock_fd = -1;
+	if (!flatfile_lock_acquire(directory, flat_town_lock_filename, &lock_fd, &error))
+	{
+		flat_town_error("load", error);
+		return false;
+	}
+
+	std::vector<uint8_t> bytes;
+	auto read_result = flatfile_read(directory, flat_town_filename, flat_town_maximum_file_size,
+					 &bytes, &error);
+	bool publish_seed = false;
+	if (read_result == flatfile_read_result::not_found)
+	{
+		publish_seed = true;
+		if (!flat_town_load_seed(&bytes, &error))
+			read_result = flatfile_read_result::invalid;
+		else
+			read_result = flatfile_read_result::ok;
+	}
+
+	std::vector<flat_town_record> records;
+	bool loaded = read_result == flatfile_read_result::ok &&
+		      flat_town_parse(bytes, &records, &error);
+	if (loaded && publish_seed)
+	{
+		std::vector<uint8_t> canonical;
+		loaded = flat_town_encode(records, &canonical, &error) &&
+			 flatfile_atomic_write(directory, flat_town_filename, canonical, &error);
+	}
+	if (loaded)
+		loaded = flat_town_replace_live(records, &error);
+	flatfile_lock_release(lock_fd);
+	if (!loaded)
+		flat_town_error("load", error);
+	return loaded;
 }
 bool sql_save_account_ips(const char *account_name, struct acct_ip *ips)
 {
@@ -381,6 +947,140 @@ bool sql_ensure_account_bank(const char *account_name, int racewar)
 {
 	return false;
 }
+
+bool sql_player_rename(P_char /*ch*/, const char * /*new_name*/)
+{
+	return false;
+}
+
+int sql_get_locker_id_by_name(const char * /*locker_name*/)
+{
+	return -1;
+}
+int sql_get_or_create_public_chest(int /*locker_id*/)
+{
+	return -1;
+}
+int sql_create_private_chest(int /*locker_id*/, const char * /*chest_name*/,
+			     const char * /*password*/)
+{
+	return 0;
+}
+bool sql_delete_private_chest(int /*chest_id*/)
+{
+	return false;
+}
+int sql_get_chest_id(int /*locker_id*/, const char * /*chest_name*/)
+{
+	return -1;
+}
+bool sql_set_chest_password(int /*chest_id*/, const char * /*password*/)
+{
+	return false;
+}
+bool sql_verify_chest_password(int /*chest_id*/, const char * /*password*/)
+{
+	return false;
+}
+int sql_count_private_chests(int /*locker_id*/)
+{
+	return -1;
+}
+bool sql_log_chest_activity(int /*locker_id*/, int /*chest_id*/, const char * /*char_name*/,
+			    int /*action_type*/, const char * /*item_short*/)
+{
+	return false;
+}
+bool sql_save_private_chest_items(int /*locker_id*/, int /*chest_id*/, P_obj /*chest_obj*/)
+{
+	return false;
+}
+void sql_load_private_chest_items(int /*locker_id*/, int /*chest_id*/, P_obj /*chest_obj*/) {}
+
+bool sql_add_spellbook_mob(int pid, int mob_vnum)
+{
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_spellbook_add(root, pid, mob_vnum, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return true;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "add",
+			  "flat_write_failed", "pid=%d mob=%d error=%s", pid, mob_vnum,
+			  error.c_str());
+	return false;
+}
+bool sql_remove_spellbook_mob(int pid, int mob_vnum)
+{
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_spellbook_remove(root, pid, mob_vnum, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return true;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "remove",
+			  "flat_write_failed", "pid=%d mob=%d error=%s", pid, mob_vnum,
+			  error.c_str());
+	return false;
+}
+bool sql_has_spellbook_mob(int pid, int mob_vnum)
+{
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	bool contains = false;
+	const auto result =
+		root ? flatfile_spellbook_contains(root, pid, mob_vnum, &contains, &error) :
+		       flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return contains;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "contains",
+			  "flat_read_failed", "pid=%d mob=%d error=%s", pid, mob_vnum,
+			  error.c_str());
+	return false;
+}
+int *sql_get_spellbook_mobs(int pid, int *count)
+{
+	if (!count)
+		return NULL;
+	*count = 0;
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	std::vector<int32_t> mobs;
+	const auto loaded = root ? flatfile_spellbook_list(root, pid, &mobs, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (loaded != flatfile_spellbook_result::ok)
+	{
+		persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "list",
+				  "flat_read_failed", "pid=%d error=%s", pid, error.c_str());
+		return NULL;
+	}
+	if (mobs.empty())
+		return NULL;
+	int *result = static_cast<int *>(malloc(mobs.size() * sizeof(int)));
+	if (!result)
+	{
+		persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "list",
+				  "allocation_failed", "pid=%d mobs=%zu", pid, mobs.size());
+		return NULL;
+	}
+	std::copy(mobs.begin(), mobs.end(), result);
+	*count = static_cast<int>(mobs.size());
+	return result;
+}
+bool sql_delete_spellbook_mobs(int pid)
+{
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_spellbook_clear(root, pid, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return true;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "clear",
+			  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
+	return false;
+}
+
+#pragma GCC diagnostic pop
 
 #else
 
@@ -10827,6 +11527,17 @@ bool sql_add_spellbook_mob(int pid, int mob_vnum)
 	snprintf(query, sizeof(query),
 		 "insert ignore into player_spellbooks (pid, mob_vnum) values (%d, %d)", pid,
 		 mob_vnum);
+	return sql_run_query(query);
+}
+
+bool sql_remove_spellbook_mob(int pid, int mob_vnum)
+{
+	if (!DB || pid <= 0 || mob_vnum <= 0)
+		return false;
+
+	char query[256];
+	snprintf(query, sizeof(query), "delete from player_spellbooks where pid=%d and mob_vnum=%d",
+		 pid, mob_vnum);
 	return sql_run_query(query);
 }
 

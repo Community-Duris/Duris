@@ -898,11 +898,10 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], rest[MAX_INPUT_LENGTH];
-	char filename[256], short_buf[256];
+	char short_buf[256];
 	P_char t_ch;
-	FILE *recipefile;
-	int duration, choice2, chance, counter;
-	long selected = 0, recnum;
+	int duration, choice2, chance;
+	long selected = 0;
 	struct affected_type af;
 
 	if (!IS_ALIVE(ch) || IS_NPC(ch))
@@ -1221,36 +1220,12 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 				ch);
 			return;
 		}
-		recipefile = fopen(filename, "rt");
-		if (!recipefile)
+		if (!sql_remove_spellbook_mob(pid, selected))
 		{
-			send_to_char("Fatal error opening spellbook, notify a god.\r\n", ch);
-			return;
-		}
-		counter = 0;
-		Gbuf1[0] = '\0';
-		// Read all the recipes into Gbuf1.
-		while ((fscanf(recipefile, "%ld", &recnum)) != EOF)
-		{
-			// Except the one we want to remove.
-			if (recnum == selected)
-			{
-				continue;
-			}
-			snprintf(Gbuf1 + counter, MAX_STRING_LENGTH, "%ld ", recnum);
-			counter += strlen(Gbuf1 + counter);
-		}
-		fclose(recipefile);
-
-		recipefile = fopen(filename, "wt");
-		if (!recipefile)
-		{
-			send_to_char("Fatal error opening spellbook for writing, notify a god.\r\n",
+			send_to_char("Your spellbook could not be updated; please try again.\r\n",
 				     ch);
 			return;
 		}
-		fprintf(recipefile, "%s", Gbuf1);
-		fclose(recipefile);
 
 		snprintf(Gbuf1, MAX_STRING_LENGTH,
 			 "&+mRemoved &+Mminion&+m vnum &+M%ld&+m from your spellbook.&n\n\r",
@@ -1464,8 +1439,12 @@ void learn_conjure_recipe(P_char ch, P_char victim)
 		return;
 	}
 
-	// add to spellbook
-	sql_add_spellbook_mob(pid, recipenumber);
+	// persist the learned mob before reporting success
+	if (!sql_add_spellbook_mob(pid, recipenumber))
+	{
+		send_to_char("Your spellbook could not be updated; please try again.\r\n", ch);
+		return;
+	}
 	act("$n &+gsuddenly &+Greaches &+gout and makes a &+Mmagical &+mgesture &+gabout &n$N&+g...\n"
 	    "&+gsh&+Gar&+Wds&+g of &+mcry&+Mstallized &+Wmagic&+g begin to form a square dome around &n$N&+g.\n"
 	    "&+gWith a &+Gfinal&+g &+mgesture&+g, &n$n &+gpoints at &n$N &+gwho is &+Gconsumed&+g by the &+mmagical &+Mdome&+g, and disappears from sight.\r\n",

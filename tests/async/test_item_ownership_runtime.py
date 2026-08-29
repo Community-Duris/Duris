@@ -15,6 +15,15 @@ HARNESS = r'''
 
 int main()
 {
+	const item_transfer_result extended = { 100, 1, 11, 1, 6, 7 };
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
+	assert(item_transfer_command_encode_result(extended, &encoded));
+	item_transfer_result decoded = {};
+	assert(item_transfer_command_decode_result(encoded.data(), encoded.size(), &decoded));
+	assert(decoded.corpse_revision == 7);
+	assert(item_transfer_command_decode_result(encoded.data(),
+					   ITEM_TRANSFER_LEGACY_RESULT_BYTES, &decoded));
+	assert(decoded.corpse_revision == 0 && decoded.max_item_revision == 6);
 	item_ownership_runtime_reset();
 	const item_owner_identity player = { item_owner_type::player, 42, 0 };
 	const item_owner_identity room = { item_owner_type::room, 1200, 0 };
@@ -31,7 +40,7 @@ int main()
 	move.target_root_item_uid = 100;
 	move.item_count = 1;
 	move.items[0] = { 100, 100, 0, 5, 7, item_custody_state::active };
-	const item_transfer_result committed = { 100, 1, 11, 1, 6 };
+	const item_transfer_result committed = { 100, 1, 11, 1, 6, 0 };
 	assert(item_ownership_runtime_apply(move, committed));
 
 	item_ownership_runtime_entry untouched = {};
@@ -44,6 +53,25 @@ int main()
 	assert(item_ownership_runtime_hydrate_batch(&authoritative, 1));
 	assert(item_ownership_runtime_lookup(101, &untouched));
 	assert(untouched.owner_revision == 11);
+	item_transfer_payload creation = {};
+	creation.from_owner = { item_owner_type::system, 0, 0 };
+	creation.to_owner = player;
+	creation.selected_item_uid = 200;
+	creation.target_root_item_uid = 101;
+	creation.target_parent_item_uid = 101;
+	creation.expected_target_parent_revision = 3;
+	creation.item_count = 1;
+	creation.items[0] = { 200, 200, 0, ITEM_TRANSFER_ABSENT_REVISION, 9,
+			      item_custody_state::absent };
+	assert(item_ownership_runtime_apply(creation, { 200, 1, 1, 12, 1, 0 }));
+	item_ownership_runtime_entry created = {};
+	assert(item_ownership_runtime_lookup(200, &created));
+	assert(created.root_item_uid == 101 && created.parent_item_uid == 101 &&
+	       created.owner_revision == 12);
+	creation.selected_item_uid = 201;
+	creation.items[0].item_uid = 201;
+	creation.expected_target_parent_revision = 2;
+	assert(!item_ownership_runtime_apply(creation, { 201, 1, 2, 13, 1, 0 }));
 
 	const item_ownership_runtime_entry stale = {
 		101, 101, 0, player, 3, 10, 8, item_custody_state::active
@@ -52,21 +80,21 @@ int main()
 
 	const item_owner_identity locker = { item_owner_type::locker, 77, 0 };
 	const item_ownership_runtime_entry rejected_atomic[] = {
-		{ 200, 200, 0, room, 1, 1, 9, item_custody_state::active },
+		{ 202, 202, 0, room, 1, 1, 9, item_custody_state::active },
 		{ 101, 101, 0, player, 3, 10, 8, item_custody_state::active },
 	};
 	assert(!item_ownership_runtime_hydrate_many_atomic(rejected_atomic, 2));
 	item_ownership_runtime_entry absent = {};
-	assert(!item_ownership_runtime_lookup(200, &absent));
+	assert(!item_ownership_runtime_lookup(202, &absent));
 
 	const item_ownership_runtime_entry accepted_atomic[] = {
-		{ 200, 200, 0, room, 1, 1, 9, item_custody_state::active },
-		{ 201, 201, 0, locker, 2, 4, 10, item_custody_state::active },
+		{ 202, 202, 0, room, 1, 1, 9, item_custody_state::active },
+		{ 203, 203, 0, locker, 2, 4, 10, item_custody_state::active },
 	};
 	assert(item_ownership_runtime_hydrate_many_atomic(accepted_atomic, 2));
-	assert(item_ownership_runtime_lookup(200, &absent));
+	assert(item_ownership_runtime_lookup(202, &absent));
 	assert(absent.owner.type == item_owner_type::room && absent.owner.id == 1200);
-	assert(item_ownership_runtime_lookup(201, &absent));
+	assert(item_ownership_runtime_lookup(203, &absent));
 	assert(absent.owner.type == item_owner_type::locker && absent.owner.id == 77);
 	return 0;
 }

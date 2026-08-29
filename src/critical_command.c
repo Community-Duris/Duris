@@ -15,7 +15,7 @@ constexpr unsigned char COMMAND_MAGIC[4] = { 'C', 'C', 'M', '1' };
 
 bool valid_entity_type(critical_entity_type type)
 {
-	return type >= critical_entity_type::player && type <= critical_entity_type::zone;
+	return type >= critical_entity_type::player && type <= critical_entity_type::shopkeeper;
 }
 
 template <typename T> void append_le(std::vector<uint8_t> &output, T value)
@@ -162,7 +162,7 @@ bool critical_command_valid(const critical_command &command)
 	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::session_audit ||
+	    command.type > critical_command_type::corpse_lifecycle ||
 	    command.source_site < critical_source_site::command ||
 	    command.source_site > critical_source_site::operator_repair ||
 	    command.deadline_class < critical_deadline_class::interactive ||

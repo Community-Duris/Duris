@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "runtime_entry": "src/files.c:deleteCharacter",
+  "core_coordinator": "src/flatfile_character_delete.c:flatfile_character_delete",
+  "runtime_exposure": "enabled",
+  "entries": [
+    {
+      "id": "identity",
+      "source": "core",
+      "key": "pid+canonical-name",
+      "disposition": "prepared_tombstone",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_identity_prepare_remove" }
+    },
+    {
+      "id": "account_membership",
+      "source": "runtime-call",
+      "key": "account+canonical-name",
+      "disposition": "covered_by_identity",
+      "evidence": { "path": "src/files.c", "token": "remove_char_from_list(ch->desc->account" }
+    },
+    {
+      "id": "player_snapshot",
+      "source": "core",
+      "key": "pid",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_player_snapshot_prepare_remove" }
+    },
+    {
+      "id": "player_domain",
+      "source": "core",
+      "key": "pid",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_player_domain_prepare_remove" }
+    },
+    {
+      "id": "item_custody",
+      "source": "core",
+      "key": "pid",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_item_repository_prepare_player_remove" }
+    },
+    {
+      "id": "boons",
+      "source": "core",
+      "key": "pid",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_boon_prepare_player_remove" }
+    },
+    {
+      "id": "recipes",
+      "source": "core",
+      "key": "pid",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_recipe_prepare_clear" }
+    },
+    {
+      "id": "spellbook",
+      "source": "core",
+      "key": "pid",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_spellbook_prepare_clear" }
+    },
+    {
+      "id": "offline_messages",
+      "source": "schema-derived",
+      "key": "pid",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_offline_message_prepare_remove" }
+    },
+    {
+      "id": "auctions",
+      "source": "schema-derived",
+      "key": "seller/winner/claim pid",
+      "disposition": "checked_empty",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_auction_check_player_unreferenced" }
+    },
+    {
+      "id": "artifacts",
+      "source": "runtime-call",
+      "key": "pid+item-vnum",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_artifact_prepare_player_release" }
+    },
+    {
+      "id": "locker_access",
+      "source": "runtime-call",
+      "key": "canonical-name",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_locker_prepare_player_remove" }
+    },
+    {
+      "id": "association_membership",
+      "source": "runtime-call",
+      "key": "association+pid",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_association_prepare_player_remove" }
+    },
+    {
+      "id": "frag_leaderboard",
+      "source": "runtime-call",
+      "key": "pid",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_frag_leaderboard_prepare_tombstone" }
+    },
+    {
+      "id": "locker_contents",
+      "source": "runtime-call",
+      "key": "pid+locker-id+chest-id",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_item_repository_prepare_player_and_custody_remove" }
+    },
+    {
+      "id": "ships_and_cargo",
+      "source": "runtime-call",
+      "key": "pid+canonical-name",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_ship_prepare_player_remove" }
+    },
+    {
+      "id": "corpses_and_saved_items",
+      "source": "schema-derived",
+      "key": "pid+save-id",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_world_item_prepare_player_remove" }
+    },
+    {
+      "id": "account_bound_summons",
+      "source": "schema-derived",
+      "key": "pid",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_account_reward_summon_prepare_player_remove" }
+    },
+    {
+      "id": "shop_trade_materializations",
+      "source": "schema-derived",
+      "key": "pid+operation-id",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_shop_trade_materialization_prepare_player_remove" }
+    },
+    {
+      "id": "historical_operation_ledgers",
+      "source": "schema-derived",
+      "key": "pid+operation-id",
+      "disposition": "retain_history",
+      "evidence": { "path": "migrations/data_lifecycle_manifest.json", "token": "database:critical_operation_inbox" }
+    }
+  ]
+}

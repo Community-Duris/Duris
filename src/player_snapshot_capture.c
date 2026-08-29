@@ -134,7 +134,12 @@ bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget
 	ADD_STATUS(vitality, GET_VITALITY(ch));
 	ADD_STATUS(base_vitality, ch->points.base_vitality);
 	ADD_STATUS(extra_memorization, ch->only.pc->spells_memmed[MAX_CIRCLE]);
+	ADD_STATUS(copper, GET_COPPER(ch));
+	ADD_STATUS(silver, GET_SILVER(ch));
+	ADD_STATUS(gold, GET_GOLD(ch));
+	ADD_STATUS(platinum, GET_PLATINUM(ch));
 	ADD_STATUS(experience, GET_EXP(ch));
+	ADD_STATUS(epics, ch->only.pc->epics);
 	ADD_STATUS(epic_skill_points, ch->only.pc->epic_skill_points);
 	ADD_STATUS(skill_points, ch->only.pc->skillpoints);
 	ADD_STATUS(spell_bind_used, ch->only.pc->spell_bind_used);
@@ -291,9 +296,9 @@ player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snaps
 player_snapshot_capture_result
 capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 		  std::vector<player_item_snapshot> &target, capture_budget &budget,
-		  std::unordered_set<const obj_data *> &seen, size_t depth)
+		  std::unordered_set<const obj_data *> &seen, size_t depth, bool omit_norent)
 {
-	if (!object || IS_SET(object->extra_flags, ITEM_NORENT))
+	if (!object || (omit_norent && IS_SET(object->extra_flags, ITEM_NORENT)))
 		return player_snapshot_capture_result::ok;
 	if (depth > PLAYER_SNAPSHOT_MAX_DEPTH)
 		return player_snapshot_capture_result::limit_exceeded;
@@ -388,8 +393,8 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	target.push_back(std::move(row));
 	for (const obj_data *content = object->contains; content; content = content->next_content)
 	{
-		const auto result =
-			capture_item_tree(content, row_index, 0, target, budget, seen, depth + 1);
+		const auto result = capture_item_tree(content, row_index, 0, target, budget, seen,
+						      depth + 1, omit_norent);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 	}
@@ -398,7 +403,8 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 
 player_snapshot_capture_result capture_items(P_char owner,
 					     std::vector<player_item_snapshot> &target,
-					     capture_budget &budget, bool equipment, bool inventory)
+					     capture_budget &budget, bool equipment, bool inventory,
+					     bool omit_norent)
 {
 	std::unordered_set<const obj_data *> seen;
 	if (equipment)
@@ -407,7 +413,7 @@ player_snapshot_capture_result capture_items(P_char owner,
 		{
 			const auto result = capture_item_tree(owner->equipment[slot],
 							      PLAYER_SNAPSHOT_NO_PARENT, slot + 1,
-							      target, budget, seen, 1);
+							      target, budget, seen, 1, omit_norent);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -418,7 +424,7 @@ player_snapshot_capture_result capture_items(P_char owner,
 		     object = object->next_content)
 		{
 			const auto result = capture_item_tree(object, PLAYER_SNAPSHOT_NO_PARENT, 0,
-							      target, budget, seen, 1);
+							      target, budget, seen, 1, omit_norent);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -469,7 +475,7 @@ player_snapshot_capture_result capture_pets(P_char ch, int save_intent, player_s
 				break;
 			}
 		}
-		const auto item_result = capture_items(pet, row.items, budget, true, true);
+		const auto item_result = capture_items(pet, row.items, budget, true, true, true);
 		if (item_result != player_snapshot_capture_result::ok)
 			return item_result;
 		snapshot.pets.push_back(std::move(row));
@@ -507,6 +513,58 @@ player_snapshot_capture_result capture_shapes_and_trophies(P_char ch,
 	return player_snapshot_capture_result::ok;
 }
 } // namespace
+
+player_snapshot_capture_result
+player_item_snapshot_list_capture(P_char owner, bool equipment, bool inventory, bool omit_norent,
+				  std::vector<player_item_snapshot> *items_out,
+				  size_t *estimated_bytes_out)
+{
+	if (!owner || !items_out || (!equipment && !inventory))
+		return player_snapshot_capture_result::invalid_identity;
+	try
+	{
+		std::vector<player_item_snapshot> items;
+		capture_budget budget;
+		const auto result =
+			capture_items(owner, items, budget, equipment, inventory, omit_norent);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+		*items_out = std::move(items);
+		if (estimated_bytes_out)
+			*estimated_bytes_out = budget.bytes;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+	return player_snapshot_capture_result::ok;
+}
+
+player_snapshot_capture_result
+player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> *items_out,
+				  size_t *estimated_bytes_out)
+{
+	if (!root || !items_out)
+		return player_snapshot_capture_result::invalid_identity;
+	try
+	{
+		capture_budget budget;
+		std::vector<player_item_snapshot> items;
+		std::unordered_set<const obj_data *> seen;
+		const auto result = capture_item_tree(root, PLAYER_SNAPSHOT_NO_PARENT, 0, items,
+						      budget, seen, 1, false);
+		if (result != player_snapshot_capture_result::ok)
+			return result;
+		*items_out = std::move(items);
+		if (estimated_bytes_out)
+			*estimated_bytes_out = budget.bytes;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+	return player_snapshot_capture_result::ok;
+}
 
 player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revision_t revision,
 						       player_component_mask_t components,
@@ -548,7 +606,8 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 		{
 			const auto result = capture_items(ch, snapshot.items, budget,
 							  components & PLAYER_COMPONENT_EQUIPMENT,
-							  components & PLAYER_COMPONENT_INVENTORY);
+							  components & PLAYER_COMPONENT_INVENTORY,
+							  true);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}

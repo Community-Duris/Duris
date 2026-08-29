@@ -479,7 +479,7 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		errno = EINVAL;
 		return false;
 	}
-	*result = { payload.selected_item_uid, payload.item_count, 0, 0, 0 };
+	*result = { payload.selected_item_uid, payload.item_count, 0, 0, 0, 0 };
 	*result_code = 0;
 	*mutation_applied = false;
 	uint64_t from_revision = 0, to_revision = 0;

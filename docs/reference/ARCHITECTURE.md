@@ -63,7 +63,7 @@ The explicit `ENVIRONMENT`, `DB_NAME`, and `DB_ALLOWED_TARGETS` settings select 
 authorize the database. The port is a second safety boundary: production role requires
 7777, and a non-default port redirects a production-like database name to `duris_dev`
 before allow-list validation. A development port is not permission to use an arbitrary
-target. See [CONFIGURATION.md](../operations/CONFIGURATION.md#database).
+target. See [CONFIGURATION.md](../operations/CONFIGURATION.md#persistence).
 
 ## Game loop and timing
 

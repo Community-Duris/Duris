@@ -20,10 +20,14 @@
 #include "assocs.h"
 #include "config.h"
 #include "deferred_save_policy.h"
+#include "corpse_lifecycle_transaction.h"
+#include "flatfile_character_delete.h"
+#include "flatfile_corpse_restore.h"
 #include "justice.h"
 #include "mm.h"
 #include "necromancy.h"
 #include "player_save_pipeline.h"
+#include "persistence_mode.h"
 #include "random.zone.h"
 #include "ships.h"
 #include "spells.h"
@@ -32,6 +36,11 @@
 #include "storage_lockers.h"
 #include "trophy.h"
 #include "vnum.obj.h"
+#include <array>
+#include <limits>
+#include <new>
+#include <string>
+#include <vector>
 using namespace std;
 
 extern P_char character_list;
@@ -1215,6 +1224,81 @@ int write_one_object(P_obj obj, char *dest_buff, int include_persistent_uid)
  * event of a crash.
  */
 
+namespace
+{
+bool capture_corpse_money(P_obj object, std::array<int32_t, 4> *money)
+{
+	if (!money)
+		return false;
+	std::vector<P_obj> pending;
+	try
+	{
+		for (P_obj current = object; current; current = current->next_content)
+			pending.push_back(current);
+		while (!pending.empty())
+		{
+			P_obj current = pending.back();
+			pending.pop_back();
+			if (GET_ITEM_TYPE(current) == ITEM_MONEY)
+				for (size_t denomination = 0; denomination < money->size();
+				     ++denomination)
+				{
+					if (current->value[denomination] < 0 ||
+					    (*money)[denomination] >
+						    std::numeric_limits<int32_t>::max() -
+							    current->value[denomination])
+						return false;
+					(*money)[denomination] += current->value[denomination];
+				}
+			for (P_obj child = current->contains; child; child = child->next_content)
+				pending.push_back(child);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool capture_corpse_lifecycle(P_obj corpse, corpse_lifecycle_action action,
+			      corpse_lifecycle_payload *payload)
+{
+	if (!corpse || !payload || !corpse->action_description || !*corpse->action_description ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	*payload = {};
+	payload->action = action;
+	payload->owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload->save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload->owner_name = corpse->action_description;
+	if (action == corpse_lifecycle_action::remove)
+		return true;
+	int room = NOWHERE;
+	if (OBJ_ROOM(corpse))
+		room = corpse->loc.room;
+	else if (OBJ_CARRIED(corpse) && corpse->loc.carrying)
+		room = corpse->loc.carrying->in_room;
+	if (room <= NOWHERE || room > top_of_world)
+		return false;
+	payload->room_vnum = world[room].number;
+	payload->weight = corpse->weight;
+	for (size_t index = 0; index < payload->values.size(); ++index)
+		payload->values[index] = corpse->value[index];
+	payload->short_description = corpse->short_description ? corpse->short_description : "";
+	payload->description = corpse->description ? corpse->description : "";
+	payload->keywords = corpse->name ? corpse->name : "";
+	return capture_corpse_money(corpse->contains, &payload->money);
+}
+
+bool stage_corpse_lifecycle(P_obj corpse, corpse_lifecycle_action action)
+{
+	corpse_lifecycle_payload payload = {};
+	return capture_corpse_lifecycle(corpse, action, &payload) &&
+	       corpse_lifecycle_transaction_stage(payload);
+}
+} // namespace
+
 void writeCorpse(P_obj corpse)
 {
 	extern int skip_corpse_save;
@@ -1224,6 +1308,20 @@ void writeCorpse(P_obj corpse)
 	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
 	{
 		logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		const bool present = OBJ_ROOM(corpse) ||
+				     (OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL);
+		if (present && corpse->value[CORPSE_SAVEID] == 0)
+			corpse->value[CORPSE_SAVEID] = time(NULL);
+		if ((!present && !corpse->value[CORPSE_SAVEID]) ||
+		    stage_corpse_lifecycle(corpse, present ? corpse_lifecycle_action::upsert :
+							     corpse_lifecycle_action::remove))
+			return;
+		persistence_alert(AVATAR, "corpse", "flatfile_lifecycle", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 		return;
 	}
 
@@ -1575,6 +1673,10 @@ int writeCharacter(P_char ch, int type, int room)
 		return 0;
 
 	const bool is_locker_char = (strstr(GET_NAME(ch), ".locker") != NULL);
+	const bool terminal_type = (type == RENT_INN || type == RENT_LINKDEAD ||
+				    type == RENT_CAMPED || type == RENT_DEATH ||
+				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
+				    type == RENT_FIGHTARTI);
 
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -1591,6 +1693,47 @@ int writeCharacter(P_char ch, int type, int room)
 		return queued == player_save_pipeline_result::queued ||
 		       queued == player_save_pipeline_result::coalesced;
 	}
+
+#ifdef __NO_MYSQL__
+	if (!is_locker_char &&
+	    (terminal_type || IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)))
+	{
+		room = calculate_save_room(ch, type, room);
+		if (ch->desc)
+			ch->desc->rtype = type;
+		const player_save_terminal_result saved =
+			player_save_pipeline_terminal(ch, type, room, 5000, false);
+		if (saved != player_save_terminal_result::database_acknowledged)
+			return 0;
+		clear_player_dirty_container_flags(ch);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+		if (terminal_type)
+		{
+			for (i = 0; i < MAX_WEAR; ++i)
+				save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
+			all_affects(ch, FALSE);
+			updateShortAffects(ch);
+			for (i = 0; i < MAX_WEAR; ++i)
+				if (save_equip[i])
+				{
+					extract_obj(save_equip[i]);
+					save_equip[i] = NULL;
+				}
+			for (obj = ch->carrying; obj; obj = obj2)
+			{
+				obj2 = obj->next_content;
+				extract_obj(obj);
+			}
+			all_affects(ch, TRUE);
+		}
+		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+		    world[ch->in_room].funct)
+			(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+		return 1;
+	}
+#endif
 
 	if (!is_locker_char)
 	{
@@ -1682,11 +1825,6 @@ int writeCharacter(P_char ch, int type, int room)
 		}
 	}
 
-	const bool terminal_type = (type == RENT_INN || type == RENT_LINKDEAD ||
-				    type == RENT_CAMPED || type == RENT_DEATH ||
-				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
-				    type == RENT_FIGHTARTI);
-
 	// Failed saves always restore the live recovery source. Terminal inventory may
 	// be extracted only after the database save has succeeded; a flat fallback is
 	// recovery evidence, not authorization to destroy live state.
@@ -1729,6 +1867,33 @@ int writeCharacter(P_char ch, int type, int room)
 
 int deleteCharacter(P_char ch, bool bDeleteLocker)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		if (!ch || !GET_NAME(ch) || GET_PID(ch) <= 0 || !bDeleteLocker)
+		{
+			logit(LOG_DEBUG,
+			      "deleteCharacter(): unsupported partial or invalid flat deletion request");
+			return FALSE;
+		}
+		std::string error;
+		const auto result = flatfile_character_delete(persistence_mode_flatfile_root(),
+							      GET_PID(ch), GET_NAME(ch), &error);
+		if (result != flatfile_character_delete_result::ok &&
+		    result != flatfile_character_delete_result::already_deleted)
+		{
+			logit(LOG_DEBUG, "deleteCharacter(): flat deletion failed for pid %d: %s",
+			      GET_PID(ch),
+			      error.empty() ? "unspecified authority failure" : error.c_str());
+			return FALSE;
+		}
+#ifdef USE_ACCOUNT
+		if (ch->desc && ch->desc->account)
+			remove_char_from_list(ch->desc->account, ch->player.name);
+#endif
+		delete_ship(GET_NAME(ch));
+		return TRUE;
+	}
+
 	char *tmp;
 	char name[MAX_STRING_LENGTH];
 	bool ok = TRUE;
@@ -1796,6 +1961,15 @@ void PurgeCorpseFile(P_obj corpse)
 	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
 	{
 		logit(LOG_DEBUG, "item not a corpse in PurgeCorpseFile");
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		if (!skip_corpse_save && corpse->value[CORPSE_SAVEID] &&
+		    !stage_corpse_lifecycle(corpse, corpse_lifecycle_action::remove))
+			persistence_alert(AVATAR, "corpse", "flatfile_remove", "none", "none",
+					  "stage_failed", "save_id=%d",
+					  corpse->value[CORPSE_SAVEID]);
 		return;
 	}
 
@@ -3966,6 +4140,18 @@ int restoreItemsOnly(P_char ch, int /*flatrate*/)
 
 void restoreCorpses(void)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		std::string error;
+		const char *root = persistence_mode_flatfile_root();
+		const auto restored = flatfile_corpse_restore_catalog(root ? root : "", &error);
+		if (restored != flatfile_corpse_restore_result::ok &&
+		    restored != flatfile_corpse_restore_result::not_found)
+			fatal_boot_error("corpse", "flat-file corpse restore failed: %s",
+					 error.empty() ? "invalid authoritative state" :
+							 error.c_str());
+		return;
+	}
 #ifndef __NO_MYSQL__
 	sql_load_all_corpses();
 #endif
@@ -4482,6 +4668,7 @@ P_char restoreShopKeeper(int id)
 #ifndef __NO_MYSQL__
 	return sql_restore_shopkeeper(id);
 #else
+	(void)id;
 	return NULL;
 #endif
 }

@@ -9,6 +9,116 @@ permissions:
   contents: read
 
 jobs:
+  flatfile-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install client-free build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential \
+            python3 \
+            openssl \
+            libxml2-dev \
+            zlib1g-dev \
+            gnutls-dev \
+            libcjson-dev \
+            libssl-dev \
+            libhiredis-dev \
+            libbsd-dev
+      - name: Build without MySQL and verify game-loop boot
+        run: python3 tests/async/test_flatfile_boot_preflight.py
+      - name: Verify flat-file account authority
+        run: python3 tests/async/test_flatfile_account_repository.py
+      - name: Verify flat-file identity authority
+        run: python3 tests/async/test_flatfile_identity_repository.py
+      - name: Verify flat-file account membership authority
+        run: python3 tests/async/test_flatfile_account_membership.py
+      - name: Verify flat-file account reward summon authority
+        run: python3 tests/async/test_flatfile_account_reward_summon_repository.py
+      - name: Verify flat-file player materialization
+        run: |
+          python3 tests/async/test_flatfile_player_repository.py
+          python3 tests/async/test_player_item_snapshot_codec.py
+      - name: Verify flat-file item UID authority
+        run: python3 tests/async/test_flatfile_item_uid_allocator.py
+      - name: Verify flat-file item ownership authority
+        run: |
+          python3 tests/async/test_flatfile_item_repository.py
+          python3 tests/async/test_item_transfer_version_compatibility.py
+          python3 tests/async/test_shop_trade_command.py
+      - name: Verify flat-file artifact authority
+        run: python3 tests/async/test_flatfile_artifact_repository.py
+      - name: Verify flat-file association authority
+        run: python3 tests/async/test_flatfile_association_repository.py
+      - name: Verify flat-file ship authority
+        run: |
+          python3 tests/async/test_flatfile_ship_repository.py
+          python3 tests/async/test_flatfile_cargo_market.py
+      - name: Verify flat-file nexus authority
+        run: python3 tests/async/test_flatfile_nexus_repository.py
+      - name: Verify flat-file shopkeeper authority
+        run: |
+          python3 tests/async/test_flatfile_shopkeeper_repository.py
+          python3 tests/async/test_flatfile_shop_trade_repository.py
+          python3 tests/async/test_shop_trade_transaction.py
+          python3 tests/async/test_shop_trade_runtime.py
+          python3 tests/async/test_shop_trade_live_route.py
+          python3 tests/async/test_flatfile_shopkeeper_capture.py
+          python3 tests/async/test_flatfile_shopkeeper_ownership.py
+          python3 tests/async/test_flatfile_shopkeeper_materialize.py
+          python3 tests/async/test_flatfile_shopkeeper_restore.py
+          python3 tests/async/test_flatfile_shopkeeper_save.py
+      - name: Verify flat-file world item authority
+        run: python3 tests/async/test_flatfile_world_item_repository.py
+      - name: Verify flat-file locker authority
+        run: python3 tests/async/test_flatfile_locker_repository.py
+      - name: Verify flat-file frag leaderboard authority
+        run: python3 tests/async/test_flatfile_frag_leaderboard_repository.py
+      - name: Verify flat-file player domain authority
+        run: python3 tests/async/test_flatfile_player_domain_repository.py
+      - name: Verify recoverable cross-authority transactions
+        run: python3 tests/async/test_flatfile_authority_transaction.py
+      - name: Verify recoverable flat-file character deletion
+        run: |
+          python3 tests/async/test_flatfile_character_delete.py
+          python3 tests/async/test_flatfile_character_delete_manifest.py
+      - name: Verify deletion-adjacent auction and offline-message authority
+        run: |
+          python3 tests/async/test_flatfile_auction_repository.py
+          python3 tests/async/test_flatfile_offline_message_repository.py
+      - name: Verify flat-file recipe authority
+        run: |
+          python3 tests/async/test_flatfile_recipe_repository.py
+          python3 tests/async/test_flatfile_recipe_runtime_contract.py
+      - name: Verify flat-file spellbook authority
+        run: |
+          python3 tests/async/test_flatfile_spellbook_repository.py
+          python3 tests/async/test_flatfile_spellbook_runtime_contract.py
+      - name: Verify flat-file global timers
+        run: python3 tests/async/test_flatfile_timers.py
+      - name: Verify flat-file polls
+        run: python3 tests/async/test_flatfile_polls.py
+      - name: Verify flat-file towns
+        run: python3 tests/async/test_flatfile_towns.py
+      - name: Verify flat-file siege objects
+        run: python3 tests/async/test_flatfile_siege.py
+      - name: Verify flat-file help catalog
+        run: python3 tests/async/test_flatfile_help_catalog.py
+      - name: Verify database-independent launcher
+        run: python3 tests/async/test_flatfile_launcher.py
+      - name: Verify flat-file multiplay whitelist
+        run: python3 tests/async/test_flatfile_multiplay_whitelist.py
+      - name: Verify flat-file operational audit logging
+        run: python3 tests/async/test_flatfile_sql_log.py
+      - name: Verify flat-file IP activity and one-hour rule
+        run: python3 tests/async/test_flatfile_ip_activity.py
+      - name: Verify flat-file world-quest history
+        run: python3 tests/async/test_flatfile_world_quest_history.py
+      - name: Verify flat-file shop-trophy history
+        run: python3 tests/async/test_flatfile_shop_trophy_history.py
+
   quality:
     runs-on: ubuntu-24.04
     steps:
@@ -35,5 +145,7 @@ jobs:
           bash -n \
             migrations/adopt_migration_baseline.sh \
             migrations/run_migration.sh \
+            scripts/backup_pfiles.sh \
             scripts/clear-redis.sh \
+            scripts/cycle_mud.sh \
             scripts/start_mud.sh

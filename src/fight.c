@@ -57,6 +57,7 @@
 #include "world_quest.h"
 #include "ws_handlers.h"
 #include "artifact_guild_transaction.h"
+#include "corpse_lifecycle_transaction.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
 #include "combat_outcome_transaction.h"
@@ -1483,7 +1484,7 @@ P_obj corpse_live_item(uint64_t uid)
 
 bool submit_next_corpse_item(P_char character, P_obj corpse);
 
-void corpse_item_completion(P_char character, bool committed, const item_transfer_result &,
+void corpse_item_completion(P_char character, bool committed, const item_transfer_result &result,
 			    unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
 	if (!character || !encoded || encoded_size != sizeof(corpse_transfer_context))
@@ -1505,6 +1506,12 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
 		return;
 	}
+	if (result.corpse_revision &&
+	    !corpse_lifecycle_transaction_note_item_transfer(
+		    static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+		    static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]), result.corpse_revision))
+		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
+				  "runtime_rejected", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 	obj_from_char(item);
 	obj_to_obj(item, corpse);
 	mark_player_dirty_components(GET_PID(character), PLAYER_COMPONENT_STATUS |
@@ -1555,7 +1562,7 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 	if (!item_movement_transaction_submit(character, item, NULL, source, destination,
 					      item_transfer_reason::corpse_create,
 					      corpse->value[CORPSE_SAVEID], corpse_item_completion,
-					      &context, sizeof(context)))
+					      &context, sizeof(context), corpse))
 	{
 		persistence_alert(AVATAR, "corpse", "ownership_submit", "none", "none",
 				  "failed_preserved", "item_uid=%llu", item->obj_uid);
@@ -1659,8 +1666,8 @@ P_obj make_corpse(P_char ch, int loss)
 	else
 	{
 		e_time = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
-		corpse->weight = GET_WEIGHT(ch) + total_carried_weight(ch);
-		corpse->value[CORPSE_WEIGHT] = total_carried_weight(ch); /* contains */
+		corpse->weight = GET_WEIGHT(ch);
+		corpse->value[CORPSE_WEIGHT] = 0;
 		corpse->value[CORPSE_FLAGS] = PC_CORPSE;
 		corpse->value[CORPSE_PID] = GET_PID(ch);
 
@@ -1681,7 +1688,7 @@ P_obj make_corpse(P_char ch, int loss)
 	account_bound_reward_prepare_player_corpse(ch, corpse);
 	if (IS_PC(ch))
 	{
-		int contents_weight = corpse->weight - GET_WEIGHT(ch);
+		int contents_weight = total_carried_weight(ch);
 		corpse->value[CORPSE_WEIGHT] = contents_weight > 0 ? contents_weight : 0;
 	}
 

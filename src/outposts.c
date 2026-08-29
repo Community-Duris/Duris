@@ -15,7 +15,9 @@
 */
 
 #include <cstring>
+#include <new>
 #include <stdlib.h>
+#include <string>
 #include <vector>
 using namespace std;
 
@@ -42,6 +44,11 @@ using namespace std;
 #include "spells.h"
 #include "sql.h"
 
+#ifdef __NO_MYSQL__
+#include "flatfile_association_repository.h"
+#include "persistence_mode.h"
+#endif
+
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_room world;
@@ -61,33 +68,9 @@ extern const long boot_time;
 	(GET_ASSOC(ch) && (IS_LEADER(GET_M_BITS(GET_A_BITS(ch), A_RK_MASK)) || \
 			   GT_LEADER(GET_M_BITS(GET_A_BITS(ch), A_RK_MASK))))
 
-#ifdef __NO_MYSQL__
-int init_outposts()
-{
-	// load nothing
-}
-
-void do_outpost(P_char ch, char *arg, int cmd)
-{
-	// do nothing
-}
-
-int get_current_outpost_hitpoints(Building *building)
-{
-	return 0;
-}
-
-void outpost_update_resources(P_char ch, int wood, int stone) {}
-
-int outpost_rubble(P_obj obj, P_char ch, int cmd, char *arg)
-{
-	return 0;
-}
-void set_current_outpost_hitpoints(Building *building) {}
-void outpost_death(P_char outpost, P_char killer) {}
-#else
-
+#ifndef __NO_MYSQL__
 extern MYSQL *DB;
+#endif
 
 // Location, entrance dir
 int outpost_locations[][2] = {
@@ -98,6 +81,181 @@ int outpost_locations[][2] = {
 	{ 0, 0 }
 };
 
+namespace
+{
+constexpr int outpost_count = 3;
+
+struct runtime_outpost_record
+{
+	int id = 0;
+	unsigned int owner_id = 0;
+	int level = 1;
+	int walls = 0;
+	int archers = 0;
+	int resources = 0;
+	int applied_resources = 100000;
+	int hitpoints = 0;
+	int territory = 0;
+	int portal_room = 0;
+	int golems = 0;
+	int meurtriere = 0;
+	int scouts = 0;
+};
+
+#ifdef __NO_MYSQL__
+std::vector<runtime_outpost_record> default_outposts()
+{
+	std::vector<runtime_outpost_record> records;
+	for (int id = 0; outpost_locations[id][0]; ++id)
+	{
+		runtime_outpost_record record;
+		record.id = id;
+		records.push_back(record);
+	}
+	return records;
+}
+flatfile_outpost_record flat_outpost(const runtime_outpost_record &source)
+{
+	flatfile_outpost_record record;
+	record.outpost_id = source.id;
+	record.owner_association_id = source.owner_id;
+	record.level = source.level;
+	record.walls = source.walls;
+	record.archers = source.archers;
+	record.resources = source.resources;
+	record.applied_resources = source.applied_resources;
+	record.hitpoints = source.hitpoints;
+	record.territory = source.territory;
+	record.portal_room = source.portal_room;
+	record.golems = source.golems;
+	record.meurtriere = source.meurtriere;
+	record.scouts = source.scouts;
+	return record;
+}
+
+runtime_outpost_record runtime_outpost(const flatfile_outpost_record &source)
+{
+	runtime_outpost_record record;
+	record.id = source.outpost_id;
+	record.owner_id = source.owner_association_id;
+	record.level = source.level;
+	record.walls = source.walls;
+	record.archers = source.archers;
+	record.resources = source.resources;
+	record.applied_resources = source.applied_resources;
+	record.hitpoints = source.hitpoints;
+	record.territory = source.territory;
+	record.portal_room = source.portal_room;
+	record.golems = source.golems;
+	record.meurtriere = source.meurtriere;
+	record.scouts = source.scouts;
+	return record;
+}
+#endif
+
+bool load_outpost_records(std::vector<runtime_outpost_record> *records, bool establish)
+{
+	if (!records)
+		return false;
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+		return false;
+	std::string error;
+	std::vector<flatfile_outpost_record> stored;
+	auto listed = flatfile_outpost_list(root, &stored, &error);
+	if (listed == flatfile_association_result::not_found && establish)
+	{
+		std::vector<flatfile_outpost_record> defaults;
+		for (const auto &record : default_outposts())
+			defaults.push_back(flat_outpost(record));
+		const auto created = flatfile_outpost_establish(root, defaults, &error);
+		if (created != flatfile_association_result::ok &&
+		    created != flatfile_association_result::already_exists)
+			return false;
+		listed = flatfile_outpost_list(root, &stored, &error);
+	}
+	if (listed != flatfile_association_result::ok)
+		return false;
+	records->clear();
+	try
+	{
+		records->reserve(stored.size());
+		for (const auto &record : stored)
+			records->push_back(runtime_outpost(record));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+#else
+	if (establish)
+		for (int id = 0; outpost_locations[id][0]; ++id)
+			if (!qry("INSERT IGNORE into outposts(id) VALUES(%d)", id))
+				return false;
+	if (!qry("SELECT id, owner_id, level, walls, archers, resources, applied_resources, hitpoints, territory, portal_room, golems, meurtriere, scouts FROM outposts ORDER BY id"))
+		return false;
+	MYSQL_RES *result = mysql_store_result(DB);
+	if (!result)
+		return false;
+	records->clear();
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
+	{
+		runtime_outpost_record record;
+		record.id = atoi(row[0]);
+		record.owner_id = atoi(row[1]);
+		record.level = atoi(row[2]);
+		record.walls = atoi(row[3]);
+		record.archers = atoi(row[4]);
+		record.resources = atoi(row[5]);
+		record.applied_resources = atoi(row[6]);
+		record.hitpoints = atoi(row[7]);
+		record.territory = atoi(row[8]);
+		record.portal_room = atoi(row[9]);
+		record.golems = atoi(row[10]);
+		record.meurtriere = atoi(row[11]);
+		record.scouts = atoi(row[12]);
+		records->push_back(record);
+	}
+	mysql_free_result(result);
+	return true;
+#endif
+}
+
+bool load_outpost_record(int id, runtime_outpost_record *record)
+{
+	std::vector<runtime_outpost_record> records;
+	if (!record || !load_outpost_records(&records, false))
+		return false;
+	for (const auto &candidate : records)
+		if (candidate.id == id)
+		{
+			*record = candidate;
+			return true;
+		}
+	return false;
+}
+
+#ifdef __NO_MYSQL__
+bool save_outpost_record(const runtime_outpost_record &record, const char *operation)
+{
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto saved = root ? flatfile_outpost_save(root, flat_outpost(record), &error) :
+				  flatfile_association_result::io_error;
+	if (saved == flatfile_association_result::ok ||
+	    saved == flatfile_association_result::unchanged)
+		return true;
+	const std::string key = std::to_string(record.id);
+	persistence_alert(AVATAR, "outposts", key.c_str(), "none", "none", operation,
+			  "flat outpost mutation failed: %s", error.c_str());
+	return false;
+}
+#endif
+} // namespace
+
 int init_outposts()
 {
 	fprintf(stderr, "-- Booting outposts\r\n");
@@ -107,7 +265,7 @@ int init_outposts()
 	// obj_index[real_object(0)].func.obj = ;
 
 	if (!load_outposts())
-		fatal_boot_error("outposts", "init_outposts: failed to load outposts from DB");
+		fatal_boot_error("outposts", "init_outposts: failed to load outpost authority");
 
 	// init_outpost_resources();
 	return 0;
@@ -115,120 +273,77 @@ int init_outposts()
 
 int load_outposts()
 {
-	for (int i = 0; outpost_locations[i][0]; i++)
-		qry("INSERT IGNORE into outposts(id) VALUES(%d)", i);
-
-	// load outposts from DB
-	if (!qry("SELECT id, owner_id, level, walls, portal_room, golems FROM outposts"))
+	std::vector<runtime_outpost_record> records;
+	if (!load_outpost_records(&records, true))
 	{
-		debug("load_outposts() can't read from db");
+		debug("load_outposts() can't read persistence authority");
 		return FALSE;
 	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
+	if (records.size() != outpost_count)
 	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		debug("load_outposts() expected %d records, found %zu", outpost_count,
+		      records.size());
 		return FALSE;
 	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return TRUE;
-	}
-
-	MYSQL_ROW row;
 	Building *building;
-	while ((row = mysql_fetch_row(res)))
+	for (const auto &record : records)
 	{
-		int id = atoi(row[0]);
-		int guild = atoi(row[1]);
-		int level = atoi(row[2]);
-		int walls = atoi(row[3]);
-		int portal = atoi(row[4]);
-		int golems = atoi(row[5]);
-
-		if ((building = load_building(get_guild_from_id(guild), BUILDING_OUTPOST,
-					      outpost_locations[id][0], level)))
+		if (record.id < 0 || record.id >= outpost_count || !outpost_locations[record.id][0])
 		{
-			building->set_dir(outpost_locations[id][1]);
-			outpost_generate_walls(building, walls, golems);
-			if (portal)
+			debug("load_outposts() found invalid outpost id %d", record.id);
+			return FALSE;
+		}
+		P_Guild guild = get_guild_from_id(record.owner_id);
+#ifdef __NO_MYSQL__
+		if (record.owner_id && !guild)
+			fatal_boot_error("outposts", "flat outpost %d references missing guild %u",
+					 record.id, record.owner_id);
+#endif
+		if ((building = load_building(guild, BUILDING_OUTPOST,
+					      outpost_locations[record.id][0], record.level)))
+		{
+			building->set_dir(outpost_locations[record.id][1]);
+			outpost_generate_walls(building, record.walls, record.golems);
+			if (record.portal_room)
 				building->generate_portals();
 		}
 		else
 		{
-			mysql_free_result(res);
 			fatal_boot_error(
 				"outposts",
-				"load_outposts: failed to instantiate outpost %d for guild %d", id,
-				guild);
+				"load_outposts: failed to instantiate outpost %d for guild %u",
+				record.id, record.owner_id);
 		}
 	}
-
-	mysql_free_result(res);
 
 	return TRUE;
 }
 
 void show_outposts(P_char ch)
 {
-	char buff[MAX_STRING_LENGTH], Gbuf1[MAX_STRING_LENGTH];
-	char title[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH], title[MAX_STRING_LENGTH];
 	int i;
-	FILE *f;
 	Building *building;
 
 	send_to_char("&+WList of outposts:&n\r\n", ch);
 	for (i = 0; i < static_cast<int>(buildings.size()); i++)
 	{
 		building = get_building_from_id(i + 1);
-		if (!qry("SELECT id, owner_id, archers, portal_room, golems, hitpoints, meurtriere FROM outposts WHERE id = %d",
-			 i))
+		runtime_outpost_record record;
+		if (!building || !load_outpost_record(i, &record))
 		{
-			debug("show_outposts() cant read from db");
+			debug("show_outposts() can't read persistence authority");
 			return;
 		}
-
-		MYSQL_RES *res = mysql_store_result(DB);
-		if (!res)
-		{
-			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-			return;
-		}
-
-		if (mysql_num_rows(res) < 1)
-		{
-			mysql_free_result(res);
-			return;
-		}
-
-		MYSQL_ROW row = mysql_fetch_row(res);
-
-		int owner = atoi(row[1]);
-		int archers = atoi(row[2]);
-		int portal = atoi(row[3]);
-		int golems = atoi(row[4]);
-		int hitp = atoi(row[5]);
-		int meurtriere = atoi(row[6]);
-
-		mysql_free_result(res);
-
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%sasc.%u", ASC_DIR, (ush_int)owner);
-		f = fopen(Gbuf1, "r");
-		if (!f)
-		{
-			snprintf(title, MAX_STRING_LENGTH, "Unknown");
-		}
-		else
-		{
-			REQUIRED_FGETS(Gbuf2, MAX_STR_NORMAL, f);
-			Gbuf2[strlen(Gbuf2) - 1] = 0;
-			Gbuf2[ASC_MAX_STR - 1] = 0;
-			strcpy(title, Gbuf2);
-			fclose(f);
-		}
+		const unsigned int owner = record.owner_id;
+		const int archers = record.archers;
+		const int portal = record.portal_room;
+		const int golems = record.golems;
+		const int hitp = record.hitpoints;
+		const int meurtriere = record.meurtriere;
+		P_Guild owner_guild = get_guild_from_id(owner);
+		snprintf(title, MAX_STRING_LENGTH, "%s",
+			 owner_guild ? owner_guild->get_name().c_str() : "Unknown");
 
 		checked_snprintf(
 			buff, MAX_STRING_LENGTH,
@@ -263,182 +378,85 @@ void show_outposts(P_char ch)
 
 int get_current_outpost_hitpoints(Building *building)
 {
-	if (!qry("SELECT id, hitpoints FROM outposts WHERE id = %d", building->get_id() - 1))
+	runtime_outpost_record record;
+	if (!building || !load_outpost_record(building->get_id() - 1, &record))
 	{
-		debug("get_current_outpost_hitpoints() cant read from db");
+		debug("get_current_outpost_hitpoints() can't read persistence authority");
 		return FALSE;
 	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return FALSE;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int hitpoints = atoi(row[1]);
-
-	mysql_free_result(res);
-
-	return hitpoints;
+	return record.hitpoints;
 }
 
 P_Guild get_outpost_owner(Building *building)
 {
-	if (!qry("SELECT id, owner_id FROM outposts WHERE id = %d", building->get_id() - 1))
+	runtime_outpost_record record;
+	if (!building || !load_outpost_record(building->get_id() - 1, &record))
 	{
-		debug("get_outpost_owner() cant read from db");
+		debug("get_outpost_owner() can't read persistence authority");
 		return NULL;
 	}
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return NULL;
-	}
+	return get_guild_from_id(record.owner_id);
+}
 
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return NULL;
-	}
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int owner = atoi(row[1]);
-
-	mysql_free_result(res);
-
-	return get_guild_from_id(owner);
+bool persist_outpost_owner(Building *building, P_Guild owner)
+{
+	if (!building || !building->get_id())
+		return false;
+	const unsigned int owner_id = owner ? owner->get_id() : 0;
+#ifdef __NO_MYSQL__
+	runtime_outpost_record record;
+	if (!load_outpost_record(building->get_id() - 1, &record))
+		return false;
+	record.owner_id = owner_id;
+	return save_outpost_record(record, "owner");
+#else
+	return qry("UPDATE outposts SET owner_id = '%u' WHERE id = '%d'", owner_id,
+		   building->get_id() - 1);
+#endif
 }
 
 int get_outpost_resources(Building *building, int type)
 {
-	if (!qry("SELECT id, owner_id FROM outposts WHERE id = %d", building->get_id() - 1))
+	runtime_outpost_record record;
+	if (!building || !load_outpost_record(building->get_id() - 1, &record))
 	{
-		debug("get_outpost_resources() cant read from db");
+		debug("get_outpost_resources() can't read persistence authority");
 		return FALSE;
 	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return FALSE;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int id = atoi(row[1]);
-
-	mysql_free_result(res);
-
-	int resources = get_guild_resources(id, type);
-
-	return resources;
+	return get_guild_resources(record.owner_id, type);
 }
 
 int get_outpost_golems(Building *building)
 {
-	if (!qry("SELECT id, golems FROM outposts WHERE id = %d", building->get_id() - 1))
+	runtime_outpost_record record;
+	if (!building || !load_outpost_record(building->get_id() - 1, &record))
 	{
-		debug("get_outpost_resources() cant read from db");
+		debug("get_outpost_golems() can't read persistence authority");
 		return FALSE;
 	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return FALSE;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int golems = atoi(row[1]);
-
-	mysql_free_result(res);
-
-	return golems;
+	return record.golems;
 }
 
 int get_outpost_archers(Building *building)
 {
-	if (!qry("SELECT id, archers FROM outposts WHERE id = %d", building->get_id() - 1))
+	runtime_outpost_record record;
+	if (!building || !load_outpost_record(building->get_id() - 1, &record))
 	{
-		debug("get_outpost_archers() cant read from db");
+		debug("get_outpost_archers() can't read persistence authority");
 		return FALSE;
 	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return FALSE;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int archers = atoi(row[1]);
-
-	mysql_free_result(res);
-
-	return archers;
+	return record.archers;
 }
 
 int get_outpost_meurtriere(Building *building)
 {
-	if (!qry("SELECT id, meurtriere FROM outposts WHERE id = %d", building->get_id() - 1))
+	runtime_outpost_record record;
+	if (!building || !load_outpost_record(building->get_id() - 1, &record))
 	{
-		debug("get_outpost_meurtriere() cant read from db");
+		debug("get_outpost_meurtriere() can't read persistence authority");
 		return FALSE;
 	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return FALSE;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	int meurtriere = atoi(row[1]);
-
-	mysql_free_result(res);
-
-	return meurtriere;
+	return record.meurtriere;
 }
 
 int get_guild_resources(int id, int type)
@@ -454,6 +472,10 @@ int get_guild_resources(int id, int type)
 		return FALSE;
 	}
 
+#ifdef __NO_MYSQL__
+	// The resource-harvest feature that used these legacy association fields is disabled.
+	return 0;
+#else
 	if (!qry("SELECT id, wood, stone FROM associations WHERE id = %d", id))
 	{
 		// WHY IS THIS FAILING?
@@ -481,13 +503,27 @@ int get_guild_resources(int id, int type)
 	mysql_free_result(res);
 
 	return resources;
+#endif
 }
 
 void set_current_outpost_hitpoints(Building *building)
 {
+#ifdef __NO_MYSQL__
+	if (!building)
+		return;
+	runtime_outpost_record record;
+	if (!load_outpost_record(building->get_id() - 1, &record))
+	{
+		debug("set_current_outpost_hitpoints() can't read persistence authority");
+		return;
+	}
+	record.hitpoints = (GET_HIT(building->get_mob()) < 0) ? 0 : GET_HIT(building->get_mob());
+	save_outpost_record(record, "hitpoints");
+#else
 	db_query("UPDATE outposts SET hitpoints='%d' WHERE id='%d'",
 		 ((GET_HIT(building->get_mob()) < 0) ? 0 : GET_HIT(building->get_mob())),
 		 building->get_id() - 1);
+#endif
 }
 
 void do_outpost(P_char ch, char *arg, int /*cmd*/)
@@ -758,8 +794,17 @@ void do_outpost(P_char ch, char *arg, int /*cmd*/)
 
 		if (building->generate_portals())
 		{
+#ifdef __NO_MYSQL__
+			runtime_outpost_record record;
+			if (load_outpost_record(building->get_id() - 1, &record))
+			{
+				record.portal_room = 1;
+				save_outpost_record(record, "portal");
+			}
+#else
 			db_query("UPDATE outposts SET portal_room = '1' WHERE id = '%d'",
 				 building->get_id() - 1);
+#endif
 			send_to_char("Your outpost now contains portals.\r\n", ch);
 		}
 		else
@@ -803,8 +848,17 @@ void do_outpost(P_char ch, char *arg, int /*cmd*/)
 
 		building->load_gateguard(building->get_golem_room(), OUTPOST_GATEGUARD_WAR,
 					 (get_outpost_golems(building)));
+#ifdef __NO_MYSQL__
+		runtime_outpost_record record;
+		if (load_outpost_record(building->get_id() - 1, &record))
+		{
+			record.golems = get_outpost_golems(building) + 1;
+			save_outpost_record(record, "golems");
+		}
+#else
 		db_query("UPDATE outposts SET golems = '%d' WHERE id = '%d'",
 			 (get_outpost_golems(building) + 1), building->get_id() - 1);
+#endif
 		send_to_char("You hire a new outpost gateguard.\r\n", ch);
 		return;
 	}
@@ -844,8 +898,17 @@ void do_outpost(P_char ch, char *arg, int /*cmd*/)
 			return;
 		}
 
+#ifdef __NO_MYSQL__
+		runtime_outpost_record record;
+		if (load_outpost_record(building->get_id() - 1, &record))
+		{
+			record.archers = 1;
+			save_outpost_record(record, "archers");
+		}
+#else
 		db_query("UPDATE outposts SET archers = '1' WHERE id = '%d'",
 			 building->get_id() - 1);
+#endif
 		send_to_char("You hire archers to defend your outpost.\r\n", ch);
 		return;
 	}
@@ -885,8 +948,17 @@ void do_outpost(P_char ch, char *arg, int /*cmd*/)
 			return;
 		}
 
+#ifdef __NO_MYSQL__
+		runtime_outpost_record record;
+		if (load_outpost_record(building->get_id() - 1, &record))
+		{
+			record.meurtriere = 1;
+			save_outpost_record(record, "meurtriere");
+		}
+#else
 		db_query("UPDATE outposts SET meurtriere = '1' WHERE id = '%d'",
 			 building->get_id() - 1);
+#endif
 		send_to_char("Your outpost gate now posseses a meurtriere.", ch);
 		return;
 	}
@@ -1072,6 +1144,13 @@ P_Guild get_killing_association(P_char ch)
 // Add resources to a player's guild's current resource pool
 void outpost_update_resources(P_char ch, int wood, int stone)
 {
+#ifdef __NO_MYSQL__
+	(void)ch;
+	(void)wood;
+	(void)stone;
+	// Resource harvesting is disabled in the live outpost rubble path.
+	return;
+#else
 	if (!qry("SELECT id, wood, stone FROM associations WHERE id = %d", GET_ASSOC(ch)))
 	{
 		debug("outpost_update_resources() cant read from db");
@@ -1100,36 +1179,64 @@ void outpost_update_resources(P_char ch, int wood, int stone)
 
 	db_query("UPDATE associations SET wood='%d', stone='%d' WHERE id='%d'",
 		 (int)(wood + cur_wood), (int)(stone + cur_stone), GET_ASSOC(ch));
+#endif
 }
 
 void update_outpost_golems(Building *building, int amount)
 {
-	if (!building->get_id())
+	if (!building || !building->get_id())
 	{
 		debug("error calling update_outpost_golems, no building ID available");
 		return;
 	}
 
+#ifdef __NO_MYSQL__
+	runtime_outpost_record record;
+	if (!load_outpost_record(building->get_id() - 1, &record))
+		return;
+	record.golems = BOUNDED(0, record.golems + amount, MAX_OUTPOST_GATEGUARDS);
+	save_outpost_record(record, "golems");
+#else
 	db_query("UPDATE outposts SET golems = '%d' WHERE id = '%d'",
 		 BOUNDED(0, (get_outpost_golems(building) + amount), MAX_OUTPOST_GATEGUARDS),
 		 building->get_id() - 1);
+#endif
 	return;
 }
 
-void reset_one_outpost(Building *building)
+bool reset_one_outpost(Building *building)
 {
 	int id;
 
-	if (!building->get_id())
+	if (!building || !building->get_id())
 	{
 		debug("error calling reset_one_outpost, no building ID available");
-		return;
+		return false;
 	}
 	id = building->get_id() - 1;
 
-	db_query(
-		"UPDATE outposts SET owner_id = '0', level = '8', walls = '1', archers = '0', meurtriere = '0', hitpoints = '%d', portal_room = '0' WHERE id = '%d'",
-		building_types[BUILDING_OUTPOST - 1].hitpoints, id);
+#ifdef __NO_MYSQL__
+	runtime_outpost_record record;
+	if (!load_outpost_record(id, &record))
+	{
+		debug("reset_one_outpost() can't read persistence authority");
+		return false;
+	}
+	record.owner_id = 0;
+	record.level = 8;
+	record.walls = 1;
+	record.archers = 0;
+	record.meurtriere = 0;
+	record.hitpoints = building_types[BUILDING_OUTPOST - 1].hitpoints;
+	record.portal_room = 0;
+	if (!save_outpost_record(record, "reset"))
+		return false;
+#else
+	if (!qry("UPDATE outposts SET owner_id = '0', level = '8', walls = '1', archers = '0', meurtriere = '0', hitpoints = '%d', portal_room = '0' WHERE id = '%d'",
+		 building_types[BUILDING_OUTPOST - 1].hitpoints, id))
+		return false;
+#endif
+	building->set_guild(NULL);
 
 	GET_MAX_HIT(building->get_mob()) = building->get_mob()->points.base_hit =
 		GET_HIT(building->get_mob()) = building_types[BUILDING_OUTPOST - 1].hitpoints;
@@ -1138,6 +1245,7 @@ void reset_one_outpost(Building *building)
 
 	// remove portals
 	building->clear_portal_op();
+	return true;
 }
 
 void reset_outposts(P_char /*ch*/)
@@ -1702,5 +1810,3 @@ int outpost_meurtriere_attack(P_char ch)
 
 	return 0;
 }
-
-#endif

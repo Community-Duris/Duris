@@ -26,6 +26,7 @@
 #include "player_load_materialize.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
+#include "flatfile_account_adapter.h"
 #include "ws_handlers.h"
 
 #include <unordered_map>
@@ -2302,15 +2303,18 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 	if (!acct || !acct->acct_name)
 		return -1;
 
-#ifndef __NO_MYSQL__
-
 	char name_backup[256];
 	strlcpy(name_backup, acct->acct_name, sizeof(name_backup));
 
+#ifndef __NO_MYSQL__
 	struct acct_entry *loaded = sql_load_account(name_backup);
+#else
+	std::string flatfile_error;
+	struct acct_entry *loaded = flatfile_account_state_load(name_backup, &flatfile_error);
+#endif
 	if (!loaded)
 	{
-		logit(LOG_FILE, "sql_load_account failed");
+		logit(LOG_FILE, "account load failed");
 		return -1;
 	}
 
@@ -2363,13 +2367,11 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 	acct->acct_flags2 = loaded->acct_flags2;
 	acct->acct_flags3 = loaded->acct_flags3;
 	acct->acct_flags4 = loaded->acct_flags4;
+	acct->persistence_revision = loaded->persistence_revision;
 
 	// free the container (but not the contents we transferred)
 	free(loaded);
 	return 1;
-#else
-	return -1;
-#endif
 }
 
 int write_account(P_acct acct) // returns -1 if error, 1 if no errors
@@ -2383,6 +2385,13 @@ int write_account(P_acct acct) // returns -1 if error, 1 if no errors
 	if (!sql_save_account(acct))
 	{
 		logit(LOG_FILE, "sql_save_account failed");
+		return -1;
+	}
+#else
+	std::string flatfile_error;
+	if (!flatfile_account_state_save(acct, &flatfile_error))
+	{
+		logit(LOG_FILE, "flat-file account save failed");
 		return -1;
 	}
 #endif
@@ -2674,6 +2683,7 @@ void clear_account(P_acct acct)
 	acct->acct_flags2 = 0;
 	acct->acct_flags3 = 0;
 	acct->acct_flags4 = 0;
+	acct->persistence_revision = 0;
 
 	acct->next = NULL;
 }
@@ -2756,6 +2766,12 @@ bool account_exists(const char *dir, char *name)
 	// check database first
 	if (sql_account_exists(name))
 		return TRUE;
+#else
+	bool exists = false;
+	std::string flatfile_error;
+	if (!flatfile_account_state_exists(name, &exists, &flatfile_error))
+		return FALSE;
+	return exists;
 #endif
 
 	// fallback to file check

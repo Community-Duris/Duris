@@ -136,7 +136,8 @@ enum class metadata_validation_outcome
 };
 
 metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item,
-						const player_load_item_identity &identity)
+						const player_load_item_identity &identity,
+						bool complete_snapshot_state)
 {
 	constexpr uint8_t allowed_string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 |
 						STRUNG_DESC3;
@@ -146,9 +147,18 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 	    item.timers[0] < std::numeric_limits<time_t>::min() ||
 	    item.timers[0] > std::numeric_limits<time_t>::max())
 		return metadata_validation_outcome::invalid;
+	if (complete_snapshot_state)
+		for (int64_t timer : item.timers)
+			if (timer < std::numeric_limits<time_t>::min() ||
+			    timer > std::numeric_limits<time_t>::max())
+				return metadata_validation_outcome::invalid;
 	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_TYPE) &&
 	    (item.type < ITEM_LOWEST || item.type > ITEM_LAST))
 		return metadata_validation_outcome::invalid;
+	if (complete_snapshot_state)
+		for (const auto &affect : item.dynamic_affects)
+			if (affect.extra2 > ULONG_MAX)
+				return metadata_validation_outcome::invalid;
 	for (const auto &affect : item.affects)
 		if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) &&
 		    (affect[0] < 0 || affect[0] > APPLY_LAST || affect[1] < INT8_MIN ||
@@ -308,12 +318,14 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 }
 }
 
-bool player_load_item_graph_materialize(P_char character,
-					const std::vector<player_item_snapshot> &items,
-					const std::vector<player_load_item_identity> &identities,
-					int32_t pid, uint64_t owner_revision,
-					bool hydrate_ownership,
-					player_load_item_materialize_metrics *metrics)
+namespace
+{
+bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots,
+			    const std::vector<player_item_snapshot> &items,
+			    const std::vector<player_load_item_identity> &identities,
+			    const item_owner_identity &expected_owner, uint64_t owner_revision,
+			    bool hydrate_ownership, bool complete_snapshot_state,
+			    player_load_item_materialize_metrics *metrics)
 {
 	player_load_item_materialize_metrics local_metrics = {};
 	if (!metrics)
@@ -321,14 +333,29 @@ bool player_load_item_graph_materialize(P_char character,
 	*metrics = {};
 	const size_t item_count = items.size();
 	metrics->item_count = item_count;
-	if (!character || pid <= 0 || identities.size() != item_count ||
-	    item_count > PLAYER_LOAD_ITEM_MAX)
+	const bool detached = detached_roots != nullptr;
+	if ((!character && !detached) || (character && detached) ||
+	    !item_owner_identity_valid(expected_owner) ||
+	    expected_owner.type == item_owner_type::system ||
+	    expected_owner.type == item_owner_type::destruction ||
+	    identities.size() != item_count || item_count > PLAYER_LOAD_ITEM_MAX)
 		return fail(metrics,
 			    item_count > PLAYER_LOAD_ITEM_MAX ?
 				    player_load_item_materialize_outcome::limit_exceeded :
 				    player_load_item_materialize_outcome::invalid_snapshot);
-	const item_owner_identity expected_owner = { item_owner_type::player,
-						     static_cast<uint64_t>(pid), 0 };
+	if (detached)
+	{
+		detached_roots->clear();
+		try
+		{
+			detached_roots->reserve(item_count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return fail(metrics,
+				    player_load_item_materialize_outcome::allocation_failure);
+		}
+	}
 	if (!item_count)
 	{
 		if (hydrate_ownership &&
@@ -388,21 +415,24 @@ bool player_load_item_graph_materialize(P_char character,
 			return fail(metrics,
 				    player_load_item_materialize_outcome::allocation_failure);
 		}
-		const metadata_validation_outcome metadata = valid_item_metadata(item, identity);
+		const metadata_validation_outcome metadata =
+			valid_item_metadata(item, identity, complete_snapshot_state);
 		if (metadata != metadata_validation_outcome::valid)
 			return fail(
 				metrics,
 				metadata == metadata_validation_outcome::allocation_failure ?
 					player_load_item_materialize_outcome::allocation_failure :
 					player_load_item_materialize_outcome::invalid_snapshot);
-		if (item.equipment_slot < 0 || item.equipment_slot > MAX_WEAR ||
-		    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT && item.equipment_slot != 0))
+		if ((detached && item.equipment_slot != -1) ||
+		    (!detached && (item.equipment_slot < 0 || item.equipment_slot > MAX_WEAR ||
+				   (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+				    item.equipment_slot != 0))))
 			return fail(metrics,
 				    player_load_item_materialize_outcome::invalid_snapshot);
-		if (item.equipment_slot > 0 && occupied_slots[item.equipment_slot - 1])
+		if (!detached && item.equipment_slot > 0 && occupied_slots[item.equipment_slot - 1])
 			return fail(metrics,
 				    player_load_item_materialize_outcome::invalid_snapshot);
-		if (item.equipment_slot > 0)
+		if (!detached && item.equipment_slot > 0)
 			occupied_slots[item.equipment_slot - 1] = true;
 		if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
 		{
@@ -506,8 +536,34 @@ bool player_load_item_graph_materialize(P_char character,
 		object->g_key = item.generated_key;
 		object->weight = item.weight;
 		object->cost = item.cost;
-		object->timer[0] = static_cast<time_t>(item.timers[0]);
+		if (complete_snapshot_state)
+			for (size_t timer = 0; timer < item.timers.size(); ++timer)
+				object->timer[timer] = static_cast<time_t>(item.timers[timer]);
+		else
+			object->timer[0] = static_cast<time_t>(item.timers[0]);
 		object->extra_flags = item.extra_flags;
+		if (complete_snapshot_state)
+		{
+			object->anti_flags = item.anti_flags;
+			object->anti2_flags = item.anti2_flags;
+			object->extra2_flags = item.extra2_flags;
+			object->craftsmanship = item.craftsmanship;
+			for (auto affect = item.dynamic_affects.rbegin();
+			     affect != item.dynamic_affects.rend(); ++affect)
+			{
+				if (affect->type == TAG_ALTERED_EXTRA2)
+					continue;
+				if (affect->extra2)
+					set_obj_affected_extra(object, -1,
+							       static_cast<sh_int>(affect->type),
+							       static_cast<sh_int>(affect->data),
+							       static_cast<ulong>(affect->extra2));
+				else
+					set_obj_affected(object, -1,
+							 static_cast<sh_int>(affect->type),
+							 static_cast<sh_int>(affect->data));
+			}
+		}
 		object->condition = item.condition;
 		for (size_t value_index = 0; value_index < item.values.size(); ++value_index)
 			object->value[value_index] = item.values[value_index];
@@ -605,10 +661,61 @@ bool player_load_item_graph_materialize(P_char character,
 	if (hydrate_ownership &&
 	    !item_ownership_runtime_hydrate_batch(ownership.data(), ownership.size()))
 		return fail(metrics, player_load_item_materialize_outcome::ownership_failure);
-	attach_loaded_inventory(character, staged.objects, roots, items);
+	if (detached)
+		for (size_t root : roots)
+			detached_roots->push_back(staged.objects[root]);
+	else
+		attach_loaded_inventory(character, staged.objects, roots, items);
 	staged.published = true;
 	metrics->outcome = player_load_item_materialize_outcome::applied;
 	return true;
+}
+}
+
+bool player_load_item_graph_materialize_for_owner(
+	P_char character, const std::vector<player_item_snapshot> &items,
+	const std::vector<player_load_item_identity> &identities,
+	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
+	bool complete_snapshot_state, player_load_item_materialize_metrics *metrics)
+{
+	return materialize_item_graph(character, nullptr, items, identities, expected_owner,
+				      owner_revision, hydrate_ownership, complete_snapshot_state,
+				      metrics);
+}
+
+bool player_load_item_graph_materialize_detached(
+	const std::vector<player_item_snapshot> &items,
+	const std::vector<player_load_item_identity> &identities,
+	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
+	bool complete_snapshot_state, std::vector<P_obj> *roots,
+	player_load_item_materialize_metrics *metrics)
+{
+	return materialize_item_graph(nullptr, roots, items, identities, expected_owner,
+				      owner_revision, hydrate_ownership, complete_snapshot_state,
+				      metrics);
+}
+
+bool player_load_item_graph_materialize(P_char character,
+					const std::vector<player_item_snapshot> &items,
+					const std::vector<player_load_item_identity> &identities,
+					int32_t pid, uint64_t owner_revision,
+					bool hydrate_ownership,
+					player_load_item_materialize_metrics *metrics)
+{
+	if (pid <= 0)
+	{
+		if (metrics)
+		{
+			*metrics = {};
+			metrics->item_count = items.size();
+			metrics->outcome = player_load_item_materialize_outcome::invalid_snapshot;
+		}
+		return false;
+	}
+	return player_load_item_graph_materialize_for_owner(
+		character, items, identities,
+		{ item_owner_type::player, static_cast<uint64_t>(pid), 0 }, owner_revision,
+		hydrate_ownership, false, metrics);
 }
 
 bool player_load_items_materialize(P_char character, const player_load_result &result,

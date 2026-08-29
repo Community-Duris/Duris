@@ -233,6 +233,8 @@ for contract in (
     "sql_worker_thread_init()",
     "pool_connection_guard guard",
     "mysql_rollback(connection)",
+    "selected_execute_callback()",
+    "flatfile_player_load_repository_execute_selected",
 ):
     assert contract in PIPELINE
 
@@ -273,6 +275,7 @@ assert "d->player_load_mode = PLAYER_LOAD_MODE_LEGACY" in NANNY
 assert "nanny_player_load_complete" in NANNY
 assert "valid_snapshot(result)" in MATERIALIZE
 assert "player_revision_hydrate" in MATERIALIZE
+assert "ZONE_TROPHY(ch) = zone_trophies.release()" in MATERIALIZE
 assert "player_load state=" in DIAGNOSTICS
 assert "account_name" not in DIAGNOSTICS[DIAGNOSTICS.index("player_load state=") :][:1000]
 

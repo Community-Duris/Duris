@@ -6,6 +6,7 @@
 #include <array>
 #include <cstring>
 #include <limits>
+#include <new>
 #include <utility>
 
 namespace
@@ -21,6 +22,10 @@ constexpr size_t SELECTED_ITEM_OFFSET = 64;
 constexpr size_t TARGET_ROOT_OFFSET = 72;
 constexpr size_t TARGET_PARENT_OFFSET = 80;
 constexpr size_t TARGET_PARENT_REVISION_OFFSET = 88;
+constexpr uint32_t CORPSE_CONTEXT_VERSION = 1;
+constexpr size_t CORPSE_PID_VALUE_INDEX = 3;
+constexpr size_t CORPSE_RACEWAR_VALUE_INDEX = 5;
+constexpr size_t CORPSE_SAVE_ID_VALUE_INDEX = 6;
 
 void put_u16(uint8_t *output, uint16_t value)
 {
@@ -62,6 +67,131 @@ uint64_t get_u64(const uint8_t *input)
 	return value;
 }
 
+bool append_u32(std::vector<uint8_t> *output, uint32_t value)
+{
+	if (!output)
+		return false;
+	try
+	{
+		const size_t offset = output->size();
+		output->resize(offset + sizeof(value));
+		put_u32(output->data() + offset, value);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool append_text(std::vector<uint8_t> *output, const std::string &value)
+{
+	if (!output || value.size() > UINT32_MAX ||
+	    !append_u32(output, static_cast<uint32_t>(value.size())))
+		return false;
+	try
+	{
+		output->insert(output->end(), value.begin(), value.end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool read_u32(const uint8_t *input, size_t size, size_t *offset, uint32_t *value)
+{
+	if (!input || !offset || !value || *offset > size || size - *offset < sizeof(*value))
+		return false;
+	*value = get_u32(input + *offset);
+	*offset += sizeof(*value);
+	return true;
+}
+
+bool read_text(const uint8_t *input, size_t size, size_t *offset, size_t maximum,
+	       std::string *value)
+{
+	uint32_t length = 0;
+	if (!value || !read_u32(input, size, offset, &length) || length > maximum ||
+	    *offset > size || size - *offset < length)
+		return false;
+	try
+	{
+		value->assign(reinterpret_cast<const char *>(input + *offset), length);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*offset += length;
+	return true;
+}
+
+bool valid_text(const std::string &value, size_t maximum, bool required)
+{
+	if ((required && value.empty()) || value.size() > maximum)
+		return false;
+	return std::all_of(value.begin(), value.end(), [](unsigned char character)
+			   { return character >= 0x20 && character != 0x7f; });
+}
+
+bool encode_corpse_context(const item_corpse_metadata &corpse, std::vector<uint8_t> *encoded)
+{
+	if (!encoded)
+		return false;
+	encoded->clear();
+	if (!corpse.present)
+		return true;
+	if (!append_u32(encoded, CORPSE_CONTEXT_VERSION) ||
+	    !append_u32(encoded, static_cast<uint32_t>(corpse.room_vnum)) ||
+	    !append_u32(encoded, static_cast<uint32_t>(corpse.weight)) ||
+	    !append_u32(encoded, corpse.actor_racewar))
+		return false;
+	for (int32_t value : corpse.values)
+		if (!append_u32(encoded, static_cast<uint32_t>(value)))
+			return false;
+	return append_text(encoded, corpse.owner_name) &&
+	       append_text(encoded, corpse.short_description) &&
+	       append_text(encoded, corpse.description) && append_text(encoded, corpse.keywords);
+}
+
+bool decode_corpse_context(const uint8_t *encoded, size_t size, item_corpse_metadata *corpse)
+{
+	if (!corpse || (!encoded && size))
+		return false;
+	*corpse = {};
+	if (!size)
+		return true;
+	size_t offset = 0;
+	uint32_t version = 0, room_vnum = 0, weight = 0, actor_racewar = 0;
+	if (!read_u32(encoded, size, &offset, &version) || version != CORPSE_CONTEXT_VERSION ||
+	    !read_u32(encoded, size, &offset, &room_vnum) ||
+	    !read_u32(encoded, size, &offset, &weight) ||
+	    !read_u32(encoded, size, &offset, &actor_racewar) || actor_racewar > UINT8_MAX)
+		return false;
+	corpse->present = true;
+	corpse->room_vnum = static_cast<int32_t>(room_vnum);
+	corpse->weight = static_cast<int32_t>(weight);
+	corpse->actor_racewar = static_cast<uint8_t>(actor_racewar);
+	for (int32_t &value : corpse->values)
+	{
+		uint32_t decoded = 0;
+		if (!read_u32(encoded, size, &offset, &decoded))
+			return false;
+		value = static_cast<int32_t>(decoded);
+	}
+	return read_text(encoded, size, &offset, ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES,
+			 &corpse->owner_name) &&
+	       read_text(encoded, size, &offset, ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES,
+			 &corpse->short_description) &&
+	       read_text(encoded, size, &offset, ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES,
+			 &corpse->description) &&
+	       read_text(encoded, size, &offset, ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES,
+			 &corpse->keywords) &&
+	       offset == size;
+}
+
 void encode_owner(uint8_t *output, const item_owner_identity &owner)
 {
 	output[0] = static_cast<uint8_t>(owner.type);
@@ -90,6 +220,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::auction;
 	case item_owner_type::room:
 		return critical_entity_type::room;
+	case item_owner_type::shopkeeper:
+		return critical_entity_type::shopkeeper;
 	default:
 		return critical_entity_type::system;
 	}
@@ -97,16 +229,51 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 
 bool valid_reason(item_transfer_reason reason)
 {
-	return reason > item_transfer_reason::unknown &&
-	       reason <= item_transfer_reason::auction_claim;
+	return reason > item_transfer_reason::unknown && reason <= item_transfer_reason::shop_sell;
 }
 
-bool validate_payload(const item_transfer_payload &payload)
+bool validate_payload(const item_transfer_payload &payload, uint16_t payload_version)
 {
 	if (!item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
-	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    payload.item_blob_size > payload.item_blob.size())
 		return false;
+	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
+	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
+	const bool corpse_context_required = payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+					     (corpse_create || corpse_loot);
+	if (corpse_context_required != payload.corpse.present ||
+	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
+			       payload.to_owner.type != item_owner_type::corpse)) ||
+	    (corpse_loot && (payload.from_owner.type != item_owner_type::corpse ||
+			     payload.to_owner.type != item_owner_type::player)))
+		return false;
+	if (payload.corpse.present)
+	{
+		const item_owner_identity &owner = corpse_create ? payload.to_owner :
+								   payload.from_owner;
+		const uint32_t owner_pid = static_cast<uint32_t>(owner.id >> 32);
+		const uint32_t save_id = static_cast<uint32_t>(owner.id);
+		if (!owner_pid || owner_pid > INT32_MAX || !save_id || save_id > INT32_MAX ||
+		    owner.context_id || payload.corpse.room_vnum < 0 ||
+		    payload.corpse.actor_racewar > 4 ||
+		    payload.corpse.values[CORPSE_PID_VALUE_INDEX] !=
+			    static_cast<int32_t>(owner_pid) ||
+		    payload.corpse.values[CORPSE_SAVE_ID_VALUE_INDEX] !=
+			    static_cast<int32_t>(save_id) ||
+		    payload.corpse.values[CORPSE_RACEWAR_VALUE_INDEX] < 0 ||
+		    payload.corpse.values[CORPSE_RACEWAR_VALUE_INDEX] > 4 ||
+		    !valid_text(payload.corpse.owner_name, ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES,
+				true) ||
+		    !valid_text(payload.corpse.short_description,
+				ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES, false) ||
+		    !valid_text(payload.corpse.description,
+				ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES, false) ||
+		    !valid_text(payload.corpse.keywords, ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES,
+				false))
+			return false;
+	}
 	const bool creation = payload.from_owner.type == item_owner_type::system;
 	const bool destruction = payload.to_owner.type == item_owner_type::destruction;
 	if (payload.to_owner.type == item_owner_type::system ||
@@ -146,8 +313,7 @@ bool validate_payload(const item_transfer_payload &payload)
 		else if (!entry.parent_item_uid)
 			return false;
 	}
-	if (!found_selected ||
-	    (creation && (selected != source_root || payload.target_parent_item_uid)))
+	if (!found_selected || (creation && selected != source_root))
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
@@ -179,7 +345,7 @@ bool validate_payload(const item_transfer_payload &payload)
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::destruction)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
@@ -197,6 +363,11 @@ uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id)
 	if (!player_pid || !corpse_save_id)
 		return 0;
 	return (static_cast<uint64_t>(player_pid) << 32) | corpse_save_id;
+}
+
+uint64_t item_shopkeeper_owner_id(uint32_t shop_id)
+{
+	return static_cast<uint64_t>(shop_id) + 1;
 }
 
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key)
@@ -219,12 +390,65 @@ bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key)
 	return true;
 }
 
+namespace
+{
+bool populate_command_entities(critical_command *command, const item_transfer_payload &payload)
+{
+	critical_entity_key from_key = {}, to_key = {};
+	if (!command || !item_owner_key(payload.from_owner, &from_key) ||
+	    !item_owner_key(payload.to_owner, &to_key))
+		return false;
+	command->keys = { from_key, to_key };
+	command->expected_revisions = { { from_key, payload.expected_from_revision },
+					{ to_key, payload.expected_to_revision } };
+	if (item_owner_identity_equal(payload.from_owner, payload.to_owner))
+	{
+		if (payload.expected_from_revision != payload.expected_to_revision)
+			return false;
+		command->keys.pop_back();
+		command->expected_revisions.pop_back();
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		critical_entity_key item_key = { critical_entity_type::item,
+						 payload.items[index].item_uid };
+		command->keys.push_back(item_key);
+		command->expected_revisions.push_back(
+			{ item_key, payload.items[index].expected_item_revision });
+	}
+	if (payload.target_parent_item_uid)
+	{
+		critical_entity_key parent_key = { critical_entity_type::item,
+						   payload.target_parent_item_uid };
+		command->keys.push_back(parent_key);
+		command->expected_revisions.push_back(
+			{ parent_key, payload.expected_target_parent_revision });
+	}
+	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
+	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
+			       critical_entity_key_equal) != command->keys.end())
+		return false;
+	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
+		  [](const critical_expected_revision &left,
+		     const critical_expected_revision &right)
+		  { return critical_entity_key_less(left.key, right.key); });
+	return true;
+}
+} // namespace
+
 bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded)
 {
-	if (!encoded || !validate_payload(payload))
+	std::vector<uint8_t> corpse_context;
+	if (!encoded || !validate_payload(payload, ITEM_TRANSFER_PAYLOAD_VERSION) ||
+	    !encode_corpse_context(payload.corpse, &corpse_context))
 		return false;
-	encoded->assign(ITEM_TRANSFER_PAYLOAD_BYTES, 0);
+	const size_t payload_size = ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
+				    payload.item_blob_size + sizeof(uint32_t) +
+				    corpse_context.size();
+	if (payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	encoded->assign(payload_size, 0);
 	encode_owner(encoded->data() + FROM_OFFSET, payload.from_owner);
 	encode_owner(encoded->data() + TO_OFFSET, payload.to_owner);
 	put_u16(encoded->data() + REASON_OFFSET, static_cast<uint16_t>(payload.reason));
@@ -252,6 +476,14 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 		put_u32(output + 32, static_cast<uint32_t>(entry.vnum));
 		output[36] = static_cast<uint8_t>(entry.expected_state);
 	}
+	put_u32(encoded->data() + ITEM_TRANSFER_PAYLOAD_BYTES, payload.item_blob_size);
+	std::copy_n(payload.item_blob.begin(), payload.item_blob_size,
+		    encoded->begin() + ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t));
+	const size_t corpse_size_offset =
+		ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) + payload.item_blob_size;
+	put_u32(encoded->data() + corpse_size_offset, static_cast<uint32_t>(corpse_context.size()));
+	std::copy(corpse_context.begin(), corpse_context.end(),
+		  encoded->begin() + corpse_size_offset + sizeof(uint32_t));
 	return true;
 }
 
@@ -259,8 +491,13 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 					  item_transfer_payload *payload)
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
-	    command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION ||
-	    command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES)
+	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION) ||
+	    (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION ?
+		     command.payload.size() < ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) :
+		     command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES))
 		return false;
 	*payload = {};
 	payload->from_owner = decode_owner(command.payload.data() + FROM_OFFSET);
@@ -297,13 +534,47 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 		if (input[37] || input[38] || input[39])
 			return false;
 	}
-	if (!validate_payload(*payload) || command.expected_revisions.size() != command.keys.size())
+	if (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
+	{
+		payload->item_blob_size =
+			get_u32(command.payload.data() + ITEM_TRANSFER_PAYLOAD_BYTES);
+		const size_t item_end =
+			ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) + payload->item_blob_size;
+		if (payload->item_blob_size > payload->item_blob.size() ||
+		    item_end > command.payload.size())
+			return false;
+		std::copy_n(command.payload.begin() + ITEM_TRANSFER_PAYLOAD_BYTES +
+				    sizeof(uint32_t),
+			    payload->item_blob_size, payload->item_blob.begin());
+		if (command.payload_version == ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
+		{
+			if (command.payload.size() != item_end)
+				return false;
+		}
+		else
+		{
+			if (command.payload.size() < item_end + sizeof(uint32_t))
+				return false;
+			const uint32_t corpse_size = get_u32(command.payload.data() + item_end);
+			if (corpse_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+			    command.payload.size() != item_end + sizeof(uint32_t) + corpse_size ||
+			    !decode_corpse_context(command.payload.data() + item_end +
+							   sizeof(uint32_t),
+						   corpse_size, &payload->corpse))
+				return false;
+		}
+	}
+	if (!validate_payload(*payload, command.payload_version) ||
+	    (command.payload_version == ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION &&
+	     payload->reason > item_transfer_reason::auction_claim) ||
+	    command.expected_revisions.size() != command.keys.size())
 		return false;
 	critical_command expected = {};
-	if (!item_transfer_command_build(&expected, command.operation_id, *payload,
-					 command.source_site, command.deadline_class))
+	if (!populate_command_entities(&expected, *payload))
 		return false;
-	return std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+	return command.keys.size() == expected.keys.size() &&
+	       command.expected_revisions.size() == expected.expected_revisions.size() &&
+	       std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
 			  [](const critical_entity_key &left, const critical_entity_key &right)
 			  { return critical_entity_key_equal(left, right); }) &&
 	       std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
@@ -327,17 +598,24 @@ bool item_transfer_command_encode_result(const item_transfer_result &result,
 	put_u64(encoded->data() + 16, result.from_owner_revision);
 	put_u64(encoded->data() + 24, result.to_owner_revision);
 	put_u64(encoded->data() + 32, result.max_item_revision);
+	put_u64(encoded->data() + 40, result.corpse_revision);
 	return true;
 }
 
 bool item_transfer_command_decode_result(const uint8_t *encoded, size_t size,
 					 item_transfer_result *result)
 {
-	if (!encoded || size != ITEM_TRANSFER_RESULT_BYTES || !result || encoded[10] ||
-	    encoded[11] || encoded[12] || encoded[13] || encoded[14] || encoded[15])
+	if (!encoded ||
+	    (size != ITEM_TRANSFER_RESULT_BYTES && size != ITEM_TRANSFER_LEGACY_RESULT_BYTES) ||
+	    !result || encoded[10] || encoded[11] || encoded[12] || encoded[13] || encoded[14] ||
+	    encoded[15])
 		return false;
-	*result = { get_u64(encoded), get_u16(encoded + 8), get_u64(encoded + 16),
-		    get_u64(encoded + 24), get_u64(encoded + 32) };
+	*result = { get_u64(encoded),
+		    get_u16(encoded + 8),
+		    get_u64(encoded + 16),
+		    get_u64(encoded + 24),
+		    get_u64(encoded + 32),
+		    size == ITEM_TRANSFER_RESULT_BYTES ? get_u64(encoded + 40) : 0 };
 	return result->root_item_uid && result->item_count &&
 	       result->item_count <= ITEM_TRANSFER_MAX_ITEMS;
 }
@@ -350,10 +628,7 @@ bool item_transfer_command_build(critical_command *command, critical_operation_i
 	if (!command || critical_operation_id_is_zero(operation_id))
 		return false;
 	std::vector<uint8_t> encoded;
-	critical_entity_key from_key = {}, to_key = {};
-	if (!item_transfer_command_encode_payload(payload, &encoded) ||
-	    !item_owner_key(payload.from_owner, &from_key) ||
-	    !item_owner_key(payload.to_owner, &to_key))
+	if (!item_transfer_command_encode_payload(payload, &encoded))
 		return false;
 	*command = { .schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
 		     .operation_id = operation_id,
@@ -362,40 +637,8 @@ bool item_transfer_command_build(critical_command *command, critical_operation_i
 		     .source_site = source_site,
 		     .deadline_class = deadline_class,
 		     .accepted_at_usec = 0,
-		     .keys = { from_key, to_key },
-		     .expected_revisions = { { from_key, payload.expected_from_revision },
-					     { to_key, payload.expected_to_revision } },
+		     .keys = {},
+		     .expected_revisions = {},
 		     .payload = std::move(encoded) };
-	if (item_owner_identity_equal(payload.from_owner, payload.to_owner))
-	{
-		if (payload.expected_from_revision != payload.expected_to_revision)
-			return false;
-		command->keys.pop_back();
-		command->expected_revisions.pop_back();
-	}
-	for (size_t index = 0; index < payload.item_count; ++index)
-	{
-		critical_entity_key item_key = { critical_entity_type::item,
-						 payload.items[index].item_uid };
-		command->keys.push_back(item_key);
-		command->expected_revisions.push_back(
-			{ item_key, payload.items[index].expected_item_revision });
-	}
-	if (payload.target_parent_item_uid)
-	{
-		critical_entity_key parent_key = { critical_entity_type::item,
-						   payload.target_parent_item_uid };
-		command->keys.push_back(parent_key);
-		command->expected_revisions.push_back(
-			{ parent_key, payload.expected_target_parent_revision });
-	}
-	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
-	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
-			       critical_entity_key_equal) != command->keys.end())
-		return false;
-	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
-		  [](const critical_expected_revision &left,
-		     const critical_expected_revision &right)
-		  { return critical_entity_key_less(left.key, right.key); });
-	return true;
+	return populate_command_entities(command, payload);
 }

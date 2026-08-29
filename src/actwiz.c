@@ -11841,6 +11841,7 @@ void whois_ip(P_char ch, char *ip_address)
 	mysql_free_result(res);
 	send_to_char(".\n", ch);
 #else
+	(void)ip_address;
 	send_to_char("This command requires MySQL support which is not compiled in.\n", ch);
 #endif
 }
@@ -11849,8 +11850,8 @@ void do_whois(P_char ch, char *arg, int /*cmd*/)
 {
 	char ip_address[MAX_STRING_LENGTH];
 	char name[MAX_INPUT_LENGTH];
-	int pid;
 #ifndef __NO_MYSQL__
+	int pid;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 #endif

@@ -50,8 +50,13 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertLess(allocator, pool)
 
     def test_mysql_boundary_precedes_hydration_workers_replay_and_gameplay(self):
-        main = self.comm[self.comm.index("if (initialize_mysql() < 0"):
-                         self.comm.index("return (0);", self.comm.index("if (initialize_mysql() < 0"))]
+        mysql_boundary = (
+            "if (persistence_mode_requires_mysql() && initialize_mysql() < 0)"
+        )
+        main = self.comm[
+            self.comm.index(mysql_boundary):
+            self.comm.index("return (0);", self.comm.index(mysql_boundary))
+        ]
         initialize = main.index("initialize_mysql()")
         hydrate = main.index("sql_hydrate_item_owner_revisions()")
         redis = main.index("redis_init()")

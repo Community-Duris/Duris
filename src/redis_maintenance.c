@@ -10,13 +10,13 @@
 #include <cstdio>
 #include <cstring>
 
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 #include <hiredis/hiredis.h>
 #endif
 
 namespace
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 redisReply *maintenance_command(redis_shared_command_kind kind, redisContext *context,
 				const char *format, ...)
 {
@@ -176,7 +176,7 @@ bool config_valid(const redis_maintenance_config *config)
 
 bool redis_maintenance_clear(const redis_maintenance_config *config)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)config;
 	return true;
 #else
@@ -255,7 +255,7 @@ bool redis_maintenance_clear(const redis_maintenance_config *config)
 
 bool redis_maintenance_validate(const redis_maintenance_config *config)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)config;
 	return true;
 #else

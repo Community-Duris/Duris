@@ -21,8 +21,11 @@
 #include <unistd.h>
 #include <vector>
 #include "files.h"
+#include "flatfile_artifact_repository.h"
+#include "flatfile_item_repository.h"
 #include "mm.h"
 #include "necromancy.h"
+#include "persistence_mode.h"
 #include "redis_report_cache.h"
 #include "spells.h"
 #include "sql.h"
@@ -71,6 +74,24 @@ void arti_redis_cache(int type, bool Godlist);
 static void arti_cache_invalidate(void)
 {
 	redis_invalidate_artifact_cache();
+}
+
+static void artifact_bind_maintenance_update(int vnum, int owner_pid, long timer)
+{
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto result = flatfile_artifact_bind_update(persistence_mode_flatfile_root(), vnum,
+							  owner_pid, timer, &error);
+	if (result != flatfile_artifact_result::ok && result != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT,
+		      "artifact binding maintenance could not update flat authority for %d: %s",
+		      vnum, error.empty() ? "unknown error" : error.c_str());
+	}
+#else
+	qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d", owner_pid,
+	    timer, vnum);
+#endif
 }
 
 // populate redis cache at boot
@@ -224,7 +245,7 @@ void arti_redis_cache(int type, bool Godlist)
 	free(json);
 }
 #else
-void arti_redis_cache(int type, bool Godlist) {}
+void arti_redis_cache(int /*type*/, bool /*Godlist*/) {}
 #endif
 
 // forward declarations
@@ -239,6 +260,7 @@ void arti_reset_sql(P_char ch, char *arg);
 void arti_swap_sql(P_char ch, char *arg);
 void arti_syncdb_sql(P_char ch);
 void arti_timer_sql(P_char ch, char *arg);
+void artifact_update_sql(P_obj arti, char owned, time_t timer);
 P_char load_dummy_char(char *name);
 void nuke_eq(P_char ch);
 
@@ -591,6 +613,170 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 			 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
 	send_to_char(buf, ch);
+#else
+	char buf[MAX_STRING_LENGTH];
+	int articount[5] = { 0 };
+	bool shownData = FALSE;
+	if (type != ARTIFACT_MAJOR && type != ARTIFACT_UNIQUE && type != ARTIFACT_IOUN)
+	{
+		send_to_char("Invalid artifact type.\n\r", ch);
+		return;
+	}
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "list_artifacts_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("Artifact data is unavailable.\n\r", ch);
+		return;
+	}
+	if (Godlist)
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+YOwner                  Time      Last Update           %s\r\n\r\n",
+			 type == ARTIFACT_MAJOR	 ? "Artifact" :
+			 type == ARTIFACT_UNIQUE ? "Unique" :
+						   "Ioun");
+	else
+		snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n",
+			 type == ARTIFACT_MAJOR	 ? "Artifact" :
+			 type == ARTIFACT_UNIQUE ? "Unique" :
+						   "Ioun");
+	send_to_char(buf, ch);
+
+	for (const auto &record : records)
+	{
+		if (record.type != type || (!allArtis && !record.owned) ||
+		    (!Godlist && record.location_type != ARTIFACT_ON_PC &&
+		     record.location_type != ARTIFACT_ONCORPSE))
+			continue;
+		P_obj artifact = read_object(record.vnum, VIRTUAL);
+		if (!artifact || !IS_ARTIFACT(artifact))
+		{
+			if (artifact)
+				extract_obj(artifact, FALSE);
+			continue;
+		}
+		char *owner_name = NULL;
+		int racewar = RACEWAR_NONE;
+		if (record.location_type == ARTIFACT_ON_PC ||
+		    record.location_type == ARTIFACT_ONCORPSE)
+		{
+			owner_name = get_player_name_from_pid(record.location);
+			if (owner_name)
+			{
+				P_char owner = load_dummy_char(owner_name);
+				if (owner)
+				{
+					racewar = GET_RACEWAR(owner);
+					nuke_eq(owner);
+					owner->in_room = NOWHERE;
+					extract_char(owner);
+				}
+			}
+		}
+		char location_buffer[MAX_STRING_LENGTH];
+		const char *location_name = NULL;
+		switch (record.location_type)
+		{
+		case ARTIFACT_NOTINGAME:
+			location_name = "&+RNotInGame&n";
+			break;
+		case ARTIFACT_ON_NPC:
+			location_name = "&+YOnMob&n";
+			break;
+		case ARTIFACT_ON_PC:
+			location_name = owner_name;
+			break;
+		case ARTIFACT_ONGROUND:
+			snprintf(location_buffer, sizeof(location_buffer), "Room #%d",
+				 record.location);
+			location_name = location_buffer;
+			break;
+		case ARTIFACT_ONCORPSE:
+			if (owner_name)
+			{
+				snprintf(location_buffer, sizeof(location_buffer),
+					 Godlist ? "%s's corpse" : "%s", owner_name);
+				location_name = location_buffer;
+			}
+			break;
+		default:
+			extract_obj(artifact, FALSE);
+			continue;
+		}
+		if (!location_name)
+			location_name = "&+RUnknown&n";
+		if (record.owned && (record.location_type == ARTIFACT_ON_PC ||
+				     record.location_type == ARTIFACT_ONCORPSE))
+		{
+			++articount[RACEWAR_NONE];
+			if (racewar > RACEWAR_NONE && racewar <= RACEWAR_NEUTRAL)
+				++articount[racewar];
+		}
+		if (!Godlist)
+		{
+			checked_snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", location_name,
+					 artifact->short_description);
+			send_to_char(buf, ch);
+			shownData = TRUE;
+			extract_obj(artifact, FALSE);
+			continue;
+		}
+		long total_time = static_cast<long>(record.timer - time(NULL));
+		bool negative_time = total_time < 0;
+		if (negative_time)
+			total_time *= -1;
+		total_time /= 60;
+		const int minutes = total_time % 60;
+		total_time /= 60;
+		const int hours = total_time % 24;
+		long days = total_time / 24;
+		if (!record.timer)
+		{
+			negative_time = FALSE;
+			days = 0;
+		}
+		char timer_buffer[32];
+		snprintf(timer_buffer, sizeof(timer_buffer), "%c%2ld:%02d:%02d",
+			 negative_time ? '-' : ' ', days, record.timer ? hours : 0,
+			 record.timer ? minutes : 0);
+		char update_buffer[32] = "";
+		const time_t updated = static_cast<time_t>(record.last_update);
+		struct tm update_time;
+		if (record.last_update > 0 && localtime_r(&updated, &update_time))
+			strftime(update_buffer, sizeof(update_buffer), "%Y-%m-%d %H:%M:%S",
+				 &update_time);
+		char padded_location[MAX_STRING_LENGTH];
+		snprintf(padded_location, sizeof(padded_location), "%s",
+			 pad_ansi(location_name, MAX_NAME_LENGTH + 9, TRUE).c_str());
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n",
+				 padded_location, timer_buffer, update_buffer,
+				 artifact->short_description, record.vnum);
+		send_to_char(buf, ch);
+		shownData = TRUE;
+		extract_obj(artifact, FALSE);
+	}
+	if (!shownData)
+	{
+		send_to_char("No artifacts found.\r\n", ch);
+		return;
+	}
+	snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
+	if (articount[RACEWAR_UNDEAD])
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
+	if (articount[RACEWAR_NEUTRAL])
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
+	send_to_char(buf, ch);
 #endif
 }
 
@@ -604,6 +790,18 @@ void arti_remove_sql(int vnum, bool mortalToo)
 		return;
 	}
 
+#ifdef __NO_MYSQL__
+	(void)mortalToo;
+	std::string error;
+	const auto removed =
+		flatfile_artifact_erase(persistence_mode_flatfile_root(), vnum, &error);
+	if (removed != flatfile_artifact_result::ok &&
+	    removed != flatfile_artifact_result::not_found)
+		logit(LOG_ARTIFACT, "arti_remove_sql: flat artifact erase failed for %d: %s", vnum,
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+	else
+		arti_cache_invalidate();
+#else
 	// Remove from artifacts table:
 	qry("DELETE FROM artifacts WHERE vnum = '%d'", vnum);
 	arti_cache_invalidate();
@@ -612,11 +810,23 @@ void arti_remove_sql(int vnum, bool mortalToo)
 	{
 		qry("DELETE FROM artifacts_mortal WHERE vnum = '%d'", vnum);
 	}
+#endif
 }
 
 // This function is called at boot to set the mortals' artifact list table.
 void setupMortArtiList_sql()
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "setupMortArtiList_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+#else
 	// Clear the mortals table.
 	qry("TRUNCATE TABLE artifacts_mortal");
 	// Arih : Explicitly specify columns to avoid "Column count doesn't match value count" error.
@@ -624,6 +834,7 @@ void setupMortArtiList_sql()
 	// Repopulate it: Only select columns that exist in both tables (excluding lastUpdate)
 	qry("INSERT INTO artifacts_mortal (vnum, owned, locType, location, timer, type) SELECT vnum, owned, locType, location, timer, type FROM artifacts WHERE locType=%d OR locType=%d",
 	    ARTIFACT_ON_PC, ARTIFACT_ONCORPSE);
+#endif
 
 	arti_cache_init();
 }
@@ -633,11 +844,47 @@ void addOnGroundArtis_sql()
 {
 	P_obj arti;
 	int room;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Beginning.");
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "addOnGroundArtis_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+	bool found = false;
+	for (const auto &record : records)
+	{
+		if (!record.owned || record.location_type != ARTIFACT_ONGROUND)
+			continue;
+		found = true;
+		if (!(arti = read_object(record.vnum, VIRTUAL)))
+		{
+			logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not load object vnum %d.",
+			      record.vnum);
+			continue;
+		}
+		if ((room = real_room(record.location)) < 0 || room > top_of_world)
+		{
+			logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not find room %d.",
+			      record.location);
+			extract_obj(arti, FALSE);
+			continue;
+		}
+		obj_to_room(arti, room);
+	}
+	if (!found)
+		logit(LOG_ARTIFACT, "addOnGroundArtis_sql: No owned artifacts found on ground.");
+#else
 	qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d",
 	    ARTIFACT_ONGROUND);
 
@@ -676,6 +923,7 @@ void addOnGroundArtis_sql()
 	{
 		logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not pull on ground arti list.");
 	}
+#endif
 
 	logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Ending.");
 }
@@ -685,12 +933,16 @@ void addOnGroundArtis_sql()
 //   the new time to poof.
 void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 {
-	int vnum = OBJ_VNUM(arti), location;
-	long unsigned oldtime, to_time;
+	int vnum = OBJ_VNUM(arti);
+	long unsigned to_time;
 	P_char owner;
 	P_obj cont;
+#ifndef __NO_MYSQL__
+	int location;
+	long unsigned oldtime;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	if (!updateArtis)
 	{
@@ -719,6 +971,66 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		      (long)(time(NULL) + min_minutes * 60), vnum);
 	}
 
+#ifdef __NO_MYSQL__
+	flatfile_artifact_record record;
+	std::string error;
+	const auto loaded =
+		flatfile_artifact_get(persistence_mode_flatfile_root(), vnum, &record, &error);
+	if (loaded == flatfile_artifact_result::ok)
+	{
+		if (!record.owned)
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: WARNING: Updating time on non-owned artifact %d.",
+			      vnum);
+		const auto extended = flatfile_artifact_extend_timer(
+			persistence_mode_flatfile_root(), vnum, to_time, time(NULL), &error);
+		if (extended != flatfile_artifact_result::ok &&
+		    extended != flatfile_artifact_result::unchanged)
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: flat timer extension failed for %d: %s",
+			      vnum, error.empty() ? "invalid artifact authority" : error.c_str());
+		else
+			arti_cache_invalidate();
+		return;
+	}
+	if (loaded != flatfile_artifact_result::not_found)
+	{
+		logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: flat artifact read failed: %s",
+		      error.empty() ? "invalid artifact authority" : error.c_str());
+		return;
+	}
+	cont = arti;
+	if (OBJ_INSIDE(cont))
+	{
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is inside a container?!", vnum);
+		while (OBJ_INSIDE(cont) && cont->loc.inside)
+			cont = cont->loc.inside;
+	}
+	if (OBJ_ROOM(cont))
+		artifact_update_sql(arti, 'Y', to_time);
+	else if (OBJ_WORN(cont) || OBJ_CARRIED(cont))
+	{
+		owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
+		if (!owner)
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: arti vnum %d worn or carried, but no owner?!",
+			      vnum);
+		else
+			artifact_update_sql(arti, IS_NPC(owner) ? 'N' : 'Y', to_time);
+	}
+	else if (OBJ_INSIDE(cont))
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is inside a non-existent container?!",
+		      vnum);
+	else if (OBJ_NOWHERE(cont))
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is in location NOWHERE?!", vnum);
+	else
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is in an UNKNOWN location?!", vnum);
+	return;
+#else
 	if (!qry("select owned, UNIX_TIMESTAMP(timer) from artifacts where vnum = %d", vnum))
 	{
 		logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: failed to read from database.");
@@ -842,6 +1154,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		}
 	}
 	mysql_free_result(res);
+#endif
 }
 
 // This function handles the 'soul' of the artifact.
@@ -941,11 +1254,14 @@ void artifact_switch_check(P_char ch, P_obj arti)
 void artifact_update_sql(P_obj arti, char owned, time_t timer)
 {
 	int type, locType, location, vnum = arti ? OBJ_VNUM(arti) : -1;
-	bool new_owned, update_existing = FALSE;
+	bool new_owned;
 	P_char owner;
 	P_obj obj1;
+#ifndef __NO_MYSQL__
+	bool update_existing = FALSE;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	if (!updateArtis)
 	{
@@ -1078,6 +1394,48 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 	}
 	// At this point, type, locType, location, and vnum should be correct.
 
+#ifdef __NO_MYSQL__
+	flatfile_artifact_record existing;
+	std::string error;
+	const auto loaded =
+		flatfile_artifact_get(persistence_mode_flatfile_root(), vnum, &existing, &error);
+	if (loaded == flatfile_artifact_result::ok)
+	{
+		new_owned = UPPER(owned) == 'Y' ? TRUE :
+			    UPPER(owned) == 'N' ? FALSE :
+						  existing.owned;
+		if (locType == ARTIFACT_ONCORPSE)
+			location = existing.location;
+	}
+	else if (loaded == flatfile_artifact_result::not_found)
+		new_owned = UPPER(owned) == 'Y';
+	else
+	{
+		logit(LOG_ARTIFACT, "arti_update_sql: flat artifact read failed: %s",
+		      error.empty() ? "invalid artifact authority" : error.c_str());
+		return;
+	}
+	if (timer <= 0)
+	{
+		timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+		if (new_owned)
+			logit(LOG_ARTIFACT,
+			      "arti_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
+			      (long)0, vnum);
+	}
+	const auto updated = flatfile_artifact_gameplay_update(
+		persistence_mode_flatfile_root(), vnum, new_owned, locType, location, timer, type,
+		static_cast<int64_t>(time(NULL)), &error);
+	if (updated != flatfile_artifact_result::ok &&
+	    updated != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "arti_update_sql: flat artifact update failed: %s",
+		      error.empty() ? "invalid or missing artifact authority" : error.c_str());
+		return;
+	}
+	arti_cache_invalidate();
+	return;
+#else
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
 	if (!qry("SELECT owned, location, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
 		 vnum))
@@ -1175,20 +1533,46 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 		    vnum, new_owned ? 'Y' : 'N', locType, location, timer, type);
 		arti_cache_invalidate();
 	}
+#endif
 }
 
 // This function just updates/creates a new entry for the arti with vnum vnum.
 void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t timer, int type)
 {
+#ifndef __NO_MYSQL__
 	bool update_existing;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	if (!updateArtis)
 	{
 		return;
 	}
 
+#ifdef __NO_MYSQL__
+	if (timer <= 0)
+	{
+		timer = time(NULL) + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+		if (owned)
+			logit(LOG_ARTIFACT,
+			      "artifact_update_sql: WARNING: timer was %ld, resetting to 10 days for vnum %d",
+			      (long)0, vnum);
+	}
+	std::string error;
+	const auto updated = flatfile_artifact_gameplay_update(
+		persistence_mode_flatfile_root(), vnum, owned, locType, location, timer, type,
+		static_cast<int64_t>(time(NULL)), &error);
+	if (updated != flatfile_artifact_result::ok &&
+	    updated != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "artifact_update_sql: flat artifact update failed: %s",
+		      error.empty() ? "invalid or missing artifact authority" : error.c_str());
+		return;
+	}
+	arti_cache_invalidate();
+	return;
+#else
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
 	if (!qry("SELECT owned, location, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
 		 vnum))
@@ -1239,6 +1623,7 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 		    vnum, owned ? 'Y' : 'N', locType, location, timer, type);
 		arti_cache_invalidate();
 	}
+#endif
 }
 
 // Remove the artifact data from the DB.
@@ -1248,9 +1633,11 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 bool remove_owned_artifact_sql(P_obj arti, int pid)
 {
 	int vnum = arti ? OBJ_VNUM(arti) : -1;
+#ifndef __NO_MYSQL__
 	bool update_existing = FALSE;
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+#endif
 
 	if (!updateArtis)
 	{
@@ -1264,6 +1651,24 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 		      arti ? arti->short_description : "NULL", arti ? OBJ_VNUM(arti) : -1);
 		return FALSE;
 	}
+
+#ifdef __NO_MYSQL__
+	const int type = IS_IOUN(arti)	 ? ARTIFACT_IOUN :
+			 IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+					   ARTIFACT_MAJOR;
+	std::string error;
+	const auto removed = flatfile_artifact_remove_owned(persistence_mode_flatfile_root(), vnum,
+							    pid, type, time(NULL), &error);
+	if (removed != flatfile_artifact_result::ok &&
+	    removed != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "remove_owned_artifact_sql: flat artifact update failed: %s",
+		      error.empty() ? "invalid or missing artifact authority" : error.c_str());
+		return FALSE;
+	}
+	arti_cache_invalidate();
+	return TRUE;
+#else
 
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
 	if (!qry("SELECT owned, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
@@ -1327,6 +1732,7 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 
 	// If pid <= 0 && there's no existing entry, don't bother.
 	return TRUE;
+#endif
 }
 
 // This is used for when a character is deleted.
@@ -1346,9 +1752,22 @@ void remove_all_artifacts_sql(P_char ch)
 	}
 	pid = GET_PID(ch);
 
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto removed =
+		flatfile_artifact_release_player(persistence_mode_flatfile_root(), pid, &error);
+	if (removed != flatfile_artifact_result::ok &&
+	    removed != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "remove_all_artifacts_sql: flat artifact release failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+#else
 	// Nullify arti timers on all ch's equipment.
 	qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d",
 	    pid, ARTIFACT_ON_PC);
+#endif
 	arti_cache_invalidate();
 }
 
@@ -1407,6 +1826,31 @@ void artifact_update_location_sql(P_obj arti)
 // Returns TRUE iff arti vnum has timer ticking already.
 bool get_artifact_data_sql(int vnum, P_arti adata)
 {
+#ifdef __NO_MYSQL__
+	flatfile_artifact_record record;
+	std::string error;
+	const auto loaded =
+		flatfile_artifact_get(persistence_mode_flatfile_root(), vnum, &record, &error);
+	if (loaded == flatfile_artifact_result::not_found)
+		return FALSE;
+	if (loaded != flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "get_artifact_data_sql: flat artifact read failed: %s",
+		      error.empty() ? "invalid artifact authority" : error.c_str());
+		return FALSE;
+	}
+	if (adata)
+	{
+		adata->vnum = record.vnum;
+		adata->owned = record.owned;
+		adata->locType = static_cast<char>(record.location_type);
+		adata->location = record.location;
+		adata->timer = static_cast<time_t>(record.timer);
+		adata->type = static_cast<char>(record.type);
+		adata->next = NULL;
+	}
+	return record.owned;
+#else
 	bool owned;
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
@@ -1450,6 +1894,7 @@ bool get_artifact_data_sql(int vnum, P_arti adata)
 	}
 	mysql_free_result(res);
 	return owned;
+#endif
 }
 
 void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulCheck)
@@ -1508,12 +1953,31 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 	if (!get_artifact_data_sql(vnum, &artidata))
 	{
 		statuslog(MINLVLIMMORTAL, "artifact_feed_sql: called without an entry in DB?!");
+#ifdef __NO_MYSQL__
+		std::string error;
+		const int type = IS_IOUN(arti)	 ? ARTIFACT_IOUN :
+				 IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+						   ARTIFACT_MAJOR;
+		const auto updated = flatfile_artifact_gameplay_update(
+			persistence_mode_flatfile_root(), vnum, true, ARTIFACT_ON_PC,
+			GET_PID(owner), poof_time, type, time(NULL), &error);
+		if (updated != flatfile_artifact_result::ok &&
+		    updated != flatfile_artifact_result::unchanged)
+		{
+			logit(LOG_ARTIFACT, "artifact_feed_sql: flat artifact update failed: %s",
+			      error.empty() ? "invalid or missing artifact authority" :
+					      error.c_str());
+			return;
+		}
+#endif
 		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...\r\n",
 			     owner);
+#ifndef __NO_MYSQL__
 		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
 		    vnum, ARTIFACT_ON_PC, GET_PID(owner), poof_time,
 		    IS_IOUN(arti) ? ARTIFACT_IOUN :
 				    (IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR));
+#endif
 		arti_cache_invalidate();
 		return;
 	}
@@ -2224,8 +2688,13 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	bool expired = FALSE;
 	bool save_failed = FALSE;
 	char *name;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+#else
+	flatfile_artifact_record flat_expired;
+	const int64_t expiry_now = static_cast<int64_t>(time(NULL));
+#endif
 	size_t row_count;
 	int page_last_vnum = cursor_vnum;
 
@@ -2237,6 +2706,22 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 
 	// Each expired artifact can require global object scans or an offline player save.
 	// Page by vnum so only a fixed amount of that work runs in one game pulse.
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto selected = flatfile_artifact_find_next_expired(
+		persistence_mode_flatfile_root(), cursor_vnum, expiry_now, &flat_expired, &error);
+	if (selected == flatfile_artifact_result::not_found)
+		row_count = 0;
+	else if (selected == flatfile_artifact_result::ok)
+		row_count = 1;
+	else
+	{
+		logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		nevent_periodic_mark_failure("artifact-expiry flat read failed");
+		return;
+	}
+#else
 	if (!qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now() AND vnum > %d ORDER BY vnum LIMIT %zu",
 		 cursor_vnum, ARTIFACT_EXPIRY_BATCH_SIZE))
 	{
@@ -2252,18 +2737,28 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		return;
 	}
 	row_count = static_cast<size_t>(mysql_num_rows(res));
+#endif
 
 	// If there were any artis to pull
 	if (row_count > 0)
 	{
 		expired = TRUE;
-		while ((row = mysql_fetch_row(res)))
+		for (size_t row_index = 0; row_index < row_count; ++row_index)
 		{
 			bool owner_terminal_saved = TRUE;
+#ifdef __NO_MYSQL__
+			vnum = flat_expired.vnum;
+			locType = flat_expired.location_type;
+			location = flat_expired.location;
+#else
+			row = mysql_fetch_row(res);
+			if (!row)
+				break;
 			vnum = atoi(row[0]);
-			page_last_vnum = vnum;
 			locType = atoi(row[1]);
 			location = atoi(row[2]);
+#endif
+			page_last_vnum = vnum;
 
 			// Not in game: nothing to find or poof, the UPDATE below clears the row.
 			if (locType == ARTIFACT_NOTINGAME)
@@ -2645,12 +3140,26 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		}
 	}
 
+#ifndef __NO_MYSQL__
 	mysql_free_result(res);
+#endif
 
 	// Clear only the page that was processed.  Keeping this after the loop preserves
 	// the all-or-nothing behavior for offline owner saves within the page.
 	if (expired && !save_failed)
 	{
+#ifdef __NO_MYSQL__
+		const auto cleared = flatfile_artifact_expire(persistence_mode_flatfile_root(),
+							      page_last_vnum, expiry_now, &error);
+		if (cleared == flatfile_artifact_result::ok)
+			arti_cache_invalidate();
+		else if (cleared != flatfile_artifact_result::unchanged)
+		{
+			nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+						    "artifact-expiry flat update failed");
+			return;
+		}
+#else
 		if (qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now() AND vnum = %d",
 			ARTIFACT_NOTINGAME, page_last_vnum))
 			arti_cache_invalidate();
@@ -2660,6 +3169,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						    "artifact-expiry update failed");
 			return;
 		}
+#endif
 	}
 	else if (save_failed)
 	{
@@ -2692,8 +3202,10 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	size_t owner_count = 0;
 	bool timers_updated = false;
 	bool update_failed = false;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	if (!updateArtis)
 	{
@@ -2715,6 +3227,27 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	// Aggregate only violating owners and page them by pid.  Timer updates are one
 	// statement per owner, so the callback never materializes the whole artifact table.
 	debug("event_artifact_wars_sql: querying artifact owners after pid %d...", cursor_pid);
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_war_owner> flat_owners;
+	std::string error;
+	if (flatfile_artifact_war_owners(persistence_mode_flatfile_root(), cursor_pid,
+					 ARTIFACT_WARS_OWNER_BATCH_SIZE, &flat_owners,
+					 &error) != flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "event_artifact_wars_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-wars flat read failed");
+		return;
+	}
+	owner_count = flat_owners.size();
+	for (size_t index = 0; index < owner_count; ++index)
+	{
+		owners[index] = { flat_owners[index].pid, flat_owners[index].total,
+				  flat_owners[index].major, flat_owners[index].unique,
+				  flat_owners[index].ioun };
+	}
+#else
 	if (!qry("SELECT location, COUNT(*), SUM(type=%d), SUM(type=%d), SUM(type=%d) FROM artifacts WHERE locType=%d AND location > %d GROUP BY location HAVING SUM(type=%d) > 1 OR SUM(type=%d) > 1 OR SUM(type=%d) > 1 ORDER BY location LIMIT %zu",
 		 ARTIFACT_MAJOR, ARTIFACT_UNIQUE, ARTIFACT_IOUN, ARTIFACT_ON_PC, cursor_pid,
 		 ARTIFACT_MAJOR, ARTIFACT_UNIQUE, ARTIFACT_IOUN, ARTIFACT_WARS_OWNER_BATCH_SIZE))
@@ -2744,6 +3277,7 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 		entry.ioun = row[4] ? atoi(row[4]) : 0;
 	}
 	mysql_free_result(res);
+#endif
 
 	if (owner_count == 0)
 	{
@@ -2769,6 +3303,21 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 			if (burn > 1.0f)
 				burn = 1.0f;
 			const float retained = 1.0f - burn;
+#ifdef __NO_MYSQL__
+			const auto updated = flatfile_artifact_apply_war_burn(
+				persistence_mode_flatfile_root(), entry.pid,
+				static_cast<int64_t>(now), retained, static_cast<int64_t>(now),
+				&error);
+			if (updated == flatfile_artifact_result::ok)
+			{
+				timers_updated = true;
+				logit(LOG_ARTIFACT,
+				      "artifact_wars: pid %d artifact timers cut by %d%% (punish_level=%d)",
+				      entry.pid, (int)(burn * 100.0f), punish_level);
+			}
+			else if (updated != flatfile_artifact_result::unchanged)
+				update_failed = true;
+#else
 			if (qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu + FLOOR((UNIX_TIMESTAMP(timer) - %lu) * %.9f)), lastUpdate=SYSDATE() WHERE locType=%d AND location=%d AND timer > FROM_UNIXTIME(%lu)",
 				(unsigned long)now, (unsigned long)now, retained, ARTIFACT_ON_PC,
 				entry.pid, (unsigned long)now))
@@ -2780,6 +3329,7 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 			}
 			else
 				update_failed = true;
+#endif
 		}
 
 		P_char owner = find_player_by_pid(entry.pid);
@@ -3145,6 +3695,23 @@ void arti_clear_sql(P_char ch, char *arg)
 		act("$p &+Wis not an artifact.", FALSE, ch, arti, 0, TO_CHAR);
 	}
 
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto removed =
+		flatfile_artifact_erase(persistence_mode_flatfile_root(), vnum, &error);
+	if (removed == flatfile_artifact_result::ok)
+	{
+		arti_cache_invalidate();
+		act("&+WThe artifact data for $p&+W has been cleared.  You fool!", FALSE, ch, arti,
+		    0, TO_CHAR);
+	}
+	else
+	{
+		logit(LOG_ARTIFACT, "arti_clear_sql: flat artifact erase failed for %d: %s", vnum,
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("&+WFailed to remove entry from artifact data.&n\n\r", ch);
+	}
+#else
 	// Remove from artifacts table:
 	if (qry("DELETE FROM artifacts WHERE vnum = '%d'", vnum))
 	{
@@ -3165,6 +3732,7 @@ void arti_clear_sql(P_char ch, char *arg)
 	{
 		send_to_char("&+WFailed to remove entry from main DB.  wth?&n\n\r", ch);
 	}
+#endif
 	extract_obj(arti);
 }
 
@@ -3767,8 +4335,10 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	static int cursor_vnum = 0;
 	artifact_bind_row rows[ARTIFACT_BIND_BATCH_SIZE] = {};
 	size_t row_count = 0;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+#endif
 
 	if (!updateArtis)
 	{
@@ -3778,6 +4348,32 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 
 	debug("event_artifact_check_bind_sql(): beginning...");
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	const auto loaded =
+		flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error);
+	if (loaded != flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT,
+		      "event_artifact_check_bind_sql(): failed to read flat authority: %s",
+		      error.empty() ? "unknown error" : error.c_str());
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-bind flat read failed");
+		return;
+	}
+	for (const auto &record : records)
+	{
+		if (record.vnum <= cursor_vnum)
+			continue;
+		artifact_bind_row &entry = rows[row_count++];
+		entry.vnum = record.vnum;
+		entry.owner_pid = record.bind_owner_pid;
+		entry.timer = record.bind_timer;
+		if (row_count == ARTIFACT_BIND_BATCH_SIZE)
+			break;
+	}
+#else
 	if (!qry("SELECT vnum, owner_pid, timer FROM artifact_bind WHERE vnum > %d ORDER BY vnum LIMIT %zu",
 		 cursor_vnum, ARTIFACT_BIND_BATCH_SIZE))
 	{
@@ -3806,6 +4402,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		entry.timer = row[2] ? atol(row[2]) : 0;
 	}
 	mysql_free_result(res);
+#endif
 
 	if (row_count == 0)
 	{
@@ -3841,9 +4438,9 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						{
 							act("&+L$p &+Lmerges with your &+wsoul&+L.",
 							    FALSE, owner, arti, 0, TO_CHAR);
-							qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
-							    artidata.location, curr_time,
-							    entry.vnum);
+							artifact_bind_maintenance_update(
+								entry.vnum, artidata.location,
+								curr_time);
 							logit(LOG_ARTIFACT,
 							      "event_artifact_check_bind_sql(): artifact '%s' %d merged with '%s' %d's soul.",
 							      arti ? OBJ_SHORT(arti) : "NULL",
@@ -3882,8 +4479,8 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						      entry.vnum,
 						      get_player_name_from_pid(artidata.location),
 						      artidata.location);
-						qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
-						    artidata.location, curr_time, entry.vnum);
+						artifact_bind_maintenance_update(
+							entry.vnum, artidata.location, curr_time);
 					}
 				}
 			}
@@ -3907,8 +4504,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 			      ++counter,
 			      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
 			      entry.vnum);
-			qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d",
-			    entry.vnum);
+			artifact_bind_maintenance_update(entry.vnum, -1, 0);
 		}
 		if (arti)
 		{
@@ -3929,6 +4525,52 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 // Resets the timers on artifacts that weren't properly bound.
 void arti_fixit_sql(P_char ch)
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "arti_fixit_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("Failed to read artifact data.\n\r", ch);
+		return;
+	}
+	const time_t now = time(NULL);
+	const time_t new_time = now + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+	int counter = 0;
+	bool found_player_artifact = false;
+	for (const auto &record : records)
+	{
+		if (record.location_type != ARTIFACT_ON_PC)
+			continue;
+		found_player_artifact = true;
+		const auto repaired = flatfile_artifact_repair_player_binding(
+			persistence_mode_flatfile_root(), record.vnum, new_time, now, now, &error);
+		if (repaired == flatfile_artifact_result::unchanged)
+			continue;
+		if (repaired != flatfile_artifact_result::ok)
+		{
+			logit(LOG_ARTIFACT, "arti_fixit_sql: flat repair failed for %d: %s",
+			      record.vnum,
+			      error.empty() ? "invalid artifact authority" : error.c_str());
+			send_to_char_f(ch, "Skipped artifact %d: repair failed.\n\r", record.vnum);
+			continue;
+		}
+		P_obj artifact = read_object(record.vnum, VIRTUAL);
+		send_to_char_f(ch, "%3d) '%s&n'%6d - timer reset and now owned by '%s' %d.\n\r",
+			       ++counter,
+			       pad_ansi(artifact ? OBJ_SHORT(artifact) : "NULL", 35, TRUE).c_str(),
+			       record.vnum, get_player_name_from_pid(record.location),
+			       record.location);
+		if (artifact)
+			extract_obj(artifact);
+	}
+	if (!found_player_artifact)
+		send_to_char("Empty set; no artifacts on PC in artifact data.\n\r", ch);
+	else if (!counter)
+		send_to_char("All artifact bind_data are up to date.\n\r", ch);
+#else
 	int pid, timer, curr_time;
 	int vnum, location, counter;
 	time_t new_time;
@@ -4004,6 +4646,7 @@ void arti_fixit_sql(P_char ch)
 	{
 		send_to_char("All artifact bind_data are up to date.\n\r", ch);
 	}
+#endif
 }
 
 // syncs all in-game artifact locations to the database
@@ -4032,6 +4675,55 @@ void arti_sync_sql(P_char ch)
 // syncs artifact ownership from player_items table to artifacts_mortal
 void arti_syncdb_sql(P_char ch)
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_item_ownership_record> owned_items;
+	std::string error;
+	if (flatfile_item_repository_list_active_player_items(persistence_mode_flatfile_root(),
+							      &owned_items, &error) !=
+	    flatfile_item_repository_result::ok)
+	{
+		logit(LOG_ARTIFACT, "arti_syncdb_sql: flat item authority read failed: %s",
+		      error.empty() ? "missing or invalid item authority" : error.c_str());
+		send_to_char("Failed to read saved item ownership.\n\r", ch);
+		return;
+	}
+	std::vector<flatfile_artifact_player_item> player_items;
+	try
+	{
+		player_items.reserve(owned_items.size());
+		for (const auto &item : owned_items)
+		{
+			if (item.owner.id > static_cast<uint64_t>(INT32_MAX))
+			{
+				send_to_char(
+					"Saved item ownership contains an invalid player id.\n\r",
+					ch);
+				return;
+			}
+			player_items.push_back({ item.vnum, static_cast<int32_t>(item.owner.id) });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("Not enough memory to reconcile artifact ownership.\n\r", ch);
+		return;
+	}
+	flatfile_artifact_reconcile_result counts;
+	const auto reconciled = flatfile_artifact_reconcile_players(
+		persistence_mode_flatfile_root(), player_items, time(NULL), &counts, &error);
+	if (reconciled != flatfile_artifact_result::ok &&
+	    reconciled != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "arti_syncdb_sql: flat artifact reconciliation failed: %s",
+		      error.empty() ? "invalid or conflicting authority" : error.c_str());
+		send_to_char("Failed to reconcile artifact ownership.\n\r", ch);
+		return;
+	}
+	arti_cache_invalidate();
+	send_to_char_f(ch,
+		       "Cleared %zu, updated %zu artifact ownerships from flat player saves.\n\r",
+		       counts.cleared, counts.updated);
+#else
 	extern MYSQL *DB;
 	if (!DB)
 	{
@@ -4096,6 +4788,7 @@ void arti_syncdb_sql(P_char ch)
 	arti_cache_invalidate();
 	send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r",
 		       cleared, updated);
+#endif
 }
 
 // Resets the 'soul' of the artifact of vnum == arg.
@@ -4168,23 +4861,50 @@ void arti_reset_sql(P_char ch, char *arg)
 	}
 	if (vnum > 0)
 	{
+#ifdef __NO_MYSQL__
+		std::string error;
+		const auto reset = flatfile_artifact_bind_update(persistence_mode_flatfile_root(),
+								 vnum, -1, 0, &error);
+		if (reset == flatfile_artifact_result::ok ||
+		    reset == flatfile_artifact_result::unchanged)
+#else
 		if (qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d", vnum))
+#endif
 		{
 			send_to_char_f(ch, "Artifact vnum %d has a hungry soul.\n\r", vnum);
 		}
 		else
 		{
+#ifdef __NO_MYSQL__
+			logit(LOG_ARTIFACT, "arti_reset_sql: flat binding reset failed for %d: %s",
+			      vnum,
+			      error.empty() ? "missing or invalid artifact authority" :
+					      error.c_str());
+#endif
 			send_to_char("Update operation failed.\n\r", ch);
 		}
 	}
 	else
 	{
+#ifdef __NO_MYSQL__
+		std::string error;
+		const auto reset =
+			flatfile_artifact_bind_reset_all(persistence_mode_flatfile_root(), &error);
+		if (reset == flatfile_artifact_result::ok ||
+		    reset == flatfile_artifact_result::unchanged)
+#else
 		if (qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0"))
+#endif
 		{
 			send_to_char("All artifacts' souls are hungry for an owner now.\n\r", ch);
 		}
 		else
 		{
+#ifdef __NO_MYSQL__
+			logit(LOG_ARTIFACT, "arti_reset_sql: flat binding reset-all failed: %s",
+			      error.empty() ? "missing or invalid artifact authority" :
+					      error.c_str());
+#endif
 			send_to_char("Update operation failed.\n\r", ch);
 		}
 	}
@@ -4211,11 +4931,47 @@ void addOnMobArtis_sql()
 {
 	P_obj arti;
 	P_char mob;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	logit(LOG_ARTIFACT, "addOnMobArtis_sql: Beginning.");
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "addOnMobArtis_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+	bool found = false;
+	for (const auto &record : records)
+	{
+		if (!record.owned || record.location_type != ARTIFACT_ON_NPC)
+			continue;
+		found = true;
+		if (!(arti = read_object(record.vnum, VIRTUAL)))
+		{
+			logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not load object vnum %d.",
+			      record.vnum);
+			continue;
+		}
+		if (!(mob = find_mob_in_game(record.location)))
+		{
+			logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not find mob vnum %d.",
+			      record.location);
+			extract_obj(arti);
+			continue;
+		}
+		obj_to_char(arti, mob);
+	}
+	if (!found)
+		logit(LOG_ARTIFACT, "addOnMobArtis_sql: No owned artifacts found on NPCs.");
+#else
 	qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d", ARTIFACT_ON_NPC);
 
 	if ((res = mysql_store_result(DB)) != NULL)
@@ -4252,6 +5008,7 @@ void addOnMobArtis_sql()
 	{
 		logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not pull on mob arti list.");
 	}
+#endif
 
 	logit(LOG_ARTIFACT, "addOnMobArtis_sql: Ending.");
 }
@@ -4386,6 +5143,88 @@ void arti_player_sql(P_char ch, char *arg)
 	if (!shownData)
 		send_to_char("No artifacts found.\n\r", ch);
 #else
-	send_to_char("This command requires MySQL support which is not compiled in.\n", ch);
+	char buf[MAX_STRING_LENGTH], location_buffer[MAX_STRING_LENGTH], time_buffer[128];
+	int pid = atoi(arg);
+	if (pid < 1)
+	{
+		pid = get_player_pid_from_name(arg);
+		if (pid < 1)
+		{
+			send_to_char(
+				"The '&+wartifact player&n' command requires a valid player name or pid.\n\r",
+				ch);
+			return;
+		}
+	}
+	char *name = get_player_name_from_pid(pid);
+	if (!name)
+	{
+		snprintf(buf, sizeof(buf), "'%s' was not found to be a valid player name or pid.\n",
+			 arg);
+		send_to_char(buf, ch);
+		return;
+	}
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "arti_player_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("Artifact data is unavailable.\n\r", ch);
+		return;
+	}
+	snprintf(buf, sizeof(buf),
+		 "&+YOwner                  Time      Last Update           Artifact\r\n\r\n");
+	send_to_char(buf, ch);
+	bool shown_data = false;
+	for (const auto &record : records)
+	{
+		if (record.location != pid || (record.location_type != ARTIFACT_ON_PC &&
+					       record.location_type != ARTIFACT_ONCORPSE))
+			continue;
+		P_obj artifact = read_object(record.vnum, VIRTUAL);
+		if (!artifact || !IS_ARTIFACT(artifact))
+		{
+			debug("arti_player_sql: Non artifact on arti list: '%s' %d.",
+			      artifact ? artifact->short_description : "NULL", record.vnum);
+			if (artifact)
+				extract_obj(artifact, FALSE);
+			continue;
+		}
+		if (record.location_type == ARTIFACT_ON_PC)
+			snprintf(location_buffer, sizeof(location_buffer), "%-21s", name);
+		else
+		{
+			snprintf(buf, sizeof(buf), "%s's corpse", name);
+			checked_snprintf(location_buffer, sizeof(location_buffer), "%-21s", buf);
+		}
+		long total_time = static_cast<long>(record.timer - time(NULL));
+		bool negative_time = total_time < 0;
+		if (negative_time)
+			total_time *= -1;
+		total_time /= 60;
+		const int minutes = total_time % 60;
+		total_time /= 60;
+		const int hours = total_time % 24;
+		const long days = record.timer ? total_time / 24 : 0;
+		snprintf(time_buffer, sizeof(time_buffer), "%c%2ld:%02d:%02d",
+			 negative_time && record.timer ? '-' : ' ', days, record.timer ? hours : 0,
+			 record.timer ? minutes : 0);
+		char update_buffer[32] = "";
+		const time_t updated = static_cast<time_t>(record.last_update);
+		struct tm update_time;
+		if (record.last_update > 0 && localtime_r(&updated, &update_time))
+			strftime(update_buffer, sizeof(update_buffer), "%Y-%m-%d %H:%M:%S",
+				 &update_time);
+		checked_snprintf(buf, sizeof(buf), "%s&n%-11s %-22s%s (#%d)\r\n", location_buffer,
+				 time_buffer, update_buffer, artifact->short_description,
+				 record.vnum);
+		send_to_char(buf, ch);
+		shown_data = true;
+		extract_obj(artifact, FALSE);
+	}
+	if (!shown_data)
+		send_to_char("No artifacts found.\n\r", ch);
 #endif
 }

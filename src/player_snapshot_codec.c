@@ -287,6 +287,127 @@ bool valid_item_relationships(const std::vector<player_item_snapshot> &items)
 }
 } // namespace
 
+player_snapshot_codec_result
+player_item_snapshot_list_encode(const std::vector<player_item_snapshot> &items,
+				 std::vector<uint8_t> *encoded_out)
+{
+	if (!encoded_out || !valid_item_relationships(items))
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		encoder out;
+		encode_items(out, items);
+		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+			return player_snapshot_codec_result::limit_exceeded;
+		std::vector<player_item_snapshot> validated;
+		const auto validation = player_item_snapshot_list_decode(
+			out.bytes.data(), out.bytes.size(), &validated);
+		if (validation != player_snapshot_codec_result::ok)
+			return validation;
+		*encoded_out = std::move(out.bytes);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result
+player_item_snapshot_list_decode(const uint8_t *encoded, size_t encoded_size,
+				 std::vector<player_item_snapshot> *items_out)
+{
+	if (!encoded || !encoded_size || !items_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (encoded_size > PLAYER_SNAPSHOT_MAX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+	try
+	{
+		decoder in = { encoded, encoded_size };
+		std::vector<player_item_snapshot> items;
+		if (!decode_items(in, items))
+			return in.result;
+		if (in.offset != in.size || !valid_item_relationships(items))
+			return player_snapshot_codec_result::invalid_value;
+		*items_out = std::move(items);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result
+player_item_snapshot_extract_subtree(const std::vector<player_item_snapshot> &items,
+				     uint64_t selected_uid,
+				     std::vector<player_item_snapshot> *selected_out,
+				     std::vector<player_item_snapshot> *remaining_out)
+{
+	if (!selected_uid || !selected_out || !remaining_out || !valid_item_relationships(items))
+		return player_snapshot_codec_result::invalid_value;
+	size_t selected_index = items.size();
+	for (size_t index = 0; index < items.size(); ++index)
+		if (items[index].object_uid == selected_uid)
+		{
+			selected_index = index;
+			break;
+		}
+	if (selected_index == items.size())
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		std::vector<player_item_snapshot> selected;
+		std::vector<player_item_snapshot> remaining;
+		std::vector<bool> included(items.size(), false);
+		std::vector<int32_t> selected_positions(items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		std::vector<int32_t> remaining_positions(items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		selected.reserve(items.size());
+		remaining.reserve(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			if (index == selected_index)
+				included[index] = true;
+			else if (items[index].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				included[index] =
+					included[static_cast<size_t>(items[index].parent_index)];
+			if (included[index])
+			{
+				selected_positions[index] = static_cast<int32_t>(selected.size());
+				auto item = items[index];
+				item.parent_index = index == selected_index ?
+							    PLAYER_SNAPSHOT_NO_PARENT :
+							    selected_positions[static_cast<size_t>(
+								    items[index].parent_index)];
+				if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    index != selected_index)
+					return player_snapshot_codec_result::invalid_value;
+				selected.push_back(std::move(item));
+			}
+			else
+			{
+				remaining_positions[index] = static_cast<int32_t>(remaining.size());
+				auto item = items[index];
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					item.parent_index = remaining_positions[static_cast<size_t>(
+						items[index].parent_index)];
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+						return player_snapshot_codec_result::invalid_value;
+				}
+				remaining.push_back(std::move(item));
+			}
+		}
+		*selected_out = std::move(selected);
+		*remaining_out = std::move(remaining);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
 player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snapshot,
 						    std::vector<uint8_t> *encoded_out)
 {

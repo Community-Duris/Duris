@@ -1,6 +1,7 @@
 #include "boon_reward_command.h"
 
 #include <bit>
+#include <cmath>
 
 namespace
 {
@@ -39,7 +40,7 @@ uint64_t get_u64(const uint8_t *input)
 bool valid(const boon_reward_payload &payload)
 {
 	return payload.pid && payload.option < 14 && payload.level <= 255 &&
-	       !(payload.victim_flags & ~uint8_t{ 3 });
+	       std::isfinite(payload.data) && !(payload.victim_flags & ~uint8_t{ 3 });
 }
 } // namespace
 

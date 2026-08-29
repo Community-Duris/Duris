@@ -666,9 +666,11 @@ void Building::update_outpost_owner(P_Guild new_guild)
 		return;
 	}
 
-	// Update the DB
-	db_query("UPDATE outposts SET owner_id = '%d' WHERE id = '%d'", new_guild->get_id(),
-		 id - 1);
+	if (!persist_outpost_owner(this, new_guild))
+	{
+		debug("could not persist owner update for outpost %d", id - 1);
+		return;
+	}
 	guild = new_guild;
 }
 

@@ -66,7 +66,7 @@ timer_warnings = [
     for n, line in enumerate(artifact_lines)
     if "WARNING: timer was" in line and "resetting to 10 days" in line
 ]
-assert len(timer_warnings) == 3
+assert len(timer_warnings) == 5
 for n in timer_warnings:
     # clang-format wraps the logit() call, so the ownership guard sits a couple
     # of lines above the message rather than immediately before it.

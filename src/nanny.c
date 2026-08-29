@@ -28,8 +28,11 @@
 #include "epic_transaction.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "shop_trade_transaction.h"
 #include "auction_transaction.h"
+#include "boon_reward_transaction.h"
 #include "files.h"
+#include "flatfile_identity_adapter.h"
 #include "gmcp.h"
 #include "guildhall.h"
 #include "hardcore_config.h"
@@ -42,6 +45,7 @@
 #include "player_load_pets.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
+#include "player_revision_state.h"
 #include "redis_presence_runtime.h"
 #include "ships.h"
 #include "specializations.h"
@@ -181,6 +185,17 @@ void update_ingame_racewar(int racewar)
 
 int getNewPCidNumb(void)
 {
+#ifdef __NO_MYSQL__
+	int32_t allocated = -1;
+	std::string error;
+	if (!flatfile_player_identity_allocate(&allocated, &error))
+	{
+		logit(LOG_FILE, "could not allocate flat-file player id");
+		return -1;
+	}
+	highestPCidNumb = allocated;
+	return allocated;
+#else
 	FILE *file;
 
 	file = fopen(SAVE_DIR "/pc_idnumb", "wt");
@@ -197,10 +212,22 @@ int getNewPCidNumb(void)
 	}
 
 	return highestPCidNumb;
+#endif
 }
 
 void setNewPCidNumbfromFile(void)
 {
+#ifdef __NO_MYSQL__
+	int32_t highest = 0;
+	std::string error;
+	if (!flatfile_player_identity_highest(&highest, &error))
+	{
+		logit(LOG_FILE, "could not load flat-file player id allocator");
+		highestPCidNumb = 0;
+		return;
+	}
+	highestPCidNumb = highest;
+#else
 	FILE *file;
 
 	file = fopen(SAVE_DIR "/pc_idnumb", "rt");
@@ -222,6 +249,7 @@ void setNewPCidNumbfromFile(void)
 		REQUIRED_FSCANF(file, "%ld\n", &highestPCidNumb);
 		fclose(file);
 	}
+#endif
 
 	logit(LOG_STATUS, "highest PC number is %ld", highestPCidNumb);
 }
@@ -2851,7 +2879,9 @@ void enter_game(P_desc d)
 	epic_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
 	item_movement_transaction_player_ready(ch);
+	shop_trade_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
+	boon_reward_transaction_player_ready(ch);
 	writeCharacter(ch, 1, NOWHERE);
 	if (!sql_save_player_core(ch))
 	{
@@ -3358,6 +3388,15 @@ bool violating_one_hour_rule(P_desc d)
 	}
 
 	timer = sql_find_racewar_for_ip(d->host, &racewar_side);
+	if (timer < 0)
+	{
+		wizlog(AVATAR, "%s could not be checked against the one-hour rule.",
+		       GET_NAME(d->character));
+		send_to_char(
+			"\n\rLogin history is temporarily unavailable; please try again shortly.\n\r",
+			d->character);
+		return TRUE;
+	}
 
 	if (racewar_side < RACEWAR_NONE || racewar_side > MAX_RACEWAR)
 	{
@@ -3448,7 +3487,9 @@ void reconnect(P_desc d, P_char tmp_ch)
 	epic_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
 	item_movement_transaction_player_ready(tmp_ch);
+	shop_trade_transaction_player_ready(tmp_ch);
 	auction_transaction_player_ready(tmp_ch);
+	boon_reward_transaction_player_ready(tmp_ch);
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);
 	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
 	loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character),
@@ -5386,6 +5427,10 @@ void init_char(P_char ch)
 	clear_title(ch);
 
 	ch->only.pc->pid = getNewPCidNumb();
+#ifdef __NO_MYSQL__
+	if (ch->only.pc->pid > 0 && !player_revision_hydrate(ch->only.pc->pid, 0))
+		logit(LOG_FILE, "could not initialize flat-file player revision state");
+#endif
 	/*
 	 * getNewPCidNumb() allocates from the on-disk counter and touches no table, so a
 	 * brand new character has a positive pid but no player_data row. The async save

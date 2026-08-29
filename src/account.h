@@ -4,6 +4,8 @@
 #ifndef DURIS_ACCOUNT_H
 #define DURIS_ACCOUNT_H
 
+#include <stdint.h>
+
 #ifndef _DE_
 #include "structs.h"
 #endif
@@ -66,6 +68,7 @@ struct acct_entry
 	unsigned long int acct_flags2;
 	unsigned long int acct_flags3;
 	unsigned long int acct_flags4;
+	uint64_t persistence_revision;
 
 	struct acct_entry *next;
 };

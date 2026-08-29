@@ -32,7 +32,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      const item_owner_identity &to_owner,
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
-				      size_t context_size);
+				      size_t context_size, P_obj corpse_context = NULL);
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
 void item_movement_transaction_player_ready(P_char actor);

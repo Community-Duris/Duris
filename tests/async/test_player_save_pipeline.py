@@ -14,6 +14,7 @@ ACTOTH = (ROOT / "src/actoth.c").read_text()
 CHECKPOINT = (ROOT / "src/persistence_checkpoint.c").read_text()
 EVENTS = (ROOT / "src/new_events.c").read_text()
 COMM = (ROOT / "src/comm.c").read_text()
+NANNY = (ROOT / "src/nanny.c").read_text()
 WORKER = (ROOT / "src/player_save_worker.c").read_text()
 SQL_PLAYER = (ROOT / "src/sql_player.c").read_text()
 
@@ -90,7 +91,10 @@ dispatcher = section(PIPELINE, "void dispatcher_main()", "player_save_pipeline_r
 assert dispatcher.index("player_save_journal_append(snapshot)") < dispatcher.index(
     "durable_ready.push_back"
 )
-assert "player_save_journal_replay(player_snapshot_repository_apply_from_pool" in dispatcher
+assert "player_save_journal_replay(selected_snapshot_apply()" in dispatcher
+selector = section(PIPELINE, "player_save_apply_fn selected_snapshot_apply()", "struct terminal_fence")
+assert "flatfile_player_snapshot_apply_selected" in selector
+assert "player_snapshot_repository_apply_from_pool" in selector
 assert "sleep_for(std::chrono::milliseconds(100))" in dispatcher
 print("[PASS] bounded dispatcher journals before worker eligibility and retains append failures")
 
@@ -128,6 +132,22 @@ silent = section(ACTOTH, "bool do_save_silent(P_char ch", "void do_save(P_char")
 assert silent.index("player_save_pipeline_is_nonterminal_type") < silent.index("fopen(tmp_buf")
 assert silent.index("player_save_pipeline_request") < silent.index("writeCharacter(ch")
 print("[PASS] ordinary direct and manual saves branch before legacy mutation and I/O")
+
+flat_fence = section(write_character, "#ifdef __NO_MYSQL__", "#endif")
+assert "player_save_pipeline_terminal(ch, type, room, 5000, false)" in flat_fence
+assert flat_fence.index("player_save_pipeline_terminal") < flat_fence.index("unequip_char")
+assert flat_fence.index("database_acknowledged") < flat_fence.index(
+    "REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)"
+)
+terminal_save = section(
+    ACTOTH,
+    "bool persistence_save_character_terminal(P_char ch, int type)",
+    "bool persistence_save_all_characters_terminal",
+)
+assert "allow_journal_handoff = false" in terminal_save
+init_char = section(NANNY, "void init_char(P_char ch)", "int approve_mode")
+assert "player_revision_hydrate(ch->only.pc->pid, 0)" in init_char
+print("[PASS] flat baselines and terminal extraction wait for materialized authority")
 
 legacy_start = SQL_PLAYER.rindex("bool sql_save_player(P_char ch")
 legacy_save = SQL_PLAYER[legacy_start : SQL_PLAYER.index("bool sql_save_player_status", legacy_start)]

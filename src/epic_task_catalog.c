@@ -1,7 +1,5 @@
 #include "epic_task_catalog.h"
 
-#include <mysql/mysql.h>
-
 #include "prototypes.h"
 #include "sql.h"
 #include "utils.h"

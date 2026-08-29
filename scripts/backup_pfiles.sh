@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# The runtime is MySQL-authoritative. This script intentionally has no Redis or
-# legacy-flat-file mode switch.
+# Back up the authority selected by the explicit persistence mode. Redis is never
+# treated as the durable authority here.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT"
@@ -23,6 +23,69 @@ elif [[ -e "$ENV_FILE" ]]; then
   # shellcheck disable=SC1090
   source "$ENV_FILE"
   set +a
+fi
+
+DATESTR="$(date +%s)"
+DATESTR_FULL="$(date -u +%Y.%m.%d-%H.%M.%S-UTC)"
+
+if [[ "${PERSISTENCE_MODE:-mariadb-primary}" == "flatfile-primary" ]]; then
+  if [[ -z "${FLATFILE_STATE_DIR:-}" || "$FLATFILE_STATE_DIR" != /* ]]; then
+    echo "Flat-file backup requires an absolute FLATFILE_STATE_DIR" >&2
+    exit 1
+  fi
+  if [[ ! -e "$FLATFILE_STATE_DIR" ]]; then
+    echo "Flat-file state does not exist yet; skipping pre-boot backup."
+    exit 0
+  fi
+  if [[ -L "$FLATFILE_STATE_DIR" || ! -d "$FLATFILE_STATE_DIR" ]]; then
+    echo "Flat-file state root must be a real directory" >&2
+    exit 1
+  fi
+  STATE_MODE="$(stat -c '%a' -- "$FLATFILE_STATE_DIR")"
+  STATE_OWNER="$(stat -c '%u' -- "$FLATFILE_STATE_DIR")"
+  if (( (8#$STATE_MODE & 0077) != 0 )) || [[ "$STATE_OWNER" != "$(id -u)" ]]; then
+    echo "Flat-file state root must be owner-controlled with mode 0700 or stricter" >&2
+    exit 1
+  fi
+
+  FLATFILE_BACKUP_DIR="${FLATFILE_BACKUP_DIR:-$PROJECT_ROOT/backups/flatfile}"
+  if [[ "$FLATFILE_BACKUP_DIR" != /* ]]; then
+    echo "FLATFILE_BACKUP_DIR must be an absolute path" >&2
+    exit 1
+  fi
+  if [[ -L "$FLATFILE_BACKUP_DIR" ||
+        ( -e "$FLATFILE_BACKUP_DIR" && ! -d "$FLATFILE_BACKUP_DIR" ) ]]; then
+    echo "Flat-file backup root must be a real directory" >&2
+    exit 1
+  fi
+  STATE_REAL="$(realpath -e "$FLATFILE_STATE_DIR")"
+  BACKUP_REAL="$(realpath -m "$FLATFILE_BACKUP_DIR")"
+  case "$BACKUP_REAL/" in
+    "$STATE_REAL/"|"$STATE_REAL/"*)
+      echo "FLATFILE_BACKUP_DIR must not be inside FLATFILE_STATE_DIR" >&2
+      exit 1
+      ;;
+  esac
+
+  install -d -m 700 -- "$FLATFILE_BACKUP_DIR"
+  BACKUP_MODE="$(stat -c '%a' -- "$FLATFILE_BACKUP_DIR")"
+  BACKUP_OWNER="$(stat -c '%u' -- "$FLATFILE_BACKUP_DIR")"
+  if (( (8#$BACKUP_MODE & 0077) != 0 )) || [[ "$BACKUP_OWNER" != "$(id -u)" ]]; then
+    echo "Flat-file backup root must be owner-controlled with mode 0700 or stricter" >&2
+    exit 1
+  fi
+  BACKUP_DESTINATION="$FLATFILE_BACKUP_DIR/$DATESTR"
+  if ! mkdir -m 0700 -- "$BACKUP_DESTINATION"; then
+    echo "Could not create flat-file backup destination" >&2
+    exit 1
+  fi
+  if ! cp -a -- "$FLATFILE_STATE_DIR/." "$BACKUP_DESTINATION/"; then
+    echo "Flat-file state backup failed" >&2
+    exit 1
+  fi
+  chmod 0700 -- "$BACKUP_DESTINATION"
+  echo "Flat-file state backup complete: $BACKUP_DESTINATION ($DATESTR_FULL)"
+  exit 0
 fi
 
 for REQUIRED_DB_FIELD in \
@@ -105,8 +168,6 @@ else
   install -d -m 700 -- "$BACKUP_DIR"
 fi
 
-DATESTR="$(date +%s)"
-DATESTR_FULL="$(date -u +%Y.%m.%d-%H.%M.%S-UTC)"
 BACKUP_FILE="$BACKUP_DIR/$DATESTR.sql.gz"
 if [[ -e "$BACKUP_FILE" ]]; then
   echo "Refusing to overwrite existing backup: $BACKUP_FILE" >&2

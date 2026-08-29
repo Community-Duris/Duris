@@ -447,6 +447,7 @@ vector<epic_trophy_data> get_epic_zone_trophy(P_char ch)
 	vector<epic_trophy_data> trophy;
 
 #ifdef __NO_MYSQL__
+	(void)ch;
 	debug("get_epic_zone_trophy(): __NO_MYSQL__, returning 0");
 	return trophy;
 #else
@@ -1624,6 +1625,7 @@ vector<string> get_epic_players(int racewar)
 	vector<string> names;
 
 #ifdef __NO_MYSQL__
+	(void)racewar;
 	debug("get_epic_players(): __NO_MYSQL__, returning 0");
 	return names;
 #else
@@ -2140,6 +2142,8 @@ void do_epic_trophy(P_char ch, char *arg, int /*cmd*/)
 void update_epic_zone_alignment(int zone_number, int delta)
 {
 #ifdef __NO_MYSQL__
+	(void)zone_number;
+	(void)delta;
 	return;
 #else
 	// add alignment
@@ -2164,6 +2168,8 @@ void update_epic_zone_alignment(int zone_number, int delta)
 float get_epic_zone_alignment_mod(int zone_number, ubyte racewar)
 {
 #ifdef __NO_MYSQL__
+	(void)zone_number;
+	(void)racewar;
 	return 1.0;
 #else
 
@@ -2254,6 +2260,7 @@ void update_epic_zone_mods()
 void update_epic_zone_frequency(int zone_number)
 {
 #ifdef __NO_MYSQL__
+	(void)zone_number;
 	return;
 #else
 	float sub = (float)get_property("epic.freqMod.touch.sub", 0.10);
@@ -2270,6 +2277,7 @@ void update_epic_zone_frequency(int zone_number)
 float get_epic_zone_frequency_mod(int zone_number)
 {
 #ifdef __NO_MYSQL__
+	(void)zone_number;
 	return 1.0;
 #else
 

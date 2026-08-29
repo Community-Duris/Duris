@@ -12,6 +12,15 @@
 #include "db.h"
 #include "interp.h"
 #include "item_uid_allocator.h"
+#include "critical_command.h"
+#include "flatfile_artifact_repository.h"
+#include "flatfile_help_catalog.h"
+#include "flatfile_ip_activity_repository.h"
+#include "flatfile_offline_message_repository.h"
+#include "flatfile_frag_leaderboard_repository.h"
+#include "flatfile_shop_trophy_history.h"
+#include "flatfile_world_quest_history.h"
+#include "persistence_mode.h"
 #include "utils.h"
 #include "sql.h"
 #include "item_ownership_runtime.h"
@@ -19,6 +28,7 @@
 #include "sql_pool.h"
 #include "session_audit_transaction.h"
 #include "runtime_compatibility_contract.h"
+#include <algorithm>
 #include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
@@ -67,102 +77,392 @@ bool get_equipment_list(P_char ch, char *buf, int list_only);
 extern P_index obj_index;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
+extern const int top_of_world;
 extern P_index obj_index;
 extern P_obj object_list;
 extern P_room world;
 
 void get_pkill_player_description(P_char ch, char *buffer);
 
+#ifndef __NO_MYSQL__
 static int sql_trace_burst = 0;
 static const pid_t sql_main_process_id = getpid();
 static bool sql_trace_enabled(void);
 static bool sql_trace_active(void);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 static bool sql_verify_metadata_fingerprint(void);
+#endif
+
+static int flat_sql_shop_sell(P_char ch, P_obj obj, int value)
+{
+	if (!obj)
+		return 0;
+	const int item = obj->R_num >= 0 ? obj_index[obj->R_num].virtual_number : 0;
+	const int seller = ch && IS_PC(ch) ? GET_PID(ch) : 0;
+	std::string error;
+	if (flatfile_shop_trophy_record(persistence_mode_flatfile_root(), item, value, seller,
+					static_cast<int64_t>(time(nullptr)),
+					&error) != flatfile_shop_trophy_result::ok)
+	{
+		persistence_alert(AVATAR, "shop_trophy", "global", "none", "none", "record",
+				  "flat_write_failed", "item=%d seller=%d error=%s", item, seller,
+				  error.c_str());
+		return -1;
+	}
+	return 1;
+}
+
+static int flat_sql_shop_trophy(P_obj obj)
+{
+	if (!obj)
+		return 0;
+	if (obj->name && strstr(obj->name, "_ore_"))
+		return 0;
+	const int objvir = OBJ_VNUM(obj);
+	if (objvir >= 400000 && objvir < 400202)
+		return 0;
+	const int item = obj->R_num >= 0 ? obj_index[obj->R_num].virtual_number : 0;
+	int count = 0;
+	std::string error;
+	if (flatfile_shop_trophy_count(persistence_mode_flatfile_root(), item,
+				       static_cast<int64_t>(time(nullptr)), &count,
+				       &error) != flatfile_shop_trophy_result::ok)
+	{
+		persistence_alert(AVATAR, "shop_trophy", "global", "none", "none", "count",
+				  "flat_read_failed", "item=%d error=%s", item, error.c_str());
+		return -1;
+	}
+	return count;
+}
 
 #ifdef __NO_MYSQL__
+MYSQL *DB = NULL;
+
+MYSQL *sql_open_configured_connection(unsigned long client_flags)
+{
+	(void)client_flags;
+	return NULL;
+}
+
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...)
+{
+	(void)site;
+	(void)format;
+	return NULL;
+}
+
+MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...)
+{
+	(void)site;
+	(void)format;
+	return NULL;
+}
+
+bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
+			     enum persistence_query_context context, const char *sql, size_t len,
+			     uint64_t *operation_id)
+{
+	(void)conn;
+	(void)site;
+	(void)context;
+	(void)sql;
+	(void)len;
+	(void)operation_id;
+	return false;
+}
+
+char *mysql_str(const char * /*str*/, char *buf)
+{
+	if (buf)
+		buf[0] = '\0';
+	return buf;
+}
+
 int initialize_mysql()
-{
-	return 1;
-}
-void do_sql(P_char ch, char *argument, int cmd) {}
-int sql_save_player_core(P_char ch)
-{
-	return 1;
-}
-void sql_modify_frags(P_char ch, int gain) {}
-void sql_insert_item(P_char ch, P_obj obj, char *desc) {}
-
-void sql_save_pkill(P_char ch, P_char victim) {}
-void sql_insert_new_item(P_char ch, P_obj obj) {}
-
-void sql_webinfo_toggle(P_char ch) {}
-void sql_update_level(P_char ch) {}
-void sql_update_money(P_char ch) {}
-void sql_update_epics(P_char ch) {}
-void sql_update_playtime(P_char ch) {}
-void manual_log(P_char ch) {}
-void perform_wiki_search(P_char ch, const char *buf) {}
-int sql_quest_finish(P_char ch, P_char giver, int type, int value)
 {
 	return -1;
 }
-int sql_quest_trophy(P_char giver)
+void do_sql(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
+int sql_save_player_core(P_char /*ch*/)
+{
+	return 0;
+}
+void sql_modify_frags(P_char ch, int /*gain*/)
+{
+	sql_update_frag_leaderboard(ch);
+}
+void sql_insert_item(P_char /*ch*/, P_obj /*obj*/, char * /*desc*/) {}
+
+void sql_save_pkill(P_char /*ch*/, P_char /*victim*/) {}
+void sql_insert_new_item(P_char /*ch*/, P_obj /*obj*/) {}
+
+void sql_webinfo_toggle(P_char /*ch*/) {}
+void sql_update_level(P_char /*ch*/) {}
+void sql_update_money(P_char /*ch*/) {}
+void sql_update_epics(P_char /*ch*/) {}
+void sql_update_playtime(P_char /*ch*/) {}
+void manual_log(P_char /*ch*/) {}
+void perform_wiki_search(P_char /*ch*/, const char * /*buf*/) {}
+int sql_quest_finish(P_char /*ch*/, P_char /*giver*/, int /*type*/, int /*value*/)
+{
+	return -1;
+}
+int sql_quest_trophy(P_char /*giver*/)
 {
 	return -1;
 }
 int sql_shop_trophy(P_obj obj)
 {
-	return -1;
+	return flat_sql_shop_trophy(obj);
 }
 int sql_shop_sell(P_char ch, P_obj obj, int value)
 {
-	return -1;
+	return flat_sql_shop_sell(ch, obj, value);
 }
-void sql_world_quest_finished(P_char ch, P_char giver, P_obj obj) {}
-int sql_world_quest_done_already(P_char ch, int quest_target)
+void sql_world_quest_finished(P_char ch, P_obj /*obj*/)
 {
-	return -1;
-}
-int sql_world_quest_can_do_another(P_char ch)
-{
-	return -1;
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 ||
+	    ch->only.pc->quest_mob_vnum <= 0)
+		return;
+	std::string error;
+	if (flatfile_world_quest_record(
+		    persistence_mode_flatfile_root(), static_cast<uint32_t>(GET_PID(ch)),
+		    ch->only.pc->quest_mob_vnum, GET_LEVEL(ch), static_cast<int64_t>(time(nullptr)),
+		    &error) != flatfile_world_quest_result::ok)
+		persistence_alert(AVATAR, "world_quest", "player", "unknown", "record",
+				  "flat_write_failed", "pid=%d error=%s", GET_PID(ch),
+				  error.c_str());
 }
 
-void sql_connectIP(P_char ch) {}
-void sql_disconnectIP(P_char ch) {}
+int sql_world_quest_done_already(P_char ch, int quest_target)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || quest_target <= 0)
+		return -1;
+	bool completed = false;
+	std::string error;
+	if (flatfile_world_quest_completed(persistence_mode_flatfile_root(),
+					   static_cast<uint32_t>(GET_PID(ch)), quest_target,
+					   &completed, &error) != flatfile_world_quest_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_world_quest_done_already: %s", error.c_str());
+		return -1;
+	}
+	return completed ? 1 : 0;
+}
+
+int sql_world_quest_can_do_another(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0)
+		return -1;
+	int completed_today = 0;
+	std::string error;
+	if (flatfile_world_quest_count_day(persistence_mode_flatfile_root(),
+					   static_cast<uint32_t>(GET_PID(ch)), GET_LEVEL(ch),
+					   static_cast<int64_t>(time(nullptr)), &completed_today,
+					   &error) != flatfile_world_quest_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_world_quest_can_do_another: %s", error.c_str());
+		return -1;
+	}
+	int maximum = 0;
+	if (GET_LEVEL(ch) <= 30)
+		maximum = get_property("world.quest.max.level.30.andUnder", 6.000);
+	else if (GET_LEVEL(ch) <= 40)
+		maximum = get_property("world.quest.max.level.40.andUnder", 6.000);
+	else if (GET_LEVEL(ch) <= 50)
+		maximum = get_property("world.quest.max.level.50.andUnder", 6.000);
+	else if (GET_LEVEL(ch) <= 55)
+		maximum = get_property("world.quest.max.level.55.andUnder", 6.000);
+	else
+		maximum = get_property("world.quest.max.level.other", 6.000);
+	return std::max(maximum - completed_today, 0);
+}
+
+static int flat_ip_racewar_side(P_char ch)
+{
+	return IS_TRUSTED(ch) ? RACEWAR_NONE : GET_RACEWAR(ch);
+}
+
+void sql_connectIP(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !ch->desc ||
+	    !ch->desc->host[0])
+		return;
+	std::string error;
+	if (flatfile_ip_activity_connect(
+		    persistence_mode_flatfile_root(), static_cast<uint32_t>(GET_PID(ch)),
+		    ch->desc->host, flat_ip_racewar_side(ch), static_cast<int64_t>(time(nullptr)),
+		    &error) != flatfile_ip_activity_result::ok)
+		logit(LOG_DEBUG, "sql_connectIP: failed to persist IP activity: %s", error.c_str());
+}
+
+void sql_disconnectIP(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !ch->desc)
+		return;
+	std::string error;
+	if (flatfile_ip_activity_disconnect(
+		    persistence_mode_flatfile_root(), static_cast<uint32_t>(GET_PID(ch)),
+		    flat_ip_racewar_side(ch), static_cast<int64_t>(time(nullptr)),
+		    &error) != flatfile_ip_activity_result::ok)
+		logit(LOG_DEBUG, "sql_disconnectIP: failed to persist IP activity: %s",
+		      error.c_str());
+}
+
 const char *sql_select_IP_info(P_char ch, char *buf, size_t bufSize, time_t *lastConnect,
 			       time_t *lastDisconnect)
 {
-	buf[0] = 0;
+	if (buf && bufSize)
+		buf[0] = '\0';
+	if (lastConnect)
+		*lastConnect = 0;
+	if (lastDisconnect)
+		*lastDisconnect = 0;
+	if (!buf || !bufSize || !ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0)
+		return buf;
+
+	flatfile_ip_activity_record record;
+	std::string error;
+	const auto loaded = flatfile_ip_activity_get(persistence_mode_flatfile_root(),
+						     static_cast<uint32_t>(GET_PID(ch)), &record,
+						     &error);
+	if (loaded == flatfile_ip_activity_result::not_found)
+		return buf;
+	if (loaded != flatfile_ip_activity_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_select_IP_info: failed to load IP activity: %s",
+		      error.c_str());
+		return buf;
+	}
+
+	strlcpy(buf, record.ip.c_str(), bufSize);
+	const int64_t now = static_cast<int64_t>(time(nullptr));
+	if (lastConnect && record.last_connect > 0 && now >= record.last_connect)
+		*lastConnect = static_cast<time_t>(now - record.last_connect);
+	if (lastDisconnect && record.last_disconnect > 0 && now >= record.last_disconnect)
+		*lastDisconnect = static_cast<time_t>(now - record.last_disconnect);
 	return buf;
 }
+
 int sql_find_racewar_for_ip(char *ip, int *racewar_side)
 {
-	return -1;
+	if (racewar_side)
+		*racewar_side = RACEWAR_NONE;
+	if (!ip || !*ip || !racewar_side)
+		return -1;
+
+	flatfile_ip_activity_record record;
+	std::string error;
+	const auto loaded = flatfile_ip_activity_find_latest(persistence_mode_flatfile_root(), ip,
+							     &record, &error);
+	if (loaded == flatfile_ip_activity_result::not_found)
+		return 0;
+	if (loaded != flatfile_ip_activity_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_find_racewar_for_ip: failed to load IP activity: %s",
+		      error.c_str());
+		return -1;
+	}
+
+	*racewar_side = record.racewar_side;
+	const int64_t now = static_cast<int64_t>(time(nullptr));
+	const int64_t hour_ago = now - 60 * 60;
+	if (record.last_disconnect > record.last_connect && record.last_disconnect <= hour_ago)
+	{
+		*racewar_side = RACEWAR_NONE;
+		return 0;
+	}
+	if (record.last_disconnect < record.last_connect)
+		return 60 * 60;
+	const int64_t remaining = record.last_disconnect - hour_ago;
+	if (remaining <= 0)
+	{
+		*racewar_side = RACEWAR_NONE;
+		return 0;
+	}
+	return static_cast<int>(std::min<int64_t>(remaining, 60 * 60));
 }
 bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
 	(void)site;
 	(void)format;
-	return TRUE;
+	return FALSE;
 }
-void send_to_char_offline(const char *msg, int pid) {}
-void send_offline_messages(P_char ch) {}
-void log_epic_gain(int pid, int zone_id, int type, int epics) {}
-void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics) {}
-bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
-					const char *owner_ref, const char *context)
+static void enqueue_flat_offline_message(const char *message, int pid)
 {
-	return true;
+	const char *root = persistence_mode_flatfile_root();
+	critical_operation_id operation_id = {};
+	std::string error;
+	if (!root || !message || pid <= 0 || !critical_operation_id_generate(&operation_id) ||
+	    flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid), operation_id.bytes,
+					     message,
+					     &error) != flatfile_offline_message_result::ok)
+		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
+				  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
 }
-bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
-						 const char *owner_type,
-						 unsigned long long owner_id,
-						 unsigned long long owner_context_id,
-						 const char *context)
+void send_to_char_offline(const char *message, int pid)
 {
-	return true;
+	enqueue_flat_offline_message(message, pid);
+}
+void send_to_pid_offline(const char *message, int pid)
+{
+	enqueue_flat_offline_message(message, pid);
+}
+void send_offline_messages(P_char ch)
+{
+	const char *root = persistence_mode_flatfile_root();
+	if (!root || !ch || IS_NPC(ch) || GET_PID(ch) <= 0)
+		return;
+	std::vector<flatfile_offline_message_record> messages;
+	std::string error;
+	if (flatfile_offline_message_list(root, static_cast<uint32_t>(GET_PID(ch)), &messages,
+					  &error) != flatfile_offline_message_result::ok)
+	{
+		persistence_alert(AVATAR, "offline_message", "player", "unknown", "load",
+				  "flat_read_failed", "pid=%d error=%s", GET_PID(ch),
+				  error.c_str());
+		return;
+	}
+	std::sort(messages.begin(), messages.end(),
+		  [](const auto &left, const auto &right)
+		  {
+			  return left.created_at != right.created_at ?
+					 left.created_at < right.created_at :
+					 left.id < right.id;
+		  });
+	for (const auto &message : messages)
+	{
+		send_to_char(message.text.c_str(), ch);
+		const auto acknowledged = flatfile_offline_message_acknowledge(
+			root, static_cast<uint32_t>(GET_PID(ch)), message.id, &error);
+		if (acknowledged != flatfile_offline_message_result::ok &&
+		    acknowledged != flatfile_offline_message_result::not_found)
+		{
+			persistence_alert(AVATAR, "offline_message", "player", "unknown",
+					  "acknowledge", "flat_write_failed", "pid=%d error=%s",
+					  GET_PID(ch), error.c_str());
+			break;
+		}
+	}
+}
+void log_epic_gain(int /*pid*/, int /*zone_id*/, int /*type*/, int /*epics*/) {}
+void log_epic_gain_event(const char * /*event_key*/, int /*pid*/, int /*type*/, int /*type_id*/,
+			 int /*epics*/)
+{
+}
+bool sql_persistence_item_owner_matches(unsigned long long /*item_uid*/,
+					const char * /*owner_type*/, const char * /*owner_ref*/,
+					const char * /*context*/)
+{
+	return false;
+}
+bool sql_persistence_item_owner_matches_identity(unsigned long long /*item_uid*/,
+						 const char * /*owner_type*/,
+						 unsigned long long /*owner_id*/,
+						 unsigned long long /*owner_context_id*/,
+						 const char * /*context*/)
+{
+	return false;
 }
 bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authority_item *items,
 						    size_t count,
@@ -175,14 +475,97 @@ bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authori
 }
 bool sql_hydrate_item_owner_revisions(void)
 {
-	return true;
+	return false;
+}
+void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_update)
+{
+	if (max_frags)
+		*max_frags = -1;
+	if (racewar)
+		*racewar = RACEWAR_NONE;
+	if (level)
+		*level = frag_cap_config_get()->cap_floor_level;
+	if (next_update)
+		*next_update = 0;
+}
+int sql_level_cap(int /*racewar_side*/)
+{
+	return frag_cap_config_get()->cap_floor_level;
+}
+double sql_get_total_donated(const char * /*account_name*/)
+{
+	return 0.0;
+}
+void sql_update_frag_leaderboard(P_char ch)
+{
+	if (!ch || IS_NPC(ch))
+		return;
+	if (IS_MORPH(ch))
+		ch = MORPH_ORIG(ch);
+	const char *root = persistence_mode_flatfile_root();
+	const char *account = get_account_name_safe(ch);
+	const char *name = GET_NAME(ch);
+	if (!root || GET_PID(ch) <= 0 || !account || !*account || !name || !*name)
+		return;
+	flatfile_frag_leaderboard_record record;
+	record.pid = static_cast<uint32_t>(GET_PID(ch));
+	record.account_name = account;
+	record.character_name = name;
+	record.total_frags = ch->only.pc->frags;
+	record.racewar = GET_RACEWAR(ch);
+	record.race_name = race_names_table[ch->player.race].normal;
+	record.class_name = class_names_table[flag2idx(ch->player.m_class)].normal;
+	record.level = GET_LEVEL(ch);
+	record.last_updated = static_cast<int64_t>(time(nullptr));
+	record.revision = 1;
+	std::string error;
+	if (flatfile_frag_leaderboard_upsert(root, record, &error) !=
+	    flatfile_frag_leaderboard_result::ok)
+		persistence_alert(AVATAR, "frag_leaderboard", "player", "unknown", "upsert",
+				  "flat_write_failed", "pid=%d error=%s", GET_PID(ch),
+				  error.c_str());
+}
+bool sql_soft_delete_character(long /*pid*/)
+{
+	return false;
+}
+bool sql_trace_exec_at(struct persistence_query_site /*source_site*/, const char * /*label*/,
+		       const char * /*sql*/, size_t /*len*/, bool /*drain_before*/,
+		       bool /*drain_after*/)
+{
+	return false;
+}
+void sql_log_player_login(P_char ch, const char *status)
+{
+	if (!ch || IS_NPC(ch) || !status ||
+	    (strcasecmp(status, "login") && strcasecmp(status, "logout")))
+		return;
+	sql_log(ch, CONNECTLOG, "Session audit: %s", status);
 }
 void update_zone_db() {}
-void update_zone_epic_level(int zone_id, int level) {}
-void show_frag_trophy(P_char ch, P_char who)
+void update_zone_epic_level(int /*zone_id*/, int /*level*/) {}
+void show_frag_trophy(P_char ch, P_char /*who*/)
 {
 	send_to_char("Disabled.", ch);
 }
+
+static void sanitize_flat_log_field(const char *source, char *destination, size_t capacity)
+{
+	if (!destination || capacity == 0)
+		return;
+
+	size_t index = 0;
+	if (source)
+	{
+		for (; source[index] && index + 1 < capacity; ++index)
+		{
+			const unsigned char byte = static_cast<unsigned char>(source[index]);
+			destination[index] = byte < 0x20 || byte == 0x7f ? ' ' : source[index];
+		}
+	}
+	destination[index] = '\0';
+}
+
 void sql_log(P_char ch, const char *kind, const char *format, ...)
 {
 	if (!ch)
@@ -195,84 +578,57 @@ void sql_log(P_char ch, const char *kind, const char *format, ...)
 	{
 		debug("sql_log called in sql.c for mobile ch - %s - Vnum %d", GET_NAME(ch),
 		      GET_VNUM(ch));
-		debug("sql_log kind '%s', format '%s'", kind, format);
+		debug("sql_log kind '%s', format '%s'", kind ? kind : "(null)",
+		      format ? format : "(null)");
 		return;
 	}
 
+	if (!ch->only.pc || !GET_NAME(ch) || !kind || !format)
+	{
+		debug("sql_log called with incomplete player log data");
+		return;
+	}
+
+	static char message[MAX_STRING_LENGTH];
 	va_list args;
-	int raw_len;
-	char *raw_msg;
-	char *escaped_msg;
-	string esc_kind;
-	string esc_ip;
-	string esc_name;
-	string query;
-
 	va_start(args, format);
-	raw_len = vsnprintf(NULL, 0, format, args);
+	const int message_length = vsnprintf(message, sizeof(message), format, args);
 	va_end(args);
-	if (raw_len < 0)
+	if (message_length < 0 || message_length >= static_cast<int>(sizeof(message)))
 	{
-		debug("sql_log: Message formatting error");
+		debug("sql_log: Message too long or formatting error");
 		return;
 	}
 
-	raw_msg = (char *)malloc((size_t)raw_len + 1);
-	if (!raw_msg)
-		return;
+	char safe_kind[32];
+	char safe_ip[sizeof(ch->desc->host)];
+	char safe_name[MAX_INPUT_LENGTH];
+	sanitize_flat_log_field(kind, safe_kind, sizeof(safe_kind));
+	sanitize_flat_log_field(ch->desc ? ch->desc->host : "", safe_ip, sizeof(safe_ip));
+	sanitize_flat_log_field(GET_NAME(ch), safe_name, sizeof(safe_name));
+	sanitize_flat_log_field(message, message, sizeof(message));
 
-	va_start(args, format);
-	vsnprintf(raw_msg, (size_t)raw_len + 1, format, args);
-	va_end(args);
-
-	escaped_msg = (char *)malloc(((size_t)raw_len * 2) + 1);
-	if (!escaped_msg)
+	int zone_number = NOWHERE;
+	int room_vnum = NOWHERE;
+	if (world && ch->in_room >= 0 && ch->in_room <= top_of_world)
 	{
-		free(raw_msg);
-		return;
+		room_vnum = world[ch->in_room].number;
+		const int zone_rnum = world[ch->in_room].zone;
+		if (zone_table && zone_rnum >= 0 && zone_rnum <= top_of_zone_table)
+			zone_number = zone_table[zone_rnum].number;
 	}
-	mysql_real_escape_string(DB, escaped_msg, raw_msg, (unsigned long)raw_len);
 
-	auto escape_sql = [](const char *src) -> string
-	{
-		if (!src)
-			return string();
-		size_t len = strlen(src);
-		string out;
-		out.resize((len * 2) + 1);
-		unsigned long out_len =
-			mysql_real_escape_string(DB, &out[0], src, (unsigned long)len);
-		out.resize(out_len);
-		return out;
-	};
+	const char *destination = LOG_PLAYER;
+	if (!strcmp(kind, WIZLOG))
+		destination = LOG_WIZ;
+	else if (!strcmp(kind, EXPLOG))
+		destination = LOG_EXP;
 
-	esc_kind = escape_sql(kind);
-	if (ch->desc && ch->desc->host)
-		esc_ip = escape_sql(ch->desc->host);
-	esc_name = escape_sql(GET_NAME(ch));
-
-	query = "INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) VALUES (NOW(), '";
-	query += esc_kind;
-	query += "', '";
-	query += esc_ip;
-	query += "', ";
-	query += std::to_string(GET_PID(ch));
-	query += ", '";
-	query += esc_name;
-	query += "', ";
-	query += std::to_string(zone_table[world[ch->in_room].zone].number);
-	query += ", ";
-	query += std::to_string(world[ch->in_room].number);
-	query += ", '";
-	query += escaped_msg;
-	query += "')";
-
-	qry("%s", query.c_str());
-	free(raw_msg);
-	free(escaped_msg);
+	logit(destination, "kind=%s ip=%s pid=%d player=%s zone=%d room=%d message=%s", safe_kind,
+	      safe_ip, GET_PID(ch), safe_name, zone_number, room_vnum, message);
 }
 
-bool get_zone_info(int zone_number, struct zone_info *info)
+bool get_zone_info(int /*zone_number*/, struct zone_info * /*info*/)
 {
 	return FALSE;
 }
@@ -284,25 +640,62 @@ string escape_str(const char *str)
 
 string get_mud_info(const char *name)
 {
-	return string();
+	string contents, error;
+	if (!name || !flatfile_information_read(".", name, &contents, &error))
+	{
+		logit(LOG_DEBUG, "get_mud_info: %s",
+		      error.empty() ? "invalid name" : error.c_str());
+		return {};
+	}
+	return contents;
 }
 
-void send_mud_info(const char *name, P_char ch) {}
+void send_mud_info(const char *name, P_char ch)
+{
+	send_to_char(get_mud_info(name).c_str(), ch, LOG_NONE);
+}
 
-void sql_update_bind_data(int vnum, int *owner_pid, int *timer) {}
+void sql_update_bind_data(int vnum, int *owner_pid, int *timer)
+{
+	if (!owner_pid || !timer)
+	{
+		logit(LOG_DEBUG, "sql_update_bind_data: invalid input pointer");
+		return;
+	}
+	std::string error;
+	const auto updated = flatfile_artifact_bind_update(persistence_mode_flatfile_root(), vnum,
+							   *owner_pid, *timer, &error);
+	if (updated != flatfile_artifact_result::ok &&
+	    updated != flatfile_artifact_result::unchanged)
+		logit(LOG_DEBUG, "sql_update_bind_data: flat artifact update failed: %s",
+		      error.empty() ? "invalid or missing artifact authority" : error.c_str());
+}
 
 bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
 {
-	(void)vnum;
 	if (owner_pid)
-	{
 		*owner_pid = 0;
-	}
 	if (timer)
-	{
 		*timer = 0;
+	if (!owner_pid || !timer)
+	{
+		logit(LOG_DEBUG, "sql_get_bind_data: invalid output pointer");
+		return false;
 	}
-	return false;
+	int32_t flat_owner_pid = 0;
+	int64_t flat_timer = 0;
+	std::string error;
+	const auto loaded = flatfile_artifact_bind_get(persistence_mode_flatfile_root(), vnum,
+						       &flat_owner_pid, &flat_timer, &error);
+	if (loaded != flatfile_artifact_result::ok || flat_timer > INT_MAX)
+	{
+		logit(LOG_DEBUG, "sql_get_bind_data: flat artifact lookup failed: %s",
+		      error.empty() ? "invalid or missing artifact authority" : error.c_str());
+		return false;
+	}
+	*owner_pid = flat_owner_pid;
+	*timer = static_cast<int>(flat_timer);
+	return true;
 }
 
 bool sql_pwipe(int code_verify)
@@ -970,73 +1363,6 @@ const char *sql_persistence_db_name(void)
 	if (RUNNING_PORT != DFLT_PORT && production_name)
 		return "duris_dev";
 	return DB_NAME;
-}
-
-/* load .env file if present, setting environment variables */
-int load_env_file(void)
-{
-	int fd = open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
-	if (fd < 0)
-	{
-		if (errno != ENOENT)
-		{
-			logit(LOG_STATUS, "Unable to open .env securely");
-			return -1;
-		}
-		logit(LOG_STATUS, "No .env file found; explicit process environment is required.");
-		return 0;
-	}
-
-	struct stat file_stat;
-	if (fstat(fd, &file_stat) || !S_ISREG(file_stat.st_mode) || file_stat.st_uid != geteuid() ||
-	    (file_stat.st_mode & 0177))
-	{
-		logit(LOG_STATUS,
-		      "Unsafe .env metadata: require an owner-controlled regular file with mode 0600 or stricter");
-		close(fd);
-		return -1;
-	}
-
-	FILE *f = fdopen(fd, "r");
-	if (!f)
-	{
-		close(fd);
-		return -1;
-	}
-
-	char line[256];
-	int count = 0;
-	while (fgets(line, sizeof(line), f))
-	{
-		// skip comments and empty lines
-		if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
-			continue;
-
-		// remove newline
-		char *nl = strchr(line, '\n');
-		if (nl)
-			*nl = '\0';
-		nl = strchr(line, '\r');
-		if (nl)
-			*nl = '\0';
-
-		// skip empty lines after trimming
-		if (line[0] == '\0')
-			continue;
-
-		// parse KEY=VALUE
-		char *eq = strchr(line, '=');
-		if (eq)
-		{
-			*eq = '\0';
-			setenv(line, eq + 1, 0);
-			count++;
-		}
-	}
-	fclose(f);
-
-	logit(LOG_STATUS, "Loaded %d environment variables from .env file.", count);
-	return count;
 }
 
 /* Open a connection to the database. The connection will remain open
@@ -2993,6 +3319,10 @@ void send_offline_messages(P_char ch)
 
 int sql_shop_sell(P_char ch, P_obj obj, int value)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return flat_sql_shop_sell(ch, obj, value);
+	if (!obj)
+		return 0;
 	int m_virtual = (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : 0;
 
 	int pid = (IS_PC(ch) ? GET_PID(ch) : 0);
@@ -3005,11 +3335,13 @@ int sql_shop_sell(P_char ch, P_obj obj, int value)
 
 int sql_shop_trophy(P_obj obj)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return flat_sql_shop_trophy(obj);
 	if (!obj)
 		return 0;
 
 	// mined ore doesnt devaule
-	if (strstr(obj->name, "_ore_"))
+	if (obj->name && strstr(obj->name, "_ore_"))
 		return 0;
 
 	int objvir = OBJ_VNUM(obj);
@@ -4937,6 +5269,8 @@ bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
 		expected_type = item_owner_type::locker;
 	else if (!strcmp(owner_type, "auction"))
 		expected_type = item_owner_type::auction;
+	else if (!strcmp(owner_type, "shopkeeper"))
+		expected_type = item_owner_type::shopkeeper;
 	if (expected_type == item_owner_type::unknown)
 		return false;
 	if (!expected_id)

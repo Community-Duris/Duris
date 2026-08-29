@@ -32,6 +32,17 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertLess(movement.index("const bool committed"),
                         movement.index("item_ownership_runtime_apply"))
 
+    def test_transfer_captures_exact_snapshot_before_submission(self):
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        capture = movement.index("player_item_snapshot_tree_capture")
+        encode = movement.index("player_item_snapshot_list_encode")
+        build = movement.index("item_transfer_command_build")
+        submit = movement.index("critical_command_coordinator_submit")
+        self.assertLess(capture, encode)
+        self.assertLess(encode, build)
+        self.assertLess(build, submit)
+        self.assertIn("payload.item_blob_size", movement)
+
     def test_audited_commands_defer_pointer_mutation(self):
         actobj = (SRC / "actobj.c").read_text()
         for reason in ("player_get", "player_drop", "player_put", "player_give",
@@ -57,6 +68,9 @@ class LiveItemMovementContractTests(unittest.TestCase):
         make_corpse = fight[fight.index("P_obj make_corpse"):]
         self.assertIn("submit_next_corpse_item", fight)
         self.assertIn("item_transfer_reason::corpse_create", fight)
+        self.assertIn("corpse->weight = GET_WEIGHT(ch);", fight)
+        self.assertIn("int contents_weight = total_carried_weight(ch);", fight)
+        self.assertIn("sizeof(context), corpse", fight)
         self.assertIn("failed_preserved", fight)
         self.assertNotIn("sql_delete_player_items", make_corpse)
         completion = fight[fight.index("void corpse_item_completion"):]
@@ -100,6 +114,33 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("const bool same_owner", repository)
         self.assertIn("SET root_item_uid=?", repository)
         self.assertIn("target_container", movement)
+
+    def test_flat_corpse_creation_and_loot_are_composite(self):
+        repository = (SRC / "flatfile_item_repository.c").read_text()
+        world = (SRC / "flatfile_world_item_repository.c").read_text()
+        artifact = (SRC / "flatfile_artifact_repository.c").read_text()
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        self.assertIn("flatfile_world_item_prepare_corpse_transfer", world)
+        self.assertIn("flatfile_artifact_prepare_corpse_transfer", artifact)
+        self.assertIn("capture_corpse_metadata", movement)
+        self.assertIn("corpse_loot_transfer(payload)", repository)
+        self.assertIn("corpse_create_transfer(payload)", repository)
+        apply = repository[repository.index(
+            "critical_apply_result flatfile_item_repository_apply") :]
+        prepare = apply.index("flatfile_world_item_prepare_corpse_transfer")
+        artifact_prepare = apply.index("flatfile_artifact_prepare_corpse_transfer", prepare)
+        image = apply.index("corpse.after_image", prepare)
+        artifact_image = apply.index("corpse_artifacts.after_image", artifact_prepare)
+        commit = apply.index("flatfile_authority_transaction_commit", image)
+        self.assertLess(prepare, image)
+        self.assertLess(artifact_prepare, artifact_image)
+        self.assertLess(image, commit)
+        self.assertLess(artifact_image, commit)
+        supported = repository[repository.index("bool generic_transfer_supported") :]
+        supported = supported[:supported.index("bool locker_custody_matches")]
+        self.assertIn("corpse_loot_transfer(payload)", supported)
+        self.assertIn("corpse_create_transfer(payload)", supported)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION", supported)
 
 
 if __name__ == "__main__":

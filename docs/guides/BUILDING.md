@@ -13,6 +13,26 @@ make -C src                             # produces bin/server/dms_new
 cp bin/server/dms_new bin/server/dms    # manually promote for a direct run
 ```
 
+The server build has an explicit compile-time persistence dependency boundary:
+
+```bash
+make -C src PERSISTENCE_BACKEND=mariadb
+make -C src PERSISTENCE_BACKEND=flatfile
+```
+
+`mariadb` is the default and includes and links the MySQL-compatible client. The
+`flatfile` selection defines `__NO_MYSQL__` and does not add the MySQL include path or
+client library. Each binary accepts only its matching primary runtime mode. The legacy
+`mariadb-primary-flatfile-fallback` token remains recognized but fails closed because
+mixed per-operation authority transfer is not supported.
+
+Mixed legacy modules still mention MySQL types while their durable operations are being
+moved behind backend repositories. Flat builds resolve those declarations through
+`src/no_mysql/`, a client-free compatibility surface whose connection, query, statement,
+and thread initialization calls always fail. It neither connects nor persists data and
+must not be treated as a backend; flat-file primary routes durable operations through
+the corresponding file repositories instead of this compatibility surface.
+
 The root `Makefile` is the maintained full-project entry point. `make clean`
 removes compiled server, editor, and area-tool artifacts but preserves generated
 world data, the active runtime, package artifacts, and runtime history. Every
@@ -44,12 +64,10 @@ From the default build line:
 | `-std=c++20` | All `.c` files are compiled as C++20 with g++. |
 | `-DTEST_MUD` | Development build: selects the `duris_dev` database credentials in `src/sql.h` and enables test commands. |
 | `-D__NO_TESTS__` | Excludes built-in test hooks. |
+| `-D__NO_MYSQL__` | Selected by `PERSISTENCE_BACKEND=flatfile`; removes the client compile/link dependency. |
 
-MySQL/MariaDB client support is a mandatory server build dependency. The historical
-`-D__NO_MYSQL__` partial stubs remain only to keep narrow unit harnesses isolated; they do
-not define or advertise a supported whole-server build. Redis is optional at runtime, but
-Hiredis and OpenSSL remain build dependencies because one server binary supports both the
-enabled and disabled runtime configurations.
+Redis is optional at runtime, but Hiredis and OpenSSL remain build dependencies because
+one server binary supports both the enabled and disabled runtime configurations.
 
 `HARDENING_FLAGS` adds `-Og -D_FORTIFY_SOURCE=3 -fstack-protector-strong
 -fstack-clash-protection`. `EXTRA_CFLAGS` / `EXTRA_LDFLAGS` are appended last

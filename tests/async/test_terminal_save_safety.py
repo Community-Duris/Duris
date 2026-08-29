@@ -71,13 +71,26 @@ checks["terminal helper uses typed coordinator outcome"] = all(
     )
 ) and "do_save_silent" not in terminal_helper and "writeCharacter" not in terminal_helper
 
+player_sql_start = files.index("if (!sql_save_player(ch, type, room))")
 player_sql_failure = files[
-    files.index("else\n\t{\n\t\tif (!sql_save_player"):
-    files.index("const bool terminal_type", files.index("else\n\t{\n\t\tif (!sql_save_player"))
+    player_sql_start:files.index("// Failed saves always restore", player_sql_start)
 ]
-checks["new player flat fallback writes retired"] = (
+checks["player SQL failure flat fallback writes retired"] = (
     "flat_fallback_retired" in player_sql_failure
     and "persistence_write_character_flat_fallback" not in player_sql_failure
+)
+
+flat_terminal_start = files.index("#ifdef __NO_MYSQL__", files.index("int writeCharacter"))
+flat_terminal = files[
+    flat_terminal_start:files.index("#endif", flat_terminal_start)
+]
+checks["flat terminal saves require the typed durable outcome"] = all(
+    token in flat_terminal
+    for token in (
+        "player_save_pipeline_terminal",
+        "player_save_terminal_result::database_acknowledged",
+        "return 0;",
+    )
 )
 
 # Ghost extraction lives in actwiz.c and uses the shared terminal helper twice.

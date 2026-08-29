@@ -29,6 +29,7 @@ fi
 # Parse command line arguments
 DEV_MODE=0
 MINIMAL_MODE=0
+CONFIG_CHECK_ONLY=0
 while (( $# > 0 )); do
   case "$1" in
     --dev)
@@ -38,22 +39,23 @@ while (( $# > 0 )); do
       MINIMAL_MODE=1
       DEV_MODE=1
       ;;
+    --check-config)
+      CONFIG_CHECK_ONLY=1
+      ;;
     --help|-h)
-      echo "Usage: $0 [--dev] [--minimal]"
+      echo "Usage: $0 [--dev] [--minimal] [--check-config]"
       echo "  --minimal  Use the tracked areas_mini dataset (implies --dev)."
+      echo "  --check-config  Validate persistence configuration without starting the game."
       exit 0
       ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: $0 [--dev] [--minimal]" >&2
+      echo "Usage: $0 [--dev] [--minimal] [--check-config]" >&2
       exit 2
       ;;
   esac
   shift
 done
-if (( DEV_MODE == 1 )); then
-  echo "Running in DEV mode - using TEST_MUD database"
-fi
 if (( MINIMAL_MODE == 1 )); then
   echo "Running in minimal world mode from areas_mini"
 fi
@@ -79,56 +81,101 @@ mkdir -p "$BINARY_HISTORY_DIR"
 
 ulimit -c unlimited
 
-for REQUIRED_DB_FIELD in ENVIRONMENT DB_HOST DB_USER DB_PASSWD DB_NAME DB_ALLOWED_TARGETS; do
-  if [[ -z "${!REQUIRED_DB_FIELD:-}" ]]; then
-    echo "Missing required database field: $REQUIRED_DB_FIELD" >&2
+PERSISTENCE_MODE="${PERSISTENCE_MODE:-mariadb-primary}"
+export PERSISTENCE_MODE
+DATABASE_REQUIRED=0
+FLATFILE_REQUIRED=0
+case "$PERSISTENCE_MODE" in
+  mariadb-primary)
+    DATABASE_REQUIRED=1
+    ;;
+  mariadb-primary-flatfile-fallback)
+    DATABASE_REQUIRED=1
+    FLATFILE_REQUIRED=1
+    ;;
+  flatfile-primary)
+    FLATFILE_REQUIRED=1
+    ;;
+  *)
+    echo "Invalid PERSISTENCE_MODE: $PERSISTENCE_MODE" >&2
     exit 1
-  fi
-done
-if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
-  echo "ENVIRONMENT must be local or production" >&2
+    ;;
+esac
+
+if [[ -z "${ENVIRONMENT:-}" ]]; then
+  echo "Missing required environment field: ENVIRONMENT" >&2
   exit 1
 fi
-if [[ -n "${DB_PORT:-}" ]] &&
-   { ! [[ "$DB_PORT" =~ ^[0-9]+$ ]] || (( DB_PORT < 1 || DB_PORT > 65535 )); }; then
-  echo "DB_PORT must be between 1 and 65535" >&2
+if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
+  echo "ENVIRONMENT must be local or production" >&2
   exit 1
 fi
 if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne 7777 ]]; then
   echo "Production mode requires port 7777" >&2
   exit 1
 fi
-
-EFFECTIVE_DB_NAME="$DB_NAME"
-if [[ $MUD_PORT -ne 7777 && ( "$DB_NAME" == "duris" || "$DB_NAME" == "duris_prod" ) ]]; then
-  EFFECTIVE_DB_NAME="duris_dev"
-fi
-case ",$DB_ALLOWED_TARGETS," in
-  *",$DB_HOST/$EFFECTIVE_DB_NAME,"*) ;;
-  *) echo "Resolved database target is not allow-listed" >&2; exit 1 ;;
-esac
-export DB_NAME="$EFFECTIVE_DB_NAME"
-
-MYSQL_CONNECTION_ARGS=(--connect-timeout=10 -u "$DB_USER")
-if [[ -n "${DB_SOCKET:-}" ]]; then
-  if [[ "$ENVIRONMENT" != "local" ||
-        ( "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != "::1" ) ]]; then
-    echo "DB_SOCKET is restricted to local loopback mode" >&2
+if (( FLATFILE_REQUIRED == 1 )); then
+  if [[ -z "${FLATFILE_STATE_DIR:-}" ]]; then
+    echo "FLATFILE_STATE_DIR is required for persistence mode $PERSISTENCE_MODE" >&2
     exit 1
   fi
-  MYSQL_CONNECTION_ARGS+=(--protocol=socket --socket="$DB_SOCKET")
-elif [[ "$DB_HOST" == "localhost" || "$DB_HOST" == "127.0.0.1" || "$DB_HOST" == "::1" ]]; then
-  MYSQL_CONNECTION_ARGS+=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}")
+  if [[ "$FLATFILE_STATE_DIR" != /* ]]; then
+    echo "FLATFILE_STATE_DIR must be an absolute path" >&2
+    exit 1
+  fi
+fi
+
+if (( DATABASE_REQUIRED == 1 )); then
+  for REQUIRED_DB_FIELD in DB_HOST DB_USER DB_PASSWD DB_NAME DB_ALLOWED_TARGETS; do
+    if [[ -z "${!REQUIRED_DB_FIELD:-}" ]]; then
+      echo "Missing required database field: $REQUIRED_DB_FIELD" >&2
+      exit 1
+    fi
+  done
+  if [[ -n "${DB_PORT:-}" ]] &&
+     { ! [[ "$DB_PORT" =~ ^[0-9]+$ ]] || (( DB_PORT < 1 || DB_PORT > 65535 )); }; then
+    echo "DB_PORT must be between 1 and 65535" >&2
+    exit 1
+  fi
+  EFFECTIVE_DB_NAME="$DB_NAME"
+  if [[ $MUD_PORT -ne 7777 && ( "$DB_NAME" == "duris" || "$DB_NAME" == "duris_prod" ) ]]; then
+    EFFECTIVE_DB_NAME="duris_dev"
+  fi
+  case ",$DB_ALLOWED_TARGETS," in
+    *",$DB_HOST/$EFFECTIVE_DB_NAME,"*) ;;
+    *) echo "Resolved database target is not allow-listed" >&2; exit 1 ;;
+  esac
+  export DB_NAME="$EFFECTIVE_DB_NAME"
+
+  MYSQL_CONNECTION_ARGS=(--connect-timeout=10 -u "$DB_USER")
+  if [[ -n "${DB_SOCKET:-}" ]]; then
+    if [[ "$ENVIRONMENT" != "local" ||
+          ( "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != "::1" ) ]]; then
+      echo "DB_SOCKET is restricted to local loopback mode" >&2
+      exit 1
+    fi
+    MYSQL_CONNECTION_ARGS+=(--protocol=socket --socket="$DB_SOCKET")
+  elif [[ "$DB_HOST" == "localhost" || "$DB_HOST" == "127.0.0.1" || "$DB_HOST" == "::1" ]]; then
+    MYSQL_CONNECTION_ARGS+=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}")
+  else
+    if [[ "${DB_TLS:-}" != "TRUE" || ! -f "${DB_SSL_CA:-}" ]]; then
+      echo "Remote database transport requires TLS and a CA file" >&2
+      exit 1
+    fi
+    MYSQL_CONNECTION_ARGS+=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}"
+                            --ssl-ca="$DB_SSL_CA" --ssl-verify-server-cert)
+  fi
+  export MYSQL_PWD="$DB_PASSWD"
+  echo "Validated explicit database configuration for $PERSISTENCE_MODE"
 else
-  if [[ "${DB_TLS:-}" != "TRUE" || ! -f "${DB_SSL_CA:-}" ]]; then
-    echo "Remote database transport requires TLS and a CA file" >&2
-    exit 1
-  fi
-  MYSQL_CONNECTION_ARGS+=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}"
-                          --ssl-ca="$DB_SSL_CA" --ssl-verify-server-cert)
+  echo "Validated database-independent configuration for flatfile-primary"
 fi
-export MYSQL_PWD="$DB_PASSWD"
-echo "Validated explicit database configuration"
+if (( DEV_MODE == 1 )); then
+  echo "Running in DEV mode"
+fi
+if (( CONFIG_CHECK_ONLY == 1 )); then
+  exit 0
+fi
 
 while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 	DATESTR=$(date +%C%y.%m.%d-%H.%M.%S)
@@ -136,17 +183,19 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   # Refuse to publish the service against a stale or incompatible schema. Local
   # databases can be advanced safely by the guarded immutable runner;
   # production remains read-only and must be migrated through the runbook.
-  if [[ "$ENVIRONMENT" == "local" ]]; then
-    echo "Applying pending immutable database migrations..."
-    if ! python3 scripts/migration_runner.py run; then
-      echo "Database migrations are not up to date; refusing to boot" >&2
+  if (( DATABASE_REQUIRED == 1 )); then
+    if [[ "$ENVIRONMENT" == "local" ]]; then
+      echo "Applying pending immutable database migrations..."
+      if ! python3 scripts/migration_runner.py run; then
+        echo "Database migrations are not up to date; refusing to boot" >&2
+        exit 1
+      fi
+    fi
+    echo "Verifying runtime database compatibility..."
+    if ! ./migrations/verify_runtime_compatibility.sh; then
+      echo "Database schema is incompatible with this server; refusing to boot" >&2
       exit 1
     fi
-  fi
-  echo "Verifying runtime database compatibility..."
-  if ! ./migrations/verify_runtime_compatibility.sh; then
-    echo "Database schema is incompatible with this server; refusing to boot" >&2
-    exit 1
   fi
 
   if [[ $RESULT == 53 || $RESULT == 57 ]]; then
@@ -180,9 +229,9 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   # directory is missing; every logit() write would be dropped.
   mkdir -p logs/log
 
-  echo "Backing up the authoritative database..."
+  echo "Backing up authoritative persistence state..."
   if ! ./scripts/backup_pfiles.sh; then
-    echo "Required database backup failed; refusing to continue the cycle" >&2
+    echo "Required $PERSISTENCE_MODE backup failed; refusing to boot" >&2
     exit 1
   fi
 
@@ -249,7 +298,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 	echo "Mud stopped, reason: ${STOP_REASON} [${RESULT}]"
 
   # Log shutdown to database for server reboot tracking
-  if [ -n "$DB_HOST" ]; then
+  if (( DATABASE_REQUIRED == 1 )); then
     SHUTDOWN_TIME=$(date +%s)
 
     # Default values for database

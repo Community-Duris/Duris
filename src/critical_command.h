@@ -31,6 +31,7 @@ enum class critical_entity_type : uint8_t
 	system,
 	artifact,
 	zone,
+	shopkeeper,
 };
 
 struct critical_entity_key
@@ -54,6 +55,9 @@ enum class critical_command_type : uint16_t
 	boon_reward,
 	zone,
 	session_audit,
+	boon_shop,
+	shop_trade,
+	corpse_lifecycle,
 };
 
 enum class critical_source_site : uint16_t

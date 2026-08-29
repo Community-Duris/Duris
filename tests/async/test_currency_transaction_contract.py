@@ -93,12 +93,15 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_reason_type::boon_reward", boon)
         self.assertIn("currency_reason_type::ship_insurance", ship)
 
-    def test_checkpoint_and_legacy_update_cannot_overwrite_currency(self):
+    def test_checkpoint_handoff_captures_but_cannot_overwrite_currency(self):
         capture = (SRC / "player_snapshot_capture.c").read_text()
         replay = (SRC / "player_snapshot_repository.c").read_text()
         sql_player = (SRC / "sql_player.c").read_text()
         for field in ("copper", "silver", "gold", "platinum"):
-            self.assertNotIn(f"ADD_STATUS({field},", capture)
+            # A complete flat baseline needs the immutable opening value. Both SQL
+            # replay and load materialization still treat the transaction domain as
+            # authoritative after that handoff.
+            self.assertIn(f"ADD_STATUS({field},", capture)
             self.assertIn(f"row.field == player_status_field::{field}", replay)
         self.assertIn("copper=copper, silver=silver, gold=gold, platinum=platinum", sql_player)
         self.assertIn("INSERT INTO currency_wallet_baseline", sql_player)

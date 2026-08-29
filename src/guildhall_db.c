@@ -7,7 +7,10 @@
  */
 
 #include "guildhall_db.h"
+#include <algorithm>
+#include <new>
 #include <string>
+#include <utility>
 #include <vector>
 using namespace std;
 
@@ -18,12 +21,122 @@ using namespace std;
 #include "guildhall.h"
 #include "sql.h"
 
+#ifdef __NO_MYSQL__
+#include "flatfile_association_repository.h"
+#include "persistence_mode.h"
+#endif
+
 extern vector<Guildhall *> guildhalls;
 extern P_room world;
 
 int _next_guildhall_id = -1;
 int _next_guildhall_room_id = -1;
 int _next_guildhall_room_vnum = -1;
+
+#ifdef __NO_MYSQL__
+namespace
+{
+static_assert(GH_ROOM_NUM_VALUES == FLATFILE_GUILDHALL_VALUE_COUNT);
+static_assert(NUM_EXITS == FLATFILE_GUILDHALL_EXIT_COUNT);
+
+bool flat_result_succeeded(flatfile_association_result result)
+{
+	return result == flatfile_association_result::ok ||
+	       result == flatfile_association_result::unchanged;
+}
+
+bool capture_guildhall(const Guildhall *guildhall, flatfile_guildhall_record *record,
+		       std::string *error)
+{
+	if (!guildhall || !guildhall->guild || !record)
+	{
+		if (error)
+			*error = "guildhall or owning guild is unavailable";
+		return false;
+	}
+	flatfile_guildhall_record captured;
+	captured.guildhall_id = guildhall->id;
+	captured.association_id = guildhall->guild->get_id();
+	captured.type = guildhall->type;
+	captured.outside_vnum = guildhall->outside_vnum;
+	captured.racewar = guildhall->racewar;
+	try
+	{
+		captured.rooms.reserve(guildhall->rooms.size());
+		for (const auto *room : guildhall->rooms)
+		{
+			if (!room)
+			{
+				if (error)
+					*error = "guildhall contains a missing room";
+				return false;
+			}
+			flatfile_guildhall_room_record captured_room;
+			captured_room.room_id = room->id;
+			captured_room.vnum = room->vnum;
+			captured_room.name = room->name;
+			captured_room.type = room->type;
+			for (size_t index = 0; index < captured_room.values.size(); ++index)
+				captured_room.values[index] = room->value[index];
+			for (size_t index = 0; index < captured_room.exits.size(); ++index)
+				captured_room.exits[index] = room->exits[index];
+			captured.rooms.push_back(std::move(captured_room));
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (error)
+			*error = "could not allocate guildhall snapshot";
+		return false;
+	}
+	*record = std::move(captured);
+	return true;
+}
+
+GuildhallRoom *make_guildhall_room(int type)
+{
+	switch (type)
+	{
+	case GH_ROOM_TYPE_ENTRANCE:
+		return new EntranceRoom();
+	case GH_ROOM_TYPE_INN:
+		return new InnRoom();
+	case GH_ROOM_TYPE_HEARTSTONE:
+		return new HeartstoneRoom();
+	case GH_ROOM_TYPE_PORTAL:
+		return new PortalRoom();
+	case GH_ROOM_TYPE_WINDOW:
+		return new WindowRoom();
+	case GH_ROOM_TYPE_HEAL:
+		return new HealRoom();
+	case GH_ROOM_TYPE_BANK:
+		return new BankRoom();
+	case GH_ROOM_TYPE_TOWN_PORTAL:
+		return new TownPortalRoom();
+	case GH_ROOM_TYPE_LIBRARY:
+		return new LibraryRoom();
+	case GH_ROOM_TYPE_CARGO:
+		return new CargoRoom();
+	default:
+		return new GuildhallRoom();
+	}
+}
+
+void materialize_guildhall_room(const flatfile_guildhall_room_record &record, Guildhall *guildhall)
+{
+	GuildhallRoom *room = make_guildhall_room(record.type);
+	room->id = record.room_id;
+	room->vnum = record.vnum;
+	room->name = record.name;
+	room->type = record.type;
+	for (size_t index = 0; index < record.values.size(); ++index)
+		room->value[index] = record.values[index];
+	for (size_t index = 0; index < record.exits.size(); ++index)
+		room->exits[index] = record.exits[index];
+	guildhall->add_room(room);
+}
+} // namespace
+#endif
 
 int next_guildhall_id()
 {
@@ -120,7 +233,53 @@ int next_guildhall_room_vnum()
 
 void load_guildhalls(vector<Guildhall *> &guildhalls)
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+	{
+		fatal_boot_error("guildhalls", "flat-file state root is unavailable");
+		return;
+	}
+	std::string error;
+	std::vector<flatfile_guildhall_record> records;
+	const auto listed = flatfile_guildhall_list(root, &records, &error);
+	if (listed == flatfile_association_result::not_found)
+	{
+		_next_guildhall_id = 0;
+		_next_guildhall_room_id = 0;
+		return;
+	}
+	if (listed != flatfile_association_result::ok)
+	{
+		fatal_boot_error("guildhalls", "could not load flat guildhall authority: %s",
+				 error.c_str());
+		return;
+	}
+	_next_guildhall_id = 0;
+	_next_guildhall_room_id = 0;
+	for (const auto &record : records)
+	{
+		P_Guild guild = get_guild_from_id(record.association_id);
+		if (!guild)
+		{
+			fatal_boot_error("guildhalls",
+					 "flat guildhall %d references missing guild %u",
+					 record.guildhall_id, record.association_id);
+			return;
+		}
+		Guildhall *guildhall = new Guildhall();
+		guildhall->id = record.guildhall_id;
+		guildhall->assoc_id = record.association_id;
+		guildhall->guild = guild;
+		guildhall->type = record.type;
+		guildhall->outside_vnum = record.outside_vnum;
+		guildhall->racewar = record.racewar;
+		guildhalls.push_back(guildhall);
+		_next_guildhall_id = std::max(_next_guildhall_id, record.guildhall_id);
+		for (const auto &room : record.rooms)
+			_next_guildhall_room_id = std::max(_next_guildhall_room_id, room.room_id);
+	}
+#else
 	if (!qry("select id, assoc_id, type, outside_vnum, racewar from guildhalls order by id asc"))
 	{
 		logit(LOG_GUILDHALLS, "load_guildhalls(): query failed");
@@ -178,7 +337,35 @@ void load_guildhall(int id, Guildhall *gh)
 		return;
 	}
 
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+	{
+		logit(LOG_GUILDHALLS, "load_guildhall(%d): flat-file state root unavailable", id);
+		return;
+	}
+	std::string error;
+	std::vector<flatfile_guildhall_record> records;
+	const auto listed = flatfile_guildhall_list(root, &records, &error);
+	if (listed != flatfile_association_result::ok)
+	{
+		logit(LOG_GUILDHALLS, "load_guildhall(%d): %s", id, error.c_str());
+		return;
+	}
+	const auto record = std::find_if(records.begin(), records.end(), [id](const auto &entry)
+					 { return entry.guildhall_id == id; });
+	if (record == records.end())
+	{
+		logit(LOG_GUILDHALLS, "load_guildhall(%d): guildhall not found", id);
+		return;
+	}
+	gh->id = record->guildhall_id;
+	gh->assoc_id = record->association_id;
+	gh->guild = get_guild_from_id(record->association_id);
+	gh->type = record->type;
+	gh->outside_vnum = record->outside_vnum;
+	gh->racewar = record->racewar;
+#else
 	if (!qry("select id, assoc_id, type, outside_vnum, racewar from guildhalls where id = %d",
 		 id))
 	{
@@ -227,7 +414,35 @@ void load_guildhall_rooms(Guildhall *guildhall)
 		return;
 	}
 
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+	{
+		fatal_boot_error("guildhalls",
+				 "flat-file state root unavailable while loading rooms");
+		return;
+	}
+	std::string error;
+	std::vector<flatfile_guildhall_record> records;
+	const auto listed = flatfile_guildhall_list(root, &records, &error);
+	if (listed != flatfile_association_result::ok)
+	{
+		fatal_boot_error("guildhalls", "could not load flat guildhall rooms: %s",
+				 error.c_str());
+		return;
+	}
+	const auto record = std::find_if(records.begin(), records.end(),
+					 [guildhall](const auto &entry)
+					 { return entry.guildhall_id == guildhall->id; });
+	if (record == records.end())
+	{
+		fatal_boot_error("guildhalls", "flat guildhall %d disappeared while loading rooms",
+				 guildhall->id);
+		return;
+	}
+	for (const auto &room : record->rooms)
+		materialize_guildhall_room(room, guildhall);
+#else
 	if (!qry("select id, vnum, guildhall_id, name, type, value0, value1, value2, value3, value4, value5, value6, value7, exit0, exit1, exit2, exit3, exit4, exit5, exit6, exit7, exit8, exit9 from "
 		 "guildhall_rooms where guildhall_id = %d order by vnum",
 		 guildhall->id))
@@ -338,6 +553,21 @@ bool save_guildhall(Guildhall *gh)
 	}
 
 #ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	flatfile_guildhall_record record;
+	if (!root || !capture_guildhall(gh, &record, &error))
+	{
+		logit(LOG_GUILDHALLS, "save_guildhall(%d): %s", gh->id,
+		      root ? error.c_str() : "flat-file state root unavailable");
+		return FALSE;
+	}
+	const auto saved = flatfile_guildhall_save(root, record, &error);
+	if (!flat_result_succeeded(saved))
+	{
+		logit(LOG_GUILDHALLS, "save_guildhall(%d): %s", gh->id, error.c_str());
+		return FALSE;
+	}
 	return TRUE;
 #else
 	if (!qry("replace into guildhalls (id, assoc_id, type, outside_vnum, racewar) values (%d, %d, %d, %d, %d)",
@@ -372,6 +602,26 @@ bool save_guildhall_room(GuildhallRoom *room)
 	}
 
 #ifdef __NO_MYSQL__
+	if (!room->guildhall)
+	{
+		logit(LOG_GUILDHALLS, "save_guildhall_room(%d): missing guildhall", room->id);
+		return FALSE;
+	}
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	flatfile_guildhall_record record;
+	if (!root || !capture_guildhall(room->guildhall, &record, &error))
+	{
+		logit(LOG_GUILDHALLS, "save_guildhall_room(%d): %s", room->id,
+		      root ? error.c_str() : "flat-file state root unavailable");
+		return FALSE;
+	}
+	const auto saved = flatfile_guildhall_save(root, record, &error);
+	if (!flat_result_succeeded(saved))
+	{
+		logit(LOG_GUILDHALLS, "save_guildhall_room(%d): %s", room->id, error.c_str());
+		return FALSE;
+	}
 	return TRUE;
 #else
 	if (!qry("replace into guildhall_rooms (id, vnum, guildhall_id, name, type, value0, value1, value2, value3, value4, value5, value6, value7, exit0, exit1, exit2, exit3, exit4, exit5, exit6, "
@@ -405,6 +655,16 @@ bool delete_guildhall(Guildhall *gh)
 	}
 
 #ifdef __NO_MYSQL__
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto erased = root ? flatfile_guildhall_erase(root, gh->id, &error) :
+				   flatfile_association_result::io_error;
+	if (!flat_result_succeeded(erased))
+	{
+		logit(LOG_GUILDHALLS, "delete_guildhall(%d): %s", gh->id,
+		      root ? error.c_str() : "flat-file state root unavailable");
+		return FALSE;
+	}
 	return TRUE;
 #else
 	if (!qry("delete from guildhalls where id = %d", gh->id))
@@ -432,6 +692,22 @@ bool delete_guildhall_room(GuildhallRoom *room)
 	}
 
 #ifdef __NO_MYSQL__
+	if (!room->guildhall)
+	{
+		logit(LOG_GUILDHALLS, "delete_guildhall_room(%d): missing guildhall", room->id);
+		return FALSE;
+	}
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto erased =
+		root ? flatfile_guildhall_room_erase(root, room->guildhall->id, room->id, &error) :
+		       flatfile_association_result::io_error;
+	if (!flat_result_succeeded(erased))
+	{
+		logit(LOG_GUILDHALLS, "delete_guildhall_room(%d): %s", room->id,
+		      root ? error.c_str() : "flat-file state root unavailable");
+		return FALSE;
+	}
 	return TRUE;
 #else
 	if (!qry("delete from guildhall_rooms where id = %d", room->id))
