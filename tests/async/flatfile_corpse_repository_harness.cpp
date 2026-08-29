@@ -287,9 +287,9 @@ int main(int argc, char **argv)
 	require(flatfile_world_item_list_rooms(release_root.string(), &rooms, &error) ==
 				flatfile_world_item_result::ok &&
 			rooms.size() == 1 && rooms[0].room_vnum == 500 && rooms[0].revision == 1 &&
-			rooms[0].money == released_corpse.money && rooms[0].items.size() == 2 &&
+			rooms[0].money == std::array<int32_t, 4>{} && rooms[0].items.size() == 2 &&
 			rooms[0].items[0].object_uid == 900 && rooms[0].items[1].parent_index == 0,
-		"recovered corpse release did not publish the exact room aggregate");
+		"recovered corpse release persisted live floor money in the room aggregate");
 	uint64_t room_revision = 0;
 	std::vector<flatfile_item_ownership_record> room_items;
 	require(flatfile_item_repository_load_owner(
@@ -351,9 +351,8 @@ int main(int argc, char **argv)
 	require(flatfile_world_item_list_rooms(release_root.string(), &rooms, &error) ==
 				flatfile_world_item_result::ok &&
 			rooms.size() == 1 && rooms[0].revision == 2 &&
-			rooms[0].money == std::array<int32_t, 4>{ 11, 22, 33, 44 } &&
-			rooms[0].items.size() == 2,
-		"money-only corpse release did not accumulate the existing room aggregate");
+			rooms[0].money == std::array<int32_t, 4>{} && rooms[0].items.size() == 2,
+		"money-only corpse release persisted a rebootable room-money copy");
 
 	const fs::path destruction_root = fs::path(argv[1]) / "destruction";
 	prepare_root(destruction_root);
@@ -501,8 +500,8 @@ int main(int argc, char **argv)
 	require(flatfile_world_item_list_rooms(resurrection_root.string(), &rooms, &error) ==
 				flatfile_world_item_result::ok &&
 			rooms.size() == 1 && rooms[0].room_vnum == 600 && rooms[0].revision == 1 &&
-			rooms[0].money == resurrection_payload.money && rooms[0].items.empty(),
-		"recovered corpse resurrection did not deposit the target's old wallet");
+			rooms[0].money == std::array<int32_t, 4>{} && rooms[0].items.empty(),
+		"recovered corpse resurrection persisted the target's live floor wallet");
 	uint64_t resurrected_player_revision = 0;
 	std::vector<flatfile_item_ownership_record> resurrected_player_items;
 	require(flatfile_item_repository_load_owner(
@@ -757,7 +756,7 @@ int main(int argc, char **argv)
 			rooms[0].items[0].object_uid == 800 &&
 			rooms[0].items[1].parent_index == 0 &&
 			rooms[0].items[2].parent_index == 1 &&
-			rooms[0].money == nested_room_corpse.money,
+			rooms[0].money == std::array<int32_t, 4>{},
 		"nested room release did not preserve the containing item topology");
 	uint64_t nested_room_revision = 0;
 	std::vector<flatfile_item_ownership_record> nested_room_items;

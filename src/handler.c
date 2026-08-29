@@ -24,6 +24,7 @@
 #include "account.h"
 #include "arena.h"
 #include "corpse_lifecycle_transaction.h"
+#include "currency_transaction.h"
 #include "ctf.h"
 #include "redis_floor_runtime.h"
 #include "damage.h"
@@ -3306,6 +3307,14 @@ void rearm_corpse_release(P_obj corpse)
 		set_obj_affected(corpse, CORPSE_RELEASE_RETRY_DELAY, TAG_OBJ_DECAY, 0);
 }
 
+bool publish_corpse_wallet(P_char character, const corpse_lifecycle_result &result)
+{
+	currency_vector wallet = {};
+	for (size_t index = 0; index < result.wallet.size(); ++index)
+		wallet.amount[index] = result.wallet[index];
+	return currency_transaction_publish_wallet(character, wallet, result.wallet_revision);
+}
+
 void publish_corpse_release(bool committed, const corpse_lifecycle_result &result,
 			    unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
@@ -3380,7 +3389,7 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 	const int room = real_room(payload.room_vnum);
 	int live_room = NOWHERE;
 	if (!corpse || room == NOWHERE || !corpse_release_room(corpse, &live_room) ||
-	    live_room != room || !validate_corpse_release_items(corpse, result) ||
+	    !validate_corpse_release_items(corpse, result) ||
 	    !item_ownership_runtime_apply_corpse_release(payload.owner_pid, payload.save_id,
 							 payload.room_vnum, result))
 	{
@@ -3573,7 +3582,7 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	int corpse_room = NOWHERE;
 	if (!caster || !follower || !corpse || follower->in_room != NOWHERE ||
-	    !corpse_release_room(corpse, &corpse_room) || caster->in_room != corpse_room ||
+	    !corpse_release_room(corpse, &corpse_room) ||
 	    world[corpse_room].number != payload.room_vnum ||
 	    !validate_corpse_release_items(corpse, result) ||
 	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
@@ -3582,18 +3591,11 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 		fail_corpse_raise(key, "raise_live_topology_stale");
 		return;
 	}
-	for (int32_t amount : result.wallet)
-		if (amount < 0)
-		{
-			fail_corpse_raise(key, "raise_wallet_invalid");
-			return;
-		}
-	GET_COPPER(caster) = result.wallet[0];
-	GET_SILVER(caster) = result.wallet[1];
-	GET_GOLD(caster) = result.wallet[2];
-	GET_PLATINUM(caster) = result.wallet[3];
-	caster->only.pc->wallet_revision = result.wallet_revision;
-	gmcp_char_vitals(caster);
+	if (!publish_corpse_wallet(caster, result))
+	{
+		fail_corpse_raise(key, "raise_wallet_invalid");
+		return;
+	}
 	corpse_raises.erase(found);
 	corpse_release_side_effect_guard guard;
 	complete_corpse_raise_after_commit(caster, follower, corpse, context.kind, context.level,
@@ -3642,8 +3644,7 @@ void publish_corpse_resurrection_item(P_char actor, bool committed, const item_t
 		return;
 	}
 	const corpse_resurrection_context &context = found->second;
-	if (actor != context.target || actor->runtime_id != context.target_runtime_id ||
-	    actor->in_room != context.old_room)
+	if (actor != context.target || actor->runtime_id != context.target_runtime_id)
 	{
 		fail_corpse_resurrection(item_context.corpse_key, "target_moved_during_item_drop");
 		return;
@@ -3712,8 +3713,8 @@ void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	int corpse_room = NOWHERE;
 	if (!caster || !target || !corpse || context.old_room <= NOWHERE ||
-	    target->in_room != context.old_room || !corpse_release_room(corpse, &corpse_room) ||
-	    world[corpse_room].number != payload.room_vnum || caster->in_room != corpse_room ||
+	    !corpse_release_room(corpse, &corpse_room) ||
+	    world[corpse_room].number != payload.room_vnum ||
 	    !validate_corpse_release_items(corpse, result) ||
 	    !item_ownership_runtime_apply_corpse_resurrection(payload.owner_pid, payload.save_id,
 							      payload.destination_player_pid,
@@ -3722,13 +3723,10 @@ void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &
 		fail_corpse_resurrection(key, "claim_live_topology_stale");
 		return;
 	}
-	for (size_t index = 0; index < result.wallet.size(); ++index)
+	if (!publish_corpse_wallet(target, result))
 	{
-		if (result.wallet[index] < 0)
-		{
-			fail_corpse_resurrection(key, "claim_wallet_invalid");
-			return;
-		}
+		fail_corpse_resurrection(key, "claim_wallet_invalid");
+		return;
 	}
 	if (std::any_of(payload.money.begin(), payload.money.end(),
 			[](int32_t amount) { return amount > 0; }))
@@ -3741,12 +3739,6 @@ void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &
 			obj_to_room(money, context.old_room);
 		}
 	}
-	GET_COPPER(target) = result.wallet[0];
-	GET_SILVER(target) = result.wallet[1];
-	GET_GOLD(target) = result.wallet[2];
-	GET_PLATINUM(target) = result.wallet[3];
-	target->only.pc->wallet_revision = result.wallet_revision;
-	gmcp_char_vitals(target);
 	corpse_resurrections.erase(found);
 	corpse_release_side_effect_guard guard;
 	complete_player_resurrection_after_commit(caster, target, corpse, context.lesser,
@@ -3874,7 +3866,8 @@ void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result
 	int room = NOWHERE;
 	P_char carrier = corpse ? corpse_release_carrier(corpse) : nullptr;
 	if (!corpse || !parent || parent->obj_uid != payload.target_parent_item_uid ||
-	    !corpse_nested_release_room(corpse, &room) || world[room].number != payload.room_vnum ||
+	    !corpse_nested_release_room(corpse, &room) ||
+	    (!payload.destination_player_pid && world[room].number != payload.room_vnum) ||
 	    !item_ownership_runtime_lookup(parent->obj_uid, &parent_runtime) ||
 	    parent_runtime.root_item_uid != payload.target_root_item_uid ||
 	    parent_runtime.item_revision != payload.expected_target_parent_revision ||
@@ -3894,9 +3887,7 @@ void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result
 				  payload.room_vnum);
 		return;
 	}
-	if (payload.destination_player_pid &&
-	    std::any_of(result.wallet.begin(), result.wallet.end(),
-			[](int32_t amount) { return amount < 0; }))
+	if (payload.destination_player_pid && !publish_corpse_wallet(carrier, result))
 	{
 		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
 				  "wallet_invalid", "save_id=%u", payload.save_id);
@@ -3929,12 +3920,6 @@ void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result
 	extract_obj(corpse, TRUE);
 	if (payload.destination_player_pid)
 	{
-		GET_COPPER(carrier) = result.wallet[0];
-		GET_SILVER(carrier) = result.wallet[1];
-		GET_GOLD(carrier) = result.wallet[2];
-		GET_PLATINUM(carrier) = result.wallet[3];
-		carrier->only.pc->wallet_revision = result.wallet_revision;
-		gmcp_char_vitals(carrier);
 		writeCharacter(carrier, RENT_CRASH, carrier->in_room);
 	}
 	if (carrier)
@@ -4169,7 +4154,10 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
 					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
+	{
+		rearm_corpse_release(corpse);
 		return true;
+	}
 	const bool submitted = OBJ_INSIDE(corpse) ? submit_corpse_nested_release(corpse) :
 						    submit_corpse_release(corpse);
 	if (!submitted)

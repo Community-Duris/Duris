@@ -64,6 +64,8 @@ lesser_resurrect = body(MAGIC, "void spell_lesser_resurrect(",
                         "void spell_mass_invisibility(")
 resurrection_publication = body(HANDLER, "void publish_corpse_resurrection(",
                                 "void continue_corpse_resurrection(")
+resurrection_item_publication = body(HANDLER, "void publish_corpse_resurrection_item(",
+                                     "void publish_corpse_resurrection(")
 raise_publication = body(HANDLER, "void publish_corpse_raise(",
                          "P_obj find_resurrection_item(")
 raise_undead = body(NECROMANCY, "void raise_undead(", "#undef UNDEAD_TYPES")
@@ -101,6 +103,9 @@ assert decay.index("persistence_defer_corpse_room_release(obj)") < decay.index(
     "if (OBJ_ROOM(obj))")
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in deferred_release
 assert "corpse_lifecycle_transaction_busy" in deferred_release
+busy_check = deferred_release.index("corpse_lifecycle_transaction_busy")
+busy_return = deferred_release.index("return true;", busy_check)
+assert "rearm_corpse_release(corpse)" in deferred_release[busy_check:busy_return]
 assert "submit_corpse_release(corpse)" in deferred_release
 assert "OBJ_INSIDE(corpse) ? submit_corpse_nested_release(corpse)" in deferred_release
 assert "corpse_lifecycle_transaction_release(payload, publish_corpse_release)" in HANDLER
@@ -138,9 +143,7 @@ assert unmaking.index("persistence_defer_corpse_unmaking(obj, ch, level, clevel)
        unmaking.index("obj_from_obj(cobj)")
 assert "corpse_unmakings" in HANDLER
 assert "caster->runtime_id" in HANDLER
-assert "live_room != room" in release_publication
-assert release_publication.index("live_room != room") < \
-       release_publication.index("item_ownership_runtime_apply_corpse_release")
+assert "live_room != room" not in release_publication
 assert HANDLER.index("item_ownership_runtime_apply_corpse_release") < \
        HANDLER.index("GET_HIT(caster) =")
 assert "persistence_defer_corpse_wall_of_bones(corpse, ch, level, exit_dir)" in wall_of_bones
@@ -168,6 +171,9 @@ for resurrection_spell in (resurrect, lesser_resurrect):
            resurrection_spell.index("stop_fighting(t_ch)")
 assert "corpse_lifecycle_transaction_resurrect" in HANDLER
 assert "item_ownership_runtime_apply_corpse_resurrection" in resurrection_publication
+assert "target->in_room != context.old_room" not in resurrection_publication
+assert "caster->in_room != corpse_room" not in resurrection_publication
+assert "actor->in_room != context.old_room" not in resurrection_item_publication
 assert resurrection_publication.index("item_ownership_runtime_apply_corpse_resurrection") < \
        resurrection_publication.index("complete_player_resurrection_after_commit")
 assert HANDLER.index("item_movement_transaction_submit(",
@@ -183,8 +189,14 @@ for raise_spell in (raise_undead, call_titan, create_dracolich, create_golem,
            raise_spell.index("create_saved_corpse")
 assert "corpse_lifecycle_transaction_raise_follower" in HANDLER
 assert "item_ownership_runtime_apply_corpse_raise" in raise_publication
+assert "caster->in_room != corpse_room" not in raise_publication
 assert raise_publication.index("item_ownership_runtime_apply_corpse_raise") < \
        raise_publication.index("complete_corpse_raise_after_commit")
+assert "(!payload.destination_player_pid && world[room].number != payload.room_vnum)" in \
+       nested_publication
+assert "publish_corpse_wallet" in raise_publication
+assert "publish_corpse_wallet" in resurrection_publication
+assert "publish_corpse_wallet" in nested_publication
 assert "discard_nested_money" in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 

@@ -1340,15 +1340,10 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 					room->items.push_back(std::move(item));
 				}
 			}
-			for (size_t index = 0; index < room->money.size(); ++index)
-			{
-				const int32_t addition = release || nested_room ?
-								 corpse->money[index] :
-								 payload.money[index];
-				if (addition > INT32_MAX - room->money[index])
-					return flatfile_world_item_result::conflict;
-				room->money[index] += addition;
-			}
+			// Floor money is published to the live room after this commit, but is not
+			// part of the durable room aggregate.  Pickup uses the currency authority
+			// directly and cannot atomically withdraw this world-domain snapshot; if it
+			// were persisted, every reboot after pickup would recreate the same coins.
 			mutation->room_revision = room->revision;
 		}
 		catalog.corpses.erase(corpse);

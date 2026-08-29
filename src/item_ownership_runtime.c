@@ -374,6 +374,12 @@ static bool item_ownership_runtime_apply_corpse_disposition(
 	uint64_t target_root_item_uid = 0, uint64_t target_parent_item_uid = 0,
 	uint64_t expected_target_parent_revision = 0)
 {
+	const auto corpse_owner_id = [](uint32_t player_pid, uint32_t corpse_save_id)
+	{
+		return player_pid && corpse_save_id ?
+			       (static_cast<uint64_t>(player_pid) << 32) | corpse_save_id :
+			       0;
+	};
 	const bool nested = action == corpse_lifecycle_action::release_nested;
 	const uint64_t destination_result_revision = destination.type == item_owner_type::player ?
 							     result.player_owner_revision :
@@ -388,7 +394,7 @@ static bool item_ownership_runtime_apply_corpse_disposition(
 	     (result.item_count && !result.max_item_revision)))
 		return false;
 	const item_owner_identity corpse = { item_owner_type::corpse,
-					     item_corpse_owner_id(owner_pid, save_id), 0 };
+					     corpse_owner_id(owner_pid, save_id), 0 };
 	const auto corpse_revision = owner_revisions.find(corpse);
 	const auto destination_revision = owner_revisions.find(destination);
 	const bool corpse_existed = corpse_revision != owner_revisions.end();
@@ -501,6 +507,8 @@ bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32
 						      uint32_t player_pid, int32_t old_room_vnum,
 						      const corpse_lifecycle_result &result)
 {
+	const uint64_t corpse_owner_id = (static_cast<uint64_t>(owner_pid) << 32) |
+					 static_cast<uint64_t>(save_id);
 	if (!owner_pid || !save_id || !player_pid || old_room_vnum <= 0 ||
 	    result.owner_pid != owner_pid || result.save_id != save_id ||
 	    result.action != corpse_lifecycle_action::resurrect || result.corpse_revision ||
@@ -509,8 +517,7 @@ bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32
 	    ((!result.item_count && result.max_item_revision) ||
 	     (result.item_count && !result.max_item_revision)))
 		return false;
-	const item_owner_identity corpse = { item_owner_type::corpse,
-					     item_corpse_owner_id(owner_pid, save_id), 0 };
+	const item_owner_identity corpse = { item_owner_type::corpse, corpse_owner_id, 0 };
 	const item_owner_identity player = { item_owner_type::player, player_pid, 0 };
 	const item_owner_identity room = { item_owner_type::room,
 					   static_cast<uint64_t>(old_room_vnum), 0 };
@@ -566,6 +573,8 @@ bool item_ownership_runtime_apply_corpse_raise(uint32_t owner_pid, uint32_t save
 					       uint32_t player_pid,
 					       const corpse_lifecycle_result &result)
 {
+	const uint64_t corpse_owner_id = (static_cast<uint64_t>(owner_pid) << 32) |
+					 static_cast<uint64_t>(save_id);
 	if (!owner_pid || !save_id || !player_pid || result.owner_pid != owner_pid ||
 	    result.save_id != save_id || result.action != corpse_lifecycle_action::raise_follower ||
 	    result.corpse_revision || !result.corpse_owner_revision || result.room_owner_revision ||
@@ -573,8 +582,7 @@ bool item_ownership_runtime_apply_corpse_raise(uint32_t owner_pid, uint32_t save
 	    ((!result.item_count && result.max_item_revision) ||
 	     (result.item_count && !result.max_item_revision)))
 		return false;
-	const item_owner_identity corpse = { item_owner_type::corpse,
-					     item_corpse_owner_id(owner_pid, save_id), 0 };
+	const item_owner_identity corpse = { item_owner_type::corpse, corpse_owner_id, 0 };
 	const item_owner_identity player = { item_owner_type::player, player_pid, 0 };
 	const auto corpse_revision = owner_revisions.find(corpse);
 	const auto player_revision = owner_revisions.find(player);

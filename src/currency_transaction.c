@@ -112,10 +112,25 @@ bool currency_transaction_publish_balances(P_char character, const char *account
 {
 	if (!character || !character->only.pc || !account_name)
 		return false;
-	for (int64_t amount : wallet.amount)
+	for (int64_t amount : bank.amount)
 		if (amount < 0 || amount > INT_MAX)
 			return false;
-	for (int64_t amount : bank.amount)
+	if (!currency_transaction_publish_wallet(character, wallet, wallet_revision))
+		return false;
+	const AccountBankBalances balances = { static_cast<int>(bank.amount[0]),
+					       static_cast<int>(bank.amount[1]),
+					       static_cast<int>(bank.amount[2]),
+					       static_cast<int>(bank.amount[3]) };
+	publish_account_bank_balances_revision(account_name, racewar, &balances, bank_revision);
+	return true;
+}
+
+bool currency_transaction_publish_wallet(P_char character, const currency_vector &wallet,
+					 uint64_t wallet_revision)
+{
+	if (!character || !character->only.pc)
+		return false;
+	for (int64_t amount : wallet.amount)
 		if (amount < 0 || amount > INT_MAX)
 			return false;
 	GET_COPPER(character) = static_cast<int>(wallet.amount[0]);
@@ -123,11 +138,6 @@ bool currency_transaction_publish_balances(P_char character, const char *account
 	GET_GOLD(character) = static_cast<int>(wallet.amount[2]);
 	GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);
 	character->only.pc->wallet_revision = wallet_revision;
-	const AccountBankBalances balances = { static_cast<int>(bank.amount[0]),
-					       static_cast<int>(bank.amount[1]),
-					       static_cast<int>(bank.amount[2]),
-					       static_cast<int>(bank.amount[3]) };
-	publish_account_bank_balances_revision(account_name, racewar, &balances, bank_revision);
 	gmcp_char_vitals(character);
 	return true;
 }
