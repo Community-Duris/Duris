@@ -4306,3 +4306,31 @@ action" text below remains historical and does not authorize work.
   server build, the isolated client-free build/game-loop boot/clean-shutdown preflight,
   changed-line formatting, and `git diff --check` pass.
 - **Remaining restoration:** historical mixed-format siege-state compatibility remains required.
+
+### Checkpoint 101 - historical siege import and project completion
+
+- **Historical compatibility restored:** when the current `metadata/siege` authority is absent,
+  the client-free boot path imports the version-35 mixed text/binary `Players/siege` format written
+  at the reference revision. Historical room indexes become durable room vnums, and the existing
+  one-object reader reconstructs the four historical siege object types before the existing item
+  snapshot codec captures them.
+- **Narrow bounded reader:** the compatibility code is confined to `src/siege.c`. It validates the
+  exact old object layout and derives its binary record length, so newline bytes inside ordinary
+  numeric fields are not mistaken for record separators. It does not add a general legacy-object
+  importer, new catalog, repository, transaction framework, or writer for the unsafe old format.
+- **Safe one-way publication:** import reads an owned regular file without following a final
+  symlink, enforces file, record, string, and object bounds, validates every room and object before
+  publication, then uses the existing locked, checksummed, atomic siege authority. A malformed,
+  truncated, oversized, unknown-room, or symlinked source publishes nothing and leaves live state
+  empty. Once current authority exists it takes precedence, making import idempotent without
+  deleting the historical source.
+- **Validation evidence:** `python3 tests/async/test_flatfile_siege.py` covers exact version-35
+  import, a numeric field containing an embedded newline byte, typed-authority precedence,
+  truncation, symlink refusal, current-format round trips, corruption refusal, unknown rooms, and
+  SQL-free routing. The strict normal server build, strict client-free siege compilation, and the
+  isolated client-free build/game-loop boot/clean-shutdown preflight pass, together with
+  changed-line formatting and `git diff --check`.
+- **Final directive audit:** this closes the directive's sole remaining explicit restoration item.
+  The earlier siege/kingdom removal memo remains non-authoritative research and adds no work. Older
+  changelog next-action statements remain historical checkpoint notes. Checkpoint 101 completes the
+  flat-file restoration directive without expanding the architecture.

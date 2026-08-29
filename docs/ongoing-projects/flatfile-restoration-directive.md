@@ -1,7 +1,7 @@
 # Flat-file restoration project directive
 
 **Effective date:** 2026-08-28
-**Status:** authoritative direction for all remaining flat-file work
+**Status:** completed at checkpoint 101
 
 ## Completed work
 
@@ -10,25 +10,25 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 100 restores decay of a player corpse nested inside a
-player-owned or room-owned container. The bounded `release_nested` lifecycle action
-records the existing root, immediate parent, parent item revision, and destination
-owner. One shared-authority transaction removes the corpse aggregate, reparents every
-durable corpse item beneath the same container, updates artifacts, and records player
-restart materialization when needed. Only its durable acknowledgment moves the live
-contents and extracts the corpse.
+As of 2026-08-29, checkpoint 101 completes the final explicit restoration item. When no
+current siege authority exists, the client-free boot path now imports the historical
+version-35 `Players/siege` file produced at the reference revision. The bounded reader
+accepts only the four historical siege object types, converts historical room indexes
+to durable room vnums, validates each complete object record without treating embedded
+binary newline bytes as delimiters, and publishes the result through the existing
+checksummed atomic siege authority. Current authority always takes precedence.
 
-Player-container currency is credited through the existing wallet authority and its
-live money objects are removed after commit; room-container currency remains in the
-existing room-money authority while the live objects retain their containing placement.
-This avoids inventing a second currency-item format or allowing crash duplication.
-Forced interruption tests cover both destination types and recover the same result
-exactly once. Payload versions 1-4 remain readable, and MariaDB modes retain the
-synchronous historical path.
+Truncated, malformed, oversized, unowned, non-regular, and symlinked legacy files fail
+without publishing authority or changing live state. Focused compatibility tests cover
+exact import, an embedded newline byte, idempotent current-authority precedence,
+truncation, and symlink refusal. Strict MariaDB and client-free compilation, the
+isolated client-free build/game-loop boot/clean shutdown, formatting, and diff checks
+pass.
 
-Historical mixed-format siege-state compatibility is the remaining explicit
-restoration item. The earlier siege/kingdom removal memo remains research only and does
-not amend this directive's siege requirement.
+The final scope audit found no other explicit work authorized by this directive. The
+earlier siege/kingdom removal memo remains research only and does not add a removal or
+redesign requirement. Older changelog “remaining” statements record their checkpoints
+and do not reopen completed scope. The flat-file restoration project is complete.
 
 ## Owner intent
 

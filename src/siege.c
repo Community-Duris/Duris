@@ -22,7 +22,10 @@
 #include "player_snapshot_codec.h"
 
 #include <array>
+#include <bit>
 #include <cerrno>
+#include <climits>
+#include <fcntl.h>
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
@@ -30,6 +33,7 @@
 #include <sys/stat.h>
 #include <type_traits>
 #include <unordered_set>
+#include <unistd.h>
 #include <vector>
 #endif
 
@@ -49,6 +53,7 @@ constexpr std::array<uint8_t, 8> flat_siege_magic = { 'D', 'U', 'R', 'S', 'I', '
 constexpr uint32_t flat_siege_version = 1;
 constexpr size_t flat_siege_maximum_file_size = 64 * 1024 * 1024;
 constexpr size_t flat_siege_maximum_records = 4096;
+constexpr uint8_t flat_siege_legacy_version = 35;
 const char flat_siege_filename[] = "siege";
 const char flat_siege_lock_filename[] = "siege.lock";
 
@@ -129,6 +134,189 @@ struct flat_siege_decoder
 		return true;
 	}
 };
+
+struct flat_siege_legacy_decoder
+{
+	const uint8_t *data;
+	size_t size;
+	size_t offset = 0;
+
+	template <typename T> bool number(T *value)
+	{
+		if (!value || offset > size || size - offset < sizeof(T))
+			return false;
+		memcpy(value, data + offset, sizeof(T));
+		offset += sizeof(T);
+		return true;
+	}
+
+	bool skip(size_t length)
+	{
+		if (offset > size || size - offset < length)
+			return false;
+		offset += length;
+		return true;
+	}
+
+	bool string()
+	{
+		uint16_t length = 0;
+		return number(&length) && length <= PLAYER_SNAPSHOT_MAX_STRING_BYTES &&
+		       skip(length);
+	}
+};
+
+bool flat_siege_legacy_vnum(int32_t vnum)
+{
+	return vnum >= 461 && vnum <= 464;
+}
+
+bool flat_siege_legacy_fail(std::string *error, const char *message)
+{
+	if (error)
+		*error = message;
+	return false;
+}
+
+bool flat_siege_legacy_object_size(const uint8_t *data, size_t size, size_t *object_size,
+				   std::string *error)
+{
+	constexpr uint8_t allowed_flags = O_F_UNIQUE | O_F_AFFECTS;
+	constexpr uint32_t allowed_unique_flags =
+		O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3 | O_U_VAL0 | O_U_VAL1 | O_U_VAL2 |
+		O_U_VAL3 | O_U_TYPE | O_U_WEAR | O_U_EXTRA | O_U_WEIGHT | O_U_COST | O_U_BV1 |
+		O_U_BV2 | O_U_AFFS | O_U_TRAP | O_U_ANTI | O_U_EXTRA2 | O_U_TIMER | O_U_ANTI2 |
+		O_U_EDESC | O_U_MATERIAL | O_U_VAL4 | O_U_VAL5 | O_U_VAL6 | O_U_VAL7 | O_U_BV3 |
+		O_U_BV4 | O_U_BV5;
+	flat_siege_legacy_decoder decoded = { data, size };
+	uint8_t version = 0;
+	int32_t object_count = 0;
+	uint8_t flags = 0;
+	int32_t vnum = 0;
+	int16_t ignored_short = 0;
+	if (!object_size || !decoded.number(&version) || version != flat_siege_legacy_version ||
+	    !decoded.number(&object_count) || object_count != 1 || !decoded.number(&flags) ||
+	    (flags & ~allowed_flags) || !decoded.number(&vnum) || !flat_siege_legacy_vnum(vnum) ||
+	    !decoded.number(&ignored_short) || !decoded.number(&ignored_short))
+		return flat_siege_legacy_fail(error, "invalid legacy siege object header");
+
+	if (flags & O_F_AFFECTS)
+	{
+		uint8_t affect_count = 0;
+		constexpr size_t affect_size = sizeof(int32_t) * 2 + sizeof(int16_t) * 2;
+		if (!decoded.number(&affect_count) || affect_count > 127 ||
+		    !decoded.skip(affect_count * affect_size))
+			return flat_siege_legacy_fail(error, "invalid legacy siege object affects");
+	}
+
+	if (flags & O_F_UNIQUE)
+	{
+		uint32_t unique = 0;
+		if (!decoded.number(&unique) || (unique & ~allowed_unique_flags))
+			return flat_siege_legacy_fail(error, "invalid legacy siege object fields");
+		for (const uint32_t flag : { O_U_KEYS, O_U_DESC1, O_U_DESC2, O_U_DESC3 })
+			if ((unique & flag) && !decoded.string())
+				return flat_siege_legacy_fail(error,
+							      "invalid legacy siege object string");
+		if (unique & O_U_EDESC)
+		{
+			int16_t description_count = 0;
+			if (!decoded.number(&description_count) || description_count < 0 ||
+			    description_count > static_cast<int16_t>(PLAYER_SNAPSHOT_MAX_ROWS))
+				return flat_siege_legacy_fail(
+					error, "invalid legacy siege object descriptions");
+			for (int index = 0; index < description_count; ++index)
+				if (!decoded.string() || !decoded.string())
+					return flat_siege_legacy_fail(
+						error, "invalid legacy siege object description");
+		}
+		constexpr uint32_t value_flags = O_U_VAL0 | O_U_VAL1 | O_U_VAL2 | O_U_VAL3 |
+						 O_U_VAL4 | O_U_VAL5 | O_U_VAL6 | O_U_VAL7;
+		constexpr uint32_t integer_flags = O_U_WEAR | O_U_EXTRA | O_U_ANTI | O_U_ANTI2 |
+						   O_U_EXTRA2 | O_U_WEIGHT | O_U_COST;
+		constexpr uint32_t long_flags = O_U_BV1 | O_U_BV2 | O_U_BV3 | O_U_BV4 | O_U_BV5;
+		size_t fixed_size = std::popcount(unique & value_flags) * sizeof(int32_t) +
+				    std::popcount(unique & integer_flags) * sizeof(int32_t) +
+				    std::popcount(unique & long_flags) * sizeof(long);
+		fixed_size += (unique & O_U_TIMER) ? sizeof(int32_t) * 4 : 0;
+		fixed_size += (unique & O_U_TRAP) ? sizeof(int16_t) * 4 : 0;
+		fixed_size += (unique & O_U_TYPE) ? sizeof(uint8_t) : 0;
+		fixed_size += (unique & O_U_MATERIAL) ? sizeof(uint8_t) : 0;
+		fixed_size += (unique & O_U_AFFS) ? MAX_OBJ_AFFECT * sizeof(uint8_t) * 2 : 0;
+		if (!decoded.skip(fixed_size))
+			return flat_siege_legacy_fail(error,
+						      "truncated legacy siege object fields");
+	}
+
+	uint8_t end = 0;
+	if (!decoded.number(&end) || end != O_F_EOL)
+		return flat_siege_legacy_fail(error,
+					      "legacy siege object is missing its terminator");
+	*object_size = decoded.offset;
+	return true;
+}
+
+flatfile_read_result flat_siege_legacy_read(std::vector<uint8_t> *bytes, std::string *error)
+{
+	if (!bytes)
+		return flatfile_read_result::invalid;
+	bytes->clear();
+	const int file_fd = open(SAVE_DIR "/siege", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (file_fd < 0)
+	{
+		const int open_error = errno;
+		if (open_error == ENOENT)
+			return flatfile_read_result::not_found;
+		if (error)
+			*error = std::string("could not open legacy Players/siege: ") +
+				 strerror(open_error);
+		return open_error == ELOOP ? flatfile_read_result::invalid :
+					     flatfile_read_result::io_error;
+	}
+
+	struct stat info = {};
+	if (fstat(file_fd, &info) < 0 || !S_ISREG(info.st_mode) || info.st_uid != geteuid() ||
+	    info.st_size < 0 || static_cast<uintmax_t>(info.st_size) > flat_siege_maximum_file_size)
+	{
+		if (error)
+			*error = "invalid legacy Players/siege metadata or size";
+		close(file_fd);
+		return flatfile_read_result::invalid;
+	}
+	try
+	{
+		bytes->resize(static_cast<size_t>(info.st_size));
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (error)
+			*error = "could not allocate legacy siege input";
+		close(file_fd);
+		return flatfile_read_result::io_error;
+	}
+	for (size_t offset = 0; offset < bytes->size();)
+	{
+		const ssize_t received =
+			read(file_fd, bytes->data() + offset, bytes->size() - offset);
+		if (received < 0 && errno == EINTR)
+			continue;
+		if (received <= 0)
+		{
+			if (error)
+				*error = received < 0 ?
+						 std::string(
+							 "could not read legacy Players/siege: ") +
+							 strerror(errno) :
+						 "legacy Players/siege changed while reading";
+			bytes->clear();
+			close(file_fd);
+			return flatfile_read_result::io_error;
+		}
+		offset += static_cast<size_t>(received);
+	}
+	close(file_fd);
+	return flatfile_read_result::ok;
+}
 
 std::string flat_siege_directory()
 {
@@ -526,6 +714,99 @@ bool flat_siege_materialize(const std::vector<flat_siege_record> &records, std::
 	return true;
 }
 
+bool flat_siege_legacy_decode(const std::vector<uint8_t> &bytes,
+			      std::vector<flat_siege_record> *records, std::string *error)
+{
+	if (!records)
+		return false;
+	try
+	{
+		std::vector<flat_siege_record> loaded;
+		size_t offset = 0;
+		while (offset < bytes.size())
+		{
+			if (loaded.size() >= flat_siege_maximum_records || bytes[offset++] != '#')
+			{
+				if (error)
+					*error = "invalid legacy siege room header";
+				return false;
+			}
+			uint64_t room = 0;
+			const size_t digits = offset;
+			while (offset < bytes.size() && bytes[offset] != '\n')
+			{
+				if (bytes[offset] < '0' || bytes[offset] > '9' ||
+				    room > (static_cast<uint64_t>(INT_MAX) -
+					    static_cast<uint64_t>(bytes[offset] - '0')) /
+						    10)
+				{
+					if (error)
+						*error = "invalid legacy siege room number";
+					return false;
+				}
+				room = room * 10 + static_cast<uint64_t>(bytes[offset++] - '0');
+			}
+			if (offset == digits || offset >= bytes.size() || !room ||
+			    room > static_cast<uint64_t>(top_of_world) || world[room].number <= 0)
+			{
+				if (error)
+					*error = "legacy siege record references an unknown room";
+				return false;
+			}
+			++offset;
+
+			size_t object_size = 0;
+			if (!flat_siege_legacy_object_size(bytes.data() + offset,
+							   bytes.size() - offset, &object_size,
+							   error) ||
+			    object_size >= bytes.size() - offset ||
+			    bytes[offset + object_size] != '\n')
+			{
+				if (error && error->empty())
+					*error = "legacy siege object record is truncated";
+				return false;
+			}
+
+			std::vector<char> serialized(object_size + 1, 0);
+			memcpy(serialized.data(), bytes.data() + offset, object_size);
+			P_obj object = read_one_object(serialized.data());
+			if (!object)
+			{
+				if (error)
+					*error = "could not materialize legacy siege object";
+				return false;
+			}
+			flat_siege_record record;
+			record.room_vnum = world[room].number;
+			const bool captured =
+				flat_siege_assign_item_uids(object, error) &&
+				player_item_snapshot_tree_capture(object, &record.items, nullptr) ==
+					player_snapshot_capture_result::ok;
+			extract_obj(object, FALSE);
+			if (!captured)
+			{
+				if (error && error->empty())
+					*error = "could not capture legacy siege object";
+				return false;
+			}
+			for (player_item_snapshot &item : record.items)
+				item.equipment_slot = -1;
+			loaded.push_back(std::move(record));
+			offset += object_size + 1;
+		}
+		if (!flat_siege_valid_records(loaded, error))
+			return false;
+		*records = std::move(loaded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (error)
+			*error = "could not allocate imported siege state";
+		return false;
+	}
+	return true;
+}
+
 bool flat_siege_save(std::string *error)
 {
 	const std::string directory = flat_siege_directory();
@@ -572,24 +853,23 @@ bool flat_siege_load(std::string *error)
 					  flat_siege_maximum_file_size, &bytes, error);
 	if (loaded == flatfile_read_result::not_found)
 	{
-		struct stat legacy = {};
-		const int inspected = lstat(SAVE_DIR "/siege", &legacy);
-		const int inspection_errno = inspected < 0 ? errno : 0;
+		std::vector<uint8_t> legacy;
+		const auto legacy_result = flat_siege_legacy_read(&legacy, error);
+		if (legacy_result == flatfile_read_result::not_found)
+		{
+			flatfile_lock_release(lock_fd);
+			return true;
+		}
+		std::vector<flat_siege_record> imported;
+		std::vector<uint8_t> encoded;
+		const bool restored =
+			legacy_result == flatfile_read_result::ok &&
+			flat_siege_legacy_decode(legacy, &imported, error) &&
+			flat_siege_encode(imported, &encoded, error) &&
+			flatfile_atomic_write(directory, flat_siege_filename, encoded, error) &&
+			flat_siege_materialize(imported, error);
 		flatfile_lock_release(lock_fd);
-		if (inspected == 0)
-		{
-			if (error)
-				*error = "legacy Players/siege requires safe import";
-			return false;
-		}
-		if (inspection_errno != ENOENT)
-		{
-			if (error)
-				*error = std::string("could not inspect legacy Players/siege: ") +
-					 strerror(inspection_errno);
-			return false;
-		}
-		return true;
+		return restored;
 	}
 	std::vector<flat_siege_record> records;
 	const bool restored = loaded == flatfile_read_result::ok &&
