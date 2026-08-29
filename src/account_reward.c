@@ -3,6 +3,7 @@
 #include "utility.h"
 #include "utils.h"
 #include "interp.h"
+#include "item_movement_transaction.h"
 #include "account_reward.h"
 #include "account_reward_config.h"
 #include "account_reward_snapshot.h"
@@ -532,21 +533,28 @@ static bool summon_one(P_char ch, const RewardGrant &grant, bool explain)
 	if (obj->type == ITEM_CONTAINER)
 		REMOVE_BIT(obj->value[1], CONT_CLOSED);
 	mark_reward_item(obj, grant.account.c_str(), grant.id);
-	obj_to_char(obj, ch);
-	if (!OBJ_CARRIED(obj) || obj->loc.carrying != ch ||
-	    !qry("INSERT INTO account_bound_reward_summons(grant_id,pid,last_summoned_at,recovery_ready) VALUES(%llu,%d,NOW(),0) ON DUPLICATE KEY UPDATE last_summoned_at=NOW(),recovery_ready=0",
+	if (!qry("INSERT INTO account_bound_reward_summons(grant_id,pid,last_summoned_at,recovery_ready) VALUES(%llu,%d,NOW(),0) ON DUPLICATE KEY UPDATE last_summoned_at=NOW(),recovery_ready=0",
 		 grant.id, GET_PID(ch)))
 	{
-		if (OBJ_CARRIED(obj) || OBJ_WORN(obj) || OBJ_INSIDE(obj) || OBJ_ROOM(obj))
-			extract_obj(obj);
-		logit(LOG_WIZ, "divineclaim: failed to finalize grant %llu for %s", grant.id,
+		extract_obj(obj, FALSE);
+		logit(LOG_WIZ, "divineclaim: failed to reserve grant %llu for %s", grant.id,
+		      GET_NAME(ch));
+		return false;
+	}
+	if (!item_creation_grant_submit_to_player(ch, obj, ch))
+	{
+		(void)qry(
+			"UPDATE account_bound_reward_summons SET recovery_ready=1 WHERE grant_id=%llu AND pid=%d",
+			grant.id, GET_PID(ch));
+		extract_obj(obj, FALSE);
+		logit(LOG_WIZ, "divineclaim: failed to submit grant %llu for %s", grant.id,
 		      GET_NAME(ch));
 		return false;
 	}
 	if (explain)
 	{
 		send_to_char("\r\n", ch);
-		send_to_char_f(ch, "A divine account reward materializes in your hands: %s.&n\r\n",
+		send_to_char_f(ch, "A divine account reward begins to materialize: %s.&n\r\n",
 			       obj->short_description ? obj->short_description : name);
 		send_to_char_f(
 			ch,

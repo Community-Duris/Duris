@@ -638,8 +638,8 @@ void do_mail(P_char ch, char *arg, int /*cmd*/)
 		send_to_char(
 			"The mail man gives you a &+Rred cap&n, a strange cap, an xmas cap!!!\r\n",
 			ch);
-		obj_to_char(new_obj, ch);
 		new_obj->value[6] = GET_PID(ch);
+		obj_to_char(new_obj, ch);
 		CharWait(ch, (int)(PULSE_VIOLENCE * 5));
 		send_to_char("You feel so lucky, so stunned, did Santa give you a cap?!\r\n", ch);
 		ch->only.pc->vote = 1;

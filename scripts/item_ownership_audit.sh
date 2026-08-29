@@ -47,7 +47,7 @@ for required in DB_HOST DB_USER DB_PASSWD DB_NAME; do
 done
 
 run_sql() {
-  mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWD" "$DB_NAME" --batch --table -e "$1"
+  MYSQL_PWD="$DB_PASSWD" mysql -h"$DB_HOST" -u"$DB_USER" "$DB_NAME" --batch --table -e "$1"
 }
 
 ACTIVE_STATE=1   # item_custody_state::active
@@ -106,7 +106,7 @@ run_sql "
    ORDER BY missing_payload_rows DESC;"
 echo
 
-echo "== Characters at or over the load-time skip cap (PLAYER_LOAD_ITEM_SKIP_MAX = 32) =="
+echo "== Characters over the load-time skip cap (PLAYER_LOAD_ITEM_SKIP_MAX = 32) =="
 echo "   These characters are REFUSED at login rather than losing items silently."
 run_sql "
   SELECT pid, orphan_rows FROM (

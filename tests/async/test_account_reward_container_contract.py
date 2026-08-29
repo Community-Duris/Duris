@@ -24,7 +24,9 @@ summon_end = index(reward, "static bool parse_positive", summon_start)
 summon = reward[summon_start:summon_end]
 assert contains(summon, "obj->type==ITEM_CONTAINER")
 assert contains(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)")
-assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(summon, "obj_to_char(obj,ch)")
+assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(
+    summon, "item_creation_grant_submit_to_player(ch,obj,ch)"
+)
 
 # Account reward code owns one public pre-persistence corpse hook. ACK-staged death
 # invokes it before the first empty corpse snapshot and ownership submission; player

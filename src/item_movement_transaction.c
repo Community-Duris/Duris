@@ -187,8 +187,18 @@ item_owner_identity creation_grant_owner(const pending_creation_grant &request)
 bool creation_grant_request_valid(const pending_creation_grant &request)
 {
 	P_obj object = find_item(request.item_uid);
-	return object && OBJ_NOWHERE(object) &&
-	       (!request.to_room || (request.room > NOWHERE && request.room <= top_of_world));
+	if (!object || !OBJ_NOWHERE(object))
+		return false;
+	if (request.to_room)
+		return request.room > NOWHERE && request.room <= top_of_world;
+	P_char recipient = find_player_by_pid(request.recipient_pid);
+	if (!recipient)
+		return false;
+	if (!request.target_container_uid)
+		return true;
+	P_obj container = find_item(request.target_container_uid);
+	return container && OBJ_CARRIED_BY(container, recipient) &&
+	       GET_ITEM_TYPE(container) == ITEM_CONTAINER;
 }
 
 void discard_creation_queue(P_char actor, creation_grant_queue &queue)
@@ -296,11 +306,16 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 			{
 				P_obj container = find_item(request.target_container_uid);
 				if (!container || !OBJ_CARRIED_BY(container, recipient) ||
-				    !put(recipient, object, container, TRUE))
+				    GET_ITEM_TYPE(container) != ITEM_CONTAINER)
 					logit(LOG_FILE,
 					      "item creation grant could not publish container placement (uid=%llu container_uid=%llu)",
 					      (unsigned long long)request.item_uid,
 					      (unsigned long long)request.target_container_uid);
+				else
+				{
+					obj_from_char(object);
+					obj_to_obj(object, container);
+				}
 			}
 			mark_player_dirty_components(GET_PID(recipient),
 						     PLAYER_COMPONENT_EQUIPMENT |
@@ -338,12 +353,14 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue)
 	P_obj object = find_item(request.item_uid);
 	if (!creation_grant_request_valid(request))
 		return false;
+	P_obj target_container =
+		request.target_container_uid ? find_item(request.target_container_uid) : NULL;
 	const item_owner_identity owner = creation_grant_owner(request);
 	item_ownership_runtime_entry runtime = {};
 	const bool adopted = item_ownership_runtime_lookup(object->obj_uid, &runtime);
 	const item_owner_identity source = adopted ? runtime.owner : owner;
 	if (!item_movement_transaction_submit(
-		    actor, object, NULL, source, owner,
+		    actor, object, target_container, source, owner,
 		    adopted ? item_transfer_reason::operator_repair :
 			      item_transfer_reason::creation,
 		    object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Multi-grant and per-character instance contracts."""
 from pathlib import Path
-from contract_text import contains
+from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "src/account_reward.c").read_text()
@@ -26,6 +26,12 @@ assert contains(source, "ON DUPLICATE KEY UPDATE last_summoned_at=NOW()")
 assert contains(source, "grant_marker_matches")
 assert contains(source, "reward_marker_matches(obj, grant.account.c_str(), grant.id)")
 assert contains(source, "grant.template_version == 0 && reward_marker_matches")
+summon = source[source.index("static bool summon_one"):source.index("static bool parse_positive")]
+assert contains(summon, "item_creation_grant_submit_to_player(ch,obj,ch)")
+assert index(summon, "account_bound_reward_summons") < index(
+    summon, "item_creation_grant_submit_to_player(ch,obj,ch)"
+)
+assert not contains(summon, "OBJ_CARRIED(obj)")
 
 # Stable IDs allow multiple exact rewards sharing a vnum and precise removal;
 # the old account/vnum and account/all forms remain as compatibility paths.

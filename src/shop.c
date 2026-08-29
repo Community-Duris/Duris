@@ -251,17 +251,10 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 			obj_from_char(object);
 		SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
 		obj_to_char(object, ch);
-		if (payload.target_parent_item_uid && !put(ch, object, destination, TRUE))
+		if (payload.target_parent_item_uid)
 		{
-			produced_purchase_sequences.erase(static_cast<uint32_t>(GET_PID(ch)));
-			statuslog(
-				56,
-				"&+RALERT&n: committed produced purchase could not publish container placement [%llu] into [%llu]",
-				static_cast<unsigned long long>(payload.selected_item_uid),
-				static_cast<unsigned long long>(payload.target_parent_item_uid));
-			persistence_alert(AVATAR, "shop_trade", "redacted", "none", "none",
-					  "container_publish_failed", NULL);
-			return;
+			obj_from_char(object);
+			obj_to_obj(object, destination);
 		}
 		snprintf(message, MAX_STRING_LENGTH, "You now have %s.\r\n",
 			 object->short_description);
@@ -1002,12 +995,20 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 				if (purchase_count < 1 || purchase_count > 50 || *arg)
 				{
 					send_to_char(
-						"The amount must be between 1 and 50 with no extra arguments.\n\r",
+						"The amount must be between 1 and 50 with no extra arguments. The purchased item will be delivered to your inventory.\n\r",
 						ch);
-					extract_obj(temp1, FALSE);
-					return;
+					purchase_count = 1;
+					container = NULL;
 				}
 			}
+		}
+		if (container && !shop_trade_container_accepts(ch, temp1, container))
+		{
+			send_to_char(
+				"That item will not fit in the selected container, so it will be delivered to your inventory.\r\n",
+				ch);
+			container = NULL;
+			purchase_count = 1;
 		}
 	}
 	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container))

@@ -32,6 +32,10 @@ db = (root / "src/db.c").read_text()
 buildings = (root / "src/buildings.c").read_text()
 capture = (root / "src/player_snapshot_capture.c").read_text()
 fight = (root / "src/fight.c").read_text()
+account_reward = (root / "src/account_reward.c").read_text()
+magic = (root / "src/magic.c").read_text()
+mail = (root / "src/mail.c").read_text()
+shop = (root / "src/shop.c").read_text()
 
 failures = []
 
@@ -87,7 +91,8 @@ check("generate_desc never passes a generator straight into snprintf",
       "generate_shape(ch))" not in desc.replace("shape = generate_shape(ch);", "")
       and "generate_modif(ch));" not in desc.replace("modif = generate_modif(ch);", ""))
 check("generate_desc frees the description it replaces",
-      "str_free(ch->player.short_descr);" in desc)
+      "if (IS_PC(ch))" in desc and "str_free(ch->player.short_descr);" in desc
+      and "if (ch->only.pc)" not in desc)
 
 # 4. free_char releases long_descr on the player path.
 free_char = db[db.index("void free_char("):]
@@ -137,6 +142,40 @@ check("multi-item creation rewards serialize owner revisions",
 check("container placement waits before advancing a multi-item grant queue",
       "movement_conflicts(owner, owner)" in movement
       and "pump_creation_grants();" in movement)
+grant_start = movement[movement.index("bool start_creation_grant("):]
+grant_start = grant_start[:grant_start.index("bool queue_creation_grant(")]
+grant_completion = movement[movement.index("void creation_grant_completion("):]
+grant_completion = grant_completion[:grant_completion.index("bool start_creation_grant(")]
+check("container grants commit their durable parent before live publication",
+      "actor, object, target_container, source, owner" in grant_start
+      and "obj_from_char(object);" in grant_completion
+      and "obj_to_obj(object, container);" in grant_completion
+      and "put(recipient, object, container" not in grant_completion)
+newbie = nanny[nanny.index("static void add_newbie_keyword("):]
+newbie = newbie[:newbie.index("/* check for a legal player name")]
+check("newbie item keywords are captured before asynchronous grants",
+      newbie.count("add_newbie_keyword(") >= 5
+      and newbie.index("add_newbie_keyword(obj);") < newbie.index("obj_to_char(obj, ch);"))
+soulbind = magic[magic.index("void load_soulbind("):]
+soulbind = soulbind[:soulbind.index("void spell_contain_being(")]
+check("soulbind flags are captured before asynchronous publication",
+      soulbind.index("SET_BIT(obj->extra_flags, ITEM_NOSELL);") <
+      soulbind.index("obj_to_char(obj, ch);"))
+holiday = mail[mail.index("void do_mail("):]
+check("holiday ownership metadata is captured before asynchronous publication",
+      holiday.index("new_obj->value[6] = GET_PID(ch);") <
+      holiday.index("obj_to_char(new_obj, ch);"))
+summon = account_reward[account_reward.index("static bool summon_one("):]
+summon = summon[:summon.index("static bool parse_positive")]
+check("divine claims reserve cooldown before submitting an asynchronous grant",
+      summon.index("account_bound_reward_summons") <
+      summon.index("item_creation_grant_submit_to_player(ch, obj, ch)")
+      and "OBJ_CARRIED(obj)" not in summon)
+shop_completion = shop[shop.index("static void shop_trade_completion("):]
+shop_completion = shop_completion[:shop_completion.index("void push(")]
+check("committed shop container placement does not rerun fallible put checks",
+      "obj_to_obj(object, destination);" in shop_completion
+      and "put(ch, object, destination" not in shop_completion)
 
 # Minimal-world death must remain valid when the optional corpse portal prototype
 # is absent. This was found while exercising the player-corpse transfer boundary.

@@ -28,10 +28,12 @@ for token in (
     "shop_trade_submit_produced_continuation",
     "shop_trade_submit_invalid_cleanup",
     "shop_trade_route_invalid_cleanup",
-    "payload.target_parent_item_uid && !put(ch, object, destination, TRUE)",
+    "obj_to_obj(object, destination)",
 ):
     if token not in SOURCE:
         raise SystemExit(f"live shop trade route is missing {token}")
+if "put(ch, object, destination" in SOURCE:
+    raise SystemExit("committed shop placement still reruns the fallible put path")
 if SOURCE.count("shop_trade_route_invalid_cleanup(") < 9:
     raise SystemExit("not every flat shop invalid-stock selection route is authority-gated")
 

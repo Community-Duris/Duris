@@ -2444,7 +2444,7 @@ void kill_gain(P_char ch, P_char victim);
 static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data);
 static void hold_for_death_extract_retry(P_char ch);
 
-static void schedule_death_extract_retry(P_char ch, P_obj corpse, int delay)
+static void schedule_death_extract_retry(P_char ch, int delay)
 {
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
@@ -2460,7 +2460,7 @@ static void schedule_death_extract_retry(P_char ch, P_obj corpse, int delay)
 	GET_HIT(ch) = 1;
 	SET_POS(ch, GET_POS(ch) + STAT_NORMAL);
 	const nevent_schedule_result scheduled = add_event(event_death_extract_retry, delay, ch,
-							   NULL, corpse, 0, &delay, sizeof(delay));
+							   NULL, NULL, 0, &delay, sizeof(delay));
 	hold_for_death_extract_retry(ch);
 	if (!scheduled)
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
@@ -2478,11 +2478,12 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	const int previous_delay = data ? *((int *)data) : DEATH_EXTRACT_RETRY_INITIAL;
 
 	(void)victim;
+	(void)obj;
 
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
 		return;
 
-	if (CHAR_IN_ARENA(ch))
+	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
@@ -2494,7 +2495,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_awaiting_corpse_items", "delay=%d",
 				  previous_delay * 2);
-		schedule_death_extract_retry(ch, obj, previous_delay * 2);
+		schedule_death_extract_retry(ch, previous_delay * 2);
 		return;
 	}
 
@@ -2502,7 +2503,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_retry", "delay=%d", previous_delay * 2);
-		schedule_death_extract_retry(ch, obj, previous_delay * 2);
+		schedule_death_extract_retry(ch, previous_delay * 2);
 		return;
 	}
 
@@ -2918,6 +2919,12 @@ void die(P_char ch, P_char killer)
 						"You are not willing to summon pets from death blows.\n",
 						killer);
 				}
+				else if (IS_PC(ch) && item_movement_transaction_player_busy(ch))
+					persistence_alert(AVATAR, "player_save", "death", "none",
+							  "none",
+							  "spawn_raise_skipped_ownership_pending",
+							  "corpse_uid=%llu",
+							  (unsigned long long)corpse->obj_uid);
 				else
 					spawn_raise_undead(killer, ch, corpse);
 			}
@@ -3080,7 +3087,7 @@ void die(P_char ch, P_char killer)
 			persistence_alert(AVATAR, "player_save", "death", "none", "none",
 					  "corpse_items_in_flight",
 					  "extract_refused=1 recovery_scheduled=1");
-			schedule_death_extract_retry(ch, corpse, DEATH_EXTRACT_RETRY_INITIAL);
+			schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
 		if (!CHAR_IN_ARENA(ch) && !persistence_save_character_terminal(ch, RENT_DEATH))
@@ -3093,7 +3100,7 @@ void die(P_char ch, P_char killer)
 				ch);
 			// the save pipeline retries on its own, but nothing else ever retries
 			// the death itself; this completes the extraction once it succeeds
-			schedule_death_extract_retry(ch, corpse, DEATH_EXTRACT_RETRY_INITIAL);
+			schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
 		GET_HIT(ch) = 1;

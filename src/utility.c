@@ -5338,7 +5338,7 @@ void generate_desc(P_char ch)
 	str_free(modif);
 	// A PC's short description is always its own allocation (db.c frees it
 	// unconditionally on the PC path), so the one being replaced has to go.
-	if (ch->only.pc)
+	if (IS_PC(ch))
 		str_free(ch->player.short_descr);
 	ch->player.short_descr = str_dup(buf);
 }

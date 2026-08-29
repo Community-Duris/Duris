@@ -22406,7 +22406,6 @@ void load_soulbind(P_char ch)
 	snprintf(buffer, MAX_STRING_LENGTH, "%s &+Lbearing the &+Wsoul&+L of &+r%s&n",
 		 obj->short_description, GET_NAME(ch));
 	set_short_description(obj, buffer);
-	obj_to_char(obj, ch);
 	SET_BIT(obj->extra_flags, ITEM_NOSELL);
 	SET_BIT(obj->extra_flags, ITEM_NORENT);
 	SET_BIT(obj->extra2_flags, ITEM2_CRUMBLELOOT);
@@ -22415,6 +22414,7 @@ void load_soulbind(P_char ch)
 	REMOVE_BIT(obj->extra_flags, ITEM_INVISIBLE);
 	SET_BIT(obj->extra_flags, ITEM_NOREPAIR);
 	REMOVE_BIT(obj->extra_flags, ITEM_NODROP);
+	obj_to_char(obj, ch);
 }
 
 void spell_contain_being(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,

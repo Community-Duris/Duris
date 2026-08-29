@@ -71,7 +71,7 @@ checks.append((
     contains(die, "item_movement_transaction_player_busy(ch)") and
     contains(die, 'persistence_alert(AVATAR, "player_save", "death", "none", "none",'
                   '"corpse_items_in_flight",') and
-    contains(die, "schedule_death_extract_retry(ch, corpse, DEATH_EXTRACT_RETRY_INITIAL);")
+    contains(die, "schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);")
 ))
 checks.append((
     "the deferral happens before the terminal save and the extraction",
@@ -84,19 +84,24 @@ checks.append((
              "GET_HIT(ch) = 1;") and
     contains(body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{"),
              "SET_POS(ch, GET_POS(ch) + STAT_DEAD);") and
-    contains(body(fight, "static void schedule_death_extract_retry(P_char ch, P_obj corpse, int delay)"),
+    contains(body(fight, "static void schedule_death_extract_retry(P_char ch, int delay)"),
              "hold_for_death_extract_retry(ch);") and
     die.index("persistence_save_character_terminal(ch, RENT_DEATH)") <
     die.index("GET_HIT(ch) = 1;")
 ))
-schedule = body(fight, "static void schedule_death_extract_retry(P_char ch, P_obj corpse, int delay)")
+schedule = body(fight, "static void schedule_death_extract_retry(P_char ch, int delay)")
 checks.append((
     "the private death retry can be linked to a dead character safely",
     schedule.index("SET_POS(ch, GET_POS(ch) + STAT_NORMAL);") <
     schedule.index("add_event(event_death_extract_retry") <
     schedule.index("hold_for_death_extract_retry(ch);") and
-    contains(schedule, "corpse, 0, &delay") and
+    contains(schedule, "NULL, NULL, 0, &delay") and
     contains(schedule, '"death_recovery_schedule_failed"')
+))
+checks.append((
+    "corpse removal cannot cancel or invalidate the character recovery event",
+    not contains(schedule, "P_obj corpse") and
+    not contains(schedule, "OBJ_VNUM")
 ))
 
 # the forward declaration shares the name, so match through the opening brace.
@@ -107,8 +112,14 @@ checks.append((
     contains(retry, "item_movement_transaction_player_busy(ch)") and
     retry.index("item_movement_transaction_player_busy(ch)") <
     retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") and
-    contains(retry, "schedule_death_extract_retry(ch, obj, previous_delay * 2);") and
-    not contains(retry, "GET_STAT(ch) != STAT_DEAD")
+    contains(retry, "schedule_death_extract_retry(ch, previous_delay * 2);") and
+    contains(retry, "GET_STAT(ch) != STAT_DEAD")
+))
+checks.append((
+    "automatic raising cannot consume a PC corpse while its item handoff is pending",
+    contains(die, "spawn_raise_skipped_ownership_pending") and
+    die.index("item_movement_transaction_player_busy(ch)") <
+    die.index("spawn_raise_undead(killer, ch, corpse)")
 ))
 checks.append((
     "the retry still finishes the death once nothing is pending",

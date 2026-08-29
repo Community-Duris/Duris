@@ -332,6 +332,15 @@ void init_height_weight(P_char ch)
 	GET_SIZE(ch) = race_size(GET_RACE(ch));
 }
 
+static void add_newbie_keyword(P_obj obj)
+{
+	if (!obj)
+		return;
+	char keywords[MAX_STRING_LENGTH];
+	snprintf(keywords, sizeof(keywords), "%s newbie", obj->name ? obj->name : "item");
+	set_keywords(obj, keywords);
+}
+
 static void LoadNewbyShit(P_char ch, int *items)
 {
 	int i;
@@ -374,6 +383,7 @@ static void LoadNewbyShit(P_char ch, int *items)
 				}
 			}
 
+			add_newbie_keyword(obj);
 			obj_to_char(obj, ch);
 			if (!IS_PC(ch))
 				CheckEqWorthUsing(ch, obj);
@@ -1972,7 +1982,11 @@ void load_obj_to_newbies(P_char ch)
 	{
 		P_obj note = read_object(29319, VIRTUAL);
 
-		obj_to_char(note, ch);
+		if (note)
+		{
+			add_newbie_keyword(note);
+			obj_to_char(note, ch);
+		}
 	}
 
 	if (GET_LVL_FOR_SKILL(ch, SKILL_BANDAGE)) // all but necros
@@ -1980,24 +1994,22 @@ void load_obj_to_newbies(P_char ch)
 		for (int i = 0; i < 4; i++)
 		{
 			P_obj bandage = read_object(393, VIRTUAL);
-			obj_to_char(bandage, ch);
+			if (bandage)
+			{
+				add_newbie_keyword(bandage);
+				obj_to_char(bandage, ch);
+			}
 		}
 	}
 
 	if (!GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN))
 	{
 		P_obj shield = read_object(458, VIRTUAL);
-		obj_to_char(shield, ch);
-	}
-
-	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
-	{
-		char keywords[MAX_STRING_LENGTH];
-		// LATENT: sprintf without bounds -- safe because obj->name is bounded
-		// by MAX_INPUT_LENGTH and keywords[] is MAX_STRING_LENGTH. Use
-		// snprintf for defense-in-depth if refactoring.
-		sprintf(keywords, "%s newbie", obj->name);
-		set_keywords(obj, keywords);
+		if (shield)
+		{
+			add_newbie_keyword(shield);
+			obj_to_char(shield, ch);
+		}
 	}
 }
 

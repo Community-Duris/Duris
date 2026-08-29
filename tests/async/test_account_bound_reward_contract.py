@@ -64,11 +64,11 @@ assert "object_list" in reward
 assert "extract_obj" in reward
 assert "clear_saved_grant" in reward
 assert "DELETE pi FROM player_items" in reward
-assert "obj_to_char" in reward
+assert "item_creation_grant_submit_to_player" in reward
 assert "ITEM2_ACCOUNT_BOUND" in reward
 assert "ITEM2_SOULBIND" in reward
 assert "soulbound" in reward
-assert "A divine account reward materializes" in reward
+assert "A divine account reward begins to materialize" in reward
 
 assert "account_bound_reward_owner" in actobj
 assert "You may not take that account-bound reward" in actobj

@@ -40,6 +40,7 @@ root = Path(__file__).resolve().parents[2]
 header = (root / "src/safe_format.h").read_text()
 impl = (root / "src/safe_format.c").read_text()
 prompt = (root / "src/prompt.c").read_text()
+actobj = (root / "src/actobj.c").read_text()
 
 failures = []
 
@@ -106,6 +107,14 @@ check("deathsdoor sizes its closing write by the remaining room",
       and "MAX_STRING_LENGTH - length" in door)
 check("deathsdoor only trims a separator it actually wrote",
       "header_length" in door and "if (length > header_length)" in door)
+
+nowhere = actobj[actobj.index('if (IS_TRUSTED(ch) && !strcmp(arg1, "nowhere"))'):]
+nowhere = nowhere[:nowhere.index("GETDBG[get-single-not-found]")]
+check("nowhere collection uses the capacity-aware append helper",
+      'APPENDF(Gbuf2, "%s, ", OBJ_SHORT(s_obj))' in nowhere
+      and "i = strnlen(Gbuf2, MAX_STRING_LENGTH)" in nowhere)
+check("nowhere collection trims only a separator that was actually stored",
+      "Gbuf2[i - 2] == ','" in nowhere and "Gbuf2[i - 1] == ' '" in nowhere)
 
 # Two functions take a caller-owned char* whose size only the caller knows.
 # They must keep saying so, or a future reader will "fix" them wrongly.
