@@ -13,6 +13,7 @@
 #include "comm.h"
 #include "db.h"
 #include "events.h"
+#include "files.h"
 #include "interp.h"
 #include "utils.h"
 #include "handler.h"
@@ -3236,6 +3237,24 @@ bool corpse_release_room(P_obj corpse, int *room)
 	return *room > NOWHERE && *room <= top_of_world && world[*room].number > 0;
 }
 
+bool corpse_nested_release_room(P_obj corpse, int *room)
+{
+	if (!corpse || !room || !OBJ_INSIDE(corpse) || !corpse->loc.inside)
+		return false;
+	P_obj outer = corpse;
+	while (OBJ_INSIDE(outer) && outer->loc.inside)
+		outer = outer->loc.inside;
+	if (OBJ_ROOM(outer))
+		*room = outer->loc.room;
+	else if (OBJ_CARRIED(outer) && outer->loc.carrying)
+		*room = outer->loc.carrying->in_room;
+	else if (OBJ_WORN(outer) && outer->loc.wearing)
+		*room = outer->loc.wearing->in_room;
+	else
+		return false;
+	return *room > NOWHERE && *room <= top_of_world && world[*room].number > 0;
+}
+
 bool validate_corpse_release_item(P_obj item, const item_owner_identity &owner, uint64_t root_uid,
 				  uint64_t parent_uid, uint32_t *count)
 {
@@ -3372,7 +3391,7 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 			extract_obj(compact_pile);
 		return;
 	}
-	P_char carrier = corpse_release_carrier(corpse);
+	P_char carrier = corpse ? corpse_release_carrier(corpse) : nullptr;
 	const int old_load = carrier ? total_carried_weight(carrier) : 0;
 	if (unmade)
 	{
@@ -3814,6 +3833,168 @@ bool submit_corpse_release(P_obj corpse)
 	return corpse_lifecycle_transaction_release(payload, publish_corpse_release);
 }
 
+void discard_corpse_release_money(P_obj container)
+{
+	for (P_obj item = container ? container->contains : nullptr, next = nullptr; item;
+	     item = next)
+	{
+		next = item->next_content;
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+		{
+			obj_from_obj(item);
+			extract_obj(item);
+		}
+		else
+			discard_corpse_release_money(item);
+	}
+}
+
+void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result &result,
+				   unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
+	if (!committed)
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
+				  "commit_failed", "save_id=%u error=%u", payload.save_id,
+				  error_code);
+		if (error_code == ESTALE)
+			rearm_corpse_release(corpse);
+		return;
+	}
+	const item_owner_identity destination =
+		payload.destination_player_pid ?
+			item_owner_identity{ item_owner_type::player,
+					     static_cast<uint64_t>(payload.destination_player_pid),
+					     0 } :
+			item_owner_identity{ item_owner_type::room,
+					     static_cast<uint64_t>(payload.room_vnum), 0 };
+	P_obj parent = corpse && OBJ_INSIDE(corpse) ? corpse->loc.inside : nullptr;
+	item_ownership_runtime_entry parent_runtime = {};
+	int room = NOWHERE;
+	P_char carrier = corpse ? corpse_release_carrier(corpse) : nullptr;
+	if (!corpse || !parent || parent->obj_uid != payload.target_parent_item_uid ||
+	    !corpse_nested_release_room(corpse, &room) || world[room].number != payload.room_vnum ||
+	    !item_ownership_runtime_lookup(parent->obj_uid, &parent_runtime) ||
+	    parent_runtime.root_item_uid != payload.target_root_item_uid ||
+	    parent_runtime.item_revision != payload.expected_target_parent_revision ||
+	    !item_owner_identity_equal(parent_runtime.owner, destination) ||
+	    (payload.destination_player_pid &&
+	     (!carrier || IS_NPC(carrier) ||
+	      GET_PID(carrier) != static_cast<int32_t>(payload.destination_player_pid))) ||
+	    (!payload.destination_player_pid && carrier) ||
+	    !validate_corpse_release_items(corpse, result) ||
+	    !item_ownership_runtime_apply_corpse_nested_release(
+		    payload.owner_pid, payload.save_id, destination, payload.target_root_item_uid,
+		    payload.target_parent_item_uid, payload.expected_target_parent_revision,
+		    result))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
+				  "stale_live_topology", "save_id=%u room=%d", payload.save_id,
+				  payload.room_vnum);
+		return;
+	}
+	if (payload.destination_player_pid &&
+	    std::any_of(result.wallet.begin(), result.wallet.end(),
+			[](int32_t amount) { return amount < 0; }))
+	{
+		persistence_alert(AVATAR, "corpse", "flatfile_nested_release", "none", "none",
+				  "wallet_invalid", "save_id=%u", payload.save_id);
+		return;
+	}
+	const int old_load = carrier ? total_carried_weight(carrier) : 0;
+	logit(LOG_CORPSE, "%s decayed inside %s in room %d.", corpse->short_description,
+	      parent->short_description, payload.room_vnum);
+	corpse_release_side_effect_guard guard;
+	while (corpse->contains)
+	{
+		P_obj item = corpse->contains;
+		obj_from_obj(item);
+		if (!IS_SET(item->extra_flags, ITEM_TRANSIENT))
+			logit(LOG_CORPSE, "%s Decay drop: [%d] %s", corpse->short_description,
+			      obj_index[item->R_num].virtual_number, item->name);
+		if (payload.destination_player_pid)
+		{
+			if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+				extract_obj(item);
+			else
+			{
+				discard_corpse_release_money(item);
+				obj_to_obj(item, parent);
+			}
+		}
+		else
+			obj_to_obj(item, parent);
+	}
+	extract_obj(corpse, TRUE);
+	if (payload.destination_player_pid)
+	{
+		GET_COPPER(carrier) = result.wallet[0];
+		GET_SILVER(carrier) = result.wallet[1];
+		GET_GOLD(carrier) = result.wallet[2];
+		GET_PLATINUM(carrier) = result.wallet[3];
+		carrier->only.pc->wallet_revision = result.wallet_revision;
+		gmcp_char_vitals(carrier);
+		writeCharacter(carrier, RENT_CRASH, carrier->in_room);
+	}
+	if (carrier)
+	{
+		if (old_load > total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels lighter!\r\n", carrier);
+		if (old_load < total_carried_weight(carrier))
+			send_to_char("Your load suddenly feels heavier!\r\n", carrier);
+	}
+}
+
+bool submit_corpse_nested_release(P_obj corpse)
+{
+	if (!corpse || !OBJ_INSIDE(corpse) || !corpse->loc.inside || !corpse->action_description ||
+	    !*corpse->action_description || corpse->value[CORPSE_PID] <= 0 ||
+	    corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	P_obj parent = corpse->loc.inside;
+	item_ownership_runtime_entry parent_runtime = {};
+	int room = NOWHERE;
+	if (!parent->obj_uid || !corpse_nested_release_room(corpse, &room) ||
+	    !item_ownership_runtime_lookup(parent->obj_uid, &parent_runtime) ||
+	    (parent_runtime.owner.type != item_owner_type::player &&
+	     parent_runtime.owner.type != item_owner_type::room))
+		return false;
+	if (parent_runtime.owner.type == item_owner_type::room &&
+	    parent_runtime.owner.id != static_cast<uint64_t>(world[room].number))
+		return false;
+	P_char carrier = corpse_release_carrier(corpse);
+	if (parent_runtime.owner.type == item_owner_type::room && carrier)
+		return false;
+	if (parent_runtime.owner.type == item_owner_type::player &&
+	    (!carrier || IS_NPC(carrier) || !carrier->only.pc || GET_PID(carrier) <= 0 ||
+	     parent_runtime.owner.id != static_cast<uint64_t>(GET_PID(carrier))))
+		return false;
+	uint64_t destination_revision = 0;
+	if (!item_ownership_runtime_owner_revision(parent_runtime.owner, &destination_revision))
+		return false;
+	corpse_lifecycle_payload payload = {};
+	payload.action = corpse_lifecycle_action::release_nested;
+	payload.owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload.save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload.room_vnum = world[room].number;
+	payload.target_root_item_uid = parent_runtime.root_item_uid;
+	payload.target_parent_item_uid = parent_runtime.item_uid;
+	payload.expected_target_parent_revision = parent_runtime.item_revision;
+	payload.owner_name = corpse->action_description;
+	if (parent_runtime.owner.type == item_owner_type::player)
+	{
+		payload.destination_player_pid = static_cast<uint32_t>(GET_PID(carrier));
+		payload.expected_player_revision = destination_revision;
+		payload.expected_wallet_revision = carrier->only.pc->wallet_revision;
+		payload.money = { GET_COPPER(carrier), GET_SILVER(carrier), GET_GOLD(carrier),
+				  GET_PLATINUM(carrier) };
+	}
+	else
+		payload.expected_room_revision = destination_revision;
+	return corpse_lifecycle_transaction_release(payload, publish_corpse_nested_release);
+}
+
 bool submit_corpse_destruction(P_obj corpse);
 
 void publish_corpse_destruction(bool committed, const corpse_lifecycle_result &result,
@@ -3989,7 +4170,9 @@ bool persistence_defer_corpse_room_release(P_obj corpse)
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
 					      static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])))
 		return true;
-	if (!submit_corpse_release(corpse))
+	const bool submitted = OBJ_INSIDE(corpse) ? submit_corpse_nested_release(corpse) :
+						    submit_corpse_release(corpse);
+	if (!submitted)
 	{
 		rearm_corpse_release(corpse);
 		persistence_alert(AVATAR, "corpse", "flatfile_release", "none", "none",

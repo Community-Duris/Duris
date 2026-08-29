@@ -12,7 +12,8 @@ namespace
 {
 constexpr size_t legacy_fixed_payload_bytes = 80;
 constexpr size_t release_fixed_payload_bytes = 88;
-constexpr size_t fixed_payload_bytes = 112;
+constexpr size_t resurrection_fixed_payload_bytes = 112;
+constexpr size_t fixed_payload_bytes = 136;
 constexpr size_t owner_pid_offset = 8;
 constexpr size_t save_id_offset = 12;
 constexpr size_t expected_revision_offset = 16;
@@ -25,6 +26,9 @@ constexpr size_t destination_player_pid_offset = 88;
 constexpr size_t old_room_vnum_offset = 92;
 constexpr size_t expected_player_revision_offset = 96;
 constexpr size_t expected_wallet_revision_offset = 104;
+constexpr size_t target_root_item_uid_offset = 112;
+constexpr size_t target_parent_item_uid_offset = 120;
+constexpr size_t expected_target_parent_revision_offset = 128;
 
 template <typename T> void put_number(uint8_t *output, T value)
 {
@@ -102,11 +106,14 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 	     payload.action != corpse_lifecycle_action::release &&
 	     payload.action != corpse_lifecycle_action::destroy &&
 	     payload.action != corpse_lifecycle_action::resurrect &&
-	     payload.action != corpse_lifecycle_action::raise_follower) ||
+	     payload.action != corpse_lifecycle_action::raise_follower &&
+	     payload.action != corpse_lifecycle_action::release_nested) ||
 	    !payload.owner_pid || payload.owner_pid > INT32_MAX || !payload.save_id ||
 	    payload.save_id > INT32_MAX ||
 	    !valid_text(payload.owner_name, CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES, true))
 		return false;
+	const bool no_target = !payload.target_root_item_uid && !payload.target_parent_item_uid &&
+			       !payload.expected_target_parent_revision;
 	if (payload.action == corpse_lifecycle_action::remove)
 		return payload.expected_corpse_revision && !payload.expected_room_revision &&
 		       !payload.destination_player_pid && !payload.old_room_vnum &&
@@ -117,7 +124,7 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 		       std::all_of(payload.money.begin(), payload.money.end(),
 				   [](int32_t value) { return value == 0; }) &&
 		       payload.short_description.empty() && payload.description.empty() &&
-		       payload.keywords.empty();
+		       payload.keywords.empty() && no_target;
 	if (payload.action == corpse_lifecycle_action::release ||
 	    payload.action == corpse_lifecycle_action::destroy)
 		return payload.expected_corpse_revision && payload.room_vnum > 0 &&
@@ -129,7 +136,7 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 		       std::all_of(payload.money.begin(), payload.money.end(),
 				   [](int32_t value) { return value == 0; }) &&
 		       payload.short_description.empty() && payload.description.empty() &&
-		       payload.keywords.empty();
+		       payload.keywords.empty() && no_target;
 	if (payload.action == corpse_lifecycle_action::resurrect)
 		return payload.expected_corpse_revision && payload.room_vnum > 0 &&
 		       payload.destination_player_pid &&
@@ -140,7 +147,7 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 		       std::all_of(payload.money.begin(), payload.money.end(),
 				   [](int32_t value) { return value >= 0; }) &&
 		       payload.short_description.empty() && payload.description.empty() &&
-		       payload.keywords.empty();
+		       payload.keywords.empty() && no_target;
 	if (payload.action == corpse_lifecycle_action::raise_follower)
 		return payload.expected_corpse_revision && !payload.expected_room_revision &&
 		       payload.room_vnum > 0 && payload.destination_player_pid &&
@@ -151,7 +158,30 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 		       std::all_of(payload.money.begin(), payload.money.end(),
 				   [](int32_t value) { return value >= 0; }) &&
 		       payload.short_description.empty() && payload.description.empty() &&
+		       payload.keywords.empty() && no_target;
+	if (payload.action == corpse_lifecycle_action::release_nested)
+	{
+		const bool player = payload.destination_player_pid > 0;
+		const bool destination_valid =
+			player ? payload.destination_player_pid <= INT32_MAX &&
+					 payload.expected_player_revision &&
+					 !payload.expected_room_revision :
+				 payload.expected_room_revision &&
+					 !payload.expected_player_revision &&
+					 !payload.expected_wallet_revision &&
+					 std::all_of(payload.money.begin(), payload.money.end(),
+						     [](int32_t value) { return value == 0; });
+		return payload.expected_corpse_revision && payload.room_vnum > 0 &&
+		       destination_valid && !payload.old_room_vnum && !payload.weight &&
+		       payload.target_root_item_uid && payload.target_parent_item_uid &&
+		       payload.expected_target_parent_revision &&
+		       std::all_of(payload.values.begin(), payload.values.end(),
+				   [](int32_t value) { return value == 0; }) &&
+		       std::all_of(payload.money.begin(), payload.money.end(),
+				   [](int32_t value) { return value >= 0; }) &&
+		       payload.short_description.empty() && payload.description.empty() &&
 		       payload.keywords.empty();
+	}
 	return !payload.expected_room_revision && !payload.destination_player_pid &&
 	       !payload.old_room_vnum && !payload.expected_player_revision &&
 	       !payload.expected_wallet_revision && payload.room_vnum >= 0 &&
@@ -163,7 +193,8 @@ bool valid_payload(const corpse_lifecycle_payload &payload)
 	       valid_text(payload.short_description, CORPSE_LIFECYCLE_SHORT_DESCRIPTION_MAX_BYTES,
 			  false) &&
 	       valid_text(payload.description, CORPSE_LIFECYCLE_DESCRIPTION_MAX_BYTES, false) &&
-	       valid_text(payload.keywords, CORPSE_LIFECYCLE_KEYWORDS_MAX_BYTES, false);
+	       valid_text(payload.keywords, CORPSE_LIFECYCLE_KEYWORDS_MAX_BYTES, false) &&
+	       no_target;
 }
 
 bool valid_result(const corpse_lifecycle_result &result)
@@ -197,12 +228,24 @@ bool valid_result(const corpse_lifecycle_result &result)
 		       result.wallet_revision && item_result &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value >= 0; });
-	return result.action == corpse_lifecycle_action::raise_follower &&
-	       !result.corpse_revision && result.corpse_owner_revision &&
-	       !result.room_owner_revision && result.player_owner_revision &&
-	       result.wallet_revision && item_result &&
-	       std::all_of(result.wallet.begin(), result.wallet.end(),
-			   [](int32_t value) { return value >= 0; });
+	if (result.action == corpse_lifecycle_action::raise_follower)
+		return !result.corpse_revision && result.corpse_owner_revision &&
+		       !result.room_owner_revision && result.player_owner_revision &&
+		       result.wallet_revision && item_result &&
+		       std::all_of(result.wallet.begin(), result.wallet.end(),
+				   [](int32_t value) { return value >= 0; });
+	if (result.action != corpse_lifecycle_action::release_nested || result.corpse_revision ||
+	    !result.corpse_owner_revision || !item_result)
+		return false;
+	const bool room = result.room_owner_revision && !result.player_owner_revision &&
+			  !result.wallet_revision &&
+			  std::all_of(result.wallet.begin(), result.wallet.end(),
+				      [](int32_t value) { return value == 0; });
+	const bool player = !result.room_owner_revision && result.player_owner_revision &&
+			    result.wallet_revision &&
+			    std::all_of(result.wallet.begin(), result.wallet.end(),
+					[](int32_t value) { return value >= 0; });
+	return room != player;
 }
 } // namespace
 
@@ -241,6 +284,12 @@ bool corpse_lifecycle_command_encode_payload(const corpse_lifecycle_payload &pay
 			     payload.expected_player_revision);
 	put_number<uint64_t>(encoded->data() + expected_wallet_revision_offset,
 			     payload.expected_wallet_revision);
+	put_number<uint64_t>(encoded->data() + target_root_item_uid_offset,
+			     payload.target_root_item_uid);
+	put_number<uint64_t>(encoded->data() + target_parent_item_uid_offset,
+			     payload.target_parent_item_uid);
+	put_number<uint64_t>(encoded->data() + expected_target_parent_revision_offset,
+			     payload.expected_target_parent_revision);
 	return append_text(encoded, payload.owner_name) &&
 	       append_text(encoded, payload.short_description) &&
 	       append_text(encoded, payload.description) && append_text(encoded, payload.keywords);
@@ -252,14 +301,17 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 	if (!payload || command.type != critical_command_type::corpse_lifecycle ||
 	    (command.payload_version != CORPSE_LIFECYCLE_PAYLOAD_VERSION &&
 	     command.payload_version != CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != CORPSE_LIFECYCLE_INTERMEDIATE_PAYLOAD_VERSION &&
 	     command.payload_version != CORPSE_LIFECYCLE_RELEASE_PAYLOAD_VERSION &&
 	     command.payload_version != CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION))
 		return false;
 	const size_t payload_fixed_bytes =
 		command.payload_version == CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION ?
 			legacy_fixed_payload_bytes :
-		command.payload_version < CORPSE_LIFECYCLE_PAYLOAD_VERSION ?
+		command.payload_version < CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION ?
 			release_fixed_payload_bytes :
+		command.payload_version < CORPSE_LIFECYCLE_PAYLOAD_VERSION ?
+			resurrection_fixed_payload_bytes :
 			fixed_payload_bytes;
 	if (command.payload.size() < payload_fixed_bytes + sizeof(uint32_t) * 4)
 		return false;
@@ -283,7 +335,7 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 	if (command.payload_version != CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION)
 		payload->expected_room_revision =
 			get_number<uint64_t>(input + expected_room_revision_offset);
-	if (command.payload_version == CORPSE_LIFECYCLE_PAYLOAD_VERSION)
+	if (command.payload_version >= CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION)
 	{
 		payload->destination_player_pid =
 			get_number<uint32_t>(input + destination_player_pid_offset);
@@ -292,6 +344,15 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 			get_number<uint64_t>(input + expected_player_revision_offset);
 		payload->expected_wallet_revision =
 			get_number<uint64_t>(input + expected_wallet_revision_offset);
+	}
+	if (command.payload_version == CORPSE_LIFECYCLE_PAYLOAD_VERSION)
+	{
+		payload->target_root_item_uid =
+			get_number<uint64_t>(input + target_root_item_uid_offset);
+		payload->target_parent_item_uid =
+			get_number<uint64_t>(input + target_parent_item_uid_offset);
+		payload->expected_target_parent_revision =
+			get_number<uint64_t>(input + expected_target_parent_revision_offset);
 	}
 	size_t offset = payload_fixed_bytes;
 	if (!read_text(input, command.payload.size(), &offset,
@@ -311,9 +372,12 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 	if (command.payload_version == CORPSE_LIFECYCLE_RELEASE_PAYLOAD_VERSION &&
 	    payload->action == corpse_lifecycle_action::destroy)
 		return false;
-	if (command.payload_version != CORPSE_LIFECYCLE_PAYLOAD_VERSION &&
+	if (command.payload_version < CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION &&
 	    (payload->action == corpse_lifecycle_action::resurrect ||
 	     payload->action == corpse_lifecycle_action::raise_follower))
+		return false;
+	if (command.payload_version != CORPSE_LIFECYCLE_PAYLOAD_VERSION &&
+	    payload->action == corpse_lifecycle_action::release_nested)
 		return false;
 	critical_command expected = {};
 	critical_operation_id operation = {};
@@ -429,7 +493,8 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 	if (payload.action == corpse_lifecycle_action::release ||
 	    payload.action == corpse_lifecycle_action::destroy ||
 	    payload.action == corpse_lifecycle_action::resurrect ||
-	    payload.action == corpse_lifecycle_action::raise_follower)
+	    payload.action == corpse_lifecycle_action::raise_follower ||
+	    payload.action == corpse_lifecycle_action::release_nested)
 	{
 		critical_entity_key destination_key = {};
 		if (payload.action == corpse_lifecycle_action::release)
@@ -454,15 +519,28 @@ bool corpse_lifecycle_command_build(critical_command *command, critical_operatio
 			command->expected_revisions.push_back(
 				{ player_key, payload.expected_player_revision });
 		}
-		else if (payload.action == corpse_lifecycle_action::raise_follower)
+		else if (payload.action == corpse_lifecycle_action::raise_follower ||
+			 payload.action == corpse_lifecycle_action::release_nested)
 		{
-			const critical_entity_key player_key = {
-				critical_entity_type::player,
-				static_cast<uint64_t>(payload.destination_player_pid)
-			};
-			command->keys.push_back(player_key);
-			command->expected_revisions.push_back(
-				{ player_key, payload.expected_player_revision });
+			if (payload.destination_player_pid)
+			{
+				const critical_entity_key player_key = {
+					critical_entity_type::player,
+					static_cast<uint64_t>(payload.destination_player_pid)
+				};
+				command->keys.push_back(player_key);
+				command->expected_revisions.push_back(
+					{ player_key, payload.expected_player_revision });
+			}
+			else
+			{
+				const critical_entity_key room_key = { critical_entity_type::room,
+								       static_cast<uint64_t>(
+									       payload.room_vnum) };
+				command->keys.push_back(room_key);
+				command->expected_revisions.push_back(
+					{ room_key, payload.expected_room_revision });
+			}
 		}
 		else
 		{

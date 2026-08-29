@@ -25,6 +25,7 @@ static bool retryable_release_completed = false;
 static bool queued_destruction_completed = false;
 static bool resurrection_completed = false;
 static bool raise_completed = false;
+static bool nested_completed = false;
 
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
@@ -112,6 +113,16 @@ static corpse_lifecycle_payload raise_follower(uint32_t owner_pid, uint32_t save
 	payload.action = corpse_lifecycle_action::raise_follower;
 	payload.expected_room_revision = 0;
 	payload.old_room_vnum = 0;
+	return payload;
+}
+
+static corpse_lifecycle_payload release_nested(uint32_t owner_pid, uint32_t save_id)
+{
+	auto payload = release(owner_pid, save_id, 906, 5);
+	payload.action = corpse_lifecycle_action::release_nested;
+	payload.target_root_item_uid = 700;
+	payload.target_parent_item_uid = 701;
+	payload.expected_target_parent_revision = 8;
 	return payload;
 }
 
@@ -221,6 +232,20 @@ static critical_completion raise_completion(size_t index, uint32_t owner_pid,
 	return value;
 }
 
+static critical_completion nested_completion(size_t index, uint32_t owner_pid,
+				      uint32_t save_id, uint64_t catalog_revision)
+{
+	auto value = release_completion(index, owner_pid, save_id, catalog_revision);
+	corpse_lifecycle_result result = {};
+	assert(corpse_lifecycle_command_decode_result(value.result_payload.data(), value.result_size,
+					      &result));
+	result.action = corpse_lifecycle_action::release_nested;
+	std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> encoded = {};
+	assert(corpse_lifecycle_command_encode_result(result, &encoded));
+	std::copy(encoded.begin(), encoded.end(), value.result_payload.begin());
+	return value;
+}
+
 static void on_release(bool committed, const corpse_lifecycle_result &result,
 			       unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
@@ -276,6 +301,17 @@ static void on_raise(bool committed, const corpse_lifecycle_result &result,
 	       payload.destination_player_pid == 88 && !payload.old_room_vnum &&
 	       payload.expected_corpse_revision == 1);
 	raise_completed = true;
+}
+
+static void on_nested(bool committed, const corpse_lifecycle_result &result,
+			      unsigned int error_code, const corpse_lifecycle_payload &payload)
+{
+	assert(committed && error_code == 0 &&
+	       result.action == corpse_lifecycle_action::release_nested &&
+	       result.room_owner_revision == 5 && payload.expected_corpse_revision == 1 &&
+	       payload.target_root_item_uid == 700 && payload.target_parent_item_uid == 701 &&
+	       payload.expected_target_parent_revision == 8);
+	nested_completed = true;
 }
 
 int main()
@@ -391,8 +427,20 @@ int main()
 	corpse_lifecycle_transaction_handle_completions(&done, 1);
 	assert(raise_completed && !corpse_lifecycle_transaction_busy(47, 25));
 
+	assert(corpse_lifecycle_transaction_stage(upsert(48, 26, 906, 8)));
+	assert(submitted.size() == 15);
+	done = completion(14, corpse_lifecycle_action::upsert, 48, 26, 1, 23);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(corpse_lifecycle_transaction_release(release_nested(48, 26), on_nested));
+	assert(submitted.size() == 16 &&
+	       decode(15).action == corpse_lifecycle_action::release_nested &&
+	       decode(15).expected_corpse_revision == 1 && submitted[15].keys.size() == 2);
+	done = nested_completion(15, 48, 26, 24);
+	corpse_lifecycle_transaction_handle_completions(&done, 1);
+	assert(nested_completed && !corpse_lifecycle_transaction_busy(48, 26));
+
 	const auto health = corpse_lifecycle_transaction_health_copy();
-	assert(health.submitted == 14 && health.committed == 13 && health.rejected == 1 &&
+	assert(health.submitted == 16 && health.committed == 15 && health.rejected == 1 &&
 	       health.pending == 0 && health.dirty == 0);
 	assert(corpse_lifecycle_transaction_forget(42, 20));
 	assert(corpse_lifecycle_transaction_forget(43, 21));

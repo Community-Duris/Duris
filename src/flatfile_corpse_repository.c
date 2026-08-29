@@ -364,8 +364,10 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	const bool destroys_custody = payload.action == corpse_lifecycle_action::destroy;
 	const bool resurrects_custody = payload.action == corpse_lifecycle_action::resurrect;
 	const bool raises_follower = payload.action == corpse_lifecycle_action::raise_follower;
+	const bool releases_nested = payload.action == corpse_lifecycle_action::release_nested;
+	const bool nested_player = releases_nested && payload.destination_player_pid;
 	const bool disposes_custody = releases_custody || destroys_custody || resurrects_custody ||
-				      raises_follower;
+				      raises_follower || releases_nested;
 	const auto prepared =
 		disposes_custody ?
 			flatfile_world_item_prepare_corpse_release(root, authority, payload,
@@ -395,24 +397,26 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 							 flatfile_item_repository_result::io_error ?
 						 EIO :
 						 EILSEQ) };
-		if ((releases_custody || resurrects_custody) &&
+		if ((releases_custody || resurrects_custody ||
+		     (releases_nested && !nested_player)) &&
 		    release_items.room_owner_revision != release.room_revision)
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
 		const auto artifact_prepared =
-			releases_custody ? flatfile_artifact_prepare_corpse_release(
-						   root, authority, payload.owner_pid,
-						   payload.room_vnum, command.accepted_at_usec,
-						   release.items, &release_artifacts, &error) :
-			destroys_custody ? flatfile_artifact_prepare_corpse_destruction(
-						   root, authority, payload.owner_pid,
-						   command.accepted_at_usec, release.items,
-						   &release_artifacts, &error) :
-					   flatfile_artifact_prepare_corpse_resurrection(
-						   root, authority, payload.owner_pid,
-						   payload.destination_player_pid,
-						   command.accepted_at_usec, release.items,
-						   &release_artifacts, &error);
+			releases_custody || (releases_nested && !nested_player) ?
+				flatfile_artifact_prepare_corpse_release(
+					root, authority, payload.owner_pid, payload.room_vnum,
+					command.accepted_at_usec, release.items, &release_artifacts,
+					&error) :
+			destroys_custody ?
+				flatfile_artifact_prepare_corpse_destruction(
+					root, authority, payload.owner_pid,
+					command.accepted_at_usec, release.items, &release_artifacts,
+					&error) :
+				flatfile_artifact_prepare_corpse_resurrection(
+					root, authority, payload.owner_pid,
+					payload.destination_player_pid, command.accepted_at_usec,
+					release.items, &release_artifacts, &error);
 		if (artifact_prepared != flatfile_artifact_result::ok &&
 		    artifact_prepared != flatfile_artifact_result::unchanged)
 			return { artifact_prepared == flatfile_artifact_result::io_error ?
@@ -427,10 +431,11 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	}
 	bool include_resurrection_wallet = false;
 	bool include_resurrection_materialization = false;
-	if (prepared == flatfile_world_item_result::ok && (resurrects_custody || raises_follower))
+	if (prepared == flatfile_world_item_result::ok &&
+	    (resurrects_custody || raises_follower || nested_player))
 	{
 		std::array<int32_t, 4> replacement_wallet = release.money;
-		if (raises_follower)
+		if (raises_follower || nested_player)
 			for (size_t index = 0; index < replacement_wallet.size(); ++index)
 			{
 				if (release.money[index] > INT32_MAX - payload.money[index])
@@ -507,7 +512,7 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 			result.wallet_revision = resurrection_wallet.wallet_revision;
 			result.max_item_revision = release_items.max_item_revision;
 			result.item_count = static_cast<uint32_t>(release_items.item_count);
-			if (resurrects_custody || raises_follower)
+			if (resurrects_custody || raises_follower || nested_player)
 				for (size_t index = 0; index < result.wallet.size(); ++index)
 					result.wallet[index] = static_cast<int32_t>(
 						resurrection_wallet.wallet.amount[index]);

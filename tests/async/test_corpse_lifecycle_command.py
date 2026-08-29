@@ -78,7 +78,7 @@ int main()
 						      CORPSE_LIFECYCLE_LEGACY_RESULT_BYTES,
 						      &decoded_result));
 	auto legacy = upsert_command;
-	legacy.payload.erase(legacy.payload.begin() + 80, legacy.payload.begin() + 112);
+	legacy.payload.erase(legacy.payload.begin() + 80, legacy.payload.begin() + 136);
 	legacy.payload_version = CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION;
 	assert(corpse_lifecycle_command_decode_payload(legacy, &decoded));
 	assert(decoded.expected_room_revision == 0);
@@ -126,8 +126,8 @@ int main()
 	assert(decoded_result.action == corpse_lifecycle_action::release &&
 	       decoded_result.room_owner_revision == 5 && decoded_result.item_count == 2);
 	auto previous_release = release_command;
-	previous_release.payload.erase(previous_release.payload.begin() + 88,
-				       previous_release.payload.begin() + 112);
+	previous_release.payload.erase(previous_release.payload.begin() + 112,
+				       previous_release.payload.begin() + 136);
 	previous_release.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
 	assert(corpse_lifecycle_command_decode_payload(previous_release, &decoded));
 	corpse_lifecycle_payload destroy = release;
@@ -141,8 +141,8 @@ int main()
 	assert(decoded.action == corpse_lifecycle_action::destroy && decoded.room_vnum == 500 &&
 	       decoded.expected_room_revision == 2);
 	auto previous_destroy = command;
-	previous_destroy.payload.erase(previous_destroy.payload.begin() + 88,
-				       previous_destroy.payload.begin() + 112);
+	previous_destroy.payload.erase(previous_destroy.payload.begin() + 112,
+				       previous_destroy.payload.begin() + 136);
 	previous_destroy.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
 	assert(corpse_lifecycle_command_decode_payload(previous_destroy, &decoded));
 	auto unsupported_release_version_destroy = previous_destroy;
@@ -177,11 +177,17 @@ int main()
 	assert(decoded.action == corpse_lifecycle_action::resurrect &&
 	       decoded.destination_player_pid == 77 && decoded.old_room_vnum == 600 &&
 	       decoded.expected_wallet_revision == 11 && decoded.money[0] == 4);
+	auto previous_resurrect = command;
+	previous_resurrect.payload.erase(previous_resurrect.payload.begin() + 112,
+					 previous_resurrect.payload.begin() + 136);
+	previous_resurrect.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+	assert(corpse_lifecycle_command_decode_payload(previous_resurrect, &decoded));
 	auto unsupported_previous_resurrect = command;
 	unsupported_previous_resurrect.payload.erase(
 		unsupported_previous_resurrect.payload.begin() + 88,
-		unsupported_previous_resurrect.payload.begin() + 112);
-	unsupported_previous_resurrect.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+		unsupported_previous_resurrect.payload.begin() + 136);
+	unsupported_previous_resurrect.payload_version =
+		CORPSE_LIFECYCLE_INTERMEDIATE_PAYLOAD_VERSION;
 	assert(!corpse_lifecycle_command_decode_payload(unsupported_previous_resurrect, &decoded));
 	corpse_lifecycle_result resurrect_result = {};
 	resurrect_result.owner_pid = 42;
@@ -213,10 +219,16 @@ int main()
 	assert(decoded.action == corpse_lifecycle_action::raise_follower &&
 	       decoded.destination_player_pid == 77 && decoded.expected_player_revision == 9 &&
 	       decoded.expected_wallet_revision == 11 && decoded.room_vnum == 500);
+	auto previous_raise = command;
+	previous_raise.payload.erase(previous_raise.payload.begin() + 112,
+				     previous_raise.payload.begin() + 136);
+	previous_raise.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+	assert(corpse_lifecycle_command_decode_payload(previous_raise, &decoded));
 	auto unsupported_previous_raise = command;
 	unsupported_previous_raise.payload.erase(unsupported_previous_raise.payload.begin() + 88,
-					 unsupported_previous_raise.payload.begin() + 112);
-	unsupported_previous_raise.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+					 unsupported_previous_raise.payload.begin() + 136);
+	unsupported_previous_raise.payload_version =
+		CORPSE_LIFECYCLE_INTERMEDIATE_PAYLOAD_VERSION;
 	assert(!corpse_lifecycle_command_decode_payload(unsupported_previous_raise, &decoded));
 	corpse_lifecycle_result raise_result = resurrect_result;
 	raise_result.action = corpse_lifecycle_action::raise_follower;
@@ -227,8 +239,43 @@ int main()
 	assert(decoded_result.action == corpse_lifecycle_action::raise_follower &&
 	       decoded_result.room_owner_revision == 0 &&
 	       decoded_result.player_owner_revision == 10 && decoded_result.wallet[0] == 1);
+	corpse_lifecycle_payload nested = release;
+	nested.action = corpse_lifecycle_action::release_nested;
+	nested.target_root_item_uid = 100;
+	nested.target_parent_item_uid = 101;
+	nested.expected_target_parent_revision = 12;
+	assert(corpse_lifecycle_command_build(&command, operation(9), nested,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(command.keys.size() == 2 && command.expected_revisions.size() == 2);
+	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
+	assert(decoded.action == corpse_lifecycle_action::release_nested &&
+	       decoded.target_root_item_uid == 100 && decoded.target_parent_item_uid == 101 &&
+	       decoded.expected_target_parent_revision == 12);
+	auto unsupported_previous_nested = command;
+	unsupported_previous_nested.payload.erase(unsupported_previous_nested.payload.begin() + 112,
+					  unsupported_previous_nested.payload.begin() + 136);
+	unsupported_previous_nested.payload_version = CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION;
+	assert(!corpse_lifecycle_command_decode_payload(unsupported_previous_nested, &decoded));
+	corpse_lifecycle_result nested_result = release_result;
+	nested_result.action = corpse_lifecycle_action::release_nested;
+	assert(corpse_lifecycle_command_encode_result(nested_result, &encoded_result));
+	nested.destination_player_pid = 77;
+	nested.expected_room_revision = 0;
+	nested.expected_player_revision = 9;
+	nested.expected_wallet_revision = 11;
+	nested.money = { 4, 3, 2, 1 };
+	assert(corpse_lifecycle_command_build(&command, operation(10), nested,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
+	nested_result.room_owner_revision = 0;
+	nested_result.player_owner_revision = 10;
+	nested_result.wallet_revision = 12;
+	nested_result.wallet = { 5, 6, 7, 8 };
+	assert(corpse_lifecycle_command_encode_result(nested_result, &encoded_result));
 	release.money[0] = 1;
-	assert(!corpse_lifecycle_command_build(&command, operation(9), release,
+	assert(!corpse_lifecycle_command_build(&command, operation(11), release,
 					       critical_source_site::command,
 					       critical_deadline_class::terminal));
 	return 0;

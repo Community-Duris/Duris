@@ -7,8 +7,9 @@
 #include <cstdint>
 #include <string>
 
-constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 4;
-constexpr uint16_t CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION = 3;
+constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 5;
+constexpr uint16_t CORPSE_LIFECYCLE_PREVIOUS_PAYLOAD_VERSION = 4;
+constexpr uint16_t CORPSE_LIFECYCLE_INTERMEDIATE_PAYLOAD_VERSION = 3;
 constexpr uint16_t CORPSE_LIFECYCLE_RELEASE_PAYLOAD_VERSION = 2;
 constexpr uint16_t CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION = 1;
 constexpr size_t CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES = 255;
@@ -27,6 +28,7 @@ enum class corpse_lifecycle_action : uint8_t
 	destroy = 4,
 	resurrect = 5,
 	raise_follower = 6,
+	release_nested = 7,
 };
 
 struct corpse_lifecycle_payload
@@ -40,6 +42,9 @@ struct corpse_lifecycle_payload
 	int32_t old_room_vnum = 0;
 	uint64_t expected_player_revision = 0;
 	uint64_t expected_wallet_revision = 0;
+	uint64_t target_root_item_uid = 0;
+	uint64_t target_parent_item_uid = 0;
+	uint64_t expected_target_parent_revision = 0;
 	int32_t room_vnum = 0;
 	int32_t weight = 0;
 	std::array<int32_t, 8> values = {};

@@ -671,6 +671,200 @@ int main(int argc, char **argv)
 				stale_raise_snapshot.items[1].parent_index == 0,
 			"restart reconciliation did not materialize raised corpse items: " + error);
 	}
+
+	const fs::path nested_room_root = fs::path(argv[1]) / "nested-room";
+	prepare_root(nested_room_root);
+	flatfile_corpse_record container_corpse = {};
+	container_corpse.owner_pid = 88;
+	container_corpse.owner_name = "carrier";
+	container_corpse.save_id = 30;
+	container_corpse.room_vnum = 500;
+	container_corpse.values[3] = 88;
+	container_corpse.values[5] = 1;
+	container_corpse.values[6] = 30;
+	container_corpse.revision = 1;
+	container_corpse.items = {
+		release_item(800, PLAYER_SNAPSHOT_NO_PARENT, 1800),
+	};
+	flatfile_corpse_record nested_room_corpse = released_corpse;
+	nested_room_corpse.money = { 1, 2, 3, 4 };
+	require(flatfile_world_item_establish(nested_room_root.string(),
+					      { container_corpse, nested_room_corpse }, {},
+					      &error) == flatfile_world_item_result::ok,
+		"could not establish nested room fixtures: " + error);
+	const item_owner_identity container_corpse_owner = { item_owner_type::corpse,
+							     item_corpse_owner_id(88, 30), 0 };
+	require(flatfile_item_repository_establish_owner(
+			nested_room_root.string(), container_corpse_owner,
+			{ { 800, 800, 0, container_corpse_owner, 1, 1800,
+			    item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish nested room container custody: " + error);
+	require(flatfile_item_repository_establish_owner(
+			nested_room_root.string(), corpse_owner,
+			{ { 900, 900, 0, corpse_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, corpse_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish nested room corpse custody: " + error);
+	require(flatfile_artifact_establish(nested_room_root.string(), { corpse_artifact },
+					    &error) == flatfile_artifact_result::ok,
+		"could not establish nested room artifact: " + error);
+	corpse_lifecycle_payload container_release = {};
+	container_release.action = corpse_lifecycle_action::release;
+	container_release.owner_pid = 88;
+	container_release.save_id = 30;
+	container_release.expected_corpse_revision = 1;
+	container_release.expected_room_revision = 0;
+	container_release.room_vnum = 500;
+	container_release.owner_name = "Carrier";
+	applied = flatfile_corpse_repository_apply(nested_room_root.string(),
+						   command(20, container_release));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"could not seed the nested room container");
+	corpse_lifecycle_payload nested_room_payload = {};
+	nested_room_payload.action = corpse_lifecycle_action::release_nested;
+	nested_room_payload.owner_pid = 42;
+	nested_room_payload.save_id = 20;
+	nested_room_payload.expected_corpse_revision = 3;
+	nested_room_payload.expected_room_revision = 1;
+	nested_room_payload.room_vnum = 500;
+	nested_room_payload.target_root_item_uid = 800;
+	nested_room_payload.target_parent_item_uid = 800;
+	nested_room_payload.expected_target_parent_revision = 2;
+	nested_room_payload.owner_name = "Hero";
+	auto nested_room_command = command(21, nested_room_payload);
+	nested_room_command.accepted_at_usec = 21000000;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "2", 1);
+	applied = flatfile_corpse_repository_apply(nested_room_root.string(), nested_room_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted nested room release did not retain recoverable intent");
+	applied = flatfile_corpse_repository_apply(nested_room_root.string(), nested_room_command);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+							       applied.result_size, &result) &&
+			result.action == corpse_lifecycle_action::release_nested &&
+			result.room_owner_revision == 2 && result.item_count == 2,
+		"nested room release did not recover exactly");
+	require(flatfile_world_item_list(nested_room_root.string(), &corpses, &saved, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty(),
+		"nested room release retained a corpse aggregate");
+	require(flatfile_world_item_list_rooms(nested_room_root.string(), &rooms, &error) ==
+				flatfile_world_item_result::ok &&
+			rooms.size() == 1 && rooms[0].revision == 2 && rooms[0].items.size() == 3 &&
+			rooms[0].items[0].object_uid == 800 &&
+			rooms[0].items[1].parent_index == 0 &&
+			rooms[0].items[2].parent_index == 1 &&
+			rooms[0].money == nested_room_corpse.money,
+		"nested room release did not preserve the containing item topology");
+	uint64_t nested_room_revision = 0;
+	std::vector<flatfile_item_ownership_record> nested_room_items;
+	require(flatfile_item_repository_load_owner(
+			nested_room_root.string(), { item_owner_type::room, 500, 0 },
+			&nested_room_revision, &nested_room_items,
+			&error) == flatfile_item_repository_result::ok &&
+			nested_room_revision == 2 && nested_room_items.size() == 3 &&
+			nested_room_items[1].root_item_uid == 800 &&
+			nested_room_items[1].parent_item_uid == 800 &&
+			nested_room_items[2].root_item_uid == 800 &&
+			nested_room_items[2].parent_item_uid == 900,
+		"nested room release did not reparent durable custody");
+
+	const fs::path nested_player_root = fs::path(argv[1]) / "nested-player";
+	prepare_root(nested_player_root);
+	flatfile_corpse_record nested_player_corpse = released_corpse;
+	nested_player_corpse.money = { 4, 3, 2, 1 };
+	require(flatfile_world_item_establish(nested_player_root.string(), { nested_player_corpse },
+					      {}, &error) == flatfile_world_item_result::ok,
+		"could not establish nested player corpse: " + error);
+	require(flatfile_item_repository_establish_owner(
+			nested_player_root.string(), corpse_owner,
+			{ { 900, 900, 0, corpse_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, corpse_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish nested player corpse custody: " + error);
+	const item_owner_identity nested_player_owner = { item_owner_type::player, 72, 0 };
+	require(flatfile_item_repository_establish_owner(
+			nested_player_root.string(), nested_player_owner,
+			{ { 800, 800, 0, nested_player_owner, 1, 1800,
+			    item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish nested player container custody: " + error);
+	flatfile_player_domain_record nested_player = {};
+	nested_player.pid = 72;
+	nested_player.account_name = "nested-account";
+	nested_player.racewar = 1;
+	nested_player.domains.wallet = { 5, 6, 7, 8 };
+	require(flatfile_player_domain_establish(nested_player_root.string(), nested_player,
+						 &error) == flatfile_player_domain_result::ok,
+		"could not establish nested player wallet: " + error);
+	require(flatfile_artifact_establish(nested_player_root.string(), { corpse_artifact },
+					    &error) == flatfile_artifact_result::ok,
+		"could not establish nested player artifact: " + error);
+	corpse_lifecycle_payload nested_player_payload = nested_room_payload;
+	nested_player_payload.expected_room_revision = 0;
+	nested_player_payload.destination_player_pid = 72;
+	nested_player_payload.expected_player_revision = 1;
+	nested_player_payload.expected_wallet_revision = 0;
+	nested_player_payload.expected_target_parent_revision = 1;
+	nested_player_payload.money = { 5, 6, 7, 8 };
+	auto nested_player_command = command(22, nested_player_payload);
+	nested_player_command.accepted_at_usec = 22000000;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "3", 1);
+	applied = flatfile_corpse_repository_apply(nested_player_root.string(),
+						   nested_player_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted nested player release did not retain recoverable intent: outcome=" +
+			std::to_string(static_cast<unsigned int>(applied.outcome)) +
+			" error=" + std::to_string(applied.error_code));
+	applied = flatfile_corpse_repository_apply(nested_player_root.string(),
+						   nested_player_command);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+							       applied.result_size, &result) &&
+			result.action == corpse_lifecycle_action::release_nested &&
+			result.player_owner_revision == 2 && result.wallet_revision == 1 &&
+			result.wallet == std::array<int32_t, 4>{ 9, 9, 9, 9 },
+		"nested player release did not recover exactly");
+	uint64_t nested_player_revision = 0;
+	std::vector<flatfile_item_ownership_record> nested_player_items;
+	require(flatfile_item_repository_load_owner(
+			nested_player_root.string(), nested_player_owner, &nested_player_revision,
+			&nested_player_items, &error) == flatfile_item_repository_result::ok &&
+			nested_player_revision == 2 && nested_player_items.size() == 3 &&
+			nested_player_items[1].root_item_uid == 800 &&
+			nested_player_items[1].parent_item_uid == 800 &&
+			nested_player_items[2].root_item_uid == 800,
+		"nested player release did not reparent durable custody");
+	flatfile_player_domain_record loaded_nested_player;
+	require(flatfile_player_domain_load(nested_player_root.string(), 72, "nested-account", 1,
+					    &loaded_nested_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_nested_player.domains.wallet ==
+				std::array<uint64_t, 4>{ 9, 9, 9, 9 },
+		"nested player release did not credit corpse money");
+	player_snapshot stale_nested_player = {};
+	stale_nested_player.pid = 72;
+	stale_nested_player.items = {
+		release_item(800, PLAYER_SNAPSHOT_NO_PARENT, 1800),
+	};
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(nested_player_root.string(), &error),
+			"could not lock nested player materialization: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				nested_player_root.string(), reconciliation_lock, 72,
+				nested_player_items, &stale_nested_player,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_nested_player.items.size() == 3 &&
+				stale_nested_player.items[1].parent_index == 0 &&
+				stale_nested_player.items[2].parent_index == 1,
+			"restart reconciliation did not preserve nested player topology: " + error);
+	}
 	std::cout << "flat-file corpse lifecycle repository passed\n";
 	return 0;
 }

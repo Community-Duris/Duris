@@ -39,6 +39,12 @@ bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32
 bool item_ownership_runtime_apply_corpse_raise(uint32_t owner_pid, uint32_t save_id,
 					       uint32_t player_pid,
 					       const corpse_lifecycle_result &result);
+bool item_ownership_runtime_apply_corpse_nested_release(uint32_t owner_pid, uint32_t save_id,
+							const item_owner_identity &destination,
+							uint64_t target_root_item_uid,
+							uint64_t target_parent_item_uid,
+							uint64_t expected_target_parent_revision,
+							const corpse_lifecycle_result &result);
 void item_ownership_runtime_forget(uint64_t item_uid);
 void item_ownership_runtime_forget_owner(const item_owner_identity &owner);
 void item_ownership_runtime_reset(void);

@@ -1138,10 +1138,13 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
 	const bool resurrect = payload.action == corpse_lifecycle_action::resurrect;
 	const bool raise_follower = payload.action == corpse_lifecycle_action::raise_follower;
+	const bool release_nested = payload.action == corpse_lifecycle_action::release_nested;
+	const bool nested_player = release_nested && payload.destination_player_pid;
 	if (!mutation || !lock.matches(root) ||
 	    static_cast<unsigned int>(release) + static_cast<unsigned int>(destroy) +
 			    static_cast<unsigned int>(resurrect) +
-			    static_cast<unsigned int>(raise_follower) !=
+			    static_cast<unsigned int>(raise_follower) +
+			    static_cast<unsigned int>(release_nested) !=
 		    1 ||
 	    !payload.owner_pid || !payload.save_id || payload.room_vnum <= 0 ||
 	    (resurrect && (!payload.destination_player_pid || payload.old_room_vnum <= 0 ||
@@ -1149,6 +1152,11 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	    (raise_follower &&
 	     (!payload.destination_player_pid || payload.old_room_vnum ||
 	      !payload.expected_player_revision || payload.expected_room_revision)) ||
+	    (release_nested && (!payload.target_root_item_uid || !payload.target_parent_item_uid ||
+				!payload.expected_target_parent_revision ||
+				(nested_player ? (!payload.expected_player_revision ||
+						  payload.expected_room_revision) :
+						 !payload.expected_room_revision))) ||
 	    expected_items.size() > ownership_maximum_entries ||
 	    !std::is_sorted(expected_items.begin(), expected_items.end(),
 			    [](const auto &left, const auto &right)
@@ -1175,7 +1183,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 		item_owner_type::corpse, item_corpse_owner_id(payload.owner_pid, payload.save_id), 0
 	};
 	const item_owner_identity destination_owner =
-		release ?
+		release || (release_nested && !nested_player) ?
 			item_owner_identity{ item_owner_type::room,
 					     static_cast<uint64_t>(payload.room_vnum), 0 } :
 		destroy ?
@@ -1190,11 +1198,13 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	owner_state *destination = find_owner(&catalog, destination_owner);
 	owner_state *old_room = resurrect ? find_owner(&catalog, old_room_owner) : nullptr;
 	if ((!corpse && !expected_items.empty()) ||
-	    (destination && destination->revision != ((resurrect || raise_follower) ?
-							      payload.expected_player_revision :
-							      payload.expected_room_revision)) ||
-	    (!destination && ((resurrect || raise_follower) ? payload.expected_player_revision :
-							      payload.expected_room_revision)) ||
+	    (destination &&
+	     destination->revision != ((resurrect || raise_follower || nested_player) ?
+					       payload.expected_player_revision :
+					       payload.expected_room_revision)) ||
+	    (!destination &&
+	     ((resurrect || raise_follower || nested_player) ? payload.expected_player_revision :
+							       payload.expected_room_revision)) ||
 	    (resurrect && ((old_room && old_room->revision != payload.expected_room_revision) ||
 			   (!old_room && payload.expected_room_revision))) ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
@@ -1218,6 +1228,15 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	    !ensure_owner(&catalog, destination_owner) ||
 	    (resurrect && !ensure_owner(&catalog, old_room_owner)))
 		return flatfile_item_repository_result::invalid;
+	if (release_nested)
+	{
+		const auto *parent = find_item(&catalog, payload.target_parent_item_uid);
+		if (!parent || parent->root_item_uid != payload.target_root_item_uid ||
+		    !item_owner_identity_equal(parent->owner, destination_owner) ||
+		    parent->item_revision != payload.expected_target_parent_revision ||
+		    parent->state != item_custody_state::active)
+			return flatfile_item_repository_result::invalid;
+	}
 	corpse = find_owner(&catalog, corpse_owner);
 	destination = find_owner(&catalog, destination_owner);
 	old_room = resurrect ? find_owner(&catalog, old_room_owner) : nullptr;
@@ -1231,16 +1250,24 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	if (resurrect)
 		++old_room->revision;
 	mutation->corpse_owner_revision = corpse->revision;
-	mutation->room_owner_revision = resurrect	   ? old_room->revision :
-					release || destroy ? destination->revision :
-							     0;
-	mutation->player_owner_revision = resurrect || raise_follower ? destination->revision : 0;
+	mutation->room_owner_revision = resurrect ? old_room->revision :
+					release || destroy || (release_nested && !nested_player) ?
+						    destination->revision :
+						    0;
+	mutation->player_owner_revision =
+		resurrect || raise_follower || nested_player ? destination->revision : 0;
 	mutation->item_count = expected_items.size();
 	for (auto &item : catalog.items)
 	{
 		if (!item_owner_identity_equal(item.owner, corpse_owner))
 			continue;
 		item.owner = destination_owner;
+		if (release_nested)
+		{
+			item.root_item_uid = payload.target_root_item_uid;
+			if (!item.parent_item_uid)
+				item.parent_item_uid = payload.target_parent_item_uid;
+		}
 		if (destroy)
 			item.state = item_custody_state::destroyed;
 		++item.item_revision;

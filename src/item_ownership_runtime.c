@@ -368,15 +368,22 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	return true;
 }
 
-static bool item_ownership_runtime_apply_corpse_disposition(uint32_t owner_pid, uint32_t save_id,
-							    const item_owner_identity &destination,
-							    corpse_lifecycle_action action,
-							    const corpse_lifecycle_result &result)
+static bool item_ownership_runtime_apply_corpse_disposition(
+	uint32_t owner_pid, uint32_t save_id, const item_owner_identity &destination,
+	corpse_lifecycle_action action, const corpse_lifecycle_result &result,
+	uint64_t target_root_item_uid = 0, uint64_t target_parent_item_uid = 0,
+	uint64_t expected_target_parent_revision = 0)
 {
+	const bool nested = action == corpse_lifecycle_action::release_nested;
+	const uint64_t destination_result_revision = destination.type == item_owner_type::player ?
+							     result.player_owner_revision :
+							     result.room_owner_revision;
 	if (!owner_pid || !save_id || !item_owner_identity_valid(destination) ||
 	    result.owner_pid != owner_pid || result.save_id != save_id || result.action != action ||
 	    result.corpse_revision || !result.corpse_owner_revision ||
-	    !result.room_owner_revision ||
+	    !destination_result_revision ||
+	    (nested !=
+	     (target_root_item_uid && target_parent_item_uid && expected_target_parent_revision)) ||
 	    ((!result.item_count && result.max_item_revision) ||
 	     (result.item_count && !result.max_item_revision)))
 		return false;
@@ -387,11 +394,21 @@ static bool item_ownership_runtime_apply_corpse_disposition(uint32_t owner_pid, 
 	const bool corpse_existed = corpse_revision != owner_revisions.end();
 	const bool destination_existed = destination_revision != owner_revisions.end();
 	const uint64_t expected_corpse_revision = result.corpse_owner_revision - 1;
-	const uint64_t expected_destination_revision = result.room_owner_revision - 1;
+	const uint64_t expected_destination_revision = destination_result_revision - 1;
 	if ((corpse_existed ? corpse_revision->second : 0) != expected_corpse_revision ||
 	    (destination_existed ? destination_revision->second : 0) !=
 		    expected_destination_revision)
 		return false;
+	if (nested)
+	{
+		const auto parent = entries.find(target_parent_item_uid);
+		if (parent == entries.end() ||
+		    parent->second.root_item_uid != target_root_item_uid ||
+		    !item_owner_identity_equal(parent->second.owner, destination) ||
+		    parent->second.item_revision != expected_target_parent_revision ||
+		    parent->second.state != item_custody_state::active)
+			return false;
+	}
 	size_t item_count = 0;
 	uint64_t max_item_revision = 0;
 	for (const auto &[uid, entry] : entries)
@@ -412,7 +429,7 @@ static bool item_ownership_runtime_apply_corpse_disposition(uint32_t owner_pid, 
 		owner_revisions.reserve(owner_revisions.size() + (corpse_existed ? 0 : 1) +
 					(destination_existed ? 0 : 1));
 		owner_revisions.insert_or_assign(corpse, result.corpse_owner_revision);
-		owner_revisions.insert_or_assign(destination, result.room_owner_revision);
+		owner_revisions.insert_or_assign(destination, destination_result_revision);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -433,7 +450,13 @@ static bool item_ownership_runtime_apply_corpse_disposition(uint32_t owner_pid, 
 			continue;
 		++entry.item_revision;
 		entry.owner = destination;
-		entry.owner_revision = result.room_owner_revision;
+		entry.owner_revision = destination_result_revision;
+		if (nested)
+		{
+			entry.root_item_uid = target_root_item_uid;
+			if (!entry.parent_item_uid)
+				entry.parent_item_uid = target_parent_item_uid;
+		}
 		if (action == corpse_lifecycle_action::destroy)
 			entry.state = item_custody_state::destroyed;
 	}
@@ -457,6 +480,21 @@ bool item_ownership_runtime_apply_corpse_destruction(uint32_t owner_pid, uint32_
 	return item_ownership_runtime_apply_corpse_disposition(
 		owner_pid, save_id, { item_owner_type::destruction, 0, 0 },
 		corpse_lifecycle_action::destroy, result);
+}
+
+bool item_ownership_runtime_apply_corpse_nested_release(uint32_t owner_pid, uint32_t save_id,
+							const item_owner_identity &destination,
+							uint64_t target_root_item_uid,
+							uint64_t target_parent_item_uid,
+							uint64_t expected_target_parent_revision,
+							const corpse_lifecycle_result &result)
+{
+	if (destination.type != item_owner_type::player &&
+	    destination.type != item_owner_type::room)
+		return false;
+	return item_ownership_runtime_apply_corpse_disposition(
+		owner_pid, save_id, destination, corpse_lifecycle_action::release_nested, result,
+		target_root_item_uid, target_parent_item_uid, expected_target_parent_revision);
 }
 
 bool item_ownership_runtime_apply_corpse_resurrection(uint32_t owner_pid, uint32_t save_id,

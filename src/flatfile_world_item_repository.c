@@ -1210,10 +1210,13 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 	const bool destroy = payload.action == corpse_lifecycle_action::destroy;
 	const bool resurrect = payload.action == corpse_lifecycle_action::resurrect;
 	const bool raise_follower = payload.action == corpse_lifecycle_action::raise_follower;
+	const bool release_nested = payload.action == corpse_lifecycle_action::release_nested;
+	const bool nested_room = release_nested && !payload.destination_player_pid;
 	if (root.empty() || !lock.matches(root) || !mutation ||
 	    static_cast<unsigned int>(release) + static_cast<unsigned int>(destroy) +
 			    static_cast<unsigned int>(resurrect) +
-			    static_cast<unsigned int>(raise_follower) !=
+			    static_cast<unsigned int>(raise_follower) +
+			    static_cast<unsigned int>(release_nested) !=
 		    1 ||
 	    !payload.owner_pid || !payload.save_id || !payload.expected_corpse_revision ||
 	    payload.room_vnum <= 0 ||
@@ -1226,6 +1229,12 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 	      !payload.expected_player_revision || payload.expected_room_revision ||
 	      std::any_of(payload.money.begin(), payload.money.end(),
 			  [](int32_t amount) { return amount < 0; }))) ||
+	    (release_nested &&
+	     (!payload.target_root_item_uid || !payload.target_parent_item_uid ||
+	      !payload.expected_target_parent_revision ||
+	      (payload.destination_player_pid ?
+		       (!payload.expected_player_revision || payload.expected_room_revision) :
+		       !payload.expected_room_revision))) ||
 	    !valid_printable(payload.owner_name, name_maximum, true))
 		return flatfile_world_item_result::invalid;
 	*mutation = {};
@@ -1251,7 +1260,7 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 		std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), room_key, room_less);
 	const bool room_found = room != catalog.rooms.end() &&
 				room->room_vnum == room_key.room_vnum;
-	if ((release || resurrect) &&
+	if ((release || resurrect || nested_room) &&
 	    ((room_found && room->revision != payload.expected_room_revision) ||
 	     (!room_found && payload.expected_room_revision) ||
 	     (room_found && room->revision == UINT64_MAX) ||
@@ -1284,10 +1293,12 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 		std::sort(mutation->expected_items.begin(), mutation->expected_items.end(),
 			  [](const auto &left, const auto &right)
 			  { return left.item_uid < right.item_uid; });
-		if (release || resurrect)
+		if (release || resurrect || nested_room)
 		{
 			if (!room_found)
 			{
+				if (nested_room)
+					return flatfile_world_item_result::conflict;
 				flatfile_room_item_record created = {};
 				created.room_vnum = room_key.room_vnum;
 				created.revision = 1;
@@ -1305,10 +1316,35 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
 					room->items.push_back(std::move(item));
 				}
 			}
+			else if (nested_room)
+			{
+				const size_t parent_index = room_item_index(
+					room->items, payload.target_parent_item_uid);
+				if (parent_index == room->items.size() ||
+				    !room_item_root_matches(room->items, parent_index,
+							    payload.target_root_item_uid))
+					return flatfile_world_item_result::conflict;
+				for (const auto &item : corpse->items)
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+					    !apply_room_weight_delta(&room->items, parent_index,
+								     item.weight))
+						return flatfile_world_item_result::conflict;
+				const int32_t offset = static_cast<int32_t>(room->items.size());
+				for (auto item : corpse->items)
+				{
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+						item.parent_index =
+							static_cast<int32_t>(parent_index);
+					else
+						item.parent_index += offset;
+					room->items.push_back(std::move(item));
+				}
+			}
 			for (size_t index = 0; index < room->money.size(); ++index)
 			{
-				const int32_t addition = release ? corpse->money[index] :
-								   payload.money[index];
+				const int32_t addition = release || nested_room ?
+								 corpse->money[index] :
+								 payload.money[index];
 				if (addition > INT32_MAX - room->money[index])
 					return flatfile_world_item_result::conflict;
 				room->money[index] += addition;

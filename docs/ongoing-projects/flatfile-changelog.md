@@ -4271,3 +4271,38 @@ action" text below remains historical and does not authorize work.
   build pass. The isolated client-free build/game-loop boot/clean-shutdown preflight also passes.
 - **Remaining restoration:** nested-container corpse decay must preserve its containing item
   topology. Historical mixed-format siege-state compatibility remains required.
+
+### Checkpoint 100 - recoverable nested-container corpse decay
+
+- **Historical container result restored:** flat-primary decay now distinguishes a player corpse
+  nested inside an object from ordinary room release. It proves the immediate containing item, its
+  root and revision, the containing owner, and the outer room before submitting. MariaDB modes,
+  non-player corpses, and every other decay location retain their established paths.
+- **One narrow lifecycle action:** payload version 5 adds `release_nested` plus only the three item
+  topology fields required to name the existing root, parent, and parent revision. Versions 1-4
+  remain readable. The action supports the two live authoritative destinations: a player-owned
+  container and a room-owned container. It adds no catalog, general extraction hook, container
+  authority, or callback framework.
+- **Atomic topology publication:** the shared authority transaction removes the corpse aggregate,
+  changes every durable corpse item's owner and root, attaches each former corpse root directly
+  beneath the proven container, updates artifact location, and records inbound player
+  materialization when the container belongs to a player. Room snapshots append the exact nested
+  item trees under the existing room item. Player restart reconciliation reconstructs the same
+  parent chain beneath the existing inventory container.
+- **Currency safety:** currency continues through its existing special authorities rather than
+  becoming a second kind of ownership-backed item. Player-container decay adds corpse money to the
+  wallet and discards the corresponding live money objects after commit. Room-container decay adds
+  the durable value to the room aggregate while retaining the historical live containing placement.
+  This is a bounded safety correction for the existing aggregate currency model and prevents
+  process interruption from duplicating value.
+- **Durability-before-mutation:** decay returns before logging, moving a child, or extracting the
+  corpse. A committed completion rechecks the same live parent, outer room, owner, root, revision,
+  and complete corpse item graph, advances runtime custody, then moves contents to the immediate
+  parent and extracts the empty corpse. A failed or stale command preserves and rearms the corpse.
+- **Recovery and validation evidence:** forced interruptions cover both room and player containers,
+  including exact nested ownership, room topology and money, additive player wallet credit,
+  artifact movement, restart materialization, and idempotent replay. Lifecycle codec and key
+  compatibility, transaction completion, runtime ownership, live routing, the strict normal C++20
+  server build, the isolated client-free build/game-loop boot/clean-shutdown preflight,
+  changed-line formatting, and `git diff --check` pass.
+- **Remaining restoration:** historical mixed-format siege-state compatibility remains required.

@@ -256,6 +256,42 @@ int main()
 	assert(item_ownership_runtime_owner_revision(raising_player, &owner_revision) &&
 	       owner_revision == 6);
 	assert(!item_ownership_runtime_apply_corpse_raise(61, 41, 71, raised));
+
+	item_ownership_runtime_reset();
+	const item_owner_identity nested_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(62, 42), 0
+	};
+	const item_owner_identity nested_room = { item_owner_type::room, 700, 0 };
+	const item_ownership_runtime_entry nested_items[] = {
+		{ 600, 600, 0, nested_room, 9, 5, 50, item_custody_state::active },
+		{ 610, 610, 0, nested_corpse, 2, 3, 51, item_custody_state::active },
+		{ 611, 610, 610, nested_corpse, 4, 3, 52, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_many_atomic(nested_items, 3));
+	corpse_lifecycle_result nested = {};
+	nested.owner_pid = 62;
+	nested.save_id = 42;
+	nested.action = corpse_lifecycle_action::release_nested;
+	nested.catalog_revision = 14;
+	nested.corpse_owner_revision = 4;
+	nested.room_owner_revision = 6;
+	nested.max_item_revision = 5;
+	nested.item_count = 2;
+	assert(!item_ownership_runtime_apply_corpse_nested_release(
+		62, 42, nested_room, 600, 600, 8, nested));
+	assert(item_ownership_runtime_apply_corpse_nested_release(
+		62, 42, nested_room, 600, 600, 9, nested));
+	assert(item_ownership_runtime_lookup(610, &absent) &&
+	       item_owner_identity_equal(absent.owner, nested_room) &&
+	       absent.root_item_uid == 600 && absent.parent_item_uid == 600 &&
+	       absent.item_revision == 3 && absent.owner_revision == 6);
+	assert(item_ownership_runtime_lookup(611, &absent) &&
+	       absent.root_item_uid == 600 && absent.parent_item_uid == 610 &&
+	       absent.item_revision == 5 && absent.owner_revision == 6);
+	assert(item_ownership_runtime_owner_revision(nested_corpse, &owner_revision) &&
+	       owner_revision == 4);
+	assert(item_ownership_runtime_owner_revision(nested_room, &owner_revision) &&
+	       owner_revision == 6);
 	return 0;
 }
 '''

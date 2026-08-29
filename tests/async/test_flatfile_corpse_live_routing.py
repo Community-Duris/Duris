@@ -33,6 +33,10 @@ deferred_release = body(HANDLER, "bool persistence_defer_corpse_room_release(",
                         "void Decay(P_obj obj)")
 release_publication = body(HANDLER, "void publish_corpse_release(",
                            "bool submit_corpse_release")
+nested_publication = body(HANDLER, "void publish_corpse_nested_release(",
+                          "bool submit_corpse_nested_release")
+nested_submission = body(HANDLER, "bool submit_corpse_nested_release(",
+                         "bool submit_corpse_destruction")
 destruction_publication = body(HANDLER, "void publish_corpse_destruction(",
                                "bool submit_corpse_destruction")
 deferred_destruction = body(HANDLER, "bool persistence_defer_corpse_destruction(",
@@ -98,12 +102,28 @@ assert decay.index("persistence_defer_corpse_room_release(obj)") < decay.index(
 assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in deferred_release
 assert "corpse_lifecycle_transaction_busy" in deferred_release
 assert "submit_corpse_release(corpse)" in deferred_release
+assert "OBJ_INSIDE(corpse) ? submit_corpse_nested_release(corpse)" in deferred_release
 assert "corpse_lifecycle_transaction_release(payload, publish_corpse_release)" in HANDLER
 assert "item_ownership_runtime_apply_corpse_release" in release_publication
 assert release_publication.index("item_ownership_runtime_apply_corpse_release") < \
        release_publication.index("obj_from_obj(item)")
 assert release_publication.index("obj_from_obj(item)") < \
        release_publication.index("extract_obj(corpse, TRUE)")
+assert "corpse_lifecycle_action::release_nested" in nested_submission
+assert "item_owner_type::player" in nested_submission
+assert "item_owner_type::room" in nested_submission
+assert "target_root_item_uid" in nested_submission
+assert "target_parent_item_uid" in nested_submission
+assert "expected_target_parent_revision" in nested_submission
+assert "corpse_lifecycle_transaction_release(payload, publish_corpse_nested_release)" in \
+       nested_submission
+assert "item_ownership_runtime_apply_corpse_nested_release" in nested_publication
+assert nested_publication.index("item_ownership_runtime_apply_corpse_nested_release") < \
+       nested_publication.index("obj_from_obj(item)")
+assert nested_publication.index("obj_to_obj(item, parent)") < \
+       nested_publication.index("extract_obj(corpse, TRUE)")
+assert "discard_corpse_release_money" in nested_publication
+assert "writeCharacter(carrier, RENT_CRASH" in nested_publication
 assert "corpse_lifecycle_transaction_destroy" in HANDLER
 assert "item_ownership_runtime_apply_corpse_destruction" in destruction_publication
 assert destruction_publication.index("item_ownership_runtime_apply_corpse_destruction") < \

@@ -10,29 +10,25 @@ Completed implementation history is maintained in
 
 ## Current progress
 
-As of 2026-08-29, checkpoint 99 restores the six historical follower-raising paths in
-flat-primary mode: ordinary undead, titans, dracoliches, golems, avatars, and greater
-dracoliches. Each path now stops after constructing its off-world follower but before
-publishing the follower, cloning a backup corpse, moving contents, or extracting the
-corpse. One final `raise_follower` lifecycle action atomically removes the corpse, moves
-its exact nested item graph and artifacts to the caster's existing player authority,
-adds corpse money to the caster wallet, and records restart materialization. Only its
-durable acknowledgment publishes the follower, moves the live contents, applies the
-historical control or hostility result, and checkpoints the caster and pets. MariaDB
-modes and NPC-caster behavior retain the synchronous historical path.
+As of 2026-08-29, checkpoint 100 restores decay of a player corpse nested inside a
+player-owned or room-owned container. The bounded `release_nested` lifecycle action
+records the existing root, immediate parent, parent item revision, and destination
+owner. One shared-authority transaction removes the corpse aggregate, reparents every
+durable corpse item beneath the same container, updates artifacts, and records player
+restart materialization when needed. Only its durable acknowledgment moves the live
+contents and extracts the corpse.
 
-The action reuses the existing world-item, player-item, wallet, artifact,
-materialization, and operation-ledger after-images under the shared authority lock. It
-does not add pet identity storage, a new catalog, or a general spell callback system.
-Forced interruption recovers and replays the same result exactly once. A crash after
-the commit but before live follower publication safely materializes the items for the
-caster on restart, while nested money objects are discarded from the live item graph
-because their value was already credited atomically.
+Player-container currency is credited through the existing wallet authority and its
+live money objects are removed after commit; room-container currency remains in the
+existing room-money authority while the live objects retain their containing placement.
+This avoids inventing a second currency-item format or allowing crash duplication.
+Forced interruption tests cover both destination types and recover the same result
+exactly once. Payload versions 1-4 remain readable, and MariaDB modes retain the
+synchronous historical path.
 
-The remaining audited corpse path is decay of a corpse nested inside another object,
-which must retain the containing topology. Historical mixed-format siege-state
-compatibility also remains to be restored. The earlier siege/kingdom removal memo
-remains research only and does not amend this directive's explicit siege requirement.
+Historical mixed-format siege-state compatibility is the remaining explicit
+restoration item. The earlier siege/kingdom removal memo remains research only and does
+not amend this directive's siege requirement.
 
 ## Owner intent
 

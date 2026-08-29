@@ -55,7 +55,8 @@ bool valid_staged_payload(const corpse_lifecycle_payload &payload)
 	    payload.action == corpse_lifecycle_action::release ||
 	    payload.action == corpse_lifecycle_action::destroy ||
 	    payload.action == corpse_lifecycle_action::resurrect ||
-	    payload.action == corpse_lifecycle_action::raise_follower)
+	    payload.action == corpse_lifecycle_action::raise_follower ||
+	    payload.action == corpse_lifecycle_action::release_nested)
 		return false;
 	corpse_lifecycle_payload candidate = payload;
 	if (candidate.action == corpse_lifecycle_action::remove)
@@ -66,7 +67,9 @@ bool valid_staged_payload(const corpse_lifecycle_payload &payload)
 
 bool valid_release_payload(const corpse_lifecycle_payload &payload)
 {
-	if (payload.action != corpse_lifecycle_action::release || payload.expected_corpse_revision)
+	if ((payload.action != corpse_lifecycle_action::release &&
+	     payload.action != corpse_lifecycle_action::release_nested) ||
+	    payload.expected_corpse_revision)
 		return false;
 	corpse_lifecycle_payload candidate = payload;
 	candidate.expected_corpse_revision = 1;
@@ -129,7 +132,8 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	     state->desired.action == corpse_lifecycle_action::release ||
 	     state->desired.action == corpse_lifecycle_action::destroy ||
 	     state->desired.action == corpse_lifecycle_action::resurrect ||
-	     state->desired.action == corpse_lifecycle_action::raise_follower) &&
+	     state->desired.action == corpse_lifecycle_action::raise_follower ||
+	     state->desired.action == corpse_lifecycle_action::release_nested) &&
 	    !state->revision)
 	{
 		state->dirty = false;
@@ -143,7 +147,8 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 	if (state->desired.action == corpse_lifecycle_action::release ||
 	    state->desired.action == corpse_lifecycle_action::destroy ||
 	    state->desired.action == corpse_lifecycle_action::resurrect ||
-	    state->desired.action == corpse_lifecycle_action::raise_follower)
+	    state->desired.action == corpse_lifecycle_action::raise_follower ||
+	    state->desired.action == corpse_lifecycle_action::release_nested)
 	{
 		critical_entity_key destination = {};
 		if (state->desired.action == corpse_lifecycle_action::release)
@@ -165,14 +170,27 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 			    critical_command_coordinator_is_fenced(player, &blocking))
 				return submit_outcome::deferred;
 		}
-		else if (state->desired.action == corpse_lifecycle_action::raise_follower)
+		else if (state->desired.action == corpse_lifecycle_action::raise_follower ||
+			 state->desired.action == corpse_lifecycle_action::release_nested)
 		{
-			const critical_entity_key player = {
-				critical_entity_type::player,
-				static_cast<uint64_t>(state->desired.destination_player_pid)
-			};
-			if (critical_command_coordinator_is_fenced(player, &blocking))
-				return submit_outcome::deferred;
+			if (state->desired.destination_player_pid)
+			{
+				const critical_entity_key player = {
+					critical_entity_type::player,
+					static_cast<uint64_t>(state->desired.destination_player_pid)
+				};
+				if (critical_command_coordinator_is_fenced(player, &blocking))
+					return submit_outcome::deferred;
+			}
+			else
+			{
+				const critical_entity_key room = {
+					critical_entity_type::room,
+					static_cast<uint64_t>(state->desired.room_vnum)
+				};
+				if (critical_command_coordinator_is_fenced(room, &blocking))
+					return submit_outcome::deferred;
+			}
 		}
 		else if (critical_command_coordinator_is_fenced(destination, &blocking))
 			return submit_outcome::deferred;
@@ -245,7 +263,8 @@ bool corpse_lifecycle_transaction_stage(const corpse_lifecycle_payload &payload)
 	      (found->second.inflight.action == corpse_lifecycle_action::release ||
 	       found->second.inflight.action == corpse_lifecycle_action::destroy ||
 	       found->second.inflight.action == corpse_lifecycle_action::resurrect ||
-	       found->second.inflight.action == corpse_lifecycle_action::raise_follower))))
+	       found->second.inflight.action == corpse_lifecycle_action::raise_follower ||
+	       found->second.inflight.action == corpse_lifecycle_action::release_nested))))
 		return false;
 	if (found == states.end() && states.size() >= CORPSE_LIFECYCLE_PENDING_MAX)
 		return false;
@@ -579,7 +598,9 @@ void corpse_lifecycle_transaction_handle_completions(const critical_completion *
 				  state.inflight.action == corpse_lifecycle_action::destroy ||
 				  state.inflight.action == corpse_lifecycle_action::resurrect ||
 				  state.inflight.action ==
-					  corpse_lifecycle_action::raise_follower) &&
+					  corpse_lifecycle_action::raise_follower ||
+				  state.inflight.action ==
+					  corpse_lifecycle_action::release_nested) &&
 				 completions[index].error_code == ESTALE)
 				state.fenced = false;
 			else if (!(state.inflight.action == corpse_lifecycle_action::remove &&
