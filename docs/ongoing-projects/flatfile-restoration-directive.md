@@ -5,6 +5,39 @@
 
 ## Progress ledger
 
+### 2026-08-29 - restored historically database-only cargo-market persistence
+
+- **Concrete gap:** the global ship cargo and contraband modifiers were historically
+  database-only. Client-free `read_cargo` and `write_cargo` returned failure, so player
+  trades and staff changes were not durable; the scheduled cargo-maintenance job also
+  attempted to acquire a SQL connection and repeatedly failed in no-DB mode.
+- **Restoration:** no-DB mode now stores the 100 cargo and 100 contraband modifiers in
+  one fixed-size, versioned, checksummed record in the existing private metadata
+  authority. It uses the existing metadata lock and atomic publication primitive; a
+  missing record establishes the normal initialized values, while corrupt or unsafe
+  authority fails boot and cannot be overwritten. Reads stage and validate every value
+  before replacing live matrices, and initialize the delayed matrix from current cargo
+  exactly as the database loader does. Direct player/staff writes and the existing
+  scheduled maintenance callback now use the same record, with scheduled timer updates
+  continuing through the already-restored flat timer hooks. Derived prices remain
+  derived rather than being duplicated on disk. The MariaDB table and transaction path
+  remain in place, with row bounds and finite-modifier checks added before indexing the
+  live matrices.
+- **Focused evidence:** `python3 tests/async/test_flatfile_cargo_market.py` covers fresh
+  authority, exact modifier round trips, delayed initialization, owner-only
+  permissions, checksum corruption, overwrite refusal, live-state preservation,
+  scheduled publication, timer advancement, malformed work rejection, and symlink
+  refusal. Its preprocessing contracts verify that client-free live and maintenance
+  paths do not enter cargo SQL. The existing cargo transaction, ship repository,
+  maintenance scheduler, maintenance slicing, and persistence-mode tests pass, and the
+  cargo test is included in client-free CI.
+- **Build evidence:** complete builds pass with both `PERSISTENCE_BACKEND=flatfile`
+  (without MySQL headers or client library) and `PERSISTENCE_BACKEND=mariadb`; the
+  client-free boot preflight, formatting check, and `git diff --check` pass.
+- **Overall state:** ship aggregates and their cargo-market state now persist in both
+  modes. Historically database-only nexus state and other listed gaps remain, so the
+  global incomplete-domain boot fence remains.
+
 ### 2026-08-29 - restored live flat ship persistence
 
 - **Concrete gap:** ships were historically stored in `Ships/ship_index` plus one

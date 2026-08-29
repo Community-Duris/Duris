@@ -733,6 +733,9 @@ void scan_target(P_ship ship, P_ship target, P_char ch);
 void cargo_activity();
 size_t cargo_maintenance_snapshot(uint64_t work_id, int64_t *values, size_t capacity);
 void cargo_maintenance_complete(uint64_t work_id, bool success);
+#ifdef __NO_MYSQL__
+bool flatfile_cargo_maintenance_apply(const int64_t *values, size_t count);
+#endif
 void check_contraband(P_ship ship, int to_room);
 void initialize_ship_cargo();
 int read_cargo();

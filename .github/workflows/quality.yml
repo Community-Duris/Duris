@@ -52,7 +52,9 @@ jobs:
       - name: Verify flat-file association authority
         run: python3 tests/async/test_flatfile_association_repository.py
       - name: Verify flat-file ship authority
-        run: python3 tests/async/test_flatfile_ship_repository.py
+        run: |
+          python3 tests/async/test_flatfile_ship_repository.py
+          python3 tests/async/test_flatfile_cargo_market.py
       - name: Verify flat-file shopkeeper authority
         run: |
           python3 tests/async/test_flatfile_shopkeeper_repository.py

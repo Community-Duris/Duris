@@ -3,6 +3,9 @@
 #include "frag_cap_config.h"
 #include "persistence_observability.h"
 #include "sql_pool.h"
+#ifdef __NO_MYSQL__
+#include "ships/ships.h"
+#endif
 
 #include <mysql/mysql.h>
 
@@ -1049,6 +1052,16 @@ maintenance_result maintenance_repository_execute(const maintenance_request &req
 		return failure(request, maintenance_outcome::permanent_failure, EINVAL);
 	if (request.job_id == maintenance_job_id::web_status)
 		return execute_web_status(request);
+#ifdef __NO_MYSQL__
+	if (request.job_id == maintenance_job_id::cargo_market)
+	{
+		if (!flatfile_cargo_maintenance_apply(request.values.data(), request.value_count))
+			return failure(request, maintenance_outcome::retryable_failure, EIO);
+		maintenance_result result = failure(request, maintenance_outcome::complete, 0);
+		result.rows = NUM_PORTS * NUM_PORTS;
+		return result;
+	}
+#endif
 	MYSQL *connection = sql_pool_acquire();
 	if (!connection)
 		return failure(request, maintenance_outcome::retryable_failure, EAGAIN);
