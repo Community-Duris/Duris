@@ -7,7 +7,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): password-hash temporaries now use matching `malloc`/`free`; the focused hash runtime test and an actual-character login/`score` under Memcheck completed with 0 errors.
  -  VERIFIED FIXED (2026-08-30): restored the framed, colored good/evil/neutral race-selection screen while preserving availability filtering and the restricted-race testing block; verified through live account creation after an actual-character login.
  `docs/ongoing-projects/1767242209173_x3drwi.webp`
- -  idle timeout during character creation is very short
+ -  VERIFIED FIXED (2026-08-30): character-creation confirmations now allow 10 minutes instead of 60 seconds; after an actual-character login, a live creation session remained connected past the old cutoff and continued successfully.
  -  rules were not listed for player to read during character login (missing)
  -  message "The ownership authority is busy; the item was not granted." showed up a bunch of times upon initial login during "chaos" config
  -  a little while after login was complete "The ownership authority is busy; the item was not granted." showed up again

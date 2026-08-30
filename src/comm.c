@@ -1419,11 +1419,8 @@ resume_game_loop:
 
 				switch (point->connected)
 				{
-					/* these are either yes/no or <return> 60 second timeout */
-				case CON_APPROPRIATE_NAME:
+					/* short protocol/login transitions retain a 60 second timeout */
 				case CON_FLUSH:
-				case CON_NAME_CONF:
-				case CON_GET_SEX:
 				case CON_GET_TERM:
 					if (point->wait > 240)
 					{
@@ -1451,6 +1448,9 @@ resume_game_loop:
 				case CON_GET_RACE:
 				case CON_GET_RETURN:
 				case CON_REROLL:
+				case CON_APPROPRIATE_NAME:
+				case CON_NAME_CONF:
+				case CON_GET_SEX:
 					if (point->wait > 2400)
 					{
 						write_to_descriptor(point, "Idle Timeout\n");
