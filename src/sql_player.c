@@ -4853,7 +4853,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	ch->only.pc->wimpy = sql_row_int(row, col++, 0);
 	ch->only.pc->aggressive = sql_row_int(row, col++, -1);
 	ch->only.pc->highest_level = sql_row_int(row, col++, 0);
-	ch->only.pc->screen_length = sql_row_int(row, col++, 24);
+	ch->only.pc->screen_length = sql_row_int(row, col++, DEFAULT_SCREEN_LENGTH);
 
 	// quest data
 	ch->only.pc->quest_active = sql_row_int(row, col++, 0);

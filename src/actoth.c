@@ -4651,7 +4651,7 @@ void show_toggles(P_char ch)
 	}
 	else
 	{
-		strcpy(Gbuf3, " 24");
+		snprintf(Gbuf3, MAX_INPUT_LENGTH, "%3d", DEFAULT_SCREEN_LENGTH);
 	}
 
 	snprintf(Gbuf1, MAX_STRING_LENGTH,
@@ -4862,7 +4862,7 @@ static const char *tog_messages[][2] = {
 	{ "You turn off the &+WStatus&N messages.\r\n",
 	  "You tune into the &+WStatus&N messages.\r\n" },
 	{ "&+WVnum&N toggled off.\r\n", "&+WVnum&N toggled on.\r\n" },
-	{ "Screen length set to default 24 lines.\r\n", "Screen length set to %s lines.\r\n" },
+	{ "Screen length set to default %s lines.\r\n", "Screen length set to %s lines.\r\n" },
 	{ "Smartprompt toggled off.\r\n", "Smartprompt toggled on.\r\n" },
 	{ "Once again, you view the world through the rose colored eyes of immortality.\r\n",
 	  "Your vision is clouded through the fog that is mortality.\r\n" },
@@ -5227,7 +5227,8 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		if (number == 0)
 		{
 			result = FALSE;
-			ch->only.pc->screen_length = 24;
+			ch->only.pc->screen_length = DEFAULT_SCREEN_LENGTH;
+			snprintf(Gbuf3, MAX_STRING_LENGTH, "%d", DEFAULT_SCREEN_LENGTH);
 		}
 		else if ((number < 12) || (number > 48))
 		{

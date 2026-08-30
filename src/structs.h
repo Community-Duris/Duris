@@ -74,6 +74,8 @@ typedef struct acct_entry *P_acct;
 typedef void (*event_func_type)(P_char, P_char, P_obj, void *);
 typedef void (*nevent_payload_destroy_type)(void *);
 
+constexpr int DEFAULT_SCREEN_LENGTH = 40;
+
 #ifdef REALTIME_COMBAT
 typedef struct combat_data *P_combat;
 
