@@ -1748,6 +1748,8 @@ void event_autosave(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/
 }
 
 #define PERSISTENCE_DEFERRED_SAVE_SLOTS 512
+#define PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS 512
+#define PERSISTENCE_MANUAL_SAVE_TIMEOUT_USEC (30ULL * 1000000ULL)
 
 struct deferred_save_slot
 {
@@ -1765,7 +1767,105 @@ struct deferred_save_slot
 
 static struct deferred_save_slot deferred_saves[PERSISTENCE_DEFERRED_SAVE_SLOTS];
 
+struct manual_save_status_slot
+{
+	int pid;
+	player_revision_t revision;
+	uint64_t started_usec;
+	int scheduled;
+};
+
+static struct manual_save_status_slot manual_save_statuses[PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS];
+
 static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data);
+static void event_manual_character_save_status(P_char ch, P_char victim, P_obj obj, void *data);
+
+static struct manual_save_status_slot *find_manual_save_status(int pid)
+{
+	for (int i = 0; i < PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS; ++i)
+		if (manual_save_statuses[i].pid == pid)
+			return &manual_save_statuses[i];
+	return NULL;
+}
+
+static struct manual_save_status_slot *find_empty_manual_save_status(void)
+{
+	for (int i = 0; i < PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS; ++i)
+		if (!manual_save_statuses[i].pid)
+			return &manual_save_statuses[i];
+	return NULL;
+}
+
+static void clear_manual_save_status(int pid)
+{
+	struct manual_save_status_slot *status = find_manual_save_status(pid);
+	if (status)
+		memset(status, 0, sizeof(*status));
+}
+
+static void schedule_manual_save_status_event(struct manual_save_status_slot *status, P_char ch)
+{
+	if (!status || !status->pid || status->scheduled || !ch || IS_NPC(ch))
+		return;
+	status->scheduled = 1;
+	add_event(event_manual_character_save_status, 1, ch, 0, 0, 0, &status->pid,
+		  sizeof(status->pid));
+}
+
+static void begin_manual_save_status_wait(P_char ch)
+{
+	struct manual_save_status_slot *status;
+	struct player_revision_snapshot revision = {};
+
+	if (!ch || IS_NPC(ch))
+		return;
+	status = find_manual_save_status(GET_PID(ch));
+	if (!status)
+		return;
+	if (status->revision)
+		return;
+	if (!player_revision_snapshot_copy(status->pid, &revision))
+	{
+		send_to_char_f(ch, "Save failed for %s; please try again.\r\n", GET_NAME(ch));
+		clear_manual_save_status(status->pid);
+		return;
+	}
+	status->revision = revision.current_revision;
+	schedule_manual_save_status_event(status, ch);
+}
+
+static void event_manual_character_save_status(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	const int pid = data ? *((int *)data) : 0;
+	struct manual_save_status_slot *status = find_manual_save_status(pid);
+	struct player_revision_snapshot revision = {};
+
+	(void)victim;
+	(void)obj;
+	if (!status)
+		return;
+	status->scheduled = 0;
+	if (!ch || IS_NPC(ch) || GET_PID(ch) != pid || !GET_NAME(ch))
+	{
+		clear_manual_save_status(pid);
+		return;
+	}
+	if (status->revision && player_revision_snapshot_copy(pid, &revision) &&
+	    revision.acknowledged_revision >= status->revision)
+	{
+		send_to_char_f(ch, "Save complete for %s.\r\n", GET_NAME(ch));
+		clear_manual_save_status(pid);
+		return;
+	}
+	if (persistence_observability_now_usec() - status->started_usec >=
+	    PERSISTENCE_MANUAL_SAVE_TIMEOUT_USEC)
+	{
+		send_to_char_f(ch, "Save failed for %s; please try again.\r\n", GET_NAME(ch));
+		clear_manual_save_status(pid);
+		return;
+	}
+	schedule_manual_save_status_event(status, ch);
+}
 
 static struct deferred_save_slot *find_deferred_save_slot(int pid)
 {
@@ -1824,6 +1924,7 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 
 	if (!ch || IS_NPC(ch))
 	{
+		clear_manual_save_status(pid);
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
 				  "deferred_save_character_missing", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
@@ -1832,6 +1933,7 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 
 	if (!GET_NAME(ch))
 	{
+		clear_manual_save_status(pid);
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
 				  "deferred_save_character_invalid", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
@@ -1842,10 +1944,16 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 		sql_update_level(ch);
 
 	if (do_save_silent(ch, pending.type ? pending.type : 1))
+	{
 		memset(slot, 0, sizeof(*slot));
+		begin_manual_save_status_wait(ch);
+	}
 	else
 	{
 		persistence_counter_saturating_add(&slot->failures, 1);
+		if (find_manual_save_status(pid) && slot->failures == 1)
+			send_to_char_f(ch, "Save attempt failed for %s; retrying.\r\n",
+				       GET_NAME(ch));
 		slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
 				  "deferred_save_retry_scheduled",
@@ -2032,6 +2140,8 @@ bool persistence_save_character_terminal(P_char ch, int type)
 	slot = find_deferred_save_slot(GET_PID(ch));
 	if (saved && slot)
 		memset(slot, 0, sizeof(*slot));
+	if (saved)
+		clear_manual_save_status(GET_PID(ch));
 	if (!saved)
 		persistence_schedule_character_save(
 			ch, RENT_CRASH, PERSISTENCE_DEFERRED_RETRY_INITIAL, "terminal-save-retry");
@@ -2215,10 +2325,28 @@ void do_save(P_char ch, char *argument, int /*cmd*/)
 		else
 			wizlog(OVERLORD, "Pet %s saved to file %d!", GET_NAME(ch), GET_IDNUM(ch));
 	}
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "Save queued for %s.\r\n", GET_NAME(GET_PLYR(ch)));
-	send_to_char(Gbuf1, ch);
+	struct manual_save_status_slot *status = find_manual_save_status(GET_PID(ch));
+	if (status)
+	{
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "Save already queued for %s.\r\n",
+			 GET_NAME(GET_PLYR(ch)));
+		send_to_char(Gbuf1, ch);
+		return;
+	}
+	status = find_empty_manual_save_status();
+	if (!status)
+	{
+		send_to_char("Save could not be queued; please try again.\r\n", ch);
+		return;
+	}
+	status->pid = GET_PID(ch);
+	status->started_usec = persistence_observability_now_usec();
 	update_pos(ch);
 	persistence_schedule_character_save(ch, 1, 2, "manual_save");
+	if (!find_deferred_save_slot(GET_PID(ch)))
+		begin_manual_save_status_wait(ch);
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "Save queued for %s.\r\n", GET_NAME(GET_PLYR(ch)));
+	send_to_char(Gbuf1, ch);
 }
 
 void do_not_here(P_char ch, char * /*argument*/, int /*cmd*/)

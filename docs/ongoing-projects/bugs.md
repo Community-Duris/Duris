@@ -27,7 +27,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FALSE (2026-08-30): an actual level-56 druid recovered all 84 spell slots through passive communion in 181.91 seconds without a stall (longest gap: 5.25 seconds); the brief cadence changes match the intentional random 33% recovery acceleration.
  -  VERIFIED FIXED (2026-08-30): bare `list` at a shipyard now defaults to the purchasable hull catalog; an actual character at Quietus Quay received the ship list beginning with Sloop.
  -  VERIFIED FALSE (2026-08-30): at a valid inn, an actual character carrying `0/11` items and wearing nothing rented successfully and returned to the account menu; the reported save failure did not occur.
- -  upon typing save i received the message "Save queued for Fer." but at no point did i receive a follow up message. i was also able to type it again and receive the same exact message. (it didn't show differently for state such as already queued for save. or save failed.
+ -  VERIFIED FIXED (2026-08-30): manual saves now distinguish queued and already-queued requests, then report database acknowledgment or failure; an actual character received `queued`, `already queued`, and `complete` in sequence.
  -  class selection requires you to type the class name instead of having numbers or letters to select them. this is a change of behavior from the refactor.
  -  class selection does not list all available classes to a race while still lettings you type the race that wasn't listed such as druid while selecting human.
  -  after character creation, i selected not to keep the character and was taken back to the main login screen instead of to the account screen. i think typed the account name and was disconnected.
