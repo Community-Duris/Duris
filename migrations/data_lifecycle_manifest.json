@@ -4826,6 +4826,24 @@
       "dependencies": []
     },
     {
+      "id": "database:server_reboots",
+      "kind": "database_table",
+      "locator": "server_reboots",
+      "data_category": "operational_metadata",
+      "data_subject_key": "optional_operator_identity",
+      "technical_purpose": "durable server boot, shutdown, uptime, and stop-reason history",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
+        "excluded_fields": ["initiated_by", "reason"], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "none", "protected_record": false,
+      "dependencies": []
+    },
+    {
       "id": "database:mud_schema_baselines",
       "kind": "database_table",
       "locator": "mud_schema_baselines",

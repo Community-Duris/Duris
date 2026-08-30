@@ -2066,6 +2066,38 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		// only a real mysql error means failure (which would have been caught by sql_run_query above)
 	}
 
+	/* Keep the denormalized player identity in the same transaction as the
+	 * character save.  New characters do not have a pid when the account is
+	 * first written, so account_characters is projected only after this INSERT.
+	 * Leaving player_data.account_name NULL forces every later load through the
+	 * legacy mapping fallback and breaks account-scoped queries that read the
+	 * player row directly. */
+	if (ch->desc && ch->desc->account && ch->desc->account->acct_name &&
+	    ch->desc->account->acct_name[0])
+	{
+		char *escaped_account = sql_escape_string(ch->desc->account->acct_name);
+		if (!escaped_account)
+		{
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
+		const int account_written =
+			snprintf(query, sizeof(query),
+				 "UPDATE player_data SET account_name='%s' WHERE pid=%d",
+				 escaped_account, pid);
+		free(escaped_account);
+		if (account_written < 0 || account_written >= (int)sizeof(query) ||
+		    !sql_run_query(query) || mysql_affected_rows(DB) > 1)
+		{
+			logit(LOG_PLAYER,
+			      "sql_save_player_status: component=account_identity outcome=update_failure");
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
+	}
+
 	// batched array saves for performance (was 1200+ individual queries, now ~12)
 
 	// allocate buffer for batch inserts

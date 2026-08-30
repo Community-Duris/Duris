@@ -16,7 +16,7 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0002_player_item_metadata_uniqueness`, producing 171 current tables. An
+The current head is `0004_server_reboots`, producing 173 current tables. An
 existing database must first complete the guarded legacy upgrade and verified
 baseline adoption described in [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md).
 Never run migration or destructive verification commands against production.
@@ -30,7 +30,7 @@ recovery replay, listener acceptance, or gameplay publication, it verifies:
 - the sealed baseline ID and table-name fingerprint;
 - immutable migration ID, sequence, apply/verifier hashes, applied count, and history
   checksum;
-- all 171 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 173 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - `utf8mb4`, UTC, READ COMMITTED, strict SQL modes, ten-second connection/read/write

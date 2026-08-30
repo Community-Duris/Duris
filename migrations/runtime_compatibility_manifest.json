@@ -3,17 +3,17 @@
   "baseline_id": "duris-schema-2026-08-27-session11",
   "baseline_table_count": 170,
   "baseline_table_fingerprint": "db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd",
-  "current_table_count": 172,
+  "current_table_count": 173,
   "normalized_metadata_fingerprints": {
-    "mysql8": "438e3458faa52ecf99a10937a2c74684fb487f24541b777e4aebf19e93e1829b",
-    "mariadb10_11": "c3e925238707ac36f45bf817f5aea68d24be47b6f346a1bab1b571628e866c28"
+    "mysql8": "faa4bc0cfec07dd5cd960cce8306503fd774820e72ee344ec98398b15f4d78ed",
+    "mariadb10_11": "7ab4d5acca0f4125c5a95114dd375df859768c4c2ade97abe6fb68b73ecb19e1"
   },
   "migration_head": {
-    "id": "0003_season_reset_state",
-    "sequence": 3,
-    "apply_checksum": "82390d1302e9a0bec3a0111fc22fd428b83ef3c0954a0904cfb9215a8ea14cc7",
-    "verify_checksum": "75aeeae3f6bbfd486f4c596b33c742d23cff85d319f1a833c8503587f7d751a9",
-    "history_checksum": "3348d0f218e8f71501be7afe189e0a4b122b9ffa2a59ae3218f88f594e77b415"
+    "id": "0004_server_reboots",
+    "sequence": 4,
+    "apply_checksum": "4756002529e0e55eedf8de2391c333f37a579e30415da28c340162e1b030834f",
+    "verify_checksum": "15c4e45ce796d854df1e0d6e1257023969829e8e17322c41d081c0a3e27f1e1b",
+    "history_checksum": "312f188b48316668dc110e04a19e305f52f1b8a8dd9595af00bd59aa96303bcb"
   },
   "connection": {
     "character_set": "utf8mb4",

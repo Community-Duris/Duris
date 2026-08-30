@@ -204,7 +204,7 @@ execute_sql_file() {
 # ============================================================================
 # HEADER
 # ============================================================================
-echo "=== DurisMUD Unified Help Import to Production ===="
+echo "=== DurisMUD Unified Help Import ===="
 if [ $USE_SSH -eq 1 ]; then
     echo "Mode: SSH (Remote)"
     echo "Remote Host: $REMOTE_HOST"
@@ -217,16 +217,16 @@ echo "Database: $MYSQL_DB"
 echo ""
 echo "This will import:"
 echo "  1. Individual help files (mud_info + pages)"
-echo "  2. Help index entries (~535 entries)"
+echo "  2. Help index entries"
 echo "  3. Parsed help file entries"
 echo ""
 
 if [ $DRY_RUN -eq 1 ]; then
     echo "Mode: DRY RUN (no changes will be made)"
 else
-    echo "Mode: LIVE (changes will be committed to production)"
+    echo "Mode: LIVE (changes will be committed to the selected database)"
     echo ""
-    read -r -p "Continue with production import? (yes/no): " confirm
+    read -r -p "Continue with help import? (yes/no): " confirm
     if [ "$confirm" != "yes" ]; then
         echo "Aborted."
         exit 0
@@ -312,13 +312,10 @@ declare -A HELP_FILES=(
     ["help"]="help"
     ["help.1"]="help commands"
     ["help.2"]="help advanced"
-    ["helpguild1"]="guilds"
-    ["helpguild2"]="guild commands"
     ["helpships"]="ships"
     ["helpkingdoms"]="kingdoms"
     ["faq"]="faq"
     ["rules"]="rules"
-    ["info"]="info"
     ["credits"]="credits"
     ["wizlist"]="wizlist"
     ["hints.txt"]="hints"
@@ -351,6 +348,7 @@ for filename in "${!MUD_INFO_FILES[@]}"; do
             echo "  IMPORTED: $name ($(wc -c < "$filepath") bytes)"
         else
             echo "  ERROR importing $name"
+            exit 1
         fi
     fi
 
@@ -390,6 +388,7 @@ for filename in "${!HELP_FILES[@]}"; do
             echo "  IMPORTED: '$title' from $filename ($(wc -c < "$filepath") bytes)"
         else
             echo "  ERROR importing '$title'"
+            exit 1
         fi
     fi
 
@@ -416,7 +415,7 @@ def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
         content = f.read()
 
-    entries = content.split('\\n#\\n')
+    entries = content.split('\n#\n')
     help_entries = []
 
     for entry in entries:
@@ -424,7 +423,7 @@ def parse_help_index(filename):
         if not entry or entry.startswith('last update:'):
             continue
 
-        lines = entry.split('\\n')
+        lines = entry.split('\n')
         if not lines:
             continue
 
@@ -441,9 +440,9 @@ def parse_help_index(filename):
                 continue
 
         content_lines = lines[1:]
-        content = '\\n'.join(content_lines).strip()
-        content = re.sub(r'^=+\\n', '', content)
-        content = re.sub(r'\\n=+$', '', content)
+        content = '\n'.join(content_lines).strip()
+        content = re.sub(r'^=+\n', '', content)
+        content = re.sub(r'\n=+$', '', content)
         content = content.strip()
 
         if title and content:
@@ -487,7 +486,7 @@ def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
         content = f.read()
 
-    entries = content.split('\\n#\\n')
+    entries = content.split('\n#\n')
     help_entries = []
 
     for entry in entries:
@@ -495,7 +494,7 @@ def parse_help_index(filename):
         if not entry or entry.startswith('last update:'):
             continue
 
-        lines = entry.split('\\n')
+        lines = entry.split('\n')
         if not lines:
             continue
 
@@ -512,9 +511,9 @@ def parse_help_index(filename):
                 continue
 
         content_lines = lines[1:]
-        content = '\\n'.join(content_lines).strip()
-        content = re.sub(r'^=+\\n', '', content)
-        content = re.sub(r'\\n=+$', '', content)
+        content = '\n'.join(content_lines).strip()
+        content = re.sub(r'^=+\n', '', content)
+        content = re.sub(r'\n=+$', '', content)
         content = content.strip()
 
         if title and content:
@@ -562,6 +561,8 @@ print(f"")
 print(f"Help Index Import Complete:")
 print(f"  Success: {success_count}")
 print(f"  Errors: {error_count}")
+if error_count:
+    raise SystemExit(1)
 PYTHON_SCRIPT
     fi
 
@@ -592,7 +593,7 @@ def parse_parsed_help(filename):
         content = f.read()
 
     # Split by #0 marker
-    entries = content.split('\\n#0\\n')
+    entries = content.split('\n#0\n')
     help_entries = []
 
     for entry in entries:
@@ -600,7 +601,7 @@ def parse_parsed_help(filename):
         if not entry:
             continue
 
-        lines = entry.split('\\n')
+        lines = entry.split('\n')
         if len(lines) < 2:
             continue
 
@@ -621,7 +622,7 @@ def parse_parsed_help(filename):
 
         # Content is all remaining lines
         content_lines = lines[1:]
-        content = '\\n'.join(content_lines).strip()
+        content = '\n'.join(content_lines).strip()
 
         if title and content and len(content) > 10:
             help_entries.append((title, content))
@@ -660,7 +661,7 @@ def parse_parsed_help(filename):
         content = f.read()
 
     # Split by #0 marker
-    entries = content.split('\\n#0\\n')
+    entries = content.split('\n#0\n')
     help_entries = []
 
     for entry in entries:
@@ -668,7 +669,7 @@ def parse_parsed_help(filename):
         if not entry:
             continue
 
-        lines = entry.split('\\n')
+        lines = entry.split('\n')
         if len(lines) < 2:
             continue
 
@@ -689,7 +690,7 @@ def parse_parsed_help(filename):
 
         # Content is all remaining lines
         content_lines = lines[1:]
-        content = '\\n'.join(content_lines).strip()
+        content = '\n'.join(content_lines).strip()
 
         if title and content and len(content) > 10:
             help_entries.append((title, content))
@@ -740,6 +741,8 @@ print(f"")
 print(f"Parsed Help Import Complete:")
 print(f"  Success: {success_count}")
 print(f"  Errors: {error_count}")
+if error_count:
+    raise SystemExit(1)
 PYTHON_SCRIPT
     fi
 fi
@@ -749,7 +752,7 @@ fi
 # ============================================================================
 echo ""
 if [ $DRY_RUN -eq 1 ]; then
-    echo "=== Dry run complete. Run without --dry-run to apply to production ==="
+    echo "=== Dry run complete. Run without --dry-run to apply to the selected database ==="
 else
     echo "=== All Import Operations Complete! ==="
 fi

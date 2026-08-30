@@ -171,6 +171,11 @@ python3 scripts/migration_runner.py run
 
 # Confirm the exact runtime contract before first boot.
 ./migrations/verify_runtime_compatibility.sh
+
+# Seed the tracked help and login content. Inspect the counts first, then
+# confirm the live import when prompted.
+./scripts/import_help_to_prod.sh --local --dry-run
+./scripts/import_help_to_prod.sh --local
 ```
 
 > [!IMPORTANT]
@@ -267,7 +272,7 @@ Operational log locations and restart behavior are documented in the
 ## Connect
 
 ```bash
-telnet localhost 4000
+nc localhost 4000
 ```
 
 | Listener | Standard start | `--dev` start |

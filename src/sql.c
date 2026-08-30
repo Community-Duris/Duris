@@ -2105,8 +2105,22 @@ int sql_save_player_core(P_char ch)
 		 GET_PID(ch));
 	db_query(query);
 
-	// mark this player as active
-	db_query("UPDATE player_data SET active = 1 WHERE pid = %d", GET_PID(ch));
+	// Mark this player active and keep its denormalized account identity aligned
+	// with the canonical account projection. Existing rows created before the
+	// transactional status-save linkage are repaired on their next login.
+	if (ch->desc && ch->desc->account && ch->desc->account->acct_name &&
+	    ch->desc->account->acct_name[0])
+	{
+		char account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+		mysql_str(ch->desc->account->acct_name, account_name_sql);
+		if (!qry("UPDATE player_data SET active=1,account_name='%s' WHERE pid=%d",
+			 account_name_sql, GET_PID(ch)))
+			return 0;
+	}
+	else if (!qry("UPDATE player_data SET active=1 WHERE pid=%d", GET_PID(ch)))
+	{
+		return 0;
+	}
 
 	// Update frag leaderboard tables for web statistics
 	sql_update_account_character(ch);

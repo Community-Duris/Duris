@@ -20,6 +20,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
+    ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
 )
 
 ROOT_FIELDS = {

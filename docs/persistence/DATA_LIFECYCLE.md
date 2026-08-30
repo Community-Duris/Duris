@@ -1,7 +1,7 @@
 # Data Lifecycle Contract
 
 DurisMUD maintains one machine-readable technical inventory at
-`migrations/data_lifecycle_manifest.json`. It currently covers 172 current database
+`migrations/data_lifecycle_manifest.json`. It currently covers 173 current database
 tables and 21 declared Redis, journal, fallback, quarantine, runtime-file, log,
 export-spool, and backup classes. Season reset, archive, export, erasure, restore, and
 documentation work must consume this inventory instead of introducing independent

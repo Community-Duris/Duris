@@ -8,19 +8,19 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 172;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 173;
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"438e3458faa52ecf99a10937a2c74684fb487f24541b777e4aebf19e93e1829b";
+	"faa4bc0cfec07dd5cd960cce8306503fd774820e72ee344ec98398b15f4d78ed";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"c3e925238707ac36f45bf817f5aea68d24be47b6f346a1bab1b571628e866c28";
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0003_season_reset_state";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 3;
+	"7ab4d5acca0f4125c5a95114dd375df859768c4c2ade97abe6fb68b73ecb19e1";
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0004_server_reboots";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 4;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"82390d1302e9a0bec3a0111fc22fd428b83ef3c0954a0904cfb9215a8ea14cc7";
+	"4756002529e0e55eedf8de2391c333f37a579e30415da28c340162e1b030834f";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"75aeeae3f6bbfd486f4c596b33c742d23cff85d319f1a833c8503587f7d751a9";
+	"15c4e45ce796d854df1e0d6e1257023969829e8e17322c41d081c0a3e27f1e1b";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"3348d0f218e8f71501be7afe189e0a4b122b9ffa2a59ae3218f88f594e77b415";
+	"312f188b48316668dc110e04a19e305f52f1b8a8dd9595af00bd59aa96303bcb";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

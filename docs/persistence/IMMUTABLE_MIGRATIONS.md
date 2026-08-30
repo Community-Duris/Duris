@@ -33,9 +33,12 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-The current immutable head is `0002_player_item_metadata_uniqueness`. After it is
-applied, the runtime schema contains 171 tables and the history singleton records
-applied count 2 plus the exact history checksum.
+The current immutable head is `0004_server_reboots`. After it is applied, the
+runtime schema contains 173 tables and the history singleton records applied
+count 4 plus the exact history checksum. If a pre-b029 launcher already created
+the legacy `server_reboots` shape, 0004 copies every lifecycle row into the
+canonical table and atomically swaps it into place; an interrupted conversion
+can be retried without making the legacy table unavailable or duplicating rows.
 
 ## Post-baseline migration contract
 
@@ -67,4 +70,5 @@ RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 
 The isolated MySQL tests verify the full legacy upgrade, exact fresh-bootstrap
 equivalence, replay, schema compatibility, ordered uniqueness, honest baseline kind
-uniqueness, and preservation of legacy data-copy markers.
+uniqueness, preservation of legacy data-copy markers, and record-preserving
+convergence of the pre-b029 `server_reboots` table on both supported engines.

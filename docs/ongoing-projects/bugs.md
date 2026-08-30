@@ -1,12 +1,15 @@
 # phase 1 live test
 
-## BUGS
+Note some of these may be false positives or may have been already repaired.  They must be address carefully to not break working existing systems.
+
+## (potential) BUGS & ISSUES
 
  -  allocator mismatch on password hashing
- -  the race selection screen was reverted to a plain text list in one of the refactors.
+ -  the race selection screen was reverted to a plain text list in one of the refactors, here is how race menu should look (colors too!):
+ `docs/ongoing-projects/1767242209173_x3drwi.webp`
  -  idle timeout during character creation is very short
  -  rules were not listed for player to read during character login (missing)
- -  message "The ownership authority is busy; the item was not granted." showed up a bunch of times upon initial login during chaos
+ -  message "The ownership authority is busy; the item was not granted." showed up a bunch of times upon initial login during "chaos" config
  -  a little while after login was complete "The ownership authority is busy; the item was not granted." showed up again
  -  when logged in as druid, the character did not begin to commune until the command was purposefully invoked. this should begin on login
  -  the news page was missing
@@ -32,3 +35,46 @@
  -  database persistence is still broken, items are not granted on login. or upon summon such as wizard innate summon book. or on any npc's
  -  there was a bit of lag after using the specialization command at the teacher. this should not lag (i speced as wizard)
  -  if a log file cannot be written because the path does not exist, the path should be created. and the log entry should attempt to write again
+ - made a new thri-kreen warrior, logged in, type `inv` saw these items:  You are carrying: (5/12)
+a two-handed sword
+a thin steel dagger
+a steel short sword
+a steel long sword
+a small wooden mace
+    then typed `inv` again a bit later and saw:
+
+    <> inv
+You are carrying: (5/12)
+a two-handed sword
+a thin steel dagger
+a steel short sword
+a steel long sword
+a small wooden mace
+< 36h/36H 170v/170V Pos: standing >
+<> eq
+You aren't wearing anything!
+< 36h/36H 170v/170V Pos: standing >
+<> wield long
+You wield a steel long sword.
+< 36h/36H 170v/170V Pos: standing >
+<> wield mace
+You wield a small wooden mace.
+< 36h/36H 170v/170V Pos: standing >
+<> inv
+You are carrying: (21/12)
+a crystalline chatkcha (glowing)
+a bronze skull cap
+[4] a thick spiked leather bracer
+[2] some thick leather gloves
+a pair of studded leather leggings
+[2] a pair of studded leather sleeves
+a thin batwing cloak
+a thick leather belt
+[2] a large wooden torch
+a large snakeskin bag
+a stout oaken cudgel
+a steel warhammer
+a two-handed sword
+a thin steel dagger
+a steel short sword
+< 36h/36H 170v/170V Pos: standing >

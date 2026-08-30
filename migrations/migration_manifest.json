@@ -36,6 +36,16 @@
       "verify": "immutable/0003_season_reset_state.sh",
       "verify_checksum": "75aeeae3f6bbfd486f4c596b33c742d23cff85d319f1a833c8503587f7d751a9",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0004_server_reboots",
+      "sequence": 4,
+      "description": "Add durable server reboot lifecycle records",
+      "apply": "immutable/0004_server_reboots.sql",
+      "apply_checksum": "4756002529e0e55eedf8de2391c333f37a579e30415da28c340162e1b030834f",
+      "verify": "immutable/0004_server_reboots.sh",
+      "verify_checksum": "15c4e45ce796d854df1e0d6e1257023969829e8e17322c41d081c0a3e27f1e1b",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

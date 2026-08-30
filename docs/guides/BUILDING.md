@@ -192,7 +192,7 @@ intervention.
 
   ```bash
   ./bin/server/dms 4000 &
-  sleep 5 && telnet localhost 4000   # confirm greeting, then shut down
+  sleep 5 && nc localhost 4000   # confirm greeting, then shut down
   ```
 
 - If you changed persistence-related code, run the relevant focused test;
