@@ -8,7 +8,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): restored the framed, colored good/evil/neutral race-selection screen while preserving availability filtering and the restricted-race testing block; verified through live account creation after an actual-character login.
  `docs/ongoing-projects/1767242209173_x3drwi.webp`
  -  VERIFIED FIXED (2026-08-30): character-creation confirmations now allow 10 minutes instead of 60 seconds; after an actual-character login, a live creation session remained connected past the old cutoff and continued successfully.
- -  rules were not listed for player to read during character login (missing)
+ -  VERIFIED FIXED (2026-08-30): character creation now renders the authoritative rules file before agreement; focused catalog tests and a live actual-character check passed.
  -  message "The ownership authority is busy; the item was not granted." showed up a bunch of times upon initial login during "chaos" config
  -  a little while after login was complete "The ownership authority is busy; the item was not granted." showed up again
  -  when logged in as druid, the character did not begin to commune until the command was purposefully invoked. this should begin on login
