@@ -11,7 +11,7 @@ constexpr size_t WORLD_RECOVERY_WIRE_HEADER_BYTES = 64;
 constexpr size_t WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES = 8;
 constexpr uint8_t WORLD_RECOVERY_RECORD_VERSION = 1;
 constexpr size_t WORLD_RECOVERY_WIRE_OBJECT_HEADER_BYTES = 8;
-constexpr size_t WORLD_RECOVERY_WIRE_ITEM_BYTES = 432;
+constexpr size_t WORLD_RECOVERY_WIRE_ITEM_BYTES = 436;
 constexpr size_t WORLD_RECOVERY_FLOOR_PREFIX_BYTES = 5;
 
 enum class world_recovery_record_type : uint8_t

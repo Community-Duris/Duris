@@ -163,8 +163,10 @@ After world boot, two recovery paths may apply before socket input is accepted:
 - **Redis restart recovery**: after a graceful restart or an unclean exit, a world generation
   is restored only after schema, completeness, sequence, checksum, size, and age
   validation. The generation and bounded binary floor-item trees are combined into one
-  semantic plan; every item UID/root/parent/VNUM/room is reconciled against SQL before
-  rollback-capable materialization. NPC inventory and equipment are deliberately omitted
+  semantic plan; every custody-bearing item UID/root/parent/VNUM/room is reconciled against
+  SQL before rollback-capable materialization. Authenticated reconstructible world-pop
+  objects carry an explicit non-custody marker, and player corpses remain owned by the
+  separate authoritative corpse restore path. NPC inventory and equipment are deliberately omitted
   because they are not an authoritative identity-safe source. A fenced one-use sequence
   marker distinguishes a clean restart from a crash. The prior generation remains
   authoritative until publication ACK, and matching floor deltas are retained until that

@@ -14,11 +14,15 @@ new sequence. The game thread still performs at most 64 capture steps or 2 ms of
 work per pulse. Door capture scans all fixed directions for one room per step, avoiding
 one budget step per absent exit.
 
-Fuzzy state is restricted to reconstructible NPC position/state, doors, and zone timers.
-NPC equipment and inventory are omitted, and NPC-carried gold is captured as zero so a
-cross-time generation cannot replay currency into the persisted player economy. Floor
-item trees retain stable UIDs and hierarchy, and restore requires complete SQL custody of
-every item before materializing anything. Player and ship state remain SQL-authoritative.
+Fuzzy state is restricted to reconstructible NPC position/state, doors, zone timers, and
+world-pop objects. NPC equipment and inventory are omitted, and NPC-carried gold is
+captured as zero so a cross-time generation cannot replay currency into the persisted
+player economy. Floor item trees retain stable UIDs and hierarchy. Capture marks items
+that have live SQL custody and omits trees whose custody disagrees with their floor
+location; restore requires complete SQL reconciliation of every marked item before
+materializing anything. Reconstructible world-pop objects stay HMAC-authenticated without
+inventing SQL custody, and player corpses remain with the separate authoritative corpse
+restore path. Player and ship state remain SQL-authoritative.
 
 The publisher receives only owned framed bytes. It cannot traverse live characters,
 objects, rooms, exits, or zones. It seals the generation with schema version, timestamp,

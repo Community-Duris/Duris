@@ -153,8 +153,10 @@ boot. An old process can therefore write only its abandoned epoch after a reset;
 create a snapshot visible to the new season.
 Boot accepts only a complete, non-expired generation whose schema, sequence, size, and
 checksum validate. It combines the generation with versioned binary floor records,
-validates the full semantic graph, and batch-reconciles every item UID against SQL before
-creating any entity. A failed or stale generation is retained for diagnosis and the
+validates the full semantic graph, and batch-reconciles every custody-bearing item UID
+against SQL before creating any entity. Authenticated reconstructible world-pop objects
+are restored without inventing SQL custody, while SQL-restored player corpses are excluded.
+A failed or stale generation is retained for diagnosis and the
 server performs a full normal zone boot.
 
 World generations are capped at 64 MiB. Restore checks the value length inside Redis

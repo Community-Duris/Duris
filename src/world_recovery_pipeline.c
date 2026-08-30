@@ -190,7 +190,7 @@ bool encode_generation(recovery_generation *generation, world_recovery_header *h
 		source_offset += native_header.size;
 	}
 	generation->blob.resize(destination_offset);
-	memcpy(header->magic, "WRS9", 4);
+	memcpy(header->magic, "WR10", 4);
 	header->schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
 	header->header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
 	header->sequence = generation->sequence;
@@ -254,11 +254,11 @@ bool submit_capture()
 	return true;
 }
 
-bool capture_item_tree(P_obj object, uint64_t root_uid, uint64_t parent_uid,
-		       world_recovery_item_snapshot *items, uint32_t *count)
+bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t parent_uid,
+		       world_recovery_item_snapshot *items, uint32_t *count, bool *skip)
 {
-	if (!object || !items || !count || *count >= WORLD_RECOVERY_MAX_ITEM_TREE ||
-	    !object->obj_uid || OBJ_VNUM(object) <= 0)
+	if (!object || room_vnum <= 0 || !items || !count || !skip ||
+	    *count >= WORLD_RECOVERY_MAX_ITEM_TREE || !object->obj_uid || OBJ_VNUM(object) <= 0)
 		return false;
 	const uint64_t item_uid = object->obj_uid;
 	if (!root_uid)
@@ -270,6 +270,21 @@ bool capture_item_tree(P_obj object, uint64_t root_uid, uint64_t parent_uid,
 	entry.parent_item_uid = parent_uid;
 	entry.vnum = OBJ_VNUM(object);
 	entry.type = object->type;
+	item_ownership_runtime_entry authority = {};
+	if (item_ownership_runtime_lookup(item_uid, &authority))
+	{
+		const item_owner_identity expected_owner = { item_owner_type::room,
+							     static_cast<uint64_t>(room_vnum), 0 };
+		if (!item_owner_identity_equal(authority.owner, expected_owner) ||
+		    authority.root_item_uid != root_uid ||
+		    authority.parent_item_uid != parent_uid || authority.vnum != entry.vnum ||
+		    authority.state != item_custody_state::active)
+		{
+			*skip = true;
+			return true;
+		}
+		entry.flags |= WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED;
+	}
 	for (int index = 0; index < NUMB_OBJ_VALS; ++index)
 		entry.values[index] = object->value[index];
 	for (int index = 0; index < 6; ++index)
@@ -282,7 +297,7 @@ bool capture_item_tree(P_obj object, uint64_t root_uid, uint64_t parent_uid,
 	if (object->description)
 		strlcpy(entry.description, object->description, sizeof(entry.description));
 	for (P_obj child = object->contains; child; child = child->next_content)
-		if (!capture_item_tree(child, root_uid, item_uid, items, count))
+		if (!capture_item_tree(child, room_vnum, root_uid, item_uid, items, count, skip))
 			return false;
 	return true;
 }
@@ -293,13 +308,16 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 		return -1;
 	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items = {};
 	uint32_t count = 0;
-	if (!capture_item_tree(object, 0, 0, items.data(), &count) || !count)
+	bool skip = false;
+	if (!capture_item_tree(object, room_vnum, 0, 0, items.data(), &count, &skip) || !count)
 	{
 		logit(LOG_SYS,
 		      "redis: world recovery object tree rejected vnum=%d captured_items=%u root_uid=%s",
 		      OBJ_VNUM(object), count, object->obj_uid ? "set" : "missing");
 		return -1;
 	}
+	if (skip)
+		return 0;
 	const size_t size = sizeof(world_recovery_object_record) +
 			    static_cast<size_t>(count) * sizeof(world_recovery_item_snapshot);
 	if (size > maximum)
@@ -485,6 +503,8 @@ bool capture_one_record()
 			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS ||
 			    vnum == VOBJ_CARGO_CRATE)
 				return true;
+			if (obj->type == ITEM_CORPSE && IS_SET(obj->value[1], PC_CORPSE))
+				return true;
 			if (vnum == 2 && obj->value[6] > 0 &&
 			    time(NULL) - static_cast<time_t>(obj->value[6]) > 86400)
 				return true;
@@ -492,9 +512,11 @@ bool capture_one_record()
 				write_object_record(obj, world[obj->loc.room].number,
 						    reinterpret_cast<char *>(capture_buffer.data()),
 						    capture_buffer.size());
-			if (size <= 0 || !append_record(active_capture.generation,
-							world_recovery_record_type::object,
-							capture_buffer.data(), size))
+			if (!size)
+				return true;
+			if (size < 0 || !append_record(active_capture.generation,
+						       world_recovery_record_type::object,
+						       capture_buffer.data(), size))
 				return false;
 			++active_capture.generation.object_count;
 			return true;
@@ -775,7 +797,7 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 	    max_age_seconds <= 0)
 		return false;
 	world_recovery_header header = {};
-	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WRS9", 4) ||
+	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WR10", 4) ||
 	    header.schema_version != WORLD_RECOVERY_SCHEMA_VERSION ||
 	    header.header_size != WORLD_RECOVERY_WIRE_HEADER_BYTES || !header.complete ||
 	    header.sequence < minimum_sequence ||
@@ -929,9 +951,10 @@ bool add_object_record(recovery_plan *plan, const unsigned char *data, size_t si
 			    item.timers[timer_index])
 				return false;
 		if (!item.item_uid || item.item_uid > ULONG_MAX || !item.root_item_uid ||
-		    item.root_item_uid != root_uid || item.vnum <= 0 || item.type < ITEM_LIGHT ||
-		    item.type > ITEM_LAST || real_object(item.vnum) < 0 ||
-		    !terminated(item.name, sizeof(item.name)) ||
+		    item.root_item_uid != root_uid || item.vnum <= 0 || item.type < 0 ||
+		    item.type > ITEM_LAST ||
+		    (item.flags & ~WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED) ||
+		    real_object(item.vnum) < 0 || !terminated(item.name, sizeof(item.name)) ||
 		    !terminated(item.short_description, sizeof(item.short_description)) ||
 		    !terminated(item.description, sizeof(item.description)) ||
 		    (index == 0 && item.parent_item_uid) ||
@@ -943,9 +966,10 @@ bool add_object_record(recovery_plan *plan, const unsigned char *data, size_t si
 			if (!plan->item_uids.insert(item.item_uid).second ||
 			    !parents.insert(item.item_uid).second)
 				return false;
-			plan->authority_items.push_back({ item.item_uid, item.root_item_uid,
-							  item.parent_item_uid, planned.room_vnum,
-							  item.vnum });
+			if (item.flags & WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED)
+				plan->authority_items.push_back({ item.item_uid, item.root_item_uid,
+								  item.parent_item_uid,
+								  planned.room_vnum, item.vnum });
 		}
 		catch (const std::bad_alloc &)
 		{
@@ -975,18 +999,28 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 	    !world_recovery_validate(data, size, max_age_seconds, minimum_sequence, &plan->header))
 		return false;
 	size_t offset = WORLD_RECOVERY_WIRE_HEADER_BYTES;
+	size_t record_index = 0;
 	while (offset < size)
 	{
 		world_recovery_record_type type = {};
 		uint32_t record_size = 0;
 		if (!world_recovery_decode_record_header(data + offset, size - offset, &type,
 							 &record_size))
+		{
+			logit(LOG_SYS, "redis: world recovery record header rejected index=%zu",
+			      record_index);
 			return false;
+		}
 		offset += WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES;
 		std::vector<unsigned char> native_record;
 		if (record_size > size - offset ||
 		    !world_recovery_decode_record(type, data + offset, record_size, &native_record))
+		{
+			logit(LOG_SYS,
+			      "redis: world recovery record decode rejected index=%zu type=%u",
+			      record_index, static_cast<unsigned int>(type));
 			return false;
+		}
 		const unsigned char *record_data = native_record.data();
 		switch (type)
 		{
@@ -999,7 +1033,13 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			if (real_mobile(entry.vnum) < 0 || planned.room_rnum < 0 ||
 			    planned.room_rnum > top_of_world || entry.max_hit <= 0 ||
 			    entry.max_mana < 0 || entry.max_vitality < 0 || entry.gold < 0)
+			{
+				logit(LOG_SYS,
+				      "redis: world recovery mob rejected index=%zu vnum=%d room=%d max_hit=%d max_mana=%d max_vitality=%d gold=%d",
+				      record_index, entry.vnum, entry.room, entry.max_hit,
+				      entry.max_mana, entry.max_vitality, entry.gold);
 				return false;
+			}
 			const unsigned char *affect_data = record_data + sizeof(entry);
 			for (int index = 0; index < entry.num_affects; ++index)
 			{
@@ -1008,7 +1048,13 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 				       affect_data + static_cast<size_t>(index) * sizeof(affect),
 				       sizeof(affect));
 				if (affect.location > APPLY_LAST)
+				{
+					logit(LOG_SYS,
+					      "redis: world recovery mob affect rejected index=%zu vnum=%d location=%u",
+					      record_index, entry.vnum,
+					      static_cast<unsigned int>(affect.location));
 					return false;
+				}
 			}
 			try
 			{
@@ -1023,7 +1069,11 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 		}
 		case world_recovery_record_type::object:
 			if (!add_object_record(plan, record_data, native_record.size()))
+			{
+				logit(LOG_SYS, "redis: world recovery object rejected index=%zu",
+				      record_index);
 				return false;
+			}
 			break;
 		case world_recovery_record_type::door:
 		{
@@ -1038,7 +1088,12 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			    door.dir >= NUM_EXITS || !world[room].dir_option[door.dir] ||
 			    !IS_SET(world[room].dir_option[door.dir]->exit_info, EX_ISDOOR) ||
 			    !IS_SET(door.state, EX_ISDOOR) || (door.state & ~ALLOWED_DOOR_FLAGS))
+			{
+				logit(LOG_SYS,
+				      "redis: world recovery door rejected index=%zu room=%d dir=%d state=%d",
+				      record_index, door.vnum, door.dir, door.state);
 				return false;
+			}
 			try
 			{
 				plan->doors.push_back(door);
@@ -1056,7 +1111,12 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			if (zone.zone_rnum < 0 || zone.zone_rnum > top_of_zone_table ||
 			    zone.age < 0 || zone.lifespan < 0 || zone.fullreset_age < 0 ||
 			    zone.fullreset_lifespan < 0)
+			{
+				logit(LOG_SYS,
+				      "redis: world recovery zone rejected index=%zu zone=%d age=%d lifespan=%d",
+				      record_index, zone.zone_rnum, zone.age, zone.lifespan);
 				return false;
+			}
 			try
 			{
 				plan->zones.push_back(zone);
@@ -1069,11 +1129,19 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 		}
 		}
 		offset += record_size;
+		++record_index;
 	}
-	return plan->mobs.size() == plan->header.mob_count &&
-	       plan->objects.size() == plan->header.object_count &&
-	       plan->doors.size() == plan->header.door_count &&
-	       plan->zones.size() == plan->header.zone_count;
+	const bool counts_match = plan->mobs.size() == plan->header.mob_count &&
+				  plan->objects.size() == plan->header.object_count &&
+				  plan->doors.size() == plan->header.door_count &&
+				  plan->zones.size() == plan->header.zone_count;
+	if (!counts_match)
+		logit(LOG_SYS,
+		      "redis: world recovery semantic counts rejected mobs=%zu/%u objs=%zu/%u doors=%zu/%u zones=%zu/%u",
+		      plan->mobs.size(), plan->header.mob_count, plan->objects.size(),
+		      plan->header.object_count, plan->doors.size(), plan->header.door_count,
+		      plan->zones.size(), plan->header.zone_count);
+	return counts_match;
 }
 
 void replace_object_text(P_obj object, const world_recovery_item_snapshot &item)
@@ -1189,24 +1257,36 @@ bool materialize_plan(const recovery_plan &plan,
 	{
 		return false;
 	}
-	for (const planned_mob &planned : plan.mobs)
+	for (size_t index = 0; index < plan.mobs.size(); ++index)
 	{
+		const planned_mob &planned = plan.mobs[index];
 		size_t consumed = 0;
 		P_char mob = copyover_restore_mob_from_buffer(
 			reinterpret_cast<const char *>(planned.record.data()),
 			planned.record.size(), &consumed);
 		if (!mob || consumed != planned.record.size())
 		{
+			copyover_mob entry = {};
+			if (planned.record.size() >= sizeof(entry))
+				memcpy(&entry, planned.record.data(), sizeof(entry));
+			logit(LOG_SYS,
+			      "redis: world recovery mob materialization failed index=%zu vnum=%d room=%d",
+			      index, entry.vnum, entry.room);
 			rollback_materialized(&created_mobs, &created_objects);
 			return false;
 		}
 		created_mobs.push_back(mob);
 	}
-	for (const planned_object &planned : plan.objects)
+	for (size_t index = 0; index < plan.objects.size(); ++index)
 	{
+		const planned_object &planned = plan.objects[index];
 		P_obj object = materialize_object(planned);
 		if (!object)
 		{
+			logit(LOG_SYS,
+			      "redis: world recovery object materialization failed index=%zu vnum=%d room=%d",
+			      index, planned.items.empty() ? 0 : planned.items[0].vnum,
+			      planned.room_vnum);
 			rollback_materialized(&created_mobs, &created_objects);
 			return false;
 		}
@@ -1221,6 +1301,8 @@ bool materialize_plan(const recovery_plan &plan,
 	}
 	if (!item_ownership_runtime_hydrate_many_atomic(authoritative.data(), authoritative.size()))
 	{
+		logit(LOG_SYS, "redis: world recovery custody hydration failed items=%zu",
+		      authoritative.size());
 		rollback_materialized(&created_mobs, &created_objects);
 		return false;
 	}
@@ -1250,7 +1332,10 @@ bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, i
 		return false;
 	recovery_plan plan;
 	if (!build_recovery_plan(data, size, max_age_seconds, minimum_sequence, &plan))
+	{
+		logit(LOG_SYS, "redis: world recovery semantic plan validation failed");
 		return false;
+	}
 	for (size_t index = 0; index < floor_record_count; ++index)
 	{
 		std::vector<unsigned char> native_record;
@@ -1258,7 +1343,11 @@ bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, i
 						  floor_records[index], floor_record_sizes[index],
 						  &native_record) ||
 		    !add_object_record(&plan, native_record.data(), native_record.size()))
+		{
+			logit(LOG_SYS, "redis: world recovery floor record rejected index=%zu",
+			      index);
 			return false;
+		}
 	}
 	std::vector<item_ownership_runtime_entry> authoritative;
 	try
@@ -1272,12 +1361,20 @@ bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, i
 	if (!sql_persistence_reconcile_world_recovery_items(
 		    plan.authority_items.data(), plan.authority_items.size(), authoritative.data(),
 		    authoritative.size()))
+	{
+		logit(LOG_SYS, "redis: world recovery custody reconciliation failed items=%zu",
+		      plan.authority_items.size());
 		return false;
+	}
 	redis_floor_runtime_set_materializing(true);
 	const bool materialized = materialize_plan(plan, authoritative);
 	redis_floor_runtime_set_materializing(false);
 	if (!materialized)
+	{
+		logit(LOG_SYS, "redis: world recovery materialization failed mobs=%zu objs=%zu",
+		      plan.mobs.size(), plan.objects.size());
 		return false;
+	}
 	if (header_out)
 		*header_out = plan.header;
 	return true;

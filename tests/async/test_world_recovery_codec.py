@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Golden vectors and round trips for the schema-9 recovery wire format."""
+"""Golden vectors and round trips for the schema-10 recovery wire format."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ int main()
     header.zone_count = 4;
     header.complete = 1;
     const std::array<unsigned char, WORLD_RECOVERY_WIRE_HEADER_BYTES> expected_header = {
-        0x57,0x52,0x53,0x39, 0x09,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
+        0x57,0x52,0x31,0x30, 0x0a,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
         0x08,0x07,0x06,0x05,0x04,0x03,0x02,0x01,
         0xfe,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
         0x18,0x17,0x16,0x15,0x14,0x13,0x12,0x11,
@@ -97,6 +97,7 @@ int main()
     item.root_item_uid = item.item_uid;
     item.vnum = 456;
     item.type = 7;
+    item.flags = WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED;
     item.values[0] = -99;
     item.timers[0] = 0x0102030405060708LL;
     memcpy(item.name, "golden", 7);
@@ -113,9 +114,10 @@ int main()
     assert(encoded_object[0] == 0x41 && encoded_object[1] == 0x01);
     assert(encoded_object[4] == 1 && encoded_object[8] == 0x08 &&
            encoded_object[15] == 0x01);
-    assert(encoded_object[40] == 0x9d && encoded_object[41] == 0xff);
-    assert(encoded_object[72] == 0x08 && encoded_object[79] == 0x01);
-    assert(!memcmp(encoded_object.data() + 120, "golden", 7));
+    assert(encoded_object[40] == WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED);
+    assert(encoded_object[44] == 0x9d && encoded_object[45] == 0xff);
+    assert(encoded_object[76] == 0x08 && encoded_object[83] == 0x01);
+    assert(!memcmp(encoded_object.data() + 124, "golden", 7));
     assert(world_recovery_decode_record(world_recovery_record_type::object,
                                         encoded_object.data(), encoded_object.size(), &native));
     world_recovery_item_snapshot decoded_item = {};
@@ -160,7 +162,7 @@ int main()
 
     std::vector<unsigned char> floor;
     assert(world_recovery_encode_floor_object(native_object.data(), native_object.size(), &floor));
-    assert(floor.size() == 5 + encoded_object.size() && !memcmp(floor.data(), "WRF3:", 5));
+    assert(floor.size() == 5 + encoded_object.size() && !memcmp(floor.data(), "WRF4:", 5));
     uint64_t root_uid = 0;
     assert(world_recovery_floor_object_root_uid(floor.data(), floor.size(), &root_uid));
     assert(root_uid == item.item_uid);
@@ -203,4 +205,4 @@ assert "const bool succeeded = prepared && execute_batch(context, job)" in FLOOR
 assert "prepared ? redis_observability_now_usec() : 0" in FLOOR
 assert FLOOR.index("prepare_batch(job)") < FLOOR.index("execute_batch(context, job)")
 
-print("schema-9 little-endian recovery codec golden vectors passed")
+print("schema-10 little-endian recovery codec golden vectors passed")

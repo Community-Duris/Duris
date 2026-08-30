@@ -44,6 +44,8 @@ assert "world_recovery_floor_object_root_uid" in restore
 assert "WORLD_RECOVERY_FLOOR_PREFIX_BYTES" in restore
 assert "ZCARD" in restore and "HLEN" in restore
 assert "ZRANGE" in restore and "HMGET" in restore
+assert '"ZRANGE %s %lld %lld"' in restore
+assert '"ZRANGE %s %zu' not in restore
 assert "HGETALL" not in restore
 assert "WORLD_RECOVERY_MAX_FLOOR_RECORDS" in restore
 assert "WORLD_RECOVERY_MAX_FLOOR_BYTES" in restore

@@ -597,6 +597,8 @@ CREATE TABLE `level_cap` (
   `next_update` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `level_cap` (`id`, `most_frags`, `racewar_leader`, `level`, `next_update`)
+VALUES (1, 0, 2, 56, NOW());
 CREATE TABLE `locker_access` (
   `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `visitor` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,

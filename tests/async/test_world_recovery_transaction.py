@@ -23,6 +23,7 @@ for token in (
     "uint64_t root_item_uid",
     "uint64_t parent_item_uid",
     "int32_t vnum",
+    "uint32_t flags",
     "int32_t values[8]",
     "int64_t timers[6]",
     "WORLD_RECOVERY_MAX_ITEM_TREE = 512",
@@ -46,8 +47,10 @@ for token in (
     "parents.find(item.parent_item_uid)",
     "existing_tree_matches",
     "plan->authority_items.push_back",
+    "WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED",
 ):
     assert token in plan
+assert "item.flags & WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED" in plan
 
 reconcile_start = SQL.rindex("bool sql_persistence_reconcile_world_recovery_items")
 reconcile = SQL[reconcile_start : SQL.index("bool sql_hydrate_item_owner_revisions", reconcile_start)]

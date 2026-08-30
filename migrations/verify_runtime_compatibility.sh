@@ -36,6 +36,7 @@ transactional=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM information_schema.tables
 baseline=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_baselines WHERE baseline_id='${expected[3]}' AND LOWER(HEX(schema_fingerprint))='${expected[4]}' AND manifest_version=1 AND runner_version=1;")
 head=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='${expected[5]}' AND sequence_number=${expected[6]} AND LOWER(HEX(apply_checksum))='${expected[7]}' AND LOWER(HEX(verify_checksum))='${expected[8]}' AND runner_version=1;")
 state=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND applied_count=${expected[6]} AND LOWER(HEX(history_checksum))='${expected[9]}';")
+level_cap=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM level_cap WHERE id=1 AND most_frags>=0 AND racewar_leader BETWEEN 0 AND 4 AND level BETWEEN 1 AND 56 AND next_update IS NOT NULL AND (SELECT COUNT(*) FROM level_cap)=1;")
 failed=0
 [[ "$fingerprint" == "$metadata_fingerprint" ]] || {
     echo "FAILED: normalized metadata fingerprint mismatch: expected=$metadata_fingerprint actual=$fingerprint" >&2
@@ -52,5 +53,6 @@ failed=0
 [[ "$baseline" == 1 ]] || { echo "FAILED: sealed baseline is absent or stale" >&2; failed=1; }
 [[ "$head" == 1 ]] || { echo "FAILED: immutable migration head is absent or stale" >&2; failed=1; }
 [[ "$state" == 1 ]] || { echo "FAILED: immutable migration state is absent or stale" >&2; failed=1; }
+[[ "$level_cap" == 1 ]] || { echo "FAILED: required level-cap singleton is absent or invalid" >&2; failed=1; }
 [[ "$failed" == 0 ]] || exit 1
 echo "runtime migration, schema metadata, engine, collation, index, and FK compatibility verified"

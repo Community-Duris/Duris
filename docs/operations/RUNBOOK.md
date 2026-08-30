@@ -306,9 +306,11 @@ The automatic recovery paths are:
 1. **Redis world-state recovery** -- after either a graceful restart or an unclean exit,
    the current immutable generation is accepted only
    if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
-   decoded with the matching generation into one semantic plan. Every item in each
-   bounded tree must exactly match SQL UID, root, parent, room owner, VNUM, and active
-   state before rollback-capable materialization; NPC-held items are not recreated. The
+   decoded with the matching generation into one semantic plan. Every custody-bearing
+   item in each bounded tree must exactly match SQL UID, root, parent, room owner, VNUM,
+   and active state before rollback-capable materialization. Authenticated reconstructible
+   world-pop objects have no SQL custody, player corpses use their separate restore path,
+   and NPC-held items are not recreated. The
    exact restored generation is then consumed. A fenced one-use marker distinguishes
    clean restart from crash recovery.
 2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.

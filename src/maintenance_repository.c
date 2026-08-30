@@ -463,6 +463,7 @@ maintenance_result execute_level_cap(MYSQL *connection, const maintenance_reques
 	mysql_free_result(rows);
 	const double frags = raw_frags / 100.0;
 	uint64_t created_boon = 0;
+	bool level_cap_changed = false;
 	if (request.values[0] >= next_update &&
 	    old_level < frag_cap_config_cap_level_from_frags(frags))
 	{
@@ -489,17 +490,21 @@ maintenance_result execute_level_cap(MYSQL *connection, const maintenance_reques
 					 ",next_update=FROM_UNIXTIME(" + std::to_string(next_time) +
 					 ") WHERE id=" + std::to_string(id)))
 			return sql_failure(connection, request);
+		level_cap_changed = mysql_affected_rows(connection) == 1;
 	}
-	else if (frags > old_max &&
-		 !execute_sql(connection,
-			      "UPDATE level_cap SET most_frags=" + std::to_string(frags) +
-				      ",racewar_leader=" + std::to_string(racewar) +
-				      " WHERE id=" + std::to_string(id)))
-		return sql_failure(connection, request);
+	else if (frags > old_max)
+	{
+		if (!execute_sql(connection,
+				 "UPDATE level_cap SET most_frags=" + std::to_string(frags) +
+					 ",racewar_leader=" + std::to_string(racewar) +
+					 " WHERE id=" + std::to_string(id)))
+			return sql_failure(connection, request);
+		level_cap_changed = mysql_affected_rows(connection) == 1;
+	}
 	if (!before_deadline(request) || !execute_sql(connection, "COMMIT"))
 		return sql_failure(connection, request);
 	maintenance_result result = failure(request, maintenance_outcome::complete, 0);
-	result.rows = 1;
+	result.rows = level_cap_changed ? 1 : 0;
 	if (created_boon)
 	{
 		result.value_count = 3;

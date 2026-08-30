@@ -78,7 +78,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
-        self.assertEqual(len(manifest.migrations), 4)
+        self.assertEqual(len(manifest.migrations), 5)
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -87,6 +87,8 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                          "0003_season_reset_state")
         self.assertEqual(manifest.migrations[3].migration_id,
                          "0004_server_reboots")
+        self.assertEqual(manifest.migrations[4].migration_id,
+                         "0005_level_cap_singleton")
         self.assertEqual(len(manifest.required_table_fingerprint), 64)
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()

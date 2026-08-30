@@ -356,13 +356,26 @@ bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
 			WORLD_RECOVERY_MAX_FLOOR_RECORDS;
 	const size_t record_count = counts_valid ? static_cast<size_t>(index_count_reply->integer) :
 						   0;
+	const long long index_count = index_count_reply && index_count_reply->type ==
+								   REDIS_REPLY_INTEGER ?
+					      index_count_reply->integer :
+					      -1;
+	const long long hash_count = hash_count_reply &&
+						     hash_count_reply->type == REDIS_REPLY_INTEGER ?
+					     hash_count_reply->integer :
+					     -1;
 	if (index_count_reply)
 		freeReplyObject(index_count_reply);
 	if (hash_count_reply)
 		freeReplyObject(hash_count_reply);
 	if (!counts_valid || (record_count && !maximum_bytes) ||
 	    maximum_bytes > WORLD_RECOVERY_MAX_FLOOR_BYTES)
+	{
+		logit(LOG_SYS,
+		      "redis: world recovery floor counts rejected index=%lld hash=%lld budget=%zu",
+		      index_count, hash_count, maximum_bytes);
 		return false;
+	}
 	try
 	{
 		records->clear();
@@ -378,10 +391,14 @@ bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
 	{
 		const size_t count = std::min(page_size, record_count - first);
 		redisReply *fields = redis_command(REDIS_SHARED_SCOPE_FLOOR,
-						   REDIS_SHARED_COMMAND_READ, "ZRANGE %s %zu %zu",
-						   floor_index_key, first, first + count - 1);
+						   REDIS_SHARED_COMMAND_READ, "ZRANGE %s %lld %lld",
+						   floor_index_key, static_cast<long long>(first),
+						   static_cast<long long>(first + count - 1));
 		if (!fields || fields->type != REDIS_REPLY_ARRAY || fields->elements != count)
 		{
+			logit(LOG_SYS,
+			      "redis: world recovery floor index page rejected first=%zu count=%zu",
+			      first, count);
 			if (fields)
 				freeReplyObject(fields);
 			records->clear();
@@ -416,7 +433,12 @@ bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
 						    static_cast<int>(count + 2), arguments.data(),
 						    lengths.data());
 		if (!values || values->type != REDIS_REPLY_ARRAY || values->elements != count)
+		{
+			logit(LOG_SYS,
+			      "redis: world recovery floor values page rejected first=%zu count=%zu",
+			      first, count);
 			valid = false;
+		}
 		for (size_t index = 0; valid && index < count; ++index)
 		{
 			const redisReply *value = values->element[index];
@@ -430,10 +452,20 @@ bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
 					value->len, &root_uid) &&
 				root_uid == field_uids[index];
 			if (!valid)
+			{
+				logit(LOG_SYS,
+				      "redis: world recovery floor value rejected first=%zu index=%zu uid=%llu bytes=%zu root=%llu",
+				      first, index, (unsigned long long)field_uids[index],
+				      value && value->str ? value->len : 0,
+				      (unsigned long long)root_uid);
 				break;
+			}
 			const size_t record_size = value->len - WORLD_RECOVERY_FLOOR_PREFIX_BYTES;
 			if (record_size > maximum_bytes - aggregate_size)
 			{
+				logit(LOG_SYS,
+				      "redis: world recovery floor budget exceeded record=%zu aggregate=%zu budget=%zu",
+				      record_size, aggregate_size, maximum_bytes);
 				valid = false;
 				break;
 			}
@@ -469,12 +501,25 @@ bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
 			    hash_count_reply && hash_count_reply->type == REDIS_REPLY_INTEGER &&
 			    index_count_reply->integer == static_cast<long long>(record_count) &&
 			    hash_count_reply->integer == static_cast<long long>(record_count);
+	const long long final_index_count = index_count_reply && index_count_reply->type ==
+									 REDIS_REPLY_INTEGER ?
+						    index_count_reply->integer :
+						    -1;
+	const long long final_hash_count = hash_count_reply && hash_count_reply->type ==
+								       REDIS_REPLY_INTEGER ?
+						   hash_count_reply->integer :
+						   -1;
 	if (index_count_reply)
 		freeReplyObject(index_count_reply);
 	if (hash_count_reply)
 		freeReplyObject(hash_count_reply);
 	if (!stable)
+	{
+		logit(LOG_SYS,
+		      "redis: world recovery floor changed during read expected=%zu index=%lld hash=%lld",
+		      record_count, final_index_count, final_hash_count);
 		records->clear();
+	}
 	return stable;
 }
 #endif
@@ -861,32 +906,52 @@ bool redis_load_world_state(void)
 	return false;
 #else
 	if (!world_enabled || ((!world_context || world_context->err) && !redis_reconnect()))
+	{
+		logit(LOG_SYS, "redis: world recovery load unavailable");
 		return false;
+	}
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, world_runtime_epoch,
 			     REDIS_WORLD_CURRENT_SUFFIX))
+	{
+		logit(LOG_SYS, "redis: world recovery current key rejected");
 		return false;
+	}
 	redisReply *sequence_reply = redis_command(
 		REDIS_SHARED_SCOPE_WORLD, REDIS_SHARED_COMMAND_READ, "GET %s", current_key);
 	if (!sequence_reply)
+	{
+		logit(LOG_SYS, "redis: world recovery current sequence read failed");
 		return false;
+	}
 	uint64_t expected_sequence = 0;
 	if (sequence_reply->type == REDIS_REPLY_STRING && sequence_reply->str)
 		expected_sequence = strtoull(sequence_reply->str, NULL, 10);
 	freeReplyObject(sequence_reply);
 	if (!expected_sequence)
+	{
+		logit(LOG_SYS, "redis: world recovery current sequence rejected");
 		return false;
+	}
 	std::vector<unsigned char> generation;
 	const redis_world_store_config config = redis_world_store_config_copy();
 	if (!redis_world_store_read_generation(&config, expected_sequence, &generation))
+	{
+		logit(LOG_SYS, "redis: world recovery generation read failed sequence=%llu",
+		      (unsigned long long)expected_sequence);
 		return false;
+	}
 	std::vector<std::vector<unsigned char>> floor_records;
 	const size_t floor_budget = generation.size() <= WORLD_RECOVERY_MAX_BYTES ?
 					    std::min(WORLD_RECOVERY_MAX_FLOOR_BYTES,
 						     WORLD_RECOVERY_MAX_BYTES - generation.size()) :
 					    0;
 	if (!redis_read_floor_records(&floor_records, floor_budget))
+	{
+		logit(LOG_SYS, "redis: world recovery floor read failed sequence=%llu budget=%zu",
+		      (unsigned long long)expected_sequence, floor_budget);
 		return false;
+	}
 	std::vector<const unsigned char *> floor_record_data;
 	std::vector<size_t> floor_record_sizes;
 	try
@@ -901,6 +966,7 @@ bool redis_load_world_state(void)
 	}
 	catch (const std::bad_alloc &)
 	{
+		logit(LOG_SYS, "redis: world recovery floor metadata allocation failed");
 		return false;
 	}
 	world_recovery_header header = {};

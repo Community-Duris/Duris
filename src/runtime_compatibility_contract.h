@@ -13,14 +13,14 @@ constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
 	"faa4bc0cfec07dd5cd960cce8306503fd774820e72ee344ec98398b15f4d78ed";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
 	"7ab4d5acca0f4125c5a95114dd375df859768c4c2ade97abe6fb68b73ecb19e1";
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0004_server_reboots";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 4;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0005_level_cap_singleton";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 5;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"4756002529e0e55eedf8de2391c333f37a579e30415da28c340162e1b030834f";
+	"a83264e2f9241e328bcf76eefa192a0d10b0b4122917e56ef12ad39a35bc6132";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"15c4e45ce796d854df1e0d6e1257023969829e8e17322c41d081c0a3e27f1e1b";
+	"4974eb5bf494251d83fc9c3f0c381a61f3afbd80e4eae6f9f291ea5b5c77b77f";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"312f188b48316668dc110e04a19e305f52f1b8a8dd9595af00bd59aa96303bcb";
+	"31d99c8d9bd9bbc551046cb448e75e8a61bd9d2d3ab4c58795865d096b3e055e";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

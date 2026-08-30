@@ -7,7 +7,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 9;
+constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 10;
+constexpr uint32_t WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED = 1U << 0;
 constexpr size_t WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_ITEM_TREE = 512;
@@ -50,6 +51,7 @@ struct world_recovery_item_snapshot
 	uint64_t parent_item_uid;
 	int32_t vnum;
 	int32_t type;
+	uint32_t flags;
 	int32_t values[8];
 	int64_t timers[6];
 	char name[80];

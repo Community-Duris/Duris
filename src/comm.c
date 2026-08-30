@@ -178,7 +178,7 @@ static void maintenance_handle_completions(const maintenance_result *results, si
 					      "maintenance job=auction_due_scan outcome=submit_failed actor=redacted");
 		}
 		if (result.job_id == maintenance_job_id::level_cap &&
-		    result.outcome == maintenance_outcome::complete)
+		    result.outcome == maintenance_outcome::complete && result.rows > 0)
 		{
 			redis_invalidate_fraglist();
 			if (result.value_count == 3 && result.values[0] > 0 &&

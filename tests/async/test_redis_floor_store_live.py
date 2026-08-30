@@ -79,6 +79,14 @@ int main(int argc, char **argv)
     assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 2);
     assert(!strcmp(reply->element[0]->str, "100") && !strcmp(reply->element[1]->str, "200"));
     freeReplyObject(reply);
+    const long long first_page = 0;
+    const long long last_page = 1;
+    reply = (redisReply *)redisCommand(context,
+                                       "ZRANGE %s %lld %lld",
+                                       "mud:season:1:floor_drop_index",
+                                       first_page, last_page);
+    assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 2);
+    freeReplyObject(reply);
 
     redis_floor_store_resume();
     assert(redis_floor_store_drain(2000));
@@ -108,7 +116,7 @@ int main(int argc, char **argv)
     assert(redis_floor_store_drain(2000));
     reply = (redisReply *)redisCommand(context, "HGET mud:season:1:floor_drops 600");
     assert(reply && reply->type == REDIS_REPLY_STRING && reply->len > 5 &&
-           !memcmp(reply->str, "WRF3:", 5));
+           !memcmp(reply->str, "WRF4:", 5));
     uint64_t root_uid = 0;
     assert(world_recovery_floor_object_root_uid(
         reinterpret_cast<const unsigned char *>(reply->str), reply->len, &root_uid));

@@ -58,6 +58,8 @@ bool hydrate_succeeds = true;
 bool materializing = false;
 int objects_read = 0;
 int objects_extracted = 0;
+bool lookup_succeeds = false;
+item_ownership_runtime_entry lookup_entry = {};
 
 void logit(const char *, const char *, ...)
 {
@@ -176,6 +178,21 @@ bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_ent
     return hydrate_succeeds;
 }
 
+bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry)
+{
+    if (!lookup_succeeds || !entry || item_uid != lookup_entry.item_uid)
+        return false;
+    *entry = lookup_entry;
+    return true;
+}
+
+bool item_owner_identity_equal(const item_owner_identity &left,
+                               const item_owner_identity &right)
+{
+    return left.type == right.type && left.id == right.id &&
+           left.context_id == right.context_id;
+}
+
 void redis_floor_runtime_set_materializing(bool active)
 {
     materializing = active;
@@ -237,7 +254,7 @@ static std::vector<unsigned char> object_generation(
     const std::vector<std::vector<world_recovery_item_snapshot>>& trees)
 {
     world_recovery_header header = {};
-    memcpy(header.magic, "WRS9", 4);
+    memcpy(header.magic, "WR10", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 77;
@@ -268,6 +285,7 @@ static world_recovery_item_snapshot item(uint64_t uid, uint64_t root, uint64_t p
     value.parent_item_uid = parent;
     value.vnum = 1000;
     value.type = ITEM_CONTAINER;
+    value.flags = WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED;
     strcpy(value.name, "item");
     strcpy(value.short_description, "an item");
     strcpy(value.description, "An item is here.");
@@ -279,8 +297,56 @@ int main()
     rooms[0].number = 100;
     rooms[1].number = 200;
     object_indexes[0].virtual_number = 1000;
+
+    obj_data captured = {};
+    captured.obj_uid = 800;
+    captured.R_num = 0;
+    captured.type = ITEM_CONTAINER;
+    std::array<unsigned char, WORLD_RECOVERY_MAX_RECORD_BYTES> capture_buffer = {};
+    int captured_size = world_recovery_write_object_to_buffer(
+        &captured, 100, reinterpret_cast<char *>(capture_buffer.data()),
+        capture_buffer.size());
+    assert(captured_size > 0);
+    std::vector<unsigned char> captured_native;
+    std::array<unsigned char, WORLD_RECOVERY_MAX_RECORD_BYTES> captured_wire = {};
+    size_t captured_wire_size = 0;
+    assert(world_recovery_encode_record(
+        world_recovery_record_type::object, capture_buffer.data(), captured_size,
+        captured_wire.data(), captured_wire.size(), &captured_wire_size));
+    assert(world_recovery_decode_record(world_recovery_record_type::object,
+                                        captured_wire.data(), captured_wire_size,
+                                        &captured_native));
+    world_recovery_item_snapshot captured_item = {};
+    memcpy(&captured_item,
+           captured_native.data() + sizeof(world_recovery_object_record),
+           sizeof(captured_item));
+    assert(captured_item.flags == 0);
+
+    lookup_succeeds = true;
+    lookup_entry = {800, 800, 0, {item_owner_type::room, 100, 0}, 1, 1, 1000,
+                    item_custody_state::active};
+    captured_size = world_recovery_write_object_to_buffer(
+        &captured, 100, reinterpret_cast<char *>(capture_buffer.data()),
+        capture_buffer.size());
+    assert(captured_size > 0);
+    assert(world_recovery_encode_record(
+        world_recovery_record_type::object, capture_buffer.data(), captured_size,
+        captured_wire.data(), captured_wire.size(), &captured_wire_size));
+    assert(world_recovery_decode_record(world_recovery_record_type::object,
+                                        captured_wire.data(), captured_wire_size,
+                                        &captured_native));
+    memcpy(&captured_item,
+           captured_native.data() + sizeof(world_recovery_object_record),
+           sizeof(captured_item));
+    assert(captured_item.flags == WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED);
+    lookup_entry.owner = {item_owner_type::player, 1, 0};
+    assert(world_recovery_write_object_to_buffer(
+               &captured, 100, reinterpret_cast<char *>(capture_buffer.data()),
+               capture_buffer.size()) == 0);
+    lookup_succeeds = false;
+
     world_recovery_header header = {};
-    memcpy(header.magic, "WRS9", 4);
+    memcpy(header.magic, "WR10", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 42;
@@ -300,7 +366,7 @@ int main()
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 0, nullptr));
     header.complete = 1;
     finish(blob, header);
-    blob[4] = 8;
+    blob[4] = 9;
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 0, nullptr));
 
     copyover_room door = {100, 1, 2};
@@ -395,6 +461,21 @@ int main()
         {{item(600, 600, 0)}, {item(600, 600, 0)}});
     assert(!world_recovery_restore(duplicates.data(), duplicates.size(), 300, 77, nullptr));
 
+    auto invalid_flags_item = item(650, 650, 0);
+    invalid_flags_item.flags = WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED << 1;
+    const auto invalid_flags = object_generation({{invalid_flags_item}});
+    assert(!world_recovery_restore(invalid_flags.data(), invalid_flags.size(), 300, 77,
+                                   nullptr));
+
+    auto type_zero_item = item(675, 675, 0);
+    type_zero_item.type = 0;
+    type_zero_item.flags = 0;
+    const auto type_zero_object = object_generation({{type_zero_item}});
+    assert(world_recovery_restore(type_zero_object.data(), type_zero_object.size(), 300, 77,
+                                  nullptr));
+    assert(object_list && object_list->type == 0);
+    extract_obj(object_list, FALSE);
+
     obj_data live_root = {};
     obj_data moved_child = {};
     live_root.obj_uid = 700;
@@ -449,6 +530,7 @@ for token in (
     "WORLD_RECOVERY_QUEUE_CAPACITY = 2",
     "WORLD_RECOVERY_MAX_RETRIES = 3",
     "WORLD_RECOVERY_MAX_ITEM_TREE = 512",
+    "WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED",
 ):
     assert token in HEADER
 capture = section(PIPELINE, "void world_recovery_pipeline_pulse", "bool world_recovery_pipeline_take_completion")
@@ -457,6 +539,8 @@ assert "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC" in capture
 assert "std::chrono::steady_clock::now()" in capture
 assert "world_recovery_capture_age_expired" in capture
 assert "fail_capture(true)" in capture
+assert "PC_CORPSE" in PIPELINE
+assert "item_ownership_runtime_lookup" in PIPELINE
 failure = section(PIPELINE, "void fail_capture(bool expired)", "bool submit_capture()")
 for token in (
     "capture_failure_completion = { active_capture.generation.sequence, false, 0 }",

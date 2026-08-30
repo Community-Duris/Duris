@@ -46,6 +46,16 @@
       "verify": "immutable/0004_server_reboots.sh",
       "verify_checksum": "15c4e45ce796d854df1e0d6e1257023969829e8e17322c41d081c0a3e27f1e1b",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0005_level_cap_singleton",
+      "sequence": 5,
+      "description": "Restore the required level cap singleton state",
+      "apply": "immutable/0005_level_cap_singleton.sql",
+      "apply_checksum": "a83264e2f9241e328bcf76eefa192a0d10b0b4122917e56ef12ad39a35bc6132",
+      "verify": "immutable/0005_level_cap_singleton.sh",
+      "verify_checksum": "4974eb5bf494251d83fc9c3f0c381a61f3afbd80e4eae6f9f291ea5b5c77b77f",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

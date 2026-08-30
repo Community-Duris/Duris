@@ -14,7 +14,7 @@ constexpr size_t MOB_WIRE_FIXED_BYTES = 282;
 constexpr size_t AFFECT_WIRE_BYTES = 60;
 constexpr size_t DOOR_WIRE_BYTES = 12;
 constexpr size_t ZONE_WIRE_BYTES = 20;
-constexpr char FLOOR_MAGIC[] = "WRF3:";
+constexpr char FLOOR_MAGIC[] = "WRF4:";
 static_assert(sizeof(int) == sizeof(int32_t));
 static_assert(sizeof(unsigned int) == sizeof(uint32_t));
 static_assert(sizeof(unsigned long) <= sizeof(uint64_t));
@@ -320,6 +320,8 @@ bool encode_object(const unsigned char *native_data, size_t native_size, unsigne
 		offset += 4;
 		put_i32(output + offset, item.type);
 		offset += 4;
+		put_u32(output + offset, item.flags);
+		offset += 4;
 		for (int32_t value : item.values)
 		{
 			put_i32(output + offset, value);
@@ -384,6 +386,8 @@ bool decode_object(const unsigned char *wire_data, size_t wire_size,
 		item.vnum = get_i32(wire_data + offset);
 		offset += 4;
 		item.type = get_i32(wire_data + offset);
+		offset += 4;
+		item.flags = get_u32(wire_data + offset);
 		offset += 4;
 		for (int32_t &value : item.values)
 		{
@@ -463,7 +467,7 @@ bool world_recovery_encode_header(const world_recovery_header *header, unsigned 
 {
 	if (!header || !output || output_size < WORLD_RECOVERY_WIRE_HEADER_BYTES)
 		return false;
-	memcpy(output, "WRS9", 4);
+	memcpy(output, "WR10", 4);
 	put_u32(output + 4, WORLD_RECOVERY_SCHEMA_VERSION);
 	put_u32(output + 8, WORLD_RECOVERY_WIRE_HEADER_BYTES);
 	put_u64(output + 12, header->sequence);
@@ -482,7 +486,7 @@ bool world_recovery_encode_header(const world_recovery_header *header, unsigned 
 bool world_recovery_decode_header(const unsigned char *data, size_t size,
 				  world_recovery_header *header)
 {
-	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || !header || memcmp(data, "WRS9", 4))
+	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || !header || memcmp(data, "WR10", 4))
 		return false;
 	*header = {};
 	memcpy(header->magic, data, 4);
