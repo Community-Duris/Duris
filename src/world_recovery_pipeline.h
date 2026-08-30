@@ -10,10 +10,10 @@
 constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 9;
 constexpr size_t WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024;
-constexpr size_t WORLD_RECOVERY_MAX_ITEM_TREE = 12;
+constexpr size_t WORLD_RECOVERY_MAX_ITEM_TREE = 512;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768;
-constexpr size_t WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 64;
+constexpr size_t WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 1024;
 constexpr uint64_t WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000;
 constexpr uint64_t WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC = 300000;
 constexpr size_t WORLD_RECOVERY_QUEUE_CAPACITY = 2;
@@ -62,6 +62,10 @@ struct world_recovery_object_record
 	int32_t room_vnum;
 	uint32_t item_count;
 };
+
+static_assert(sizeof(world_recovery_object_record) +
+		      WORLD_RECOVERY_MAX_ITEM_TREE * sizeof(world_recovery_item_snapshot) <=
+	      WORLD_RECOVERY_MAX_RECORD_BYTES);
 
 struct world_recovery_authority_item
 {

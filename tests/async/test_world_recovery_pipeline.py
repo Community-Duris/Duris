@@ -59,6 +59,10 @@ bool materializing = false;
 int objects_read = 0;
 int objects_extracted = 0;
 
+void logit(const char *, const char *, ...)
+{
+}
+
 P_char get_linked_char(P_char, ush_int)
 {
     return nullptr;
@@ -330,8 +334,11 @@ int main()
     memcpy(blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES, record.data(), record.size());
     finish(blob, header);
     assert(world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
-    blob[WORLD_RECOVERY_WIRE_HEADER_BYTES + WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES + 4] =
-        WORLD_RECOVERY_MAX_ITEM_TREE + 1;
+    const uint32_t oversized_item_count = WORLD_RECOVERY_MAX_ITEM_TREE + 1;
+    const size_t item_count_offset =
+        WORLD_RECOVERY_WIRE_HEADER_BYTES + WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES + 4;
+    for (size_t index = 0; index < sizeof(oversized_item_count); ++index)
+        blob[item_count_offset + index] = oversized_item_count >> (index * 8);
     finish(blob, header);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
 
@@ -436,12 +443,12 @@ for token in (
     "WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
-    "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 64",
+    "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 1024",
     "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000",
     "WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC = 300000",
     "WORLD_RECOVERY_QUEUE_CAPACITY = 2",
     "WORLD_RECOVERY_MAX_RETRIES = 3",
-    "WORLD_RECOVERY_MAX_ITEM_TREE = 12",
+    "WORLD_RECOVERY_MAX_ITEM_TREE = 512",
 ):
     assert token in HEADER
 capture = section(PIPELINE, "void world_recovery_pipeline_pulse", "bool world_recovery_pipeline_take_completion")
@@ -456,6 +463,7 @@ for token in (
     "capture_failure_pending = true",
     "++health.capture_expirations",
     "health.last_capture_duration_msec",
+    "active_capture.generation.blob.size()",
 ):
     assert token in failure
 completion = section(

@@ -211,12 +211,37 @@ class DocumentationContractTest(unittest.TestCase):
             "REDIS_HOST",
             "REDIS_PORT",
             "REDIS_WORLD_STATE",
+            "REDIS_WORLD_STATE_SECRET",
+            "REDIS_DONATION_SUBSCRIBER",
+            "REDIS_DONATION_SECRET",
         )
         for name in required:
             self.assertIn(name, configuration, name)
             self.assertTrue(name in example or name in runtime, name)
         for token in ("10-second", "READ-COMMITTED", "utf8mb4", "250 ms", "100 ms"):
             self.assertIn(token, configuration, token)
+
+    def test_redis_example_enables_all_local_subsystems(self) -> None:
+        example = (ROOT / ".env.example").read_text()
+        assignments = dict(
+            match.groups()
+            for match in re.finditer(
+                r"^([A-Z][A-Z0-9_]*)=(.*)$", example, re.MULTILINE
+            )
+        )
+
+        for toggle in (
+            "REDIS",
+            "REDIS_WORLD_STATE",
+            "REDIS_DONATION_SUBSCRIBER",
+        ):
+            self.assertEqual(assignments.get(toggle), "TRUE", toggle)
+
+        world_secret = assignments.get("REDIS_WORLD_STATE_SECRET", "")
+        donation_secret = assignments.get("REDIS_DONATION_SECRET", "")
+        self.assertGreaterEqual(len(world_secret), 32)
+        self.assertGreaterEqual(len(donation_secret), 32)
+        self.assertNotEqual(world_secret, donation_secret)
 
     def test_integrated_topology_is_required_and_stale_claims_are_absent(self) -> None:
         maintained = "\n".join(self.text.values())

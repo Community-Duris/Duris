@@ -209,9 +209,16 @@ REDIS_SOCKET=
 REDIS_DB=0
 REDIS_NAMESPACE=duris:local:default
 REDIS_TLS=FALSE
+REDIS_ALLOWED_TARGETS=127.0.0.1:6379/0
 REDIS_WORLD_STATE=TRUE
-REDIS_WORLD_STATE_SECRET=replace-with-an-independent-random-secret
+REDIS_WORLD_STATE_SECRET=local-development-only-world-state-hmac-change-before-shared-use
+REDIS_DONATION_SUBSCRIBER=TRUE
+REDIS_DONATION_SECRET=local-development-only-donation-hmac-change-before-shared-use
 ```
+
+Those fixed values are local-only placeholders so the example brings up every Redis
+worker. Replace both with distinct random secrets before connecting any shared or
+externally reachable service.
 
 Stop the server before clearing Redis state. `scripts/clear-redis.sh --confirm
 <host:port/database|unix:/absolute/socket/database>` loads the owner-only `.env`, requires

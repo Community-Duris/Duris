@@ -25,7 +25,7 @@ for token in (
     "int32_t vnum",
     "int32_t values[8]",
     "int64_t timers[6]",
-    "WORLD_RECOVERY_MAX_ITEM_TREE = 12",
+    "WORLD_RECOVERY_MAX_ITEM_TREE = 512",
 ):
     assert token in HEADER
 

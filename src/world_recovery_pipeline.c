@@ -210,6 +210,12 @@ bool encode_generation(recovery_generation *generation, world_recovery_header *h
 void fail_capture(bool expired)
 {
 	std::lock_guard<std::mutex> lock(recovery_mutex);
+	logit(LOG_SYS,
+	      "redis: world recovery capture %s stage=%u bytes=%zu mobs=%u objs=%u doors=%u zones=%u",
+	      expired ? "expired" : "failed", static_cast<unsigned int>(active_capture.stage),
+	      active_capture.generation.blob.size(), active_capture.generation.mob_count,
+	      active_capture.generation.object_count, active_capture.generation.door_count,
+	      active_capture.generation.zone_count);
 	capture_failure_completion = { active_capture.generation.sequence, false, 0 };
 	capture_failure_pending = true;
 	++health.capture_failures;
@@ -288,7 +294,12 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items = {};
 	uint32_t count = 0;
 	if (!capture_item_tree(object, 0, 0, items.data(), &count) || !count)
+	{
+		logit(LOG_SYS,
+		      "redis: world recovery object tree rejected vnum=%d captured_items=%u root_uid=%s",
+		      OBJ_VNUM(object), count, object->obj_uid ? "set" : "missing");
 		return -1;
+	}
 	const size_t size = sizeof(world_recovery_object_record) +
 			    static_cast<size_t>(count) * sizeof(world_recovery_item_snapshot);
 	if (size > maximum)
