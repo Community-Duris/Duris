@@ -10,6 +10,7 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
                            # otherwise nohup cycle_mud.sh -> logs/duris-console.log
 ./scripts/cycle_mud.sh     # foreground supervised run (what start_mud wraps)
 ./scripts/cycle_mud.sh --dev   # development listener/build role on port 4000
+./scripts/cycle_mud.sh --production  # require the production role on port 7777
 ./scripts/cycle_mud.sh --check-config  # validate the selected persistence mode only
 ```
 
@@ -76,6 +77,60 @@ file; do not guess with a broad `kill` or `pkill` command. Check
 `logs/duris-console.log`, the listener port, and the process command line before
 stopping a specific local process. A normal shutdown lets the supervisor write
 its reboot record and rotate logs.
+
+### Production systemd service
+
+The checked-in production unit is rendered from
+`deploy/systemd/duris-mud-production.service.in`. It is a system service, so it starts
+from `multi-user.target` without a login session or user lingering. It runs under the
+checkout owner, sets `Restart=always`, disables systemd's restart-rate limit, waits ten
+seconds between attempts, and invokes `cycle_mud.sh --production`. The launch flag
+refuses `ENVIRONMENT=local`; the unit cannot silently publish a development role as
+production. A deliberate `systemctl stop` remains stopped because systemd suppresses
+restart jobs requested by the service manager.
+
+Prepare the production `.env` and protected runtime directories before installation.
+The service account must own `.env`, which must remain mode `0600`. Complete the
+production checklist below, qualify migrations on a restored non-production clone,
+apply approved migrations through the migration runbook, and run this offline preflight:
+
+```bash
+sudo -u DURIS_USER /absolute/path/to/duris/scripts/cycle_mud.sh \
+  --production --check-config
+```
+
+Install a disabled copy for inspection without disturbing the current listener:
+
+```bash
+sudo /absolute/path/to/duris/scripts/install-production-service.sh \
+  --user DURIS_USER --no-enable
+sudo systemctl cat duris-mud-production.service
+```
+
+The installer renders the absolute checkout path and account into
+`/etc/systemd/system/duris-mud-production.service`, validates the unit with
+`systemd-analyze verify` and reloads systemd. Enabling repeats the production
+configuration preflight and refuses to proceed while another service owns port 7777.
+The `--no-enable` staging path neither needs nor bypasses production credentials; the
+service still enforces them whenever it is eventually started.
+
+For the cutover, stop and disable any prior service that owns port 7777, then start the
+production unit. Do not run the local and production units concurrently:
+
+```bash
+# If this checkout currently uses the local user service:
+systemctl --user disable --now duris-mud.service
+
+sudo /absolute/path/to/duris/scripts/install-production-service.sh \
+  --user DURIS_USER --start
+sudo systemctl status duris-mud-production.service
+sudo journalctl -u duris-mud-production.service -f
+```
+
+Alternatively, `install-production-service.sh --start` performs enablement and startup
+in one explicitly requested step. Installation does not create credentials, change
+`.env`, run legacy migrations, or promote a database. A failed production preflight is
+a deployment blocker, not a reason to weaken the unit or reuse development secrets.
 
 Do not use the `pwipe` shutdown path for ordinary restarts: exit code `55`
 causes `cycle_mud.sh` to run the filesystem player wipe artifact after the

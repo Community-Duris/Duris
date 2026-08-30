@@ -216,6 +216,12 @@ upgrade production. Without a configured user service it runs in the
 background and writes console output to `logs/duris-console.log`. The `--dev`
 quick-start listener is port 4000 and cannot select the production runtime role.
 
+Production deployments use the checked-in systemd service rather than the local
+user service. Its installer requires an explicit production configuration check,
+enables boot startup, and supervises every exit with an unlimited restart policy.
+See [Production systemd service](docs/operations/RUNBOOK.md#production-systemd-service)
+for installation and cutover instructions.
+
 For a foreground development session on port 4000, use this instead of
 `start_mud.sh`:
 

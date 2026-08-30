@@ -48,11 +48,14 @@ per-operation authority transfer is not supported.
 | `MAINTENANCE_STATE_FILE` | Optional; `bin/server/maintenance-scheduler.state` | Durable scheduler cursor/completion state; parent directory must be server-user controlled. |
 
 `scripts/cycle_mud.sh --check-config` validates the selected mode without starting the
-server. In `flatfile-primary`, the launcher does not require database settings, run
-migrations or schema checks, invoke MySQL shutdown logging, or select a database backup
-because Redis happens to be enabled. It snapshots the selected `FLATFILE_STATE_DIR`
-before boot and refuses to start if that snapshot fails. Build the client-free binary
-with `make -C src PERSISTENCE_BACKEND=flatfile` for this mode.
+server. Add `--production` to require `ENVIRONMENT=production` and the port-7777
+runtime role; the production systemd unit always supplies that flag. `--production`
+cannot be combined with `--dev` or `--minimal`. In `flatfile-primary`, the launcher
+does not require database settings, run migrations or schema checks, invoke MySQL
+shutdown logging, or select a database backup because Redis happens to be enabled. It
+snapshots the selected `FLATFILE_STATE_DIR` before boot and refuses to start if that
+snapshot fails. Build the client-free binary with
+`make -C src PERSISTENCE_BACKEND=flatfile` for this mode.
 
 Flat-file IP connection history is stored in the owner-only metadata authority so the
 existing one-hour racewar-side rule and staff/player information paths remain functional

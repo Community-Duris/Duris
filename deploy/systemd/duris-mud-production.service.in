@@ -1,0 +1,46 @@
+[Unit]
+Description=DurisMUD production server
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@DURIS_USER@
+Group=@DURIS_GROUP@
+WorkingDirectory=@DURIS_ROOT@
+ExecStart="@DURIS_ROOT@/scripts/cycle_mud.sh" --production
+Restart=always
+RestartSec=10s
+KillMode=control-group
+TimeoutStopSec=90s
+UMask=0077
+LimitNOFILE=65535
+LimitCORE=infinity
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelLogs=true
+ProtectProc=invisible
+ProcSubset=pid
+RemoveIPC=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=duris-mud
+
+[Install]
+WantedBy=multi-user.target

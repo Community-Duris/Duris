@@ -29,6 +29,7 @@ fi
 # Parse command line arguments
 DEV_MODE=0
 MINIMAL_MODE=0
+PRODUCTION_MODE=0
 CONFIG_CHECK_ONLY=0
 while (( $# > 0 )); do
   case "$1" in
@@ -39,23 +40,31 @@ while (( $# > 0 )); do
       MINIMAL_MODE=1
       DEV_MODE=1
       ;;
+    --production)
+      PRODUCTION_MODE=1
+      ;;
     --check-config)
       CONFIG_CHECK_ONLY=1
       ;;
     --help|-h)
-      echo "Usage: $0 [--dev] [--minimal] [--check-config]"
+      echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config]"
+      echo "  --production  Require ENVIRONMENT=production and use the port 7777 role."
       echo "  --minimal  Use the tracked areas_mini dataset (implies --dev)."
       echo "  --check-config  Validate persistence configuration without starting the game."
       exit 0
       ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: $0 [--dev] [--minimal] [--check-config]" >&2
+      echo "Usage: $0 [--dev] [--minimal] [--production] [--check-config]" >&2
       exit 2
       ;;
   esac
   shift
 done
+if (( PRODUCTION_MODE == 1 && DEV_MODE == 1 )); then
+  echo "--production cannot be combined with --dev or --minimal" >&2
+  exit 2
+fi
 if (( MINIMAL_MODE == 1 )); then
   echo "Running in minimal world mode from areas_mini"
 fi
@@ -108,6 +117,10 @@ if [[ -z "${ENVIRONMENT:-}" ]]; then
 fi
 if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
   echo "ENVIRONMENT must be local or production" >&2
+  exit 1
+fi
+if (( PRODUCTION_MODE == 1 )) && [[ "$ENVIRONMENT" != "production" ]]; then
+  echo "--production requires ENVIRONMENT=production" >&2
   exit 1
 fi
 if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne 7777 ]]; then
