@@ -4927,13 +4927,20 @@ void select_keepchar(P_desc d, char *arg)
 	switch (LOWER(*arg))
 	{
 	case 'n':
-		SEND_TO_Q("\r\n\r\nDeleting this character.r\n", d);
+		SEND_TO_Q("\r\n\r\nDiscarding this character.\r\n", d);
+#ifdef USE_ACCOUNT
+		free_char(d->character);
+		d->character = NULL;
+		STATE(d) = CON_DISPLAY_ACCT_MENU;
+		display_account_menu(d, NULL);
+#else
 		STATE(d) = CON_NAME;
 		if (d->term_type == TERM_GENERIC)
 			SEND_TO_Q(GREETINGS, d);
 		else
 			SEND_TO_Q(greetinga, d);
 		SEND_TO_Q("\r\nBy what name do you wish to be known? ", d);
+#endif
 		break;
 	case 'q':
 		SEND_TO_Q("\r\n\r\nCome back again real soon.\r\n", d);

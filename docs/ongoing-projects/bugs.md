@@ -30,7 +30,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): manual saves now distinguish queued and already-queued requests, then report database acknowledgment or failure; an actual character received `queued`, `already queued`, and `complete` in sequence.
  -  VERIFIED FALSE (2026-08-30): the live Human class menu displayed lettered choices, and selecting the shown `w)` key chose Warrior and advanced to alignment without requiring the class name.
  -  VERIFIED FALSE (2026-08-30): the live Human class menu explicitly listed `d) Druid`, and selecting `d` accepted Druid and advanced to hometown selection.
- -  after character creation, i selected not to keep the character and was taken back to the main login screen instead of to the account screen. i think typed the account name and was disconnected.
+ -  VERIFIED FIXED (2026-08-30): declining the final keep-character prompt now frees the uncommitted character and returns to the existing account menu; the complete live creation/discard flow no longer falls into legacy name login.
  -  players can see their own tracks in a room with the track skill
  -  database persistence is still broken, items are not granted on login. or upon summon such as wizard innate summon book. or on any npc's
  -  there was a bit of lag after using the specialization command at the teacher. this should not lag (i speced as wizard)
