@@ -18,6 +18,27 @@
 - Remaining: smooth the player death transition; investigate and fix item
   duplication across disconnect/reconnect.
 
+### 2026-08-30 - Player death transition complete
+
+- Root cause: death extraction correctly waits for asynchronous corpse-item
+  ownership handoffs, but the retry delay doubled after every poll. During that
+  wait the normal 1 HP gameplay prompt remained visible and commands produced
+  the abrupt "Lie still" response.
+- Fix: expected corpse handoffs are now polled at a steady short interval;
+  actual terminal-save failures retain bounded exponential backoff. Death now
+  announces the spirit leaving the body, dead commands receive an afterlife
+  transition message, and the misleading gameplay prompt is suppressed until
+  the account menu appears.
+- Files changed: `src/fight.c`, `src/comm.c`, `src/interp.c`,
+  `tests/async/test_death_item_custody_contract.py`, and
+  `tests/async/test_death_transition_contract.py`.
+- Checks passed: `python3 tests/async/test_death_transition_contract.py`,
+  `python3 tests/async/test_death_item_custody_contract.py`,
+  `python3 tests/async/test_character_persistence_gap.py`,
+  `./scripts/format.sh --check`, and `make -C src`.
+- Remaining: investigate and fix item duplication across
+  disconnect/reconnect.
+
 ## Made a new character, for Hometown I chose "Planes of life":
 
 Your race may choose among:

@@ -2494,8 +2494,11 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_awaiting_corpse_items", "delay=%d",
-				  previous_delay * 2);
-		schedule_death_extract_retry(ch, previous_delay * 2);
+				  DEATH_EXTRACT_RETRY_INITIAL);
+		// Corpse ownership handoffs are expected bounded work, not a failure.
+		// Poll them steadily so the account menu follows the final handoff
+		// promptly; reserve exponential backoff for an actual save failure.
+		schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
 		return;
 	}
 
@@ -2753,6 +2756,12 @@ void die(P_char ch, P_char killer)
 			death_rattle(ch);
 		else
 			death_cry(ch);
+	}
+	if (IS_PC(ch) && !CHAR_IN_ARENA(ch))
+	{
+		send_to_char(
+			"\r\n&+RYour wounds claim you at last. Your spirit slips free of your body...&n\r\n",
+			ch);
 	}
 
 	// Dragon mobs now will drop a dragon scale

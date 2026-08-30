@@ -1564,7 +1564,9 @@ void command_interpreter(P_char ch, char *argument)
 				switch (GET_STAT(ch))
 				{
 				case STAT_DEAD:
-					send_to_char("Lie still; you are DEAD!!!\r\n", ch);
+					send_to_char(
+						"Your spirit has left your body; the afterlife is drawing you onward.\r\n",
+						ch);
 					break;
 				case STAT_INCAP:
 				case STAT_DYING:

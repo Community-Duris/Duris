@@ -112,12 +112,23 @@ checks.append((
 retry = body(fight, "static void event_death_extract_retry(P_char ch, P_char victim, "
                     "P_obj obj, void *data)\n{")
 checks.append((
-    "the retry keeps waiting instead of saving over a pending transfer",
+    "the retry steadily polls instead of saving over a pending transfer",
     contains(retry, "item_movement_transaction_player_busy(ch)") and
     retry.index("item_movement_transaction_player_busy(ch)") <
     retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") and
-    contains(retry, "schedule_death_extract_retry(ch, previous_delay * 2);") and
+    contains(retry, "schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);") and
     contains(retry, "GET_STAT(ch) != STAT_DEAD")
+))
+busy_retry = retry.split("if (item_movement_transaction_player_busy(ch))", 1)[1]
+busy_retry = busy_retry.split("if (!persistence_save_character_terminal", 1)[0]
+checks.append((
+    "normal corpse handoffs do not exponentially delay the account menu",
+    not contains(busy_retry, "previous_delay * 2") and
+    contains(busy_retry, "DEATH_EXTRACT_RETRY_INITIAL")
+))
+checks.append((
+    "actual terminal save failures retain bounded exponential backoff",
+    contains(retry, "schedule_death_extract_retry(ch, previous_delay * 2);")
 ))
 checks.append((
     "automatic raising cannot consume a PC corpse while its item handoff is pending",

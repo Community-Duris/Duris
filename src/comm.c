@@ -3459,6 +3459,8 @@ int process_output(P_desc t)
 #endif
 	if (realChar && item_creation_grant_blocks_commands(realChar))
 		t->prompt_mode = FALSE;
+	if (realChar && GET_STAT(realChar) == STAT_DEAD)
+		t->prompt_mode = FALSE;
 
 	bool had_prompt = t->prompt_mode; // track if prompt will be sent
 	make_prompt(t);
