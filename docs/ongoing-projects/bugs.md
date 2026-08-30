@@ -13,7 +13,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): no delayed ownership-authority rejection appeared during a 150-second post-login chaos-mode watch, and the actual character remained responsive afterward.
  -  VERIFIED FIXED (2026-08-30): commune-capable non-dragoon characters now silently resume spell-slot recovery on login; a temporary actual druid communed without issuing the command.
  -  VERIFIED FIXED (2026-08-30): account login now displays the tracked news before the MOTD; verified through an actual-character login and focused account/flat-file tests.
- -  upon looting a corpse i received the message "Your coin credit is waiting at the auction house." but it should have been granted to the character immediately
+ -  VERIFIED FIXED (2026-08-30): positive carried-coin rewards now serialize and rebase behind in-flight wallet work instead of falling back to auction pickup; two immediate live 10k-platinum grants to an actual character produced no fallback message and durably recorded 20k platinum across two ledger entries.
  -  upon typing auction pickup i received the message "The auction house is busy; your money remains staged."
  -  VERIFIED FALSE (2026-08-30): "no NPCs loaded with items." A full-world game-loop audit found 13,433 NPCs with inventory or equipment (9,663 equipped); no code change was required.
  -  when attempting to enter locker with no money i received the "..but you don't have the money or the bank could not complete the payment, GET OUT!" however when it said i was booted out i actualy remained in a room with no visible name and a north exit with door closed rather than being returned to the bank i had attempted to enter from.
@@ -86,4 +86,3 @@ Cage of Smoke
 Obvious exits: None!
 < 30h/30H 120v/120V Pos: standing >
 <> eq
-
