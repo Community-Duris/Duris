@@ -21,7 +21,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): corpse creation now defers extraction while its item handoff completes, after which the death save retries; the live linkdead battle test ended with one durable 28-item corpse and one saved death rather than an unsaved character/corpse split.
  -  VERIFIED FIXED (2026-08-30): `suicide` now rejects an already-dead character before confirmation or `die()` can run; the actual-character retest returned "You are already dead" and advanced durable state by exactly one battle death and one corpse.
  -  VERIFIED FIXED (2026-08-30): salvage eligibility now excludes corpses; live examination of the actual character's corpse reports that it cannot yield usable salvage materials.
- -  while stuck in perpetual death bug, i disconnected, re logged in, and was immediately alive again.
+ -  VERIFIED FIXED (2026-08-30): an actual-character disconnect/relogin during deferred death remained dead until the terminal retry completed, then returned to the account menu; it did not revive before the death was saved.
  -  while on the world map, the "+" that marked the road was replaced by a "." after i moved off of that tile, and it stayed like that. but only the ones i walked on.
  -  while walking through the forest "*" tiles on the world map, they turned into a "." after i walked on them and stayed that way.
  -  while communing, the spells would occasionaly stop returning in a timely manner for a short period and then return to the normal pace
