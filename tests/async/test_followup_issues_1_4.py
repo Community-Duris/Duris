@@ -54,4 +54,21 @@ assert contains(handler, "CMD_FROMROOM, NULL) == ROOM_PROC_LEAVE_VETO")
 assert contains(locker, "static bool locker_handle_leave")
 assert contains(locker, "if (!locker_handle_leave(ch, pLocker, room, troom))\n\t\t\treturn ROOM_PROC_LEAVE_VETO;")
 
+# An unpaid locker entry must resolve its bank exit before char_from_room runs
+# the leave hook and frees the temporary locker room. The leave hook owns the
+# locker cleanup, and a veto must not duplicate the character into the bank.
+entry_start = locker.index("int storage_locker_room_hook(")
+entry_end = locker.index("int guild_locker_room_hook(", entry_start)
+entry_body = locker[entry_start:entry_end]
+payment_start = entry_body.index("..but you don't have the money")
+payment_end = entry_body.index("// End Money hack", payment_start)
+payment_failure = entry_body[payment_start:payment_end]
+exit_lookup = payment_failure.index("const int exit_room = locker_exit_room(ch, room);")
+unlink = payment_failure.index("char_from_room(ch);")
+reinsert = payment_failure.index("char_to_room(ch, exit_room, 0);")
+assert exit_lookup < unlink < reinsert
+assert contains(payment_failure, "if (ch->in_room == NOWHERE)")
+assert not contains(payment_failure, "free_locker(room);")
+assert not contains(payment_failure, "extract_char(chLocker);")
+
 print("locker bounds, auction row lock, ship commit failure, and locker exit veto checks passed")

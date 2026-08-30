@@ -1970,10 +1970,10 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 				"..but you don't have the money or the bank could not complete the payment, GET OUT!\r\n\r\n",
 				ch);
 			room = ch->in_room;
+			const int exit_room = locker_exit_room(ch, room);
 			char_from_room(ch);
-			char_to_room(ch, locker_exit_room(ch, room), 0);
-			free_locker(room);
-			extract_char(chLocker);
+			if (ch->in_room == NOWHERE)
+				char_to_room(ch, exit_room, 0);
 			return TRUE;
 		}
 	}
