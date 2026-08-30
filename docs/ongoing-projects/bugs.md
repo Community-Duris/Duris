@@ -36,8 +36,4 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FALSE (2026-08-30): an actual level-30 Sorcerer at the correct teacher was offered Wizard, specialized successfully, and received the complete response within 250.3 ms; the specialization also persisted through a clean shutdown.
  -  VERIFIED FIXED (2026-08-30): `logit()` now creates a missing parent-directory chain after `ENOENT` and retries the same append once; the focused runtime test wrote the original marker through the real logger into a previously absent nested path.
 -  VERIFIED FIXED (2026-08-30): starter-kit creation now withholds the gameplay prompt and queued commands until every serialized ownership grant finishes; an actual new Thri-kreen Warrior received readiness at 16.991 seconds and its queued first inventory then showed the complete 33-item kit instead of an intermediate 5- or 21-item kit.
-- made a new human illusionist character, neutral race war (i tested good too with same result), picked Tharnadia hometown, got into the game and found myself in this room:
-Cage of Smoke
-Obvious exits: None!
-< 30h/30H 120v/120V Pos: standing >
-<> eq
+-  VERIFIED FALSE (2026-08-30): actual new neutral and good Human Illusionists selecting Tharnadia both entered `Inside a Twisted Twilight Tower of Illusion`; each durably stored room `132501` as hometown, birthplace, and original birthplace rather than falling back to Cage of Smoke.
