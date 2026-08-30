@@ -9,13 +9,11 @@ A technical audit of all 8 issues filed in upstream repository [`https://github.
 | # | Upstream Issue Title | Upstream State | Current Codebase Status | Category |
 |---|---|:---:|:---:|---|
 | **#1** | [DEFINITIONS (Read First) OPIs/balance/zone issues and suggested solutions](https://github.com/xanadinn/DurisMUD/issues/1) | `OPEN` | **OUTSTANDING** | Content / Item Balance Design Proposals |
-| **#2** | [Kobold Calming](https://github.com/xanadinn/DurisMUD/issues/2) | `OPEN` | **RESOLVED / MITIGATED** | Racial Innate Rebalance |
 | **#3** | [Hellfire vs. Paladin](https://github.com/xanadinn/DurisMUD/issues/3) | `OPEN` | **OUTSTANDING** | Combat & Spell Mechanics Balance |
 | **#4** | [Minotaur Balance](https://github.com/xanadinn/DurisMUD/issues/4) | `OPEN` | **OUTSTANDING** | Racial Stat / Innate Balance |
 | **#5** | [3rd Racewar Side Re-Enabling](https://github.com/xanadinn/DurisMUD/issues/5) | `OPEN` | **OUTSTANDING** | Game Architecture / Feature Request |
 | **#6** | [single hand 2 hand weapons (race/class)](https://github.com/xanadinn/DurisMUD/issues/6) | `OPEN` | **OUTSTANDING** | Equipment / Combat Mechanics Request |
 | **#7** | [Case senistive areas](https://github.com/xanadinn/DurisMUD/issues/7) | `OPEN` | **PARTIALLY MITIGATED** | Build Tooling & Asset Auditing |
-| **#8** | [Fix: some things to hopefully fix dim spells](https://github.com/xanadinn/DurisMUD/issues/8) | `CLOSED` | **RESOLVED & VERIFIED** | Bug Fix (Merged Upstream) |
 
 ---
 
@@ -37,18 +35,6 @@ A technical audit of all 8 issues filed in upstream repository [`https://github.
      - *Mechanism*: Procs `AFF2_FLURRY` upon tapping/invoking ([`src/specs.object.c:11185`](file:///home/aiwithapex/projects/duris/src/specs.object.c#L11185)).
      - *Spawn Location*: Loaded in Tempest Court / Cosmic zone ([`areas/obj/cosmic.obj:411`](file:///home/aiwithapex/projects/duris/areas/obj/cosmic.obj#L411), [`areas/qst/cosmic.qst:61`](file:///home/aiwithapex/projects/duris/areas/qst/cosmic.qst#L61)).
      - *Proposal*: Move to Celestia and allow in Celestia Bartender Quests. Currently unchanged.
-
----
-
-### Issue #2: Kobold Calming
-- **Upstream URL**: [`https://github.com/xanadinn/DurisMUD/issues/2`](https://github.com/xanadinn/DurisMUD/issues/2)
-- **Status in Current Codebase**: **RESOLVED / MITIGATED IN CODE**
-- **Technical Analysis**:
-  - *Request*: *"Give kobold calming a cooldown or other limiting factor"*.
-  - *Resolution*: Rather than adding an arbitrary timer or cooldown check to `INNATE_CALMING`, the innate was **disabled entirely from the racial definition**:
-    - [`src/innates.c:578`](file:///home/aiwithapex/projects/duris/src/innates.c#L578): `// ADD_RACIAL_INNATE(INNATE_CALMING, RACE_KOBOLD, 1);`
-    - [`src/innates.c:526`](file:///home/aiwithapex/projects/duris/src/innates.c#L526): `// ADD_RACIAL_INNATE(INNATE_CALMING, RACE_HALFLING, 1);`
-  - In the current codebase, `INNATE_CALMING` is strictly assigned as a class innate to Monks ([`src/innates.c:887`](file:///home/aiwithapex/projects/duris/src/innates.c#L887)).
 
 ---
 
@@ -112,70 +98,3 @@ A technical audit of all 8 issues filed in upstream repository [`https://github.
     - However, several inactive/orphaned area files on disk use PascalCase (`Monsteri`, `Magetower`, `Mentiri`, `Nexus_1`, `IC3`). If added in lowercase to `areas/AREA`, `make_all` scripts will fail to locate them on case-sensitive filesystems.
 
 ---
-
-### Issue #8: Dimension Door Fixes
-- **Upstream URL**: [`https://github.com/xanadinn/DurisMUD/issues/8`](https://github.com/xanadinn/DurisMUD/issues/8)
-- **Status in Current Codebase**: **RESOLVED & VERIFIED (Closed Upstream)**
-- **Technical Analysis**:
-  - *Resolution Details*:
-    - **Bidirectional Range Check**: Implemented in [`src/magic.c:5052-5054`](file:///home/aiwithapex/projects/duris/src/magic.c#L5052-L5054) (`how_close(ch->in_room, victim->in_room, distance) < 0 && how_close(victim->in_room, ch->in_room, distance) < 0`).
-    - **Float Modifier Precision**: Fixed integer truncation when evaluating `get_property("spell.dim.perlevel.modifier", 1.35)` in [`src/magic.c:5048`](file:///home/aiwithapex/projects/duris/src/magic.c#L5048) and [`src/smagic.c:4425`](file:///home/aiwithapex/projects/duris/src/smagic.c#L4425).
-    - **Probe Normalization**: Normalized failure messages to generic `"&+cYou failed.\n"` across all invalid targets to prevent probing mob status or presence.
-
----
-
-## Upstream Pull Request Audit: PR #7 (`Case senistive areas`)
-
-- **Upstream PR URL**: [`https://github.com/xanadinn/DurisMUD/pull/7`](https://github.com/xanadinn/DurisMUD/pull/7)
-- **Branch**: `Community-Duris/DurisMUD:caseSenistiveAreas` $\rightarrow$ `xanadinn/DurisMUD:master`
-- **Relevance to Current Codebase**: **NOT RELEVANT / FULLY INCORPORATED (100% Merged)**
-
-### Technical Evaluation & Evidence
-
-1. **Commit Lineage Verification**:
-   - PR #7 contains **80 commits** representing development history and area file normalization from `Community-Duris`.
-   - A complete commit-by-commit audit against our local repository verified that **all 80 commits (80/80, 100%) already exist in our Git tree**.
-
-2. **Area Filename Normalization**:
-   - The primary file renames in PR #7 targeted uppercase area files that broke on case-sensitive Linux filesystems:
-     - `areas/mob/forofcon.MOB` $\rightarrow$ `areas/mob/forofcon.mob`
-     - `areas/obj/forofcon.OBJ` $\rightarrow$ `areas/obj/forofcon.obj`
-     - `areas/qst/forofcon.QST` $\rightarrow$ `areas/qst/forofcon.qst`
-     - `areas/zon/forofcon.ZON` $\rightarrow$ `areas/zon/forofcon.zon`
-     - `areas/mob/LORNECRO.mob` $\rightarrow$ `areas/mob/lornecro.mob`
-     - `areas/obj/LORNECRO.obj` $\rightarrow$ `areas/obj/lornecro.obj`
-     - `areas/qst/LORNECRO.qst` $\rightarrow$ `areas/qst/lornecro.qst`
-     - `areas/wld/LORNECRO.wld` $\rightarrow$ `areas/wld/lornecro.wld`
-     - `areas/zon/LORNECRO.zon` $\rightarrow$ `areas/zon/lornecro.zon`
-   - In our current repository, all of these area files are already normalized to lowercase in `areas/mob/`, `areas/obj/`, `areas/qst/`, `areas/wld/`, and `areas/zon/`.
-
-3. **Conclusion**:
-   - PR #7 is **obsolete/redundant for this codebase** because our fork already includes every commit and patch contained in PR #7. No action or merge is required.
-
----
-
-## Upstream Branch Comparison: `Community-Duris:caseSenistiveAreas...xanadinn:master`
-
-- **Comparison URL**: [`https://github.com/Community-Duris/DurisMUD/compare/caseSenistiveAreas...xanadinn%3ADurisMUD%3Amaster`](https://github.com/Community-Duris/DurisMUD/compare/caseSenistiveAreas...xanadinn%3ADurisMUD%3Amaster)
-- **Relevance to Current Codebase**: **NOT RELEVANT / ALL FUNCTIONAL CHANGES ALREADY PRESENT**
-
-### Summary of the 9 Divergent Commits on `xanadinn:master`
-
-`xanadinn:master` contains 9 commits that diverged from `Community-Duris:caseSenistiveAreas`. Each commit was audited against our codebase:
-
-| Commit | Author | Message | Status in Current Codebase | Technical Details |
-|---|---|---|:---:|---|
-| **`d30fba10`** | Josh Collins | *Lots of changing to get building for Ubuntu 24 (WSL2)* | **INCORPORATED / SUPERSEDED** | Replaced deprecated `types.h` and legacy type aliases (`byte` $\rightarrow$ `uint8`, `is_empty` $\rightarrow$ `is_zone_empty`). Our codebase compiles cleanly with modern C++20 / GCC (`g++`). |
-| **`93837a40`** | Josh Collins | *random changes* | **REVERTED UPSTREAM** | Immediately reverted in commit `8d0409ad`. Net difference is zero. |
-| **`872ac07a`** | Josh Collins | *will this actually work? everything needs to be lower case omg* | **SUPERSEDED** | Partial area file lowercase rename attempt on `xanadinn:master`. All area files and tools in our codebase are already cleanly normalized to lowercase. |
-| **`8d0409ad`** | Josh Collins | *Revert "random changes"* | **N/A (Reversion)** | Reverted `93837a40`. |
-| **`d40f9952`** | Josh Collins | *Updating ignore file* | **INCORPORATED** | Added `.vscode` to `.gitignore`. Our `.gitignore` is already updated and comprehensive. |
-| **`c55774e5`** | Josh Collins | *More gitignore changes* | **INCORPORATED** | Added Visual Studio / Windows debug build patterns to `.gitignore`. |
-| **`729845f5`** | sainth | *change drow guild zone to never reset* | **ALREADY PRESENT** | Modified Arachdrathos Guilds zone ([`areas/zon/aracguil.zon:3`](file:///home/aiwithapex/projects/duris/areas/zon/aracguil.zon#L3)) reset mode from 2 to 0 (`36777 0 0 350 360 2`). Verified identical in our codebase. |
-| **`57962348`** | sainth | *fix from arih to compile on ubuntu 25.04* | **ALREADY PRESENT** | Added `(unsigned long)` cast in `ShipObjHash` pointer hashing in [`src/ships/ship_utils.c:45, 58, 74`](file:///home/aiwithapex/projects/duris/src/ships/ship_utils.c#L45) to prevent 64-bit pointer truncation warnings. Verified identical in our codebase. |
-| **`600024e8`** | Josh Collins | *Adding rested bonus to god noob spellup* | **ALREADY PRESENT** | Added `spell_rest` to `newb_spellup` in [`src/actwiz.c:10694`](file:///home/aiwithapex/projects/duris/src/actwiz.c#L10694). Verified present in our codebase. |
-
-### Conclusion
-
-There are **no unmerged or missing changes** from `https://github.com/Community-Duris/DurisMUD/compare/caseSenistiveAreas...xanadinn%3ADurisMUD%3Amaster`. Every valid fix (zone reset flags, 64-bit compiler warning fixes, spellup additions, modern build compatibility) is already present and active in this repository.
-
