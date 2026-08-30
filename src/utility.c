@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -706,6 +707,35 @@ static char *format_variadic_message(const char *prefix, const char *suffix, con
 	return buf;
 }
 
+static bool create_log_parent_directories(const char *filename)
+{
+	char path[MAX_STRING_LENGTH];
+	size_t length;
+
+	if (!filename || !*filename)
+		return false;
+
+	length = strlen(filename);
+	if (length >= sizeof(path))
+		return false;
+	memcpy(path, filename, length + 1);
+
+	for (char *slash = strchr(path, '/'); slash; slash = strchr(slash + 1, '/'))
+	{
+		if (slash == path)
+			continue;
+
+		*slash = '\0';
+		if (mkdir(path, 0755) != 0 && errno != EEXIST)
+		{
+			*slash = '/';
+			return false;
+		}
+		*slash = '/';
+	}
+	return true;
+}
+
 void logit(const char *filename, const char *format, ...)
 {
 	FILE *log_f;
@@ -739,6 +769,8 @@ void logit(const char *filename, const char *format, ...)
 		return;
 
 	log_f = fopen(filename, "a");
+	if (!log_f && errno == ENOENT && create_log_parent_directories(filename))
+		log_f = fopen(filename, "a");
 	if (!log_f)
 	{
 		free(lbuf);
