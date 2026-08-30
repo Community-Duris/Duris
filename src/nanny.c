@@ -2939,6 +2939,8 @@ void enter_game(P_desc d)
 		REMOVE_BIT(ch->specials.act, PLR_SMARTPROMPT);
 
 	schedule_pc_events(ch);
+	if (USES_COMMUNE(ch) && !IS_DRAGOON(ch))
+		do_assimilate(ch, writable_arg("nl"), CMD_COMMUNE);
 
 	if (IS_AFFECTED5(ch, AFF5_HOLY_DHARMA))
 	{

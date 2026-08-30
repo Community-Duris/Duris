@@ -11,7 +11,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): character creation now renders the authoritative rules file before agreement; focused catalog tests and a live actual-character check passed.
  -  VERIFIED FIXED (2026-08-30): chaos-mode actual-character login completed without ownership-authority grant rejections; the durable starter baseline and serialized grant regressions also pass.
  -  VERIFIED FIXED (2026-08-30): no delayed ownership-authority rejection appeared during a 150-second post-login chaos-mode watch, and the actual character remained responsive afterward.
- -  when logged in as druid, the character did not begin to commune until the command was purposefully invoked. this should begin on login
+ -  VERIFIED FIXED (2026-08-30): commune-capable non-dragoon characters now silently resume spell-slot recovery on login; a temporary actual druid communed without issuing the command.
  -  the news page was missing
  -  upon looting a corpse i received the message "Your coin credit is waiting at the auction house." but it should have been granted to the character immediately
  -  upon typing auction pickup i received the message "The auction house is busy; your money remains staged."
