@@ -31,7 +31,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FALSE (2026-08-30): the live Human class menu displayed lettered choices, and selecting the shown `w)` key chose Warrior and advanced to alignment without requiring the class name.
  -  VERIFIED FALSE (2026-08-30): the live Human class menu explicitly listed `d) Druid`, and selecting `d` accepted Druid and advanced to hometown selection.
  -  VERIFIED FIXED (2026-08-30): declining the final keep-character prompt now frees the uncommitted character and returns to the existing account menu; the complete live creation/discard flow no longer falls into legacy name login.
- -  players can see their own tracks in a room with the track skill
+ -  VERIFIED FIXED (2026-08-30): room-level track output now excludes tracks owned by the viewer; with improved tracking enabled, an actual character returned along its route without seeing its own track message.
  -  database persistence is still broken, items are not granted on login. or upon summon such as wizard innate summon book. or on any npc's
  -  there was a bit of lag after using the specialization command at the teacher. this should not lag (i speced as wizard)
  -  if a log file cannot be written because the path does not exist, the path should be created. and the log entry should attempt to write again
