@@ -4650,6 +4650,18 @@ void update_char_objects(P_char ch)
  * Extract a ch completely from the world
  */
 
+void extract_char_after_terminal_save(P_char ch)
+{
+	if (!ch)
+	{
+		logit(LOG_EXIT, "No ch in extract_char_after_terminal_save");
+		return;
+	}
+
+	SET_BIT(ch->runtime_flags, CHAR_RFLAG_TERMINAL_ITEMS_SAVED);
+	extract_char(ch);
+}
+
 void extract_char(P_char ch)
 {
 	P_obj obj;
@@ -4670,6 +4682,8 @@ void extract_char(P_char ch)
 		logit(LOG_EXIT, "No name in extract_char");
 		return;
 	}
+	const bool terminal_items_saved =
+		IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_TERMINAL_ITEMS_SAVED);
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	while (affected_by_spell(ch, TAG_CTF))
 	{
@@ -4851,8 +4865,9 @@ void extract_char(P_char ch)
 			}
 			obj = unequip_char(ch, l);
 			/* Added pet check */
-			if (ch->in_room == NOWHERE || IS_SET(obj->extra_flags, ITEM_TRANSIENT) ||
-			    IS_SHOPKEEPER(ch) || (IS_NPC(ch) && IS_RANDOM_MOB(ch)))
+			if (terminal_items_saved || ch->in_room == NOWHERE ||
+			    IS_SET(obj->extra_flags, ITEM_TRANSIENT) || IS_SHOPKEEPER(ch) ||
+			    (IS_NPC(ch) && IS_RANDOM_MOB(ch)))
 			{
 				extract_obj(obj);
 				obj = NULL;
@@ -4868,7 +4883,7 @@ void extract_char(P_char ch)
 		{
 			next_obj = obj->next_content;
 
-			if (ch->in_room == NOWHERE || IS_SHOPKEEPER(ch) ||
+			if (terminal_items_saved || ch->in_room == NOWHERE || IS_SHOPKEEPER(ch) ||
 			    IS_SET(obj->extra_flags, ITEM_TRANSIENT) ||
 			    (IS_NPC(ch) && mob_index[GET_RNUM(ch)].virtual_number >= 100000 &&
 			     mob_index[GET_RNUM(ch)].virtual_number < 110000))

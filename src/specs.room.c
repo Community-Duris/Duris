@@ -415,7 +415,7 @@ int inn(int room, P_char ch, int cmd, char * /*arg*/)
 		{
 			update_ingame_racewar(-GET_RACEWAR(ch));
 		}
-		extract_char(ch);
+		extract_char_after_terminal_save(ch);
 		ch = NULL;
 
 		return TRUE;
@@ -491,7 +491,7 @@ int undead_inn(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 		{
 			update_ingame_racewar(-GET_RACEWAR(ch));
 		}
-		extract_char(ch);
+		extract_char_after_terminal_save(ch);
 		ch = NULL;
 	}
 	return (TRUE);

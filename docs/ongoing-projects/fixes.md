@@ -39,6 +39,31 @@
 - Remaining: investigate and fix item duplication across
   disconnect/reconnect.
 
+### 2026-08-30 - Item duplication across idle disconnect complete
+
+- Root cause: idle rent durably saved the character and then used ordinary
+  world extraction. Ordinary extraction dropped every non-transient carried
+  item and equipped weapon into the room. Login then restored those same
+  saved items. This exactly explains the report: the existing floor dagger
+  plus two equipped daggers became three, and the saved sword, bandages, and
+  torches appeared both on the floor and in inventory; transient armor was
+  destroyed instead of duplicated.
+- Fix: added an explicit post-terminal-save extraction path. It frees the
+  saved in-memory equipment and inventory without turning either into room
+  drops. Idle rent, camp, inn, trusted quit, and staff ghost extraction now
+  use that path only after the terminal save succeeds.
+- Files changed: `src/defines.h`, `src/prototypes.h`, `src/handler.c`,
+  `src/limits.c`, `src/affects.c`, `src/actoth.c`, `src/specs.room.c`,
+  `src/actwiz.c`, and
+  `tests/async/test_terminal_extract_item_retention.py`.
+- Checks passed:
+  `python3 tests/async/test_terminal_extract_item_retention.py`,
+  `python3 tests/async/test_terminal_save_safety.py`,
+  `python3 tests/async/test_orphan_item_session_regressions.py`,
+  `python3 tests/async/test_player_snapshot_capture.py`,
+  `./scripts/format.sh --check`, and `make -C src`.
+- Remaining: final completion audit across all three fixes.
+
 ## Made a new character, for Hometown I chose "Planes of life":
 
 Your race may choose among:

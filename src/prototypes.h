@@ -1316,6 +1316,7 @@ void char_from_room(P_char);
 bool char_to_room(P_char, int, int);
 void equip_char(P_char, P_obj, int, int);
 void extract_char(P_char);
+void extract_char_after_terminal_save(P_char);
 void extract_obj(P_obj obj,
 		 int gone_for_good = FALSE); // Only use gone_for_good for purging arti data.
 //   If it was just a temp object, _don't_ use.

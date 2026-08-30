@@ -13782,7 +13782,7 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 					ch);
 				continue;
 			}
-			extract_char(vict);
+			extract_char_after_terminal_save(vict);
 			count++;
 		}
 
@@ -13839,7 +13839,7 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 					ch);
 				continue;
 			}
-			extract_char(vict);
+			extract_char_after_terminal_save(vict);
 			count++;
 		}
 

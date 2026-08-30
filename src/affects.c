@@ -3585,7 +3585,7 @@ int camp(P_char ch)
 					{
 						update_ingame_racewar(-GET_RACEWAR(ch));
 					}
-					extract_char(ch);
+					extract_char_after_terminal_save(ch);
 
 					/*
 					 ok, to make the new nanny work correctly, we need to assign

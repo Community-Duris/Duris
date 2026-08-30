@@ -322,7 +322,7 @@ void do_camp(P_char ch, char *arg, int /*cmd*/)
 		act("$n has left the game.", TRUE, ch, 0, 0, TO_ROOM);
 		sql_log_player_login(ch, "logout");
 		redis_player_offline(ch);
-		extract_char(ch);
+		extract_char_after_terminal_save(ch);
 		ch = NULL;
 		return;
 	}
@@ -1721,7 +1721,7 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	sql_log_player_login(ch, "logout");
 	redis_player_offline(ch);
-	extract_char(ch);
+	extract_char_after_terminal_save(ch);
 	ch = NULL;
 }
 

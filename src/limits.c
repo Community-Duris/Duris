@@ -1683,7 +1683,7 @@ void point_update(void)
 				{
 					update_ingame_racewar(-GET_RACEWAR(i));
 				}
-				extract_char(i);
+				extract_char_after_terminal_save(i);
 				continue;
 			}
 		}
