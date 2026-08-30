@@ -26,6 +26,8 @@ class ProductionServiceTest(unittest.TestCase):
         self.assertIn("--production)", self.cycle)
         self.assertIn('--production requires ENVIRONMENT=production', self.cycle)
         self.assertIn("PRODUCTION_MODE == 1 && DEV_MODE == 1", self.cycle)
+        self.assertIn('!= "mariadb/production"', self.cycle)
+        self.assertIn("BUILD_PROFILE=production", self.cycle)
 
     def test_service_is_boot_enabled_and_restarts_without_rate_limit(self) -> None:
         for token in (

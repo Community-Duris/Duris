@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -101,6 +102,9 @@ static void write_legacy_ship(const fs::path &path, const std::string &owner)
 
 int main(int argc, char **argv)
 {
+	/* Security-sensitive fixture metadata must not depend on the invoking
+	 * account's umask (developer accounts commonly use 0002). */
+	umask(0077);
 	require(argc == 2, "state root argument required");
 	const fs::path root = fs::path(argv[1]) / "ship";
 	prepare_root(root);

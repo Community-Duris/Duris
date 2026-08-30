@@ -27,10 +27,15 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 EXTRA_CFLAGS =
 EXTRA_LDFLAGS =
 PERSISTENCE_BACKEND ?= mariadb
+BUILD_PROFILE ?= development
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS)
+ifeq ($(BUILD_PROFILE),development)
 CFLAGS += -DTEST_MUD
-CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
+else ifneq ($(BUILD_PROFILE),production)
+$(error BUILD_PROFILE must be development or production)
+endif
+CFLAGS += -D__NO_TESTS__    # exclude built-in test hooks from maintained builds
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
@@ -61,7 +66,7 @@ BIN_ROOT          ?= $(ROOT_DIR)/bin
 SERVER_BIN_DIR    ?= $(BIN_ROOT)/server
 TOOL_BIN_DIR      ?= $(BIN_ROOT)/tools
 MIGRATION_BIN_DIR ?= $(BIN_ROOT)/migrations
-OBJDIR            ?= $(BIN_ROOT)/objects/server/$(PERSISTENCE_BACKEND)
+OBJDIR            ?= $(BIN_ROOT)/objects/server/$(PERSISTENCE_BACKEND)/$(BUILD_PROFILE)
 DMS_BINARY        ?= $(SERVER_BIN_DIR)/dms_new
 PFILE_BINARY      ?= $(TOOL_BIN_DIR)/pfile
 MIGRATE_BINARY    ?= $(MIGRATION_BIN_DIR)/migrate_pfiles
@@ -489,15 +494,18 @@ dms_new: $(DMS_BINARY)
 FORCE:
 
 # The server binary has one stable runtime path, but its object graph and link
-# dependencies differ by persistence backend. Keep each backend's objects
-# isolated and update this stamp only when the selected backend changes so a
-# backend switch cannot leave an up-to-date binary linked for the prior mode.
+# dependencies differ by persistence backend and build profile. Keep each
+# combination's objects isolated and update this stamp when either selection
+# changes so a switch cannot leave an up-to-date binary linked for the prior
+# runtime role.
 $(BACKEND_STAMP): FORCE
 	@mkdir -p $(dir $@)
 	@set -eu; \
 	backend='$(PERSISTENCE_BACKEND)'; \
-	if [ ! -f "$@" ] || [ "$$(cat "$@")" != "$$backend" ]; then \
-		printf '%s\n' "$$backend" >"$@.tmp"; \
+	profile='$(BUILD_PROFILE)'; \
+	identity="$$backend/$$profile"; \
+	if [ ! -f "$@" ] || [ "$$(cat "$@")" != "$$identity" ]; then \
+		printf '%s\n' "$$identity" >"$@.tmp"; \
 		mv "$@.tmp" "$@"; \
 	fi
 

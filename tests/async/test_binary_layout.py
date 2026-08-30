@@ -76,12 +76,17 @@ for command, required in (
     ).stdout
     assert required in output, f"{' '.join(command)} does not emit {required}"
 
-# MariaDB and client-free builds use incompatible compile definitions and link
-# dependencies. Their objects must remain isolated even though both publish the
-# maintained server path, and switching modes must invalidate that shared binary.
+# Backends and build profiles use incompatible compile definitions and link
+# dependencies. Their objects must remain isolated even though all combinations
+# publish the maintained server path, and switching either dimension must
+# invalidate that shared binary.
 makefile = (ROOT / "src/Makefile").read_text()
 assert "BACKEND_STAMP" in makefile
-for backend in ("mariadb", "flatfile"):
+for backend, profile in (
+    ("mariadb", "development"),
+    ("mariadb", "production"),
+    ("flatfile", "development"),
+):
     output = subprocess.run(
         [
             "make",
@@ -91,14 +96,20 @@ for backend in ("mariadb", "flatfile"):
             "-n",
             "dms_new",
             f"PERSISTENCE_BACKEND={backend}",
+            f"BUILD_PROFILE={profile}",
         ],
         cwd=ROOT,
         check=True,
         text=True,
         capture_output=True,
     ).stdout
-    assert f"bin/objects/server/{backend}" in output
+    assert f"bin/objects/server/{backend}/{profile}" in output
     assert f"backend='{backend}'" in output
+    assert f"profile='{profile}'" in output
+    if profile == "development":
+        assert "-DTEST_MUD" in output
+    else:
+        assert "-DTEST_MUD" not in output
 
 # Cleaning the isolated sanitizer build must not remove normal utility or
 # migration binaries.

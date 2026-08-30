@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <sys/stat.h>
 
 namespace fs = std::filesystem;
 
@@ -103,6 +104,9 @@ void logit(const char *, const char *, ...) {}
 
 int main(int argc, char **argv)
 {
+	/* Keep authority fixtures private even when the invoking account uses a
+	 * collaborative umask such as 0002. */
+	umask(0077);
 	require(argc == 2, "temporary directory argument required");
 	const fs::path base = fs::absolute(argv[1]);
 	const fs::path working = base / "working";

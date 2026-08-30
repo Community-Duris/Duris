@@ -9,24 +9,28 @@ itself.
 
 ```bash
 make                                    # server, editor, and area tools
-make -C src                             # produces bin/server/dms_new
+make -C src                             # development server build
+make -C src BUILD_PROFILE=production    # production server build
 cp bin/server/dms_new bin/server/dms    # manually promote for a direct run
 ```
 
 The server build has an explicit compile-time persistence dependency boundary:
 
 ```bash
-make -C src PERSISTENCE_BACKEND=mariadb
-make -C src PERSISTENCE_BACKEND=flatfile
+make -C src PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=development
+make -C src PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production
+make -C src PERSISTENCE_BACKEND=flatfile BUILD_PROFILE=development
 ```
 
 `mariadb` is the default and includes and links the MySQL-compatible client. The
 `flatfile` selection defines `__NO_MYSQL__` and does not add the MySQL include path or
-client library. Backend-specific objects are kept under
-`bin/objects/server/<backend>/`; the maintained `bin/server/dms_new` path is relinked
-when the selected backend changes, so the two commands can be run sequentially without
-cleaning or reusing incompatible objects. Each binary accepts only its matching primary
-runtime mode. The legacy
+client library. Backend/profile-specific objects are kept under
+`bin/objects/server/<backend>/<profile>/`; the maintained `bin/server/dms_new` path is
+relinked when either selection changes, so the commands can be run sequentially without
+cleaning or reusing incompatible objects. `development` is the default and defines
+`TEST_MUD`; `production` omits all development-only behavior. The production launcher
+checks the build stamp before promoting or running a binary. Each binary accepts only
+its matching primary runtime mode. The legacy
 `mariadb-primary-flatfile-fallback` token remains recognized but fails closed because
 mixed per-operation authority transfer is not supported.
 
@@ -66,8 +70,8 @@ From the default build line:
 | Flag | Meaning |
 |------|---------|
 | `-std=c++20` | All `.c` files are compiled as C++20 with g++. |
-| `-DTEST_MUD` | Development build: selects the `duris_dev` database credentials in `src/sql.h` and enables test commands. |
-| `-D__NO_TESTS__` | Excludes built-in test hooks. |
+| `-DTEST_MUD` | Added only by `BUILD_PROFILE=development`; enables development-only commands and behavior. |
+| `-D__NO_TESTS__` | Excludes built-in test hooks from maintained development and production builds. |
 | `-D__NO_MYSQL__` | Selected by `PERSISTENCE_BACKEND=flatfile`; removes the client compile/link dependency. |
 
 Redis is optional at runtime, but Hiredis and OpenSSL remain build dependencies because

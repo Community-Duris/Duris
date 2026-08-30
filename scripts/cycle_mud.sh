@@ -78,6 +78,8 @@ STOP_REASON="initial bootup"
 SERVER_BIN_DIR="bin/server"
 STAGED_BINARY="$SERVER_BIN_DIR/dms_new"
 RUNTIME_BINARY="$SERVER_BIN_DIR/dms"
+STAGED_BUILD_STAMP="$SERVER_BIN_DIR/.dms_new-backend"
+RUNTIME_BUILD_STAMP="$SERVER_BIN_DIR/.dms-backend"
 BINARY_HISTORY_DIR="$SERVER_BIN_DIR/history"
 BINARY_HISTORY_LIMIT="${DMS_BINARY_HISTORY_LIMIT:-5}"
 
@@ -193,6 +195,16 @@ fi
 while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 	DATESTR=$(date +%C%y.%m.%d-%H.%M.%S)
 
+  if (( PRODUCTION_MODE == 1 )); then
+    BUILD_STAMP="$RUNTIME_BUILD_STAMP"
+    [[ -f "$STAGED_BINARY" ]] && BUILD_STAMP="$STAGED_BUILD_STAMP"
+    if [[ ! -f "$BUILD_STAMP" || "$(<"$BUILD_STAMP")" != "mariadb/production" ]]; then
+      echo "Production mode requires a mariadb/production server build" >&2
+      echo "Build with: make -C src PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production" >&2
+      exit 1
+    fi
+  fi
+
   # Refuse to publish the service against a stale or incompatible schema. Local
   # databases can be advanced safely by the guarded immutable runner;
   # production remains read-only and must be migrated through the runbook.
@@ -217,6 +229,10 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
         mv "$RUNTIME_BINARY" "$BINARY_HISTORY_DIR/dms.$DATESTR"
       fi
       mv "$STAGED_BINARY" "$RUNTIME_BINARY"
+      rm -f -- "$RUNTIME_BUILD_STAMP"
+      if [[ -f "$STAGED_BUILD_STAMP" ]]; then
+        mv "$STAGED_BUILD_STAMP" "$RUNTIME_BUILD_STAMP"
+      fi
 
       mapfile -t OLD_BINARIES < <(
         find "$BINARY_HISTORY_DIR" -maxdepth 1 -type f -name 'dms.*' \

@@ -32,6 +32,8 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
 - Promotes `bin/server/dms_new` to `bin/server/dms`, retains the five newest
   prior executables under `bin/server/history/` by default, and runs the active
   binary in an outer loop. Set `DMS_BINARY_HISTORY_LIMIT` to change the limit.
+  A `--production` launch refuses to promote or run anything except a stamped
+  `PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production` build.
 - On each restart it snapshots logs into `logs/old-logs/<timestamp>/`, writes
   the stop reason, runs `scripts/backup_pfiles.sh`, and optionally emails an alert.
   Database-backed modes create and validate an atomic MySQL backup and record
@@ -570,12 +572,13 @@ the timer penalty.
   explicit non-production `DB_NAME` in `DB_ALLOWED_TARGETS`, non-7777 listener
   (for example port 4000 via `--dev`), and a `TEST_MUD` build. The port does not
   select the database.
-- Production: production `ENVIRONMENT`, non-loopback database transport with an
-  absolute trusted `DB_SSL_CA`, explicit allow-listed database name, real listener
-  TLS certificate linked as `duris.crt`/`duris.key`, secrets supplied through the
-  protected environment or secret store, mode-0700 journal/state directories, and
-  regularly restored and verified backups of MySQL, legacy player/account material,
-  journals, and erasure tombstones. Credentials never belong in source files.
+- Production: production `ENVIRONMENT`, an explicit allow-listed database target,
+  TLS with an absolute trusted `DB_SSL_CA` whenever database traffic leaves loopback,
+  a `BUILD_PROFILE=production` binary, a real listener TLS certificate linked as
+  `duris.crt`/`duris.key`, secrets supplied through the protected environment or secret
+  store, mode-0700 journal/state directories, and regularly restored and verified
+  backups of MySQL, legacy player/account material, journals, and erasure tombstones.
+  Credentials never belong in source files.
 
 ### Release boundary
 

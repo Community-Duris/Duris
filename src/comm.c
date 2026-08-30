@@ -520,6 +520,19 @@ int main(int argc, char **argv)
 	if (load_env_file() < 0)
 		fatal_boot_error("comm", "Unsafe environment configuration file");
 
+	const char *configured_tls_port = getenv("DURIS_TLS_PORT");
+	if (configured_tls_port && *configured_tls_port)
+	{
+		char *end = NULL;
+		errno = 0;
+		long parsed_tls_port = strtol(configured_tls_port, &end, 10);
+		if (errno == ERANGE || end == configured_tls_port || *end || parsed_tls_port < 1 ||
+		    parsed_tls_port > 65535 || parsed_tls_port == port)
+			fatal_boot_error("comm", "DURIS_TLS_PORT is invalid");
+		sslport = static_cast<int>(parsed_tls_port);
+	}
+	logit(LOG_STATUS, "Using TLS telnet port %d.", sslport);
+
 	char persistence_error[2048];
 	if (!persistence_mode_configure(persistence_error, sizeof(persistence_error)))
 		fatal_boot_error("comm", "%s", persistence_error);

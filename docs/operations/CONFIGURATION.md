@@ -292,6 +292,7 @@ for production.
 | Variable | Meaning |
 | --- | --- |
 | `LISTEN_ADDRESS` | Numeric IPv4 or IPv6 address applied to telnet, TLS telnet, and WebSocket listeners. Use `127.0.0.1` or `::1` for local development. |
+| `DURIS_TLS_PORT` | Optional independent TLS telnet port. It defaults to `7778`, or to the plain-telnet port plus one when a custom plain port is supplied. Values must be decimal ports from 1 through 65535 and must differ from the plain port. |
 | `DURIS_WEBSOCKET_PORT` | WebSocket and HTTP health-listener port. It defaults to `4050`; values must be decimal ports from 1 through 65535. |
 | `DURIS_WEBSOCKET_LISTEN_ADDRESS` | WebSocket-only numeric listener address; defaults to `LISTEN_ADDRESS`, and to `127.0.0.1` when neither is set. Production requires exact loopback so a local TLS reverse proxy owns the public endpoint. |
 | `DURIS_WEBSOCKET_ALLOWED_ORIGINS` | Exact comma-separated browser `Origin` allow-list. Required in production; non-browser service connections may omit `Origin`. |
@@ -307,13 +308,13 @@ TLS before forwarding to this plaintext listener. The server refuses to create
 the production listener when those controls are absent.
 The health response reports only process and in-memory database-pool readiness and
 performs no blocking database query. Plain telnet defaults to `7777` and TLS telnet to
-`7778`; a custom plain-telnet port uses the following port for TLS. Configure a
-real `duris.crt` and `duris.key` in the repository root for networked TLS. The
-operator key must be owner-controlled and mode `0600` or stricter. The tracked
-self-signed key was removed; run `./scripts/generate_localhost_cert.sh` to create
-an ignored machine-local fallback. That fallback is accepted only with the
-explicit local role and an exact loopback listener, and its key must also be
-owner-controlled and mode `0600` or stricter.
+`7778`; a custom plain-telnet port uses the following port for TLS unless
+`DURIS_TLS_PORT` provides an independent port. Configure a real `duris.crt` and
+`duris.key` in the repository root for networked TLS. The operator key must be
+owner-controlled and mode `0600` or stricter. The tracked self-signed key was removed;
+run `./scripts/generate_localhost_cert.sh` to create an ignored machine-local fallback.
+That fallback is accepted only with the explicit local role and an exact loopback
+listener, and its key must also be owner-controlled and mode `0600` or stricter.
 
 ## Diagnostics
 
