@@ -28,6 +28,7 @@ from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
 fight = (ROOT / "src" / "fight.c").read_text(encoding="utf-8", errors="replace")
+actoth = (ROOT / "src" / "actoth.c").read_text(encoding="utf-8", errors="replace")
 movement = (ROOT / "src" / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace")
 repository = (ROOT / "src" / "player_load_repository.c").read_text(
@@ -128,6 +129,15 @@ checks.append((
     "the retry still finishes the death once nothing is pending",
     contains(retry, "extract_char(ch);") and
     contains(retry, "persistence_save_character_terminal(ch, RENT_DEATH)")
+))
+
+suicide = body(actoth, "void do_suicide(P_char ch, char * /*argument*/, int /*cmd*/)")
+checks.append((
+    "an already-dead character cannot confirm a second death",
+    contains(suicide, "if (GET_STAT(ch) == STAT_DEAD)") and
+    contains(suicide, 'send_to_char("You are already dead.\\r\\n", ch);') and
+    suicide.index("if (GET_STAT(ch) == STAT_DEAD)") <
+    suicide.index("if (!command_confirm)") < suicide.index("die(ch, ch);")
 ))
 
 failed = [name for name, ok in checks if not ok]
