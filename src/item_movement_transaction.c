@@ -20,6 +20,7 @@
 #include <vector>
 
 extern P_obj object_list;
+extern P_char character_list;
 extern const int top_of_world;
 
 namespace
@@ -173,6 +174,14 @@ P_obj find_item(uint64_t uid)
 	for (P_obj object = object_list; object; object = object->next)
 		if (object->obj_uid == uid)
 			return object;
+	return NULL;
+}
+
+P_char find_live_player(uint32_t pid)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid))
+			return character;
 	return NULL;
 }
 
@@ -649,7 +658,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			continue;
 		found->second.completed = completions[index];
 		found->second.completion_ready = true;
-		if (P_char actor = find_player_by_pid(found->second.actor_pid))
+		if (P_char actor = find_live_player(found->second.actor_pid))
 			publish(found, actor);
 	}
 	pump_creation_grants();

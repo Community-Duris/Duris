@@ -3,10 +3,11 @@
 
 make_corpse() hands the corpse's items over one asynchronous transaction at a
 time: submit_next_corpse_item() submits a single item and corpse_item_completion()
-submits the next when that one commits.  A completion is only published while the
-owner is still live (item_movement_transaction_handle_completions() looks the
-actor up by pid), so die() extracting the character mid-chain stranded the
-remaining items as active rows in item_current_owner while
+submits the next when that one commits. The completion must publish while the
+owner remains in the world even if their descriptor dropped during combat;
+otherwise the first committed transfer stalls the chain. Extracting the
+character mid-chain also stranded the remaining items as active rows in
+item_current_owner while
 persistence_save_character_terminal() wrote an empty player_items.
 
 load_items() then compared the two on the next login, saw owned_count !=
@@ -50,10 +51,12 @@ def body(text, signature):
 
 checks = []
 
-# The hazard this guards against: completions are addressed to a live pid.
+# The hazard this guards against: linkdead combat deaths still have a live actor.
 checks.append((
-    "completions are only published to a live owner",
-    contains(movement, "if (P_char actor = find_player_by_pid(found->second.actor_pid))")
+    "completions publish to a live owner without requiring a descriptor",
+    contains(movement, "P_char find_live_player(uint32_t pid)") and
+    contains(movement, "for (P_char character = character_list;") and
+    contains(movement, "if (P_char actor = find_live_player(found->second.actor_pid))")
 ))
 checks.append((
     "the corpse handoff is still a one-item-at-a-time chain",

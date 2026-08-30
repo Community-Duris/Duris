@@ -17,7 +17,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): `auction pickup` accepted a live staged 1-platinum claim without the busy response, credited the actual character, cleared the staged balance, and recorded the durable auction-claim ledger entry; no further code change was required.
  -  VERIFIED FALSE (2026-08-30): "no NPCs loaded with items." A full-world game-loop audit found 13,433 NPCs with inventory or equipment (9,663 equipped); no code change was required.
  -  VERIFIED FIXED (2026-08-30): unpaid locker entry now captures the bank exit before the temporary locker is released and leaves cleanup to the normal locker hook; an actual zero-balance character received the payment rejection and was returned to the named Tharnadian Bank instead of an anonymous locker room.
- -  upon being killed in battle i received the message "Your death could not be saved. You remain in the world for recovery."
+ -  VERIFIED FIXED (2026-08-30): linkdead battle deaths now publish corpse-item completions against the live in-world character instead of waiting on a descriptor; all 28 actual-character items reached one corpse, death recovery completed, and the character logged back in alive without the save warning.
  -  a corpse was created even though my death did not save.
  -  a second corpse was created when i tried to suicide confirm while locked in death.
  -  the salvage skill shows that corpses "Salvage assessment: the corpse of Fer can be broken down for salvage materials." however corpses cannot, or should not, be salvagable

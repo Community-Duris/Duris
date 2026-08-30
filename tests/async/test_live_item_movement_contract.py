@@ -106,6 +106,20 @@ class LiveItemMovementContractTests(unittest.TestCase):
         nanny = (SRC / "nanny.c").read_text()
         self.assertGreaterEqual(nanny.count("item_movement_transaction_player_ready"), 2)
 
+    def test_linkdead_actor_completion_publishes_while_character_is_live(self):
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        helper = movement[movement.index("P_char find_live_player(uint32_t pid)") :]
+        helper = helper[: helper.index("bool creation_grant_request_valid")]
+        self.assertIn("character_list", helper)
+        completions = movement[
+            movement.index("void item_movement_transaction_handle_completions") :
+        ]
+        completions = completions[
+            : completions.index("void item_movement_transaction_player_ready")
+        ]
+        self.assertIn("find_live_player(found->second.actor_pid)", completions)
+        self.assertNotIn("find_player_by_pid(found->second.actor_pid)", completions)
+
     def test_give_completion_can_publish_to_a_linkdead_recipient(self):
         actobj = (SRC / "actobj.c").read_text()
         helper = actobj[actobj.index("P_char find_live_player_pid"):]
