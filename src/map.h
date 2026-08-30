@@ -77,6 +77,11 @@
 #define MAP_AUTOMAP 2
 
 #define VNUM_TRACKS 1276
+#define TRACK_DIRECTION_VALUE 0
+#define TRACK_OWNER_PID_VALUE 1
+
+#define IS_OWN_TRACK(ch, track) \
+	(IS_PC(ch) && GET_PID(ch) > 0 && (track)->value[TRACK_OWNER_PID_VALUE] == GET_PID(ch))
 
 typedef struct _mapSymbolInfo
 {

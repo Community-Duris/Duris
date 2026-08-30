@@ -458,7 +458,7 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 				val = MIN(val, CONTAINS_MINE);
 			}
 			// Using track scan ?
-			else if ((OBJ_VNUM(obj) == VNUM_TRACKS) &&
+			else if ((OBJ_VNUM(obj) == VNUM_TRACKS) && !IS_OWN_TRACK(ch, obj) &&
 				 ((distance <= (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) / 20)) ||
 				  IS_TRUSTED(ch)))
 			{

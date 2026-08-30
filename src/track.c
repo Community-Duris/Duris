@@ -248,7 +248,7 @@ void do_track_not_in_use(P_char ch, char *arg, int /*cmd*/)
 
 	for (obj = world[ch->in_room].contents; obj; obj = obj->next_content)
 	{
-		if (obj->R_num == real_object(VNUM_TRACKS))
+		if (obj->R_num == real_object(VNUM_TRACKS) && !IS_OWN_TRACK(ch, obj))
 		{
 			if (skill >= number(90, 100))
 			{
@@ -612,7 +612,7 @@ void add_track(P_char ch, int dir)
 		snprintf(buf1, MAX_STRING_LENGTH, "There are deep %s tracks going %s.",
 			 race_names_table[(int)GET_RACE(mount)].ansi, dirs[dir]);
 		strcpy(buf3, mount->player.short_descr);
-		track->value[0] = dir;
+		track->value[TRACK_DIRECTION_VALUE] = dir;
 		dura += 15 * WAIT_SEC;
 	}
 	else if (IS_DISGUISE_SHAPE(ch))
@@ -620,7 +620,7 @@ void add_track(P_char ch, int dir)
 		snprintf(buf1, MAX_STRING_LENGTH, "There are %s tracks going %s.",
 			 race_names_table[(int)GET_DISGUISE_RACE(ch)].ansi, dirs[dir]);
 		strcpy(buf3, ch->disguise.name);
-		track->value[0] = dir;
+		track->value[TRACK_DIRECTION_VALUE] = dir;
 	}
 	else
 	{
@@ -632,8 +632,9 @@ void add_track(P_char ch, int dir)
 			strcpy(buf3, ch->player.name);
 		else
 			strcpy(buf3, "someone");
-		track->value[0] = dir;
+		track->value[TRACK_DIRECTION_VALUE] = dir;
 	}
+	track->value[TRACK_OWNER_PID_VALUE] = GET_PID(ch);
 
 	// snprintf(buf1, MAX_STRING_LENGTH, "There are tracks here going %s.", dirs[dir]);
 
@@ -872,7 +873,7 @@ void show_tracks(P_char ch, int room)
 	{
 		next_obj = obj->next_content;
 
-		if (obj->R_num == real_object(VNUM_TRACKS))
+		if (obj->R_num == real_object(VNUM_TRACKS) && !IS_OWN_TRACK(ch, obj))
 		{
 			if (affected_by_spell(ch, SPELL_AURA_SIGHT))
 			{
