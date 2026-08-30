@@ -4,7 +4,7 @@ Note some of these may be false positives or may have been already repaired.  Th
 
 ## (potential) BUGS & ISSUES
 
- -  allocator mismatch on password hashing
+ -  VERIFIED FIXED (2026-08-30): password-hash temporaries now use matching `malloc`/`free`; the focused hash runtime test and an actual-character login/`score` under Memcheck completed with 0 errors.
  -  the race selection screen was reverted to a plain text list in one of the refactors, here is how race menu should look (colors too!):
  `docs/ongoing-projects/1767242209173_x3drwi.webp`
  -  idle timeout during character creation is very short
