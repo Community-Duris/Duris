@@ -15,7 +15,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  the news page was missing
  -  upon looting a corpse i received the message "Your coin credit is waiting at the auction house." but it should have been granted to the character immediately
  -  upon typing auction pickup i received the message "The auction house is busy; your money remains staged."
- -  no npc's loaded with items
+ -  no npc's loaded with items!!
  -  when attempting to enter locker with no money i received the "..but you don't have the money or the bank could not complete the payment, GET OUT!" however when it said i was booted out i actualy remained in a room with no visible name and a north exit with door closed rather than being returned to the bank i had attempted to enter from.
  -  upon being killed in battle i received the message "Your death could not be saved. You remain in the world for recovery."
  -  a corpse was created even though my death did not save.
