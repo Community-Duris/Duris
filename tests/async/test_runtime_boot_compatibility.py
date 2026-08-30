@@ -25,7 +25,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         report = runtime.validate()
         self.assertEqual(report["current_table_count"], 173)
         self.assertEqual(report["migration_head"],
-                         "0004_server_reboots")
+                         "0005_level_cap_singleton")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

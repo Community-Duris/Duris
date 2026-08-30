@@ -5510,7 +5510,7 @@ void init_char(P_char ch)
 	 * first save down the synchronous path, which is the only one that INSERTs.
 	 */
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
-	ch->only.pc->screen_length = 24; /* default */
+	ch->only.pc->screen_length = DEFAULT_SCREEN_LENGTH;
 	ch->only.pc->wiz_invis = 0;
 	ch->only.pc->highest_level = 1;
 	ch->player.short_descr = 0;
