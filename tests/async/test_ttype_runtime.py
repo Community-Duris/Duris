@@ -9,6 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 
+COMM = (SRC / "comm.c").read_text()
+assert "ttype_negotiate(newd);\n\t\tgreet(newd);" in COMM
+assert "time(0) >= point->ttype_timeout" not in COMM
+
 HARNESS = r'''
 #include "ttype.h"
 #include "telnet.h"
@@ -226,6 +230,15 @@ int main()
 		std::strcpy(modern.client_name, "MUDLET");
 		check_cp437(&modern);
 		require(modern.cp437 == 0, 21);
+	}
+	tests++;
+
+	// 14. Background negotiation still selects legacy output after login starts.
+	{
+		descriptor_data legacy = {};
+		legacy.ttype_state = TTYPE_CYCLING;
+		submit(&legacy, "CMUD");
+		require(legacy.cp437 == 1, 22);
 	}
 	tests++;
 

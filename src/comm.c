@@ -1348,18 +1348,6 @@ resume_game_loop:
 				}
 			}
 
-			/* wait for ttype response or timeout */
-			if (point->connected == CON_TTYPE_NEGO)
-			{
-				if (point->ttype_state == TTYPE_COMPLETE ||
-				    time(0) >= point->ttype_timeout)
-				{
-					greet(point);
-				}
-				else
-					continue;
-			}
-
 			/* update max_users_playing for "who" information */
 			if ((point->connected) == CON_PLAYING)
 			{
@@ -3086,10 +3074,11 @@ int new_descriptor(int s, int conn_type)
 		STATE(newd) = CON_GET_TERM; /* WebSocket waits for HTTP handshake */
 	else
 	{
-		/* start ttype negotiation before greeting */
+		/* Terminal discovery is optional metadata.  Start it before the
+		 * greeting so responsive clients can answer immediately, but never
+		 * hold the login screen behind an RFC 1091 response. */
 		ttype_negotiate(newd);
-		STATE(newd) = CON_TTYPE_NEGO;
-		newd->ttype_timeout = time(0) + 5; /* 5 second timeout */
+		greet(newd);
 	}
 
 	return 0;

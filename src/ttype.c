@@ -185,6 +185,10 @@ void ttype_handle_subnegotiation(P_desc d, const unsigned char *data, int len)
 	/* MTTS response can come as any entry; typically not first but checking doesn't hurt */
 	if (strncasecmp(term_type, "MTTS", 4) == 0)
 		parse_mtts_bitvector(d, term_type);
+	else
+		/* Login no longer waits for the full TTYPE cycle.  Apply legacy
+		 * terminal detection as soon as a usable name arrives. */
+		check_cp437(d);
 
 	/* request next round */
 	ttype_send_request(d);
