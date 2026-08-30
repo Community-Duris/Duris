@@ -151,6 +151,8 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
                       "zone_touch_outcome", "zone_touch_outcome_participant"):
             self.assertIn(token, migration)
             self.assertIn(token, bootstrap)
+        self.assertIn("`option` TINYINT UNSIGNED NOT NULL", migration)
+        self.assertIn("pid,`option`,event_value", boon)
         self.assertIn("verify_boon_reward_zone_schema.sh", runner)
 
     def test_flat_boon_rewards_replay_before_acknowledgement(self):

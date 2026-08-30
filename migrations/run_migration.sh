@@ -19,14 +19,22 @@ esac
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-if [[ -f "$SCRIPT_DIR/.env" ]]; then
+if [[ -n "${MIGRATION_ENV_FILE:-}" ]]; then
+    if [[ ! -f "$MIGRATION_ENV_FILE" || -L "$MIGRATION_ENV_FILE" ]]; then
+        printf 'invalid migration configuration: %s must be a regular non-symlink file\n' \
+            "$MIGRATION_ENV_FILE" >&2
+        exit 2
+    fi
+    # shellcheck disable=SC1090
+    source "$MIGRATION_ENV_FILE"
+elif [[ -f "$SCRIPT_DIR/.env" ]]; then
     # shellcheck disable=SC1091
     source "$SCRIPT_DIR/.env"
 elif [[ -f "$PROJECT_ROOT/.env" ]]; then
     # shellcheck disable=SC1091
     source "$PROJECT_ROOT/.env"
 else
-    printf 'missing migration configuration: expected %s or %s\n' \
+    printf 'missing migration configuration: set MIGRATION_ENV_FILE or provide %s or %s\n' \
         "$SCRIPT_DIR/.env" "$PROJECT_ROOT/.env" >&2
     exit 2
 fi
@@ -36,7 +44,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=142
+TOTAL=143
 FAILED=0
 
 run_sql() {
@@ -172,6 +180,42 @@ EOF
     echo "ok"
 }
 
+convert_tables_to_innodb_if_present() {
+    local desc="$1"
+    shift
+    STEP=$((STEP + 1))
+    printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "$desc"
+
+    local table
+    local table_exists
+    local err_file
+    for table in "$@"; do
+        if ! table_exists=$("${MYSQL[@]}" -N -B -e "
+SELECT COUNT(*)
+FROM information_schema.tables
+WHERE table_schema = DATABASE()
+  AND table_name = '$table'
+  AND table_type = 'BASE TABLE';" 2>/dev/null); then
+            echo "FAILED"
+            FAILED=$((FAILED + 1))
+            exit 1
+        fi
+        [ "$table_exists" = "1" ] || continue
+
+        err_file=$(mktemp)
+        if ! "${MYSQL[@]}" -e "SET sql_mode=''; ALTER TABLE \`$table\` ENGINE=InnoDB;" 2>"$err_file"; then
+            echo "FAILED"
+            head -20 "$err_file"
+            rm -f "$err_file"
+            FAILED=$((FAILED + 1))
+            exit 1
+        fi
+        rm -f "$err_file"
+    done
+
+    echo "ok"
+}
+
 run_sql "set database to server default" "
 ALTER DATABASE \`$DB_NAME\` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;"
 
@@ -183,38 +227,13 @@ UPDATE ping SET TIMESTAMP='1970-01-01 00:00:01' WHERE TIMESTAMP < '1970-01-01 00
 UPDATE pkill_event SET stamp='1970-01-01 00:00:01' WHERE stamp < '1970-01-01 00:00:01' OR stamp = '0000-00-00 00:00:00';
 UPDATE progress SET stamp='1970-01-01 00:00:01' WHERE stamp < '1970-01-01 00:00:01' OR stamp = '0000-00-00 00:00:00';"
 
-run_sql "convert legacy MyISAM tables to InnoDB" "
-SET sql_mode='';
-ALTER TABLE artifact_bind ENGINE=InnoDB;
-ALTER TABLE artifacts ENGINE=InnoDB;
-ALTER TABLE artifacts_mortal ENGINE=InnoDB;
-ALTER TABLE boons ENGINE=InnoDB;
-ALTER TABLE boons_progress ENGINE=InnoDB;
-ALTER TABLE boons_shop ENGINE=InnoDB;
-ALTER TABLE ctf_data ENGINE=InnoDB;
-ALTER TABLE epic_bonus ENGINE=InnoDB;
-ALTER TABLE epic_gain ENGINE=InnoDB;
-ALTER TABLE guild_transactions ENGINE=InnoDB;
-ALTER TABLE guildhall_rooms ENGINE=InnoDB;
-ALTER TABLE guildhalls ENGINE=InnoDB;
-ALTER TABLE ip_info ENGINE=InnoDB;
-ALTER TABLE locker_access ENGINE=InnoDB;
-ALTER TABLE mud_info ENGINE=InnoDB;
-ALTER TABLE multiplay_whitelist ENGINE=InnoDB;
-ALTER TABLE nexus_stones ENGINE=InnoDB;
-ALTER TABLE offline_messages ENGINE=InnoDB;
-ALTER TABLE outposts ENGINE=InnoDB;
-ALTER TABLE ping ENGINE=InnoDB;
-ALTER TABLE pkill_event ENGINE=InnoDB;
-ALTER TABLE pkill_info ENGINE=InnoDB;
-ALTER TABLE poll_options ENGINE=InnoDB;
-ALTER TABLE poll_votes ENGINE=InnoDB;
-ALTER TABLE polls ENGINE=InnoDB;
-ALTER TABLE progress ENGINE=InnoDB;
-ALTER TABLE racewar_stat_mods ENGINE=InnoDB;
-ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;
-ALTER TABLE ship_cargo_prices ENGINE=InnoDB;
-ALTER TABLE shop_trophy ENGINE=InnoDB;"
+convert_tables_to_innodb_if_present "convert legacy MyISAM tables to InnoDB" \
+    artifact_bind artifacts artifacts_mortal boons boons_progress boons_shop \
+    ctf_data epic_bonus epic_gain guild_transactions guildhall_rooms guildhalls \
+    ip_info locker_access mud_info multiplay_whitelist nexus_stones \
+    offline_messages outposts ping pkill_event pkill_info poll_options poll_votes \
+    polls progress racewar_stat_mods ship_cargo_market_mods ship_cargo_prices \
+    shop_trophy
 
 convert_tables_to_charset "convert existing tables to database default" 1
 
@@ -2924,6 +2943,9 @@ run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persis
 run_sql_file "apply player corpse persistence state" "$SCRIPT_DIR/corpse_persistence_state.sql"
 run_sql_file "apply critical command inbox and outbox" "$SCRIPT_DIR/critical_command_inbox_outbox.sql"
 run_check "verify critical command inbox and outbox" "$SCRIPT_DIR/verify_critical_command_schema.sh"
+run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
+run_sql_file "permit shopkeeper item custody" "$SCRIPT_DIR/shopkeeper_item_owner.sql"
+run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "apply epic ledger and balance schema" "$SCRIPT_DIR/epic_ledger_balance.sql"
 run_check "verify epic ledger and balance schema" "$SCRIPT_DIR/verify_epic_ledger_schema.sh"
 run_sql_file "apply currency ledger schema" "$SCRIPT_DIR/currency_ledger.sql"
@@ -2943,9 +2965,6 @@ run_check "verify personal data export schema" "$SCRIPT_DIR/verify_personal_data
 run_sql_file "apply account erasure schema" "$SCRIPT_DIR/account_erasure.sql"
 run_check "verify account erasure schema" "$SCRIPT_DIR/verify_account_erasure_schema.sh"
 run_sql_file "apply immutable migration ledger" "$SCRIPT_DIR/immutable_migration_ledger.sql"
-run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
-run_sql_file "permit shopkeeper item custody" "$SCRIPT_DIR/shopkeeper_item_owner.sql"
-run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"
 run_sql_file "normalize locker chest ownership identity" "$SCRIPT_DIR/locker_ownership_cutover.sql"
 run_sql_file "apply transactional auction custody" "$SCRIPT_DIR/auction_transactional_cutover.sql"
@@ -2969,6 +2988,14 @@ CREATE TABLE IF NOT EXISTS account_locker_item_extra_descr (
     description TEXT DEFAULT NULL,
     PRIMARY KEY (id), INDEX idx_item_id (item_id),
     CONSTRAINT fk_account_locker_item_ed FOREIGN KEY (item_id) REFERENCES account_locker_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS locker_item_extra_descr (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    item_id INT UNSIGNED NOT NULL,
+    keyword VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    PRIMARY KEY (id), INDEX idx_item_id (item_id),
+    CONSTRAINT fk_locker_item_ed FOREIGN KEY (item_id) REFERENCES locker_items(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 CREATE TABLE IF NOT EXISTS saved_item_extra_descr (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -3021,6 +3048,8 @@ SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schem
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector3') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector3 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector4') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector4 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'siege_items' AND column_name = 'bitvector5') = 0, 'ALTER TABLE siege_items ADD COLUMN bitvector5 BIGINT UNSIGNED DEFAULT NULL', 'SELECT 1 INTO @dummy'); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
+
+run_sql_file "normalize legacy schema metadata" "$SCRIPT_DIR/legacy_schema_convergence.sql"
 
 run_sql "convert ship cargo tables to InnoDB" "
 ALTER TABLE ship_cargo_prices ENGINE=InnoDB;

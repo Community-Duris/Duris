@@ -201,7 +201,7 @@ bool boon_reward_repository_execute(MYSQL *connection, const critical_command &c
 	const std::string operation =
 		bytes_hex(command.operation_id.bytes.data(), command.operation_id.bytes.size());
 	if (!execute(connection,
-		     "INSERT INTO boon_reward_outcome(operation_id,pid,option,event_value,entry_count) "
+		     "INSERT INTO boon_reward_outcome(operation_id,pid,`option`,event_value,entry_count) "
 		     "VALUES(UNHEX('" +
 			     operation + "')," + std::to_string(payload.pid) + "," +
 			     std::to_string(payload.option) + "," + std::to_string(payload.data) +

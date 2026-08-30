@@ -71,6 +71,13 @@ assert '"$SCRIPT_DIR/persistence_contract.sql"' in runner
 assert "CREATE TABLE IF NOT EXISTS mud_schema_migrations" in runner
 assert "account_locker_copy_v1" in runner
 assert 'run_sql "repair item persistence schema drift"' in runner
+assert "CREATE TABLE IF NOT EXISTS locker_item_extra_descr" in runner
+assert '"$SCRIPT_DIR/legacy_schema_convergence.sql"' in runner
+convergence = (ROOT / "migrations/legacy_schema_convergence.sql").read_text()
+assert "MODIFY COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT FIRST" in convergence
+assert runner.index('"$SCRIPT_DIR/legacy_schema_convergence.sql"') < runner.index(
+    '"$SCRIPT_DIR/adopt_migration_baseline.sh"'
+)
 assert 'PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"' in runner
 assert 'source "$PROJECT_ROOT/.env"' in runner
 

@@ -22,6 +22,11 @@ class ItemOwnershipContractTests(unittest.TestCase):
             self.assertIn(token, bootstrap)
         self.assertIn("item_ownership_ledger.sql", runner)
         self.assertIn("shopkeeper_item_owner.sql", runner)
+        self.assertLess(
+            runner.index('"$SCRIPT_DIR/item_ownership_ledger.sql"'),
+            runner.index('"$SCRIPT_DIR/artifact_guild_outcome.sql"'),
+            "item_current_owner must exist before artifact_domain_state adds its foreign key",
+        )
         shopkeeper_owner = (ROOT / "migrations/shopkeeper_item_owner.sql").read_text()
         self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 9)"), 3)
         for script in ("baseline_item_ownership.sh", "reconcile_item_ownership.sh",

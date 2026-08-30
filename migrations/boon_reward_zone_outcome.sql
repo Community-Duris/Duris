@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS boon_reward_outcome (
     operation_id BINARY(16) NOT NULL,
     pid INT UNSIGNED NOT NULL,
-    option TINYINT UNSIGNED NOT NULL,
+    `option` TINYINT UNSIGNED NOT NULL,
     event_value DOUBLE NOT NULL,
     entry_count SMALLINT UNSIGNED NOT NULL,
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
