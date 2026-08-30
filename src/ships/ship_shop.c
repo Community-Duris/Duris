@@ -2820,6 +2820,9 @@ int ship_shop_proc(int /*room*/, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_LIST)
 	{
+		if (!*arg1)
+			return list_hulls(ch, ship, owned);
+
 		if (*arg1)
 		{
 			if (is_abbrev(arg1, "cargo"))
