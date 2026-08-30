@@ -28,7 +28,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): bare `list` at a shipyard now defaults to the purchasable hull catalog; an actual character at Quietus Quay received the ship list beginning with Sloop.
  -  VERIFIED FALSE (2026-08-30): at a valid inn, an actual character carrying `0/11` items and wearing nothing rented successfully and returned to the account menu; the reported save failure did not occur.
  -  VERIFIED FIXED (2026-08-30): manual saves now distinguish queued and already-queued requests, then report database acknowledgment or failure; an actual character received `queued`, `already queued`, and `complete` in sequence.
- -  class selection requires you to type the class name instead of having numbers or letters to select them. this is a change of behavior from the refactor.
+ -  VERIFIED FALSE (2026-08-30): the live Human class menu displayed lettered choices, and selecting the shown `w)` key chose Warrior and advanced to alignment without requiring the class name.
  -  class selection does not list all available classes to a race while still lettings you type the race that wasn't listed such as druid while selecting human.
  -  after character creation, i selected not to keep the character and was taken back to the main login screen instead of to the account screen. i think typed the account name and was disconnected.
  -  players can see their own tracks in a room with the track skill
