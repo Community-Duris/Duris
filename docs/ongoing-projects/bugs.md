@@ -24,7 +24,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): an actual-character disconnect/relogin during deferred death remained dead until the terminal retry completed, then returned to the account menu; it did not revive before the death was saved.
  -  VERIFIED FALSE (2026-08-30): an actual character crossed adjacent ASCII world-map road tiles and the prior tile remained `+`; road sectors explicitly do not create tracks, and no terrain mutation occurred.
  -  VERIFIED FIXED (2026-08-30): track objects now retain their creator and the world map ignores the viewer's own tracks; with improved tracking enabled, an actual character crossed adjacent forest tiles and the vacated tile remained `*` instead of becoming `.`.
- -  while communing, the spells would occasionaly stop returning in a timely manner for a short period and then return to the normal pace
+ -  VERIFIED FALSE (2026-08-30): an actual level-56 druid recovered all 84 spell slots through passive communion in 181.91 seconds without a stall (longest gap: 5.25 seconds); the brief cadence changes match the intentional random 33% recovery acceleration.
  -  when typing list at a dock where i can purchase a ship it did not show me the list of options for purchase
  -  upon attempting to rent at a valid inn i received the message "Failed to save this character, most likely too much eq." (i had zero equipment)
  -  upon typing save i received the message "Save queued for Fer." but at no point did i receive a follow up message. i was also able to type it again and receive the same exact message. (it didn't show differently for state such as already queued for save. or save failed.
