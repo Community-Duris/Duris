@@ -59,6 +59,7 @@ struct creation_grant_queue
 {
 	std::deque<pending_creation_grant> requests;
 	bool active = false;
+	bool blocks_actor_commands = false;
 };
 
 std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
@@ -200,7 +201,7 @@ bool creation_grant_request_valid(const pending_creation_grant &request)
 		return false;
 	if (request.to_room)
 		return request.room > NOWHERE && request.room <= top_of_world;
-	P_char recipient = find_player_by_pid(request.recipient_pid);
+	P_char recipient = find_live_player(request.recipient_pid);
 	if (!recipient)
 		return false;
 	if (!request.target_container_uid)
@@ -212,15 +213,20 @@ bool creation_grant_request_valid(const pending_creation_grant &request)
 
 void discard_creation_queue(P_char actor, creation_grant_queue &queue)
 {
+	const bool blocks_actor_commands = queue.blocks_actor_commands;
 	for (const pending_creation_grant &request : queue.requests)
 		if (P_obj object = find_item(request.item_uid); object && OBJ_NOWHERE(object))
 			extract_obj(object, FALSE);
 	queue.requests.clear();
 	queue.active = false;
 	if (actor)
+	{
 		send_to_char(
 			"The ownership authority could not continue the item grant; nothing else was created.\r\n",
 			actor);
+		if (blocks_actor_commands && actor->desc)
+			actor->desc->prompt_mode = TRUE;
+	}
 }
 
 bool start_creation_grant(P_char actor, creation_grant_queue &queue);
@@ -233,7 +239,7 @@ void pump_creation_grants()
 		creation_grant_queue &queue = current->second;
 		if (queue.active || queue.requests.empty())
 			continue;
-		P_char actor = find_player_by_pid(current->first);
+		P_char actor = find_live_player(current->first);
 		if (!actor)
 			continue;
 		const pending_creation_grant &request = queue.requests.front();
@@ -303,7 +309,7 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	}
 	else
 	{
-		P_char recipient = find_player_by_pid(request.recipient_pid);
+		P_char recipient = find_live_player(request.recipient_pid);
 		if (!recipient)
 			logit(LOG_FILE,
 			      "item creation grant committed to an unavailable player (uid=%llu pid=%u)",
@@ -335,7 +341,13 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	queue.active = false;
 	if (queue.requests.empty())
 	{
+		const bool blocks_actor_commands = queue.blocks_actor_commands;
 		creation_grants.erase(queue_found);
+		if (blocks_actor_commands && actor->desc)
+		{
+			send_to_char("Your starter kit is ready.\r\n", actor);
+			actor->desc->prompt_mode = TRUE;
+		}
 		return;
 	}
 	const pending_creation_grant &next = queue.requests.front();
@@ -644,6 +656,25 @@ bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char rec
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room)
 {
 	return queue_creation_grant(actor, object, NULL, room, NULL, true);
+}
+
+bool item_creation_grant_mark_blocking(P_char actor)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return false;
+	auto found = creation_grants.find(static_cast<uint32_t>(GET_PID(actor)));
+	if (found == creation_grants.end())
+		return false;
+	found->second.blocks_actor_commands = true;
+	return true;
+}
+
+bool item_creation_grant_blocks_commands(P_char actor)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return false;
+	auto found = creation_grants.find(static_cast<uint32_t>(GET_PID(actor)));
+	return found != creation_grants.end() && found->second.blocks_actor_commands;
 }
 
 void item_movement_transaction_handle_completions(const critical_completion *completions,

@@ -36,6 +36,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room);
+bool item_creation_grant_mark_blocking(P_char actor);
+bool item_creation_grant_blocks_commands(P_char actor);
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
 void item_movement_transaction_player_ready(P_char actor);

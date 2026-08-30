@@ -384,7 +384,7 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
 		SEND_TO_Q("&+y------------------------------------------&n\r\n", d);
 		SEND_TO_Q("Please select an option: ", d);
-		d->prompt_mode = TRUE;
+		d->prompt_mode = !item_creation_grant_blocks_commands(ch);
 		return;
 	}
 

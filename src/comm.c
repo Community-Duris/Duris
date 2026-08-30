@@ -972,6 +972,7 @@ void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;
 	bool casting_input = FALSE;
+	bool creation_grant_input = FALSE;
 	P_desc point, next_point;
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
@@ -1508,8 +1509,10 @@ resume_game_loop:
 				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
 				 point->connected == CON_PLAYING && !point->showstr_count &&
 				 !point->str);
+			creation_grant_input = t_ch && item_creation_grant_blocks_commands(t_ch);
 
-			if ((!t_ch || (t_ch && ((CAN_ACT(t_ch) || casting_input) &&
+			if ((!t_ch || (t_ch && (!creation_grant_input &&
+						((CAN_ACT(t_ch) || casting_input) &&
 						(!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
 						 (point->original))))) &&
 			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :

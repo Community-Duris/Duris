@@ -2011,6 +2011,9 @@ void load_obj_to_newbies(P_char ch)
 			obj_to_char(shield, ch);
 		}
 	}
+
+	if (item_creation_grant_mark_blocking(ch))
+		send_to_char("Your starter kit is being prepared...\r\n", ch);
 }
 
 #undef CREATE_KIT
@@ -3965,7 +3968,7 @@ void select_main_menu(P_desc d, char *arg)
 		}
 		enter_game(d);
 		STATE(d) = CON_PLAYING;
-		d->prompt_mode = TRUE;
+		d->prompt_mode = !item_creation_grant_blocks_commands(d->character);
 		break;
 	case '2': /* read background story */
 		SEND_TO_Q(BACKGR_STORY, d);
@@ -6174,7 +6177,7 @@ void nanny(P_desc d, char *arg)
 			echo_on(d);
 			STATE(d) = CON_PLAYING;
 			enter_game(d);
-			d->prompt_mode = TRUE;
+			d->prompt_mode = !item_creation_grant_blocks_commands(d->character);
 		}
 #else
 		SEND_TO_Q(MENU, d);

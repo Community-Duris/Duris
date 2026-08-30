@@ -1991,7 +1991,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 	/* set connection state before entering game */
 	STATE(d) = CON_PLAYING;
 	enter_game(d);
-	d->prompt_mode = TRUE;
+	d->prompt_mode = !item_creation_grant_blocks_commands(ch);
 
 	/* send full game state via gmcp */
 	ws_send_full_game_state(d);
