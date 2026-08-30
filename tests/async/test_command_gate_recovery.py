@@ -80,10 +80,13 @@ checks.append((
     contains(comm, "extern void event_wait(P_char, P_char, P_obj, void *);")
 ))
 
-gate = re.search(r"if \(t_ch && !CAN_ACT\(t_ch\).*?\n\n\t\t\t/\*.*?if \(\(!t_ch \|\|\s*\(t_ch &&\s*\(+CAN_ACT\(t_ch\)", comm, re.S)
+self_heal = comm.find("/* Self-heal a stuck command gate:")
+input_gate = comm.find(
+    "!creation_grant_input && (CAN_ACT(t_ch) || casting_input)", self_heal
+)
 checks.append((
     "self-heal runs before the CAN_ACT input gate",
-    gate is not None
+    self_heal >= 0 and input_gate > self_heal
 ))
 
 checks.append((
