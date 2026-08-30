@@ -33,7 +33,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): declining the final keep-character prompt now frees the uncommitted character and returns to the existing account menu; the complete live creation/discard flow no longer falls into legacy name login.
  -  VERIFIED FIXED (2026-08-30): room-level track output now excludes tracks owned by the viewer; with improved tracking enabled, an actual character returned along its route without seeing its own track message.
  -  VERIFIED FALSE (2026-08-30): a newly created actual character received 21 starter items, all 21 persisted through a clean shutdown/restart, and the same character as a level-30 Wizard materialized its innate spellbook; the full-world audit also found 13,433 item-bearing NPCs.
- -  there was a bit of lag after using the specialization command at the teacher. this should not lag (i speced as wizard)
+ -  VERIFIED FALSE (2026-08-30): an actual level-30 Sorcerer at the correct teacher was offered Wizard, specialized successfully, and received the complete response within 250.3 ms; the specialization also persisted through a clean shutdown.
  -  if a log file cannot be written because the path does not exist, the path should be created. and the log entry should attempt to write again
  - made a new thri-kreen warrior, logged in, type `inv` saw these items:  You are carrying: (5/12)
 a two-handed sword
