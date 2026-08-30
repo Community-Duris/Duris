@@ -297,16 +297,28 @@ int main(int argc, char **argv)
 	orphan.object_uid = 103;
 	orphan.vnum = 503;
 
-	player_snapshot extra_payload = make_full(6);
+	// A stale projection that still shows an authoritative child at top level heals
+	// back into its container instead of refusing the character.
+	player_snapshot stale_parent = make_full(6);
+	stale_parent.items[1].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	player_load_result recovered = reload(stale_parent, 9);
+	require(recovered.outcome == player_load_outcome::applied &&
+			recovered.repaired_item_rows == 1 &&
+			recovered.snapshot.items[1].parent_index == 0 &&
+			recovered.item_identities[1].serialized_parent_id ==
+				recovered.item_identities[0].database_id,
+		"stale flat-file item placement refused the load");
+
+	player_snapshot extra_payload = make_full(7);
 	extra_payload.items.push_back(orphan);
-	player_load_result recovered = reload(extra_payload, 10);
+	recovered = reload(extra_payload, 10);
 	require(recovered.outcome == player_load_outcome::applied &&
 			recovered.snapshot.items.size() == 2 && recovered.stale_item_rows == 1 &&
 			recovered.missing_payload_rows == 0 &&
 			recovered.authoritative_item_count == 3,
 		"a payload item missing from the ownership catalog refused the load");
 
-	player_snapshot dropped_payload = make_full(7);
+	player_snapshot dropped_payload = make_full(8);
 	dropped_payload.items.pop_back();
 	recovered = reload(dropped_payload, 11);
 	require(recovered.outcome == player_load_outcome::applied &&
@@ -317,7 +329,7 @@ int main(int argc, char **argv)
 
 	// The orphan is the container this time: its contents load at the top level rather
 	// than disappearing with it.
-	player_snapshot orphan_container = make_full(8);
+	player_snapshot orphan_container = make_full(9);
 	orphan_container.items.insert(orphan_container.items.begin(), orphan);
 	orphan_container.items[1].parent_index = 0;
 	orphan_container.items[2].parent_index = 1;
@@ -331,7 +343,7 @@ int main(int argc, char **argv)
 			!recovered.item_identities[0].parent_item_uid &&
 			recovered.item_identities[1].root_item_uid == 100,
 		"contents of an orphaned container did not survive the load");
-	require(flatfile_player_snapshot_apply(root.string(), make_full(9), &error).outcome ==
+	require(flatfile_player_snapshot_apply(root.string(), make_full(10), &error).outcome ==
 			player_save_apply_outcome::applied,
 		"could not restore the consistent item fixture: " + error);
 	{

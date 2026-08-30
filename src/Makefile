@@ -306,6 +306,7 @@ OBJS =  $(SHIP_OBJS) \
 				 session_audit_repository.o \
 				 session_audit_transaction.o \
 				 player_load_repository.o \
+				 player_load_topology.o \
 				 player_load_pipeline.o \
 				 player_load_items.o \
 				 player_load_pets.o \

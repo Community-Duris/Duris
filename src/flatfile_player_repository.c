@@ -231,21 +231,14 @@ bool build_item_identities(std::vector<player_item_snapshot> *items,
 			if (!consumed->insert(item.object_uid).second)
 				return false;
 			const flatfile_item_ownership_record &record = found->second;
-			const bool promoted = item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
-					      parent_new == skipped_index;
-			uint64_t parent_uid = 0, serialized_parent = 0, root_uid = record.item_uid;
+			uint64_t serialized_parent = 0;
 			if (parent_new != skipped_index)
-			{
-				parent_uid = kept[parent_new].object_uid;
 				serialized_parent = database_ids[parent_new];
-				root_uid = (*identities)[parent_new].root_item_uid;
-			}
-			if (record.vnum != item.vnum ||
-			    (!promoted && record.parent_item_uid != parent_uid) ||
-			    (!promoted && !parent_uid && record.root_item_uid != record.item_uid))
-				return false;
-			if (promoted)
+			else if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+				 !record.parent_item_uid)
 				++result->promoted_item_rows;
+			if (record.vnum != item.vnum)
+				return false;
 			item.parent_index = parent_new == skipped_index ?
 						    PLAYER_SNAPSHOT_NO_PARENT :
 						    static_cast<int32_t>(parent_new);
@@ -254,7 +247,7 @@ bool build_item_identities(std::vector<player_item_snapshot> *items,
 			remap.push_back(kept.size());
 			identities->push_back({ database_id, serialized_parent, 1,
 						PLAYER_LOAD_ITEM_OVERRIDE_ALL, record.item_uid,
-						root_uid, promoted ? 0 : record.parent_item_uid,
+						record.root_item_uid, record.parent_item_uid,
 						record.owner, record.item_revision, owner_revision,
 						record.state });
 			kept.push_back(std::move(item));
@@ -265,7 +258,8 @@ bool build_item_identities(std::vector<player_item_snapshot> *items,
 	{
 		return false;
 	}
-	return true;
+	return player_load_reconcile_item_topology(items, identities, &result->promoted_item_rows,
+						   &result->repaired_item_rows);
 }
 
 bool reconcile_item_ownership(const std::string &root, player_load_result *result)

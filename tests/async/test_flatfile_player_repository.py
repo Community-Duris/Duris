@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_repository_harness.cpp",
             "src/flatfile_player_repository.c",
+            "src/player_load_topology.c",
             "src/flatfile_identity_repository.c",
             "src/flatfile_item_repository.c",
             "src/flatfile_corpse_repository.c",

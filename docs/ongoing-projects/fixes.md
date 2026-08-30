@@ -80,6 +80,31 @@
   transition), and `6551e2c5` (saved inventory extraction).
 - Remaining: none.
 
+### 2026-08-31 - Character-load item topology self-healing complete
+
+- Follow-up symptom: the staff character Zusuk could be selected from the
+  account menu but failed at "Loading character...".
+- Root cause: six saved consumables named the snakeskin bag as their serialized
+  container even though the authoritative ownership records still placed them
+  at the top level. The strict parent comparison rejected the entire character.
+- Data repair: the six local `duris_dev` projection rows were moved to the top
+  level to match authoritative custody. No item or ownership row was deleted;
+  all 23 saved item UIDs remain unique and accounted for.
+- Code fix: MariaDB and flat-file character loads now share a bounded topology
+  reconciler. It rebuilds stale saved placement from authoritative custody,
+  promotes contents whose parent is unavailable, records the recovery, and
+  relies on the normal post-entry full save to persist the corrected projection.
+  Genuine cycles, excessive depth, and malformed ownership still fail closed.
+- Regression coverage: exact historical mismatch, inverse projection lag,
+  wrong-container placement, missing-parent promotion, cycle refusal, MariaDB
+  repository integration, and flat-file repository and deletion integration.
+- Checks passed: focused player-load tests, `make -C src`, formatting, the real
+  configured MariaDB snapshot test, all 356 Python regression tests, and the
+  native signal-handler test.
+- Runtime: the local development service was rebuilt, restarted, and is
+  listening on `127.0.0.1:7777`.
+- Remaining: none.
+
 ## Made a new character, for Hometown I chose "Planes of life":
 
 Your race may choose among:

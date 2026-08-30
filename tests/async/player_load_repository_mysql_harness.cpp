@@ -217,6 +217,28 @@ int main()
 	assert(fixture.snapshot.items[1].affects[0][0] == 1);
 	assert(fixture.stale_item_rows == 0);
 
+	// The saved projection can lag a committed reparent in either direction. Custody
+	// is authoritative, so both cases rebuild placement instead of refusing login.
+	execute_sql(connection,
+		    "UPDATE item_current_owner SET root_item_uid=900002,parent_item_uid=NULL "
+		    "WHERE item_uid=900002");
+	player_load_result stale_nested_projection = execute_load(connection, request, 93);
+	assert(stale_nested_projection.outcome == player_load_outcome::applied);
+	assert(stale_nested_projection.repaired_item_rows == 1 &&
+	       stale_nested_projection.snapshot.items[1].parent_index ==
+		       PLAYER_SNAPSHOT_NO_PARENT &&
+	       !stale_nested_projection.item_identities[1].serialized_parent_id);
+	execute_sql(connection,
+		    "UPDATE item_current_owner SET root_item_uid=900001,parent_item_uid=900001 "
+		    "WHERE item_uid=900002");
+	execute_sql(connection, "UPDATE player_items SET container_id=NULL WHERE id=1002");
+	player_load_result stale_flat_projection = execute_load(connection, request, 94);
+	assert(stale_flat_projection.outcome == player_load_outcome::applied);
+	assert(stale_flat_projection.repaired_item_rows == 1 &&
+	       stale_flat_projection.snapshot.items[1].parent_index == 0 &&
+	       stale_flat_projection.item_identities[1].serialized_parent_id == 1001);
+	execute_sql(connection, "UPDATE player_items SET container_id=1001 WHERE id=1002");
+
 	// A committed ownership move can outrun the replacement player snapshot. The
 	// ownership ledger is authoritative, so the stale payload row is skipped and its
 	// metadata cannot make the whole character unloadable.

@@ -117,6 +117,7 @@ bool valid_snapshot(const player_load_result &result)
 	    result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX ||
 	    result.missing_payload_rows > PLAYER_LOAD_ITEM_MAX ||
 	    result.promoted_item_rows > PLAYER_LOAD_ITEM_MAX ||
+	    result.repaired_item_rows > PLAYER_LOAD_ITEM_MAX ||
 	    result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX ||
 	    result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX)
 		return false;
@@ -422,6 +423,13 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      "player_load_materialize: component=items pid=%d outcome=contents_promoted "
 		      "count=%zu recovery=next_full_save",
 		      result.pid, result.promoted_item_rows);
+	if (result.repaired_item_rows)
+	{
+		logit(LOG_SYS,
+		      "player_load_materialize: component=items pid=%d outcome=topology_repaired "
+		      "count=%zu recovery=next_full_save",
+		      result.pid, result.repaired_item_rows);
+	}
 	if (result.missing_payload_rows)
 		logit(LOG_SYS,
 		      "player_load_materialize: component=items pid=%d outcome=missing_payload_rows "

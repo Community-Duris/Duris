@@ -738,76 +738,13 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		       }))
 		return false;
 
-	std::vector<bool> promoted;
-	try
-	{
-		promoted.resize(result->item_identities.size(), false);
-	}
-	catch (const std::bad_alloc &)
-	{
-		result->outcome = player_load_outcome::retryable_failure;
+	// Custody is authoritative. A stale player_items.container_id is repaired in the
+	// materialized graph instead of locking out the whole character; the post-entry
+	// full save then rewrites the projection with this placement.
+	if (!player_load_reconcile_item_topology(&result->snapshot.items, &result->item_identities,
+						 &result->promoted_item_rows,
+						 &result->repaired_item_rows))
 		return false;
-	}
-	for (size_t index = 0; index < result->item_identities.size(); ++index)
-	{
-		player_load_item_identity &identity = result->item_identities[index];
-		player_item_snapshot &item = result->snapshot.items[index];
-		if (!identity.serialized_parent_id && !identity.parent_item_uid)
-		{
-			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-			continue;
-		}
-		// A skipped row can be some other row's container. Dropping the contents with
-		// it, or refusing the load, would both punish the player for one bad row, so
-		// the contents move to the top level and the next full save rewrites the
-		// ledger to match.
-		if (identity.serialized_parent_id &&
-		    stale_database_ids.find(identity.serialized_parent_id) !=
-			    stale_database_ids.end())
-		{
-			identity.serialized_parent_id = 0;
-			identity.parent_item_uid = 0;
-			identity.root_item_uid = identity.item_uid;
-			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-			promoted[index] = true;
-			++result->promoted_item_rows;
-			continue;
-		}
-		// A parent that is neither present nor skipped means its payload row is gone
-		// while this one survived, and that is still fatal. fk_player_items_container
-		// is ON DELETE CASCADE, so deleting a container takes its contents with it and
-		// the case cannot arise from the schema; it is reachable only by a hand-edited
-		// row or a database missing that constraint.
-		const auto database_parent =
-			item_by_database_id.find(identity.serialized_parent_id);
-		const auto uid_parent = item_by_uid.find(identity.parent_item_uid);
-		if (!identity.serialized_parent_id || !identity.parent_item_uid ||
-		    database_parent == item_by_database_id.end() ||
-		    uid_parent == item_by_uid.end() ||
-		    database_parent->second != uid_parent->second ||
-		    database_parent->second == index ||
-		    database_parent->second > static_cast<size_t>(INT32_MAX))
-			return false;
-		item.parent_index = static_cast<int32_t>(database_parent->second);
-	}
-	// Promotion gives the subtree a new root, and every item below it records that root.
-	for (bool changed = result->promoted_item_rows != 0; changed;)
-	{
-		changed = false;
-		for (size_t index = 0; index < result->item_identities.size(); ++index)
-		{
-			const int32_t parent = result->snapshot.items[index].parent_index;
-			if (parent == PLAYER_SNAPSHOT_NO_PARENT || promoted[index])
-				continue;
-			const size_t parent_index = static_cast<size_t>(parent);
-			if (!promoted[parent_index])
-				continue;
-			result->item_identities[index].root_item_uid =
-				result->item_identities[parent_index].root_item_uid;
-			promoted[index] = true;
-			changed = true;
-		}
-	}
 
 	const std::string ownership_summary_sql =
 		"SELECT COALESCE(owner_revision.revision,0),COUNT(own.item_uid),"
@@ -1144,71 +1081,10 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 		std::vector<player_load_item_identity> &identities =
 			result->pet_identities[pet_index].item_identities;
 		std::vector<player_item_snapshot> &items = result->snapshot.pets[pet_index].items;
-		std::vector<bool> promoted;
-		size_t promotions = 0;
-		try
-		{
-			promoted.resize(identities.size(), false);
-		}
-		catch (const std::bad_alloc &)
-		{
-			result->outcome = player_load_outcome::retryable_failure;
+		if (!player_load_reconcile_item_topology(&items, &identities,
+							 &result->promoted_item_rows,
+							 &result->repaired_item_rows))
 			return false;
-		}
-		for (size_t item_index = 0; item_index < identities.size(); ++item_index)
-		{
-			player_load_item_identity &identity = identities[item_index];
-			player_item_snapshot &item = items[item_index];
-			if (!identity.serialized_parent_id && !identity.parent_item_uid)
-			{
-				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-				continue;
-			}
-			// Same reasoning as the character's own inventory: contents outlive a
-			// skipped container instead of taking the whole load down with them.
-			if (identity.serialized_parent_id &&
-			    stale_pet_item_ids.find(identity.serialized_parent_id) !=
-				    stale_pet_item_ids.end())
-			{
-				identity.serialized_parent_id = 0;
-				identity.parent_item_uid = 0;
-				identity.root_item_uid = identity.item_uid;
-				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-				promoted[item_index] = true;
-				++promotions;
-				++result->promoted_item_rows;
-				continue;
-			}
-			const auto database_parent =
-				database_indices[pet_index].find(identity.serialized_parent_id);
-			const auto uid_parent =
-				uid_indices[pet_index].find(identity.parent_item_uid);
-			if (!identity.serialized_parent_id || !identity.parent_item_uid ||
-			    database_parent == database_indices[pet_index].end() ||
-			    uid_parent == uid_indices[pet_index].end() ||
-			    database_parent->second != uid_parent->second ||
-			    database_parent->second == item_index ||
-			    database_parent->second > static_cast<size_t>(INT32_MAX))
-				return false;
-			item.parent_index = static_cast<int32_t>(database_parent->second);
-		}
-		for (bool changed = promotions != 0; changed;)
-		{
-			changed = false;
-			for (size_t item_index = 0; item_index < identities.size(); ++item_index)
-			{
-				const int32_t parent = items[item_index].parent_index;
-				if (parent == PLAYER_SNAPSHOT_NO_PARENT || promoted[item_index])
-					continue;
-				const size_t parent_index = static_cast<size_t>(parent);
-				if (!promoted[parent_index])
-					continue;
-				identities[item_index].root_item_uid =
-					identities[parent_index].root_item_uid;
-				promoted[item_index] = true;
-				changed = true;
-			}
-		}
 	}
 
 	std::vector<std::vector<std::unordered_set<uint64_t>>> affects;

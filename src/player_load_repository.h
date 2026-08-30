@@ -151,6 +151,9 @@ struct player_load_result
 	// Items whose container row was skipped and which were moved to the top level
 	// rather than dropped along with it.
 	size_t promoted_item_rows = 0;
+	// Items whose saved parent disagreed with authoritative custody and whose placement
+	// was rebuilt from the custody graph during load.
+	size_t repaired_item_rows = 0;
 	std::vector<player_load_item_identity> item_identities;
 	std::vector<player_load_pet_identity> pet_identities;
 	player_load_read_mask_t read_components = 0;
@@ -164,6 +167,10 @@ struct player_load_result
 	int64_t saved_at = 0;
 	std::string account_name;
 };
+
+bool player_load_reconcile_item_topology(std::vector<player_item_snapshot> *items,
+					 std::vector<player_load_item_identity> *identities,
+					 size_t *promoted_item_rows, size_t *repaired_item_rows);
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now_usec);
 player_load_result player_load_repository_execute(MYSQL *connection,
