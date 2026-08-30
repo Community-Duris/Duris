@@ -1,8 +1,9 @@
 # Versioning
 
 DurisMUD follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
-The current project version is `1.81.107`. The version shown at the top of the
-root [README.md](../../README.md) is the canonical version marker.
+The current project version is `0.1.52`. The root
+[`VERSION`](../../VERSION) file is the canonical version marker; the version
+shown at the top of the root [README.md](../../README.md) mirrors it.
 
 The repository's long development history informed the initial `1.81.8`
 baseline. It does not create a formula between Git commit counts and release
@@ -68,7 +69,7 @@ players, operators, integrations, and builders, not by the size of the diff.
 
 1. Review all changes since the preceding release and choose the highest
    required version increment.
-2. Update the canonical version marker in the root README.
+2. Update the canonical root `VERSION` file and its README mirror.
 3. Record user-visible behavior, migrations, deprecations, and upgrade actions
    in the release notes.
 4. Run the validation appropriate to the changed code and data.

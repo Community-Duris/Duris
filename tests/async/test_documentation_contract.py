@@ -94,6 +94,29 @@ class DocumentationContractTest(unittest.TestCase):
         # the corpus and turn every content assertion below into a no-op.
         self.assertGreater(len(GUIDES), len(ANCHORS))
 
+    def test_readme_version_and_setup_contract(self) -> None:
+        readme = self.text[ROOT / "README.md"]
+        version = (ROOT / "VERSION").read_text(encoding="ascii").strip()
+        versioning = self.text[ROOT / "docs/guides/VERSIONING.md"]
+        immutable = self.text[ROOT / "docs/persistence/IMMUTABLE_MIGRATIONS.md"]
+        migration_runner = (ROOT / "migrations/run_migration.sh").read_text()
+        total_match = re.search(r"^TOTAL=(\d+)$", migration_runner, re.MULTILINE)
+
+        self.assertIn(f"**Version: {version}**", readme)
+        self.assertIn(f"current project version is `{version}`", versioning)
+        self.assertIsNotNone(total_match)
+        self.assertIn(f"Its {total_match.group(1)} progress", immutable)
+        self.assertIn("tests/async/run_legacy_migration_mysql.sh", immutable)
+        for token in (
+            "MIGRATION_ENV_FILE",
+            "make test-all",
+            "make test-db",
+            "./scripts/start_mud.sh --dev",
+            "telnet localhost 4000",
+            "historical 143-step legacy upgrade",
+        ):
+            self.assertIn(token, readme, token)
+
     def test_maintained_markdown_links_and_anchors_resolve(self) -> None:
         failures: list[str] = []
         pattern = re.compile(r"(?<!!)\[[^]]+\]\(([^)]+)\)")

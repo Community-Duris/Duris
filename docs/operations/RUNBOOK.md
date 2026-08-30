@@ -350,7 +350,7 @@ On the qualified clone only, use this order:
 
 ```bash
 # 1. Legacy additive upgrade and exact verified adoption. No arguments; mutates immediately.
-./migrations/run_migration.sh
+MIGRATION_ENV_FILE=/path/to/owner-readable-clone.env ./migrations/run_migration.sh
 
 # 2. Inspect the checked-in manifest identity without opening the database.
 python3 scripts/migration_runner.py inspect
@@ -359,6 +359,11 @@ python3 scripts/migration_runner.py inspect
 python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
+
+Keep the clone configuration separate from the server's `.env`; the legacy runner
+loads the file named by `MIGRATION_ENV_FILE` and rejects symlinks, non-regular files,
+and files readable by group or others. That file must describe the allow-listed
+loopback clone and must not contain production credentials.
 
 For a fresh disposable bootstrap, import `migrations/bootstrap_multithread_safe.sql`
 and use `adopt --kind fresh_bootstrap` instead. The immutable runner rejects

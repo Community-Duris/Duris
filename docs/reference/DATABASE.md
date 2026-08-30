@@ -155,7 +155,8 @@ python3 scripts/migration_runner.py run
 # final database gate. When REDIS=TRUE, it then deletes only Duris-owned key patterns from
 # the explicit local REDIS_HOST:REDIS_PORT/REDIS_DB target in REDIS_ALLOWED_TARGETS.
 # Stop the game and every other Redis writer first; Redis failure fails the migration.
-./migrations/run_migration.sh
+# Keep this owner-readable clone configuration separate from the server's .env.
+MIGRATION_ENV_FILE=/path/to/owner-readable-clone.env ./migrations/run_migration.sh
 
 # After an adopted baseline, apply immutable post-baseline migrations:
 python3 scripts/migration_runner.py run

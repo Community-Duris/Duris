@@ -56,6 +56,9 @@ tests/async/run_sql_pool_shutdown.sh
 # Isolated Docker/MySQL schema suites (Docker is an optional prerequisite):
 make test-db
 
+# Full historical legacy upgrade, replay, bootstrap equivalence, and compatibility:
+tests/async/run_legacy_migration_mysql.sh
+
 # Runtime schema compatibility on both supported variants:
 tests/async/run_runtime_compatibility_mysql.sh
 RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
@@ -83,7 +86,7 @@ iterating, then run every row required by the session or release gate.
 | Focused source/runtime | `python3 tests/async/test_<feature>.py` | One named invariant or compiled harness | Unrelated domains or integrated load |
 | Server build | `make -C src` | C++20 server compiles under the warning profile | Schema compatibility or runtime readiness |
 | Repository gate | `make test-all` | Maintained builds, generated world inputs, all discovered Python tests, and native signal tests | Docker database suites, representative data, or a 200-player hold |
-| Disposable schema | `make test-db` | Listed schema contracts on isolated Docker MySQL | MariaDB parity or configured database state |
+| Disposable schema | `make test-db` | Listed schema contracts and legacy-to-current convergence on isolated Docker MySQL | MariaDB parity or configured database state |
 | Dual-engine boot contract | `tests/async/run_runtime_compatibility_mysql.sh` and `RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh` | Fresh bootstrap, immutable head, drift rejection, and boot compatibility on MySQL 8 and MariaDB 10.11 | A configured or production upgrade |
 | Lifecycle/privacy | commands below | Pending-policy fail-closed behavior, synthetic archive/export/erasure contracts, and disposable schemas | Controller approval, legal compliance, or enabled canonical mutation |
 | Capacity/fault precursors | commands below | Bounded 25/50/100/200 logical-client codecs and named crash/fault invariants | Representative eight-profile 30-minute 200-player readiness |
@@ -135,6 +138,7 @@ Then run schema behavior only through the self-contained disposable wrappers:
 tests/async/run_lifecycle_archive_schema_mysql.sh
 tests/async/run_personal_data_export_schema_mysql.sh
 tests/async/run_account_erasure_schema_mysql.sh
+tests/async/run_legacy_migration_mysql.sh
 tests/async/run_immutable_migration_ledger_mysql.sh
 tests/async/run_runtime_compatibility_mysql.sh
 RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh

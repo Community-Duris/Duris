@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.111** | [Versioning policy](docs/guides/VERSIONING.md)
+**Version: 0.1.52** | [Versioning policy](docs/guides/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -72,12 +72,15 @@ to reconstructible caches plus validated world-recovery generations. See the ful
 The maintained setup path is Debian/Ubuntu, matching the CI workflow and the
 repository's build-dependency manifest.
 
-After setup, one command builds every maintained target and runs the complete safe
-regression gate:
+After setup, one command builds every maintained target and runs the complete
+non-database regression gate:
 
 ```bash
 make test-all
 ```
+
+Run the isolated Docker/MySQL migration and schema suites separately with
+`make test-db`; Docker is an optional prerequisite for that database gate.
 
 ### 1. Install dependencies
 
@@ -143,11 +146,11 @@ user password, and `DB_ALLOWED_TARGETS=127.0.0.1/duris_dev` explicitly in
 CREATE DATABASE IF NOT EXISTS duris_dev
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'duris'@'localhost'
+CREATE USER IF NOT EXISTS 'duris'@'127.0.0.1'
   IDENTIFIED BY 'CHOOSE_A_PASSWORD';
-ALTER USER 'duris'@'localhost'
+ALTER USER 'duris'@'127.0.0.1'
   IDENTIFIED BY 'CHOOSE_A_PASSWORD';
-GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost';
+GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'127.0.0.1';
 ```
 
 Load the authoritative fresh-database baseline:
@@ -172,15 +175,33 @@ python3 scripts/migration_runner.py run
 
 > [!IMPORTANT]
 > `bootstrap_multithread_safe.sql` is for an empty database. To upgrade an
-> existing populated database, back it up, restore a clone, and run
-> `./migrations/run_migration.sh` against the clone. Never test schema changes
-> on a live database.
+> existing populated database, back it up, restore a disposable development
+> clone, and use a separate owner-readable configuration file that targets only
+> that clone. Never test schema changes on a live database.
+
+For a cloned legacy database, copy the local configuration into a temporary
+mode-`0600` file, change `DB_NAME` and `DB_ALLOWED_TARGETS` to the clone, and run
+the guarded legacy upgrade through `MIGRATION_ENV_FILE`:
+
+```bash
+migration_env=$(mktemp)
+chmod 600 "$migration_env"
+cp .env "$migration_env"
+${EDITOR:-vi} "$migration_env"
+MIGRATION_ENV_FILE="$migration_env" ./migrations/run_migration.sh
+rm -f "$migration_env"
+unset migration_env
+```
+
+The legacy runner is re-runnable, records verified baseline adoption, and checks
+runtime schema compatibility before it succeeds. If any step fails, treat the
+clone as partially migrated and restore it from the known backup before retrying.
 
 ### 4. Build and start
 
 ```bash
 make
-./scripts/start_mud.sh
+./scripts/start_mud.sh --dev
 ```
 
 The root build places every compiled artifact below `bin/`: the staged server
@@ -192,7 +213,8 @@ pending immutable migrations for an allow-listed local database, verifies the
 exact runtime schema on every restart, and only then starts it. Production
 startup performs the verification read-only; use the migration runbook to
 upgrade production. Without a configured user service it runs in the
-background and writes console output to `logs/duris-console.log`.
+background and writes console output to `logs/duris-console.log`. The `--dev`
+quick-start listener is port 4000 and cannot select the production runtime role.
 
 For a foreground development session on port 4000, use this instead of
 `start_mud.sh`:
@@ -239,7 +261,7 @@ Operational log locations and restart behavior are documented in the
 ## Connect
 
 ```bash
-telnet localhost 7777
+telnet localhost 4000
 ```
 
 | Listener | Standard start | `--dev` start |
@@ -264,7 +286,14 @@ Run the complete developer/CI gate before handing off a change:
 
 ```bash
 make test-all
+make test-db
 ```
+
+`make test-all` covers maintained builds, generated world data, Python
+regressions, and native tests. `make test-db` additionally creates disposable
+MySQL containers for schema contracts, immutable migration checks, and the full
+historical 143-step legacy upgrade, replay, fresh-bootstrap equivalence, and
+runtime-compatibility test. It never targets the database configured in `.env`.
 
 During development, run the smallest relevant regression directly:
 

@@ -2,7 +2,7 @@
 
 Duris has two deliberately separate histories:
 
-- `migrations/run_migration.sh` is the legacy additive upgrade path. Its 141 progress
+- `migrations/run_migration.sh` is the legacy additive upgrade path. Its 143 progress
   steps and `mud_schema_migrations` data-copy markers are not complete historical
   execution evidence and are never backfilled as if they were.
 - `migrations/migration_manifest.json` is the authoritative immutable history after
@@ -59,10 +59,12 @@ reclassifying it as pending. Exact replay with a complete prefix performs no wor
 
 ```sh
 python3 tests/async/test_immutable_migration_runner.py
+tests/async/run_legacy_migration_mysql.sh
 tests/async/run_immutable_migration_ledger_mysql.sh
 tests/async/run_runtime_compatibility_mysql.sh
 RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 ```
 
-The isolated MySQL test verifies schema replay, ordered uniqueness, honest baseline
-kind uniqueness, and preservation of legacy data-copy markers.
+The isolated MySQL tests verify the full legacy upgrade, exact fresh-bootstrap
+equivalence, replay, schema compatibility, ordered uniqueness, honest baseline kind
+uniqueness, and preservation of legacy data-copy markers.
