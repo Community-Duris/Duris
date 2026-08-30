@@ -18,12 +18,13 @@ start = (SRC / "actwiz.c").read_text()
 defines = (SRC / "defines.h").read_text()
 
 
-# The committed environment turns on a strict, explicit creation-only switch.
+# The committed environment documents a strict, explicit creation-only switch
+# while keeping the broad override disabled by default.
 assert contains(impl, "bool creation_all_classes_enabled(void)")
 assert contains(impl, 'getenv("CREATION_ALL_CLASSES")')
 assert contains(impl, 'strcasecmp(value, "TRUE")')
 assert contains(header, "bool creation_all_classes_enabled(void);")
-assert "CREATION_ALL_CLASSES=TRUE" in (ROOT / ".env.example").read_text()
+assert "CREATION_ALL_CLASSES=FALSE" in (ROOT / ".env.example").read_text()
 
 
 # All 30 class IDs are represented by the availability layer.
@@ -86,7 +87,9 @@ assert index(allowed, "creation_all_classes_enabled()") < index(allowed, "allowe
 # rows were removed when Rogue specializations replaced them. Direct creation
 # assigns their legacy slots before NewbySkillSet so those abilities still
 # participate in leveling and skill initialization.
-do_start = start.split("void do_start(P_char ch, int nomsg)", 1)[1].split("void do_advance", 1)[0]
+do_start = start.split("static void do_start_impl(P_char ch, int nomsg", 1)[1].split(
+    "void do_start(P_char ch, int nomsg)", 1
+)[0]
 assert contains(do_start, "CLASS_ASSASSIN") and contains(do_start, "SPEC_ASSMASTER")
 assert contains(do_start, "CLASS_THIEF") and contains(do_start, "SPEC_CUTPURSE")
 assert index(do_start, "SPEC_ASSMASTER") < index(do_start, "NewbySkillSet")

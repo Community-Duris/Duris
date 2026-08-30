@@ -201,6 +201,11 @@ P_acct flatfile_account_state_load(const char *name, std::string *error)
 	return from_record(record, error);
 }
 
+void flatfile_account_state_release(P_acct account)
+{
+	release_account(account);
+}
+
 bool flatfile_account_state_save(P_acct account, std::string *error)
 {
 	const char *root = persistence_mode_flatfile_root();

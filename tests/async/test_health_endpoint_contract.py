@@ -16,8 +16,11 @@ def check(name, condition):
 
 
 check("health route is exact", 'strcmp(line, "GET /health HTTP/1.1") == 0' in SOURCE)
-check("health reports database pool readiness without a database round trip",
+check("health reports selected persistence readiness without a database round trip",
+      "persistence_mode_requires_mysql()" in SOURCE and
       "sql_pool_is_active()" in SOURCE and "mysql_ping" not in SOURCE)
+check("health uses a backend-neutral response contract",
+      '\\"persistence\\"' in SOURCE and '\\"database\\"' not in SOURCE)
 check("health response is JSON and cannot be cached",
       "Content-Type: application/json" in SOURCE and "Cache-Control: no-store" in SOURCE)
 check("health response closes its probe connection",

@@ -37,6 +37,16 @@ def available_game_port() -> int:
     raise AssertionError("could not reserve an available game/SSL port pair")
 
 
+world = subprocess.run(
+    ["make", "world"],
+    cwd=ROOT,
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    timeout=600,
+)
+require(world.returncode == 0, "full-world data generation failed:\n" + world.stdout[-8000:])
+
 with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_tmp:
     build_root = pathlib.Path(build_tmp)
     binary = build_root / "server" / "dms_new"

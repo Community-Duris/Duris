@@ -9,12 +9,14 @@ GET /health HTTP/1.1
 A ready server returns HTTP 200 with:
 
 ```json
-{"status":"healthy","database":"ready"}
+{"status":"healthy","persistence":"ready"}
 ```
 
-The check reads in-memory database-pool state and performs no blocking database query.
-It returns no configuration, target, credential, player, or account value; responses
-are non-cacheable and the connection closes after the response.
+The check reports readiness for the selected persistence authority. MariaDB mode reads
+in-memory database-pool state without a blocking database query; `flatfile-primary` is
+ready after its private authority has passed startup validation. The response does not
+reveal the selected mode, configuration, target, credential, player, or account value.
+Responses are non-cacheable and the connection closes after the response.
 
 Run the checked-in probe with:
 

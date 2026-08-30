@@ -7,6 +7,7 @@ Covers docs/ongoing-projects/ongoing/character-creation-persistence-gap.md:
   4. item extra descriptions and affects are deleted before being re-inserted
   5. the SESSION03 load path reports why it refused a character
   7. display_account_menu tolerates a NULL argument
+  8. enter_game converts fallback room vnums before indexing the mini world
 """
 
 from pathlib import Path
@@ -238,6 +239,67 @@ require(
     menu.lstrip().startswith("void display_account_menu(P_desc d, char *arg)\n{\n\tif (!arg)")
     or "if (!arg)" in menu.split("\n")[2],
     "display_account_menu must guard against a NULL arg, not dereference it",
+)
+
+# --- 8. saved-room fallback bounds ------------------------------------------------
+enter_game = section(NANNY, "void enter_game(P_desc d)", "\n}\n")
+require(
+    "r_room = real_room(GET_ORIG_BIRTHPLACE(ch));" in enter_game,
+    "enter_game must convert the original birthplace vnum to a world index",
+)
+require(
+    enter_game.index("if (r_room < 0 || r_room > top_of_world)")
+    < enter_game.index("if (zone_table[world[r_room].zone].flags & ZONE_CLOSED)"),
+    "enter_game must bounds-check a restored room before indexing world and zone_table",
+)
+
+# --- 9. post-entry save routing ---------------------------------------------------
+entry_save = NANNY[NANNY.index("auction_transaction_player_ready(ch);") :]
+entry_save = entry_save[: entry_save.index("sql_connectIP(ch);")]
+require(
+    "if (!writeCharacter(ch, 1, NOWHERE))" in entry_save,
+    "post-entry persistence must check the backend-neutral character save result",
+)
+require(
+    entry_save.index("#ifndef __NO_MYSQL__")
+    < entry_save.index("sql_save_player_core(ch)"),
+    "client-free entry must not report the unavailable SQL-only core writer as a save failure",
+)
+
+newbie_grant = NANNY[NANNY.index("if (!GET_LEVEL(ch))") :]
+newbie_grant = newbie_grant[: newbie_grant.index("else if (IS_SET(ch->specials.act2")]
+require(
+    "do_start_deferred_newbie_kit(ch, 0)" in newbie_grant
+    and newbie_grant.index("writeCharacter(ch, 1, NOWHERE)")
+    < newbie_grant.index("load_obj_to_newbies(ch)"),
+    "new players need complete initialization and a durable authority baseline before one starter grant",
+)
+require(
+    newbie_grant.count("load_obj_to_newbies(ch)") == 1,
+    "the new-character entry branch must submit exactly one starter grant sequence",
+)
+require(
+    "starter kit withheld" in newbie_grant,
+    "starter-item publication must fail closed when the player baseline cannot be saved",
+)
+
+flat_terminal_save = section(
+    write_character,
+    "#ifdef __NO_MYSQL__\n\tif (!is_locker_char &&",
+    "\n#endif",
+)
+require(
+    "const bool establishing_baseline" in flat_terminal_save
+    and "flatfile_item_repository_load_owner(" in flat_terminal_save,
+    "the first flat-file save must reload the authoritative item-owner revision",
+)
+require(
+    "item_ownership_runtime_hydrate_owner(owner, owner_revision)" in flat_terminal_save,
+    "starter grants must use the persisted player-owner revision, not the pre-save revision",
+)
+require(
+    "ownership_revision_sync_failed" in flat_terminal_save,
+    "a failed ownership revision publication must fail closed and remain observable",
 )
 
 print("character persistence gap contracts ok")

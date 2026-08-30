@@ -297,7 +297,7 @@ void get_account_password(P_desc d, char *arg)
 		{
 			FREE(d->account->acct_password);
 			d->account->acct_password = str_dup(new_hash);
-			FREE(new_hash);
+			free(new_hash);
 			if (-1 == write_account(d->account))
 			{
 				statuslog(56, "&+RALERT&n: account password upgrade save failed");
@@ -668,7 +668,7 @@ void get_new_account_password(P_desc d, char *arg)
 	}
 
 	d->account->acct_password = str_dup(hash);
-	FREE(hash);
+	free(hash);
 	STATE(d) = CON_VERIFY_NEW_ACCT_PASSWD;
 	verify_new_account_password(d, NULL);
 	return;
@@ -1147,7 +1147,21 @@ void account_confirm_char(P_desc d, char *arg)
 		echo_on(d);
 		STATE(d) = CON_PLAYING;
 		d->character = ch;
+		c->count++;
+		c->last = time(NULL);
 		enter_game(d);
+		const int projection_room = ch->in_room >= 0 && ch->in_room <= top_of_world ?
+						    world[ch->in_room].number :
+						    ch->specials.was_in_room;
+		if (!sync_account_character_projection(ch, projection_room, TRUE))
+		{
+			statuslog(
+				56,
+				"&+RALERT&n: loaded flat-file account character projection save failed");
+			persistence_alert(AVATAR, "account", "redacted", "none", "none",
+					  "write_failed",
+					  "loaded character projection save failed");
+		}
 		d->prompt_mode = TRUE;
 
 		switch (GET_RACEWAR(ch))
@@ -2099,6 +2113,10 @@ void add_char_to_account(P_desc d)
 		c->racewar = ACCT_EVIL;
 	else
 		c->racewar = ACCT_GOOD;
+	c->level = GET_LEVEL(player);
+	c->race = GET_RACE(player);
+	c->m_class = player->player.m_class;
+	c->secondary_class = player->player.secondary_class;
 	c->next = d->account->acct_character_list;
 	d->account->acct_character_list = c;
 	if (-1 == write_account(d->account))
@@ -2107,6 +2125,29 @@ void add_char_to_account(P_desc d)
 		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
 				  "add character save failed");
 	}
+}
+
+int sync_account_character_projection(P_char player, int room, int persist)
+{
+	if (!player || !player->desc || !player->desc->account || !GET_NAME(player))
+		return 1;
+
+	struct acct_chars *character =
+		find_char_in_list(player->desc->account->acct_character_list, GET_NAME(player));
+	if (!character)
+		return 0;
+
+	character->pid = GET_PID(player);
+	character->level = GET_LEVEL(player);
+	character->race = GET_RACE(player);
+	character->m_class = player->player.m_class;
+	character->secondary_class = player->player.secondary_class;
+	character->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
+	if (room != NOWHERE)
+		character->last_room = room;
+	character->last_save = time(NULL);
+
+	return !persist || write_account(player->desc->account) == 1;
 }
 
 void account_delete_char(P_desc d, char *arg)
@@ -2348,15 +2389,63 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 		acct->acct_character_list = NULL;
 	}
 
-	// copy loaded data (transfer ownership of pointers)
+	/*
+	 * MariaDB materializes strings and list nodes through the live-account
+	 * allocator, so its pointers can transfer directly.  The flat-file adapter
+	 * returns an isolated standard-library DTO; copy that data before releasing
+	 * the DTO so the live account always has one allocator contract.
+	 */
+#ifdef __NO_MYSQL__
+	acct->acct_name = str_dup(loaded->acct_name ? loaded->acct_name : "");
+	acct->acct_email = str_dup(loaded->acct_email ? loaded->acct_email : "");
+	acct->acct_password = str_dup(loaded->acct_password ? loaded->acct_password : "");
+	acct->acct_confirmation =
+		str_dup(loaded->acct_confirmation ? loaded->acct_confirmation : "");
+
+	struct acct_ip **ip_tail = &acct->acct_unique_ips;
+	for (struct acct_ip *source = loaded->acct_unique_ips; source; source = source->next)
+	{
+		struct acct_ip *copy;
+		CREATE(copy, struct acct_ip, 1, MEM_TAG_OTHER);
+		memset(copy, 0, sizeof(*copy));
+		copy->hostname = str_dup(source->hostname ? source->hostname : "");
+		copy->ip_address = str_dup(source->ip_address ? source->ip_address : "");
+		copy->count = source->count;
+		*ip_tail = copy;
+		ip_tail = &copy->next;
+	}
+
+	struct acct_chars **character_tail = &acct->acct_character_list;
+	for (struct acct_chars *source = loaded->acct_character_list; source; source = source->next)
+	{
+		struct acct_chars *copy;
+		CREATE(copy, struct acct_chars, 1, MEM_TAG_OTHER);
+		memset(copy, 0, sizeof(*copy));
+		copy->pid = source->pid;
+		copy->charname = str_dup(source->charname ? source->charname : "");
+		copy->count = source->count;
+		copy->last = source->last;
+		copy->blocked = source->blocked;
+		copy->racewar = source->racewar;
+		copy->level = source->level;
+		copy->race = source->race;
+		copy->m_class = source->m_class;
+		copy->secondary_class = source->secondary_class;
+		copy->last_room = source->last_room;
+		copy->last_save = source->last_save;
+		*character_tail = copy;
+		character_tail = &copy->next;
+	}
+#else
 	acct->acct_name = loaded->acct_name;
 	acct->acct_email = loaded->acct_email;
 	acct->acct_password = loaded->acct_password;
 	acct->acct_confirmation = loaded->acct_confirmation;
-	acct->num_ips = loaded->num_ips;
-	acct->num_chars = loaded->num_chars;
 	acct->acct_unique_ips = loaded->acct_unique_ips;
 	acct->acct_character_list = loaded->acct_character_list;
+#endif
+	acct->num_ips = loaded->num_ips;
+	acct->num_chars = loaded->num_chars;
 	acct->acct_blocked = loaded->acct_blocked;
 	acct->acct_confirmed = loaded->acct_confirmed;
 	acct->acct_confirmation_sent = loaded->acct_confirmation_sent;
@@ -2369,8 +2458,12 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 	acct->acct_flags4 = loaded->acct_flags4;
 	acct->persistence_revision = loaded->persistence_revision;
 
-	// free the container (but not the contents we transferred)
+	/* Release the DTO container with the allocator that created it. */
+#ifdef __NO_MYSQL__
+	flatfile_account_state_release(loaded);
+#else
 	free(loaded);
+#endif
 	return 1;
 }
 

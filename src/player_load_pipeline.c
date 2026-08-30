@@ -336,7 +336,18 @@ bool player_load_pipeline_cancel(uint64_t request_id)
 	if (!request_id || !active_ids.count(request_id))
 		return false;
 	if (cancelled_ids.insert(request_id).second)
+	{
 		++health.cancelled;
+		/* Completion publication and descriptor cancellation race on separate
+		 * threads.  If the worker already queued the result, cancel it in place;
+		 * otherwise worker_main observes cancelled_ids before publishing. */
+		for (player_load_result &result : completions)
+			if (result.request_id == request_id)
+			{
+				result.outcome = player_load_outcome::cancelled;
+				break;
+			}
+	}
 	return true;
 }
 
@@ -350,6 +361,7 @@ size_t player_load_pipeline_pulse(player_load_result *results_out, size_t capaci
 	{
 		results_out[count] = std::move(completions.front());
 		active_ids.erase(results_out[count].request_id);
+		cancelled_ids.erase(results_out[count].request_id);
 		record_delivery_locked(results_out[count].request_id);
 		completions.pop_front();
 		++count;

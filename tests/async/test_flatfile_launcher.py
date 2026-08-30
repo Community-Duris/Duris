@@ -23,6 +23,11 @@ def run(script: pathlib.Path, env: dict[str, str], *arguments: str) -> subproces
 
 
 subprocess.run(["bash", "-n", str(SOURCE)], check=True)
+subprocess.run(["bash", "-n", str(ROOT / ".env.example")], check=True)
+
+example = (ROOT / ".env.example").read_text()
+if "GAME_ACCOUNT_PASSWORD=<password>" in example:
+    raise AssertionError(".env.example contains a shell-redirection password placeholder")
 
 with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary:
     project = pathlib.Path(temporary)

@@ -22,7 +22,11 @@ make -C src PERSISTENCE_BACKEND=flatfile
 
 `mariadb` is the default and includes and links the MySQL-compatible client. The
 `flatfile` selection defines `__NO_MYSQL__` and does not add the MySQL include path or
-client library. Each binary accepts only its matching primary runtime mode. The legacy
+client library. Backend-specific objects are kept under
+`bin/objects/server/<backend>/`; the maintained `bin/server/dms_new` path is relinked
+when the selected backend changes, so the two commands can be run sequentially without
+cleaning or reusing incompatible objects. Each binary accepts only its matching primary
+runtime mode. The legacy
 `mariadb-primary-flatfile-fallback` token remains recognized but fails closed because
 mixed per-operation authority transfer is not supported.
 

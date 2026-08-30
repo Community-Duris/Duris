@@ -1,0 +1,34 @@
+# phase 1 live test
+
+## BUGS
+
+ -  allocator mismatch on password hashing
+ -  the race selection screen was reverted to a plain text list in one of the refactors.
+ -  idle timeout during character creation is very short
+ -  rules were not listed for player to read during character login (missing)
+ -  message "The ownership authority is busy; the item was not granted." showed up a bunch of times upon initial login during chaos
+ -  a little while after login was complete "The ownership authority is busy; the item was not granted." showed up again
+ -  when logged in as druid, the character did not begin to commune until the command was purposefully invoked. this should begin on login
+ -  the news page was missing
+ -  upon looting a corpse i received the message "Your coin credit is waiting at the auction house." but it should have been granted to the character immediately
+ -  upon typing auction pickup i received the message "The auction house is busy; your money remains staged."
+ -  no npc's loaded with items
+ -  when attempting to enter locker with no money i received the "..but you don't have the money or the bank could not complete the payment, GET OUT!" however when it said i was booted out i actualy remained in a room with no visible name and a north exit with door closed rather than being returned to the bank i had attempted to enter from.
+ -  upon being killed in battle i received the message "Your death could not be saved. You remain in the world for recovery."
+ -  a corpse was created even though my death did not save.
+ -  a second corpse was created when i tried to suicide confirm while locked in death.
+ -  the salvage skill shows that corpses "Salvage assessment: the corpse of Fer can be broken down for salvage materials." however corpses cannot, or should not, be salvagable
+ -  while stuck in perpetual death bug, i disconnected, re logged in, and was immediately alive again.
+ -  while on the world map, the "+" that marked the road was replaced by a "." after i moved off of that tile, and it stayed like that. but only the ones i walked on.
+ -  while walking through the forest "*" tiles on the world map, they turned into a "." after i walked on them and stayed that way.
+ -  while communing, the spells would occasionaly stop returning in a timely manner for a short period and then return to the normal pace
+ -  when typing list at a dock where i can purchase a ship it did not show me the list of options for purchase
+ -  upon attempting to rent at a valid inn i received the message "Failed to save this character, most likely too much eq." (i had zero equipment)
+ -  upon typing save i received the message "Save queued for Fer." but at no point did i receive a follow up message. i was also able to type it again and receive the same exact message. (it didn't show differently for state such as already queued for save. or save failed.
+ -  class selection requires you to type the class name instead of having numbers or letters to select them. this is a change of behavior from the refactor.
+ -  class selection does not list all available classes to a race while still lettings you type the race that wasn't listed such as druid while selecting human.
+ -  after character creation, i selected not to keep the character and was taken back to the main login screen instead of to the account screen. i think typed the account name and was disconnected.
+ -  players can see their own tracks in a room with the track skill
+ -  database persistence is still broken, items are not granted on login. or upon summon such as wizard innate summon book. or on any npc's
+ -  there was a bit of lag after using the specialization command at the teacher. this should not lag (i speced as wizard)
+ -  if a log file cannot be written because the path does not exist, the path should be created. and the log entry should attempt to write again

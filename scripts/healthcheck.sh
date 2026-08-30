@@ -9,6 +9,6 @@ import json
 import sys
 
 payload = json.load(sys.stdin)
-if payload != {"status": "healthy", "database": "ready"}:
+if payload != {"status": "healthy", "persistence": "ready"}:
     raise SystemExit("unexpected DurisMUD health response")
 ' <<<"$response"

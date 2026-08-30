@@ -61,10 +61,11 @@ BIN_ROOT          ?= $(ROOT_DIR)/bin
 SERVER_BIN_DIR    ?= $(BIN_ROOT)/server
 TOOL_BIN_DIR      ?= $(BIN_ROOT)/tools
 MIGRATION_BIN_DIR ?= $(BIN_ROOT)/migrations
-OBJDIR            ?= $(BIN_ROOT)/objects/server
+OBJDIR            ?= $(BIN_ROOT)/objects/server/$(PERSISTENCE_BACKEND)
 DMS_BINARY        ?= $(SERVER_BIN_DIR)/dms_new
 PFILE_BINARY      ?= $(TOOL_BIN_DIR)/pfile
 MIGRATE_BINARY    ?= $(MIGRATION_BIN_DIR)/migrate_pfiles
+BACKEND_STAMP     := $(dir $(DMS_BINARY)).$(notdir $(DMS_BINARY))-backend
 DEPFLAGS := -MMD -MP
 
 # files that would be compiled as dynamic libs if USE_SHARED was defined
@@ -481,11 +482,26 @@ endif
 
 all: $(PROGS)
 
-.PHONY: dms_new pfile migrate_pfiles clean clean-server debug valgrind
+.PHONY: dms_new pfile migrate_pfiles clean clean-server debug valgrind FORCE
 
 dms_new: $(DMS_BINARY)
 
-$(DMS_BINARY): $(DMS_OBJS)
+FORCE:
+
+# The server binary has one stable runtime path, but its object graph and link
+# dependencies differ by persistence backend. Keep each backend's objects
+# isolated and update this stamp only when the selected backend changes so a
+# backend switch cannot leave an up-to-date binary linked for the prior mode.
+$(BACKEND_STAMP): FORCE
+	@mkdir -p $(dir $@)
+	@set -eu; \
+	backend='$(PERSISTENCE_BACKEND)'; \
+	if [ ! -f "$@" ] || [ "$$(cat "$@")" != "$$backend" ]; then \
+		printf '%s\n' "$$backend" >"$@.tmp"; \
+		mv "$@.tmp" "$@"; \
+	fi
+
+$(DMS_BINARY): $(DMS_OBJS) $(BACKEND_STAMP)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -rdynamic -g -o $@ $(DMS_OBJS) $(LIBS)
 	chmod a+rx $@
@@ -530,7 +546,7 @@ $(SERVER_BIN_DIR)/%.so: %.c
 	ld -shared -o $@ /usr/lib/crtbeginS.o $(OBJDIR)/$*.o /usr/lib/crtendS.o
 
 clean-server:
-	rm -f $(DMS_BINARY)
+	rm -f $(DMS_BINARY) $(BACKEND_STAMP)
 	rm -rf $(OBJDIR)
 
 clean: clean-server

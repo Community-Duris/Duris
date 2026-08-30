@@ -5788,7 +5788,7 @@ void NewbySkillSet(P_char ch, bool fullReset)
 
 // If nomsg == 0, send a message and assume a new char.
 // If nomsg == CMD_MULTICLASS, this is a new multiclassed char.
-void do_start(P_char ch, int nomsg)
+static void do_start_impl(P_char ch, int nomsg, bool grant_newbie_kit)
 {
 	int i;
 
@@ -5811,7 +5811,7 @@ void do_start(P_char ch, int nomsg)
 
 	clear_title(ch);
 
-	if (!(GET_CLASS(ch, CLASS_AVENGER | CLASS_DREADLORD)) &&
+	if (grant_newbie_kit && !(GET_CLASS(ch, CLASS_AVENGER | CLASS_DREADLORD)) &&
 	    !((GET_RACE(ch) == RACE_DUERGAR || GET_RACE(ch) == RACE_MOUNTAIN) &&
 	      GET_CLASS(ch, CLASS_BERSERKER)))
 	{
@@ -5946,6 +5946,16 @@ void do_start(P_char ch, int nomsg)
 	ch->player.time.played = EQ_WIPE;
 #endif
 	ch->player.time.logon = time(0);
+}
+
+void do_start(P_char ch, int nomsg)
+{
+	do_start_impl(ch, nomsg, true);
+}
+
+void do_start_deferred_newbie_kit(P_char ch, int nomsg)
+{
+	do_start_impl(ch, nomsg, false);
 }
 
 void do_advance(P_char ch, char *argument, int /*cmd*/)
