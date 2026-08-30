@@ -97,6 +97,7 @@
 #include "corpse_lifecycle_transaction.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "item_ownership_runtime.h"
 #include "shop_trade_transaction.h"
 #include "item_uid_allocator.h"
 #include "flatfile_item_repository.h"
@@ -139,6 +140,22 @@ long sentbytes = 0;
 long receivedbytes = 0;
 bool game_booted = FALSE;
 static std::vector<int32_t> maintenance_catalog_candidate;
+
+static bool hydrate_flatfile_system_item_owner(void)
+{
+	const char *root = persistence_mode_flatfile_root();
+	const item_owner_identity owner = { item_owner_type::system, 0, 0 };
+	uint64_t revision = 0;
+	std::vector<flatfile_item_ownership_record> items;
+	std::string error;
+	const auto loaded =
+		root ? flatfile_item_repository_load_owner(root, owner, &revision, &items, &error) :
+		       flatfile_item_repository_result::invalid;
+	if (loaded == flatfile_item_repository_result::not_found)
+		return item_ownership_runtime_hydrate_owner(owner, 0);
+	return loaded == flatfile_item_repository_result::ok && items.empty() &&
+	       item_ownership_runtime_hydrate_owner(owner, revision);
+}
 
 static void maintenance_handle_completions(const maintenance_result *results, size_t count)
 {
@@ -515,6 +532,9 @@ int main(int argc, char **argv)
 	if (!persistence_mode_requires_mysql() &&
 	    !item_uid_allocator_reserve(nullptr, ITEM_UID_BOOT_RESERVATION))
 		fatal_boot_error("comm", "Could not reserve a collision-free flat item UID range");
+	if (!persistence_mode_requires_mysql() && !hydrate_flatfile_system_item_owner())
+		fatal_boot_error("comm",
+				 "Could not hydrate the flat-file system item-owner revision");
 	if (persistence_mode_requires_mysql() && !sql_hydrate_item_owner_revisions())
 		logit(LOG_STATUS,
 		      "Authoritative item owner revisions unavailable; movement fails closed.");
@@ -597,9 +617,6 @@ void run_the_game(int port, int sslport)
 
 	logit(LOG_STATUS, "Signal trapping.");
 	signal_setup();
-	if (!player_load_pipeline_init())
-		logit(LOG_STATUS,
-		      "Player load pipeline unavailable; existing-character login fails closed.");
 
 	SetSpellCircles(); /* spells circlewise done with pure math */
 
@@ -760,6 +777,15 @@ void run_the_game(int port, int sslport)
 		(int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
 	logit(LOG_STATUS, "Boot completed in:%d milliseconds\n",
 	      (int)((time_after - time_before) * 1E3 / CLOCKS_PER_SEC));
+
+	/* Do not start joinable worker threads until all fatal world-data loading is
+	 * complete.  Legacy boot_db() errors exit immediately; starting this pipeline
+	 * before boot_db() made a missing generated world invoke std::terminate while
+	 * the global worker thread was still joinable, obscuring the real diagnostic
+	 * and turning a controlled configuration failure into SIGABRT. */
+	if (!player_load_pipeline_init())
+		logit(LOG_STATUS,
+		      "Player load pipeline unavailable; existing-character login fails closed.");
 
 	game_booted = TRUE;
 

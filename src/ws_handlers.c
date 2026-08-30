@@ -1308,7 +1308,7 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 	d->account->acct_password = str_dup(hash);
-	FREE(hash);
+	free(hash);
 
 	/* mark account as confirmed (skip email verification for web clients) */
 	d->account->acct_confirmed = 1;
@@ -2487,7 +2487,7 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data)
 		FREE(d->account->acct_password);
 	}
 	d->account->acct_password = str_dup(hash);
-	FREE(hash);
+	free(hash);
 	if (-1 == write_account(d->account))
 	{
 		ws_send_account_message(d, "error", NULL, "Failed to save password change");

@@ -2405,12 +2405,14 @@ void enter_game(P_desc d)
 			if (IS_TRUSTED(ch))
 				r_room = real_room0(1200);
 			else
-				r_room = GET_ORIG_BIRTHPLACE(ch);
+				r_room = real_room(GET_ORIG_BIRTHPLACE(ch));
 		}
 
 		if (r_room == NOWHERE)
 			r_room = real_room0(11);
 	}
+	if (r_room < 0 || r_room > top_of_world)
+		r_room = real_room0(11);
 	// old guildhalls (deprecated)
 	//  else if (world[r_room].number >= 48000 &&
 	//           world[r_room].number <= 48999 &&
@@ -2768,8 +2770,26 @@ void enter_game(P_desc d)
 
 	if (!GET_LEVEL(ch))
 	{
-		do_start(ch, 0);
-		load_obj_to_newbies(ch);
+		/* Finish all level-one initialization before writing the authority baseline,
+		 * but defer do_start's legacy item grant until that baseline is durable. */
+		do_start_deferred_newbie_kit(ch, 0);
+		/* Creation grants are durable item-transfer commands.  Establish the new
+		 * player's authority before the first grant is submitted; otherwise a
+		 * clean flat-file install rejects every starter item because the target
+		 * player does not exist yet. */
+		if (writeCharacter(ch, 1, NOWHERE))
+			load_obj_to_newbies(ch);
+		else
+		{
+			statuslog(
+				56,
+				"&+RALERT&n: new-player baseline save failed; starter kit withheld");
+			persistence_alert(AVATAR, "player", "redacted", "none", "none",
+					  "baseline_save_failed", NULL);
+			send_to_char(
+				"Your starter kit could not be granted safely; please contact staff.\r\n",
+				ch);
+		}
 	}
 	else if (IS_SET(ch->specials.act2, PLR2_NEWBIEEQ) && !ch->carrying)
 		load_obj_to_newbies(ch);
@@ -2895,13 +2915,20 @@ void enter_game(P_desc d)
 	shop_trade_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
 	boon_reward_transaction_player_ready(ch);
-	writeCharacter(ch, 1, NOWHERE);
-	if (!sql_save_player_core(ch))
+	if (!writeCharacter(ch, 1, NOWHERE))
+	{
+		statuslog(56, "&+RALERT&n: post-entry player save failed");
+		persistence_alert(AVATAR, "player", "redacted", "none", "none", "save_failed",
+				  NULL);
+	}
+#ifndef __NO_MYSQL__
+	else if (!sql_save_player_core(ch))
 	{
 		statuslog(56, "&+RALERT&n: post-entry player core save failed");
 		persistence_alert(AVATAR, "player", "redacted", "none", "none", "sql_save_failed",
 				  NULL);
 	}
+#endif
 	sql_connectIP(ch);
 	displayShutdownMsg(ch);
 

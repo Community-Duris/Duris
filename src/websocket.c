@@ -9,6 +9,7 @@
 #include "structs.h"
 #include "comm.h"
 #include "db.h"
+#include "persistence_mode.h"
 #include "sql_pool.h"
 #include "utils.h"
 #include "websocket.h"
@@ -285,11 +286,11 @@ static int websocket_send_all(int fd, const void *buf, size_t len)
 
 static int websocket_send_health_response(struct descriptor_data *d)
 {
-	const int database_ready = sql_pool_is_active();
-	const char *status = database_ready ? "200 OK" : "503 Service Unavailable";
-	const char *body = database_ready ?
-				   "{\"status\":\"healthy\",\"database\":\"ready\"}\n" :
-				   "{\"status\":\"unhealthy\",\"database\":\"unavailable\"}\n";
+	const int persistence_ready = !persistence_mode_requires_mysql() || sql_pool_is_active();
+	const char *status = persistence_ready ? "200 OK" : "503 Service Unavailable";
+	const char *body = persistence_ready ?
+				   "{\"status\":\"healthy\",\"persistence\":\"ready\"}\n" :
+				   "{\"status\":\"unhealthy\",\"persistence\":\"unavailable\"}\n";
 	char response[WS_RESPONSE_BUFFER_SIZE];
 	int response_len = snprintf(response, sizeof(response),
 				    "HTTP/1.1 %s\r\n"

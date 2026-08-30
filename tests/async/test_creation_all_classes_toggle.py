@@ -86,7 +86,9 @@ assert index(allowed, "creation_all_classes_enabled()") < index(allowed, "allowe
 # rows were removed when Rogue specializations replaced them. Direct creation
 # assigns their legacy slots before NewbySkillSet so those abilities still
 # participate in leveling and skill initialization.
-do_start = start.split("void do_start(P_char ch, int nomsg)", 1)[1].split("void do_advance", 1)[0]
+do_start = start.split("static void do_start_impl(P_char ch, int nomsg", 1)[1].split(
+    "void do_start(P_char ch, int nomsg)", 1
+)[0]
 assert contains(do_start, "CLASS_ASSASSIN") and contains(do_start, "SPEC_ASSMASTER")
 assert contains(do_start, "CLASS_THIEF") and contains(do_start, "SPEC_CUTPURSE")
 assert index(do_start, "SPEC_ASSMASTER") < index(do_start, "NewbySkillSet")

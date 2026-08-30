@@ -23,6 +23,7 @@
 #include "corpse_lifecycle_transaction.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_corpse_restore.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_shopkeeper_restore.h"
 #include "item_ownership_runtime.h"
 #include "justice.h"
@@ -1700,6 +1701,8 @@ int writeCharacter(P_char ch, int type, int room)
 	if (!is_locker_char &&
 	    (terminal_type || IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)))
 	{
+		const bool establishing_baseline =
+			IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 		room = calculate_save_room(ch, type, room);
 		if (ch->desc)
 			ch->desc->rtype = type;
@@ -1707,6 +1710,34 @@ int writeCharacter(P_char ch, int type, int room)
 			player_save_pipeline_terminal(ch, type, room, 5000, false);
 		if (saved != player_save_terminal_result::database_acknowledged)
 			return 0;
+		if (establishing_baseline)
+		{
+			const item_owner_identity owner = { item_owner_type::player,
+							    static_cast<uint64_t>(GET_PID(ch)), 0 };
+			uint64_t owner_revision = 0;
+			std::vector<flatfile_item_ownership_record> owned_items;
+			std::string ownership_error;
+			const auto ownership = flatfile_item_repository_load_owner(
+				persistence_mode_flatfile_root(), owner, &owner_revision,
+				&owned_items, &ownership_error);
+			if (ownership != flatfile_item_repository_result::ok || !owner_revision ||
+			    !item_ownership_runtime_hydrate_owner(owner, owner_revision))
+			{
+				statuslog(
+					56,
+					"&+RALERT&n: new-player item ownership revision sync failed");
+				persistence_alert(AVATAR, "player", "redacted", "none", "none",
+						  "ownership_revision_sync_failed", NULL);
+				return 0;
+			}
+		}
+		if (!sync_account_character_projection(ch, room, TRUE))
+		{
+			statuslog(56,
+				  "&+RALERT&n: flat-file account character projection save failed");
+			persistence_alert(AVATAR, "account", "redacted", "none", "none",
+					  "write_failed", "character projection save failed");
+		}
 		clear_player_dirty_container_flags(ch);
 		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);

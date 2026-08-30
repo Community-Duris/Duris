@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import pathlib
 import signal
@@ -8,6 +9,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import urllib.request
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -31,6 +33,16 @@ def available_game_port() -> int:
                 continue
             return port
     raise AssertionError("could not reserve an available game/SSL port pair")
+
+
+def available_websocket_port(game_port: int) -> int:
+    for _ in range(100):
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            port = listener.getsockname()[1]
+            if port > 1024 and port not in (game_port, game_port + 1):
+                return port
+    raise AssertionError("could not reserve an available WebSocket port")
 
 
 with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
@@ -94,6 +106,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
             player_journal.mkdir(parents=True, mode=0o700)
             critical_journal.mkdir(mode=0o700)
             port = available_game_port()
+            websocket_port = available_websocket_port(port)
             output_path = run_root / "boot.out"
             environment = {
                 "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
@@ -104,6 +117,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                 "CRITICAL_COMMAND_JOURNAL_DIR": str(critical_journal),
                 "LISTEN_ADDRESS": "127.0.0.1",
                 "DURIS_WEBSOCKET_LISTEN_ADDRESS": "127.0.0.1",
+                "DURIS_WEBSOCKET_PORT": str(websocket_port),
                 "REDIS": "FALSE",
             }
             with output_path.open("w", encoding="utf-8") as output:
@@ -130,6 +144,15 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                         "Entering game loop." in boot_output,
                         "client-free server did not reach the game loop:\n" + boot_output,
                     )
+                    with urllib.request.urlopen(
+                        f"http://127.0.0.1:{websocket_port}/health", timeout=3
+                    ) as response:
+                        health = json.load(response)
+                    require(
+                        response.status == 200
+                        and health == {"status": "healthy", "persistence": "ready"},
+                        f"client-free health endpoint was not ready: {health}",
+                    )
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=30)
                     output.flush()
@@ -153,6 +176,39 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                             process.kill()
                             process.wait(timeout=5)
 
+            # A normal install may be started before `make world` has generated
+            # the full-world files.  That is a configuration error, but it must
+            # remain a controlled exit: no joinable worker may turn it into a
+            # misleading std::terminate/SIGABRT failure.
+            with tempfile.TemporaryDirectory(prefix="duris-flatfile-missing-world-") as missing_tmp:
+                missing_root = pathlib.Path(missing_tmp)
+                (missing_root / "logs/log").mkdir(parents=True)
+                (missing_root / "lib").symlink_to(ROOT / "lib", target_is_directory=True)
+                missing_world = subprocess.run(
+                    [str(binary), "-d", str(missing_root), str(available_game_port())],
+                    cwd=missing_root,
+                    env=environment,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    timeout=30,
+                )
+                require(
+                    missing_world.returncode == 1,
+                    "missing full-world data did not fail with a controlled exit:\n"
+                    + missing_world.stdout,
+                )
+                require(
+                    "Trouble opening mobile file world.mob" in missing_world.stdout,
+                    "missing full-world startup did not identify world.mob:\n"
+                    + missing_world.stdout,
+                )
+                require(
+                    "terminate called" not in missing_world.stdout,
+                    "missing full-world startup invoked std::terminate:\n"
+                    + missing_world.stdout,
+                )
+
             expected_dirs = {
                 "metadata",
                 "identities",
@@ -174,4 +230,4 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                 mode = stat.S_IMODE(path.stat().st_mode)
                 require(mode == 0o700, f"insecure mode {mode:o} on {path}")
 
-print("client-free build, game-loop boot, and clean shutdown preflight passed")
+print("client-free build, health, game-loop boot, and clean shutdown preflight passed")

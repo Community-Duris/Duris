@@ -372,7 +372,9 @@ flatfile_frag_leaderboard_upsert(const std::string &root,
 		return recovered;
 	frag_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_frag_leaderboard_result::ok)
+	if (loaded == flatfile_frag_leaderboard_result::not_found)
+		catalog = {};
+	else if (loaded != flatfile_frag_leaderboard_result::ok)
 		return loaded;
 	flatfile_frag_leaderboard_record *stored = find_record(&catalog, record.pid);
 	try

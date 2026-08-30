@@ -42,6 +42,17 @@ int main(int argc, char **argv)
 	const flatfile_frag_leaderboard_record second = { 7, "Account-B", "Beta",   -200,
 							  2, "Drow",	  "Cleric", 40,
 							  0, 1001,	  2 };
+	const fs::path bootstrap = root / "bootstrap";
+	fs::create_directories(bootstrap / "domains");
+	fs::permissions(bootstrap, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(bootstrap / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	require(flatfile_frag_leaderboard_upsert(bootstrap.string(), first, &error) ==
+			flatfile_frag_leaderboard_result::ok,
+		"first leaderboard upsert did not establish a missing catalog: " + error);
+	require(flatfile_frag_leaderboard_list(bootstrap.string(), &records, &error) ==
+				flatfile_frag_leaderboard_result::ok &&
+			records == std::vector<flatfile_frag_leaderboard_record>{ first },
+		"first leaderboard upsert did not round trip");
 	require(flatfile_frag_leaderboard_establish(root.string(), { first, second }, &error) ==
 			flatfile_frag_leaderboard_result::ok,
 		"leaderboard establishment failed: " + error);

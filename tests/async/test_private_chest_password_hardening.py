@@ -87,6 +87,11 @@ assert "#define BCRYPT_PASSWORD_MAX_BYTES 72" in header
 assert '#include "password_hash.h"' in account
 assert '#include "password_hash.h"' in ws
 assert "char *bcrypt_hash_password" not in account
+assert "FREE(new_hash)" not in account
+assert "FREE(hash)" not in account + ws
+assert account.count("free(new_hash);") == 1
+assert account.count("free(hash);") == 1
+assert ws.count("free(hash);") == 2
 print("[PASS] shared hashing is reentrant, bounded, and consumed by account callers")
 
 create = section(sql_player, "int sql_create_private_chest", "bool sql_delete_private_chest")
