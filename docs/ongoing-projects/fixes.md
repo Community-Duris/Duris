@@ -62,7 +62,23 @@
   `python3 tests/async/test_orphan_item_session_regressions.py`,
   `python3 tests/async/test_player_snapshot_capture.py`,
   `./scripts/format.sh --check`, and `make -C src`.
-- Remaining: final completion audit across all three fixes.
+- Remaining: none; final audit recorded below.
+
+### 2026-08-30 - Final completion audit passed
+
+- Outcome: all three reported issues are fixed, documented, and published as
+  separate checkpoints on `master`.
+- Focused checks passed: the paladin reward contract, death transition and
+  custody contracts, character persistence gap contract, terminal saved-item
+  extraction contract, terminal save safety contract, orphan-item session
+  regressions, immutable player snapshot capture contract, formatting check,
+  and server build.
+- Full gate passed: `make test-all` built the server, area editor, and area
+  tools; verified the generated world; passed all 355 Python regression tests;
+  and passed the native signal-handler test.
+- Published checkpoints: `93b70034` (paladin reward), `6229bf9e` (death
+  transition), and `6551e2c5` (saved inventory extraction).
+- Remaining: none.
 
 ## Made a new character, for Hometown I chose "Planes of life":
 
