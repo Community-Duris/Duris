@@ -129,6 +129,20 @@ bool currency_account_key(const char *account_name, uint8_t racewar, critical_en
 	return true;
 }
 
+bool currency_command_is_rebasable_wallet_reward(const currency_command_payload &payload)
+{
+	if (payload.reason != currency_reason_type::wallet_reward)
+		return false;
+	bool positive = false;
+	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
+	{
+		if (payload.wallet_delta.amount[index] < 0 || payload.bank_delta.amount[index])
+			return false;
+		positive = positive || payload.wallet_delta.amount[index] > 0;
+	}
+	return positive;
+}
+
 bool currency_command_encode_payload(const currency_command_payload &payload,
 				     std::vector<uint8_t> *encoded)
 {

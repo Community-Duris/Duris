@@ -30,4 +30,4 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
 "$ROOT/bin/tests/currency_transaction_mysql_harness"
-printf 'currency deposit-all, withdrawal, rejection, stale, overflow, duplicate, ledger, and baseline checks passed\n'
+printf 'currency deposit-all, withdrawal, rejection, reward rebase, overflow, duplicate, ledger, and baseline checks passed\n'

@@ -178,13 +178,6 @@ bool currency_transaction_submit(P_char character, const currency_vector &wallet
 	critical_entity_key account_key = {};
 	const critical_entity_key player_key = { critical_entity_type::player,
 						 static_cast<uint64_t>(GET_PID(character)) };
-	if (!currency_account_key(account_name, static_cast<uint8_t>(GET_RACEWAR(character)),
-				  &account_key) ||
-	    critical_command_coordinator_is_fenced(player_key, nullptr) ||
-	    critical_command_coordinator_is_fenced(account_key, nullptr))
-		return false;
-	critical_operation_id operation_id = {};
-	critical_command command = {};
 	currency_command_payload payload = { .pid = static_cast<uint32_t>(GET_PID(character)),
 					     .racewar =
 						     static_cast<uint8_t>(GET_RACEWAR(character)),
@@ -194,6 +187,14 @@ bool currency_transaction_submit(P_char character, const currency_vector &wallet
 					     .wallet_delta = wallet_delta,
 					     .bank_delta = bank_delta };
 	memcpy(payload.account_name.data(), account_name, strlen(account_name));
+	const bool rebasable_reward = currency_command_is_rebasable_wallet_reward(payload);
+	if (!currency_account_key(account_name, static_cast<uint8_t>(GET_RACEWAR(character)),
+				  &account_key) ||
+	    (!rebasable_reward && (critical_command_coordinator_is_fenced(player_key, nullptr) ||
+				   critical_command_coordinator_is_fenced(account_key, nullptr))))
+		return false;
+	critical_operation_id operation_id = {};
+	critical_command command = {};
 	if (!critical_operation_id_generate(&operation_id) ||
 	    !currency_command_build(&command, operation_id, payload,
 				    character->only.pc->wallet_revision,

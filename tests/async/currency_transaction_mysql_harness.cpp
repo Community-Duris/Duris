@@ -163,12 +163,14 @@ int main()
 	       duplicate.error_code == ENOSPC);
 
 	const currency_vector reward = { { 3, 0, 0, 0 } };
-	critical_command stale = command_for(pid, account.c_str(), reward, empty,
-					     currency_reason_type::wallet_reward, 0, 2);
-	operations.push_back(operation_hex(stale.operation_id));
-	applied = critical_command_repository_apply(connection, stale);
-	assert(applied.outcome == critical_apply_outcome::terminal_failure &&
-	       applied.error_code == ESTALE);
+	critical_command rebased_reward = command_for(pid, account.c_str(), reward, empty,
+						      currency_reason_type::wallet_reward, 0, 2);
+	operations.push_back(operation_hex(rebased_reward.operation_id));
+	applied = critical_command_repository_apply(connection, rebased_reward);
+	assert(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0);
+	result = result_of(applied);
+	assert(result.wallet.amount[0] == 3 && result.wallet.amount[3] == 5);
+	assert(result.wallet_revision == 3 && result.bank_revision == 3);
 
 	execute("UPDATE account_banks SET bank_copper=2147483647 WHERE id=" +
 		std::to_string(bank_id));
@@ -181,15 +183,15 @@ int main()
 	       applied.error_code == ERANGE);
 	execute("UPDATE account_banks SET bank_copper=10 WHERE id=" + std::to_string(bank_id));
 
-	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)) == 0);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)) == 3);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(pid)) == 5);
 	assert(scalar("SELECT bank_platinum FROM account_banks WHERE id=" +
 		      std::to_string(bank_id)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + std::to_string(pid)) ==
-	       2);
+	       3);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox o JOIN currency_ledger l "
 		      "ON l.operation_id=o.operation_id WHERE l.pid=" +
-		      std::to_string(pid)) == 2);
+		      std::to_string(pid)) == 3);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +
 		      operation_hex(rejected.operation_id) + "')") == 0);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +

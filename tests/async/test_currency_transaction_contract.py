@@ -93,6 +93,19 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_reason_type::boon_reward", boon)
         self.assertIn("currency_reason_type::ship_insurance", ship)
 
+    def test_positive_wallet_rewards_serialize_and_rebase(self):
+        command = (SRC / "currency_command.c").read_text()
+        transaction = (SRC / "currency_transaction.c").read_text()
+        repository = (SRC / "critical_command_repository.c").read_text()
+        helper = "currency_command_is_rebasable_wallet_reward"
+        self.assertIn("payload.reason != currency_reason_type::wallet_reward", command)
+        self.assertIn("payload.wallet_delta.amount[index] < 0", command)
+        self.assertIn("payload.bank_delta.amount[index]", command)
+        self.assertIn("!rebasable_reward &&", transaction)
+        self.assertIn(helper, transaction)
+        self.assertIn("!rebasable_reward &&", repository)
+        self.assertIn(helper, repository)
+
     def test_checkpoint_handoff_captures_but_cannot_overwrite_currency(self):
         capture = (SRC / "player_snapshot_capture.c").read_text()
         replay = (SRC / "player_snapshot_repository.c").read_text()

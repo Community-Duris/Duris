@@ -755,10 +755,11 @@ bool execute_currency_state(MYSQL *connection, const critical_command &command,
 		    .bank_revision = bank_revision };
 	const uint64_t expected_wallet = command.expected_revisions[0].revision;
 	const uint64_t expected_bank = command.expected_revisions[1].revision;
-	if ((expected_wallet != std::numeric_limits<uint64_t>::max() &&
-	     expected_wallet != wallet_revision) ||
-	    (expected_bank != std::numeric_limits<uint64_t>::max() &&
-	     expected_bank != bank_revision))
+	const bool rebasable_reward = currency_command_is_rebasable_wallet_reward(payload);
+	if (!rebasable_reward && ((expected_wallet != std::numeric_limits<uint64_t>::max() &&
+				   expected_wallet != wallet_revision) ||
+				  (expected_bank != std::numeric_limits<uint64_t>::max() &&
+				   expected_bank != bank_revision)))
 	{
 		*result_code = ESTALE;
 		*mutation_applied = false;

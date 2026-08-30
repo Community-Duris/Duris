@@ -56,6 +56,7 @@ struct currency_command_result
 };
 
 bool currency_account_key(const char *account_name, uint8_t racewar, critical_entity_key *key);
+bool currency_command_is_rebasable_wallet_reward(const currency_command_payload &payload);
 bool currency_command_encode_payload(const currency_command_payload &payload,
 				     std::vector<uint8_t> *encoded);
 bool currency_command_decode_payload(const critical_command &command,

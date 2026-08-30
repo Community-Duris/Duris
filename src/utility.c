@@ -3015,13 +3015,17 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 
 static void currency_adjustment_committed(P_char ch, bool committed,
 					  const currency_command_result & /*result*/,
-					  unsigned int /*error_code*/, const uint8_t * /*context*/,
+					  unsigned int error_code, const uint8_t * /*context*/,
 					  size_t /*context_size*/)
 {
 	if (!committed && ch)
+	{
+		logit(LOG_DEBUG, "Currency adjustment rejected for pid %d (error %u)", GET_PID(ch),
+		      error_code);
 		send_to_char(
 			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
 			ch);
+	}
 }
 
 int SUB_BALANCE(P_char ch, int amount, int mode)

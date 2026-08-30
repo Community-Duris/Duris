@@ -1,6 +1,6 @@
 # phase 1 live test
 
-Note some of these may be false positives or may have been already repaired.  They must be address carefully to not break working existing systems.
+Note some of these may be false positives or may have been already repaired.  They must be addressed carefully to not break working existing systems.
 
 ## (potential) BUGS & ISSUES
 
@@ -78,3 +78,12 @@ a two-handed sword
 a thin steel dagger
 a steel short sword
 < 36h/36H 170v/170V Pos: standing >
+
+
+
+- made a new human illusionist character, neutral race war (i tested good too with same result), picked Tharnadia hometown, got into the game and found myself in this room:
+Cage of Smoke
+Obvious exits: None!
+< 30h/30H 120v/120V Pos: standing >
+<> eq
+
