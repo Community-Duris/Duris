@@ -10,7 +10,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): character-creation confirmations now allow 10 minutes instead of 60 seconds; after an actual-character login, a live creation session remained connected past the old cutoff and continued successfully.
  -  VERIFIED FIXED (2026-08-30): character creation now renders the authoritative rules file before agreement; focused catalog tests and a live actual-character check passed.
  -  VERIFIED FIXED (2026-08-30): chaos-mode actual-character login completed without ownership-authority grant rejections; the durable starter baseline and serialized grant regressions also pass.
- -  a little while after login was complete "The ownership authority is busy; the item was not granted." showed up again
+ -  VERIFIED FIXED (2026-08-30): no delayed ownership-authority rejection appeared during a 150-second post-login chaos-mode watch, and the actual character remained responsive afterward.
  -  when logged in as druid, the character did not begin to commune until the command was purposefully invoked. this should begin on login
  -  the news page was missing
  -  upon looting a corpse i received the message "Your coin credit is waiting at the auction house." but it should have been granted to the character immediately
