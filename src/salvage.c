@@ -34,6 +34,9 @@ bool grant_salvage_item(P_char ch, P_obj object)
 
 bool is_salvageable(P_obj temp)
 {
+	if (!temp || GET_ITEM_TYPE(temp) == ITEM_CORPSE)
+		return FALSE;
+
 	if (OBJ_VNUM(temp) > 400237 && OBJ_VNUM(temp) < 400259)
 	{
 		return TRUE;
