@@ -11126,12 +11126,6 @@ int newbie_paladin(P_char ch, P_char pl, int cmd, char *arg)
 	act("$n gives $q to $N!", TRUE, ch, sword, pl, TO_NOTVICT);
 	act("$n gives you $q!", TRUE, ch, sword, pl, TO_VICT);
 	obj_to_char(sword, pl);
-
-	mobsay(ch,
-	       "Here take this also, some items crafted by slaves in Bloodstone, maybe they will help you.");
-	act("$n gives a lot of stuff to $N!", TRUE, ch, NULL, pl, TO_NOTVICT);
-	act("$n gives you a lot of stuff.", TRUE, ch, NULL, pl, TO_VICT);
-	load_obj_to_newbies(pl);
 	return TRUE;
 }
 
