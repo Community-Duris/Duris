@@ -23,6 +23,7 @@
 #include "files.h"
 #include "gmcp.h"
 #include "hardcore_config.h"
+#include "item_movement_transaction.h"
 #include "justice.h"
 #include "json_utils.h"
 #include "mm.h"

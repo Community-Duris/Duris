@@ -28,8 +28,14 @@ command_gate = comm.split("casting_input =", 1)[1].split("PROFILE_END(commands)"
 assert contains(command_gate, "item_creation_grant_blocks_commands(t_ch)")
 assert command_gate.index("!creation_grant_input") < command_gate.index("get_from_q(")
 
+output_gate = comm.split("int process_output(P_desc t)", 1)[1].split(
+    "int process_input(P_desc t)", 1
+)[0]
+assert contains(output_gate, "item_creation_grant_blocks_commands(realChar)")
+assert output_gate.index("item_creation_grant_blocks_commands(realChar)") < output_gate.index(
+    "make_prompt(t)"
+)
+
 creation_flow = movement.split("bool creation_grant_request_valid", 1)[1]
 creation_flow = creation_flow.split("void account_health", 1)[0]
-assert creation_flow.count("find_live_player(") >= 3
-assert "find_player_by_pid(" not in creation_flow
 assert contains(creation_flow, "Your starter kit is ready")

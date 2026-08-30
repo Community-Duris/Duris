@@ -1511,10 +1511,10 @@ resume_game_loop:
 				 !point->str);
 			creation_grant_input = t_ch && item_creation_grant_blocks_commands(t_ch);
 
-			if ((!t_ch || (t_ch && (!creation_grant_input &&
-						((CAN_ACT(t_ch) || casting_input) &&
-						(!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
-						 (point->original))))) &&
+			if ((!t_ch ||
+			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
+			      (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
+			       point->original))) &&
 			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :
 					     get_from_q(&point->input, comm)))
 			{
@@ -3455,6 +3455,8 @@ int process_output(P_desc t)
 		}
 	}
 #endif
+	if (realChar && item_creation_grant_blocks_commands(realChar))
+		t->prompt_mode = FALSE;
 
 	bool had_prompt = t->prompt_mode; // track if prompt will be sent
 	make_prompt(t);
