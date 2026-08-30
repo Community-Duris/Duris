@@ -4152,16 +4152,34 @@ static void display_available_races(P_desc d)
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
+	bool show_formatted_table = racetable != NULL;
 
-	strcpy(buf, "\r\nRace Selection\r\n---------------\r\n");
 	for (i = 0; playable_races[i].race_id != -1; i++)
-	{
-		if (creation_race_enabled(playable_races[i].race_id))
+		if (!creation_race_enabled(playable_races[i].race_id))
 		{
-			checked_snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-					 "  (%c) %s\r\n", playable_races[i].select_key,
-					 race_names_table[playable_races[i].race_id].normal);
+			show_formatted_table = false;
+			break;
 		}
+
+	if (show_formatted_table)
+	{
+		SEND_TO_Q(racetable, d);
+	}
+	else
+	{
+		strcpy(buf, "\r\nRace Selection\r\n---------------\r\n");
+		for (i = 0; playable_races[i].race_id != -1; i++)
+		{
+			if (creation_race_enabled(playable_races[i].race_id))
+			{
+				checked_snprintf(
+					buf + strlen(buf), sizeof(buf) - strlen(buf),
+					"  (%c) %s\r\n", playable_races[i].select_key,
+					race_names_table[playable_races[i].race_id].normal);
+			}
+		}
+		strcat(buf, "  (x) General listing of classes by race\r\n");
+		SEND_TO_Q(buf, d);
 	}
 
 	/* CREATION_ALL_RACES=TRUE opens the races that are normally off-limits.
@@ -4171,7 +4189,7 @@ static void display_available_races(P_desc d)
 	{
 		int shown = 0;
 
-		strcat(buf, "\r\n  --- NORMALLY UNAVAILABLE RACES (testing toggle) ---\r\n");
+		strcpy(buf, "\r\n  --- NORMALLY UNAVAILABLE RACES (testing toggle) ---\r\n");
 		strcat(buf, "  These races cannot normally be chosen at creation.\r\n");
 		strcat(buf, "  Type the race name to select one.\r\n\r\n");
 
@@ -4190,11 +4208,10 @@ static void display_available_races(P_desc d)
 		if (!shown)
 			strcat(buf, "      (none currently enabled)\r\n");
 		strcat(buf, "\r\n");
+		SEND_TO_Q(buf, d);
 	}
 
-	strcat(buf, "  (x) General listing of classes by race\r\n");
-	strcat(buf, "  (y) Racewar information\r\n\r\nYour selection: ");
-	SEND_TO_Q(buf, d);
+	SEND_TO_Q("                    (y) Racewar information.\r\n\r\nYour selection: ", d);
 }
 
 /* Normalizes a race name or menu entry to lowercase letters and digits only,

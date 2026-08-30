@@ -11,6 +11,15 @@ from contract_text import contains, find, index, split_at
 
 ROOT = Path(__file__).resolve().parents[2]
 
+race_table = (ROOT / "lib/creation/racetable").read_text()
+for marker in (
+    "&+YGOOD   RACES",
+    "&+rEVIL   RACES",
+    "&+LNEUTRAL   RACES",
+    "&+RDuris: Land of BloodLust",
+):
+    assert marker in race_table
+
 
 # --- the toggle itself -------------------------------------------------------
 cfg = (ROOT / "src/creation_availability_config.c").read_text()
@@ -76,6 +85,13 @@ menu = menu.split("\n}", 1)[0]
 assert contains(menu, "creation_all_races_enabled()")
 assert contains(menu, "NORMALLY UNAVAILABLE RACES")
 assert contains(menu, "restricted_races[i].note")
+assert contains(menu, "SEND_TO_Q(racetable, d)")
+assert contains(menu, "show_formatted_table = racetable != NULL")
+# A deliberately disabled standard race still uses the policy-aware fallback
+# rather than advertising an option that selection will reject.
+assert index(menu, "creation_race_enabled(playable_races[i].race_id)") < index(
+    menu, "SEND_TO_Q(racetable, d)"
+)
 # Gated: the block only renders behind the toggle.
 assert index(menu, "creation_all_races_enabled()") < index(menu, "NORMALLY UNAVAILABLE RACES")
 

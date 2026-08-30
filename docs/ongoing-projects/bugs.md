@@ -5,7 +5,7 @@ Note some of these may be false positives or may have been already repaired.  Th
 ## (potential) BUGS & ISSUES
 
  -  VERIFIED FIXED (2026-08-30): password-hash temporaries now use matching `malloc`/`free`; the focused hash runtime test and an actual-character login/`score` under Memcheck completed with 0 errors.
- -  the race selection screen was reverted to a plain text list in one of the refactors, here is how race menu should look (colors too!):
+ -  VERIFIED FIXED (2026-08-30): restored the framed, colored good/evil/neutral race-selection screen while preserving availability filtering and the restricted-race testing block; verified through live account creation after an actual-character login.
  `docs/ongoing-projects/1767242209173_x3drwi.webp`
  -  idle timeout during character creation is very short
  -  rules were not listed for player to read during character login (missing)
