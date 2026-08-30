@@ -50,6 +50,13 @@ struct acct_entry *account_list = NULL;
 namespace
 {
 std::unordered_map<uint64_t, player_load_result> ready_player_loads;
+
+void display_account_login_pages(P_desc d)
+{
+	SEND_TO_Q(news.c_str(), d);
+	SEND_TO_Q(motd.c_str(), d);
+	SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
+}
 } // namespace
 
 #define ACCT_SERIAL 1
@@ -329,9 +336,8 @@ void get_account_password(P_desc d, char *arg)
 #ifdef REQUIRE_EMAIL_VERIFICATION
 	if (is_account_confirmed(d))
 	{
-		// Display MOTD before showing account menu
-		SEND_TO_Q(motd.c_str(), d);
-		SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
+		// Display news and MOTD before showing account menu
+		display_account_login_pages(d);
 		update_account_iplist(d);
 		STATE(d) = CON_ACCT_RMOTD;
 		return;
@@ -343,9 +349,8 @@ void get_account_password(P_desc d, char *arg)
 		return;
 	}
 #else
-	// Email verification disabled - skip confirmation and go directly to MOTD
-	SEND_TO_Q(motd.c_str(), d);
-	SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
+	// Email verification disabled - skip confirmation and show the login pages
+	display_account_login_pages(d);
 	update_account_iplist(d);
 	STATE(d) = CON_ACCT_RMOTD;
 	return;
@@ -750,8 +755,7 @@ void verify_new_account_information(P_desc d, char *arg)
 			persistence_alert(AVATAR, "account", "redacted", "none", "none",
 					  "write_failed", "auto-confirm save failed");
 		}
-		SEND_TO_Q(motd.c_str(), d);
-		SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
+		display_account_login_pages(d);
 		update_account_iplist(d);
 		STATE(d) = CON_ACCT_RMOTD;
 #endif

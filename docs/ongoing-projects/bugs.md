@@ -12,7 +12,7 @@ Note some of these may be false positives or may have been already repaired.  Th
  -  VERIFIED FIXED (2026-08-30): chaos-mode actual-character login completed without ownership-authority grant rejections; the durable starter baseline and serialized grant regressions also pass.
  -  VERIFIED FIXED (2026-08-30): no delayed ownership-authority rejection appeared during a 150-second post-login chaos-mode watch, and the actual character remained responsive afterward.
  -  VERIFIED FIXED (2026-08-30): commune-capable non-dragoon characters now silently resume spell-slot recovery on login; a temporary actual druid communed without issuing the command.
- -  the news page was missing
+ -  VERIFIED FIXED (2026-08-30): account login now displays the tracked news before the MOTD; verified through an actual-character login and focused account/flat-file tests.
  -  upon looting a corpse i received the message "Your coin credit is waiting at the auction house." but it should have been granted to the character immediately
  -  upon typing auction pickup i received the message "The auction house is busy; your money remains staged."
  -  VERIFIED FALSE (2026-08-30): "no NPCs loaded with items." A full-world game-loop audit found 13,433 NPCs with inventory or equipment (9,663 equipped); no code change was required.
