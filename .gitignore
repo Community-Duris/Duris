@@ -90,6 +90,8 @@ logs/valgrind/
 /tmp/query-plan-gate/
 /tmp_*.py
 /tmp_*.txt
+docs/ongoing-projects/future/bugs.md
+docs/ongoing-projects/future/db-data-audit.md
 
 # ------------------------------------------------------------------------------
 # Local-only database test fixtures
