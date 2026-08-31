@@ -1,7 +1,7 @@
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utility.h"
-#include "testcmd.h"
+#include "cmd/testcmd.h"
 #include <cstring>
 #include <fstream>
 #include <math.h>

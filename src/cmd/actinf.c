@@ -24,7 +24,7 @@ using namespace std;
 #include "net/comm.h"
 #include "db.h"
 #include "events.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
 #include "ctf.h"
@@ -66,7 +66,7 @@ using namespace std;
 #include "tradeskill.h"
 #include "crafting.h"
 #include "weather.h"
-#include "wikihelp.h"
+#include "cmd/wikihelp.h"
 #include "safe_format.h"
 
 /* * external variables */

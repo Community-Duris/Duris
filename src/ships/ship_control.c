@@ -3,7 +3,7 @@
 #include "net/comm.h"
 #include "db.h"
 #include "events.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "limits.h"
 #include "utility.h"
 #include "utils.h"

@@ -6,7 +6,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utility.h"
 #include "auction_houses.h"
 #include "auction_transaction.h"

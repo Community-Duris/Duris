@@ -1,7 +1,7 @@
 #include "prototypes.h"
 #include "utility.h"
 #include "utils.h"
-#include "wikihelp.h"
+#include "cmd/wikihelp.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_help_catalog.h"
 #endif

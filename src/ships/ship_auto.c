@@ -7,7 +7,7 @@
 #include "prototypes.h"
 #include "net/comm.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>

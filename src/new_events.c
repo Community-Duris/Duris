@@ -32,7 +32,7 @@
 #include "db.h"
 #include "events.h"
 #include "event_names.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include "persistence/copyover.h"
 #include "epic.h"

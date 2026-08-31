@@ -6,7 +6,7 @@
 #include "structs.h"
 #include "net/comm.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "item_movement_transaction.h"
 #include "utils.h"
 #include "account/account.h"

@@ -106,15 +106,15 @@ OBJS =  $(SHIP_OBJS) \
 				 hardcore_config.o \
 				 account/creation_availability_config.o \
 				 frag_cap_config.o \
-				 actcomm.o \
-				 actinf.o \
-				 actmove.o \
-				 actnew.o \
-				 actobj.o \
-				 actoff.o \
-				 actoth.o \
-				 actset.o \
-				 actwiz.o \
+				 cmd/actcomm.o \
+				 cmd/actinf.o \
+				 cmd/actmove.o \
+				 cmd/actnew.o \
+				 cmd/actobj.o \
+				 cmd/actoff.o \
+				 cmd/actoth.o \
+				 cmd/actset.o \
+				 cmd/actwiz.o \
 				 net/ansi.o \
 				 specs/specs.ailvio.o \
 				 alliances.o \
@@ -137,7 +137,7 @@ OBJS =  $(SHIP_OBJS) \
 				 bard.o \
 				 beh_magic.o \
          blispells.o \
-				 boards.o \
+				 cmd/boards.o \
 				 boon.o \
 				 breath_weapons.o \
 				 buildings.o \
@@ -194,14 +194,14 @@ OBJS =  $(SHIP_OBJS) \
 				 handler.o \
 				 hardcore.o \
 				 innates.o \
-				 interp.o \
+				 cmd/interp.o \
 				 justice.o \
 				 kick.o \
 				 language.o \
 				 limits.o \
 				 linked_objects.o\
 				 net/listen.o\
-				 mail.o \
+				 cmd/mail.o \
 				 map.o \
 				 net/mccp.o \
 				 memorize.o \
@@ -218,7 +218,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/nanny.o \
 				 necromancy.o \
 				 new_skills.o \
-				 nq.o \
+				 cmd/nq.o \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
@@ -417,7 +417,7 @@ OBJS =  $(SHIP_OBJS) \
 				 storage_lockers.o \
 				 persistence/locker_async.o \
 				 timers.o \
-				 track.o \
+				 cmd/track.o \
 				 tradeskill.o \
 				 trap.o \
 				 transport.o \
@@ -433,8 +433,8 @@ OBJS =  $(SHIP_OBJS) \
 				 racewar_stat_mods.o \
 				 nexus_stones.o \
 				 test_async.o \
-				 testcmd.o \
-				 wikihelp.o \
+				 cmd/testcmd.o \
+				 cmd/wikihelp.o \
 				 reavers.o \
 				 avengers.o \
 				 specs/specs.lucrot.o \

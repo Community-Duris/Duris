@@ -1,7 +1,7 @@
 #include <string>
 using namespace std;
 
-#include "wikihelp.h"
+#include "cmd/wikihelp.h"
 
 #include <cstdlib>
 #include <iostream>

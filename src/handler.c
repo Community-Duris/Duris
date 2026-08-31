@@ -14,7 +14,7 @@
 #include "db.h"
 #include "events.h"
 #include "files.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include "handler.h"
 #include <ctype.h>

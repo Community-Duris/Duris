@@ -13,7 +13,7 @@
 #include "prototypes.h"
 #include "net/comm.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
 #include <assert.h>

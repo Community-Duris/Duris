@@ -10,7 +10,7 @@
 #include "structs.h"
 #include "net/comm.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "item_uid_allocator.h"
 #include "persistence/critical_command.h"
 #include "flatfile/flatfile_artifact_repository.h"

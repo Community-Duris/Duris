@@ -2,7 +2,7 @@
 #include "structs.h"
 #include "net/comm.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include <string.h>
 #include "achievements.h"

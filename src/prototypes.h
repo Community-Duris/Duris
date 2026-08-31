@@ -23,7 +23,7 @@
 #include <type_traits>
 #include <utility>
 #include "account/account.h"
-#include "mail.h"
+#include "cmd/mail.h"
 #include "safe_format.h"
 #include "safe_io.h"
 using namespace std;

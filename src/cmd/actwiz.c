@@ -26,7 +26,7 @@
 #include "shop.h"
 // #include "types.h"  // Not needed on modern Linux systems
 #include "structs.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
 #include "achievements.h"

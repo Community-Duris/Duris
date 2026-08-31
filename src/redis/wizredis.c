@@ -2,7 +2,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>

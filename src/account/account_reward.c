@@ -2,7 +2,7 @@
 #include "structs.h"
 #include "utility.h"
 #include "utils.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "item_movement_transaction.h"
 #include "account/account_reward.h"
 #include "account/account_reward_config.h"

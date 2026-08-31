@@ -34,7 +34,7 @@ using namespace std;
 
 #include "prototypes.h"
 #include "structs.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
 #include "assocs.h"

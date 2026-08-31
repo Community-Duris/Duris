@@ -7,7 +7,7 @@ using namespace std;
 #include "account/creation_availability_config.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include "epic.h"
 #include "epic_transaction.h"

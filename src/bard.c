@@ -12,7 +12,7 @@
 #include "structs.h"
 #include "net/comm.h"
 #include "events.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>

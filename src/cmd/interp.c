@@ -15,7 +15,7 @@
 #include "net/comm.h"
 #include "db.h"
 #include "events.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include <arpa/telnet.h>
 #include <ctype.h>
@@ -50,7 +50,7 @@
 #include "spells.h"
 #include "enhance.h"
 #include "sql/sql.h"
-#include "testcmd.h"
+#include "cmd/testcmd.h"
 #include "tradeskill.h"
 #include "net/unicode.h"
 #include "vnum.room.h"

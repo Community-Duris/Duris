@@ -26,9 +26,9 @@ TO ADD A NEW BOARD, simply follow our easy 3-step program:
 #include "structs.h"
 #include "net/comm.h"
 #include "db.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
-#include "boards.h"
+#include "cmd/boards.h"
 #include "safe_format.h"
 #include <ctype.h>
 #include <stdio.h>

@@ -124,7 +124,7 @@
 #include "damage.h"
 #include "db.h"
 #include "events.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "spells.h"
 #include "utils.h"
 #include "utility.h"

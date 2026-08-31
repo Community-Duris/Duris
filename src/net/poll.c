@@ -9,7 +9,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "interp.h"
+#include "cmd/interp.h"
 #include "utils.h"
 #include "net/poll.h"
 #include <ctype.h>
