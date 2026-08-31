@@ -1,6 +1,6 @@
 #include "prototypes.h"
 #include "config.h"
-#include "frag_cap_config.h"
+#include "combat/frag_cap_config.h"
 
 #include <errno.h>
 #include <math.h>

@@ -19,13 +19,13 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "account/account.h"
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 #include "defines.h"
 #include "files.h"
 #include "net/gmcp.h"
 #include "hardcore_config.h"
 #include "item_movement_transaction.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "json_utils.h"
 #include "mm.h"
 #include "net/poll.h"

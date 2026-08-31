@@ -20,10 +20,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "assocs.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "graph.h"
-#include "guard.h"
-#include "justice.h"
+#include "combat/guard.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "magic/spells.h"
 

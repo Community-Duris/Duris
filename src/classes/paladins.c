@@ -7,8 +7,8 @@
 #include "classes/paladins.h"
 #include <stdio.h>
 #include <string.h>
-#include "damage.h"
-#include "guard.h"
+#include "combat/damage.h"
+#include "combat/guard.h"
 #include "objmisc.h"
 #include "magic/spells.h"
 #include "weather.h"

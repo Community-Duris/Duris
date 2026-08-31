@@ -1,7 +1,7 @@
 #ifndef COMBAT_OUTCOME_REPOSITORY_H
 #define COMBAT_OUTCOME_REPOSITORY_H
 
-#include "combat_outcome_command.h"
+#include "combat/combat_outcome_command.h"
 
 #include <mysql/mysql.h>
 

@@ -15,13 +15,13 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "range.h"
+#include "combat/range.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "damage.h"
-#include "justice.h"
+#include "combat/damage.h"
+#include "combat/justice.h"
 #include "objmisc.h"
 #include "magic/spells.h"
 #include "weather.h"

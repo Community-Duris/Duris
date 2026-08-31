@@ -13,7 +13,7 @@
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>

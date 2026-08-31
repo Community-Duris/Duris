@@ -24,12 +24,12 @@
 #include <stdio.h>
 #include <string.h>
 #include "achievements.h"
-#include "arena.h"
-#include "arenadef.h"
+#include "combat/arena.h"
+#include "combat/arenadef.h"
 #include "assocs.h"
 #include "epic_transaction.h"
 #include "guildhall.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "map.h"
 #include "mm.h"
 #include "objmisc.h"

@@ -58,7 +58,7 @@
 #include "classes/specializations.h"
 #include "magic/spells.h"
 #include "sql/sql_player.h"
-#include "frag_cap_config.h"
+#include "combat/frag_cap_config.h"
 #include "timers.h"
 #include "persistence/persistence_queue.h"
 #include "utility.h"

@@ -20,7 +20,7 @@ using namespace std;
 #include "alliances.h"
 #include "assocs.h"
 #include "boon.h"
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "defines.h"
 #include "epic.h"
 #include "guildhall.h"

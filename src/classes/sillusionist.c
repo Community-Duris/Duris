@@ -21,12 +21,12 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "arena.h"
-#include "arenadef.h"
-#include "ctf.h"
-#include "damage.h"
+#include "combat/arena.h"
+#include "combat/arenadef.h"
+#include "combat/ctf.h"
+#include "combat/damage.h"
 #include "classes/disguise.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "specs.prototypes.h"

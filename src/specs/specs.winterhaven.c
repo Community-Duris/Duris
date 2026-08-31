@@ -16,11 +16,11 @@
 #include <strings.h>
 #include <sys/time.h>
 #include "assocs.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "objmisc.h"
-#include "range.h"
+#include "combat/range.h"
 #include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "specs/specs.zion.h"

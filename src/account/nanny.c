@@ -7,7 +7,7 @@
 
 #include "prototypes.h"
 #include "account/creation_availability_config.h"
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 #include "structs.h"
 #include "net/comm.h"
 #include "db.h"
@@ -37,7 +37,7 @@
 #include "net/gmcp.h"
 #include "guildhall.h"
 #include "hardcore_config.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "account/multiplay_whitelist.h"
 #include "classes/paladins.h"

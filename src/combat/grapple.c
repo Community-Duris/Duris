@@ -14,8 +14,8 @@ using namespace std;
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "damage.h"
-#include "grapple.h"
+#include "combat/damage.h"
+#include "combat/grapple.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 

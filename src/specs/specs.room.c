@@ -20,10 +20,10 @@
 #include <strings.h>
 #include <time.h>
 #include "assocs.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "files.h"
 #include "guildhall.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"

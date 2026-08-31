@@ -9,7 +9,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

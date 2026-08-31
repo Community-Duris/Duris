@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "graph.h"
 #include "magic/spells.h"
 

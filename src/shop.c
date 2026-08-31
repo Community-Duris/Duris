@@ -18,9 +18,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <glob.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "epic_bonus.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "classes/salchemist.h"
 #include "specs.prototypes.h"
 #include "sql/sql.h"

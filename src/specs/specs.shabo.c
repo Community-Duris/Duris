@@ -22,7 +22,7 @@
 #include "assocs.h"
 #include "classes/disguise.h"
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "weather.h"

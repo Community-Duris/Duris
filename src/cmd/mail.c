@@ -28,7 +28,7 @@
 #define mkdir(path, mode) _mkdir(path)
 #endif
 #endif
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 
 extern struct zone_data *zone_table;

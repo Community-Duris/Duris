@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"

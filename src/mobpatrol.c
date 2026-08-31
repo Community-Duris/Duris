@@ -9,10 +9,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
-#include "range.h"
+#include "combat/range.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"

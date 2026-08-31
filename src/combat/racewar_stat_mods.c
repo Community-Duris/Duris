@@ -4,7 +4,7 @@ using namespace std;
 #include "structs.h"
 #include "utils.h"
 #include "defines.h"
-#include "racewar_stat_mods.h"
+#include "combat/racewar_stat_mods.h"
 
 #define REG_STAT 0
 #define MAX_STAT 1

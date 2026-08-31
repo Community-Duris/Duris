@@ -1,7 +1,7 @@
 #ifndef COMBAT_OUTCOME_TRANSACTION_H
 #define COMBAT_OUTCOME_TRANSACTION_H
 
-#include "combat_outcome_command.h"
+#include "combat/combat_outcome_command.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 #include "prototypes.h"

@@ -26,9 +26,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "assocs.h"
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "account/password_hash.h"

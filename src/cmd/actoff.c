@@ -45,14 +45,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "buildings.h"
-#include "damage.h"
-#include "grapple.h"
-#include "guard.h"
+#include "combat/damage.h"
+#include "combat/grapple.h"
+#include "combat/guard.h"
 #include "guildhall.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "objmisc.h"
 #include "classes/paladins.h"
-#include "siege.h"
+#include "combat/siege.h"
 #include "magic/spells.h"
 
 /*

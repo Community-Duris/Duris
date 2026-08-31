@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-#include "damage.h"
-#include "range.h"
+#include "combat/damage.h"
+#include "combat/range.h"
 #include "magic/spells.h"
 
 /*

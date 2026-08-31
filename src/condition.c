@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "damage.h"
-#include "justice.h"
+#include "combat/damage.h"
+#include "combat/justice.h"
 #include "objmisc.h"
 #include "magic/spells.h"
 #include "weather.h"

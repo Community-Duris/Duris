@@ -14,7 +14,7 @@
 #include <strings.h>
 #include <sys/time.h>
 #include "assocs.h"
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "graph.h"
 #include "classes/reavers.h"
 #include "magic/spells.h"

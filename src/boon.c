@@ -43,7 +43,7 @@ using namespace std;
 #include "boon_reward_transaction.h"
 #include "boon_shop_transaction.h"
 #include "buildings.h"
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "currency_transaction.h"
 #include "epic.h"
 #include "flatfile/flatfile_boon_repository.h"

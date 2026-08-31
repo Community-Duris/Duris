@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "graph.h"
 #include "map.h"
 #include "magic/spells.h"

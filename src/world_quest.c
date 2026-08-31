@@ -35,7 +35,7 @@ using namespace std;
 #include <time.h>
 #include "epic.h"
 #include "net/gmcp.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "map.h"
 #include "objmisc.h"
 #include "persistence/persistence_checkpoint.h"

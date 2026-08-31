@@ -22,9 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "arena.h"
-#include "arenadef.h"
-#include "justice.h"
+#include "combat/arena.h"
+#include "combat/arenadef.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "magic/spells.h"

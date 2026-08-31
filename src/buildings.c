@@ -15,7 +15,7 @@
 #include <string.h>
 #include "alliances.h"
 #include "assocs.h"
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "defines.h"
 #include "guildhall.h"
 #include "outposts.h"

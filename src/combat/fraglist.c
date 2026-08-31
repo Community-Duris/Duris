@@ -6,7 +6,7 @@
 #include <string.h>
 #include "assocs.h"
 #include "config.h"
-#include "frag_cap_config.h"
+#include "combat/frag_cap_config.h"
 #include "redis/redis_report_cache.h"
 #include "ships.h"
 #include "magic/spells.h"

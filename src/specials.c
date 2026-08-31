@@ -16,7 +16,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <strings.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "map.h"
 #include "magic/spells.h"
 

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 

@@ -1,4 +1,4 @@
-#include "combat_outcome_repository.h"
+#include "combat/combat_outcome_repository.h"
 
 #include "epic_command.h"
 

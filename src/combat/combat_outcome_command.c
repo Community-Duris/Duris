@@ -1,4 +1,4 @@
-#include "combat_outcome_command.h"
+#include "combat/combat_outcome_command.h"
 
 #include <algorithm>
 #include <cstring>

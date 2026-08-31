@@ -1,4 +1,4 @@
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -25,11 +25,11 @@
 #include <string.h>
 #include <time.h>
 #include "achievements.h"
-#include "ctf.h"
-#include "damage.h"
+#include "combat/ctf.h"
+#include "combat/damage.h"
 #include "classes/disguise.h"
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "weather.h"

@@ -9,10 +9,10 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "defines.h"
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"

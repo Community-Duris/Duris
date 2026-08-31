@@ -18,12 +18,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "arena.h"
+#include "combat/arena.h"
 #include "config.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "classes/disguise.h"
 #include "net/gmcp.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "net/listen.h"
 #include "mm.h"
 #include "objmisc.h"

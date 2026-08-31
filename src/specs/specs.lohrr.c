@@ -6,9 +6,9 @@
 #include "utils.h"
 #include <string.h>
 #include "achievements.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "graph.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"

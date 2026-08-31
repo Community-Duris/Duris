@@ -2,11 +2,11 @@
 #include "structs.h"
 #include "db.h"
 #include "utils.h"
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "objmisc.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"

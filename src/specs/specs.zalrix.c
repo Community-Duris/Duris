@@ -15,8 +15,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <strings.h>
-#include "damage.h"
-#include "justice.h"
+#include "combat/damage.h"
+#include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"

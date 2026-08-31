@@ -16,8 +16,8 @@
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "damage.h"
-#include "justice.h"
+#include "combat/damage.h"
+#include "combat/justice.h"
 #include "magic/spells.h"
 
 /*

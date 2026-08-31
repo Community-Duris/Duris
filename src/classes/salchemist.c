@@ -21,11 +21,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "defines.h"
 #include "epic.h"
 #include "epic_transaction.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "specs.prototypes.h"

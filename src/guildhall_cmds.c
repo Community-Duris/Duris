@@ -16,7 +16,7 @@
 #include "assocs.h"
 #include "guildhall.h"
 #include "guildhall_db.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "map.h"
 
 #define CAN_CONSTRUCT_CMD(ch)                                                  \

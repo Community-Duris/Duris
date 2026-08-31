@@ -34,7 +34,7 @@
 #include "classes/necromancy.h"
 #include "ships/ships.h"
 #include "redis/redis_ship_legacy.h"
-#include "siege.h"
+#include "combat/siege.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "player/player_name.h"

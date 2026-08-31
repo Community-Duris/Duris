@@ -27,8 +27,8 @@
 #include <signal.h>
 #include <string.h>
 #include "config.h"
-#include "damage.h"
-#include "guard.h"
+#include "combat/damage.h"
+#include "combat/guard.h"
 #include "map.h"
 #include "classes/necromancy.h"
 #include "objmisc.h"

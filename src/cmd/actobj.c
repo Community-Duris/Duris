@@ -20,9 +20,9 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "net/gmcp.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "classes/necromancy.h"
 #include "objmisc.h"
 #include "persistence/persistence_checkpoint.h"

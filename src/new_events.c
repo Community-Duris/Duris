@@ -36,7 +36,7 @@
 #include "utils.h"
 #include "persistence/copyover.h"
 #include "epic.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "outposts.h"

@@ -9,11 +9,11 @@
 #include "db.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "arena.h"
+#include "combat/arena.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "arenadef.h"
+#include "combat/arenadef.h"
 #include "graph.h"
 #include "objmisc.h"
 #include "magic/spells.h"

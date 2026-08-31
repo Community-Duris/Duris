@@ -2,7 +2,7 @@
 
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_store.h"
-#include "combat_outcome_command.h"
+#include "combat/combat_outcome_command.h"
 #include "currency_command.h"
 #include "epic_command.h"
 

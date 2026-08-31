@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "magic/spells.h"
 
 extern P_desc descriptor_list;

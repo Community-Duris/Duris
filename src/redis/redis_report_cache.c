@@ -4,7 +4,7 @@
 #include "db.h"
 #include "structs.h"
 #include "epic.h"
-#include "frag_cap_config.h"
+#include "combat/frag_cap_config.h"
 #include "prototypes.h"
 #include "redis/redis_cache_store.h"
 #include "redis/redis_command_observability.h"

@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "classes/avengers.h"
 #include <string.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "objmisc.h"
 #include "magic/spells.h"
 

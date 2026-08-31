@@ -6,7 +6,7 @@
 #include "prototypes.h"
 #include "net/comm.h"
 #include "utils.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "magic/spells.h"
 
 float breath_dam_mod;

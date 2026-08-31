@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "classes/epic_skills.h"
 #include <string.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "epic.h"
 #include "epic_transaction.h"
 #include "classes/skills.h"

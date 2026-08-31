@@ -121,7 +121,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "db.h"
 #include "events.h"
 #include "cmd/interp.h"

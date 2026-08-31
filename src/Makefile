@@ -105,7 +105,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/account_reward_config.o \
 				 hardcore_config.o \
 				 account/creation_availability_config.o \
-				 frag_cap_config.o \
+				 combat/frag_cap_config.o \
 				 cmd/actcomm.o \
 				 cmd/actinf.o \
 				 cmd/actmove.o \
@@ -120,7 +120,7 @@ OBJS =  $(SHIP_OBJS) \
 				 alliances.o \
 				 automatic_rules.o \
 				 magic/affects.o \
-				 arena.o \
+				 combat/arena.o \
 				 artifact.o \
 				 artifact_cache_codec.o \
 				 persistence/report_cache_codec.o \
@@ -139,18 +139,18 @@ OBJS =  $(SHIP_OBJS) \
          magic/blispells.o \
 				 cmd/boards.o \
 				 boon.o \
-				 breath_weapons.o \
+				 combat/breath_weapons.o \
 				 buildings.o \
          cardgames.o \
-         chaos.o \
-				 chaos_config.o \
+         combat/chaos.o \
+				 combat/chaos_config.o \
 				 net/comm.o \
 				 persistence/copyover.o \
 				 common.o \
 				 condition.o \
 				 constant.o \
-				 ctf.o \
-				 dam_mods.o \
+				 combat/ctf.o \
+				 combat/dam_mods.o \
 				 db.o \
 				 account/character_identity.o \
 				 debug.o \
@@ -178,9 +178,9 @@ OBJS =  $(SHIP_OBJS) \
 				 event_names.o \
 				 new_events.o \
 				 nevent_periodic.o \
-				 fight.o \
+				 combat/fight.o \
 				 files.o \
-				 fraglist.o \
+				 combat/fraglist.o \
 				 forge_items.o \
 				 graph.o \
 				 group.o \
@@ -190,13 +190,13 @@ OBJS =  $(SHIP_OBJS) \
 				 guildhall_cmds.o \
 				 guildhall_procs.o \
 				 guildhall_db.o \
-				 grapple.o \
+				 combat/grapple.o \
 				 handler.o \
 				 hardcore.o \
 				 classes/innates.o \
 				 cmd/interp.o \
-				 justice.o \
-				 kick.o \
+				 combat/justice.o \
+				 combat/kick.o \
 				 classes/language.o \
 				 limits.o \
 				 linked_objects.o\
@@ -209,7 +209,7 @@ OBJS =  $(SHIP_OBJS) \
 				 mm.o \
 				 mobact.o \
 				 world_quest.o \
-				 mobcombat.o \
+				 combat/mobcombat.o \
 				 mobconv.o \
 				 mobpatrol.o \
 				 net/modify.o \
@@ -286,9 +286,9 @@ OBJS =  $(SHIP_OBJS) \
 				 auction_command.o \
 				 auction_repository.o \
 				 auction_transaction.o \
-				 combat_outcome_command.o \
-				 combat_outcome_repository.o \
-				 combat_outcome_transaction.o \
+				 combat/combat_outcome_command.o \
+				 combat/combat_outcome_repository.o \
+				 combat/combat_outcome_transaction.o \
 				 artifact_guild_command.o \
 				 artifact_guild_repository.o \
 				 artifact_guild_state.o \
@@ -354,7 +354,7 @@ OBJS =  $(SHIP_OBJS) \
 				 random.mob.o \
 				 random.zone.o \
 				 randobj.o \
-				 range.o \
+				 combat/range.o \
 				 classes/rogues.o \
 				 classes/shaman.o \
 				 shop.o \
@@ -363,7 +363,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/smagic.o \
 				 classes/salchemist.o \
 				 classes/sillusionist.o \
-				 siege.o \
+				 combat/siege.o \
 				 net/sparser.o \
 				 specials.o \
 				 classes/specializations.o \
@@ -419,7 +419,7 @@ OBJS =  $(SHIP_OBJS) \
 				 timers.o \
 				 cmd/track.o \
 				 tradeskill.o \
-				 trap.o \
+				 combat/trap.o \
 				 transport.o \
 				 trophy.o \
 				 net/unicode.o \
@@ -428,9 +428,9 @@ OBJS =  $(SHIP_OBJS) \
 				 ferry.o \
 				 ferryact.o \
 				 classes/paladins.o \
-				 guard.o \
+				 combat/guard.o \
 				 makeexit.o \
-				 racewar_stat_mods.o \
+				 combat/racewar_stat_mods.o \
 				 nexus_stones.o \
 				 test_async.o \
 				 cmd/testcmd.o \

@@ -3,7 +3,7 @@
 #include "net/comm.h"
 #include "events.h"
 #include "utils.h"
-#include "guard.h"
+#include "combat/guard.h"
 #include "defines.h"
 #include "magic/spells.h"
 

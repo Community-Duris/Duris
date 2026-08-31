@@ -17,10 +17,10 @@
 #include "magic/spells.h"
 #include <stdio.h>
 #include <string.h>
-#include "ctf.h"
-#include "damage.h"
+#include "combat/ctf.h"
+#include "combat/damage.h"
 #include "classes/disguise.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "map.h"
 #include "classes/necromancy.h"
 #include "specs.prototypes.h"

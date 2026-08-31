@@ -20,7 +20,7 @@ using namespace std;
 #include "zone_touch_transaction.h"
 #include "auction_houses.h"
 #include "boon.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "currency_transaction.h"
 #include "epic.h"
 #include "epic_bonus.h"

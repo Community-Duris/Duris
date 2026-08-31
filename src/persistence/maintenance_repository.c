@@ -1,6 +1,6 @@
 #include "persistence/maintenance_repository.h"
 
-#include "frag_cap_config.h"
+#include "combat/frag_cap_config.h"
 #include "persistence/persistence_observability.h"
 #include "sql/sql_pool.h"
 #ifdef __NO_MYSQL__

@@ -14,7 +14,7 @@
 #include "utils.h"
 #include "objmisc.h"
 #include <string.h>
-#include "damage.h"
+#include "combat/damage.h"
 
 extern P_room world; /* dyn alloc'ed array of rooms     */
 // extern int rev_dir[];

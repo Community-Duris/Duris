@@ -22,10 +22,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "arena.h"
-#include "arenadef.h"
+#include "combat/arena.h"
+#include "combat/arenadef.h"
 #include "epic.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "map.h"
 #include "mm.h"
 #include "objmisc.h"

@@ -26,7 +26,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_shopkeeper_restore.h"
 #include "item_ownership_runtime.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "classes/necromancy.h"
 #include "player/player_save_pipeline.h"

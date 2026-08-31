@@ -7,7 +7,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "config.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "map.h"
 #include "magic/spells.h"
 

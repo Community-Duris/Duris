@@ -17,7 +17,7 @@ using namespace std;
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "map.h"
 #include "specs.prototypes.h"
 #include "specs/specs.venthix.h"

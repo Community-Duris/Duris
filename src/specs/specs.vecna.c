@@ -20,11 +20,11 @@
 #include <strings.h>
 #include <time.h>
 #include "assocs.h"
-#include "damage.h"
+#include "combat/damage.h"
 #include "classes/disguise.h"
 #include "graph.h"
-#include "grapple.h"
-#include "justice.h"
+#include "combat/grapple.h"
+#include "combat/justice.h"
 #include "map.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"

@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "ctf.h" // Can remove?
+#include "combat/ctf.h" // Can remove?
 #include "classes/necromancy.h"
 #include "objmisc.h"
 #include "magic/spells.h"

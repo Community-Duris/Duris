@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "map.h"
 #include "classes/reavers.h"
 #include "specs.prototypes.h"

@@ -23,7 +23,7 @@
 #include "utils.h"
 #include "epic.h"
 #include "net/gmcp.h"
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "profile.h"

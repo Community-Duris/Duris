@@ -2,10 +2,10 @@
 
 #include "net/comm.h"
 #include "config.h"
-#include "ctf.h"
+#include "combat/ctf.h"
 #include "db.h"
 #include "epic.h"
-#include "frag_cap_config.h"
+#include "combat/frag_cap_config.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"

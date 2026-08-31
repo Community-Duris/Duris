@@ -1,4 +1,4 @@
-#include "combat_outcome_transaction.h"
+#include "combat/combat_outcome_transaction.h"
 
 #include "redis/redis_report_cache.h"
 #include "currency_transaction.h"

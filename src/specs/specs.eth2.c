@@ -11,7 +11,7 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
-#include "damage.h"
+#include "combat/damage.h"
 #include "magic/spells.h"
 
 extern P_room world;

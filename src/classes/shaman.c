@@ -16,7 +16,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "justice.h"
+#include "combat/justice.h"
 #include "mm.h"
 #include "objmisc.h"
 #include "magic/spells.h"
