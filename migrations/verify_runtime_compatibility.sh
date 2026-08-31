@@ -10,14 +10,14 @@ fi
 : "${DB_HOST:?DB_HOST is required}" "${DB_USER:?DB_USER is required}"
 : "${DB_PASSWD:?DB_PASSWD is required}" "${DB_NAME:?DB_NAME is required}"
 export MYSQL_PWD="$DB_PASSWD"
-if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 if [[ -n "${DB_SOCKET:-}" ]]; then
     [[ "$DB_SOCKET" == /* ]] || { echo "DB_SOCKET must be an absolute path" >&2; exit 1; }
     MYSQL_CONNECTION=(--protocol=socket --socket="$DB_SOCKET")
 else
-    MYSQL_CONNECTION=(-h "$DB_HOST" -P "${DB_PORT:-3306}")
+    if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
+    MYSQL_CONNECTION=("${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}")
 fi
-MYSQL=(mysql "${MYSQL_SSL[@]}" "${MYSQL_CONNECTION[@]}" -u "$DB_USER" -N -B --raw "$DB_NAME")
+MYSQL=(mysql "${MYSQL_CONNECTION[@]}" -u "$DB_USER" -N -B --raw "$DB_NAME")
 extract_string() { sed -n "s/.*\"$1\": \"\([^\"]*\)\".*/\1/p" "$MANIFEST" | head -1; }
 extract_number() { sed -n "s/.*\"$1\": \([0-9][0-9]*\).*/\1/p" "$MANIFEST" | head -1; }
 expected=(

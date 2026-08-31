@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 0.1.59** | [Versioning policy](docs/guides/VERSIONING.md)
+**Version: 0.1.58** | [Versioning policy](docs/guides/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -88,8 +88,9 @@ nc 127.0.0.1 4000
 ```
 
 The generated `.env.docker` is ignored, mode `0600`, and contains random
-database credentials. The database, recovery journals, backups, certificate,
-and logs live in named Docker volumes and survive ordinary container rebuilds.
+database credentials. The database, filesystem-backed player state, recovery
+journals, backups, certificate, and logs live in named Docker volumes and
+survive ordinary container rebuilds.
 This stack is a local/development alternative to the native setup below; it is
 not the production deployment model. See the [Docker deployment guide](docs/operations/DOCKER.md)
 for lifecycle, configuration, upgrades, logs, and data-reset commands.

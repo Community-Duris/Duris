@@ -24,7 +24,7 @@ migrate_pfiles
 .bash_history
 .c*
 .env
-.env.docker
+.env.docker*
 /Duris.xcodeproj
 /certs/*.crt
 /certs/*.key

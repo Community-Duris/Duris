@@ -74,8 +74,14 @@ docker compose --env-file .env.docker up --detach --wait
 
 The game launcher takes a database backup before each boot. Backups, player-save
 and critical-command journals, maintenance state, and the local TLS key are in
-the `duris-runtime` volume. Game logs are in `duris-logs`; MariaDB data is in
-`mariadb-data`. The transient `mariadb-socket` volume carries no durable data.
+the `duris-runtime` volume. Filesystem-backed player state such as lockers,
+crafting recipes, aliases, and death-object configuration is in `duris-players`.
+Game logs are in `duris-logs`, and MariaDB data is in `mariadb-data`.
+
+`mariadb-socket` is also a persistent named volume because Compose cannot share
+a tmpfs between services. It contains no durable application state, but it can
+retain stale socket or PID files across `down`; `down --volumes` removes it
+together with the other named volumes during a full local reset.
 
 Inspect a health failure without exposing credentials:
 
@@ -92,8 +98,9 @@ values interpolated from `.env.docker`.
 ## Clean local reset
 
 Ordinary `down`, rebuild, and image removal preserve the named volumes. The
-following command permanently deletes the Docker database, backups, journals,
-certificate, and logs for this Compose project:
+following command permanently deletes the Docker database, filesystem-backed
+player state, backups, journals, certificate, logs, and socket volume for this
+Compose project:
 
 ```bash
 docker compose --env-file .env.docker down --volumes

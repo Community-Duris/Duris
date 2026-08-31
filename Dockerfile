@@ -19,7 +19,8 @@ RUN apt-get update \
 WORKDIR /opt/duris
 COPY . .
 
-RUN make -j"${BUILD_JOBS}" build-server build-area-tools
+RUN make -j"${BUILD_JOBS}" build-server build-area-tools \
+    && rm -rf bin/objects
 
 
 FROM ubuntu:24.04 AS runtime
@@ -54,11 +55,18 @@ WORKDIR /opt/duris
 COPY --from=build --chown=duris:duris /opt/duris /opt/duris
 
 RUN install -d -o duris -g duris -m 0700 \
+        /opt/duris/Players \
+        /opt/duris/Players/Tradeskills \
         /var/lib/duris \
         /var/lib/duris/critical-command-journal \
         /var/lib/duris/db-backups \
         /var/lib/duris/player-journal \
         /var/lib/duris/tls \
+    && for letter in a b c d e f g h i j k l m n o p q r s t u v w x y z; do \
+        install -d -o duris -g duris -m 0700 \
+            "/opt/duris/Players/$letter" \
+            "/opt/duris/Players/Tradeskills/$letter"; \
+    done \
     && install -d -o duris -g duris -m 0755 \
         /opt/duris/logs \
         /opt/duris/logs/log \
@@ -72,7 +80,7 @@ USER duris
 
 EXPOSE 4000 4001 4050
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=12 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=30 \
     CMD ["./scripts/healthcheck.sh"]
 
 ENTRYPOINT ["./deploy/docker/entrypoint.sh"]

@@ -4,6 +4,8 @@ services:
   mariadb:
     image: mariadb:11.4
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     environment:
       MARIADB_DATABASE: duris_dev
       MARIADB_USER: duris
@@ -28,7 +30,7 @@ services:
       context: .
       args:
         BUILD_JOBS: ${DURIS_BUILD_JOBS:-2}
-    restart: unless-stopped
+    restart: "on-failure:5"
     init: true
     depends_on:
       mariadb:
@@ -61,12 +63,14 @@ services:
       - no-new-privileges:true
     stop_grace_period: 1m
     volumes:
+      - duris-players:/opt/duris/Players
       - duris-runtime:/var/lib/duris
       - duris-logs:/opt/duris/logs
       - mariadb-socket:/run/mysqld:ro
 
 volumes:
   duris-logs:
+  duris-players:
   duris-runtime:
   mariadb-data:
   mariadb-socket:

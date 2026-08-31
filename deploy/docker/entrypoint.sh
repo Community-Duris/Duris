@@ -57,13 +57,16 @@ if [[ "$database_ready" != 1 ]]; then
   exit 1
 fi
 
-baseline_count="$(
+if ! baseline_count="$(
   MYSQL_PWD="$DB_PASSWD" "${MYSQL[@]}" \
     --execute='SELECT COUNT(*) FROM mud_schema_baselines;'
-)"
+)"; then
+  echo "Unable to query mud_schema_baselines; the Docker database bootstrap may be incomplete" >&2
+  exit 1
+fi
 if [[ "$baseline_count" == 0 ]]; then
   echo "Seeding tracked help content into the fresh Docker database..."
-  printf 'yes\n' | ./scripts/import_help_to_prod.sh --local
+  ./scripts/import_help_to_prod.sh --local < <(yes yes)
   echo "Adopting the verified fresh database baseline..."
   python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 elif [[ "$baseline_count" != 1 ]]; then
