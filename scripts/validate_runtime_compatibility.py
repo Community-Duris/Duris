@@ -19,7 +19,8 @@ HEADER = ROOT / "src/runtime_compatibility_contract.h"
 FIELDS = {
     "manifest_version", "baseline_id", "baseline_table_count",
     "baseline_table_fingerprint", "current_table_count",
-    "normalized_metadata_fingerprints", "migration_head", "connection", "lookup",
+    "runtime_table_sql_list", "normalized_metadata_fingerprints", "migration_head",
+    "connection", "lookup",
 }
 HEAD_FIELDS = {"id", "sequence", "apply_checksum", "verify_checksum",
                "history_checksum"}
@@ -54,6 +55,11 @@ def load() -> dict:
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
             value["current_table_count"] != 173:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
+    if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
+            r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
+            value["runtime_table_sql_list"]):
+        raise migration_runner.MigrationContractError(
+            "runtime table inventory is invalid")
     for field in ("baseline_table_fingerprint",):
         if not isinstance(value[field], str) or not re.fullmatch(r"[0-9a-f]{64}",
                                                                  value[field]):
@@ -110,7 +116,29 @@ def validate() -> dict:
                 }]
             ) != value["baseline_table_fingerprint"]:
         raise migration_runner.MigrationContractError("runtime lifecycle table drift")
+    baseline_tables = [table for table in tables if table not in {
+        "lookup_dataset_state", "season_reset_state", "server_reboots"
+    }]
+    if set(baseline_tables) != set(migration.required_tables):
+        raise migration_runner.MigrationContractError(
+            "migration baseline table inventory drift")
     header = HEADER.read_text()
+    table_list_match = re.search(
+        r"RUNTIME_TABLE_SQL_LIST\s*=\s*((?:\"[^\"]*\"\s*)+);", header)
+    if table_list_match is None:
+        raise migration_runner.MigrationContractError(
+            "compiled runtime table inventory is absent")
+    compiled_table_list = "".join(
+        json.loads(literal)
+        for literal in re.findall(r'"[^\"]*"', table_list_match.group(1))
+    )
+    expected_table_list = ",".join(f"'{table}'" for table in sorted(tables))
+    if value["runtime_table_sql_list"] != expected_table_list:
+        raise migration_runner.MigrationContractError(
+            "runtime manifest table inventory drift")
+    if compiled_table_list != expected_table_list:
+        raise migration_runner.MigrationContractError(
+            "compiled runtime table inventory drift")
     required_literals = (
         str(value["manifest_version"]), value["baseline_id"],
         value["baseline_table_fingerprint"], str(value["baseline_table_count"]),

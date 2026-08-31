@@ -68,7 +68,8 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             "manifest_version": 1, "runner_version": 1,
             "baseline": {"id": "test-baseline-0001", "required_table_count": 2,
                          "required_table_fingerprint":
-                             runner.table_fingerprint(["alpha", "beta"])},
+                             runner.table_fingerprint(["alpha", "beta"]),
+                         "required_tables": ["alpha", "beta"]},
             "migrations": items,
         }
         path = directory / "migration_manifest.json"
@@ -78,6 +79,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
+        self.assertEqual(len(manifest.required_tables), 170)
         self.assertEqual(len(manifest.migrations), 5)
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
@@ -101,6 +103,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(len(baseline_tables), manifest.required_table_count)
         self.assertEqual(runner.table_fingerprint(baseline_tables),
                          manifest.required_table_fingerprint)
+        self.assertEqual(set(baseline_tables), set(manifest.required_tables))
 
     def test_manifest_rejects_duplicate_reorder_checksum_and_symlink(self):
         with tempfile.TemporaryDirectory() as temporary:

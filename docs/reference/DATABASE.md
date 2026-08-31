@@ -127,7 +127,7 @@ transaction, replay, or idempotency identifiers.
   re-runnable by design.
 - `migrations/migration_manifest.json` and `scripts/migration_runner.py` -- the
   immutable manifest-driven path for every migration after the verified Session 11
-  baseline. The current immutable head adds `server_reboots`, producing the
+  baseline. The current immutable head restores the `level_cap` singleton, producing the
   173-table schema. See [IMMUTABLE_MIGRATIONS.md](../persistence/IMMUTABLE_MIGRATIONS.md).
 - `migrations/runtime_compatibility_manifest.json` and
   `migrations/verify_runtime_compatibility.sh` -- the read-only pre-boot contract for

@@ -22,7 +22,9 @@ DEFAULT_MANIFEST = ROOT / "migrations" / "migration_manifest.json"
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_MIGRATION_BYTES = 8 * 1024 * 1024
 MANIFEST_FIELDS = {"manifest_version", "runner_version", "baseline", "migrations"}
-BASELINE_FIELDS = {"id", "required_table_count", "required_table_fingerprint"}
+BASELINE_FIELDS = {
+    "id", "required_table_count", "required_table_fingerprint", "required_tables",
+}
 MIGRATION_FIELDS = {
     "id", "sequence", "description", "apply", "apply_checksum", "verify",
     "verify_checksum", "compatibility",
@@ -78,6 +80,7 @@ class Manifest:
     baseline_id: str
     required_table_count: int
     required_table_fingerprint: str
+    required_tables: tuple[str, ...]
     migrations: tuple[Migration, ...]
 
 
@@ -111,6 +114,16 @@ def load_manifest(path: Path = DEFAULT_MANIFEST) -> Manifest:
             not re.fullmatch(r"[0-9a-f]{64}", baseline.get(
                 "required_table_fingerprint", "")):
         raise MigrationContractError("baseline contract is invalid")
+    required_tables = baseline["required_tables"]
+    if not isinstance(required_tables, list) or \
+            len(required_tables) != baseline["required_table_count"]:
+        raise MigrationContractError("baseline table inventory count differs")
+    try:
+        required_fingerprint = table_fingerprint(required_tables)
+    except MigrationContractError as error:
+        raise MigrationContractError("baseline table inventory is invalid") from error
+    if required_fingerprint != baseline["required_table_fingerprint"]:
+        raise MigrationContractError("baseline table inventory fingerprint differs")
     items = value["migrations"]
     if not isinstance(items, list):
         raise MigrationContractError("migrations must be a list")
@@ -155,7 +168,8 @@ def load_manifest(path: Path = DEFAULT_MANIFEST) -> Manifest:
                                     item["verify_checksum"], item["compatibility"]))
     return Manifest(value["manifest_version"], value["runner_version"], baseline["id"],
                     baseline["required_table_count"],
-                    baseline["required_table_fingerprint"], tuple(migrations))
+                    baseline["required_table_fingerprint"], tuple(required_tables),
+                    tuple(migrations))
 
 
 def table_fingerprint(table_names: list[str]) -> str:
@@ -352,9 +366,10 @@ class MysqlExecutor:
 
     def adopt(self, kind: str) -> None:
         tables = self.live_tables()
-        if len(tables) != self.manifest.required_table_count or \
-                table_fingerprint(tables) != self.manifest.required_table_fingerprint:
-            raise MigrationContractError("live schema does not match required baseline fingerprint")
+        missing = sorted(set(self.manifest.required_tables) - set(tables))
+        if missing:
+            raise MigrationContractError(
+                "live schema is missing required baseline tables: " + ", ".join(missing[:8]))
         if kind not in {"fresh_bootstrap", "verified_legacy_adoption"}:
             raise MigrationContractError("invalid baseline kind")
         self.sql("INSERT INTO mud_schema_baselines(baseline_id,baseline_kind,"

@@ -16,10 +16,14 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0004_server_reboots`, producing 173 current tables. An
+The current head is `0005_level_cap_singleton`, producing 173 current tables. An
 existing database must first complete the guarded legacy upgrade and verified
 baseline adoption described in [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md).
 Never run migration or destructive verification commands against production.
+
+Compatibility fingerprints and table counts use the positive 173-table runtime
+inventory. Additional tables restored from a combined game/website dump are ignored
+by the game contract, while every runtime table still has to match exactly.
 
 ## Boot gate
 
