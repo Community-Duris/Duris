@@ -1,6 +1,6 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "combat/combat_outcome_command.h"
-#include "currency_command.h"
+#include "economy/currency_command.h"
 #include "epic_command.h"
 
 #include <cstdlib>

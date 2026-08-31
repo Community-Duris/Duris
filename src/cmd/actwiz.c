@@ -23,7 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "assocs.h"
-#include "shop.h"
+#include "economy/shop.h"
 // #include "types.h"  // Not needed on modern Linux systems
 #include "structs.h"
 #include "cmd/interp.h"

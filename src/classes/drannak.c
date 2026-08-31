@@ -32,8 +32,8 @@
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql_player.h"
-#include "tradeskill.h"
-#include "crafting.h"
+#include "economy/tradeskill.h"
+#include "economy/crafting.h"
 #include "vnum.obj.h"
 #include "weather.h"
 

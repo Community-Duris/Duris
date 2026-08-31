@@ -10,8 +10,8 @@
 #include "magic/spells.h"
 #include "utility.h"
 #include "utils.h"
-#include "tradeskill.h"
-#include "crafting.h"
+#include "economy/tradeskill.h"
+#include "economy/crafting.h"
 #include "vnum.obj.h"
 #include <stdio.h>
 #include <string.h>

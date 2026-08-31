@@ -25,7 +25,7 @@
 #include "specs.prototypes.h"
 #include "specs/specs.zion.h"
 #include "magic/spells.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "vnum.obj.h"
 #include "weather.h"
 /*

@@ -27,7 +27,7 @@ using namespace std;
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "stdio.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "vnum.mob.h"
 #include "vnum.obj.h"
 #include "weather.h"

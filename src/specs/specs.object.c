@@ -26,7 +26,7 @@
 #include "assocs.h"
 #include "magic/blispells.h"
 #include "combat/ctf.h"
-#include "currency_transaction.h"
+#include "economy/currency_transaction.h"
 #include "combat/damage.h"
 #include "graph.h"
 #include "handler.h"

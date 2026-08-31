@@ -2,7 +2,7 @@
 
 #include "flatfile/flatfile_shopkeeper_materialize.h"
 #include "item/item_ownership_runtime.h"
-#include "shop_trade_runtime.h"
+#include "economy/shop_trade_runtime.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"

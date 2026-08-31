@@ -3,7 +3,7 @@
 #include "assocs.h"
 #include "db.h"
 #include "epic.h"
-#include "nexus_stones.h"
+#include "economy/nexus_stones.h"
 #include "prototypes.h"
 #include "sql/sql.h"
 #include "magic/spells.h"

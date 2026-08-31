@@ -1,7 +1,7 @@
 #include "combat/combat_outcome_transaction.h"
 
 #include "redis/redis_report_cache.h"
-#include "currency_transaction.h"
+#include "economy/currency_transaction.h"
 #include "epic_transaction.h"
 #include "sql/sql_player.h"
 #include "utils.h"

@@ -24,7 +24,7 @@
 #include "account/account.h"
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
-#include "currency_transaction.h"
+#include "economy/currency_transaction.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
 #include "combat/damage.h"

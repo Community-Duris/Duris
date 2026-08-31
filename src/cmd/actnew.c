@@ -30,7 +30,7 @@
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"
-#include "crafting.h"
+#include "economy/crafting.h"
 
 /*
  * external variables

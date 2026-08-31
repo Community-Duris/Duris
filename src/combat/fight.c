@@ -27,7 +27,7 @@
 #include "achievements.h"
 #include "combat/arena.h"
 #include "combat/arenadef.h"
-#include "boon.h"
+#include "economy/boon.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "combat/dam_mods.h"

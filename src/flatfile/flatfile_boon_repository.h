@@ -1,8 +1,8 @@
 #ifndef DURIS_FLATFILE_BOON_REPOSITORY_H
 #define DURIS_FLATFILE_BOON_REPOSITORY_H
 
-#include "boon_reward_command.h"
-#include "boon_shop_command.h"
+#include "economy/boon_reward_command.h"
+#include "economy/boon_shop_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "persistence/critical_command_coordinator.h"
 

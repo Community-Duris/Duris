@@ -6,7 +6,7 @@
 #include "utils.h"
 #include "item/randobj.h"
 #include <strings.h>
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "vnum.obj.h"
 
 extern P_index obj_index;

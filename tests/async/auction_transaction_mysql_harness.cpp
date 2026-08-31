@@ -1,4 +1,4 @@
-#include "auction_command.h"
+#include "economy/auction_command.h"
 #include "persistence/critical_command_repository.h"
 
 #include <mysql.h>

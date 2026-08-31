@@ -2,7 +2,7 @@
 #define _CTF_H_
 
 #include "structs.h"
-#include "boon.h"
+#include "economy/boon.h"
 
 #define RANDOM -1 // room setting, randomize at bootup
 

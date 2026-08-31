@@ -6,7 +6,7 @@
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_store.h"
-#include "shop_trade_command.h"
+#include "economy/shop_trade_command.h"
 
 #include <algorithm>
 #include <array>

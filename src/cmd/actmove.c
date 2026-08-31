@@ -25,7 +25,7 @@
 #include "combat/siege.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "vnum.obj.h"
 #include "weather.h"
 

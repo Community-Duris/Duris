@@ -19,7 +19,7 @@ using namespace std;
 #include "utils.h"
 #include "alliances.h"
 #include "assocs.h"
-#include "boon.h"
+#include "economy/boon.h"
 #include "combat/ctf.h"
 #include "defines.h"
 #include "epic.h"

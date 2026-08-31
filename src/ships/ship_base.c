@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "combat/ctf.h"
-#include "currency_transaction.h"
+#include "economy/currency_transaction.h"
 #include "net/gmcp.h"
 #include "graph.h"
 #include "map.h"

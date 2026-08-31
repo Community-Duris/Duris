@@ -28,7 +28,7 @@
 #include "specs/specs.snogres.h"
 #include "specs/specs.winterhaven.h"
 #include "specs/specs.zion.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "vnum.mob.h"
 #include "vnum.obj.h"
 

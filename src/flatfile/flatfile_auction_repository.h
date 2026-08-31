@@ -1,7 +1,7 @@
 #ifndef DURIS_FLATFILE_AUCTION_REPOSITORY_H
 #define DURIS_FLATFILE_AUCTION_REPOSITORY_H
 
-#include "auction_command.h"
+#include "economy/auction_command.h"
 #include "persistence/critical_command_coordinator.h"
 #include "flatfile/flatfile_authority_transaction.h"
 

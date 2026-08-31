@@ -14,7 +14,7 @@
 #include "mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "weather.h"
 
 struct forge_item forge_item_list[MAX_FORGE_ITEMS] = {

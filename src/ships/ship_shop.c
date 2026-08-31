@@ -17,7 +17,7 @@
 #include "classes/epic_skills.h"
 #include "epic_transaction.h"
 #include "map.h"
-#include "nexus_stones.h"
+#include "economy/nexus_stones.h"
 #include "ships.h"
 #include "magic/spells.h"
 

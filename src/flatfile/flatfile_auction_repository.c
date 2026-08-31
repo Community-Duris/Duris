@@ -1,6 +1,6 @@
 #include "flatfile/flatfile_auction_repository.h"
 
-#include "auction_command.h"
+#include "economy/auction_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"

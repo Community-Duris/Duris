@@ -3,7 +3,7 @@
 #include "flatfile/flatfile_shopkeeper_capture.h"
 #include "flatfile/flatfile_shopkeeper_ownership.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
-#include "shop_trade_runtime.h"
+#include "economy/shop_trade_runtime.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"

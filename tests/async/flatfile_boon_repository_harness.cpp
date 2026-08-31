@@ -1,4 +1,4 @@
-#include "boon.h"
+#include "economy/boon.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 

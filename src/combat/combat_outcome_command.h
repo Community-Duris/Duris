@@ -2,7 +2,7 @@
 #define COMBAT_OUTCOME_COMMAND_H
 
 #include "persistence/critical_command.h"
-#include "currency_command.h"
+#include "economy/currency_command.h"
 
 #include <array>
 #include <cstdint>

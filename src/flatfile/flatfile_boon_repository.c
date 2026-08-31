@@ -1,7 +1,7 @@
 #include "flatfile/flatfile_boon_repository.h"
 
-#include "boon.h"
-#include "boon_shop_command.h"
+#include "economy/boon.h"
+#include "economy/boon_shop_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_store.h"

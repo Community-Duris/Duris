@@ -49,7 +49,7 @@
 #include "account/account.h"
 #include "account/account_reward.h"
 #include "assocs.h"
-#include "boon.h"
+#include "economy/boon.h"
 #include "epic.h"
 #include "graph.h"
 #include "mm.h"

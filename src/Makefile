@@ -124,7 +124,7 @@ OBJS =  $(SHIP_OBJS) \
 				 artifact.o \
 				 artifact_cache_codec.o \
 				 persistence/report_cache_codec.o \
-				 donation_event.o \
+				 economy/donation_event.o \
 				 redis/redis_connection.o \
 				 redis/redis_command_observability.o \
 				 redis/redis_donation_runtime.o \
@@ -133,15 +133,15 @@ OBJS =  $(SHIP_OBJS) \
 				 world_recovery_codec.o \
 				 redis/redis_donation_worker.o \
 				 assocs.o \
-				 auction_houses.o \
+				 economy/auction_houses.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \
 				 cmd/boards.o \
-				 boon.o \
+				 economy/boon.o \
 				 combat/breath_weapons.o \
 				 buildings.o \
-         cardgames.o \
+         economy/cardgames.o \
          combat/chaos.o \
 				 combat/chaos_config.o \
 				 net/comm.o \
@@ -157,9 +157,9 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/disguise.o \
 				 classes/drannak.o \
 				 item/enhance.o \
-				 crafting.o \
-				 mining.o \
-				 mining_config.o \
+				 economy/crafting.o \
+				 economy/mining.o \
+				 economy/mining_config.o \
 				 item/random_equipment_config.o \
 				 safe_format.o \
 				 safe_io.o \
@@ -274,18 +274,18 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_transfer_command.o \
 				 item/item_ownership_runtime.o \
 				 item/item_movement_transaction.o \
-				 shop_trade_transaction.o \
-				 shop_trade_runtime.o \
+				 economy/shop_trade_transaction.o \
+				 economy/shop_trade_runtime.o \
 				 item/item_transfer_repository.o \
 				 item/item_transfer_synthetic.o \
 				 item/item_uid_allocator.o \
 				 persistence/critical_outbox.o \
 				 epic_command.o \
 				 epic_transaction.o \
-				 currency_command.o \
-				 auction_command.o \
-				 auction_repository.o \
-				 auction_transaction.o \
+				 economy/currency_command.o \
+				 economy/auction_command.o \
+				 economy/auction_repository.o \
+				 economy/auction_transaction.o \
 				 combat/combat_outcome_command.o \
 				 combat/combat_outcome_repository.o \
 				 combat/combat_outcome_transaction.o \
@@ -293,12 +293,12 @@ OBJS =  $(SHIP_OBJS) \
 				 artifact_guild_repository.o \
 				 artifact_guild_state.o \
 				 artifact_guild_transaction.o \
-				 boon_reward_command.o \
-				 boon_reward_repository.o \
-				 boon_reward_transaction.o \
-				 boon_shop_command.o \
-				 boon_shop_transaction.o \
-				 shop_trade_command.o \
+				 economy/boon_reward_command.o \
+				 economy/boon_reward_repository.o \
+				 economy/boon_reward_transaction.o \
+				 economy/boon_shop_command.o \
+				 economy/boon_shop_transaction.o \
+				 economy/shop_trade_command.o \
 				 zone_touch_command.o \
 				 zone_touch_repository.o \
 				 zone_touch_transaction.o \
@@ -329,7 +329,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_presence_worker.o \
 				 redis/redis_world_runtime.o \
 				 redis/redis_world_store.o \
-				 currency_transaction.o \
+				 economy/currency_transaction.o \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
@@ -357,7 +357,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/range.o \
 				 classes/rogues.o \
 				 classes/shaman.o \
-				 shop.o \
+				 economy/shop.o \
 				 signals.o \
 				 classes/skills.o \
 				 magic/smagic.o \
@@ -418,7 +418,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/locker_async.o \
 				 timers.o \
 				 cmd/track.o \
-				 tradeskill.o \
+				 economy/tradeskill.o \
 				 combat/trap.o \
 				 transport.o \
 				 item/trophy.o \
@@ -431,7 +431,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/guard.o \
 				 makeexit.o \
 				 combat/racewar_stat_mods.o \
-				 nexus_stones.o \
+				 economy/nexus_stones.o \
 				 test_async.o \
 				 cmd/testcmd.o \
 				 cmd/wikihelp.o \

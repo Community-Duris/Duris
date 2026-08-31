@@ -1,6 +1,6 @@
-#include "currency_transaction.h"
+#include "economy/currency_transaction.h"
 #include "item/item_ownership_runtime.h"
-#include "shop_trade_transaction.h"
+#include "economy/shop_trade_transaction.h"
 #include "utils.h"
 
 #include <cassert>

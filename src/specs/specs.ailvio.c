@@ -16,7 +16,7 @@ using namespace std;
 #include "utils.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "vnum.mob.h"
 
 extern P_room world;

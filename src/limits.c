@@ -22,7 +22,7 @@
 #include <time.h>
 #include "alliances.h"
 #include "assocs.h"
-#include "boon.h"
+#include "economy/boon.h"
 #include "combat/ctf.h"
 #include "defines.h"
 #include "epic_bonus.h"
@@ -33,7 +33,7 @@
 #include "combat/justice.h"
 #include "map.h"
 #include "mm.h"
-#include "nexus_stones.h"
+#include "economy/nexus_stones.h"
 #include "persistence/persistence_checkpoint.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

@@ -18,7 +18,7 @@
 #include "item/objmisc.h"
 #include "prototypes.h"
 #include "structs.h"
-#include "tradeskill.h"
+#include "economy/tradeskill.h"
 #include "utils.h"
 
 #define MATERIAL_RARITY_MIN_VNUM 400000

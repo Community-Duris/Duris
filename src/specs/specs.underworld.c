@@ -24,7 +24,7 @@
 #include "handler.h"
 #include "combat/justice.h"
 #include "map.h"
-#include "nexus_stones.h"
+#include "economy/nexus_stones.h"
 #include "combat/range.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
