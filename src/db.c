@@ -64,6 +64,7 @@ extern struct mm_ds *dead_pconly_pool;
 extern struct mm_ds *dead_trophy_pool;
 extern int portal_id;
 extern float exp_mods[EXPMOD_MAX + 1];
+extern P_nevent current_nevent;
 extern void obj_affect_remove(P_obj, struct obj_affect *);
 void delete_knownShapes(P_char ch);
 void proclib_obj_event(P_char, P_char, P_obj obj, void *);
@@ -2727,6 +2728,10 @@ void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*dat
 {
 	if (obj_index[obj->R_num].func.obj)
 		(*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);
+
+	/* Object procs may extract their owner, which detaches this event before freeing it. */
+	if (!current_nevent || current_nevent->obj != obj)
+		return;
 
 	if (obj_index[obj->R_num].number == 55434)
 	{

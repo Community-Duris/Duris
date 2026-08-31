@@ -346,6 +346,112 @@ comm = (SRC / "comm.c").read_text(encoding="utf-8")
 makefile = (SRC / "Makefile").read_text(encoding="utf-8")
 donation = (SRC / "redis_donation_runtime.c").read_text(encoding="utf-8")
 checkpoint = (SRC / "persistence_checkpoint.c").read_text(encoding="utf-8")
+database = (SRC / "db.c").read_text(encoding="utf-8")
+
+object_event_harness = f'''
+#include "prototypes.h"
+#include "interp.h"
+
+#include <cstdlib>
+
+P_nevent current_nevent = nullptr;
+P_index obj_index = nullptr;
+
+static int callback_runs = 0;
+static int schedules = 0;
+static P_obj scheduled_object = nullptr;
+static bool detach_owner = false;
+
+int number(int, int)
+{{
+\treturn 0;
+}}
+
+nevent_schedule_result add_event(event_func, int, P_char, P_char, P_obj obj, int,
+\t\t\t\t const void *, int)
+{{
+\tschedules++;
+\tscheduled_object = obj;
+\treturn {{ nevent_schedule_status::scheduled, {{ nullptr, 1 }} }};
+}}
+
+static int object_proc(P_obj, P_char, int cmd, char *)
+{{
+\tif (cmd == CMD_PERIODIC)
+\t{{
+\t\tcallback_runs++;
+\t\tif (detach_owner)
+\t\t\tcurrent_nevent->obj = nullptr;
+\t}}
+\treturn true;
+}}
+
+{function_body(database, "void event_object_proc")}
+
+static void require(bool condition, int code)
+{{
+\tif (!condition)
+\t\tstd::exit(code);
+}}
+
+static void reset(obj_data *object, nevent_data *event)
+{{
+\tcallback_runs = 0;
+\tschedules = 0;
+\tscheduled_object = nullptr;
+\tdetach_owner = false;
+\tevent->obj = object;
+\tcurrent_nevent = event;
+}}
+
+int main()
+{{
+\tindex_data index = {{}};
+\tobj_data object = {{}};
+\tnevent_data event = {{}};
+\tobj_index = &index;
+\tindex.func.obj = object_proc;
+\tindex.number = 1;
+\tobject.R_num = 0;
+
+\treset(&object, &event);
+\tevent_object_proc(nullptr, nullptr, &object, nullptr);
+\trequire(callback_runs == 1 && schedules == 1 && scheduled_object == &object, 1);
+
+\treset(&object, &event);
+\tdetach_owner = true;
+\tevent_object_proc(nullptr, nullptr, &object, nullptr);
+\trequire(callback_runs == 1 && schedules == 0, 2);
+\treturn 0;
+}}
+'''
+
+with tempfile.TemporaryDirectory(prefix="duris-object-event-rearm-") as directory:
+    temp = Path(directory)
+    harness = temp / "harness.cpp"
+    binary = temp / "harness"
+    harness.write_text(object_event_harness, encoding="utf-8")
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++20",
+            "-O1",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-fsanitize=address,undefined",
+            "-fno-omit-frame-pointer",
+            f"-I{SRC}",
+            str(harness),
+            "-o",
+            str(binary),
+        ],
+        check=True,
+    )
+    environment = os.environ.copy()
+    environment["ASAN_OPTIONS"] = "detect_leaks=1:halt_on_error=1"
+    environment["UBSAN_OPTIONS"] = "halt_on_error=1:print_stacktrace=1"
+    subprocess.run([str(binary)], check=True, env=environment)
 
 for key in (
     "game-clock",

@@ -82,6 +82,8 @@ logs/valgrind/
 *.backup
 *~
 .hermes/
+/core
+/core.*
 /nohup.out
 /temp_letterfile
 /tmp/
