@@ -25,7 +25,7 @@
 #include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
-#include "studioproclib.h"
+#include "mob/studioproclib.h"
 #include "weather.h"
 
 /*

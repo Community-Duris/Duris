@@ -14,7 +14,7 @@
 #include "db.h"
 #include "events.h"
 #include "cmd/interp.h"
-#include "studioproc.h"
+#include "mob/studioproc.h"
 #include "utility.h"
 #include "utils.h"
 #include <ctype.h>

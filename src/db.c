@@ -36,7 +36,7 @@
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "studioproc.h"
+#include "mob/studioproc.h"
 #include "trophy.h"
 #include "weather.h"
 #include <string>

@@ -118,7 +118,7 @@ OBJS =  $(SHIP_OBJS) \
 				 net/ansi.o \
 				 specs/specs.ailvio.o \
 				 alliances.o \
-				 automatic_rules.o \
+				 mob/automatic_rules.o \
 				 magic/affects.o \
 				 combat/arena.o \
 				 artifact.o \
@@ -167,7 +167,7 @@ OBJS =  $(SHIP_OBJS) \
 				 material_rarity.o \
 				 classes/dreadlord.o \
 				 net/editor.o \
-				 encounters.o \
+				 mob/encounters.o \
 				 epic.o \
 				 epic_bonus.o \
 				 epic_bonus_state.o \
@@ -207,14 +207,14 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/memorize.o \
 				 memory.o \
 				 mm.o \
-				 mobact.o \
+				 mob/mobact.o \
 				 world_quest.o \
 				 combat/mobcombat.o \
-				 mobconv.o \
-				 mobpatrol.o \
+				 mob/mobconv.o \
+				 mob/mobpatrol.o \
 				 net/modify.o \
 				 classes/mount.o \
-				 name_gen.o \
+				 mob/name_gen.o \
 				 account/nanny.o \
 				 classes/necromancy.o \
 				 classes/new_skills.o \
@@ -365,7 +365,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/sillusionist.o \
 				 combat/siege.o \
 				 net/sparser.o \
-				 specials.o \
+				 mob/specials.o \
 				 classes/specializations.o \
 				 specs/specs.assign.o \
 				 specs/specs.barovia.o \
@@ -378,8 +378,8 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.ioun.o \
 				 specs/specs.jot.o \
 				 specs/specs.library.o \
-				 studioproc.o \
-				 studioproclib.o \
+				 mob/studioproc.o \
+				 mob/studioproclib.o \
 				 specs/specs.lohrr.o \
 				 specs/specs.mobile.o \
 				 specs/specs.morgs.o \

@@ -128,7 +128,7 @@
 #include "magic/spells.h"
 #include "utils.h"
 #include "utility.h"
-#include "studioproc.h"
+#include "mob/studioproc.h"
 
 extern int mini_mode;
 

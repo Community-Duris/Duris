@@ -35,7 +35,7 @@
 #include "cmd/interp.h"
 #include "utils.h"
 #include "utility.h"
-#include "studioproclib.h"
+#include "mob/studioproclib.h"
 
 extern P_index obj_index;
 extern P_room world;

@@ -51,7 +51,7 @@
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
-#include "studioproc.h"
+#include "mob/studioproc.h"
 #include "vnum.obj.h"
 #include "weather.h"
 #include "world_quest.h"

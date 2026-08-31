@@ -5,7 +5,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "mobpatrol.h"
+#include "mob/mobpatrol.h"
 #include <stdio.h>
 #include <string.h>
 #include "graph.h"
