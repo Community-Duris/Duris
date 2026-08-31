@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../area_file.h"
+
 #define AREA_LIST "AREA"
 #define OBJ_DIR "obj"
 
@@ -49,7 +51,7 @@ int main()
 
 		if (snprintf(obj_name, sizeof(obj_name), "%s/%s.obj", OBJ_DIR, area_name) < 0)
 			punt("object filename cannot be formatted");
-		tmp_obj = fopen(obj_name, "r");
+		tmp_obj = fopen_area_file(obj_name);
 		if (tmp_obj == NULL)
 		{
 			fprintf(stdout, "\twarning: %s not found\n", obj_name);

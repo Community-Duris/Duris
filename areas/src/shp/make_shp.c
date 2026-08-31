@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../area_file.h"
+
 #define SHOP_LIST "AREA"
 #define SHP_DIR "shp"
 
@@ -49,7 +51,7 @@ int main()
 
 		if (snprintf(shp_name, sizeof(shp_name), "%s/%s.shp", SHP_DIR, shop_name) < 0)
 			punt("shop filename cannot be formatted");
-		tmp_shp = fopen(shp_name, "r");
+		tmp_shp = fopen_area_file(shp_name);
 		if (tmp_shp == NULL)
 		{
 #if 0
