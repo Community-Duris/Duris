@@ -178,6 +178,11 @@ bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_ent
     return hydrate_succeeds;
 }
 
+bool world_recovery_rehydrate_npc_items(P_char const *, size_t)
+{
+    return true;
+}
+
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry)
 {
     if (!lookup_succeeds || !entry || item_uid != lookup_entry.item_uid)
@@ -254,7 +259,7 @@ static std::vector<unsigned char> object_generation(
     const std::vector<std::vector<world_recovery_item_snapshot>>& trees)
 {
     world_recovery_header header = {};
-    memcpy(header.magic, "WR10", 4);
+    memcpy(header.magic, "WR11", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 77;
@@ -346,7 +351,7 @@ int main()
     lookup_succeeds = false;
 
     world_recovery_header header = {};
-    memcpy(header.magic, "WR10", 4);
+    memcpy(header.magic, "WR11", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 42;

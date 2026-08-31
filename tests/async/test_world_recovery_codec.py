@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Golden vectors and round trips for the schema-10 recovery wire format."""
+"""Golden vectors and round trips for the schema-11 recovery wire format."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ int main()
     header.zone_count = 4;
     header.complete = 1;
     const std::array<unsigned char, WORLD_RECOVERY_WIRE_HEADER_BYTES> expected_header = {
-        0x57,0x52,0x31,0x30, 0x0a,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
+        0x57,0x52,0x31,0x31, 0x0b,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
         0x08,0x07,0x06,0x05,0x04,0x03,0x02,0x01,
         0xfe,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
         0x18,0x17,0x16,0x15,0x14,0x13,0x12,0x11,
@@ -133,6 +133,7 @@ int main()
     mob.max_mana = 50;
     mob.max_vitality = 60;
     mob.gold = 70;
+    mob.birthplace = 29001;
     mob.num_affects = 1;
     for (int &equipment : mob.equipment_vnums)
         equipment = -1;
@@ -148,7 +149,7 @@ int main()
     assert(world_recovery_encode_record(world_recovery_record_type::mob, native_mob.data(),
                                         native_mob.size(), encoded_mob.data(),
                                         encoded_mob.size(), &encoded_size));
-    assert(encoded_size == 342);
+    assert(encoded_size == 346);
     assert(world_recovery_decode_record(world_recovery_record_type::mob, encoded_mob.data(),
                                         encoded_size, &native));
     copyover_mob decoded_mob = {};
@@ -156,6 +157,7 @@ int main()
     memcpy(&decoded_mob, native.data(), sizeof(decoded_mob));
     memcpy(&decoded_affect, native.data() + sizeof(decoded_mob), sizeof(decoded_affect));
     assert(decoded_mob.vnum == mob.vnum && decoded_mob.gold == mob.gold &&
+           decoded_mob.birthplace == mob.birthplace &&
            decoded_mob.num_affects == 1);
     assert(decoded_affect.type == affect.type && decoded_affect.flags == affect.flags &&
            decoded_affect.bitvector5 == affect.bitvector5);
@@ -205,4 +207,4 @@ assert "const bool succeeded = prepared && execute_batch(context, job)" in FLOOR
 assert "prepared ? redis_observability_now_usec() : 0" in FLOOR
 assert FLOOR.index("prepare_batch(job)") < FLOOR.index("execute_batch(context, job)")
 
-print("schema-10 little-endian recovery codec golden vectors passed")
+print("schema-11 little-endian recovery codec golden vectors passed")

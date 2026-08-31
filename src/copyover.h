@@ -10,7 +10,7 @@
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 9 // bumped for obj_uid support
+#define COPYOVER_VERSION 10 // bumped for NPC birthplace recovery
 
 // copyover file header
 struct copyover_header
@@ -79,6 +79,7 @@ struct copyover_mob
 	int equipment_vnums[43]; // worn items (max_wear slots)
 	int num_carrying; // carried items saved after affects
 	int gold; // mob's gold
+	int birthplace; // original zone spawn room vnum
 };
 
 // affect data for copyover - matches affected_type fields
