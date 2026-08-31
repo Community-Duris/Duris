@@ -429,7 +429,17 @@ uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint6
 
 uint64_t item_transfer_result_root(const item_transfer_payload &payload)
 {
-	return payload.item_count ? selected_root_for(payload, payload.items[0].item_uid) : 0;
+	uint64_t result = 0;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const uint64_t selected_root =
+			selected_root_for(payload, payload.items[index].item_uid);
+		if (!selected_root)
+			return 0;
+		if (!result || selected_root < result)
+			result = selected_root;
+	}
+	return result;
 }
 
 bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_t item_uid,

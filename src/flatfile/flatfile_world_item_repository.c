@@ -1140,18 +1140,30 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 					room_item_index(room->items,
 							payload.target_parent_item_uid) :
 					room->items.size();
-			if (payload.target_parent_item_uid &&
-			    (parent_index == room->items.size() ||
-			     !room_item_root_matches(room->items, parent_index,
-						     payload.target_root_item_uid) ||
-			     !apply_room_weight_delta(&room->items, parent_index,
-						      exact_items.front().weight)))
-				return flatfile_world_item_result::conflict;
+			if (payload.target_parent_item_uid)
+			{
+				int64_t selected_weight = 0;
+				for (const auto &item : exact_items)
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+					{
+						if (item.weight < 0 ||
+						    selected_weight > INT64_MAX - item.weight)
+							return flatfile_world_item_result::conflict;
+						selected_weight += item.weight;
+					}
+				if (parent_index == room->items.size() ||
+				    !room_item_root_matches(room->items, parent_index,
+							    payload.target_root_item_uid) ||
+				    !apply_room_weight_delta(&room->items, parent_index,
+							     selected_weight))
+					return flatfile_world_item_result::conflict;
+			}
 			const int32_t offset = static_cast<int32_t>(room->items.size());
 			for (size_t index = 0; index < exact_items.size(); ++index)
 			{
 				auto item = exact_items[index];
-				if (!index && payload.target_parent_item_uid)
+				if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    payload.target_parent_item_uid)
 					item.parent_index = static_cast<int32_t>(parent_index);
 				else if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
 					item.parent_index += offset;

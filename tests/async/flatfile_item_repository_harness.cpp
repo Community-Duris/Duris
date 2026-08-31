@@ -797,6 +797,61 @@ int main(int argc, char **argv)
 			room_records[0].items[1].object_uid == 101 &&
 			room_records[0].items[1].parent_index == PLAYER_SNAPSHOT_NO_PARENT,
 		"saved storage child removal did not detach the root or repair ancestor weight");
+
+	const item_owner_identity batch_put_player = { item_owner_type::player, 90, 0 };
+	require(flatfile_item_repository_establish_owner(
+			room_root.string(), batch_put_player,
+			{ { 210, 210, 0, batch_put_player, 1, 610, item_custody_state::active },
+			  { 220, 220, 0, batch_put_player, 1, 620, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish room-container batch items: " + error);
+	player_item_snapshot first_inserted = inserted_item;
+	first_inserted.object_uid = 210;
+	first_inserted.vnum = 610;
+	first_inserted.weight = 2;
+	player_item_snapshot second_inserted = inserted_item;
+	second_inserted.object_uid = 220;
+	second_inserted.vnum = 620;
+	second_inserted.weight = 5;
+	std::vector<uint8_t> batch_inserted_blob;
+	require(player_item_snapshot_list_encode({ first_inserted, second_inserted },
+						 &batch_inserted_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode room-container batch items");
+	item_transfer_payload room_batch_put = {};
+	room_batch_put.from_owner = batch_put_player;
+	room_batch_put.to_owner = room_owner;
+	room_batch_put.reason = item_transfer_reason::player_put;
+	room_batch_put.reason_id = 100;
+	room_batch_put.expected_from_revision = 1;
+	room_batch_put.expected_to_revision = 6;
+	room_batch_put.target_root_item_uid = 100;
+	room_batch_put.target_parent_item_uid = 100;
+	room_batch_put.expected_target_parent_revision = 2;
+	room_batch_put.multi_root = true;
+	room_batch_put.item_count = 2;
+	room_batch_put.items[0] = { 210, 210, 0, 1, 610, item_custody_state::active };
+	room_batch_put.items[1] = { 220, 220, 0, 1, 620, item_custody_state::active };
+	room_batch_put.item_blob_size = static_cast<uint32_t>(batch_inserted_blob.size());
+	std::copy(batch_inserted_blob.begin(), batch_inserted_blob.end(),
+		  room_batch_put.item_blob.begin());
+	critical_command room_batch_put_command = {};
+	require(item_transfer_command_build(&room_batch_put_command, operation(51), room_batch_put,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build room-container batch put");
+	room_batch_put_command.accepted_at_usec = 51;
+	applied = flatfile_item_repository_apply(room_root.string(), room_batch_put_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"room-container batch put did not apply");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(room_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records[0].revision == 7 && room_records[0].items.size() == 4 &&
+			room_records[0].items[0].weight == 12 &&
+			room_records[0].items[2].parent_index == 0 &&
+			room_records[0].items[3].parent_index == 0,
+		"room-container batch put did not attach every root or propagate total weight");
 	items.clear();
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,

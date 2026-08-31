@@ -40,12 +40,25 @@ Implemented on 2026-09-01:
   two-root atomic transfer. The clean server build succeeds with warnings
   treated as errors.
 
+### Checkpoint 2: atomic `drop` and `put`
+
+Implemented on 2026-09-01:
+
+- Added a live movement adapter that captures multiple object trees, rebases
+  snapshot parent indexes into one forest, and submits one version 6 command.
+- Replaced the durable `drop all` / `drop all.<keyword>` chain with one batch
+  transaction. Soulbound and cursed objects are excluded during selection;
+  transient, money, and player-corpse roots run only after a successful durable
+  commit.
+- Replaced the durable `put all` / `put all.<keyword>` chain with one batch
+  transaction. Selection now performs cumulative quiver-count, weight, and
+  optional space preflight before submitting the full eligible set.
+- Updated room-container flat-file materialization to attach every batch root
+  and propagate their combined weight. Focused command, live-movement, and
+  repository contracts cover the new boundary.
+
 Still to implement:
 
-- Add the movement-submission adapter that captures multiple live object trees
-  into one version 6 payload.
-- Replace the serialized `drop` and `put` command chains with one batch
-  submission, including cumulative eligibility and capacity preflight.
 - Replace the serialized room/container/corpse `get` chain and update flat-file
   room, locker, and corpse materialization for multi-root extraction and
   attachment.

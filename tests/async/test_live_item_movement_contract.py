@@ -52,11 +52,12 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("start_container_bulk_get", actobj)
         self.assertIn("continue_bulk_get(actor, true)", actobj)
         self.assertIn("start_bulk_drop", actobj)
-        self.assertIn("continue_bulk_drop(actor, true)", actobj)
+        self.assertIn("bulk_drop_completion", actobj)
         self.assertIn("start_bulk_put", actobj)
-        self.assertIn("continue_bulk_put(actor, stored)", actobj)
-        # every bulk command now serialises its transactions instead of
-        # refusing the command outright.
+        self.assertIn("bulk_put_completion", actobj)
+        self.assertIn("item_movement_transaction_submit_batch", actobj)
+        # Bulk get still waits for its batch cutover; drop and put now publish
+        # one durable forest only after its shared commit.
         self.assertNotIn("Durable container items must be collected one at a time", actobj)
         self.assertNotIn("Durable items must be dropped one at a time", actobj)
         self.assertNotIn("Durable items must be put away one at a time", actobj)
@@ -163,7 +164,7 @@ class LiveItemMovementContractTests(unittest.TestCase):
         supported = supported[:supported.index("bool locker_custody_matches")]
         self.assertIn("corpse_loot_transfer(payload)", supported)
         self.assertIn("corpse_create_transfer(payload)", supported)
-        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION", supported)
+        self.assertIn("ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION", supported)
 
     def test_flat_room_item_moves_are_composite(self):
         repository = (SRC / "flatfile_item_repository.c").read_text()
