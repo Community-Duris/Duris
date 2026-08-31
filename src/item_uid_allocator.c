@@ -2,7 +2,7 @@
 
 #include "db.h"
 #include "flatfile/flatfile_item_uid_allocator.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 #include <cstdlib>
 #include <cstring>

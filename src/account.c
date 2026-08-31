@@ -26,7 +26,7 @@
 #include "player/player_name.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 #include "flatfile/flatfile_account_adapter.h"
 #include "ws_handlers.h"
 

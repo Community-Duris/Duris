@@ -2,7 +2,7 @@
 
 #include "item_ownership_runtime.h"
 #include "necromancy.h"
-#include "persistence_checkpoint.h"
+#include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "prototypes.h"

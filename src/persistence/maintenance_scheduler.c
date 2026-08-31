@@ -1,7 +1,7 @@
-#include "maintenance_scheduler.h"
+#include "persistence/maintenance_scheduler.h"
 #include "sql/sql_thread_init.h"
 
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 
 #include <mysql/mysql.h>
 

@@ -1,7 +1,7 @@
 #ifndef ITEM_TRANSFER_SYNTHETIC_H
 #define ITEM_TRANSFER_SYNTHETIC_H
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 #include "item_transfer_command.h"
 
 /* Session 05 proof adapter. Live object pointers and movement routes are intentionally

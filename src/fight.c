@@ -43,7 +43,7 @@
 #include "necromancy.h"
 #include "objmisc.h"
 #include "outposts.h"
-#include "persistence_checkpoint.h"
+#include "persistence/persistence_checkpoint.h"
 #include "paladins.h"
 #include "plushit.h"
 #include "reavers.h"
@@ -57,11 +57,11 @@
 #include "world_quest.h"
 #include "ws_handlers.h"
 #include "artifact_guild_transaction.h"
-#include "corpse_lifecycle_transaction.h"
+#include "persistence/corpse_lifecycle_transaction.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
 #include "combat_outcome_transaction.h"
-#include "gameplay_read_state.h"
+#include "persistence/gameplay_read_state.h"
 /*
  * external variables //
  */

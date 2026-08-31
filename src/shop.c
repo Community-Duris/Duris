@@ -24,7 +24,7 @@
 #include "salchemist.h"
 #include "specs.prototypes.h"
 #include "sql/sql.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 #include "shop_trade_runtime.h"
 #include "shop_trade_transaction.h"
 #include <cerrno>

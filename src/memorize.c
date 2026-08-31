@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "guildhall.h"
-#include "persistence_checkpoint.h"
+#include "persistence/persistence_checkpoint.h"
 #include "profile.h"
 #include "spells.h"
 

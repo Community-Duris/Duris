@@ -1,4 +1,4 @@
-#include "critical_outbox.h"
+#include "persistence/critical_outbox.h"
 #include "sql/sql_thread_init.h"
 
 #include "sql/sql_pool.h"

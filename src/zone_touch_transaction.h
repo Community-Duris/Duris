@@ -1,8 +1,8 @@
 #ifndef ZONE_TOUCH_TRANSACTION_H
 #define ZONE_TOUCH_TRANSACTION_H
 
-#include "critical_command_coordinator.h"
-#include "critical_outbox.h"
+#include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
 #include "zone_touch_command.h"
 
 constexpr size_t ZONE_TOUCH_PENDING_MAX = 64;

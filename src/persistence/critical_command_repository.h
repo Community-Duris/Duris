@@ -1,7 +1,7 @@
 #ifndef CRITICAL_COMMAND_REPOSITORY_H
 #define CRITICAL_COMMAND_REPOSITORY_H
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <mysql/mysql.h>
 

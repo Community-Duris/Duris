@@ -35,7 +35,7 @@
 #include "grapple.h"
 #include "guildhall.h"
 #include "justice.h"
-#include "locker_async.h"
+#include "persistence/locker_async.h"
 #include "makeexit.h"
 #include "map.h"
 #include "mm.h"

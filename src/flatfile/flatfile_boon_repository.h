@@ -4,7 +4,7 @@
 #include "boon_reward_command.h"
 #include "boon_shop_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <cstdint>
 #include <string>

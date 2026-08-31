@@ -26,7 +26,7 @@
 #include "flatfile/flatfile_association_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "outposts.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 #include <algorithm>
 #include <limits.h>

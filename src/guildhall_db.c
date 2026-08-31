@@ -23,7 +23,7 @@ using namespace std;
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_association_repository.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 #endif
 
 extern vector<Guildhall *> guildhalls;

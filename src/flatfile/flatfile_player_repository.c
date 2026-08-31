@@ -5,8 +5,8 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_store.h"
-#include "persistence_observability.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_observability.h"
+#include "persistence/persistence_mode.h"
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>

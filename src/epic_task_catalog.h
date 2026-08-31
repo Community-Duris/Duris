@@ -1,7 +1,7 @@
 #ifndef EPIC_TASK_CATALOG_H
 #define EPIC_TASK_CATALOG_H
 
-#include "gameplay_read_state.h"
+#include "persistence/gameplay_read_state.h"
 
 #include <cstddef>
 #include <cstdint>

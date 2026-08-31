@@ -2,8 +2,8 @@
 #define COMBAT_OUTCOME_TRANSACTION_H
 
 #include "combat_outcome_command.h"
-#include "critical_command_coordinator.h"
-#include "critical_outbox.h"
+#include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
 #include "prototypes.h"
 
 using combat_outcome_completion_fn = void (*)(bool committed, const combat_outcome_result &result,

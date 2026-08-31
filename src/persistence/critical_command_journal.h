@@ -1,7 +1,7 @@
 #ifndef CRITICAL_COMMAND_JOURNAL_H
 #define CRITICAL_COMMAND_JOURNAL_H
 
-#include "critical_command.h"
+#include "persistence/critical_command.h"
 
 #include <cstddef>
 #include <cstdint>

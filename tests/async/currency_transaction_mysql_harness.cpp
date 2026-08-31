@@ -1,4 +1,4 @@
-#include "critical_command_repository.h"
+#include "persistence/critical_command_repository.h"
 #include "currency_command.h"
 
 #include <mysql.h>

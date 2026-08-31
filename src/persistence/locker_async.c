@@ -24,7 +24,7 @@
 #include "sql/sql_pool.h"
 #include "sql/sql_player.h"
 #include "storage_lockers.h"
-#include "locker_async.h"
+#include "persistence/locker_async.h"
 #include "comm.h"
 #include "db.h"
 #include "events.h"

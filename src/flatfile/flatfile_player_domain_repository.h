@@ -3,7 +3,7 @@
 
 #include "flatfile/flatfile_authority_transaction.h"
 #include "player/player_load_repository.h"
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 #include "currency_command.h"
 
 #include <cstdint>

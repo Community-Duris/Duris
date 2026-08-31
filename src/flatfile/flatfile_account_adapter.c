@@ -3,7 +3,7 @@
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_identity_repository.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 #include <cstdlib>
 #include <new>

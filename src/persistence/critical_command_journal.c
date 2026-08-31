@@ -1,4 +1,4 @@
-#include "critical_command_journal.h"
+#include "persistence/critical_command_journal.h"
 
 #include <algorithm>
 #include <cerrno>

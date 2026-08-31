@@ -1,7 +1,7 @@
 #ifndef SHOP_TRADE_TRANSACTION_H
 #define SHOP_TRADE_TRANSACTION_H
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 #include "shop_trade_command.h"
 #include "structs.h"
 

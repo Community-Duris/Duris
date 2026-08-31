@@ -1,4 +1,4 @@
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <algorithm>
 #include <chrono>

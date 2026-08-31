@@ -10,7 +10,7 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_shop_trade_repository.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 #include <algorithm>
 #include <array>

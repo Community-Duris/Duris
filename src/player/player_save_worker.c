@@ -1,7 +1,7 @@
 #include "player/player_save_worker.h"
 #include "sql/sql_thread_init.h"
 
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
 
 #include <algorithm>

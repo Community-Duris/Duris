@@ -1,4 +1,4 @@
-#include "latency_trace.h"
+#include "persistence/latency_trace.h"
 
 latency_entry _latency_buf[LATENCY_TRACE_MAX_SAMPLES];
 int _latency_head = 0;

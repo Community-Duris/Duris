@@ -8,7 +8,7 @@
 #include "comm.h"
 #include "db.h"
 #include "utils.h"
-#include "copyover.h"
+#include "persistence/copyover.h"
 #include "sql/sql_player.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -29,14 +29,14 @@
 #include "ships/ships.h"
 #include "ttype.h"
 #include "websocket.h"
-#include "locker_async.h"
-#include "maintenance_scheduler.h"
-#include "critical_command_coordinator.h"
-#include "critical_outbox.h"
+#include "persistence/locker_async.h"
+#include "persistence/maintenance_scheduler.h"
+#include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 #include "redis/redis_world_runtime.h"
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"

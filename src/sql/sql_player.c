@@ -40,7 +40,7 @@
 #include "player/player_name.h"
 #include "password_hash.h"
 #include "player/player_revision_state.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 #include "item_transfer_command.h"
 
 // external tables

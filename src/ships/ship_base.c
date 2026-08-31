@@ -34,7 +34,7 @@
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_identity_adapter.h"
 #include "flatfile/flatfile_ship_repository.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 #include <cmath>
 #include <limits>

@@ -1,4 +1,4 @@
-#include "persistence_checkpoint.h"
+#include "persistence/persistence_checkpoint.h"
 
 #include "files.h"
 #include "player/player_save_pipeline.h"

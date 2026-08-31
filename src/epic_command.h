@@ -1,7 +1,7 @@
 #ifndef EPIC_COMMAND_H
 #define EPIC_COMMAND_H
 
-#include "critical_command.h"
+#include "persistence/critical_command.h"
 
 #include <cstdint>
 

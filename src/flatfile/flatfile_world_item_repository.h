@@ -1,7 +1,7 @@
 #ifndef DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 #define DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 
-#include "corpse_lifecycle_command.h"
+#include "persistence/corpse_lifecycle_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "item_transfer_command.h"
 #include "player/player_snapshot.h"

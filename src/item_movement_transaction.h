@@ -1,7 +1,7 @@
 #ifndef ITEM_MOVEMENT_TRANSACTION_H
 #define ITEM_MOVEMENT_TRANSACTION_H
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 #include "item_transfer_command.h"
 #include "structs.h"
 

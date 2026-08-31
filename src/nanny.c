@@ -45,7 +45,7 @@
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
 #include "redis/redis_presence_runtime.h"
 #include "ships.h"

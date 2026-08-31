@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <zlib.h>
-#include "copyover.h"
+#include "persistence/copyover.h"
 #include "gmcp.h"
 #include "json_utils.h"
 #include "telnet.h"

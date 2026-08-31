@@ -2,8 +2,8 @@
 #define BOON_REWARD_TRANSACTION_H
 
 #include "boon_reward_command.h"
-#include "critical_command_coordinator.h"
-#include "critical_outbox.h"
+#include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
 #include "structs.h"
 
 constexpr size_t BOON_REWARD_PENDING_MAX = 1024;

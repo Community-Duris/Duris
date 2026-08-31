@@ -26,7 +26,7 @@
 #include "assocs.h"
 #include "damage.h"
 #include "currency_transaction.h"
-#include "deferred_save_policy.h"
+#include "persistence/deferred_save_policy.h"
 #include "epic.h"
 #include "epic_transaction.h"
 #include "files.h"

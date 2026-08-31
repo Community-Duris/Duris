@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "persistence_checkpoint.h"
+#include "persistence/persistence_checkpoint.h"
 #include "redis/redis_lifecycle.h"
 #include "redis/redis_cache_store.h"
 #include "redis/redis_command_observability.h"

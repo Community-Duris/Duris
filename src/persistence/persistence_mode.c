@@ -1,4 +1,4 @@
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 #include <errno.h>
 #include <stdarg.h>

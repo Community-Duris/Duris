@@ -1,7 +1,7 @@
 #ifndef CURRENCY_COMMAND_H
 #define CURRENCY_COMMAND_H
 
-#include "critical_command.h"
+#include "persistence/critical_command.h"
 
 #include <array>
 #include <cstdint>

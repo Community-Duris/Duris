@@ -2,8 +2,8 @@
 #define AUCTION_TRANSACTION_H
 
 #include "auction_command.h"
-#include "critical_command_coordinator.h"
-#include "critical_outbox.h"
+#include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
 #include "structs.h"
 
 #include <cstddef>

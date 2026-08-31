@@ -1,4 +1,4 @@
-#include "maintenance_snapshot.h"
+#include "persistence/maintenance_snapshot.h"
 
 #include "comm.h"
 #include "config.h"

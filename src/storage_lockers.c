@@ -38,7 +38,7 @@
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "vnum.room.h"
-#include "locker_async.h"
+#include "persistence/locker_async.h"
 #include "item_movement_transaction.h"
 
 extern P_index obj_index;

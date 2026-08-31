@@ -41,7 +41,7 @@
 #include "map.h"
 #include "mm.h"
 #include "objmisc.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 #include "ships/ships.h"
 #include "specs.prototypes.h"
 #include "spells.h"

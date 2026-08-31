@@ -1,7 +1,7 @@
 #ifndef __PERSISTENCE_QUEUE_H_INCLUDED__
 #define __PERSISTENCE_QUEUE_H_INCLUDED__
 
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 
 #define PERSISTENCE_EVENT_QUEUE_CAPACITY 4096
 #define PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY 131072

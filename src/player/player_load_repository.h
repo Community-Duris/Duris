@@ -2,7 +2,7 @@
 #define PLAYER_LOAD_REPOSITORY_H
 
 #include "item_transfer_command.h"
-#include "gameplay_read_state.h"
+#include "persistence/gameplay_read_state.h"
 #include "player/player_snapshot.h"
 
 #include <array>

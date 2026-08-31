@@ -49,7 +49,7 @@ using namespace std;
 #include "flatfile/flatfile_boon_repository.h"
 #include "guildhall.h"
 #include "nexus_stones.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 #include "spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

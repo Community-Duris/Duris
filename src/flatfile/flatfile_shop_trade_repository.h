@@ -1,7 +1,7 @@
 #ifndef DURIS_FLATFILE_SHOP_TRADE_REPOSITORY_H
 #define DURIS_FLATFILE_SHOP_TRADE_REPOSITORY_H
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <string>
 

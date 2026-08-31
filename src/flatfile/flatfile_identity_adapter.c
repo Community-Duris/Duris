@@ -1,7 +1,7 @@
 #include "flatfile/flatfile_identity_adapter.h"
 
 #include "flatfile/flatfile_identity_repository.h"
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 
 namespace
 {

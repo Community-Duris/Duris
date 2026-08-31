@@ -11,7 +11,7 @@
 #include "redis/redis_connection.h"
 #include "redis/redis_key_registry.h"
 #include "redis/redis_namespace.h"
-#include "report_cache_codec.h"
+#include "persistence/report_cache_codec.h"
 #include "spells.h"
 #include "sql/sql.h"
 #include "utility.h"

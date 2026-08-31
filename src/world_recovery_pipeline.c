@@ -1,6 +1,6 @@
 #include "world_recovery_pipeline.h"
 
-#include "copyover.h"
+#include "persistence/copyover.h"
 #include "db.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"

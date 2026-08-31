@@ -1,7 +1,7 @@
 #ifndef PERSISTENCE_CHECKPOINT_H
 #define PERSISTENCE_CHECKPOINT_H
 
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
 #include "structs.h"
 

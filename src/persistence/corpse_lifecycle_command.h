@@ -1,7 +1,7 @@
 #ifndef DURIS_CORPSE_LIFECYCLE_COMMAND_H
 #define DURIS_CORPSE_LIFECYCLE_COMMAND_H
 
-#include "critical_command.h"
+#include "persistence/critical_command.h"
 
 #include <array>
 #include <cstdint>

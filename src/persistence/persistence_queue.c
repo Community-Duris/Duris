@@ -14,9 +14,9 @@
 #include <mysql.h>
 #endif
 
-#include "persistence_queue.h"
+#include "persistence/persistence_queue.h"
 #include "sql/sql_thread_init.h"
-#include "latency_trace.h"
+#include "persistence/latency_trace.h"
 #include "safe_format.h"
 
 /* wizlog() and logit() are declared in utility.h / structs.h; pull in

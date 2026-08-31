@@ -1,6 +1,6 @@
 #include "flatfile/flatfile_corpse_restore.h"
 
-#include "corpse_lifecycle_transaction.h"
+#include "persistence/corpse_lifecycle_transaction.h"
 #include "flatfile/flatfile_corpse_ownership.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_world_item_repository.h"

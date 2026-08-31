@@ -1,4 +1,4 @@
-#include "corpse_lifecycle_transaction.h"
+#include "persistence/corpse_lifecycle_transaction.h"
 
 #include "item_transfer_command.h"
 

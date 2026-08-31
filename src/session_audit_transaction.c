@@ -1,6 +1,6 @@
 #include "session_audit_transaction.h"
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 #include "prototypes.h"
 #include "utils.h"
 

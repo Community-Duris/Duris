@@ -2,7 +2,7 @@
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 
 #include <cstdlib>
 #include <filesystem>

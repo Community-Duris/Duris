@@ -1,7 +1,7 @@
 #ifndef EPIC_TRANSACTION_H
 #define EPIC_TRANSACTION_H
 
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 #include "epic_command.h"
 #include "structs.h"
 

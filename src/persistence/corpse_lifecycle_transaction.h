@@ -1,8 +1,8 @@
 #ifndef DURIS_CORPSE_LIFECYCLE_TRANSACTION_H
 #define DURIS_CORPSE_LIFECYCLE_TRANSACTION_H
 
-#include "corpse_lifecycle_command.h"
-#include "critical_command_coordinator.h"
+#include "persistence/corpse_lifecycle_command.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <cstddef>
 #include <cstdint>

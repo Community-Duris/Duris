@@ -33,7 +33,7 @@
 #include "sql/sql_player.h"
 #include "player/player_name.h"
 #include "password_hash.h"
-#include "presence_policy.h"
+#include "persistence/presence_policy.h"
 #include "websocket.h"
 #include "ws_auth.h"
 #include "utility.h"

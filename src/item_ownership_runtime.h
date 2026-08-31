@@ -1,7 +1,7 @@
 #ifndef ITEM_OWNERSHIP_RUNTIME_H
 #define ITEM_OWNERSHIP_RUNTIME_H
 
-#include "corpse_lifecycle_command.h"
+#include "persistence/corpse_lifecycle_command.h"
 #include "item_transfer_command.h"
 
 #include <cstddef>

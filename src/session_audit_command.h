@@ -1,7 +1,7 @@
 #ifndef SESSION_AUDIT_COMMAND_H
 #define SESSION_AUDIT_COMMAND_H
 
-#include "critical_command.h"
+#include "persistence/critical_command.h"
 
 #include <array>
 

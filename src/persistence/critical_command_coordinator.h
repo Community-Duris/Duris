@@ -1,8 +1,8 @@
 #ifndef CRITICAL_COMMAND_COORDINATOR_H
 #define CRITICAL_COMMAND_COORDINATOR_H
 
-#include "critical_command.h"
-#include "critical_command_journal.h"
+#include "persistence/critical_command.h"
+#include "persistence/critical_command_journal.h"
 
 #include <array>
 #include <cstddef>

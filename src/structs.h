@@ -27,7 +27,7 @@
 
 #include "defines.h"
 #include "epic_bonus_state.h"
-#include "gameplay_read_state.h"
+#include "persistence/gameplay_read_state.h"
 #include "map.h"
 #include "player/player_log.h"
 #include "ansi.h"

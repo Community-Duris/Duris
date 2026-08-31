@@ -123,7 +123,7 @@ OBJS =  $(SHIP_OBJS) \
 				 arena.o \
 				 artifact.o \
 				 artifact_cache_codec.o \
-				 report_cache_codec.o \
+				 persistence/report_cache_codec.o \
 				 donation_event.o \
 				 redis/redis_connection.o \
 				 redis/redis_command_observability.o \
@@ -145,7 +145,7 @@ OBJS =  $(SHIP_OBJS) \
          chaos.o \
 				 chaos_config.o \
 				 comm.o \
-				 copyover.o \
+				 persistence/copyover.o \
 				 common.o \
 				 condition.o \
 				 constant.o \
@@ -171,7 +171,7 @@ OBJS =  $(SHIP_OBJS) \
 				 epic.o \
 				 epic_bonus.o \
 				 epic_bonus_state.o \
-				 deferred_save_policy.o \
+				 persistence/deferred_save_policy.o \
 				 epic_skills.o \
 				 ethermancer.o \
 				 events.o \
@@ -222,9 +222,9 @@ OBJS =  $(SHIP_OBJS) \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
-				 persistence_checkpoint.o \
-				 persistence_observability.o \
-				 persistence_mode.o \
+				 persistence/persistence_checkpoint.o \
+				 persistence/persistence_observability.o \
+				 persistence/persistence_mode.o \
 				 env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
@@ -265,12 +265,12 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_shop_trophy_history.o \
 				 flatfile/flatfile_world_item_repository.o \
 				 flatfile/flatfile_world_quest_history.o \
-				 corpse_lifecycle_transaction.o \
-				 critical_command.o \
-				 critical_command_journal.o \
-				 critical_command_coordinator.o \
-				 critical_command_repository.o \
-				 corpse_lifecycle_command.o \
+				 persistence/corpse_lifecycle_transaction.o \
+				 persistence/critical_command.o \
+				 persistence/critical_command_journal.o \
+				 persistence/critical_command_coordinator.o \
+				 persistence/critical_command_repository.o \
+				 persistence/corpse_lifecycle_command.o \
 				 item_transfer_command.o \
 				 item_ownership_runtime.o \
 				 item_movement_transaction.o \
@@ -279,7 +279,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item_transfer_repository.o \
 				 item_transfer_synthetic.o \
 				 item_uid_allocator.o \
-				 critical_outbox.o \
+				 persistence/critical_outbox.o \
 				 epic_command.o \
 				 epic_transaction.o \
 				 currency_command.o \
@@ -310,13 +310,13 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_load_pipeline.o \
 				 player/player_load_items.o \
 				 player/player_load_pets.o \
-				 gameplay_read_state.o \
+				 persistence/gameplay_read_state.o \
 				 epic_task_catalog.o \
-				 maintenance_scheduler.o \
-				 maintenance_repository.o \
-				 maintenance_snapshot.o \
+				 persistence/maintenance_scheduler.o \
+				 persistence/maintenance_repository.o \
+				 persistence/maintenance_snapshot.o \
 				 player/player_load_materialize.o \
-				 presence_policy.o \
+				 persistence/presence_policy.o \
 				 redis/redis_cache_store.o \
 				 redis/redis_report_cache.o \
 				 redis/redis_runtime_config.o \
@@ -339,8 +339,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_snapshot_repository.o \
 				 player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
-				 persistence_queue.o \
-				 latency_trace.o \
+				 persistence/persistence_queue.o \
+				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
 				 plushit.o \
@@ -415,7 +415,7 @@ OBJS =  $(SHIP_OBJS) \
 				 ssl.o \
 				 statistics.o \
 				 storage_lockers.o \
-				 locker_async.o \
+				 persistence/locker_async.o \
 				 timers.o \
 				 track.o \
 				 tradeskill.o \

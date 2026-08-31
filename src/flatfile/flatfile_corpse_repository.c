@@ -1,6 +1,6 @@
 #include "flatfile/flatfile_corpse_repository.h"
 
-#include "corpse_lifecycle_command.h"
+#include "persistence/corpse_lifecycle_command.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
