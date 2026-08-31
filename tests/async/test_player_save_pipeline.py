@@ -156,6 +156,10 @@ assert "SET save_revision=%llu WHERE pid=%d AND save_revision<%llu" in legacy_sa
 assert "mysql_affected_rows(DB) != 1" in legacy_save
 assert legacy_save.index("sql_save_player_shapechanges") < legacy_save.index("SET save_revision")
 assert legacy_save.index("SET save_revision") < legacy_save.index("if (own_txn)")
+assert "player_revision_acknowledge_durable" in legacy_save
+assert legacy_save.index("if (own_txn)") < legacy_save.index(
+    "player_revision_acknowledge_durable"
+)
 print("[PASS] transactional compatibility saves fence every older immutable revision")
 
 mark = section(CHECKPOINT, "void mark_player_dirty(int pid)", "void flush_dirty_players(void)")

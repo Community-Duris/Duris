@@ -68,6 +68,26 @@ int main()
     assert(snapshot.inflight_components == 0);
     assert(snapshot.queued_components == PLAYER_COMPONENT_INVENTORY);
 
+    assert(player_revision_hydrate(9, 4));
+    assert(player_revision_mark(9, PLAYER_COMPONENT_STATUS, &revision));
+    assert(player_revision_queue(9, &revision, &components));
+    assert(player_revision_begin_inflight(9, revision, components));
+    assert(player_revision_mark(9, PLAYER_COMPONENT_INVENTORY, &revision));
+    assert(player_revision_queue(9, &revision, &components));
+    assert(player_revision_mark(9, PLAYER_CHECKPOINT_COMPONENT_ALL, &revision));
+    assert(revision == 7);
+    assert(player_revision_acknowledge_durable(
+        9, revision, PLAYER_CHECKPOINT_COMPONENT_ALL));
+    assert(player_revision_snapshot_copy(9, &snapshot));
+    assert(snapshot.current_revision == 7);
+    assert(snapshot.acknowledged_revision == 7);
+    assert(snapshot.dirty_components == 0);
+    assert(snapshot.unacknowledged_components == 0);
+    assert(snapshot.queued_components == 0);
+    assert(snapshot.inflight_components == 0);
+    assert(player_revision_hydrate(9, 7));
+    player_revision_forget(9);
+
     assert(player_revision_hydrate(7, 7));
     assert(!player_revision_hydrate(7, 6));
     assert(!player_revision_hydrate(7, 9));

@@ -163,6 +163,27 @@ bool player_revision_acknowledge(int pid, player_revision_t revision,
 	return true;
 }
 
+bool player_revision_acknowledge_durable(int pid, player_revision_t revision,
+					 player_component_mask_t components)
+{
+	player_revision_entry *state = find_state(pid);
+	if (!state || !valid_components(components) || revision < state->acknowledged_revision ||
+	    revision > state->current_revision)
+		return false;
+
+	const player_component_mask_t before = state->unacknowledged_components;
+	clear_acknowledged_components(*state, revision, components);
+	const player_component_mask_t cleared = before & ~state->unacknowledged_components;
+	state->inflight_components &= ~cleared;
+	if (!state->queued_components)
+		state->queued_revision = 0;
+	if (!state->inflight_components)
+		state->inflight_revision = 0;
+	if (revision > state->acknowledged_revision)
+		state->acknowledged_revision = revision;
+	return true;
+}
+
 bool player_revision_fail_inflight(int pid, player_revision_t revision,
 				   player_component_mask_t components)
 {
