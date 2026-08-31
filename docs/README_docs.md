@@ -58,6 +58,7 @@ docs/
 | Document | Purpose |
 |----------|---------|
 | [RUNBOOK.md](operations/RUNBOOK.md) | Safe startup, migration, backup, restore, recovery, reconciliation, and the release boundary. |
+| [PRODUCTION_DEPLOYMENT.md](operations/PRODUCTION_DEPLOYMENT.md) | Live production topology, service and helper locations, Cloudflare Tunnel, and TLS setup. |
 | [DOCKER.md](operations/DOCKER.md) | End-to-end local Compose deployment, persistent data, upgrades, and reset boundaries. |
 | [CONFIGURATION.md](operations/CONFIGURATION.md) | Runtime variables, Redis, listeners, proxy handling, and diagnostics. |
 | [SECURITY_BASELINE.md](operations/SECURITY_BASELINE.md) | Generated dependency baseline and its validation. |

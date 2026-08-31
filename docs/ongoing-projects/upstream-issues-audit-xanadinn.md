@@ -87,14 +87,3 @@ A technical audit of all 8 issues filed in upstream repository [`https://github.
     - No fumble chance, hit penalties, or prerequisite weapon mastery skill requirements exist for giant-sized races wielding two-handers in one hand.
 
 ---
-
-### Issue #7: Case-Sensitive Areas
-- **Upstream URL**: [`https://github.com/xanadinn/DurisMUD/issues/7`](https://github.com/xanadinn/DurisMUD/issues/7)
-- **Status in Current Codebase**: **PARTIALLY MITIGATED / ONGOING AUDIT**
-- **Technical Analysis**:
-  - *Current State*:
-    - On Linux, area concatenation tools ([`areas/src/wld/make_wld.c`](file:///home/aiwithapex/projects/duris/areas/src/wld/make_wld.c), `make_mob.c`, `make_obj.c`, `make_zon.c`) use `fopen()` with filenames constructed directly from entries in [`areas/AREA`](file:///home/aiwithapex/projects/duris/areas/AREA).
-    - All active entries currently in `areas/AREA` match their disk filenames exactly (`PortSkythic`, `Voluntown`, etc.).
-    - However, several inactive/orphaned area files on disk use PascalCase (`Monsteri`, `Magetower`, `Mentiri`, `Nexus_1`, `IC3`). If added in lowercase to `areas/AREA`, `make_all` scripts will fail to locate them on case-sensitive filesystems.
-
----
