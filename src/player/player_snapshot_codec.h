@@ -1,7 +1,7 @@
 #ifndef PLAYER_SNAPSHOT_CODEC_H
 #define PLAYER_SNAPSHOT_CODEC_H
 
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 
 #include <cstdint>
 #include <vector>

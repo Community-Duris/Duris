@@ -2,8 +2,8 @@
 #define DURIS_FLATFILE_PLAYER_REPOSITORY_H
 
 #include "flatfile/flatfile_authority_transaction.h"
-#include "player_load_repository.h"
-#include "player_save_worker.h"
+#include "player/player_load_repository.h"
+#include "player/player_save_worker.h"
 
 #include <memory>
 #include <string>

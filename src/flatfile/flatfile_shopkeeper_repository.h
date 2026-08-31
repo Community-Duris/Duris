@@ -2,7 +2,7 @@
 #define DURIS_FLATFILE_SHOPKEEPER_REPOSITORY_H
 
 #include "flatfile/flatfile_authority_transaction.h"
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 #include "shop_trade_command.h"
 
 #include <array>

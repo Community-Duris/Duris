@@ -2,7 +2,7 @@
 #define DURIS_FLATFILE_SHOPKEEPER_MATERIALIZE_H
 
 #include "flatfile/flatfile_shopkeeper_repository.h"
-#include "player_load_items.h"
+#include "player/player_load_items.h"
 
 #include <cstdint>
 #include <string>

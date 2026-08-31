@@ -17,9 +17,9 @@
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"
 #include "persistence_mode.h"
-#include "player_load_items.h"
-#include "player_snapshot_capture.h"
-#include "player_snapshot_codec.h"
+#include "player/player_load_items.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 
 #include <array>
 #include <bit>

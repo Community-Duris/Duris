@@ -1,13 +1,13 @@
-#include "player_save_pipeline.h"
+#include "player/player_save_pipeline.h"
 #include "sql_thread_init.h"
 
 #include "prototypes.h"
 #include "files.h"
 #include "flatfile/flatfile_player_repository.h"
-#include "player_save_journal.h"
-#include "player_save_worker.h"
-#include "player_snapshot_capture.h"
-#include "player_snapshot_repository.h"
+#include "player/player_save_journal.h"
+#include "player/player_save_worker.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_repository.h"
 #include "structs.h"
 #include "utils.h"
 

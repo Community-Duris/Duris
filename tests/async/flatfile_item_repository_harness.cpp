@@ -3,7 +3,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <cerrno>

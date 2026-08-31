@@ -54,7 +54,7 @@
 #include "mm.h"
 #include "nexus_stones.h"
 #include "outposts.h"
-#include "player_log.h"
+#include "player/player_log.h"
 #include "poll.h"
 #include "profile.h"
 #include "racewar_stat_mods.h"
@@ -108,8 +108,8 @@
 #include "boon_shop_transaction.h"
 #include "zone_touch_transaction.h"
 #include "epic_transaction.h"
-#include "player_save_pipeline.h"
-#include "player_load_pipeline.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_load_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
 #endif

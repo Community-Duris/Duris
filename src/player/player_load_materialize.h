@@ -1,7 +1,7 @@
 #ifndef PLAYER_LOAD_MATERIALIZE_H
 #define PLAYER_LOAD_MATERIALIZE_H
 
-#include "player_load_repository.h"
+#include "player/player_load_repository.h"
 
 struct char_data;
 typedef struct char_data *P_char;

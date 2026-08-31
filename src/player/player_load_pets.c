@@ -1,6 +1,6 @@
-#include "player_load_pets.h"
+#include "player/player_load_pets.h"
 
-#include "player_load_items.h"
+#include "player/player_load_items.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"

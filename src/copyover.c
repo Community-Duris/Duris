@@ -33,9 +33,9 @@
 #include "maintenance_scheduler.h"
 #include "critical_command_coordinator.h"
 #include "critical_outbox.h"
-#include "player_save_pipeline.h"
-#include "player_load_materialize.h"
-#include "player_load_pipeline.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_load_materialize.h"
+#include "player/player_load_pipeline.h"
 #include "persistence_observability.h"
 #include "redis/redis_world_runtime.h"
 

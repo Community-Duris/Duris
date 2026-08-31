@@ -1,7 +1,7 @@
 #ifndef PLAYER_LOAD_ITEMS_H
 #define PLAYER_LOAD_ITEMS_H
 
-#include "player_load_repository.h"
+#include "player/player_load_repository.h"
 
 #include <cstddef>
 #include <cstdint>

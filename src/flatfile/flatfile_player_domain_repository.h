@@ -2,7 +2,7 @@
 #define DURIS_FLATFILE_PLAYER_DOMAIN_REPOSITORY_H
 
 #include "flatfile/flatfile_authority_transaction.h"
-#include "player_load_repository.h"
+#include "player/player_load_repository.h"
 #include "critical_command_coordinator.h"
 #include "currency_command.h"
 

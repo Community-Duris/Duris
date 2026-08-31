@@ -1,7 +1,7 @@
 #ifndef PLAYER_SAVE_PIPELINE_H
 #define PLAYER_SAVE_PIPELINE_H
 
-#include "player_revision_state.h"
+#include "player/player_revision_state.h"
 
 #include <cstddef>
 #include <cstdint>

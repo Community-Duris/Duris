@@ -2,7 +2,7 @@
 
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_store.h"
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <array>

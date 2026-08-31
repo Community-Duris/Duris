@@ -7,7 +7,7 @@
 #include "flatfile/flatfile_store.h"
 #include "persistence_observability.h"
 #include "persistence_mode.h"
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <array>

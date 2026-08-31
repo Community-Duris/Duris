@@ -305,17 +305,17 @@ OBJS =  $(SHIP_OBJS) \
 				 session_audit_command.o \
 				 session_audit_repository.o \
 				 session_audit_transaction.o \
-				 player_load_repository.o \
-				 player_load_topology.o \
-				 player_load_pipeline.o \
-				 player_load_items.o \
-				 player_load_pets.o \
+				 player/player_load_repository.o \
+				 player/player_load_topology.o \
+				 player/player_load_pipeline.o \
+				 player/player_load_items.o \
+				 player/player_load_pets.o \
 				 gameplay_read_state.o \
 				 epic_task_catalog.o \
 				 maintenance_scheduler.o \
 				 maintenance_repository.o \
 				 maintenance_snapshot.o \
-				 player_load_materialize.o \
+				 player/player_load_materialize.o \
 				 presence_policy.o \
 				 redis/redis_cache_store.o \
 				 redis/redis_report_cache.o \
@@ -330,15 +330,15 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_world_runtime.o \
 				 redis/redis_world_store.o \
 				 currency_transaction.o \
-				 player_revision_state.o \
-				 player_save_worker.o \
-				 player_save_journal.o \
-				 player_save_pipeline.o \
+				 player/player_revision_state.o \
+				 player/player_save_worker.o \
+				 player/player_save_journal.o \
+				 player/player_save_pipeline.o \
 				 world_recovery_npc_items.o \
 				 world_recovery_pipeline.o \
-				 player_snapshot_repository.o \
-				 player_snapshot_capture.o \
-				 player_snapshot_codec.o \
+				 player/player_snapshot_repository.o \
+				 player/player_snapshot_capture.o \
+				 player/player_snapshot_codec.o \
 				 persistence_queue.o \
 				 latency_trace.o \
 				 sql_persistence_raw.o \

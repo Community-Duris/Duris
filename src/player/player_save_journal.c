@@ -1,6 +1,6 @@
-#include "player_save_journal.h"
+#include "player/player_save_journal.h"
 
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <array>

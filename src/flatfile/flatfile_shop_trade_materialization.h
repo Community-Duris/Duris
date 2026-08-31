@@ -3,7 +3,7 @@
 
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_item_repository.h"
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 #include "shop_trade_command.h"
 
 #include <string>

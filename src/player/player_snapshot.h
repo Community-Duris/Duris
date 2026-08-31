@@ -1,7 +1,7 @@
 #ifndef PLAYER_SNAPSHOT_H
 #define PLAYER_SNAPSHOT_H
 
-#include "player_revision_state.h"
+#include "player/player_revision_state.h"
 
 #include <array>
 #include <cstdint>

@@ -1,4 +1,4 @@
-#include "player_snapshot_capture.h"
+#include "player/player_snapshot_capture.h"
 
 #include "prototypes.h"
 #include "structs.h"

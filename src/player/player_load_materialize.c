@@ -1,8 +1,8 @@
-#include "player_load_materialize.h"
+#include "player/player_load_materialize.h"
 
 #include "item_ownership_runtime.h"
-#include "player_load_items.h"
-#include "player_load_pets.h"
+#include "player/player_load_items.h"
+#include "player/player_load_pets.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "db.h"
@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "assocs.h"
-#include "player_revision_state.h"
+#include "player/player_revision_state.h"
 #include "spells.h"
 #include "trophy.h"
 

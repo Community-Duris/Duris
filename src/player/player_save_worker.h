@@ -1,7 +1,7 @@
 #ifndef PLAYER_SAVE_WORKER_H
 #define PLAYER_SAVE_WORKER_H
 
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 
 #include <cstddef>
 #include <cstdint>

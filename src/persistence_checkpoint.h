@@ -2,7 +2,7 @@
 #define PERSISTENCE_CHECKPOINT_H
 
 #include "persistence_observability.h"
-#include "player_revision_state.h"
+#include "player/player_revision_state.h"
 #include "structs.h"
 
 void mark_player_dirty(int pid);

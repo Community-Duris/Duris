@@ -1,7 +1,7 @@
 #ifndef PLAYER_SNAPSHOT_CAPTURE_H
 #define PLAYER_SNAPSHOT_CAPTURE_H
 
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 
 struct char_data;
 typedef struct char_data *P_char;

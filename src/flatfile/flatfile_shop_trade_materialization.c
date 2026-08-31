@@ -1,7 +1,7 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 
 #include "flatfile/flatfile_store.h"
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_codec.h"
 
 #include <algorithm>
 #include <array>

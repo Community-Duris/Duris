@@ -3,7 +3,7 @@
 
 #include "item_transfer_command.h"
 #include "gameplay_read_state.h"
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 
 #include <array>
 #include <cstdint>

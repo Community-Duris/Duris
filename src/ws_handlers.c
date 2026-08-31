@@ -31,7 +31,7 @@
 #include "poll.h"
 #include "sql.h"
 #include "sql_player.h"
-#include "player_name.h"
+#include "player/player_name.h"
 #include "password_hash.h"
 #include "presence_policy.h"
 #include "websocket.h"

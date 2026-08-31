@@ -1,5 +1,5 @@
 #include "flatfile/flatfile_shopkeeper_repository.h"
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_codec.h"
 
 #include <cerrno>
 #include <cstdlib>

@@ -4,7 +4,7 @@
 #include "corpse_lifecycle_command.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "item_transfer_command.h"
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 
 #include <array>
 #include <cstdint>

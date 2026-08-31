@@ -1,8 +1,8 @@
 #include "shop_trade_runtime.h"
 
 #include "item_ownership_runtime.h"
-#include "player_snapshot_capture.h"
-#include "player_snapshot_codec.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "prototypes.h"
 #include "utils.h"
 

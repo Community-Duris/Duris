@@ -1,4 +1,4 @@
-#include "player_load_pipeline.h"
+#include "player/player_load_pipeline.h"
 #include "sql_thread_init.h"
 
 #include "flatfile/flatfile_player_repository.h"

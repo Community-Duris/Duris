@@ -29,7 +29,7 @@
 #include "epic_bonus_state.h"
 #include "gameplay_read_state.h"
 #include "map.h"
-#include "player_log.h"
+#include "player/player_log.h"
 #include "ansi.h"
 
 #include <sys/socket.h>
