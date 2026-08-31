@@ -1,7 +1,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "events.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "classes/paladins.h"
@@ -11,7 +11,7 @@
 #include "combat/guard.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
-#include "weather.h"
+#include "world/weather.h"
 
 extern struct time_info_data time_info;
 

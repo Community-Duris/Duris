@@ -10,8 +10,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <ctype.h>
@@ -19,15 +19,15 @@
 #include <string.h>
 #include "classes/disguise.h"
 #include "net/gmcp.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
-#include "map.h"
+#include "world/map.h"
 #include "combat/siege.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "economy/tradeskill.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 
 /*
  * external variables

@@ -12,7 +12,7 @@
 
 #include "prototypes.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"

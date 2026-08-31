@@ -31,7 +31,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "utility.h"

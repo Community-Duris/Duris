@@ -1,13 +1,13 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "item/randobj.h"
 #include <strings.h>
 #include "economy/tradeskill.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 extern P_index obj_index;
 

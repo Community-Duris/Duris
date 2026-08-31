@@ -1,9 +1,9 @@
 #include "redis/redis_report_cache.h"
 
 #include "config.h"
-#include "db.h"
+#include "world/db.h"
 #include "structs.h"
-#include "epic.h"
+#include "world/epic.h"
 #include "combat/frag_cap_config.h"
 #include "prototypes.h"
 #include "redis/redis_cache_store.h"

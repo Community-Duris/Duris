@@ -10,8 +10,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <ctype.h>
@@ -21,12 +21,12 @@
 #include <time.h>
 #include "guild/assocs.h"
 #include "combat/damage.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "mob/studioproclib.h"
-#include "weather.h"
+#include "world/weather.h"
 
 /*
    external variables

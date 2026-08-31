@@ -9,7 +9,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include <ctype.h>
 #include <stdio.h>

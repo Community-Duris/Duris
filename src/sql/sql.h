@@ -4,7 +4,7 @@
 #include "structs.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_observability.h"
-#include "world_recovery_pipeline.h"
+#include "world/world_recovery_pipeline.h"
 #include <stdlib.h>
 
 /* Database connection fields are explicit. Runtime validation rejects missing values. */

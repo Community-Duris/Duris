@@ -1,6 +1,6 @@
 #include "combat/combat_outcome_repository.h"
 
-#include "epic_command.h"
+#include "world/epic_command.h"
 
 #include <algorithm>
 #include <array>

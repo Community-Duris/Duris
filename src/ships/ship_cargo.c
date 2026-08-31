@@ -2,8 +2,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
@@ -11,13 +11,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "graph.h"
+#include "world/graph.h"
 #include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
-#include "timers.h"
+#include "world/timers.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"
 #include "persistence/persistence_mode.h"

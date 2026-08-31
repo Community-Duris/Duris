@@ -1,8 +1,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <math.h>
@@ -11,8 +11,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "net/gmcp.h" // for GMCP_ENABLED macro
-#include "graph.h"
-#include "map.h"
+#include "world/graph.h"
+#include "world/map.h"
 #include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"

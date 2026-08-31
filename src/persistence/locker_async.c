@@ -26,8 +26,8 @@
 #include "item/storage_lockers.h"
 #include "persistence/locker_async.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 
 #include <mysql/mysql.h>
 #include <pthread.h>

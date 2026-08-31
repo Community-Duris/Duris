@@ -1,6 +1,6 @@
 #include "redis/redis_floor_store.h"
 #include "redis/redis_connection.h"
-#include "world_recovery_codec.h"
+#include "world/world_recovery_codec.h"
 
 #include <hiredis/hiredis.h>
 

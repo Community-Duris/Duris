@@ -8,7 +8,7 @@
 #include "account/creation_availability_config.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include "net/ws_handlers.h"
 #include <ctype.h>
@@ -23,7 +23,7 @@
 #include "defines.h"
 #include "files.h"
 #include "net/gmcp.h"
-#include "hardcore_config.h"
+#include "world/hardcore_config.h"
 #include "item/item_movement_transaction.h"
 #include "combat/justice.h"
 #include "json_utils.h"

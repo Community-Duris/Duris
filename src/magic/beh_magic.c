@@ -3,13 +3,13 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "combat/damage.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 
 extern const int rev_dir[];

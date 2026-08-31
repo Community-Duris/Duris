@@ -17,22 +17,22 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "achievements.h"
+#include "world/achievements.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "classes/disguise.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "weather.h"
+#include "world/weather.h"
 
 /*
  * external variables

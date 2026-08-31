@@ -18,7 +18,7 @@
 #include "redis/redis_report_cache.h"
 #include "redis/redis_wizard.h"
 #include "redis/redis_world_runtime.h"
-#include "world_recovery_pipeline.h"
+#include "world/world_recovery_pipeline.h"
 
 static const char *world_worker_state(const world_recovery_health *world)
 {

@@ -4,8 +4,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "specs/specs.winterhaven.h"
@@ -17,17 +17,17 @@
 #include <sys/time.h>
 #include "guild/assocs.h"
 #include "combat/damage.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
 #include "item/objmisc.h"
 #include "combat/range.h"
 #include "classes/reavers.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "specs/specs.zion.h"
 #include "magic/spells.h"
 #include "economy/tradeskill.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 /*
  * external variables
  */

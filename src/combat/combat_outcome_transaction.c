@@ -2,7 +2,7 @@
 
 #include "redis/redis_report_cache.h"
 #include "economy/currency_transaction.h"
-#include "epic_transaction.h"
+#include "world/epic_transaction.h"
 #include "sql/sql_player.h"
 #include "utils.h"
 

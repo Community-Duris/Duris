@@ -10,8 +10,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "mm.h"
 #include "prototypes.h"

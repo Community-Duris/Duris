@@ -1,8 +1,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "classes/rogues.h"
@@ -15,7 +15,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "time.h"
-#include "weather.h"
+#include "world/weather.h"
 
 extern struct str_app_type str_app[];
 extern P_room world;

@@ -5,7 +5,7 @@
 #include "player/player_load_pets.h"
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include "files.h"
 #include "utils.h"
 

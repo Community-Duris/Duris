@@ -5,13 +5,13 @@
  *****************************************************************************/
 
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "economy/cardgames.h"
 #include <stdio.h>
 #include <string.h>
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 // Card functions!
 const char *Card::getSuit()

@@ -5,7 +5,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
 #include "utils.h"
@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <time.h>
-#include "graph.h"
+#include "world/graph.h"
 #include "mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"

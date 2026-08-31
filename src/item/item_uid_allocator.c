@@ -1,6 +1,6 @@
 #include "item/item_uid_allocator.h"
 
-#include "db.h"
+#include "world/db.h"
 #include "flatfile/flatfile_item_uid_allocator.h"
 #include "persistence/persistence_mode.h"
 

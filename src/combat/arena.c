@@ -6,7 +6,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "combat/arena.h"
@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "combat/arenadef.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 

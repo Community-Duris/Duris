@@ -13,8 +13,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <math.h>
@@ -27,10 +27,10 @@
 #include "mm.h"
 #include "item/objmisc.h"
 #include "item/random_equipment_config.h"
-#include "hardcore_config.h"
+#include "world/hardcore_config.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 /*
  * external variables
  */

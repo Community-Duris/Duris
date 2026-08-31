@@ -2,8 +2,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
 #include "item/objmisc.h"
@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 #include <stdio.h>
 #include <string.h>
 extern P_room world;

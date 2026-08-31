@@ -1,8 +1,8 @@
 #include "guild/artifact_guild_state.h"
 
 #include "guild/assocs.h"
-#include "db.h"
-#include "epic.h"
+#include "world/db.h"
+#include "world/epic.h"
 #include "economy/nexus_stones.h"
 #include "prototypes.h"
 #include "sql/sql.h"

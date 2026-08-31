@@ -12,8 +12,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "mob/studioproc.h"
 #include "utils.h"
@@ -21,14 +21,14 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "guild/assocs.h"
-#include "epic.h"
+#include "world/epic.h"
 #include "net/gmcp.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "net/listen.h"
-#include "map.h"
+#include "world/map.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "world_quest.h"
+#include "world/world_quest.h"
 
 /* external variables */
 extern P_char character_list;

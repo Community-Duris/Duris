@@ -26,9 +26,9 @@
 #endif
 
 #include "defines.h"
-#include "epic_bonus_state.h"
+#include "world/epic_bonus_state.h"
 #include "persistence/gameplay_read_state.h"
-#include "map.h"
+#include "world/map.h"
 #include "player/player_log.h"
 #include "net/ansi.h"
 

@@ -31,14 +31,14 @@
 #include "classes/necromancy.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_mode.h"
-#include "random.zone.h"
+#include "world/random.zone.h"
 #include "ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "item/storage_lockers.h"
 #include "item/trophy.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 #include <array>
 #include <limits>
 #include <new>

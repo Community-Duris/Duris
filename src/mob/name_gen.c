@@ -14,8 +14,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <stdio.h>
@@ -28,7 +28,7 @@
 #include "mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
-#include "weather.h"
+#include "world/weather.h"
 /****************************************************************************/
 /* Compile Time parameters                                                  */
 /****************************************************************************/

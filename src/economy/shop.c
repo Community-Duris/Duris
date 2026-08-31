@@ -8,7 +8,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
 #include "utility.h"
@@ -19,10 +19,10 @@
 #include <string.h>
 #include <glob.h>
 #include "combat/damage.h"
-#include "epic_bonus.h"
+#include "world/epic_bonus.h"
 #include "combat/justice.h"
 #include "classes/salchemist.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "sql/sql.h"
 #include "persistence/persistence_mode.h"
 #include "economy/shop_trade_runtime.h"

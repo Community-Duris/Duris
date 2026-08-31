@@ -1,6 +1,6 @@
 #include "economy/boon_reward_command.h"
 #include "persistence/critical_command_repository.h"
-#include "zone_touch_command.h"
+#include "world/zone_touch_command.h"
 
 #include <cassert>
 #include <cstdlib>

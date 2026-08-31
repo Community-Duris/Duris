@@ -4,7 +4,7 @@
 #include "flatfile/flatfile_store.h"
 #include "combat/combat_outcome_command.h"
 #include "economy/currency_command.h"
-#include "epic_command.h"
+#include "world/epic_command.h"
 
 #include <algorithm>
 #include <array>

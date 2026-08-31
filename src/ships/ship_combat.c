@@ -1,8 +1,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "epic.h"
-#include "graph.h"
+#include "world/epic.h"
+#include "world/graph.h"
 #include "item/objmisc.h"
 #include "ship_auto.h"
 #include "ship_npc.h"

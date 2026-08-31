@@ -3,7 +3,7 @@
 #include "redis/redis_key_registry.h"
 #include "redis/redis_namespace.h"
 
-#include "world_recovery_pipeline.h"
+#include "world/world_recovery_pipeline.h"
 
 #include <hiredis/hiredis.h>
 #include <openssl/crypto.h>

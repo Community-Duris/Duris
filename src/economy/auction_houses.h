@@ -7,7 +7,7 @@
 */
 
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include <string>
 #include <vector>
 #include "files.h"

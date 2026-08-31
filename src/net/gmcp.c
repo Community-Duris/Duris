@@ -7,7 +7,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include "net/gmcp.h"
 #include <cjson/cJSON.h>
@@ -18,9 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "handler.h"
+#include "world/handler.h"
 #include "json_utils.h"
-#include "map.h"
+#include "world/map.h"
 #include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

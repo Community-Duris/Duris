@@ -17,7 +17,7 @@ using namespace std;
 #include "utils.h"
 #include "item/objmisc.h"
 #include "sql/sql.h"
-#include "timers.h"
+#include "world/timers.h"
 #include "item/trophy.h"
 
 extern struct zone_data *zone_table;

@@ -12,7 +12,7 @@
 #include "structs.h"
 #include "guild/artifact_cache_codec.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utility.h"
 #include "utils.h"
 #include <dirent.h>
@@ -29,7 +29,7 @@
 #include "redis/redis_report_cache.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>

@@ -13,8 +13,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
@@ -27,7 +27,7 @@
 #include <sys/wait.h>
 #include "guild/assocs.h"
 #include "combat/ctf.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
 #include "mm.h"
 #include "item/objmisc.h"
@@ -37,7 +37,7 @@
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
-#include "vnum.room.h"
+#include "world/vnum.room.h"
 #include "persistence/locker_async.h"
 #include "item/item_movement_transaction.h"
 

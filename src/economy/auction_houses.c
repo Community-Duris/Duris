@@ -5,7 +5,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "economy/auction_houses.h"

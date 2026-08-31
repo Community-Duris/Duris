@@ -13,7 +13,7 @@
 #include <string.h>
 #include <strings.h>
 #include "guild/alliances.h"
-#include "epic.h"
+#include "world/epic.h"
 #include "files.h"
 #include "guild/guildhall.h"
 #include "economy/nexus_stones.h"
@@ -22,10 +22,10 @@
 #include "safe_format.h"
 
 #ifdef __NO_MYSQL__
-#include "buildings.h"
+#include "world/buildings.h"
 #include "flatfile/flatfile_association_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
-#include "outposts.h"
+#include "world/outposts.h"
 #include "persistence/persistence_mode.h"
 
 #include <algorithm>

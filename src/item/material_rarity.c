@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "db.h"
+#include "world/db.h"
 #include "defines.h"
 #include "item/material_rarity.h"
 #include "item/objmisc.h"

@@ -1,6 +1,6 @@
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include "combat/chaos_config.h"
 #include <ctype.h>

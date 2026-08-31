@@ -5,15 +5,15 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "combat/justice.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "graph.h"
+#include "world/graph.h"
 #include "mm.h"
 #include "magic/spells.h"
 

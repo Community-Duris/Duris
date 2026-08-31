@@ -1,15 +1,15 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
 #include "classes/epic_skills.h"
 #include <string.h>
 #include "combat/damage.h"
-#include "epic.h"
-#include "epic_transaction.h"
+#include "world/epic.h"
+#include "world/epic_transaction.h"
 #include "classes/skills.h"
 #include "magic/spells.h"
 

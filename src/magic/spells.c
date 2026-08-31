@@ -10,8 +10,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "magic/spells.h"
@@ -21,11 +21,11 @@
 #include "combat/damage.h"
 #include "classes/disguise.h"
 #include "combat/justice.h"
-#include "map.h"
+#include "world/map.h"
 #include "classes/necromancy.h"
-#include "specs.prototypes.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/specs.prototypes.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 
 /*
    external variables

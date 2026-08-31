@@ -1,6 +1,6 @@
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include <math.h>
 #include <stdio.h>
@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include "config.h"
 #include "combat/justice.h"
-#include "map.h"
+#include "world/map.h"
 #include "magic/spells.h"
 
 extern P_char char_in_room(int);

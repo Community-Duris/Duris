@@ -5,7 +5,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include "sql/sql_player.h"
 #include <errno.h>
@@ -29,7 +29,7 @@
 #include "flatfile/flatfile_identity_adapter.h"
 #include "flatfile/flatfile_recipe_repository.h"
 #include "flatfile/flatfile_spellbook_repository.h"
-#include "epic_bonus.h"
+#include "world/epic_bonus.h"
 #include "mm.h"
 #include "classes/necromancy.h"
 #include "ships/ships.h"

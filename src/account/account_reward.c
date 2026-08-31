@@ -8,7 +8,7 @@
 #include "account/account_reward_config.h"
 #include "account/account_reward_snapshot.h"
 #include "net/comm.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 #ifndef __NO_MYSQL__
 #include "sql/sql.h"
 #include "sql/sql_player.h"

@@ -10,26 +10,26 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "buildings.h"
+#include "world/buildings.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "guild/guildhall.h"
-#include "handler.h"
+#include "world/handler.h"
 #include "combat/justice.h"
-#include "map.h"
+#include "world/map.h"
 #include "economy/nexus_stones.h"
 #include "combat/range.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
-#include "vnum.room.h"
+#include "world/vnum.obj.h"
+#include "world/vnum.room.h"
 /*
    extern variables
  */

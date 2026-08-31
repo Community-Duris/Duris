@@ -8,7 +8,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "persistence/persistence_mode.h"
 #include "sql/sql_pool.h"
 #include "utils.h"

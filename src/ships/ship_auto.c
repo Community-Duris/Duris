@@ -6,18 +6,18 @@
 
 #include "prototypes.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "graph.h"
+#include "world/graph.h"
 #include "item/objmisc.h"
 // #include "magic/spells.h"
 #include "structs.h"
-#include "events.h"
+#include "world/events.h"
 #include "utils.h"
-#include "map.h"
+#include "world/map.h"
 #include "ship_auto.h"
 
 extern char buf[MAX_STRING_LENGTH];

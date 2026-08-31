@@ -14,7 +14,7 @@
 #include "utils.h"
 #include "classes/avengers.h"
 #include "magic/blispells.h"
-#include "epic.h"
+#include "world/epic.h"
 #include "classes/necromancy.h"
 #include "classes/paladins.h"
 #include "classes/reavers.h"

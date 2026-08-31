@@ -6,8 +6,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <ctype.h>
@@ -16,10 +16,10 @@
 #include <string.h>
 #include <sys/time.h>
 #include "combat/damage.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 
 /* external variables */
 

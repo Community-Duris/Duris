@@ -19,8 +19,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <ctype.h>
@@ -29,12 +29,12 @@
 #include "config.h"
 #include "combat/damage.h"
 #include "combat/guard.h"
-#include "map.h"
+#include "world/map.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "magic/spells.h"
-#include "weather.h"
+#include "world/weather.h"
 #include "safe_format.h"
 
 #define ADD_RACIAL_INNATE(innate, race, level) (racial_innates[(innate)][(race)] = (level))

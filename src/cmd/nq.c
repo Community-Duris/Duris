@@ -6,7 +6,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>

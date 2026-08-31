@@ -1,21 +1,21 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "mob/mobpatrol.h"
 #include <stdio.h>
 #include <string.h>
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
 #include "mm.h"
 #include "item/objmisc.h"
 #include "combat/range.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 extern Skill skills[];
 extern P_desc descriptor_list;

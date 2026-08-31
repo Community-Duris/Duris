@@ -1,8 +1,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <stdio.h>
@@ -10,13 +10,13 @@
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "classes/disguise.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
-#include "map.h"
-#include "specs.prototypes.h"
+#include "world/map.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 
 extern P_index obj_index;
 extern P_char character_list;

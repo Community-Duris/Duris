@@ -1,8 +1,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <math.h>
@@ -15,7 +15,7 @@
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "economy/tradeskill.h"
-#include "weather.h"
+#include "world/weather.h"
 
 struct forge_item forge_item_list[MAX_FORGE_ITEMS] = {
 	{

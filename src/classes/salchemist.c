@@ -13,8 +13,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "classes/salchemist.h"
@@ -23,16 +23,16 @@
 #include <string.h>
 #include "combat/damage.h"
 #include "defines.h"
-#include "epic.h"
-#include "epic_transaction.h"
+#include "world/epic.h"
+#include "world/epic_transaction.h"
 #include "combat/justice.h"
 #include "mm.h"
 #include "item/objmisc.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "vnum.obj.h"
-#include "weather.h"
+#include "world/vnum.obj.h"
+#include "world/weather.h"
 
 /*
  * external variables

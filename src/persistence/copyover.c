@@ -6,7 +6,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include "persistence/copyover.h"
 #include "sql/sql_player.h"

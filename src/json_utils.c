@@ -7,7 +7,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "utils.h"
 #include "json_utils.h"
 #include <ctype.h>
@@ -16,7 +16,7 @@
 #include <string.h>
 #include "guild/assocs.h"
 #include "defines.h"
-#include "handler.h"
+#include "world/handler.h"
 #include "ships/ships.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"

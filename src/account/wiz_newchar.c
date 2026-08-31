@@ -2,7 +2,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <ctype.h>
@@ -10,7 +10,7 @@
 #include <string.h>
 #include <time.h>
 #include "account/account.h"
-#include "epic.h"
+#include "world/epic.h"
 #include "classes/epic_skills.h"
 #include "files.h"
 #include "mm.h"

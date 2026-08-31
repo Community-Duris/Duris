@@ -6,8 +6,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include "specs/specs.gellz.h"
@@ -20,8 +20,8 @@
 #include <time.h>
 #include <vector>
 #include "combat/damage.h"
-#include "map.h"
-#include "specs.prototypes.h"
+#include "world/map.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 using namespace std;
 #include "ships.h"

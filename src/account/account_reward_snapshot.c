@@ -1,6 +1,6 @@
 #include "prototypes.h"
 #include "account/account_reward_snapshot.h"
-#include "db.h"
+#include "world/db.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "utility.h"

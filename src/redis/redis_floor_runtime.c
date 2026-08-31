@@ -5,8 +5,8 @@
 #include "redis/redis_key_registry.h"
 #include "redis/redis_namespace.h"
 #include "utils.h"
-#include "world_recovery_codec.h"
-#include "world_recovery_pipeline.h"
+#include "world/world_recovery_codec.h"
+#include "world/world_recovery_pipeline.h"
 
 #include <ctime>
 #include <new>

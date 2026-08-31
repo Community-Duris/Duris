@@ -8,18 +8,18 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "combat/damage.h"
-#include "graph.h"
-#include "map.h"
+#include "world/graph.h"
+#include "world/map.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 /* external variables */
 

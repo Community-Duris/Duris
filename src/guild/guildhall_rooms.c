@@ -7,15 +7,15 @@
  */
 
 #include "prototypes.h"
-#include "db.h"
+#include "world/db.h"
 #include "utility.h"
 #include "utils.h"
 #include <math.h>
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
 #include "guild/guildhall_db.h"
-#include "map.h"
-#include "specs.prototypes.h"
+#include "world/map.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 
 // external global variables

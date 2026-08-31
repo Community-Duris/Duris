@@ -1,8 +1,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "files.h"
 #include "utils.h"
 #include "classes/necromancy.h"
@@ -11,11 +11,11 @@
 #include <string.h>
 #include "combat/damage.h"
 #include "defines.h"
-#include "graph.h"
+#include "world/graph.h"
 #include "combat/justice.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 extern P_room world;
 extern P_index mob_index;

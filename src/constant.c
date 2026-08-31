@@ -16,7 +16,7 @@
 #include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 extern const char *god_list[];
 const char *god_list[] = { "Arih", "Fotenak", "Xanadin", "Tyrus", "\0" };

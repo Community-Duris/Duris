@@ -8,7 +8,7 @@
 
 #include "prototypes.h"
 #include "net/comm.h"
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
@@ -16,7 +16,7 @@
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
 #include "ships.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "item/storage_lockers.h"
 
 extern const struct race_names race_names_table[];

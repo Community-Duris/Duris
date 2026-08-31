@@ -13,20 +13,20 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <climits>
 #include <stdio.h>
 #include <string.h>
 #include "guild/assocs.h"
-#include "buildings.h"
-#include "graph.h"
+#include "world/buildings.h"
+#include "world/graph.h"
 #include "combat/grapple.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
-#include "map.h"
+#include "world/map.h"
 #include "mm.h"
 #include "classes/necromancy.h"
 #include "economy/nexus_stones.h"
@@ -34,9 +34,9 @@
 #include "classes/paladins.h"
 #include "profile.h"
 #include "classes/salchemist.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 
 /*
  * external variables

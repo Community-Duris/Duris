@@ -7,13 +7,13 @@
  */
 
 #include "prototypes.h"
-#include "db.h"
+#include "world/db.h"
 #include "utility.h"
 #include "utils.h"
 #include "guild/guildhall.h"
 #include "guild/assocs.h"
 #include "guild/guildhall_db.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 
 // global variables

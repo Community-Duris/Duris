@@ -1,13 +1,13 @@
-#include "db.h"
+#include "world/db.h"
 #include "cmd/interp.h"
 #include "utility.h"
 #include "cmd/testcmd.h"
 #include <cstring>
 #include <fstream>
 #include <math.h>
-#include "epic.h"
-#include "graph.h"
-#include "map.h"
+#include "world/epic.h"
+#include "world/graph.h"
+#include "world/map.h"
 #include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"

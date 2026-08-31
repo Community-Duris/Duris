@@ -9,13 +9,13 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "utils.h"
 #include <dlfcn.h>
 #include <stdio.h>
-#include "buildings.h"
-#include "outposts.h"
+#include "world/buildings.h"
+#include "world/outposts.h"
 #include "proc-libs.h"
 #include "specs/specs.barovia.h"
 #include "specs/specs.caertannad.h"
@@ -23,14 +23,14 @@
 #include "specs/specs.firep.h"
 #include "specs/specs.juiblex.h"
 #include "specs/specs.keleks.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "specs/specs.ravenloft.h"
 #include "specs/specs.snogres.h"
 #include "specs/specs.winterhaven.h"
 #include "specs/specs.zion.h"
 #include "economy/tradeskill.h"
-#include "vnum.mob.h"
-#include "vnum.obj.h"
+#include "world/vnum.mob.h"
+#include "world/vnum.obj.h"
 
 extern const int top_of_world;
 extern P_index mob_index;

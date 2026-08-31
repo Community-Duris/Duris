@@ -97,13 +97,13 @@ SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
 				 magic/magic.o \
-				 achievements.o \
+				 world/achievements.o \
 				 account/account.o \
 				 account/password_hash.o \
 				 account/account_reward.o \
 				 account/account_reward_snapshot.o \
 				 account/account_reward_config.o \
-				 hardcore_config.o \
+				 world/hardcore_config.o \
 				 account/creation_availability_config.o \
 				 combat/frag_cap_config.o \
 				 cmd/actcomm.o \
@@ -130,7 +130,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_donation_runtime.o \
 				 redis/redis_key_registry.o \
 				 redis/redis_namespace.o \
-				 world_recovery_codec.o \
+				 world/world_recovery_codec.o \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \
@@ -140,18 +140,18 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/boards.o \
 				 economy/boon.o \
 				 combat/breath_weapons.o \
-				 buildings.o \
+				 world/buildings.o \
          economy/cardgames.o \
          combat/chaos.o \
 				 combat/chaos_config.o \
 				 net/comm.o \
 				 persistence/copyover.o \
 				 common.o \
-				 condition.o \
+				 world/condition.o \
 				 constant.o \
 				 combat/ctf.o \
 				 combat/dam_mods.o \
-				 db.o \
+				 world/db.o \
 				 account/character_identity.o \
 				 debug.o \
 				 classes/disguise.o \
@@ -168,21 +168,21 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/dreadlord.o \
 				 net/editor.o \
 				 mob/encounters.o \
-				 epic.o \
-				 epic_bonus.o \
-				 epic_bonus_state.o \
+				 world/epic.o \
+				 world/epic_bonus.o \
+				 world/epic_bonus_state.o \
 				 persistence/deferred_save_policy.o \
 				 classes/epic_skills.o \
 				 classes/ethermancer.o \
-				 events.o \
-				 event_names.o \
-				 new_events.o \
-				 nevent_periodic.o \
+				 world/events.o \
+				 world/event_names.o \
+				 world/new_events.o \
+				 world/nevent_periodic.o \
 				 combat/fight.o \
 				 files.o \
 				 combat/fraglist.o \
 				 item/forge_items.o \
-				 graph.o \
+				 world/graph.o \
 				 guild/group.o \
 				 guild/guild.o \
 				 guild/guildhall.o \
@@ -191,24 +191,24 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/guildhall_procs.o \
 				 guild/guildhall_db.o \
 				 combat/grapple.o \
-				 handler.o \
-				 hardcore.o \
+				 world/handler.o \
+				 world/hardcore.o \
 				 classes/innates.o \
 				 cmd/interp.o \
 				 combat/justice.o \
 				 combat/kick.o \
 				 classes/language.o \
-				 limits.o \
+				 world/limits.o \
 				 item/linked_objects.o\
 				 net/listen.o\
 				 cmd/mail.o \
-				 map.o \
+				 world/map.o \
 				 net/mccp.o \
 				 classes/memorize.o \
 				 memory.o \
 				 mm.o \
 				 mob/mobact.o \
-				 world_quest.o \
+				 world/world_quest.o \
 				 combat/mobcombat.o \
 				 mob/mobconv.o \
 				 mob/mobpatrol.o \
@@ -221,7 +221,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/nq.o \
 				 item/objconv.o \
 				 item/objmisc.o \
-				 outposts.o \
+				 world/outposts.o \
 				 persistence/persistence_checkpoint.o \
 				 persistence/persistence_observability.o \
 				 persistence/persistence_mode.o \
@@ -280,8 +280,8 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_transfer_synthetic.o \
 				 item/item_uid_allocator.o \
 				 persistence/critical_outbox.o \
-				 epic_command.o \
-				 epic_transaction.o \
+				 world/epic_command.o \
+				 world/epic_transaction.o \
 				 economy/currency_command.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
@@ -299,9 +299,9 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/boon_shop_command.o \
 				 economy/boon_shop_transaction.o \
 				 economy/shop_trade_command.o \
-				 zone_touch_command.o \
-				 zone_touch_repository.o \
-				 zone_touch_transaction.o \
+				 world/zone_touch_command.o \
+				 world/zone_touch_repository.o \
+				 world/zone_touch_transaction.o \
 				 account/session_audit_command.o \
 				 account/session_audit_repository.o \
 				 account/session_audit_transaction.o \
@@ -311,7 +311,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_load_items.o \
 				 player/player_load_pets.o \
 				 persistence/gameplay_read_state.o \
-				 epic_task_catalog.o \
+				 world/epic_task_catalog.o \
 				 persistence/maintenance_scheduler.o \
 				 persistence/maintenance_repository.o \
 				 persistence/maintenance_snapshot.o \
@@ -334,8 +334,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
 				 player/player_save_pipeline.o \
-				 world_recovery_npc_items.o \
-				 world_recovery_pipeline.o \
+				 world/world_recovery_npc_items.o \
+				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
 				 player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
@@ -346,13 +346,13 @@ OBJS =  $(SHIP_OBJS) \
 				 item/plushit.o \
 				 net/poll.o \
 				 net/prompt.o \
-				 properties.o \
+				 world/properties.o \
 				 classes/psionics.o \
-				 quest.o \
+				 world/quest.o \
 				 random.o \
 				 item/randomeq.o \
-				 random.mob.o \
-				 random.zone.o \
+				 world/random.mob.o \
+				 world/random.zone.o \
 				 item/randobj.o \
 				 combat/range.o \
 				 classes/rogues.o \
@@ -413,23 +413,23 @@ OBJS =  $(SHIP_OBJS) \
 				 sql/sql.o \
 				 sql/sql_player.o \
 				 net/ssl.o \
-				 statistics.o \
+				 world/statistics.o \
 				 item/storage_lockers.o \
 				 persistence/locker_async.o \
-				 timers.o \
+				 world/timers.o \
 				 cmd/track.o \
 				 economy/tradeskill.o \
 				 combat/trap.o \
-				 transport.o \
+				 world/transport.o \
 				 item/trophy.o \
 				 net/unicode.o \
 				 utility.o \
-				 weather.o \
-				 ferry.o \
-				 ferryact.o \
+				 world/weather.o \
+				 world/ferry.o \
+				 world/ferryact.o \
 				 classes/paladins.o \
 				 combat/guard.o \
-				 makeexit.o \
+				 world/makeexit.o \
 				 combat/racewar_stat_mods.o \
 				 economy/nexus_stones.o \
 				 test_async.o \
@@ -441,14 +441,14 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.gellz.o \
 				 smoke.o \
 				 account/multiplay_whitelist.o \
-				 home.o \
+				 world/home.o \
 				 net/websocket.o \
 				 net/ws_handlers.o \
 				 json_utils.o \
 				 net/gmcp.o \
 				 net/ttype.o \
 				 account/wiz_newchar.o \
-				 zcheck.o
+				 world/zcheck.o
 
 
 # Name lists (no paths) for pfile-related objs

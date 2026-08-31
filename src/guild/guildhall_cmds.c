@@ -8,7 +8,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "db.h"
+#include "world/db.h"
 #include "utility.h"
 #include "utils.h"
 #include <math.h>
@@ -17,7 +17,7 @@
 #include "guild/guildhall.h"
 #include "guild/guildhall_db.h"
 #include "combat/justice.h"
-#include "map.h"
+#include "world/map.h"
 
 #define CAN_CONSTRUCT_CMD(ch)                                                  \
 	(GET_ASSOC(ch) && (IS_LEADER(GET_M_BITS(GET_A_BITS(ch), A_RK_MASK)) || \

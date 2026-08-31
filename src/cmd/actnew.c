@@ -10,8 +10,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
 #include <ctype.h>
@@ -29,7 +29,7 @@
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "vnum.obj.h"
+#include "world/vnum.obj.h"
 #include "economy/crafting.h"
 
 /*

@@ -10,14 +10,14 @@ using namespace std;
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "db.h"
-#include "events.h"
+#include "world/db.h"
+#include "world/events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "specs.prototypes.h"
+#include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "economy/tradeskill.h"
-#include "vnum.mob.h"
+#include "world/vnum.mob.h"
 
 extern P_room world;
 extern P_nevent get_scheduled(P_char ch, event_func func);
