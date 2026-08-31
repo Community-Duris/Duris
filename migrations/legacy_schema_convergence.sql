@@ -311,9 +311,156 @@ ALTER TABLE zone_touches
     MODIFY COLUMN touched_at TIMESTAMP NULL DEFAULT NULL AFTER boot_time;
 
 ALTER TABLE zones
+    MODIFY COLUMN id INT(11) NOT NULL AUTO_INCREMENT FIRST,
+    MODIFY COLUMN number INT(11) DEFAULT NULL AFTER id,
+    MODIFY COLUMN suggested_group_size INT(11) NOT NULL DEFAULT 1 AFTER trophy_zone,
+    MODIFY COLUMN epic_payout INT(11) NOT NULL DEFAULT 0 AFTER suggested_group_size,
+    MODIFY COLUMN difficulty INT(11) NOT NULL DEFAULT 0 AFTER epic_payout,
     MODIFY COLUMN reset_perc INT DEFAULT 0 AFTER alignment,
     MODIFY COLUMN stonecount INT NOT NULL DEFAULT 1 AFTER reset_perc,
     MODIFY COLUMN last_touch TIMESTAMP NULL DEFAULT NULL AFTER stonecount;
+
+-- MariaDB retains integer display widths that MySQL 8 omits. Normalize the
+-- handful of legacy widths whose declarations differ from the sealed baseline.
+ALTER TABLE epic_bonus
+    MODIFY COLUMN pid INT(11) NOT NULL FIRST,
+    MODIFY COLUMN type INT(11) NOT NULL DEFAULT 0 AFTER pid;
+ALTER TABLE log_entries
+    MODIFY COLUMN pid INT(11) NOT NULL DEFAULT 0 AFTER player_name,
+    MODIFY COLUMN room_vnum INT(11) NOT NULL DEFAULT 0 AFTER ip_address;
+ALTER TABLE outposts
+    MODIFY COLUMN meurtriere INT(11) NOT NULL DEFAULT 0 AFTER golems;
+ALTER TABLE ping
+    MODIFY COLUMN ID BIGINT(20) NOT NULL AUTO_INCREMENT FIRST;
+ALTER TABLE world_quest_accomplished
+    MODIFY COLUMN quest_target INT(11) NOT NULL DEFAULT 0 AFTER player_level,
+    MODIFY COLUMN reward_vnum INT(11) NOT NULL DEFAULT 0 AFTER quest_target;
+ALTER TABLE zone_touches
+    MODIFY COLUMN id INT(11) NOT NULL AUTO_INCREMENT FIRST;
+
+-- Immutable migration 0002 removes redundant item metadata before adding
+-- uniqueness constraints. Keep the complete imported source rows outside the
+-- runtime contract whenever that cleanup will collapse duplicates.
+DROP PROCEDURE IF EXISTS duris_archive_duplicate_item_metadata;
+DELIMITER //
+CREATE PROCEDURE duris_archive_duplicate_item_metadata()
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM player_item_extra_descr
+        GROUP BY item_id, keyword, LEFT(COALESCE(description, ''), 255)
+        HAVING COUNT(*) > 1
+        LIMIT 1
+    ) THEN
+        CREATE TABLE IF NOT EXISTS legacy_import_player_item_extra_descr
+            LIKE player_item_extra_descr;
+        INSERT IGNORE INTO legacy_import_player_item_extra_descr
+        SELECT * FROM player_item_extra_descr;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM player_pet_item_extra_descr
+        GROUP BY item_id, keyword, LEFT(COALESCE(description, ''), 255)
+        HAVING COUNT(*) > 1
+        LIMIT 1
+    ) THEN
+        CREATE TABLE IF NOT EXISTS legacy_import_player_pet_item_extra_descr
+            LIKE player_pet_item_extra_descr;
+        INSERT IGNORE INTO legacy_import_player_pet_item_extra_descr
+        SELECT * FROM player_pet_item_extra_descr;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM player_item_affects
+        GROUP BY item_id, location, modifier
+        HAVING COUNT(*) > 1
+        LIMIT 1
+    ) THEN
+        CREATE TABLE IF NOT EXISTS legacy_import_player_item_affects
+            LIKE player_item_affects;
+        INSERT IGNORE INTO legacy_import_player_item_affects
+        SELECT * FROM player_item_affects;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM player_pet_item_affects
+        GROUP BY item_id, location, modifier
+        HAVING COUNT(*) > 1
+        LIMIT 1
+    ) THEN
+        CREATE TABLE IF NOT EXISTS legacy_import_player_pet_item_affects
+            LIKE player_pet_item_affects;
+        INSERT IGNORE INTO legacy_import_player_pet_item_affects
+        SELECT * FROM player_pet_item_affects;
+    END IF;
+END//
+DELIMITER ;
+CALL duris_archive_duplicate_item_metadata();
+DROP PROCEDURE duris_archive_duplicate_item_metadata;
+
+-- Launcher-created server_reboots tables predate immutable migration 0004.
+-- Preserve the exact legacy rows outside the runtime contract before filling
+-- nullable/incompatible fields for the canonical projection.
+DROP PROCEDURE IF EXISTS duris_prepare_legacy_server_reboots;
+DELIMITER //
+CREATE PROCEDURE duris_prepare_legacy_server_reboots()
+BEGIN
+    DECLARE legacy_shape INT DEFAULT 0;
+
+    SELECT COUNT(*) INTO legacy_shape
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'server_reboots'
+      AND column_name = 'id';
+
+    IF legacy_shape = 1 THEN
+        CREATE TABLE IF NOT EXISTS legacy_import_server_reboots (
+            source_id BIGINT UNSIGNED NOT NULL,
+            boot_time BIGINT NOT NULL,
+            shutdown_time BIGINT DEFAULT NULL,
+            uptime_seconds BIGINT DEFAULT NULL,
+            shutdown_type VARCHAR(50) DEFAULT NULL,
+            initiated_by VARCHAR(255) DEFAULT NULL,
+            reason TEXT DEFAULT NULL,
+            created_at DATETIME DEFAULT NULL,
+            PRIMARY KEY (source_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+        INSERT IGNORE INTO legacy_import_server_reboots (
+            source_id,
+            boot_time,
+            shutdown_time,
+            uptime_seconds,
+            shutdown_type,
+            initiated_by,
+            reason,
+            created_at
+        )
+        SELECT
+            id,
+            boot_time,
+            shutdown_time,
+            uptime_seconds,
+            shutdown_type,
+            initiated_by,
+            reason,
+            created_at
+        FROM server_reboots;
+
+        UPDATE server_reboots
+        SET uptime_seconds = GREATEST(
+                COALESCE(uptime_seconds, COALESCE(shutdown_time, boot_time) - boot_time), 0),
+            shutdown_time = GREATEST(COALESCE(shutdown_time, boot_time), 0),
+            boot_time = GREATEST(boot_time, 0);
+    END IF;
+END//
+DELIMITER ;
+CALL duris_prepare_legacy_server_reboots();
+DROP PROCEDURE duris_prepare_legacy_server_reboots;
+DROP PROCEDURE IF EXISTS migrate_0004_server_reboots;
 
 DROP PROCEDURE duris_add_column_if_missing;
 DROP PROCEDURE duris_drop_column_if_present;

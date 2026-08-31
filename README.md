@@ -222,6 +222,33 @@ rm -f "$migration_env"
 unset migration_env
 ```
 
+To replace an allow-listed local/development database directly from a private
+MySQL dump, use the guarded importer. It refuses active database connections,
+creates an owner-only backup before mutation, translates MySQL 8's `0900`
+collation and stale view definers for MariaDB, runs both migration layers, verifies
+the runtime contract, and restores the backup automatically if any stage fails:
+
+```bash
+chmod 600 /path/to/legacy.sql
+python3 scripts/import_legacy_dump.py \
+  --env-file .env \
+  --replace \
+  /path/to/legacy.sql
+```
+
+The canonical game schema is still checked exactly. Non-runtime tables from a
+combined game/website dump may coexist and are preserved, but they are not treated
+as part of the game server's schema contract. When a launcher-era `server_reboots`
+table contains values the canonical lifecycle schema cannot represent, its complete
+raw rows remain in `legacy_import_server_reboots` before the runtime projection is
+normalized. Likewise, when required uniqueness cleanup collapses duplicate legacy
+item metadata, the complete source rows remain in corresponding
+`legacy_import_player_*` archive tables.
+
+For the complete source-to-destination map, safety model, audited reference-import
+results, and recovery runbook, see
+[Legacy Dump Import Guide](docs/persistence/LEGACY_DUMP_IMPORT.md).
+
 The legacy runner is re-runnable, records verified baseline adoption, and checks
 runtime schema compatibility before it succeeds. If any step fails, treat the
 clone as partially migrated and restore it from the known backup before retrying.

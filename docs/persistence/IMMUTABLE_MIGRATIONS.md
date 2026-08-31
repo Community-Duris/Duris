@@ -12,8 +12,10 @@ Duris has two deliberately separate histories:
 ## Honest baseline adoption
 
 The checked-in baseline identifies the exact 170-table authoritative contract by a
-sorted-name fingerprint. A fresh bootstrap and a fully completed legacy upgrade both
-must match that fingerprint exactly. Only then may an operator record either
+sealed positive table inventory and sorted-name fingerprint. A fresh bootstrap and a
+fully completed legacy upgrade must contain that complete inventory. Unrelated tables
+from a combined game/website dump may coexist without weakening the canonical check.
+Only then may an operator record either
 `fresh_bootstrap` or `verified_legacy_adoption` in `mud_schema_baselines`.
 
 The legacy runner creates the ledger and attempts verified adoption only after its last
@@ -33,9 +35,9 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-The current immutable head is `0004_server_reboots`. After it is applied, the
+The current immutable head is `0005_level_cap_singleton`. After it is applied, the
 runtime schema contains 173 tables and the history singleton records applied
-count 4 plus the exact history checksum. If a pre-b029 launcher already created
+count 5 plus the exact history checksum. If a pre-b029 launcher already created
 the legacy `server_reboots` shape, 0004 copies every lifecycle row into the
 canonical table and atomically swaps it into place; an interrupted conversion
 can be retried without making the legacy table unavailable or duplicating rows.

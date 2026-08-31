@@ -1494,9 +1494,7 @@ static bool sql_verify_boot_database(void)
 		return false;
 	}
 
-	char compatibility_probe[4096];
-	snprintf(
-		compatibility_probe, sizeof compatibility_probe,
+	MYSQL_RES *result = db_query(
 		"SELECT "
 		"(SELECT COUNT(*) FROM mud_schema_baselines WHERE baseline_id='%s' AND "
 		"LOWER(HEX(schema_fingerprint))='%s' AND manifest_version=%u AND runner_version=1),"
@@ -1506,16 +1504,15 @@ static bool sql_verify_boot_database(void)
 		"(SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND "
 		"applied_count=%u AND LOWER(HEX(history_checksum))='%s'),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
-		"AND table_type='BASE TABLE'),"
+		"AND table_type='BASE TABLE' AND table_name IN (%s)),"
 		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
 		"AND table_type='BASE TABLE' AND engine='InnoDB' AND "
-		"table_collation='utf8mb4_unicode_ci')",
+		"table_collation='utf8mb4_unicode_ci' AND table_name IN (%s))",
 		RUNTIME_BASELINE_ID, RUNTIME_BASELINE_FINGERPRINT,
 		RUNTIME_COMPATIBILITY_MANIFEST_VERSION, RUNTIME_MIGRATION_HEAD_ID,
 		RUNTIME_MIGRATION_HEAD_SEQUENCE, RUNTIME_MIGRATION_APPLY_CHECKSUM,
 		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
-		RUNTIME_MIGRATION_HISTORY_CHECKSUM);
-	MYSQL_RES *result = db_query("%s", compatibility_probe);
+		RUNTIME_MIGRATION_HISTORY_CHECKSUM, RUNTIME_TABLE_SQL_LIST, RUNTIME_TABLE_SQL_LIST);
 	if (!result)
 	{
 		logit(LOG_STATUS, "FATAL: COMPAT-E001 compatibility metadata query failed");
@@ -1977,10 +1974,13 @@ static bool sql_verify_boot_database(void)
 
 static bool sql_verify_metadata_fingerprint(void)
 {
-	const char *query =
+	std::string query =
 		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
 		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
-		"table_type='BASE TABLE' UNION ALL SELECT CONCAT('C',CHAR(9),c.table_name,CHAR(9),"
+		"table_type='BASE TABLE' AND table_name IN (";
+	query += RUNTIME_TABLE_SQL_LIST;
+	query +=
+		") UNION ALL SELECT CONCAT('C',CHAR(9),c.table_name,CHAR(9),"
 		"c.column_name,CHAR(9),c.ordinal_position,CHAR(9),c.data_type,CHAR(9),c.is_nullable,"
 		"CHAR(9),COALESCE(c.character_maximum_length,0),CHAR(9),"
 		"COALESCE(c.numeric_precision,0),CHAR(9),COALESCE(c.numeric_scale,0),CHAR(9),"
@@ -1992,18 +1992,26 @@ static bool sql_verify_metadata_fingerprint(void)
 		"IF(LOWER(c.extra) LIKE '%generated%','G',''))) FROM information_schema.columns c "
 		"JOIN information_schema.tables t ON t.table_schema=c.table_schema AND "
 		"t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE "
-		"c.table_schema=DATABASE() "
+		"c.table_schema=DATABASE() AND c.table_name IN (";
+	query += RUNTIME_TABLE_SQL_LIST;
+	query +=
+		") "
 		"UNION ALL SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),"
 		"non_unique,CHAR(9),seq_in_index,CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0)) "
-		"FROM information_schema.statistics WHERE table_schema=DATABASE() UNION ALL SELECT "
+		"FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name IN (";
+	query += RUNTIME_TABLE_SQL_LIST;
+	query +=
+		") UNION ALL SELECT "
 		"CONCAT('F',CHAR(9),k.table_name,CHAR(9),k.constraint_name,CHAR(9),k.column_name,"
 		"CHAR(9),k.referenced_table_name,CHAR(9),k.referenced_column_name,CHAR(9),"
 		"k.ordinal_position,CHAR(9),r.update_rule,CHAR(9),r.delete_rule) FROM "
 		"information_schema.key_column_usage k JOIN information_schema.referential_constraints "
 		"r ON r.constraint_schema=k.constraint_schema AND "
 		"r.constraint_name=k.constraint_name WHERE k.constraint_schema=DATABASE() AND "
-		"k.referenced_table_name IS NOT NULL ORDER BY 1";
-	if (mysql_real_query(DB, query, strlen(query)))
+		"k.table_name IN (";
+	query += RUNTIME_TABLE_SQL_LIST;
+	query += ") AND k.referenced_table_name IS NOT NULL ORDER BY 1";
+	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;
 	MYSQL_RES *result = mysql_store_result(DB);
 	if (!result)

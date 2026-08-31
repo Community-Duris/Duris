@@ -79,6 +79,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
 
     def test_schema_fingerprint_and_redacted_reason_ids_are_enforced(self):
         self.assertIn("sql_verify_metadata_fingerprint", self.sql)
+        self.assertIn("RUNTIME_TABLE_SQL_LIST", self.sql)
+        self.assertIn("table_name IN (%s)", self.sql)
         self.assertIn("table_type='BASE TABLE'", self.sql)
         self.assertIn("JOIN information_schema.tables t", self.sql)
         self.assertIn("column_type LIKE '%unsigned'", self.sql)

@@ -1364,6 +1364,26 @@ DEALLOCATE PREPARE stmt;
 UPDATE player_data SET active = 1 WHERE active = 0 OR active IS NULL;"
 
 run_sql "add unique char name constraints" "
+SET @duplicate_characters = (
+    SELECT COUNT(*)
+    FROM account_characters ac1
+    INNER JOIN account_characters ac2
+      ON ac1.char_name = ac2.char_name
+     AND ac1.pid > ac2.pid
+);
+SET @sql = IF(@duplicate_characters > 0,
+    'CREATE TABLE IF NOT EXISTS legacy_import_account_characters LIKE account_characters',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+SET @sql = IF(@duplicate_characters > 0,
+    'INSERT IGNORE INTO legacy_import_account_characters SELECT ac1.* FROM account_characters ac1 INNER JOIN account_characters ac2 ON ac1.char_name = ac2.char_name AND ac1.pid > ac2.pid',
+    'SELECT 1 INTO @dummy');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 DELETE ac1 FROM account_characters ac1
 INNER JOIN account_characters ac2
 WHERE ac1.char_name = ac2.char_name
@@ -2045,7 +2065,7 @@ CREATE TABLE IF NOT EXISTS account_banks (
 );"
 
 run_sql "migrate player banks to account banks" "
-REPLACE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
+INSERT IGNORE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
 SELECT
     ac.account_name,
     ac.racewar,
