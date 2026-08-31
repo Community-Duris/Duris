@@ -177,7 +177,6 @@ ordering_checks = [
     ("ship_slots", "ships", "ship"),
     ("guild_members", "guilds", "guild"),
     ("guild_ranks", "guilds", "guild"),
-    ("siege_item_affects", "siege_items", "siege"),
     ("shopkeeper_item_affects", "shopkeepers", "shopkeeper"),
     ("shopkeeper_items", "shopkeepers", "shopkeeper"),
     ("saved_item_affects", "saved_items", "saved item"),

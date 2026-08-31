@@ -331,7 +331,6 @@ declare -A HELP_FILES=(
     ["help.1"]="help commands"
     ["help.2"]="help advanced"
     ["helpships"]="ships"
-    ["helpkingdoms"]="kingdoms"
     ["faq"]="faq"
     ["rules"]="rules"
     ["credits"]="credits"

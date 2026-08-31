@@ -514,8 +514,6 @@ achievements
 ~
 ack
 ~
-add
-~
 addict
 ~
 advance
@@ -804,8 +802,6 @@ delete
 demote
 ~
 depiss
-~
-deploy
 ~
 deposit
 ~

@@ -4673,8 +4673,8 @@ void show_toggles(P_char ch)
 		 "&+r     Old SmartP  :&+g %-3s    &+y|&N"
 		 "&+r     Show Titles :&+g %-3s    &+y|&N\r\n"
 		 "&+r   Battle Alert:&+g %-3s    &+y|&N"
-		 "&+r     Kingdom View:&+g %-3s    &+y|&N"
-		 "&+r     Ship Map    :&+g %-3s    &+y|&N\r\n"
+		 "&+r     Ship Map    :&+g %-3s    &+y|&N"
+		 "&+r                 :&+g        &+y|&N\r\n"
 		 "&+r   Take        :&+g %-3s    &+y|&N"
 		 "&+r     Terse Battle:&+g %-3s    &+y|&N"
 		 "&+r     QuickChant  :&+g %-3s    &+y|&N\r\n"
@@ -4709,8 +4709,7 @@ void show_toggles(P_char ch)
 		 ONOFF(PLR_FLAGGED(ch, PLR_SNOTIFY)), ONOFF(PLR_FLAGGED(ch, PLR_WHO)), Gbuf3,
 		 term_name(send_ch), ONOFF(PLR_FLAGGED(ch, PLR_MAP)),
 		 ONOFF(PLR_FLAGGED(ch, PLR_OLDSMARTP)), ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTITLE)),
-		 ONOFF(!PLR2_FLAGGED(ch, PLR2_BATTLEALERT)),
-		 ONOFF(PLR2_FLAGGED(ch, PLR2_KINGDOMVIEW)), ONOFF(PLR2_FLAGGED(ch, PLR2_SHIPMAP)),
+		 ONOFF(!PLR2_FLAGGED(ch, PLR2_BATTLEALERT)), ONOFF(PLR2_FLAGGED(ch, PLR2_SHIPMAP)),
 		 ONOFF(!PLR2_FLAGGED(ch, PLR2_NOTAKE)), ONOFF(PLR2_FLAGGED(ch, PLR2_TERSE)),
 		 ONOFF(PLR2_FLAGGED(ch, PLR2_QUICKCHANT)), ONOFF(PLR2_FLAGGED(ch, PLR2_PROJECT)),
 		 ONOFF(PLR_FLAGGED(ch, PLR_AFK)), ONOFF(PLR2_FLAGGED(ch, PLR2_NCHAT)),
@@ -4786,41 +4785,40 @@ static const char *toggles_list[] = { "?", // 0
 				      "no locate",
 				      "titles", // 30
 				      "battle",
-				      "kingdom",
 				      "shipmap",
 				      "take",
-				      "terse", // 35
-				      "quickchant",
+				      "terse",
+				      "quickchant", // 35
 				      "rwc",
 				      "project",
 				      "zzxyzz",
-				      "afk", // 40
-				      "nchat",
+				      "afk",
+				      "nchat", // 40
 				      "damage",
 				      "spec1",
 				      "spec2",
-				      "spec3", // 45
-				      "spec4",
+				      "spec3",
+				      "spec4", // 45
 				      "spec_timer",
 				      "heal",
 				      "group needed",
-				      "experience", // 50
-				      "showspec",
+				      "experience",
+				      "showspec", // 50
 				      "hint",
 				      "webinfo",
 				      "acc",
-				      "quest", // 55
-				      "boon",
+				      "quest",
+				      "boon", // 55
 				      "newbie",
 				      "beep",
 				      "underline",
-				      "surname", // 60
-				      "no level",
+				      "surname",
+				      "no level", // 60
 				      "epic",
 				      "petdamage",
 				      "guildname",
-				      "gmcp", // 65
-				      "jchat", // 66
+				      "gmcp",
+				      "jchat", // 65
 				      "\n" };
 
 static const char *tog_messages[][2] = {
@@ -4869,8 +4867,6 @@ static const char *tog_messages[][2] = {
 	{ "You will now see player titles.\r\n", "You will no longer see player titles.\r\n" },
 	{ "You turn your battle alert status off.\r\n",
 	  "You turn your battle alert status on.\r\n" },
-	{ "You will no longer see kingdom areas on the map.\r\n",
-	  "You will now see kingdom areas on the map.\r\n" },
 	{ "You will no longer see maps as ships move.\r\n",
 	  "You will now see maps as ships move.\r\n" },
 	{ "You will now accept items from people.\r\n",
@@ -5323,33 +5319,30 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		}
 		break;
 	case 32:
-		result = PLR2_TOG(PLR2_KINGDOMVIEW);
-		break;
-	case 33:
 		result = PLR2_TOG(PLR2_SHIPMAP);
 		break;
-	case 34:
+	case 33:
 		result = PLR2_TOG(PLR2_NOTAKE);
 		break;
-	case 35:
+	case 34:
 		result = PLR2_TOG(PLR2_TERSE);
 		break;
-	case 36:
+	case 35:
 		result = PLR2_TOG(PLR2_QUICKCHANT);
 		break;
-	case 37:
+	case 36:
 		result = PLR2_TOG(PLR2_RWC);
 		break;
-	case 38:
+	case 37:
 		result = PLR2_TOG(PLR2_PROJECT);
 		break;
-	case 39:
+	case 38:
 		result = PLR2_TOG(PLR2_NPC_HOG);
 		break;
-	case 40:
+	case 39:
 		result = TOGGLE_BIT(ch->specials.act, PLR_AFK) & (PLR_AFK);
 		break;
-	case 41:
+	case 40:
 		/* if((GET_LEVEL(ch) > 31) &&
 			    (GET_LEVEL(ch) < 57) &&
 			    !IS_SET(PLR2_FLAGS(ch), PLR2_NCHAT) &&
@@ -5362,13 +5355,13 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 			 }*/
 		result = PLR2_TOG(PLR2_NCHAT);
 		break;
-	case 42:
+	case 41:
 		result = PLR2_TOG(PLR2_DAMAGE);
 		break;
-	case 48:
+	case 47:
 		result = PLR2_TOG(PLR2_HEAL);
 		break;
-	case 49:
+	case 48:
 		if ((GET_LEVEL(ch) > 50) && !IS_SET(PLR2_FLAGS(ch), PLR2_LGROUP))
 		{
 			send_to_char("You don't need to find a group.\r\n", ch);
@@ -5376,44 +5369,44 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		}
 		result = PLR2_TOG(PLR2_LGROUP);
 		break;
-	case 50:
+	case 49:
 		result = PLR2_TOG(PLR2_EXP);
 		break;
-	case 51:
+	case 50:
 		result = PLR2_TOG(PLR2_SPEC);
 		break;
-	case 52:
+	case 51:
 		result = PLR2_TOG(PLR2_HINT_CHANNEL);
 		break;
-	case 53:
+	case 52:
 		result = PLR2_TOG(PLR2_WEBINFO);
 		sql_webinfo_toggle(ch);
 		break;
-	case 54:
+	case 53:
 		result = PLR2_TOG(PLR2_ACC);
 		break;
-	case 55:
+	case 54:
 		result = PLR2_TOG(PLR2_SHOW_QUEST);
 		break;
-	case 56:
+	case 55:
 		result = PLR2_TOG(PLR2_BOON);
 		break;
-	case 57:
+	case 56:
 		result = PLR2_TOG(PLR2_NEWBIEEQ);
 		break;
-	case 58:
+	case 57:
 		result = PLR3_TOG(PLR3_NOBEEP);
 		break;
-	case 59:
+	case 58:
 		result = PLR3_TOG(PLR3_UNDERLINE);
 		break;
-	case 60:
+	case 59:
 		result = PLR3_TOG(PLR3_SURNAMES);
 		break;
-	case 61:
+	case 60:
 		result = PLR3_TOG(PLR3_NOLEVEL);
 		break;
-	case 62:
+	case 61:
 		if (IS_TRUSTED(ch))
 		{
 			result = PLR3_TOG(PLR3_EPICWATCH);
@@ -5424,16 +5417,16 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 			return;
 		}
 		break;
-	case 63:
+	case 62:
 		result = PLR3_TOG(PLR3_PET_DAMAGE);
 		break;
-	case 64:
+	case 63:
 		result = PLR3_TOG(PLR3_GUILDNAME);
 		break;
-	case 65: /* gmcp */
+	case 64: /* gmcp */
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_NOGMCP, arg, 1);
 		break;
-	case 66: // jchat
+	case 65: // jchat
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);
 		break;
 	default:

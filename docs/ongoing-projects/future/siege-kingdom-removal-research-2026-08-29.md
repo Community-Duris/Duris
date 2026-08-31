@@ -3,8 +3,8 @@
 Date: 2026-08-31
 Branch: `siege-kingdom-removal`
 Research baseline: `63cb1ab9`
-Status: Implementation in progress; siege acquisition and dedicated world wiring removed;
-production and retained-backup custody preflight still blocks object-prototype deletion
+Status: Ungated implementation complete; production and retained-backup custody preflight
+still blocks object-prototype deletion and the gated Release B cleanup
 
 ## Executive conclusion
 
@@ -61,9 +61,9 @@ Completed on branch `siege-kingdom-removal`:
 - regenerated the ignored combined world outputs successfully;
 - verified hometown racewar safety and the zcheck source contract after regeneration.
 
-The comprehensive removal contract has been drafted and baseline-verified locally. It is
-being kept out of the checkpoint commit while its expected failures describe work still in
-progress; it must be committed once the runtime removal is complete enough to keep CI green.
+At this checkpoint, the comprehensive removal contract was drafted and baseline-verified
+locally but kept out of the commit while its expected failures described work still in
+progress. Checkpoint 4 includes the now-green contract with explicit gated-prototype custody.
 
 The eight dedicated object prototypes remain unchanged. Their removal is still blocked by
 the required production and retained-backup custody audit; the local zero-row evidence is
@@ -110,6 +110,35 @@ pass. This checkpoint does not intentionally change supported-build behavior: th
 state could only become active through the now-deleted optional siege implementation.
 Kingdom UI/help and legacy-table lifecycle residue remain for the next checkpoint; the
 historical schema inputs and gated object prototypes remain unchanged.
+
+### Checkpoint 4 - Kingdom surfaces and lifecycle retirement (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed `toggle kingdom` from status rendering, the toggle name/message arrays, and
+  dispatch, then shifted every later dispatch index together;
+- reserved persisted `act2` `BIT_4` as `PLR2_RETIRED_KINGDOMVIEW` without clearing or
+  reusing existing player data;
+- changed the administrator association heading to advertise standard guilds only;
+- deleted the kingdom proposal help source and its SQL/flat-file import mappings;
+- removed the ADD help page, Kingdom View from TOGGLE help, and the retired `add` and
+  `deploy` command-attribute entries;
+- removed the three siege item tables from runtime pwipe preflight and deletion, leaving
+  the shopkeeper graph and logging independent;
+- reclassified the three siege item tables from season deletion to service-lifetime
+  retention and identified all five retired feature tables as compatibility schema,
+  without changing their definitions or historical migration inputs;
+- removed the obsolete siege dependency-order assertion.
+
+A focused toggle-dispatch contract now verifies every post-removal name/index/flag mapping
+and the parallel message-array length. The comprehensive removal contract is also included;
+for Release A it requires all gated prototypes to remain present as an atomic compatibility
+set, and must be flipped to absence only when the custody gate permits Release B.
+
+The full warning-as-error server build and link pass, as do the removal, toggle dispatch,
+flat-file help catalog/runtime, documentation, command-attribute coverage, data-lifecycle,
+and season-reset regressions. Historical schema inputs, runtime fingerprints, and the gated
+object prototypes remain unchanged.
 
 ## Scope and terminology
 

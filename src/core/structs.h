@@ -866,7 +866,7 @@ struct room_data
 #define PLR2_NOLOCATE BIT_1 /* noping */
 #define PLR2_NOTITLE BIT_2 /* don't show player titles */
 #define PLR2_BATTLEALERT BIT_3 /* battle highlighting */
-#define PLR2_KINGDOMVIEW BIT_4 /* show kingdom land on map */
+#define PLR2_RETIRED_KINGDOMVIEW BIT_4 /* reserved persisted bit; do not reuse */
 #define PLR2_SHIPMAP BIT_5 /* show maps while ships move*/
 #define PLR2_NOTAKE BIT_6 /* do not accept items from players */
 #define PLR2_TERSE BIT_7 /* terse battle mode (anti-spam) */

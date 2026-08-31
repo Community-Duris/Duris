@@ -4157,9 +4157,6 @@ bool sql_verify_pwipe_manifest(void)
 					      "shopkeeper_item_extra_descr",
 					      "shopkeeper_items",
 					      "shopkeepers",
-					      "siege_item_affects",
-					      "siege_item_extra_descr",
-					      "siege_items",
 					      "statistics",
 					      "timers",
 					      "world_quest_accomplished",
@@ -4874,12 +4871,10 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* -- Season-reset manifest: siege and shopkeeper graphs -- */
-		logit(LOG_DEBUG, "sql_pwipe: Clearing siege and shopkeeper data... .. .");
-		send_to_all("Clearing siege and shopkeeper data... .. .");
-		if (qry("DELETE FROM siege_item_affects") &&
-		    qry("DELETE FROM siege_item_extra_descr") && qry("DELETE FROM siege_items") &&
-		    qry("DELETE FROM shopkeeper_affects") &&
+		/* -- Season-reset manifest: shopkeeper graph -- */
+		logit(LOG_DEBUG, "sql_pwipe: Clearing shopkeeper data... .. .");
+		send_to_all("Clearing shopkeeper data... .. .");
+		if (qry("DELETE FROM shopkeeper_affects") &&
 		    qry("DELETE FROM shopkeeper_item_affects") &&
 		    qry("DELETE FROM shopkeeper_item_extra_descr") &&
 		    qry("DELETE FROM shopkeeper_items") && qry("DELETE FROM shopkeepers"))
