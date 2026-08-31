@@ -19,10 +19,10 @@
 #include <string.h>
 #include "ctf.h"
 #include "damage.h"
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "justice.h"
 #include "map.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "specs.prototypes.h"
 #include "vnum.obj.h"
 #include "weather.h"

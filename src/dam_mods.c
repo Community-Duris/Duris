@@ -8,8 +8,8 @@
 #include "dam_mods.h"
 #include "hardcore_config.h"
 #include "justice.h"
-#include "necromancy.h"
-#include "paladins.h"
+#include "classes/necromancy.h"
+#include "classes/paladins.h"
 #include "spells.h"
 #include "utils.h"
 

@@ -18,7 +18,7 @@
 #include "defines.h"
 #include "handler.h"
 #include "ships/ships.h"
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "spells.h"
 
 /* externs */

@@ -5,7 +5,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "achievements.h"
 #include "damage.h"
 #include "guard.h"

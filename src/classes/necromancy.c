@@ -5,7 +5,7 @@
 #include "events.h"
 #include "files.h"
 #include "utils.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>

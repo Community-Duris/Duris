@@ -34,7 +34,7 @@
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
 #include "world_recovery_pipeline.h"

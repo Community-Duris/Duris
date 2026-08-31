@@ -12,13 +12,13 @@
 #ifndef _DE_
 #include "structs.h"
 #include "utils.h"
-#include "avengers.h"
+#include "classes/avengers.h"
 #include "blispells.h"
 #include "epic.h"
-#include "necromancy.h"
-#include "paladins.h"
-#include "reavers.h"
-#include "rogues.h"
+#include "classes/necromancy.h"
+#include "classes/paladins.h"
+#include "classes/reavers.h"
+#include "classes/rogues.h"
 
 int numSkills;
 #else

@@ -51,7 +51,7 @@
 #include "guildhall.h"
 #include "justice.h"
 #include "objmisc.h"
-#include "paladins.h"
+#include "classes/paladins.h"
 #include "siege.h"
 #include "spells.h"
 

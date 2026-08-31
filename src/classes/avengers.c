@@ -5,7 +5,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "avengers.h"
+#include "classes/avengers.h"
 #include <string.h>
 #include "damage.h"
 #include "objmisc.h"

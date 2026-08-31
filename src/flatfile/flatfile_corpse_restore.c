@@ -5,7 +5,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "item_ownership_runtime.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "player/player_load_items.h"
 #include "prototypes.h"
 #include "structs.h"

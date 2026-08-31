@@ -11,7 +11,7 @@ using namespace std;
 #include "utils.h"
 #include "epic.h"
 #include "epic_transaction.h"
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "spells.h"
 #include "sql/sql.h"
 

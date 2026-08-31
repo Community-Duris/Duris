@@ -20,7 +20,7 @@
 #include "buildings.h"
 #include "ctf.h"
 #include "damage.h"
-#include "epic_skills.h"
+#include "classes/epic_skills.h"
 #include "graph.h"
 #include "grapple.h"
 #include "guard.h"

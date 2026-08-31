@@ -4,7 +4,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "paladins.h"
+#include "classes/paladins.h"
 #include <stdio.h>
 #include <string.h>
 #include "damage.h"

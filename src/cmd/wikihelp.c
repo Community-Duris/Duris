@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "sql/sql.h"
 #include "string.h"
 using namespace std;

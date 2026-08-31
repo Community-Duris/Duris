@@ -8,7 +8,7 @@
 #include <string.h>
 #include "damage.h"
 #include "objmisc.h"
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "spells.h"
 
 extern P_index mob_index; /* for IS_SHOPKEEPER() macro */

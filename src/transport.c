@@ -16,7 +16,7 @@
 #include "assocs.h"
 #include "ctf.h"
 #include "graph.h"
-#include "reavers.h"
+#include "classes/reavers.h"
 #include "spells.h"
 
 extern P_char character_list;

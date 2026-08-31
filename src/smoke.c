@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ctf.h" // Can remove?
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "objmisc.h"
 #include "spells.h"
 #include "sql/sql.h"

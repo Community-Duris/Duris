@@ -26,7 +26,7 @@ using namespace std;
 #include "epic_bonus.h"
 #include "epic_task_catalog.h"
 #include "epic_transaction.h"
-#include "epic_skills.h"
+#include "classes/epic_skills.h"
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "random.zone.h"

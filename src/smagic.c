@@ -27,7 +27,7 @@
 #include "achievements.h"
 #include "ctf.h"
 #include "damage.h"
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "graph.h"
 #include "justice.h"
 #include "specs.prototypes.h"

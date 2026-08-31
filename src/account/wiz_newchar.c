@@ -11,7 +11,7 @@
 #include <time.h>
 #include "account/account.h"
 #include "epic.h"
-#include "epic_skills.h"
+#include "classes/epic_skills.h"
 #include "files.h"
 #include "mm.h"
 #include "spells.h"

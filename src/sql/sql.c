@@ -55,7 +55,7 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "redis/redis_maintenance.h"
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "spells.h"
 #include "sql/sql_player.h"
 #include "frag_cap_config.h"

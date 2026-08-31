@@ -19,7 +19,7 @@
 #include <sys/time.h>
 #include "damage.h"
 #include "map.h"
-#include "reavers.h"
+#include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "weather.h"

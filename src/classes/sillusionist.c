@@ -25,7 +25,7 @@
 #include "arenadef.h"
 #include "ctf.h"
 #include "damage.h"
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"

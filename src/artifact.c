@@ -24,7 +24,7 @@
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "mm.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "persistence/persistence_mode.h"
 #include "redis/redis_report_cache.h"
 #include "spells.h"

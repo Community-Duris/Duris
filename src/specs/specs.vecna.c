@@ -21,7 +21,7 @@
 #include <time.h>
 #include "assocs.h"
 #include "damage.h"
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "graph.h"
 #include "grapple.h"
 #include "justice.h"

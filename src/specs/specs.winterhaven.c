@@ -21,7 +21,7 @@
 #include "justice.h"
 #include "objmisc.h"
 #include "range.h"
-#include "reavers.h"
+#include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "specs/specs.zion.h"
 #include "spells.h"

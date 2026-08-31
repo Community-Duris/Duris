@@ -31,7 +31,7 @@
 #include "flatfile/flatfile_spellbook_repository.h"
 #include "epic_bonus.h"
 #include "mm.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "ships/ships.h"
 #include "redis/redis_ship_legacy.h"
 #include "siege.h"

@@ -19,7 +19,7 @@
 #include "guild.h"
 #include "hardcore_config.h"
 #include <stdio.h>
-#include "epic_skills.h"
+#include "classes/epic_skills.h"
 #include "spells.h"
 #include "string.h"
 /*

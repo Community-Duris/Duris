@@ -1,7 +1,7 @@
 #include "item_movement_transaction.h"
 
 #include "item_ownership_runtime.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"

@@ -5,12 +5,12 @@
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
-#include "epic_skills.h"
+#include "classes/epic_skills.h"
 #include <string.h>
 #include "damage.h"
 #include "epic.h"
 #include "epic_transaction.h"
-#include "skills.h"
+#include "classes/skills.h"
 #include "spells.h"
 
 extern P_index mob_index;

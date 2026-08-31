@@ -5,7 +5,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "reavers.h"
+#include "classes/reavers.h"
 #include <string.h>
 #include "damage.h"
 #include "objmisc.h"

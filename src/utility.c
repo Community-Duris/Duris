@@ -47,7 +47,7 @@ using namespace std;
 #include "persistence/persistence_queue.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/latency_trace.h"
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "spells.h"
 #include "sql/sql.h"
 #include "sql/sql_pool.h"

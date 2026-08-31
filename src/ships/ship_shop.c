@@ -14,7 +14,7 @@
 #include "defines.h"
 #include "epic.h"
 #include "epic_bonus.h"
-#include "epic_skills.h"
+#include "classes/epic_skills.h"
 #include "epic_transaction.h"
 #include "map.h"
 #include "nexus_stones.h"

@@ -26,7 +26,7 @@
 #include "net/gmcp.h"
 #include "justice.h"
 #include "map.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "nexus_stones.h"
 #include "range.h"
 #include "specs.prototypes.h"

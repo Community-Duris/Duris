@@ -17,7 +17,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "salchemist.h"
+#include "classes/salchemist.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>

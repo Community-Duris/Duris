@@ -134,7 +134,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_donation_worker.o \
 				 assocs.o \
 				 auction_houses.o \
-				 bard.o \
+				 classes/bard.o \
 				 beh_magic.o \
          blispells.o \
 				 cmd/boards.o \
@@ -154,8 +154,8 @@ OBJS =  $(SHIP_OBJS) \
 				 db.o \
 				 account/character_identity.o \
 				 debug.o \
-				 disguise.o \
-				 drannak.o \
+				 classes/disguise.o \
+				 classes/drannak.o \
 				 enhance.o \
 				 crafting.o \
 				 mining.o \
@@ -165,15 +165,15 @@ OBJS =  $(SHIP_OBJS) \
 				 safe_io.o \
 				 salvage.o \
 				 material_rarity.o \
-				 dreadlord.o \
+				 classes/dreadlord.o \
 				 net/editor.o \
 				 encounters.o \
 				 epic.o \
 				 epic_bonus.o \
 				 epic_bonus_state.o \
 				 persistence/deferred_save_policy.o \
-				 epic_skills.o \
-				 ethermancer.o \
+				 classes/epic_skills.o \
+				 classes/ethermancer.o \
 				 events.o \
 				 event_names.o \
 				 new_events.o \
@@ -193,18 +193,18 @@ OBJS =  $(SHIP_OBJS) \
 				 grapple.o \
 				 handler.o \
 				 hardcore.o \
-				 innates.o \
+				 classes/innates.o \
 				 cmd/interp.o \
 				 justice.o \
 				 kick.o \
-				 language.o \
+				 classes/language.o \
 				 limits.o \
 				 linked_objects.o\
 				 net/listen.o\
 				 cmd/mail.o \
 				 map.o \
 				 net/mccp.o \
-				 memorize.o \
+				 classes/memorize.o \
 				 memory.o \
 				 mm.o \
 				 mobact.o \
@@ -213,11 +213,11 @@ OBJS =  $(SHIP_OBJS) \
 				 mobconv.o \
 				 mobpatrol.o \
 				 net/modify.o \
-				 mount.o \
+				 classes/mount.o \
 				 name_gen.o \
 				 account/nanny.o \
-				 necromancy.o \
-				 new_skills.o \
+				 classes/necromancy.o \
+				 classes/new_skills.o \
 				 cmd/nq.o \
 				 objconv.o \
 				 objmisc.o \
@@ -347,7 +347,7 @@ OBJS =  $(SHIP_OBJS) \
 				 net/poll.o \
 				 net/prompt.o \
 				 properties.o \
-				 psionics.o \
+				 classes/psionics.o \
 				 quest.o \
 				 random.o \
 				 randomeq.o \
@@ -355,18 +355,18 @@ OBJS =  $(SHIP_OBJS) \
 				 random.zone.o \
 				 randobj.o \
 				 range.o \
-				 rogues.o \
-				 shaman.o \
+				 classes/rogues.o \
+				 classes/shaman.o \
 				 shop.o \
 				 signals.o \
-				 skills.o \
+				 classes/skills.o \
 				 smagic.o \
-				 salchemist.o \
-				 sillusionist.o \
+				 classes/salchemist.o \
+				 classes/sillusionist.o \
 				 siege.o \
 				 net/sparser.o \
 				 specials.o \
-				 specializations.o \
+				 classes/specializations.o \
 				 specs/specs.assign.o \
 				 specs/specs.barovia.o \
 				 specs/specs.clwcvrn.o \
@@ -427,7 +427,7 @@ OBJS =  $(SHIP_OBJS) \
 				 weather.o \
 				 ferry.o \
 				 ferryact.o \
-				 paladins.o \
+				 classes/paladins.o \
 				 guard.o \
 				 makeexit.o \
 				 racewar_stat_mods.o \
@@ -435,8 +435,8 @@ OBJS =  $(SHIP_OBJS) \
 				 test_async.o \
 				 cmd/testcmd.o \
 				 cmd/wikihelp.o \
-				 reavers.o \
-				 avengers.o \
+				 classes/reavers.o \
+				 classes/avengers.o \
 				 specs/specs.lucrot.o \
 				 specs/specs.gellz.o \
 				 smoke.o \

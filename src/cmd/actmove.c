@@ -17,7 +17,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "net/gmcp.h"
 #include "graph.h"
 #include "justice.h"

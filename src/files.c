@@ -28,7 +28,7 @@
 #include "item_ownership_runtime.h"
 #include "justice.h"
 #include "mm.h"
-#include "necromancy.h"
+#include "classes/necromancy.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_mode.h"
 #include "random.zone.h"

@@ -18,7 +18,7 @@
 #include "damage.h"
 #include "graph.h"
 #include "justice.h"
-#include "reavers.h"
+#include "classes/reavers.h"
 #include "specs/specs.firep.h"
 #include "specs.prototypes.h"
 #include "spells.h"

@@ -21,7 +21,7 @@
 #include "arena.h"
 #include "config.h"
 #include "damage.h"
-#include "disguise.h"
+#include "classes/disguise.h"
 #include "net/gmcp.h"
 #include "justice.h"
 #include "net/listen.h"

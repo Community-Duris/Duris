@@ -32,7 +32,7 @@
 #include "handler.h"
 #include "justice.h"
 #include "map.h"
-#include "reavers.h"
+#include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "vnum.obj.h"

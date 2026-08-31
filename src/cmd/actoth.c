@@ -40,7 +40,7 @@
 #include "player/player_save_pipeline.h"
 #include "redis/redis_presence_runtime.h"
 #include "ships/ships.h"
-#include "specializations.h"
+#include "classes/specializations.h"
 #include "specs/specs.winterhaven.h"
 #include "spells.h"
 #include "sql/sql.h"

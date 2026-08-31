@@ -5,7 +5,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "dreadlord.h"
+#include "classes/dreadlord.h"
 #include <string.h>
 #include "damage.h"
 #include "objmisc.h"

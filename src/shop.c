@@ -21,7 +21,7 @@
 #include "damage.h"
 #include "epic_bonus.h"
 #include "justice.h"
-#include "salchemist.h"
+#include "classes/salchemist.h"
 #include "specs.prototypes.h"
 #include "sql/sql.h"
 #include "persistence/persistence_mode.h"

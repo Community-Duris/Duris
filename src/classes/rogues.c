@@ -5,7 +5,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "rogues.h"
+#include "classes/rogues.h"
 #include "damage.h"
 #include "guard.h"
 #include "justice.h"
