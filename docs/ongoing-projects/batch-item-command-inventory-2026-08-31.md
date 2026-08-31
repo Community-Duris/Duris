@@ -1,7 +1,6 @@
 # Batch-item command inventory
 
-Status: implementation complete; PR qualification in progress. Last updated:
-2026-09-01. Branch:
+Status: implemented and qualified. Last updated: 2026-09-01. Branch:
 `batch-item` (implementation started from `e71a54c7`).
 
 ## Scope
@@ -109,11 +108,9 @@ Implemented on 2026-09-01:
 - The focused flat-file repository and hydration suites pass. Both formerly
   failing live flat-file journeys now pass, including combat, death, corpse
   recovery, save/reconnect, and full-world process restart.
-
-Still to verify:
-
-- Run the repository-wide `make test-all` gate, update this checkpoint with the
-  result, and confirm the replacement pull-request checks are green.
+- The exact repository-wide pull-request command, `make test-all` with native
+  parallelism, passes all 374 regression tests. Pull request #67 is open and
+  ready for review; its checks were restarted from the repaired branch.
 
 ## Core command matrix
 
