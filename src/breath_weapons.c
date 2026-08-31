@@ -4,7 +4,7 @@
  ***************************************************************************/
 
 #include "prototypes.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "utils.h"
 #include "damage.h"
 #include "spells.h"

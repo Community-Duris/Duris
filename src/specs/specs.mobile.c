@@ -9,7 +9,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -23,7 +23,7 @@
 #include "assocs.h"
 #include "damage.h"
 #include "epic.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "justice.h"
 #include "map.h"
 #include "necromancy.h"

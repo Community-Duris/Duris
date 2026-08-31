@@ -11,7 +11,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "utility.h"
@@ -29,7 +29,7 @@
 #include "frag_cap_config.h"
 #include "hardcore_config.h"
 #include "files.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
@@ -39,7 +39,7 @@
 #include "sql/sql.h"
 #include "trophy.h"
 #include "weather.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 
 /*
  * external variables

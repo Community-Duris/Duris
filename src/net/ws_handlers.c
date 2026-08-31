@@ -7,10 +7,10 @@
 #include "prototypes.h"
 #include "creation_availability_config.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "utils.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 #include <ctype.h>
 #include <openssl/hmac.h>
 #include <stdio.h>
@@ -22,20 +22,20 @@
 #include "chaos_config.h"
 #include "defines.h"
 #include "files.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "hardcore_config.h"
 #include "item_movement_transaction.h"
 #include "justice.h"
 #include "json_utils.h"
 #include "mm.h"
-#include "poll.h"
+#include "net/poll.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "player/player_name.h"
 #include "password_hash.h"
 #include "persistence/presence_policy.h"
-#include "websocket.h"
-#include "ws_auth.h"
+#include "net/websocket.h"
+#include "net/ws_auth.h"
 #include "utility.h"
 
 extern struct descriptor_data *descriptor_list;

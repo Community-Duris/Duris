@@ -11,7 +11,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -22,9 +22,9 @@
 #include <sys/stat.h>
 #include "assocs.h"
 #include "epic.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "graph.h"
-#include "listen.h"
+#include "net/listen.h"
 #include "map.h"
 #include "spells.h"
 #include "sql/sql.h"

@@ -11,7 +11,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "artifact_cache_codec.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "utility.h"
 #include "utils.h"

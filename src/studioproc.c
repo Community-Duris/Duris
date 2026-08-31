@@ -120,7 +120,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "damage.h"
 #include "db.h"
 #include "events.h"

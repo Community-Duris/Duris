@@ -1,7 +1,7 @@
 // wiz_newchar.c - wizard command to create test characters
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "interp.h"
 #include "utils.h"

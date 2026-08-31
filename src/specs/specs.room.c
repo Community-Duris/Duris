@@ -9,7 +9,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -28,7 +28,7 @@
 #include "specs/specs.winterhaven.h"
 #include "spells.h"
 #include "sql/sql.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 
 /*
    external variables

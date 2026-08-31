@@ -4,7 +4,7 @@
  * Inception: 5/21/2015                                                      *
  *****************************************************************************/
 
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "interp.h"
 #include "utils.h"

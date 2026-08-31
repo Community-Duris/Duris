@@ -11,7 +11,7 @@
 /** Ported to duris, and mm_x routines added by Fafhrd **/
 
 #include "prototypes.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "interp.h"
 #include "utility.h"

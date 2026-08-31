@@ -1,6 +1,6 @@
 #include "currency_transaction.h"
 
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "prototypes.h"
 #include "sql/sql_player.h"
 #include "utils.h"

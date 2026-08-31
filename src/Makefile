@@ -115,7 +115,7 @@ OBJS =  $(SHIP_OBJS) \
 				 actoth.o \
 				 actset.o \
 				 actwiz.o \
-				 ansi.o \
+				 net/ansi.o \
 				 specs/specs.ailvio.o \
 				 alliances.o \
 				 automatic_rules.o \
@@ -144,7 +144,7 @@ OBJS =  $(SHIP_OBJS) \
          cardgames.o \
          chaos.o \
 				 chaos_config.o \
-				 comm.o \
+				 net/comm.o \
 				 persistence/copyover.o \
 				 common.o \
 				 condition.o \
@@ -166,7 +166,7 @@ OBJS =  $(SHIP_OBJS) \
 				 salvage.o \
 				 material_rarity.o \
 				 dreadlord.o \
-				 editor.o \
+				 net/editor.o \
 				 encounters.o \
 				 epic.o \
 				 epic_bonus.o \
@@ -200,10 +200,10 @@ OBJS =  $(SHIP_OBJS) \
 				 language.o \
 				 limits.o \
 				 linked_objects.o\
-				 listen.o\
+				 net/listen.o\
 				 mail.o \
 				 map.o \
-				 mccp.o \
+				 net/mccp.o \
 				 memorize.o \
 				 memory.o \
 				 mm.o \
@@ -212,7 +212,7 @@ OBJS =  $(SHIP_OBJS) \
 				 mobcombat.o \
 				 mobconv.o \
 				 mobpatrol.o \
-				 modify.o \
+				 net/modify.o \
 				 mount.o \
 				 name_gen.o \
 				 nanny.o \
@@ -344,8 +344,8 @@ OBJS =  $(SHIP_OBJS) \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
 				 plushit.o \
-				 poll.o \
-				 prompt.o \
+				 net/poll.o \
+				 net/prompt.o \
 				 properties.o \
 				 psionics.o \
 				 quest.o \
@@ -364,7 +364,7 @@ OBJS =  $(SHIP_OBJS) \
 				 salchemist.o \
 				 sillusionist.o \
 				 siege.o \
-				 sparser.o \
+				 net/sparser.o \
 				 specials.o \
 				 specializations.o \
 				 specs/specs.assign.o \
@@ -412,7 +412,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/wizredis.o \
 				 sql/sql.o \
 				 sql/sql_player.o \
-				 ssl.o \
+				 net/ssl.o \
 				 statistics.o \
 				 storage_lockers.o \
 				 persistence/locker_async.o \
@@ -422,7 +422,7 @@ OBJS =  $(SHIP_OBJS) \
 				 trap.o \
 				 transport.o \
 				 trophy.o \
-				 unicode.o \
+				 net/unicode.o \
 				 utility.o \
 				 weather.o \
 				 ferry.o \
@@ -442,11 +442,11 @@ OBJS =  $(SHIP_OBJS) \
 				 smoke.o \
 				 multiplay_whitelist.o \
 				 home.o \
-				 websocket.o \
-				 ws_handlers.o \
+				 net/websocket.o \
+				 net/ws_handlers.o \
 				 json_utils.o \
-				 gmcp.o \
-				 ttype.o \
+				 net/gmcp.o \
+				 net/ttype.o \
 				 wiz_newchar.o \
 				 zcheck.o
 

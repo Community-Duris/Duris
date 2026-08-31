@@ -5,7 +5,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "utils.h"
 #include "persistence/copyover.h"
@@ -24,11 +24,11 @@
 #include <unistd.h>
 #include "defines.h"
 #include "files.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "mm.h"
 #include "ships/ships.h"
-#include "ttype.h"
-#include "websocket.h"
+#include "net/ttype.h"
+#include "net/websocket.h"
 #include "persistence/locker_async.h"
 #include "persistence/maintenance_scheduler.h"
 #include "persistence/critical_command_coordinator.h"

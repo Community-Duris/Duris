@@ -22,7 +22,7 @@ using namespace std;
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -34,7 +34,7 @@ using namespace std;
 #include <string.h>
 #include <time.h>
 #include "epic.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "justice.h"
 #include "map.h"
 #include "objmisc.h"

@@ -17,12 +17,12 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
-#include "ttype.h"
+#include "net/ttype.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "telnet.h"
+#include "net/telnet.h"
 
 /* telnet sequences */
 static const unsigned char ttype_do[] = { IAC, DO, TELOPT_TTYPE };

@@ -12,7 +12,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -42,7 +42,7 @@
 #include "multiplay_whitelist.h"
 #include "nexus_stones.h"
 #include "outposts.h"
-#include "poll.h"
+#include "net/poll.h"
 #include "redis/redis_wizard.h"
 #include "rogues.h"
 #include "siege.h"
@@ -52,7 +52,7 @@
 #include "sql/sql.h"
 #include "testcmd.h"
 #include "tradeskill.h"
-#include "unicode.h"
+#include "net/unicode.h"
 #include "vnum.room.h"
 #include "weather.h"
 

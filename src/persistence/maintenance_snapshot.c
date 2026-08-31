@@ -1,6 +1,6 @@
 #include "persistence/maintenance_snapshot.h"
 
-#include "comm.h"
+#include "net/comm.h"
 #include "config.h"
 #include "ctf.h"
 #include "db.h"

@@ -1,6 +1,6 @@
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>

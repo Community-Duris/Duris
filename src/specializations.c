@@ -6,7 +6,7 @@ using namespace std;
 #include "prototypes.h"
 #include "creation_availability_config.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "interp.h"
 #include "utils.h"
 #include "epic.h"

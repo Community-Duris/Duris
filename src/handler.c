@@ -10,7 +10,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "files.h"
@@ -28,7 +28,7 @@
 #include "ctf.h"
 #include "redis/redis_floor_runtime.h"
 #include "damage.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "item_ownership_runtime.h"
 #include "item_movement_transaction.h"
 #include "justice.h"
@@ -43,7 +43,7 @@
 #include "sql/sql.h"
 #include "vnum.obj.h"
 #include "weather.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 #include "safe_format.h"
 #include <algorithm>
 #include <cerrno>

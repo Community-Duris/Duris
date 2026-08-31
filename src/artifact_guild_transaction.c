@@ -1,7 +1,7 @@
 #include "artifact_guild_transaction.h"
 
 #include "assocs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "prototypes.h"
 #include "redis/redis_report_cache.h"
 #include "utils.h"

@@ -7,7 +7,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -19,7 +19,7 @@
 #include <string.h>
 #include "ctf.h"
 #include "currency_transaction.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "graph.h"
 #include "map.h"
 #include "objmisc.h"

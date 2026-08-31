@@ -2,7 +2,7 @@
 
 #include "auction_houses.h"
 #include "currency_transaction.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"
 #include "sql/sql_player.h"

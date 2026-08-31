@@ -10,7 +10,7 @@
 
 #include "prototypes.h"
 #include "creation_availability_config.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include <errno.h>
@@ -34,10 +34,10 @@
 #include "epic.h"
 #include "epic_transaction.h"
 #include "files.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "item_movement_transaction.h"
 #include "justice.h"
-#include "listen.h"
+#include "net/listen.h"
 #include "map.h"
 #include "mm.h"
 #include "objmisc.h"
@@ -50,7 +50,7 @@
 #include "trophy.h"
 #include "vnum.obj.h"
 #include "weather.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 #include "safe_format.h"
 
 /*

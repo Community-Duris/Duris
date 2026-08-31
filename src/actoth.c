@@ -11,7 +11,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -30,13 +30,13 @@
 #include "epic.h"
 #include "epic_transaction.h"
 #include "files.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "guard.h"
 #include "hardcore_config.h"
 #include "guildhall.h"
 #include "justice.h"
 #include "map.h"
-#include "mccp.h"
+#include "net/mccp.h"
 #include "player/player_save_pipeline.h"
 #include "redis/redis_presence_runtime.h"
 #include "ships/ships.h"
@@ -49,7 +49,7 @@
 #include "vnum.obj.h"
 #include "vnum.room.h"
 #include "weather.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 
 /*
  * external variables

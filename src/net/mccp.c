@@ -1,7 +1,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
-#include "mccp.h"
+#include "net/mccp.h"
 #include <errno.h>
 #include <gnutls/gnutls.h>
 #include <stdlib.h>
@@ -9,12 +9,12 @@
 #include <unistd.h>
 #include <zlib.h>
 #include "persistence/copyover.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "json_utils.h"
-#include "telnet.h"
-#include "ttype.h"
-#include "unicode.h"
-#include "websocket.h"
+#include "net/telnet.h"
+#include "net/ttype.h"
+#include "net/unicode.h"
+#include "net/websocket.h"
 
 /* external variables used by this module */
 extern P_desc descriptor_list;

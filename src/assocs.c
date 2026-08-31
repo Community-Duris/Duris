@@ -5,7 +5,7 @@
  ************************************************************************/
 
 #include "prototypes.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "interp.h"
 #include "utility.h"
 #include "utils.h"

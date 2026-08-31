@@ -7,12 +7,12 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "persistence/persistence_mode.h"
 #include "sql/sql_pool.h"
 #include "utils.h"
-#include "websocket.h"
+#include "net/websocket.h"
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
@@ -31,9 +31,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <zlib.h>
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "json_utils.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 
 extern struct descriptor_data *descriptor_list;
 

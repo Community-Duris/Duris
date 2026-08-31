@@ -10,7 +10,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ctf.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "justice.h"
 #include "necromancy.h"
 #include "objmisc.h"

@@ -8,13 +8,13 @@ using namespace std;
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
 #include "epic.h"
-#include "listen.h"
+#include "net/listen.h"
 #include "spells.h"
 #include "sql/sql.h"
 

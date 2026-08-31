@@ -1,6 +1,6 @@
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "gmcp.h" // for GMCP_ENABLED macro
+#include "net/gmcp.h" // for GMCP_ENABLED macro
 #include "graph.h"
 #include "map.h"
 #include "objmisc.h"

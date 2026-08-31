@@ -1,6 +1,6 @@
 #include <string.h>
-#include "ansi.h"
-#include "unicode.h"
+#include "net/ansi.h"
+#include "net/unicode.h"
 
 #if 0
 static int char2col(char c)

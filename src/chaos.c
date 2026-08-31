@@ -1,4 +1,4 @@
-#include "comm.h"
+#include "net/comm.h"
 #include "prototypes.h"
 #include "ships.h"
 #include "utils.h"

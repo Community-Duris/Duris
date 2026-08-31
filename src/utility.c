@@ -26,7 +26,7 @@ using namespace std;
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -38,7 +38,7 @@ using namespace std;
 #include "currency_transaction.h"
 #include "defines.h"
 #include "epic.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "graph.h"
 #include "grapple.h"
 #include "justice.h"

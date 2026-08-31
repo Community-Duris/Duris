@@ -1,6 +1,6 @@
 #include "player/player_load_items.h"
 
-#include "comm.h"
+#include "net/comm.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"
 #include "spells.h"

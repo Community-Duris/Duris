@@ -8,10 +8,10 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "interp.h"
 #include "utils.h"
-#include "poll.h"
+#include "net/poll.h"
 #include <ctype.h>
 #include <map>
 #include <stdio.h>
@@ -22,7 +22,7 @@
 #include "config.h"
 #include "json_utils.h"
 #include "sql/sql.h"
-#include "websocket.h"
+#include "net/websocket.h"
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"

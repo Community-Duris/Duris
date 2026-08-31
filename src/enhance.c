@@ -9,7 +9,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"

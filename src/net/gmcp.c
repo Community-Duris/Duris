@@ -6,10 +6,10 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "utils.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include <cjson/cJSON.h>
 #include <math.h>
 #include <mysql.h>
@@ -24,8 +24,8 @@
 #include "ships/ships.h"
 #include "spells.h"
 #include "sql/sql.h"
-#include "websocket.h"
-#include "ws_auth.h"
+#include "net/websocket.h"
+#include "net/ws_auth.h"
 
 extern const int top_of_world;
 

@@ -4,7 +4,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "interp.h"
 #include "item_movement_transaction.h"
@@ -28,7 +28,7 @@
 #include "player/player_load_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "flatfile/flatfile_account_adapter.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 
 #include <unordered_map>
 #include <new>

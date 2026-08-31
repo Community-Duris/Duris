@@ -9,7 +9,7 @@
 #include "creation_availability_config.h"
 #include "chaos_config.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -34,7 +34,7 @@
 #include "boon_reward_transaction.h"
 #include "files.h"
 #include "flatfile/flatfile_identity_adapter.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "guildhall.h"
 #include "hardcore_config.h"
 #include "justice.h"
@@ -54,7 +54,7 @@
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "vnum.room.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 #include "safe_format.h"
 
 /* external variables */

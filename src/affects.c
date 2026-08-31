@@ -10,7 +10,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "comm.h"
+#include "net/comm.h"
 #include "db.h"
 #include "events.h"
 #include "interp.h"
@@ -27,7 +27,7 @@
 #include "disguise.h"
 #include "epic_skills.h"
 #include "files.h"
-#include "gmcp.h"
+#include "net/gmcp.h"
 #include "guard.h"
 #include "hardcore_config.h"
 #include "justice.h"

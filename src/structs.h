@@ -30,7 +30,7 @@
 #include "persistence/gameplay_read_state.h"
 #include "map.h"
 #include "player/player_log.h"
-#include "ansi.h"
+#include "net/ansi.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>

@@ -29,7 +29,7 @@
 #include "spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
-#include "ws_handlers.h"
+#include "net/ws_handlers.h"
 using namespace std;
 
 #ifdef __NO_MYSQL__
