@@ -1073,7 +1073,7 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
 	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &exact_items) != player_snapshot_codec_result::ok ||
 	    exact_items.size() != payload.item_count || exact_items.empty() ||
-	    exact_items.front().object_uid != payload.selected_item_uid ||
+	    exact_items.front().object_uid != item_transfer_result_root(payload) ||
 	    !std::all_of(exact_items.begin(), exact_items.end(),
 			 [&](const auto &item)
 			 {
@@ -1227,7 +1227,7 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &exact_items) != player_snapshot_codec_result::ok ||
 	    exact_items.size() != payload.item_count || exact_items.empty() ||
-	    exact_items.front().object_uid != payload.selected_item_uid ||
+	    exact_items.front().object_uid != item_transfer_result_root(payload) ||
 	    !std::all_of(exact_items.begin(), exact_items.end(),
 			 [&](const auto &item)
 			 {

@@ -393,7 +393,7 @@ bool payload_items_match(const item_transfer_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
 	if (items.empty() || items.size() != payload.item_count ||
-	    items.front().object_uid != payload.selected_item_uid)
+	    items.front().object_uid != item_transfer_result_root(payload))
 		return false;
 	std::unordered_set<uint64_t> payload_uids;
 	try

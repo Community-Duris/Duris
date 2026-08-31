@@ -513,7 +513,7 @@ bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t p
 		generic_materialization_owner(payload.to_owner.type)) ||
 	       locker_transfer(payload) || corpse_loot_transfer(payload) ||
 	       (payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION && room_transfer(payload)) ||
-	       (payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	       (payload_version >= ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 		corpse_create_transfer(payload));
 }
 
@@ -616,7 +616,7 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 	if (!from_owner || !to_owner)
 		return EILSEQ;
 	const bool same_owner = item_owner_identity_equal(payload.from_owner, payload.to_owner);
-	*result = { payload.selected_item_uid,
+	*result = { item_transfer_result_root(payload),
 		    payload.item_count,
 		    from_owner->revision,
 		    to_owner->revision,
@@ -630,8 +630,15 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 	std::vector<flatfile_item_ownership_record *> selected;
 	try
 	{
+		std::vector<uint64_t> source_roots;
+		for (size_t index = 0; index < payload.item_count; ++index)
+			source_roots.push_back(payload.items[index].root_item_uid);
+		std::sort(source_roots.begin(), source_roots.end());
+		source_roots.erase(std::unique(source_roots.begin(), source_roots.end()),
+				   source_roots.end());
 		for (auto &entry : catalog->items)
-			if (entry.root_item_uid == payload.items[0].root_item_uid)
+			if (std::binary_search(source_roots.begin(), source_roots.end(),
+					       entry.root_item_uid))
 				root_items.push_back(&entry);
 	}
 	catch (const std::bad_alloc &)
@@ -650,9 +657,26 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 	}
 	else
 	{
+		std::vector<uint64_t> selected_roots;
+		try
+		{
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (item_transfer_selected_root(payload,
+								payload.items[index].item_uid) ==
+				    payload.items[index].item_uid)
+					selected_roots.push_back(payload.items[index].item_uid);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return ENOMEM;
+		}
 		for (auto *entry : root_items)
-			if (descendant_of(root_items, *entry, payload.selected_item_uid))
-				selected.push_back(entry);
+			for (uint64_t selected_root : selected_roots)
+				if (descendant_of(root_items, *entry, selected_root))
+				{
+					selected.push_back(entry);
+					break;
+				}
 		if (selected.size() != payload.item_count)
 			return EMSGSIZE;
 		std::sort(selected.begin(), selected.end(), [](const auto *left, const auto *right)
@@ -691,13 +715,14 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 			for (size_t index = 0; index < payload.item_count; ++index)
 			{
 				const auto &entry = payload.items[index];
-				catalog->items.push_back(
-					{ entry.item_uid, payload.target_root_item_uid,
-					  entry.item_uid == payload.selected_item_uid ?
-						  payload.target_parent_item_uid :
-						  entry.parent_item_uid,
-					  payload.to_owner, 1, entry.vnum,
-					  item_custody_state::active });
+				uint64_t target_root = 0, target_parent = 0;
+				if (!item_transfer_target_topology(payload, entry.item_uid,
+								   &target_root, &target_parent))
+					return EINVAL;
+				catalog->items.push_back({ entry.item_uid, target_root,
+							   target_parent, payload.to_owner, 1,
+							   entry.vnum,
+							   item_custody_state::active });
 				result->max_item_revision = 1;
 			}
 			std::sort(catalog->items.begin(), catalog->items.end(), item_less);
@@ -708,16 +733,29 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 		}
 	}
 	else
+	{
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			uint64_t target_root = 0, target_parent = 0;
+			if (selected[index]->item_revision ==
+				    std::numeric_limits<uint64_t>::max() ||
+			    !item_transfer_target_topology(payload, selected[index]->item_uid,
+							   &target_root, &target_parent))
+				return selected[index]->item_revision ==
+						       std::numeric_limits<uint64_t>::max() ?
+					       ERANGE :
+					       EINVAL;
+		}
 		for (size_t index = 0; index < payload.item_count; ++index)
 		{
 			auto &entry = *selected[index];
-			if (entry.item_revision == std::numeric_limits<uint64_t>::max())
-				return ERANGE;
+			uint64_t target_root = 0, target_parent = 0;
+			if (!item_transfer_target_topology(payload, entry.item_uid, &target_root,
+							   &target_parent))
+				return EINVAL;
 			++entry.item_revision;
-			entry.root_item_uid = payload.target_root_item_uid;
-			entry.parent_item_uid = entry.item_uid == payload.selected_item_uid ?
-							payload.target_parent_item_uid :
-							payload.items[index].parent_item_uid;
+			entry.root_item_uid = target_root;
+			entry.parent_item_uid = target_parent;
 			entry.owner = payload.to_owner;
 			entry.state = payload.to_owner.type == item_owner_type::destruction ?
 					      item_custody_state::destroyed :
@@ -725,6 +763,7 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 			result->max_item_revision =
 				std::max(result->max_item_revision, entry.item_revision);
 		}
+	}
 	++from_owner->revision;
 	if (!same_owner)
 		++to_owner->revision;
@@ -1568,7 +1607,7 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		}
 		const owner_state *from = find_owner(&catalog, payload.from_owner);
 		const owner_state *to = find_owner(&catalog, payload.to_owner);
-		result = { payload.selected_item_uid,
+		result = { item_transfer_result_root(payload),
 			   payload.item_count,
 			   from ? from->revision : 0,
 			   to ? to->revision : 0,
@@ -1595,7 +1634,7 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 			}
 			const owner_state *from = find_owner(&catalog, payload.from_owner);
 			const owner_state *to = find_owner(&catalog, payload.to_owner);
-			result = { payload.selected_item_uid,
+			result = { item_transfer_result_root(payload),
 				   payload.item_count,
 				   from ? from->revision : 0,
 				   to ? to->revision : 0,

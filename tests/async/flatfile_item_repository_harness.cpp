@@ -606,6 +606,71 @@ int main(int argc, char **argv)
 			room_records[0].revision == 3 && room_records[0].items.size() == 2 &&
 			room_records[0].items[0].weight == 9,
 		"room-container get did not remove only the subtree and restore ancestor weight");
+
+	const fs::path batch_root = root / "batch-transfer";
+	fs::create_directories(batch_root / "domains");
+	fs::permissions(batch_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(batch_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity batch_player = { item_owner_type::player, 99, 0 };
+	const item_owner_identity batch_room = { item_owner_type::room, 9100, 0 };
+	require(flatfile_item_repository_establish_owner(
+			batch_root.string(), batch_player,
+			{ { 410, 410, 0, batch_player, 1, 810, item_custody_state::active },
+			  { 420, 420, 0, batch_player, 1, 820, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish multi-root batch authority: " + error);
+	player_item_snapshot first_batch_item = {};
+	first_batch_item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	first_batch_item.equipment_slot = 0;
+	first_batch_item.object_uid = 410;
+	first_batch_item.vnum = 810;
+	first_batch_item.name = "first batch item";
+	first_batch_item.short_description = "a first batch item";
+	player_item_snapshot second_batch_item = first_batch_item;
+	second_batch_item.object_uid = 420;
+	second_batch_item.vnum = 820;
+	second_batch_item.name = "second batch item";
+	second_batch_item.short_description = "a second batch item";
+	std::vector<uint8_t> batch_blob;
+	require(player_item_snapshot_list_encode({ first_batch_item, second_batch_item },
+						 &batch_blob) == player_snapshot_codec_result::ok,
+		"could not encode multi-root transfer snapshot");
+	item_transfer_payload batch_drop = {};
+	batch_drop.from_owner = batch_player;
+	batch_drop.to_owner = batch_room;
+	batch_drop.reason = item_transfer_reason::player_drop;
+	batch_drop.reason_id = 9100;
+	batch_drop.expected_from_revision = 1;
+	batch_drop.expected_to_revision = 0;
+	batch_drop.multi_root = true;
+	batch_drop.item_count = 2;
+	batch_drop.items[0] = { 410, 410, 0, 1, 810, item_custody_state::active };
+	batch_drop.items[1] = { 420, 420, 0, 1, 820, item_custody_state::active };
+	batch_drop.item_blob_size = static_cast<uint32_t>(batch_blob.size());
+	std::copy(batch_blob.begin(), batch_blob.end(), batch_drop.item_blob.begin());
+	critical_command batch_drop_command = {};
+	require(item_transfer_command_build(&batch_drop_command, operation(50), batch_drop,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build multi-root drop command");
+	batch_drop_command.accepted_at_usec = 50;
+	applied = flatfile_item_repository_apply(batch_root.string(), batch_drop_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).item_count == 2 &&
+			result_of(applied).root_item_uid == 410,
+		"multi-root drop did not apply as one command: outcome=" +
+			std::to_string(static_cast<unsigned int>(applied.outcome)) +
+			" error=" + std::to_string(applied.error_code));
+	owned_room_items.clear();
+	require(flatfile_item_repository_load_owner(batch_root.string(), batch_room, &room_revision,
+						    &owned_room_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			room_revision == 1 && owned_room_items.size() == 2 &&
+			owned_room_items[0].root_item_uid == 410 &&
+			owned_room_items[1].root_item_uid == 420 &&
+			owned_room_items[0].parent_item_uid == 0 &&
+			owned_room_items[1].parent_item_uid == 0,
+		"multi-root drop did not preserve independent destination roots: " + error);
 	player_item_snapshot storage_root = {};
 	storage_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 	storage_root.equipment_slot = 0;
@@ -952,8 +1017,18 @@ int main(int argc, char **argv)
 					    artifact_loot, critical_source_site::command,
 					    critical_deadline_class::interactive),
 		"could not build historical artifact loot command");
-	historical_artifact_command.payload.resize(ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
-						   artifact_blob.size());
+	std::vector<uint8_t> historical_payload(ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
+						artifact_blob.size());
+	std::copy_n(historical_artifact_command.payload.begin(),
+		    ITEM_TRANSFER_HEADER_BYTES +
+			    artifact_loot.item_count * ITEM_TRANSFER_ENTRY_BYTES,
+		    historical_payload.begin());
+	for (unsigned int byte = 0; byte < sizeof(uint32_t); ++byte)
+		historical_payload[ITEM_TRANSFER_PAYLOAD_BYTES + byte] =
+			static_cast<uint8_t>(artifact_blob.size() >> (byte * 8));
+	std::copy(artifact_blob.begin(), artifact_blob.end(),
+		  historical_payload.begin() + ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t));
+	historical_artifact_command.payload = std::move(historical_payload);
 	historical_artifact_command.payload_version = ITEM_TRANSFER_EXACT_PAYLOAD_VERSION;
 	historical_artifact_command.accepted_at_usec = 9000000000ULL;
 	applied = flatfile_item_repository_apply(root.string(), historical_artifact_command);

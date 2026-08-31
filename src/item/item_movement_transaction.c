@@ -577,6 +577,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 									0,
 		.expected_target_parent_revision =
 			adopted && target_container ? target_runtime.item_revision : 0,
+		.multi_root = false,
 		.item_count = static_cast<uint16_t>(items.size()),
 		.items = {},
 		.item_blob_size = 0,

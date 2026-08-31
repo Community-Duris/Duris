@@ -310,7 +310,7 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 {
 	if (!payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    result.item_count != payload.item_count ||
-	    result.root_item_uid != payload.selected_item_uid)
+	    result.root_item_uid != item_transfer_result_root(payload))
 		return false;
 	const bool creation = payload.from_owner.type == item_owner_type::system;
 	if (payload.target_parent_item_uid)
@@ -326,15 +326,17 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	if (creation)
 	{
 		for (size_t index = 0; index < payload.item_count; ++index)
-			if (entries.find(payload.items[index].item_uid) != entries.end() ||
+		{
+			uint64_t target_root = 0, target_parent = 0;
+			if (!item_transfer_target_topology(payload, payload.items[index].item_uid,
+							   &target_root, &target_parent) ||
+			    entries.find(payload.items[index].item_uid) != entries.end() ||
 			    !item_ownership_runtime_hydrate(
-				    { payload.items[index].item_uid, payload.target_root_item_uid,
-				      payload.items[index].item_uid == payload.selected_item_uid ?
-					      payload.target_parent_item_uid :
-					      payload.items[index].parent_item_uid,
+				    { payload.items[index].item_uid, target_root, target_parent,
 				      payload.to_owner, 1, result.to_owner_revision,
 				      payload.items[index].vnum, item_custody_state::active }))
 				return false;
+		}
 		owner_revisions[payload.from_owner] = result.from_owner_revision;
 		owner_revisions[payload.to_owner] = result.to_owner_revision;
 		return true;
@@ -342,21 +344,25 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		auto found = entries.find(payload.items[index].item_uid);
+		uint64_t target_root = 0, target_parent = 0;
 		if (found == entries.end() ||
 		    found->second.item_revision != payload.items[index].expected_item_revision ||
-		    !item_owner_identity_equal(found->second.owner, payload.from_owner))
+		    !item_owner_identity_equal(found->second.owner, payload.from_owner) ||
+		    found->second.item_revision == std::numeric_limits<uint64_t>::max() ||
+		    !item_transfer_target_topology(payload, payload.items[index].item_uid,
+						   &target_root, &target_parent))
 			return false;
 	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		item_ownership_runtime_entry &entry = entries[payload.items[index].item_uid];
-		if (entry.item_revision == std::numeric_limits<uint64_t>::max())
+		uint64_t target_root = 0, target_parent = 0;
+		if (!item_transfer_target_topology(payload, payload.items[index].item_uid,
+						   &target_root, &target_parent))
 			return false;
 		++entry.item_revision;
-		entry.root_item_uid = payload.target_root_item_uid;
-		entry.parent_item_uid = payload.items[index].item_uid == payload.selected_item_uid ?
-						payload.target_parent_item_uid :
-						payload.items[index].parent_item_uid;
+		entry.root_item_uid = target_root;
+		entry.parent_item_uid = target_parent;
 		entry.owner = payload.to_owner;
 		entry.owner_revision = result.to_owner_revision;
 		entry.state = payload.to_owner.type == item_owner_type::destruction ?
