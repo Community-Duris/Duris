@@ -11045,8 +11045,12 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			return TRUE;
 		}
 
-		mobsay(ch,
-		       "Hmm, I'm unable to help you right now, try one of my colleagues around the world, or grab a few levels and come back.");
+		if (GET_LEVEL(pl) >= MAXLVLMORTAL)
+			mobsay(ch,
+			       "Hmm, I can't find a suitable quest for someone of your experience right now. Try one of my colleagues around the world.");
+		else
+			mobsay(ch,
+			       "Hmm, I'm unable to help you right now, try one of my colleagues around the world, or grab a few levels and come back.");
 		send_to_char("\r\n&=LWYou get your money back.\r\n", pl);
 		ADD_MONEY(pl, temp);
 		return TRUE;
