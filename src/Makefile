@@ -451,7 +451,7 @@ OBJS =  $(SHIP_OBJS) \
 
 # Name lists (no paths) for pfile-related objs
 SHARED_PFILE_OBJS_NAMES = classes/skills.pf.o core/files.pf.o
-PFILE_OBJS_NAMES        = account/pfile-stubs.o account/pfile.o
+PFILE_OBJS_NAMES        = account/pfile-stubs.o account/pfile.o core/safe_format.o
 
 #******************************************************************************
 #******************************************************************************

@@ -113,10 +113,6 @@ P_room world = NULL;
 unsigned long next_obj_uid = 0;
 
 void debug(const char *, ...) {}
-int checked_snprintf(char *, size_t, const char *, ...)
-{
-	return 0;
-}
 char *str_dup(const char *source)
 {
 	return source ? strdup(source) : NULL;
