@@ -4083,6 +4083,11 @@ void select_hardcore(P_desc d, char *arg)
 	{
 	case 'H':
 	case 'h':
+		if (chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos)
+		{
+			SEND_TO_Q("Hardcore characters are unavailable during chaos.\r\n", d);
+			break;
+		}
 		SET_BIT(d->character->specials.act2, PLR2_HARDCORE_CHAR);
 		SEND_TO_Q("HARDCORE!\r\n", d);
 		break;
@@ -4136,6 +4141,7 @@ void select_sex(P_desc d, char *arg)
 	}
 
 	if (hardcore_config_get()->creation_enabled &&
+	    !(chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos) &&
 	    (!hardcore_config_get()->creation_veterans_only || !IS_NEWBIE(d->character)))
 	{
 		snprintf(
