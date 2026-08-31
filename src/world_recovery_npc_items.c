@@ -165,8 +165,8 @@ bool world_recovery_rehydrate_npc_items(P_char const *mobs, size_t mob_count)
 				}
 				else if (command.command == 'E')
 				{
-					loaded_items += rehydrate_equipped_item(
-						selected, command, artifact_respawn);
+					loaded_items += rehydrate_equipped_item(selected, command,
+										artifact_respawn);
 				}
 			}
 		}
