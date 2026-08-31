@@ -1095,11 +1095,15 @@ static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj
 
 // track transaction state
 static bool in_transaction = false;
-static P_char pending_account_cache_char = NULL;
+// Held by pid, never by pointer: the queued sync is drained at the next commit,
+// and a terminal death save runs inside an outer transaction that commits after
+// extract_char() has already returned the character to its pool. A raw P_char
+// here becomes a dangling read of ch->desc->account on that commit.
+static int pending_account_cache_pid = 0;
 static int pending_account_cache_room = NOWHERE;
 static bool pending_account_cache_sync = false;
 
-static void sql_sync_account_character_cache(P_char ch, int room);
+static void sql_sync_account_character_cache(int pid, int room);
 static void sql_queue_account_character_cache_sync(P_char ch, int room);
 static void sql_clear_account_character_cache_sync(void);
 
@@ -1157,10 +1161,10 @@ bool sql_commit(void)
 	in_transaction = false;
 	if (pending_account_cache_sync)
 	{
-		P_char ch = pending_account_cache_char;
-		int room = pending_account_cache_room;
+		const int pid = pending_account_cache_pid;
+		const int room = pending_account_cache_room;
 		sql_clear_account_character_cache_sync();
-		sql_sync_account_character_cache(ch, room);
+		sql_sync_account_character_cache(pid, room);
 	}
 	return true;
 }
@@ -1197,9 +1201,22 @@ bool sql_in_transaction(void)
 	return in_transaction;
 }
 
-static void sql_sync_account_character_cache(P_char ch, int room)
+static void sql_sync_account_character_cache(int pid, int room)
 {
-	if (!ch || !ch->desc || !ch->desc->account)
+	if (pid <= 0)
+		return;
+
+	// Resolve the pid against the live roster. A character extracted between the
+	// queued save and this commit is simply gone; its projection is already on
+	// disk and there is no in-memory list left to refresh.
+	P_char ch = NULL;
+	for (P_char candidate = character_list; candidate; candidate = candidate->next)
+		if (IS_PC(candidate) && GET_PID(candidate) == pid)
+		{
+			ch = candidate;
+			break;
+		}
+	if (!ch || !ch->desc || !ch->desc->account || !GET_NAME(ch))
 		return;
 
 	struct acct_chars *c = ch->desc->account->acct_character_list;
@@ -1218,14 +1235,14 @@ static void sql_sync_account_character_cache(P_char ch, int room)
 
 static void sql_queue_account_character_cache_sync(P_char ch, int room)
 {
-	pending_account_cache_char = ch;
+	pending_account_cache_pid = ch ? GET_PID(ch) : 0;
 	pending_account_cache_room = room;
-	pending_account_cache_sync = (ch != NULL);
+	pending_account_cache_sync = (pending_account_cache_pid > 0);
 }
 
 static void sql_clear_account_character_cache_sync(void)
 {
-	pending_account_cache_char = NULL;
+	pending_account_cache_pid = 0;
 	pending_account_cache_room = NOWHERE;
 	pending_account_cache_sync = false;
 }

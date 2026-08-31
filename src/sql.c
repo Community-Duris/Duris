@@ -2390,6 +2390,20 @@ void sql_update_account_character(P_char ch)
 
 	account_name = get_account_name_safe(ch);
 
+	// account_characters is UNIQUE on char_name and the account character list is
+	// selected by account_name, so writing the get_account_name_safe() placeholder
+	// would move the row off its real account and empty that account's menu while
+	// player_data still holds the character. An offline or descriptor-less save has
+	// nothing to project; leave the existing mapping alone.
+	if (!ch->desc || !ch->desc->account || !ch->desc->account->acct_name ||
+	    !ch->desc->account->acct_name[0])
+	{
+		logit(LOG_DEBUG,
+		      "sql_update_account_character: component=mapping outcome=skipped_no_account pid=%d",
+		      GET_PID(ch));
+		return;
+	}
+
 	// Escape strings for SQL safety
 	mysql_str(account_name, account_name_sql);
 	mysql_str(ch->player.name, char_name_sql);

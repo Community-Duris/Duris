@@ -2344,6 +2344,40 @@ void delete_account(P_desc /*d*/, char * /*arg*/) {}
 
 void verify_delete_account(P_desc /*d*/, char * /*arg*/) {}
 
+#ifndef __NO_MYSQL__
+/* Release a DTO from sql_load_account() whose contents were never transferred to
+ * a live account. Its strings and list nodes come from the live-account allocator,
+ * the container itself from malloc(). */
+static void free_acct_entry_shallow(struct acct_entry *loaded)
+{
+	if (!loaded)
+		return;
+	loaded->acct_name = check_and_clear(loaded->acct_name);
+	loaded->acct_email = check_and_clear(loaded->acct_email);
+	loaded->acct_password = check_and_clear(loaded->acct_password);
+	loaded->acct_confirmation = check_and_clear(loaded->acct_confirmation);
+	while (loaded->acct_unique_ips)
+	{
+		struct acct_ip *next = loaded->acct_unique_ips->next;
+		loaded->acct_unique_ips->hostname =
+			check_and_clear(loaded->acct_unique_ips->hostname);
+		loaded->acct_unique_ips->ip_address =
+			check_and_clear(loaded->acct_unique_ips->ip_address);
+		FREE(loaded->acct_unique_ips);
+		loaded->acct_unique_ips = next;
+	}
+	while (loaded->acct_character_list)
+	{
+		struct acct_chars *next = loaded->acct_character_list->next;
+		loaded->acct_character_list->charname =
+			check_and_clear(loaded->acct_character_list->charname);
+		FREE(loaded->acct_character_list);
+		loaded->acct_character_list = next;
+	}
+	free(loaded);
+}
+#endif
+
 int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 {
 	if (!acct || !acct->acct_name)
@@ -2362,6 +2396,27 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 	{
 		logit(LOG_FILE, "account load failed");
 		return -1;
+	}
+
+	/* A reload that returns no characters is indistinguishable from a projection
+	 * that has not landed - a mapping row written inside a transaction that later
+	 * rolled back, or one whose account_name was rewritten. Installing it would
+	 * leave a player who is standing in the game looking at an empty account menu
+	 * while player_data still holds the character. Deletion already prunes the live
+	 * list through remove_char_from_list(), so an emptied list here is never the
+	 * authority. Keep what we have and report it instead. */
+	if (!loaded->acct_character_list && acct->acct_character_list)
+	{
+		statuslog(56, "&+RALERT&n: account reload returned no characters for %s",
+			  name_backup);
+		persistence_alert(AVATAR, "account", "redacted", "none", "none",
+				  "character_projection_empty", NULL);
+#ifdef __NO_MYSQL__
+		flatfile_account_state_release(loaded);
+#else
+		free_acct_entry_shallow(loaded);
+#endif
+		return 1;
 	}
 
 	// free old data
