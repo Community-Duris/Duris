@@ -2008,9 +2008,11 @@ static bool sql_verify_metadata_fingerprint(void)
 		"information_schema.key_column_usage k JOIN information_schema.referential_constraints "
 		"r ON r.constraint_schema=k.constraint_schema AND "
 		"r.constraint_name=k.constraint_name WHERE k.constraint_schema=DATABASE() AND "
-		"k.table_name IN (";
+		"(k.table_name IN (";
 	query += RUNTIME_TABLE_SQL_LIST;
-	query += ") AND k.referenced_table_name IS NOT NULL ORDER BY 1";
+	query += ") OR k.referenced_table_name IN (";
+	query += RUNTIME_TABLE_SQL_LIST;
+	query += ")) AND k.referenced_table_name IS NOT NULL ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;
 	MYSQL_RES *result = mysql_store_result(DB);

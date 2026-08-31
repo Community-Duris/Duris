@@ -2065,7 +2065,7 @@ CREATE TABLE IF NOT EXISTS account_banks (
 );"
 
 run_sql "migrate player banks to account banks" "
-INSERT IGNORE INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
+INSERT INTO account_banks (account_name, racewar, bank_copper, bank_silver, bank_gold, bank_platinum)
 SELECT
     ac.account_name,
     ac.racewar,
@@ -2076,7 +2076,8 @@ SELECT
 FROM account_characters ac
 JOIN player_data pd ON ac.pid = pd.pid
 WHERE pd.bank_copper > 0 OR pd.bank_silver > 0 OR pd.bank_gold > 0 OR pd.bank_platinum > 0
-GROUP BY ac.account_name, ac.racewar;"
+GROUP BY ac.account_name, ac.racewar
+ON DUPLICATE KEY UPDATE account_name = account_name;"
 
 run_sql "create private_chests table" "
 CREATE TABLE IF NOT EXISTS private_chests (

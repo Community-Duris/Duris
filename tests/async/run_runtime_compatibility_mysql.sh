@@ -102,6 +102,9 @@ MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot 
 verify() { docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/runtime_compatibility_manifest.json "$NAME" /tmp/verify_runtime_compatibility.sh; }
 expect_reject() { if verify >/dev/null 2>&1; then echo "runtime drift was accepted: $1" >&2; exit 1; fi; }
 verify >/dev/null
+"${MYSQL[@]}" -e "ALTER TABLE imported_extension_probe ADD COLUMN pid INT UNSIGNED NULL, ADD CONSTRAINT imported_extension_probe_pid_fk FOREIGN KEY (pid) REFERENCES player_data(pid);"
+expect_reject inbound-foreign-key
+"${MYSQL[@]}" -e "ALTER TABLE imported_extension_probe DROP FOREIGN KEY imported_extension_probe_pid_fk, DROP COLUMN pid;"
 "${MYSQL[@]}" -e "START TRANSACTION; SELECT season_epoch FROM season_reset_state WHERE state_id=1 FOR UPDATE; UPDATE season_reset_state SET season_epoch=season_epoch+1,reset_status='resetting',reset_started_at=UTC_TIMESTAMP(6),reset_completed_at=NULL WHERE state_id=1 AND reset_status='active'; COMMIT;" >/dev/null
 season_fenced=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM season_reset_state WHERE state_id=1 AND season_epoch=2 AND reset_status='resetting' AND reset_started_at IS NOT NULL AND reset_completed_at IS NULL;")
 [[ "$season_fenced" == 1 ]]

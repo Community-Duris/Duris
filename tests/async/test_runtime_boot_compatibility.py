@@ -84,6 +84,11 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.assertIn("table_type='BASE TABLE'", self.sql)
         self.assertIn("JOIN information_schema.tables t", self.sql)
         self.assertIn("column_type LIKE '%unsigned'", self.sql)
+        self.assertIn("k.referenced_table_name IN (", self.sql)
+        verifier = (ROOT / "migrations/verify_runtime_compatibility.sh").read_text()
+        self.assertIn(
+            "k.table_name IN ($runtime_tables) OR "
+            "k.referenced_table_name IN ($runtime_tables)", verifier)
         for token in ("information_schema.tables", "information_schema.columns",
                       "information_schema.statistics", "referential_constraints"):
             self.assertIn(token, self.sql)

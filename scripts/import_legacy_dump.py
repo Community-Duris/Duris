@@ -12,6 +12,7 @@ import shlex
 import stat
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,7 +27,8 @@ REQUIRED_CONFIG = {
 SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9_]+$")
 PRODUCTION_NAME = re.compile(r"(^|[_-])prod(?:uction)?($|[_-])", re.IGNORECASE)
 DATABASE_DIRECTIVE = re.compile(
-    rb"^\s*(?:CREATE\s+DATABASE|DROP\s+DATABASE|USE\s+)", re.IGNORECASE)
+    rb"^\s*(?:/\*!\d*\s*)?(?:(?:CREATE|DROP)\s+(?:DATABASE|SCHEMA)\b|USE\s+)",
+    re.IGNORECASE)
 MYSQL8_COLLATION = b"utf8mb4_0900_ai_ci"
 PORTABLE_COLLATION = b"utf8mb4_unicode_ci"
 DEFINER = re.compile(rb"DEFINER=`(?:``|[^`])+`@`(?:``|[^`])+`")
@@ -74,8 +76,6 @@ def read_env_file(path: Path) -> dict[str, str]:
                 raise LegacyImportError(
                     f"environment file line {line_number} has an invalid value")
             value = parsed[0]
-        elif " #" in value:
-            value = value.split(" #", 1)[0].rstrip()
         values[key] = value
     missing = sorted(key for key in REQUIRED_CONFIG if not values.get(key))
     if missing:
@@ -187,6 +187,32 @@ def target_objects(config: dict[str, str], table_type: str) -> list[str]:
     return names
 
 
+def target_routines(config: dict[str, str]) -> list[tuple[str, str]]:
+    output = run_mysql(
+        config,
+        "SELECT routine_type,routine_name FROM information_schema.routines "
+        "WHERE routine_schema=DATABASE() ORDER BY routine_type,routine_name;")
+    routines = []
+    for row in output.splitlines() if output else []:
+        fields = row.split("\t")
+        if len(fields) != 2 or fields[0] not in {"FUNCTION", "PROCEDURE"} or \
+                SAFE_IDENTIFIER.fullmatch(fields[1]) is None:
+            raise LegacyImportError("target contains a routine with an unsafe identifier")
+        routines.append((fields[0], fields[1]))
+    return routines
+
+
+def target_events(config: dict[str, str]) -> list[str]:
+    output = run_mysql(
+        config,
+        "SELECT event_name FROM information_schema.events "
+        "WHERE event_schema=DATABASE() ORDER BY event_name;")
+    names = output.splitlines() if output else []
+    if any(SAFE_IDENTIFIER.fullmatch(name) is None for name in names):
+        raise LegacyImportError("target contains an event with an unsafe identifier")
+    return names
+
+
 def active_connections(config: dict[str, str]) -> int:
     output = run_mysql(
         config,
@@ -199,9 +225,14 @@ def active_connections(config: dict[str, str]) -> int:
 
 
 def wipe_target(config: dict[str, str]) -> None:
+    events = target_events(config)
+    routines = target_routines(config)
     views = target_objects(config, "VIEW")
     tables = target_objects(config, "BASE TABLE")
-    statements = ["SET FOREIGN_KEY_CHECKS=0"]
+    statements = [f"DROP EVENT IF EXISTS `{name}`" for name in events]
+    statements.extend(
+        f"DROP {routine_type} IF EXISTS `{name}`" for routine_type, name in routines)
+    statements.append("SET FOREIGN_KEY_CHECKS=0")
     if views:
         statements.append("DROP VIEW IF EXISTS " + ",".join(f"`{name}`" for name in views))
     if tables:
@@ -229,29 +260,37 @@ def create_backup(config: dict[str, str], backup_path: Path) -> None:
 
 
 def import_stream(config: dict[str, str], source_path: Path, *, normalize: bool) -> None:
-    process = subprocess.Popen(
-        mysql_command(config), stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE, env=process_environment(config))
-    assert process.stdin is not None
-    try:
-        with source_path.open("rb") as source:
-            for line in source:
-                if normalize:
-                    line = normalize_dump_line(line)
-                process.stdin.write(line)
-        process.stdin.close()
-    except (BrokenPipeError, OSError) as error:
+    with tempfile.TemporaryFile() as diagnostic:
+        process = subprocess.Popen(
+            mysql_command(config), stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+            stderr=diagnostic, env=process_environment(config))
+        assert process.stdin is not None
         try:
+            with source_path.open("rb") as source:
+                for line in source:
+                    if normalize:
+                        line = normalize_dump_line(line)
+                    process.stdin.write(line)
             process.stdin.close()
-        except (BrokenPipeError, OSError):
-            pass
-        stderr = process.stderr.read() if process.stderr is not None else b""
-        process.wait()
-        raise LegacyImportError("dump restore failed: " + summarize_error(stderr)) from error
-    stderr = process.stderr.read() if process.stderr is not None else b""
-    return_code = process.wait()
-    if return_code:
-        raise LegacyImportError("dump restore failed: " + summarize_error(stderr))
+            return_code = process.wait()
+        except BaseException as error:
+            try:
+                process.stdin.close()
+            except (BrokenPipeError, OSError):
+                pass
+            if process.poll() is None:
+                process.terminate()
+            process.wait()
+            diagnostic.seek(0)
+            stderr = diagnostic.read()
+            if isinstance(error, (BrokenPipeError, OSError)):
+                raise LegacyImportError(
+                    "dump restore failed: " + summarize_error(stderr)) from error
+            raise
+        diagnostic.seek(0)
+        stderr = diagnostic.read()
+        if return_code:
+            raise LegacyImportError("dump restore failed: " + summarize_error(stderr))
 
 
 def table_counts(config: dict[str, str]) -> dict[str, int]:
@@ -350,17 +389,19 @@ def import_legacy_dump(config: dict[str, str], env_path: Path, dump_path: Path,
         run_migrations(config, env_path)
         final_counts = table_counts(config)
         verify_source_rows(source_counts, final_counts, runtime_tables())
-    except Exception as error:
+    except BaseException as error:
         if mutation_started:
             try:
                 restore_backup(config, backup_path)
-            except Exception as restore_error:
+            except BaseException as restore_error:
                 raise LegacyImportError(
                     f"import failed and automatic restore failed; recover from {backup_path}: "
                     f"{restore_error}") from error
         if isinstance(error, LegacyImportError):
             raise
-        raise LegacyImportError(f"legacy import failed: {error}") from error
+        if isinstance(error, Exception):
+            raise LegacyImportError(f"legacy import failed: {error}") from error
+        raise
     return dump_checksum, len(source_counts), sum(source_counts.values())
 
 
