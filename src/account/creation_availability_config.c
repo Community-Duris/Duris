@@ -1,4 +1,4 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/creation_availability_config.h"
 
 #include <errno.h>

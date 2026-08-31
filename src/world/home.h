@@ -6,7 +6,7 @@ MIT License
 This copy is for the exclusive use of Duris: Land of the Bloodlust
 */
 
-#include "structs.h"
+#include "core/structs.h"
 
 #define PLOT_SIZE 11
 #define MAX_PLOTS 11

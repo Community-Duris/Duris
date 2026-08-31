@@ -1,4 +1,4 @@
-#include "structs.h"
+#include "core/structs.h"
 #include "account/multiplay_whitelist.h"
 
 #include <cstdlib>

@@ -7,7 +7,7 @@
 #ifndef _OUTPOSTS_H_
 #define _OUTPOSTS_H_
 
-#include "structs.h"
+#include "core/structs.h"
 #include "world/buildings.h"
 
 #define OUTPOST_LEVEL_ONE 2

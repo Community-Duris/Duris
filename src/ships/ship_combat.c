@@ -1,11 +1,11 @@
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>

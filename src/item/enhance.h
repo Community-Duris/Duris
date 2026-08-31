@@ -1,7 +1,7 @@
 #ifndef _ENHANCE_H_
 #define _ENHANCE_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 /* Boot-time index entry */
 struct enhance_index_entry

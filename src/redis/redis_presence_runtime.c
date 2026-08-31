@@ -1,10 +1,10 @@
 #include "redis/redis_presence_runtime.h"
 
 #include "persistence/presence_policy.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "redis/redis_presence_payload.h"
 #include "redis/redis_presence_worker.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <cstdlib>
 #include <ctime>

@@ -1,5 +1,5 @@
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 #include "world/makeexit.h"
 #include <string.h>
 

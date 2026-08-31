@@ -7,21 +7,21 @@
  ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <strings.h>
 #include <time.h>
 #include "guild/assocs.h"
 #include "combat/damage.h"
-#include "files.h"
+#include "core/files.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/specs.prototypes.h"

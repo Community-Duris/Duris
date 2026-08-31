@@ -7,9 +7,9 @@
  ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include <execinfo.h>
 #include <errno.h>
 #include <fcntl.h>

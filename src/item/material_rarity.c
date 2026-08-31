@@ -13,13 +13,13 @@
 #include <sys/types.h>
 
 #include "world/db.h"
-#include "defines.h"
+#include "core/defines.h"
 #include "item/material_rarity.h"
 #include "item/objmisc.h"
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "economy/tradeskill.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #define MATERIAL_RARITY_MIN_VNUM 400000
 #define MATERIAL_RARITY_MAX_VNUM 400209

@@ -8,7 +8,7 @@
 #ifndef DURIS_POLL_H
 #define DURIS_POLL_H
 
-#include "structs.h"
+#include "core/structs.h"
 #include <string>
 #include <vector>
 

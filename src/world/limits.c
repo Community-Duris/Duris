@@ -9,13 +9,13 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,15 +24,15 @@
 #include "guild/assocs.h"
 #include "economy/boon.h"
 #include "combat/ctf.h"
-#include "defines.h"
+#include "core/defines.h"
 #include "world/epic_bonus.h"
 #include "combat/frag_cap_config.h"
 #include "world/hardcore_config.h"
-#include "files.h"
+#include "core/files.h"
 #include "net/gmcp.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "economy/nexus_stones.h"
 #include "persistence/persistence_checkpoint.h"
 #include "magic/spells.h"

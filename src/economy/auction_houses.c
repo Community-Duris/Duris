@@ -3,11 +3,11 @@
  -- torgal april 2006 (torgal@durismud.com)
 */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utility.h"
+#include "core/utility.h"
 #include "economy/auction_houses.h"
 #include "economy/auction_transaction.h"
 #include "economy/currency_transaction.h"
@@ -25,7 +25,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "files.h"
+#include "core/files.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

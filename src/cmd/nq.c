@@ -3,15 +3,15 @@
  *
  *  Author: Michal Rembiszewski (Tharkun)
  */
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
-#include "config.h"
-#include "defines.h"
+#include "core/config.h"
+#include "core/defines.h"
 #include "magic/spells.h"
 #include "string.h"
 

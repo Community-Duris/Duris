@@ -1,7 +1,7 @@
 #ifndef REDIS_PRESENCE_RUNTIME_H
 #define REDIS_PRESENCE_RUNTIME_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 bool redis_presence_runtime_enabled(void);
 void redis_presence_runtime_set_enabled(bool enabled);

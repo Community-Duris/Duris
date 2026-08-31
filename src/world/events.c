@@ -15,18 +15,18 @@
 #include <sys/types.h>
 #endif
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/epic.h"
 #include "net/gmcp.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
-#include "profile.h"
+#include "core/profile.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 

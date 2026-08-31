@@ -4,7 +4,7 @@
 #include <vector>
 using namespace std;
 
-#include "structs.h"
+#include "core/structs.h"
 
 struct ZombieGame
 {

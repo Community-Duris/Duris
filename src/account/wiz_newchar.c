@@ -1,10 +1,10 @@
 // wiz_newchar.c - wizard command to create test characters
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,8 +12,8 @@
 #include "account/account.h"
 #include "world/epic.h"
 #include "classes/epic_skills.h"
-#include "files.h"
-#include "mm.h"
+#include "core/files.h"
+#include "core/mm.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

@@ -1,7 +1,7 @@
 #ifndef REDIS_WORLD_RUNTIME_H
 #define REDIS_WORLD_RUNTIME_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 #include <stdint.h>
 

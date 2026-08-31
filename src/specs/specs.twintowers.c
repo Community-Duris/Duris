@@ -2,13 +2,13 @@
    Specs for Sehanine's series of twin towers zones.
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <signal.h>
 #include <stdio.h>

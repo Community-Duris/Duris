@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #ifndef _DE_
-#include "structs.h"
+#include "core/structs.h"
 #endif
 
 #define USE_ACCOUNT

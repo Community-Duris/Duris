@@ -10,12 +10,12 @@
  ***************************************************************/
 /** Ported to duris, and mm_x routines added by Fafhrd **/
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -29,7 +29,7 @@
 #endif
 #endif
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 
 extern struct zone_data *zone_table;
 extern struct room_data *world;

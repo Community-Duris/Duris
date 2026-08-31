@@ -12,7 +12,7 @@
 #ifndef JSON_UTILS_H
 #define JSON_UTILS_H
 
-#include "structs.h"
+#include "core/structs.h"
 #include <cjson/cJSON.h>
 
 /* forward declarations */

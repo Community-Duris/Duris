@@ -4,9 +4,9 @@
 #include "economy/currency_transaction.h"
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "sql/sql_player.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <cerrno>

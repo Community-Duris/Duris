@@ -8,13 +8,13 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -22,8 +22,8 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include "mm.h"
-#include "safe_format.h"
+#include "core/mm.h"
+#include "core/safe_format.h"
 
 extern P_desc descriptor_list;
 extern P_index mob_index;

@@ -3,7 +3,7 @@
 #include "world/epic.h"
 #include "ships/ships.h"
 #include "sql/sql.h"
-#include "utility.h"
+#include "core/utility.h"
 #include <stdlib.h>
 
 #ifdef __NO_MYSQL__

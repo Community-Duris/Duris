@@ -10,14 +10,14 @@
 
 #define TROPHY
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
 #include "item/enhance.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <algorithm>
 #include <math.h>
 #include <set>
@@ -39,7 +39,7 @@
 #include "world/hardcore_config.h"
 #include "combat/grapple.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
 #include "world/outposts.h"

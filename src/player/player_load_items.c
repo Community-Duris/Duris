@@ -2,10 +2,10 @@
 
 #include "net/comm.h"
 #include "item/item_ownership_runtime.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "magic/spells.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/structs.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <array>

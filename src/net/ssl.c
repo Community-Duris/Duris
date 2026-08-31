@@ -1,10 +1,10 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include <errno.h>
 #include <gnutls/gnutls.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include "config.h"
+#include "core/config.h"
 
 static gnutls_certificate_credentials_t x509_cred = 0;
 static gnutls_priority_t priority_cache = 0;

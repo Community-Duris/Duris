@@ -3,8 +3,8 @@
 #include "item/item_ownership_runtime.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <cstring>

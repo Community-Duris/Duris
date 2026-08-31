@@ -8,22 +8,22 @@
  ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "guild/artifact_cache_codec.h"
 #include "net/comm.h"
 #include "world/db.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <vector>
-#include "files.h"
+#include "core/files.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_item_repository.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "persistence/persistence_mode.h"
 #include "redis/redis_report_cache.h"

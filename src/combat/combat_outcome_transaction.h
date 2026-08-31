@@ -4,7 +4,7 @@
 #include "combat/combat_outcome_command.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 using combat_outcome_completion_fn = void (*)(bool committed, const combat_outcome_result &result,
 					      unsigned int error_code,

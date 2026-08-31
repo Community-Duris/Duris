@@ -3,11 +3,11 @@
 #include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
-#include "files.h"
-#include "utils.h"
+#include "core/files.h"
+#include "core/utils.h"
 
 #include <climits>
 #include <cstdlib>

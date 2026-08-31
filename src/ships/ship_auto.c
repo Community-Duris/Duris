@@ -4,7 +4,7 @@
  * Ship autopilot
  *****************************************************/
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
@@ -14,9 +14,9 @@
 #include "world/graph.h"
 #include "item/objmisc.h"
 // #include "magic/spells.h"
-#include "structs.h"
+#include "core/structs.h"
 #include "world/events.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/map.h"
 #include "ship_auto.h"
 

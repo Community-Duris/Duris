@@ -6,7 +6,7 @@
  * defined.
  * =================================================================== */
 
-#include "test_async.h"
+#include "core/test_async.h"
 
 /* test_async.h includes ../tests/real/test_persistence_real.h when
  * TEST_REAL_PERSISTENCE is defined, which provides all declarations.

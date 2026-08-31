@@ -12,13 +12,13 @@
 /* and may NOT be used in any form without expressly written permission from */
 /* the author. */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

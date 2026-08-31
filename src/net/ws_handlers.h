@@ -8,7 +8,7 @@
 #ifndef DURIS_WS_HANDLERS_H
 #define DURIS_WS_HANDLERS_H
 
-#include "structs.h"
+#include "core/structs.h"
 #include <cjson/cJSON.h>
 
 /* command handler function type */

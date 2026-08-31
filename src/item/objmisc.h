@@ -3,7 +3,7 @@
 #ifndef _OBJMISC_H_
 
 #ifndef _DE_
-#include "structs.h"
+#include "core/structs.h"
 #endif
 
 // Used in val0 of items of type ITEM_TOTEM - specifies what sphere shaman can cast with the totem

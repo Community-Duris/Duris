@@ -1,10 +1,10 @@
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/events.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "combat/guard.h"
-#include "defines.h"
+#include "core/defines.h"
 #include "magic/spells.h"
 
 extern P_room world;

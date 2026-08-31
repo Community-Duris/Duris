@@ -16,17 +16,17 @@
  * innate code. this function must have the same signature as all
  * command functions: it's void func(P_char ch, char *args, int cmd)
  */
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <signal.h>
 #include <string.h>
-#include "config.h"
+#include "core/config.h"
 #include "combat/damage.h"
 #include "combat/guard.h"
 #include "world/map.h"
@@ -35,7 +35,7 @@
 #include "classes/paladins.h"
 #include "magic/spells.h"
 #include "world/weather.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 #define ADD_RACIAL_INNATE(innate, race, level) (racial_innates[(innate)][(race)] = (level))
 #define ADD_CLASS_INNATE(innate, ch_class, level, spec)                              \

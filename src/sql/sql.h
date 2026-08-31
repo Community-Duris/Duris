@@ -1,7 +1,7 @@
 #ifndef __SQL_H_INCLUDED__
 #define __SQL_H_INCLUDED__
 
-#include "structs.h"
+#include "core/structs.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_observability.h"
 #include "world/world_recovery_pipeline.h"

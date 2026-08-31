@@ -6,7 +6,7 @@
 #ifndef _COPYOVER_H_
 #define _COPYOVER_H_
 
-#include "structs.h" // for P_char, P_desc, etc
+#include "core/structs.h" // for P_char, P_desc, etc
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"

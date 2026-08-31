@@ -4,7 +4,7 @@
 #include "economy/auction_command.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
-#include "structs.h"
+#include "core/structs.h"
 
 #include <cstddef>
 #include <cstdint>

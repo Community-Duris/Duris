@@ -5,7 +5,7 @@
 #ifndef _TTYPE_H_
 #define _TTYPE_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 /* ttype negotiation states */
 #define TTYPE_NONE 0

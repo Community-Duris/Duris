@@ -4,22 +4,22 @@
  *  Redone by Lohrr in OOP style                                         *
  ************************************************************************/
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "net/comm.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "guild/assocs.h"
 #include <string.h>
 #include <strings.h>
 #include "guild/alliances.h"
 #include "world/epic.h"
-#include "files.h"
+#include "core/files.h"
 #include "guild/guildhall.h"
 #include "economy/nexus_stones.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 #ifdef __NO_MYSQL__
 #include "world/buildings.h"

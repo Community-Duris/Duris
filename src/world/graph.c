@@ -28,7 +28,7 @@ CHANGELOG
  */
 
 #include <stdio.h>
-#include "defines.h"
+#include "core/defines.h"
 
 #ifdef __CYGWIN32__
 #include <mingw/values.h>
@@ -45,12 +45,12 @@ CHANGELOG
 #include <vector>
 using namespace std;
 
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include "world/graph.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 
 static void bfs_enqueue(int room, int dir, int step);
 static void bfs_dequeue(void);

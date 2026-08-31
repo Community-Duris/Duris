@@ -8,10 +8,10 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "item/objmisc.h"
 #include <string.h>
 #include "combat/damage.h"

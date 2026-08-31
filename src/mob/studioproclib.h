@@ -18,7 +18,7 @@
 #ifndef _STUDIOPROCLIB_H_
 #define _STUDIOPROCLIB_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 char *proclibobj_parse_sayresponse(char *argument);
 int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument);

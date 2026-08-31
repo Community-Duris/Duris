@@ -8,8 +8,8 @@
  * ***************************************************************************
  */
 
-#include "defines.h"
-#include "prototypes.h"
+#include "core/defines.h"
+#include "core/prototypes.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 

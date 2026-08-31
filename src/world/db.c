@@ -9,13 +9,13 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -28,7 +28,7 @@
 #include "item/enhance.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
 #include "ships.h"

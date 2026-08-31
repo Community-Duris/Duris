@@ -4,12 +4,12 @@
  * handles json commands from web clients: login, register, enter, game, etc.
  */
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/creation_availability_config.h"
-#include "structs.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "net/ws_handlers.h"
 #include <ctype.h>
 #include <openssl/hmac.h>
@@ -20,14 +20,14 @@
 #include <time.h>
 #include "account/account.h"
 #include "combat/chaos_config.h"
-#include "defines.h"
-#include "files.h"
+#include "core/defines.h"
+#include "core/files.h"
 #include "net/gmcp.h"
 #include "world/hardcore_config.h"
 #include "item/item_movement_transaction.h"
 #include "combat/justice.h"
-#include "json_utils.h"
-#include "mm.h"
+#include "core/json_utils.h"
+#include "core/mm.h"
 #include "net/poll.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
@@ -36,7 +36,7 @@
 #include "persistence/presence_policy.h"
 #include "net/websocket.h"
 #include "net/ws_auth.h"
-#include "utility.h"
+#include "core/utility.h"
 
 extern struct descriptor_data *descriptor_list;
 extern struct mm_ds *dead_mob_pool;

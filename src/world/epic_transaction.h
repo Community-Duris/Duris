@@ -3,7 +3,7 @@
 
 #include "persistence/critical_command_coordinator.h"
 #include "world/epic_command.h"
-#include "structs.h"
+#include "core/structs.h"
 
 #include <cstddef>
 #include <cstdint>

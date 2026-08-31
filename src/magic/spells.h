@@ -1319,7 +1319,7 @@
 #define EVIL_AVATAR_OBJ 951
 
 #ifdef _DE_
-#include "defines.h"
+#include "core/defines.h"
 
 struct skill_data
 {

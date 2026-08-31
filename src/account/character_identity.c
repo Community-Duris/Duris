@@ -1,4 +1,4 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 extern P_char character_list;
 

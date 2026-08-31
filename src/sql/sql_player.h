@@ -5,7 +5,7 @@
 #ifndef __SQL_PLAYER_H_INCLUDED__
 #define __SQL_PLAYER_H_INCLUDED__
 
-#include "structs.h"
+#include "core/structs.h"
 
 // ============================================================================
 // transaction helpers

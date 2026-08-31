@@ -1,6 +1,6 @@
 // Redis subsystem composition and lifecycle.
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "redis/redis_lifecycle.h"
 #include "redis/redis_world_runtime.h"
 #include <stdlib.h>

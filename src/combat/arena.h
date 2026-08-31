@@ -3,7 +3,7 @@
  *  Arena Subsystem for Duris
  ****************************************************************************/
 
-#include "structs.h"
+#include "core/structs.h"
 
 #define DEFAULT_ENABLED 0
 #define DEFAULT_MAP 0

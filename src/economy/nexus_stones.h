@@ -1,7 +1,7 @@
 #ifndef _NEXUS_STONES_H_
 #define _NEXUS_STONES_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 #define VAL_STONE_ID 0
 #define VAL_ALIGN 1

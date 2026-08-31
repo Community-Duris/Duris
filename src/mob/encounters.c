@@ -1,12 +1,12 @@
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include "config.h"
+#include "core/config.h"
 #include "combat/justice.h"
 #include "world/map.h"
 #include "magic/spells.h"

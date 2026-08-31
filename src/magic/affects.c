@@ -8,13 +8,13 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -26,12 +26,12 @@
 #include "combat/ctf.h"
 #include "classes/disguise.h"
 #include "classes/epic_skills.h"
-#include "files.h"
+#include "core/files.h"
 #include "net/gmcp.h"
 #include "combat/guard.h"
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"

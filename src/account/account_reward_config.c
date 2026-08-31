@@ -1,4 +1,4 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/account_reward_config.h"
 
 #include <errno.h>

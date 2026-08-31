@@ -1,8 +1,8 @@
 #include "economy/boon_shop_transaction.h"
 
 #include "persistence/persistence_mode.h"
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 
 #include <cerrno>
 #include <new>

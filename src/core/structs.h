@@ -22,10 +22,10 @@
 #define _SOJ_STRUCTS_H_
 
 #ifndef _SOJ_CONFIG_H_
-#include "config.h"
+#include "core/config.h"
 #endif
 
-#include "defines.h"
+#include "core/defines.h"
 #include "world/epic_bonus_state.h"
 #include "persistence/gameplay_read_state.h"
 #include "world/map.h"

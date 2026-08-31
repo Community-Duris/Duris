@@ -1,4 +1,4 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "ships.h"
 
 struct ship_runtime_slot

@@ -7,7 +7,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "economy/cardgames.h"
 #include <stdio.h>
 #include <string.h>

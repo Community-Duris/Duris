@@ -1,11 +1,11 @@
 #ifndef __GRAPPLE_H__
 #define __GRAPPLE_H__
 
-#include "structs.h"
+#include "core/structs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include "config.h"
+#include "core/config.h"
 
 /*
  * Affects definitions:

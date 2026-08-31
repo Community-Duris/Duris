@@ -6,12 +6,12 @@
  *
  */
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "guild/guildhall.h"

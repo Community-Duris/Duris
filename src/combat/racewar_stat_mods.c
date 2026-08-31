@@ -1,9 +1,9 @@
 #include <vector>
 using namespace std;
 
-#include "structs.h"
-#include "utils.h"
-#include "defines.h"
+#include "core/structs.h"
+#include "core/utils.h"
+#include "core/defines.h"
 #include "combat/racewar_stat_mods.h"
 
 #define REG_STAT 0

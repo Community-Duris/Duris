@@ -1,6 +1,6 @@
 #include "world/zone_touch_transaction.h"
 
-#include "structs.h"
+#include "core/structs.h"
 #include "world/epic.h"
 #include "redis/redis_report_cache.h"
 

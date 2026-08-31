@@ -1,6 +1,6 @@
 #include "redis/redis_world_runtime.h"
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "redis/redis_command_observability.h"
 #include "redis/redis_connection.h"
 #include "redis/redis_floor_runtime.h"

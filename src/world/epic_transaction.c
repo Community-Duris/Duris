@@ -1,8 +1,8 @@
 #include "world/epic_transaction.h"
 
 #include "world/epic.h"
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 
 #include <array>
 #include <cstring>

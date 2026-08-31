@@ -1,6 +1,6 @@
 #include "flatfile/flatfile_ip_activity_repository.h"
 
-#include "defines.h"
+#include "core/defines.h"
 #include "flatfile/flatfile_store.h"
 
 #include <algorithm>

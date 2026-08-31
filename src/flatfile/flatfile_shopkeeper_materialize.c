@@ -1,9 +1,9 @@
 #include "flatfile/flatfile_shopkeeper_materialize.h"
 
 #include "flatfile/flatfile_shopkeeper_ownership.h"
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 
 #include <climits>
 #include <cstdint>

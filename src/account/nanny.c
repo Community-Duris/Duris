@@ -5,16 +5,16 @@
  *  Copyright 1994 - 2008 - Duris Systems Ltd.                               *
  *****************************************************************************/
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/creation_availability_config.h"
 #include "combat/chaos_config.h"
-#include "structs.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <arpa/telnet.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -32,13 +32,13 @@
 #include "economy/shop_trade_transaction.h"
 #include "economy/auction_transaction.h"
 #include "economy/boon_reward_transaction.h"
-#include "files.h"
+#include "core/files.h"
 #include "flatfile/flatfile_identity_adapter.h"
 #include "net/gmcp.h"
 #include "guild/guildhall.h"
 #include "world/hardcore_config.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "account/multiplay_whitelist.h"
 #include "classes/paladins.h"
 #include "player/player_load_materialize.h"
@@ -55,7 +55,7 @@
 #include "sql/sql_player.h"
 #include "world/vnum.room.h"
 #include "net/ws_handlers.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 /* external variables */
 

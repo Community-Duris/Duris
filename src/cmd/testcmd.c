@@ -1,6 +1,6 @@
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utility.h"
+#include "core/utility.h"
 #include "cmd/testcmd.h"
 #include <cstring>
 #include <fstream>
@@ -12,7 +12,7 @@
 #include "ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 using namespace std;
 
 extern struct zone_data *zone_table;

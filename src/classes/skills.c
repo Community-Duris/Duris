@@ -7,11 +7,11 @@
 ***************************************************************************
 */
 #include <string.h>
-#include "defines.h"
+#include "core/defines.h"
 #include "magic/spells.h"
 #ifndef _DE_
-#include "structs.h"
-#include "utils.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include "classes/avengers.h"
 #include "magic/blispells.h"
 #include "world/epic.h"
@@ -31,7 +31,7 @@ extern void initialize_skills();
 
 int flag2idx(int);
 #else
-#include "prototypes.h"
+#include "core/prototypes.h"
 extern int SortedSkills[];
 #endif
 

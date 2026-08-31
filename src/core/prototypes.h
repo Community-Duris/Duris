@@ -9,11 +9,11 @@
 #define _SOJ_PROTOTYPES_H_
 
 #ifndef _SOJ_CONFIG_H_
-#include "config.h"
+#include "core/config.h"
 #endif
 
 #ifndef _SOJ_STRUCTS_H_
-#include "structs.h"
+#include "core/structs.h"
 #endif
 
 #include <stdint.h>
@@ -24,8 +24,8 @@
 #include <utility>
 #include "account/account.h"
 #include "cmd/mail.h"
-#include "safe_format.h"
-#include "safe_io.h"
+#include "core/safe_format.h"
+#include "core/safe_io.h"
 using namespace std;
 
 struct AccountBankBalances;

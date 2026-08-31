@@ -12,9 +12,9 @@
 /*
  * #include <errno.h>
  */
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -23,8 +23,8 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/wait.h>
-#include "mm.h"
-#include "profile.h"
+#include "core/mm.h"
+#include "core/profile.h"
 #include "ships/ship_npc_ai.h"
 #include "ships/ships.h"
 

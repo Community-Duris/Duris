@@ -7,9 +7,9 @@
 #include "item/item_ownership_runtime.h"
 #include "classes/necromancy.h"
 #include "player/player_load_items.h"
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <new>

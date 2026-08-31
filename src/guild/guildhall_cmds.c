@@ -6,11 +6,11 @@
  *
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <math.h>
 #include <string.h>
 #include "guild/assocs.h"

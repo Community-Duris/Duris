@@ -17,7 +17,7 @@
 #include "persistence/persistence_queue.h"
 #include "sql/sql_thread_init.h"
 #include "persistence/latency_trace.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 /* wizlog() and logit() are declared in utility.h / structs.h; pull in
  * just the declarations to avoid dragging heavy dependencies into this

@@ -1,8 +1,8 @@
 #include "world/world_recovery_npc_items.h"
 
 #include "item/enhance.h"
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 
 #include <new>
 #include <unordered_map>

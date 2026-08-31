@@ -6,13 +6,13 @@
  ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "combat/chaos_config.h"
 #include <math.h>
 #include <signal.h>
@@ -20,7 +20,7 @@
 #include <string.h>
 #include "guild/guildhall.h"
 #include "persistence/persistence_checkpoint.h"
-#include "profile.h"
+#include "core/profile.h"
 #include "magic/spells.h"
 
 /*

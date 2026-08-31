@@ -1,7 +1,7 @@
 #ifndef WORLD_RECOVERY_NPC_ITEMS_H
 #define WORLD_RECOVERY_NPC_ITEMS_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 #include <stddef.h>
 

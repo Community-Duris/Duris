@@ -7,16 +7,16 @@
  ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
 #include "world/events.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <dlfcn.h>
 #include <stdio.h>
 #include "world/buildings.h"
 #include "world/outposts.h"
-#include "proc-libs.h"
+#include "core/proc-libs.h"
 #include "specs/specs.barovia.h"
 #include "specs/specs.caertannad.h"
 #include "specs/specs.eth2.h"

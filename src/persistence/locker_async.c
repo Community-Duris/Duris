@@ -15,11 +15,11 @@
  * carried by the locker character after LockerToPFile transitions.
  */
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "sql/sql_thread_init.h"
-#include "structs.h"
-#include "utils.h"
-#include "utility.h"
+#include "core/structs.h"
+#include "core/utils.h"
+#include "core/utility.h"
 #include "sql/sql.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_player.h"

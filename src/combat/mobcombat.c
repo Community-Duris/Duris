@@ -10,13 +10,13 @@
 
 #undef RILDEBUG
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <stdio.h>
 #include <string.h>
 #include "guild/assocs.h"
@@ -24,7 +24,7 @@
 #include "world/graph.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "magic/spells.h"
 
 /*

@@ -146,14 +146,14 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/chaos_config.o \
 				 net/comm.o \
 				 persistence/copyover.o \
-				 common.o \
+				 core/common.o \
 				 world/condition.o \
-				 constant.o \
+				 core/constant.o \
 				 combat/ctf.o \
 				 combat/dam_mods.o \
 				 world/db.o \
 				 account/character_identity.o \
-				 debug.o \
+				 core/debug.o \
 				 classes/disguise.o \
 				 classes/drannak.o \
 				 item/enhance.o \
@@ -161,8 +161,8 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/mining.o \
 				 economy/mining_config.o \
 				 item/random_equipment_config.o \
-				 safe_format.o \
-				 safe_io.o \
+				 core/safe_format.o \
+				 core/safe_io.o \
 				 item/salvage.o \
 				 item/material_rarity.o \
 				 classes/dreadlord.o \
@@ -179,7 +179,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/new_events.o \
 				 world/nevent_periodic.o \
 				 combat/fight.o \
-				 files.o \
+				 core/files.o \
 				 combat/fraglist.o \
 				 item/forge_items.o \
 				 world/graph.o \
@@ -205,8 +205,8 @@ OBJS =  $(SHIP_OBJS) \
 				 world/map.o \
 				 net/mccp.o \
 				 classes/memorize.o \
-				 memory.o \
-				 mm.o \
+				 core/memory.o \
+				 core/mm.o \
 				 mob/mobact.o \
 				 world/world_quest.o \
 				 combat/mobcombat.o \
@@ -225,7 +225,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/persistence_checkpoint.o \
 				 persistence/persistence_observability.o \
 				 persistence/persistence_mode.o \
-				 env_file.o \
+				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
 				 flatfile/flatfile_account_repository.o \
@@ -349,7 +349,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/properties.o \
 				 classes/psionics.o \
 				 world/quest.o \
-				 random.o \
+				 core/random.o \
 				 item/randomeq.o \
 				 world/random.mob.o \
 				 world/random.zone.o \
@@ -358,7 +358,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/rogues.o \
 				 classes/shaman.o \
 				 economy/shop.o \
-				 signals.o \
+				 core/signals.o \
 				 classes/skills.o \
 				 magic/smagic.o \
 				 classes/salchemist.o \
@@ -423,7 +423,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/transport.o \
 				 item/trophy.o \
 				 net/unicode.o \
-				 utility.o \
+				 core/utility.o \
 				 world/weather.o \
 				 world/ferry.o \
 				 world/ferryact.o \
@@ -432,19 +432,19 @@ OBJS =  $(SHIP_OBJS) \
 				 world/makeexit.o \
 				 combat/racewar_stat_mods.o \
 				 economy/nexus_stones.o \
-				 test_async.o \
+				 core/test_async.o \
 				 cmd/testcmd.o \
 				 cmd/wikihelp.o \
 				 classes/reavers.o \
 				 classes/avengers.o \
 				 specs/specs.lucrot.o \
 				 specs/specs.gellz.o \
-				 smoke.o \
+				 core/smoke.o \
 				 account/multiplay_whitelist.o \
 				 world/home.o \
 				 net/websocket.o \
 				 net/ws_handlers.o \
-				 json_utils.o \
+				 core/json_utils.o \
 				 net/gmcp.o \
 				 net/ttype.o \
 				 account/wiz_newchar.o \

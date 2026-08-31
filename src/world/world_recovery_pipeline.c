@@ -3,10 +3,10 @@
 #include "persistence/copyover.h"
 #include "world/db.h"
 #include "item/item_ownership_runtime.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "redis/redis_floor_runtime.h"
 #include "ships/ships.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/world_recovery_codec.h"
 #include "world/world_recovery_npc_items.h"
 

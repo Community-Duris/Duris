@@ -3,13 +3,13 @@
         This is where Gellz's Procs and Special Procedures and Events reside.
         Nathan Wheeler - 21-05-2015 - email nwheeler@iinet.net.au
 */
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "specs/specs.gellz.h"
 #include <ctype.h>
 #include <list>

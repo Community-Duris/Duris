@@ -28,13 +28,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utils.h"
-#include "utility.h"
+#include "core/utils.h"
+#include "core/utility.h"
 #include "mob/studioproclib.h"
 
 extern P_index obj_index;

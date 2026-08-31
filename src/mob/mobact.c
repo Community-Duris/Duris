@@ -10,13 +10,13 @@
 
 #undef RILDEBUG
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <climits>
 #include <stdio.h>
 #include <string.h>
@@ -27,12 +27,12 @@
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "economy/nexus_stones.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
-#include "profile.h"
+#include "core/profile.h"
 #include "classes/salchemist.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"

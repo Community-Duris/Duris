@@ -7,13 +7,13 @@
 ***************************************************************************
 */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -26,8 +26,8 @@
 #include "combat/guard.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
-#include "mm.h"
-#include "profile.h"
+#include "core/mm.h"
+#include "core/profile.h"
 #include "ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"

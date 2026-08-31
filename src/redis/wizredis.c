@@ -1,9 +1,9 @@
 // wiz command for redis status and cache management
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>

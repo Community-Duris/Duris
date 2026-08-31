@@ -1,13 +1,13 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
-#include "mm.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
+#include "core/mm.h"
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-#include "defines.h"
+#include "core/defines.h"
 
 #ifdef _OSX_
 #define MAP_ANONYMOUS MAP_ANON

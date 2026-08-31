@@ -3,9 +3,9 @@
  *  Usage: procedures for breath weapon attacks.                           *
  ***************************************************************************/
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "net/comm.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
 

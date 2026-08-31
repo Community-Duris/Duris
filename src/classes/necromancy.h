@@ -1,11 +1,11 @@
 #ifndef __NECROMANCY_H__
 #define __NECROMANCY_H__
 
-#include "structs.h"
+#include "core/structs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include "config.h"
+#include "core/config.h"
 
 #define NECROPET 1201
 

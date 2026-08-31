@@ -1,8 +1,8 @@
 #include "player/player_snapshot_capture.h"
 
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <new>
@@ -10,7 +10,7 @@
 #include <unordered_set>
 
 #include "guild/assocs.h"
-#include "files.h"
+#include "core/files.h"
 #include "item/item_ownership_runtime.h"
 #include "magic/spells.h"
 #include "item/trophy.h"

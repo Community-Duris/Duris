@@ -1,7 +1,7 @@
 #include "economy/currency_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_transaction.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <cassert>
 #include <cstdarg>

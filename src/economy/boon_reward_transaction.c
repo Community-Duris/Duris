@@ -3,9 +3,9 @@
 #include "economy/boon.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "persistence/persistence_mode.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "magic/spells.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <chrono>

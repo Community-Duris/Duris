@@ -1,7 +1,7 @@
 #ifndef PLAYER_NAME_H
 #define PLAYER_NAME_H
 
-#include "utils.h"
+#include "core/utils.h"
 
 static inline void normalize_player_name_case(char *name)
 {

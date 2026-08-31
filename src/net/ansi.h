@@ -21,7 +21,7 @@
 
 #include <string>
 #include <vector>
-#include "config.h"
+#include "core/config.h"
 
 #define ATTR_FG(x) ((x) << 21)
 #define ATTR_BG(x) ((x) << 26)

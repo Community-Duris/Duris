@@ -1,5 +1,5 @@
-#include "prototypes.h"
-#include "config.h"
+#include "core/prototypes.h"
+#include "core/config.h"
 #include "combat/frag_cap_config.h"
 
 #include <errno.h>

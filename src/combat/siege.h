@@ -3,8 +3,8 @@
 
 // #define SIEGE_ENABLED
 
-#include "prototypes.h"
-#include "files.h"
+#include "core/prototypes.h"
+#include "core/files.h"
 
 void init_towns();
 int warmaster(P_char, P_char, int, char *);

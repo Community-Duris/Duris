@@ -13,7 +13,7 @@
 #include <vector>
 using namespace std;
 
-#include "structs.h"
+#include "core/structs.h"
 
 // mud room/object/mob vnums/etc
 

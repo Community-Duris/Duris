@@ -6,11 +6,11 @@
  * votes tracked per account (not per character)
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "net/poll.h"
 #include <ctype.h>
 #include <map>
@@ -19,8 +19,8 @@
 #include <string.h>
 #include <time.h>
 #include "account/account.h"
-#include "config.h"
-#include "json_utils.h"
+#include "core/config.h"
+#include "core/json_utils.h"
 #include "sql/sql.h"
 #include "net/websocket.h"
 

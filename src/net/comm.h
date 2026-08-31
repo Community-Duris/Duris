@@ -7,7 +7,7 @@
 #define _SOJ_COMM_H_
 
 #ifndef _SOJ_STRUCTS_H_
-#include "structs.h"
+#include "core/structs.h"
 #endif
 
 #define TO_ROOM 0

@@ -8,14 +8,14 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
-#include "files.h"
+#include "core/files.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/handler.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@
 #include "item/item_movement_transaction.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
@@ -44,7 +44,7 @@
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 #include "net/ws_handlers.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>

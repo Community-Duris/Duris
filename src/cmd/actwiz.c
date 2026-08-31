@@ -8,7 +8,7 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/creation_availability_config.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -24,22 +24,22 @@
 #include <unistd.h>
 #include "guild/assocs.h"
 #include "economy/shop.h"
-// #include "types.h"  // Not needed on modern Linux systems
-#include "structs.h"
+// #include "core/types.h"  // Not needed on modern Linux systems
+#include "core/structs.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "world/achievements.h"
 #include "combat/damage.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
-#include "files.h"
+#include "core/files.h"
 #include "net/gmcp.h"
 #include "item/item_movement_transaction.h"
 #include "combat/justice.h"
 #include "net/listen.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
 #include "ships/ships.h"
@@ -51,7 +51,7 @@
 #include "world/vnum.obj.h"
 #include "world/weather.h"
 #include "net/ws_handlers.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 /*
  * external variables

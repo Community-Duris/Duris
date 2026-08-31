@@ -7,17 +7,17 @@
  *  * ***************************************************************************
  *  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include "sql/sql.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 #define PROPERTIES_FILE "lib/duris.properties"
 #define MAX_PROPERTIES 3000

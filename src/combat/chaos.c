@@ -1,7 +1,7 @@
 #include "net/comm.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "ships.h"
-#include "utils.h"
+#include "core/utils.h"
 
 extern long new_exp_table[];
 

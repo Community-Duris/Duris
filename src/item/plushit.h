@@ -17,7 +17,7 @@
 #ifndef _PLUSHIT_H_
 #define _PLUSHIT_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 /* TRUE  -> ch cannot hurt victim with this weapon; hit() should abort.
    FALSE -> proceed exactly as before.  Never TRUE while both properties

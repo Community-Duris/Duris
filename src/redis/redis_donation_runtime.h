@@ -1,7 +1,7 @@
 #ifndef REDIS_DONATION_RUNTIME_H
 #define REDIS_DONATION_RUNTIME_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 bool redis_donation_runtime_enabled(void);
 void redis_donation_runtime_set_enabled(bool enabled);

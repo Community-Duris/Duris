@@ -3,12 +3,12 @@
 #include <vector>
 using namespace std;
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/creation_availability_config.h"
-#include "structs.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/epic.h"
 #include "world/epic_transaction.h"
 #include "classes/specializations.h"

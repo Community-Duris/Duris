@@ -5,13 +5,13 @@
  * handshake, frame parsing, and message routing.
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "persistence/persistence_mode.h"
 #include "sql/sql_pool.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "net/websocket.h"
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <zlib.h>
 #include "net/gmcp.h"
-#include "json_utils.h"
+#include "core/json_utils.h"
 #include "net/ws_handlers.h"
 
 extern struct descriptor_data *descriptor_list;

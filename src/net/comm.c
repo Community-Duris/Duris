@@ -6,14 +6,14 @@
  **************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
@@ -47,16 +47,16 @@
 #include "world/graph.h"
 #include "guild/guildhall.h"
 #include "world/hardcore.h"
-#include "json_utils.h"
-#include "lookup_process.h"
+#include "core/json_utils.h"
+#include "core/lookup_process.h"
 #include "world/map.h"
 #include "net/mccp.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "economy/nexus_stones.h"
 #include "world/outposts.h"
 #include "player/player_log.h"
 #include "net/poll.h"
-#include "profile.h"
+#include "core/profile.h"
 #include "combat/racewar_stat_mods.h"
 #include "redis/redis_lifecycle.h"
 #include "redis/redis_presence_runtime.h"
@@ -86,7 +86,7 @@
 #include "persistence/latency_trace.h"
 #include "persistence/persistence_queue.h"
 #include "persistence/persistence_mode.h"
-#include "env_file.h"
+#include "core/env_file.h"
 #include "persistence/locker_async.h"
 #include "persistence/maintenance_repository.h"
 #include "persistence/maintenance_scheduler.h"
@@ -111,7 +111,7 @@
 #include "player/player_save_pipeline.h"
 #include "player/player_load_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
-#include "test_async.h"
+#include "core/test_async.h"
 #endif
 
 void account_player_load_complete(P_desc d, player_load_result result);

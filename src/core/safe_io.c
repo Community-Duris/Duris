@@ -1,6 +1,6 @@
-#include "safe_io.h"
+#include "core/safe_io.h"
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 #include <stdarg.h>
 

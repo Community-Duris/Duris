@@ -4,19 +4,19 @@
 // - Torgal 1/29/2010
 //
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/buildings.h"
 #include <string.h>
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "combat/ctf.h"
-#include "defines.h"
+#include "core/defines.h"
 #include "guild/guildhall.h"
 #include "world/outposts.h"
 #include "magic/spells.h"

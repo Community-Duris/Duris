@@ -32,11 +32,11 @@
 #include <time.h>
 using namespace std;
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "guild/assocs.h"
 #include "economy/auction_houses.h"
 #include "economy/boon.h"

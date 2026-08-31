@@ -10,15 +10,15 @@
 
 #define TROPHY
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "economy/tradeskill.h"
 #include <math.h>
 #include <stdio.h>
@@ -31,7 +31,7 @@
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
 #include "specs/specs.barovia.h"
 #include "specs/specs.eth2.h"
@@ -47,7 +47,7 @@
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
 #include "world/weather.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 #define SMITH_MAX_ITEMS 20
 

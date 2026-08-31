@@ -2,9 +2,9 @@
 
 #include "economy/currency_transaction.h"
 #include "item/item_ownership_runtime.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "economy/shop_trade_runtime.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <cerrno>

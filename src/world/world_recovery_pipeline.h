@@ -1,7 +1,7 @@
 #ifndef WORLD_RECOVERY_PIPELINE_H
 #define WORLD_RECOVERY_PIPELINE_H
 
-#include "structs.h"
+#include "core/structs.h"
 #include "redis/redis_command_observability.h"
 
 #include <stddef.h>

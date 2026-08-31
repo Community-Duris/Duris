@@ -7,10 +7,10 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

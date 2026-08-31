@@ -1,5 +1,5 @@
 #include "flatfile/flatfile_artifact_repository.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 #include <cstdlib>
 #include <filesystem>

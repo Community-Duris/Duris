@@ -3,11 +3,11 @@
  * keeps player connections alive across process replacement
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "persistence/copyover.h"
 #include "sql/sql_player.h"
 #include <errno.h>
@@ -22,10 +22,10 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include "defines.h"
-#include "files.h"
+#include "core/defines.h"
+#include "core/files.h"
 #include "net/gmcp.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "ships/ships.h"
 #include "net/ttype.h"
 #include "net/websocket.h"

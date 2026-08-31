@@ -2,9 +2,9 @@
 
 #include "guild/assocs.h"
 #include "net/comm.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "redis/redis_report_cache.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <chrono>

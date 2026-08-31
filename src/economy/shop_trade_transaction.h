@@ -3,7 +3,7 @@
 
 #include "persistence/critical_command_coordinator.h"
 #include "economy/shop_trade_command.h"
-#include "structs.h"
+#include "core/structs.h"
 
 #include <cstddef>
 

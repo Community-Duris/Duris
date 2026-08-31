@@ -11,7 +11,7 @@
 #endif
 
 #include <signal.h>
-#include "config.h"
+#include "core/config.h"
 #if defined(__has_include)
 #if __has_include(<bsd/string.h>)
 #include <bsd/string.h>

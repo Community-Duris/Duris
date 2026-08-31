@@ -3,7 +3,7 @@
 
 #include "persistence/persistence_observability.h"
 #include "player/player_revision_state.h"
-#include "structs.h"
+#include "core/structs.h"
 
 void mark_player_dirty(int pid);
 void mark_player_dirty_components(int pid, player_component_mask_t components);

@@ -9,7 +9,7 @@
 #ifndef _UTILITY_H_
 #define _UTILITY_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 int GET_LVL_FOR_SKILL(P_char ch, int skill);
 bool is_ansi_char(char collor_char);

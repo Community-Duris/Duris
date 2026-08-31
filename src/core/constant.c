@@ -9,10 +9,10 @@
  * ***************************************************************************
  */
 
-#include "structs.h"
-#include "utils.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include "guild/assocs.h"
-#include "config.h"
+#include "core/config.h"
 #include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"

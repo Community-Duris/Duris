@@ -3,7 +3,7 @@
 
 #include "persistence/critical_command_coordinator.h"
 #include "economy/currency_command.h"
-#include "structs.h"
+#include "core/structs.h"
 
 #include <cstddef>
 #include <cstdint>

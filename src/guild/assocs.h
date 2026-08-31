@@ -9,7 +9,7 @@
 #ifndef _ASSOCS_H_
 #define _ASSOCS_H_
 
-#include "structs.h"
+#include "core/structs.h"
 #include <stdio.h>
 
 /* DEFINES for assocs.c */

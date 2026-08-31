@@ -4,11 +4,11 @@
  * sends game data to clients via telnet or websocket.
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "net/gmcp.h"
 #include <cjson/cJSON.h>
 #include <math.h>
@@ -19,7 +19,7 @@
 #include <string.h>
 #include <time.h>
 #include "world/handler.h"
-#include "json_utils.h"
+#include "core/json_utils.h"
 #include "world/map.h"
 #include "ships/ships.h"
 #include "magic/spells.h"

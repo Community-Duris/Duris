@@ -1,5 +1,5 @@
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 
 typedef struct Deck *P_Deck;
 typedef struct Card *P_Card;

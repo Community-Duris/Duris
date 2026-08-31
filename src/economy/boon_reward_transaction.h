@@ -4,7 +4,7 @@
 #include "economy/boon_reward_command.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
-#include "structs.h"
+#include "core/structs.h"
 
 constexpr size_t BOON_REWARD_PENDING_MAX = 1024;
 

@@ -1,9 +1,9 @@
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "combat/siege.h"
 #include <string.h>
 #include "combat/damage.h"

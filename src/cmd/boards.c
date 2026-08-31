@@ -22,14 +22,14 @@ TO ADD A NEW BOARD, simply follow our easy 3-step program:
 	Last field must always be 0.
 */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "cmd/boards.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,6 +1,6 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include "net/mccp.h"
 #include <errno.h>
 #include <gnutls/gnutls.h>
@@ -10,7 +10,7 @@
 #include <zlib.h>
 #include "persistence/copyover.h"
 #include "net/gmcp.h"
-#include "json_utils.h"
+#include "core/json_utils.h"
 #include "net/telnet.h"
 #include "net/ttype.h"
 #include "net/unicode.h"

@@ -2,11 +2,11 @@
 // player save/load functions for mysql storage
 // part of pfile-to-db migration
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "sql/sql_player.h"
 #include <errno.h>
 #include <limits.h>
@@ -24,13 +24,13 @@
 #include <vector>
 #include "account/account.h"
 #include "guild/assocs.h"
-#include "files.h"
+#include "core/files.h"
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_identity_adapter.h"
 #include "flatfile/flatfile_recipe_repository.h"
 #include "flatfile/flatfile_spellbook_repository.h"
 #include "world/epic_bonus.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "ships/ships.h"
 #include "redis/redis_ship_legacy.h"

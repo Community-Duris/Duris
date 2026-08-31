@@ -8,7 +8,7 @@
 #ifndef WEBSOCKET_H
 #define WEBSOCKET_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 /* config */
 #define WS_PORT 4050

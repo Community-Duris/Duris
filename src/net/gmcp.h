@@ -12,7 +12,7 @@
 #ifndef GMCP_H
 #define GMCP_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 /* forward declarations */
 struct ShipData;

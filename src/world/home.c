@@ -6,7 +6,7 @@ MIT License
 This copy is for the exclusive use of Duris: Land of the Bloodlust
 */
 
-#include "utils.h"
+#include "core/utils.h"
 #include "world/home.h"
 #include <string.h>
 

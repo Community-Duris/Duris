@@ -4,10 +4,10 @@
 #include "world/db.h"
 #include "world/epic.h"
 #include "economy/nexus_stones.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "sql/sql.h"
 #include "magic/spells.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <cerrno>

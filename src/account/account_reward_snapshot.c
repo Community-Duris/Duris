@@ -1,10 +1,10 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "account/account_reward_snapshot.h"
 #include "world/db.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 
 #include <cjson/cJSON.h>
 #include <errno.h>

@@ -8,17 +8,17 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
-#include "files.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
+#include "core/files.h"
 #include <dirent.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include "guild/assocs.h"
-#include "config.h"
+#include "core/config.h"
 #include "persistence/deferred_save_policy.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "flatfile/flatfile_character_delete.h"
@@ -27,7 +27,7 @@
 #include "flatfile/flatfile_shopkeeper_restore.h"
 #include "item/item_ownership_runtime.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_mode.h"

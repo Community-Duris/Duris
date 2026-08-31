@@ -10,13 +10,13 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include <arpa/telnet.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -38,7 +38,7 @@
 #include "persistence/locker_async.h"
 #include "world/makeexit.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "account/multiplay_whitelist.h"
 #include "economy/nexus_stones.h"
 #include "world/outposts.h"

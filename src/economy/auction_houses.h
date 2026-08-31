@@ -6,11 +6,11 @@
  -- torgal april 2006 (torgal@durismud.com)
 */
 
-#include "structs.h"
+#include "core/structs.h"
 #include "world/db.h"
 #include <string>
 #include <vector>
-#include "files.h"
+#include "core/files.h"
 using namespace std;
 
 void init_auction_houses();

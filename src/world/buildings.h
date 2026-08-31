@@ -10,7 +10,7 @@
 #include <vector>
 using namespace std;
 
-#include "structs.h"
+#include "core/structs.h"
 #include "world/map.h"
 #include "world/vnum.room.h"
 

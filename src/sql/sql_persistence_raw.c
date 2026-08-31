@@ -7,9 +7,9 @@
  * for sql_persistence_execute_raw() lives in sql.c alongside the other stubs.
  */
 
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include "sql/sql.h"
 #include <stdio.h>
 #include <string.h>

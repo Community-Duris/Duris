@@ -1,7 +1,7 @@
 #ifndef _ACCOUNT_REWARD_SNAPSHOT_H_
 #define _ACCOUNT_REWARD_SNAPSHOT_H_
 
-#include "structs.h"
+#include "core/structs.h"
 #include "account/account_reward.h"
 
 char *account_reward_snapshot_serialize(P_obj obj);

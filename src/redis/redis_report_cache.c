@@ -1,11 +1,11 @@
 #include "redis/redis_report_cache.h"
 
-#include "config.h"
+#include "core/config.h"
 #include "world/db.h"
-#include "structs.h"
+#include "core/structs.h"
 #include "world/epic.h"
 #include "combat/frag_cap_config.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "redis/redis_cache_store.h"
 #include "redis/redis_command_observability.h"
 #include "redis/redis_connection.h"
@@ -14,8 +14,8 @@
 #include "persistence/report_cache_codec.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 
 #include <algorithm>
 #include <cctype>

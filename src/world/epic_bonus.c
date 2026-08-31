@@ -7,14 +7,14 @@
 // the bonus chosen, if a new bonus is chosen your accumulated epics will be reset to
 // the date and time you chose.
 
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include "world/epic.h"
 #include "world/epic_bonus.h"
 #include "world/epic_command.h"
 #include <string.h>
-#include "config.h"
+#include "core/config.h"
 #include "sql/sql.h"
 #include <errno.h>
 #include <limits.h>

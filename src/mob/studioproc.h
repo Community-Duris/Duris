@@ -25,7 +25,7 @@
 #ifndef _STUDIOPROC_H_
 #define _STUDIOPROC_H_
 
-#include "structs.h"
+#include "core/structs.h"
 
 #define STUDIOPROC_FILE "areas/world.trg"
 

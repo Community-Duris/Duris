@@ -1,11 +1,11 @@
 #ifndef __BOON_H__
 #define __BOON_H__
 
-#include "structs.h"
+#include "core/structs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include "config.h"
+#include "core/config.h"
 #include "economy/boon_reward_command.h"
 
 // Boon DB Tables

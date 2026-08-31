@@ -10,13 +10,13 @@
 
 #define TROPHY
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "world/hardcore.h"
 #include "world/hardcore_config.h"
 #include <ctype.h>
@@ -26,7 +26,7 @@
 #include "combat/arena.h"
 #include "combat/arenadef.h"
 #include "combat/justice.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

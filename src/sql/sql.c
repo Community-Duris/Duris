@@ -6,8 +6,8 @@
  *                                                                      *
  ************************************************************************/
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
@@ -21,13 +21,13 @@
 #include "flatfile/flatfile_shop_trophy_history.h"
 #include "flatfile/flatfile_world_quest_history.h"
 #include "persistence/persistence_mode.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "sql/sql.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
 #include "account/session_audit_transaction.h"
-#include "runtime_compatibility_contract.h"
+#include "core/runtime_compatibility_contract.h"
 #include <algorithm>
 #include <openssl/sha.h>
 #include <math.h>
@@ -52,7 +52,7 @@
 #include "economy/boon.h"
 #include "world/epic.h"
 #include "world/graph.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
 #include "redis/redis_maintenance.h"
 #include "classes/specializations.h"
@@ -61,7 +61,7 @@
 #include "combat/frag_cap_config.h"
 #include "world/timers.h"
 #include "persistence/persistence_queue.h"
-#include "utility.h"
+#include "core/utility.h"
 #include <errno.h>
 #include <limits.h>
 

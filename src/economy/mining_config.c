@@ -1,5 +1,5 @@
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 #include "economy/mining_config.h"
 
 #include <stdio.h>

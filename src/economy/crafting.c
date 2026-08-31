@@ -3,10 +3,10 @@
  * Command ownership moves here in subsequent extraction slices; the plan is
  * already shared so preview and execution cannot drift on material costs.
  */
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
-#include "config.h"
+#include "core/config.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -16,7 +16,7 @@
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "sql/sql_player.h"
 #include <math.h>
 #include <stdio.h>

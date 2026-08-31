@@ -11,7 +11,7 @@
  *
  * Tharkun, January 2004
  */
-#include "structs.h"
+#include "core/structs.h"
 #include <dirent.h>
 #include <fnmatch.h>
 #include <stdio.h>

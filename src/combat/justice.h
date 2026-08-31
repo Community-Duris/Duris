@@ -6,11 +6,11 @@
 #define _SOJ_JUSTICE_H_
 
 #ifndef _SOJ_STRUCTS_H_
-#include "structs.h"
+#include "core/structs.h"
 #endif
 
 #ifndef _SOJ_UTILS_H_
-#include "utils.h"
+#include "core/utils.h"
 #endif
 
 /* okay...  some "rules".  All justice related macros shall begin with

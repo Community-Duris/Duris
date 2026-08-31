@@ -1,7 +1,7 @@
 #ifndef CRAFTING_H
 #define CRAFTING_H
 
-#include "structs.h"
+#include "core/structs.h"
 
 enum crafting_mode
 {

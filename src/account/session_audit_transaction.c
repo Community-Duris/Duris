@@ -1,8 +1,8 @@
 #include "account/session_audit_transaction.h"
 
 #include "persistence/critical_command_coordinator.h"
-#include "prototypes.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 
 #include <ctime>
 

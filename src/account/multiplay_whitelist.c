@@ -1,7 +1,7 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "account/multiplay_whitelist.h"
 #include <string.h>
 #include "sql/sql.h"

@@ -8,14 +8,14 @@
  * ***************************************************************************
  */
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +26,7 @@
 #include "guild/assocs.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
-#include "defines.h"
+#include "core/defines.h"
 #include "classes/disguise.h"
 #include "world/graph.h"
 #include "combat/grapple.h"
@@ -34,7 +34,7 @@
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
 #include "world/outposts.h"
@@ -43,7 +43,7 @@
 #include "sql/sql.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 /*
  * external variables

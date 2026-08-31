@@ -1,8 +1,8 @@
 #include "world/epic_task_catalog.h"
 
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "sql/sql.h"
-#include "utils.h"
+#include "core/utils.h"
 
 #include <cerrno>
 #include <cstdlib>

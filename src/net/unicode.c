@@ -1,5 +1,5 @@
 #include "net/unicode.h"
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include <stdlib.h>
 #include <string.h>
 #include <map>

@@ -1,4 +1,4 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "world/hardcore_config.h"
 
 #include <errno.h>

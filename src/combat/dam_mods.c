@@ -1,7 +1,7 @@
 #include <math.h>
 #include <strings.h>
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "combat/damage.h"
 #include "world/db.h"
@@ -11,7 +11,7 @@
 #include "classes/necromancy.h"
 #include "classes/paladins.h"
 #include "magic/spells.h"
-#include "utils.h"
+#include "core/utils.h"
 
 extern float dam_factor[LAST_DF + 1];
 extern float racial_spldam_offensive_factor[LAST_RACE + 1][LAST_SPLDAM_TYPE];

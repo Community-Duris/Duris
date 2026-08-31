@@ -1,11 +1,11 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include "guild/assocs.h"
-#include "config.h"
+#include "core/config.h"
 #include "combat/frag_cap_config.h"
 #include "redis/redis_report_cache.h"
 #include "ships.h"

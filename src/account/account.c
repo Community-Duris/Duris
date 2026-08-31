@@ -2,13 +2,13 @@
  * account.c
  *************************************************************/
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
 #include "item/item_movement_transaction.h"
-#include "utils.h"
+#include "core/utils.h"
 #include "account/account.h"
 #include "account/password_hash.h"
 #include <ctype.h>
@@ -19,7 +19,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include "world/graph.h"
-#include "mm.h"
+#include "core/mm.h"
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql_player.h"

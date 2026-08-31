@@ -12,7 +12,7 @@
 
 #ifndef _SOJ_STRUCTS_H
 #ifdef _LINUX_SOURCE
-#include "structs.h"
+#include "core/structs.h"
 #endif
 #endif
 

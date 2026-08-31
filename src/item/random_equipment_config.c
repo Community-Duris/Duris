@@ -1,4 +1,4 @@
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include "item/random_equipment_config.h"
 
 #include <errno.h>

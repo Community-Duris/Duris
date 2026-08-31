@@ -10,11 +10,11 @@
 #include <vector>
 using namespace std;
 
-#include "prototypes.h"
-#include "structs.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
 #include "net/comm.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include "item/objmisc.h"
 #include "sql/sql.h"
 #include "world/timers.h"
