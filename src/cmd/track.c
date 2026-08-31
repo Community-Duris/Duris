@@ -43,7 +43,7 @@ void event_track_move(P_char ch, P_char vict, P_obj /*obj*/, void * /*data*/)
 	int dir, dist;
 	char buf[MAX_STRING_LENGTH];
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("Something comes up, and you abandon the hunt.\r\n", ch);
 		REMOVE_BIT(ch->specials.affected_by3, AFF3_TRACKING);
@@ -732,7 +732,7 @@ void show_tracks(P_char ch, int room)
 		percent += 30;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		return;
 	}

@@ -2201,7 +2201,7 @@
       "locator": "kingdom_land",
       "data_category": "reference_or_configuration",
       "data_subject_key": "none",
-      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "technical_purpose": "retired compatibility schema retained for legacy data custody",
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
@@ -4236,7 +4236,7 @@
       "locator": "siege_item_affects",
       "data_category": "world_or_gameplay_state",
       "data_subject_key": "none",
-      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "technical_purpose": "retired compatibility schema retained for legacy data custody",
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
@@ -4251,8 +4251,8 @@
         "excluded_fields": [],
         "shared_fields": []
       },
-      "season_action": "reset_delete",
-      "active_retention": "current_season_or_operational_need",
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
       "terminal_action": "retain",
       "exception": "none",
@@ -4265,7 +4265,7 @@
       "locator": "siege_item_extra_descr",
       "data_category": "world_or_gameplay_state",
       "data_subject_key": "none",
-      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "technical_purpose": "retired compatibility schema retained for legacy data custody",
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
@@ -4280,8 +4280,8 @@
         "excluded_fields": [],
         "shared_fields": []
       },
-      "season_action": "reset_delete",
-      "active_retention": "current_season_or_operational_need",
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
       "terminal_action": "retain",
       "exception": "none",
@@ -4294,7 +4294,7 @@
       "locator": "siege_items",
       "data_category": "world_or_gameplay_state",
       "data_subject_key": "none",
-      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "technical_purpose": "retired compatibility schema retained for legacy data custody",
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
@@ -4309,8 +4309,8 @@
         "excluded_fields": [],
         "shared_fields": []
       },
-      "season_action": "reset_delete",
-      "active_retention": "current_season_or_operational_need",
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
       "terminal_action": "retain",
       "exception": "none",
@@ -4381,7 +4381,7 @@
       "locator": "towns",
       "data_category": "reference_or_configuration",
       "data_subject_key": "none",
-      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "technical_purpose": "retired compatibility schema retained for legacy data custody",
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"

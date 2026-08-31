@@ -22,7 +22,6 @@
 #include "world/graph.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "combat/siege.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "economy/tradeskill.h"
@@ -723,20 +722,6 @@ int can_enter_room(P_char ch, int room, int show_msg)
 		return FALSE;
 	}
 
-#ifdef SIEGE_ENABLED
-	if (IS_INVADER(ch))
-	{
-		if (check_gates(ch, room))
-		{
-			if (show_msg)
-			{
-				send_to_char("You can not pass through the gates!\n", ch);
-			}
-			return FALSE;
-		}
-	}
-#endif
-
 	if (world[room].sector_type == SECT_UNDRWLD_MOUNTAIN && IS_MAP_ROOM(ch->in_room) &&
 	    IS_MAP_ROOM(room))
 	{
@@ -1190,8 +1175,6 @@ void blow_char_somewhere_else(P_char ch, int dir)
 
 	if (IS_FIGHTING(ch))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next)
 		if (IS_FIGHTING(t_ch) && (GET_OPPONENT(t_ch) == ch))
 			stop_fighting(t_ch);
@@ -1912,8 +1895,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 			next_dude = k->next;
 			if ((was_in == k->follower->in_room) && CAN_ACT(k->follower) &&
 			    MIN_POS(k->follower, POS_STANDING + STAT_RESTING) &&
-			    !IS_FIGHTING(k->follower) && !IS_DESTROYING(k->follower) &&
-			    !NumAttackers(k->follower) && CAN_SEE(k->follower, ch))
+			    !IS_FIGHTING(k->follower) && !NumAttackers(k->follower) &&
+			    CAN_SEE(k->follower, ch))
 			{
 				/* if((IS_NPC(k->follower) &&
 				   k->follower->group &&
@@ -3039,7 +3022,7 @@ void do_pick(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("You don't know how to pick locks...\n", ch);
 		return;
 	}
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("Uh huh, while fighting eh?  That would be a REALLY nice trick!\n",
 			     ch);
@@ -4155,11 +4138,6 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 			send_to_char("Resting now will most likely lead to your final rest!\n", ch);
 			return;
 		}
-		if (IS_DESTROYING(ch))
-		{
-			send_to_char("You try, but you can't focus while destroying.\n", ch);
-			return;
-		}
 		if (IS_AFFECTED(ch, AFF_BOUND))
 		{
 			send_to_char("Your bonds prevent you from really getting comfortable.\n",
@@ -4284,11 +4262,6 @@ void do_sleep(P_char ch, char * /*argument*/, int /*cmd*/)
 	if (IS_FIGHTING(ch) || NumAttackers(ch))
 	{
 		send_to_char("Sleep while fighting?  Are you MAD?\n", ch);
-		return;
-	}
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Sleep while destroying an object?\n", ch);
 		return;
 	}
 	if (world[ch->in_room].sector_type >= SECT_WATER_SWIM &&

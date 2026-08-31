@@ -352,11 +352,7 @@ int berserker_toss(P_char ch, P_char vict, int cmd, char * /*arg*/)
 		Stun(vict, ch, 2 * PULSE_VIOLENCE, TRUE);
 		Stun(victtwo, ch, 2 * PULSE_VIOLENCE, TRUE);
 		stop_fighting(victtwo);
-		if (IS_DESTROYING(victtwo))
-			stop_destroying(victtwo);
 		stop_fighting(vict);
-		if (IS_DESTROYING(vict))
-			stop_destroying(vict);
 	} //  33% chance of proc
 
 	return FALSE;

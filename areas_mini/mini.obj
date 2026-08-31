@@ -2099,22 +2099,6 @@ a broken spear lies here.~
 12 16 0 0 7 0 0 1 0 0 0
 0 0 0 0 0 0 0 0
 1 2 100
-#160
-shattered ballista missile~
-a shattered ballista missile~
-A shattered ballista missile lies here.~
-~
-12 5 0 0 7 0 0 1 0 0 0
-0 0 0 0 0 0 0 0
-1 4 100
-#161
-shattered catapult missile~
-a shattered catapult missile~
-A shattered catapult missile lies here.~
-~
-12 5 0 0 7 0 0 1 0 0 0
-0 0 0 0 0 0 0 0
-1 4 100
 #162
 broken sling missile~
 a shattered sling missile~
@@ -2278,22 +2262,6 @@ band~
 
 &+B*&+bV&+B*&N
 ~
-#178
-ballista missile~
-&+ya ballista missile&N~
-&+yA deadly looking ballista missile lies here.&N~
-~
-7 5 2 3 7 0 0 1 0 0 0
-0 0 0 0 0 0 0 0
-30 500 100
-#179
-boulder catapult rock~
-&+La heavy catapult boulder&N~
-&+LA large greyish catapult boulder lies here.&N~
-~
-7 11 2 3 7 0 0 1 0 0 0
-0 0 0 0 0 0 0 0
-125 5 100
 #180
 bow~
 &+ya bow&N~

@@ -1354,8 +1354,6 @@ bool char_to_room(P_char ch, int room, int dir)
 
 	if (GET_OPPONENT(ch) && (dir >= 0))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch) && (dir >= 0))
-		stop_destroying(ch);
 
 	char_light(ch);
 	room_light(ch->in_room, REAL);
@@ -1564,8 +1562,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	}
 	if (IS_MAP_ROOM(ch->in_room) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
-		/*random_encounters(ch);
-		   check_for_kingdom_trespassing(ch); */
+		/* random_encounters(ch); */
 	}
 
 	if (ALONE(ch))
@@ -4832,8 +4829,6 @@ void extract_char(P_char ch)
 
 	if (GET_OPPONENT(ch))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	/*
 	 * Code to stop all that are attacking ch
 	 */

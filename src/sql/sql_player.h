@@ -205,18 +205,11 @@ char *sql_escape_string(const char *str);
 // log a redacted SQL failure with a stable call-site label
 void sql_player_error(const char *site);
 
-// towns
-bool sql_save_towns(void);
-bool sql_load_towns(void);
-
 // account ips
 struct acct_ip;
 bool sql_save_account_ips(const char *account_name, struct acct_ip *ips);
 struct acct_ip *sql_load_account_ips(const char *account_name);
 bool sql_delete_account_ips(const char *account_name);
-
-// kingdom land
-bool sql_save_kingdom_land(void);
 
 // corpses
 bool sql_save_corpse(P_obj corpse);
@@ -234,12 +227,6 @@ void sql_save_dirty_shopkeepers(void);
 bool sql_save_saved_item(P_obj item, const char *item_key);
 bool sql_delete_saved_item(const char *item_key);
 void sql_restore_saved_items(void);
-
-// siege items
-bool sql_save_siege_item(P_obj obj, int room_vnum);
-bool sql_save_siege_list(void);
-bool sql_delete_siege_items(int room_vnum);
-void sql_load_siege_list(void);
 
 // ships
 struct ShipData;

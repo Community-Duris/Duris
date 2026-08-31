@@ -16617,7 +16617,7 @@ Shout       : ON     |     Echo        : ON     |     Vicious     : OFF
 Petition    : ON     |     Paging      : OFF    |     Save Notify : ON     
 Anonymous   : OFF    |     Screen Size :  24    |     Terminal    : ANSI   
 Map         : ON     |     Old SmartP  : OFF    |     Show Titles : ON     
-Battle Alert: OFF    |     Kingdom View: OFF    |     Ship Map    : OFF    
+Battle Alert: OFF    |     Ship Map    : OFF
 Take        : ON     |     Terse Battle: OFF    |     QuickChant  : ON     
 Project     : OFF    |     AFK         : OFF    |     NChat       : ON     
 Hint Channel: OFF    |     Group Needed: OFF    |     Showspec    : ON
@@ -19295,17 +19295,6 @@ Lesser God command (level 59). Account management front end. 'i' shows an online
 information and character list; 'l' looks up accounts by name. The
 remove-char ('r'), add-char ('a') and change-email ('c') subcommands are
 not implemented yet.
-===========================================================================
-#
-ADD (Immortal Command)
-===========================================================================
-Syntax: add [resources|defense|offense] <town> <amount>
-        add list
-
-Forger command (level 61). Siege-management tool. Adds resources, defense or offense to a
-town (negative amounts subtract; values are clamped at zero) and saves
-the result. 'add list' shows all towns and registered siege objects.
-Towns are matched by abbreviation against their zone name.
 ===========================================================================
 #
 ADVANCE (Immortal Command)

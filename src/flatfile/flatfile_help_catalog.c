@@ -24,7 +24,6 @@ constexpr help_source individual_sources[] = {
 	{ "lib/information/help.1", "help commands" },
 	{ "lib/information/help.2", "help advanced" },
 	{ "lib/information/helpships", "ships" },
-	{ "lib/information/helpkingdoms", "kingdoms" },
 	{ "lib/information/faq", "faq" },
 	{ "lib/information/rules", "rules" },
 	{ "lib/information/credits", "credits" },

@@ -32,7 +32,6 @@
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
 #include "ships/ships.h"
-#include "combat/siege.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -87,7 +86,6 @@ extern void event_reset_zone(P_char, P_char, P_obj, void *);
 struct reset_q_type reset_q;
 
 P_room world; /* dyn alloc'ed array of rooms     */
-P_town towns; /* List of towns for defenses      */
 int top_of_world = 0; /* ref to the top element of world - LAST VALID ROOM INDEX
                                             * world[top_of_world] is valid world[top_of_world+1] is out
                                             * of bounds.
@@ -1190,9 +1188,6 @@ void boot_world(int mini_mode)
 
 		/* A few presets, may get changed further down */
 
-		/*      world[room_nr].resources = 0;
-			    world[room_nr].kingdom_num = 0;
-			    world[room_nr].kingdom_type = 0;*/
 		world[room_nr].continent = 0;
 		world[room_nr].funct = 0;
 		world[room_nr].contents = 0;
@@ -3929,11 +3924,6 @@ void reset_zone(int zone, int force_item_repop)
 		zone_table[zone].lifespan = zone_table[zone].lifespan_min;
 
 	zone_table[zone].age = 0;
-
-#ifdef SIEGE_ENABLED
-	// Check and deploy troops if applicable.
-	check_deploy(&zone_table[zone]);
-#endif
 }
 
 #undef ZCMD
@@ -4350,7 +4340,6 @@ void reset_char(P_char ch)
 #else
 	ch->specials.next_fighting = 0;
 #endif
-	ch->specials.destroying_obj = 0;
 	GET_OPPONENT(ch) = 0;
 	ch->specials.carry_weight = 0;
 	ch->specials.carry_items = 0;

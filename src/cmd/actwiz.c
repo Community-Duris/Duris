@@ -64,7 +64,6 @@ extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_obj object_list;
-extern P_town towns;
 extern P_room world;
 extern ::byte create_locked;
 extern ::byte locked;
@@ -110,7 +109,6 @@ extern const char *zone_bits[];
 extern const char *justice_obj_status[];
 extern char *shutdown_message;
 extern const char *item_material[];
-extern const char *kingdom_type_list[];
 extern const char *resource_list[];
 extern const int shot_damage[];
 extern const struct stat_data stat_factor[];
@@ -1715,11 +1713,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 		checked_snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf),
 				 "&+YJustice Patrol:&N %s \n",
 				 town_name_list[(int)rm->justice_area]);
-
-		//    snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf), "&+YKingdom Type:&N %s ", kingdom_type_list[(int) rm->kingdom_type]);
-		//    snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf), "&+YKingdom Number:&N %d\n", rm->kingdom_num);
-		//    sprintbit(rm->resources, resource_list, buf);
-		//    snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf), "&+YResources:&N (%ld) %s\n", rm->resources, buf);
 
 		checked_snprintf(o_buf + strlen(o_buf), MAX_STRING_LENGTH - strlen(o_buf),
 				 "&+YSpecial procedure:&N %s\n",
@@ -5043,7 +5036,7 @@ void do_switch(P_char ch, char *argument, int cmd)
 				ch->desc->snoop.snoop_by_list = NULL;
 			}
 
-			if (IS_TRUSTED(ch) && !IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+			if (IS_TRUSTED(ch) && !IS_FIGHTING(ch))
 			{
 				if (GET_WIZINVIS(ch) < GET_LEVEL(ch))
 				{

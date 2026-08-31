@@ -404,7 +404,7 @@ blackpearl                *1422
 Voluntown                 *1424-1425
 *OPEN 1426-3999
 tradeskills	          *4000-4009
-siege                     *4010
+*RETIRED 4010 (siege; do not reuse)
 *OPEN 4011-4019
 library                   *4020-4021
 *OPEN 4022-4999

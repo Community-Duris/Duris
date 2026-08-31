@@ -174,8 +174,6 @@ void spell_frost_beam(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 		StopMercifulAttackers(victim);
 	}
 }
@@ -1270,8 +1268,6 @@ void spell_induce_tupor(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused
 
 	if (GET_OPPONENT(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 	affect_to_char(victim, &af);
 
 	if (GET_STAT(victim) > STAT_SLEEPING)
@@ -2074,8 +2070,6 @@ void spell_single_polar_vortex(int level, P_char ch, char * /*arg*/, [[maybe_unu
 
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 	}
 
 	send_to_char("&+CYou find no shelter from the savage vortex!&n\n", victim);
@@ -2168,8 +2162,6 @@ void spell_ethereal_travel(int /*level*/, P_char ch, char * /*arg*/, int /*type*
 				// if they're fighting, break it up
 				if (IS_FIGHTING(gl->ch))
 					stop_fighting(gl->ch);
-				if (IS_DESTROYING(gl->ch))
-					stop_destroying(gl->ch);
 
 				// move the char
 				char_from_room(gl->ch);
@@ -2191,8 +2183,6 @@ void spell_ethereal_travel(int /*level*/, P_char ch, char * /*arg*/, int /*type*
 		// if they're fighting, break it up
 		if (IS_FIGHTING(ch))
 			stop_fighting(ch);
-		if (IS_DESTROYING(ch))
-			stop_destroying(ch);
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 		if (ctf_carrying_flag(ch) == CTF_PRIMARY)
@@ -2848,8 +2838,6 @@ void spell_etheric_gust(int level, P_char ch, char * /*arg*/, int /*type*/, P_ch
 
 	if (IS_FIGHTING(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 
 	if (victim->in_room != NOWHERE)
 		for (t_ch = world[victim->in_room].people; t_ch; t_ch = t_ch->next)

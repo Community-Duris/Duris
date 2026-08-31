@@ -421,8 +421,6 @@ int hoa_sin(P_char ch, P_char vict, int cmd, char * /*arg*/)
 			StopCasting(victim);
 			if (IS_FIGHTING(victim))
 				stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 			bzero(&af, sizeof(af));
 			af.type = SPELL_MAJOR_PARALYSIS;
 			af.flags = AFFTYPE_SHORT;

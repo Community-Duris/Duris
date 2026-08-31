@@ -705,8 +705,6 @@ void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 			unlink_char(ch, victim, LNK_GRAPPLED);
 
 			stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 			StopMercifulAttackers(victim);
 
 			memset(&af, 0, sizeof(af));

@@ -106,12 +106,8 @@ int spec_mob(P_char ch, P_char pl, int cmd, char *arg);
 
 /* lohrr stuff */
 int sphinx_prefect_crown(P_obj obj, P_char ch, int cmd, char *arg);
-int ballista(P_obj obj, P_char ch, int cmd, char *arg);
-int battering_ram(P_obj obj, P_char ch, int cmd, char *arg);
-int catapult(P_obj obj, P_char ch, int cmd, char *arg);
 int proc_lohrr(P_obj obj, P_char ch, int cmd, char *arg);
 int proc_soldon_hat(P_obj obj, P_char ch, int cmd, char *arg);
-int castlewall(P_obj obj, P_char ch, int cmd, char *arg);
 
 /* harpy hometown */
 int harpy_gatekeeper(P_char ch, P_char pl, int cmd, char *arg);

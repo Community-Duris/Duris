@@ -977,8 +977,6 @@ bool DragonCombat(P_char ch, int awe)
 			{
 				if (IS_FIGHTING(tchar1))
 					stop_fighting(tchar1);
-				if (IS_DESTROYING(tchar1))
-					stop_destroying(tchar1);
 			}
 		}
 		return TRUE;

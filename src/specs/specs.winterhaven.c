@@ -1285,10 +1285,6 @@ int illithid_axe(P_obj obj, P_char ch, int cmd, char *arg)
 
 				SET_POS(vict, POS_SITTING + GET_STAT(vict));
 				stop_fighting(vict);
-				if (IS_DESTROYING(vict))
-				{
-					stop_destroying(vict);
-				}
 				CharWait(vict, PULSE_VIOLENCE);
 				break;
 			case 1:

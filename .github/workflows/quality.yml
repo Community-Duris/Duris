@@ -100,10 +100,6 @@ jobs:
         run: python3 tests/async/test_flatfile_timers.py
       - name: Verify flat-file polls
         run: python3 tests/async/test_flatfile_polls.py
-      - name: Verify flat-file towns
-        run: python3 tests/async/test_flatfile_towns.py
-      - name: Verify flat-file siege objects
-        run: python3 tests/async/test_flatfile_siege.py
       - name: Verify flat-file help catalog
         run: python3 tests/async/test_flatfile_help_catalog.py
       - name: Verify database-independent launcher

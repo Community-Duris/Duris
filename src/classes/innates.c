@@ -1185,11 +1185,6 @@ bool check_reincarnate(P_char ch)
 				stop_fighting(ch);
 			}
 
-			if (IS_DESTROYING(ch))
-			{
-				stop_destroying(ch);
-			}
-
 			for (t = world[ch->in_room].people; t; t = t_next)
 			{
 				t_next = t->next_in_room;
@@ -1794,8 +1789,6 @@ void bite(P_char ch, P_char victim)
 					       CMD_SAY);
 					if (IS_FIGHTING(victim))
 						stop_fighting(victim);
-					if (IS_DESTROYING(victim))
-						stop_destroying(victim);
 					StopMercifulAttackers(victim);
 				}
 			}
@@ -1916,7 +1909,7 @@ void do_darkness(P_char ch, char * /*arg*/, int /*cmd*/)
 
 void do_shift_astral(P_char ch, char * /*arg*/, int /*cmd*/)
 {
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're too busy fighting!\n", ch);
 		CharWait(ch, PULSE_VIOLENCE);
@@ -1942,7 +1935,7 @@ void do_shift_astral(P_char ch, char * /*arg*/, int /*cmd*/)
 
 void do_shift_ethereal(P_char ch, char * /*arg*/, int /*cmd*/)
 {
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're too busy fighting!\n", ch);
 		CharWait(ch, PULSE_VIOLENCE);
@@ -1977,7 +1970,7 @@ void do_shift_prime(P_char ch, char * /*arg*/, int /*cmd*/)
 				       5759,  2018,  99295, 93919, 16302, 574427, 557620 };
 	const int phantom_room[] = { 5927, 98731, 14373, 99465, 18305, 217481, 15100, 8486, 8430 };
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're too busy fighting!\n", ch);
 		CharWait(ch, PULSE_VIOLENCE);
@@ -2245,7 +2238,7 @@ void do_flurry(P_char ch, char * /*arg*/, int /*cmd*/)
 
 void do_plane_shift(P_char ch, char *arg, int /*cmd*/)
 {
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're too busy fighting!\n", ch);
 		CharWait(ch, PULSE_VIOLENCE);
@@ -2454,7 +2447,7 @@ void do_dimension_door(P_char ch, char *arg, int /*cmd*/)
 	P_char victim;
 	P_obj obj;
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You can't do this while fighting.\n", ch);
 		return;
@@ -2711,8 +2704,6 @@ void event_torm(P_char ch, P_char victim, P_obj /*obj*/, void * /*args*/)
 	for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 	{
 		stop_fighting(tch);
-		if (IS_DESTROYING(tch))
-			stop_destroying(tch);
 		update_pos(tch);
 
 		if (IS_NPC(tch) && !number(0, 1) && !IS_ELITE(tch))
@@ -3901,8 +3892,6 @@ void webwrap(P_char ch, P_char victim)
 
 	CharWait(ch, PULSE_VIOLENCE);
 	stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 }
 
 void do_webwrap(P_char ch, char *argument, int /*cmd*/)
@@ -4245,7 +4234,7 @@ void event_fade(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct fade_data *fdata = (struct fade_data *)data;
 
-	if (!ch->desc || IS_FIGHTING(ch) || (GET_STAT(ch) < STAT_SLEEPING) || IS_DESTROYING(ch) ||
+	if (!ch->desc || IS_FIGHTING(ch) || (GET_STAT(ch) < STAT_SLEEPING) ||
 	    IS_SET(ch->specials.affected_by, AFF_HIDE))
 	{
 		send_to_char("You fade into existance confused and in the same place.\n", ch);

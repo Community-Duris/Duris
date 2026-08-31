@@ -10,7 +10,7 @@ limits = (SRC / "limits.c").read_text()
 new_events = (SRC / "new_events.c").read_text()
 
 assert contains(limits, "else if (GET_STAT(ch) > STAT_INCAP)")
-assert contains(limits, "if (IS_FIGHTING(ch) || IS_DESTROYING(ch))")
+assert contains(limits, "if (IS_FIGHTING(ch))")
 assert contains(new_events, "NEVENT_NORMAL_AGING_DEFERRALS")
 assert contains(new_events, "NEVENT_NORMAL_AGING_TICKS")
 assert contains(new_events, "NEVENT_PRIORITY_AGED_NORMAL")

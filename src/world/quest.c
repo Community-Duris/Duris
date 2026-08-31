@@ -468,7 +468,7 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 
 	/* if quester can't see player */
 	if (((!CAN_SEE(ch, pl) || !CAN_SEE(pl, ch)) && (GET_LEVEL(pl) < MINLVLIMMORTAL)) ||
-	    IS_FIGHTING(ch) || IS_DESTROYING(ch) || (GET_STAT(ch) <= STAT_SLEEPING))
+	    IS_FIGHTING(ch) || (GET_STAT(ch) <= STAT_SLEEPING))
 		return (FALSE);
 
 	if (affected_by_spell(ch, TAG_CONJURED_PET) || affected_by_spell(pl, TAG_CONJURED_PET))

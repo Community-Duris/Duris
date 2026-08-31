@@ -1781,7 +1781,7 @@ void do_supervise(P_char god, char *argument, int /*cmd*/)
 	}
 	snprintf(
 		buf, MAX_STRING_LENGTH,
-		"\n&+RUsage:&n supervise <&ns>ubcommand <argumentlist>\n&+MStandard Guilds and Kingdoms&n\n"
+		"\n&+RUsage:&n supervise <&ns>ubcommand <argumentlist>\n&+MStandard Guilds&n\n"
 		"&+m============================&n\n<> - displays list of existing associations\n"
 		"<&+Mf&n>ound  <leader_name> <bits_string> <asc_name>\n<&+Md&n>elete <asc_number>\n"
 		"<&+Mn&n>ame   <asc_number> <new_asc_name>\n<&+Mt&n>ype   <asc_number> <bits_string>\n"

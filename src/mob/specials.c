@@ -276,11 +276,6 @@ void npc_steal(P_char ch, P_char vict)
 			return;
 		}
 
-		if (IS_DESTROYING(ch) || IS_DESTROYING(vict))
-		{
-			return;
-		}
-
 		chance = ((2 * GET_LEVEL(vict) + GET_LEVEL(vict) / 4) - GET_LEVEL(ch));
 		if (chance == 0)
 		{

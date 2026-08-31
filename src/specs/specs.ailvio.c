@@ -133,7 +133,7 @@ int bandage_mob(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	// If he's not dead, we need to make him bandage-able.
 	GET_HIT(ch) = -3;
 	// We keep him incap'd until someone saves him.  Or kills him.
-	if (GET_STAT(ch) != STAT_INCAP && !IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+	if (GET_STAT(ch) != STAT_INCAP && !IS_FIGHTING(ch))
 	{
 		SET_POS(ch, POS_PRONE + STAT_INCAP);
 	}

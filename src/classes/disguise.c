@@ -113,7 +113,7 @@ void do_disguise(P_char ch, char *arg, int /*cmd*/)
 	   } */
 
 	// No disguise while fighting
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("Can't do that while fighting!\r\n", ch);
 		return;

@@ -700,8 +700,6 @@ void fetid_breath(P_char ch, P_char victim)
 				victim);
 			if (IS_FIGHTING(victim))
 				stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 		}
 	}
 }
@@ -9220,8 +9218,6 @@ int jotun_thrym(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 			StopCasting(vict);
 			if (IS_FIGHTING(vict))
 				stop_fighting(vict);
-			if (IS_DESTROYING(vict))
-				stop_destroying(vict);
 			bzero(&af, sizeof(af));
 			af.type = SPELL_MAJOR_PARALYSIS;
 			af.flags = AFFTYPE_SHORT;
@@ -10295,11 +10291,7 @@ int recharm_ch(P_char master, P_char vict, bool madatOldMaster, char *charmMsg)
 		act(charmMsg, TRUE, master, 0, vict, TO_ROOM);
 
 	stop_fighting(vict);
-	if (IS_DESTROYING(vict))
-		stop_destroying(vict);
 	stop_fighting(master);
-	if (IS_DESTROYING(master))
-		stop_destroying(master);
 
 	/* stop all combat with new charmie */
 
@@ -11387,8 +11379,6 @@ int construct(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 				    ch, 0, vict, TO_VICT);
 				SET_POS(vict, POS_PRONE + GET_STAT(vict));
 				stop_fighting(vict);
-				if (IS_DESTROYING(vict))
-					stop_destroying(vict);
 				CharWait(vict, PULSE_VIOLENCE);
 			}
 		}
@@ -13016,8 +13006,6 @@ int conj_specpet_golem(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 					act("$n &+Yflies in &+Yface first&+y, crashing on the floor!",
 					    TRUE, vict, 0, 0, TO_ROOM);
 					stop_fighting(vict);
-					if (IS_DESTROYING(vict))
-						stop_destroying(vict);
 					SET_POS(vict, POS_SITTING + GET_STAT(vict));
 					CharWait(vict, PULSE_VIOLENCE * 1);
 				}
@@ -13356,8 +13344,6 @@ int shabo_palle(P_char ch, P_char /*vict*/, int cmd, char *arg)
 			return FALSE;
 
 		stop_fighting(ch);
-		if (IS_DESTROYING(ch))
-			stop_destroying(ch);
 		tempchar2 = read_mobile(32847, VIRTUAL);
 		if (!tempchar2)
 		{

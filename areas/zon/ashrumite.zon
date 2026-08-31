@@ -55,7 +55,6 @@ M 0 66035 5 66001 100 0 0 0        * a noble
 M 0 66012 6 66001 100 0 0 0        * a gnome commoner
 M 0 66013 10 66001 100 0 0 0       * a gnome woman
 M 0 66036 5 66001 100 0 0 0        * a street cleaner
-M 0 401020 1 66001 100 0 0 0       * (mob type not in this .mob file)
 M 0 66008 25 66002 100 0 0 0       * a large iguana
 M 0 66008 25 66005 100 0 0 0       * a large iguana
 M 0 1252 5 66005 100 0 0 0         * (mob type not in this .mob file)

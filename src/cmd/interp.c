@@ -45,7 +45,6 @@
 #include "net/poll.h"
 #include "redis/redis_wizard.h"
 #include "classes/rogues.h"
-#include "combat/siege.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "item/enhance.h"
@@ -1074,8 +1073,8 @@ const char *command[MAX_CMD] = {
 	"conjure",
 	"dismiss",
 	"enhance",
-	"add",
-	"deploy",
+	"_retired_827",
+	"_retired_828",
 	"blood",
 	"deforest",
 	"beep", /* 830 */
@@ -1322,6 +1321,16 @@ void do_confirm(P_char ch, bool yes)
 	command_interpreter(ch, ch->desc->last_command);
 }
 
+static bool is_retired_command_spelling(const char *word, uint length)
+{
+	static const char *const spellings[] = { "add", "deploy", NULL };
+
+	for (int i = 0; spellings[i]; ++i)
+		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
+			return true;
+	return false;
+}
+
 /*
  * **    Improvements/Additions ** ** 1) disallow certain commands when
  * paralyzed. --TAM ** 2) disallow all but stand command when berserked
@@ -1402,6 +1411,13 @@ void command_interpreter(P_char ch, char *argument)
 				return;
 			}
 		}
+
+	/* Exact retired spellings must not abbreviate unrelated commands. */
+	if (is_retired_command_spelling(argument + begin, look_at))
+	{
+		send_to_char("Pardon?\r\n", ch);
+		return;
+	}
 	cmd = old_search_block(argument, begin, look_at, command, 2);
 
 	if (!cmd)
@@ -1557,7 +1573,7 @@ void command_interpreter(P_char ch, char *argument)
 	if ((cmd > 0) && (cmd_info[cmd].command_pointer != 0))
 	{
 		if (!MIN_POS(ch, cmd_info[cmd].minimum_position) ||
-		    ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && !cmd_info[cmd].in_battle))
+		    (IS_FIGHTING(ch) && !cmd_info[cmd].in_battle))
 		{
 			if (GET_STAT(ch) < (cmd_info[cmd].minimum_position & STAT_MASK))
 			{
@@ -1602,7 +1618,7 @@ void command_interpreter(P_char ch, char *argument)
 						     ch);
 					break;
 				}
-			if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && !cmd_info[cmd].in_battle)
+			if (IS_FIGHTING(ch) && !cmd_info[cmd].in_battle)
 				send_to_char("Sorry, you aren't allowed to do that in combat.\r\n",
 					     ch);
 			return;
@@ -2605,9 +2621,6 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_RESETARTI, STAT_DEAD + POS_PRONE, do_artireset, OVERLORD);
 	CMD_GRT(CMD_RESETSPEC, STAT_DEAD + POS_PRONE, do_unspec, FORGER);
 	CMD_GRT(CMD_STATISTIC, STAT_DEAD + POS_PRONE, do_statistic, FORGER);
-#ifdef SIEGE_ENABLED
-	CMD_GRT(CMD_ADD, STAT_DEAD + POS_PRONE, do_add, FORGER);
-#endif
 	CMD_GRT(CMD_STORAGE, STAT_DEAD + POS_PRONE, do_storage, GREATER_G);
 	CMD_GRT(CMD_NEWBSU, STAT_DEAD + POS_PRONE, do_newb_spellup, LESSER_G);
 	CMD_GRT(CMD_NEWBSA, STAT_DEAD + POS_PRONE, do_newb_spellup_all, LESSER_G);
@@ -3047,8 +3060,6 @@ void assign_command_pointers(void)
 	// CMD_TRIG(CMD_SPECIALIZE, 0);
 	CMD_TRIG(CMD_HARVEST, 0, TRUE);
 	CMD_TRIG(CMD_BATTLERAGER, 0, FALSE);
-	CMD_TRIG(CMD_DEPLOY, 0, TRUE);
-
 	/*
 	 * socials (all call do_action, rather than a specific func)
 	 */

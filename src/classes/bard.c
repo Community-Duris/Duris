@@ -188,11 +188,11 @@ void bard_aggro(P_char ch, P_char victim)
 		return;
 	}
 
-	if (IS_PC(victim) && !IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+	if (IS_PC(victim) && !IS_FIGHTING(victim))
 	{
 		set_fighting(victim, ch);
 	}
-	else if (IS_NPC(victim) && !IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+	else if (IS_NPC(victim) && !IS_FIGHTING(victim))
 	{
 		MobStartFight(ch, victim);
 		remember(victim, ch);
@@ -361,7 +361,7 @@ int bard_calc_chance(P_char ch, int song)
 		chance = chance * 85 / 100;
 	}
 	// 7% chance reduction while fighting (and not casting)...
-	else if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	else if (IS_FIGHTING(ch))
 	{
 		chance = chance * 93 / 100;
 	}
@@ -856,8 +856,6 @@ void bard_charm(int /*l*/, P_char ch, P_char victim, int song)
 	act("You stand enthralled by $n's charming song...", FALSE, ch, 0, victim, TO_VICT);
 	if (IS_FIGHTING(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 	StopMercifulAttackers(victim);
 	if (IS_NPC(victim))
 		victim->only.npc->aggro_flags = 0;
@@ -940,8 +938,6 @@ void bard_sleep(int l, P_char ch, P_char victim, int song)
 
 	if (GET_OPPONENT(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 	if (GET_STAT(victim) > STAT_SLEEPING)
 	{
 		act("&+G$n falls sleep.", TRUE, victim, 0, 0, TO_ROOM);
@@ -959,8 +955,6 @@ void bard_calm(int /*l*/, P_char ch, P_char victim, int song)
 		if (!bard_saves(ch, victim, song) || IS_TRUSTED(ch))
 		{
 			stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 			clearMemory(victim);
 			send_to_char("A sense of calm comes upon you.\r\n", victim);
 		}

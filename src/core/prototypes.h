@@ -1075,9 +1075,7 @@ void make_bloodstain(P_char);
 void perform_violence(void);
 void set_fighting(P_char, P_char);
 bool set_fighting(P_char, P_char, bool);
-void set_destroying(P_char, P_obj);
 void stop_fighting(P_char);
-void stop_destroying(P_char);
 void engage(P_char, P_char);
 void soul_taking_check(P_char, P_char);
 struct affected_type *get_ward_from_char(P_char ch);
@@ -2859,9 +2857,6 @@ void spell_ritus_draconum(int, P_char, char *, int, P_char, P_obj);
 void spell_edictum_cineris(int, P_char, char *, int, P_char, P_obj);
 void spell_sigillum_negati(int, P_char, char *, int, P_char, P_obj);
 void spell_draconic_apotheosis(int, P_char, char *, int, P_char, P_obj);
-
-/* Siege Engines */
-void event_move_engine(P_char ch, P_char victim, P_obj obj, void *data);
 
 /* track.c */
 

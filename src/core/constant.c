@@ -21,27 +21,6 @@
 extern const char *god_list[];
 const char *god_list[] = { "Arih", "Fotenak", "Xanadin", "Tyrus", "\0" };
 
-/* Kingdom constants */
-
-const char *troop_types[] = { "foot soldier", "archer", "cavalry", "scout",
-			      "assassin",     "cleric", "mage",	   "\n" };
-
-const char *troop_levels[] = { "raw", "seasoned", "veteran", "elite", "\n" };
-
-const char *troop_offense[] = { "basic", "average", "well", "\n" };
-
-const char *troop_defense[] = { "basic", "average", "well", "\n" };
-
-const int troop_costs[NUM_TROOP_TYPES][4] = {
-	{ 1, 5, 10 }, /* TROOP_FOOT */
-	{ 2, 10, 20 }, /* TROOP_ARCHER */
-	{ 4, 20, 40 }, /* TROOP_CAVALRY */
-	{ 5, 25, 50 }, /* TROOP_SCOUT */
-	{ 7, 35, 70 }, /* TROOP_ASSASSIN */
-	{ 8, 40, 80 }, /* TROOP_CLERIC */
-	{ 10, 50, 100 } /* TROOP_MAGE */
-};
-
 extern const struct attr_names_struct attr_names[];
 const attr_names_struct attr_names[] = { {},
 					 { "str", "Strength" },
@@ -1189,8 +1168,6 @@ const char *resource_list[] = { "None",
 				"Fertile land",
 				"Peasant villages",
 				"\n" };
-
-const char *kingdom_type_list[] = { "None", "Town Owned", "Guild", "Game", "\n" };
 
 const char *town_name_list[] = { "Nowhere", /* must remain 'nowhere'! */
 				 "Tharnadia",

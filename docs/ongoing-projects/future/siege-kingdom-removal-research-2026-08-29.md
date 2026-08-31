@@ -1,10 +1,10 @@
 # Siege and Kingdom Removal Research
 
 Date: 2026-08-31
-Branch: `master`
+Branch: `siege-kingdom-removal`
 Research baseline: `63cb1ab9`
-Status: Repository research complete; production and retained-backup preflight outstanding;
-no implementation changes made
+Status: Complete; production and retained-backup custody preflight passed, Release B
+prototype deletion is complete, and the production help-store postflight is clean
 
 ## Executive conclusion
 
@@ -46,6 +46,177 @@ The recommended end state is:
 This should be implemented as a focused project with two deployment gates if production
 contains any of the dedicated object VNUMs. It should not be treated as deleting only
 `siege.c` and `siege.h`.
+
+## Implementation progress
+
+### Checkpoint 1 - Acquisition freeze and world detach (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed siege-ammunition VNUMs 178 and 179 from `areas/shp/kzkrkeep.shp`;
+- removed all ten hometown quartermaster reset commands;
+- replaced the active `areas/AREA` entry with `*RETIRED 4010 (siege; do not reuse)`;
+- deleted `areas/mob/siege.mob`, `areas/obj/siege.obj`, `areas/wld/siege.wld`, and
+  `areas/zon/siege.zon`;
+- regenerated the ignored combined world outputs successfully;
+- verified hometown racewar safety and the zcheck source contract after regeneration.
+
+At this checkpoint, the comprehensive removal contract was drafted and baseline-verified
+locally but kept out of the commit while its expected failures described work still in
+progress. Checkpoint 4 includes the now-green contract with explicit gated-prototype custody.
+
+The eight dedicated object prototypes remain unchanged. Their removal is still blocked by
+the required production and retained-backup custody audit; the local zero-row evidence is
+not being treated as sufficient. No historical migration, schema fingerprint, or persisted
+identifier was changed.
+
+### Checkpoint 2 - Runtime, persistence, and type removal (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed the MariaDB and flat-file town, kingdom-land, and siege-item persistence paths;
+- deleted the tracked town seed, both feature-only flat-file regressions and harnesses,
+  and their CI steps;
+- deleted the siege translation unit and header, its Makefile entry, runtime hooks,
+  special-procedure declarations, and event declaration;
+- removed the unused town/troop structs, constants, arrays, global, kingdom room comments,
+  and `Guild::is_kingdom()` scaffolding;
+- retired command slots 827 and 828 in place as `_retired_827` and `_retired_828`, with
+  explicit reserved constants, so later command IDs did not move;
+- corrected the unrelated private-chest malformed-row log label while removing the shared
+  siege loader that had supplied it.
+
+A full warning-as-error server build passed before deleting the translation unit. The
+post-deletion build exposed one hidden `RENT_DEATH` dependency formerly supplied through
+`siege.h`; adding the owning `core/files.h` include directly to `fight.c` restored a clean
+full build and link. Object-destruction compatibility state remains for the separate
+mechanical checkpoint. The compatibility-table `towns` entry, historical schema inputs,
+and the gated object prototypes remain unchanged.
+
+### Checkpoint 3 - Object-destruction compatibility removal (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed the inactive object-destruction list, character fields, macro, lifecycle
+  functions, combat pulse, and declarations;
+- removed object-target status and prompt rendering;
+- mechanically simplified the 61 source files whose guards had been behavior-neutral
+  while `SIEGE_ENABLED` was absent, then reviewed the full diff for semantic changes;
+- removed stale destruction references from comments and diagnostic output.
+
+The changed C/C++ sources pass the repository formatting check, a static source scan finds
+no remaining destruction-state symbol, and a full warning-as-error server build and link
+pass. This checkpoint does not intentionally change supported-build behavior: the removed
+state could only become active through the now-deleted optional siege implementation.
+Kingdom UI/help and legacy-table lifecycle residue remain for the next checkpoint; the
+historical schema inputs and gated object prototypes remain unchanged.
+
+### Checkpoint 4 - Kingdom surfaces and lifecycle retirement (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed `toggle kingdom` from status rendering, the toggle name/message arrays, and
+  dispatch, then shifted every later dispatch index together;
+- reserved persisted `act2` `BIT_4` as `PLR2_RETIRED_KINGDOMVIEW` without clearing or
+  reusing existing player data;
+- changed the administrator association heading to advertise standard guilds only;
+- deleted the kingdom proposal help source and its SQL/flat-file import mappings;
+- removed the ADD help page, Kingdom View from TOGGLE help, and the retired `add` and
+  `deploy` command-attribute entries;
+- removed the three siege item tables from runtime pwipe preflight and deletion, leaving
+  the shopkeeper graph and logging independent;
+- reclassified the three siege item tables from season deletion to service-lifetime
+  retention and identified all five retired feature tables as compatibility schema,
+  without changing their definitions or historical migration inputs;
+- removed the obsolete siege dependency-order assertion.
+
+A focused toggle-dispatch contract now verifies every post-removal name/index/flag mapping
+and the parallel message-array length. The comprehensive removal contract is also included;
+for Release A it requires all gated prototypes to remain present as an atomic compatibility
+set, and must be flipped to absence only when the custody gate permits Release B.
+
+The full warning-as-error server build and link pass, as do the removal, toggle dispatch,
+flat-file help catalog/runtime, documentation, command-attribute coverage, data-lifecycle,
+and season-reset regressions. Historical schema inputs, runtime fingerprints, and the gated
+object prototypes remain unchanged.
+
+### Checkpoint 5 - Full validation and runtime smoke (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- corrected the obsolete `src-migrate` validation references to the maintained
+  `migrations/tools` location;
+- regenerated the full world, clean-built the server with warnings as errors, and built
+  the migration tools;
+- passed all focused removal, toggle, help, lifecycle, season, hometown, documentation,
+  immutable-migration, minimal-data, and full-world flat-file regressions;
+- passed the complete suite: 374 Python regressions and the native signal-handler test;
+- cold-booted both the configured full development world and the tracked minimal world to
+  `Entering game loop`, then stopped each normally;
+- logged in with the configured staff character, verified the command list and toggle
+  status no longer advertise the retired surfaces, rejected `toggle kingdom`, exercised
+  `toggle shipmap` in both directions, saved successfully, reconnected, and disconnected
+  cleanly.
+
+The full-world live smoke exposed one abbreviation edge case: with the retired table slots
+hidden, exact input `add` abbreviated the unrelated `addict` social. The interpreter now
+rejects the exact retired spellings `add` and `deploy` as unknown before abbreviation
+lookup, while the reserved command slots and every other abbreviation remain unchanged.
+The removal contract covers this guard, and the live smoke confirmed both spellings return
+`Pardon?`.
+
+Repository and flat-file help sources no longer contain the retired ADD, kingdoms, or
+Kingdom View content. A read-only local MariaDB postflight found zero `ADD` page rows, one
+stale `kingdoms` row, and one stale TOGGLE row containing Kingdom View. Those rows were not
+mutated: Step 8 requires a backup and targeted cleanup on an approved deployment target.
+The same production postflight must verify the exact rows after the repository help import.
+
+The eight dedicated object prototypes remain present as the atomic Release A compatibility
+set. Their Release B deletion and the corresponding prototype-absence smoke assertions
+remain blocked by the production and retained-backup custody audit; local zero-row evidence
+does not satisfy that gate. No historical migration, schema fingerprint, player flag,
+command ID, or retained prototype was changed during final validation.
+
+### Checkpoint 6 - Production gate and Release B completion (2026-08-31)
+
+The approved `ssh duris` production preflight established:
+
+- the target is `mariadb-primary`, uses the configured database-backup root, and does not
+  inject `SIEGE_ENABLED` through `EXTRA_CFLAGS`;
+- all five retired feature tables contain zero rows, no player has retired `act2 BIT_4`,
+  and every discovered live `vnum` or `obj_vnum` column contains zero rows for VNUMs 160,
+  161, 178, 179, and 461 through 464;
+- there are no auctions, auction custody rows, or unretrieved auction pickups, so there are
+  no active auction blobs to decode and no corrupt or unsupported live blob blocks;
+- all 14 generations in the configured database-backup root contain every required custody
+  table, zero matches in every discovered VNUM column, zero active auction blobs, and zero
+  corrupt or unsupported repository-format records;
+- the player-save and critical-command journals are both empty;
+- no flat-file authority, flat-file backup generation, legacy `Players/Kingdoms`, town, or
+  siege path, conversion backup, or separate builder/deployment repository exists on the
+  target host.
+
+That evidence clears the documented custody gate. Release B therefore deletes all eight
+full-world prototypes from `areas/obj/heavens.obj`, deletes VNUMs 160, 161, 178, and 179
+from the tracked minimal world, and flips the comprehensive contract from atomic retention
+to required absence.
+
+Before the production help mutation, the exact `ADD`, `kingdoms`, and TOGGLE rows were
+saved to the owner-only rollback file
+`db/Backup/siege-help-precleanup-1788208738.sql` with SHA-256
+`13cb4e42d450433d4e9f464991724dd3f250e566f598ff6efd86cfe7b9ebc3c3`. A count-checked
+transaction deleted exactly the two obsolete pages and replaced exactly one TOGGLE page
+with the repository source. Postflight found zero obsolete rows, one TOGGLE row matching
+the source, zero Kingdom View text, and all five compatibility tables still present and
+empty.
+
+After Release B, world generation, the focused removal/minimal/zcheck contracts, the
+warning-as-error server build, migration-tool build, all 374 Python regressions, the native
+signal-handler test, and the real flat-file full-world boot pass. Configured MariaDB cold
+boots of both the full and minimal worlds reached `Entering game loop` and stopped normally.
+The full-world staff smoke found all eight VNUMs absent from the runtime object list and
+completed an existing-character save successfully. Historical migrations, schema
+fingerprints, command IDs, and the reserved player flag remain unchanged.
 
 ## Scope and terminology
 
@@ -181,7 +352,7 @@ exist.
 ### Research coverage and limits
 
 The repository audit covered tracked source, tests, CI, area inputs, the tracked minimal
-world, help sources, migrations, manifests, operational scripts, `src-migrate`, Git
+world, help sources, migrations, manifests, operational scripts, `migrations/tools`, Git
 history, the built default binary, and a read-only local MariaDB instance. Generated and
 ignored full-world outputs were treated as derivatives of tracked `areas/` inputs;
 `areas_mini` was treated separately because it is tracked and is not regenerated by
@@ -268,7 +439,7 @@ Remove these active-source remnants after the siege and SQL functions are gone:
   in `src/core/constant.c`;
 - unused `kingdom_type_list` in `src/core/constant.c` and its `src/cmd/actwiz.c` declaration;
 - unused `Guild::is_kingdom()` declaration in `src/guild/assocs.h` and its offline-tool stub in
-  `src-migrate/migrate_stubs.c`;
+  `migrations/tools/migrate_stubs.c`;
 - the commented kingdom room-stat output in `src/cmd/actwiz.c`;
 - the commented troop display in `src/cmd/actinf.c`;
 - stale commented kingdom calls in `src/world/db.c`, `src/world/handler.c`, and `src/world/weather.c`.
@@ -795,7 +966,7 @@ test ! -e src/combat/siege.h
 ! rg -n '\b(P_siege|P_town|troop_info_rec|IS_DESTROYING|set_destroying|stop_destroying|destroying_obj|next_destroying|destroying_list)\b' src
 ! rg -n '\b(flat_siege_|flat_town_)' src
 ! rg -n '^int (ballista|battering_ram|catapult|castlewall)\(' src/world/specs.prototypes.h
-! rg -n '\b(kingdom_type_list|is_kingdom)\b' src src-migrate
+! rg -n '\b(kingdom_type_list|is_kingdom)\b' src migrations/tools
 ! rg -n '^M [0-9]+ 4010(00|10|20|30|40|50|60|70|80|90)\b' areas/zon
 ! rg -n '^siege[[:space:]]+\*4010\b' areas/AREA
 ! rg -n '^#(160|161|178|179|461|462|463|464)\b' areas/obj/heavens.obj
@@ -817,7 +988,7 @@ Kingdom, and Kingdom of Torg. Review remaining matches rather than requiring glo
 
 ```bash
 make -C src
-make -C src-migrate
+make -C migrations/tools
 make world
 python3 tests/async/test_season_reset_manifest.py
 python3 tests/async/test_data_lifecycle_manifest.py
