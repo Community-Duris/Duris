@@ -1,6 +1,10 @@
 # src/ subdirectory reorganization
 
-Status: plan, not started. Date: 2026-08-31.
+Status: complete. Date: 2026-08-31. Branch: `src-subdirectory-reorg`.
+
+All 633 files moved into 18 subdirectories; `src/` root now holds only
+`Makefile`. Server builds clean; regression suite 373/373, identical to the
+pre-move baseline. `core/` moved into `src/core/` rather than staying in root.
 
 ## Goal
 
@@ -55,10 +59,10 @@ Path(__file__).resolve().parents[2]` is copy-pasted 298 times and `SRC = ROOT /
 | `test/` | 2 | `test_async.*` |
 | `ships/` | 15 | unchanged |
 
-Alternative: leave the 39 `core/` files in `src/` root. One-line difference in
-execution; decide before starting.
+Decided: `core/` moved into `src/core/` like everything else. `src/` root
+holds only `Makefile` (plus the untracked `vc140.pdb` artifact noted below).
 
-## Execution order
+## Execution order (as performed)
 
 1. **Add `tests/async/_paths.py`** exposing `repo_root()` and `source(name)`,
    which resolves a bare filename against `src/` and its subdirectories.
@@ -90,3 +94,34 @@ execution; decide before starting.
 - `make -C src src-migrate` (or equivalent explicit target).
 - `python3 tests/async/test_<affected>.py` for tests touching the moved files.
 - `./scripts/format.sh --check` on touched lines.
+
+## Outcome
+
+- 20 commits: one path-helper refactor, 18 directory moves, one reference sweep.
+- `make -C src` clean under the existing `-Werror` profile after every move.
+- Regression suite 373/373 before and after.
+- No file lost: the set of tracked `src/` basenames is byte-identical to master
+  (650 files).
+
+## Deviations from the plan
+
+- The reference sweep needed four passes beyond the helper, for forms the plan
+  did not anticipate: inline C++ harness text embedded in tests, `os.path.join`
+  constructions, evidence paths inside `tests/async/*.json`, and assertions
+  pinning bare header names.
+- `-I./ships` was dropped as planned, which exposed 34 files still using the
+  unqualified `#include "ships.h"` spelling. All are now directory-qualified.
+
+## Pre-existing problems surfaced, not fixed
+
+Both are unrelated to the move and fail identically on `master`:
+
+- `make -C src pfile` fails with 751 `-Werror` errors.
+- `make -C src migrate_pfiles` fails with 74. Its `../src/*.h` includes were
+  repointed at the new layout, so it now fails on code rot rather than missing
+  files.
+
+Neither target is in the default build, which is why both rotted unnoticed.
+
+- `src/vc140.pdb` is a committed compiler artifact that `AGENTS.md` says must
+  not be in the tree. Left alone; out of scope.
