@@ -1488,9 +1488,11 @@ static void finish_bulk_get(P_char actor, uint32_t actor_pid)
 		snprintf(summary, sizeof(summary), "You got %d items.\r\n", total);
 		send_to_char(summary, actor);
 	}
-	else if (!total && !failed && !from_container)
+	else if (!total && !failed)
 	{
-		send_to_char("You see nothing here.\r\n", actor);
+		send_to_char(from_container ? "You find nothing in it.\r\n" :
+					      "You see nothing here.\r\n",
+			     actor);
 	}
 }
 
