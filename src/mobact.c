@@ -3524,6 +3524,9 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 
 		if (!spl && npc_has_spell_slot(ch, SPELL_VITALITY) &&
 		    !affected_by_spell(target, SPELL_VITALITY) &&
+		    !affected_by_spell(target, SPELL_MIELIKKI_VITALITY) &&
+		    !affected_by_spell(target, SPELL_FALUZURES_VITALITY) &&
+		    !affected_by_spell(target, SPELL_ESHABALAS_VITALITY) &&
 		    (number(0, 1) || !IS_FIGHTING(ch)))
 			spl = SPELL_VITALITY;
 
