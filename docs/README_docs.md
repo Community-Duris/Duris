@@ -58,6 +58,7 @@ docs/
 | Document | Purpose |
 |----------|---------|
 | [RUNBOOK.md](operations/RUNBOOK.md) | Safe startup, migration, backup, restore, recovery, reconciliation, and the release boundary. |
+| [DOCKER.md](operations/DOCKER.md) | End-to-end local Compose deployment, persistent data, upgrades, and reset boundaries. |
 | [CONFIGURATION.md](operations/CONFIGURATION.md) | Runtime variables, Redis, listeners, proxy handling, and diagnostics. |
 | [SECURITY_BASELINE.md](operations/SECURITY_BASELINE.md) | Generated dependency baseline and its validation. |
 | [incident-response.md](operations/incident-response.md) | Incident handling procedure. |

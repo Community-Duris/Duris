@@ -47,6 +47,7 @@ MYSQL_HOST="$DB_HOST"
 MYSQL_PORT="$DB_PORT"
 MYSQL_USER="$DB_USER"
 MYSQL_DB="$DB_NAME"
+MYSQL_SOCKET="${DB_SOCKET:-}"
 
 HELP_DIR="lib/information"
 HELP_INDEX_FILE="lib/information/help_index"
@@ -137,6 +138,10 @@ if ! [[ "$MYSQL_PORT" =~ ^[0-9]+$ ]] || (( MYSQL_PORT < 1 || MYSQL_PORT > 65535 
     echo "Error: DB_PORT must be between 1 and 65535"
     exit 1
 fi
+if [ -n "$MYSQL_SOCKET" ] && [[ "$MYSQL_SOCKET" != /* ]]; then
+    echo "Error: DB_SOCKET must be an absolute path"
+    exit 1
+fi
 
 # These values become arguments to a command interpreted by the remote shell.
 if ! [[ "$MYSQL_USER" =~ ^[A-Za-z0-9_.-]+$ ]] || ! [[ "$MYSQL_DB" =~ ^[A-Za-z0-9_.-]+$ ]]; then
@@ -166,6 +171,7 @@ export IMPORT_REMOTE_HOST="$REMOTE_HOST"
 export IMPORT_REMOTE_USER="$REMOTE_USER"
 export IMPORT_MYSQL_HOST="$MYSQL_HOST"
 export IMPORT_MYSQL_PORT="$MYSQL_PORT"
+export IMPORT_MYSQL_SOCKET="$MYSQL_SOCKET"
 export IMPORT_MYSQL_USER="$MYSQL_USER"
 export IMPORT_MYSQL_DB="$MYSQL_DB"
 export IMPORT_HELP_INDEX_FILE="$HELP_INDEX_FILE"
@@ -185,7 +191,13 @@ execute_sql() {
             ssh "$REMOTE_USER@$REMOTE_HOST" mysql --user="$MYSQL_USER" "$MYSQL_DB"
     else
         # Local mode: execute directly using MYSQL_PWD from the environment.
-        echo "$sql" | mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" "$MYSQL_DB"
+        if [ -n "$MYSQL_SOCKET" ]; then
+            echo "$sql" | mysql --protocol=socket --socket="$MYSQL_SOCKET" \
+                -u"$MYSQL_USER" "$MYSQL_DB"
+        else
+            echo "$sql" | mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" \
+                -u"$MYSQL_USER" "$MYSQL_DB"
+        fi
     fi
 }
 
@@ -197,7 +209,13 @@ execute_sql_file() {
         ssh "$REMOTE_USER@$REMOTE_HOST" mysql --user="$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
     else
         # Local mode: execute directly using MYSQL_PWD from the environment.
-        mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
+        if [ -n "$MYSQL_SOCKET" ]; then
+            mysql --protocol=socket --socket="$MYSQL_SOCKET" \
+                -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
+        else
+            mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" \
+                -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
+        fi
     fi
 }
 
@@ -481,6 +499,7 @@ MYSQL_USER = os.environ["IMPORT_MYSQL_USER"]
 MYSQL_DB = os.environ["IMPORT_MYSQL_DB"]
 MYSQL_HOST = os.environ["IMPORT_MYSQL_HOST"]
 MYSQL_PORT = os.environ["IMPORT_MYSQL_PORT"]
+MYSQL_SOCKET = os.environ["IMPORT_MYSQL_SOCKET"]
 
 def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
@@ -544,8 +563,10 @@ VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB',
         )
     else:
         # Local mode inherits MYSQL_PWD from the parent environment.
+        connection = (["--protocol=socket", f"--socket={MYSQL_SOCKET}"]
+                      if MYSQL_SOCKET else [f"-h{MYSQL_HOST}", f"-P{MYSQL_PORT}"])
         mysql_result = subprocess.run(
-            ['mysql', f'-h{MYSQL_HOST}', f'-P{MYSQL_PORT}', f'-u{MYSQL_USER}', MYSQL_DB],
+            ['mysql', *connection, f'-u{MYSQL_USER}', MYSQL_DB],
             input=sql, capture_output=True, text=True
         )
 
@@ -653,6 +674,7 @@ MYSQL_USER = os.environ["IMPORT_MYSQL_USER"]
 MYSQL_DB = os.environ["IMPORT_MYSQL_DB"]
 MYSQL_HOST = os.environ["IMPORT_MYSQL_HOST"]
 MYSQL_PORT = os.environ["IMPORT_MYSQL_PORT"]
+MYSQL_SOCKET = os.environ["IMPORT_MYSQL_SOCKET"]
 HELP_FILE = os.environ["IMPORT_PARSED_HELP_FILE"]
 
 def parse_parsed_help(filename):
@@ -724,8 +746,10 @@ VALUES ('{safe_title}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
         )
     else:
         # Local mode inherits MYSQL_PWD from the parent environment.
+        connection = (["--protocol=socket", f"--socket={MYSQL_SOCKET}"]
+                      if MYSQL_SOCKET else [f"-h{MYSQL_HOST}", f"-P{MYSQL_PORT}"])
         mysql_result = subprocess.run(
-            ['mysql', f'-h{MYSQL_HOST}', f'-P{MYSQL_PORT}', f'-u{MYSQL_USER}', MYSQL_DB],
+            ['mysql', *connection, f'-u{MYSQL_USER}', MYSQL_DB],
             input=sql, capture_output=True, text=True
         )
 

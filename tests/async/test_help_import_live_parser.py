@@ -20,6 +20,9 @@ for block in live_blocks:
     assert "if error_count:\n    raise SystemExit(1)" in block
 
 assert "selected database" in source
+assert 'MYSQL_SOCKET="${DB_SOCKET:-}"' in source
+assert source.count('--protocol=socket --socket="$MYSQL_SOCKET"') == 2
+assert source.count('f"--socket={MYSQL_SOCKET}"') == 2
 assert "~535" not in source
 for missing_source in ("helpguild1", "helpguild2", '["info"]'):
     assert missing_source not in source

@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 0.1.57** | [Versioning policy](docs/guides/VERSIONING.md)
+**Version: 0.1.58** | [Versioning policy](docs/guides/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -71,6 +71,29 @@ to reconstructible caches plus validated world-recovery generations. See the ful
 
 The maintained setup path is Debian/Ubuntu, matching the CI workflow and the
 repository's build-dependency manifest.
+
+### Docker alternative
+
+Docker Compose provides a complete local deployment without installing the
+compiler or MariaDB on the host. It builds Duris, creates a private MariaDB
+service, loads the fresh schema, applies immutable migrations, imports the
+tracked help content, generates a persistent self-signed local TLS certificate,
+and starts the full world:
+
+```bash
+./scripts/init_docker_env.sh
+docker compose --env-file .env.docker up --build --detach --wait
+curl http://127.0.0.1:4050/health
+nc 127.0.0.1 4000
+```
+
+The generated `.env.docker` is ignored, mode `0600`, and contains random
+database credentials. The database, filesystem-backed player state, recovery
+journals, backups, certificate, and logs live in named Docker volumes and
+survive ordinary container rebuilds.
+This stack is a local/development alternative to the native setup below; it is
+not the production deployment model. See the [Docker deployment guide](docs/operations/DOCKER.md)
+for lifecycle, configuration, upgrades, logs, and data-reset commands.
 
 After setup, one command builds every maintained target and runs the complete
 non-database regression gate:
@@ -363,6 +386,7 @@ the root [`VERSION`](VERSION) file.
 | [Building](docs/guides/BUILDING.md) | Build flags, areas, sanitizers, verification. |
 | [Database](docs/reference/DATABASE.md) | Connections, reads, typed writes, reconciliation, schema, migrations. |
 | [Configuration](docs/operations/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
+| [Docker deployment](docs/operations/DOCKER.md) | End-to-end local Compose setup, lifecycle, data, and troubleshooting. |
 | [Runbook](docs/operations/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
 | [Testing](docs/guides/TESTING.md) | Test layout, commands, and conventions. |
 | [Immutable migrations](docs/persistence/IMMUTABLE_MIGRATIONS.md) | Baseline adoption, ordered checksums, exact resume. |

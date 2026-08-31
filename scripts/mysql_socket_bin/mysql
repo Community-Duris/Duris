@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${DURIS_REAL_MYSQL_CLIENT:?real mysql client is required}"
+: "${DB_SOCKET:?DB_SOCKET is required}"
+if [[ "$DURIS_REAL_MYSQL_CLIENT" != /* || ! -x "$DURIS_REAL_MYSQL_CLIENT" ]]; then
+  echo "real mysql client must be an absolute executable path" >&2
+  exit 2
+fi
+if [[ "$DB_SOCKET" != /* ]]; then
+  echo "DB_SOCKET must be an absolute path" >&2
+  exit 2
+fi
+
+arguments=()
+while (( $# > 0 )); do
+  case "$1" in
+    -h|-P|--host|--port|--protocol|--socket)
+      if (( $# < 2 )); then
+        echo "mysql connection option is missing its value" >&2
+        exit 2
+      fi
+      shift 2
+      ;;
+    -h*|-P*|--host=*|--port=*|--protocol=*|--socket=*)
+      shift
+      ;;
+    *)
+      arguments+=("$1")
+      shift
+      ;;
+  esac
+done
+
+exec "$DURIS_REAL_MYSQL_CLIENT" --protocol=socket --socket="$DB_SOCKET" \
+  "${arguments[@]}"

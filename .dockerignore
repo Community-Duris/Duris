@@ -11,9 +11,8 @@ docs/
 # Build artifacts
 bin/
 
-# Player files (will be mounted as volume)
+# Player files are initialized in the image and persisted in a named volume.
 Players/
-!Players/.gitkeep
 
 # Logs (will be mounted as volume)
 logs/
@@ -48,6 +47,7 @@ Thumbs.db
 # Docker files themselves
 Dockerfile
 docker-compose.yml
+compose.yaml
 .dockerignore
 
 # Development scripts
@@ -60,8 +60,12 @@ set_god_level*.py
 promote_to_god.py
 
 # Development databases/configs
+.env
+.env.*
+certs/
+duris.crt
+duris.key
 devmysql.md
-help/duris_help*.hlp
 fix_mysql_schema.sql
 
 # SQL reports and analysis
