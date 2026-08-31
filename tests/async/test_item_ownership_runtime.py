@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 
 #include <cassert>
 

@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "unicode.h"
+#include "net/unicode.h"
 
 #include <cstdarg>
 #include <cstdio>

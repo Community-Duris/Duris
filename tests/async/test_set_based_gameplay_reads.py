@@ -16,8 +16,8 @@ COMM = (SRC / "comm.c").read_text()
 COPYOVER = (SRC / "copyover.c").read_text()
 
 HARNESS = r'''
-#include "epic_task_catalog.h"
-#include "gameplay_read_state.h"
+#include "world/epic_task_catalog.h"
+#include "persistence/gameplay_read_state.h"
 
 #include <cassert>
 #include <cstdint>

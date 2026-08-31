@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
+from _paths import source
 from pathlib import Path
 import sys
 
-src = Path(__file__).resolve().parents[2] / 'src' / 'auction_houses.c'
+src = source("auction_houses.c")
 text = src.read_text()
 
-epic = Path(__file__).resolve().parents[2] / 'src' / 'epic.c'
+epic = source("epic.c")
 epic_text = epic.read_text()
 
-ship = Path(__file__).resolve().parents[2] / 'src' / 'ships' / 'ship_base.c'
+ship = source("ships") / 'ship_base.c'
 ship_text = ship.read_text()
 
 ok = True

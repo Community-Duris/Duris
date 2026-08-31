@@ -18,8 +18,8 @@ assert "if (!description_keys.insert(std::move(description_key)).second)" in REP
 
 
 HARNESS = r'''
-#include "player_save_worker.h"
-#include "player_revision_state.h"
+#include "player/player_save_worker.h"
+#include "player/player_revision_state.h"
 
 #include <algorithm>
 #include <cassert>

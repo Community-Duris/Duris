@@ -52,7 +52,7 @@ endif
 
 #CFLAGS += -DCTF_MUD=1
 
-INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 $(MYSQL_INCLUDES) -I./ships
+INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 $(MYSQL_INCLUDES)
 
 GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt $(MYSQL_LIBS) -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
 
@@ -452,7 +452,7 @@ OBJS =  $(SHIP_OBJS) \
 
 
 # Name lists (no paths) for pfile-related objs
-SHARED_PFILE_OBJS_NAMES = skills.pf.o files.pf.o
+SHARED_PFILE_OBJS_NAMES = classes/skills.pf.o core/files.pf.o
 PFILE_OBJS_NAMES        = account/pfile-stubs.o account/pfile.o
 
 MIGRATE_OBJ_NAMES = migrate_main.o \
@@ -518,11 +518,11 @@ $(DMS_BINARY): $(DMS_OBJS) $(BACKEND_STAMP)
 
 pfile: $(PFILE_BINARY)
 
-$(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/mm.o $(OBJDIR)/common.o
+$(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/core/mm.o $(OBJDIR)/core/common.o
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ \
 		$(PFILE_OBJS) $(SHARED_PFILE_OBJS) \
-		$(OBJDIR)/common.o $(OBJDIR)/mm.o $(LIBS)
+		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(LIBS)
 
 migrate_pfiles: $(MIGRATE_BINARY)
 
@@ -560,7 +560,7 @@ clean-server:
 	rm -rf $(OBJDIR)
 
 clean: clean-server
-	rm -f *~ ships/*~ .depend ships/.depend
+	rm -f *~ */*~ .depend */.depend
 	rm -f $(PFILE_BINARY) $(MIGRATE_BINARY)
 
 debug: $(PROGS)

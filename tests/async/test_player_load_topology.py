@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "player_load_repository.h"
+#include "player/player_load_repository.h"
 
 #include <cassert>
 #include <vector>

@@ -47,7 +47,7 @@ for definition in (
 
 assert "initialize_mining();" in legacy
 assert "mining.o" in makefile
-assert '"mining.h"' in legacy_header
+assert '"economy/mining.h"' in legacy_header
 assert "void initialize_mining();" in header
 assert "#define LOWEST_ORE_VNUM" in header
 assert "#define MINES_MAP_SURFACE" in header

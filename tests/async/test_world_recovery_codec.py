@@ -14,8 +14,8 @@ PIPELINE = (SRC / "world_recovery_pipeline.c").read_text(encoding="ascii")
 FLOOR = (SRC / "redis_floor_store.c").read_text(encoding="ascii")
 
 HARNESS = r'''
-#include "copyover.h"
-#include "world_recovery_codec.h"
+#include "persistence/copyover.h"
+#include "world/world_recovery_codec.h"
 
 #include <array>
 #include <cassert>

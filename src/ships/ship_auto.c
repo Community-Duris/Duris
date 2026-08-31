@@ -18,7 +18,7 @@
 #include "world/events.h"
 #include "core/utils.h"
 #include "world/map.h"
-#include "ship_auto.h"
+#include "ships/ship_auto.h"
 
 extern char buf[MAX_STRING_LENGTH];
 

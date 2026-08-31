@@ -14,7 +14,7 @@ CAPTURE = (SRC / "player_snapshot_capture.c").read_text()
 
 
 HARNESS = r'''
-#include "player_snapshot.h"
+#include "player/player_snapshot.h"
 
 #include <cassert>
 #include <string>

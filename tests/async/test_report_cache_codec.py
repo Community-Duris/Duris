@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "report_cache_codec.h"
+#include "persistence/report_cache_codec.h"
 
 #include <cassert>
 #include <cstdlib>

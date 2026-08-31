@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "ansi.h"
+#include "net/ansi.h"
 
 #include <cstdarg>
 #include <cstdio>

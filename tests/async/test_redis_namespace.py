@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "redis_namespace.h"
+#include "redis/redis_namespace.h"
 
 #include <assert.h>
 #include <string.h>

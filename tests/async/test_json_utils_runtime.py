@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "json_utils.h"
+#include "core/json_utils.h"
 
 #include <cstdio>
 #include <cstdlib>

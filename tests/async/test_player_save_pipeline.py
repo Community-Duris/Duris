@@ -26,7 +26,7 @@ def section(text: str, start: str, end: str) -> str:
 
 
 HARNESS = r'''
-#include "player_revision_state.h"
+#include "player/player_revision_state.h"
 #include <cassert>
 
 int main()

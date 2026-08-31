@@ -64,7 +64,7 @@ def main() -> None:
     assert "REDIS_DONATION_WORK_BATCH" in worker_header
 
     harness = r'''
-#include "donation_event.h"
+#include "economy/donation_event.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>

@@ -1,8 +1,8 @@
 #ifndef _SHIP_NPC_H_
 #define _SHIP_NPC_H_
 
-#include "ship_npc_ai.h"
-#include "ships.h"
+#include "ships/ship_npc_ai.h"
+#include "ships/ships.h"
 
 struct NPCShipSetup
 {

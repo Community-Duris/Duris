@@ -13,9 +13,9 @@
 #include "world/epic.h"
 #include "world/graph.h"
 #include "item/objmisc.h"
-#include "ship_auto.h"
-#include "ship_npc.h"
-#include "ship_npc_ai.h"
+#include "ships/ship_auto.h"
+#include "ships/ship_npc.h"
+#include "ships/ship_npc_ai.h"
 #include "magic/spells.h"
 
 // char  arc[3];

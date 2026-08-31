@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "flatfile_shopkeeper_ownership.h"
+#include "flatfile/flatfile_shopkeeper_ownership.h"
 
 #include <cassert>
 

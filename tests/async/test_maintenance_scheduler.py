@@ -18,7 +18,7 @@ REPOSITORY = (SRC / "maintenance_repository.c").read_text()
 NEW_EVENTS = (SRC / "new_events.c").read_text()
 
 HARNESS = r'''
-#include "maintenance_scheduler.h"
+#include "persistence/maintenance_scheduler.h"
 
 #include <atomic>
 #include <cassert>

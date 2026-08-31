@@ -19,7 +19,7 @@ terminal_helper = actoth[
 ]
 
 harness = r'''
-#include "deferred_save_policy.h"
+#include "persistence/deferred_save_policy.h"
 #include <cassert>
 
 int main()

@@ -10,7 +10,7 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "corpse_lifecycle_transaction.h"
+#include "persistence/corpse_lifecycle_transaction.h"
 
 #include <algorithm>
 #include <cassert>

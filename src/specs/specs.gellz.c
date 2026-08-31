@@ -24,7 +24,7 @@
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 using namespace std;
-#include "ships.h"
+#include "ships/ships.h"
 
 // *****************************************************************
 //	Gellz TEST Object procedure... ONLY for testing

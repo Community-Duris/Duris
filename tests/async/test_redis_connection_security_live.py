@@ -62,7 +62,7 @@ def main() -> None:
             raise SystemExit(f"{executable} is required")
 
     harness = r'''
-#include "redis_connection.h"
+#include "redis/redis_connection.h"
 
 #include <hiredis/hiredis.h>
 

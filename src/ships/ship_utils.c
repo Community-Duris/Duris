@@ -14,7 +14,7 @@
 #include "world/graph.h"
 #include "world/map.h"
 #include "item/objmisc.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 
 extern int top_of_world;

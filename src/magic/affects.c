@@ -36,7 +36,7 @@
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"
 #include "classes/reavers.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "world/vnum.obj.h"

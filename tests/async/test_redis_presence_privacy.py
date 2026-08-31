@@ -9,8 +9,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "redis_presence_payload.h"
-#include "presence_policy.h"
+#include "redis/redis_presence_payload.h"
+#include "persistence/presence_policy.h"
 
 #include <cassert>
 #include <cstdlib>

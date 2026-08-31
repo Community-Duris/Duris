@@ -32,7 +32,7 @@
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_mode.h"
 #include "world/random.zone.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

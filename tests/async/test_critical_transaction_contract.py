@@ -80,7 +80,7 @@ assert "critical_outbox state=%s" in DIAGNOSTICS
 assert "committed_without_outbox" in DIAGNOSTICS
 
 HARNESS = r'''
-#include "critical_outbox.h"
+#include "persistence/critical_outbox.h"
 #include <cassert>
 extern "C" struct st_mysql *sql_pool_acquire(void) { return nullptr; }
 extern "C" void sql_pool_release(struct st_mysql *) {}

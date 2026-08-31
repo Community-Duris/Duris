@@ -11,7 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "session_audit_command.h"
+#include "account/session_audit_command.h"
 #include <cassert>
 #include <set>
 #include <string>

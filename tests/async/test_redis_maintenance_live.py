@@ -13,9 +13,9 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "redis_connection.h"
-#include "redis_maintenance.h"
-#include "redis_command_observability.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_maintenance.h"
+#include "redis/redis_command_observability.h"
 
 #include <hiredis/hiredis.h>
 

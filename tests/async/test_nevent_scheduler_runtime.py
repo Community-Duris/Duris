@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #define clock_gettime nevent_test_clock_gettime
-#include "new_events.c"
+#include "world/new_events.c"
 #undef clock_gettime
 
 #include <algorithm>

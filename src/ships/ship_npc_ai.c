@@ -11,7 +11,7 @@
 #include "world/events.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
-#include "ship_npc_ai.h"
+#include "ships/ship_npc_ai.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -19,8 +19,8 @@
 #include "world/graph.h"
 #include "world/map.h"
 #include "item/objmisc.h"
-#include "ship_npc.h"
-#include "ships.h"
+#include "ships/ship_npc.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 
 extern char buf[MAX_STRING_LENGTH];

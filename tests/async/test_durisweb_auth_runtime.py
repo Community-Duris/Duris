@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = r'''
-#include "ws_auth.h"
+#include "net/ws_auth.h"
 #include <openssl/hmac.h>
 #include <cstdio>
 #include <cstdlib>

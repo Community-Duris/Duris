@@ -2287,7 +2287,7 @@ struct mcname
 };
 
 // #ifndef _NEWSHIP_H_
-//   #include "ships.h"
+//   #include "ships/ships.h"
 // #endif
 
 #define MIN_SPEC 0

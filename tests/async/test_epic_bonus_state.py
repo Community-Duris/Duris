@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "epic_bonus_state.h"
+#include "world/epic_bonus_state.h"
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

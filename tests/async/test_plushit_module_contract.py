@@ -33,7 +33,7 @@ assert contains(source, "IS_PC(victim) || IS_TRUSTED(ch)")
 
 # fight.c carries exactly one guard, and it only ever aborts the swing
 assert fight.count("plushit_blocks(") == 1
-assert contains(fight, '#include "plushit.h"')
+assert contains(fight, '#include "item/plushit.h"')
 assert contains(fight, "if (plushit_blocks(ch, victim, weapon))")
 
 # one object line

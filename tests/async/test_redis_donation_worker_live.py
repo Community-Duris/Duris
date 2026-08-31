@@ -59,8 +59,8 @@ def main() -> None:
         raise SystemExit("redis-server and redis-cli are required")
 
     harness = r'''
-#include "redis_donation_worker.h"
-#include "redis_connection.h"
+#include "redis/redis_donation_worker.h"
+#include "redis/redis_connection.h"
 
 #include <cassert>
 #include <chrono>

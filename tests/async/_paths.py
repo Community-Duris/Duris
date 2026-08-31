@@ -1,6 +1,6 @@
 """Resolve `src/` paths independently of the subdirectory layout.
 
-Tests historically hardcoded `ROOT / "src" / "foo.c"`, which pins every test to
+Tests historically hardcoded `source("foo.c")`, which pins every test to
 the physical location of a source file.  Source files now live in topical
 subdirectories (`src/core/`, `src/world/`, ...), so tests address them by bare
 filename and let this module find them.

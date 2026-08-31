@@ -71,7 +71,7 @@ for name, text in (("comm.c", comm), ("websocket.c", websocket)):
 # The helper this fix introduced now lives in safe_format.h and is shared with
 # the other 115 sites; test_append_bounds.py covers the helper itself.
 check("prompt.c appends through the shared bounded helper",
-      '#include "safe_format.h"' in prompt
+      '#include "core/safe_format.h"' in prompt
       and "APPENDF(promptbuf," in prompt
       and "checked_appendf(pPrompt, pPromptCap," in prompt)
 check("prompt.c open-codes no append of its own",

@@ -11,13 +11,14 @@ DELETE FROM / UPDATE statements in sql_pwipe() and compares them against
 the full table inventory from the bootstrap SQL.
 """
 
+from _paths import source
 import json
 import re
 import os
 import sys
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SQL_C = os.path.join(REPO_ROOT, "src", "sql.c")
+SQL_C = str(source("sql.c"))
 BOOTSTRAP_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_multithread_safe.sql")
 DURIS_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_legacy_baseline.sql")
 LIFECYCLE_MANIFEST = os.path.join(

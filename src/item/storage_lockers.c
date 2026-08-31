@@ -32,7 +32,7 @@
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "account/password_hash.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

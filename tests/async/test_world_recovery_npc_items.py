@@ -10,9 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "world_recovery_npc_items.h"
-#include "prototypes.h"
-#include "utils.h"
+#include "world/world_recovery_npc_items.h"
+#include "core/prototypes.h"
+#include "core/utils.h"
 
 #include <cassert>
 #include <cstdarg>

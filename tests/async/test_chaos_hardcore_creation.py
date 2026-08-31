@@ -18,6 +18,6 @@ create_character = WS[WS.index("void ws_cmd_create_character(") :]
 assert policy in select_sex
 assert policy in select_hardcore
 assert policy in create_character
-assert '#include "chaos_config.h"' in WS
+assert '#include "combat/chaos_config.h"' in WS
 
 print("chaos hardcore creation contract passed")

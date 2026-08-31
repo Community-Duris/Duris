@@ -13,8 +13,8 @@ assert "ttype_negotiate(newd);\n\t\tgreet(newd);" in COMM
 assert "time(0) >= point->ttype_timeout" not in COMM
 
 HARNESS = r'''
-#include "ttype.h"
-#include "telnet.h"
+#include "net/ttype.h"
+#include "net/telnet.h"
 
 #include <cstdio>
 #include <cstdlib>

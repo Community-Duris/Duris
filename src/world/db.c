@@ -31,7 +31,7 @@
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "combat/siege.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"

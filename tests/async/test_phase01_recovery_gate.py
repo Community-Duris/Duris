@@ -19,8 +19,8 @@ WIZREDIS = (SRC / "wizredis.c").read_text()
 
 
 HARNESS = r'''
-#include "player_revision_state.h"
-#include "player_save_worker.h"
+#include "player/player_revision_state.h"
+#include "player/player_save_worker.h"
 
 #include <cassert>
 #include <chrono>

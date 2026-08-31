@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "persistence_observability.h"
+#include "persistence/persistence_observability.h"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -56,7 +56,7 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
 | other | unknown | yes |
 
 Graceful shutdown from inside the game: immortal `shutdown` command
-(`src/actwiz.c`). It writes `logs/shutdown_info.txt`
+(`src/cmd/actwiz.c`). It writes `logs/shutdown_info.txt`
 (`initiated_by|reason`), which `cycle_mud.sh` consumes for its reboot record
 and then removes. Copyover (`copyover` command) execs a fresh binary while
 keeping player connections alive via `copyover.dat`.
@@ -551,7 +551,7 @@ retry. A repair invalidates affected evidence and requires affected plus complet
 ## Runtime tuning
 
 Server behavior knobs are exposed through the properties system:
-`get_property()` (`src/properties.c`) binary-searches key/value pairs loaded
+`get_property()` (`src/world/properties.c`) binary-searches key/value pairs loaded
 from `lib/duris.properties`, falling back to per-call defaults, e.g.
 `help.cooldown.secs`. Feature config files live in `lib/*.cfg`
 (crafting, mining, hardcore, frag caps, account rewards, creation

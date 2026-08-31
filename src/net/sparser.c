@@ -28,7 +28,7 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "core/profile.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

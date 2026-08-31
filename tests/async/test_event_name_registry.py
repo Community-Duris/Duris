@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "event_names.h"
+#include "world/event_names.h"
 
 #include <cstdint>
 #include <cstdlib>

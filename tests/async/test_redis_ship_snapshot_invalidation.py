@@ -41,13 +41,13 @@ assert "redis_shared_command_observability_record" in legacy
 assert "redis_clear_ship_snapshots(context)" in source
 for caller in (rel("sql_player.c"), rel("ship_base.c")):
     caller_source = (ROOT / caller).read_text()
-    assert '#include "redis_ship_legacy.h"' in caller_source
-    assert '#include "redis.h"' not in caller_source
+    assert '#include "redis/redis_ship_legacy.h"' in caller_source
+    assert '#include "redis/redis.h"' not in caller_source
 
 HARNESS = r'''
-#include "redis_ship_legacy.h"
-#include "redis_command_observability.h"
-#include "redis_connection.h"
+#include "redis/redis_ship_legacy.h"
+#include "redis/redis_command_observability.h"
+#include "redis/redis_connection.h"
 
 #include <hiredis/hiredis.h>
 

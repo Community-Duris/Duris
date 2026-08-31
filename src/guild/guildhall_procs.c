@@ -15,7 +15,7 @@
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "item/storage_lockers.h"
 

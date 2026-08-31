@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "combat_outcome_command.h"
+#include "combat/combat_outcome_command.h"
 #include <cassert>
 #include <cstring>
 

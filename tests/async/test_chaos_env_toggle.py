@@ -29,7 +29,7 @@ assert "defined(CHAOS_MUD)" not in consumers
 assert "chaos_mud_enabled()" in consumers
 
 HARNESS = r"""
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 
 #include <stdio.h>
 

@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "artifact_cache_codec.h"
+#include "guild/artifact_cache_codec.h"
 
 #include <cassert>
 #include <cjson/cJSON.h>

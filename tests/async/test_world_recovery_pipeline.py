@@ -25,10 +25,10 @@ def section(text: str, start: str, end: str) -> str:
 
 
 HARNESS = r'''
-#include "world_recovery_pipeline.h"
-#include "world_recovery_codec.h"
-#include "copyover.h"
-#include "item_ownership_runtime.h"
+#include "world/world_recovery_pipeline.h"
+#include "world/world_recovery_codec.h"
+#include "persistence/copyover.h"
+#include "item/item_ownership_runtime.h"
 #include <array>
 #include <atomic>
 #include <cassert>

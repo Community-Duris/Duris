@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
-DEFAULT_REDIS_REGISTRY = ROOT / "src" / "redis_key_registry.def"
+DEFAULT_REDIS_REGISTRY = ROOT / "src/redis/redis_key_registry.def"
 DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",

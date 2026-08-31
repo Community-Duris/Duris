@@ -15,7 +15,7 @@ import validate_data_lifecycle as lifecycle  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "migrations/runtime_compatibility_manifest.json"
-HEADER = ROOT / "src/runtime_compatibility_contract.h"
+HEADER = ROOT / "src/core/runtime_compatibility_contract.h"
 FIELDS = {
     "manifest_version", "baseline_id", "baseline_table_count",
     "baseline_table_fingerprint", "current_table_count",

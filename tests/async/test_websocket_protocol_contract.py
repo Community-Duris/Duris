@@ -170,8 +170,8 @@ def test_authentication_fails_closed_without_configured_secret():
     assert 'DURISWEB_SECRET_DEFAULT' not in WS_HANDLERS
     assert 'DURISWEB_SECRET_DEFAULT' not in GMCP
     assert 'if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge' in AUTH
-    assert '#include "ws_auth.h"' in WS_HANDLERS
-    assert '#include "ws_auth.h"' in GMCP
+    assert '#include "net/ws_auth.h"' in WS_HANDLERS
+    assert '#include "net/ws_auth.h"' in GMCP
     assert 'strlen(sig) != 64' in AUTH
     assert 'CRYPTO_memcmp' in AUTH
     assert 'offset = -1' in AUTH and 'offset <= 1' in AUTH

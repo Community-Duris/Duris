@@ -71,7 +71,7 @@ assert "redis_donation_enabled" not in REDIS_SOURCE
 assert "broadcast_donation_nchat" not in REDIS_SOURCE
 
 events = (SRC / "new_events.c").read_text(encoding="utf-8")
-assert '#include "redis_donation_runtime.h"' in events
+assert '#include "redis/redis_donation_runtime.h"' in events
 assert "redis_donation_runtime_enabled()" in events
 
 for symbol in (
@@ -91,8 +91,8 @@ assert "redis_presence_worker_submit_clear" in PRESENCE_SOURCE
 assert "redis_presence_runtime.o" in MAKEFILE
 for filename in ("actoth.c", "nanny.c"):
     source = (SRC / filename).read_text(encoding="utf-8")
-    assert '#include "redis_presence_runtime.h"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "redis/redis_presence_runtime.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in (
     "redis_report_cache_configure",
@@ -143,8 +143,8 @@ report_only_callers = (
 )
 for filename in report_only_callers:
     source = (SRC / filename).read_text(encoding="utf-8")
-    assert '#include "redis_report_cache.h"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "redis/redis_report_cache.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in (
     "redis_floor_runtime_configure",
@@ -169,8 +169,8 @@ for filename in (
     "world_recovery_pipeline.c",
 ):
     source = (SRC / filename).read_text(encoding="utf-8")
-    assert '#include "redis_floor_runtime.h"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "redis/redis_floor_runtime.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in (
     "redis_runtime_connections_configure",
@@ -209,8 +209,8 @@ assert "REDIS_SHIP_SNAPSHOT_PATTERN" in SHIP_SOURCE
 assert "redis_ship_legacy.o" in MAKEFILE
 for filename in ("sql_player.c", "ships/ship_base.c"):
     source = (SRC / filename).read_text(encoding="utf-8")
-    assert '#include "redis_ship_legacy.h"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "redis/redis_ship_legacy.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in ("redis_clear_pwipe_state", "redis_validate_pwipe_state"):
     assert symbol in MAINTENANCE_HEADER
@@ -220,8 +220,8 @@ for symbol in ("redis_maintenance_clear", "redis_maintenance_validate"):
     assert symbol in MAINTENANCE_SOURCE
 assert "redis_maintenance.o" in MAKEFILE
 sql = (SRC / "sql.c").read_text(encoding="utf-8")
-assert '#include "redis_maintenance.h"' in sql
-assert '#include "redis.h"' not in sql
+assert '#include "redis/redis_maintenance.h"' in sql
+assert '#include "redis/redis.h"' not in sql
 
 assert "#error \"redis.h is retired" in REDIS_HEADER
 for symbol in ("redis_init", "redis_cleanup", "redis_runtime_enabled"):
@@ -249,15 +249,15 @@ for token in (
     assert token not in REDIS_SOURCE
 assert "redis_world_runtime.o" in MAKEFILE
 for filename, header in (
-    ("comm.c", "redis_world_runtime.h"),
-    ("copyover.c", "redis_world_runtime.h"),
-    ("new_events.c", "redis_world_runtime.h"),
-    ("wizredis.c", "redis_world_runtime.h"),
-    ("interp.c", "redis_wizard.h"),
+    ("comm.c", "redis/redis_world_runtime.h"),
+    ("copyover.c", "redis/redis_world_runtime.h"),
+    ("new_events.c", "redis/redis_world_runtime.h"),
+    ("wizredis.c", "redis/redis_world_runtime.h"),
+    ("interp.c", "redis/redis_wizard.h"),
 ):
     source = (SRC / filename).read_text(encoding="utf-8")
     assert f'#include "{header}"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "redis/redis.h"' not in source
 
 checkpoint_only_callers = (
     "actinf.c",
@@ -271,12 +271,12 @@ checkpoint_only_callers = (
 )
 for filename in checkpoint_only_callers:
     source = (SRC / filename).read_text(encoding="utf-8")
-    assert '#include "persistence_checkpoint.h"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "persistence/persistence_checkpoint.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 redis_includers = []
 for source_path in SRC.rglob("*.[ch]"):
-    if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
+    if '#include "redis/redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
 assert redis_includers == []
 

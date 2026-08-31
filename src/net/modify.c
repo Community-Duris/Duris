@@ -21,7 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "core/mm.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

@@ -14,7 +14,7 @@
 #include "guild/assocs.h"
 #include "core/config.h"
 #include "item/objmisc.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 

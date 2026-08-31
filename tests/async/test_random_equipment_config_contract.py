@@ -22,7 +22,7 @@ assert 'fopen("lib/random_equipment.cfg", "r")' in s
 assert "random_equipment_stat_max" in s
 assert "random_equipment_config.o" in m
 assert "boot_random_equipment_config();" in comm
-assert '#include "random_equipment_config.h"' in r
+assert '#include "item/random_equipment_config.h"' in r
 assert "random_equipment_config_get()" in r
 
 # Checked-in defaults must preserve the currently active duris.properties values.

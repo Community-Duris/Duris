@@ -13,9 +13,9 @@ HEADER_DIR = SRC
 MAKEFILE = (SRC / "Makefile").read_text()
 
 PROBE = r'''
-#include "persistence_mode.h"
+#include "persistence/persistence_mode.h"
 #ifdef __NO_MYSQL__
-#include "flatfile_ip_activity_repository.h"
+#include "flatfile/flatfile_ip_activity_repository.h"
 #endif
 
 #include <cstdlib>

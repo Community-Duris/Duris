@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "artifact_guild_command.h"
+#include "guild/artifact_guild_command.h"
 #include <cassert>
 
 int main()

@@ -168,7 +168,7 @@ The authoritative inventories are:
 - normalized runtime metadata and migration head:
   [`migrations/runtime_compatibility_manifest.json`](../../migrations/runtime_compatibility_manifest.json); and
 - the compiled boot contract:
-  [`src/runtime_compatibility_contract.h`](../../src/runtime_compatibility_contract.h).
+  [`src/core/runtime_compatibility_contract.h`](../../src/core/runtime_compatibility_contract.h).
 
 [`scripts/validate_runtime_compatibility.py`](../../scripts/validate_runtime_compatibility.py)
 cross-checks those inventories so they cannot drift independently.
@@ -446,7 +446,7 @@ is not a second copy of the incoming legacy dump.
 | Runtime table inventory | [`migrations/data_lifecycle_manifest.json`](../../migrations/data_lifecycle_manifest.json) |
 | Runtime metadata/head contract | [`migrations/runtime_compatibility_manifest.json`](../../migrations/runtime_compatibility_manifest.json) |
 | Standalone runtime verifier | [`migrations/verify_runtime_compatibility.sh`](../../migrations/verify_runtime_compatibility.sh) |
-| Compiled server boot gate | [`src/runtime_compatibility_contract.h`](../../src/runtime_compatibility_contract.h) and [`src/sql.c`](../../src/sql.c) |
+| Compiled server boot gate | [`src/core/runtime_compatibility_contract.h`](../../src/core/runtime_compatibility_contract.h) and [`src/sql/sql.c`](../../src/sql/sql.c) |
 | Import regressions | [`tests/async/test_legacy_dump_import.py`](../../tests/async/test_legacy_dump_import.py) |
 | Cross-engine legacy convergence | [`tests/async/run_legacy_migration_mysql.sh`](../../tests/async/run_legacy_migration_mysql.sh) |
 | Cross-engine runtime contract | [`tests/async/run_runtime_compatibility_mysql.sh`](../../tests/async/run_runtime_compatibility_mysql.sh) |

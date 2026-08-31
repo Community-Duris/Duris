@@ -8,7 +8,7 @@
 #include "core/config.h"
 #include "combat/frag_cap_config.h"
 #include "redis/redis_report_cache.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #define MAX_FRAG_SIZE 10 /* max size of high/low lists */

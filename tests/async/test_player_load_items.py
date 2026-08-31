@@ -15,13 +15,13 @@ NANNY = (SRC / "nanny.c").read_text()
 COPYOVER = (SRC / "copyover.c").read_text()
 
 HARNESS = r'''
-#include "item_ownership_runtime.h"
-#include "player_load_items.h"
-#include "player_load_pets.h"
-#include "prototypes.h"
-#include "spells.h"
-#include "structs.h"
-#include "utils.h"
+#include "item/item_ownership_runtime.h"
+#include "player/player_load_items.h"
+#include "player/player_load_pets.h"
+#include "core/prototypes.h"
+#include "magic/spells.h"
+#include "core/structs.h"
+#include "core/utils.h"
 
 #include <cassert>
 #include <cstdarg>

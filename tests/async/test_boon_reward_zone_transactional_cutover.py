@@ -10,9 +10,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "boon_reward_command.h"
-#include "boon_shop_command.h"
-#include "zone_touch_command.h"
+#include "economy/boon_reward_command.h"
+#include "economy/boon_shop_command.h"
+#include "world/zone_touch_command.h"
 #include <cassert>
 
 int main()

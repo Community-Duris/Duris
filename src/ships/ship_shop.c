@@ -18,7 +18,7 @@
 #include "world/epic_transaction.h"
 #include "world/map.h"
 #include "economy/nexus_stones.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 
 extern char buf[MAX_STRING_LENGTH];

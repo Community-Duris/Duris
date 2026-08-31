@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 OWNED_PAYLOAD_HARNESS = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 #include <cstdlib>
 #include <vector>
@@ -95,7 +95,7 @@ int main()
 '''
 
 IDENTITY_HARNESS = r'''
-#include "character_identity.c"
+#include "account/character_identity.c"
 
 #include <cstdarg>
 #include <cstdlib>
@@ -137,7 +137,7 @@ int main()
 '''
 
 RAW_TRIVIAL_SOURCE = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 static void callback(P_char, P_char, P_obj, void *)
 {
@@ -151,7 +151,7 @@ void schedule_trivial()
 '''
 
 RAW_NONTRIVIAL_SOURCE = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 static void callback(P_char, P_char, P_obj, void *)
 {

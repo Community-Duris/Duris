@@ -13,9 +13,9 @@
 #include "combat/ctf.h"
 #include "net/gmcp.h"
 #include "world/map.h"
-#include "ship_auto.h"
-#include "ship_npc.h"
-#include "ship_npc_ai.h"
+#include "ships/ship_auto.h"
+#include "ships/ship_npc.h"
+#include "ships/ship_npc_ai.h"
 
 extern char buf[MAX_STRING_LENGTH];
 extern char arg1[MAX_STRING_LENGTH];

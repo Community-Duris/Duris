@@ -15,7 +15,7 @@ HEADER = (SRC / "critical_command_coordinator.h").read_text()
 
 
 HARNESS = r'''
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <cassert>
 #include <chrono>

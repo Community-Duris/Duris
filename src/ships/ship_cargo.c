@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include "world/graph.h"
 #include "item/objmisc.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

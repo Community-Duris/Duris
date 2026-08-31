@@ -25,7 +25,7 @@ using namespace std;
 #include "economy/nexus_stones.h"
 #include "persistence/persistence_checkpoint.h"
 #include "combat/racewar_stat_mods.h"
-#include "ship_npc.h"
+#include "ships/ship_npc.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #ifdef __NO_MYSQL__

@@ -14,7 +14,7 @@ CONFIG = ROOT / "lib/hardcore.cfg"
 
 PROBE = r'''
 #include <stdio.h>
-#include "hardcore_config.h"
+#include "world/hardcore_config.h"
 
 void logit(const char *file, const char *format, ...)
 {

@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "new_events.c"
+#include "world/new_events.c"
 
 bool nevent_periodic_begin(P_nevent)
 {

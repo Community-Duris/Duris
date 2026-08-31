@@ -34,7 +34,7 @@ for mutation in ("obj_from_char(", "obj_to_char(", "extract_obj(", "ADD_MONEY(",
         raise SystemExit(f"shop trade payload builder mutates live state through {mutation}")
 
 HARNESS = r'''
-#include "shop_trade_runtime.h"
+#include "economy/shop_trade_runtime.h"
 
 #include <cassert>
 #include <cstdint>

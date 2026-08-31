@@ -119,8 +119,8 @@ class DropReplyProxy:
 
 
 HARNESS = r'''
-#include "redis_connection.h"
-#include "redis_world_store.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_world_store.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -169,8 +169,8 @@ int main(int argc, char **argv)
 
 
 FLOOR_HARNESS = r'''
-#include "redis_connection.h"
-#include "redis_floor_store.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_floor_store.h"
 
 #include <cstdlib>
 

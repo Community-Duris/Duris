@@ -21,9 +21,9 @@ DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 
 HARNESS = r'''
-#include "player_load_pipeline.h"
-#include "persistence_observability.h"
-#include "sql_pool.h"
+#include "player/player_load_pipeline.h"
+#include "persistence/persistence_observability.h"
+#include "sql/sql_pool.h"
 
 #include <cassert>
 #include <chrono>

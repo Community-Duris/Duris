@@ -1,7 +1,7 @@
 #ifndef _SHIP_NPC_AI_H_
 #define _SHIP_NPC_AI_H_
 
-#include "ships.h"
+#include "ships/ships.h"
 
 // must be a value that survives float conversion exactly
 #define INF_RANGE 65536

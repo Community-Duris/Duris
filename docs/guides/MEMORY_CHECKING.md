@@ -132,7 +132,7 @@ or intermittent investigation.
 
 ## Known limitation
 
-Some objects come from the fixed pools in `src/mm.c`. Releasing one of those
+Some objects come from the fixed pools in `src/core/mm.c`. Releasing one of those
 objects returns its slot to a Duris pool rather than to the system allocator,
 so ASan and Memcheck may not diagnose every stale reference to a released pool
 object. `mreport` can show pool counts but does not close this detection gap.

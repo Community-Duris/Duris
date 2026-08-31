@@ -33,7 +33,7 @@ assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(
 # invokes it before the first empty corpse snapshot and ownership submission; player
 # inventory remains visible until each transfer commits.
 assert contains(header, "void account_bound_reward_prepare_player_corpse(P_char ch, P_obj corpse);")
-assert contains(fight, '#include "account_reward.h"')
+assert contains(fight, '#include "account/account_reward.h"')
 hook = "account_bound_reward_prepare_player_corpse(ch, corpse);"
 assert hook in fight
 make_corpse = fight[index(fight, "P_obj make_corpse"):]

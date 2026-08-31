@@ -14,7 +14,7 @@ SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
 HARNESS = r'''
-#include "player_revision_state.h"
+#include "player/player_revision_state.h"
 
 #include <cassert>
 #include <cstdint>

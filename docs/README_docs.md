@@ -108,5 +108,5 @@ Kept when the `.spec_system/` tracking tree was retired.
 - `legacy/` is inherited upstream reference text (`legacy/areas/`, `legacy/src/`) and
   may be stale.
 - `lib/` is **not documentation**. `lib/information/` is read by the server at runtime
-  (`src/wikihelp.c`, `src/nanny.c`) and by `scripts/import_help_to_prod.sh`; moving it
+  (`src/cmd/wikihelp.c`, `src/account/nanny.c`) and by `scripts/import_help_to_prod.sh`; moving it
   breaks the running game.

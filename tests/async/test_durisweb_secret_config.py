@@ -17,8 +17,8 @@ EXAMPLE = (ROOT / ".env.example").read_text()
 for source in (WS, GMCP, AUTH):
     assert "DURISWEB_SECRET_DEFAULT" not in source
 
-assert '#include "ws_auth.h"' in WS
-assert '#include "ws_auth.h"' in GMCP
+assert '#include "net/ws_auth.h"' in WS
+assert '#include "net/ws_auth.h"' in GMCP
 assert 'getenv("DURISWEB_SECRET")' in AUTH
 assert "if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge" in AUTH
 assert "char expected[65];" in AUTH

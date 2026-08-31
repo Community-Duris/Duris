@@ -9,7 +9,7 @@
 #include "world/graph.h"
 #include "world/map.h"
 #include "item/objmisc.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "core/safe_format.h"

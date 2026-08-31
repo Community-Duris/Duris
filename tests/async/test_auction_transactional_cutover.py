@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "auction_command.h"
+#include "economy/auction_command.h"
 #include <cassert>
 #include <cstring>
 

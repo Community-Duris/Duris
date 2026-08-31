@@ -50,7 +50,7 @@ fs::path make_state(const fs::path &base, const std::string &name)
 }
 } // namespace
 
-#include "../../src/siege.c"
+#include "../../src/combat/siege.c"
 
 struct room_data room_storage[3] = {};
 P_room world = room_storage;

@@ -15,8 +15,8 @@ DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 
 HARNESS = r'''
-#include "player_save_journal.h"
-#include "player_snapshot_codec.h"
+#include "player/player_save_journal.h"
+#include "player/player_snapshot_codec.h"
 
 #include <cassert>
 #include <cstdint>

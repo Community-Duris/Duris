@@ -26,9 +26,9 @@ def main() -> None:
         raise SystemExit("redis-server and redis-cli are required")
 
     harness = r'''
-#include "redis_world_store.h"
-#include "redis_connection.h"
-#include "world_recovery_pipeline.h"
+#include "redis/redis_world_store.h"
+#include "redis/redis_connection.h"
+#include "world/world_recovery_pipeline.h"
 #include <hiredis/hiredis.h>
 #include <cassert>
 #include <cstdlib>

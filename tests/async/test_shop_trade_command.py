@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "shop_trade_command.h"
+#include "economy/shop_trade_command.h"
 
 #include <cassert>
 #include <cstring>

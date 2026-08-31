@@ -6,12 +6,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 #include <cstdarg>
 #include <cstdio>
 #include <cmath>
 void logit(const char *, const char *, ...) {}
-#include "random_equipment_config.c"
+#include "item/random_equipment_config.c"
 
 int main() {
     const random_equipment_config *cfg = random_equipment_config_get();

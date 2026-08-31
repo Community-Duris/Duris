@@ -62,7 +62,7 @@
 #include "redis/redis_presence_runtime.h"
 #include "redis/redis_report_cache.h"
 #include "redis/redis_world_runtime.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "combat/siege.h"
 #include "magic/spells.h"
 #include "item/enhance.h"

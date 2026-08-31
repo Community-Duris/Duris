@@ -81,7 +81,7 @@ its own commit, never mixed with a behavior change.
 - **clang-format is not idempotent here.** A second pass can rewrite more than
   the first. `--all` iterates until a pass changes nothing, and fails loudly if
   five passes are not enough.
-- **One statement oscillates forever.** `do_vote()` in `src/actnew.c` has
+- **One statement oscillates forever.** `do_vote()` in `src/cmd/actnew.c` has
   literal tab characters inside an `fprintf` format string, which breaks
   clang-format's column arithmetic. It is fenced with `// clang-format off`.
 - **Constant defines with long trailing comments.** clang-format wrapped 23 of

@@ -28,7 +28,7 @@
 #include "world/map.h"
 #include "core/mm.h"
 #include "item/objmisc.h"
-#include "ships.h"
+#include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "sql/sql_player.h"

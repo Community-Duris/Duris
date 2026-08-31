@@ -25,7 +25,7 @@ defaults. The resolved `host/database` pair must also appear in
 details.
 
 The listen port applies a production safety redirect in
-`sql_persistence_db_name()` (`src/sql.c`):
+`sql_persistence_db_name()` (`src/sql/sql.c`):
 
 | Condition | Effective database |
 |------|----------|
@@ -41,7 +41,7 @@ Connection architecture:
 - **Main connection** - owns boot verification and remaining synchronous legacy or
   administrative queries. It is not the normal player checkpoint, critical-command,
   maintenance, or existing-character login path.
-- **Connection pool** (`src/sql_pool.c`) - bounded, individually owned connections used
+- **Connection pool** (`src/sql/sql_pool.c`) - bounded, individually owned connections used
   by typed load, snapshot, critical-command, outbox, maintenance, locker, and retained
   compatibility workers. Acquire/release is mutex and condition-variable based.
 - **Failure behavior** - typed routes return unavailable, retryable, or fenced outcomes
@@ -66,13 +66,13 @@ verification; a protected local loopback/socket path is the only plaintext excep
 
 The typed player and critical journals contain schema versions, checksums, bounds, and
 restrictive-permission checks. Unrestricted raw SQL is not accepted as a new durable
-message contract. The older `src/persistence_queue.c` and
-`src/sql_persistence_raw.c` modules remain only for compatibility producers still named
+message contract. The older `src/persistence/persistence_queue.c` and
+`src/sql/sql_persistence_raw.c` modules remain only for compatibility producers still named
 by source and health output.
 
 Redis is not an authority for player dirty state. It holds floor-delta recovery data
 and optional sequence-numbered world generations used after graceful restart or an unclean exit
-(`src/redis.c`). Recovery reads every referenced item from SQL in batches and accepts only
+(`src/redis/redis.c`). Recovery reads every referenced item from SQL in batches and accepts only
 an exact active room-owned graph before creating entities. A generation is cleared only
 after successful validated recovery and atomic runtime-custody hydration.
 
@@ -236,8 +236,8 @@ not applied to a different object.
 
 ## Consistent player load
 
-Existing-character login is asynchronous. `src/player_load_pipeline.c` owns one
-bounded request queue and worker; `src/player_load_repository.c` borrows one validated
+Existing-character login is asynchronous. `src/player/player_load_pipeline.c` owns one
+bounded request queue and worker; `src/player/player_load_repository.c` borrows one validated
 pool connection and opens a consistent read transaction. Required status, skills,
 affects, current item ownership, item metadata, pet rows, and pet item metadata are
 loaded in bounded set-based queries into owned DTOs. The worker never creates or

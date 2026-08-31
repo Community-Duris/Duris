@@ -35,7 +35,7 @@ WORKER_HEADERS = (
 )
 
 HARNESS = r'''
-#include "redis_command_observability.h"
+#include "redis/redis_command_observability.h"
 
 #include <hiredis/hiredis.h>
 
