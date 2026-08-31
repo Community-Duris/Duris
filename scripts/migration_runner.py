@@ -9,6 +9,7 @@ import hmac
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -231,16 +232,22 @@ class MysqlExecutor:
         environment = os.environ.get("ENVIRONMENT", "").casefold()
         host = os.environ.get("DB_HOST", "")
         database = os.environ.get("DB_NAME", "")
+        socket_path = os.environ.get("DB_SOCKET", "")
         if environment not in {"local", "development", "dev", "test"} or \
                 host not in {"127.0.0.1", "localhost", "::1"} or \
                 re.search(r"(^|[_-])prod(uction)?($|[_-])", database, re.I):
             raise MigrationContractError("migration target must be loopback non-production")
+        if socket_path and not os.path.isabs(socket_path):
+            raise MigrationContractError("DB_SOCKET must be an absolute path")
         for name in ("DB_USER", "DB_PASSWD", "DB_NAME"):
             if not os.environ.get(name):
                 raise MigrationContractError(f"missing migration credential: {name}")
         self.manifest = manifest
-        self.command = ["mysql", "-h", host, "-P", os.environ.get("DB_PORT", "3306"),
-                        "-u", os.environ["DB_USER"], "-N", "-B", database]
+        self.socket_path = socket_path
+        connection = (["--protocol=socket", f"--socket={socket_path}"] if socket_path else
+                      ["-h", host, "-P", os.environ.get("DB_PORT", "3306")])
+        self.command = ["mysql", *connection, "-u", os.environ["DB_USER"],
+                        "-N", "-B", database]
 
     def sql(self, statement: str, input_payload: bytes | None = None) -> str:
         environment = dict(os.environ)
@@ -304,6 +311,16 @@ class MysqlExecutor:
 
     def verify(self, migration: Migration) -> None:
         environment = dict(os.environ)
+        if self.socket_path:
+            # Immutable verifier files are checksum-sealed and carry explicit
+            # TCP flags. Route only their mysql executable through a narrow
+            # adapter instead of rewriting those historical artifacts.
+            real_mysql = shutil.which("mysql")
+            if not real_mysql:
+                raise MigrationContractError("mysql client is unavailable")
+            environment["DURIS_REAL_MYSQL_CLIENT"] = real_mysql
+            environment["PATH"] = (str(ROOT / "scripts/mysql_socket_bin") +
+                                   os.pathsep + environment.get("PATH", ""))
         result = subprocess.run([str(migration.verify_path)], capture_output=True,
                                 env=environment, check=False)
         if result.returncode:

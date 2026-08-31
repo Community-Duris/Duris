@@ -1,0 +1,72 @@
+name: durismud
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: duris_dev
+      MARIADB_USER: duris
+      MARIADB_PASSWORD: ${DURIS_DB_PASSWORD:?run ./scripts/init_docker_env.sh first}
+      MARIADB_ROOT_PASSWORD: ${DURIS_DB_ROOT_PASSWORD:?run ./scripts/init_docker_env.sh first}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - mariadb-socket:/run/mysqld
+      - type: bind
+        source: ./migrations/bootstrap_multithread_safe.sql
+        target: /docker-entrypoint-initdb.d/00-bootstrap.sql
+        read_only: true
+
+  game:
+    build:
+      context: .
+      args:
+        BUILD_JOBS: ${DURIS_BUILD_JOBS:-2}
+    restart: unless-stopped
+    init: true
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: local
+      LISTEN_ADDRESS: "0.0.0.0"
+      DURIS_TLS_PORT: "4001"
+      DURIS_WEBSOCKET_PORT: "4050"
+      DURIS_WEBSOCKET_LISTEN_ADDRESS: "0.0.0.0"
+      PERSISTENCE_MODE: mariadb-primary
+      DB_HOST: localhost
+      DB_PORT: "3306"
+      DB_USER: duris
+      DB_PASSWD: ${DURIS_DB_PASSWORD:?run ./scripts/init_docker_env.sh first}
+      DB_NAME: duris_dev
+      DB_ALLOWED_TARGETS: localhost/duris_dev
+      DB_SOCKET: /run/mysqld/mysqld.sock
+      DB_TLS: "FALSE"
+      PLAYER_SAVE_JOURNAL_DIR: /var/lib/duris/player-journal
+      CRITICAL_COMMAND_JOURNAL_DIR: /var/lib/duris/critical-command-journal
+      DATABASE_BACKUP_DIR: /var/lib/duris/db-backups
+      MAINTENANCE_STATE_FILE: /var/lib/duris/maintenance-scheduler.state
+      REDIS: "FALSE"
+    ports:
+      - "${DURIS_DOCKER_BIND_ADDRESS:-127.0.0.1}:${DURIS_GAME_HOST_PORT:-4000}:4000"
+      - "${DURIS_DOCKER_BIND_ADDRESS:-127.0.0.1}:${DURIS_TLS_HOST_PORT:-4001}:4001"
+      - "${DURIS_DOCKER_BIND_ADDRESS:-127.0.0.1}:${DURIS_WEB_HOST_PORT:-4050}:4050"
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 1m
+    volumes:
+      - duris-runtime:/var/lib/duris
+      - duris-logs:/opt/duris/logs
+      - mariadb-socket:/run/mysqld:ro
+
+volumes:
+  duris-logs:
+  duris-runtime:
+  mariadb-data:
+  mariadb-socket:

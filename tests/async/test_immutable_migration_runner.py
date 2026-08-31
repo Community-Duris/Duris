@@ -201,6 +201,32 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                                             "non-production"):
                     runner.MysqlExecutor(manifest)
 
+    def test_local_unix_socket_is_explicit_and_reaches_sealed_verifiers(self):
+        manifest = runner.load_manifest()
+        environment = {
+            "ENVIRONMENT": "local", "DB_HOST": "127.0.0.1",
+            "DB_NAME": "duris_dev", "DB_USER": "duris", "DB_PASSWD": "secret",
+            "DB_SOCKET": "/run/mysqld/mysqld.sock",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True):
+            executor = runner.MysqlExecutor(manifest)
+            self.assertIn("--protocol=socket", executor.command)
+            self.assertIn("--socket=/run/mysqld/mysqld.sock", executor.command)
+            with mock.patch.object(runner.shutil, "which", return_value="/usr/bin/mysql"), \
+                    mock.patch.object(runner.subprocess, "run") as process:
+                process.return_value.returncode = 0
+                executor.verify(manifest.migrations[0])
+                verify_environment = process.call_args.kwargs["env"]
+                self.assertEqual(verify_environment["DURIS_REAL_MYSQL_CLIENT"],
+                                 "/usr/bin/mysql")
+                self.assertTrue(verify_environment["PATH"].startswith(
+                    str(ROOT / "scripts/mysql_socket_bin") + os.pathsep))
+
+        environment["DB_SOCKET"] = "relative/socket"
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(runner.MigrationContractError, "absolute"):
+                runner.MysqlExecutor(manifest)
+
     def test_legacy_data_markers_are_not_recast_as_complete_history(self):
         ledger = (ROOT / "migrations/immutable_migration_ledger.sql").read_text()
         legacy = (ROOT / "migrations/run_migration.sh").read_text()

@@ -48,6 +48,7 @@ Thumbs.db
 # Docker files themselves
 Dockerfile
 docker-compose.yml
+compose.yaml
 .dockerignore
 
 # Development scripts
@@ -60,8 +61,12 @@ set_god_level*.py
 promote_to_god.py
 
 # Development databases/configs
+.env
+.env.*
+certs/
+duris.crt
+duris.key
 devmysql.md
-help/duris_help*.hlp
 fix_mysql_schema.sql
 
 # SQL reports and analysis

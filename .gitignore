@@ -24,6 +24,7 @@ migrate_pfiles
 .bash_history
 .c*
 .env
+.env.docker
 /Duris.xcodeproj
 /certs/*.crt
 /certs/*.key
@@ -89,9 +90,8 @@ logs/valgrind/
 /tmp_*.txt
 
 # ------------------------------------------------------------------------------
-# Local-only Docker and database test fixtures
+# Local-only database test fixtures
 # ------------------------------------------------------------------------------
-/Dockerfile
 tests/db_write/*.c
 tests/db_write/*.h
 tests/db_write/Dockerfile.*
