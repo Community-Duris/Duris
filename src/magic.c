@@ -21101,8 +21101,7 @@ void spell_shadow_gate(int level, P_char ch, char * /*arg*/, int /*type*/, P_cha
 	spell_general_portal(level, ch, victim, &set, &msg);
 }
 
-void spell_moonwell(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
-		    P_obj /*obj*/)
+void spell_moonwell(int level, P_char ch, char *arg, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	struct affected_type *afp;
 	int to_room = NOWHERE;
@@ -21137,6 +21136,9 @@ void spell_moonwell(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 		return;
 
 	if (!victim)
+		victim = ch;
+	else if (IS_NPC(victim) && arg && !str_cmp(arg, "moonstone") &&
+		 affected_by_spell(ch, SPELL_MOONSTONE))
 		victim = ch;
 
 	if (IS_NPC(ch))
