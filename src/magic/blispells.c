@@ -25,7 +25,7 @@
 #include "objmisc.h"
 #include "outposts.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"
 #include "weather.h"

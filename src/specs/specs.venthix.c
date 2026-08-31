@@ -21,7 +21,7 @@ using namespace std;
 #include "map.h"
 #include "specs.prototypes.h"
 #include "specs/specs.venthix.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 vector<ZombieGame *> zgames;
 

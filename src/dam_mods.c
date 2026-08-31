@@ -10,7 +10,7 @@
 #include "justice.h"
 #include "classes/necromancy.h"
 #include "classes/paladins.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "utils.h"
 
 extern float dam_factor[LAST_DF + 1];

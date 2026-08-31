@@ -9,7 +9,7 @@
 #include <string.h>
 #include "damage.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 void event_dread_wrath(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {

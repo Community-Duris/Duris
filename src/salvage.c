@@ -7,7 +7,7 @@
 #include "cmd/interp.h"
 #include "item_movement_transaction.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "utility.h"
 #include "utils.h"
 #include "tradeskill.h"

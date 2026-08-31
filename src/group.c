@@ -39,7 +39,7 @@
 #include "net/gmcp.h"
 #include "mm.h"
 #include "ships/ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_desc descriptor_list;
 extern const struct race_names race_names_table[];

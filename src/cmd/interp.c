@@ -47,7 +47,7 @@
 #include "classes/rogues.h"
 #include "siege.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "enhance.h"
 #include "sql/sql.h"
 #include "cmd/testcmd.h"

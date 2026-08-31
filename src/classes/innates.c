@@ -33,7 +33,7 @@
 #include "classes/necromancy.h"
 #include "objmisc.h"
 #include "classes/paladins.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 #include "safe_format.h"
 

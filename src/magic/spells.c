@@ -14,7 +14,7 @@
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include <stdio.h>
 #include <string.h>
 #include "ctf.h"

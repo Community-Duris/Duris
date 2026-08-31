@@ -42,7 +42,7 @@
 #include "specs/specs.snogres.h"
 #include "specs/specs.winterhaven.h"
 #include "specs/specs.zion.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql_player.h"
 #include "vnum.obj.h"
 #include "crafting.h"

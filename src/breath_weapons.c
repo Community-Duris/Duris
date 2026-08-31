@@ -7,7 +7,7 @@
 #include "net/comm.h"
 #include "utils.h"
 #include "damage.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 float breath_dam_mod;
 float breath_saved_multiplier;

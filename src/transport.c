@@ -17,7 +17,7 @@
 #include "ctf.h"
 #include "graph.h"
 #include "classes/reavers.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_char character_list;
 extern P_desc descriptor_list;

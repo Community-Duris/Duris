@@ -24,7 +24,7 @@
 #include "graph.h"
 #include "justice.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "studioproclib.h"
 #include "weather.h"
 

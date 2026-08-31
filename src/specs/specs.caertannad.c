@@ -21,7 +21,7 @@
 #include "classes/reavers.h"
 #include "specs/specs.caertannad.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 int caertannad_summon(P_char ch, P_char tch, int cmd, char * /*arg*/)

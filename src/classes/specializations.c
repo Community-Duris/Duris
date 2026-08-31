@@ -12,7 +12,7 @@ using namespace std;
 #include "epic.h"
 #include "epic_transaction.h"
 #include "classes/specializations.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 extern P_room world;

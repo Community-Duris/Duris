@@ -64,7 +64,7 @@
 #include "redis/redis_world_runtime.h"
 #include "ships.h"
 #include "siege.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "enhance.h"
 #include "crafting.h"
 #include "account/account_reward_config.h"

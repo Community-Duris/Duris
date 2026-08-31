@@ -21,7 +21,7 @@
 #include "classes/reavers.h"
 #include "specs/specs.firep.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 extern P_char character_list;

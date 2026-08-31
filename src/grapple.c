@@ -16,7 +16,7 @@ using namespace std;
 #include "utils.h"
 #include "damage.h"
 #include "grapple.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 extern P_room world;

@@ -11,7 +11,7 @@
 #include "epic.h"
 #include "epic_transaction.h"
 #include "classes/skills.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_index mob_index;
 extern P_index obj_index;

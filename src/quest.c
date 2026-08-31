@@ -17,7 +17,7 @@
 #include <string.h>
 #include <strings.h>
 #include <glob.h>
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 /* external variables */

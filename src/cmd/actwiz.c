@@ -44,7 +44,7 @@
 #include "persistence/persistence_mode.h"
 #include "ships/ships.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "trophy.h"

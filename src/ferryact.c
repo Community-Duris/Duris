@@ -26,7 +26,7 @@ For the main ferry documentation, see ferry.c
 #include <vector>
 #include "ferry.h"
 #include "graph.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.mob.h"
 #include "vnum.obj.h"
 using namespace std;

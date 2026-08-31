@@ -19,7 +19,7 @@
 #include "handler.h"
 #include "ships/ships.h"
 #include "classes/specializations.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /* externs */
 extern const char *class_abbrevs[];

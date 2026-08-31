@@ -17,7 +17,7 @@
 #include <sys/time.h>
 #include "damage.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 #include "weather.h"
 

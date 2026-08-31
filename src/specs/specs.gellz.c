@@ -22,7 +22,7 @@
 #include "damage.h"
 #include "map.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 using namespace std;
 #include "ships.h"
 

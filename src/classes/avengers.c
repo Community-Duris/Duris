@@ -9,7 +9,7 @@
 #include <string.h>
 #include "damage.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 void spell_holy_sword(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 		      P_char /*victim*/, P_obj /*obj*/)

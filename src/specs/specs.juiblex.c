@@ -12,7 +12,7 @@
 #include <sys/time.h>
 #include "damage.h"
 #include "range.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
  * external variables

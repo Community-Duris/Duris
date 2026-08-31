@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.mob.h"
 #include "vnum.obj.h"
 #include "vnum.room.h"

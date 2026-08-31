@@ -16,7 +16,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
    extern variables

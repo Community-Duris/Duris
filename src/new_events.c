@@ -46,7 +46,7 @@
 #include "redis/redis_lifecycle.h"
 #include "redis/redis_world_runtime.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 
 #define FUNCTION_NAMES_FILE "lib/misc/event_names"

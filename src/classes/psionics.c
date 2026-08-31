@@ -18,7 +18,7 @@
 #include "damage.h"
 #include "graph.h"
 #include "map.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 
 /* external variables */

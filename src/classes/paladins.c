@@ -10,7 +10,7 @@
 #include "damage.h"
 #include "guard.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 extern struct time_info_data time_info;

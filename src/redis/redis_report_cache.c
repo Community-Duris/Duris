@@ -12,7 +12,7 @@
 #include "redis/redis_key_registry.h"
 #include "redis/redis_namespace.h"
 #include "persistence/report_cache_codec.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "utility.h"
 #include "utils.h"

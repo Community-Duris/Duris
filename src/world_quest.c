@@ -39,7 +39,7 @@ using namespace std;
 #include "map.h"
 #include "objmisc.h"
 #include "persistence/persistence_checkpoint.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "weather.h"
 #include "world_quest.h"

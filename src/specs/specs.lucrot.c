@@ -22,7 +22,7 @@ using namespace std;
 #include "graph.h"
 #include "justice.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_index obj_index;
 extern char *spells[];

@@ -12,7 +12,7 @@
 #include <libxml/xmlmemory.h>
 #include "config.h"
 #include "defines.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "string.h"
 
 #define NQ_RESET_NEVER 1

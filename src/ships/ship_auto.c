@@ -13,7 +13,7 @@
 #include <string.h>
 #include "graph.h"
 #include "objmisc.h"
-// #include "spells.h"
+// #include "magic/spells.h"
 #include "structs.h"
 #include "events.h"
 #include "utils.h"

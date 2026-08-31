@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 
 /*

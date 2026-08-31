@@ -30,7 +30,7 @@
 #include "objmisc.h"
 #include "profile.h"
 #include "redis/redis_report_cache.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 /*

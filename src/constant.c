@@ -15,7 +15,7 @@
 #include "config.h"
 #include "objmisc.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 
 extern const char *god_list[];

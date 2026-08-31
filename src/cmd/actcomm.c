@@ -26,7 +26,7 @@
 #include "graph.h"
 #include "net/listen.h"
 #include "map.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "world_quest.h"
 

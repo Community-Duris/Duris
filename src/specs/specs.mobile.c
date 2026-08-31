@@ -30,7 +30,7 @@
 #include "nexus_stones.h"
 #include "range.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "tradeskill.h"
 #include "vnum.obj.h"

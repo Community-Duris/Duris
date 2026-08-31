@@ -60,7 +60,7 @@ using namespace std;
 #include "redis/redis_presence_worker.h"
 #include "ships/ships.h"
 #include "classes/specializations.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"
 #include "tradeskill.h"

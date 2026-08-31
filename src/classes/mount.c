@@ -18,7 +18,7 @@
 #include <time.h>
 #include "ctf.h"
 #include "graph.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
    external variables

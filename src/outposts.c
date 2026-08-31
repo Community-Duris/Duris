@@ -41,7 +41,7 @@ using namespace std;
 #include "outposts.h"
 #include "racewar_stat_mods.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 #ifdef __NO_MYSQL__

@@ -13,7 +13,7 @@
 #include "item_movement_transaction.h"
 #include "objmisc.h"
 #include "persistence/persistence_mode.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 #include "crafting.h"
 #include "utils.h"

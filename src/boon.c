@@ -50,7 +50,7 @@ using namespace std;
 #include "guildhall.h"
 #include "nexus_stones.h"
 #include "persistence/persistence_mode.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 

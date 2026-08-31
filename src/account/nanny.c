@@ -50,7 +50,7 @@
 #include "redis/redis_presence_runtime.h"
 #include "ships.h"
 #include "classes/specializations.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "vnum.room.h"

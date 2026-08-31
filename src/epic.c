@@ -32,7 +32,7 @@ using namespace std;
 #include "random.zone.h"
 #include "redis/redis_key_registry.h"
 #include "redis/redis_report_cache.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "timers.h"
 #include "trophy.h"

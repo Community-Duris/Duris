@@ -30,7 +30,7 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.mob.h"
 #include "weather.h"

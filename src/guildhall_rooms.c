@@ -16,7 +16,7 @@
 #include "guildhall_db.h"
 #include "map.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 // external global variables
 extern P_room world;

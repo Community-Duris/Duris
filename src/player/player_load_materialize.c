@@ -19,7 +19,7 @@
 
 #include "assocs.h"
 #include "player/player_revision_state.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "trophy.h"
 
 namespace

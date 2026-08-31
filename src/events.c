@@ -28,7 +28,7 @@
 #include "objmisc.h"
 #include "profile.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 void event_memorize(P_char, P_char, P_obj, void *);
 

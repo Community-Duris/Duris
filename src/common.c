@@ -11,7 +11,7 @@
 #include "defines.h"
 #include "prototypes.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 #include <stdarg.h>
 #include <stdio.h>

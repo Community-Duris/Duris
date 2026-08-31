@@ -25,7 +25,7 @@ using namespace std;
 #include "map.h"
 #include "random.zone.h"
 #include "ships/ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "stdio.h"
 #include "tradeskill.h"
 #include "vnum.mob.h"

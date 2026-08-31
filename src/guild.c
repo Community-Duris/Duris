@@ -20,7 +20,7 @@
 #include "hardcore_config.h"
 #include <stdio.h>
 #include "classes/epic_skills.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "string.h"
 /*
  * external variables

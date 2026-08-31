@@ -14,7 +14,7 @@
 #include "graph.h"
 #include "objmisc.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "timers.h"

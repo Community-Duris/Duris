@@ -12,7 +12,7 @@
 #include <strings.h>
 #include <time.h>
 #include "damage.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_room world;
 extern P_index mob_index;

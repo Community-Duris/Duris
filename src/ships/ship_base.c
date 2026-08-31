@@ -26,7 +26,7 @@
 #include "ship_auto.h"
 #include "ship_npc.h"
 #include "ship_npc_ai.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "redis/redis_ship_legacy.h"

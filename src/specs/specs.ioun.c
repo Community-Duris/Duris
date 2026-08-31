@@ -14,7 +14,7 @@
 #include <string.h>
 #include <strings.h>
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
    external vars

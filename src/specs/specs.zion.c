@@ -23,7 +23,7 @@ using namespace std;
 #include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "specs/specs.zion.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 extern const char *dirs[];

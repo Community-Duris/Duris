@@ -18,7 +18,7 @@
 #include <string.h>
 #include "damage.h"
 #include "justice.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
  * External variables

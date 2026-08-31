@@ -19,7 +19,7 @@
 #include "map.h"
 #include "nexus_stones.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern char buf[MAX_STRING_LENGTH];
 extern char arg1[MAX_STRING_LENGTH];

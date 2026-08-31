@@ -12,7 +12,7 @@
 #include "config.h"
 #include "objmisc.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /* new Ship Constants */
 const PortData ports[NUM_PORTS] = {

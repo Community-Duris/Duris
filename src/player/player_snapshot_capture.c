@@ -12,7 +12,7 @@
 #include "assocs.h"
 #include "files.h"
 #include "item_ownership_runtime.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "trophy.h"
 
 extern P_index obj_index;

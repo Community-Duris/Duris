@@ -21,7 +21,7 @@
 #include "objmisc.h"
 #include "ship_npc.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern char buf[MAX_STRING_LENGTH];
 

@@ -25,7 +25,7 @@
 #include "guard.h"
 #include "justice.h"
 #include "mm.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
  * external variables

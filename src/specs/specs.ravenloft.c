@@ -21,7 +21,7 @@
 #include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "specs/specs.ravenloft.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 #include "vnum.room.h"
 #include "weather.h"

@@ -125,7 +125,7 @@
 #include "db.h"
 #include "events.h"
 #include "cmd/interp.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "utils.h"
 #include "utility.h"
 #include "studioproc.h"

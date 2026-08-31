@@ -25,7 +25,7 @@ using namespace std;
 #include "epic.h"
 #include "guildhall.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 struct ctfData ctfdata[] = { { 0, 0, 0, 0, 0, NULL },

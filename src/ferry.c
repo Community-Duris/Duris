@@ -53,7 +53,7 @@ Enjoy!
 #include <vector>
 #include "ferry.h"
 #include "graph.h"
-#include "spells.h"
+#include "magic/spells.h"
 using namespace std;
 
 extern P_room world;

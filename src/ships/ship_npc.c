@@ -12,7 +12,7 @@
 #include "map.h"
 #include "objmisc.h"
 #include "ship_npc_ai.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern int top_of_world;
 

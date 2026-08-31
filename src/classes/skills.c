@@ -8,12 +8,12 @@
 */
 #include <string.h>
 #include "defines.h"
-#include "spells.h"
+#include "magic/spells.h"
 #ifndef _DE_
 #include "structs.h"
 #include "utils.h"
 #include "classes/avengers.h"
-#include "blispells.h"
+#include "magic/blispells.h"
 #include "epic.h"
 #include "classes/necromancy.h"
 #include "classes/paladins.h"

@@ -3,7 +3,7 @@
 #include "net/comm.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "structs.h"
 #include "utils.h"
 

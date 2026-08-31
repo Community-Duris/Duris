@@ -26,7 +26,7 @@
 #include "justice.h"
 #include "specs.prototypes.h"
 #include "specs/specs.winterhaven.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "net/ws_handlers.h"
 

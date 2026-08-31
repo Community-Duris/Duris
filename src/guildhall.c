@@ -14,7 +14,7 @@
 #include "assocs.h"
 #include "guildhall_db.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 // global variables
 

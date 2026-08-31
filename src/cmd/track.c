@@ -19,7 +19,7 @@
 #include <string.h>
 #include "graph.h"
 #include "map.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_desc descriptor_list;
 extern P_index mob_index;

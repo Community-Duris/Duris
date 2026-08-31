@@ -10,7 +10,7 @@
 #include <time.h>
 #include "damage.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern const int rev_dir[];
 extern const char *dirs[];

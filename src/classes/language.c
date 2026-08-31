@@ -14,7 +14,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
  * external variables

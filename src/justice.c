@@ -15,7 +15,7 @@
 #include <time.h>
 #include "graph.h"
 #include "mm.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_room world;
 extern struct time_info_data time_info;

@@ -15,7 +15,7 @@ using namespace std;
 #include "cmd/interp.h"
 #include "utils.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "tradeskill.h"
 #include "vnum.mob.h"
 

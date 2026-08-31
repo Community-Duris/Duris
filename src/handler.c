@@ -39,7 +39,7 @@
 #include "persistence/persistence_mode.h"
 #include "world_recovery_pipeline.h"
 #include "ships/ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"
 #include "weather.h"

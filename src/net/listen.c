@@ -15,7 +15,7 @@ using namespace std;
 #include "utils.h"
 #include "epic.h"
 #include "net/listen.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 extern P_room world;

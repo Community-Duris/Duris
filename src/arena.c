@@ -16,7 +16,7 @@
 #include "arenadef.h"
 #include "graph.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 // External Stuff
 extern P_index obj_index;

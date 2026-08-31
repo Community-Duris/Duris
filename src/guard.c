@@ -5,7 +5,7 @@
 #include "utils.h"
 #include "guard.h"
 #include "defines.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_room world;
 

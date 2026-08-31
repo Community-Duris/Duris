@@ -4,7 +4,7 @@
 #include "flatfile/flatfile_boon_repository.h"
 #include "persistence/persistence_mode.h"
 #include "prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "utils.h"
 
 #include <algorithm>

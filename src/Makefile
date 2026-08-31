@@ -96,7 +96,7 @@ SHIP_SRCS = \
 SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
-				 magic.o \
+				 magic/magic.o \
 				 achievements.o \
 				 account/account.o \
 				 account/password_hash.o \
@@ -119,7 +119,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.ailvio.o \
 				 alliances.o \
 				 automatic_rules.o \
-				 affects.o \
+				 magic/affects.o \
 				 arena.o \
 				 artifact.o \
 				 artifact_cache_codec.o \
@@ -135,8 +135,8 @@ OBJS =  $(SHIP_OBJS) \
 				 assocs.o \
 				 auction_houses.o \
 				 classes/bard.o \
-				 beh_magic.o \
-         blispells.o \
+				 magic/beh_magic.o \
+         magic/blispells.o \
 				 cmd/boards.o \
 				 boon.o \
 				 breath_weapons.o \
@@ -360,7 +360,7 @@ OBJS =  $(SHIP_OBJS) \
 				 shop.o \
 				 signals.o \
 				 classes/skills.o \
-				 smagic.o \
+				 magic/smagic.o \
 				 classes/salchemist.o \
 				 classes/sillusionist.o \
 				 siege.o \
@@ -407,7 +407,7 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.firep.o \
 				 specs/specs.winterhaven.o \
 				 specs/specs.zion.o \
-				 spells.o \
+				 magic/spells.o \
 				 redis/redis.o \
 				 redis/wizredis.o \
 				 sql/sql.o \

@@ -30,7 +30,7 @@
 #include "objmisc.h"
 #include "ships.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql_player.h"
 #include "tradeskill.h"
 #include "crafting.h"

@@ -16,7 +16,7 @@
 #include "ship_auto.h"
 #include "ship_npc.h"
 #include "ship_npc_ai.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 // char  arc[3];
 extern char buf[MAX_STRING_LENGTH];

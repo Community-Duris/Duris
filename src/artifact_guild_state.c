@@ -6,7 +6,7 @@
 #include "nexus_stones.h"
 #include "prototypes.h"
 #include "sql/sql.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "utils.h"
 
 #include <algorithm>

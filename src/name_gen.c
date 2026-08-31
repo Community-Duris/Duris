@@ -27,7 +27,7 @@
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 /****************************************************************************/
 /* Compile Time parameters                                                  */

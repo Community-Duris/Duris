@@ -15,7 +15,7 @@
 #include "cmd/interp.h"
 #include "mm.h"
 #include "prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "structs.h"
 #include "utils.h"
 #include "enhance.h"

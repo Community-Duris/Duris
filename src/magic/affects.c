@@ -37,7 +37,7 @@
 #include "racewar_stat_mods.h"
 #include "classes/reavers.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"
 #include "weather.h"

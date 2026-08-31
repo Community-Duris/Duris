@@ -27,7 +27,7 @@
 #include "classes/necromancy.h"
 #include "persistence/persistence_mode.h"
 #include "redis/redis_report_cache.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"
 

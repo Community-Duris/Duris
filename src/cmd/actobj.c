@@ -28,7 +28,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "redis/redis_floor_runtime.h"
 #include "safe_format.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "tradeskill.h"
 #include "crafting.h"

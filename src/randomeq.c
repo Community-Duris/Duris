@@ -28,7 +28,7 @@
 #include "objmisc.h"
 #include "random_equipment_config.h"
 #include "hardcore_config.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.obj.h"
 #include "weather.h"
 /*

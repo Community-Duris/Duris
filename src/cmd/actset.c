@@ -21,7 +21,7 @@
 #include <time.h>
 #include "defines.h"
 #include "ships/ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 
 /* external variables */

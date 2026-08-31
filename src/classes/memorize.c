@@ -21,7 +21,7 @@
 #include "guildhall.h"
 #include "persistence/persistence_checkpoint.h"
 #include "profile.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
    external variables

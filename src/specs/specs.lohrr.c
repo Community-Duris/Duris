@@ -11,7 +11,7 @@
 #include "justice.h"
 #include "objmisc.h"
 #include "ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_room world;
 extern P_desc descriptor_list;

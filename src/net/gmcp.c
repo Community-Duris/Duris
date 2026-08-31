@@ -22,7 +22,7 @@
 #include "json_utils.h"
 #include "map.h"
 #include "ships/ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "net/websocket.h"
 #include "net/ws_auth.h"

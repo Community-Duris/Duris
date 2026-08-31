@@ -25,7 +25,7 @@
 #include "arenadef.h"
 #include "justice.h"
 #include "mm.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 /*

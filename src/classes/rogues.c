@@ -10,7 +10,7 @@
 #include "guard.h"
 #include "justice.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "stdio.h"
 #include "string.h"

@@ -21,7 +21,7 @@
 #include "graph.h"
 #include "mm.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql_player.h"
 #include "player/player_name.h"
 #include "player/player_load_materialize.h"

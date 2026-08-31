@@ -24,7 +24,7 @@
 #include "classes/reavers.h"
 #include "specs.prototypes.h"
 #include "specs/specs.zion.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "tradeskill.h"
 #include "vnum.obj.h"
 #include "weather.h"

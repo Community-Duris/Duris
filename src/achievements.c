@@ -6,7 +6,7 @@
 #include <string.h>
 #include "epic.h"
 #include "ships/ships.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "vnum.mob.h"
 
 extern P_index mob_index;

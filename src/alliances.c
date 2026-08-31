@@ -9,7 +9,7 @@ using namespace std;
 #include "utils.h"
 #include "alliances.h"
 #include "assocs.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 

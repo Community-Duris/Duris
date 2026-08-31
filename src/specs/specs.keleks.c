@@ -21,7 +21,7 @@ using namespace std;
 #include "classes/reavers.h"
 #include "specs/specs.keleks.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 int deliverer_hammer(P_obj obj, P_char ch, int cmd, char *arg)

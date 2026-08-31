@@ -53,7 +53,7 @@
 #include "objmisc.h"
 #include "classes/paladins.h"
 #include "siege.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 /*
  * external variables

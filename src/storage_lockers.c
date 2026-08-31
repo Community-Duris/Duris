@@ -34,7 +34,7 @@
 #include "account/password_hash.h"
 #include "ships.h"
 #include "specs/specs.winterhaven.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "vnum.room.h"

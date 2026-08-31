@@ -22,7 +22,7 @@
 #include "guard.h"
 #include "justice.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 /*
    external variables

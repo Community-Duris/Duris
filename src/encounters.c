@@ -9,7 +9,7 @@
 #include "config.h"
 #include "justice.h"
 #include "map.h"
-#include "spells.h"
+#include "magic/spells.h"
 
 extern P_char char_in_room(int);
 extern P_char character_list;

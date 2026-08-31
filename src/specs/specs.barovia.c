@@ -21,7 +21,7 @@ using namespace std;
 #include "classes/reavers.h"
 #include "specs/specs.barovia.h"
 #include "specs.prototypes.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "weather.h"
 
 int barovia_undead_necklace(P_obj obj, P_char ch, int cmd, char *arg)

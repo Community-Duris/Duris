@@ -35,7 +35,7 @@
 #include "mm.h"
 #include "nexus_stones.h"
 #include "persistence/persistence_checkpoint.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "trophy.h"
 #include "weather.h"

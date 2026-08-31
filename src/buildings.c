@@ -19,7 +19,7 @@
 #include "defines.h"
 #include "guildhall.h"
 #include "outposts.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "strings.h"
 

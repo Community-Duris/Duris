@@ -2,7 +2,7 @@
 #include "account/account_reward_snapshot.h"
 #include "db.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "utility.h"
 #include "utils.h"
 

@@ -21,7 +21,7 @@
 #include "ctf.h" // Can remove?
 #include "classes/necromancy.h"
 #include "objmisc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #include "weather.h"
 

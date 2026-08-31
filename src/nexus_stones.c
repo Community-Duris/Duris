@@ -26,7 +26,7 @@ using namespace std;
 #include "persistence/persistence_checkpoint.h"
 #include "racewar_stat_mods.h"
 #include "ship_npc.h"
-#include "spells.h"
+#include "magic/spells.h"
 #include "sql/sql.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_nexus_repository.h"
