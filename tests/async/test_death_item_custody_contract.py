@@ -75,7 +75,7 @@ checks.append((
     contains(die, "item_movement_transaction_player_busy(ch)") and
     contains(die, 'persistence_alert(AVATAR, "player_save", "death", "none", "none",'
                   '"corpse_items_in_flight",') and
-    contains(die, "schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);")
+    contains(die, "schedule_death_extract_retry(ch, death_corpse_uid,")
 ))
 checks.append((
     "the deferral happens before the terminal save and the extraction",
@@ -88,18 +88,23 @@ checks.append((
              "GET_HIT(ch) = 1;") and
     contains(body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{"),
              "SET_POS(ch, GET_POS(ch) + STAT_DEAD);") and
-    contains(body(fight, "static void schedule_death_extract_retry(P_char ch, int delay)"),
+    contains(body(fight, "static void schedule_death_extract_retry(P_char ch, uint64_t "
+                         "corpse_uid, int delay)"),
              "hold_for_death_extract_retry(ch);") and
     die.index("persistence_save_character_terminal(ch, RENT_DEATH)") <
     die.index("GET_HIT(ch) = 1;")
 ))
-schedule = body(fight, "static void schedule_death_extract_retry(P_char ch, int delay)")
+schedule = body(
+    fight,
+    "static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)",
+)
 checks.append((
     "the private death retry can be linked to a dead character safely",
     schedule.index("SET_POS(ch, GET_POS(ch) + STAT_NORMAL);") <
-    schedule.index("add_event(event_death_extract_retry") <
+    schedule.index("const nevent_schedule_result scheduled = add_event(") <
     schedule.index("hold_for_death_extract_retry(ch);") and
-    contains(schedule, "NULL, NULL, 0, &delay") and
+    contains(schedule, "const death_extract_retry_context context = { delay, corpse_uid };") and
+    contains(schedule, "NULL, NULL, 0, &context") and
     contains(schedule, '"death_recovery_schedule_failed"')
 ))
 checks.append((
@@ -116,7 +121,7 @@ checks.append((
     contains(retry, "item_movement_transaction_player_busy(ch)") and
     retry.index("item_movement_transaction_player_busy(ch)") <
     retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") and
-    contains(retry, "schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);") and
+    contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid,") and
     contains(retry, "GET_STAT(ch) != STAT_DEAD")
 ))
 busy_retry = retry.split("if (item_movement_transaction_player_busy(ch))", 1)[1]
@@ -128,7 +133,15 @@ checks.append((
 ))
 checks.append((
     "actual terminal save failures retain bounded exponential backoff",
-    contains(retry, "schedule_death_extract_retry(ch, previous_delay * 2);")
+    contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);")
+))
+checks.append((
+    "a rejected handoff is resubmitted before death can be saved or extracted",
+    contains(retry, "P_obj corpse = context.corpse_uid ? corpse_live_item") and
+    contains(retry, "if (corpse && ch->carrying)") and
+    contains(retry, "submit_next_corpse_item(ch, corpse)") and
+    retry.index("if (corpse && ch->carrying)") <
+    retry.index("persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 checks.append((
     "automatic raising cannot consume a PC corpse while its item handoff is pending",
@@ -138,7 +151,7 @@ checks.append((
 ))
 checks.append((
     "the retry still finishes the death once nothing is pending",
-    contains(retry, "extract_char(ch);") and
+    contains(retry, "extract_char_after_terminal_save(ch);") and
     contains(retry, "persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 

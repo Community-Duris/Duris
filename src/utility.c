@@ -587,7 +587,7 @@ int is_char_in_room(P_char ch, const int room)
 {
 	P_char tmp;
 
-	if (!ch || room >= top_of_world || room == 0)
+	if (!ch || room > top_of_world || room == 0)
 		return FALSE;
 
 	for (tmp = world[room].people; tmp; tmp = tmp->next_in_room)

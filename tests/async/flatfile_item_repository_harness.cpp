@@ -459,9 +459,7 @@ int main(int argc, char **argv)
 	};
 	require(flatfile_item_repository_establish_owner(room_root.string(), room_player,
 							 room_player_items, &error) ==
-				flatfile_item_baseline_result::applied &&
-			flatfile_world_item_establish(room_root.string(), {}, {}, &error) ==
-				flatfile_world_item_result::ok,
+			flatfile_item_baseline_result::applied,
 		"could not establish isolated room transfer authority: " + error);
 	std::vector<player_item_snapshot> room_container = movement_items();
 	room_container[0].equipment_slot = 0;
@@ -844,9 +842,22 @@ int main(int argc, char **argv)
 			flatfile_artifact_result::ok,
 		"could not establish corpse artifact authority: " + error);
 	const flatfile_corpse_record initial_corpse = transfer_corpse();
-	require(flatfile_world_item_establish(root.string(), { initial_corpse }, {}, &error) ==
-			flatfile_world_item_result::ok,
-		"could not establish transfer corpse: " + error);
+	flatfile_corpse_record created_corpse = initial_corpse;
+	created_corpse.owner_pid = 77;
+	created_corpse.owner_name = "newowner";
+	created_corpse.save_id = 30;
+	created_corpse.room_vnum = 600;
+	created_corpse.short_description = "the newly created corpse";
+	created_corpse.description = "The newly created corpse is lying here.";
+	created_corpse.keywords = "corpse newowner _pcorpse_";
+	created_corpse.values[3] = 77;
+	created_corpse.values[5] = 2;
+	created_corpse.values[6] = 30;
+	created_corpse.revision = 1;
+	created_corpse.items.clear();
+	require(flatfile_world_item_establish(root.string(), { initial_corpse, created_corpse }, {},
+					      &error) == flatfile_world_item_result::ok,
+		"could not establish transfer corpses: " + error);
 	require(flatfile_item_repository_establish_owner(
 			root.string(), corpse_owner,
 			{ { 910, 910, 0, corpse_owner, 1, 1910, item_custody_state::active },
@@ -898,7 +909,7 @@ int main(int argc, char **argv)
 	std::vector<flatfile_saved_world_item_record> saved_items;
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&
-			corpses.size() == 1 && corpses[0].revision == 5 &&
+			corpses.size() == 2 && corpses[0].revision == 5 &&
 			corpses[0].items.size() == 3 && corpses[0].items[0].object_uid == 920 &&
 			corpses[0].items[1].parent_index == 0 &&
 			corpses[0].items[2].object_uid == 930,
@@ -979,7 +990,7 @@ int main(int argc, char **argv)
 	corpses.clear();
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&
-			corpses.size() == 1 && corpses[0].revision == 6 &&
+			corpses.size() == 2 && corpses[0].revision == 6 &&
 			corpses[0].weight == 70 && corpses[0].items.size() == 2 &&
 			corpses[0].items[1].parent_index == 0,
 		"contextual artifact loot did not publish exact corpse metadata and topology");
@@ -995,18 +1006,6 @@ int main(int argc, char **argv)
 			artifact_records[0].revision == 2,
 		"contextual artifact loot did not publish cross-race artifact semantics");
 
-	flatfile_corpse_record created_corpse = initial_corpse;
-	created_corpse.owner_pid = 77;
-	created_corpse.owner_name = "newowner";
-	created_corpse.save_id = 30;
-	created_corpse.room_vnum = 600;
-	created_corpse.short_description = "the newly created corpse";
-	created_corpse.description = "The newly created corpse is lying here.";
-	created_corpse.keywords = "corpse newowner _pcorpse_";
-	created_corpse.values[3] = 77;
-	created_corpse.values[5] = 2;
-	created_corpse.values[6] = 30;
-	created_corpse.items.clear();
 	const item_owner_identity created_corpse_owner = { item_owner_type::corpse,
 							   item_corpse_owner_id(77, 30), 0 };
 	item_transfer_payload create_corpse = artifact_loot;
@@ -1033,16 +1032,16 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root.string(), create_corpse_command);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"first corpse creation transfer did not recover exactly");
-	require(result_of(applied).corpse_revision == 1,
-		"first corpse creation completion omitted the aggregate revision");
+	require(result_of(applied).corpse_revision == 2,
+		"lifecycle-first corpse creation omitted the aggregate revision");
 	corpses.clear();
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&
 			corpses.size() == 2 && corpses[1].owner_pid == 77 &&
 			corpses[1].owner_name == "newowner" && corpses[1].save_id == 30 &&
-			corpses[1].revision == 1 && corpses[1].weight == 100 &&
+			corpses[1].revision == 2 && corpses[1].weight == 100 &&
 			corpses[1].items.size() == 1 && corpses[1].items[0].object_uid == 930,
-		"first corpse creation transfer did not establish exact metadata and contents");
+		"lifecycle-first corpse transfer did not establish exact metadata and contents");
 	require(flatfile_artifact_list(root.string(), &artifact_records, &error) ==
 				flatfile_artifact_result::ok &&
 			artifact_records[0].location_type == FLATFILE_ARTIFACT_ON_CORPSE &&
@@ -1070,12 +1069,12 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root.string(), append_corpse_command);
 	require(applied.outcome == critical_apply_outcome::applied,
 		"subsequent corpse creation transfer did not apply");
-	require(result_of(applied).corpse_revision == 2,
+	require(result_of(applied).corpse_revision == 3,
 		"subsequent corpse creation completion omitted the aggregate revision");
 	corpses.clear();
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&
-			corpses[1].revision == 2 && corpses[1].weight == 120 &&
+			corpses[1].revision == 3 && corpses[1].weight == 120 &&
 			corpses[1].items.size() == 3 && corpses[1].items[0].object_uid == 930 &&
 			corpses[1].items[1].object_uid == 910 &&
 			corpses[1].items[2].parent_index == 1,

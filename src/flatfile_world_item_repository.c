@@ -1100,7 +1100,13 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 		return flatfile_world_item_result::invalid;
 	world_item_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_world_item_result::ok)
+	if (loaded == flatfile_world_item_result::not_found)
+	{
+		if (!append)
+			return flatfile_world_item_result::conflict;
+		catalog = {};
+	}
+	else if (loaded != flatfile_world_item_result::ok)
 		return loaded;
 	flatfile_room_item_record key = {};
 	key.room_vnum = static_cast<int32_t>(room_owner.id);

@@ -681,6 +681,19 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			item_ownership_runtime_entry container_runtime = {};
 			if (item_ownership_runtime_lookup(s_obj->obj_uid, &container_runtime))
 				source = container_runtime.owner;
+			else
+			{
+				P_obj outer = s_obj;
+				while (OBJ_INSIDE(outer) && outer->loc.inside)
+					outer = outer->loc.inside;
+				if (OBJ_ROOM(outer) && outer->loc.room == ch->in_room)
+					source = { item_owner_type::room,
+						   static_cast<uint64_t>(world[ch->in_room].number),
+						   0 };
+				else if (OBJ_CARRIED_BY(outer, ch) || OBJ_WORN_BY(outer, ch))
+					source = { item_owner_type::player,
+						   static_cast<uint64_t>(GET_PID(ch)), 0 };
+			}
 		}
 		else
 			source = { item_owner_type::room,
@@ -692,9 +705,8 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 						       bulk_get_submitter };
 		const item_transfer_reason reason = source.type == item_owner_type::locker ?
 							    item_transfer_reason::locker_withdraw :
-						    s_obj && GET_ITEM_TYPE(s_obj) == ITEM_CORPSE ?
-							    item_transfer_reason::corpse_loot :
-							    item_transfer_reason::player_get;
+						    corpse ? item_transfer_reason::corpse_loot :
+							     item_transfer_reason::player_get;
 		if (!item_owner_identity_valid(source) ||
 		    !item_movement_transaction_submit(ch, o_obj, NULL, source, destination, reason,
 						      o_obj->obj_uid, item_get_completion, &context,

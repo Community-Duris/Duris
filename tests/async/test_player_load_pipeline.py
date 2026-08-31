@@ -256,6 +256,7 @@ assert "restoreCharOnly(player" not in ACCOUNT
 assert "player_load_pipeline_submit(request)" in ACCOUNT
 assert "STATE(d) = CON_PLAYER_LOAD" in ACCOUNT
 assert "player_load_materialize(player, loaded)" in ACCOUNT
+assert "d->rtype = loaded.snapshot.save_intent;" in ACCOUNT
 completion = ACCOUNT[ACCOUNT.index("void account_player_load_complete") :]
 recheck = completion.index('account_confirm_char(d, writable_arg("Y"))')
 discard = completion.index("ready_player_loads.erase(completed_request_id)")
@@ -273,7 +274,12 @@ assert NANNY.rindex("d->player_load_mode == PLAYER_LOAD_MODE_NONE", 0, bank_load
 assert "restoreCharOnly(d->character" not in NANNY
 assert "d->player_load_mode = PLAYER_LOAD_MODE_LEGACY" in NANNY
 assert "nanny_player_load_complete" in NANNY
+assert "d->rtype = result.snapshot.save_intent;" in NANNY
+assert "const bool snapshot_load = d->player_load_mode != PLAYER_LOAD_MODE_NONE;" in NANNY
+assert NANNY.count("if (!snapshot_load)\n\t\t\t\tcost = restoreItemsOnly") == 7
+assert "if (!snapshot_load)\n\t\t\t\trestoreItemsOnly(ch, 0);" in NANNY
 assert "valid_snapshot(result)" in MATERIALIZE
+assert "result.snapshot.save_intent > RENT_FIGHTARTI" in MATERIALIZE
 assert "player_revision_hydrate" in MATERIALIZE
 assert "ZONE_TROPHY(ch) = zone_trophies.release()" in MATERIALIZE
 assert "player_load state=" in DIAGNOSTICS

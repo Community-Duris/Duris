@@ -3,6 +3,7 @@
 #include <cJSON.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -12,10 +13,32 @@
 extern "C"
 {
 	descriptor_data *descriptor_list = nullptr;
+	int sql_pool_is_active(void)
+	{
+		return 0;
+	}
 }
 
 void statuslog(int, const char *, ...) {}
 void close_socket(descriptor_data *) {}
+bool persistence_mode_requires_mysql(void)
+{
+	return false;
+}
+void logit(const char *, const char *, ...) {}
+void banlog(int, const char *, ...) {}
+int bannedsite(char *, int)
+{
+	return 0;
+}
+int checked_snprintf(char *destination, size_t destination_size, const char *format, ...)
+{
+	va_list arguments;
+	va_start(arguments, format);
+	int result = vsnprintf(destination, destination_size, format, arguments);
+	va_end(arguments);
+	return result;
+}
 int is_desc_valid(descriptor_data *)
 {
 	return 1;

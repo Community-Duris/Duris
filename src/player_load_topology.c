@@ -4,10 +4,9 @@
 #include <unordered_map>
 #include <vector>
 
-bool player_load_reconcile_item_topology(
-	std::vector<player_item_snapshot> *items,
-	std::vector<player_load_item_identity> *identities, size_t *promoted_item_rows,
-	size_t *repaired_item_rows)
+bool player_load_reconcile_item_topology(std::vector<player_item_snapshot> *items,
+					 std::vector<player_load_item_identity> *identities,
+					 size_t *promoted_item_rows, size_t *repaired_item_rows)
 {
 	if (!items || !identities || !promoted_item_rows || !repaired_item_rows ||
 	    items->size() != identities->size() || items->size() > PLAYER_LOAD_ITEM_MAX)

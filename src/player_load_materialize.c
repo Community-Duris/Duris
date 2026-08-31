@@ -6,6 +6,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "db.h"
+#include "files.h"
 #include "utils.h"
 
 #include <climits>
@@ -32,7 +33,8 @@ bool valid_snapshot(const player_load_result &result)
 {
 	if (result.outcome != player_load_outcome::applied || result.pid <= 0 ||
 	    result.snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION ||
-	    result.snapshot.pid != result.pid ||
+	    result.snapshot.pid != result.pid || result.snapshot.save_intent < 0 ||
+	    result.snapshot.save_intent > RENT_FIGHTARTI ||
 	    (result.snapshot.components != PLAYER_LOAD_SESSION01_COMPONENTS &&
 	     result.snapshot.components != PLAYER_LOAD_SESSION02_COMPONENTS &&
 	     result.snapshot.components != PLAYER_LOAD_SESSION03_COMPONENTS) ||

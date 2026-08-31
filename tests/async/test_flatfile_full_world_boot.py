@@ -1,17 +1,31 @@
 #!/usr/bin/env python3
 
-"""Boot the client-free server against the full world (no --minimal) so the
-flat-file corpse, saved-item, and shopkeeper restoration stages are exercised by
-a real boot rather than by harnesses alone."""
+"""Exercise durable player and world-item recovery across a full-world restart.
+
+The first real server process creates an account and character, transactionally
+drops an identifiable starter item, saves, and exits.  A fresh process then
+boots against the same isolated authority, restores the floor item, reloads the
+player with the saved terminal intent, and moves the item back to the player.
+This also keeps the corpse, saved-item, and shopkeeper boot stages under a real
+full-world boot rather than harnesses alone.
+"""
 
 import os
 import pathlib
+import shutil
 import signal
-import socket
 import stat
 import subprocess
 import tempfile
 import time
+
+from test_flatfile_combat_journey import (
+    CHARACTER,
+    MudClient,
+    available_ports,
+    create_character,
+    reconnect_character,
+)
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -22,19 +36,41 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def available_game_port() -> int:
-    for _ in range(100):
-        with socket.socket() as first, socket.socket() as second:
-            first.bind(("127.0.0.1", 0))
-            port = first.getsockname()[1]
-            if port <= 1024 or port >= 65535:
-                continue
-            try:
-                second.bind(("127.0.0.1", port + 1))
-            except OSError:
-                continue
-            return port
-    raise AssertionError("could not reserve an available game/SSL port pair")
+def wait_for_boot(process: subprocess.Popen[str], output, output_path: pathlib.Path) -> str:
+    deadline = time.monotonic() + 600
+    boot_output = ""
+    while time.monotonic() < deadline:
+        output.flush()
+        boot_output = output_path.read_text(errors="replace")
+        if "Entering game loop." in boot_output:
+            break
+        if process.poll() is not None:
+            break
+        time.sleep(0.1)
+    require(
+        "Entering game loop." in boot_output,
+        "full-world server did not reach the game loop:\n" + boot_output,
+    )
+    for stage in ("-- Player corpses", "-- Shopkeepers"):
+        require(stage in boot_output, f"full-world boot skipped {stage}:\n" + boot_output)
+    return boot_output
+
+
+def stop_server(process: subprocess.Popen[str], output, output_path: pathlib.Path) -> str:
+    process.send_signal(signal.SIGTERM)
+    process.wait(timeout=30)
+    output.flush()
+    server_output = output_path.read_text(errors="replace")
+    require(
+        process.returncode == 0,
+        f"full-world server did not shut down cleanly ({process.returncode}):\n"
+        + server_output,
+    )
+    require(
+        "Normal termination of game." in server_output,
+        "full-world shutdown did not reach normal termination:\n" + server_output,
+    )
+    return server_output
 
 
 world = subprocess.run(
@@ -80,8 +116,16 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
             os.chmod(state_root, 0o700)
             (run_root / "logs/log").mkdir(parents=True)
             (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
-            for directory in ("areas", "areas_mini", "lib"):
+            for directory in ("areas", "areas_mini", "docs"):
                 (run_root / directory).symlink_to(ROOT / directory, target_is_directory=True)
+            runtime_lib = run_root / "lib"
+            shutil.copytree(ROOT / "lib", runtime_lib)
+            properties_path = runtime_lib / "duris.properties"
+            properties = properties_path.read_text()
+            require("camp.timer=9.000" in properties, "camp timer fixture changed")
+            properties_path.write_text(
+                properties.replace("camp.timer=9.000", "camp.timer=2.000")
+            )
             certificate = run_root / "duris.crt"
             private_key = run_root / "duris.key"
             generated_certificate = subprocess.run(
@@ -107,8 +151,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
             critical_journal = journal_root / "critical"
             player_journal.mkdir(parents=True, mode=0o700)
             critical_journal.mkdir(mode=0o700)
-            port = available_game_port()
-            output_path = run_root / "boot.out"
+            port, tls_port, websocket_port = available_ports()
+            output_path = run_root / "boot-first.out"
             environment = {
                 "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
                 "ENVIRONMENT": "local",
@@ -117,7 +161,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
                 "PLAYER_SAVE_JOURNAL_DIR": str(player_journal),
                 "CRITICAL_COMMAND_JOURNAL_DIR": str(critical_journal),
                 "LISTEN_ADDRESS": "127.0.0.1",
+                "DURIS_TLS_PORT": str(tls_port),
                 "DURIS_WEBSOCKET_LISTEN_ADDRESS": "127.0.0.1",
+                "DURIS_WEBSOCKET_PORT": str(websocket_port),
                 "REDIS": "FALSE",
             }
             with output_path.open("w", encoding="utf-8") as output:
@@ -129,43 +175,74 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
                     stdout=output,
                     stderr=subprocess.STDOUT,
                 )
+                client = None
                 try:
-                    deadline = time.monotonic() + 600
-                    boot_output = ""
-                    while time.monotonic() < deadline:
-                        output.flush()
-                        boot_output = output_path.read_text(errors="replace")
-                        if "Entering game loop." in boot_output:
-                            break
-                        if process.poll() is not None:
-                            break
-                        time.sleep(0.1)
-                    require(
-                        "Entering game loop." in boot_output,
-                        "client-free full-world server did not reach the game loop:\n"
-                        + boot_output,
-                    )
-                    for stage in ("-- Player corpses", "-- Shopkeepers"):
-                        require(
-                            stage in boot_output,
-                            f"full-world boot skipped the {stage} restoration stage:\n"
-                            + boot_output,
-                        )
-                    process.send_signal(signal.SIGTERM)
-                    process.wait(timeout=30)
-                    output.flush()
-                    boot_output = output_path.read_text(errors="replace")
-                    require(
-                        process.returncode == 0,
-                        f"client-free server did not shut down cleanly ({process.returncode}):\n"
-                        + boot_output,
-                    )
-                    require(
-                        "Normal termination of game." in boot_output,
-                        "client-free shutdown did not reach normal termination:\n"
-                        + boot_output,
-                    )
+                    wait_for_boot(process, output, output_path)
+                    client = MudClient(port)
+                    create_character(client, expected_room=None)
+                    client.send("drop mace")
+                    client.expect("You drop a small wooden mace", timeout=20)
+                    client.send("look")
+                    client.expect("A gnoby piece of wood, perhaps a small mace, lies here.")
+                    client.send("save")
+                    client.expect(f"Save complete for {CHARACTER}.", timeout=15)
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=30)
+                    client.send("0")
+                    client.close()
+                    client = None
+                    stop_server(process, output, output_path)
                 finally:
+                    if client is not None:
+                        client.close()
+                    if process.poll() is None:
+                        process.terminate()
+                        try:
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait(timeout=5)
+
+            port, tls_port, websocket_port = available_ports()
+            environment["DURIS_TLS_PORT"] = str(tls_port)
+            environment["DURIS_WEBSOCKET_PORT"] = str(websocket_port)
+            output_path = run_root / "boot-restart.out"
+            with output_path.open("w", encoding="utf-8") as output:
+                process = subprocess.Popen(
+                    [str(binary), "-d", str(run_root), str(port)],
+                    cwd=run_root,
+                    env=environment,
+                    text=True,
+                    stdout=output,
+                    stderr=subprocess.STDOUT,
+                )
+                client = None
+                try:
+                    wait_for_boot(process, output, output_path)
+                    client = reconnect_character(
+                        port,
+                        return_message="You break camp and get ready to move on",
+                        expected_room=None,
+                    )
+                    client.send("look")
+                    client.expect("A gnoby piece of wood, perhaps a small mace, lies here.")
+                    client.send("drop all")
+                    client.expect("You drop a steel long sword", timeout=45)
+                    client.send("get mace")
+                    client.expect("You get a small wooden mace", timeout=20)
+                    client.send("inventory")
+                    client.expect("a small wooden mace", timeout=10)
+                    client.send("save")
+                    client.expect(f"Save complete for {CHARACTER}.", timeout=15)
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=30)
+                    client.send("0")
+                    client.close()
+                    client = None
+                    stop_server(process, output, output_path)
+                finally:
+                    if client is not None:
+                        client.close()
                     if process.poll() is None:
                         process.terminate()
                         try:
@@ -195,4 +272,4 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
                 mode = stat.S_IMODE(path.stat().st_mode)
                 require(mode == 0o700, f"insecure mode {mode:o} on {path}")
 
-print("client-free full-world boot, restoration stages, and clean shutdown passed")
+print("full-world player and floor-item process-restart journey passed")

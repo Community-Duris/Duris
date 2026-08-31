@@ -13,6 +13,7 @@ affects = (SRC / "affects.c").read_text()
 actoth = (SRC / "actoth.c").read_text()
 rooms = (SRC / "specs.room.c").read_text()
 actwiz = (SRC / "actwiz.c").read_text()
+fight = (SRC / "fight.c").read_text()
 
 
 def body(text, signature):
@@ -65,5 +66,17 @@ for inn_signature in ("int inn(", "int undead_inn("):
 ghosts = body(actwiz, "void do_extractlink(P_char ch")
 assert ghosts.count("extract_char_after_terminal_save(vict)") == 2
 assert "persistence_save_character_terminal(vict, RENT_LINKDEAD)" in ghosts
+
+death = body(fight, "void die(P_char ch, P_char killer)")
+assert death.index("persistence_save_character_terminal(ch, RENT_DEATH)") < death.index(
+    "extract_char_after_terminal_save(ch)"
+)
+death_retry = body(
+    fight,
+    "static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data)\n{",
+)
+assert death_retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") < death_retry.index(
+    "extract_char_after_terminal_save(ch)"
+)
 
 print("terminal saved-item extraction contracts passed")

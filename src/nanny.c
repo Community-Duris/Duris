@@ -2451,8 +2451,7 @@ void enter_game(P_desc d)
 
 	if (GET_LEVEL(ch))
 	{
-		const bool snapshot_load = d->rtype == 0 &&
-					   d->player_load_mode != PLAYER_LOAD_MODE_NONE;
+		const bool snapshot_load = d->player_load_mode != PLAYER_LOAD_MODE_NONE;
 		ch->desc = d;
 		if (d->player_load_mode == PLAYER_LOAD_MODE_NONE)
 		{
@@ -2476,40 +2475,47 @@ void enter_game(P_desc d)
 		{
 			send_to_char("\r\nRestoring items and pets from crash save info...\r\n",
 				     ch);
-			cost = restoreItemsOnly(ch, 100);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 100);
 		}
 		else if (d->rtype == RENT_CAMPED)
 		{
 			send_to_char("\r\nYou break camp and get ready to move on...\r\n", ch);
-			cost = restoreItemsOnly(ch, 0);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 0);
 		}
 		else if (d->rtype == RENT_INN)
 		{
 			send_to_char("\r\nRetrieving rented items from storage...\r\n", ch);
-			cost = restoreItemsOnly(ch, 100);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 100);
 		}
 		else if (d->rtype == RENT_LINKDEAD)
 		{
 			send_to_char("\r\nRetrieving items from linkdead storage...\r\n", ch);
-			cost = restoreItemsOnly(ch, 200);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 200);
 		}
 		else if (d->rtype == RENT_POOFARTI)
 		{
 			send_to_char("\r\nThe gods have taken your artifact...\r\n", ch);
-			cost = restoreItemsOnly(ch, 100);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 100);
 		}
 		else if (d->rtype == RENT_FIGHTARTI)
 		{
 			nobonus = TRUE;
 			send_to_char("\r\nYour artifacts argued all night...\r\n", ch);
-			cost = restoreItemsOnly(ch, 100);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 100);
 		}
 		else if (d->rtype == RENT_SWAPARTI)
 		{
 			send_to_char(
 				"\r\nThe gods have taken your artifact... and replaced it with another!\r\n",
 				ch);
-			cost = restoreItemsOnly(ch, 100);
+			if (!snapshot_load)
+				cost = restoreItemsOnly(ch, 100);
 		}
 		else if (d->rtype == RENT_DEATH)
 		{
@@ -2518,7 +2524,8 @@ void enter_game(P_desc d)
 					     ch);
 			else
 				send_to_char("\r\nYou rejoin the land of the living...\r\n", ch);
-			restoreItemsOnly(ch, 0);
+			if (!snapshot_load)
+				restoreItemsOnly(ch, 0);
 		}
 		else if (d->rtype == 0)
 		{
@@ -3687,7 +3694,7 @@ void nanny_player_load_complete(P_desc d, player_load_result result)
 	d->character->desc = NULL;
 	free_char(d->character);
 	d->character = loaded;
-	d->rtype = 0;
+	d->rtype = result.snapshot.save_intent;
 	finish_legacy_player_login(d);
 }
 

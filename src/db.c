@@ -1046,7 +1046,8 @@ P_index generate_indices(FILE *fl, int *top)
 			break; /* EOF-terminated legacy files */
 		}
 	}
-	*top = i - 2;
+	const bool has_sentinel = i > 0 && t_idx[i - 1].virtual_number == 9999999;
+	*top = i - (has_sentinel ? 2 : 1);
 	return (t_idx);
 }
 

@@ -541,7 +541,11 @@ bool corpse_custody_matches(ownership_catalog &catalog, const item_owner_identit
 {
 	const owner_state *stored_owner = find_owner(&catalog, owner);
 	if (!stored_owner)
-		return created && expected.empty();
+		// writeCorpse() publishes the empty aggregate before the first item handoff.
+		// In that ordering the world corpse exists while its custody owner does not;
+		// the first transfer is what creates that owner.  A non-empty aggregate still
+		// requires matching custody and therefore remains fail-closed here.
+		return expected.empty();
 	if (created && (stored_owner->revision || !expected.empty()))
 		return false;
 	size_t index = 0;
