@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regressions for the three defects that made every login abort the server.
+"""Regressions for fatal connection and command-path I/O defects.
 
 All three predate the warning cleanup but only became reachable once a clean
 rebuild let _FORTIFY_SOURCE=3 resolve object sizes at the call sites. Symptom
@@ -31,6 +31,7 @@ account = (root / "src/account.c").read_text()
 comm = (root / "src/comm.c").read_text()
 websocket = (root / "src/websocket.c").read_text()
 prompt = (root / "src/prompt.c").read_text()
+db = (root / "src/db.c").read_text()
 
 failures = []
 
@@ -90,6 +91,15 @@ check("make_bar guards division by zero", "(max > 0)" in bar)
 check("make_prompt still sizes its buffers from MAX_INPUT_LENGTH",
       "char promptbuf[MAX_INPUT_LENGTH];" in prompt and
       "char promptbuf2[MAX_INPUT_LENGTH], *pPrompt;" in prompt)
+
+# An empty bug/idea/typo report file is valid. Avoid invoking the fatal
+# required-read wrapper with a zero element size.
+insert = db[db.index("int InsertIntoFile("):]
+insert = insert[:insert.index("\n}\n")]
+read = insert.index("REQUIRED_FREAD(buffer, sizeToRead, 1, fin);")
+check("empty report files skip the required read",
+      "if (sizeToRead)" in insert[:read] and
+      insert.rindex("if (sizeToRead)", 0, read) < read)
 
 # The three fixed files must stay clean under the repo-wide scanner.
 import subprocess, sys

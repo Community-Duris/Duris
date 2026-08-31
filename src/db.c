@@ -4723,8 +4723,10 @@ int InsertIntoFile(const char *filename, const char *text)
 		else
 			sizeToRead = MAX_STRING_LENGTH;
 
-		// read the file until the max size or end is found
-		REQUIRED_FREAD(buffer, sizeToRead, 1, fin);
+		// fread reports zero elements for a zero-sized element, which the required-read
+		// wrapper treats as fatal.  An empty report file has nothing to preserve.
+		if (sizeToRead)
+			REQUIRED_FREAD(buffer, sizeToRead, 1, fin);
 
 		// close the input file
 		fclose(fin);
