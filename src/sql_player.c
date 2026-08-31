@@ -49,6 +49,7 @@ extern struct index_data *mob_index;
 extern int top_of_world;
 extern struct room_data *world;
 extern P_char character_list;
+extern P_acct account_list;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern struct mm_ds *dead_obj_pool;
@@ -674,6 +675,10 @@ struct acct_entry *sql_load_account(const char *name)
 {
 	return NULL;
 }
+int sql_repair_account_character_projection(const char *account_name)
+{
+	return 0;
+}
 bool sql_account_exists(const char *name)
 {
 	return false;
@@ -1095,15 +1100,22 @@ static bool sql_save_locker_item_children(int locker_id, int chest_id, P_obj obj
 
 // track transaction state
 static bool in_transaction = false;
-// Held by pid, never by pointer: the queued sync is drained at the next commit,
-// and a terminal death save runs inside an outer transaction that commits after
-// extract_char() has already returned the character to its pool. A raw P_char
-// here becomes a dangling read of ch->desc->account on that commit.
-static int pending_account_cache_pid = 0;
-static int pending_account_cache_room = NOWHERE;
+// Held entirely by value: a terminal save can commit after extract_char() has
+// removed and freed the character while leaving its descriptor account menu live.
+struct pending_account_character_cache_update
+{
+	int pid;
+	int room;
+	int level;
+	char account_name[256];
+	char character_name[256];
+};
+
+static struct pending_account_character_cache_update pending_account_cache = {};
 static bool pending_account_cache_sync = false;
 
-static void sql_sync_account_character_cache(int pid, int room);
+static void
+sql_sync_account_character_cache(const struct pending_account_character_cache_update &update);
 static void sql_queue_account_character_cache_sync(P_char ch, int room);
 static void sql_clear_account_character_cache_sync(void);
 
@@ -1161,10 +1173,9 @@ bool sql_commit(void)
 	in_transaction = false;
 	if (pending_account_cache_sync)
 	{
-		const int pid = pending_account_cache_pid;
-		const int room = pending_account_cache_room;
+		const struct pending_account_character_cache_update update = pending_account_cache;
 		sql_clear_account_character_cache_sync();
-		sql_sync_account_character_cache(pid, room);
+		sql_sync_account_character_cache(update);
 	}
 	return true;
 }
@@ -1201,49 +1212,56 @@ bool sql_in_transaction(void)
 	return in_transaction;
 }
 
-static void sql_sync_account_character_cache(int pid, int room)
+static void
+sql_sync_account_character_cache(const struct pending_account_character_cache_update &update)
 {
-	if (pid <= 0)
+	if (update.pid <= 0 || !update.account_name[0] || !update.character_name[0])
 		return;
 
-	// Resolve the pid against the live roster. A character extracted between the
-	// queued save and this commit is simply gone; its projection is already on
-	// disk and there is no in-memory list left to refresh.
-	P_char ch = NULL;
-	for (P_char candidate = character_list; candidate; candidate = candidate->next)
-		if (IS_PC(candidate) && GET_PID(candidate) == pid)
-		{
-			ch = candidate;
-			break;
-		}
-	if (!ch || !ch->desc || !ch->desc->account || !GET_NAME(ch))
-		return;
-
-	struct acct_chars *c = ch->desc->account->acct_character_list;
-	while (c)
+	// Account objects outlive extracted characters and stay linked in account_list
+	// until their descriptors close. Publish the committed snapshot to every live
+	// copy without dereferencing the character that produced it.
+	for (P_acct account = account_list; account; account = account->next)
 	{
-		if (c->charname && !strcasecmp(c->charname, GET_NAME(ch)))
+		if (!account->acct_name || strcasecmp(account->acct_name, update.account_name))
+			continue;
+
+		for (struct acct_chars *character = account->acct_character_list; character;
+		     character = character->next)
 		{
-			c->last_room = room;
-			c->level = GET_LEVEL(ch);
-			c->last_save = time(NULL);
+			if (character->pid != update.pid &&
+			    (!character->charname ||
+			     strcasecmp(character->charname, update.character_name)))
+				continue;
+			character->pid = update.pid;
+			character->last_room = update.room;
+			character->level = update.level;
+			character->last_save = time(NULL);
 			break;
 		}
-		c = c->next;
 	}
 }
 
 static void sql_queue_account_character_cache_sync(P_char ch, int room)
 {
-	pending_account_cache_pid = ch ? GET_PID(ch) : 0;
-	pending_account_cache_room = room;
-	pending_account_cache_sync = (pending_account_cache_pid > 0);
+	sql_clear_account_character_cache_sync();
+	if (!ch || GET_PID(ch) <= 0 || !GET_NAME(ch) || !ch->desc || !ch->desc->account ||
+	    !ch->desc->account->acct_name || !ch->desc->account->acct_name[0])
+		return;
+
+	pending_account_cache.pid = GET_PID(ch);
+	pending_account_cache.room = room;
+	pending_account_cache.level = GET_LEVEL(ch);
+	strlcpy(pending_account_cache.account_name, ch->desc->account->acct_name,
+		sizeof(pending_account_cache.account_name));
+	strlcpy(pending_account_cache.character_name, GET_NAME(ch),
+		sizeof(pending_account_cache.character_name));
+	pending_account_cache_sync = true;
 }
 
 static void sql_clear_account_character_cache_sync(void)
 {
-	pending_account_cache_pid = 0;
-	pending_account_cache_room = NOWHERE;
+	pending_account_cache = {};
 	pending_account_cache_sync = false;
 }
 
@@ -1855,8 +1873,6 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		own_txn = true;
 	}
 
-	sql_queue_account_character_cache_sync(ch, room);
-
 	if (is_update)
 	{
 		written = snprintf(
@@ -2379,6 +2395,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		}
 	}
 
+	sql_queue_account_character_cache_sync(ch, room);
 	free(batch);
 
 	if (own_txn)
@@ -5686,6 +5703,43 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		return false;
 	}
 	return true;
+}
+
+int sql_repair_account_character_projection(const char *account_name)
+{
+	if (!DB || !account_name || !account_name[0])
+		return -1;
+
+	char *escaped_account = sql_escape_string(account_name);
+	if (!escaped_account)
+		return -1;
+
+	char query[4096];
+	const int written =
+		snprintf(query, sizeof(query),
+			 "INSERT INTO account_characters "
+			 "(id, account_name, pid, char_name, created_at, deleted_at) "
+			 "SELECT active_mapping.id, pd.account_name, pd.pid, pd.name, NOW(), NULL "
+			 "FROM player_data pd "
+			 "LEFT JOIN account_characters active_mapping "
+			 "ON active_mapping.pid=pd.pid AND active_mapping.deleted_at IS NULL "
+			 "WHERE pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') "
+			 "AND NOT EXISTS ("
+			 "SELECT 1 FROM account_characters tombstone "
+			 "WHERE tombstone.deleted_at IS NOT NULL "
+			 "AND (tombstone.pid=pd.pid OR LOWER(tombstone.char_name)=LOWER(pd.name))) "
+			 "ON DUPLICATE KEY UPDATE "
+			 "account_name=VALUES(account_name), pid=VALUES(pid), "
+			 "char_name=VALUES(char_name), deleted_at=NULL",
+			 escaped_account);
+	free(escaped_account);
+	if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
+		return -1;
+	if (!sql_run_query(query))
+		return -1;
+
+	const my_ulonglong affected = mysql_affected_rows(DB);
+	return affected > static_cast<my_ulonglong>(INT_MAX) ? INT_MAX : static_cast<int>(affected);
 }
 
 struct acct_entry *sql_load_account(const char *name)

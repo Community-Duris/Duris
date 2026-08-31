@@ -2387,6 +2387,17 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 	strlcpy(name_backup, acct->acct_name, sizeof(name_backup));
 
 #ifndef __NO_MYSQL__
+	/* Repair from durable player ownership before loading the account. Doing this
+	 * on every read also recovers one missing character from an otherwise healthy
+	 * multi-character account; soft-deleted mappings remain tombstoned. */
+	const int repaired = sql_repair_account_character_projection(name_backup);
+	if (repaired < 0)
+	{
+		statuslog(56, "&+RALERT&n: account character projection repair failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none",
+				  "character_projection_repair_failed", NULL);
+		return -1;
+	}
 	struct acct_entry *loaded = sql_load_account(name_backup);
 #else
 	std::string flatfile_error;
@@ -2398,26 +2409,54 @@ int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 		return -1;
 	}
 
-	/* A reload that returns no characters is indistinguishable from a projection
-	 * that has not landed - a mapping row written inside a transaction that later
-	 * rolled back, or one whose account_name was rewritten. Installing it would
-	 * leave a player who is standing in the game looking at an empty account menu
-	 * while player_data still holds the character. Deletion already prunes the live
-	 * list through remove_char_from_list(), so an emptied list here is never the
-	 * authority. Keep what we have and report it instead. */
-	if (!loaded->acct_character_list && acct->acct_character_list)
+	/* A positive repair must be visible to the immediately following load. */
+#ifndef __NO_MYSQL__
+	if (repaired > 0)
 	{
-		statuslog(56, "&+RALERT&n: account reload returned no characters for %s",
-			  name_backup);
-		persistence_alert(AVATAR, "account", "redacted", "none", "none",
-				  "character_projection_empty", NULL);
-#ifdef __NO_MYSQL__
-		flatfile_account_state_release(loaded);
-#else
-		free_acct_entry_shallow(loaded);
-#endif
-		return 1;
+		if (!loaded->acct_character_list)
+		{
+			free_acct_entry_shallow(loaded);
+			statuslog(56, "&+RALERT&n: repaired account projection did not reload");
+			persistence_alert(AVATAR, "account", "redacted", "none", "none",
+					  "character_projection_repair_unreadable", NULL);
+			return -1;
+		}
+		statuslog(56, "account character projection repaired (affected=%d)", repaired);
 	}
+#endif
+
+	/* Flat-file mode can atomically republish still-live membership when a reload
+	 * unexpectedly returns empty. */
+#ifdef __NO_MYSQL__
+	if (!loaded->acct_character_list)
+	{
+		if (acct->acct_character_list)
+		{
+			flatfile_account_state_release(loaded);
+			loaded = NULL;
+			flatfile_error.clear();
+			if (!flatfile_account_state_save(acct, &flatfile_error))
+			{
+				statuslog(56,
+					  "&+RALERT&n: account character projection repair failed");
+				persistence_alert(AVATAR, "account", "redacted", "none", "none",
+						  "character_projection_repair_failed", NULL);
+				return -1;
+			}
+			loaded = flatfile_account_state_load(name_backup, &flatfile_error);
+			if (!loaded || !loaded->acct_character_list)
+			{
+				if (loaded)
+					flatfile_account_state_release(loaded);
+				statuslog(56,
+					  "&+RALERT&n: repaired account projection did not reload");
+				persistence_alert(AVATAR, "account", "redacted", "none", "none",
+						  "character_projection_repair_unreadable", NULL);
+				return -1;
+			}
+		}
+	}
+#endif
 
 	// free old data
 	acct->acct_name = check_and_clear(acct->acct_name);

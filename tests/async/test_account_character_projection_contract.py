@@ -1,50 +1,27 @@
 #!/usr/bin/env python3
-"""Regression test for a character vanishing from its account after death.
+"""Account projection recovery and post-extraction cache regressions."""
 
-A player took a lethal artifact proc, the death completed through the deferred
-recovery path ("Your death has been recorded; the world lets go of you."), and
-the account menu that followed reported
-
-    Account currently doesn't have any characters (0/16).
-
-display_character_list() prints that whenever d->account->acct_character_list is
-NULL, and only two things empty a live account's list: remove_char_from_list()
-(deletion, which never ran here - no deletion message was printed) and
-read_account(), which frees the list and installs whatever the reload returns.
-This pins down the three ways the projection behind that reload can be lost:
-
-1. account_characters is UNIQUE on char_name and the account list is selected by
-   account_name, so sql_update_account_character() writing the
-   get_account_name_safe() "Unknown" placeholder moves a character off its real
-   account permanently while player_data still holds it.
-2. read_account() installed a zero-character reload over a populated live list,
-   turning any lost or rolled-back projection into an empty account menu for a
-   player who is standing in the game.
-3. The queued account-cache sync held a raw P_char that sql_commit() dereferenced
-   later. A terminal death save runs inside an outer transaction and
-   extract_char() returns the character to its pool before that commit, so the
-   commit read ch->desc->account through freed memory.
-"""
-
+import os
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
 account = (ROOT / "src" / "account.c").read_text(encoding="utf-8", errors="replace")
 sql = (ROOT / "src" / "sql.c").read_text(encoding="utf-8", errors="replace")
-sql_player = (ROOT / "src" / "sql_player.c").read_text(encoding="utf-8", errors="replace")
+sql_player = (ROOT / "src" / "sql_player.c").read_text(
+    encoding="utf-8", errors="replace"
+)
+mysql_sql_player = sql_player[sql_player.index("\n#else\n\n// globals") :]
 
 
 def body(text, signature):
-    """Return one function definition from its signature through its closing brace.
-
-    Skips forward declarations: a definition has no ";" between its signature and
-    its opening brace.
-    """
+    """Return one function or structure definition through its closing brace."""
     start = index(text, signature)
-    while ";" in text[start + len(signature):text.index("{", start)]:
+    while ";" in text[start + len(signature) : text.index("{", start)]:
         start = index(text, signature, start + len(signature))
     depth = 0
     opening = text.index("{", start)
@@ -54,58 +31,117 @@ def body(text, signature):
         elif text[position] == "}":
             depth -= 1
             if depth == 0:
-                return text[start:position + 1]
-    raise AssertionError(f"unterminated function: {signature}")
+                return text[start : position + 1]
+    raise AssertionError(f"unterminated definition: {signature}")
 
 
 checks = []
 
 mapping = body(sql, "void sql_update_account_character(P_char ch)")
-checks.append((
-    "the account mapping is never rewritten to a placeholder account name",
-    contains(mapping, "if (!ch->desc || !ch->desc->account || !ch->desc->account->acct_name ||")
-    and contains(mapping, "outcome=skipped_no_account")
-    and mapping.index("outcome=skipped_no_account")
-    < mapping.index("INSERT INTO account_characters ")
-))
+checks.append(
+    (
+        "the account mapping is never rewritten to a placeholder account name",
+        contains(
+            mapping,
+            "if (!ch->desc || !ch->desc->account || !ch->desc->account->acct_name ||",
+        )
+        and contains(mapping, "outcome=skipped_no_account")
+        and mapping.index("outcome=skipped_no_account")
+        < mapping.index("INSERT INTO account_characters "),
+    )
+)
 
 reload_body = body(account, "int read_account(P_acct acct)")
-checks.append((
-    "a zero-character reload cannot empty a populated live account list",
-    contains(reload_body, "if (!loaded->acct_character_list && acct->acct_character_list)")
-    and contains(reload_body, "character_projection_empty")
-    and reload_body.index("if (!loaded->acct_character_list && acct->acct_character_list)")
-    < reload_body.index("acct->acct_name = check_and_clear(acct->acct_name);")
-))
-checks.append((
-    "the untransferred reload DTO is released rather than leaked",
-    contains(account, "static void free_acct_entry_shallow(struct acct_entry *loaded)")
-    and contains(reload_body, "free_acct_entry_shallow(loaded);")
-    and contains(reload_body, "flatfile_account_state_release(loaded);")
-))
+repair_call = reload_body.index(
+    "sql_repair_account_character_projection(name_backup)"
+)
+checks.append(
+    (
+        "every MariaDB account load repairs its durable projection before reading it",
+        contains(
+            reload_body, "sql_repair_account_character_projection(name_backup)"
+        )
+        and contains(reload_body, "loaded = sql_load_account(name_backup);")
+        and repair_call
+        < reload_body.index("loaded = sql_load_account(name_backup);", repair_call)
+        < reload_body.index("acct->acct_name = check_and_clear(acct->acct_name);"),
+    )
+)
+checks.append(
+    (
+        "a legitimate empty account is not rebuilt from process-local state in MariaDB",
+        contains(reload_body, "if (repaired > 0)")
+        and not contains(reload_body, "character_projection_empty"),
+    )
+)
+checks.append(
+    (
+        "abandoned reload objects are released on repair paths",
+        contains(account, "static void free_acct_entry_shallow(struct acct_entry *loaded)")
+        and contains(reload_body, "free_acct_entry_shallow(loaded);")
+        and contains(reload_body, "flatfile_account_state_release(loaded);"),
+    )
+)
 
-checks.append((
-    "the queued account-cache sync survives the character being extracted",
-    contains(sql_player, "static int pending_account_cache_pid = 0;")
-    and not contains(sql_player, "pending_account_cache_char")
-    and contains(sql_player, "static void sql_sync_account_character_cache(int pid, int room);")
-))
+repair = body(
+    mysql_sql_player,
+    "int sql_repair_account_character_projection(const char *account_name)",
+)
+checks.append(
+    (
+        "repair is sourced from active durable player ownership and honors tombstones",
+        contains(repair, "FROM player_data pd")
+        and contains(repair, "pd.active=1")
+        and contains(repair, "pd.account_name")
+        and contains(repair, "tombstone.deleted_at IS NOT NULL")
+        and contains(repair, "ON DUPLICATE KEY UPDATE"),
+    )
+)
 
-sync = body(sql_player, "static void sql_sync_account_character_cache(int pid, int room)")
-checks.append((
-    "the commit-time sync resolves the pid against the live roster",
-    contains(sync, "for (P_char candidate = character_list; candidate; candidate = candidate->next)")
-    and contains(sync, "if (!ch || !ch->desc || !ch->desc->account || !GET_NAME(ch))")
-    and sync.index("if (!ch || !ch->desc || !ch->desc->account || !GET_NAME(ch))")
-    < sync.index("ch->desc->account->acct_character_list;")
-))
+pending = body(mysql_sql_player, "struct pending_account_character_cache_update")
+checks.append(
+    (
+        "the queued cache update is an immutable account and character snapshot",
+        all(
+            contains(pending, field)
+            for field in (
+                "int pid;",
+                "int room;",
+                "int level;",
+                "char account_name[256];",
+                "char character_name[256];",
+            )
+        )
+        and not contains(pending, "P_char"),
+    )
+)
 
-queue = body(sql_player, "static void sql_queue_account_character_cache_sync(P_char ch, int room)")
-checks.append((
-    "queueing stores a pid, never a character pointer",
-    contains(queue, "pending_account_cache_pid = ch ? GET_PID(ch) : 0;")
-    and contains(queue, "pending_account_cache_sync = (pending_account_cache_pid > 0);")
-))
+sync = body(
+    mysql_sql_player,
+    "static void\nsql_sync_account_character_cache("
+    "const struct pending_account_character_cache_update &update)",
+)
+checks.append(
+    (
+        "commit-time cache publication targets surviving account objects",
+        contains(sync, "for (P_acct account = account_list;")
+        and contains(sync, "account->acct_character_list")
+        and not contains(sync, "for (P_char candidate = character_list;")
+        and not contains(sync, "P_char"),
+    )
+)
+
+save = body(
+    mysql_sql_player, "bool sql_save_player_status(P_char ch, int type, int room)"
+)
+checks.append(
+    (
+        "new-character cache snapshots use the database-assigned pid",
+        save.index("mysql_insert_id(DB)")
+        < save.index("sql_queue_account_character_cache_sync(ch, room)")
+        < save.rindex("if (own_txn)"),
+    )
+)
 
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:
@@ -117,4 +153,102 @@ if failed:
         print(f"- {name}")
     sys.exit(1)
 
+cache_harness = f"""
+#include <cstdlib>
+#include <ctime>
+#include <strings.h>
+
+struct acct_chars
+{{
+    int pid;
+    char *charname;
+    int level;
+    int last_room;
+    long last_save;
+    struct acct_chars *next;
+}};
+
+struct acct_entry
+{{
+    char *acct_name;
+    struct acct_chars *acct_character_list;
+    struct acct_entry *next;
+}};
+
+using P_acct = struct acct_entry *;
+P_acct account_list = nullptr;
+
+{pending};
+
+{sync}
+
+static void require(bool condition, int code)
+{{
+    if (!condition)
+        std::exit(code);
+}}
+
+int main()
+{{
+    char account_name[] = "RepairAcct";
+    char other_account_name[] = "OtherAcct";
+    char character_name[] = "RepairHero";
+    char other_character_name[] = "OtherHero";
+    acct_chars hero = {{ 7, character_name, 12, 80, 1, nullptr }};
+    acct_chars other_hero = {{ 8, other_character_name, 13, 81, 2, nullptr }};
+    acct_entry other = {{ other_account_name, &other_hero, nullptr }};
+    acct_entry surviving_account = {{ account_name, &hero, &other }};
+    account_list = &surviving_account;
+
+    pending_account_character_cache_update update = {{}};
+    update.pid = 9001;
+    update.room = 4096;
+    update.level = 58;
+    __builtin_strcpy(update.account_name, account_name);
+    __builtin_strcpy(update.character_name, character_name);
+    const long before = std::time(nullptr);
+
+    // No character object or character_list exists in this harness: it models
+    // commit after extract_char() while the descriptor account menu survives.
+    sql_sync_account_character_cache(update);
+
+    require(hero.pid == 9001, 1);
+    require(hero.last_room == 4096, 2);
+    require(hero.level == 58, 3);
+    require(hero.last_save >= before, 4);
+    require(other_hero.pid == 8 && other_hero.last_room == 81, 5);
+    return 0;
+}}
+"""
+
+with tempfile.TemporaryDirectory(prefix="duris-account-cache-") as directory:
+    temp = Path(directory)
+    source = temp / "account_cache.cpp"
+    binary = temp / "account_cache"
+    source.write_text(cache_harness, encoding="utf-8")
+    compile_result = subprocess.run(
+        [
+            "g++",
+            "-std=c++20",
+            "-O1",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-fsanitize=address,undefined",
+            "-fno-omit-frame-pointer",
+            str(source),
+            "-o",
+            str(binary),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert compile_result.returncode == 0, compile_result.stderr
+    environment = os.environ.copy()
+    environment["ASAN_OPTIONS"] = "detect_leaks=1:halt_on_error=1"
+    environment["UBSAN_OPTIONS"] = "halt_on_error=1:print_stacktrace=1"
+    subprocess.run([str(binary)], check=True, env=environment)
+
+print("[PASS] post-extraction cache publication updates the surviving account menu")
 print("\nAll account character projection checks passed successfully.")

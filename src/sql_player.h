@@ -104,6 +104,10 @@ bool sql_save_account(struct acct_entry *acc);
 // load account from db by name
 struct acct_entry *sql_load_account(const char *name);
 
+// rebuild active, non-deleted account mappings from player_data.account_name
+// returns affected rows, or -1 on failure
+int sql_repair_account_character_projection(const char *account_name);
+
 // check if account exists
 bool sql_account_exists(const char *name);
 
