@@ -1,6 +1,6 @@
 # Batch-item command inventory
 
-Status: implementation in progress. Last updated: 2026-09-01. Branch:
+Status: implemented and qualified. Last updated: 2026-09-01. Branch:
 `batch-item` (implementation started from `e71a54c7`).
 
 ## Scope
@@ -16,10 +16,10 @@ but at least one coin example in it is stale.
 
 ## Required behavior
 
-Batch-item commands must select the full eligible item set and commit it as one
+Batch-item commands select the full eligible item set and commit it as one
 atomic multi-item transaction, preserving the pre-refactor all-at-once
-semantics. The current one-item-at-a-time serialized transaction chains are
-incorrect and must be replaced.
+semantics. The prior one-item-at-a-time serialized transaction chains were
+incorrect and have been replaced.
 
 ## Implementation progress
 
@@ -76,10 +76,22 @@ Implemented on 2026-09-01:
   submission, and publication assertions. The clean server build and the
   focused get, movement, snapshot, and flat-file suites pass.
 
-Still to implement:
+### Checkpoint 4: final qualification
 
-- Run the final combined regression pass and an in-game smoke test, then update
-  this inventory from implementation-progress wording to its completed state.
+Completed on 2026-09-01:
+
+- Rebuilt the server and ran the combined ownership, transfer compatibility,
+  snapshot, flat-file repository, live movement, get-limit, and atomic
+  get/drop/put regression suites. All checks pass, including changed-line
+  formatting and whitespace validation.
+- Booted the branch binary against the configured local development
+  environment and exercised two durable objects through `drop all.paper` and
+  `get all.paper`. Both commands moved the full two-item set, and the test
+  objects were removed before the character was saved and the server shut down
+  cleanly.
+- Checked the resulting server log for batch-publication, stale-topology,
+  ownership, persistence-alert, and critical-command failures; none were
+  present.
 
 ## Core command matrix
 
@@ -252,21 +264,23 @@ multi-item persistence payloads are outside this player-command inventory.
 The commands do not share one generic batch implementation.
 
 - Player `get all` / `take all`, including container and corpse variants,
-  snapshot durable item UIDs and submit one ownership move at a time. Each
-  completion advances the chain.
+  snapshot every eligible durable root and submit the full forest in one
+  ownership transaction. Publication begins only after every selected live
+  root has been validated against its original source.
 - Player `drop all`, `drop all.<keyword>`, `put all`, and
-  `put all.<keyword>` use their own equivalent serialized chains.
+  `put all.<keyword>` use the same multi-root movement adapter to submit one
+  ownership transaction for the eligible durable set.
 - Money objects, transient objects, and player-corpse roots are excluded from
   generic item ownership and run through their synchronous lifecycle-specific
-  paths after each durable chain drains.
+  paths after the durable transaction commits successfully.
 - `wear all` and `remove all` are direct synchronous loops over inventory or
-  equipment. They do not use the get/drop/put serialized chains.
+  equipment. They do not use the durable get/drop/put batch adapter.
 - `junk`, `bury`, `donate`, and `empty` are also direct legacy loops.
 - Quantity auctions use one true multi-item auction payload. Producing-shop
   purchases sequence their individual shop transactions.
 
-The focused source-contract coverage currently protects serialized get,
-drop, and put behavior in:
+Focused source-contract and regression coverage protects atomic get, drop, and
+put selection, submission, publication, and capacity behavior in:
 
 - `tests/async/test_get_all_durable_chain.py`
 - `tests/async/test_bulk_drop_put_durable_chain.py`
