@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "account.h"
+#include "chaos_config.h"
 #include "defines.h"
 #include "files.h"
 #include "gmcp.h"
@@ -1749,6 +1750,7 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 
 	/* veterans only can be hardcore */
 	if (!hardcore_config_get()->creation_enabled ||
+	    (chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos) ||
 	    (hardcore_config_get()->creation_veterans_only && is_newbie && is_hardcore))
 	{
 		is_hardcore = 0;
