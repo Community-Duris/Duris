@@ -17,7 +17,7 @@ The feature is disabled in the supported server build, but it is not detached. T
 flat-file siege regression explicitly compiles it with `-DSIEGE_ENABLED`, so it remains
 an exercised optional test configuration even though normal builds do not enable it:
 
-- `src/siege.c` is still compiled and linked.
+- `src/combat/siege.c` is still compiled and linked.
 - Ten quartermaster mobs still reset into hometowns, although their special procedure is
   not assigned in the supported default build.
 - Dedicated siege object prototypes and an isolated siege zone still enter generated
@@ -54,7 +54,7 @@ In this document:
 - "Siege" means the code behind `SIEGE_ENABLED`, the ballista, battering ram, catapult,
   town gates, persistent siege objects, and object-destruction combat state.
 - "Town defense" means the resource, guard, cavalry, portal, quartermaster, and hometown
-  logic implemented inside `src/siege.c`.
+  logic implemented inside `src/combat/siege.c`.
 - "Kingdom scaffolding" means the unused troop model, land-import helper, room fields,
   map toggle, and proposal help file. It does not include fantasy lore or zones whose
   proper name contains "Kingdom".
@@ -79,20 +79,20 @@ hardened dormant persistence without reconnecting the normal runtime feature:
 
 ### Runtime state
 
-[`src/siege.h`](../../../src/siege.h#L4) contains a commented-out
+[`src/combat/siege.h`](../../../src/combat/siege.h#L4) contains a commented-out
 `SIEGE_ENABLED` definition. The normal build does not define it elsewhere.
 
 The following external entry points are all guarded by `#ifdef SIEGE_ENABLED`:
 
 | Runtime seam | Current location | Disabled behavior |
 | --- | --- | --- |
-| Town and siege boot | [`src/comm.c`](../../../src/comm.c#L762) | Does not load towns, siege objects, or special procedures |
-| Town deployment on zone reset | [`src/db.c`](../../../src/db.c#L3933) | Does not deploy guards or cavalry |
-| Gate movement checks | [`src/actmove.c`](../../../src/actmove.c#L726) | Does not block invaders with siege gates |
-| Attacking siege objects | [`src/actoff.c`](../../../src/actoff.c#L767) and [`src/actoff.c`](../../../src/actoff.c#L1727) | `hit` and `kill` cannot enter object combat |
-| Object-combat pulse | [`src/fight.c`](../../../src/fight.c#L9479) | No siege attacks execute |
-| Immortal `add` command | [`src/interp.c`](../../../src/interp.c#L2608) | Handler is not registered |
-| `IS_DESTROYING` | [`src/utils.h`](../../../src/utils.h#L738) | Expands to `false` |
+| Town and siege boot | [`src/net/comm.c`](../../../src/net/comm.c#L762) | Does not load towns, siege objects, or special procedures |
+| Town deployment on zone reset | [`src/world/db.c`](../../../src/world/db.c#L3933) | Does not deploy guards or cavalry |
+| Gate movement checks | [`src/cmd/actmove.c`](../../../src/cmd/actmove.c#L726) | Does not block invaders with siege gates |
+| Attacking siege objects | [`src/cmd/actoff.c`](../../../src/cmd/actoff.c#L767) and [`src/cmd/actoff.c`](../../../src/cmd/actoff.c#L1727) | `hit` and `kill` cannot enter object combat |
+| Object-combat pulse | [`src/combat/fight.c`](../../../src/combat/fight.c#L9479) | No siege attacks execute |
+| Immortal `add` command | [`src/cmd/interp.c`](../../../src/cmd/interp.c#L2608) | Handler is not registered |
+| `IS_DESTROYING` | [`src/core/utils.h`](../../../src/core/utils.h#L738) | Expands to `false` |
 
 Despite that, [`src/Makefile`](../../../src/Makefile#L366) still links `siege.o`. The current
 default binary contains `init_towns`, `init_siege`, `warmaster`, `check_deploy`, `do_add`,
@@ -102,13 +102,13 @@ guarded feature entry points; calls among functions inside `siege.c`, including
 
 The main source files contain 2,760 lines:
 
-- [`src/siege.c`](../../../src/siege.c): 2,718 lines
-- [`src/siege.h`](../../../src/siege.h): 42 lines
+- [`src/combat/siege.c`](../../../src/combat/siege.c): 2,718 lines
+- [`src/combat/siege.h`](../../../src/combat/siege.h): 42 lines
 
 ### What the implemented code actually does
 
 The live-looking implementation is not the kingdom design described by the help file.
-[`warmaster`](../../../src/siege.c#L1743) finds a `town` by current zone and uses player
+[`warmaster`](../../../src/combat/siege.c#L1743) finds a `town` by current zone and uses player
 surname rank to:
 
 - donate item value into town resources;
@@ -127,12 +127,12 @@ runtime.
 
 Both supported persistence modes still carry feature code:
 
-- MariaDB town and siege persistence is split between `src/sql_player.c` and
-  `src/siege.c`.
-- Under `__NO_MYSQL__`, `src/sql_player.c` maintains a canonical `metadata/towns`
+- MariaDB town and siege persistence is split between `src/sql/sql_player.c` and
+  `src/combat/siege.c`.
+- Under `__NO_MYSQL__`, `src/sql/sql_player.c` maintains a canonical `metadata/towns`
   authority, imports `Players/towns` when present, and otherwise seeds from the tracked
   [`defaults/towns`](../../../defaults/towns) file.
-- Under `__NO_MYSQL__`, `src/siege.c` maintains a checksummed `metadata/siege` authority
+- Under `__NO_MYSQL__`, `src/combat/siege.c` maintains a checksummed `metadata/siege` authority
   and imports the legacy `Players/siege` serialization.
 - [`tests/async/test_flatfile_towns.py`](../../../tests/async/test_flatfile_towns.py) and
   [`tests/async/test_flatfile_siege.py`](../../../tests/async/test_flatfile_siege.py), with
@@ -197,22 +197,22 @@ evidence that production is empty.
 
 Delete after callers and persistence dependencies are removed:
 
-- `src/siege.c`
-- `src/siege.h`
+- `src/combat/siege.c`
+- `src/combat/siege.h`
 - `siege.o` from `src/Makefile`
-- `event_move_engine` from the Siege Engines section of `src/prototypes.h`
+- `event_move_engine` from the Siege Engines section of `src/core/prototypes.h`
 - `ballista`, `battering_ram`, `catapult`, and `castlewall` declarations from
-  `src/specs.prototypes.h`
+  `src/world/specs.prototypes.h`
 
 Remove the feature includes and guarded hooks from:
 
-- `src/comm.c`
-- `src/db.c`
-- `src/actmove.c`
-- `src/actoff.c`
-- `src/fight.c`
-- `src/interp.c`
-- `src/sql_player.c`
+- `src/net/comm.c`
+- `src/world/db.c`
+- `src/cmd/actmove.c`
+- `src/cmd/actoff.c`
+- `src/combat/fight.c`
+- `src/cmd/interp.c`
+- `src/sql/sql_player.c`
 
 Do not retain the `SIEGE_ENABLED` macro as an optional build configuration. Once the
 implementation is removed, keeping the flag would advertise a configuration that cannot
@@ -258,20 +258,20 @@ Appendix A.
 
 Remove these active-source remnants after the siege and SQL functions are gone:
 
-- global `P_town towns` in `src/db.c`;
-- the unused `extern P_town towns` in `src/actwiz.c`;
-- `struct town` and `P_town` in `src/structs.h`;
-- all `TROOP_*` and `NUM_TROOP_*` definitions in `src/structs.h`;
-- `struct troop_info_rec` in `src/structs.h`;
+- global `P_town towns` in `src/world/db.c`;
+- the unused `extern P_town towns` in `src/cmd/actwiz.c`;
+- `struct town` and `P_town` in `src/core/structs.h`;
+- all `TROOP_*` and `NUM_TROOP_*` definitions in `src/core/structs.h`;
+- `struct troop_info_rec` in `src/core/structs.h`;
 - commented `room_data` kingdom number, kingdom type, and troop pointer fields;
 - `troop_types`, `troop_levels`, `troop_offense`, `troop_defense`, and `troop_costs`
-  in `src/constant.c`;
-- unused `kingdom_type_list` in `src/constant.c` and its `src/actwiz.c` declaration;
-- unused `Guild::is_kingdom()` declaration in `src/assocs.h` and its offline-tool stub in
+  in `src/core/constant.c`;
+- unused `kingdom_type_list` in `src/core/constant.c` and its `src/cmd/actwiz.c` declaration;
+- unused `Guild::is_kingdom()` declaration in `src/guild/assocs.h` and its offline-tool stub in
   `src-migrate/migrate_stubs.c`;
-- the commented kingdom room-stat output in `src/actwiz.c`;
-- the commented troop display in `src/actinf.c`;
-- stale commented kingdom calls in `src/db.c`, `src/handler.c`, and `src/weather.c`.
+- the commented kingdom room-stat output in `src/cmd/actwiz.c`;
+- the commented troop display in `src/cmd/actinf.c`;
+- stale commented kingdom calls in `src/world/db.c`, `src/world/handler.c`, and `src/world/weather.c`.
 
 The troop definitions have no consumers outside their definitions. The room ownership and
 troop fields are already commented out, so the kingdom map and land model cannot operate.
@@ -284,7 +284,7 @@ Do not remove these unrelated live concepts:
 - ordinary hometown logic;
 - guilds and associations.
 
-The active administrator text in [`src/assocs.c`](../../../src/assocs.c#L1784) should change
+The active administrator text in [`src/guild/assocs.c`](../../../src/guild/assocs.c#L1784) should change
 from "Standard Guilds and Kingdoms" to "Standard Guilds" because it currently advertises
 a system that does not exist.
 
@@ -301,7 +301,7 @@ Required cleanup:
 - remove the guarded `CMD_GRT(CMD_ADD, ..., do_add, ...)` line;
 - remove `CMD_TRIG(CMD_DEPLOY, ...)`;
 - replace command-array spellings 827 and 828 with unique internal tombstone names and
-  rename their `src/interp.h` constants to explicit retired-slot names;
+  rename their `src/cmd/interp.h` constants to explicit retired-slot names;
 - remove their stale entries from
   `docs/lib/information/command_attributes.txt`;
 - remove the `ADD (Immortal Command)` help entry.
@@ -321,11 +321,11 @@ Keep shared commands used by other systems, including `CMD_RELOAD`, `CMD_FIRE`,
 
 `toggle kingdom` is parallel state spread across:
 
-- the status format and argument list in `src/actoth.c`;
+- the status format and argument list in `src/cmd/actoth.c`;
 - `toggle_names` index 32;
 - `tog_messages` index 32;
 - `do_toggle` case 32;
-- `PLR2_KINGDOMVIEW` in `src/structs.h`;
+- `PLR2_KINGDOMVIEW` in `src/core/structs.h`;
 - the static TOGGLE help example in `lib/information/help_index`.
 
 Remove the visible option and carefully renumber the later toggle array/case positions.
@@ -350,8 +350,8 @@ Remove the MariaDB implementations for:
 - `sql_load_siege_list()`
 - siege-only recursive save/load and affect helpers
 
-Remove their declarations from `src/sql_player.h` and the `siege.h` dependency from
-`src/sql_player.c`.
+Remove their declarations from `src/sql/sql_player.h` and the `siege.h` dependency from
+`src/sql/sql_player.c`.
 
 Remove the matching no-MySQL placeholder definitions for the SQL-only functions after
 their callers and declarations are gone.
@@ -360,9 +360,9 @@ The no-MySQL feature path is not only stubs: town persistence and `siege.c` cont
 implementations. Remove the feature-only flat-file code at the same time:
 
 - `flat_town_*` parsing, seed import, live-list replacement, save, and load code in
-  `src/sql_player.c`;
+  `src/sql/sql_player.c`;
 - `flat_siege_*` legacy decoding, validation, materialization, save, and load code in
-  `src/siege.c`;
+  `src/combat/siege.c`;
 - tracked `defaults/towns`;
 - `tests/async/test_flatfile_towns.py` and
   `tests/async/flatfile_town_harness.cpp`;
@@ -372,16 +372,16 @@ implementations. Remove the feature-only flat-file code at the same time:
 
 Preserve `src/flatfile_store.*`, the item-ownership authority, backup/restore tooling, and
 all other shared flat-file infrastructure. Remove the direct `flatfile_store.h` include
-from `src/sql_player.c` only if the town cleanup leaves it unused.
+from `src/sql/sql_player.c` only if the town cleanup leaves it unused.
 
-There is one unrelated private-chest log message in `src/sql_player.c` which incorrectly
+There is one unrelated private-chest log message in `src/sql/sql_player.c` which incorrectly
 says `sql_load_siege_item_contents`. Rename that label to its private-chest function while
 removing the real siege loader; otherwise a misleading siege string survives in active
 code.
 
 ### 6. Season reset and lifecycle inventory
 
-`src/sql.c` currently treats the three siege item tables as season-reset state. When
+`src/sql/sql.c` currently treats the three siege item tables as season-reset state. When
 runtime siege persistence is removed:
 
 - remove the three tables from `sql_verify_pwipe_manifest()`;
@@ -411,7 +411,7 @@ Do not alter these historical and runtime-compatibility artifacts as part of the
 - `migrations/item_ownership_ledger.sql`
 - `migrations/migration_manifest.json`
 - `migrations/runtime_compatibility_manifest.json`
-- `src/runtime_compatibility_contract.h`
+- `src/core/runtime_compatibility_contract.h`
 - `tests/test_run_migration_persistence_schema.sh`
 - already checksummed migration files and verification inputs
 
@@ -508,7 +508,7 @@ Remove or update these authoritative sources:
 
 - delete `lib/information/helpkingdoms`;
 - remove `helpkingdoms -> kingdoms` from `scripts/import_help_to_prod.sh`;
-- remove the same source/title mapping from `src/flatfile_help_catalog.c`;
+- remove the same source/title mapping from `src/flatfile/flatfile_help_catalog.c`;
 - delete the `ADD (Immortal Command)` entry from `lib/information/help_index`;
 - remove `Kingdom View` from the TOGGLE help entry;
 - remove `add` and `deploy` entries from
@@ -673,7 +673,7 @@ pull request, but the item compatibility gate may require two deployments.
 Add a focused source-contract test before deleting code. It should fail while the feature
 is present and pass only when:
 
-- `src/siege.c`, `src/siege.h`, and `siege.o` are absent;
+- `src/combat/siege.c`, `src/combat/siege.h`, and `siege.o` are absent;
 - no production source contains `SIEGE_ENABLED`, `P_siege`, `P_town`, `troop_info_rec`,
   `kingdom_type_list`, `Guild::is_kingdom()`, `flat_siege_*`, `flat_town_*`,
   `IS_DESTROYING`, `set_destroying`, `stop_destroying`, or the destruction fields;
@@ -705,7 +705,7 @@ production contains any legacy dedicated item.
 ### Step 3 - Remove runtime persistence and town types
 
 1. Delete MariaDB and flat-file siege/town/kingdom-land functions and helpers from
-   `src/sql_player.c`, `src/sql_player.h`, and `src/siege.c`.
+   `src/sql/sql_player.c`, `src/sql/sql_player.h`, and `src/combat/siege.c`.
 2. Correct the unrelated private-chest log label.
 3. Delete `defaults/towns`, the two flat-file feature regressions and harnesses, and their
    CI steps.
@@ -721,10 +721,10 @@ and type-order mistakes.
 
 1. Remove guarded boot, reset, movement, attack, combat-pulse, and command hooks.
 2. Remove siege includes.
-3. Remove `event_move_engine` from `src/prototypes.h` and the four siege object-special
-   declarations from `src/specs.prototypes.h`.
+3. Remove `event_move_engine` from `src/core/prototypes.h` and the four siege object-special
+   declarations from `src/world/specs.prototypes.h`.
 4. Remove `siege.o` from the Makefile.
-5. Delete `src/siege.c` and `src/siege.h`.
+5. Delete `src/combat/siege.c` and `src/combat/siege.h`.
 6. Replace command spellings and constants 827/828 with retired tombstones without
    shifting later IDs.
 
@@ -789,12 +789,12 @@ contains the dedicated zone and hometown resets.
 git diff --check
 ./scripts/format.sh --check
 
-test ! -e src/siege.c
-test ! -e src/siege.h
+test ! -e src/combat/siege.c
+test ! -e src/combat/siege.h
 ! rg -n 'SIEGE_ENABLED|#include "siege\.h"|\bsiege\.o\b' src
 ! rg -n '\b(P_siege|P_town|troop_info_rec|IS_DESTROYING|set_destroying|stop_destroying|destroying_obj|next_destroying|destroying_list)\b' src
 ! rg -n '\b(flat_siege_|flat_town_)' src
-! rg -n '^int (ballista|battering_ram|catapult|castlewall)\(' src/specs.prototypes.h
+! rg -n '^int (ballista|battering_ram|catapult|castlewall)\(' src/world/specs.prototypes.h
 ! rg -n '\b(kingdom_type_list|is_kingdom)\b' src src-migrate
 ! rg -n '^M [0-9]+ 4010(00|10|20|30|40|50|60|70|80|90)\b' areas/zon
 ! rg -n '^siege[[:space:]]+\*4010\b' areas/AREA
@@ -806,7 +806,7 @@ test ! -e tests/async/flatfile_town_harness.cpp
 test ! -e tests/async/test_flatfile_siege.py
 test ! -e tests/async/flatfile_siege_harness.cpp
 ! rg -n 'test_flatfile_(towns|siege)\.py' .github/workflows/quality.yml
-! rg -n 'helpkingdoms' scripts/import_help_to_prod.sh src/flatfile_help_catalog.c
+! rg -n 'helpkingdoms' scripts/import_help_to_prod.sh src/flatfile/flatfile_help_catalog.c
 ```
 
 The final repository will still contain allowed siege/kingdom strings in historical
@@ -946,71 +946,71 @@ The removal is complete only when all of the following are true:
 The current 62-file inventory is:
 
 ```text
-src/actinf.c
-src/actmove.c
-src/actnew.c
-src/actobj.c
-src/actoff.c
-src/actoth.c
-src/actwiz.c
-src/affects.c
-src/auction_houses.c
-src/bard.c
-src/beh_magic.c
-src/buildings.c
-src/comm.c
-src/db.c
-src/disguise.c
-src/drannak.c
-src/ethermancer.c
-src/ferryact.c
-src/fight.c
-src/grapple.c
-src/group.c
-src/handler.c
-src/innates.c
-src/interp.c
-src/limits.c
-src/magic.c
-src/mining.c
-src/mobact.c
-src/mobcombat.c
-src/new_skills.c
-src/nexus_stones.c
-src/prompt.c
-src/prototypes.h
-src/psionics.c
-src/quest.c
-src/range.c
-src/siege.c
-src/sillusionist.c
-src/smagic.c
-src/sparser.c
-src/specials.c
-src/specs.ailvio.c
-src/specs.hoa.c
-src/specs.lohrr.c
-src/specs.mobile.c
-src/specs.object.c
-src/specs.ravenloft.c
-src/specs.snogres.c
-src/specs.undermountain.c
-src/specs.underworld.c
-src/specs.vecna.c
-src/specs.venthix.c
-src/specs.winterhaven.c
-src/specs.zalrix.c
-src/spells.c
-src/structs.h
-src/track.c
-src/tradeskill.c
-src/transport.c
-src/trap.c
-src/utility.c
-src/utils.h
+src/cmd/actinf.c
+src/cmd/actmove.c
+src/cmd/actnew.c
+src/cmd/actobj.c
+src/cmd/actoff.c
+src/cmd/actoth.c
+src/cmd/actwiz.c
+src/magic/affects.c
+src/economy/auction_houses.c
+src/classes/bard.c
+src/magic/beh_magic.c
+src/world/buildings.c
+src/net/comm.c
+src/world/db.c
+src/classes/disguise.c
+src/classes/drannak.c
+src/classes/ethermancer.c
+src/world/ferryact.c
+src/combat/fight.c
+src/combat/grapple.c
+src/guild/group.c
+src/world/handler.c
+src/classes/innates.c
+src/cmd/interp.c
+src/world/limits.c
+src/magic/magic.c
+src/economy/mining.c
+src/mob/mobact.c
+src/combat/mobcombat.c
+src/classes/new_skills.c
+src/economy/nexus_stones.c
+src/net/prompt.c
+src/core/prototypes.h
+src/classes/psionics.c
+src/world/quest.c
+src/combat/range.c
+src/combat/siege.c
+src/classes/sillusionist.c
+src/magic/smagic.c
+src/net/sparser.c
+src/mob/specials.c
+src/specs/specs.ailvio.c
+src/specs/specs.hoa.c
+src/specs/specs.lohrr.c
+src/specs/specs.mobile.c
+src/specs/specs.object.c
+src/specs/specs.ravenloft.c
+src/specs/specs.snogres.c
+src/specs/specs.undermountain.c
+src/specs/specs.underworld.c
+src/specs/specs.vecna.c
+src/specs/specs.venthix.c
+src/specs/specs.winterhaven.c
+src/specs/specs.zalrix.c
+src/magic/spells.c
+src/core/structs.h
+src/cmd/track.c
+src/economy/tradeskill.c
+src/world/transport.c
+src/combat/trap.c
+src/core/utility.c
+src/core/utils.h
 ```
 
-After deleting `src/siege.c`, 61 files remain in the mechanical compatibility sweep.
+After deleting `src/combat/siege.c`, 61 files remain in the mechanical compatibility sweep.
 
 ## Appendix B - Explicit preserve list
 
