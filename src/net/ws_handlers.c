@@ -5,7 +5,7 @@
  */
 
 #include "prototypes.h"
-#include "creation_availability_config.h"
+#include "account/creation_availability_config.h"
 #include "structs.h"
 #include "net/comm.h"
 #include "db.h"
@@ -18,7 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include "account.h"
+#include "account/account.h"
 #include "chaos_config.h"
 #include "defines.h"
 #include "files.h"
@@ -32,7 +32,7 @@
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "player/player_name.h"
-#include "password_hash.h"
+#include "account/password_hash.h"
 #include "persistence/presence_policy.h"
 #include "net/websocket.h"
 #include "net/ws_auth.h"

@@ -4,9 +4,9 @@
 #include "utils.h"
 #include "interp.h"
 #include "item_movement_transaction.h"
-#include "account_reward.h"
-#include "account_reward_config.h"
-#include "account_reward_snapshot.h"
+#include "account/account_reward.h"
+#include "account/account_reward_config.h"
+#include "account/account_reward_snapshot.h"
 #include "net/comm.h"
 #include "vnum.obj.h"
 #ifndef __NO_MYSQL__

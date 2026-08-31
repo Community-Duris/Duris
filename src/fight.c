@@ -23,7 +23,7 @@
 #include <set>
 #include <stdio.h>
 #include <string.h>
-#include "account_reward.h"
+#include "account/account_reward.h"
 #include "achievements.h"
 #include "arena.h"
 #include "arenadef.h"

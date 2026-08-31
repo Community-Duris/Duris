@@ -22,7 +22,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "account.h"
+#include "account/account.h"
 #include "assocs.h"
 #include "files.h"
 #include "flatfile/flatfile_store.h"
@@ -38,7 +38,7 @@
 #include "spells.h"
 #include "sql/sql.h"
 #include "player/player_name.h"
-#include "password_hash.h"
+#include "account/password_hash.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
 #include "item_transfer_command.h"

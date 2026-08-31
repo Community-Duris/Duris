@@ -1,5 +1,5 @@
 #include "prototypes.h"
-#include "account_reward_config.h"
+#include "account/account_reward_config.h"
 
 #include <errno.h>
 #include <stdio.h>

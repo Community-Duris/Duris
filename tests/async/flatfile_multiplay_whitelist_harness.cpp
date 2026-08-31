@@ -1,5 +1,5 @@
 #include "structs.h"
-#include "multiplay_whitelist.h"
+#include "account/multiplay_whitelist.h"
 
 #include <cstdlib>
 #include <filesystem>

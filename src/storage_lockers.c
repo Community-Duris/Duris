@@ -31,7 +31,7 @@
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
-#include "password_hash.h"
+#include "account/password_hash.h"
 #include "ships.h"
 #include "specs/specs.winterhaven.h"
 #include "spells.h"

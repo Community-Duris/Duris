@@ -39,7 +39,7 @@
 #include "makeexit.h"
 #include "map.h"
 #include "mm.h"
-#include "multiplay_whitelist.h"
+#include "account/multiplay_whitelist.h"
 #include "nexus_stones.h"
 #include "outposts.h"
 #include "net/poll.h"

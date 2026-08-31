@@ -4,7 +4,7 @@
 using namespace std;
 
 #include "prototypes.h"
-#include "creation_availability_config.h"
+#include "account/creation_availability_config.h"
 #include "structs.h"
 #include "net/comm.h"
 #include "interp.h"

@@ -98,13 +98,13 @@ SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 OBJS =  $(SHIP_OBJS) \
 				 magic.o \
 				 achievements.o \
-				 account.o \
-				 password_hash.o \
-				 account_reward.o \
-				 account_reward_snapshot.o \
-				 account_reward_config.o \
+				 account/account.o \
+				 account/password_hash.o \
+				 account/account_reward.o \
+				 account/account_reward_snapshot.o \
+				 account/account_reward_config.o \
 				 hardcore_config.o \
-				 creation_availability_config.o \
+				 account/creation_availability_config.o \
 				 frag_cap_config.o \
 				 actcomm.o \
 				 actinf.o \
@@ -152,7 +152,7 @@ OBJS =  $(SHIP_OBJS) \
 				 ctf.o \
 				 dam_mods.o \
 				 db.o \
-				 character_identity.o \
+				 account/character_identity.o \
 				 debug.o \
 				 disguise.o \
 				 drannak.o \
@@ -215,7 +215,7 @@ OBJS =  $(SHIP_OBJS) \
 				 net/modify.o \
 				 mount.o \
 				 name_gen.o \
-				 nanny.o \
+				 account/nanny.o \
 				 necromancy.o \
 				 new_skills.o \
 				 nq.o \
@@ -302,9 +302,9 @@ OBJS =  $(SHIP_OBJS) \
 				 zone_touch_command.o \
 				 zone_touch_repository.o \
 				 zone_touch_transaction.o \
-				 session_audit_command.o \
-				 session_audit_repository.o \
-				 session_audit_transaction.o \
+				 account/session_audit_command.o \
+				 account/session_audit_repository.o \
+				 account/session_audit_transaction.o \
 				 player/player_load_repository.o \
 				 player/player_load_topology.o \
 				 player/player_load_pipeline.o \
@@ -440,20 +440,20 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.lucrot.o \
 				 specs/specs.gellz.o \
 				 smoke.o \
-				 multiplay_whitelist.o \
+				 account/multiplay_whitelist.o \
 				 home.o \
 				 net/websocket.o \
 				 net/ws_handlers.o \
 				 json_utils.o \
 				 net/gmcp.o \
 				 net/ttype.o \
-				 wiz_newchar.o \
+				 account/wiz_newchar.o \
 				 zcheck.o
 
 
 # Name lists (no paths) for pfile-related objs
 SHARED_PFILE_OBJS_NAMES = skills.pf.o files.pf.o
-PFILE_OBJS_NAMES        = pfile-stubs.o pfile.o
+PFILE_OBJS_NAMES        = account/pfile-stubs.o account/pfile.o
 
 MIGRATE_OBJ_NAMES = migrate_main.o \
 							migrate_common.o \

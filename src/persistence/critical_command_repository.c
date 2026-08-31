@@ -13,8 +13,8 @@
 #include "boon_reward_repository.h"
 #include "zone_touch_command.h"
 #include "zone_touch_repository.h"
-#include "session_audit_command.h"
-#include "session_audit_repository.h"
+#include "account/session_audit_command.h"
+#include "account/session_audit_repository.h"
 #include "item_transfer_repository.h"
 #include "sql/sql_pool.h"
 

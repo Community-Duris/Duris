@@ -9,8 +9,8 @@
 #include "interp.h"
 #include "item_movement_transaction.h"
 #include "utils.h"
-#include "account.h"
-#include "password_hash.h"
+#include "account/account.h"
+#include "account/password_hash.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>

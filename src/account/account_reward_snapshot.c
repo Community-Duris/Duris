@@ -1,5 +1,5 @@
 #include "prototypes.h"
-#include "account_reward_snapshot.h"
+#include "account/account_reward_snapshot.h"
 #include "db.h"
 #include "objmisc.h"
 #include "spells.h"

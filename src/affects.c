@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "account.h"
+#include "account/account.h"
 #include "arena.h"
 #include "ctf.h"
 #include "disguise.h"

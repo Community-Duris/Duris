@@ -1,5 +1,5 @@
 #include "persistence/critical_command_repository.h"
-#include "session_audit_command.h"
+#include "account/session_audit_command.h"
 
 #include <cassert>
 #include <cstdlib>

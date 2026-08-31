@@ -1,7 +1,7 @@
 #ifndef DURIS_FLATFILE_ACCOUNT_ADAPTER_H
 #define DURIS_FLATFILE_ACCOUNT_ADAPTER_H
 
-#include "account.h"
+#include "account/account.h"
 
 #include <string>
 

@@ -26,7 +26,7 @@
 #include "item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
-#include "session_audit_transaction.h"
+#include "account/session_audit_transaction.h"
 #include "runtime_compatibility_contract.h"
 #include <algorithm>
 #include <openssl/sha.h>
@@ -46,8 +46,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "account.h"
-#include "account_reward.h"
+#include "account/account.h"
+#include "account/account_reward.h"
 #include "assocs.h"
 #include "boon.h"
 #include "epic.h"

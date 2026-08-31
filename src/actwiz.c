@@ -9,7 +9,7 @@
  */
 
 #include "prototypes.h"
-#include "creation_availability_config.h"
+#include "account/creation_availability_config.h"
 #include "net/comm.h"
 #include "db.h"
 #include "events.h"

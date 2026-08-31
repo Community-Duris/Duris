@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 #include "prototypes.h"
-#include "creation_availability_config.h"
+#include "account/creation_availability_config.h"
 #include "chaos_config.h"
 #include "structs.h"
 #include "net/comm.h"
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
-#include "account.h"
+#include "account/account.h"
 #include "achievements.h"
 #include "assocs.h"
 #include "epic.h"
@@ -39,7 +39,7 @@
 #include "hardcore_config.h"
 #include "justice.h"
 #include "mm.h"
-#include "multiplay_whitelist.h"
+#include "account/multiplay_whitelist.h"
 #include "paladins.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_items.h"

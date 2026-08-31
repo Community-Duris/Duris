@@ -1,7 +1,7 @@
 #ifndef SESSION_AUDIT_REPOSITORY_H
 #define SESSION_AUDIT_REPOSITORY_H
 
-#include "session_audit_command.h"
+#include "account/session_audit_command.h"
 
 #include <mysql/mysql.h>
 
