@@ -36,6 +36,7 @@ continue_bulk = function_body(
     ACTOBJ, "void continue_bulk_get(P_char actor, bool previous_succeeded)\n{"
 )
 completion = function_body(ACTOBJ, "void item_get_completion(")
+finish = function_body(ACTOBJ, "static void finish_bulk_get(")
 publish = function_body(MOVEMENT, "void publish(")
 player_ready = function_body(
     MOVEMENT, "void item_movement_transaction_player_ready("
@@ -89,6 +90,10 @@ ok &= check(
 ok &= check(
     "the blanket container rejection is gone",
     "Durable container items must be collected one at a time" not in ACTOBJ,
+)
+ok &= check(
+    "an empty container reports that no items were found",
+    'from_container ? "You find nothing in it.\\r\\n"' in finish,
 )
 ok &= check(
     "floor coin extraction cannot be followed by an artifact dereference",
