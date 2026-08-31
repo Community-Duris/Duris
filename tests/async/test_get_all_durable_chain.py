@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Contracts for serialized durable floor pickup via `get all`."""
+"""Source contracts for atomic durable floor/container pickup via ``get all``."""
 
 from _paths import SRC
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
 ACTOBJ = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
 MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace"
@@ -31,16 +29,16 @@ def check(name, condition):
 
 
 do_get = function_body(ACTOBJ, "void do_get(")
+start_bulk = function_body(ACTOBJ, "static void start_bulk_get(")
 start_floor = function_body(ACTOBJ, "static void start_floor_bulk_get(")
 start_container = function_body(ACTOBJ, "static void start_container_bulk_get(")
-continue_bulk = function_body(
-    ACTOBJ, "void continue_bulk_get(P_char actor, bool previous_succeeded)\n{"
-)
-completion = function_body(ACTOBJ, "void item_get_completion(")
-finish = function_body(ACTOBJ, "static void finish_bulk_get(")
-publish = function_body(MOVEMENT, "void publish(")
-player_ready = function_body(
-    MOVEMENT, "void item_movement_transaction_player_ready("
+select_item = function_body(ACTOBJ, "static bool select_bulk_get_item(")
+completion = function_body(ACTOBJ, "static void bulk_get_completion(")
+after_commit = function_body(ACTOBJ, "static void finish_bulk_get_after_commit(")
+finish = function_body(ACTOBJ, "static void report_bulk_get(")
+single_get = function_body(ACTOBJ, "void get(P_char ch")
+submit_batch = function_body(
+    MOVEMENT, "bool item_movement_transaction_submit_batch("
 )
 room_finalize = function_body(ACTOBJ, "static void do_get_finalize_room_item(")
 container_finalize = function_body(
@@ -49,79 +47,90 @@ container_finalize = function_body(
 
 ok = True
 ok &= check(
-    "player get-all enters the serialized bulk path",
-    "start_floor_bulk_get(ch, alldot ? Gbuf2 : NULL);" in do_get,
+    "player room and container batches enter the shared atomic path",
+    "start_floor_bulk_get(ch, alldot ? Gbuf2 : NULL);" in do_get
+    and "start_container_bulk_get(ch, s_obj" in do_get
+    and "start_bulk_get(actor, NULL, filter, false);" in start_floor
+    and "start_bulk_get(actor, container, filter, corpse);" in start_container,
 )
 ok &= check(
-    "the blanket player rejection is gone",
-    "Durable floor items must be collected one at a time" not in ACTOBJ,
-)
-ok &= check(
-    "get-all snapshots durable item identities rather than live pointers",
+    "selection snapshots durable UIDs and preserves the keyword filter",
     "std::vector<uint64_t> durable_items" in ACTOBJ
-    and "durable_items.push_back(object->obj_uid)" in start_floor,
+    and "state.durable_items.push_back(object->obj_uid)" in select_item
+    and "isname(filter, object->name)" in select_item,
 )
 ok &= check(
-    "filtered get-all preserves the requested keyword",
-    "filter ? filter" in start_floor
-    and "isname(state.filter.c_str(), object->name)" in continue_bulk,
+    "selection applies cumulative count and weight capacity",
+    "int carried_count = IS_CARRYING_N(actor)" in start_bulk
+    and "int64_t carried_weight = total_carried_weight(actor)" in start_bulk
+    and "carried_count >= CAN_CARRY_N(actor)" in select_item
+    and "carried_weight + GET_OBJ_WEIGHT(object)" in select_item
+    and "++carried_count" in select_item
+    and "carried_weight += GET_OBJ_WEIGHT(object)" in select_item,
 )
 ok &= check(
-    "durable siblings submit one at a time",
-    "item_get_deferred" in continue_bulk
-    and "continue_bulk_get(actor, true);" in completion,
+    "binding, trap, hitch, and no-loot exclusions happen before submission",
+    "account_bound_reward_owner" in select_item
+    and "checkgetput(actor, object)" in select_item
+    and "object->hitched_to" in select_item
+    and "ITEM2_NOLOOT" in select_item,
 )
 ok &= check(
-    "bulk pickup stops if the player leaves the source room",
-    "actor->in_room != state.room" in continue_bulk
-    and "source is no longer here" in continue_bulk,
+    "all durable roots submit in one multi-root movement",
+    start_bulk.count("item_movement_transaction_submit_batch(") == 1
+    and "roots.data(), roots.size()" in start_bulk
+    and "item_movement_transaction_submit(" not in start_bulk
+    and "continue_bulk_get" not in ACTOBJ,
 )
 ok &= check(
-    "currency and lifecycle-owned floor items retain synchronous pickup",
-    "uses_generic_item_ownership(object)" in continue_bulk
-    and "PC_CORPSE" in ACTOBJ
-    and "do_get_finalize_room_item(actor, object" in continue_bulk,
+    "the movement adapter captures and encodes one forest",
+    "ordered_roots.assign(roots, roots + root_count)" in submit_batch
+    and "player_item_snapshot_tree_capture" in submit_batch
+    and "snapshot.parent_index += static_cast<int32_t>(offset)" in submit_batch
+    and ".multi_root = true" in submit_batch,
+)
+validation = completion.index("for (uint64_t item_uid : state.durable_items)")
+publication = completion.index("item_get_ack_publication = true")
+ok &= check(
+    "completion validates every selected root before publishing any live move",
+    validation < publication
+    and "bulk_get_source_matches(state, container, object)" in completion
+    and "get_batch_publish" in completion,
 )
 ok &= check(
-    "container get-all uses the same serialized durable chain",
-    "start_container_bulk_get(ch, s_obj" in do_get
-    and "container->obj_uid" in start_container
-    and "do_get_finalize_container_success" in continue_bulk,
+    "corpse revision publication happens once for the committed forest",
+    completion.count("corpse_lifecycle_transaction_note_item_transfer(") == 1
+    and completion.index("corpse_lifecycle_transaction_note_item_transfer(")
+    < publication,
 )
 ok &= check(
-    "the blanket container rejection is gone",
-    "Durable container items must be collected one at a time" not in ACTOBJ,
+    "currency and lifecycle-owned roots wait until durable commit succeeds",
+    "std::vector<synchronous_get_item> synchronous_items" in ACTOBJ
+    and "finish_bulk_get_after_commit(actor, state, container);" in completion
+    and "do_get_finalize_room_item" in after_commit
+    and "do_get_finalize_container_success" in after_commit
+    and completion.index("if (!committed)")
+    < completion.index("finish_bulk_get_after_commit(actor, state, container);"),
 )
 ok &= check(
-    "an empty container reports that no items were found",
-    'from_container ? "You find nothing in it.\\r\\n"' in finish,
+    "single durable get rejects no-loot before ownership submission",
+    single_get.index("uses_generic_item_ownership(o_obj) &&")
+    < single_get.index("item_movement_transaction_submit(ch, o_obj"),
 )
 ok &= check(
-    "floor coin extraction cannot be followed by an artifact dereference",
-    "const bool money" in room_finalize and "if (!money)" in room_finalize,
+    "empty room and container batches retain distinct messages",
+    'state.container_uid ? "You find nothing in it.\\r\\n"' in finish
+    and '"You see nothing here.\\r\\n"' in finish,
 )
 ok &= check(
-    "container coin extraction cannot be followed by a debug dereference",
-    "const bool money" in container_finalize
-    and "if (money)" in container_finalize
-    and container_finalize.index("if (money)")
-    < container_finalize.index("GETDBG_LOG"),
-)
-
-erase = publish.index("pending.erase(found);")
-callback = publish.index("completion_fn(actor")
-ok &= check(
-    "completed movement is erased before a chaining callback can rehash pending state",
-    erase < callback,
-)
-ok &= check(
-    "offline completion publication restarts traversal after a chaining callback",
-    "std::find_if" in player_ready
-    and "publish(found, actor);" in player_ready
-    and "found++" not in player_ready,
+    "coin extraction cannot be followed by stale debug or artifact dereferences",
+    "const bool money" in room_finalize
+    and "if (!money)" in room_finalize
+    and "const bool money" in container_finalize
+    and container_finalize.index("if (money)") < container_finalize.index("GETDBG_LOG"),
 )
 
 if not ok:
     raise SystemExit(1)
 
-print("\nAll durable get-all contracts passed.")
+print("\nAll atomic get-all contracts passed.")

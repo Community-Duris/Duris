@@ -146,16 +146,21 @@ struct get_movement_context
 	uint64_t container_uid;
 	int32_t room;
 	int32_t showit;
-	uint32_t bulk_actor_pid;
+};
+
+struct synchronous_get_item
+{
+	uint64_t item_uid;
+	P_obj object;
+	bool scrap;
 };
 
 struct bulk_get_state
 {
 	int32_t room;
 	uint64_t container_uid;
-	std::string filter;
 	std::vector<uint64_t> durable_items;
-	size_t next_item;
+	std::vector<synchronous_get_item> synchronous_items;
 	int total;
 	bool failed;
 	bool corpse;
@@ -213,13 +218,9 @@ bool item_get_ack_publication = false;
 bool item_get_deferred = false;
 bool item_put_ack_publication = false;
 bool item_put_deferred = false;
-uint32_t bulk_get_submitter = 0;
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
-
-void continue_bulk_get(P_char actor, bool previous_succeeded);
-void cancel_bulk_get(P_char actor);
 
 P_obj find_live_item_uid(uint64_t item_uid)
 {
@@ -244,8 +245,6 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 	const bool context_valid = encoded && encoded_size == sizeof(context);
 	if (context_valid)
 		memcpy(&context, encoded, sizeof(context));
-	const bool bulk_get = actor && context_valid &&
-			      context.bulk_actor_pid == static_cast<uint32_t>(GET_PID(actor));
 
 	if (!actor || !committed || !context_valid)
 	{
@@ -253,13 +252,6 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 			send_to_char(
 				"The item remains where it was; its ownership did not commit.\r\n",
 				actor);
-		if (bulk_get)
-		{
-			auto found = bulk_gets.find(context.bulk_actor_pid);
-			if (found != bulk_gets.end())
-				found->second.failed = true;
-			continue_bulk_get(actor, false);
-		}
 		return;
 	}
 	P_obj object = find_live_item_uid(context.item_uid);
@@ -276,8 +268,6 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 			actor);
 		persistence_alert(AVATAR, "item_movement", "get_publish", "none", "none",
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
-		if (bulk_get)
-			cancel_bulk_get(actor);
 		return;
 	}
 	if (container && container->type == ITEM_CORPSE &&
@@ -291,8 +281,6 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 	item_get_ack_publication = true;
 	get(actor, object, container, context.showit);
 	item_get_ack_publication = false;
-	if (bulk_get)
-		continue_bulk_get(actor, true);
 }
 
 void publish_player_drop(P_char actor, P_obj object, int room, bool floor_hint, bool quiet)
@@ -616,6 +604,12 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		    TO_CHAR);
 		return;
 	}
+	if (uses_generic_item_ownership(o_obj) && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+	    !IS_TRUSTED(ch))
+	{
+		send_to_char("&+LYou cannot take that.&n\n\r", ch);
+		return;
+	}
 
 	GETDBG_LOG(
 		"GETDBG[get-enter]: ch=%s room=%d obj=%s [%d] type=%d wt=%d carry_n=%d carry_w=%d showit=%d from_container=%s [%d]",
@@ -670,8 +664,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		const item_owner_identity destination = { item_owner_type::player,
 							  static_cast<uint64_t>(GET_PID(ch)), 0 };
 		const get_movement_context context = { o_obj->obj_uid, s_obj ? s_obj->obj_uid : 0,
-						       s_obj ? NOWHERE : o_obj->loc.room, showit,
-						       bulk_get_submitter };
+						       s_obj ? NOWHERE : o_obj->loc.room, showit };
 		const item_transfer_reason reason = source.type == item_owner_type::locker ?
 							    item_transfer_reason::locker_withdraw :
 						    corpse ? item_transfer_reason::corpse_loot :
@@ -887,7 +880,8 @@ publish_after_ack:
 	}
 	if (s_obj)
 	{
-		if (IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) && !IS_TRUSTED(ch))
+		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		    !IS_TRUSTED(ch))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
 			return;
@@ -915,7 +909,8 @@ publish_after_ack:
 	}
 	else
 	{
-		if (IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) && !IS_TRUSTED(ch))
+		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
+		    !IS_TRUSTED(ch))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
 			return;
@@ -1435,10 +1430,38 @@ static void do_get_mark_alldot(char *arg1, bool &alldot)
 
 namespace
 {
-void cancel_bulk_get(P_char actor)
+static bool bulk_get_source_matches(const bulk_get_state &state, P_obj container, P_obj object)
 {
-	if (actor && IS_PC(actor))
-		bulk_gets.erase(static_cast<uint32_t>(GET_PID(actor)));
+	return object && (container ? (OBJ_INSIDE(object) && object->loc.inside == container) :
+				      (OBJ_ROOM(object) && object->loc.room == state.room));
+}
+
+static bool bulk_get_source_available(P_char actor, const bulk_get_state &state, P_obj container)
+{
+	if (!actor || (!container && state.container_uid) ||
+	    (!state.container_uid && actor->in_room != state.room))
+		return false;
+	if (!container)
+		return true;
+	const bool container_local = OBJ_CARRIED_BY(container, actor) ||
+				     OBJ_WORN_BY(container, actor);
+	return container_local || (OBJ_ROOM(container) && container->loc.room == actor->in_room);
+}
+
+static void report_bulk_get(P_char actor, const bulk_get_state &state)
+{
+	if (state.total > 1)
+	{
+		char summary[MAX_STRING_LENGTH];
+		snprintf(summary, sizeof(summary), "You got %d items.\r\n", state.total);
+		send_to_char(summary, actor);
+	}
+	else if (!state.total && !state.failed)
+	{
+		send_to_char(state.container_uid ? "You find nothing in it.\r\n" :
+						   "You see nothing here.\r\n",
+			     actor);
+	}
 }
 
 static void finish_bulk_get(P_char actor, uint32_t actor_pid)
@@ -1446,180 +1469,196 @@ static void finish_bulk_get(P_char actor, uint32_t actor_pid)
 	auto found = bulk_gets.find(actor_pid);
 	if (found == bulk_gets.end())
 		return;
-	const int total = found->second.total;
-	const bool failed = found->second.failed;
-	const bool from_container = found->second.container_uid != 0;
+	const bulk_get_state completed = std::move(found->second);
 	bulk_gets.erase(found);
-
-	if (total > 1)
-	{
-		char summary[MAX_STRING_LENGTH];
-		snprintf(summary, sizeof(summary), "You got %d items.\r\n", total);
-		send_to_char(summary, actor);
-	}
-	else if (!total && !failed)
-	{
-		send_to_char(from_container ? "You find nothing in it.\r\n" :
-					      "You see nothing here.\r\n",
-			     actor);
-	}
+	report_bulk_get(actor, completed);
 }
 
-void continue_bulk_get(P_char actor, bool previous_succeeded)
+static P_obj resolve_synchronous_get_item(const synchronous_get_item &selected,
+					  const bulk_get_state &state, P_obj container)
 {
-	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
-		return;
-	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
-	auto found = bulk_gets.find(actor_pid);
-	if (found == bulk_gets.end())
-		return;
-	bulk_get_state &state = found->second;
-	if (previous_succeeded)
-	{
-		++state.total;
-		if (state.container_uid)
-		{
-			P_obj source = find_live_item_uid(state.container_uid);
-			if (source && GET_ITEM_TYPE(source) == ITEM_QUIVER && source->value[3] > 0)
-				source->value[3]--;
-		}
-	}
-
-	P_obj container = state.container_uid ? find_live_item_uid(state.container_uid) : NULL;
-	const bool container_local =
-		container && (OBJ_CARRIED_BY(container, actor) || OBJ_WORN_BY(container, actor));
-	if ((!container && state.container_uid) ||
-	    (!state.container_uid && actor->in_room != state.room) ||
-	    (container && !container_local &&
-	     (!OBJ_ROOM(container) || container->loc.room != actor->in_room)))
-	{
-		send_to_char("You stop collecting items because the source is no longer here.\r\n",
-			     actor);
-		bulk_gets.erase(found);
-		return;
-	}
-	if (container && GET_ITEM_TYPE(container) != ITEM_CORPSE &&
-	    IS_SET(container->value[1], CONT_CLOSED))
-	{
-		send_to_char("You stop collecting items because the container is closed.\r\n",
-			     actor);
-		bulk_gets.erase(found);
-		return;
-	}
-
-	while (state.next_item < state.durable_items.size())
-	{
-		P_obj object = find_live_item_uid(state.durable_items[state.next_item++]);
-		const bool source_matches =
-			object &&
-			(container ? (OBJ_INSIDE(object) && object->loc.inside == container) :
-				     (OBJ_ROOM(object) && object->loc.room == state.room));
-		if (!source_matches ||
-		    (state.filter.size() &&
-		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
-		    (!container_local && !CAN_SEE_OBJ(actor, object)))
-			continue;
-
-		const bool material_exception = !container &&
-						((OBJ_VNUM(object) > LOWEST_MAT_VNUM) &&
-						 (OBJ_VNUM(object) <= HIGHEST_MAT_VNUM));
-		if (IS_CARRYING_N(actor) >= CAN_CARRY_N(actor) && !material_exception)
-		{
-			send_to_char(container ? "You can't carry any more.\r\n" :
-						 "You can't carry anything more.\r\n",
-				     actor);
-			state.failed = true;
-			break;
-		}
-		if (!container_local &&
-		    (total_carried_weight(actor) + GET_OBJ_WEIGHT(object)) > CAN_CARRY_W(actor))
-		{
-			do_get_reject_object(actor, object,
-					     container ? "is too heavy." : "is too heavy to lift.",
-					     state.failed);
-			continue;
-		}
-		if (!container_local && !do_get_obj_is_takeable(actor, object))
-		{
-			do_get_reject_not_takeable(actor, object, state.failed);
-			continue;
-		}
-
-		bulk_get_submitter = actor_pid;
-		if (container)
-		{
-			bool item_found = false;
-			const int total_before = state.total;
-			do_get_finalize_container_success(actor, actor, container, object,
-							  state.total, item_found, state.corpse,
-							  "GETDBG[get-container-bulk-post]");
-			if (!item_get_deferred)
-				state.total = total_before;
-		}
-		else
-		{
-			get(actor, object, NULL, TRUE);
-		}
-		bulk_get_submitter = 0;
-		if (item_get_deferred)
-			return;
-
-		/* Durable pickups normally defer. A synchronous return here means the
-		 * item's own preflight rejected it (trap, binding, condition, etc.). */
-		state.failed = true;
-	}
-
-	/* Currency, transient objects, and PC corpse roots do not use generic ownership.
-	 * Collect them synchronously after the durable chain has advanced. */
-	P_obj next_object = NULL;
-	bool found_item = false;
+	if (selected.item_uid)
+		return find_live_item_uid(selected.item_uid);
 	P_obj contents = container ? container->contains : world[state.room].contents;
-	int container_safety = top_of_objt + 1;
-	for (P_obj object = contents; object && (!container || container_safety-- > 0);
-	     object = next_object)
+	int safety = top_of_objt + 1;
+	for (P_obj object = contents; object && (!container || safety-- > 0);
+	     object = object->next_content)
+		if (object == selected.object)
+			return object;
+	return NULL;
+}
+
+static void finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_obj container)
+{
+	bool found_item = false;
+	for (const synchronous_get_item &selected : state.synchronous_items)
 	{
-		next_object = object->next_content;
-		if (uses_generic_item_ownership(object) ||
-		    (state.filter.size() &&
-		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
-		    (!container_local && !CAN_SEE_OBJ(actor, object)))
-			continue;
-		const bool material_exception = !container &&
-						((OBJ_VNUM(object) > LOWEST_MAT_VNUM) &&
-						 (OBJ_VNUM(object) <= HIGHEST_MAT_VNUM));
-		if (IS_CARRYING_N(actor) >= CAN_CARRY_N(actor) && !material_exception)
+		P_obj object = resolve_synchronous_get_item(selected, state, container);
+		if (!bulk_get_source_matches(state, container, object))
 		{
-			send_to_char(container ? "You can't carry any more.\r\n" :
-						 "You can't carry anything more.\r\n",
-				     actor);
 			state.failed = true;
-			break;
-		}
-		if (!container_local &&
-		    (total_carried_weight(actor) + GET_OBJ_WEIGHT(object)) > CAN_CARRY_W(actor))
-		{
-			do_get_reject_object(actor, object,
-					     container ? "is too heavy." : "is too heavy to lift.",
-					     state.failed);
 			continue;
 		}
-		if (!container_local && !do_get_obj_is_takeable(actor, object))
+		if (selected.scrap)
 		{
-			do_get_reject_not_takeable(actor, object, state.failed);
+			MakeScrap(actor, object);
+			++state.total;
 			continue;
 		}
+		item_get_ack_publication = true;
 		if (container)
 			do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
 							  "GETDBG[get-container-bulk-post]");
 		else
 			do_get_finalize_room_item(actor, object, found_item, state.total);
+		item_get_ack_publication = false;
 	}
-
-	finish_bulk_get(actor, actor_pid);
 }
 
-static void start_floor_bulk_get(P_char actor, const char *filter)
+static void bulk_get_completion(P_char actor, bool committed, const item_transfer_result &result,
+				unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	bulk_movement_context context = {};
+	const bool context_valid = encoded && encoded_size == sizeof(context);
+	if (context_valid)
+		memcpy(&context, encoded, sizeof(context));
+	if (!actor || !context_valid)
+		return;
+	auto found = bulk_gets.find(context.actor_pid);
+	if (found == bulk_gets.end() || context.actor_pid != static_cast<uint32_t>(GET_PID(actor)))
+		return;
+	bulk_get_state &state = found->second;
+	if (!committed)
+	{
+		send_to_char("Nothing was taken; the ownership move did not commit.\r\n", actor);
+		bulk_gets.erase(found);
+		return;
+	}
+
+	P_obj container = state.container_uid ? find_live_item_uid(state.container_uid) : NULL;
+	bool source_matches = bulk_get_source_available(actor, state, container);
+	std::vector<P_obj> roots;
+	try
+	{
+		roots.reserve(state.durable_items.size());
+		for (uint64_t item_uid : state.durable_items)
+		{
+			P_obj object = find_live_item_uid(item_uid);
+			if (!bulk_get_source_matches(state, container, object))
+				source_matches = false;
+			roots.push_back(object);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		source_matches = false;
+	}
+	if (!source_matches)
+	{
+		send_to_char(
+			"The committed item batch could not be published; staff have been alerted.\r\n",
+			actor);
+		persistence_alert(AVATAR, "item_movement", "get_batch_publish", "none", "none",
+				  "stale_live_topology", "actor_pid=%u", context.actor_pid);
+		bulk_gets.erase(found);
+		return;
+	}
+	if (container && state.corpse && result.corpse_revision &&
+	    !corpse_lifecycle_transaction_note_item_transfer(
+		    static_cast<uint32_t>(container->value[CORPSE_PID]),
+		    static_cast<uint32_t>(container->value[CORPSE_SAVEID]), result.corpse_revision))
+		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
+				  "runtime_rejected", "save_id=%d",
+				  container->value[CORPSE_SAVEID]);
+
+	bool found_item = false;
+	item_get_ack_publication = true;
+	for (P_obj object : roots)
+		if (container)
+			do_get_finalize_container_success(actor, actor, container, object,
+							  state.total, found_item, state.corpse,
+							  "GETDBG[get-container-bulk-post]");
+		else
+			do_get_finalize_room_item(actor, object, found_item, state.total);
+	item_get_ack_publication = false;
+	finish_bulk_get_after_commit(actor, state, container);
+	finish_bulk_get(actor, context.actor_pid);
+}
+
+static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, const char *filter,
+				 bool container_local, int &carried_count, int64_t &carried_weight,
+				 bulk_get_state &state, bool &stop)
+{
+	if ((filter && (!object->name || !isname(filter, object->name))) ||
+	    (!container_local && !CAN_SEE_OBJ(actor, object)))
+		return false;
+	const bool material_exception = !container && OBJ_VNUM(object) > LOWEST_MAT_VNUM &&
+					OBJ_VNUM(object) <= HIGHEST_MAT_VNUM;
+	if (carried_count >= CAN_CARRY_N(actor) && !material_exception)
+	{
+		send_to_char(container ? "You can't carry any more.\r\n" :
+					 "You can't carry anything more.\r\n",
+			     actor);
+		state.failed = true;
+		stop = true;
+		return false;
+	}
+	if (!container_local && carried_weight + GET_OBJ_WEIGHT(object) > CAN_CARRY_W(actor))
+	{
+		do_get_reject_object(actor, object,
+				     container ? "is too heavy." : "is too heavy to lift.",
+				     state.failed);
+		stop = container != NULL;
+		return false;
+	}
+	if (!container_local && !do_get_obj_is_takeable(actor, object))
+	{
+		do_get_reject_not_takeable(actor, object, state.failed);
+		return false;
+	}
+	if (!account_bound_reward_owner(actor, object) && IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND))
+	{
+		send_to_char(
+			"You may not take that account-bound reward; it belongs to another account.\r\n",
+			actor);
+		state.failed = true;
+		return false;
+	}
+	const bool scrap = object->condition <= 0;
+	if (!scrap && checkgetput(actor, object))
+	{
+		state.failed = true;
+		return false;
+	}
+	if (!scrap && object->hitched_to)
+	{
+		act("You can't, $p is hitched to $N.", FALSE, actor, object, object->hitched_to,
+		    TO_CHAR);
+		state.failed = true;
+		return false;
+	}
+	if (!scrap && GET_ITEM_TYPE(object) != ITEM_MONEY && IS_OBJ_STAT2(object, ITEM2_NOLOOT) &&
+	    !IS_TRUSTED(actor))
+	{
+		send_to_char("&+LYou cannot take that.&n\n\r", actor);
+		state.failed = true;
+		return false;
+	}
+	if (uses_generic_item_ownership(object) && !scrap)
+		state.durable_items.push_back(object->obj_uid);
+	else
+		state.synchronous_items.push_back({ object->obj_uid, object, scrap });
+	if (!scrap && GET_ITEM_TYPE(object) != ITEM_MONEY)
+	{
+		++carried_count;
+		if (!container_local)
+			carried_weight += GET_OBJ_WEIGHT(object);
+	}
+	return true;
+}
+
+static void start_bulk_get(P_char actor, P_obj container, const char *filter, bool corpse)
 {
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	if (bulk_gets.count(actor_pid) || item_movement_transaction_player_busy(actor))
@@ -1627,19 +1666,27 @@ static void start_floor_bulk_get(P_char actor, const char *filter)
 		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
 		return;
 	}
-
-	bulk_get_state state = { actor->in_room, 0, filter ? filter : "", {}, 0, 0, false, false };
+	bulk_get_state state = {
+		actor->in_room, container ? container->obj_uid : 0, {}, {}, 0, false, corpse
+	};
 	try
 	{
-		for (P_obj object = world[actor->in_room].contents; object;
-		     object = object->next_content)
+		const bool container_local = container && (OBJ_CARRIED_BY(container, actor) ||
+							   OBJ_WORN_BY(container, actor));
+		int carried_count = IS_CARRYING_N(actor);
+		int64_t carried_weight = total_carried_weight(actor);
+		P_obj contents = container ? container->contains : world[actor->in_room].contents;
+		int safety = top_of_objt + 1;
+		for (P_obj object = contents, next = NULL; object && (!container || safety-- > 0);
+		     object = next)
 		{
-			if (uses_generic_item_ownership(object) &&
-			    (state.filter.empty() ||
-			     (object->name && isname(state.filter.c_str(), object->name))))
-				state.durable_items.push_back(object->obj_uid);
+			next = object->next_content;
+			bool stop = false;
+			select_bulk_get_item(actor, container, object, filter, container_local,
+					     carried_count, carried_weight, state, stop);
+			if (stop)
+				break;
 		}
-		bulk_gets.emplace(actor_pid, std::move(state));
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1647,48 +1694,25 @@ static void start_floor_bulk_get(P_char actor, const char *filter)
 			     actor);
 		return;
 	}
-
-	continue_bulk_get(actor, false);
-}
-
-static void start_container_bulk_get(P_char actor, P_obj container, const char *filter, bool corpse)
-{
-	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
-	if (bulk_gets.count(actor_pid) || item_movement_transaction_player_busy(actor))
+	if (state.durable_items.empty())
 	{
-		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
+		finish_bulk_get_after_commit(actor, state, container);
+		report_bulk_get(actor, state);
 		return;
 	}
-
-	bool has_durable_items = false;
-	int container_safety = top_of_objt + 1;
-	for (P_obj object = container->contains; object && container_safety-- > 0;
-	     object = object->next_content)
-		if (uses_generic_item_ownership(object) &&
-		    (!filter || (object->name && isname(filter, object->name))))
-		{
-			has_durable_items = true;
-			break;
-		}
-	if (has_durable_items && !container->obj_uid)
+	if (container && !container->obj_uid)
 	{
 		send_to_char("That container lacks authoritative ownership.\r\n", actor);
 		return;
 	}
 
-	bulk_get_state state = {
-		actor->in_room, container->obj_uid, filter ? filter : "", {}, 0, 0, false, corpse
-	};
+	std::vector<P_obj> roots;
+	item_ownership_runtime_entry source_runtime = {};
 	try
 	{
-		container_safety = top_of_objt + 1;
-		for (P_obj object = container->contains; object && container_safety-- > 0;
-		     object = object->next_content)
-			if (uses_generic_item_ownership(object) &&
-			    (state.filter.empty() ||
-			     (object->name && isname(state.filter.c_str(), object->name))))
-				state.durable_items.push_back(object->obj_uid);
-		bulk_gets.emplace(actor_pid, std::move(state));
+		roots.reserve(state.durable_items.size());
+		for (uint64_t item_uid : state.durable_items)
+			roots.push_back(find_live_item_uid(item_uid));
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1696,8 +1720,56 @@ static void start_container_bulk_get(P_char actor, P_obj container, const char *
 			     actor);
 		return;
 	}
+	if (!roots.front() ||
+	    !item_ownership_runtime_lookup(roots.front()->obj_uid, &source_runtime))
+	{
+		send_to_char("Nothing was taken; an item lacks authoritative ownership.\r\n",
+			     actor);
+		return;
+	}
+	const item_owner_identity destination = { item_owner_type::player,
+						  static_cast<uint64_t>(GET_PID(actor)), 0 };
+	const item_transfer_reason reason = source_runtime.owner.type == item_owner_type::locker ?
+						    item_transfer_reason::locker_withdraw :
+					    container && corpse ?
+						    item_transfer_reason::corpse_loot :
+						    item_transfer_reason::player_get;
+	try
+	{
+		if (!bulk_gets.emplace(actor_pid, std::move(state)).second)
+		{
+			send_to_char("You are already moving an item; try again in a moment.\r\n",
+				     actor);
+			return;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("You can't collect everything right now; please try again.\r\n",
+			     actor);
+		return;
+	}
+	const bulk_movement_context context = { actor_pid };
+	if (!item_movement_transaction_submit_batch(
+		    actor, roots.data(), roots.size(), NULL, source_runtime.owner, destination,
+		    reason, static_cast<int64_t>(roots.front()->obj_uid), bulk_get_completion,
+		    &context, sizeof(context), corpse ? container : NULL))
+	{
+		send_to_char(
+			"Nothing was taken; an item is busy or lacks authoritative ownership.\r\n",
+			actor);
+		bulk_gets.erase(actor_pid);
+	}
+}
 
-	continue_bulk_get(actor, false);
+static void start_floor_bulk_get(P_char actor, const char *filter)
+{
+	start_bulk_get(actor, NULL, filter, false);
+}
+
+static void start_container_bulk_get(P_char actor, P_obj container, const char *filter, bool corpse)
+{
+	start_bulk_get(actor, container, filter, corpse);
 }
 }
 

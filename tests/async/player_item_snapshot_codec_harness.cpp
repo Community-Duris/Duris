@@ -101,6 +101,19 @@ int main()
 			remaining[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
 			remaining[1].parent_index == 0,
 		"subtree extraction did not normalize both resulting forests");
+	auto third_root = original[0];
+	third_root.object_uid = 300;
+	third_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	forest.push_back(third_root);
+	require(player_item_snapshot_extract_forest(forest, { 100, 300 }, &selected, &remaining) ==
+				player_snapshot_codec_result::ok &&
+			selected.size() == 3 && selected[0].object_uid == 100 &&
+			selected[1].parent_index == 0 && selected[2].object_uid == 300 &&
+			selected[2].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			remaining.size() == 2 && remaining[0].object_uid == 200 &&
+			remaining[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			remaining[1].parent_index == 0,
+		"forest extraction did not normalize selected and remaining roots");
 	auto invalid_parent = original;
 	invalid_parent[1].parent_index = 1;
 	require(player_item_snapshot_list_encode(invalid_parent, &encoded) ==

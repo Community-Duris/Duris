@@ -23,6 +23,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-locker-") as temporary:
             "tests/async/flatfile_locker_repository_harness.cpp",
             rel("flatfile_locker_repository.c"),
             rel("player_snapshot_codec.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
             rel("flatfile_authority_transaction.c"),
             rel("flatfile_store.c"),
             "-lcrypto",

@@ -671,6 +671,47 @@ int main(int argc, char **argv)
 			owned_room_items[0].parent_item_uid == 0 &&
 			owned_room_items[1].parent_item_uid == 0,
 		"multi-root drop did not preserve independent destination roots: " + error);
+	first_batch_item.equipment_slot = -1;
+	second_batch_item.equipment_slot = -1;
+	std::vector<uint8_t> batch_get_blob;
+	require(player_item_snapshot_list_encode({ first_batch_item, second_batch_item },
+						 &batch_get_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode multi-root room withdrawal snapshot");
+	item_transfer_payload batch_get = batch_drop;
+	batch_get.from_owner = batch_room;
+	batch_get.to_owner = batch_player;
+	batch_get.reason = item_transfer_reason::player_get;
+	batch_get.reason_id = 9100;
+	batch_get.expected_from_revision = 1;
+	batch_get.expected_to_revision = 2;
+	batch_get.items[0].expected_item_revision = 2;
+	batch_get.items[1].expected_item_revision = 2;
+	batch_get.item_blob_size = static_cast<uint32_t>(batch_get_blob.size());
+	std::copy(batch_get_blob.begin(), batch_get_blob.end(), batch_get.item_blob.begin());
+	critical_command batch_get_command = {};
+	require(item_transfer_command_build(&batch_get_command, operation(52), batch_get,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build multi-root room get command");
+	batch_get_command.accepted_at_usec = 52;
+	applied = flatfile_item_repository_apply(batch_root.string(), batch_get_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"multi-root room get did not apply as one command");
+	room_records.clear();
+	require(flatfile_world_item_list_rooms(batch_root.string(), &room_records, &error) ==
+				flatfile_world_item_result::ok &&
+			room_records.size() == 1 && room_records[0].revision == 2 &&
+			room_records[0].items.empty(),
+		"multi-root room get did not extract the complete selected forest: " + error);
+	owned_room_items.clear();
+	require(flatfile_item_repository_load_owner(batch_root.string(), batch_player,
+						    &room_revision, &owned_room_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			room_revision == 3 && owned_room_items.size() == 2 &&
+			owned_room_items[0].root_item_uid == 410 &&
+			owned_room_items[1].root_item_uid == 420,
+		"multi-root room get did not return every selected root to player custody");
 	player_item_snapshot storage_root = {};
 	storage_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 	storage_root.equipment_slot = 0;
@@ -953,6 +994,152 @@ int main(int argc, char **argv)
 			&error) == flatfile_item_repository_result::ok &&
 			owner_revision == 3 && items.size() == 2 && items[0].item_revision == 4,
 		"locker withdrawal did not restore player custody");
+
+	const fs::path locker_batch_root = root / "locker-batch";
+	fs::create_directories(locker_batch_root / "domains");
+	fs::permissions(locker_batch_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(locker_batch_root / "domains", fs::perms::owner_all,
+			fs::perm_options::replace);
+	flatfile_locker_record batch_locker = transfer_locker();
+	player_item_snapshot second_locker_root = batch_locker.chests[0].items[0];
+	second_locker_root.object_uid = 950;
+	second_locker_root.vnum = 1950;
+	second_locker_root.name = "second locker container";
+	player_item_snapshot second_locker_child = batch_locker.chests[0].items[1];
+	second_locker_child.parent_index = 2;
+	second_locker_child.object_uid = 951;
+	second_locker_child.vnum = 1951;
+	second_locker_child.name = "second locker child";
+	batch_locker.chests[0].items.push_back(second_locker_root);
+	batch_locker.chests[0].items.push_back(second_locker_child);
+	const item_owner_identity batch_locker_owner = { item_owner_type::locker, 2, 11 };
+	require(flatfile_locker_establish(locker_batch_root.string(), { batch_locker }, {},
+					  &error) == flatfile_locker_result::ok,
+		"could not establish multi-root locker fixture: " + error);
+	require(flatfile_item_repository_establish_owner(
+			locker_batch_root.string(), batch_locker_owner,
+			{ { 900, 900, 0, batch_locker_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, batch_locker_owner, 1, 1901, item_custody_state::active },
+			  { 950, 950, 0, batch_locker_owner, 1, 1950, item_custody_state::active },
+			  { 951, 950, 950, batch_locker_owner, 1, 1951,
+			    item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish multi-root locker custody: " + error);
+	std::vector<uint8_t> batch_locker_blob;
+	require(player_item_snapshot_list_encode(batch_locker.chests[0].items,
+						 &batch_locker_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode multi-root locker withdrawal");
+	item_transfer_payload batch_withdraw = {};
+	batch_withdraw.from_owner = batch_locker_owner;
+	batch_withdraw.to_owner = { item_owner_type::player, 777, 0 };
+	batch_withdraw.reason = item_transfer_reason::locker_withdraw;
+	batch_withdraw.reason_id = 11;
+	batch_withdraw.expected_from_revision = 1;
+	batch_withdraw.expected_to_revision = 0;
+	batch_withdraw.multi_root = true;
+	batch_withdraw.item_count = 4;
+	batch_withdraw.items[0] = { 900, 900, 0, 1, 1900, item_custody_state::active };
+	batch_withdraw.items[1] = { 901, 900, 900, 1, 1901, item_custody_state::active };
+	batch_withdraw.items[2] = { 950, 950, 0, 1, 1950, item_custody_state::active };
+	batch_withdraw.items[3] = { 951, 950, 950, 1, 1951, item_custody_state::active };
+	batch_withdraw.item_blob_size = static_cast<uint32_t>(batch_locker_blob.size());
+	std::copy(batch_locker_blob.begin(), batch_locker_blob.end(),
+		  batch_withdraw.item_blob.begin());
+	critical_command batch_withdraw_command = {};
+	require(item_transfer_command_build(&batch_withdraw_command, operation(53), batch_withdraw,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build multi-root locker withdrawal");
+	batch_withdraw_command.accepted_at_usec = 53;
+	applied =
+		flatfile_item_repository_apply(locker_batch_root.string(), batch_withdraw_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"multi-root locker withdrawal did not apply");
+	lockers.clear();
+	require(flatfile_locker_list(locker_batch_root.string(), &lockers, &locker_access,
+				     &error) == flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].revision == 2 &&
+			lockers[0].chests[0].revision == 2 && lockers[0].chests[0].items.empty(),
+		"multi-root locker withdrawal did not extract every selected root: " + error);
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			locker_batch_root.string(), { item_owner_type::player, 777, 0 },
+			&owner_revision, &items, &error) == flatfile_item_repository_result::ok &&
+			owner_revision == 1 && items.size() == 4,
+		"multi-root locker withdrawal did not publish complete player custody");
+
+	const fs::path corpse_batch_root = root / "corpse-batch";
+	fs::create_directories(corpse_batch_root / "domains");
+	fs::permissions(corpse_batch_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(corpse_batch_root / "domains", fs::perms::owner_all,
+			fs::perm_options::replace);
+	flatfile_corpse_record batch_corpse = transfer_corpse();
+	batch_corpse.items.resize(4);
+	const item_owner_identity batch_corpse_owner = { item_owner_type::corpse,
+							 item_corpse_owner_id(42, 20), 0 };
+	require(flatfile_world_item_establish(corpse_batch_root.string(), { batch_corpse }, {},
+					      &error) == flatfile_world_item_result::ok,
+		"could not establish multi-root corpse fixture: " + error);
+	require(flatfile_artifact_establish(corpse_batch_root.string(), {}, &error) ==
+			flatfile_artifact_result::ok,
+		"could not establish empty multi-root corpse artifact authority: " + error);
+	require(flatfile_item_repository_establish_owner(
+			corpse_batch_root.string(), batch_corpse_owner,
+			{ { 910, 910, 0, batch_corpse_owner, 1, 1910, item_custody_state::active },
+			  { 911, 910, 910, batch_corpse_owner, 1, 1911, item_custody_state::active },
+			  { 920, 920, 0, batch_corpse_owner, 1, 1920, item_custody_state::active },
+			  { 921, 920, 920, batch_corpse_owner, 1, 1921,
+			    item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish multi-root corpse custody: " + error);
+	std::vector<uint8_t> batch_corpse_blob;
+	require(player_item_snapshot_list_encode(batch_corpse.items, &batch_corpse_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode multi-root corpse loot");
+	item_transfer_payload batch_loot = {};
+	batch_loot.from_owner = batch_corpse_owner;
+	batch_loot.to_owner = { item_owner_type::player, 778, 0 };
+	batch_loot.reason = item_transfer_reason::corpse_loot;
+	batch_loot.reason_id = 910;
+	batch_loot.expected_from_revision = 1;
+	batch_loot.expected_to_revision = 0;
+	batch_loot.multi_root = true;
+	batch_loot.item_count = 4;
+	batch_loot.items[0] = { 910, 910, 0, 1, 1910, item_custody_state::active };
+	batch_loot.items[1] = { 911, 910, 910, 1, 1911, item_custody_state::active };
+	batch_loot.items[2] = { 920, 920, 0, 1, 1920, item_custody_state::active };
+	batch_loot.items[3] = { 921, 920, 920, 1, 1921, item_custody_state::active };
+	batch_loot.item_blob_size = static_cast<uint32_t>(batch_corpse_blob.size());
+	std::copy(batch_corpse_blob.begin(), batch_corpse_blob.end(), batch_loot.item_blob.begin());
+	batch_loot.corpse = corpse_metadata(batch_corpse, 1, 70);
+	critical_command batch_loot_command = {};
+	require(item_transfer_command_build(&batch_loot_command, operation(54), batch_loot,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build multi-root corpse loot");
+	batch_loot_command.accepted_at_usec = 54;
+	applied = flatfile_item_repository_apply(corpse_batch_root.string(), batch_loot_command);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			result_of(applied).corpse_revision == 5,
+		"multi-root corpse loot did not apply: outcome=" +
+			std::to_string(static_cast<unsigned int>(applied.outcome)) +
+			" error=" + std::to_string(applied.error_code));
+	std::vector<flatfile_corpse_record> batch_corpses;
+	std::vector<flatfile_saved_world_item_record> batch_saved_items;
+	require(flatfile_world_item_list(corpse_batch_root.string(), &batch_corpses,
+					 &batch_saved_items,
+					 &error) == flatfile_world_item_result::ok &&
+			batch_corpses.size() == 1 && batch_corpses[0].revision == 5 &&
+			batch_corpses[0].weight == 70 && batch_corpses[0].items.empty(),
+		"multi-root corpse loot did not extract the complete selected forest: " + error);
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			corpse_batch_root.string(), { item_owner_type::player, 778, 0 },
+			&owner_revision, &items, &error) == flatfile_item_repository_result::ok &&
+			owner_revision == 1 && items.size() == 4,
+		"multi-root corpse loot did not publish complete player custody");
+
 	const item_owner_identity corpse_owner = { item_owner_type::corpse,
 						   item_corpse_owner_id(42, 20), 0 };
 	const flatfile_artifact_record corpse_artifact = {

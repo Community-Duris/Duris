@@ -50,14 +50,14 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("item_get_ack_publication", actobj)
         self.assertIn("item_put_ack_publication", actobj)
         self.assertIn("start_container_bulk_get", actobj)
-        self.assertIn("continue_bulk_get(actor, true)", actobj)
+        self.assertIn("bulk_get_completion", actobj)
         self.assertIn("start_bulk_drop", actobj)
         self.assertIn("bulk_drop_completion", actobj)
         self.assertIn("start_bulk_put", actobj)
         self.assertIn("bulk_put_completion", actobj)
         self.assertIn("item_movement_transaction_submit_batch", actobj)
-        # Bulk get still waits for its batch cutover; drop and put now publish
-        # one durable forest only after its shared commit.
+        # Each core bulk movement publishes one durable forest only after its
+        # shared commit.
         self.assertNotIn("Durable container items must be collected one at a time", actobj)
         self.assertNotIn("Durable items must be dropped one at a time", actobj)
         self.assertNotIn("Durable items must be put away one at a time", actobj)

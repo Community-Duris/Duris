@@ -57,13 +57,29 @@ Implemented on 2026-09-01:
   and propagate their combined weight. Focused command, live-movement, and
   repository contracts cover the new boundary.
 
+### Checkpoint 3: atomic `get` and multi-root extraction
+
+Implemented on 2026-09-01:
+
+- Replaced the durable room, container, locker, and player-corpse `get all` /
+  `get all.<keyword>` chain with one batch transaction. Selection performs
+  cumulative count and weight preflight and excludes binding, trap, hitch, and
+  no-loot failures before ownership submission.
+- Batch completion validates every selected root against the original live
+  source before publishing any move. Player-corpse revision publication occurs
+  once for the committed forest; money, transient roots, and scrap processing
+  run only after that commit succeeds.
+- Added normalized forest extraction for persisted item snapshots and applied
+  it to flat-file room, locker, and corpse withdrawals. End-to-end repository
+  coverage now exercises two independent roots at all three boundaries.
+- Replaced the serialized-get source contract with atomic selection,
+  submission, and publication assertions. The clean server build and the
+  focused get, movement, snapshot, and flat-file suites pass.
+
 Still to implement:
 
-- Replace the serialized room/container/corpse `get` chain and update flat-file
-  room, locker, and corpse materialization for multi-root extraction and
-  attachment.
-- Replace the old serialized-chain source-contract tests with focused atomic
-  batch contracts and run the complete relevant regression set.
+- Run the final combined regression pass and an in-game smoke test, then update
+  this inventory from implementation-progress wording to its completed state.
 
 ## Core command matrix
 
