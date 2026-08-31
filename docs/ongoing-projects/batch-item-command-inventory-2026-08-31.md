@@ -1,6 +1,7 @@
 # Batch-item command inventory
 
-Status: implemented and qualified. Last updated: 2026-09-01. Branch:
+Status: implementation complete; PR qualification in progress. Last updated:
+2026-09-01. Branch:
 `batch-item` (implementation started from `e71a54c7`).
 
 ## Scope
@@ -92,6 +93,27 @@ Completed on 2026-09-01:
 - Checked the resulting server log for batch-publication, stale-topology,
   ownership, persistence-alert, and critical-command failures; none were
   present.
+
+### Checkpoint 5: PR gate integration repairs
+
+Implemented on 2026-09-01:
+
+- The first full pull-request gate exposed two integration gaps outside the
+  focused matrix: the shared flat-file materialization journal still capped
+  decoded events at the 12-item commerce limit, and two isolated player-load
+  harnesses did not link the new item-transfer helpers.
+- Raised only the internal materialization event reader to the item-transfer
+  limit; shop command payloads retain their existing 12-item maximum. Added a
+  13-root journal regression and linked the isolated hydration harness against
+  the production transfer and critical-command helpers.
+- The focused flat-file repository and hydration suites pass. Both formerly
+  failing live flat-file journeys now pass, including combat, death, corpse
+  recovery, save/reconnect, and full-world process restart.
+
+Still to verify:
+
+- Run the repository-wide `make test-all` gate, update this checkpoint with the
+  result, and confirm the replacement pull-request checks are green.
 
 ## Core command matrix
 

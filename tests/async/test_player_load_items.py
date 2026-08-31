@@ -352,18 +352,6 @@ void act(const char *, int, P_char, P_obj, void *, int)
 {
 }
 
-bool item_owner_identity_valid(const item_owner_identity &owner)
-{
-    return owner.type != item_owner_type::unknown && owner.id != 0;
-}
-
-bool item_owner_identity_equal(const item_owner_identity &left,
-                               const item_owner_identity &right)
-{
-    return left.type == right.type && left.id == right.id &&
-           left.context_id == right.context_id;
-}
-
 int main()
 {
     {
@@ -757,7 +745,10 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-items-") as temp_dir:
             str(source),
             rel("player_load_items.c"),
             rel("player_load_pets.c"),
+            rel("item_transfer_command.c"),
             rel("item_ownership_runtime.c"),
+            rel("critical_command.c"),
+            "-lcrypto",
             "-o",
             str(binary),
         ],

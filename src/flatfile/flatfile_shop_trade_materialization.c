@@ -148,7 +148,7 @@ bool decode_items(const materialization_event &event, std::vector<player_item_sn
 	return !event.item_blob.empty() &&
 	       player_item_snapshot_list_decode(event.item_blob.data(), event.item_blob.size(),
 						items) == player_snapshot_codec_result::ok &&
-	       !items->empty() && items->size() <= SHOP_TRADE_MAX_ITEMS;
+	       !items->empty() && items->size() <= ITEM_TRANSFER_MAX_ITEMS;
 }
 
 bool encode_catalog(const materialization_catalog &catalog, std::vector<uint8_t> *bytes)

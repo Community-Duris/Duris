@@ -712,6 +712,62 @@ int main(int argc, char **argv)
 			owned_room_items[0].root_item_uid == 410 &&
 			owned_room_items[1].root_item_uid == 420,
 		"multi-root room get did not return every selected root to player custody");
+	{
+		const fs::path large_root = root / "large-transfer-materialization";
+		fs::create_directories(large_root / "domains");
+		fs::permissions(large_root, fs::perms::owner_all, fs::perm_options::replace);
+		fs::permissions(large_root / "domains", fs::perms::owner_all,
+				fs::perm_options::replace);
+		constexpr size_t large_count = ITEM_TRANSFER_LEGACY_MAX_ITEMS + 1;
+		item_transfer_payload large_transfer = {};
+		large_transfer.from_owner = batch_player;
+		large_transfer.to_owner = batch_room;
+		large_transfer.reason = item_transfer_reason::player_drop;
+		large_transfer.reason_id = 9100;
+		large_transfer.multi_root = true;
+		large_transfer.item_count = static_cast<uint16_t>(large_count);
+		std::vector<player_item_snapshot> large_items;
+		large_items.reserve(large_count);
+		for (size_t index = 0; index < large_count; ++index)
+		{
+			const uint64_t uid = 500 + index;
+			const int32_t vnum = 900 + static_cast<int32_t>(index);
+			player_item_snapshot item = {};
+			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			item.equipment_slot = -1;
+			item.object_uid = uid;
+			item.vnum = vnum;
+			item.name = "large batch item";
+			large_items.push_back(item);
+			large_transfer.items[index] = { uid, uid,  0,
+							1,   vnum, item_custody_state::active };
+		}
+		std::vector<uint8_t> large_blob;
+		require(player_item_snapshot_list_encode(large_items, &large_blob) ==
+					player_snapshot_codec_result::ok &&
+				large_blob.size() <= large_transfer.item_blob.size(),
+			"could not encode above-shop-limit batch snapshot");
+		large_transfer.item_blob_size = static_cast<uint32_t>(large_blob.size());
+		std::copy(large_blob.begin(), large_blob.end(), large_transfer.item_blob.begin());
+		flatfile_authority_lock lock;
+		flatfile_shop_trade_materialization_mutation mutation;
+		require(lock.acquire(large_root.string(), &error) &&
+				flatfile_item_transfer_materialization_prepare(
+					large_root.string(), lock, operation(55), large_transfer,
+					&mutation,
+					&error) == flatfile_shop_trade_materialization_result::ok,
+			"above-shop-limit batch materialization did not prepare: " + error);
+		require(flatfile_authority_transaction_commit(large_root.string(), lock,
+							      { mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"above-shop-limit batch materialization did not commit: " + error);
+		flatfile_shop_trade_materialization_health health = {};
+		require(flatfile_shop_trade_materialization_read_health(large_root.string(), lock,
+									&health, &error) ==
+					flatfile_shop_trade_materialization_result::ok &&
+				health.events == 1,
+			"above-shop-limit batch materialization did not remain readable: " + error);
+	}
 	player_item_snapshot storage_root = {};
 	storage_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 	storage_root.equipment_slot = 0;
