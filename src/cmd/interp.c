@@ -1321,6 +1321,16 @@ void do_confirm(P_char ch, bool yes)
 	command_interpreter(ch, ch->desc->last_command);
 }
 
+static bool is_retired_command_spelling(const char *word, uint length)
+{
+	static const char *const spellings[] = { "add", "deploy", NULL };
+
+	for (int i = 0; spellings[i]; ++i)
+		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
+			return true;
+	return false;
+}
+
 /*
  * **    Improvements/Additions ** ** 1) disallow certain commands when
  * paralyzed. --TAM ** 2) disallow all but stand command when berserked
@@ -1401,6 +1411,13 @@ void command_interpreter(P_char ch, char *argument)
 				return;
 			}
 		}
+
+	/* Exact retired spellings must not abbreviate unrelated commands. */
+	if (is_retired_command_spelling(argument + begin, look_at))
+	{
+		send_to_char("Pardon?\r\n", ch);
+		return;
+	}
 	cmd = old_search_block(argument, begin, look_at, command, 2);
 
 	if (!cmd)

@@ -121,6 +121,12 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         interp_header = (SRC / "cmd/interp.h").read_text()
         self.assertIn('"_retired_827"', interp)
         self.assertIn('"_retired_828"', interp)
+        retired_guard = interp.split("static bool is_retired_command_spelling", 1)[1].split(
+            "\n}", 1
+        )[0]
+        self.assertIn('"add"', retired_guard)
+        self.assertIn('"deploy"', retired_guard)
+        self.assertIn("is_retired_command_spelling(argument + begin, look_at)", interp)
         self.assertIn("CMD_RETIRED_827", interp_header)
         self.assertIn("CMD_RETIRED_828", interp_header)
         self.assertNotRegex(interp_header, r"\bCMD_(?:ADD|DEPLOY)\b")
