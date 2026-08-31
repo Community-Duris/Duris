@@ -53,9 +53,7 @@ int main()
 			punt("world filename cannot be formatted");
 		tmp_wld = fopen_area_file(wld_name);
 		if (tmp_wld == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", wld_name);
-		}
+			punt_area_file(wld_name);
 		else
 		{
 			for (;;)

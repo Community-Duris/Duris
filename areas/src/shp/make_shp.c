@@ -54,9 +54,8 @@ int main()
 		tmp_shp = fopen_area_file(shp_name);
 		if (tmp_shp == NULL)
 		{
-#if 0
-	    fprintf(stdout, "\twarning: %s not found\n", shp_name);
-#endif
+			if (!area_file_is_optional_missing(SHP_DIR))
+				punt_area_file(shp_name);
 		}
 		else
 		{

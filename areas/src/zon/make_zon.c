@@ -53,9 +53,7 @@ int main()
 			punt("zone filename cannot be formatted");
 		tmp_zon = fopen_area_file(zon_name);
 		if (tmp_zon == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", zon_name);
-		}
+			punt_area_file(zon_name);
 		else
 		{
 			do_it = 0;

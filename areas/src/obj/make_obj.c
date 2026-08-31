@@ -53,9 +53,7 @@ int main()
 			punt("object filename cannot be formatted");
 		tmp_obj = fopen_area_file(obj_name);
 		if (tmp_obj == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", obj_name);
-		}
+			punt_area_file(obj_name);
 		else
 		{
 			for (;;)

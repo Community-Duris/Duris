@@ -53,9 +53,7 @@ int main()
 			punt("mob filename cannot be formatted");
 		tmp_mob = fopen_area_file(mob_name);
 		if (tmp_mob == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", mob_name);
-		}
+			punt_area_file(mob_name);
 		else
 		{
 			for (;;)
