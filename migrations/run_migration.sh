@@ -2954,7 +2954,7 @@ SET @sql = IF(@col_exists = 0, 'ALTER TABLE player_items ADD COLUMN item_materia
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;"
 
 # epic_bonus/epic_gain pid remapping is now handled by the C migration tool
-# (src-migrate/migrate_players.c) which has access to the old pids from pfiles
+# (migrations/tools/migrate_players.c) which has access to the old pids from pfiles
 
 convert_tables_to_charset "ensure consistent collation on all tables" 1
 

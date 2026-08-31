@@ -26,6 +26,12 @@ int numSkills;
 int currentSkill = 0;
 #endif
 
+#ifdef _PFILE_
+/* The _DE_ arm above declares this; the _PFILE_ arm needs it for the
+   SKILL_CREATE/SPELL_ADD macros below. */
+int currentSkill = 0;
+#endif
+
 #if defined(_DE_) || defined(_PFILE_)
 extern void initialize_skills();
 
@@ -57,9 +63,21 @@ Skill skills[MAX_AFFECT_TYPES + 1];
 #define SPELL_CREATE2(Name, Index, Beats, Targets, Spell_pointer, Wear_off, wear_off_room) \
 	SPELL_CREATE_MSG(Name, Index, Beats, Targets, Spell_pointer, Wear_off)
 
+#if defined(_PFILE_)
+/* s_skill carries per-class m_class[] rather than the editor's minLevel[];
+   mirror the SPEC_SKILL_ADD/SKILL_ADD arms below. */
+#define SPEC_SPELL_ADD(Class, Level, Spec) \
+	skills[numSkills].m_class[flag2idx(Class) - 1].rlevel[Spec] = (Level)
+#define SPELL_ADD(Class, Level)                                                            \
+	for (int spec_idx = 0; spec_idx < MAX_SPEC + 1; spec_idx++)                        \
+	{                                                                                  \
+		skills[numSkills].m_class[flag2idx(Class) - 1].rlevel[spec_idx] = (Level); \
+	}
+#else
 #define SPEC_SPELL_ADD(Class, Level, Spec) \
 	skills[currentSkill].minLevel[flag2idx(Class) - 1] = (Level)
 #define SPELL_ADD(Class, Level) skills[currentSkill].minLevel[flag2idx(Class) - 1] = (Level)
+#endif
 
 #define TAG_CREATE(Name, Index) skills[Index].name = (Name)
 #define TAG_CREATE_WITH_MESSAGES(Name, Index, wear_off, wear_off_room) skills[Index].name = (Name)
@@ -69,11 +87,11 @@ Skill skills[MAX_AFFECT_TYPES + 1];
 	skills[numSkills].m_class[flag2idx(Class) - 1].rlevel[Spec] = Level; \
 	skills[numSkills].m_class[flag2idx(Class) - 1].maxlearn[Spec] = MaxLearn;
 
-#define SKILL_ADD(Class, Level, MaxLearn)                                              \
-	for (int i = 0; i < MAX_SPEC + 1; i++)                                         \
-	{                                                                              \
-		skills[numSkills].m_class[flag2idx(Class) - 1].rlevel[i] = Level;      \
-		skills[numSkills].m_class[flag2idx(Class) - 1].maxlearn[i] = MaxLearn; \
+#define SKILL_ADD(Class, Level, MaxLearn)                                                     \
+	for (int spec_idx = 0; spec_idx < MAX_SPEC + 1; spec_idx++)                           \
+	{                                                                                     \
+		skills[numSkills].m_class[flag2idx(Class) - 1].rlevel[spec_idx] = Level;      \
+		skills[numSkills].m_class[flag2idx(Class) - 1].maxlearn[spec_idx] = MaxLearn; \
 	}
 #else
 #define SPEC_SKILL_ADD(Class, Level, MaxLearn, Spec) \
@@ -4908,7 +4926,7 @@ void initialize_skills()
 	SKILL_ADD(CLASS_ROGUE, 10, 90);
 	SKILL_ADD(CLASS_THIEF, 10, 90);
 	SKILL_ADD(CLASS_MERCENARY, 20, 80);
-	SKILL_ADD(CLASS_ASSASSIN, 20, 900);
+	SKILL_ADD(CLASS_ASSASSIN, 20, 90);
 	SKILL_ADD(CLASS_BARD, 10, 100);
 	SKILL_ADD(CLASS_DRAGOON, 10, 100);
 	SPEC_SKILL_ADD(CLASS_ROGUE, 1, 90, SPEC_ASSASSIN);

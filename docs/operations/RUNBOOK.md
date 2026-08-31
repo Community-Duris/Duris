@@ -346,7 +346,7 @@ These are investigated and understood; they are not signs of a failed boot.
 | `scripts/clear-redis.sh` | With the game stopped, use the scoped maintenance ACL identity to delete only the configured `REDIS_NAMESPACE`, legacy `mud:*`, and retired `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
 | `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions; back up and review their assumptions before use. |
-| `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |
+| `bin/migrations/*` | Offline pfile/schema conversion binaries built from `migrations/tools/`. |
 
 Schema operations follow the safety rules in [DATABASE.md](../reference/DATABASE.md):
 back up, clone, validate replay on the clone -- never against live data.

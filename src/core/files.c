@@ -52,12 +52,13 @@ extern P_index mob_index;
 extern P_desc descriptor_list;
 extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 char *ibuf;
-static int corpse_room;
+[[maybe_unused]] static int corpse_room;
 static int int_size = sizeof(int);
 static int long_size = sizeof(long);
-static int save_count;
+[[maybe_unused]] static int save_count;
 static int short_size = sizeof(short);
-static int stat_vers, obj_vers, aff_vers, skill_vers, witness_vers;
+static int stat_vers, obj_vers, skill_vers;
+[[maybe_unused]] static int aff_vers, witness_vers;
 extern struct shop_data *shop_index;
 
 // flag to skip corpse saves during boot (loading from db)
@@ -80,9 +81,7 @@ extern int innate2_abilities[];
 extern int class_innates2[][5];
 extern const int top_of_world;
 
-#ifndef _PFILE_
 extern Skill skills[];
-#endif
 
 /*
  * Crash recovery should not punish a player for reboot time.  Keep this
@@ -1996,6 +1995,7 @@ void PurgeCorpseFile(P_obj corpse)
 		logit(LOG_DEBUG, "item not a corpse in PurgeCorpseFile");
 		return;
 	}
+#ifndef _PFILE_
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		if (!skip_corpse_save && corpse->value[CORPSE_SAVEID] &&
@@ -2005,6 +2005,7 @@ void PurgeCorpseFile(P_obj corpse)
 					  corpse->value[CORPSE_SAVEID]);
 		return;
 	}
+#endif
 
 	snprintf(Gbuf2, MAX_STRING_LENGTH, "%s%d", corpse->action_description,
 		 corpse->value[CORPSE_SAVEID]);
@@ -2907,7 +2908,7 @@ int restoreCharOnly(P_char ch, char *name)
 {
 	FILE *f;
 
-	struct stat statbuf;
+	[[maybe_unused]] struct stat statbuf;
 
 #ifndef _PFILE_
 	char buff[SAV_MAXSIZE];
@@ -2915,6 +2916,8 @@ int restoreCharOnly(P_char ch, char *name)
 	int skill_off, affect_off, surname = 0;
 	/* Header offset read to advance the cursor; only skill_off is verified. */
 	[[maybe_unused]] int item_off;
+#else
+	int surname = 0;
 #endif
 	int start, size, csize, type, room;
 	int witness_off;
@@ -3295,10 +3298,10 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			tmp = GET_BYTE(buf);
 			while (tmp--)
 			{
-				int time = GET_INTE(buf);
+				[[maybe_unused]] int time = GET_INTE(buf);
 				sh_int type = GET_SHORT(buf);
-				sh_int data = GET_SHORT(buf);
-				ulong extra2 = GET_INTE(buf);
+				[[maybe_unused]] sh_int data = GET_SHORT(buf);
+				[[maybe_unused]] ulong extra2 = GET_INTE(buf);
 				if (type == TAG_ALTERED_EXTRA2)
 					continue;
 #ifndef _PFILE_
@@ -3642,10 +3645,10 @@ P_obj read_one_object(char *read_buf)
 		tmp = GET_BYTE(buf);
 		while (tmp--)
 		{
-			int time = GET_INTE(buf);
+			[[maybe_unused]] int time = GET_INTE(buf);
 			sh_int type = GET_SHORT(buf);
-			sh_int data = GET_SHORT(buf);
-			ulong extra2 = GET_INTE(buf);
+			[[maybe_unused]] sh_int data = GET_SHORT(buf);
+			[[maybe_unused]] ulong extra2 = GET_INTE(buf);
 
 			if (type == TAG_ALTERED_EXTRA2)
 				continue;
@@ -4044,11 +4047,12 @@ int restoreItemsOnly(P_char ch, int /*flatrate*/)
 	   inventory section is restored. */
 	[[maybe_unused]] int skill_off;
 #endif
-	int size, csize, tmp;
+	int tmp;
+	[[maybe_unused]] int size, csize;
 	[[maybe_unused]] int witness_off;
 	[[maybe_unused]] ::byte dummy_byte;
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char b_savevers;
+	[[maybe_unused]] char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	[[maybe_unused]] char b_savevers;
 
 	if (!ch)
 		return -2;

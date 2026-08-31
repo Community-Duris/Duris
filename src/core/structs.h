@@ -1991,10 +1991,8 @@ struct s_skill
 	struct ClassSkillInfo m_class[CLASS_COUNT]; /* info for each class */
 };
 
-#ifndef _PFILE_
 #ifndef _DE_
 typedef struct s_skill Skill;
-#endif
 #endif
 
 struct command_info

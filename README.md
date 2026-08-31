@@ -392,9 +392,9 @@ Sanitizer and Valgrind workflows are covered in
 | `areas/` | World sources, compilers, and generated `world.*` boot files. |
 | `lib/` | Runtime configuration, help, boards, descriptions, and game data. |
 | `migrations/` | Fresh schema, upgrade runner, and schema-contract tools. |
+| `migrations/tools/` | Standalone legacy player/account conversion tools. |
 | `scripts/` | Launch, backup, formatting, debugging, and maintenance helpers. |
 | `tests/async/` | Focused regression, source-contract, and DB-backed tests. |
-| `src-migrate/` | Standalone legacy player/account conversion tools. |
 | `docs/` | Architecture, operations, database, test, and builder guides. |
 
 Runtime state belongs under `Players/`, `Accounts/`, `Ships/`, and `logs/`.

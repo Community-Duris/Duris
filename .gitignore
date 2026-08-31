@@ -16,7 +16,6 @@
 __pycache__/
 cscope.out
 durismud-launcher
-migrate_pfiles
 
 # ------------------------------------------------------------------------------
 # Environment, credentials, and host-specific files

@@ -101,7 +101,7 @@ check_prerequisites() {
 
     if [ ! -x "$CONVERTER" ]; then
         error "Converter not found or not executable: $CONVERTER"
-        error "Please compile it first: make -C src-migrate pfile_converter"
+        error "Please compile it first: make -C migrations/tools pfile_converter"
         exit 1
     fi
 

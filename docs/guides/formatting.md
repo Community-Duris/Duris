@@ -63,7 +63,7 @@ runs the installer once.
 
 ## The whole tree is formatted
 
-Every tracked C/C++ file under `src/`, `src-migrate/`, `areas/src/`, and
+Every tracked C/C++ file under `src/`, `migrations/tools/`, `areas/src/`, and
 `tests/async/` matches `.clang-format`, and `--all --check` verifies that in
 about 12 seconds:
 

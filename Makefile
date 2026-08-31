@@ -179,7 +179,7 @@ clean:
 	+$(MAKE) -C src clean
 	+$(MAKE) -C areas/de/src clean
 	+$(MAKE) -C areas/src clean
-	+$(MAKE) -C src-migrate clean
+	+$(MAKE) -C migrations/tools clean
 	rm -rf bin/tests
 
 # Preserve repository configuration and runtime data. Everything below bin/

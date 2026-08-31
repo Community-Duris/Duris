@@ -15,13 +15,13 @@
 #include <pthread.h>
 #include <mysql.h>
 
-#include "../src/core/structs.h"
-#include "../src/core/utils.h"
-#include "../src/sql/sql.h"
-#include "../src/sql/sql_player.h"
-#include "../src/account/account.h"
-#include "../src/guild/assocs.h"
-#include "../src/ships/ships.h"
+#include "../../src/core/structs.h"
+#include "../../src/core/utils.h"
+#include "../../src/sql/sql.h"
+#include "../../src/sql/sql_player.h"
+#include "../../src/account/account.h"
+#include "../../src/guild/assocs.h"
+#include "../../src/ships/ships.h"
 
 // constants from config.h
 #define MAX_OBJ_AFFECT 4

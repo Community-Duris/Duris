@@ -192,7 +192,8 @@ and `test_relic_lab_reset_bounds.py` cover these paths.
 
 ## Standalone tools
 
-- `src-migrate/` — offline conversion/migration binaries (`pfile_converter`,
-  account/guild/locker/ship migrators). Not part of the server build.
+- `migrations/tools/` — offline conversion/migration binaries (`pfile_converter`,
+  account/guild/locker/ship migrators). Not part of the server build; build
+  them with `make -C migrations/tools`.
 - `areas/src/` — area compiler tools that turn per-area source dirs into
   combined `world.*` files.

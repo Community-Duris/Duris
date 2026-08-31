@@ -28,7 +28,7 @@ extern const struct race_names race_names_table[];
 extern const struct class_names class_names_table[];
 extern int flag2idx(int);
 
-void print_help(char *msg)
+void print_help(const char *msg)
 {
 	printf("Syntax error: %s\n", msg);
 	printf("Usage:\n"
@@ -44,8 +44,8 @@ void print_help(char *msg)
 }
 
 /* what in the hell is this shit? */
-void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item, char *ipattern,
-	      unsigned int flags)
+void scan_all(const char *pattern, unsigned int pc_class, unsigned int race, int item,
+	      const char *ipattern, unsigned int flags)
 {
 	P_char ch;
 	P_obj obj;
@@ -54,7 +54,7 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 	char dname[256];
 	char fname[256];
 	char letter;
-	int item_count, total_items, total;
+	int item_count = 0, total_items, total;
 	char *dot_index;
 	ch = (struct char_data *)malloc(sizeof(struct char_data));
 	ch->only.pc = (struct pc_only_data *)malloc(sizeof(struct pc_only_data));
@@ -65,7 +65,7 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 		pf_dir = opendir(dname);
 		if (!pf_dir)
 			print_help("can't find pfiles under Players/?");
-		while (pf_entry = readdir(pf_dir))
+		while ((pf_entry = readdir(pf_dir)) != NULL)
 		{
 			strcpy(fname, pf_entry->d_name);
 			dot_index = rindex(fname, '.');
@@ -95,9 +95,9 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 				item_count = 0;
 				for (obj = ch->carrying; obj; obj = obj->next_content)
 					if (obj->R_num == item)
+					{
 						if (!ipattern)
 							item_count++;
-
 						else if (obj->short_description &&
 							 !fnmatch(ipattern, obj->short_description,
 								  0))
@@ -107,6 +107,7 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 								       obj->short_description);
 							item_count++;
 						}
+					}
 				if (!item_count)
 					continue;
 				total_items += item_count;
@@ -137,9 +138,10 @@ void scan_all(char *pattern, unsigned int pc_class, unsigned int race, int item,
 int main(int argc, char *argv[])
 {
 	unsigned int race = 0, pc_class = 0, item = 0;
-	char *pattern = "*";
-	char *ipattern = NULL;
-	unsigned int i, j, flags = 0;
+	const char *pattern = "*";
+	const char *ipattern = NULL;
+	int i;
+	unsigned int j, flags = 0;
 
 	if (argc == 1)
 		print_help("Not enough arguments");

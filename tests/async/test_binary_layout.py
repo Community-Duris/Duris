@@ -26,7 +26,7 @@ expected_routes = {
     ),
     "areas/src/Makefile": ("$(BIN_ROOT)/areas/tools", "$(BIN_ROOT)/objects/areas/tools"),
     "areas/de/src/Makefile": ("$(BIN_ROOT)/areas/editor", "$(BIN_ROOT)/objects/areas/editor"),
-    "src-migrate/Makefile": ("$(BIN_ROOT)/migrations", "$(BIN_ROOT)/objects/migrations"),
+    "migrations/tools/Makefile": ("$(BIN_ROOT)/migrations", "$(BIN_ROOT)/objects/migrations"),
     "Makefile": ("bin/packages", "bin/areas/tools"),
     "tests/async/run_signal_handlers.sh": ("bin/tests/test_signal_handlers",),
 }
@@ -64,7 +64,7 @@ for command, required in (
     (["make", "-C", "areas/src", "-B", "-n"], "bin/areas/tools/make_mob"),
     (["make", "-C", "areas/de/src", "-B", "-n"], "bin/areas/editor/de"),
     (
-        ["make", "-C", "src-migrate", "-B", "-n", "pfile_converter"],
+        ["make", "-C", "migrations/tools", "-B", "-n", "pfile_converter"],
         "bin/migrations/pfile_converter",
     ),
 ):

@@ -19,7 +19,7 @@ MAKEFILES = (
     "areas/src/shp/Makefile",
     "areas/src/wld/Makefile",
     "areas/src/zon/Makefile",
-    "src-migrate/Makefile",
+    "migrations/tools/Makefile",
 )
 
 

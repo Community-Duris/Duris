@@ -65,11 +65,9 @@ ROOT_DIR          := $(abspath ..)
 BIN_ROOT          ?= $(ROOT_DIR)/bin
 SERVER_BIN_DIR    ?= $(BIN_ROOT)/server
 TOOL_BIN_DIR      ?= $(BIN_ROOT)/tools
-MIGRATION_BIN_DIR ?= $(BIN_ROOT)/migrations
 OBJDIR            ?= $(BIN_ROOT)/objects/server/$(PERSISTENCE_BACKEND)/$(BUILD_PROFILE)
 DMS_BINARY        ?= $(SERVER_BIN_DIR)/dms_new
 PFILE_BINARY      ?= $(TOOL_BIN_DIR)/pfile
-MIGRATE_BINARY    ?= $(MIGRATION_BIN_DIR)/migrate_pfiles
 BACKEND_STAMP     := $(dir $(DMS_BINARY)).$(notdir $(DMS_BINARY))-backend
 DEPFLAGS := -MMD -MP
 
@@ -455,17 +453,6 @@ OBJS =  $(SHIP_OBJS) \
 SHARED_PFILE_OBJS_NAMES = classes/skills.pf.o core/files.pf.o
 PFILE_OBJS_NAMES        = account/pfile-stubs.o account/pfile.o
 
-MIGRATE_OBJ_NAMES = migrate_main.o \
-							migrate_common.o \
-							migrate_objects.o \
-							migrate_accounts.o \
-							migrate_players.o \
-							migrate_lockers.o \
-							migrate_ships.o \
-							migrate_guilds.o \
-							migrate_misc.o \
-							migrate_stubs.o
-
 #******************************************************************************
 #******************************************************************************
 #
@@ -478,7 +465,6 @@ PROGS = $(DMS_BINARY)
 DMS_OBJS = $(addprefix $(OBJDIR)/,$(OBJS))
 PFILE_OBJS        = $(addprefix $(OBJDIR)/,$(PFILE_OBJS_NAMES))
 SHARED_PFILE_OBJS = $(addprefix $(OBJDIR)/,$(SHARED_PFILE_OBJS_NAMES))
-MIGRATE_OBJS      = $(addprefix $(OBJDIR)/migrations/,$(MIGRATE_OBJ_NAMES))
 
 ifndef USE_SHARED
 	DMS_OBJS   += $(addprefix $(OBJDIR)/,$(SH_LIBS))
@@ -489,7 +475,7 @@ endif
 
 all: $(PROGS)
 
-.PHONY: dms_new pfile migrate_pfiles clean clean-server debug valgrind FORCE
+.PHONY: dms_new pfile clean clean-server debug valgrind FORCE
 
 dms_new: $(DMS_BINARY)
 
@@ -518,17 +504,12 @@ $(DMS_BINARY): $(DMS_OBJS) $(BACKEND_STAMP)
 
 pfile: $(PFILE_BINARY)
 
-$(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/core/mm.o $(OBJDIR)/core/common.o
+$(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/core/mm.o $(OBJDIR)/core/common.o \
+		$(OBJDIR)/core/memory.o
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ \
 		$(PFILE_OBJS) $(SHARED_PFILE_OBJS) \
-		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(LIBS)
-
-migrate_pfiles: $(MIGRATE_BINARY)
-
-$(MIGRATE_BINARY): $(MIGRATE_OBJS)
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ $(MIGRATE_OBJS) $(LIBS)
+		$(OBJDIR)/core/common.o $(OBJDIR)/core/mm.o $(OBJDIR)/core/memory.o $(LIBS)
 
 # Build any C object into OBJDIR, creating folders as needed.
 $(OBJDIR)/%.o: %.c
@@ -537,10 +518,6 @@ $(OBJDIR)/%.o: %.c
 
 # Build any C++ object into OBJDIR, creating folders as needed.
 $(OBJDIR)/%.o: %.cpp
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
-
-$(OBJDIR)/migrations/%.o: ../src-migrate/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
 
@@ -561,7 +538,7 @@ clean-server:
 
 clean: clean-server
 	rm -f *~ */*~ .depend */.depend
-	rm -f $(PFILE_BINARY) $(MIGRATE_BINARY)
+	rm -f $(PFILE_BINARY)
 
 debug: $(PROGS)
 	cd ..; ./scripts/gdbdms

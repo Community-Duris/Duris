@@ -112,16 +112,54 @@ holds only `Makefile` and `.gitignore`.
 - `-I./ships` was dropped as planned, which exposed 34 files still using the
   unqualified `#include "ships.h"` spelling. All are now directory-qualified.
 
-## Pre-existing problems surfaced, not fixed
+## Pre-existing problems surfaced
 
-Both are unrelated to the move and fail identically on `master`:
+Both were unrelated to the move and failed identically on `master`. Neither
+target is in the default build, which is why both rotted unnoticed. Both are
+now fixed -- see "Auxiliary build targets" below.
 
-- `make -C src pfile` fails with 751 `-Werror` errors.
-- `make -C src migrate_pfiles` fails with 74. Its `../src/*.h` includes were
-  repointed at the new layout, so it now fails on code rot rather than missing
+- `make -C src pfile` failed with 751 `-Werror` errors, then failed to link.
+- `make -C src migrate_pfiles` failed with 74. Its `../src/*.h` includes were
+  repointed at the new layout, so it failed on code rot rather than missing
   files.
 
-Neither target is in the default build, which is why both rotted unnoticed.
+## Auxiliary build targets
+
+`src-migrate/` moved to `migrations/tools/`, so the offline converters sit
+beside the SQL and shell migrations they serve and out of the server's
+source-contract sweep (`tests/async/_paths.py` indexes `src/**`).
+
+| Binary | Build with | Status |
+| --- | --- | --- |
+| `bin/server/dms_new` | `make -C src` | clean |
+| `bin/tools/pfile` | `make -C src pfile` | clean |
+| `bin/migrations/migrate_pfiles` | `make -C migrations/tools` | clean |
+| `bin/migrations/migrate_locker_affects` | `make -C migrations/tools affects` | clean |
+| `bin/migrations/pfile_converter` | `make -C migrations/tools pfile_converter` | clean |
+
+`src/Makefile` used to carry a second, divergent `migrate_pfiles` target that
+compiled `../src-migrate/*.c` with the server's strict profile. It had drifted
+(it omitted `migrate_shopkeepers.o`) and had not built in a long time.
+`migrations/tools/Makefile` is now the single entry point for those binaries.
+
+### What `pfile` needed
+
+- `classes/skills.c`: one macro declared `int i`, shadowing the `i` in
+  `initialize_skills()` -- 686 of the 751 errors came from that single line.
+- `core/structs.h`: the `Skill` typedef was hidden from `_PFILE_`, so
+  `skills[]` had no type; the underlying `struct s_skill` was always visible.
+- The `_PFILE_` arm had no `m_class` variants of `SPELL_ADD`/`SPEC_SPELL_ADD`.
+- `account/pfile-stubs.c` gained 32 link stubs. `files.c` and `skills.c` had
+  grown references to the wider runtime (SQL loaders, flatfile deletion,
+  persistence mode, guilds) that the offline scanner never reaches.
+
+### Data fix
+
+`SKILL_ADD(CLASS_ASSASSIN, 20, 900)` in `classes/skills.c` overflowed the
+byte-wide `maxlearn` field (900 wraps to -124). Neighbouring rogue-family
+entries use 90, so it now reads 90. The server's `SKILL_ADD` discards its
+`MaxLearn` argument entirely, so this changes no server behaviour -- only the
+`_PFILE_` arm, which is the only one that stores it.
 
 ## Resolved after the move
 

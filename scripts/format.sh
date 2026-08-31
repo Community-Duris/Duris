@@ -60,7 +60,7 @@ fi
 # --all: the whole tree.  clang-format is not idempotent on this codebase, so
 # iterate until a pass stops changing anything rather than trusting one pass.
 if [[ "$MODE" == "all" ]]; then
-  mapfile -t ALL_FILES < <(git ls-files src src-migrate areas/src tests |
+  mapfile -t ALL_FILES < <(git ls-files src migrations/tools areas/src tests |
                              grep -E '\.(c|h|cpp|hpp|cc|hh)$')
   if (( ${#ALL_FILES[@]} == 0 )); then
     echo "ERROR: no tracked C/C++ files found." >&2

@@ -4,11 +4,11 @@ CC = g++
 CFLAGS = -g -Wno-write-strings -std=c++14 -D_FORTIFY_SOURCE=0 -DTEST_MUD
 DEBUG = -ggdb3
 
-INCLUDES = -I. -I../src -I/usr/include/libxml2 -I/usr/include/mysql -I../src/ships
+INCLUDES = -I. -I../../src -I/usr/include/libxml2 -I/usr/include/mysql -I../../src/ships
 LDFLAGS = -L/usr/lib/mysql
 LIBS = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lpthread
 
-ROOT_DIR := $(abspath ..)
+ROOT_DIR := $(abspath ../..)
 BIN_ROOT ?= $(ROOT_DIR)/bin
 MIGRATION_BIN_DIR ?= $(BIN_ROOT)/migrations
 OBJ_DIR ?= $(BIN_ROOT)/objects/migrations
