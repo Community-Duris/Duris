@@ -60,7 +60,7 @@ Path(__file__).resolve().parents[2]` is copy-pasted 298 times and `SRC = ROOT /
 | `ships/` | 15 | unchanged |
 
 Decided: `core/` moved into `src/core/` like everything else. `src/` root
-holds only `Makefile` (plus the untracked `vc140.pdb` artifact noted below).
+holds only `Makefile` and `.gitignore`.
 
 ## Execution order (as performed)
 
@@ -123,5 +123,9 @@ Both are unrelated to the move and fail identically on `master`:
 
 Neither target is in the default build, which is why both rotted unnoticed.
 
-- `src/vc140.pdb` is a committed compiler artifact that `AGENTS.md` says must
-  not be in the tree. Left alone; out of scope.
+## Resolved after the move
+
+- `src/vc140.pdb`, a 54KB committed MSVC debug database, violated the
+  `AGENTS.md` rule that compiled artifacts live under `bin/` and stay out of
+  the tree. Initially deferred as out of scope, it was removed in commit
+  `f5f77dd` along with a `*.pdb` entry in `src/.gitignore` so it cannot return.

@@ -1,1 +1,1 @@
-#include "../../../src/common.c"
+#include "../../../src/core/common.c"
