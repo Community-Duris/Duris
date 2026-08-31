@@ -1823,7 +1823,12 @@ P_obj make_corpse(P_char ch, int loss)
 								  PLAYER_COMPONENT_EQUIPMENT |
 								  PLAYER_COMPONENT_INVENTORY);
 		writeCorpse(corpse);
-		(void)submit_next_corpse_item(ch, corpse);
+		// A movement already in flight for this player makes the first corpse
+		// transfer conflict, and a refusal here reads as failed_preserved even
+		// though nothing was lost. die() defers the death while the pipeline is
+		// busy and the recovery event restarts the chain once it drains.
+		if (!item_movement_transaction_player_busy(ch))
+			(void)submit_next_corpse_item(ch, corpse);
 	}
 
 	return corpse;

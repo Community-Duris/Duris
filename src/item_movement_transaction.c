@@ -718,14 +718,30 @@ void item_movement_transaction_player_ready(P_char actor)
 	pump_creation_grants();
 }
 
+// Busy has to mean the same thing submission does: item_movement_transaction_submit()
+// refuses whenever movement_conflicts() sees the player on either side of a pending
+// entry, so a movement someone else submitted toward this player - a give, an operator
+// creation grant - blocks their corpse handoff just as much as one they submitted
+// themselves. Reporting only actor-owned work left death free to run the terminal save
+// against an inbound transfer and to log the refused corpse transfer as failed_preserved.
 bool item_movement_transaction_player_busy(P_char actor)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
 		return false;
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
-	return creation_grants.find(pid) != creation_grants.end() ||
-	       std::any_of(pending.begin(), pending.end(),
-			   [pid](const auto &entry) { return entry.second.actor_pid == pid; });
+	if (creation_grants.find(pid) != creation_grants.end())
+		return true;
+	for (const auto &[actor_pid, queue] : creation_grants)
+	{
+		(void)actor_pid;
+		for (const pending_creation_grant &request : queue.requests)
+			if (!request.to_room && request.recipient_pid == pid)
+				return true;
+	}
+	const item_owner_identity owner = { item_owner_type::player, pid, 0 };
+	return std::any_of(
+		pending.begin(), pending.end(), [pid, &owner](const auto &entry)
+		{ return entry.second.actor_pid == pid || owner_conflicts(entry.second, owner); });
 }
 
 item_movement_health item_movement_transaction_health_copy(void)

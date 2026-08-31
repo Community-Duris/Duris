@@ -5177,8 +5177,11 @@ int holy_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 					    FALSE, ch, obj, tch, TO_NOTVICT);
 					act("$p &=LCshimmers&n and blasts $n as it leaps to you!",
 					    FALSE, ch, obj, tch, TO_VICT);
-					spell_lightning_bolt(61, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+					// Rehome before the bolt: it can kill ch, and a death
+					// with the sword detached from every list leaves it
+					// stranded in limbo across make_corpse().
 					obj_to_char(obj, tch);
+					spell_lightning_bolt(61, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 					break;
 				}
 			}
@@ -5188,8 +5191,8 @@ int holy_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 				    FALSE, ch, obj, 0, TO_CHAR);
 				act("$p &=LCshimmers&n and blasts $n before vanishing!", FALSE, ch,
 				    obj, 0, TO_ROOM);
-				spell_lightning_bolt(61, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				extract_obj(obj, TRUE); // Bye arti sword.
+				spell_lightning_bolt(61, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 			}
 			return TRUE;
 		}
