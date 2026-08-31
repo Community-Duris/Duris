@@ -22,7 +22,6 @@
 #include "world/graph.h"
 #include "combat/justice.h"
 #include "world/map.h"
-#include "combat/siege.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "economy/tradeskill.h"
@@ -722,20 +721,6 @@ int can_enter_room(P_char ch, int room, int show_msg)
 			send_to_char("Castle walls can't be simply walked through!\n", ch);
 		return FALSE;
 	}
-
-#ifdef SIEGE_ENABLED
-	if (IS_INVADER(ch))
-	{
-		if (check_gates(ch, room))
-		{
-			if (show_msg)
-			{
-				send_to_char("You can not pass through the gates!\n", ch);
-			}
-			return FALSE;
-		}
-	}
-#endif
 
 	if (world[room].sector_type == SECT_UNDRWLD_MOUNTAIN && IS_MAP_ROOM(ch->in_room) &&
 	    IS_MAP_ROOM(room))

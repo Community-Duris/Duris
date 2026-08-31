@@ -212,10 +212,6 @@ bool Guild::is_guild()
 {
 	return true;
 }
-bool Guild::is_kingdom()
-{
-	return false;
-}
 void Guild::kick(P_char victim) {}
 void Guild::kick(P_char kicker, char *char_name) {}
 bool Guild::sub_money(int p, int g, int s, int c)

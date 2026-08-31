@@ -858,8 +858,8 @@ extern unsigned int game_locked_level;
 #define CMD_CONJURE 824 // Summoner command
 #define CMD_DISMISS 825 // Dismisses pets.
 #define CMD_ENHANCE 826 // Take two items, some plat, and make a new one.
-#define CMD_ADD 827 // Add command to add resrouces to a town.
-#define CMD_DEPLOY 828 // Deploy command to deploy troops in a town.
+#define CMD_RETIRED_827 827 // Reserved retired command slot; do not reuse.
+#define CMD_RETIRED_828 828 // Reserved retired command slot; do not reuse.
 #define CMD_ADDICTED_BLOOD 829 // 'blood' command: shows Addicted to Blood/Bloodlust info
 #define CMD_DEFOREST 830 // Blighter command
 #define CMD_BEEP 831 // Make <arg>'s computer beep

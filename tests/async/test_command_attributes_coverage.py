@@ -1,7 +1,7 @@
 """Source contracts for command_attributes.txt coverage of registered commands.
 
 Guarantees, per docs/content/HELP_SYSTEM.md:
-  1. every command name registered in src/interp.c has an attribute entry
+  1. every user-facing command name registered in src/interp.c has an attribute entry
   2. every entry parses cleanly under load_cmd_attributes() semantics
      (name line, zero or more canonical GET_C_<STAT>(ch|vi lines, '~' terminator)
   3. the loader in src/wikihelp.c can hold every entry (capacity + bounds check)
@@ -25,8 +25,9 @@ def registered_commands():
     block = re.search(r"const char \*command\[MAX_CMD\] = \{(.*?)\n\};", INTERP_C, re.S)
     assert block is not None, "command[] array not found in src/interp.c"
     names = re.findall(r'"([^"]+)"', block.group(1))
-    # final "\n" is the sentinel the interpreter loops on, not a command
-    return [n for n in names if n != "\n"]
+    # The final "\n" is the sentinel the interpreter loops on, not a command.
+    # Retired positional ABI slots are intentionally inaccessible and have no metadata.
+    return [n for n in names if n != "\n" and not n.startswith("_retired_")]
 
 
 def parse_entries(text):

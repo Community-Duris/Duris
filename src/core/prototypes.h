@@ -2860,9 +2860,6 @@ void spell_edictum_cineris(int, P_char, char *, int, P_char, P_obj);
 void spell_sigillum_negati(int, P_char, char *, int, P_char, P_obj);
 void spell_draconic_apotheosis(int, P_char, char *, int, P_char, P_obj);
 
-/* Siege Engines */
-void event_move_engine(P_char ch, P_char victim, P_obj obj, void *data);
-
 /* track.c */
 
 char *sickprocess(const char *);

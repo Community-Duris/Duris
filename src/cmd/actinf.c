@@ -3191,11 +3191,6 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 			send_to_char("&+cThe wind has picked up so that is easier to move!&n\n",
 				     ch);
 		}
-		/*    if(world[room_no].troop_info)
-			    {
-			      send_to_char("&+RThere are some troops here, bearing the mark of Kingdom #%d&n\n", world[room_no].troop_info->kingdom_num);
-			    }  */
-
 		// If we can see normally, or we're on a ship looking out.
 		if ((vis_mode == 2 || vis_mode == 1) ||
 		    ((cmd == CMD_LOOKOUT) && (vis_mode == 5 || vis_mode == 6)))

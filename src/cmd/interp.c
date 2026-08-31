@@ -45,7 +45,6 @@
 #include "net/poll.h"
 #include "redis/redis_wizard.h"
 #include "classes/rogues.h"
-#include "combat/siege.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "item/enhance.h"
@@ -1074,8 +1073,8 @@ const char *command[MAX_CMD] = {
 	"conjure",
 	"dismiss",
 	"enhance",
-	"add",
-	"deploy",
+	"_retired_827",
+	"_retired_828",
 	"blood",
 	"deforest",
 	"beep", /* 830 */
@@ -2605,9 +2604,6 @@ void assign_command_pointers(void)
 	CMD_GRT(CMD_RESETARTI, STAT_DEAD + POS_PRONE, do_artireset, OVERLORD);
 	CMD_GRT(CMD_RESETSPEC, STAT_DEAD + POS_PRONE, do_unspec, FORGER);
 	CMD_GRT(CMD_STATISTIC, STAT_DEAD + POS_PRONE, do_statistic, FORGER);
-#ifdef SIEGE_ENABLED
-	CMD_GRT(CMD_ADD, STAT_DEAD + POS_PRONE, do_add, FORGER);
-#endif
 	CMD_GRT(CMD_STORAGE, STAT_DEAD + POS_PRONE, do_storage, GREATER_G);
 	CMD_GRT(CMD_NEWBSU, STAT_DEAD + POS_PRONE, do_newb_spellup, LESSER_G);
 	CMD_GRT(CMD_NEWBSA, STAT_DEAD + POS_PRONE, do_newb_spellup_all, LESSER_G);
@@ -3047,8 +3043,6 @@ void assign_command_pointers(void)
 	// CMD_TRIG(CMD_SPECIALIZE, 0);
 	CMD_TRIG(CMD_HARVEST, 0, TRUE);
 	CMD_TRIG(CMD_BATTLERAGER, 0, FALSE);
-	CMD_TRIG(CMD_DEPLOY, 0, TRUE);
-
 	/*
 	 * socials (all call do_action, rather than a specific func)
 	 */

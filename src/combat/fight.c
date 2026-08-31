@@ -12,6 +12,7 @@
 
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "core/files.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
@@ -47,7 +48,6 @@
 #include "classes/paladins.h"
 #include "item/plushit.h"
 #include "classes/reavers.h"
-#include "combat/siege.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
@@ -9476,9 +9476,6 @@ void perform_violence(void)
 		else
 		{
 			ch->specials.combat_tics = (int)ch->specials.base_combat_round;
-#ifdef SIEGE_ENABLED
-			multihit_siege(ch);
-#endif
 		}
 	}
 

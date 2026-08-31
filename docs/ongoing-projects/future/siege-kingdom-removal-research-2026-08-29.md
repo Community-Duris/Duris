@@ -70,6 +70,29 @@ the required production and retained-backup custody audit; the local zero-row ev
 not being treated as sufficient. No historical migration, schema fingerprint, or persisted
 identifier was changed.
 
+### Checkpoint 2 - Runtime, persistence, and type removal (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed the MariaDB and flat-file town, kingdom-land, and siege-item persistence paths;
+- deleted the tracked town seed, both feature-only flat-file regressions and harnesses,
+  and their CI steps;
+- deleted the siege translation unit and header, its Makefile entry, runtime hooks,
+  special-procedure declarations, and event declaration;
+- removed the unused town/troop structs, constants, arrays, global, kingdom room comments,
+  and `Guild::is_kingdom()` scaffolding;
+- retired command slots 827 and 828 in place as `_retired_827` and `_retired_828`, with
+  explicit reserved constants, so later command IDs did not move;
+- corrected the unrelated private-chest malformed-row log label while removing the shared
+  siege loader that had supplied it.
+
+A full warning-as-error server build passed before deleting the translation unit. The
+post-deletion build exposed one hidden `RENT_DEATH` dependency formerly supplied through
+`siege.h`; adding the owning `core/files.h` include directly to `fight.c` restored a clean
+full build and link. Object-destruction compatibility state remains for the separate
+mechanical checkpoint. The compatibility-table `towns` entry, historical schema inputs,
+and the gated object prototypes remain unchanged.
+
 ## Scope and terminology
 
 In this document:

@@ -276,7 +276,6 @@ class Guild
 	void ledger(P_char ch, char *args);
 	bool is_clan();
 	bool is_guild();
-	bool is_kingdom();
 	void kick(P_char victim);
 	void kick(P_char kicker, char *char_name);
 	bool sub_money(int p, int g, int s, int c);

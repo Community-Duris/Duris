@@ -88,7 +88,6 @@ void event_another_hour(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * 
 		{
 			time_info.day = 0;
 			time_info.month++;
-			//      update_kingdoms();
 			if (time_info.month > 16)
 			{
 				time_info.month = 0;

@@ -224,39 +224,6 @@ struct edit_data
 #define MISSING_LEGS BIT_11
 #define HUMANOID_CORPSE BIT_16
 
-/* kingdom stuff */
-
-/* Troop constants */
-
-#define TROOP_FOOT 0
-#define TROOP_ARCHER 1
-#define TROOP_CAVALRY 2
-#define TROOP_SCOUT 3
-#define TROOP_ASSASSIN 4
-#define TROOP_CLERIC 5
-#define TROOP_MAGE 6
-
-#define NUM_TROOP_TYPES 7
-
-#define TROOP_LEVEL_RAW 0
-#define TROOP_LEVEL_SEASONED 1
-#define TROOP_LEVEL_VETERAN 2
-#define TROOP_LEVEL_ELITE 3
-
-#define NUM_TROOP_LEVELS 4
-
-#define TROOP_OFFENSE_BASIC 0
-#define TROOP_OFFENSE_AVERAGE 1
-#define TROOP_OFFENSE_GOOD 2
-
-#define NUM_TROOP_OFFENSE 3
-
-#define TROOP_DEFENSE_BASIC 0
-#define TROOP_DEFENSE_AVERAGE 1
-#define TROOP_DEFENSE_GOOD 2
-
-#define NUM_TROOP_DEFENSE 3
-
 #define LNK_CONSENT 0
 #define LNK_RIDING 1
 #define LNK_GUARDING 2
@@ -727,34 +694,6 @@ struct misfire_properties_struct
 
 #define MISFIRE_COOLDOWN (3 * WAIT_SEC)
 
-struct town
-{
-	int resources;
-	int defense;
-	int offense;
-
-	bool deploy_guard;
-	bool deploy_cavalry;
-	bool deploy_portals;
-
-	int guard_vnum;
-	int guard_max;
-	int guard_load_room;
-
-	int cavalry_vnum;
-	int cavalry_max;
-	int cavalry_load_room;
-
-	int portal_vnum;
-	int portal_load_room;
-
-	struct zone_data *zone;
-
-	town *next_town;
-};
-
-typedef struct town *P_town;
-
 struct table_element
 {
 	int weight;
@@ -844,18 +783,6 @@ struct trackmainttype
 	int in;
 };
 
-struct troop_info_rec
-{
-	int kingdom_num;
-	int troops[NUM_TROOP_TYPES][NUM_TROOP_LEVELS][NUM_TROOP_OFFENSE][NUM_TROOP_DEFENSE];
-	int in_room;
-	int time_of_occupation;
-	int last_movement;
-	short is_acquiring_land;
-	struct troop_info_rec *is_fighting;
-	struct troop_info_rec *next;
-};
-
 struct room_direction_data
 {
 	int to_room; /* Where direction leeds (NOWHERE) */
@@ -879,9 +806,6 @@ struct room_data
 	struct extra_descr_data *ex_description; /* for examine/look                   */
 	struct room_direction_data *dir_option[NUM_EXITS]; /* Directions                         */
 	ulong room_flags; /* DEATH, DARK ... etc                */
-	//  ulong resources;                                  /* what resources the room contains   */
-	//  ubyte kingdom_num;                                /* matches guild or town number       */
-	//  ubyte kingdom_type;                               /* town, pc, npc                      */
 	::byte light; /* Number of lightsources in room     */
 	::byte justice_area;
 	::byte chance_fall;
@@ -897,7 +821,6 @@ struct room_data
 	struct room_affect *affected;
 
 	struct trackmainttype *track;
-	//  struct troop_info_rec *troop_info;
 	int bfs_mark;
 	sh_int x_coord;
 	sh_int y_coord;

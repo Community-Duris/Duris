@@ -52,7 +52,6 @@
 #include "combat/justice.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
-#include "combat/siege.h"
 #include "magic/spells.h"
 
 /*
@@ -764,16 +763,6 @@ void do_hit(P_char ch, char *argument, int cmd)
 
 	if (!victim)
 	{
-#ifdef SIEGE_ENABLED
-		// Allow attacking of siege objects.
-		P_obj obj = get_siege_room(ch, argument);
-
-		if (obj)
-		{
-			kill_siege(ch, obj);
-		}
-#endif
-
 		send_to_char("Slay whom?\n", ch);
 		return;
 	}
@@ -1724,21 +1713,7 @@ void do_kill(P_char ch, char *argument, int /*cmd*/)
 
 		if (!victim)
 		{
-#ifdef SIEGE_ENABLED
-			// Allow attacking of siege objects.
-			P_obj obj = get_siege_room(ch, argument);
-
-			if (obj)
-			{
-				kill_siege(ch, obj);
-			}
-			else
-			{
-				send_to_char("He/she/it isn't here.\n", ch);
-			}
-#else
 			send_to_char("He/she/it isn't here.\n", ch);
-#endif
 		}
 		else if (ch == victim)
 		{

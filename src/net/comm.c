@@ -63,7 +63,6 @@
 #include "redis/redis_report_cache.h"
 #include "redis/redis_world_runtime.h"
 #include "ships/ships.h"
-#include "combat/siege.h"
 #include "magic/spells.h"
 #include "item/enhance.h"
 #include "economy/crafting.h"
@@ -758,14 +757,6 @@ void run_the_game(int port, int sslport)
 
 		fprintf(stderr, "-- Loading creation availability configuration\r\n");
 		boot_creation_availability_config();
-
-#ifdef SIEGE_ENABLED
-		fprintf(stderr, "-- Loading town data\r\n");
-		init_towns();
-
-		fprintf(stderr, "-- Loading siege data\r\n");
-		init_siege();
-#endif
 
 		fprintf(stderr, "-- Touching hall of fame\r\n");
 		touch(halloffamelist_file);

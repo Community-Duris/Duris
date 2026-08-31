@@ -1564,8 +1564,7 @@ bool char_to_room(P_char ch, int room, int dir)
 	}
 	if (IS_MAP_ROOM(ch->in_room) && IS_PC(ch) && !IS_TRUSTED(ch))
 	{
-		/*random_encounters(ch);
-		   check_for_kingdom_trespassing(ch); */
+		/* random_encounters(ch); */
 	}
 
 	if (ALONE(ch))
