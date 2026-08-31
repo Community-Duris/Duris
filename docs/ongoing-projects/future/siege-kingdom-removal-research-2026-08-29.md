@@ -1,10 +1,10 @@
 # Siege and Kingdom Removal Research
 
 Date: 2026-08-31
-Branch: `master`
+Branch: `siege-kingdom-removal`
 Research baseline: `63cb1ab9`
-Status: Repository research complete; production and retained-backup preflight outstanding;
-no implementation changes made
+Status: Implementation in progress; siege acquisition and dedicated world wiring removed;
+production and retained-backup custody preflight still blocks object-prototype deletion
 
 ## Executive conclusion
 
@@ -46,6 +46,29 @@ The recommended end state is:
 This should be implemented as a focused project with two deployment gates if production
 contains any of the dedicated object VNUMs. It should not be treated as deleting only
 `siege.c` and `siege.h`.
+
+## Implementation progress
+
+### Checkpoint 1 - Acquisition freeze and world detach (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed siege-ammunition VNUMs 178 and 179 from `areas/shp/kzkrkeep.shp`;
+- removed all ten hometown quartermaster reset commands;
+- replaced the active `areas/AREA` entry with `*RETIRED 4010 (siege; do not reuse)`;
+- deleted `areas/mob/siege.mob`, `areas/obj/siege.obj`, `areas/wld/siege.wld`, and
+  `areas/zon/siege.zon`;
+- regenerated the ignored combined world outputs successfully;
+- verified hometown racewar safety and the zcheck source contract after regeneration.
+
+The comprehensive removal contract has been drafted and baseline-verified locally. It is
+being kept out of the checkpoint commit while its expected failures describe work still in
+progress; it must be committed once the runtime removal is complete enough to keep CI green.
+
+The eight dedicated object prototypes remain unchanged. Their removal is still blocked by
+the required production and retained-backup custody audit; the local zero-row evidence is
+not being treated as sufficient. No historical migration, schema fingerprint, or persisted
+identifier was changed.
 
 ## Scope and terminology
 

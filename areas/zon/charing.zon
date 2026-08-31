@@ -250,7 +250,6 @@ O 0 45030 2 45101 100 0 0 0        * a tally sheet
 M 0 45046 2 45000 100 0 0 0        * the great oak tree
 M 0 45073 7 45000 100 0 0 0        * an elven cat
 M 0 45072 8 45000 100 0 0 0        * a visiting human
-M 0 401030 1 45000 100 0 0 0       * (mob type not in this .mob file)
 M 0 45050 12 45003 100 0 0 0       * a snake
 M 0 45038 1 45006 100 0 0 0        * an elven receptionist
 M 0 45030 12 45006 100 0 0 0       * an elite elven guard

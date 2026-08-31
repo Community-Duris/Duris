@@ -791,7 +791,6 @@ E 1 11570 1 18 100 0 0 0           *   a wooden figurine of Labelas Enoreth
 M 0 11517 13 11702 100 0 0 0       * a small lizard
 G 1 11602 26 0 100 0 0 0           *    a piece of raw meat
 M 0 11503 13 11703 100 0 0 0       * a foul-smelling troll guard
-M 0 401060 1 11703 100 0 0 0       * (mob type not in this .mob file)
 M 0 11510 7 11705 100 0 0 0        * a sickly troll
 E 1 11599 1 15 100 0 0 0           *   a snake spine bracelet
 E 1 11600 1 20 100 0 0 0           *   a pink veil of silk

@@ -414,7 +414,6 @@ E 1 16677 1 15 100 0 0 0           *   an ebonwood bracer
 E 1 16607 1 16 100 0 0 0           *   a blue steel axe
 M 0 16677 1 16547 100 0 0 0        * the fisherman
 M 0 16687 5 16551 100 0 0 0        * the wandering merchant
-M 0 401010 1 16551 100 0 0 0       * (mob type not in this .mob file)
 M 0 16502 3 16552 100 0 0 0        * a halfling guard
 E 1 16506 26 5 100 0 0 0           *   a leather tunic
 G 1 16507 4 0 100 0 0 0            *    a pike with a jagged tip

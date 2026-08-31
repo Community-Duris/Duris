@@ -280,7 +280,6 @@ M 0 95516 12 95553 100 0 0 0       * a large dog
 M 0 95547 8 95553 100 0 0 0        * a huge rat
 M 0 95539 5 95553 100 0 0 0        * a gully dwarf
 M 0 95558 1 95553 100 0 0 0        * the gully dwarf town crier
-M 0 401040 1 95553 100 0 0 0       * (mob type not in this .mob file)
 M 0 95518 1 95554 100 0 0 0        * Zarlir
 G 1 95546 20 0 100 0 0 0           *    some goat meat
 M 0 95521 1 95555 100 0 0 0        * an old dwarf
