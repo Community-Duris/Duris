@@ -151,7 +151,8 @@ static void check_frag_position(P_char ch)
 
 	// check if player is #1 overall
 	res = db_query("SELECT char_name FROM frag_leaderboard "
-		       "WHERE deleted_at IS NULL ORDER BY total_frags DESC LIMIT 1");
+		       "WHERE deleted_at IS NULL AND total_frags > 0 "
+		       "ORDER BY total_frags DESC, id ASC LIMIT 1");
 	if (res)
 	{
 		row = mysql_fetch_row(res);
