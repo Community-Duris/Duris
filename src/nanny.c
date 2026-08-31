@@ -2164,9 +2164,9 @@ bool valid_password(P_desc d, char *arg)
 
 void echo_on(P_desc d)
 {
-	unsigned char on_string[] = { IAC, WONT, TELOPT_ECHO, TELOPT_NAOFFD, TELOPT_NAOCRD };
+	unsigned char on_string[] = { IAC, WONT, TELOPT_ECHO };
 
-	write_to_descriptor_binary(d, on_string, 5);
+	write_to_descriptor_binary(d, on_string, sizeof(on_string));
 }
 
 /*
