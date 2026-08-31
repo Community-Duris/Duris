@@ -239,6 +239,7 @@ static int write_mob_entry(FILE *fp, P_char mob)
 		entry.num_carrying++;
 
 	entry.gold = GET_GOLD(mob);
+	entry.birthplace = GET_BIRTHPLACE(mob);
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
 }
@@ -1136,6 +1137,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 		// restore gold
 		GET_GOLD(mob) = mob_entry.gold;
+		GET_BIRTHPLACE(mob) = mob_entry.birthplace;
 
 		// restore affects
 		for (int a = 0; a < num_affs; a++)
@@ -1512,6 +1514,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 	}
 
 	entry.gold = GET_GOLD(mob);
+	entry.birthplace = GET_BIRTHPLACE(mob);
 
 	memcpy(buf + offset, &entry, sizeof(entry));
 	offset += sizeof(entry);
@@ -1701,6 +1704,7 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 	GET_MAX_VITALITY(mob) = mob_entry.max_vitality;
 	SET_POS(mob, POS_STANDING + STAT_NORMAL);
 	GET_GOLD(mob) = mob_entry.gold;
+	GET_BIRTHPLACE(mob) = mob_entry.birthplace;
 
 	// restore affects
 	for (int a = 0; a < mob_entry.num_affects; a++)

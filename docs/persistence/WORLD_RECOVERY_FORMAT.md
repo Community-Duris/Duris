@@ -1,6 +1,6 @@
 # World Recovery Wire Format
 
-Duris world-recovery generations use schema 10. The durable Redis value is independent of
+Duris world-recovery generations use schema 11. The durable Redis value is independent of
 compiler padding, host byte order, `time_t`, `unsigned long`, and native C/C++ struct size.
 All integers are fixed-width little-endian values. Text fields are fixed-width byte arrays
 that must contain a null terminator before materialization.
@@ -11,8 +11,8 @@ The generation header is exactly 64 bytes:
 
 | Offset | Bytes | Field |
 | ---: | ---: | --- |
-| 0 | 4 | ASCII magic `WR10` |
-| 4 | 4 | Schema version, currently 10 |
+| 0 | 4 | ASCII magic `WR11` |
+| 4 | 4 | Schema version, currently 11 |
 | 8 | 4 | Header size, always 64 |
 | 12 | 8 | Monotonic publication sequence |
 | 20 | 8 | Signed Unix timestamp |
@@ -40,7 +40,7 @@ authenticated by the generation HMAC, but are not misrepresented as SQL-owned it
 Trees whose live custody identity disagrees with their floor location are omitted, and
 player corpses are left to the authoritative corpse restore path.
 
-Floor deltas use the same schema-10 object-tree payload prefixed by `WRF4:`. The Redis hash
+Floor deltas use the same schema-11 object-tree payload prefixed by `WRF4:`. The Redis hash
 field UID must match the decoded root UID before the record enters recovery planning.
 
 ## Redis storage and memory bounds
@@ -78,7 +78,7 @@ operations. Durable reads and recovery planning occur only during boot.
 ## Runtime and compatibility policy
 
 Gameplay capture retains bounded native in-process snapshots because they never leave the
-process. The existing publisher thread converts a completed generation to schema 10 in
+process. The existing publisher thread converts a completed generation to schema 11 in
 place before checksumming and Redis publication. The existing floor worker converts queued
 native object snapshots before issuing its Redis command. Durable decoding occurs only
 during boot recovery.
@@ -86,14 +86,17 @@ during boot recovery.
 The payload is intentionally a bounded fuzzy recovery snapshot. Capture start is the
 durable timestamp, capture expires after five minutes, and an expired generation is never
 queued for publication. Reconstructible NPC, door, and zone state may therefore rewind
-within that window. NPC equipment/inventory are omitted and NPC gold is forced to zero;
-floor items are accepted only after stable-UID hierarchy validation and complete SQL
-custody reconciliation for every item marked `authority_required`. No Redis, SQL,
+within that window. NPC equipment/inventory are omitted and NPC gold is forced to zero.
+The mobile record retains its zone birthplace so recovery can idempotently reconstruct
+configured `G` and `E` items after every recovered NPC has materialized; player-originated
+NPC inventory is never replayed from Redis. Floor items are accepted only after stable-UID
+hierarchy validation and complete SQL custody reconciliation for every item marked
+`authority_required`. No Redis, SQL,
 filesystem, process, or logging I/O is added to gameplay capture.
 
 Older schemas and floor records are rejected rather than interpreted through an ABI-dependent
 compatibility path. Recovery data is reconstructible and expiring: an incompatible current
-generation produces a normal zone boot, and the first schema-10 publication atomically
+generation produces a normal zone boot, and the first schema-11 publication atomically
 replaces the generation pointer and clears prior floor deltas.
 
 The golden-vector and round-trip contract is:

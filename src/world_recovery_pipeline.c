@@ -8,6 +8,7 @@
 #include "ships/ships.h"
 #include "utils.h"
 #include "world_recovery_codec.h"
+#include "world_recovery_npc_items.h"
 
 #include <algorithm>
 #include <array>
@@ -190,7 +191,7 @@ bool encode_generation(recovery_generation *generation, world_recovery_header *h
 		source_offset += native_header.size;
 	}
 	generation->blob.resize(destination_offset);
-	memcpy(header->magic, "WR10", 4);
+	memcpy(header->magic, "WR11", 4);
 	header->schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
 	header->header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
 	header->sequence = generation->sequence;
@@ -347,6 +348,7 @@ int write_mob_record(P_char mob, char *buffer, size_t maximum)
 	entry.vitality = GET_VITALITY(mob);
 	entry.max_vitality = GET_MAX_VITALITY(mob);
 	entry.position = GET_POS(mob);
+	entry.birthplace = GET_BIRTHPLACE(mob);
 	// Currency is authoritative player state and must not be replayed from a fuzzy world view.
 	entry.gold = 0;
 	if (mob->specials.fighting)
@@ -797,7 +799,7 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 	    max_age_seconds <= 0)
 		return false;
 	world_recovery_header header = {};
-	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WR10", 4) ||
+	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WR11", 4) ||
 	    header.schema_version != WORLD_RECOVERY_SCHEMA_VERSION ||
 	    header.header_size != WORLD_RECOVERY_WIRE_HEADER_BYTES || !header.complete ||
 	    header.sequence < minimum_sequence ||
@@ -1295,6 +1297,11 @@ bool materialize_plan(const recovery_plan &plan,
 		++applied_objects;
 	}
 	if (created_mobs.size() != plan.mobs.size() || applied_objects != plan.objects.size())
+	{
+		rollback_materialized(&created_mobs, &created_objects);
+		return false;
+	}
+	if (!world_recovery_rehydrate_npc_items(created_mobs.data(), created_mobs.size()))
 	{
 		rollback_materialized(&created_mobs, &created_objects);
 		return false;
