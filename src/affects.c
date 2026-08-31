@@ -2218,6 +2218,12 @@ void wear_off_message(P_char ch, struct affected_type *af)
 	if ((af->flags & AFFTYPE_NOMSG)) //|| (af->flags & AFFTYPE_SUBAFFECT))
 		return;
 
+	/* Multi-part spells use one affect per modifier.  The spell has not worn off
+	 * while another affect of the same type remains. */
+	for (struct affected_type *other = ch->affected; other; other = other->next)
+		if (other != af && other->type == af->type)
+			return;
+
 	if (af->type == TAG_INNATE_TIMER && af->location == INNATE_LAY_HANDS)
 	{
 		af->type = TAG_LAYONHANDS;
