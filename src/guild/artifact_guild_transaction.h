@@ -1,7 +1,7 @@
 #ifndef ARTIFACT_GUILD_TRANSACTION_H
 #define ARTIFACT_GUILD_TRANSACTION_H
 
-#include "artifact_guild_state.h"
+#include "guild/artifact_guild_state.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 

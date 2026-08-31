@@ -23,7 +23,7 @@
 #include <unordered_set>
 #include <vector>
 #include "account/account.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "files.h"
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_identity_adapter.h"

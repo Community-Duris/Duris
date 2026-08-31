@@ -22,7 +22,7 @@
 #include <string.h>
 #include <time.h>
 #include "account/account.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "persistence/copyover.h"
 #include "epic.h"
 #include "item/enhance.h"

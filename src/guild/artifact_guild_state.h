@@ -1,7 +1,7 @@
 #ifndef ARTIFACT_GUILD_STATE_H
 #define ARTIFACT_GUILD_STATE_H
 
-#include "artifact_guild_command.h"
+#include "guild/artifact_guild_command.h"
 #include "structs.h"
 
 enum class artifact_guild_capture_status : uint8_t

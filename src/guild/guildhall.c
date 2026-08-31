@@ -10,9 +10,9 @@
 #include "db.h"
 #include "utility.h"
 #include "utils.h"
-#include "guildhall.h"
-#include "assocs.h"
-#include "guildhall_db.h"
+#include "guild/guildhall.h"
+#include "guild/assocs.h"
+#include "guild/guildhall_db.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 

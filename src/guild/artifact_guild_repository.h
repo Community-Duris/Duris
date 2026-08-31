@@ -1,7 +1,7 @@
 #ifndef ARTIFACT_GUILD_REPOSITORY_H
 #define ARTIFACT_GUILD_REPOSITORY_H
 
-#include "artifact_guild_command.h"
+#include "guild/artifact_guild_command.h"
 
 #include <mysql/mysql.h>
 

@@ -117,12 +117,12 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actwiz.o \
 				 net/ansi.o \
 				 specs/specs.ailvio.o \
-				 alliances.o \
+				 guild/alliances.o \
 				 mob/automatic_rules.o \
 				 magic/affects.o \
 				 combat/arena.o \
-				 artifact.o \
-				 artifact_cache_codec.o \
+				 guild/artifact.o \
+				 guild/artifact_cache_codec.o \
 				 persistence/report_cache_codec.o \
 				 economy/donation_event.o \
 				 redis/redis_connection.o \
@@ -132,7 +132,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_namespace.o \
 				 world_recovery_codec.o \
 				 redis/redis_donation_worker.o \
-				 assocs.o \
+				 guild/assocs.o \
 				 economy/auction_houses.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
@@ -183,13 +183,13 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/fraglist.o \
 				 item/forge_items.o \
 				 graph.o \
-				 group.o \
-				 guild.o \
-				 guildhall.o \
-				 guildhall_rooms.o \
-				 guildhall_cmds.o \
-				 guildhall_procs.o \
-				 guildhall_db.o \
+				 guild/group.o \
+				 guild/guild.o \
+				 guild/guildhall.o \
+				 guild/guildhall_rooms.o \
+				 guild/guildhall_cmds.o \
+				 guild/guildhall_procs.o \
+				 guild/guildhall_db.o \
 				 combat/grapple.o \
 				 handler.o \
 				 hardcore.o \
@@ -289,10 +289,10 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/combat_outcome_command.o \
 				 combat/combat_outcome_repository.o \
 				 combat/combat_outcome_transaction.o \
-				 artifact_guild_command.o \
-				 artifact_guild_repository.o \
-				 artifact_guild_state.o \
-				 artifact_guild_transaction.o \
+				 guild/artifact_guild_command.o \
+				 guild/artifact_guild_repository.o \
+				 guild/artifact_guild_state.o \
+				 guild/artifact_guild_transaction.o \
 				 economy/boon_reward_command.o \
 				 economy/boon_reward_repository.o \
 				 economy/boon_reward_transaction.o \

@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-#include "alliances.h"
-#include "assocs.h"
+#include "guild/alliances.h"
+#include "guild/assocs.h"
 #include "combat/damage.h"
 #include "epic.h"
 #include "net/gmcp.h"

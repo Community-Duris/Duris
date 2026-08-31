@@ -16,7 +16,7 @@
 #include "utility.h"
 #include "utils.h"
 #include "combat/chaos_config.h"
-#include "guild.h"
+#include "guild/guild.h"
 #include "hardcore_config.h"
 #include <stdio.h>
 #include "classes/epic_skills.h"

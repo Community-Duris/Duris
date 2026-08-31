@@ -19,10 +19,10 @@
 #include <stdio.h>
 #include <strings.h>
 #include <time.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "combat/damage.h"
 #include "files.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "specs.prototypes.h"
 #include "specs/specs.winterhaven.h"

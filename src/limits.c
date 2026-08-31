@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "alliances.h"
-#include "assocs.h"
+#include "guild/alliances.h"
+#include "guild/assocs.h"
 #include "economy/boon.h"
 #include "combat/ctf.h"
 #include "defines.h"

@@ -35,7 +35,7 @@
 #include <utility>
 #include <vector>
 #include <zlib.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "economy/auction_houses.h"
 #include "economy/boon.h"
 #include "persistence/copyover.h"
@@ -45,7 +45,7 @@
 #include "ferry.h"
 #include "net/gmcp.h"
 #include "graph.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "hardcore.h"
 #include "json_utils.h"
 #include "lookup_process.h"
@@ -103,7 +103,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "economy/auction_transaction.h"
 #include "combat/combat_outcome_transaction.h"
-#include "artifact_guild_transaction.h"
+#include "guild/artifact_guild_transaction.h"
 #include "economy/boon_reward_transaction.h"
 #include "economy/boon_shop_transaction.h"
 #include "zone_touch_transaction.h"

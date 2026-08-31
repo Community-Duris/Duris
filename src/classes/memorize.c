@@ -18,7 +18,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "persistence/persistence_checkpoint.h"
 #include "profile.h"
 #include "magic/spells.h"

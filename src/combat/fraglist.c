@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "config.h"
 #include "combat/frag_cap_config.h"
 #include "redis/redis_report_cache.h"

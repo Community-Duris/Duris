@@ -16,7 +16,7 @@ using namespace std;
 #include "events.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "combat/damage.h"
 #include "graph.h"
 #include "combat/justice.h"

@@ -11,7 +11,7 @@
 
 #include "structs.h"
 #include "utils.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "config.h"
 #include "item/objmisc.h"
 #include "ships.h"

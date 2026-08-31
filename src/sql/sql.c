@@ -48,7 +48,7 @@
 #include <vector>
 #include "account/account.h"
 #include "account/account_reward.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "economy/boon.h"
 #include "epic.h"
 #include "graph.h"

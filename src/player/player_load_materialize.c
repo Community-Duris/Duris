@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "player/player_revision_state.h"
 #include "magic/spells.h"
 #include "item/trophy.h"

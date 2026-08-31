@@ -20,7 +20,7 @@ using namespace std;
 #include "combat/ctf.h"
 #include "net/gmcp.h"
 #include "graph.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "map.h"
 #include "random.zone.h"

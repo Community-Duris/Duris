@@ -11,9 +11,9 @@
 #include "utility.h"
 #include "utils.h"
 #include <math.h>
-#include "assocs.h"
-#include "guildhall.h"
-#include "guildhall_db.h"
+#include "guild/assocs.h"
+#include "guild/guildhall.h"
+#include "guild/guildhall_db.h"
 #include "map.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"

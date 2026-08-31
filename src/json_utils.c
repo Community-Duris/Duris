@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "defines.h"
 #include "handler.h"
 #include "ships/ships.h"

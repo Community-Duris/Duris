@@ -1,6 +1,6 @@
-#include "artifact_guild_state.h"
+#include "guild/artifact_guild_state.h"
 
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "db.h"
 #include "epic.h"
 #include "economy/nexus_stones.h"

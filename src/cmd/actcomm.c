@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "epic.h"
 #include "net/gmcp.h"
 #include "graph.h"

@@ -19,7 +19,7 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "combat/damage.h"
 #include "classes/disguise.h"
 #include "graph.h"

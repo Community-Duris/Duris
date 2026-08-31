@@ -22,8 +22,8 @@
 #include <string.h>
 #include <time.h>
 #include "achievements.h"
-#include "alliances.h"
-#include "assocs.h"
+#include "guild/alliances.h"
+#include "guild/assocs.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
 #include "defines.h"
@@ -31,7 +31,7 @@
 #include "graph.h"
 #include "combat/grapple.h"
 #include "hardcore_config.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "map.h"
 #include "mm.h"

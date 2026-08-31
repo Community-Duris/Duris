@@ -24,7 +24,7 @@
 #include "graph.h"
 #include "combat/grapple.h"
 #include "combat/guard.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "mm.h"
 #include "profile.h"

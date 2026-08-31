@@ -1,5 +1,5 @@
 #include "timers.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "epic.h"
 #include "ships/ships.h"
 #include "sql/sql.h"

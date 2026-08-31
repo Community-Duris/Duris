@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <unordered_set>
 
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "files.h"
 #include "item/item_ownership_runtime.h"
 #include "magic/spells.h"

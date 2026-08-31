@@ -19,7 +19,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "combat/damage.h"
 #include "graph.h"
 #include "combat/guard.h"

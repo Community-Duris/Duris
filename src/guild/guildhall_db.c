@@ -6,7 +6,7 @@
  *
  */
 
-#include "guildhall_db.h"
+#include "guild/guildhall_db.h"
 #include <algorithm>
 #include <new>
 #include <string>
@@ -17,8 +17,8 @@ using namespace std;
 #include "prototypes.h"
 #include "utility.h"
 #include "utils.h"
-#include "assocs.h"
-#include "guildhall.h"
+#include "guild/assocs.h"
+#include "guild/guildhall.h"
 #include "sql/sql.h"
 
 #ifdef __NO_MYSQL__

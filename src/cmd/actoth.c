@@ -23,7 +23,7 @@
 #include <string.h>
 #include <time.h>
 #include "achievements.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "combat/damage.h"
 #include "economy/currency_transaction.h"
 #include "persistence/deferred_save_policy.h"
@@ -33,7 +33,7 @@
 #include "net/gmcp.h"
 #include "combat/guard.h"
 #include "hardcore_config.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "map.h"
 #include "net/mccp.h"

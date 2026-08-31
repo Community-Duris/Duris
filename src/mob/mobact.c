@@ -20,11 +20,11 @@
 #include <climits>
 #include <stdio.h>
 #include <string.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "buildings.h"
 #include "graph.h"
 #include "combat/grapple.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "map.h"
 #include "mm.h"

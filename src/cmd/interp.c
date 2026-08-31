@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "achievements.h"
-#include "alliances.h"
-#include "assocs.h"
+#include "guild/alliances.h"
+#include "guild/assocs.h"
 #include "economy/auction_houses.h"
 #include "classes/avengers.h"
 #include "economy/boon.h"
@@ -33,7 +33,7 @@
 #include "epic.h"
 #include "graph.h"
 #include "combat/grapple.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "persistence/locker_async.h"
 #include "makeexit.h"

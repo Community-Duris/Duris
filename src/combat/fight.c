@@ -56,7 +56,7 @@
 #include "weather.h"
 #include "world_quest.h"
 #include "net/ws_handlers.h"
-#include "artifact_guild_transaction.h"
+#include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"

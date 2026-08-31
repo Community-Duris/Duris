@@ -17,7 +17,7 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "config.h"
 #include "persistence/deferred_save_policy.h"
 #include "persistence/corpse_lifecycle_transaction.h"

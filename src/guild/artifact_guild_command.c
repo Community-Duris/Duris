@@ -1,4 +1,4 @@
-#include "artifact_guild_command.h"
+#include "guild/artifact_guild_command.h"
 
 #include <algorithm>
 

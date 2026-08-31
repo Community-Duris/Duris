@@ -9,13 +9,13 @@
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include <string.h>
 #include <strings.h>
-#include "alliances.h"
+#include "guild/alliances.h"
 #include "epic.h"
 #include "files.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "economy/nexus_stones.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"

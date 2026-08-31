@@ -33,7 +33,7 @@ using namespace std;
 #include "item/item_uid_allocator.h"
 #include "utility.h"
 #include "utils.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "economy/auction_houses.h"
 #include "economy/currency_transaction.h"
 #include "defines.h"

@@ -9,7 +9,7 @@
 #ifndef _GUILDHALLS_DB_H_
 #define _GUILDHALLS_DB_H_
 
-#include "guildhall.h"
+#include "guild/guildhall.h"
 struct Guildhall;
 struct GuildhallRoom;
 

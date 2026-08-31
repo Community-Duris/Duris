@@ -23,7 +23,7 @@
 #include <time.h>
 #include "account/account.h"
 #include "achievements.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "epic.h"
 #include "epic_transaction.h"
 #include "economy/currency_transaction.h"
@@ -35,7 +35,7 @@
 #include "files.h"
 #include "flatfile/flatfile_identity_adapter.h"
 #include "net/gmcp.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "hardcore_config.h"
 #include "combat/justice.h"
 #include "mm.h"

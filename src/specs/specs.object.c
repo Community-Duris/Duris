@@ -23,7 +23,7 @@
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "magic/blispells.h"
 #include "combat/ctf.h"
 #include "economy/currency_transaction.h"

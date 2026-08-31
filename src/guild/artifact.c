@@ -10,7 +10,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
-#include "artifact_cache_codec.h"
+#include "guild/artifact_cache_codec.h"
 #include "net/comm.h"
 #include "db.h"
 #include "utility.h"

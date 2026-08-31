@@ -13,7 +13,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/time.h>
-#include "assocs.h"
+#include "guild/assocs.h"
 #include "combat/ctf.h"
 #include "graph.h"
 #include "classes/reavers.h"

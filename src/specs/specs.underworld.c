@@ -20,7 +20,7 @@
 #include "buildings.h"
 #include "combat/ctf.h"
 #include "combat/damage.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "handler.h"
 #include "combat/justice.h"
 #include "map.h"

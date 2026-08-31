@@ -1,4 +1,4 @@
-#include "artifact_guild_repository.h"
+#include "guild/artifact_guild_repository.h"
 
 #include <algorithm>
 #include <cerrno>

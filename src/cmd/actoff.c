@@ -48,7 +48,7 @@
 #include "combat/damage.h"
 #include "combat/grapple.h"
 #include "combat/guard.h"
-#include "guildhall.h"
+#include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
