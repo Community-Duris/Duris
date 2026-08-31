@@ -1780,6 +1780,13 @@ bool sql_save_player(P_char ch, int type, int room)
 			return false;
 		}
 	}
+	if (compatibility_revision &&
+	    !player_revision_acknowledge_durable(GET_PID(ch), compatibility_revision,
+						 PLAYER_CHECKPOINT_COMPONENT_ALL))
+	{
+		logit(LOG_DEBUG, "sql_save_player: component=revision outcome=acknowledge_failure");
+		return false;
+	}
 
 	clear_player_dirty_container_flags(ch);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);

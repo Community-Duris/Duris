@@ -59,6 +59,8 @@ bool player_revision_begin_inflight(int pid, player_revision_t revision,
 				    player_component_mask_t components);
 bool player_revision_acknowledge(int pid, player_revision_t revision,
 				 player_component_mask_t components);
+bool player_revision_acknowledge_durable(int pid, player_revision_t revision,
+					 player_component_mask_t components);
 bool player_revision_fail_inflight(int pid, player_revision_t revision,
 				   player_component_mask_t components);
 bool player_revision_snapshot_copy(int pid, struct player_revision_snapshot *snapshot_out);
