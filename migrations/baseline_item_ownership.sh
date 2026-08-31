@@ -93,7 +93,7 @@ CREATE TEMPORARY TABLE tainted_item_uids (
 WITH RECURSIVE tainted(item_uid,depth) AS (
   SELECT DISTINCT item_uid,0 FROM item_ownership_quarantine
   WHERE repaired_at IS NULL AND item_uid>0
-  UNION ALL
+  UNION DISTINCT
   SELECT child.item_uid,tainted.depth+1
   FROM tainted JOIN item_custody_evidence child ON child.parent_uid=tainted.item_uid
   WHERE tainted.depth<32

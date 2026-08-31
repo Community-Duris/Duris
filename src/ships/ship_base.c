@@ -30,6 +30,7 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "redis_ship_legacy.h"
+#include "redis_world_runtime.h"
 #ifdef __NO_MYSQL__
 #include "flatfile_identity_adapter.h"
 #include "flatfile_ship_repository.h"
@@ -426,7 +427,7 @@ void initialize_ships()
 	initialize_ship_cargo();
 	load_cyrics_revenge();
 	// load_zone_ship();
-	if (!load_moonstone_fragments())
+	if (!redis_world_recovery_boot_active() && !load_moonstone_fragments())
 	{
 		logit(LOG_FILE, "Error initializing automatons quest!\r\n");
 	}

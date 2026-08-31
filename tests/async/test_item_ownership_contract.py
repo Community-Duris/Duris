@@ -33,6 +33,14 @@ class ItemOwnershipContractTests(unittest.TestCase):
                        "verify_item_ownership_schema.sh"):
             self.assertTrue((ROOT / "migrations" / script).stat().st_mode & 0o111)
 
+        baseline = (ROOT / "migrations/baseline_item_ownership.sh").read_text()
+        tainted = baseline[
+            baseline.index("WITH RECURSIVE tainted(item_uid,depth)") :
+            baseline.index("SELECT DISTINCT item_uid FROM tainted")
+        ]
+        self.assertIn("UNION DISTINCT", tainted)
+        self.assertNotIn("UNION ALL", tainted)
+
     def test_command_is_bounded_typed_revisioned_and_snapshot_capable(self):
         header = (SRC / "item_transfer_command.h").read_text()
         implementation = (SRC / "item_transfer_command.c").read_text()

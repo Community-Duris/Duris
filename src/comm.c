@@ -1065,6 +1065,8 @@ void game_loop(int port, int sslport)
 			      redis_world_clean_restart_boot() ? "Clean restart" : "Crash");
 			for (int zone = 0; zone <= top_of_zone_table; ++zone)
 				reset_zone(zone, 2);
+			if (!load_moonstone_fragments())
+				logit(LOG_FILE, "Error initializing automatons quest!\r\n");
 		}
 		redis_world_recovery_boot_clear();
 		// Enable the registry-owned world-state job now that recovery is done.

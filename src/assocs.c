@@ -454,7 +454,7 @@ Guild::Guild(char *_name, unsigned int _racewar, unsigned int _id_number, unsign
 	members = NULL;
 	for (int i = 0; i < ASC_NUM_RANKS; i++)
 	{
-		snprintf(titles[i], MAX_STRING_LENGTH, "%s", guild_default_titles[i]);
+		snprintf(titles[i], sizeof(titles[i]), "%s", guild_default_titles[i]);
 	}
 }
 
@@ -476,7 +476,7 @@ Guild::Guild()
 	members = NULL;
 	for (int i = 0; i < ASC_NUM_RANKS; i++)
 	{
-		snprintf(titles[i], MAX_STRING_LENGTH, "%s", guild_default_titles[i]);
+		snprintf(titles[i], sizeof(titles[i]), "%s", guild_default_titles[i]);
 	}
 }
 
