@@ -28,4 +28,11 @@ assert "if (stat_idx != -1 && enhance_stat_enabled)" not in source
 assert "And which object is the enhancement object?" in source
 assert "Syntax: enhance <source item you want to upgrade> <upgrade material item>" in source
 
+# act() supplies the line ending; embedding another one creates a blank line
+# before the final item value. Legacy luck banners remain conditional and colored.
+assert 'Your enhancement is a success! You now have &n$p&+B!\\r\\n' not in source
+assert '&+YYou feel &+MEXTREMELY Lucky&+Y!\\r\\n' in source
+assert '&+YYou feel &+MVery Lucky&+Y!\\r\\n' in source
+assert '&+YYou feel &+MLucky&+Y!\\r\\n' in source
+
 print("enhance stat config gate contract passed")

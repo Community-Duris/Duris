@@ -266,8 +266,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	SUB_MONEY(ch, cost, 0);
 	send_to_char("Your pockets feel &+Wlighter&n.\r\n", ch);
 
-	act("&+BYour enhancement is a success! You now have &n$p&+B!\r\n", FALSE, ch, robj, 0,
-	    TO_CHAR);
+	act("&+BYour enhancement is a success! You now have &n$p&+B!", FALSE, ch, robj, 0, TO_CHAR);
 	snprintf(buf, MAX_STRING_LENGTH, "&+wFinal item value: %d.&n\r\n", itemvalue(robj));
 	send_to_char(buf, ch);
 	obj_to_char(robj, ch);
