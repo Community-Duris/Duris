@@ -3,9 +3,8 @@
 Date: 2026-08-31
 Branch: `siege-kingdom-removal`
 Research baseline: `63cb1ab9`
-Status: Release A repository implementation and local validation complete; production and
-retained-backup custody preflight still blocks object-prototype deletion and the gated
-Release B cleanup, and help-store cleanup remains a deployment postflight
+Status: Complete; production and retained-backup custody preflight passed, Release B
+prototype deletion is complete, and the production help-store postflight is clean
 
 ## Executive conclusion
 
@@ -177,6 +176,47 @@ set. Their Release B deletion and the corresponding prototype-absence smoke asse
 remain blocked by the production and retained-backup custody audit; local zero-row evidence
 does not satisfy that gate. No historical migration, schema fingerprint, player flag,
 command ID, or retained prototype was changed during final validation.
+
+### Checkpoint 6 - Production gate and Release B completion (2026-08-31)
+
+The approved `ssh duris` production preflight established:
+
+- the target is `mariadb-primary`, uses the configured database-backup root, and does not
+  inject `SIEGE_ENABLED` through `EXTRA_CFLAGS`;
+- all five retired feature tables contain zero rows, no player has retired `act2 BIT_4`,
+  and every discovered live `vnum` or `obj_vnum` column contains zero rows for VNUMs 160,
+  161, 178, 179, and 461 through 464;
+- there are no auctions, auction custody rows, or unretrieved auction pickups, so there are
+  no active auction blobs to decode and no corrupt or unsupported live blob blocks;
+- all 14 generations in the configured database-backup root contain every required custody
+  table, zero matches in every discovered VNUM column, zero active auction blobs, and zero
+  corrupt or unsupported repository-format records;
+- the player-save and critical-command journals are both empty;
+- no flat-file authority, flat-file backup generation, legacy `Players/Kingdoms`, town, or
+  siege path, conversion backup, or separate builder/deployment repository exists on the
+  target host.
+
+That evidence clears the documented custody gate. Release B therefore deletes all eight
+full-world prototypes from `areas/obj/heavens.obj`, deletes VNUMs 160, 161, 178, and 179
+from the tracked minimal world, and flips the comprehensive contract from atomic retention
+to required absence.
+
+Before the production help mutation, the exact `ADD`, `kingdoms`, and TOGGLE rows were
+saved to the owner-only rollback file
+`db/Backup/siege-help-precleanup-1788208738.sql` with SHA-256
+`13cb4e42d450433d4e9f464991724dd3f250e566f598ff6efd86cfe7b9ebc3c3`. A count-checked
+transaction deleted exactly the two obsolete pages and replaced exactly one TOGGLE page
+with the repository source. Postflight found zero obsolete rows, one TOGGLE row matching
+the source, zero Kingdom View text, and all five compatibility tables still present and
+empty.
+
+After Release B, world generation, the focused removal/minimal/zcheck contracts, the
+warning-as-error server build, migration-tool build, all 374 Python regressions, the native
+signal-handler test, and the real flat-file full-world boot pass. Configured MariaDB cold
+boots of both the full and minimal worlds reached `Entering game loop` and stopped normally.
+The full-world staff smoke found all eight VNUMs absent from the runtime object list and
+completed an existing-character save successfully. Historical migrations, schema
+fingerprints, command IDs, and the reserved player flag remain unchanged.
 
 ## Scope and terminology
 

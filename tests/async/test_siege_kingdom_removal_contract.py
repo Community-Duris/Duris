@@ -17,7 +17,7 @@ QUARTERMASTER_VNUMS = tuple(range(401000, 401091, 10))
 
 # Release A must retain every dedicated prototype until the production and retained-backup
 # custody gate is cleared. Flip this to False only in the gated Release B cleanup.
-COMPATIBILITY_PROTOTYPES_RETAINED = True
+COMPATIBILITY_PROTOTYPES_RETAINED = False
 
 
 def source_text() -> str:
