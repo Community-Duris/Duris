@@ -1,5 +1,5 @@
-#include "redis_presence_worker.h"
-#include "redis_connection.h"
+#include "redis/redis_presence_worker.h"
+#include "redis/redis_connection.h"
 
 #include <hiredis/hiredis.h>
 

@@ -1,4 +1,4 @@
-#include "redis_presence_payload.h"
+#include "redis/redis_presence_payload.h"
 
 #include <cjson/cJSON.h>
 

@@ -1,7 +1,7 @@
-#include "redis_world_store.h"
-#include "redis_connection.h"
-#include "redis_key_registry.h"
-#include "redis_namespace.h"
+#include "redis/redis_world_store.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_key_registry.h"
+#include "redis/redis_namespace.h"
 
 #include "world_recovery_pipeline.h"
 

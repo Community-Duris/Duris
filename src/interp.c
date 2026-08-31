@@ -43,7 +43,7 @@
 #include "nexus_stones.h"
 #include "outposts.h"
 #include "poll.h"
-#include "redis_wizard.h"
+#include "redis/redis_wizard.h"
 #include "rogues.h"
 #include "siege.h"
 #include "specs.prototypes.h"

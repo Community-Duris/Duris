@@ -26,7 +26,7 @@
 #include "mm.h"
 #include "necromancy.h"
 #include "persistence_mode.h"
-#include "redis_report_cache.h"
+#include "redis/redis_report_cache.h"
 #include "spells.h"
 #include "sql.h"
 #include "vnum.obj.h"

@@ -1,9 +1,9 @@
-#include "redis_presence_runtime.h"
+#include "redis/redis_presence_runtime.h"
 
 #include "presence_policy.h"
 #include "prototypes.h"
-#include "redis_presence_payload.h"
-#include "redis_presence_worker.h"
+#include "redis/redis_presence_payload.h"
+#include "redis/redis_presence_worker.h"
 #include "utils.h"
 
 #include <cstdlib>

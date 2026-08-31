@@ -1,7 +1,7 @@
 #ifndef REDIS_WORLD_STORE_H
 #define REDIS_WORLD_STORE_H
 
-#include "redis_command_observability.h"
+#include "redis/redis_command_observability.h"
 
 #include <stddef.h>
 #include <stdint.h>

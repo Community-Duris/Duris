@@ -26,7 +26,7 @@
 #include "corpse_lifecycle_transaction.h"
 #include "currency_transaction.h"
 #include "ctf.h"
-#include "redis_floor_runtime.h"
+#include "redis/redis_floor_runtime.h"
 #include "damage.h"
 #include "gmcp.h"
 #include "item_ownership_runtime.h"

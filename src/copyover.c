@@ -37,7 +37,7 @@
 #include "player_load_materialize.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
-#include "redis_world_runtime.h"
+#include "redis/redis_world_runtime.h"
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
 #define DMS_RUNTIME_BINARY "bin/server/dms"

@@ -47,7 +47,7 @@
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
 #include "player_revision_state.h"
-#include "redis_presence_runtime.h"
+#include "redis/redis_presence_runtime.h"
 #include "ships.h"
 #include "specializations.h"
 #include "spells.h"

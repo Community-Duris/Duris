@@ -8,7 +8,7 @@
 #define REDIS_SURFACE(symbol, token, pattern, store, kind, state) \
 	inline constexpr char REDIS_##symbol[] = token;
 #define REDIS_OWNED_PATTERN(symbol, pattern) inline constexpr char REDIS_OWNED_##symbol[] = pattern;
-#include "redis_key_registry.def"
+#include "redis/redis_key_registry.def"
 #undef REDIS_OWNED_PATTERN
 #undef REDIS_SURFACE
 #undef REDIS_STORE

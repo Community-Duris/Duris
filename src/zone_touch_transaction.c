@@ -2,7 +2,7 @@
 
 #include "structs.h"
 #include "epic.h"
-#include "redis_report_cache.h"
+#include "redis/redis_report_cache.h"
 
 #include <new>
 #include <string>

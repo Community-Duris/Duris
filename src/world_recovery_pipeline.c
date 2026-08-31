@@ -4,7 +4,7 @@
 #include "db.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"
-#include "redis_floor_runtime.h"
+#include "redis/redis_floor_runtime.h"
 #include "ships/ships.h"
 #include "utils.h"
 #include "world_recovery_codec.h"

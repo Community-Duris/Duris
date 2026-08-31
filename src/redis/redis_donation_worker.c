@@ -1,5 +1,5 @@
-#include "redis_donation_worker.h"
-#include "redis_connection.h"
+#include "redis/redis_donation_worker.h"
+#include "redis/redis_connection.h"
 
 #include <hiredis/hiredis.h>
 

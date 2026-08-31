@@ -1,5 +1,5 @@
-#include "redis_namespace.h"
-#include "redis_key_registry.h"
+#include "redis/redis_namespace.h"
+#include "redis/redis_key_registry.h"
 
 #include <stdio.h>
 #include <string.h>

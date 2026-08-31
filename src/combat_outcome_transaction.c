@@ -1,6 +1,6 @@
 #include "combat_outcome_transaction.h"
 
-#include "redis_report_cache.h"
+#include "redis/redis_report_cache.h"
 #include "currency_transaction.h"
 #include "epic_transaction.h"
 #include "sql_player.h"

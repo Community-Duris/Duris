@@ -1,9 +1,9 @@
-#include "redis_floor_runtime.h"
+#include "redis/redis_floor_runtime.h"
 
 #include "prototypes.h"
-#include "redis_floor_store.h"
-#include "redis_key_registry.h"
-#include "redis_namespace.h"
+#include "redis/redis_floor_store.h"
+#include "redis/redis_key_registry.h"
+#include "redis/redis_namespace.h"
 #include "utils.h"
 #include "world_recovery_codec.h"
 #include "world_recovery_pipeline.h"

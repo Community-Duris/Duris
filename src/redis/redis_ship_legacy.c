@@ -1,8 +1,8 @@
-#include "redis_ship_legacy.h"
+#include "redis/redis_ship_legacy.h"
 
-#include "redis_command_observability.h"
-#include "redis_connection.h"
-#include "redis_key_registry.h"
+#include "redis/redis_command_observability.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_key_registry.h"
 
 #include <algorithm>
 #include <chrono>

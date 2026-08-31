@@ -29,8 +29,8 @@
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
-#include "redis_ship_legacy.h"
-#include "redis_world_runtime.h"
+#include "redis/redis_ship_legacy.h"
+#include "redis/redis_world_runtime.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_identity_adapter.h"
 #include "flatfile/flatfile_ship_repository.h"

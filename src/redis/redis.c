@@ -1,23 +1,23 @@
 // Redis subsystem composition and lifecycle.
 
 #include "prototypes.h"
-#include "redis_lifecycle.h"
-#include "redis_world_runtime.h"
+#include "redis/redis_lifecycle.h"
+#include "redis/redis_world_runtime.h"
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "redis_command_observability.h"
-#include "redis_donation_worker.h"
-#include "redis_donation_runtime.h"
-#include "redis_floor_runtime.h"
-#include "redis_key_registry.h"
-#include "redis_maintenance.h"
-#include "redis_namespace.h"
-#include "redis_presence_runtime.h"
-#include "redis_presence_worker.h"
-#include "redis_report_cache.h"
-#include "redis_runtime_config.h"
-#include "redis_ship_legacy.h"
+#include "redis/redis_command_observability.h"
+#include "redis/redis_donation_worker.h"
+#include "redis/redis_donation_runtime.h"
+#include "redis/redis_floor_runtime.h"
+#include "redis/redis_key_registry.h"
+#include "redis/redis_maintenance.h"
+#include "redis/redis_namespace.h"
+#include "redis/redis_presence_runtime.h"
+#include "redis/redis_presence_worker.h"
+#include "redis/redis_report_cache.h"
+#include "redis/redis_runtime_config.h"
+#include "redis/redis_ship_legacy.h"
 #include "sql.h"
 
 extern int _pwipe;

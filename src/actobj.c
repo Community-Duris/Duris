@@ -26,7 +26,7 @@
 #include "necromancy.h"
 #include "objmisc.h"
 #include "persistence_checkpoint.h"
-#include "redis_floor_runtime.h"
+#include "redis/redis_floor_runtime.h"
 #include "safe_format.h"
 #include "spells.h"
 #include "sql.h"

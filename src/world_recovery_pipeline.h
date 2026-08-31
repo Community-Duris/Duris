@@ -2,7 +2,7 @@
 #define WORLD_RECOVERY_PIPELINE_H
 
 #include "structs.h"
-#include "redis_command_observability.h"
+#include "redis/redis_command_observability.h"
 
 #include <stddef.h>
 #include <stdint.h>

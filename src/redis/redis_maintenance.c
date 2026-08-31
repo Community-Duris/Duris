@@ -1,10 +1,10 @@
-#include "redis_maintenance.h"
+#include "redis/redis_maintenance.h"
 
-#include "redis_command_observability.h"
-#include "redis_connection.h"
-#include "redis_key_registry.h"
-#include "redis_namespace.h"
-#include "redis_ship_legacy.h"
+#include "redis/redis_command_observability.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_key_registry.h"
+#include "redis/redis_namespace.h"
+#include "redis/redis_ship_legacy.h"
 
 #include <cstdarg>
 #include <cstdio>

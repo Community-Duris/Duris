@@ -1,11 +1,11 @@
-#include "redis_key_registry.h"
+#include "redis/redis_key_registry.h"
 
 const redis_key_registry_entry redis_key_registry[] = {
 #define REDIS_STORE(symbol, lifecycle_id, locator, kind)
 #define REDIS_SURFACE(symbol, token, pattern, store, kind, state) \
 	{ #symbol, token, pattern, REDIS_STORE_ID_##store, kind, state },
 #define REDIS_OWNED_PATTERN(symbol, pattern)
-#include "redis_key_registry.def"
+#include "redis/redis_key_registry.def"
 #undef REDIS_OWNED_PATTERN
 #undef REDIS_SURFACE
 #undef REDIS_STORE

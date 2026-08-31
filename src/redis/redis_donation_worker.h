@@ -2,7 +2,7 @@
 #define REDIS_DONATION_WORKER_H
 
 #include "donation_event.h"
-#include "redis_command_observability.h"
+#include "redis/redis_command_observability.h"
 
 #include <stddef.h>
 #include <stdint.h>

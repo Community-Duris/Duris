@@ -8,16 +8,16 @@
 #include <string.h>
 #include <strings.h>
 #include "persistence_checkpoint.h"
-#include "redis_lifecycle.h"
-#include "redis_cache_store.h"
-#include "redis_command_observability.h"
-#include "redis_donation_worker.h"
-#include "redis_floor_store.h"
-#include "redis_key_registry.h"
-#include "redis_presence_worker.h"
-#include "redis_report_cache.h"
-#include "redis_wizard.h"
-#include "redis_world_runtime.h"
+#include "redis/redis_lifecycle.h"
+#include "redis/redis_cache_store.h"
+#include "redis/redis_command_observability.h"
+#include "redis/redis_donation_worker.h"
+#include "redis/redis_floor_store.h"
+#include "redis/redis_key_registry.h"
+#include "redis/redis_presence_worker.h"
+#include "redis/redis_report_cache.h"
+#include "redis/redis_wizard.h"
+#include "redis/redis_world_runtime.h"
 #include "world_recovery_pipeline.h"
 
 static const char *world_worker_state(const world_recovery_health *world)

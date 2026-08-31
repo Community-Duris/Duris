@@ -1,6 +1,6 @@
-#include "redis_runtime_config.h"
+#include "redis/redis_runtime_config.h"
 
-#include "redis_connection.h"
+#include "redis/redis_connection.h"
 
 #include <cerrno>
 #include <cstdlib>

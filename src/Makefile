@@ -125,13 +125,13 @@ OBJS =  $(SHIP_OBJS) \
 				 artifact_cache_codec.o \
 				 report_cache_codec.o \
 				 donation_event.o \
-				 redis_connection.o \
-				 redis_command_observability.o \
-				 redis_donation_runtime.o \
-				 redis_key_registry.o \
-				 redis_namespace.o \
+				 redis/redis_connection.o \
+				 redis/redis_command_observability.o \
+				 redis/redis_donation_runtime.o \
+				 redis/redis_key_registry.o \
+				 redis/redis_namespace.o \
 				 world_recovery_codec.o \
-				 redis_donation_worker.o \
+				 redis/redis_donation_worker.o \
 				 assocs.o \
 				 auction_houses.o \
 				 bard.o \
@@ -317,18 +317,18 @@ OBJS =  $(SHIP_OBJS) \
 				 maintenance_snapshot.o \
 				 player_load_materialize.o \
 				 presence_policy.o \
-				 redis_cache_store.o \
-				 redis_report_cache.o \
-				 redis_runtime_config.o \
-				 redis_maintenance.o \
-				 redis_ship_legacy.o \
-				 redis_floor_runtime.o \
-				 redis_floor_store.o \
-				 redis_presence_payload.o \
-				 redis_presence_runtime.o \
-				 redis_presence_worker.o \
-				 redis_world_runtime.o \
-				 redis_world_store.o \
+				 redis/redis_cache_store.o \
+				 redis/redis_report_cache.o \
+				 redis/redis_runtime_config.o \
+				 redis/redis_maintenance.o \
+				 redis/redis_ship_legacy.o \
+				 redis/redis_floor_runtime.o \
+				 redis/redis_floor_store.o \
+				 redis/redis_presence_payload.o \
+				 redis/redis_presence_runtime.o \
+				 redis/redis_presence_worker.o \
+				 redis/redis_world_runtime.o \
+				 redis/redis_world_store.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \
@@ -408,8 +408,8 @@ OBJS =  $(SHIP_OBJS) \
 				 specs/specs.winterhaven.o \
 				 specs/specs.zion.o \
 				 spells.o \
-				 redis.o \
-				 wizredis.o \
+				 redis/redis.o \
+				 redis/wizredis.o \
 				 sql.o \
 				 sql_player.o \
 				 ssl.o \
