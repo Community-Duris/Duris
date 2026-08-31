@@ -3,24 +3,46 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static FILE *fopen_regular_area_file(const char *path)
 {
-	struct stat status;
-	if (stat(path, &status) != 0)
+	int fd = open(path, O_RDONLY);
+	if (fd == -1)
 		return NULL;
+
+	struct stat status;
+	if (fstat(fd, &status) != 0)
+	{
+		int open_error = errno;
+		close(fd);
+		errno = open_error;
+		return NULL;
+	}
+
 	if (!S_ISREG(status.st_mode))
 	{
+		close(fd);
 		errno = EISDIR;
 		return NULL;
 	}
 
-	return fopen(path, "r");
+	FILE *file = fdopen(fd, "r");
+	if (file == NULL)
+	{
+		int open_error = errno;
+		close(fd);
+		errno = open_error;
+		return NULL;
+	}
+
+	return file;
 }
 
 /*
