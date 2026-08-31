@@ -80,10 +80,13 @@ for token in (
     "consumed != planned.record.size()",
     "rollback_materialized",
     "created_objects.push_back",
+    "world_recovery_rehydrate_npc_items",
     "item_ownership_runtime_hydrate_many_atomic",
 ):
     assert token in materialize
 assert materialize.index("created_objects.push_back") < materialize.index(
+    "world_recovery_rehydrate_npc_items"
+) < materialize.index(
     "item_ownership_runtime_hydrate_many_atomic"
 ) < materialize.index("for (const copyover_room &door")
 

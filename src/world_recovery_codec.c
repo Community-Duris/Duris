@@ -10,7 +10,7 @@
 namespace
 {
 constexpr size_t MOB_EQUIPMENT_COUNT = 43;
-constexpr size_t MOB_WIRE_FIXED_BYTES = 282;
+constexpr size_t MOB_WIRE_FIXED_BYTES = 286;
 constexpr size_t AFFECT_WIRE_BYTES = 60;
 constexpr size_t DOOR_WIRE_BYTES = 12;
 constexpr size_t ZONE_WIRE_BYTES = 20;
@@ -150,6 +150,8 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 	offset += 4;
 	put_i32(output + offset, static_cast<int32_t>(mob.gold));
 	offset += 4;
+	put_i32(output + offset, static_cast<int32_t>(mob.birthplace));
+	offset += 4;
 	for (int index = 0; index < mob.num_affects; ++index)
 	{
 		copyover_affect affect = {};
@@ -247,6 +249,8 @@ bool decode_mob(const unsigned char *wire_data, size_t wire_size,
 	mob.num_carrying = static_cast<int>(get_u32(wire_data + offset));
 	offset += 4;
 	mob.gold = get_i32(wire_data + offset);
+	offset += 4;
+	mob.birthplace = get_i32(wire_data + offset);
 	offset += 4;
 	memcpy(native_record->data(), &mob, sizeof(mob));
 	for (int index = 0; index < mob.num_affects; ++index)
@@ -467,7 +471,7 @@ bool world_recovery_encode_header(const world_recovery_header *header, unsigned 
 {
 	if (!header || !output || output_size < WORLD_RECOVERY_WIRE_HEADER_BYTES)
 		return false;
-	memcpy(output, "WR10", 4);
+	memcpy(output, "WR11", 4);
 	put_u32(output + 4, WORLD_RECOVERY_SCHEMA_VERSION);
 	put_u32(output + 8, WORLD_RECOVERY_WIRE_HEADER_BYTES);
 	put_u64(output + 12, header->sequence);
@@ -486,7 +490,7 @@ bool world_recovery_encode_header(const world_recovery_header *header, unsigned 
 bool world_recovery_decode_header(const unsigned char *data, size_t size,
 				  world_recovery_header *header)
 {
-	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || !header || memcmp(data, "WR10", 4))
+	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || !header || memcmp(data, "WR11", 4))
 		return false;
 	*header = {};
 	memcpy(header->magic, data, 4);

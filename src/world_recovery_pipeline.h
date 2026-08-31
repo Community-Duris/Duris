@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 10;
+constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 11;
 constexpr uint32_t WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED = 1U << 0;
 constexpr size_t WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024;
