@@ -98,6 +98,16 @@ int main(int argc, char **argv)
     assert Path("/tmp").is_dir()
     assert not Path("/TMP").exists()
     completed = subprocess.run(
+        [str(resolver), "/tmp"],
+        cwd=workspace,
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    assert completed.returncode != 0
+    assert completed.stderr.strip() == str(errno.EISDIR)
+
+    completed = subprocess.run(
         [str(resolver), "/TMP"],
         cwd=workspace,
         check=False,
