@@ -3818,8 +3818,8 @@ bool is_aggr_to(P_char ch, P_char target)
 		return FALSE;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch) || !IS_AWAKE(ch) || IS_IMMOBILE(ch) ||
-	    CHAR_IN_SAFE_ROOM(ch) || !CAN_SEE(ch, target) || IS_AFFECTED(target, AFF_WRAITHFORM))
+	if (IS_FIGHTING(ch) || !IS_AWAKE(ch) || IS_IMMOBILE(ch) || CHAR_IN_SAFE_ROOM(ch) ||
+	    !CAN_SEE(ch, target) || IS_AFFECTED(target, AFF_WRAITHFORM))
 	{
 		return FALSE;
 	}

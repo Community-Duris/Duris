@@ -3206,8 +3206,6 @@ bool spell_solbeeps_single_missile(int /*level*/, P_char ch, char * /*arg*/, int
 		   SET_POS(victim, POS_PRONE + GET_STAT(victim));
 
 		   stop_fighting(victim);
-		   if( IS_DESTROYING(victim) )
-		     stop_destroying(victim);
 		   CharWait(victim, PULSE_VIOLENCE * 1);
 
 
@@ -3230,8 +3228,6 @@ bool spell_solbeeps_single_missile(int /*level*/, P_char ch, char * /*arg*/, int
 		         SET_POS(victim, POS_PRONE + GET_STAT(victim));
 		         update_pos(victim);
 		         stop_fighting(victim);
-		         if( IS_DESTROYING(victim) )
-		           stop_destroying(victim);
 		         CharWait(victim, PULSE_VIOLENCE * 1);
 		       }
 		       return FALSE;
@@ -4513,8 +4509,6 @@ void spell_siren_song(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_
 	if (!IS_FIGHTING(victim) && !IS_PATROL(victim) &&
 	    !NewSaves(victim, SAVING_SPELL, GET_C_CHA(ch) - GET_C_POW(victim)))
 	{
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 		send_to_char(
 			"&+cYou can resist no longer! The &+Csong draws your nearer, nearer...\n",
 			victim);
@@ -5305,8 +5299,6 @@ void spell_group_teleport(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 				// if they're fighting, break it up
 				if (IS_FIGHTING(gl->ch))
 					stop_fighting(gl->ch);
-				if (IS_DESTROYING(gl->ch))
-					stop_destroying(gl->ch);
 				REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
 
 				// move the char
@@ -5327,8 +5319,6 @@ void spell_group_teleport(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 		// if they're fighting, break it up
 		if (IS_FIGHTING(ch))
 			stop_fighting(ch);
-		if (IS_DESTROYING(ch))
-			stop_destroying(ch);
 		REMOVE_BIT(ch->specials.affected_by, AFF_HIDE);
 
 		// move the char
@@ -5415,8 +5405,6 @@ void spell_teleport(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 	act("$n slowly fades out of existence.", FALSE, vict, 0, 0, TO_ROOM);
 	if (IS_FIGHTING(vict))
 		stop_fighting(vict);
-	if (IS_DESTROYING(vict))
-		stop_destroying(vict);
 	if (vict->in_room != NOWHERE)
 		for (t_ch = world[vict->in_room].people; t_ch; t_ch = t_ch->next)
 			if (IS_FIGHTING(t_ch) && (GET_OPPONENT(t_ch) == vict))
@@ -5668,7 +5656,7 @@ void spell_blindness(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_c
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }
@@ -6254,7 +6242,7 @@ void spell_ray_of_enfeeblement(int level, P_char ch, char * /*arg*/, [[maybe_unu
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }
@@ -7556,7 +7544,7 @@ void spell_poison(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int typ
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 			{
 				MobStartFight(victim, ch);
 			}
@@ -7627,8 +7615,6 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 			     victim);
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 
 		/*
 		 * stop all non-vicious/agg attackers
@@ -7640,7 +7626,7 @@ void spell_major_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 	else if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }
@@ -7679,8 +7665,6 @@ void spell_minor_paralysis(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 			     victim);
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 
 		/*
 		 * stop all non-vicious/agg attackers
@@ -7737,7 +7721,7 @@ void spell_slow(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 } /*
@@ -7777,7 +7761,7 @@ void spell_stornogs_lowered_magical_res(int level, P_char ch, char * /*arg*/,
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }
@@ -8158,7 +8142,7 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 				if (IS_NPC(victim) && CAN_SEE(victim, ch))
 				{
 					remember(victim, ch);
-					if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+					if (!IS_FIGHTING(victim))
 						MobStartFight(victim, ch);
 					send_to_char(
 						"Your victim does not want to sleep right now!&n\n",
@@ -8184,8 +8168,6 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 		act("&+LYou feel very sleepy ..... zzzzzz", FALSE, victim, 0, 0, TO_CHAR);
 		if (GET_OPPONENT(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 		if (GET_STAT(victim) > STAT_SLEEPING)
 		{
 			act("&+W$n goes to sleep.", TRUE, victim, 0, 0, TO_ROOM);
@@ -8201,7 +8183,7 @@ void spell_sleep(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 		send_to_char("Your victim does not want to sleep right now!&n\n", ch);
 	}
@@ -8375,8 +8357,6 @@ void spell_word_of_recall(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 		    TO_NOTVICT);
 		act("&+WYou utter a single word and $N disappears.", TRUE, ch, 0, victim, TO_CHAR);
 	}
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 	if (IS_PC(victim))
 		sql_log(victim, PLAYERLOG, "Word of recalled to %d", world[victim->in_room].number);
 
@@ -8619,8 +8599,6 @@ void spell_summon(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int typ
 
 	if (IS_FIGHTING(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 
 	if (victim->in_room != NOWHERE)
 		for (t_ch = world[victim->in_room].people; t_ch; t_ch = t_ch->next)
@@ -8841,8 +8819,6 @@ void charm_generic(int level, P_char ch, P_char victim)
 
 	if (IS_FIGHTING(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 
 	/*
 	 * stop all non-vicious/agg attackers
@@ -9301,8 +9277,6 @@ void spell_channel(int /*level*/, P_char ch, P_char victim, P_obj obj)
 				act("$n is severely drained by the summoning, and collapses.",
 				    FALSE, vict, 0, 0, TO_ROOM);
 				stop_fighting(vict);
-				if (IS_DESTROYING(vict))
-					stop_destroying(vict);
 				StopMercifulAttackers(vict);
 				bzero(&af, sizeof(af));
 				af.type = SPELL_CHANNEL;
@@ -9960,7 +9934,7 @@ void spell_fear(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char v
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 	}
@@ -11757,8 +11731,7 @@ bool check_item_teleport(P_char ch, char *arg, int cmd)
 
 	/* different messages for guild doors */
 
-	if ((obj_index[obj->R_num].virtual_number == 48000) &&
-	    (IS_FIGHTING(ch) || IS_DESTROYING(ch)))
+	if ((obj_index[obj->R_num].virtual_number == 48000) && IS_FIGHTING(ch))
 	{
 		act("&+WYou cannot enter a guildhall in combat!", FALSE, ch, obj, 0, TO_CHAR);
 		return TRUE;
@@ -12116,10 +12089,6 @@ void spell_entangle(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int t
 		if (IS_FIGHTING(victim))
 		{
 			stop_fighting(victim);
-		}
-		if (IS_DESTROYING(victim))
-		{
-			stop_destroying(victim);
 		}
 		StopMercifulAttackers(victim);
 
@@ -12730,8 +12699,6 @@ void spell_greater_wraithform(int /*level*/, P_char ch, P_char victim, char * /*
 	 */
 	if (GET_OPPONENT(ch))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	StopAllAttackers(ch);
 	act("$n fades into thin air..", TRUE, ch, 0, 0, TO_ROOM);
 	act("You feel your senses blur.. and then recover.", TRUE, ch, 0, 0, TO_CHAR);
@@ -12802,8 +12769,6 @@ void spell_wraithform(int /*level*/, P_char ch, P_char victim, char * /*arg*/)
 #endif
 	if (GET_OPPONENT(ch))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	StopAllAttackers(ch);
 	act("$n fades into thin air..", TRUE, ch, 0, 0, TO_ROOM);
 	act("You feel your senses blur.. and then recover.", TRUE, ch, 0, 0, TO_CHAR);
@@ -12877,14 +12842,12 @@ void spell_command_undead(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 		setup_pet(victim, ch, level / 4, 0);
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 		StopMercifulAttackers(victim);
 	}
 	else if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }
@@ -13833,7 +13796,7 @@ void spell_faerie_fire(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]
 	if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }
@@ -15338,7 +15301,7 @@ void spell_dispel_magic(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		if (!nosave && IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 		balance_affects(victim);
@@ -15450,8 +15413,6 @@ void complete_player_resurrection_after_commit(P_char ch, P_char t_ch, P_obj obj
 	t_ch->only.pc->pc_timer[PC_TIMER_HEAVEN] = 0;
 	if (GET_OPPONENT(t_ch))
 		stop_fighting(t_ch);
-	if (IS_DESTROYING(t_ch))
-		stop_destroying(t_ch);
 	StopAllAttackers(t_ch);
 	if (lesser && IS_PC(t_ch) && IS_RIDING(t_ch))
 		stop_riding(t_ch);
@@ -15753,10 +15714,6 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 		if (GET_OPPONENT(t_ch))
 		{
 			stop_fighting(t_ch);
-		}
-		if (IS_DESTROYING(t_ch))
-		{
-			stop_destroying(t_ch);
 		}
 		StopAllAttackers(t_ch);
 
@@ -16158,8 +16115,6 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 
 		if (GET_OPPONENT(t_ch))
 			stop_fighting(t_ch);
-		if (IS_DESTROYING(t_ch))
-			stop_destroying(t_ch);
 		StopAllAttackers(t_ch);
 
 		if (IS_PC(t_ch) && IS_RIDING(t_ch))
@@ -17067,11 +17022,6 @@ void spell_tranquility(int level, P_char ch, char * /*arg*/, int /*type*/, P_cha
 				update_pos(d);
 				//        StopMercifulAttackers(d);
 			}
-
-		if (IS_DESTROYING(d) && number(1, 130) < skl_lvl)
-		{
-			stop_destroying(d);
-		}
 	}
 	CharWait(ch, PULSE_VIOLENCE);
 }
@@ -17134,7 +17084,7 @@ void spell_tree(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /
 		return;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("Your magic isn't strong enough to hide you from battle!\r\n", ch);
 		return;
@@ -17493,7 +17443,7 @@ void spell_enlarge(int level, P_char ch, char * /*arg*/, int type, P_char victim
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 	}
@@ -17585,7 +17535,7 @@ void spell_reduce(int level, P_char ch, char * /*arg*/, int type, P_char victim,
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 	}
@@ -17708,8 +17658,6 @@ void spell_oldjudgement(int level, P_char ch, P_char victim, P_obj /*obj*/)
 							SET_POS(t, POS_PRONE + GET_STAT(t));
 
 							stop_fighting(t);
-							if (IS_DESTROYING(t))
-								stop_destroying(t);
 							if (CAN_ACT(t))
 							{
 								Stun(t, ch, PULSE_VIOLENCE * 2,
@@ -17729,8 +17677,6 @@ void spell_oldjudgement(int level, P_char ch, P_char victim, P_obj /*obj*/)
 							SET_POS(t, POS_SITTING + GET_STAT(t));
 
 							stop_fighting(t);
-							if (IS_DESTROYING(t))
-								stop_destroying(t);
 
 							if (CAN_ACT(t))
 							{
@@ -17958,8 +17904,6 @@ void event_judgement(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 				af.bitvector = AFF_SLEEP;
 
 				stop_fighting(victim);
-				if (IS_DESTROYING(victim))
-					stop_destroying(victim);
 
 				if (GET_STAT(victim) > STAT_SLEEPING)
 				{
@@ -17986,8 +17930,6 @@ void event_judgement(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 				    TRUE, victim, 0, victim, TO_ROOM);
 
 				stop_fighting(victim);
-				if (IS_DESTROYING(victim))
-					stop_destroying(victim);
 
 				CharWait(victim, PULSE_VIOLENCE * 3);
 			}
@@ -19680,7 +19622,7 @@ void spell_command(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_cha
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 	}
@@ -19696,7 +19638,7 @@ void spell_command(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_cha
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 	}
@@ -20300,8 +20242,6 @@ void spell_blink(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char 
 
 		if (IS_FIGHTING(ch))
 			stop_fighting(ch);
-		if (IS_DESTROYING(ch))
-			stop_destroying(ch);
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 		{
 			if (GET_OPPONENT(tch) == ch)
@@ -23122,7 +23062,7 @@ void spell_edictum_cineris(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 			{
 				MobStartFight(victim, ch);
 			}

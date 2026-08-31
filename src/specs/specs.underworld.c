@@ -516,10 +516,6 @@ int lightning(P_obj obj, P_char ch, int cmd, char *arg)
 				    FALSE, obj->loc.wearing, obj, vict, TO_VICT);
 				SET_POS(vict, POS_PRONE + GET_STAT(vict));
 				stop_fighting(vict);
-				if (IS_DESTROYING(vict))
-				{
-					stop_destroying(vict);
-				}
 				CharWait(vict, (int)(PULSE_VIOLENCE * 0.7));
 			}
 		}
@@ -1717,8 +1713,6 @@ int elfgate(P_obj obj, P_char ch, int cmd, char *arg)
 	/*         !IS_MAP_ROOM(to_room)); */
 	if (IS_FIGHTING(ch))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	if (ch->in_room != NOWHERE)
 		for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next)
 			if (IS_FIGHTING(t_ch) && (GET_OPPONENT(t_ch) == ch))
@@ -1778,8 +1772,6 @@ int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 		 !IS_SURFACE_MAP(to_room));
 	if (IS_FIGHTING(ch))
 		stop_fighting(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	if (ch->in_room != NOWHERE)
 		for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next)
 			if (IS_FIGHTING(t_ch) && (GET_OPPONENT(t_ch) == ch))
@@ -2073,10 +2065,6 @@ int githpc_special_weap(P_obj obj, P_char ch, int cmd, char *arg)
 						if (IS_FIGHTING(vict))
 						{
 							stop_fighting(vict);
-						}
-						if (IS_DESTROYING(vict))
-						{
-							stop_destroying(vict);
 						}
 						if (vict->in_room != NOWHERE)
 						{
@@ -2568,8 +2556,6 @@ int tiamat(P_char ch, P_char pl, int cmd, char * /*arg*/)
 							SET_POS(vict, POS_SITTING + GET_STAT(vict));
 
 							stop_fighting(vict);
-							if (IS_DESTROYING(vict))
-								stop_destroying(vict);
 
 							if (CAN_ACT(vict))
 							{ // prevent cumulative stun/lag
@@ -3508,10 +3494,6 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 
 					SET_POS(vict, POS_SITTING + GET_STAT(vict));
 					stop_fighting(vict);
-					if (IS_DESTROYING(vict))
-					{
-						stop_destroying(vict);
-					}
 					CharWait(vict, PULSE_VIOLENCE);
 				}
 				// if not standing, hit them again.

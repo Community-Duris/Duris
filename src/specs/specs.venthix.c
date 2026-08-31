@@ -318,8 +318,6 @@ void event_super_cannon_fire(P_char ch, P_char /*vict*/, P_obj /*obj*/, void *da
 			// can we enter next room or did we hit something bad?
 			if (IS_FIGHTING(ch))
 				stop_fighting(ch);
-			if (IS_DESTROYING(ch))
-				stop_destroying(ch);
 
 			if (ch->in_room != NOWHERE)
 				for (P_char attacker = world[ch->in_room].people; attacker;

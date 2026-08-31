@@ -1573,8 +1573,6 @@ void earthen_grasp(int level, P_char ch, P_char victim)
 		if (dam_result == DAM_NONEDEAD)
 		{
 			stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 			StopMercifulAttackers(victim);
 			affect_to_char(victim, &af);
 		}
@@ -2055,7 +2053,7 @@ void spell_snailspeed(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 	if (IS_NPC(victim) && CAN_SEE(victim, ch) && (!IS_PC(ch) || !IS_PC_PET(ch)))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 
@@ -2258,7 +2256,7 @@ void spell_molevision(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]]
 	{
 		remember(victim, ch);
 
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 
@@ -2381,7 +2379,7 @@ void spell_mousestrength(int level, P_char ch, char * /*arg*/, [[maybe_unused]] 
 	if (IS_NPC(victim) && CAN_SEE(victim, ch) && (IS_PC(ch) || !IS_PC_PET(ch)))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 
@@ -2758,7 +2756,7 @@ void spell_shrewtameness(int level, P_char ch, char * /*arg*/, [[maybe_unused]] 
 	{
 		remember(victim, ch);
 
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 
@@ -3028,7 +3026,7 @@ void spell_call_of_the_wild(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 		return;
@@ -3083,7 +3081,7 @@ void spell_malison(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int ty
 	if (IS_NPC(victim) && CAN_SEE(victim, ch) && (IS_PC(ch) || !IS_PC_PET(ch)))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 

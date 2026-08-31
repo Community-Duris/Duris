@@ -5036,7 +5036,7 @@ void do_switch(P_char ch, char *argument, int cmd)
 				ch->desc->snoop.snoop_by_list = NULL;
 			}
 
-			if (IS_TRUSTED(ch) && !IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+			if (IS_TRUSTED(ch) && !IS_FIGHTING(ch))
 			{
 				if (GET_WIZINVIS(ch) < GET_LEVEL(ch))
 				{

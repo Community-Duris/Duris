@@ -1245,14 +1245,13 @@ static bool do_get_container_preflight(P_char ch, P_obj s_obj, bool &corpse_flag
 	else
 		corpse_flag = 0;
 
-	if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
+	if (IS_FIGHTING(ch) && (GET_ITEM_TYPE(s_obj) == ITEM_CORPSE))
 	{
 		GETDBG_LOG(
-			"GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d destroying=%d corpse_flag=%d",
+			"GETDBG[get-container-fight-gate]: ch=%s room=%d container=%s [%d] fighting=%d corpse_flag=%d",
 			GET_NAME(ch), world[ch->in_room].number,
 			s_obj->short_description ? s_obj->short_description : "(none)",
-			OBJ_VNUM(s_obj), IS_FIGHTING(ch) ? 1 : 0, IS_DESTROYING(ch) ? 1 : 0,
-			corpse_flag ? 1 : 0);
+			OBJ_VNUM(s_obj), IS_FIGHTING(ch) ? 1 : 0, corpse_flag ? 1 : 0);
 		do_get_reject_fighting_bags(ch, fail);
 		return FALSE;
 	}

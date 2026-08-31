@@ -509,10 +509,6 @@ void spell_stunning_visions(int level, P_char ch, char * /*arg*/, int /*type*/, 
 		{
 			stop_fighting(victim);
 		}
-		if (IS_DESTROYING(victim))
-		{
-			stop_destroying(victim);
-		}
 
 		stop_fighting(ch);
 		Stun(victim, ch, PULSE_VIOLENCE * 2, FALSE);
@@ -530,10 +526,6 @@ void spell_stunning_visions(int level, P_char ch, char * /*arg*/, int /*type*/, 
 		if (IS_FIGHTING(victim))
 		{
 			stop_fighting(victim);
-		}
-		if (IS_DESTROYING(victim))
-		{
-			stop_destroying(victim);
 		}
 
 		stop_fighting(ch);
@@ -553,10 +545,6 @@ void spell_stunning_visions(int level, P_char ch, char * /*arg*/, int /*type*/, 
 		{
 			stop_fighting(victim);
 		}
-		if (IS_DESTROYING(victim))
-		{
-			stop_destroying(victim);
-		}
 
 		stop_fighting(ch);
 		Stun(victim, ch, PULSE_VIOLENCE / 2, FALSE);
@@ -574,10 +562,6 @@ void spell_stunning_visions(int level, P_char ch, char * /*arg*/, int /*type*/, 
 		if (IS_FIGHTING(victim))
 		{
 			stop_fighting(victim);
-		}
-		if (IS_DESTROYING(victim))
-		{
-			stop_destroying(victim);
 		}
 
 		stop_fighting(ch);
@@ -625,8 +609,6 @@ void spell_reflection(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 		if (tch && IS_NPC(tch) && GET_VNUM(tch) == 250)
 		{
 			stop_fighting(tch);
-			if (IS_DESTROYING(tch))
-				stop_destroying(tch);
 			StopAllAttackers(tch);
 			extract_char(tch);
 		}
@@ -642,8 +624,6 @@ void spell_reflection(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 			if (tch2 && IS_NPC(tch2) && GET_VNUM(tch2) == 250)
 			{
 				stop_fighting(tch2);
-				if (IS_DESTROYING(tch2))
-					stop_destroying(tch2);
 				StopAllAttackers(tch2);
 				extract_char(tch2);
 			}
@@ -1108,7 +1088,7 @@ void spell_nightmare(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_c
 		if (IS_NPC(victim) && CAN_SEE(victim, ch))
 		{
 			remember(victim, ch);
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 				MobStartFight(victim, ch);
 		}
 	}
@@ -1637,7 +1617,7 @@ void spell_imprison(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 		return;
 	}
 
-	if (IS_FIGHTING(victim) || IS_DESTROYING(victim))
+	if (IS_FIGHTING(victim))
 	{
 		send_to_char("With this much commotion you can't seem to get a fix on them!\r\n",
 			     ch);
@@ -1710,8 +1690,6 @@ void spell_imprison(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 	}
 
 	stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 	StopAllAttackers(victim);
 	SET_BIT(victim->specials.affected_by5, AFF5_IMPRISON);
 

@@ -127,9 +127,6 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	        // if they're fighting, break it up
 	        if(IS_FIGHTING(gl->ch))
 	          stop_fighting(gl->ch);
-	        if(IS_DESTROYING(gl->ch))
-	          stop_destroying(gl->ch);
-
 	        // move the char
 	        char_from_room(gl->ch);
 	        char_to_room(gl->ch, real_room(VROOM_YUANTI_RUBBLEFILLED), -1);
@@ -141,9 +138,6 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	    // If they're fighting, break it up
 	    if(IS_FIGHTING(ch))
 	      stop_fighting(ch);
-	    if(IS_DESTROYING(ch))
-	      stop_destroying(ch);
-
 	    // Move the char
 	    char_from_room(ch);
 	    char_to_room(ch, real_room(VROOM_YUANTI_RUBBLEFILLED), -1);

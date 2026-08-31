@@ -416,12 +416,6 @@ void do_fire(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You're too busy destroying something.\n", ch);
-		return;
-	}
-
 	weapon = ch->equipment[WIELD];
 
 	if (!weapon)

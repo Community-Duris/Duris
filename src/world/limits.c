@@ -179,7 +179,7 @@ int mana_regen(P_char ch, bool display_only)
 
 	gain += ch->points.mana_reg;
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 		gain = 0;
 
 	if (has_innate(ch, INNATE_VULN_SUN) && IS_SUNLIT(ch->in_room) &&
@@ -302,7 +302,7 @@ int hit_regen(P_char ch, bool display_only)
 		gain = -1;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		for (af = ch->affected; af; af = af->next)
 		{
@@ -375,8 +375,7 @@ int move_regen(P_char ch, bool display_only)
 	}
 
 	if (IS_AFFECTED3(ch, AFF3_SWIMMING) || IS_AFFECTED2(ch, AFF2_HOLDING_BREATH) ||
-	    IS_AFFECTED2(ch, AFF2_IS_DROWNING) || IS_FIGHTING(ch) || IS_DESTROYING(ch) ||
-	    IS_STUNNED(ch))
+	    IS_AFFECTED2(ch, AFF2_IS_DROWNING) || IS_FIGHTING(ch) || IS_STUNNED(ch))
 	{
 		return 0;
 	}
@@ -501,7 +500,7 @@ int ward_regen(P_char ch, bool display_only)
 		gain = 0;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		gain = 0;
 	}

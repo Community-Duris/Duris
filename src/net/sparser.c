@@ -1326,8 +1326,8 @@ bool cast_common_generic(P_char ch, int spl)
 		}
 		return FALSE;
 	}
-	else if (((IS_FIGHTING(ch) || IS_DESTROYING(ch)) &&
-		  IS_SET(skills[spl].targets, TAR_NOCOMBAT) && (IS_PC(ch) || IS_PC_PET(ch))) ||
+	else if ((IS_FIGHTING(ch) && IS_SET(skills[spl].targets, TAR_NOCOMBAT) &&
+		  (IS_PC(ch) || IS_PC_PET(ch))) ||
 		 IS_STUNNED(ch))
 	{
 		send_to_char("Impossible! You can't concentrate enough!\n", ch);
@@ -1970,10 +1970,6 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 				if (number(1, 150) <=
 				    (GET_LEVEL(tar_char) + STAT_INDEX(GET_C_INT(tar_char))))
 				{
-					if (IS_DESTROYING(tar_char))
-					{
-						stop_destroying(tar_char);
-					}
 					MobStartFight(tar_char, ch);
 
 					if (!IS_ALIVE(ch) || !char_in_list(ch))

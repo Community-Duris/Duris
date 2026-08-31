@@ -1381,8 +1381,6 @@ struct char_special_data
 	/* fighting list's next-char pointer thing is good, but too memhoggy
 	   if we want more combat values.. so.. */
 	P_char next_fighting; /* For fighting list             */
-	P_char next_destroying; /* For destroying list                     */
-	P_obj destroying_obj; /* For destroying objects                  */
 
 	sh_int timer;
 	// Absolute pulse (ne_event_tick) by which a CharWait() gate must be gone.

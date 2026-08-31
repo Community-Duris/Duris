@@ -331,7 +331,7 @@ bool flying_transport_cmd_give(P_char ch, P_char victim, char *arg)
 	if (!target || target != victim)
 		return FALSE;
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You're a bit busy fighting to be flying!", ch);
 		return TRUE;

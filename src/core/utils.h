@@ -734,11 +734,6 @@ int race_size(int race);
 
 #define IS_FIGHTING(ch) ((ch)->specials.fighting != NULL)
 #define GET_OPPONENT(ch) (ch->specials.fighting)
-#ifdef SIEGE_ENABLED
-#define IS_DESTROYING(ch) ((ch)->specials.destroying_obj != NULL)
-#else
-#define IS_DESTROYING(ch) false
-#endif
 
 /* Defining this to make life considerably easier - SKB 24 Mar 1995 */
 #define IS_CASTING(ch) (IS_SET((ch)->specials.affected_by2, AFF2_CASTING))

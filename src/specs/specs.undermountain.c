@@ -1233,8 +1233,6 @@ bool trident_charm(P_char ch, P_char victim)
 
 		if (IS_FIGHTING(victim))
 			stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 
 		StopMercifulAttackers(victim);
 

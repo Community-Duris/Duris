@@ -4340,7 +4340,6 @@ void reset_char(P_char ch)
 #else
 	ch->specials.next_fighting = 0;
 #endif
-	ch->specials.destroying_obj = 0;
 	GET_OPPONENT(ch) = 0;
 	ch->specials.carry_weight = 0;
 	ch->specials.carry_items = 0;

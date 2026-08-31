@@ -168,12 +168,6 @@ int CanDoFightMove(P_char ch, P_char victim)
 		return false;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Not while you're destroying an object.\n", ch);
-		return FALSE;
-	}
-
 	return TRUE;
 }
 
@@ -574,8 +568,6 @@ void do_feign_death(P_char ch, char * /*arg*/, int /*cmd*/)
 	if (number(1, 101) < (skl_lvl * number(2, 5) / 2))
 	{
 		stop_fighting(ch);
-		if (IS_DESTROYING(ch))
-			stop_destroying(ch);
 		for (t = world[ch->in_room].people; t; t = t_next)
 		{
 			t_next = t->next_in_room;
@@ -697,8 +689,6 @@ void chant_calm(P_char ch, char * /*argument*/, int /*cmd*/)
 				}
 			}
 		}
-		else if (IS_DESTROYING(d))
-			stop_destroying(d);
 	}
 	CharWait(ch, PULSE_VIOLENCE);
 }
@@ -1114,7 +1104,7 @@ void chant_jin_touch(P_char ch, char *argument, int /*cmd*/)
 		if (IS_NPC(vict) && CAN_SEE(vict, ch) && number(0, 1))
 		{
 			remember(vict, ch);
-			if (!IS_FIGHTING(vict) && !IS_DESTROYING(vict))
+			if (!IS_FIGHTING(vict))
 			{
 				MobStartFight(vict, ch);
 			}
@@ -1155,7 +1145,7 @@ void chant_jin_touch(P_char ch, char *argument, int /*cmd*/)
 	if (IS_NPC(vict) && CAN_SEE(vict, ch) && number(0, 1))
 	{
 		remember(vict, ch);
-		if (!IS_FIGHTING(vict) && !IS_DESTROYING(vict))
+		if (!IS_FIGHTING(vict))
 			MobStartFight(vict, ch);
 	}
 
@@ -1272,7 +1262,7 @@ void chant_ki_strike(P_char ch, char *argument, int /*cmd*/)
 		if (IS_NPC(vict) && CAN_SEE(vict, ch) && number(0, 1))
 		{
 			remember(vict, ch);
-			if (!IS_FIGHTING(vict) && !IS_DESTROYING(vict))
+			if (!IS_FIGHTING(vict))
 				MobStartFight(vict, ch);
 		}
 
@@ -1296,7 +1286,7 @@ void chant_ki_strike(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	// appear is called in set_fighting.
-	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+	if (!IS_FIGHTING(ch))
 		set_fighting(ch, vict);
 	else
 		appear(ch);
@@ -1729,11 +1719,6 @@ void do_OLD_bandage(P_char ch, char *arg, int /*cmd*/)
 	if (IS_FIGHTING(ch))
 	{
 		send_to_char("Try again when someone isn't trying to kill you.\r\n", ch);
-		return;
-	}
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Try again when you're not trying to break anything.\r\n", ch);
 		return;
 	}
 	one_argument(arg, name);
@@ -2539,7 +2524,7 @@ void do_ogre_roar(P_char ch, char *argument, int /*cmd*/)
 		if (IS_NPC(vict) && CAN_SEE(vict, ch))
 		{
 			remember(vict, ch);
-			if (!IS_FIGHTING(vict) && !IS_DESTROYING(vict))
+			if (!IS_FIGHTING(vict))
 				MobStartFight(vict, ch);
 		}
 
@@ -2599,7 +2584,7 @@ void do_ogre_roar(P_char ch, char *argument, int /*cmd*/)
 			if (IS_NPC(vict) && CAN_SEE(vict, ch))
 			{
 				remember(vict, ch);
-				if (!IS_FIGHTING(vict) && !IS_DESTROYING(vict))
+				if (!IS_FIGHTING(vict))
 					MobStartFight(vict, ch);
 			}
 
@@ -2850,11 +2835,6 @@ void do_bind(P_char ch, char *arg, int /*cmd*/)
 		send_to_char("Try again when someone isn't trying to kill you.\r\n", ch);
 		return;
 	}
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Try again when you're not trying to break something.\r\n", ch);
-		return;
-	}
 	one_argument(arg, name);
 
 	if (!(t_char = get_char_room_vis(ch, name)))
@@ -2880,7 +2860,7 @@ void do_bind(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	if (IS_FIGHTING(t_char) || IS_DESTROYING(t_char))
+	if (IS_FIGHTING(t_char))
 	{
 		send_to_char("Cannot bind someone fighting.\r\n", ch);
 		return;
@@ -3251,7 +3231,7 @@ void capture(P_char ch, P_char victim)
 
 		CharWait(ch, PULSE_VIOLENCE * 5);
 
-		if ((GET_STAT(victim) > STAT_INCAP) && !IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+		if ((GET_STAT(victim) > STAT_INCAP) && !IS_FIGHTING(ch))
 			set_fighting(ch, victim);
 	}
 	else
@@ -3265,7 +3245,6 @@ void capture(P_char ch, P_char victim)
 
 		stop_fighting(ch);
 		stop_fighting(victim);
-		stop_destroying(victim);
 
 		SET_BIT(victim->specials.affected_by, AFF_BOUND);
 		SET_POS(victim, POS_PRONE + GET_STAT(victim));
@@ -3566,7 +3545,7 @@ void do_lotus(P_char ch, char * /*argument*/, int /*cmd*/)
 		return;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("That would be un-wise!\n\r", ch);
 		return;
@@ -3611,7 +3590,7 @@ void lotus_event(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 		return;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 		return;
 
 	if (IS_RIDING(ch))

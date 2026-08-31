@@ -245,11 +245,7 @@ int strahd_charm(P_char strahd, P_char charmie, int cmd, char *arg)
         act("&+LI a younger, more able body, such as yourself, perhaps I could return the power to\n", FALSE, strahd, 0, 0, TO_CHAR);
         act("&+Lmy family's name once more.  Come and fight by my side, and reap the rewards!", FALSE, strahd, 0, 0, TO_CHAR);
         stop_fighting(victim);
-        if( IS_DESTROYING(victim) )
-          stop_destroying(victim);
         stop_fighting(strahd);
-        if( IS_DESTROYING(strahd) )
-          stop_destroying(strahd);
         if (victim->following)
           stop_follower(victim);
         add_follower(victim, strahd);

@@ -732,8 +732,7 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 		{
 			if (victim && (victim != ch))
 			{
-				if (IS_NPC(victim) && !IS_FIGHTING(victim) &&
-				    !IS_DESTROYING(victim) && CAN_SEE(victim, ch) &&
+				if (IS_NPC(victim) && !IS_FIGHTING(victim) && CAN_SEE(victim, ch) &&
 				    (GET_POS(ch) == POS_STANDING))
 				{
 					if (number(1, 150) <=
@@ -1084,8 +1083,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	 * Some rudimentary necromancy!  Why not capitalise upon carnage and raise a
 	 * protective legion of undead? - SKB 27 Apr 1995
 	 */
-	if (!IS_GOOD(ch) && !IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !GET_MASTER(ch) &&
-	    !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch) &&
+	if (!IS_GOOD(ch) && !IS_FIGHTING(ch) && !GET_MASTER(ch) && !CHAR_IN_JUSTICE_AREA(ch) &&
+	    !CHAR_IN_TOWN(ch) &&
 	    (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) ||
 	     npc_has_spell_slot(ch, SPELL_CALL_ARCHON) ||
 	     npc_has_spell_slot(ch, SPELL_CREATE_DRACOLICH) ||
@@ -1238,8 +1237,7 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	/* hey..  if we have a guy who can cast conjure elem/conjure greater elem,
 	   let's go to town on this too */
 
-	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !GET_MASTER(ch) &&
-	    !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch))
+	if (!IS_FIGHTING(ch) && !GET_MASTER(ch) && !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch))
 	{
 		if (npc_has_spell_slot(ch, SPELL_CONJURE_GREATER_ELEMENTAL) &&
 		    can_conjure_greater_elem(ch, lvl))
@@ -1258,7 +1256,7 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	if (!number(0, 3))
 	{
 		if (!spl && npc_has_spell_slot(ch, SPELL_INVISIBILITY) && !IS_FIGHTING(ch) &&
-		    !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) &&
+		    !IS_AFFECTED(target, AFF_INVISIBLE) &&
 		    !IS_AFFECTED2(target, AFF2_CONCEALMENT) && !IS_ACT(target, ACT_TEACHER) &&
 		    !IS_FIGHTING(target) &&
 		    (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) &&
@@ -1269,7 +1267,7 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	else
 	{
 		if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(ch) &&
-		    !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) &&
+		    !IS_AFFECTED(target, AFF_INVISIBLE) &&
 		    !IS_AFFECTED2(target, AFF2_CONCEALMENT) && !IS_ACT(target, ACT_TEACHER) &&
 		    !IS_FIGHTING(target) &&
 		    (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) &&
@@ -6837,7 +6835,7 @@ void MobStartFight(P_char ch, P_char vict)
 		}
 		else
 		{
-			if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+			if (!IS_FIGHTING(ch))
 			{
 				// May or may not roar depends on level.
 				set_fighting(ch, vict);
@@ -7596,7 +7594,7 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 	PROFILE_END(mundane_wakeup);
 
 	PROFILE_START(mundane_commune);
-	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !number(0, 20)) // If not fighting, "mem"
+	if (!IS_FIGHTING(ch) && !number(0, 20)) // If not fighting, "mem"
 	{ // 5%
 		// made a separate procedure for mobs, w/o sprintfs and all  -Odorf
 		do_npc_commune(ch);
@@ -7611,7 +7609,7 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 	PROFILE_START(mundane_autostand);
 	if (GET_POS(ch) < POS_STANDING)
 	{ // 3%
-		if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+		if (IS_FIGHTING(ch))
 		{
 			do_stand(ch, 0, 0);
 			PROFILE_END(mundane_autostand);
@@ -8224,7 +8222,7 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 		{
 			MobCastSpell(ch, 0, wall, SPELL_DISPEL_MAGIC, GET_LEVEL(ch));
 		}
-		else if (bTryHit && !IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+		else if (bTryHit && !IS_FIGHTING(ch))
 		{
 			char cmdBuf[500];
 			snprintf(cmdBuf, 500, "wall %s", dirs[wall->value[1]]);
@@ -9712,7 +9710,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 				do_action(ch, 0, CMD_CURSE);
 				break;
 			}
-		if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+		if (!IS_FIGHTING(ch))
 		{
 			/*
 			 * they flee?  whatever happened, stay on them...
@@ -9940,8 +9938,7 @@ P_char find_protector_target(P_char ch)
 	int is_guard = FALSE; /* set to TRUE if ch is a justice
 	                                guard */
 
-	if (!ch || IS_FIGHTING(ch) || IS_DESTROYING(ch) || !CAN_ACT(ch) || ALONE(ch) ||
-	    GET_MASTER(ch))
+	if (!ch || IS_FIGHTING(ch) || !CAN_ACT(ch) || ALONE(ch) || GET_MASTER(ch))
 	{
 		return NULL;
 	}
@@ -10100,8 +10097,6 @@ void MobRetaliateRange(P_char ch, P_char vict)
 			StopCasting(ch);
 	}
 
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	/* Add to memory! */
 
 	if (HAS_MEMORY(ch))

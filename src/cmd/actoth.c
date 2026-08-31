@@ -279,13 +279,6 @@ void do_camp(P_char ch, char *arg, int /*cmd*/)
 		    TO_CHAR);
 		return;
 	}
-	if (IS_DESTROYING(ch))
-	{
-		act("Better finish dealing with $p first, bunky.", FALSE, ch,
-		    ch->specials.destroying_obj, NULL, TO_CHAR);
-		return;
-	}
-
 	if (IS_TRUSTED(ch))
 	{
 		ch->specials.was_in_room = world[ch->in_room].number;
@@ -1369,7 +1362,7 @@ void do_forage(P_char ch, char * /*arg*/, int /*cmd*/)
 		return;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		act("Forage while fighting?  Are you mad!?", FALSE, ch, NULL, NULL, TO_CHAR);
 		return;
@@ -1619,7 +1612,7 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 	if (!command_confirm)
 	{
 		/* check if they can currently do a quit at all */
-		if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+		if (IS_FIGHTING(ch))
 		{
 			send_to_char("No way! You are fighting.\r\n", ch);
 			if (ch->desc)
@@ -1641,7 +1634,7 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 
 	/* confirmed quit! */
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("No way! You are fighting.\r\n", ch);
 		return;
@@ -2810,7 +2803,7 @@ void do_hide(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 
-		if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+		if (IS_FIGHTING(ch))
 		{
 			send_to_char(
 				"Hide behind your weapon, you're a little busy for anything else.\r\n",
@@ -3261,7 +3254,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 		}
 	}
 
-	if (IS_FIGHTING(victim) || IS_DESTROYING(victim))
+	if (IS_FIGHTING(victim))
 	{
 		send_to_char("Yah, right, good way to lose a hand, or a head!\r\n", ch);
 		return;
@@ -3712,7 +3705,7 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 
 	remember(victim, ch);
 
-	if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+	if (!IS_FIGHTING(victim))
 		MobStartFight(victim, ch);
 }
 
@@ -4204,7 +4197,7 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		chance = 50;
 

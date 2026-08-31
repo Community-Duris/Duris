@@ -645,7 +645,7 @@ void event_fish_check(P_char ch, P_char /*victim*/, P_obj, void *data)
 	pole = get_pole(ch);
 	struct affected_type *afp, af;
 
-	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != fdata->room) ||
+	if (!ch->desc || IS_FIGHTING(ch) || (ch->in_room != fdata->room) ||
 	    !MIN_POS(ch, POS_STANDING + STAT_NORMAL) ||
 	    IS_SET(ch->specials.affected_by, AFF_HIDE) || IS_IMMOBILE(ch) || !IS_AWAKE(ch) ||
 	    IS_STUNNED(ch) || IS_CASTING(ch))
@@ -972,9 +972,9 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 		return;
 	}
 
-	if (!ch->desc || IS_FIGHTING(ch) || IS_DESTROYING(ch) || (ch->in_room != mdata->room) ||
+	if (!ch->desc || IS_FIGHTING(ch) || (ch->in_room != mdata->room) ||
 	    (GET_STAT(ch) < STAT_SLEEPING) || IS_SET(ch->specials.affected_by, AFF_HIDE) ||
-	    IS_FIGHTING(victim) || IS_DESTROYING(victim) || (victim->in_room != mdata->room) ||
+	    IS_FIGHTING(victim) || (victim->in_room != mdata->room) ||
 	    IS_SET(victim->specials.affected_by, AFF_HIDE) || affected_by_spell(ch, TAG_FIRING) ||
 	    affected_by_spell(victim, TAG_FIRING) || IS_AFFECTED2(ch, AFF2_MEMORIZING) ||
 	    IS_AFFECTED2(victim, AFF2_MEMORIZING) || IS_IMMOBILE(ch))
@@ -1075,7 +1075,7 @@ void do_bandage(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	if (IS_FIGHTING(victim) || IS_DESTROYING(victim) || IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(victim) || IS_FIGHTING(ch))
 	{
 		send_to_char("The battle in room prevents you from that.\r\n", ch);
 		return;

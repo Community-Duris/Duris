@@ -93,6 +93,24 @@ full build and link. Object-destruction compatibility state remains for the sepa
 mechanical checkpoint. The compatibility-table `towns` entry, historical schema inputs,
 and the gated object prototypes remain unchanged.
 
+### Checkpoint 3 - Object-destruction compatibility removal (2026-08-31)
+
+Completed on branch `siege-kingdom-removal`:
+
+- removed the inactive object-destruction list, character fields, macro, lifecycle
+  functions, combat pulse, and declarations;
+- removed object-target status and prompt rendering;
+- mechanically simplified the 61 source files whose guards had been behavior-neutral
+  while `SIEGE_ENABLED` was absent, then reviewed the full diff for semantic changes;
+- removed stale destruction references from comments and diagnostic output.
+
+The changed C/C++ sources pass the repository formatting check, a static source scan finds
+no remaining destruction-state symbol, and a full warning-as-error server build and link
+pass. This checkpoint does not intentionally change supported-build behavior: the removed
+state could only become active through the now-deleted optional siege implementation.
+Kingdom UI/help and legacy-table lifecycle residue remain for the next checkpoint; the
+historical schema inputs and gated object prototypes remain unchanged.
+
 ## Scope and terminology
 
 In this document:

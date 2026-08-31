@@ -118,12 +118,6 @@ int on_front_line(P_char ch)
 		if (!IS_BACKRANKED(ch))
 			return TRUE;
 	}
-	if (IS_DESTROYING(ch))
-	{
-		REMOVE_BIT(ch->specials.act2, PLR2_BACK_RANK);
-		return TRUE;
-	}
-
 	if (IS_FIGHTING(ch))
 	{
 		if (!IS_FIGHTING(GET_OPPONENT(ch)))
@@ -745,7 +739,7 @@ void do_group(P_char ch, char *argument, int /*cmd*/)
 		{
 			return;
 			// code here to send self to back rank
-			if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+			if (IS_FIGHTING(ch))
 				return;
 			SET_BIT(ch->specials.act2, PLR2_BACK_RANK);
 			send_to_char("You move back to the back rank!\n", ch);

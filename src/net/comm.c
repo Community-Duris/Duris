@@ -1986,8 +1986,6 @@ resume_game_loop:
 					{
 						if (IS_FIGHTING(point->character))
 							stop_fighting(point->character);
-						if (IS_DESTROYING(point->character))
-							stop_destroying(point->character);
 						un_morph(point->character);
 					}
 					if (shutdown_message)
@@ -3106,7 +3104,6 @@ static void greet(P_desc newd)
 void append_prompt(P_char ch, char *promptbuf)
 {
 	P_char t_ch_f;
-	P_obj t_obj_f;
 	P_char tank;
 	int percent = 0;
 
@@ -3126,7 +3123,6 @@ void append_prompt(P_char ch, char *promptbuf)
 	if (ch)
 	{
 		t_ch_f = GET_OPPONENT(ch);
-		t_obj_f = ch->specials.destroying_obj;
 	}
 
 	if (IS_NPC(ch))
@@ -3322,12 +3318,6 @@ void append_prompt(P_char ch, char *promptbuf)
 			}
 			strcat(promptbuf, " &+g>&n\n ");
 		}
-	}
-	if (t_obj_f)
-	{
-		strcat(promptbuf, "&+g< &+rE: ");
-		strcat(promptbuf, t_obj_f->short_description);
-		strcat(promptbuf, "&+g >&n\n");
 	}
 }
 

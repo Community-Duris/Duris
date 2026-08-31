@@ -31,7 +31,6 @@ extern P_index mob_index;
 void make_prompt(P_desc point)
 {
 	P_char t_ch = NULL, t_ch_f = NULL, tank = NULL, orig = NULL;
-	P_obj t_obj_f = NULL;
 	char promptbuf[MAX_INPUT_LENGTH]; /*, pname[512]; */
 	char promptbuf2[MAX_INPUT_LENGTH], *pPrompt;
 	/* Space left from pPrompt onward.  pPrompt aliases one of two
@@ -47,7 +46,6 @@ void make_prompt(P_desc point)
 	if (t_ch)
 	{
 		t_ch_f = GET_OPPONENT(t_ch);
-		t_obj_f = t_ch->specials.destroying_obj;
 	}
 
 	if (!point->prompt_mode)
@@ -343,25 +341,6 @@ void make_prompt(P_desc point)
 				strcat(pPrompt, "&+C (warded)");
 		}
 	}
-	if (t_obj_f)
-	{
-		strcat(pPrompt, "&+g E: ");
-		strcat(pPrompt, FirstWord(t_obj_f->name));
-		strcat(pPrompt, " EC: ");
-		if (t_obj_f->condition > 90)
-			strcat(pPrompt, "&+G");
-		else if (t_obj_f->condition > 70)
-			strcat(pPrompt, "&+g");
-		else if (t_obj_f->condition > 50)
-			strcat(pPrompt, "&+y");
-		else if (t_obj_f->condition > 20)
-			strcat(pPrompt, "&+r");
-		else
-			strcat(pPrompt, "&+R");
-
-		checked_appendf(pPrompt, pPromptCap, "%d ", t_obj_f->condition);
-	}
-
 	if (IS_SET(t_ch_p, PROMPT_VIS) && IS_TRUSTED(t_ch))
 	{
 		strcat(pPrompt, "&+m");

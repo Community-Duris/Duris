@@ -367,7 +367,7 @@ int building_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 		if (!(tmob = get_char_room_vis(pl, arg)) || tmob != ch)
 			return FALSE;
 
-		if (allow && (IS_FIGHTING(pl) || IS_DESTROYING(pl)))
+		if (allow && IS_FIGHTING(pl))
 		{
 			act("&+WYou cannot enter a guildhall in combat!", FALSE, pl, 0, 0, TO_CHAR);
 			return TRUE;

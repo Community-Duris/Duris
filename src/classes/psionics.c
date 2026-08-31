@@ -436,7 +436,7 @@ void spell_sever_link(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_
 		send_to_char("But it seems they are powerless.\r\n", victim->following);
 		act("$N just tried to break the link between you and your master...", FALSE, ch, 0,
 		    victim, TO_CHAR);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 		return;
 	}
@@ -536,7 +536,7 @@ void spell_awe(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim
 		if (total_levels + GET_LEVEL(victim) >= max_total_levels ||
 		    GET_LEVEL(victim) > max_level)
 		{
-			if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+			if (!IS_FIGHTING(victim))
 			{
 				act("$N&n seems really &+RPISSED OFF!&n", FALSE, ch, 0, victim,
 				    TO_CHAR);
@@ -563,8 +563,7 @@ void spell_awe(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim
 				5, GET_C_POW(ch) + level - GET_C_INT(victim) - GET_LEVEL(victim),
 				95);
 
-			if (save < number(0, 100) && !IS_TRUSTED(victim) && !IS_FIGHTING(victim) &&
-			    !IS_DESTROYING(victim))
+			if (save < number(0, 100) && !IS_TRUSTED(victim) && !IS_FIGHTING(victim))
 			{
 				set_fighting(victim, ch);
 				return;
@@ -588,8 +587,6 @@ void spell_awe(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim
 					stop_fighting(victim);
 					StopMercifulAttackers(victim);
 				}
-				if (IS_DESTROYING(victim))
-					stop_destroying(victim);
 			}
 		}
 		else
@@ -611,7 +608,7 @@ void spell_mind_travel(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 			  4109,	 96803, 17589, 17607, 96909, 3404,  23812, 23805, 12535,
 			  12528, 25458, 25459, 25458, 12535, 12536, 12540 };
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		act("$n travels with the speed of &+Clight&n and reappears at the same place...",
 		    FALSE, ch, obj, 0, TO_CHAR);
@@ -2001,8 +1998,6 @@ void spell_confuse(int level, P_char ch, char * /*arg*/, int /*type*/, P_char vi
 				case 6:
 					if (IS_FIGHTING(tch))
 						stop_fighting(tch);
-					if (IS_DESTROYING(tch))
-						stop_destroying(tch);
 					if ((!(IS_NPC(tch))) && (!(GET_RACE(tch) == RACE_GOLEM)))
 					{
 						do_flee(tch, 0, 2);
@@ -2034,7 +2029,7 @@ void spell_confuse(int level, P_char ch, char * /*arg*/, int /*type*/, P_char vi
 			else if (IS_NPC(tch) && CAN_SEE(tch, ch))
 			{
 				remember(tch, ch);
-				if (!IS_FIGHTING(tch) && !IS_DESTROYING(tch))
+				if (!IS_FIGHTING(tch))
 					MobStartFight(tch, ch);
 			}
 		}
@@ -2260,8 +2255,6 @@ void spell_depart(int level, P_char ch, char * /*arg*/, int /*type*/, P_char vic
 
 	if (IS_FIGHTING(victim))
 		stop_fighting(victim);
-	if (IS_DESTROYING(victim))
-		stop_destroying(victim);
 
 	if (victim->in_room != NOWHERE)
 		for (t_ch = world[victim->in_room].people; t_ch; t_ch = t_ch->next)
@@ -2621,8 +2614,6 @@ void spell_innate_blast(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 				victim);
 			if (IS_FIGHTING(victim))
 				stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 
 			/*
 			 * stop all non-vicious/agg attackers
@@ -2636,7 +2627,7 @@ void spell_innate_blast(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	else if (IS_NPC(victim) && CAN_SEE(victim, ch))
 	{
 		remember(victim, ch);
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			MobStartFight(victim, ch);
 	}
 }

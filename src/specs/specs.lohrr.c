@@ -280,8 +280,6 @@ int leviathan(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 					char_to_room(tch, to_room, -1);
 				}
 				stop_fighting(tch);
-				if (IS_DESTROYING(tch))
-					stop_destroying(tch);
 				// Stun for 3-5 sec
 				CharWait(tch, number(3, 5));
 			}

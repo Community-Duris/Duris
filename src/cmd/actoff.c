@@ -820,7 +820,7 @@ void lance_charge(P_char ch, char *argument)
 		return;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	if (IS_FIGHTING(ch))
 	{
 		send_to_char("You are too busy fighting to prepare yourself for a charge!", ch);
 		return;
@@ -832,7 +832,7 @@ void lance_charge(P_char ch, char *argument)
 		return;
 	}
 
-	if (IS_FIGHTING(mount) || IS_DESTROYING(mount))
+	if (IS_FIGHTING(mount))
 	{
 		send_to_char("You mount is too busy fighting!\r\n", ch);
 		return;
@@ -1302,12 +1302,6 @@ void do_charge(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Try disengaging from the object first.\r\n", ch);
-		return;
-	}
-
 	half_chop(argument, arg1, arg2);
 
 	if (!*arg1)
@@ -1480,7 +1474,7 @@ void do_charge(P_char ch, char *argument, int /*cmd*/)
 			SET_POS(ch, POS_PRONE + GET_STAT(ch));
 		}
 
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			set_fighting(victim, ch);
 		return;
 	}
@@ -1503,7 +1497,7 @@ void do_charge(P_char ch, char *argument, int /*cmd*/)
 
 		// We charged, but why should we engage if we failed - Drannak
 		// Good point, only have the victim start attacking. - Lohrr
-		if (!IS_FIGHTING(victim) && !IS_DESTROYING(victim))
+		if (!IS_FIGHTING(victim))
 			set_fighting(victim, ch);
 		return;
 	}
@@ -2320,7 +2314,7 @@ static bool restore_equipment_sneak_after_flee(P_char ch)
 {
 	int i;
 
-	if (!ch || IS_FIGHTING(ch) || IS_DESTROYING(ch) || IS_AFFECTED(ch, AFF_SNEAK))
+	if (!ch || IS_FIGHTING(ch) || IS_AFFECTED(ch, AFF_SNEAK))
 		return FALSE;
 
 	for (i = 0; i < MAX_WEAR; i++)
@@ -2633,8 +2627,6 @@ void do_flee(P_char ch, char *argument, int cmd)
 
 	if (atts)
 		StopAllAttackers(ch);
-	if (IS_DESTROYING(ch))
-		stop_destroying(ch);
 	if (start_room != ch->in_room && restore_equipment_sneak_after_flee(ch))
 		send_to_char(
 			"The moment of panic has passed, and you slip back into a quiet step.\r\n",
@@ -3631,8 +3623,6 @@ void kick(P_char ch, P_char victim)
 				    TO_ROOM);
 				SET_POS(victim, POS_PRONE + GET_STAT(victim));
 				stop_fighting(victim);
-				if (IS_DESTROYING(victim))
-					stop_destroying(victim);
 
 				CharWait(victim,
 					 (int)(PULSE_VIOLENCE *
@@ -3655,8 +3645,6 @@ void kick(P_char ch, P_char victim)
 				Stun(victim, ch, (PULSE_VIOLENCE * number(4, 9)) / 4, TRUE);
 			}
 			stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 			CharWait(victim, (int)(PULSE_VIOLENCE *
 					       get_property("kick.wallkick.victimlag", 1.5)));
 		}
@@ -3679,8 +3667,6 @@ void kick(P_char ch, P_char victim)
 			Stun(victim, ch, (PULSE_VIOLENCE * number(4, 13)) / 4, TRUE);
 		}
 		stop_fighting(victim);
-		if (IS_DESTROYING(victim))
-			stop_destroying(victim);
 		CharWait(victim,
 			 (int)(PULSE_VIOLENCE * get_property("kick.groinkick.victimlag", 1.000)));
 	}
@@ -5011,8 +4997,6 @@ void knock_out(P_char ch, int duration)
 		    FALSE, ch, 0, 0, TO_ROOM);
 
 		stop_fighting(ch);
-		if (IS_DESTROYING(ch))
-			stop_destroying(ch);
 		StopMercifulAttackers(ch);
 
 		memset(&af, 0, sizeof(af));
@@ -6162,12 +6146,6 @@ bool backstab(P_char ch, P_char victim)
 		}
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You can't backstab an object.\n", ch);
-		return FALSE;
-	}
-
 	if (GET_OPPONENT(ch))
 	{
 		send_to_char(
@@ -6370,10 +6348,6 @@ bool backstab(P_char ch, P_char victim)
 				{
 					stop_fighting(victim);
 				}
-				if (IS_DESTROYING(victim))
-				{
-					stop_destroying(victim);
-				}
 				ch->specials.combat_tics = (int)ch->specials.base_combat_round;
 			}
 			else
@@ -6443,12 +6417,6 @@ void attack(P_char ch, P_char victim)
 	}
 
 	skl = GET_CHAR_SKILL(ch, SKILL_SWITCH_OPPONENTS);
-
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Not while destroying an object.\n", ch);
-		return;
-	}
 
 	if (affected_by_spell(ch, SKILL_TAUNT))
 	{
@@ -6648,12 +6616,6 @@ void bash(P_char ch, P_char victim, bool _debug)
 			DEBUG = !DEBUG;
 			debug("bash: DEBUG turned %s.", DEBUG ? "ON" : "OFF");
 		}
-		return;
-	}
-
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Not while fighting an object.\n", ch);
 		return;
 	}
 
@@ -7229,12 +7191,6 @@ void do_tackle(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You can't tackle an object.\n", ch);
-		return;
-	}
-
 	if (!IS_FIGHTING(ch))
 	{
 		vict = ParseTarget(ch, arg);
@@ -7276,7 +7232,7 @@ void do_tackle(P_char ch, char *arg, int /*cmd*/)
 		SET_POS(ch, POS_SITTING + GET_STAT(ch));
 		CharWait(ch, PULSE_VIOLENCE * 1);
 
-		if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+		if (!IS_FIGHTING(ch))
 			set_fighting(ch, vict);
 
 		return;
@@ -7577,16 +7533,7 @@ void do_disengage(P_char ch, char * /*arg*/, int /*cmd*/)
 	}
 	if (!IS_FIGHTING(ch))
 	{
-		if (IS_DESTROYING(ch))
-		{
-			char buf[300];
-			snprintf(buf, 300, "You stop trying to destroy %s.\n",
-				 ch->specials.destroying_obj->short_description);
-			send_to_char(buf, ch);
-			stop_destroying(ch);
-		}
-		else
-			send_to_char("But you aren't fighting anything!\n", ch);
+		send_to_char("But you aren't fighting anything!\n", ch);
 		return;
 	}
 	if (IS_RIDING(ch))
@@ -7670,7 +7617,7 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+	if (!IS_FIGHTING(ch))
 	{
 		send_to_char("You're not fighting anything to retreat from!\n", ch);
 		return;
@@ -7824,8 +7771,6 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 					StopAllAttackers(ch);
 					// MoveAllAttackers(ch,newvict);
 					stop_fighting(ch);
-					if (IS_DESTROYING(ch))
-						stop_destroying(ch);
 					snprintf(Gbuf1, MAX_STRING_LENGTH,
 						 "&+WYou stop fighting and retreat to the %s!&n",
 						 dirs[dir]);
@@ -8027,7 +7972,7 @@ void rescue(P_char ch, P_char rescuee, bool rescue_all)
 					    FALSE, ch, 0, rescuee, TO_NOTVICT);
 				if (GET_OPPONENT(rescuee) == t_ch)
 					stop_fighting(rescuee);
-				if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+				if (!IS_FIGHTING(ch))
 					set_fighting(ch, t_ch);
 			}
 		}
@@ -8506,12 +8451,6 @@ void do_sweeping_thrust(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You can't do that to an object.\n", ch);
-		return;
-	}
-
 	victim = ParseTarget(ch, argument); // Find the target.
 
 	if (!victim) // No target.
@@ -8906,8 +8845,6 @@ void do_rearkick(P_char ch, char *argument, int /*cmd*/)
 					       get_property("kick.roomkick.victimlag", 1.000)));
 				SET_POS(victim, POS_PRONE + GET_STAT(victim));
 				stop_fighting(victim);
-				if (IS_DESTROYING(victim))
-					stop_destroying(victim);
 			}
 		}
 		else
@@ -8922,8 +8859,6 @@ void do_rearkick(P_char ch, char *argument, int /*cmd*/)
 					       get_property("kick.wallkick.victimlag", 1.5)));
 			SET_POS(victim, POS_SITTING + GET_STAT(victim));
 			stop_fighting(victim);
-			if (IS_DESTROYING(victim))
-				stop_destroying(victim);
 		}
 	}
 	return;
@@ -9545,12 +9480,6 @@ void do_springleap(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("Not while destroying an object.\n", ch);
-		return;
-	}
-
 	vict = ParseTarget(ch, argument);
 
 	//------------------------------------------
@@ -9855,7 +9784,7 @@ void do_whirlwind(P_char ch, char * /*argument*/, int /*cmd*/)
 		}
 	}
 
-	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
+	if (!IS_FIGHTING(ch))
 	{
 		send_to_char("But you aren't engaged!\n", ch);
 		return;
@@ -9944,13 +9873,6 @@ void do_trip(P_char ch, char *argument, int /*cmd*/)
 	if (!vict)
 	{
 		send_to_char("Trip who?\n", ch);
-		return;
-	}
-
-	if (IS_DESTROYING(ch))
-	{
-		act("You futilely try to trip $p.&n", FALSE, ch, ch->specials.destroying_obj, 0,
-		    TO_CHAR);
 		return;
 	}
 
@@ -10148,12 +10070,6 @@ bool flank(P_char ch, P_char victim)
 	if (!IS_ALIVE(victim))
 	{
 		send_to_char("You can only flank the living.", ch);
-		return FALSE;
-	}
-
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You can't flank an object.. well maybe a steak.\n", ch);
 		return FALSE;
 	}
 
@@ -10482,12 +10398,6 @@ void do_gaze(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		act("You stare at $p.", FALSE, ch, ch->specials.destroying_obj, victim, TO_CHAR);
-		return;
-	}
-
 	if (GET_CHAR_SKILL(ch, SKILL_GAZE) < 1)
 	{
 		act("You stare deep into $N's eyes... Fascinating.", FALSE, ch, 0, victim, TO_CHAR);
@@ -10812,13 +10722,6 @@ void restrain(P_char ch, P_char victim)
 	{
 		send_to_char("&+LOh, but that would be way too much fun...\n", ch);
 		CharWait(ch, PULSE_VIOLENCE);
-		return;
-	}
-
-	if (IS_DESTROYING(ch))
-	{
-		act("You stare at $p and say 'hold still'.", FALSE, ch, ch->specials.destroying_obj,
-		    NULL, TO_CHAR);
 		return;
 	}
 
@@ -11317,13 +11220,6 @@ void do_shadowstep(P_char ch, char *, int)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		act("You're too busy destroying $p.", FALSE, ch, ch->specials.destroying_obj, NULL,
-		    TO_CHAR);
-		return;
-	}
-
 	int dur = 140 - GET_CHAR_SKILL(ch, SKILL_SHADOWSTEP);
 	if (number(1, 102) < GET_CHAR_SKILL(ch, SKILL_SHADOWSTEP))
 	{
@@ -11413,13 +11309,6 @@ void do_garrote(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (IS_DESTROYING(ch))
-	{
-		act("You choke $p viciously.", FALSE, ch, ch->specials.destroying_obj, NULL,
-		    TO_CHAR);
-		return;
-	}
-
 	chsize = get_takedown_size(ch);
 	victsize = get_takedown_size(victim);
 	// Size handling: +/- 1 (position irrelevant .. neck size is).
@@ -11494,12 +11383,6 @@ void do_legsweep(P_char ch, char *arg, int /*cmd*/)
 	if (IS_CENTAUR(ch) || GET_RACE(ch) == RACE_QUADRUPED || GET_RACE(ch) == RACE_DRIDER)
 	{
 		send_to_char("You rear up and .. wait, how does your leg bend?!\n", ch);
-		return;
-	}
-
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You can't legsweep an object.\n", ch);
 		return;
 	}
 
@@ -11825,12 +11708,6 @@ void do_taunt(P_char ch, char *arg, int cmd)
 	{
 		// taunt is a social if you don't have the skill
 		do_action(ch, arg, cmd);
-		return;
-	}
-
-	if (IS_DESTROYING(ch))
-	{
-		send_to_char("You can't taunt an object.\n", ch);
 		return;
 	}
 

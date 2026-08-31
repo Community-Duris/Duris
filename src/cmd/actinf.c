@@ -1436,7 +1436,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 
 		if (IS_PC(i) || (i->specials.position != i->only.npc->default_pos) ||
 		    IS_FIGHTING(i) || IS_RIDING(i) || (i->lobj && i->lobj->Visible_Type()) ||
-		    (GET_RNUM(i) == real_mobile(IMAGE_REFLECTION_VNUM)) || IS_DESTROYING(ch))
+		    (GET_RNUM(i) == real_mobile(IMAGE_REFLECTION_VNUM)))
 		{
 			/* A player char or a mobile w/o long descr, or not in default pos. */
 			if (IS_PC(i) || (GET_RNUM(i) == real_mobile(IMAGE_REFLECTION_VNUM)))
@@ -1821,12 +1821,6 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 					APPENDF(buffer, " %s $p", i->lobj->Visible_Message());
 				if (!GET_OPPONENT(i))
 				{
-					if (i->specials.destroying_obj)
-					{
-						strcat(buffer, " destroying ");
-						strcat(buffer, (i->specials.destroying_obj)
-								       ->short_description);
-					}
 					strcat(buffer, ".");
 				}
 				else
@@ -5807,11 +5801,6 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 		if (IS_FIGHTING(ch))
 		{
 			APPENDF(buf, ", fighting %s.", PERS(GET_OPPONENT(ch), ch, FALSE));
-		}
-		else if (IS_DESTROYING(ch))
-		{
-			APPENDF(buf, ", destroying %s.",
-				ch->specials.destroying_obj->short_description);
 		}
 		else if (NumAttackers(ch) > 0)
 		{
