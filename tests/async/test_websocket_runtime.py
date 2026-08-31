@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Compile and execute the WebSocket parser and output runtime harness."""
 
+from _paths import SRC
 import pathlib
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 HARNESS = ROOT / "tests/async/websocket_runtime_harness.cpp"
 
 

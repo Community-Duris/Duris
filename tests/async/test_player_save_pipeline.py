@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Runtime revision-state and source contracts for nonterminal player-save cutover."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PIPELINE = (ROOT / "src/player_save_pipeline.c").read_text()
-HEADER = (ROOT / "src/player_save_pipeline.h").read_text()
-FILES = (ROOT / "src/files.c").read_text()
-ACTOTH = (ROOT / "src/actoth.c").read_text()
-CHECKPOINT = (ROOT / "src/persistence_checkpoint.c").read_text()
-EVENTS = (ROOT / "src/new_events.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-NANNY = (ROOT / "src/nanny.c").read_text()
-WORKER = (ROOT / "src/player_save_worker.c").read_text()
-SQL_PLAYER = (ROOT / "src/sql_player.c").read_text()
+PIPELINE = (SRC / "player_save_pipeline.c").read_text()
+HEADER = (SRC / "player_save_pipeline.h").read_text()
+FILES = (SRC / "files.c").read_text()
+ACTOTH = (SRC / "actoth.c").read_text()
+CHECKPOINT = (SRC / "persistence_checkpoint.c").read_text()
+EVENTS = (SRC / "new_events.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+NANNY = (SRC / "nanny.c").read_text()
+WORKER = (SRC / "player_save_worker.c").read_text()
+SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
 def section(text: str, start: str, end: str) -> str:
@@ -63,7 +64,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-pipeline-") as temp_d
             "-Werror",
             "-Isrc",
             str(source),
-            "src/player_revision_state.c",
+            rel("player_revision_state.c"),
             "-o",
             str(binary),
         ],

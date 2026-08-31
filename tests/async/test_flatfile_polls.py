@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -24,8 +25,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-polls-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_poll_harness.cpp",
-            "src/poll.c",
-            "src/flatfile_store.c",
+            rel("poll.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-o",
@@ -36,8 +37,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-polls-") as temporary:
     )
     subprocess.run([str(binary), str(temporary_path / "state")], check=True)
 
-poll_source = (ROOT / "src/poll.c").read_text()
-websocket_source = (ROOT / "src/ws_handlers.c").read_text()
+poll_source = (SRC / "poll.c").read_text()
+websocket_source = (SRC / "ws_handlers.c").read_text()
 assert "Database not available" not in websocket_source
 assert "return record_flat_poll_votes(acct_name, char_name, poll_id, choices);" in poll_source
 assert "return create_flat_poll(poll);" in poll_source
@@ -53,7 +54,7 @@ preprocessed = subprocess.run(
         "-Isrc",
         "-E",
         "-P",
-        "src/poll.c",
+        rel("poll.c"),
     ],
     cwd=ROOT,
     check=True,

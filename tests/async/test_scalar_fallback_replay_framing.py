@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Scalar fallback records must carry the replay discriminator."""
+from _paths import SRC
 from pathlib import Path
 import re
 from contract_text import contains
 
 root = Path(__file__).resolve().parents[2]
-utility = (root / "src/utility.c").read_text()
+utility = (SRC / "utility.c").read_text()
 compact = re.sub(r"\s+", " ", utility)
 
 assert contains(utility, "static const char *persistence_fallback_record_line")

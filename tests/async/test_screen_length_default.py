@@ -1,11 +1,12 @@
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-structs = (ROOT / "src" / "structs.h").read_text()
-actoth = (ROOT / "src" / "actoth.c").read_text()
-nanny = (ROOT / "src" / "nanny.c").read_text()
-sql_player = (ROOT / "src" / "sql_player.c").read_text()
+structs = (SRC / "structs.h").read_text()
+actoth = (SRC / "actoth.c").read_text()
+nanny = (SRC / "nanny.c").read_text()
+sql_player = (SRC / "sql_player.c").read_text()
 
 assert "constexpr int DEFAULT_SCREEN_LENGTH = 40;" in structs
 

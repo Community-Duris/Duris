@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exact shopkeeper aggregate/global-item ownership reconciliation regression."""
 
+from _paths import rel
 import subprocess
 import tempfile
 from pathlib import Path
@@ -82,9 +83,9 @@ with tempfile.TemporaryDirectory(prefix="duris-shopkeeper-ownership-") as temp_d
             "-Werror",
             "-Isrc",
             str(source),
-            "src/flatfile_shopkeeper_ownership.c",
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
+            rel("flatfile_shopkeeper_ownership.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
             "-lcrypto",
             "-o",
             str(binary),

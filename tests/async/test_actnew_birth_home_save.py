@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 from contract_text import find, index
 
-text = Path(__file__).resolve().parents[2].joinpath('src/actnew.c').read_text()
+text = (SRC / "actnew.c").read_text()
 
 old_assign = find(text, 'int old_hometown')
 check = find(text, 'if (!do_save_silent(ch, 1))', old_assign)

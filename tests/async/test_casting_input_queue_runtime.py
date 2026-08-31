@@ -12,6 +12,7 @@ This lifts the two functions verbatim out of the tree, compiles them against
 the real struct txt_q layout, and runs the extraction cases.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import subprocess
@@ -20,9 +21,6 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 def extract(source: Path, signature: str) -> str:
     """Pull one whole top-level function body out of a source file."""
     text = source.read_text(encoding="utf-8", errors="replace")

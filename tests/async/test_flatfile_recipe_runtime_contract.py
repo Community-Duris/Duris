@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SQL_PLAYER = (ROOT / "src/sql_player.c").read_text()
-CRAFTING = (ROOT / "src/crafting.c").read_text()
-MAKEFILE = (ROOT / "src/Makefile").read_text()
+SQL_PLAYER = (SRC / "sql_player.c").read_text()
+CRAFTING = (SRC / "crafting.c").read_text()
+MAKEFILE = (SRC / "Makefile").read_text()
 
 flat_start = SQL_PLAYER.index("#ifdef __NO_MYSQL__")
 flat_end = SQL_PLAYER.index("#else", flat_start)

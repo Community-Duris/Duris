@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regression contract for assigning the Frag Lord title."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/fraglist.c").read_text()
+SOURCE = (SRC / "fraglist.c").read_text()
 
 start = SOURCE.index("static void check_frag_position(")
 end = SOURCE.index("// shows the frag list", start)

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Multi-grant and per-character instance contracts."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/account_reward.c").read_text()
+source = (SRC / "account_reward.c").read_text()
 bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text().lower().replace("`", "")
 migration = (ROOT / "migrations/account_bound_rewards.sql").read_text().lower().replace("`", "")
 

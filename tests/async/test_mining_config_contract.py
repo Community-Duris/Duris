@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-header = (ROOT / "src/mining_config.h").read_text()
-source = (ROOT / "src/mining_config.c").read_text()
+header = (SRC / "mining_config.h").read_text()
+source = (SRC / "mining_config.c").read_text()
 config = (ROOT / "lib/mining.cfg").read_text()
-mining = (ROOT / "src/mining.c").read_text()
-makefile = (ROOT / "src/Makefile").read_text()
+mining = (SRC / "mining.c").read_text()
+makefile = (SRC / "Makefile").read_text()
 
 assert 'fopen("lib/mining.cfg", "r")' in source
 assert "mining_config_boot" in source

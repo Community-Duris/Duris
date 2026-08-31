@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Source and lightweight runtime contracts for the generic inbox/outbox boundary."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 import shlex
@@ -10,11 +11,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION = (ROOT / "migrations/critical_command_inbox_outbox.sql").read_text()
 BOOTSTRAP = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
-REPOSITORY = (ROOT / "src/critical_command_repository.c").read_text()
-OUTBOX = (ROOT / "src/critical_outbox.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
-DIAGNOSTICS = (ROOT / "src/actinf.c").read_text()
+REPOSITORY = (SRC / "critical_command_repository.c").read_text()
+OUTBOX = (SRC / "critical_outbox.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
+DIAGNOSTICS = (SRC / "actinf.c").read_text()
 MIGRATION_RUNNER = (ROOT / "migrations/run_migration.sh").read_text()
 
 for table in (
@@ -56,9 +57,9 @@ assert "EEXIST" in REPOSITORY and "ERANGE" in REPOSITORY
 assert "command.payload.data()" not in REPOSITORY
 assert "PREPARE " not in REPOSITORY
 
-assert "CRITICAL_OUTBOX_BATCH_MAX = 64" in (ROOT / "src/critical_outbox.h").read_text()
-assert "CRITICAL_OUTBOX_RECORD_MAX_BYTES = 65535" in (ROOT / "src/critical_outbox.h").read_text()
-assert "CRITICAL_OUTBOX_MAX_ATTEMPTS = 8" in (ROOT / "src/critical_outbox.h").read_text()
+assert "CRITICAL_OUTBOX_BATCH_MAX = 64" in (SRC / "critical_outbox.h").read_text()
+assert "CRITICAL_OUTBOX_RECORD_MAX_BYTES = 65535" in (SRC / "critical_outbox.h").read_text()
+assert "CRITICAL_OUTBOX_MAX_ATTEMPTS = 8" in (SRC / "critical_outbox.h").read_text()
 assert "ORDER BY next_attempt_at,outbox_id LIMIT 64" in OUTBOX
 assert "critical_outbox_delivery_dedupe" in OUTBOX
 assert "dead_lettered_at" in OUTBOX
@@ -105,7 +106,7 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-outbox-") as temporary:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-            "-pthread", "-Isrc", str(source), "src/critical_outbox.c",
+            "-pthread", "-Isrc", str(source), rel("critical_outbox.c"),
             "-o", str(binary),
         ] + mysql_flags,
         cwd=ROOT,

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Source-contract checks for the async locker snapshot/pulsed pipeline."""
 
+from _paths import SRC
 from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 files = {
     "async_c": (SRC / "locker_async.c").read_text(encoding="utf-8", errors="replace"),
     "async_h": (SRC / "locker_async.h").read_text(encoding="utf-8", errors="replace"),

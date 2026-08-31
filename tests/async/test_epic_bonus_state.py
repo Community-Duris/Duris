@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Runtime coverage for the bounded in-memory epic bonus state."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
 #include "epic_bonus_state.h"
 #include <limits.h>

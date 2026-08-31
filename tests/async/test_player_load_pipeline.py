@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for the bounded consistent player-load pipeline."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 import shlex
@@ -8,15 +9,15 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PIPELINE = (ROOT / "src/player_load_pipeline.c").read_text()
-PIPELINE_HEADER = (ROOT / "src/player_load_pipeline.h").read_text()
-REPOSITORY = (ROOT / "src/player_load_repository.c").read_text()
-ACCOUNT = (ROOT / "src/account.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-NANNY = (ROOT / "src/nanny.c").read_text()
-MATERIALIZE = (ROOT / "src/player_load_materialize.c").read_text()
-DIAGNOSTICS = (ROOT / "src/actinf.c").read_text()
+PIPELINE = (SRC / "player_load_pipeline.c").read_text()
+PIPELINE_HEADER = (SRC / "player_load_pipeline.h").read_text()
+REPOSITORY = (SRC / "player_load_repository.c").read_text()
+ACCOUNT = (SRC / "account.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+NANNY = (SRC / "nanny.c").read_text()
+MATERIALIZE = (SRC / "player_load_materialize.c").read_text()
+DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 
 HARNESS = r'''
@@ -205,8 +206,8 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-pipeline-") as temp_d
             "-Isrc",
             *mysql_cflags,
             str(source),
-            "src/player_load_pipeline.c",
-            "src/persistence_observability.c",
+            rel("player_load_pipeline.c"),
+            rel("persistence_observability.c"),
             *mysql_libs,
             "-o",
             str(binary),

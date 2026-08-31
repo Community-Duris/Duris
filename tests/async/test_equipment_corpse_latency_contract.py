@@ -1,11 +1,12 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-new_events = (ROOT / "src/new_events.c").read_text()
-handler = (ROOT / "src/handler.c").read_text()
-necromancy = (ROOT / "src/necromancy.c").read_text()
-affects = (ROOT / "src/affects.c").read_text()
+new_events = (SRC / "new_events.c").read_text()
+handler = (SRC / "handler.c").read_text()
+necromancy = (SRC / "necromancy.c").read_text()
+affects = (SRC / "affects.c").read_text()
 
 # Equipment recalculation is player-visible and must not sit behind normal
 # event work when the queue is busy. equip_char schedules this callback.

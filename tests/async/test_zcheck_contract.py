@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Registration and safety contracts for the read-only builder zone audit."""
+from _paths import SRC
 from pathlib import Path
 import re
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/zcheck.c").read_text()
-interp = (ROOT / "src/interp.c").read_text()
-interp_h = (ROOT / "src/interp.h").read_text()
-config = (ROOT / "src/config.h").read_text()
-makefile = (ROOT / "src/Makefile").read_text()
-prototypes = (ROOT / "src/prototypes.h").read_text()
+source = (SRC / "zcheck.c").read_text()
+interp = (SRC / "interp.c").read_text()
+interp_h = (SRC / "interp.h").read_text()
+config = (SRC / "config.h").read_text()
+makefile = (SRC / "Makefile").read_text()
+prototypes = (SRC / "prototypes.h").read_text()
 
 table = re.search(r"const char \*command\[MAX_CMD\] = \{(.*?)\n\};", interp, re.DOTALL)
 assert table is not None

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Synthetic runtime and source contracts for linear player-item hydration."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-ITEMS = (ROOT / "src/player_load_items.c").read_text()
-REPOSITORY = (ROOT / "src/player_load_repository.c").read_text()
-MATERIALIZE = (ROOT / "src/player_load_materialize.c").read_text()
-NANNY = (ROOT / "src/nanny.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
+ITEMS = (SRC / "player_load_items.c").read_text()
+REPOSITORY = (SRC / "player_load_repository.c").read_text()
+MATERIALIZE = (SRC / "player_load_materialize.c").read_text()
+NANNY = (SRC / "nanny.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
 
 HARNESS = r'''
 #include "item_ownership_runtime.h"
@@ -754,9 +755,9 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-items-") as temp_dir:
             "-Werror",
             "-Isrc",
             str(source),
-            "src/player_load_items.c",
-            "src/player_load_pets.c",
-            "src/item_ownership_runtime.c",
+            rel("player_load_items.c"),
+            rel("player_load_pets.c"),
+            rel("item_ownership_runtime.c"),
             "-o",
             str(binary),
         ],
@@ -790,7 +791,7 @@ assert "player_load_items_materialize" in MATERIALIZE
 # full save, so the tolerant path has to stay bounded: past the cap the load must be refused
 # rather than quietly destroying most of an inventory, and the wizlog alert must not repeat
 # on every retried login.
-REPOSITORY_HEADER = (ROOT / "src/player_load_repository.h").read_text()
+REPOSITORY_HEADER = (SRC / "player_load_repository.h").read_text()
 assert "PLAYER_LOAD_ITEM_SKIP_MAX" in REPOSITORY_HEADER
 assert "result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX" in MATERIALIZE
 assert "outcome=skip_limit_exceeded" in MATERIALIZE

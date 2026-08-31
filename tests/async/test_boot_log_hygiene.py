@@ -4,6 +4,7 @@ Each assertion below guards a defect that showed up as an error or warning in
 logs/log/* on a clean boot.
 """
 
+from _paths import SRC
 import re
 from pathlib import Path
 from contract_text import contains, find, index, split_at
@@ -23,13 +24,13 @@ assert (ROOT / "logs/log/.gitignore").is_file()
 # --- the donation subscriber must not block the game loop --------------------
 # A blocking Redis subscriber socket stalled every idle pulse and showed up as
 # a once-per-second NEVENT SLOW entry in logs/log/status.
-donation_runtime = (ROOT / "src/redis_donation_runtime.c").read_text()
+donation_runtime = (SRC / "redis_donation_runtime.c").read_text()
 check = donation_runtime.split("void check_donation_messages(void)", 1)[1]
 check = check.split("} // namespace", 1)[0]
 assert contains(check, "redis_donation_worker_take")
 for forbidden in ("redisGetReply", "redisBufferRead", "redisConnect", "poll("):
     assert not contains(check, forbidden)
-donation_worker = (ROOT / "src/redis_donation_worker.c").read_text()
+donation_worker = (SRC / "redis_donation_worker.c").read_text()
 assert contains(donation_worker, "poll(&descriptor, 1, 100)")
 assert contains(donation_worker, "redisBufferRead(")
 assert contains(donation_worker, "redisGetReplyFromReader(")
@@ -40,7 +41,7 @@ assert contains(donation_worker, "#include <sys/poll.h>")
 # --- account saves must not emit a NULL pid ----------------------------------
 # account_characters.pid is NOT NULL; writing NULL aborted the whole account
 # transaction, discarding the accounts and account_ips writes with it.
-sql_player = (ROOT / "src/sql_player.c").read_text()
+sql_player = (SRC / "sql_player.c").read_text()
 # Anchor on the definition; the bare signature also matches the prototype.
 save_chars = split_at(
     sql_player, "static bool sql_save_account_characters(struct acct_entry *acc)\n{", 1
@@ -52,14 +53,14 @@ assert not contains(save_chars, '"NULL"')
 
 
 # --- a missing ban file is a normal state, not a failure ---------------------
-actwiz = (ROOT / "src/actwiz.c").read_text()
+actwiz = (SRC / "actwiz.c").read_text()
 read_ban = actwiz.split("void read_ban_file(void)", 1)[1].split("\nvoid ", 1)[0]
 assert contains(read_ban, "errno != ENOENT")
 assert contains(actwiz, "#include <errno.h>")
 
 
 # --- only an owned artifact with a zero timer is worth warning about ---------
-artifact = (ROOT / "src/artifact.c").read_text()
+artifact = (SRC / "artifact.c").read_text()
 artifact_lines = artifact.splitlines()
 timer_warnings = [
     n
@@ -75,7 +76,7 @@ for n in timer_warnings:
 
 
 # --- MAX_TRADE must cover the largest trade list shipped in world.shp --------
-config_h = (ROOT / "src/config.h").read_text()
+config_h = (SRC / "config.h").read_text()
 max_trade = int(re.search(r"#define MAX_TRADE\s+(\d+)", config_h).group(1))
 
 shop_file = ROOT / "areas/world.shp"
@@ -103,7 +104,7 @@ if shop_file.is_file():
 # --- the rose flavour event must not hand out a NULL object ------------------
 # Object vnum 6107 is not in the world, so read_object() returns NULL and
 # obj_to_char() logged "no obj: mob" on every occurrence.
-handler = (ROOT / "src/handler.c").read_text()
+handler = (SRC / "handler.c").read_text()
 rose = handler.split("P_obj flow = read_object(6107, VIRTUAL);", 1)[1][:400]
 assert contains(rose, "if (flow)")
 assert index(rose, "if (flow)") < index(rose, "obj_to_char(flow, t_ch);")
@@ -113,7 +114,7 @@ assert index(rose, "if (flow)") < index(rose, "do_give(t_ch, text, CMD_GIVE);")
 # --- the exit log must not report stale errno as a shutdown failure ----------
 # LOG_EXIT is also used for normal termination messages.  perror() appended an
 # unrelated EAGAIN left by the nonblocking game loop to each of those messages.
-utility = (ROOT / "src/utility.c").read_text()
+utility = (SRC / "utility.c").read_text()
 logit = utility.split("void logit(const char *filename, const char *format, ...)", 1)[1]
 logit = logit.split("\nvoid ", 1)[0]
 assert contains(logit, "fputs(lbuf, stderr)")
@@ -156,7 +157,7 @@ for area_name in active_area_names:
 
 
 # --- boot must not activate retired raw SQL queues ----------------------------
-comm = (ROOT / "src/comm.c").read_text()
+comm = (SRC / "comm.c").read_text()
 run_game = comm.split("void run_the_game(int port, int sslport)\n{", 1)[1]
 run_game = run_game.split("\nstatic int drain_new_connections", 1)[0]
 for retired in (

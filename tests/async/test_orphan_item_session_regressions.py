@@ -20,22 +20,23 @@ rather than a runtime check because the code paths need a live world.
 6. The world prototype files stay open while the game runs, then close during
    final world teardown after object instantiation has ended.
 """
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-actwiz = (root / "src/actwiz.c").read_text()
-handler = (root / "src/handler.c").read_text()
-movement = (root / "src/item_movement_transaction.c").read_text()
-nanny = (root / "src/nanny.c").read_text()
-utility = (root / "src/utility.c").read_text()
-db = (root / "src/db.c").read_text()
-buildings = (root / "src/buildings.c").read_text()
-capture = (root / "src/player_snapshot_capture.c").read_text()
-fight = (root / "src/fight.c").read_text()
-account_reward = (root / "src/account_reward.c").read_text()
-magic = (root / "src/magic.c").read_text()
-mail = (root / "src/mail.c").read_text()
-shop = (root / "src/shop.c").read_text()
+actwiz = (SRC / "actwiz.c").read_text()
+handler = (SRC / "handler.c").read_text()
+movement = (SRC / "item_movement_transaction.c").read_text()
+nanny = (SRC / "nanny.c").read_text()
+utility = (SRC / "utility.c").read_text()
+db = (SRC / "db.c").read_text()
+buildings = (SRC / "buildings.c").read_text()
+capture = (SRC / "player_snapshot_capture.c").read_text()
+fight = (SRC / "fight.c").read_text()
+account_reward = (SRC / "account_reward.c").read_text()
+magic = (SRC / "magic.c").read_text()
+mail = (SRC / "mail.c").read_text()
+shop = (SRC / "shop.c").read_text()
 
 failures = []
 

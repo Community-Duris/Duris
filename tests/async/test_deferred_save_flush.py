@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Contracts for truthful deferred flush and save helper results."""
 
+from _paths import SRC
 from pathlib import Path
 
-text = Path(__file__).resolve().parents[2].joinpath("src/actoth.c").read_text()
+text = (SRC / "actoth.c").read_text()
 
 save = text[text.index("bool do_save_silent"):text.index("void do_save(", text.index("bool do_save_silent"))]
 flush = text[text.index("bool persistence_flush_character_saves"):text.index(

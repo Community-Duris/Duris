@@ -1,13 +1,12 @@
 """Contracts for withholding commands until a durable starter kit is complete."""
 
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 movement = (SRC / "item_movement_transaction.c").read_text()
 header = (SRC / "item_movement_transaction.h").read_text()
 nanny = (SRC / "nanny.c").read_text()

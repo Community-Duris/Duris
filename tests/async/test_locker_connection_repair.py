@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Regression contracts for pooled locker connection failure hygiene."""
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "locker_async.c").read_text(encoding="utf-8", errors="replace")
+source = (SRC / "locker_async.c").read_text(encoding="utf-8", errors="replace")
 
 checks = {
     "failed connection has a repair helper": "static int repair_failed_connection(MYSQL **conn_io)" in source,

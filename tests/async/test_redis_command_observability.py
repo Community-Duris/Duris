@@ -1,36 +1,37 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for redacted shared Redis command health."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REDIS = (ROOT / "src/redis.c").read_text()
-WORLD_RUNTIME = (ROOT / "src/redis_world_runtime.c").read_text()
-REPORT = (ROOT / "src/redis_report_cache.c").read_text()
-MAINTENANCE = (ROOT / "src/redis_maintenance.c").read_text()
-SHIP = (ROOT / "src/redis_ship_legacy.c").read_text()
-WIZ = (ROOT / "src/wizredis.c").read_text()
-ACTINF = (ROOT / "src/actinf.c").read_text()
-WORLD_STORE = (ROOT / "src/redis_world_store.c").read_text()
+REDIS = (SRC / "redis.c").read_text()
+WORLD_RUNTIME = (SRC / "redis_world_runtime.c").read_text()
+REPORT = (SRC / "redis_report_cache.c").read_text()
+MAINTENANCE = (SRC / "redis_maintenance.c").read_text()
+SHIP = (SRC / "redis_ship_legacy.c").read_text()
+WIZ = (SRC / "wizredis.c").read_text()
+ACTINF = (SRC / "actinf.c").read_text()
+WORLD_STORE = (SRC / "redis_world_store.c").read_text()
 WORKERS = {
     name: (ROOT / path).read_text()
     for name, path in {
-        "presence": "src/redis_presence_worker.c",
-        "cache": "src/redis_cache_store.c",
-        "floor": "src/redis_floor_store.c",
-        "donation": "src/redis_donation_worker.c",
-        "world_publish": "src/world_recovery_pipeline.c",
+        "presence": rel("redis_presence_worker.c"),
+        "cache": rel("redis_cache_store.c"),
+        "floor": rel("redis_floor_store.c"),
+        "donation": rel("redis_donation_worker.c"),
+        "world_publish": rel("world_recovery_pipeline.c"),
     }.items()
 }
 WORKER_HEADERS = (
-    ROOT / "src/redis_presence_worker.h",
-    ROOT / "src/redis_cache_store.h",
-    ROOT / "src/redis_floor_store.h",
-    ROOT / "src/redis_donation_worker.h",
-    ROOT / "src/world_recovery_pipeline.h",
+    SRC / "redis_presence_worker.h",
+    SRC / "redis_cache_store.h",
+    SRC / "redis_floor_store.h",
+    SRC / "redis_donation_worker.h",
+    SRC / "world_recovery_pipeline.h",
 )
 
 HARNESS = r'''
@@ -177,7 +178,7 @@ with tempfile.TemporaryDirectory(prefix="duris-redis-command-health-") as temp_d
             "-Werror",
             "-Isrc",
             str(source),
-            "src/redis_command_observability.c",
+            rel("redis_command_observability.c"),
             "-pthread",
             "-o",
             str(binary),

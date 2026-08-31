@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Contracts for numeric, ACK-gated locker ownership custody."""
 
+from _paths import SRC
 from pathlib import Path
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 def function_body(source: str, signature: str, next_signature: str) -> str:
     start = source.index(signature)
     end = source.index(next_signature, start)

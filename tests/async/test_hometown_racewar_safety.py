@@ -6,13 +6,13 @@ race with no hometown of its own spawned into a town that immediately killed
 it.  This checks every player race against the mobs its hometown zone loads.
 """
 
+from _paths import SRC
 import collections
 import re
 from pathlib import Path
 from contract_text import split_at
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 AREAS = ROOT / "areas"
 
 defines = (SRC / "defines.h").read_text()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Execute the production account-projection repair against temporary tables."""
 
+from _paths import SRC
 from pathlib import Path
 import os
 import shlex
@@ -10,7 +11,7 @@ import tempfile
 from contract_text import index
 
 ROOT = Path(__file__).resolve().parents[2]
-source_text = (ROOT / "src" / "sql_player.c").read_text(
+source_text = (SRC / "sql_player.c").read_text(
     encoding="utf-8", errors="replace"
 )
 mysql_source_text = source_text[source_text.index("\n#else\n\n// globals") :]

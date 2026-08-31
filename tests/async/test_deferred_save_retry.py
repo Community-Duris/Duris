@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Runtime policy and source contracts for retryable deferred player saves."""
 
+from _paths import SRC
 from pathlib import Path
 import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[2]
-actoth = (root / "src/actoth.c").read_text()
+actoth = (SRC / "actoth.c").read_text()
 schedule_checkpoint = actoth[
     actoth.index("static void persistence_schedule_checkpoint"):
     actoth.index("void persistence_schedule_character_save")
@@ -43,8 +44,8 @@ with tempfile.TemporaryDirectory() as tmp:
     binary = Path(tmp) / "retry_test"
     source.write_text(harness)
     subprocess.run(
-        ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-I", str(root / "src"),
-         str(source), str(root / "src/deferred_save_policy.c"), "-o", str(binary)],
+        ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-I", str(SRC),
+         str(source), str(SRC / "deferred_save_policy.c"), "-o", str(binary)],
         check=True,
     )
     subprocess.run([str(binary)], check=True)

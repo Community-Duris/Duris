@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "actoth.c").read_text()
+source = (SRC / "actoth.c").read_text()
 
 manual_save = source[source.index("void do_save(") : source.index("void do_not_here(")]
 status_event = source[

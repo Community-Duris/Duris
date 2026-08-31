@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import select
 import shutil
 import socket
@@ -247,11 +248,11 @@ def main() -> None:
                 "-fsanitize=address,undefined",
                 "-fno-omit-frame-pointer",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_command_observability.c"),
-                str(ROOT / "src" / "redis_namespace.c"),
-                str(ROOT / "src" / "redis_world_store.c"),
+                str(SRC),
+                str(SRC / "redis_connection.c"),
+                str(SRC / "redis_command_observability.c"),
+                str(SRC / "redis_namespace.c"),
+                str(SRC / "redis_world_store.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",
@@ -276,11 +277,11 @@ def main() -> None:
                 "-fsanitize=address,undefined",
                 "-fno-omit-frame-pointer",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_command_observability.c"),
-                str(ROOT / "src" / "redis_floor_store.c"),
-                str(ROOT / "src" / "world_recovery_codec.c"),
+                str(SRC),
+                str(SRC / "redis_connection.c"),
+                str(SRC / "redis_command_observability.c"),
+                str(SRC / "redis_floor_store.c"),
+                str(SRC / "world_recovery_codec.c"),
                 str(floor_source),
                 "-lhiredis",
                 "-lhiredis_ssl",

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Core source contract for account-bound divineclaim rewards."""
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 MIGRATION = ROOT / "migrations/account_bound_rewards.sql"
 VERIFIER = ROOT / "migrations/verify_account_bound_rewards.sh"
 MYSQL_SCHEMA_TEST = ROOT / "tests/async/run_account_bound_reward_schema_mysql.sh"

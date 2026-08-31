@@ -1,10 +1,11 @@
 """Contracts for the Plane of Life paladin's one-time racewar reward."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src" / "specs.mobile.c").read_text()
+SOURCE = (SRC / "specs.mobile.c").read_text()
 
 paladin = SOURCE.split("int newbie_paladin(", 1)[1]
 paladin = paladin.split("int Malevolence(", 1)[0]

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Contract for the read-only static material-composition report."""
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-report = (root / "src/material_rarity.c").read_text()
-header = (root / "src/material_rarity.h").read_text()
-comm = (root / "src/comm.c").read_text()
-db = (root / "src/db.c").read_text()
+report = (SRC / "material_rarity.c").read_text()
+header = (SRC / "material_rarity.h").read_text()
+comm = (SRC / "comm.c").read_text()
+db = (SRC / "db.c").read_text()
 
 # The report must use the game's authoritative runtime template/item-value APIs,
 # not a second hand parser or a guessed recipe formula.

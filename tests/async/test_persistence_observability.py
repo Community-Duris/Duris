@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Runtime coverage for bounded, redacted persistence observability."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
 #include "persistence_observability.h"
 

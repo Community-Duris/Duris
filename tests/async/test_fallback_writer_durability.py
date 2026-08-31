@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import count
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 
 assert count(source, "if (fflush(log_f) || fsync(fileno(log_f)))") >= 3
 # One worker-path fallback write per domain.  The owner tag is part of the

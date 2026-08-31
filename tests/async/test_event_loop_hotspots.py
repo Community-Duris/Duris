@@ -18,15 +18,16 @@ Verifies:
 3. sql_trace_enabled() only turns tracing on when the environment asks for it.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-handler = (ROOT / "src" / "handler.c").read_text(encoding="utf-8", errors="replace")
-events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
-sql = (ROOT / "src" / "sql.c").read_text(encoding="utf-8", errors="replace")
+handler = (SRC / "handler.c").read_text(encoding="utf-8", errors="replace")
+events = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
+sql = (SRC / "sql.c").read_text(encoding="utf-8", errors="replace")
 
 checks = []
 

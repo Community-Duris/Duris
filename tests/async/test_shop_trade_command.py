@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Strict codec and fence regression for recoverable shop trades."""
 
+from _paths import rel
 import subprocess
 import tempfile
 from pathlib import Path
@@ -225,10 +226,10 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-trade-command-") as temp_dir
             "-Werror",
             "-Isrc",
             str(source),
-            "src/shop_trade_command.c",
-            "src/item_transfer_command.c",
-            "src/currency_command.c",
-            "src/critical_command.c",
+            rel("shop_trade_command.c"),
+            rel("item_transfer_command.c"),
+            rel("currency_command.c"),
+            rel("critical_command.c"),
             "-lcrypto",
             "-o",
             str(binary),

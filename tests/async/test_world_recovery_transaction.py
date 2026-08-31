@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Contracts for authority-first, rollback-capable Redis world recovery."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PIPELINE = (ROOT / "src/world_recovery_pipeline.c").read_text(encoding="ascii")
-HEADER = (ROOT / "src/world_recovery_pipeline.h").read_text(encoding="ascii")
-REDIS = (ROOT / "src/redis.c").read_text(encoding="ascii")
-WORLD_RUNTIME = (ROOT / "src/redis_world_runtime.c").read_text(encoding="ascii")
-SQL = (ROOT / "src/sql.c").read_text(encoding="ascii")
-COMM = (ROOT / "src/comm.c").read_text(encoding="ascii")
+PIPELINE = (SRC / "world_recovery_pipeline.c").read_text(encoding="ascii")
+HEADER = (SRC / "world_recovery_pipeline.h").read_text(encoding="ascii")
+REDIS = (SRC / "redis.c").read_text(encoding="ascii")
+WORLD_RUNTIME = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
+SQL = (SRC / "sql.c").read_text(encoding="ascii")
+COMM = (SRC / "comm.c").read_text(encoding="ascii")
 
 
 def section(text: str, start: str, end: str) -> str:

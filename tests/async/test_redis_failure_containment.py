@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 """Redis outage, child-watchdog, and floor-ack source contracts."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-text = (root / "src/redis.c").read_text()
-world_runtime = (root / "src/redis_world_runtime.c").read_text()
-checkpoint = (root / "src/persistence_checkpoint.c").read_text()
-store = (root / "src/redis_world_store.c").read_text()
-presence_worker = (root / "src/redis_presence_worker.c").read_text()
-presence_runtime = (root / "src/redis_presence_runtime.c").read_text()
-cache_store = (root / "src/redis_cache_store.c").read_text()
-report_cache = (root / "src/redis_report_cache.c").read_text()
-floor_store = (root / "src/redis_floor_store.c").read_text()
-floor_runtime = (root / "src/redis_floor_runtime.c").read_text()
-donation_worker = (root / "src/redis_donation_worker.c").read_text()
-donation_runtime = (root / "src/redis_donation_runtime.c").read_text()
-connection = (root / "src/redis_connection.c").read_text()
-key_registry = (root / "src/redis_key_registry.def").read_text()
-header = (root / "src/redis.h").read_text()
-floor_runtime_header = (root / "src/redis_floor_runtime.h").read_text()
-signals = (root / "src/signals.c").read_text()
+text = (SRC / "redis.c").read_text()
+world_runtime = (SRC / "redis_world_runtime.c").read_text()
+checkpoint = (SRC / "persistence_checkpoint.c").read_text()
+store = (SRC / "redis_world_store.c").read_text()
+presence_worker = (SRC / "redis_presence_worker.c").read_text()
+presence_runtime = (SRC / "redis_presence_runtime.c").read_text()
+cache_store = (SRC / "redis_cache_store.c").read_text()
+report_cache = (SRC / "redis_report_cache.c").read_text()
+floor_store = (SRC / "redis_floor_store.c").read_text()
+floor_runtime = (SRC / "redis_floor_runtime.c").read_text()
+donation_worker = (SRC / "redis_donation_worker.c").read_text()
+donation_runtime = (SRC / "redis_donation_runtime.c").read_text()
+connection = (SRC / "redis_connection.c").read_text()
+key_registry = (SRC / "redis_key_registry.def").read_text()
+header = (SRC / "redis.h").read_text()
+floor_runtime_header = (SRC / "redis_floor_runtime.h").read_text()
+signals = (SRC / "signals.c").read_text()
 
 
 def section(start: str, end: str, source: str = text) -> str:

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Regression checks for fail-closed locker result handling."""
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/storage_lockers.c").read_text()
+source = (SRC / "storage_lockers.c").read_text()
 
 assert "int name_len = snprintf(name, sizeof(name), \"%s\", esc_locker_name);" in source
 assert "(size_t)name_len >= sizeof(name)" in source
@@ -31,7 +32,7 @@ assert "bool is_guild_member = locker_is_guild_member(pLocker, ch);" in source
 # PFileToLocker puts items on room floor, not invisible locker char
 assert "obj_to_room(tmp_object, m_realRoom);" in source
 # UnsortedChest rejects containers (in header)
-header = (Path(__file__).resolve().parents[2] / "src/storage_lockers.h").read_text()
+header = (SRC / "storage_lockers.h").read_text()
 assert "obj->type == ITEM_CONTAINER" in header
 # Deferred terminal save
 assert "event_deferredTerminalSave" in source

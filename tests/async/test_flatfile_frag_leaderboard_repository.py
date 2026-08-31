@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,9 +21,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-frag-leaderboard-") as tempo
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_frag_leaderboard_repository_harness.cpp",
-            "src/flatfile_frag_leaderboard_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_frag_leaderboard_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",
@@ -46,7 +47,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-frag-leaderboard-") as tempo
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
 
-sql_source = (ROOT / "src/sql.c").read_text()
+sql_source = (SRC / "sql.c").read_text()
 no_mysql = sql_source[
     sql_source.index("#ifdef __NO_MYSQL__") : sql_source.index(
         "#else", sql_source.index("#ifdef __NO_MYSQL__")

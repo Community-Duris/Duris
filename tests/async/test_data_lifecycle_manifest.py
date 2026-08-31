@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import json
 import importlib.util
 import os
@@ -16,7 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = ROOT / "scripts" / "validate_data_lifecycle.py"
 MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
-REDIS_REGISTRY = ROOT / "src" / "redis_key_registry.def"
+REDIS_REGISTRY = SRC / "redis_key_registry.def"
 SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",

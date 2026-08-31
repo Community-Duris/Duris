@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-header = ROOT / "src/random_equipment_config.h"
-source = ROOT / "src/random_equipment_config.c"
+header = SRC / "random_equipment_config.h"
+source = SRC / "random_equipment_config.c"
 config = ROOT / "lib/random_equipment.cfg"
 assert header.exists() and source.exists() and config.exists()
 
 h = header.read_text()
 s = source.read_text()
 c = config.read_text()
-r = (ROOT / "src/randomeq.c").read_text()
+r = (SRC / "randomeq.c").read_text()
 properties = (ROOT / "lib/duris.properties").read_text()
-m = (ROOT / "src/Makefile").read_text()
-comm = (ROOT / "src/comm.c").read_text()
+m = (SRC / "Makefile").read_text()
+comm = (SRC / "comm.c").read_text()
 
 assert "struct random_equipment_config" in h
 assert "boot_random_equipment_config" in h

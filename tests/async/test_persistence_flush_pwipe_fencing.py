@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 for name, label in [
     ("int persistence_flush_item_events", "item"),
     ("int persistence_flush_scalar_events", "scalar"),

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Replacement-row save contracts for player array-backed components."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-text = (root / "src/sql_player.c").read_text()
+text = (SRC / "sql_player.c").read_text()
 
 status_start = text.rfind("bool sql_save_player_status(P_char ch, int type, int room)\n{")
 status_end = text.find("bool sql_save_player_skills(P_char ch)\n{", status_start)

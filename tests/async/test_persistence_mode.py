@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Runtime and build-contract tests for persistence backend selection."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "src/persistence_mode.c"
-HEADER_DIR = ROOT / "src"
-MAKEFILE = (ROOT / "src/Makefile").read_text()
+SOURCE = SRC / "persistence_mode.c"
+HEADER_DIR = SRC
+MAKEFILE = (SRC / "Makefile").read_text()
 
 PROBE = r'''
 #include "persistence_mode.h"
@@ -148,7 +149,7 @@ with tempfile.TemporaryDirectory(prefix="persistence-mode-") as directory:
         [
             "make",
             "-C",
-            str(ROOT / "src"),
+            str(SRC),
             "PERSISTENCE_BACKEND=flatfile",
             f"BIN_ROOT={flat_build}",
             f"OBJDIR={flat_build / 'objects/server'}",

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-header = (ROOT / "src" / "map.h").read_text()
-track = (ROOT / "src" / "track.c").read_text()
-mapping = (ROOT / "src" / "map.c").read_text()
+header = (SRC / "map.h").read_text()
+track = (SRC / "track.c").read_text()
+mapping = (SRC / "map.c").read_text()
 
 assert "#define TRACK_OWNER_PID_VALUE 1" in header
 assert "#define IS_OWN_TRACK(ch, track)" in header

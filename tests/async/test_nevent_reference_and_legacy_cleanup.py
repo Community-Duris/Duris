@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
 """Source contracts for the current nevent reference and retired legacy API."""
 
+from _paths import SRC, rel
 import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8", errors="replace")
 
 
-events_header = read("src/events.h")
-events_callbacks = read("src/events.c")
-scheduler = read("src/new_events.c")
-prototypes = read("src/prototypes.h")
-structs = read("src/structs.h")
+events_header = read(rel("events.h"))
+events_callbacks = read(rel("events.c"))
+scheduler = read(rel("new_events.c"))
+prototypes = read(rel("prototypes.h"))
+structs = read(rel("structs.h"))
 reference = read("docs/reference/EVENTS.md")
 architecture = read("docs/reference/ARCHITECTURE.md")
 configuration = read("docs/operations/CONFIGURATION.md")

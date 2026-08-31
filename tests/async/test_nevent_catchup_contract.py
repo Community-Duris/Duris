@@ -1,12 +1,13 @@
 """Contract for bounded event catch-up and elapsed-time regen."""
 
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "new_events.c").read_text()
-events = (ROOT / "src" / "events.c").read_text()
+source = (SRC / "new_events.c").read_text()
+events = (SRC / "events.c").read_text()
 
 for marker in (
     "NEVENT_CATCHUP_WINDOW_PULSES",

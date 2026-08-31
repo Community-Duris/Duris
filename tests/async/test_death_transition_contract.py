@@ -1,12 +1,12 @@
 """Player-facing contracts for the transition from death to the account menu."""
 
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 fight = (SRC / "fight.c").read_text()
 comm = (SRC / "comm.c").read_text()
 interp = (SRC / "interp.c").read_text()

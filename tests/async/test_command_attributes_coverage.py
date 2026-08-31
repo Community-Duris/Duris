@@ -8,13 +8,14 @@ Guarantees, per docs/content/HELP_SYSTEM.md:
   4. Luck attributes render from ATT_LUK flags, not ATT_STR (regression guard)
 """
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-INTERP_C = (ROOT / "src/interp.c").read_text()
-WIKIHELP_C = (ROOT / "src/wikihelp.c").read_text()
-WIKIHELP_H = (ROOT / "src/wikihelp.h").read_text()
+INTERP_C = (SRC / "interp.c").read_text()
+WIKIHELP_C = (SRC / "wikihelp.c").read_text()
+WIKIHELP_H = (SRC / "wikihelp.h").read_text()
 ATTRS_PATH = ROOT / "docs/lib/information/command_attributes.txt"
 
 STATS = ["STR", "DEX", "AGI", "CON", "POW", "INT", "WIS", "CHA", "KAR", "LUK"]

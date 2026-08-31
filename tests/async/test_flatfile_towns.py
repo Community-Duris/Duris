@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -24,8 +25,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-towns-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_town_harness.cpp",
-            "src/sql_player.c",
-            "src/flatfile_store.c",
+            rel("sql_player.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-o",
             str(binary),
@@ -59,7 +60,7 @@ assert defaults[1:8] == [
     "0 0",
 ]
 
-source = (ROOT / "src/siege.c").read_text()
+source = (SRC / "siege.c").read_text()
 assert "if (!sql_load_towns())" in source
 assert "exit(EXIT_FAILURE);" in source
 
@@ -72,7 +73,7 @@ preprocessed = subprocess.run(
         "-Isrc",
         "-E",
         "-P",
-        "src/sql_player.c",
+        rel("sql_player.c"),
     ],
     cwd=ROOT,
     check=True,

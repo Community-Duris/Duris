@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-src = (ROOT / "src" / "locker_async.c").read_text()
+src = (SRC / "locker_async.c").read_text()
 
 assert "g_worker_created" in src
 assert "locker_async_worker_available" in src

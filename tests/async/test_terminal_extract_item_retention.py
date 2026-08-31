@@ -1,12 +1,12 @@
 """Contracts preventing saved inventory from becoming duplicate room drops."""
 
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 handler = (SRC / "handler.c").read_text()
 limits = (SRC / "limits.c").read_text()
 affects = (SRC / "affects.c").read_text()

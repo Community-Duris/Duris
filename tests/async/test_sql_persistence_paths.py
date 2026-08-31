@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
@@ -6,10 +7,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 checks = []
 
-sql_c = (ROOT / "src/sql.c").read_text()
-sql_pool_c = (ROOT / "src/sql_pool.c").read_text()
-sql_player_c = (ROOT / "src/sql_player.c").read_text()
-account_c = (ROOT / "src/account.c").read_text()
+sql_c = (SRC / "sql.c").read_text()
+sql_pool_c = (SRC / "sql_pool.c").read_text()
+sql_player_c = (SRC / "sql_player.c").read_text()
+account_c = (SRC / "account.c").read_text()
 
 checks.append(("non-default production names remain sandboxed", "production_name" in sql_c and "return \"duris_dev\"" in sql_c))
 checks.append(("explicit non-production database names are honored", "return DB_NAME;" in sql_c and "production_name" in sql_c))

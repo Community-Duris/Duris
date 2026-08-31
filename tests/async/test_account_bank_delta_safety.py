@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Account-bank delta and committed-publication source contracts."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-sql = (root / "src/sql_player.c").read_text()
-header = (root / "src/sql_player.h").read_text()
-utility = (root / "src/utility.c").read_text()
-actoth = (root / "src/actoth.c").read_text()
-boon = (root / "src/boon.c").read_text()
-ships = (root / "src/ships/ship_base.c").read_text()
+sql = (SRC / "sql_player.c").read_text()
+header = (SRC / "sql_player.h").read_text()
+utility = (SRC / "utility.c").read_text()
+actoth = (SRC / "actoth.c").read_text()
+boon = (SRC / "boon.c").read_text()
+ships = (SRC / "ships/ship_base.c").read_text()
 
 
 def section(text: str, start_marker: str, end_marker: str) -> str:
@@ -21,7 +22,7 @@ def section(text: str, start_marker: str, end_marker: str) -> str:
 
 
 all_sources = "\n".join(
-    path.read_text(errors="replace") for path in (root / "src").rglob("*.[ch]")
+    path.read_text(errors="replace") for path in SRC.rglob("*.[ch]")
 )
 assert "sql_save_account_bank" not in all_sources
 assert "set bank_copper=%d" not in sql

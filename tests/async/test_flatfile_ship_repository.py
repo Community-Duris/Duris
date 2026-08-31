@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,9 +21,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-ship-") as temporary:
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_ship_repository_harness.cpp",
-            "src/flatfile_ship_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_ship_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",
@@ -57,7 +58,7 @@ preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/ships/ship_base.c",
+        rel("ship_base.c"),
     ],
     cwd=ROOT,
     text=True,
@@ -93,7 +94,7 @@ for database_call in (
     if database_call in live_ship_path:
         raise SystemExit(f"client-free ship runtime retained database call: {database_call}")
 
-files_source = ROOT.joinpath("src/files.c").read_text()
+files_source = (SRC / "files.c").read_text()
 delete_start = files_source.index("int deleteCharacter(")
 flat_start = files_source.index(
     "if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)", delete_start

@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for the keyed revision-guarded player save worker."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WORKER = (ROOT / "src/player_save_worker.c").read_text()
-WORKER_HEADER = (ROOT / "src/player_save_worker.h").read_text()
-REPOSITORY = (ROOT / "src/player_snapshot_repository.c").read_text()
-DIAGNOSTICS = (ROOT / "src/actinf.c").read_text()
+WORKER = (SRC / "player_save_worker.c").read_text()
+WORKER_HEADER = (SRC / "player_save_worker.h").read_text()
+REPOSITORY = (SRC / "player_snapshot_repository.c").read_text()
+DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 assert "std::unordered_set<std::string> description_keys" in REPOSITORY
 assert "if (!description_keys.insert(std::move(description_key)).second)" in REPOSITORY
@@ -254,9 +255,9 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-worker-") as temp_dir
             "-pthread",
             "-Isrc",
             str(source),
-            "src/player_save_worker.c",
-            "src/player_revision_state.c",
-            "src/persistence_observability.c",
+            rel("player_save_worker.c"),
+            rel("player_revision_state.c"),
+            rel("persistence_observability.c"),
             "-lmysqlclient",
             "-o",
             str(binary),

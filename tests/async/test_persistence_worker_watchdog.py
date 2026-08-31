@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 from contract_text import contains, count
 
 ROOT = Path(__file__).resolve().parents[2]
-queue_c = (ROOT / "src/persistence_queue.c").read_text()
-utility_c = (ROOT / "src/utility.c").read_text()
-raw_c = (ROOT / "src/sql_persistence_raw.c").read_text()
+queue_c = (SRC / "persistence_queue.c").read_text()
+utility_c = (SRC / "utility.c").read_text()
+raw_c = (SRC / "sql_persistence_raw.c").read_text()
 test_c = (ROOT / "tests/async/test_persistence.c").read_text()
 
 checks = []

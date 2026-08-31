@@ -13,15 +13,16 @@ Two defects are pinned here.
     proclib on such a vnum permanently unreachable, silently.  The bridge is
     now always installed and the displaced proc is called first.
 """
+from _paths import SRC
 from pathlib import Path
 import re
 from contract_text import contains, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
-handler = (ROOT / "src/handler.c").read_text()
-proclib = (ROOT / "src/studioproclib.c").read_text()
-proclib_h = (ROOT / "src/studioproclib.h").read_text()
-library = (ROOT / "src/specs.library.c").read_text()
+handler = (SRC / "handler.c").read_text()
+proclib = (SRC / "studioproclib.c").read_text()
+proclib_h = (SRC / "studioproclib.h").read_text()
+library = (SRC / "specs.library.c").read_text()
 
 
 def slice_fn(text, start_marker, *, end_marker=None):

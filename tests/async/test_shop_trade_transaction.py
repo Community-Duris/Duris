@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Completion publication regression for composite shop trades."""
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -8,8 +9,8 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-COMM = (ROOT / "src/comm.c").read_text()
-NANNY = (ROOT / "src/nanny.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+NANNY = (SRC / "nanny.c").read_text()
 if "shop_trade_transaction_handle_completions(completions, count);" not in COMM:
     raise SystemExit("main loop does not dispatch shop trade completions")
 if NANNY.count("shop_trade_transaction_player_ready(") != 2:
@@ -19,11 +20,11 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-trade-transaction-") as temp
     binary = pathlib.Path(temporary) / "shop_trade_transaction_test"
     sources = [
         "tests/async/shop_trade_transaction_harness.cpp",
-        "src/shop_trade_transaction.c",
-        "src/shop_trade_command.c",
-        "src/item_transfer_command.c",
-        "src/currency_command.c",
-        "src/critical_command.c",
+        rel("shop_trade_transaction.c"),
+        rel("shop_trade_command.c"),
+        rel("item_transfer_command.c"),
+        rel("currency_command.c"),
+        rel("critical_command.c"),
     ]
     compiled = subprocess.run(
         [

@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PIPELINE = (ROOT / "src" / "world_recovery_pipeline.c").read_text(encoding="ascii")
-FLOOR = (ROOT / "src" / "redis_floor_store.c").read_text(encoding="ascii")
+PIPELINE = (SRC / "world_recovery_pipeline.c").read_text(encoding="ascii")
+FLOOR = (SRC / "redis_floor_store.c").read_text(encoding="ascii")
 
 HARNESS = r'''
 #include "copyover.h"
@@ -189,7 +190,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-codec-") as temp_dir:
             "-fno-omit-frame-pointer",
             "-Isrc",
             str(source),
-            "src/world_recovery_codec.c",
+            rel("world_recovery_codec.c"),
             "-o",
             str(binary),
         ],

@@ -1,10 +1,11 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-prototypes = (ROOT / "src/prototypes.h").read_text()
-utility = (ROOT / "src/utility.c").read_text()
-actwiz = (ROOT / "src/actwiz.c").read_text()
-comm = (ROOT / "src/comm.c").read_text()
+prototypes = (SRC / "prototypes.h").read_text()
+utility = (SRC / "utility.c").read_text()
+actwiz = (SRC / "actwiz.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 assert "persistence_prepare_pwipe" in prototypes
 assert "persistence_prepare_pwipe" in utility

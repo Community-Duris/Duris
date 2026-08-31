@@ -1,10 +1,11 @@
+from _paths import SRC
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-actinf = (ROOT / "src" / "actinf.c").read_text(encoding="utf-8", errors="replace")
-epic = (ROOT / "src" / "epic.c").read_text(encoding="utf-8", errors="replace")
-new_events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
+actinf = (SRC / "actinf.c").read_text(encoding="utf-8", errors="replace")
+epic = (SRC / "epic.c").read_text(encoding="utf-8", errors="replace")
+new_events = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
 properties = (ROOT / "lib" / "duris.properties").read_text(encoding="utf-8", errors="replace")
 
 help_body = re.search(r"void do_help\(.*?\n}\n\nvoid do_wizhelp", actinf, re.S)

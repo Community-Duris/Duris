@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/sql_player.c").read_text()
+source = (SRC / "sql_player.c").read_text()
 start = source.index("bool sql_save_ship(P_ship ship)")
 end = source.index("static bool sql_load_ship_armor", start)
 section = source[start:end]

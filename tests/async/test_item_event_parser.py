@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/sql.c").read_text()
+source = (SRC / "sql.c").read_text()
 start = source.index("bool sql_persistence_write_item_event_line")
 end = source.index("\nbool sql_persistence_write_scalar_event_line", start)
 body = source[start:end]
@@ -21,7 +22,7 @@ assert "query_len >= (int)sizeof(query)" in body
 assert "SHA2(CONCAT_WS" in body
 assert "sql_persistence_execute_raw(query)" in body
 assert "sql_persistence_execute_raw(line)" not in body
-raw = (Path(__file__).resolve().parents[2] / "src/sql_persistence_raw.c").read_text()
+raw = (SRC / "sql_persistence_raw.c").read_text()
 raw_body = raw[raw.index("bool sql_persistence_execute_raw"):]
 assert "return false;" in raw_body
 assert "sql_observed_execute_at" not in raw_body

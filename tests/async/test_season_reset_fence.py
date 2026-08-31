@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Source contracts for the durable, irreversible season reset boundary."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SQL = (ROOT / "src/sql.c").read_text()
-ACTWIZ = (ROOT / "src/actwiz.c").read_text()
-REDIS = (ROOT / "src/redis.c").read_text()
-MAINTENANCE = (ROOT / "src/redis_maintenance.c").read_text()
+SQL = (SRC / "sql.c").read_text()
+ACTWIZ = (SRC / "actwiz.c").read_text()
+REDIS = (SRC / "redis.c").read_text()
+MAINTENANCE = (SRC / "redis_maintenance.c").read_text()
 MIGRATION = (ROOT / "migrations/immutable/0003_season_reset_state.sql").read_text()
 VERIFY = (ROOT / "migrations/immutable/0003_season_reset_state.sh").read_text()
 

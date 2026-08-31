@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for player revision/component state."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HEADER = (ROOT / "src/player_revision_state.h").read_text()
-SOURCE = (ROOT / "src/player_revision_state.c").read_text()
-SQL_PLAYER = (ROOT / "src/sql_player.c").read_text()
+HEADER = (SRC / "player_revision_state.h").read_text()
+SOURCE = (SRC / "player_revision_state.c").read_text()
+SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
 HARNESS = r'''
@@ -121,7 +122,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-revision-") as temp_dir:
             "-Werror",
             "-Isrc",
             str(source),
-            "src/player_revision_state.c",
+            rel("player_revision_state.c"),
             "-o",
             str(binary),
         ],
@@ -190,7 +191,7 @@ print("[PASS] required load/new/delete lifecycle is PID-stable and fail-closed")
 
 production_sources = [
     path
-    for path in (ROOT / "src").glob("*.c")
+    for path in SRC.glob("*.c")
     if path.name != "player_revision_state.c"
 ]
 mark_callers = [path.name for path in production_sources if "player_revision_mark(" in path.read_text()]
@@ -199,7 +200,7 @@ assert sorted(mark_callers) == ["player_save_pipeline.c", "sql_player.c"], (
 )
 assert "writeCharacter" not in SOURCE
 assert "sql_save_player" not in SOURCE
-assert "player_save_pipeline_mark" in (ROOT / "src/persistence_checkpoint.c").read_text()
+assert "player_save_pipeline_mark" in (SRC / "persistence_checkpoint.c").read_text()
 print("[PASS] production marks are limited to the pipeline and fenced legacy compatibility")
 
 print("player revision and component state contracts passed")

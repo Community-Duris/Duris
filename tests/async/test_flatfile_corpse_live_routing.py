@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Source contracts for live flat-file corpse lifecycle routing."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-FILES = (ROOT / "src/files.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-FIGHT = (ROOT / "src/fight.c").read_text()
-ACTOBJ = (ROOT / "src/actobj.c").read_text()
-HANDLER = (ROOT / "src/handler.c").read_text()
-MOBILE_SPECS = (ROOT / "src/specs.mobile.c").read_text()
-UNDERMOUNTAIN_SPECS = (ROOT / "src/specs.undermountain.c").read_text()
-VERZANAN_SPECS = (ROOT / "src/specs.verzanan.c").read_text()
-LOHRR_SPECS = (ROOT / "src/specs.lohrr.c").read_text()
-MAGIC = (ROOT / "src/magic.c").read_text()
-NECROMANCY = (ROOT / "src/necromancy.c").read_text()
+FILES = (SRC / "files.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+FIGHT = (SRC / "fight.c").read_text()
+ACTOBJ = (SRC / "actobj.c").read_text()
+HANDLER = (SRC / "handler.c").read_text()
+MOBILE_SPECS = (SRC / "specs.mobile.c").read_text()
+UNDERMOUNTAIN_SPECS = (SRC / "specs.undermountain.c").read_text()
+VERZANAN_SPECS = (SRC / "specs.verzanan.c").read_text()
+LOHRR_SPECS = (SRC / "specs.lohrr.c").read_text()
+MAGIC = (SRC / "magic.c").read_text()
+NECROMANCY = (SRC / "necromancy.c").read_text()
 
 
 def body(source: str, signature: str, next_signature: str) -> str:

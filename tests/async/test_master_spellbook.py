@@ -18,13 +18,12 @@ Verifies:
 8. The vnum is claimed exactly once across the area sources.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 BOOK_CLASS_NAMES = ("SORCERER", "CONJURER", "NECROMANCER", "ILLUSIONIST",
                     "BARD", "SUMMONER", "REAVER", "THEURGIST")
 TONGUE_MAGIC = 27

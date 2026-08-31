@@ -20,6 +20,7 @@ Three defects made the tick diagnostics lie about where time went:
 Verifies the loop times itself against CLOCK_MONOTONIC and dumps into logs/.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
@@ -27,7 +28,7 @@ import sys
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-comm = (ROOT / "src" / "comm.c").read_text(encoding="utf-8", errors="replace")
+comm = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
 
 checks = []
 

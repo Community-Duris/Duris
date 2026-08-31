@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import shutil
 import socket
 import subprocess
@@ -181,10 +182,10 @@ int main(int argc, char **argv)
                 "-fsanitize=address,undefined",
                 "-fno-omit-frame-pointer",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_cache_store.c"),
-                str(ROOT / "src" / "redis_command_observability.c"),
+                str(SRC),
+                str(SRC / "redis_connection.c"),
+                str(SRC / "redis_cache_store.c"),
+                str(SRC / "redis_command_observability.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",

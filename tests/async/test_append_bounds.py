@@ -30,6 +30,7 @@ strictly less than the full capacity - and it is what took the server down
 through the `deathsdoor` command (specs.gellz.c). The scanner now catches both
 shapes; 20 further instances turned up when it did.
 """
+from _paths import SRC, rel
 from pathlib import Path
 import re
 import subprocess
@@ -37,10 +38,10 @@ import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[2]
-header = (root / "src/safe_format.h").read_text()
-impl = (root / "src/safe_format.c").read_text()
-prompt = (root / "src/prompt.c").read_text()
-actobj = (root / "src/actobj.c").read_text()
+header = (SRC / "safe_format.h").read_text()
+impl = (SRC / "safe_format.c").read_text()
+prompt = (SRC / "prompt.c").read_text()
+actobj = (SRC / "actobj.c").read_text()
 
 failures = []
 
@@ -99,7 +100,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
 # The specific site that aborted the server: deathsdoor must size its closing
 # write by the room actually left, and must not back over its own header.
-gellz = (root / "src/specs.gellz.c").read_text()
+gellz = (SRC / "specs.gellz.c").read_text()
 door = gellz[gellz.index("void do_deaths_door("):]
 door = door[:door.index("\n\tif (!*arg)")]
 check("deathsdoor sizes its closing write by the remaining room",
@@ -118,8 +119,8 @@ check("nowhere collection trims only a separator that was actually stored",
 
 # Two functions take a caller-owned char* whose size only the caller knows.
 # They must keep saying so, or a future reader will "fix" them wrongly.
-for path, fn in (("src/actwiz.c", "concat_which_flagsde"),
-                 ("src/actinf.c", "get_equipment_list")):
+for path, fn in ((rel("actwiz.c"), "concat_which_flagsde"),
+                 (rel("actinf.c"), "get_equipment_list")):
     text = (root / path).read_text()
     idx = text.index(fn + "(")
     preamble = text[max(0, idx - 200):idx]

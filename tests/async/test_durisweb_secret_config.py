@@ -1,15 +1,16 @@
 """Source contracts for fail-closed DurisWeb secret configuration."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WS = (ROOT / "src/ws_handlers.c").read_text()
-GMCP = (ROOT / "src/gmcp.c").read_text()
-AUTH = (ROOT / "src/ws_auth.h").read_text()
-SQL = (ROOT / "src/sql.c").read_text()
-ENV_FILE = (ROOT / "src/env_file.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
+WS = (SRC / "ws_handlers.c").read_text()
+GMCP = (SRC / "gmcp.c").read_text()
+AUTH = (SRC / "ws_auth.h").read_text()
+SQL = (SRC / "sql.c").read_text()
+ENV_FILE = (SRC / "env_file.c").read_text()
+COMM = (SRC / "comm.c").read_text()
 EXAMPLE = (ROOT / ".env.example").read_text()
 
 

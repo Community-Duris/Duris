@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Codec, source boundary, schema, and publication contracts for artifact/guild outcomes."""
 
+from _paths import SRC
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,8 +9,6 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
 #include "artifact_guild_command.h"
 #include <cassert>

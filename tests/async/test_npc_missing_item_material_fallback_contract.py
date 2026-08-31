@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Contract for the opt-in NPC reset material fallback."""
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-db = (ROOT / "src/db.c").read_text()
-enhance = (ROOT / "src/enhance.c").read_text()
-header = (ROOT / "src/enhance.h").read_text()
+db = (SRC / "db.c").read_text()
+enhance = (SRC / "enhance.c").read_text()
+header = (SRC / "enhance.h").read_text()
 config = (ROOT / "lib/enhance.cfg").read_text()
 
 # The feature is a separate fail-closed gate in the enhancement-stat config.

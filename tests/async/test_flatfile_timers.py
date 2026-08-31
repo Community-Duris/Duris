@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -22,8 +23,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-timers-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_timers_harness.cpp",
-            "src/timers.c",
-            "src/flatfile_store.c",
+            rel("timers.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-o",
             str(binary),

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -12,16 +13,16 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
     binary = temporary_path / "flatfile_boon_test"
     sources = [
         "tests/async/flatfile_boon_repository_harness.cpp",
-        "src/flatfile_boon_repository.c",
-        "src/flatfile_player_domain_repository.c",
-        "src/flatfile_authority_transaction.c",
-        "src/flatfile_store.c",
-        "src/boon_reward_command.c",
-        "src/boon_shop_command.c",
-        "src/epic_command.c",
-        "src/currency_command.c",
-        "src/combat_outcome_command.c",
-        "src/critical_command.c",
+        rel("flatfile_boon_repository.c"),
+        rel("flatfile_player_domain_repository.c"),
+        rel("flatfile_authority_transaction.c"),
+        rel("flatfile_store.c"),
+        rel("boon_reward_command.c"),
+        rel("boon_shop_command.c"),
+        rel("epic_command.c"),
+        rel("currency_command.c"),
+        rel("combat_outcome_command.c"),
+        rel("critical_command.c"),
     ]
     compile_result = subprocess.run(
         [
@@ -59,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
 
-dispatcher = (ROOT / "src/flatfile_item_repository.c").read_text()
+dispatcher = (SRC / "flatfile_item_repository.c").read_text()
 if "return flatfile_boon_repository_apply(root, command);" not in dispatcher:
     raise SystemExit("flat critical dispatcher does not route boon rewards")
 if "return flatfile_boon_shop_repository_apply(root, command);" not in dispatcher:

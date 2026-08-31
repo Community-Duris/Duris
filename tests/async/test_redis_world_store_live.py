@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import shutil
 import socket
 import subprocess
@@ -289,11 +290,11 @@ int main(int argc, char **argv)
                 "-Wextra",
                 "-Werror",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_command_observability.c"),
-                str(ROOT / "src" / "redis_namespace.c"),
-                str(ROOT / "src" / "redis_world_store.c"),
+                str(SRC),
+                str(SRC / "redis_connection.c"),
+                str(SRC / "redis_command_observability.c"),
+                str(SRC / "redis_namespace.c"),
+                str(SRC / "redis_world_store.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",

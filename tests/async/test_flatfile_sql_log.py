@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -24,7 +25,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-sql-log-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_sql_log_runtime_harness.cpp",
-            "src/sql.c",
+            rel("sql.c"),
             "-Wl,--gc-sections",
             "-o",
             str(binary),

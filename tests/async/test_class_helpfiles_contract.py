@@ -1,11 +1,12 @@
 """Source contracts for class help files coverage across Duris help systems."""
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-COMMON_C = (ROOT / "src/common.c").read_text()
-DEFINES_H = (ROOT / "src/defines.h").read_text()
+COMMON_C = (SRC / "common.c").read_text()
+DEFINES_H = (SRC / "defines.h").read_text()
 PARSED_HELP = (ROOT / "help/duris_help_parsed.hlp").read_text()
 RAW_HELP = (ROOT / "help/duris_help.hlp").read_text()
 HELP_INDEX = (ROOT / "lib/information/help_index").read_text()

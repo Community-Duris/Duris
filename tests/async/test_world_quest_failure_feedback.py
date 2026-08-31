@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regression contract for max-level bartender quest feedback."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/specs.mobile.c").read_text()
+SOURCE = (SRC / "specs.mobile.c").read_text()
 
 start = SOURCE.index("int world_quest(")
 end = SOURCE.index("int newbie_quest(", start)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -25,9 +26,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-quests-") as tempo
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_world_quest_history_harness.cpp",
-            "src/sql.c",
-            "src/flatfile_world_quest_history.c",
-            "src/flatfile_store.c",
+            rel("sql.c"),
+            rel("flatfile_world_quest_history.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-o",

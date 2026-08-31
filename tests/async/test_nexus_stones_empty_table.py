@@ -6,11 +6,12 @@ publishes the stat modifiers. The MariaDB branch used to reject an empty
 result set, which logged a spurious load failure on every boot of a world
 that simply has no nexus stones yet.
 """
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/nexus_stones.c").read_text()
+source = (SRC / "nexus_stones.c").read_text()
 
 start = index(source, "int load_nexus_stones()")
 end = index(source, "bool nexus_stone_info(", start)

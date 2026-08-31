@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Character-creation decisions must not inherit the one-minute login timeout."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-comm = (ROOT / "src/comm.c").read_text()
-config = (ROOT / "src/config.h").read_text()
+comm = (SRC / "comm.c").read_text()
+config = (SRC / "config.h").read_text()
 
 short_start = comm.index("short protocol/login transitions retain a 60 second timeout")
 creation_start = comm.index("slightly more involved, 10 minute timeout", short_start)

@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/ships/ship_base.c').read_text()
+text = (SRC / "ships/ship_base.c").read_text()
 
 rename_ship = text.find('bool rename_ship(P_char ch, char *owner_name, char *new_name)')
 rename_guard = text.find('if (!write_ship(temp))', rename_ship)

@@ -8,11 +8,12 @@ the server down whenever a humanoid mob met more than one coin pile (e.g. after
 a player death dropped loot near town guards).
 """
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-mobact = (ROOT / "src/mobact.c").read_text()
+mobact = (SRC / "mobact.c").read_text()
 
 block = mobact.split("if (IS_HUMANOID(ch) && !IS_PATROL(ch))", 1)[1]
 block = block.split("if (IS_SET(ch->specials.act, ACT_SCAVENGER)", 1)[0]

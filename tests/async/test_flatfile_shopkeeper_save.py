@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Source contract for custody-fenced shopkeeper dirty saves."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/flatfile_shopkeeper_save.c").read_text()
+SOURCE = (SRC / "flatfile_shopkeeper_save.c").read_text()
 
 for token in (
     "flatfile_shopkeeper_list(root, &records, error)",

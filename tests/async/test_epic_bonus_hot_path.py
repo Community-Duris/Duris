@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Source contracts for the active-player epic bonus hot path."""
 
+from _paths import SRC, rel
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 def function_body(text: str, signature: str, last: bool = False) -> str:
     start = text.rindex(signature) if last else text.index(signature)
     brace = text.index("{", start)
@@ -43,8 +41,8 @@ caller_files = {
     for path in SRC.rglob("*.c")
     if path.name != "epic_bonus.c" and "get_epic_bonus(" in path.read_text(errors="ignore")
 }
-expected_callers = {"src/actinf.c", "src/epic.c", "src/limits.c", "src/shop.c",
-                    "src/ships/ship_shop.c"}
+expected_callers = {rel("actinf.c"), rel("epic.c"), rel("limits.c"), rel("shop.c"),
+                    rel("ship_shop.c")}
 
 checks = [
     ("player owns trivial cache", "struct EpicBonusState epic_bonus_state;" in structs),

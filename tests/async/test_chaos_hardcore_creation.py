@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Regression contract for hardcore creation during chaos."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-NANNY = (ROOT / "src/nanny.c").read_text()
-WS = (ROOT / "src/ws_handlers.c").read_text()
+NANNY = (SRC / "nanny.c").read_text()
+WS = (SRC / "ws_handlers.c").read_text()
 
 policy = "chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos"
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/mining.c").read_text()
-header = (ROOT / "src/mining.h").read_text()
-legacy = (ROOT / "src/tradeskill.c").read_text()
-legacy_header = (ROOT / "src/tradeskill.h").read_text()
-makefile = (ROOT / "src/Makefile").read_text()
+source = (SRC / "mining.c").read_text()
+header = (SRC / "mining.h").read_text()
+legacy = (SRC / "tradeskill.c").read_text()
+legacy_header = (SRC / "tradeskill.h").read_text()
+makefile = (SRC / "Makefile").read_text()
 
 required = (
     "initialize_mining",

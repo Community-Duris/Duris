@@ -1,13 +1,14 @@
+from _paths import rel
 from pathlib import Path
 import sys
 from contract_text import find, index
 
 base = Path(__file__).resolve().parents[2]
-ship_base = base / 'src/ships/ship_base.c'
-ship_combat = base / 'src/ships/ship_combat.c'
-ship_shop = base / 'src/ships/ship_shop.c'
-ship_utils = base / 'src/ships/ship_utils.c'
-sql_player = base / 'src/sql_player.c'
+ship_base = base / rel("ship_base.c")
+ship_combat = base / rel("ship_combat.c")
+ship_shop = base / rel("ship_shop.c")
+ship_utils = base / rel("ship_utils.c")
+sql_player = base / rel("sql_player.c")
 
 text_base = ship_base.read_text()
 text_combat = ship_combat.read_text()

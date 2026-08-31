@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Runtime regressions for RFC 1091 terminal type and MTTS negotiation."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 COMM = (SRC / "comm.c").read_text()
 assert "ttype_negotiate(newd);\n\t\tgreet(newd);" in COMM
 assert "time(0) >= point->ttype_timeout" not in COMM

@@ -16,13 +16,14 @@ Verifies:
    immortal 'randobj map' path cannot reproduce the crash.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-src = (ROOT / "src" / "random.zone.c").read_text(encoding="utf-8", errors="replace")
+src = (SRC / "random.zone.c").read_text(encoding="utf-8", errors="replace")
 
 checks = []
 

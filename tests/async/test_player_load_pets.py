@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Source and runtime contracts for batched pet graph hydration."""
 
+from _paths import SRC
 import subprocess
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REPOSITORY = (ROOT / "src/player_load_repository.c").read_text()
-MATERIALIZE = (ROOT / "src/player_load_materialize.c").read_text()
-PETS = (ROOT / "src/player_load_pets.c").read_text()
-NANNY = (ROOT / "src/nanny.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
+REPOSITORY = (SRC / "player_load_repository.c").read_text()
+MATERIALIZE = (SRC / "player_load_materialize.c").read_text()
+PETS = (SRC / "player_load_pets.c").read_text()
+NANNY = (SRC / "nanny.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
 
 subprocess.run(
     ["python3", "tests/async/test_player_load_items.py"],

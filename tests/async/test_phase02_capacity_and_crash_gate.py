@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Static and codec evidence for the bounded Phase 02 25-200 client gate."""
 
+from _paths import SRC
 from pathlib import Path
 import re
 import subprocess
@@ -9,8 +10,6 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
 #include "session_audit_command.h"
 #include <cassert>

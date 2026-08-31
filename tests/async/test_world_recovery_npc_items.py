@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime regression for idempotent recovered-NPC zone item rehydration."""
 
+from _paths import rel
 import subprocess
 import tempfile
 from pathlib import Path
@@ -197,7 +198,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-npc-items-") as temp_dir:
             "-fno-omit-frame-pointer",
             "-Isrc",
             str(source),
-            "src/world_recovery_npc_items.c",
+            rel("world_recovery_npc_items.c"),
             "-o",
             str(binary),
         ],

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regression contract for NPC vitality spell selection."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/mobact.c").read_text()
+SOURCE = (SRC / "mobact.c").read_text()
 
 start = SOURCE.index("bool CastClericSpell(")
 end = SOURCE.index("bool CastPaladinSpell(", start)

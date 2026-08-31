@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """The flat build's MySQL compatibility surface must always fail closed."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
@@ -56,7 +57,7 @@ with tempfile.TemporaryDirectory(prefix="no-mysql-compat-") as directory:
             "-Wall",
             "-Wextra",
             "-Werror",
-            f"-I{ROOT / 'src/no_mysql'}",
+            f"-I{SRC / "no_mysql"}",
             str(probe),
             "-o",
             str(binary),

@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/enhance.c").read_text()
+source = (SRC / "enhance.c").read_text()
 config = (ROOT / "lib/enhance.cfg").read_text()
 
 # The enabled lane is driven from `enhance <item>` and plans every eligible

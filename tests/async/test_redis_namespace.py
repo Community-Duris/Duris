@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Exercise the Redis application/environment/deployment namespace validator."""
 
+from _paths import SRC
 from pathlib import Path
 import subprocess
 import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
 #include "redis_namespace.h"
 

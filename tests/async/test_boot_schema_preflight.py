@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/sql.c").read_text()
+source = (SRC / "sql.c").read_text()
 
 assert "static bool sql_verify_boot_database(void)" in source
 assert "information_schema.columns" in source

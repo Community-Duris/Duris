@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 start = source.index("int persistence_replay_fallback_events")
 active = source[start:].split("#if 0", 1)[0]
 

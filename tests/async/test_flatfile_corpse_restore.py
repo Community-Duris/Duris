@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Boot restore orchestration regression for flat-file player corpses."""
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -320,7 +321,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-corpse-restore-") as tem
             "-Werror",
             "-Isrc",
             str(source),
-            "src/flatfile_corpse_restore.c",
+            rel("flatfile_corpse_restore.c"),
             "-o",
             str(binary),
         ],

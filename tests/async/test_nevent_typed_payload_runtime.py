@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Typed nevent payload, stable identity, and mob-hunt migration regressions."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
@@ -8,8 +9,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 OWNED_PAYLOAD_HARNESS = r'''
 #include "prototypes.h"
 

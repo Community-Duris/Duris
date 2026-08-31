@@ -1,9 +1,10 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
-structs = (ROOT / "src" / "structs.h").read_text(encoding="utf-8", errors="replace")
+source = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
+structs = (SRC / "structs.h").read_text(encoding="utf-8", errors="replace")
 
 assert contains(source, "nevent_is_player_timed")
 assert contains(source, "NEVENT_PRIORITY_PLAYER")

@@ -1,10 +1,11 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-events = (ROOT / "src" / "events.c").read_text()
-db = (ROOT / "src" / "db.c").read_text()
-config = (ROOT / "src" / "config.h").read_text()
+events = (SRC / "events.c").read_text()
+db = (SRC / "db.c").read_text()
+config = (SRC / "config.h").read_text()
 
 assert contains(events, "zone_table[zone].age++;")
 assert contains(events, "zone_table[zone].lifespan")

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regression contract for multi-part spell wear-off messages."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/affects.c").read_text()
+SOURCE = (SRC / "affects.c").read_text()
 
 start = SOURCE.index("void wear_off_message(")
 end = SOURCE.index("//=================================================================================", start)

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Source contract for preserving complete status and epic log messages."""
 
+from _paths import SRC
 from pathlib import Path
 import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src" / "utility.c").read_text(encoding="utf-8")
+SOURCE = (SRC / "utility.c").read_text(encoding="utf-8")
 
 
 def function_body(name: str) -> str:

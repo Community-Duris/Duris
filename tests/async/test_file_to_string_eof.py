@@ -13,11 +13,12 @@ boot at all:
 This pins the loop back to a plain fgets() and keeps the file handle closed on
 the over-long-file path.
 """
+from _paths import SRC
 from pathlib import Path
 import re
 
 root = Path(__file__).resolve().parents[2]
-db = (root / "src/db.c").read_text()
+db = (SRC / "db.c").read_text()
 
 failures = []
 
@@ -42,7 +43,7 @@ check("file_to_string still closes the file on the success path", "fclose(fl);" 
 # The same shape must not come back anywhere else: a REQUIRED_* read whose
 # enclosing loop is terminated by feof() is the bug this test exists for.
 offenders = []
-for path in sorted((root / "src").rglob("*.c")):
+for path in sorted(SRC.rglob("*.c")):
     if path.name == "safe_io.c":
         continue
     text = path.read_text(errors="replace")

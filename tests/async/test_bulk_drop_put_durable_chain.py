@@ -14,10 +14,11 @@ Currency, transient objects, and PC corpse roots still use their dedicated paths
 once the generic ownership chain has drained.
 """
 
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ACTOBJ = (ROOT / "src/actobj.c").read_text(encoding="utf-8", errors="replace")
+ACTOBJ = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
 
 
 def function_body(source, signature):

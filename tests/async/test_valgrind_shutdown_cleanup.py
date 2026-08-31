@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Contracts for clean-shutdown ownership found by the Valgrind command sweep."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-actcomm = (root / "src/actcomm.c").read_text()
-comm = (root / "src/comm.c").read_text()
-db = (root / "src/db.c").read_text()
-debug = (root / "src/debug.c").read_text()
-shop = (root / "src/shop.c").read_text()
-sql = (root / "src/sql.c").read_text()
+actcomm = (SRC / "actcomm.c").read_text()
+comm = (SRC / "comm.c").read_text()
+db = (SRC / "db.c").read_text()
+debug = (SRC / "debug.c").read_text()
+shop = (SRC / "shop.c").read_text()
+sql = (SRC / "sql.c").read_text()
 
 
 def body(source, start, end):

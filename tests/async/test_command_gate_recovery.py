@@ -17,16 +17,17 @@ Verifies:
    debt ahead of future work, and deferral reinserts through the same path.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-events = (ROOT / "src" / "events.c").read_text(encoding="utf-8", errors="replace")
-comm = (ROOT / "src" / "comm.c").read_text(encoding="utf-8", errors="replace")
-structs = (ROOT / "src" / "structs.h").read_text(encoding="utf-8", errors="replace")
-new_events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
+events = (SRC / "events.c").read_text(encoding="utf-8", errors="replace")
+comm = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
+structs = (SRC / "structs.h").read_text(encoding="utf-8", errors="replace")
+new_events = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
 
 checks = []
 

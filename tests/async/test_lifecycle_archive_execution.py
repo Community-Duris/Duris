@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import copy
 import importlib.util
 import json
@@ -18,8 +19,8 @@ SCRIPT = ROOT / "scripts" / "lifecycle_archive.py"
 MIGRATION = ROOT / "migrations" / "lifecycle_archive_execution.sql"
 BOOTSTRAP = ROOT / "migrations" / "bootstrap_multithread_safe.sql"
 MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
-SCHEDULER = (ROOT / "src" / "maintenance_scheduler.c").read_text()
-SCHEDULER_HEADER = (ROOT / "src" / "maintenance_scheduler.h").read_text()
+SCHEDULER = (SRC / "maintenance_scheduler.c").read_text()
+SCHEDULER_HEADER = (SRC / "maintenance_scheduler.h").read_text()
 MIGRATION_RUNNER = (ROOT / "migrations" / "run_migration.sh").read_text()
 SCHEMA_VERIFIER = (ROOT / "migrations" / "verify_lifecycle_archive_schema.sh").read_text()
 SPEC = importlib.util.spec_from_file_location("lifecycle_archive", SCRIPT)

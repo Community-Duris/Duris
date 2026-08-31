@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate the character-delete disposition inventory and runtime fence."""
 
+from _paths import SRC
 import json
 import pathlib
 
@@ -71,7 +72,7 @@ if blockers and manifest.get("runtime_exposure") != "fenced":
 if not blockers and manifest.get("runtime_exposure") not in {"fenced", "enabled"}:
     raise SystemExit("complete character deletion has an invalid exposure state")
 
-files_source = (ROOT / "src/files.c").read_text()
+files_source = (SRC / "files.c").read_text()
 start = files_source.index("int deleteCharacter(P_char ch, bool bDeleteLocker)")
 end = files_source.index("void PurgeCorpseFile", start)
 delete_body = files_source[start:end]
@@ -106,7 +107,7 @@ if exposure == "enabled":
     if route_positions[2] > positions[0]:
         raise SystemExit("flat character deletion does not bypass the legacy SQL mutations")
 
-coordinator = (ROOT / "src/flatfile_character_delete.c").read_text()
+coordinator = (SRC / "flatfile_character_delete.c").read_text()
 prepared_order = [
     "flatfile_account_reward_summon_prepare_player_remove",
     "flatfile_world_item_prepare_player_remove",

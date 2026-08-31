@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Source contracts for the live ownership ACK boundary."""
 
+from _paths import SRC
 from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 class LiveItemMovementContractTests(unittest.TestCase):
     def test_runtime_hydrates_authoritative_rows_not_relative_events(self):
         sql = (SRC / "sql.c").read_text()

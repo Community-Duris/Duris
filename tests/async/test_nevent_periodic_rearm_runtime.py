@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Periodic nevent registry runtime and migration contracts."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
@@ -8,8 +9,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
 #include "prototypes.h"
 

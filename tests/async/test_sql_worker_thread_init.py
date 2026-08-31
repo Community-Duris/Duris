@@ -12,6 +12,7 @@ Pin two things: the raw call is not reachable outside the shared helper, and the
 helper still initialises the library exactly once.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import shlex
@@ -21,8 +22,6 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 failures = []
 
 

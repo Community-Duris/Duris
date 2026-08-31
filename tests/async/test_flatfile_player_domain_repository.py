@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -23,13 +24,13 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as tem
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_domain_repository_harness.cpp",
-            "src/flatfile_player_domain_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
-            "src/epic_command.c",
-            "src/currency_command.c",
-            "src/combat_outcome_command.c",
-            "src/critical_command.c",
+            rel("flatfile_player_domain_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
+            rel("epic_command.c"),
+            rel("currency_command.c"),
+            rel("combat_outcome_command.c"),
+            rel("critical_command.c"),
             "-lcrypto",
             "-pthread",
             "-o",

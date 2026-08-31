@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Crafting balance must be boot-loaded from a documented config."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 root = Path(__file__).resolve().parents[2]
-source = (root / "src/crafting.c").read_text()
-header = (root / "src/crafting.h").read_text()
-comm = (root / "src/comm.c").read_text()
+source = (SRC / "crafting.c").read_text()
+header = (SRC / "crafting.h").read_text()
+comm = (SRC / "comm.c").read_text()
 config = root / "lib/crafting.cfg"
 config_text = config.read_text()
 assert config.exists(), "missing lib/crafting.cfg"

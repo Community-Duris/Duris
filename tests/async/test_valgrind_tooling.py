@@ -7,6 +7,7 @@ port, the suppression file being applied and staying free of Duris frames,
 and the dependency being declared where a fresh clone will see it.
 """
 
+from _paths import SRC
 import os
 import re
 import shutil
@@ -60,11 +61,11 @@ assert helped.returncode == 0 and "--tool" in helped.stdout
 
 # src/sql.c redirects to the development database only when RUNNING_PORT
 # differs from DFLT_PORT, so the refused port must stay in step with config.h.
-dflt_port = re.search(r"#define DFLT_PORT\s+(\d+)", (ROOT / "src/config.h").read_text())
+dflt_port = re.search(r"#define DFLT_PORT\s+(\d+)", (SRC / "config.h").read_text())
 assert dflt_port and dflt_port.group(1) == "7777", (
     "DFLT_PORT changed -- update the production-port guard in scripts/valgrind_mud.sh"
 )
-assert re.search(r"RUNNING_PORT != DFLT_PORT", (ROOT / "src/sql.c").read_text()), (
+assert re.search(r"RUNNING_PORT != DFLT_PORT", (SRC / "sql.c").read_text()), (
     "src/sql.c no longer picks the database by port -- recheck the runner's guard"
 )
 
@@ -112,7 +113,7 @@ assert DOC.is_file(), "docs/guides/valgrind.md is missing"
 doc = DOC.read_text()
 assert "scripts/valgrind_mud.sh" in doc and "scripts/valgrind.supp" in doc
 
-makefile = (ROOT / "src/Makefile").read_text()
+makefile = (SRC / "Makefile").read_text()
 assert "\nvalgrind: $(PROGS)" in makefile, "src/Makefile lost its valgrind target"
 assert "./scripts/valgrind_mud.sh" in makefile
 

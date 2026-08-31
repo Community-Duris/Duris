@@ -4,11 +4,12 @@ The absolute due tick is authoritative. Budget deferral moves only already-due
 work to the next physical bucket while preserving its original deadline.
 """
 
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, count
 
 ROOT = Path(__file__).resolve().parents[2]
-src = (ROOT / "src" / "new_events.c").read_text()
+src = (SRC / "new_events.c").read_text()
 
 # Tunables stay environment-overridable.
 assert contains(src, 'DURIS_NEVENT_BUDGET_USEC')

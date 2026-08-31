@@ -1,5 +1,6 @@
 """Contracts for keeping every compiled repository artifact under bin/."""
 
+from _paths import SRC
 import subprocess
 from pathlib import Path
 
@@ -80,7 +81,7 @@ for command, required in (
 # dependencies. Their objects must remain isolated even though all combinations
 # publish the maintained server path, and switching either dimension must
 # invalidate that shared binary.
-makefile = (ROOT / "src/Makefile").read_text()
+makefile = (SRC / "Makefile").read_text()
 assert "BACKEND_STAMP" in makefile
 for backend, profile in (
     ("mariadb", "development"),

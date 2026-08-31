@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REGISTRY = ROOT / "src" / "redis_key_registry.def"
+REGISTRY = SRC / "redis_key_registry.def"
 registry = REGISTRY.read_text(encoding="ascii")
 
 surface_names = re.findall(r"^REDIS_SURFACE\(([A-Z0-9_]+),", registry, re.MULTILINE)
@@ -21,7 +22,7 @@ assert len(store_names) == len(set(store_names)) == 5
 assert owned_patterns == ["<namespace>:*", "mud:*", "ship:snapshot:*"]
 
 redis_literals = re.compile(r'"(?:mud|ship):')
-for source in sorted((ROOT / "src").rglob("*.[ch]")):
+for source in sorted(SRC.rglob("*.[ch]")):
     if source.name in {"redis_key_registry.c", "redis_key_registry.h"}:
         continue
     assert not redis_literals.search(source.read_text(encoding="utf-8")), source

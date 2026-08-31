@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regressions for coalesced, revision-aware live corpse persistence."""
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -464,10 +465,10 @@ with tempfile.TemporaryDirectory(prefix="duris-corpse-lifecycle-transaction-") a
             "-Werror",
             "-Isrc",
             str(source),
-            "src/corpse_lifecycle_transaction.c",
-            "src/corpse_lifecycle_command.c",
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
+            rel("corpse_lifecycle_transaction.c"),
+            rel("corpse_lifecycle_command.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
             "-lcrypto",
             "-o",
             str(binary),

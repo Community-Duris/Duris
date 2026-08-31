@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,12 +21,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_artifact_repository_harness.cpp",
-            "src/flatfile_artifact_repository.c",
-            "src/player_snapshot_codec.c",
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_artifact_repository.c"),
+            rel("player_snapshot_codec.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",
@@ -64,13 +65,13 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_artifact_bind_runtime_harness.cpp",
-            "src/sql.c",
-            "src/flatfile_artifact_repository.c",
-            "src/player_snapshot_codec.c",
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("sql.c"),
+            rel("flatfile_artifact_repository.c"),
+            rel("player_snapshot_codec.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-pthread",
@@ -110,13 +111,13 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_artifact_runtime_harness.cpp",
-            "src/artifact.c",
-            "src/flatfile_artifact_repository.c",
-            "src/player_snapshot_codec.c",
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("artifact.c"),
+            rel("flatfile_artifact_repository.c"),
+            rel("player_snapshot_codec.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-pthread",
@@ -141,7 +142,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise SystemExit(gameplay_result.stdout)
     print(gameplay_result.stdout.strip())
 
-    artifact_source = (ROOT / "src/artifact.c").read_text()
+    artifact_source = (SRC / "artifact.c").read_text()
     expiry_start = artifact_source.index("void event_artifact_check_poof_sql(")
     expiry_end = artifact_source.index("\nvoid event_artifact_wars_sql(", expiry_start)
     expiry_body = artifact_source[expiry_start:expiry_end]
@@ -239,7 +240,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     if "flatfile_artifact_erase(" not in artifact_source[clear_start:clear_end]:
         raise AssertionError("client-free staff artifact clear bypasses catalog erase")
 
-    boot_source = (ROOT / "src/db.c").read_text()
+    boot_source = (SRC / "db.c").read_text()
     boot_start = boot_source.index("void boot_db(int mini_mode)\n{")
     boot_end = boot_source.index("\nvoid update_stat_data()", boot_start)
     boot_body = boot_source[boot_start:boot_end]

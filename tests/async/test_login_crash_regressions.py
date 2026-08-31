@@ -23,15 +23,16 @@ in logs/duris-console.log was:
 3. make_bar() had the same mismatch against a 512-byte static buffer, and
    divided by `max` without guarding zero.
 """
+from _paths import SRC, rel
 from pathlib import Path
 import re
 
 root = Path(__file__).resolve().parents[2]
-account = (root / "src/account.c").read_text()
-comm = (root / "src/comm.c").read_text()
-websocket = (root / "src/websocket.c").read_text()
-prompt = (root / "src/prompt.c").read_text()
-db = (root / "src/db.c").read_text()
+account = (SRC / "account.c").read_text()
+comm = (SRC / "comm.c").read_text()
+websocket = (SRC / "websocket.c").read_text()
+prompt = (SRC / "prompt.c").read_text()
+db = (SRC / "db.c").read_text()
 
 failures = []
 
@@ -106,7 +107,7 @@ import subprocess, sys
 out = subprocess.run([sys.executable, str(root / "scripts/scan-append-bounds.py")],
                      cwd=root, capture_output=True, text=True).stdout
 offenders = [l for l in out.splitlines()
-             if l.startswith(("src/prompt.c", "src/comm.c", "src/websocket.c"))]
+             if l.startswith((rel("prompt.c"), rel("comm.c"), rel("websocket.c")))]
 check("no mismatched append bounds remain in prompt.c, comm.c or websocket.c", not offenders)
 for o in offenders:
     print("       " + o)

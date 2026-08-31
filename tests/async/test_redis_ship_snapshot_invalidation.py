@@ -1,3 +1,4 @@
+from _paths import SRC, rel
 from pathlib import Path
 import shutil
 import socket
@@ -6,12 +7,12 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-header = (ROOT / "src/redis_maintenance.h").read_text()
-source = (ROOT / "src/redis_maintenance.c").read_text()
-composition = (ROOT / "src/redis.c").read_text()
-legacy_header = (ROOT / "src/redis_ship_legacy.h").read_text()
-legacy = (ROOT / "src/redis_ship_legacy.c").read_text()
-sql = (ROOT / "src/sql_player.c").read_text()
+header = (SRC / "redis_maintenance.h").read_text()
+source = (SRC / "redis_maintenance.c").read_text()
+composition = (SRC / "redis.c").read_text()
+legacy_header = (SRC / "redis_ship_legacy.h").read_text()
+legacy = (SRC / "redis_ship_legacy.c").read_text()
+sql = (SRC / "sql_player.c").read_text()
 
 assert "bool redis_clear_pwipe_state(void);" in header
 assert "redis_load_ship_snapshot" not in header
@@ -38,7 +39,7 @@ assert "redis_connection_open(configured_connection)" in legacy
 assert "redis_ship_legacy_worker_init(redis_connections.maintenance)" in composition
 assert "redis_shared_command_observability_record" in legacy
 assert "redis_clear_ship_snapshots(context)" in source
-for caller in ("src/sql_player.c", "src/ships/ship_base.c"):
+for caller in (rel("sql_player.c"), rel("ship_base.c")):
     caller_source = (ROOT / caller).read_text()
     assert '#include "redis_ship_legacy.h"' in caller_source
     assert '#include "redis.h"' not in caller_source
@@ -164,9 +165,9 @@ with tempfile.TemporaryDirectory(prefix="duris-ship-legacy-") as temp:
             "-fno-omit-frame-pointer",
             "-Isrc",
             str(source_path),
-            "src/redis_ship_legacy.c",
-            "src/redis_connection.c",
-            "src/redis_command_observability.c",
+            rel("redis_ship_legacy.c"),
+            rel("redis_connection.c"),
+            rel("redis_command_observability.c"),
             "-lhiredis",
             "-lhiredis_ssl",
             "-lssl",

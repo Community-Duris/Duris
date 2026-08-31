@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Source-contract checks for INNATE_ARCANE_RUDIMENTS mechanic."""
+from _paths import SRC
 from pathlib import Path
 import sys, re
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 def check(name, ok):
 	if not ok:
 		print(f"FAIL: {name}")

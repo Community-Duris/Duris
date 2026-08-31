@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Source contract for post-commit flat-file shop object publication."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/shop.c").read_text()
-TRANSACTION = (ROOT / "src/shop_trade_transaction.c").read_text()
+SOURCE = (SRC / "shop.c").read_text()
+TRANSACTION = (SRC / "shop_trade_transaction.c").read_text()
 
 for token in (
     "shop_trade_find_object(payload.selected_item_uid)",

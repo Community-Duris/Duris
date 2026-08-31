@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Queue completion must use per-slot identity, never serialized text."""
+from _paths import SRC
 from pathlib import Path
 import re
 from contract_text import contains
 
-source = (Path(__file__).resolve().parents[2] / "src/persistence_queue.c").read_text()
+source = (SRC / "persistence_queue.c").read_text()
 
 assert contains(source, "unsigned long long *generations;")
 assert contains(source, "unsigned long long next_generation;")

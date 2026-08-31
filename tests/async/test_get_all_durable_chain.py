@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Contracts for serialized durable floor pickup via `get all`."""
 
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ACTOBJ = (ROOT / "src/actobj.c").read_text(encoding="utf-8", errors="replace")
-MOVEMENT = (ROOT / "src/item_movement_transaction.c").read_text(
+ACTOBJ = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
+MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace"
 )
 

@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Contracts for bounded immutable player snapshot capture."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DTO = (ROOT / "src/player_snapshot.h").read_text()
-CAPTURE_HEADER = (ROOT / "src/player_snapshot_capture.h").read_text()
-CAPTURE = (ROOT / "src/player_snapshot_capture.c").read_text()
+DTO = (SRC / "player_snapshot.h").read_text()
+CAPTURE_HEADER = (SRC / "player_snapshot_capture.h").read_text()
+CAPTURE = (SRC / "player_snapshot_capture.c").read_text()
 
 
 HARNESS = r'''

@@ -1,10 +1,10 @@
 """Source contracts ensuring complete helpfiles exist for all 37 player races."""
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 HELP_DIR = ROOT / "help"
 LIB_DIR = ROOT / "lib"
 

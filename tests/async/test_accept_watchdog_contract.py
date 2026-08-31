@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-src = (ROOT / "src" / "comm.c").read_text()
+src = (SRC / "comm.c").read_text()
 
 assert "static int drain_new_connections" in src
 assert "return accepted_count;" in src

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Source contract for the early database compatibility boot gate."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CYCLE = (ROOT / "scripts" / "cycle_mud.sh").read_text()
-SQL_PLAYER = (ROOT / "src" / "sql_player.c").read_text()
+SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 migration = 'python3 scripts/migration_runner.py run'
 verification = './migrations/verify_runtime_compatibility.sh'

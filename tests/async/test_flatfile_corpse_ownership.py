@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Cross-authority reconciliation regressions for restored world items."""
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -124,7 +125,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-corpse-ownership-") as t
             "-Werror",
             "-Isrc",
             str(source),
-            "src/flatfile_corpse_ownership.c",
+            rel("flatfile_corpse_ownership.c"),
             "-o",
             str(binary),
         ],

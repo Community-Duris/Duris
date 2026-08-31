@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-REPOSITORY = (ROOT / "src/flatfile_shop_trade_repository.c").read_text()
-PLAYER = (ROOT / "src/flatfile_player_repository.c").read_text()
+REPOSITORY = (SRC / "flatfile_shop_trade_repository.c").read_text()
+PLAYER = (SRC / "flatfile_player_repository.c").read_text()
 for token in (
     "flatfile_shop_trade_materialization_prepare(",
     "images.push_back(std::move(materialization.after_image))",
@@ -26,32 +27,32 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-shop-trade-") as temporary:
     binary = temporary_path / "flatfile_shop_trade_test"
     sources = [
         "tests/async/flatfile_shop_trade_repository_harness.cpp",
-        "src/flatfile_shop_trade_repository.c",
-        "src/flatfile_shop_trade_materialization.c",
-        "src/flatfile_shopkeeper_repository.c",
-        "src/flatfile_auction_repository.c",
-        "src/flatfile_boon_repository.c",
-        "src/flatfile_item_repository.c",
-        "src/flatfile_corpse_repository.c",
-        "src/flatfile_locker_repository.c",
-        "src/flatfile_world_item_repository.c",
-        "src/flatfile_artifact_repository.c",
-        "src/flatfile_player_domain_repository.c",
-        "src/flatfile_authority_transaction.c",
-        "src/flatfile_store.c",
-        "src/player_snapshot_codec.c",
-        "src/shop_trade_command.c",
-        "src/item_transfer_command.c",
-        "src/corpse_lifecycle_command.c",
-        "src/epic_command.c",
-        "src/auction_command.c",
-        "src/currency_command.c",
-        "src/combat_outcome_command.c",
-        "src/boon_reward_command.c",
-        "src/boon_shop_command.c",
-        "src/critical_command.c",
-        "src/persistence_mode.c",
-        "src/flatfile_ip_activity_repository.c",
+        rel("flatfile_shop_trade_repository.c"),
+        rel("flatfile_shop_trade_materialization.c"),
+        rel("flatfile_shopkeeper_repository.c"),
+        rel("flatfile_auction_repository.c"),
+        rel("flatfile_boon_repository.c"),
+        rel("flatfile_item_repository.c"),
+        rel("flatfile_corpse_repository.c"),
+        rel("flatfile_locker_repository.c"),
+        rel("flatfile_world_item_repository.c"),
+        rel("flatfile_artifact_repository.c"),
+        rel("flatfile_player_domain_repository.c"),
+        rel("flatfile_authority_transaction.c"),
+        rel("flatfile_store.c"),
+        rel("player_snapshot_codec.c"),
+        rel("shop_trade_command.c"),
+        rel("item_transfer_command.c"),
+        rel("corpse_lifecycle_command.c"),
+        rel("epic_command.c"),
+        rel("auction_command.c"),
+        rel("currency_command.c"),
+        rel("combat_outcome_command.c"),
+        rel("boon_reward_command.c"),
+        rel("boon_shop_command.c"),
+        rel("critical_command.c"),
+        rel("persistence_mode.c"),
+        rel("flatfile_ip_activity_repository.c"),
     ]
     compile_result = subprocess.run(
         [

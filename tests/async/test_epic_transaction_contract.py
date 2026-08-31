@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Source and schema contracts for the transactional epic balance boundary."""
 
+from _paths import SRC
 from pathlib import Path
 import re
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 class EpicTransactionContractTests(unittest.TestCase):
     def test_schema_and_operator_tools_are_wired(self):
         migration = (ROOT / "migrations/epic_ledger_balance.sql").read_text()
