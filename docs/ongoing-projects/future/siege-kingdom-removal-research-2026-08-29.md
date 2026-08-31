@@ -1,8 +1,8 @@
 # Siege and Kingdom Removal Research
 
-Date: 2026-08-29
+Date: 2026-08-31
 Branch: `master`
-Research baseline: `843cbb947291`
+Research baseline: `3e111f43`
 Status: Research complete; no implementation changes made
 
 ## Executive conclusion
@@ -69,36 +69,36 @@ persistence code, but did not reconnect the feature.
 
 ### Runtime state
 
-[`src/siege.h`](../../src/siege.h#L4) contains a commented-out
+[`src/siege.h`](../../../src/siege.h#L4) contains a commented-out
 `SIEGE_ENABLED` definition. The normal build does not define it elsewhere.
 
 The following external entry points are all guarded by `#ifdef SIEGE_ENABLED`:
 
 | Runtime seam | Current location | Disabled behavior |
 | --- | --- | --- |
-| Town and siege boot | [`src/comm.c`](../../src/comm.c#L710) | Does not load towns, siege objects, or special procedures |
-| Town deployment on zone reset | [`src/db.c`](../../src/db.c#L3881) | Does not deploy guards or cavalry |
-| Gate movement checks | [`src/actmove.c`](../../src/actmove.c#L726) | Does not block invaders with siege gates |
-| Attacking siege objects | [`src/actoff.c`](../../src/actoff.c#L767) | `hit` and `kill` cannot enter object combat |
-| Object-combat pulse | [`src/fight.c`](../../src/fight.c#L9392) | No siege attacks execute |
-| Immortal `add` command | [`src/interp.c`](../../src/interp.c#L2606) | Handler is not registered |
-| `IS_DESTROYING` | [`src/utils.h`](../../src/utils.h#L737) | Expands to `false` |
+| Town and siege boot | [`src/comm.c`](../../../src/comm.c#L762) | Does not load towns, siege objects, or special procedures |
+| Town deployment on zone reset | [`src/db.c`](../../../src/db.c#L3933) | Does not deploy guards or cavalry |
+| Gate movement checks | [`src/actmove.c`](../../../src/actmove.c#L726) | Does not block invaders with siege gates |
+| Attacking siege objects | [`src/actoff.c`](../../../src/actoff.c#L767) | `hit` and `kill` cannot enter object combat |
+| Object-combat pulse | [`src/fight.c`](../../../src/fight.c#L9479) | No siege attacks execute |
+| Immortal `add` command | [`src/interp.c`](../../../src/interp.c#L2608) | Handler is not registered |
+| `IS_DESTROYING` | [`src/utils.h`](../../../src/utils.h#L738) | Expands to `false` |
 
-Despite that, [`src/Makefile`](../../src/Makefile#L298) still links `siege.o`. The current
+Despite that, [`src/Makefile`](../../../src/Makefile#L366) still links `siege.o`. The current
 binary contains `init_towns`, `init_siege`, `warmaster`, `check_deploy`, `do_add`, siege
 SQL functions, and `siege_objects`. Disassembly found no external calls into the boot,
 town, deployment, or command entry points; the only relevant call was internal siege code
 calling `set_destroying`.
 
-The main source files contain 1,879 lines:
+The main source files contain 2,760 lines:
 
-- [`src/siege.c`](../../src/siege.c): 1,837 lines
-- [`src/siege.h`](../../src/siege.h): 42 lines
+- [`src/siege.c`](../../../src/siege.c): 2,718 lines
+- [`src/siege.h`](../../../src/siege.h): 42 lines
 
 ### What the implemented code actually does
 
 The live-looking implementation is not the kingdom design described by the help file.
-[`warmaster`](../../src/siege.c#L884) finds a `town` by current zone and uses player
+[`warmaster`](../../../src/siege.c#L1743) finds a `town` by current zone and uses player
 surname rank to:
 
 - donate item value into town resources;
@@ -109,7 +109,7 @@ surname rank to:
 It does not use guild membership, kingdom membership, kingdom land, virtual troop
 movement, declarations of war, conquest, or the map ownership model.
 
-[`lib/information/helpkingdoms`](../../lib/information/helpkingdoms#L2) calls itself a
+[`lib/information/helpkingdoms`](../../../lib/information/helpkingdoms#L2) calls itself a
 "Duris Kingdom Code Proposal" and describes systems which were never connected to the
 runtime.
 
@@ -184,7 +184,7 @@ Current baseline counts are:
 | Surface | Count |
 | --- | ---: |
 | Source files containing destruction scaffolding | 62 |
-| `stop_destroying(...)` occurrences | 124 |
+| `stop_destroying(...)` occurrences | 125 |
 | `IS_DESTROYING(...)` occurrences, including definitions | 285 |
 
 This is broad but behavior-neutral cleanup. In the default build, `IS_DESTROYING(ch)` is
@@ -229,7 +229,7 @@ Do not remove these unrelated live concepts:
 - ordinary hometown logic;
 - guilds and associations.
 
-The active administrator text in [`src/assocs.c`](../../src/assocs.c#L1498) should change
+The active administrator text in [`src/assocs.c`](../../../src/assocs.c#L1784) should change
 from "Standard Guilds and Kingdoms" to "Standard Guilds" because it currently advertises
 a system that does not exist.
 
