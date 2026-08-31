@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "wikihelp.h"
 #ifdef __NO_MYSQL__
-#include "flatfile_help_catalog.h"
+#include "flatfile/flatfile_help_catalog.h"
 #endif
 #include <algorithm>
 #include <iomanip>

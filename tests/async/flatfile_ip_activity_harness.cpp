@@ -1,4 +1,4 @@
-#include "flatfile_ip_activity_repository.h"
+#include "flatfile/flatfile_ip_activity_repository.h"
 #include "sql.h"
 
 #include <cstdlib>

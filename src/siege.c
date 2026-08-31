@@ -15,7 +15,7 @@
 #include "sql_player.h"
 
 #ifdef __NO_MYSQL__
-#include "flatfile_store.h"
+#include "flatfile/flatfile_store.h"
 #include "persistence_mode.h"
 #include "player_load_items.h"
 #include "player_snapshot_capture.h"

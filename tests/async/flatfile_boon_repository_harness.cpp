@@ -1,6 +1,6 @@
 #include "boon.h"
-#include "flatfile_boon_repository.h"
-#include "flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_boon_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
 
 #include <cerrno>
 #include <cstdlib>

@@ -3,7 +3,7 @@
 
 #include "prototypes.h"
 #include "files.h"
-#include "flatfile_player_repository.h"
+#include "flatfile/flatfile_player_repository.h"
 #include "player_save_journal.h"
 #include "player_save_worker.h"
 #include "player_snapshot_capture.h"

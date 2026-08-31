@@ -1,7 +1,7 @@
 #include "player_load_pipeline.h"
 #include "sql_thread_init.h"
 
-#include "flatfile_player_repository.h"
+#include "flatfile/flatfile_player_repository.h"
 #include "persistence_observability.h"
 #include "sql_pool.h"
 

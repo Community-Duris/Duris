@@ -1,4 +1,4 @@
-#include "flatfile_artifact_repository.h"
+#include "flatfile/flatfile_artifact_repository.h"
 #include "prototypes.h"
 
 #include <cstdlib>

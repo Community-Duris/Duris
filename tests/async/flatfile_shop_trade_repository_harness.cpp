@@ -1,8 +1,8 @@
-#include "flatfile_item_repository.h"
-#include "flatfile_player_domain_repository.h"
-#include "flatfile_shop_trade_repository.h"
-#include "flatfile_shop_trade_materialization.h"
-#include "flatfile_shopkeeper_repository.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_shop_trade_repository.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
+#include "flatfile/flatfile_shopkeeper_repository.h"
 #include "player_snapshot_codec.h"
 
 #include <cerrno>

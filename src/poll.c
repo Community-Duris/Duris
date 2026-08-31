@@ -25,7 +25,7 @@
 #include "websocket.h"
 
 #ifdef __NO_MYSQL__
-#include "flatfile_store.h"
+#include "flatfile/flatfile_store.h"
 #include "persistence_mode.h"
 
 #include <algorithm>

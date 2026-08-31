@@ -21,8 +21,8 @@
 #include <unistd.h>
 #include <vector>
 #include "files.h"
-#include "flatfile_artifact_repository.h"
-#include "flatfile_item_repository.h"
+#include "flatfile/flatfile_artifact_repository.h"
+#include "flatfile/flatfile_item_repository.h"
 #include "mm.h"
 #include "necromancy.h"
 #include "persistence_mode.h"

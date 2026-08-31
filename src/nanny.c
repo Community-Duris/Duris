@@ -33,7 +33,7 @@
 #include "auction_transaction.h"
 #include "boon_reward_transaction.h"
 #include "files.h"
-#include "flatfile_identity_adapter.h"
+#include "flatfile/flatfile_identity_adapter.h"
 #include "gmcp.h"
 #include "guildhall.h"
 #include "hardcore_config.h"

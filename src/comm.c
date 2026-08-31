@@ -100,7 +100,7 @@
 #include "item_ownership_runtime.h"
 #include "shop_trade_transaction.h"
 #include "item_uid_allocator.h"
-#include "flatfile_item_repository.h"
+#include "flatfile/flatfile_item_repository.h"
 #include "auction_transaction.h"
 #include "combat_outcome_transaction.h"
 #include "artifact_guild_transaction.h"

@@ -27,7 +27,7 @@
 #include "player_load_materialize.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
-#include "flatfile_account_adapter.h"
+#include "flatfile/flatfile_account_adapter.h"
 #include "ws_handlers.h"
 
 #include <unordered_map>

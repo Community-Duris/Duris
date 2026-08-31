@@ -226,45 +226,45 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence_observability.o \
 				 persistence_mode.o \
 				 env_file.o \
-				 flatfile_store.o \
-				 flatfile_authority_transaction.o \
-				 flatfile_account_repository.o \
-				 flatfile_account_reward_summon_repository.o \
-				 flatfile_account_adapter.o \
-				 flatfile_identity_repository.o \
-				 flatfile_identity_adapter.o \
-				 flatfile_character_delete.o \
-				 flatfile_player_repository.o \
-				 flatfile_item_uid_allocator.o \
-				 flatfile_item_repository.o \
-				 flatfile_artifact_repository.o \
-				 flatfile_corpse_repository.o \
-				 flatfile_corpse_ownership.o \
-				 flatfile_corpse_restore.o \
-				 flatfile_association_repository.o \
-				 flatfile_locker_repository.o \
-				 flatfile_frag_leaderboard_repository.o \
-				 flatfile_help_catalog.o \
-				 flatfile_ip_activity_repository.o \
-				 flatfile_nexus_repository.o \
-				 flatfile_auction_repository.o \
-				 flatfile_boon_repository.o \
-				 flatfile_offline_message_repository.o \
-				 flatfile_player_domain_repository.o \
-				 flatfile_recipe_repository.o \
-				 flatfile_spellbook_repository.o \
-				 flatfile_ship_repository.o \
-				 flatfile_shopkeeper_repository.o \
-				 flatfile_shopkeeper_capture.o \
-				 flatfile_shopkeeper_ownership.o \
-				 flatfile_shopkeeper_materialize.o \
-				 flatfile_shopkeeper_restore.o \
-				 flatfile_shopkeeper_save.o \
-				 flatfile_shop_trade_repository.o \
-				 flatfile_shop_trade_materialization.o \
-				 flatfile_shop_trophy_history.o \
-				 flatfile_world_item_repository.o \
-				 flatfile_world_quest_history.o \
+				 flatfile/flatfile_store.o \
+				 flatfile/flatfile_authority_transaction.o \
+				 flatfile/flatfile_account_repository.o \
+				 flatfile/flatfile_account_reward_summon_repository.o \
+				 flatfile/flatfile_account_adapter.o \
+				 flatfile/flatfile_identity_repository.o \
+				 flatfile/flatfile_identity_adapter.o \
+				 flatfile/flatfile_character_delete.o \
+				 flatfile/flatfile_player_repository.o \
+				 flatfile/flatfile_item_uid_allocator.o \
+				 flatfile/flatfile_item_repository.o \
+				 flatfile/flatfile_artifact_repository.o \
+				 flatfile/flatfile_corpse_repository.o \
+				 flatfile/flatfile_corpse_ownership.o \
+				 flatfile/flatfile_corpse_restore.o \
+				 flatfile/flatfile_association_repository.o \
+				 flatfile/flatfile_locker_repository.o \
+				 flatfile/flatfile_frag_leaderboard_repository.o \
+				 flatfile/flatfile_help_catalog.o \
+				 flatfile/flatfile_ip_activity_repository.o \
+				 flatfile/flatfile_nexus_repository.o \
+				 flatfile/flatfile_auction_repository.o \
+				 flatfile/flatfile_boon_repository.o \
+				 flatfile/flatfile_offline_message_repository.o \
+				 flatfile/flatfile_player_domain_repository.o \
+				 flatfile/flatfile_recipe_repository.o \
+				 flatfile/flatfile_spellbook_repository.o \
+				 flatfile/flatfile_ship_repository.o \
+				 flatfile/flatfile_shopkeeper_repository.o \
+				 flatfile/flatfile_shopkeeper_capture.o \
+				 flatfile/flatfile_shopkeeper_ownership.o \
+				 flatfile/flatfile_shopkeeper_materialize.o \
+				 flatfile/flatfile_shopkeeper_restore.o \
+				 flatfile/flatfile_shopkeeper_save.o \
+				 flatfile/flatfile_shop_trade_repository.o \
+				 flatfile/flatfile_shop_trade_materialization.o \
+				 flatfile/flatfile_shop_trophy_history.o \
+				 flatfile/flatfile_world_item_repository.o \
+				 flatfile/flatfile_world_quest_history.o \
 				 corpse_lifecycle_transaction.o \
 				 critical_command.o \
 				 critical_command_journal.o \
@@ -452,7 +452,7 @@ OBJS =  $(SHIP_OBJS) \
 
 
 # Name lists (no paths) for pfile-related objs
-SHARED_PFILE_OBJS_NAMES = pf-skills.o pf-files.o
+SHARED_PFILE_OBJS_NAMES = skills.pf.o files.pf.o
 PFILE_OBJS_NAMES        = pfile-stubs.o pfile.o
 
 MIGRATE_OBJ_NAMES = migrate_main.o \
@@ -544,8 +544,8 @@ $(OBJDIR)/migrations/%.o: ../src-migrate/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
 
-# Shared pfile objects (pf-*.o) also go into OBJDIR
-$(OBJDIR)/pf-%.o: %.c
+# Shared pfile objects (*.pf.o) also go into OBJDIR
+$(OBJDIR)/%.pf.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -D_PFILE_ $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
 

@@ -1,4 +1,4 @@
-#include "flatfile_artifact_repository.h"
+#include "flatfile/flatfile_artifact_repository.h"
 #include "player_snapshot_codec.h"
 
 #include <algorithm>

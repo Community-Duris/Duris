@@ -1,7 +1,7 @@
 #ifndef SHOP_TRADE_RUNTIME_H
 #define SHOP_TRADE_RUNTIME_H
 
-#include "flatfile_shopkeeper_repository.h"
+#include "flatfile/flatfile_shopkeeper_repository.h"
 #include "shop_trade_command.h"
 #include "structs.h"
 

@@ -1,8 +1,8 @@
 #include "defines.h"
-#include "flatfile_artifact_repository.h"
-#include "flatfile_item_repository.h"
-#include "flatfile_locker_repository.h"
-#include "flatfile_shop_trade_materialization.h"
+#include "flatfile/flatfile_artifact_repository.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_locker_repository.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
 #include "player_snapshot_codec.h"
 
 #include <algorithm>

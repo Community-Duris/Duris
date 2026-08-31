@@ -1,7 +1,7 @@
 #include "item_uid_allocator.h"
 
 #include "db.h"
-#include "flatfile_item_uid_allocator.h"
+#include "flatfile/flatfile_item_uid_allocator.h"
 #include "persistence_mode.h"
 
 #include <cstdlib>

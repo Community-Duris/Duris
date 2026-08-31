@@ -46,7 +46,7 @@ using namespace std;
 #include "ctf.h"
 #include "currency_transaction.h"
 #include "epic.h"
-#include "flatfile_boon_repository.h"
+#include "flatfile/flatfile_boon_repository.h"
 #include "guildhall.h"
 #include "nexus_stones.h"
 #include "persistence_mode.h"

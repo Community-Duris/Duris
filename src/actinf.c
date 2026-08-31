@@ -31,7 +31,7 @@ using namespace std;
 #include "epic.h"
 #include "epic_bonus.h"
 #include "epic_transaction.h"
-#include "flatfile_shop_trade_materialization.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
 #include "grapple.h"
 #include "guard.h"
 #include "hardcore_config.h"

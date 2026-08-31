@@ -14,7 +14,7 @@ using namespace std;
 #include "sql_player.h"
 
 #ifdef __NO_MYSQL__
-#include "flatfile_association_repository.h"
+#include "flatfile/flatfile_association_repository.h"
 #include "persistence_mode.h"
 #endif
 

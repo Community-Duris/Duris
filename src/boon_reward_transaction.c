@@ -1,7 +1,7 @@
 #include "boon_reward_transaction.h"
 
 #include "boon.h"
-#include "flatfile_boon_repository.h"
+#include "flatfile/flatfile_boon_repository.h"
 #include "persistence_mode.h"
 #include "prototypes.h"
 #include "spells.h"

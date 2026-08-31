@@ -26,7 +26,7 @@
 #include "copyover.h"
 #include "epic.h"
 #include "enhance.h"
-#include "flatfile_artifact_repository.h"
+#include "flatfile/flatfile_artifact_repository.h"
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"

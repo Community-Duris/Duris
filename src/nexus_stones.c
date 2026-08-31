@@ -29,7 +29,7 @@ using namespace std;
 #include "spells.h"
 #include "sql.h"
 #ifdef __NO_MYSQL__
-#include "flatfile_nexus_repository.h"
+#include "flatfile/flatfile_nexus_repository.h"
 #include "persistence_mode.h"
 #endif
 

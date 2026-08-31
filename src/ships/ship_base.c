@@ -32,8 +32,8 @@
 #include "redis_ship_legacy.h"
 #include "redis_world_runtime.h"
 #ifdef __NO_MYSQL__
-#include "flatfile_identity_adapter.h"
-#include "flatfile_ship_repository.h"
+#include "flatfile/flatfile_identity_adapter.h"
+#include "flatfile/flatfile_ship_repository.h"
 #include "persistence_mode.h"
 
 #include <cmath>

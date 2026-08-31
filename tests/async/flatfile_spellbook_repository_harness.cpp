@@ -1,4 +1,4 @@
-#include "flatfile_spellbook_repository.h"
+#include "flatfile/flatfile_spellbook_repository.h"
 
 #include <algorithm>
 #include <cstdlib>

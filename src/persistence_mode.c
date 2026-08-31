@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #ifdef __NO_MYSQL__
-#include "flatfile_ip_activity_repository.h"
+#include "flatfile/flatfile_ip_activity_repository.h"
 
 #include <string>
 #include <time.h>

@@ -23,8 +23,8 @@
 
 #ifdef __NO_MYSQL__
 #include "buildings.h"
-#include "flatfile_association_repository.h"
-#include "flatfile_identity_repository.h"
+#include "flatfile/flatfile_association_repository.h"
+#include "flatfile/flatfile_identity_repository.h"
 #include "outposts.h"
 #include "persistence_mode.h"
 

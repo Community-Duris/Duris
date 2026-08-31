@@ -1,10 +1,10 @@
 #include "corpse_lifecycle_command.h"
-#include "flatfile_artifact_repository.h"
-#include "flatfile_corpse_repository.h"
-#include "flatfile_item_repository.h"
-#include "flatfile_player_domain_repository.h"
-#include "flatfile_shop_trade_materialization.h"
-#include "flatfile_world_item_repository.h"
+#include "flatfile/flatfile_artifact_repository.h"
+#include "flatfile/flatfile_corpse_repository.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_shop_trade_materialization.h"
+#include "flatfile/flatfile_world_item_repository.h"
 
 #include <cerrno>
 #include <cstdlib>

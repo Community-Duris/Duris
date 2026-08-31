@@ -1,4 +1,4 @@
-#include "flatfile_recipe_repository.h"
+#include "flatfile/flatfile_recipe_repository.h"
 
 #include <cstdlib>
 #include <filesystem>
