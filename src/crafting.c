@@ -17,7 +17,7 @@
 #include "vnum.obj.h"
 #include "crafting.h"
 #include "utils.h"
-#include "sql_player.h"
+#include "sql/sql_player.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

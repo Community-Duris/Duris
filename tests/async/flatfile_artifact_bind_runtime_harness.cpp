@@ -1,5 +1,5 @@
 #include "flatfile/flatfile_artifact_repository.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 #include <cstdlib>
 #include <filesystem>

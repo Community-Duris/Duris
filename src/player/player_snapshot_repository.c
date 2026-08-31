@@ -1,7 +1,7 @@
 #include "player/player_snapshot_repository.h"
 
 #include "persistence_observability.h"
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 
 #include <mysql/mysql.h>
 

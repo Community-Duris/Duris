@@ -16,7 +16,7 @@ using namespace std;
 #include "epic.h"
 #include "listen.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 extern P_room world;
 extern P_desc descriptor_list;

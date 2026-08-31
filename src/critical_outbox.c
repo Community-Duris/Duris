@@ -1,7 +1,7 @@
 #include "critical_outbox.h"
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 
 #include <algorithm>
 #include <cerrno>

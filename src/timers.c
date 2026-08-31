@@ -2,7 +2,7 @@
 #include "assocs.h"
 #include "epic.h"
 #include "ships/ships.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "utility.h"
 #include <stdlib.h>
 

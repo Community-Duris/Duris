@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "sql.h"
+#include "sql/sql.h"
 #include "safe_format.h"
 
 #define PROPERTIES_FILE "lib/duris.properties"

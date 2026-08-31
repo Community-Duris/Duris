@@ -1,9 +1,9 @@
 #include "player/player_load_pipeline.h"
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 
 #include "flatfile/flatfile_player_repository.h"
 #include "persistence_observability.h"
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 
 #ifndef __NO_MYSQL__
 #include <mysql/mysql.h>

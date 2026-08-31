@@ -22,7 +22,7 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "spells.h"
-#include "sql_player.h"
+#include "sql/sql_player.h"
 #include "player/player_name.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"

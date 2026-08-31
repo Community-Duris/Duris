@@ -15,7 +15,7 @@
 #include "epic_command.h"
 #include <string.h>
 #include "config.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include <errno.h>
 #include <limits.h>
 #include <math.h>

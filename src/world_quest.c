@@ -40,7 +40,7 @@ using namespace std;
 #include "objmisc.h"
 #include "persistence_checkpoint.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "weather.h"
 #include "world_quest.h"
 

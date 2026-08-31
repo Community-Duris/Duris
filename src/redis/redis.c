@@ -18,7 +18,7 @@
 #include "redis/redis_report_cache.h"
 #include "redis/redis_runtime_config.h"
 #include "redis/redis_ship_legacy.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 extern int _pwipe;
 

@@ -15,7 +15,7 @@
 #endif
 
 #include "persistence_queue.h"
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 #include "latency_trace.h"
 #include "safe_format.h"
 

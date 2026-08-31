@@ -15,8 +15,8 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
-#include "sql.h"
-#include "sql_pool.h"
+#include "sql/sql.h"
+#include "sql/sql_pool.h"
 
 #include <pthread.h>
 #include <errno.h>

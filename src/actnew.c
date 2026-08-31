@@ -28,7 +28,7 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "vnum.obj.h"
 #include "crafting.h"
 

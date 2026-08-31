@@ -11,7 +11,7 @@
 #include "justice.h"
 #include "objmisc.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "stdio.h"
 #include "string.h"
 #include "time.h"

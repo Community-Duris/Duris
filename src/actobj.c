@@ -29,7 +29,7 @@
 #include "redis/redis_floor_runtime.h"
 #include "safe_format.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "tradeskill.h"
 #include "crafting.h"
 #include "vnum.obj.h"

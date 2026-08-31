@@ -20,7 +20,7 @@
 #include "guildhall.h"
 #include "outposts.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "strings.h"
 
 extern P_room world;

@@ -10,8 +10,8 @@
 #include "comm.h"
 #include "vnum.obj.h"
 #ifndef __NO_MYSQL__
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 #endif
 
 #include <ctype.h>

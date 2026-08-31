@@ -16,7 +16,7 @@ using namespace std;
 #include "utility.h"
 #include "utils.h"
 #include "objmisc.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "timers.h"
 #include "trophy.h"
 

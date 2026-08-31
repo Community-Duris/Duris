@@ -16,13 +16,13 @@
  */
 
 #include "prototypes.h"
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 #include "structs.h"
 #include "utils.h"
 #include "utility.h"
-#include "sql.h"
-#include "sql_pool.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_pool.h"
+#include "sql/sql_player.h"
 #include "storage_lockers.h"
 #include "locker_async.h"
 #include "comm.h"

@@ -341,8 +341,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_snapshot_codec.o \
 				 persistence_queue.o \
 				 latency_trace.o \
-				 sql_persistence_raw.o \
-				 sql_pool.o \
+				 sql/sql_persistence_raw.o \
+				 sql/sql_pool.o \
 				 plushit.o \
 				 poll.o \
 				 prompt.o \
@@ -410,8 +410,8 @@ OBJS =  $(SHIP_OBJS) \
 				 spells.o \
 				 redis/redis.o \
 				 redis/wizredis.o \
-				 sql.o \
-				 sql_player.o \
+				 sql/sql.o \
+				 sql/sql_player.o \
 				 ssl.o \
 				 statistics.o \
 				 storage_lockers.o \

@@ -27,7 +27,7 @@ using namespace std;
 #include "racewar_stat_mods.h"
 #include "ship_npc.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_nexus_repository.h"
 #include "persistence_mode.h"

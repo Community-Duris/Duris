@@ -22,7 +22,7 @@
 #include "defines.h"
 #include "ships/ships.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 /* external variables */
 

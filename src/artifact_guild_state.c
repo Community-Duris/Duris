@@ -5,7 +5,7 @@
 #include "epic.h"
 #include "nexus_stones.h"
 #include "prototypes.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "spells.h"
 #include "utils.h"
 

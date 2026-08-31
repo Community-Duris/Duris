@@ -26,7 +26,7 @@ using namespace std;
 #include "guildhall.h"
 #include "objmisc.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 struct ctfData ctfdata[] = { { 0, 0, 0, 0, 0, NULL },
 			     { 1, CTF_PRIMARY, RACEWAR_GOOD, 790, 132573, NULL },

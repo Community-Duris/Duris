@@ -19,7 +19,7 @@ using namespace std;
 #include "utils.h"
 #include "assocs.h"
 #include "guildhall.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_association_repository.h"

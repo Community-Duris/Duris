@@ -61,7 +61,7 @@ using namespace std;
 #include "ships/ships.h"
 #include "specializations.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "vnum.obj.h"
 #include "tradeskill.h"
 #include "crafting.h"

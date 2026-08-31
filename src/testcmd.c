@@ -11,7 +11,7 @@
 #include "objmisc.h"
 #include "ships.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "safe_format.h"
 using namespace std;
 

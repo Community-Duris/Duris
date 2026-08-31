@@ -13,7 +13,7 @@
 #include "redis/redis_namespace.h"
 #include "report_cache_codec.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "utility.h"
 #include "utils.h"
 

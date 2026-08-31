@@ -23,7 +23,7 @@
 #include "map.h"
 #include "ships/ships.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "websocket.h"
 #include "ws_auth.h"
 

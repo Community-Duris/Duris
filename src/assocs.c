@@ -17,8 +17,8 @@
 #include "files.h"
 #include "guildhall.h"
 #include "nexus_stones.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 #include "safe_format.h"
 
 #ifdef __NO_MYSQL__

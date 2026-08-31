@@ -2,7 +2,7 @@
 
 #include "frag_cap_config.h"
 #include "persistence_observability.h"
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 #ifdef __NO_MYSQL__
 #include "ships/ships.h"
 #endif

@@ -10,7 +10,7 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -21,7 +21,7 @@
 
 extern MYSQL *DB;
 
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 
 /* Connection state is owned by sql.c; we just use it here.
  * persistenceDB is the legacy singleton fallback.

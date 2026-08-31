@@ -27,7 +27,7 @@
 #include "specs.prototypes.h"
 #include "specs/specs.winterhaven.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "ws_handlers.h"
 
 /*

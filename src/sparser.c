@@ -31,7 +31,7 @@
 #include "ships.h"
 #include "specs.prototypes.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "weather.h"
 
 /*

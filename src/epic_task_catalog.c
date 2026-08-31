@@ -1,7 +1,7 @@
 #include "epic_task_catalog.h"
 
 #include "prototypes.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "utils.h"
 
 #include <cerrno>

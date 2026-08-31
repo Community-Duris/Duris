@@ -7,7 +7,7 @@
 #include "comm.h"
 #include "db.h"
 #include "utils.h"
-#include "sql_player.h"
+#include "sql/sql_player.h"
 #include <errno.h>
 #include <limits.h>
 #include <dirent.h>
@@ -36,7 +36,7 @@
 #include "redis/redis_ship_legacy.h"
 #include "siege.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "player/player_name.h"
 #include "password_hash.h"
 #include "player/player_revision_state.h"

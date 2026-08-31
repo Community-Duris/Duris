@@ -10,7 +10,7 @@
 #include "redis/redis_report_cache.h"
 #include "ships.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #define MAX_FRAG_SIZE 10 /* max size of high/low lists */
 
 extern const struct class_names class_names_table[];

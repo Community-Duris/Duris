@@ -29,7 +29,7 @@
 #include "mm.h"
 #include "ships.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "weather.h"
 
 /*

@@ -10,8 +10,8 @@ using namespace std;
 #include "alliances.h"
 #include "assocs.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_association_repository.h"

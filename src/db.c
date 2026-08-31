@@ -35,7 +35,7 @@
 #include "siege.h"
 #include "specs.prototypes.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "studioproc.h"
 #include "trophy.h"
 #include "weather.h"

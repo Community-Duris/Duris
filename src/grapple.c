@@ -17,7 +17,7 @@ using namespace std;
 #include "damage.h"
 #include "grapple.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 extern P_room world;
 extern int check_shields(P_char, P_char, int, int);

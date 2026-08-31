@@ -40,7 +40,7 @@
 #include "world_recovery_pipeline.h"
 #include "ships/ships.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "vnum.obj.h"
 #include "weather.h"
 #include "ws_handlers.h"

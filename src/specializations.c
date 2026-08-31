@@ -13,7 +13,7 @@ using namespace std;
 #include "epic_transaction.h"
 #include "specializations.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 extern P_room world;
 extern char *specdata[][MAX_SPEC];

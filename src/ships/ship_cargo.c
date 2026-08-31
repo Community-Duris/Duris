@@ -15,8 +15,8 @@
 #include "objmisc.h"
 #include "ships.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 #include "timers.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"

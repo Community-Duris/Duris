@@ -13,7 +13,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
-#include "sql.h"
+#include "sql/sql.h"
 
 extern int abs(int);
 

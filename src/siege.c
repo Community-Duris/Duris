@@ -12,7 +12,7 @@
 #include "objmisc.h"
 #include "ships.h"
 #include "spells.h"
-#include "sql_player.h"
+#include "sql/sql_player.h"
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"

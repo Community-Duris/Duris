@@ -22,7 +22,7 @@
 #include "necromancy.h"
 #include "objmisc.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "weather.h"
 
 extern P_room world;

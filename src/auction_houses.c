@@ -27,8 +27,8 @@
 #include <vector>
 #include "files.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 #include "ws_handlers.h"
 using namespace std;
 

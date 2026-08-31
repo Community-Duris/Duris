@@ -23,8 +23,8 @@
 #include "mm.h"
 #include "ships.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 
 /*
    external variables

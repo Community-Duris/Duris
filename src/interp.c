@@ -49,7 +49,7 @@
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "enhance.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "testcmd.h"
 #include "tradeskill.h"
 #include "unicode.h"

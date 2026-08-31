@@ -40,7 +40,7 @@
 #include "outposts.h"
 #include "specs.prototypes.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "vnum.obj.h"
 #include "weather.h"
 #include "safe_format.h"

@@ -42,7 +42,7 @@ using namespace std;
 #include "racewar_stat_mods.h"
 #include "specs.prototypes.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_association_repository.h"

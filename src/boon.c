@@ -51,8 +51,8 @@ using namespace std;
 #include "nexus_stones.h"
 #include "persistence_mode.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 
 extern P_desc descriptor_list;
 extern P_room world;

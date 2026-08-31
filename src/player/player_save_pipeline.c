@@ -1,5 +1,5 @@
 #include "player/player_save_pipeline.h"
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 
 #include "prototypes.h"
 #include "files.h"

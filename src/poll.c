@@ -21,7 +21,7 @@
 #include "account.h"
 #include "config.h"
 #include "json_utils.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "websocket.h"
 
 #ifdef __NO_MYSQL__

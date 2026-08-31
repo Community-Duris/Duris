@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "multiplay_whitelist.h"
 #include <string.h>
-#include "sql.h"
+#include "sql/sql.h"
 
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_store.h"

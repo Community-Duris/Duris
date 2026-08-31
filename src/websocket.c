@@ -10,7 +10,7 @@
 #include "comm.h"
 #include "db.h"
 #include "persistence_mode.h"
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 #include "utils.h"
 #include "websocket.h"
 #include <arpa/inet.h>

@@ -2,7 +2,7 @@
 
 #include "gmcp.h"
 #include "prototypes.h"
-#include "sql_player.h"
+#include "sql/sql_player.h"
 #include "utils.h"
 
 #include <algorithm>

@@ -31,7 +31,7 @@
 #include "ships.h"
 #include "specs.prototypes.h"
 #include "spells.h"
-#include "sql_player.h"
+#include "sql/sql_player.h"
 #include "tradeskill.h"
 #include "crafting.h"
 #include "vnum.obj.h"

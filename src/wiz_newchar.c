@@ -15,8 +15,8 @@
 #include "files.h"
 #include "mm.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 
 extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
 extern Skill skills[];

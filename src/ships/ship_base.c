@@ -27,8 +27,8 @@
 #include "ship_npc.h"
 #include "ship_npc_ai.h"
 #include "spells.h"
-#include "sql.h"
-#include "sql_player.h"
+#include "sql/sql.h"
+#include "sql/sql_player.h"
 #include "redis/redis_ship_legacy.h"
 #include "redis/redis_world_runtime.h"
 #ifdef __NO_MYSQL__

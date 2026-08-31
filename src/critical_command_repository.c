@@ -1,5 +1,5 @@
 #include "critical_command_repository.h"
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 
 #include "currency_command.h"
 #include "epic_command.h"
@@ -16,7 +16,7 @@
 #include "session_audit_command.h"
 #include "session_audit_repository.h"
 #include "item_transfer_repository.h"
-#include "sql_pool.h"
+#include "sql/sql_pool.h"
 
 #include <algorithm>
 #include <array>

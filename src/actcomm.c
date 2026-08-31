@@ -27,7 +27,7 @@
 #include "listen.h"
 #include "map.h"
 #include "spells.h"
-#include "sql.h"
+#include "sql/sql.h"
 #include "world_quest.h"
 
 /* external variables */
