@@ -48,7 +48,7 @@
 #include "combat/siege.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
-#include "enhance.h"
+#include "item/enhance.h"
 #include "sql/sql.h"
 #include "cmd/testcmd.h"
 #include "tradeskill.h"

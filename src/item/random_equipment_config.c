@@ -1,5 +1,5 @@
 #include "prototypes.h"
-#include "random_equipment_config.h"
+#include "item/random_equipment_config.h"
 
 #include <errno.h>
 #include <math.h>

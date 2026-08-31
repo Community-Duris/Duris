@@ -15,7 +15,7 @@
 #include <string.h>
 #include "combat/arenadef.h"
 #include "graph.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 
 // External Stuff

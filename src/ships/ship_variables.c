@@ -10,7 +10,7 @@
 #include "structs.h"
 #include "utils.h"
 #include "config.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
 

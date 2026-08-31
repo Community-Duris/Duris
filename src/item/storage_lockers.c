@@ -18,7 +18,7 @@
 #include "cmd/interp.h"
 #include "utility.h"
 #include "utils.h"
-#include "storage_lockers.h"
+#include "item/storage_lockers.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -30,7 +30,7 @@
 #include "graph.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "account/password_hash.h"
 #include "ships.h"
 #include "specs/specs.winterhaven.h"
@@ -39,7 +39,7 @@
 #include "sql/sql_player.h"
 #include "vnum.room.h"
 #include "persistence/locker_async.h"
-#include "item_movement_transaction.h"
+#include "item/item_movement_transaction.h"
 
 extern P_index obj_index;
 extern P_index mob_index;

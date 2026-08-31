@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "graph.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 // #include "magic/spells.h"
 #include "structs.h"
 #include "events.h"

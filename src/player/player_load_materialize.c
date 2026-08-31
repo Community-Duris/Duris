@@ -1,6 +1,6 @@
 #include "player/player_load_materialize.h"
 
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
 #include "player/player_load_pets.h"
 #include "prototypes.h"
@@ -20,7 +20,7 @@
 #include "assocs.h"
 #include "player/player_revision_state.h"
 #include "magic/spells.h"
-#include "trophy.h"
+#include "item/trophy.h"
 
 namespace
 {

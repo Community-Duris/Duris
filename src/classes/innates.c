@@ -31,7 +31,7 @@
 #include "combat/guard.h"
 #include "map.h"
 #include "classes/necromancy.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "magic/spells.h"
 #include "weather.h"

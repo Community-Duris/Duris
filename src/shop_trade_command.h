@@ -2,7 +2,7 @@
 #define SHOP_TRADE_COMMAND_H
 
 #include "currency_command.h"
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 #include <array>
 #include <cstdint>

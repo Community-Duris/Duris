@@ -1,7 +1,7 @@
 #ifndef ITEM_TRANSFER_REPOSITORY_H
 #define ITEM_TRANSFER_REPOSITORY_H
 
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 #include <mysql/mysql.h>
 

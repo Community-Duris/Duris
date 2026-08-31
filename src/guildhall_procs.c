@@ -17,7 +17,7 @@
 #include "guildhall.h"
 #include "ships.h"
 #include "specs.prototypes.h"
-#include "storage_lockers.h"
+#include "item/storage_lockers.h"
 
 extern const struct race_names race_names_table[];
 extern P_room world;

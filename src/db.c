@@ -25,11 +25,11 @@
 #include "assocs.h"
 #include "persistence/copyover.h"
 #include "epic.h"
-#include "enhance.h"
+#include "item/enhance.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
 #include "ships.h"
 #include "combat/siege.h"
@@ -37,7 +37,7 @@
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "mob/studioproc.h"
-#include "trophy.h"
+#include "item/trophy.h"
 #include "weather.h"
 #include <string>
 #include <unordered_set>

@@ -38,7 +38,7 @@ using namespace std;
 #include "combat/justice.h"
 #include "map.h"
 #include "nexus_stones.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_observability.h"

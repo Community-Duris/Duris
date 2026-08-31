@@ -1,4 +1,4 @@
-#include "item_uid_allocator.h"
+#include "item/item_uid_allocator.h"
 
 #include "db.h"
 #include "flatfile/flatfile_item_uid_allocator.h"

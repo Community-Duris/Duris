@@ -18,7 +18,7 @@
 #include <string.h>
 #include "graph.h"
 #include "map.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ship_npc.h"
 #include "ships.h"
 #include "magic/spells.h"

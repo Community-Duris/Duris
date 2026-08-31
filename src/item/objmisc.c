@@ -12,7 +12,7 @@
 #include "structs.h"
 #include "db.h"
 #include "utils.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include <string.h>
 #include "combat/damage.h"
 

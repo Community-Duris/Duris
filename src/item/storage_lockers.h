@@ -13,7 +13,7 @@
 #define __STORAGE_LOCKERS_H__
 
 #include <string.h>
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 // Type-specific locker chests only accept matching items.  Containers and
 // corpses are rejected by the unsorted chest so they remain visible on the

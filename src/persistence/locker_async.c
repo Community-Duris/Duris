@@ -23,7 +23,7 @@
 #include "sql/sql.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_player.h"
-#include "storage_lockers.h"
+#include "item/storage_lockers.h"
 #include "persistence/locker_async.h"
 #include "net/comm.h"
 #include "db.h"

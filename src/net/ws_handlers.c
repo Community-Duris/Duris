@@ -24,7 +24,7 @@
 #include "files.h"
 #include "net/gmcp.h"
 #include "hardcore_config.h"
-#include "item_movement_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "combat/justice.h"
 #include "json_utils.h"
 #include "mm.h"

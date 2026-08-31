@@ -50,7 +50,7 @@
 #include "combat/guard.h"
 #include "guildhall.h"
 #include "combat/justice.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "combat/siege.h"
 #include "magic/spells.h"

@@ -19,7 +19,7 @@
 #include "combat/damage.h"
 #include "graph.h"
 #include "combat/justice.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "combat/range.h"
 #include "classes/reavers.h"
 #include "specs.prototypes.h"

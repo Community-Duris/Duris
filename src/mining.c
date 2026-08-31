@@ -11,7 +11,7 @@
 #include "mining_config.h"
 #include "achievements.h"
 #include "map.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"

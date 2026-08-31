@@ -22,7 +22,7 @@
 #include "map.h"
 #include "mm.h"
 #include "classes/necromancy.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "outposts.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"

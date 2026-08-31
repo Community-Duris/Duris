@@ -111,10 +111,10 @@
 #include "prototypes.h"
 #include "structs.h"
 #include "net/comm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "utils.h"
 #include "utility.h"
-#include "plushit.h"
+#include "item/plushit.h"
 
 /* highest plus-rating a character DEMANDS of its attackers, 0 = none */
 static int plushit_required(P_char victim)

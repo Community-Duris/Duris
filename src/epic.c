@@ -28,14 +28,14 @@ using namespace std;
 #include "epic_transaction.h"
 #include "classes/epic_skills.h"
 #include "nexus_stones.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "random.zone.h"
 #include "redis/redis_key_registry.h"
 #include "redis/redis_report_cache.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "timers.h"
-#include "trophy.h"
+#include "item/trophy.h"
 
 extern long boot_time;
 extern P_room world;

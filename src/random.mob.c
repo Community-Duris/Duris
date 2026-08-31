@@ -27,7 +27,7 @@
 #include "combat/justice.h"
 #include "map.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "profile.h"
 #include "redis/redis_report_cache.h"
 #include "magic/spells.h"

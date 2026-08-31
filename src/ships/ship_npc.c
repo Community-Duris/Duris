@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "map.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ship_npc_ai.h"
 #include "magic/spells.h"
 

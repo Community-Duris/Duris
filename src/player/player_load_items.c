@@ -1,7 +1,7 @@
 #include "player/player_load_items.h"
 
 #include "net/comm.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "prototypes.h"
 #include "magic/spells.h"
 #include "structs.h"

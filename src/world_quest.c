@@ -37,7 +37,7 @@ using namespace std;
 #include "net/gmcp.h"
 #include "combat/justice.h"
 #include "map.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "persistence/persistence_checkpoint.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

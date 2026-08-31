@@ -15,10 +15,10 @@ using namespace std;
 #include "net/comm.h"
 #include "utility.h"
 #include "utils.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "sql/sql.h"
 #include "timers.h"
-#include "trophy.h"
+#include "item/trophy.h"
 
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;

@@ -41,7 +41,7 @@
 #include "account/password_hash.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 // external tables
 extern P_index obj_index;

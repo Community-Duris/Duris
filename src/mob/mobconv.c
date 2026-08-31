@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "combat/damage.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "classes/specializations.h"
 #include "magic/spells.h"
 

@@ -4,7 +4,7 @@
 #include "flatfile/flatfile_corpse_ownership.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_world_item_repository.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "classes/necromancy.h"
 #include "player/player_load_items.h"
 #include "prototypes.h"

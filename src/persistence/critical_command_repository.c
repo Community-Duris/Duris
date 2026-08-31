@@ -15,7 +15,7 @@
 #include "zone_touch_repository.h"
 #include "account/session_audit_command.h"
 #include "account/session_audit_repository.h"
-#include "item_transfer_repository.h"
+#include "item/item_transfer_repository.h"
 #include "sql/sql_pool.h"
 
 #include <algorithm>

@@ -4,7 +4,7 @@
 #include "db.h"
 #include "cmd/interp.h"
 #include "utils.h"
-#include "randobj.h"
+#include "item/randobj.h"
 #include <strings.h>
 #include "tradeskill.h"
 #include "vnum.obj.h"

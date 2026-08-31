@@ -1,7 +1,7 @@
 #include "flatfile/flatfile_shopkeeper_restore.h"
 
 #include "flatfile/flatfile_shopkeeper_materialize.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "shop_trade_runtime.h"
 #include "prototypes.h"
 #include "structs.h"

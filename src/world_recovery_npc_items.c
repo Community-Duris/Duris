@@ -1,6 +1,6 @@
 #include "world_recovery_npc_items.h"
 
-#include "enhance.h"
+#include "item/enhance.h"
 #include "prototypes.h"
 #include "utils.h"
 

@@ -13,7 +13,7 @@
 #include "net/gmcp.h" // for GMCP_ENABLED macro
 #include "graph.h"
 #include "map.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
 

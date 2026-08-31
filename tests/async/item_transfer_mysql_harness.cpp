@@ -1,6 +1,6 @@
 #include "persistence/critical_command_repository.h"
-#include "item_transfer_command.h"
-#include "item_uid_allocator.h"
+#include "item/item_transfer_command.h"
+#include "item/item_uid_allocator.h"
 
 #include <cassert>
 #include <cerrno>

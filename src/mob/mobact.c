@@ -30,7 +30,7 @@
 #include "mm.h"
 #include "classes/necromancy.h"
 #include "nexus_stones.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "profile.h"
 #include "classes/salchemist.h"

@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "assocs.h"
 #include "config.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"

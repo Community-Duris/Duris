@@ -9,7 +9,7 @@
 #include "combat/damage.h"
 #include "combat/guard.h"
 #include "combat/justice.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "stdio.h"

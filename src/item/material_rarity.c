@@ -14,8 +14,8 @@
 
 #include "db.h"
 #include "defines.h"
-#include "material_rarity.h"
-#include "objmisc.h"
+#include "item/material_rarity.h"
+#include "item/objmisc.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "tradeskill.h"

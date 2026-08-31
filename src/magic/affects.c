@@ -32,7 +32,7 @@
 #include "hardcore_config.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "combat/racewar_stat_mods.h"
 #include "classes/reavers.h"

@@ -2,7 +2,7 @@
 #define ITEM_MOVEMENT_TRANSACTION_H
 
 #include "persistence/critical_command_coordinator.h"
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 #include "structs.h"
 
 #include <cstddef>

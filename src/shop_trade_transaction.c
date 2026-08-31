@@ -1,7 +1,7 @@
 #include "shop_trade_transaction.h"
 
 #include "currency_transaction.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "prototypes.h"
 #include "shop_trade_runtime.h"
 #include "utils.h"

@@ -9,7 +9,7 @@
 #include <string.h>
 #include "combat/damage.h"
 #include "combat/guard.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "weather.h"
 

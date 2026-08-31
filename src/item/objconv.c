@@ -14,7 +14,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 
 extern Skill skills[];

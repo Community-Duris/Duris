@@ -11,9 +11,9 @@
 
 #include "assocs.h"
 #include "files.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "magic/spells.h"
-#include "trophy.h"
+#include "item/trophy.h"
 
 extern P_index obj_index;
 extern struct index_data *mob_index;

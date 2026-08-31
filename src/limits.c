@@ -37,7 +37,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
-#include "trophy.h"
+#include "item/trophy.h"
 #include "weather.h"
 #include "net/ws_handlers.h"
 

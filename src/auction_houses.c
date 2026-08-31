@@ -13,7 +13,7 @@
 #include "currency_transaction.h"
 #include "flatfile/flatfile_auction_repository.h"
 #include "flatfile/flatfile_offline_message_repository.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
 #include <algorithm>

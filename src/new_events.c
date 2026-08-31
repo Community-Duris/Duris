@@ -38,7 +38,7 @@
 #include "epic.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "outposts.h"
 #include "persistence/persistence_checkpoint.h"
 #include "profile.h"

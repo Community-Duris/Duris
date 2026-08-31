@@ -1,6 +1,6 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 #include <cerrno>
 #include <new>

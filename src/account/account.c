@@ -7,7 +7,7 @@
 #include "net/comm.h"
 #include "db.h"
 #include "cmd/interp.h"
-#include "item_movement_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "utils.h"
 #include "account/account.h"
 #include "account/password_hash.h"
@@ -20,7 +20,7 @@
 #include <time.h>
 #include "graph.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql_player.h"
 #include "player/player_name.h"

@@ -10,7 +10,7 @@
 #include "net/comm.h"
 #include "db.h"
 #include "cmd/interp.h"
-#include "item_movement_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "utility.h"
 #include "utils.h"
 #include "shop.h"

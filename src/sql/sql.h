@@ -2,7 +2,7 @@
 #define __SQL_H_INCLUDED__
 
 #include "structs.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "persistence/persistence_observability.h"
 #include "world_recovery_pipeline.h"
 #include <stdlib.h>

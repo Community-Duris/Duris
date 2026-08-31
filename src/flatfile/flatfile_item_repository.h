@@ -6,7 +6,7 @@
 #include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "persistence/critical_command_coordinator.h"
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 #include "shop_trade_command.h"
 
 #include <cstdint>

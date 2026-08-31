@@ -156,15 +156,15 @@ OBJS =  $(SHIP_OBJS) \
 				 debug.o \
 				 classes/disguise.o \
 				 classes/drannak.o \
-				 enhance.o \
+				 item/enhance.o \
 				 crafting.o \
 				 mining.o \
 				 mining_config.o \
-				 random_equipment_config.o \
+				 item/random_equipment_config.o \
 				 safe_format.o \
 				 safe_io.o \
-				 salvage.o \
-				 material_rarity.o \
+				 item/salvage.o \
+				 item/material_rarity.o \
 				 classes/dreadlord.o \
 				 net/editor.o \
 				 mob/encounters.o \
@@ -181,7 +181,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/fight.o \
 				 files.o \
 				 combat/fraglist.o \
-				 forge_items.o \
+				 item/forge_items.o \
 				 graph.o \
 				 group.o \
 				 guild.o \
@@ -199,7 +199,7 @@ OBJS =  $(SHIP_OBJS) \
 				 combat/kick.o \
 				 classes/language.o \
 				 limits.o \
-				 linked_objects.o\
+				 item/linked_objects.o\
 				 net/listen.o\
 				 cmd/mail.o \
 				 map.o \
@@ -219,8 +219,8 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/necromancy.o \
 				 classes/new_skills.o \
 				 cmd/nq.o \
-				 objconv.o \
-				 objmisc.o \
+				 item/objconv.o \
+				 item/objmisc.o \
 				 outposts.o \
 				 persistence/persistence_checkpoint.o \
 				 persistence/persistence_observability.o \
@@ -271,14 +271,14 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/critical_command_coordinator.o \
 				 persistence/critical_command_repository.o \
 				 persistence/corpse_lifecycle_command.o \
-				 item_transfer_command.o \
-				 item_ownership_runtime.o \
-				 item_movement_transaction.o \
+				 item/item_transfer_command.o \
+				 item/item_ownership_runtime.o \
+				 item/item_movement_transaction.o \
 				 shop_trade_transaction.o \
 				 shop_trade_runtime.o \
-				 item_transfer_repository.o \
-				 item_transfer_synthetic.o \
-				 item_uid_allocator.o \
+				 item/item_transfer_repository.o \
+				 item/item_transfer_synthetic.o \
+				 item/item_uid_allocator.o \
 				 persistence/critical_outbox.o \
 				 epic_command.o \
 				 epic_transaction.o \
@@ -343,17 +343,17 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \
 				 sql/sql_pool.o \
-				 plushit.o \
+				 item/plushit.o \
 				 net/poll.o \
 				 net/prompt.o \
 				 properties.o \
 				 classes/psionics.o \
 				 quest.o \
 				 random.o \
-				 randomeq.o \
+				 item/randomeq.o \
 				 random.mob.o \
 				 random.zone.o \
-				 randobj.o \
+				 item/randobj.o \
 				 combat/range.o \
 				 classes/rogues.o \
 				 classes/shaman.o \
@@ -414,14 +414,14 @@ OBJS =  $(SHIP_OBJS) \
 				 sql/sql_player.o \
 				 net/ssl.o \
 				 statistics.o \
-				 storage_lockers.o \
+				 item/storage_lockers.o \
 				 persistence/locker_async.o \
 				 timers.o \
 				 cmd/track.o \
 				 tradeskill.o \
 				 combat/trap.o \
 				 transport.o \
-				 trophy.o \
+				 item/trophy.o \
 				 net/unicode.o \
 				 utility.o \
 				 weather.o \

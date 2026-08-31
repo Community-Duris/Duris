@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include "epic.h"
 #include "graph.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ship_auto.h"
 #include "ship_npc.h"
 #include "ship_npc_ai.h"

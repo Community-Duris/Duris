@@ -26,7 +26,7 @@
 #include "combat/arenadef.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "weather.h"
 /****************************************************************************/

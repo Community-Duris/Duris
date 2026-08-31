@@ -25,7 +25,7 @@
 #include "net/gmcp.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "profile.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"

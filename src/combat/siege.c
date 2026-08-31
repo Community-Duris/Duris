@@ -9,7 +9,7 @@
 #include "combat/damage.h"
 #include "graph.h"
 #include "combat/justice.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
 #include "sql/sql_player.h"

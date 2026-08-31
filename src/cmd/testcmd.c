@@ -8,7 +8,7 @@
 #include "epic.h"
 #include "graph.h"
 #include "map.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "ships.h"
 #include "magic/spells.h"
 #include "sql/sql.h"

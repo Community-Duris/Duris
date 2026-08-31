@@ -10,7 +10,7 @@
 
 #include "defines.h"
 #include "prototypes.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 
 #include <stdarg.h>

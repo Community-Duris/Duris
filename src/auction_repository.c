@@ -1,6 +1,6 @@
 #include "auction_repository.h"
 
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 #include <algorithm>
 #include <array>

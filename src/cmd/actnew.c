@@ -26,7 +26,7 @@
 #include "combat/justice.h"
 #include "net/listen.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "vnum.obj.h"

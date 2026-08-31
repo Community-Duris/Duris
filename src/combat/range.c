@@ -22,7 +22,7 @@
 #include <time.h>
 #include "combat/damage.h"
 #include "combat/justice.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "weather.h"
 

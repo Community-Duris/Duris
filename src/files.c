@@ -25,7 +25,7 @@
 #include "flatfile/flatfile_corpse_restore.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_shopkeeper_restore.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "combat/justice.h"
 #include "mm.h"
 #include "classes/necromancy.h"
@@ -36,8 +36,8 @@
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
-#include "storage_lockers.h"
-#include "trophy.h"
+#include "item/storage_lockers.h"
+#include "item/trophy.h"
 #include "vnum.obj.h"
 #include <array>
 #include <limits>

@@ -28,7 +28,7 @@
 #include "combat/justice.h"
 #include "map.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "vnum.obj.h"
 #include "weather.h"

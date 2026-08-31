@@ -18,9 +18,9 @@
 #include "magic/spells.h"
 #include "structs.h"
 #include "utils.h"
-#include "enhance.h"
+#include "item/enhance.h"
 #include "tradeskill.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 
 /* Forward declarations for hash functions used in enhance() and do_enhance() */
 static int enhance_hash(int key);

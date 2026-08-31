@@ -24,7 +24,7 @@
 #include "net/gmcp.h"
 #include "combat/justice.h"
 #include "classes/necromancy.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "persistence/persistence_checkpoint.h"
 #include "redis/redis_floor_runtime.h"
 #include "safe_format.h"
@@ -34,9 +34,9 @@
 #include "crafting.h"
 #include "vnum.obj.h"
 #include "persistence/corpse_lifecycle_transaction.h"
-#include "item_movement_transaction.h"
-#include "item_ownership_runtime.h"
-#include "storage_lockers.h"
+#include "item/item_movement_transaction.h"
+#include "item/item_ownership_runtime.h"
+#include "item/storage_lockers.h"
 
 #include <new>
 #include <string>

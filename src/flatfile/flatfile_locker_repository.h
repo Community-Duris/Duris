@@ -2,7 +2,7 @@
 #define DURIS_FLATFILE_LOCKER_REPOSITORY_H
 
 #include "flatfile/flatfile_authority_transaction.h"
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 #include "player/player_snapshot.h"
 
 #include <cstdint>

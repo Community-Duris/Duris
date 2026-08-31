@@ -1,5 +1,5 @@
 #include "currency_transaction.h"
-#include "item_ownership_runtime.h"
+#include "item/item_ownership_runtime.h"
 #include "shop_trade_transaction.h"
 #include "utils.h"
 

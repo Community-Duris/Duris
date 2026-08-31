@@ -11,7 +11,7 @@
 #include "graph.h"
 #include "combat/justice.h"
 #include "mm.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "combat/range.h"
 #include "specs.prototypes.h"
 #include "magic/spells.h"

@@ -20,7 +20,7 @@
 #include <string.h>
 #include "combat/ctf.h" // Can remove?
 #include "classes/necromancy.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "weather.h"

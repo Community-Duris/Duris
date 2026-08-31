@@ -8,7 +8,7 @@
 #include "classes/reavers.h"
 #include <string.h>
 #include "combat/damage.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 
 void spell_baladors_protection(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,

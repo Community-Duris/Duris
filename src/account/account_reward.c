@@ -3,7 +3,7 @@
 #include "utility.h"
 #include "utils.h"
 #include "cmd/interp.h"
-#include "item_movement_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "account/account_reward.h"
 #include "account/account_reward_config.h"
 #include "account/account_reward_snapshot.h"

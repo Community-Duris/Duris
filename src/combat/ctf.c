@@ -24,7 +24,7 @@ using namespace std;
 #include "defines.h"
 #include "epic.h"
 #include "guildhall.h"
-#include "objmisc.h"
+#include "item/objmisc.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 
