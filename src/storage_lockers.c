@@ -33,7 +33,7 @@
 #include "objmisc.h"
 #include "password_hash.h"
 #include "ships.h"
-#include "specs.winterhaven.h"
+#include "specs/specs.winterhaven.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"

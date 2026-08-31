@@ -116,7 +116,7 @@ OBJS =  $(SHIP_OBJS) \
 				 actset.o \
 				 actwiz.o \
 				 ansi.o \
-				 specs.ailvio.o \
+				 specs/specs.ailvio.o \
 				 alliances.o \
 				 automatic_rules.o \
 				 affects.o \
@@ -367,46 +367,46 @@ OBJS =  $(SHIP_OBJS) \
 				 sparser.o \
 				 specials.o \
 				 specializations.o \
-				 specs.assign.o \
-				 specs.barovia.o \
-				 specs.clwcvrn.o \
-				 specs.dragonnia.o \
-				 specs.eth2.o \
-				 specs.halfcut.o \
-				 specs.ravenloft.o \
-				 specs.snogres.o \
-				 specs.ioun.o \
-				 specs.jot.o \
-				 specs.library.o \
+				 specs/specs.assign.o \
+				 specs/specs.barovia.o \
+				 specs/specs.clwcvrn.o \
+				 specs/specs.dragonnia.o \
+				 specs/specs.eth2.o \
+				 specs/specs.halfcut.o \
+				 specs/specs.ravenloft.o \
+				 specs/specs.snogres.o \
+				 specs/specs.ioun.o \
+				 specs/specs.jot.o \
+				 specs/specs.library.o \
 				 studioproc.o \
 				 studioproclib.o \
-				 specs.lohrr.o \
-				 specs.mobile.o \
-				 specs.morgs.o \
-				 specs.mist.o \
-				 specs.object.o \
-				 specs.realm.o \
-				 specs.room.o \
-				 specs.snikzone.o \
-				 specs.grove.o \
-				 specs.hoa.o \
-				 specs.highway.o \
-				 specs.tharnadia.o \
-				 specs.twintowers.o \
-				 specs.undermountain.o \
-				 specs.underworld.o \
-				 specs.vecna.o \
-				 specs.venthix.o \
-				 specs.verzanan.o \
-				 specs.zalrix.o \
-				 specs.set.o \
-				 specs.shabo.o \
-				 specs.juiblex.o \
-				 specs.keleks.o \
-				 specs.caertannad.o \
-				 specs.firep.o \
-				 specs.winterhaven.o \
-				 specs.zion.o \
+				 specs/specs.lohrr.o \
+				 specs/specs.mobile.o \
+				 specs/specs.morgs.o \
+				 specs/specs.mist.o \
+				 specs/specs.object.o \
+				 specs/specs.realm.o \
+				 specs/specs.room.o \
+				 specs/specs.snikzone.o \
+				 specs/specs.grove.o \
+				 specs/specs.hoa.o \
+				 specs/specs.highway.o \
+				 specs/specs.tharnadia.o \
+				 specs/specs.twintowers.o \
+				 specs/specs.undermountain.o \
+				 specs/specs.underworld.o \
+				 specs/specs.vecna.o \
+				 specs/specs.venthix.o \
+				 specs/specs.verzanan.o \
+				 specs/specs.zalrix.o \
+				 specs/specs.set.o \
+				 specs/specs.shabo.o \
+				 specs/specs.juiblex.o \
+				 specs/specs.keleks.o \
+				 specs/specs.caertannad.o \
+				 specs/specs.firep.o \
+				 specs/specs.winterhaven.o \
+				 specs/specs.zion.o \
 				 spells.o \
 				 redis.o \
 				 wizredis.o \
@@ -437,8 +437,8 @@ OBJS =  $(SHIP_OBJS) \
 				 wikihelp.o \
 				 reavers.o \
 				 avengers.o \
-				 specs.lucrot.o \
-				 specs.gellz.o \
+				 specs/specs.lucrot.o \
+				 specs/specs.gellz.o \
 				 smoke.o \
 				 multiplay_whitelist.o \
 				 home.o \

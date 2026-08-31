@@ -20,7 +20,7 @@ using namespace std;
 #include "damage.h"
 #include "map.h"
 #include "specs.prototypes.h"
-#include "specs.venthix.h"
+#include "specs/specs.venthix.h"
 #include "spells.h"
 
 vector<ZombieGame *> zgames;

@@ -19,7 +19,7 @@ using namespace std;
 #include "graph.h"
 #include "justice.h"
 #include "reavers.h"
-#include "specs.keleks.h"
+#include "specs/specs.keleks.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "weather.h"

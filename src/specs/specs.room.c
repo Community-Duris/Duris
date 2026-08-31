@@ -25,7 +25,7 @@
 #include "guildhall.h"
 #include "justice.h"
 #include "specs.prototypes.h"
-#include "specs.winterhaven.h"
+#include "specs/specs.winterhaven.h"
 #include "spells.h"
 #include "sql.h"
 #include "ws_handlers.h"

@@ -5,7 +5,7 @@
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
-#include "specs.eth2.h"
+#include "specs/specs.eth2.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

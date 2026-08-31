@@ -20,7 +20,7 @@
 #include "justice.h"
 #include "reavers.h"
 #include "specs.prototypes.h"
-#include "specs.snogres.h"
+#include "specs/specs.snogres.h"
 #include "spells.h"
 #include "weather.h"
 

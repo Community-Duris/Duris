@@ -22,7 +22,7 @@ using namespace std;
 #include "justice.h"
 #include "reavers.h"
 #include "specs.prototypes.h"
-#include "specs.zion.h"
+#include "specs/specs.zion.h"
 #include "spells.h"
 #include "weather.h"
 

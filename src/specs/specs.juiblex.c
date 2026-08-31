@@ -5,7 +5,7 @@
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
-#include "specs.juiblex.h"
+#include "specs/specs.juiblex.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

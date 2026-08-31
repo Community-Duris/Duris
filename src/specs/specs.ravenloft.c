@@ -20,7 +20,7 @@
 #include "justice.h"
 #include "reavers.h"
 #include "specs.prototypes.h"
-#include "specs.ravenloft.h"
+#include "specs/specs.ravenloft.h"
 #include "spells.h"
 #include "vnum.obj.h"
 #include "vnum.room.h"

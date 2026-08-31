@@ -41,7 +41,7 @@
 #include "redis_presence_runtime.h"
 #include "ships/ships.h"
 #include "specializations.h"
-#include "specs.winterhaven.h"
+#include "specs/specs.winterhaven.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"

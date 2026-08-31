@@ -10,7 +10,7 @@
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
-#include "specs.gellz.h"
+#include "specs/specs.gellz.h"
 #include <ctype.h>
 #include <list>
 #include <math.h>

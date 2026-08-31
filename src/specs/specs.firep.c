@@ -19,7 +19,7 @@
 #include "graph.h"
 #include "justice.h"
 #include "reavers.h"
-#include "specs.firep.h"
+#include "specs/specs.firep.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "weather.h"

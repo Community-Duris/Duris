@@ -8,7 +8,7 @@
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
-#include "specs.winterhaven.h"
+#include "specs/specs.winterhaven.h"
 #include <ctype.h>
 #include <list>
 #include <stdio.h>
@@ -23,7 +23,7 @@
 #include "range.h"
 #include "reavers.h"
 #include "specs.prototypes.h"
-#include "specs.zion.h"
+#include "specs/specs.zion.h"
 #include "spells.h"
 #include "tradeskill.h"
 #include "vnum.obj.h"
