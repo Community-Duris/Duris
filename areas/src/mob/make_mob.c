@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../area_file.h"
+
 #define AREA_LIST "AREA"
 #define MOB_DIR "mob"
 
@@ -49,11 +51,9 @@ int main()
 
 		if (snprintf(mob_name, sizeof(mob_name), "%s/%s.mob", MOB_DIR, area_name) < 0)
 			punt("mob filename cannot be formatted");
-		tmp_mob = fopen(mob_name, "r");
+		tmp_mob = fopen_area_file(mob_name);
 		if (tmp_mob == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", mob_name);
-		}
+			punt_area_file(mob_name);
 		else
 		{
 			for (;;)

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../area_file.h"
+
 #define AREA_LIST "AREA"
 #define WLD_DIR "wld"
 
@@ -49,11 +51,9 @@ int main()
 
 		if (snprintf(wld_name, sizeof(wld_name), "%s/%s.wld", WLD_DIR, area_name) < 0)
 			punt("world filename cannot be formatted");
-		tmp_wld = fopen(wld_name, "r");
+		tmp_wld = fopen_area_file(wld_name);
 		if (tmp_wld == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", wld_name);
-		}
+			punt_area_file(wld_name);
 		else
 		{
 			for (;;)

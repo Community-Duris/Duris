@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../area_file.h"
+
 #define QUEST_LIST "AREA"
 #define QST_DIR "qst"
 
@@ -49,12 +51,11 @@ int main()
 
 		if (snprintf(qst_name, sizeof(qst_name), "%s/%s.qst", QST_DIR, quest_name) < 0)
 			punt("quest filename cannot be formatted");
-		tmp_qst = fopen(qst_name, "r");
+		tmp_qst = fopen_area_file(qst_name);
 		if (tmp_qst == NULL)
 		{
-#if 0
-	    fprintf(stdout, "\twarning: %s not found\n", qst_name);
-#endif
+			if (!area_file_is_optional_missing(QST_DIR))
+				punt_area_file(qst_name);
 		}
 		else
 		{

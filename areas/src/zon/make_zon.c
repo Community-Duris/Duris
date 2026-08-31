@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../area_file.h"
+
 #define AREA_LIST "AREA"
 #define ZON_DIR "zon"
 
@@ -49,11 +51,9 @@ int main()
 
 		if (snprintf(zon_name, sizeof(zon_name), "%s/%s.zon", ZON_DIR, area_name) < 0)
 			punt("zone filename cannot be formatted");
-		tmp_zon = fopen(zon_name, "r");
+		tmp_zon = fopen_area_file(zon_name);
 		if (tmp_zon == NULL)
-		{
-			fprintf(stdout, "\twarning: %s not found\n", zon_name);
-		}
+			punt_area_file(zon_name);
 		else
 		{
 			do_it = 0;

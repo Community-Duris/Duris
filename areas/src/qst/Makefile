@@ -14,7 +14,7 @@ $(TARGET): $(OBJECT)
 	@mkdir -p $(dir $@)
 	gcc -o $@ $<
 
-$(OBJECT): $(TOOL).c
+$(OBJECT): $(TOOL).c ../area_file.h
 	@mkdir -p $(dir $@)
 	gcc -c -g $< -o $@
 
