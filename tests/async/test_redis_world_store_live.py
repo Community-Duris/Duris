@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import shutil
 import socket
 import subprocess
@@ -25,9 +26,9 @@ def main() -> None:
         raise SystemExit("redis-server and redis-cli are required")
 
     harness = r'''
-#include "redis_world_store.h"
-#include "redis_connection.h"
-#include "world_recovery_pipeline.h"
+#include "redis/redis_world_store.h"
+#include "redis/redis_connection.h"
+#include "world/world_recovery_pipeline.h"
 #include <hiredis/hiredis.h>
 #include <cassert>
 #include <cstdlib>
@@ -289,11 +290,11 @@ int main(int argc, char **argv)
                 "-Wextra",
                 "-Werror",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_command_observability.c"),
-                str(ROOT / "src" / "redis_namespace.c"),
-                str(ROOT / "src" / "redis_world_store.c"),
+                str(SRC),
+                str(SRC / "redis_connection.c"),
+                str(SRC / "redis_command_observability.c"),
+                str(SRC / "redis_namespace.c"),
+                str(SRC / "redis_world_store.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",

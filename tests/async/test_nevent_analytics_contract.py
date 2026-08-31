@@ -1,8 +1,9 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
+source = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
 
 required = [
     "DURIS_NEVENT_ANALYTICS",

@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for set-based PvP and epic-task reads."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REPOSITORY = (ROOT / "src/player_load_repository.c").read_text()
-MATERIALIZE = (ROOT / "src/player_load_materialize.c").read_text()
-FIGHT = (ROOT / "src/fight.c").read_text()
-EPIC = (ROOT / "src/epic.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
+REPOSITORY = (SRC / "player_load_repository.c").read_text()
+MATERIALIZE = (SRC / "player_load_materialize.c").read_text()
+FIGHT = (SRC / "fight.c").read_text()
+EPIC = (SRC / "epic.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
 
 HARNESS = r'''
-#include "epic_task_catalog.h"
-#include "gameplay_read_state.h"
+#include "world/epic_task_catalog.h"
+#include "persistence/gameplay_read_state.h"
 
 #include <cassert>
 #include <cstdint>
@@ -104,7 +105,7 @@ with tempfile.TemporaryDirectory(prefix="duris-gameplay-reads-") as temp_dir:
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic",
             "-D__NO_MYSQL__", "-Isrc", str(source),
-            "src/gameplay_read_state.c", "src/epic_task_catalog.c",
+            rel("gameplay_read_state.c"), rel("epic_task_catalog.c"),
             "-o", str(binary),
         ],
         cwd=ROOT,
@@ -112,7 +113,7 @@ with tempfile.TemporaryDirectory(prefix="duris-gameplay-reads-") as temp_dir:
     )
     subprocess.run([str(binary)], check=True, timeout=10)
 
-assert "PLAYER_LOAD_QUERY_MAX = 22" in (ROOT / "src/player_load_repository.h").read_text()
+assert "PLAYER_LOAD_QUERY_MAX = 22" in (SRC / "player_load_repository.h").read_text()
 assert "FROM pkill_info pi JOIN pkill_event pe" in REPOSITORY
 assert "ORDER BY pe.stamp DESC, pi.id DESC LIMIT 20" in REPOSITORY
 assert "FROM epic_gain" in REPOSITORY and "UNION" in REPOSITORY

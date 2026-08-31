@@ -1,1 +1,1 @@
-#include "../../../src/skills.c"
+#include "../../../src/classes/skills.c"

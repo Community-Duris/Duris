@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Contract checks for the unauthenticated, value-free health endpoint."""
 
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/websocket.c").read_text()
-HEADER = (ROOT / "src/websocket.h").read_text()
+SOURCE = (SRC / "websocket.c").read_text()
+HEADER = (SRC / "websocket.h").read_text()
 SCRIPT = (ROOT / "scripts/healthcheck.sh").read_text()
 
 

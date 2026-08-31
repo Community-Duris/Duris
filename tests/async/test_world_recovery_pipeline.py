@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Runtime framing checks and source contracts for immutable world recovery."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PIPELINE = (ROOT / "src/world_recovery_pipeline.c").read_text()
-HEADER = (ROOT / "src/world_recovery_pipeline.h").read_text()
-REDIS = (ROOT / "src/redis.c").read_text()
-WORLD_RUNTIME = (ROOT / "src/redis_world_runtime.c").read_text()
-STORE = (ROOT / "src/redis_world_store.c").read_text()
-REGISTRY = (ROOT / "src/redis_key_registry.def").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
-HANDLER = (ROOT / "src/handler.c").read_text()
+PIPELINE = (SRC / "world_recovery_pipeline.c").read_text()
+HEADER = (SRC / "world_recovery_pipeline.h").read_text()
+REDIS = (SRC / "redis.c").read_text()
+WORLD_RUNTIME = (SRC / "redis_world_runtime.c").read_text()
+STORE = (SRC / "redis_world_store.c").read_text()
+REGISTRY = (SRC / "redis_key_registry.def").read_text()
+COMM = (SRC / "comm.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
+HANDLER = (SRC / "handler.c").read_text()
 
 
 def section(text: str, start: str, end: str) -> str:
@@ -24,10 +25,10 @@ def section(text: str, start: str, end: str) -> str:
 
 
 HARNESS = r'''
-#include "world_recovery_pipeline.h"
-#include "world_recovery_codec.h"
-#include "copyover.h"
-#include "item_ownership_runtime.h"
+#include "world/world_recovery_pipeline.h"
+#include "world/world_recovery_codec.h"
+#include "persistence/copyover.h"
+#include "item/item_ownership_runtime.h"
 #include <array>
 #include <atomic>
 #include <cassert>
@@ -511,8 +512,8 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
-            "src/world_recovery_pipeline.c", "src/world_recovery_codec.c",
-            "src/redis_command_observability.c",
+            rel("world_recovery_pipeline.c"), rel("world_recovery_codec.c"),
+            rel("redis_command_observability.c"),
             "-Wl,--gc-sections", "-lz", "-pthread",
             "-o", str(binary),
         ],
@@ -665,7 +666,7 @@ assert "copyover_restore_door_from_buffer" not in restore
 assert "copyover_restore_zone_age_from_buffer" not in restore
 print("[PASS] recovery publication is atomic and restore accepts only validated framed generations")
 
-FLOOR_RUNTIME = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
+FLOOR_RUNTIME = (SRC / "redis_floor_runtime.c").read_text(encoding="ascii")
 flush = section(FLOOR_RUNTIME, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 pulse = section(WORLD_RUNTIME, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_floor_store_submit" in flush

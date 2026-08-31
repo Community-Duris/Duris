@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -22,9 +23,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-spellbook-") as temporary:
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_spellbook_repository_harness.cpp",
-            "src/flatfile_spellbook_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_spellbook_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",

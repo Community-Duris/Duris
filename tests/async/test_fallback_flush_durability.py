@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Regression checks for fallback flush durability failure truncation."""
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-source = (root / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 
 # Both item and scalar paths must record a durability offset and truncate on failure
 assert source.count("durability_offset = -1") >= 2

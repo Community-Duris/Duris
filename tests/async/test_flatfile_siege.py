@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -26,8 +27,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-siege-") as temporary:
             "-Isrc",
             "-Isrc/ships",
             "tests/async/flatfile_siege_harness.cpp",
-            "src/flatfile_store.c",
-            "src/player_snapshot_codec.c",
+            rel("flatfile_store.c"),
+            rel("player_snapshot_codec.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-o",
@@ -38,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-siege-") as temporary:
     )
     subprocess.run([str(binary), str(temporary_path / "fixtures")], check=True)
 
-source = (ROOT / "src/siege.c").read_text()
+source = (SRC / "siege.c").read_text()
 remove_start = source.index("void remove_siege")
 remove_end = source.index("void save_siege_list", remove_start)
 assert "save_siege_list();" in source[remove_start:remove_end]
@@ -55,7 +56,7 @@ preprocessed = subprocess.run(
         "-Isrc/ships",
         "-E",
         "-P",
-        "src/siege.c",
+        rel("siege.c"),
     ],
     cwd=ROOT,
     check=True,

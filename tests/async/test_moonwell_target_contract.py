@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regression contract for Moonwell's stored Moonstone target."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MAGIC = (ROOT / "src/magic.c").read_text()
+MAGIC = (SRC / "magic.c").read_text()
 
 start = MAGIC.index("void spell_moonwell(")
 end = MAGIC.index("void spell_moonstone(", start)

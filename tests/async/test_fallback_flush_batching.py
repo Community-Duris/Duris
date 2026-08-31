@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Fallback flushes must retain bounded recovery batches and drain in chunks."""
+from _paths import SRC
 from pathlib import Path
 import re
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 compact = re.sub(r"\s+", " ", source)
 
 for domain in ("item", "scalar"):

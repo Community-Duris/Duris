@@ -1,8 +1,9 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-comm = (ROOT / "src" / "comm.c").read_text(encoding="utf-8", errors="replace")
-websocket = (ROOT / "src" / "websocket.c").read_text(encoding="utf-8", errors="replace")
+comm = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
+websocket = (SRC / "websocket.c").read_text(encoding="utf-8", errors="replace")
 readme = (ROOT / "README.md").read_text(encoding="utf-8", errors="replace")
 
 assert "resolve_descriptor_hostname_async" in comm
@@ -15,4 +16,4 @@ assert "bind9-host" not in readme
 assert "getnameinfo" in comm
 assert "pthread_create" in comm
 assert '"lib/etc/hosts/%d.%s"' in comm
-assert '"lib/etc/hosts/%d.%s"' in (ROOT / "src" / "actinf.c").read_text(encoding="utf-8", errors="replace")
+assert '"lib/etc/hosts/%d.%s"' in (SRC / "actinf.c").read_text(encoding="utf-8", errors="replace")

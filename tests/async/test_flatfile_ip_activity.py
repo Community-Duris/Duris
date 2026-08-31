@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -25,9 +26,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-ip-activity-") as tempor
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_ip_activity_harness.cpp",
-            "src/sql.c",
-            "src/flatfile_ip_activity_repository.c",
-            "src/flatfile_store.c",
+            rel("sql.c"),
+            rel("flatfile_ip_activity_repository.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-lbsd",
@@ -39,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-ip-activity-") as tempor
     )
     subprocess.run([str(binary), str(temporary_path / "state")], cwd=ROOT, check=True)
 
-    nanny = (ROOT / "src/nanny.c").read_text()
+    nanny = (SRC / "nanny.c").read_text()
     if "if (timer < 0)" not in nanny or "Login history is temporarily unavailable" not in nanny:
         raise AssertionError("one-hour rule does not fail closed when flat IP state is unavailable")
 

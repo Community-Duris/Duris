@@ -1,13 +1,14 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-header = (ROOT / "src/redis_maintenance.h").read_text()
-source = (ROOT / "src/redis.c").read_text()
-maintenance = (ROOT / "src/redis_maintenance.c").read_text()
-floor = (ROOT / "src/redis_floor_runtime.c").read_text()
-checkpoint = (ROOT / "src/persistence_checkpoint.c").read_text()
-sql = (ROOT / "src/sql.c").read_text()
+header = (SRC / "redis_maintenance.h").read_text()
+source = (SRC / "redis.c").read_text()
+maintenance = (SRC / "redis_maintenance.c").read_text()
+floor = (SRC / "redis_floor_runtime.c").read_text()
+checkpoint = (SRC / "persistence_checkpoint.c").read_text()
+sql = (SRC / "sql.c").read_text()
 
 assert contains(header, "bool redis_clear_pwipe_state(void);")
 assert contains(header, "bool redis_validate_pwipe_state(void);")

@@ -44,7 +44,7 @@ changing a race/class alignment combination.
                               PLAYABLE RACES
 ================================================================================
 
-Location: src/constant.c (search for "playable_races")
+Location: src/core/constant.c (search for "playable_races")
 
 The playable_races[] array defines which races players can choose during
 character creation. Each entry has three fields:
@@ -69,7 +69,7 @@ Fields:
                          HOW TO ADD A NEW PLAYABLE RACE
 --------------------------------------------------------------------------------
 
-1. Open src/constant.c
+1. Open src/core/constant.c
 
 2. Find the playable_races[] array (around line 1800)
 
@@ -105,7 +105,7 @@ from playable_races[] unless permanently deleting the race from the codebase.
                       HOW TO CHANGE A RACE'S FACTION
 --------------------------------------------------------------------------------
 
-1. Open src/constant.c
+1. Open src/core/constant.c
 
 2. Find the race entry and change the faction string:
 
@@ -118,7 +118,7 @@ from playable_races[] unless permanently deleting the race from the codebase.
                               CLASS AVAILABILITY
 ================================================================================
 
-Location: src/constant.c (search for "class_table")
+Location: src/core/constant.c (search for "class_table")
 
 The class_table[][] matrix determines which classes each race can play and
 what alignment restrictions apply.
@@ -170,13 +170,13 @@ Column  Class           Column  Class
  14     Assassin          29    Summoner
  15     Mercenary         30    Dragoon
 
-Class names are defined in src/common.c (class_names_table[])
+Class names are defined in src/core/common.c (class_names_table[])
 
 ================================================================================
                               RACE DEFINITIONS
 ================================================================================
 
-Race constants are defined in: src/defines.h (search for RACE_HUMAN)
+Race constants are defined in: src/core/defines.h (search for RACE_HUMAN)
 
 Current playable races (as of this writing):
 
@@ -195,7 +195,7 @@ Neutral (Player Chooses):
                             RACIAL STAT MODIFIERS
 ================================================================================
 
-Location: src/constant.c (search for "stat_factor")
+Location: src/core/constant.c (search for "stat_factor")
 
 The stat_factor[] array defines racial bonuses/penalties to base stats.
 Each race has modifiers for: Str, Dex, Agi, Con, Pow, Int, Wis, Cha
@@ -207,23 +207,23 @@ These are added to the rolled base stats during character creation.
 ================================================================================
 
 To add a new playable race:
-  1. Edit src/constant.c -> playable_races[]
+  1. Edit src/core/constant.c -> playable_races[]
   2. Add entry: { RACE_XXX, 'key', "faction" }
   3. Ensure class_table[RACE_XXX][] has appropriate class permissions
   4. Recompile
 
 To change class availability:
-  1. Edit src/constant.c -> class_table[][]
+  1. Edit src/core/constant.c -> class_table[][]
   2. Find race row, class column
   3. Set value (5=forbidden, 2=any, 1=good, -1=evil, 0=neutral)
   4. Recompile
 
 Files involved:
-  src/defines.h    - RACE_* and CLASS_* constants
-  src/constant.c   - playable_races[], class_table[], stat_factor[]
-  src/common.c     - race_names_table[], class_names_table[]
-  src/nanny.c      - Telnet character creation (uses playable_races[])
-  src/ws_handlers.c - WebSocket character creation (uses playable_races[])
+  src/core/defines.h    - RACE_* and CLASS_* constants
+  src/core/constant.c   - playable_races[], class_table[], stat_factor[]
+  src/core/common.c     - race_names_table[], class_names_table[]
+  src/account/nanny.c      - Telnet character creation (uses playable_races[])
+  src/net/ws_handlers.c - WebSocket character creation (uses playable_races[])
 
 ================================================================================
                               TROUBLESHOOTING

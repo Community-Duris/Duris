@@ -1,4 +1,4 @@
-#include "flatfile_help_catalog.h"
+#include "flatfile/flatfile_help_catalog.h"
 
 #include <cstdlib>
 #include <iostream>

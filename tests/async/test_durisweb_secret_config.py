@@ -1,23 +1,24 @@
 """Source contracts for fail-closed DurisWeb secret configuration."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WS = (ROOT / "src/ws_handlers.c").read_text()
-GMCP = (ROOT / "src/gmcp.c").read_text()
-AUTH = (ROOT / "src/ws_auth.h").read_text()
-SQL = (ROOT / "src/sql.c").read_text()
-ENV_FILE = (ROOT / "src/env_file.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
+WS = (SRC / "ws_handlers.c").read_text()
+GMCP = (SRC / "gmcp.c").read_text()
+AUTH = (SRC / "ws_auth.h").read_text()
+SQL = (SRC / "sql.c").read_text()
+ENV_FILE = (SRC / "env_file.c").read_text()
+COMM = (SRC / "comm.c").read_text()
 EXAMPLE = (ROOT / ".env.example").read_text()
 
 
 for source in (WS, GMCP, AUTH):
     assert "DURISWEB_SECRET_DEFAULT" not in source
 
-assert '#include "ws_auth.h"' in WS
-assert '#include "ws_auth.h"' in GMCP
+assert '#include "net/ws_auth.h"' in WS
+assert '#include "net/ws_auth.h"' in GMCP
 assert 'getenv("DURISWEB_SECRET")' in AUTH
 assert "if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge" in AUTH
 assert "char expected[65];" in AUTH

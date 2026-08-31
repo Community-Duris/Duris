@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Revisioned dirty-player checkpoint contracts."""
 
+from _paths import SRC
 from pathlib import Path
 
-text = (Path(__file__).resolve().parents[2] / "src/persistence_checkpoint.c").read_text()
+text = (SRC / "persistence_checkpoint.c").read_text()
 
 flush_start = text.index("void flush_dirty_players(void)")
 flush_end = text.index("int get_dirty_player_count(void)", flush_start)

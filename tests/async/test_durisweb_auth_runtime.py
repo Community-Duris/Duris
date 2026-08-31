@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compile and run the real DurisWeb challenge/HMAC helper."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
@@ -8,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = r'''
-#include "ws_auth.h"
+#include "net/ws_auth.h"
 #include <openssl/hmac.h>
 #include <cstdio>
 #include <cstdlib>
@@ -64,7 +65,7 @@ with tempfile.TemporaryDirectory(prefix="duris-ws-auth-") as directory:
     binary = Path(directory) / "auth_runtime"
     source.write_text(SOURCE)
     subprocess.run(
-        ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-I", str(ROOT / "src"),
+        ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-I", str(SRC),
          str(source), "-lcrypto", "-o", str(binary)],
         check=True,
     )

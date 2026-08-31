@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Source contracts for bounded periodic maintenance callbacks."""
 
+from _paths import rel
 from pathlib import Path
 
 
@@ -25,14 +26,14 @@ def function_body(text: str, signature: str) -> str:
     raise AssertionError(f"unterminated function: {signature}")
 
 
-artifact = source("src/artifact.c")
-drannak = source("src/drannak.c")
-hardcore = source("src/hardcore.c")
-periodic = source("src/nevent_periodic.c")
-redis = source("src/redis.c")
-checkpoint = source("src/persistence_checkpoint.c")
-ship_base = source("src/ships/ship_base.c")
-events = source("src/new_events.c")
+artifact = source(rel("artifact.c"))
+drannak = source(rel("drannak.c"))
+hardcore = source(rel("hardcore.c"))
+periodic = source(rel("nevent_periodic.c"))
+redis = source(rel("redis.c"))
+checkpoint = source(rel("persistence_checkpoint.c"))
+ship_base = source(rel("ship_base.c"))
+events = source(rel("new_events.c"))
 
 poof = function_body(artifact, "void event_artifact_check_poof_sql(")
 assert "ARTIFACT_EXPIRY_BATCH_SIZE = 1" in artifact

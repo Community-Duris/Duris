@@ -1,9 +1,10 @@
+from _paths import SRC
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/enhance.c").read_text()
-header = (ROOT / "src/enhance.h").read_text()
+source = (SRC / "enhance.c").read_text()
+header = (SRC / "enhance.h").read_text()
 config = (ROOT / "lib/enhance.cfg").read_text()
 
 # The donor-free superior lane fails closed unless explicitly enabled in config.

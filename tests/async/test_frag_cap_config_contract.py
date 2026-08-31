@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Source contract for configurable frag-cap behavior."""
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 LIB = ROOT / "lib"
 
 config = (LIB / "frag_cap.cfg").read_text()

@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-comm = (ROOT / "src" / "comm.c").read_text(encoding="utf-8", errors="replace")
+comm = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
 
 # Optional reverse DNS must be bounded and fail open to the numeric address.
 assert "MAX_HOSTNAME_LOOKUP_WORKERS" in comm

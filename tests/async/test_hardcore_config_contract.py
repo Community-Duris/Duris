@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
 """Source contract for the dedicated Hardcore policy configuration."""
 
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 config = ROOT / "lib/hardcore.cfg"
-header = ROOT / "src/hardcore_config.h"
-source = ROOT / "src/hardcore_config.c"
-makefile = (ROOT / "src/Makefile").read_text()
-comm = (ROOT / "src/comm.c").read_text()
-hardcore_source = (ROOT / "src/hardcore.c").read_text()
-actoth = (ROOT / "src/actoth.c").read_text()
-fight = (ROOT / "src/fight.c").read_text()
-nanny = (ROOT / "src/nanny.c").read_text()
-limits = (ROOT / "src/limits.c").read_text()
-ws_handlers = (ROOT / "src/ws_handlers.c").read_text()
+header = SRC / "hardcore_config.h"
+source = SRC / "hardcore_config.c"
+makefile = (SRC / "Makefile").read_text()
+comm = (SRC / "comm.c").read_text()
+hardcore_source = (SRC / "hardcore.c").read_text()
+actoth = (SRC / "actoth.c").read_text()
+fight = (SRC / "fight.c").read_text()
+nanny = (SRC / "nanny.c").read_text()
+limits = (SRC / "limits.c").read_text()
+ws_handlers = (SRC / "ws_handlers.c").read_text()
 frag_config = (ROOT / "lib/frag_cap.cfg").read_text()
-frag_header = (ROOT / "src/frag_cap_config.h").read_text()
-frag_source = (ROOT / "src/frag_cap_config.c").read_text()
+frag_header = (SRC / "frag_cap_config.h").read_text()
+frag_source = (SRC / "frag_cap_config.c").read_text()
 help_index = (ROOT / "lib/information/help_index").read_text()
 consumer_sources = "\n".join(
     path.read_text()
-    for path in (ROOT / "src").glob("*.c")
+    for path in SRC.glob("*.c")
     if path.name != "hardcore_config.c"
 )
 

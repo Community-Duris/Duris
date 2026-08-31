@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Regression contracts for spell level bounds and combined affect flags."""
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-bard = (ROOT / "src/bard.c").read_text()
-psionics = (ROOT / "src/psionics.c").read_text()
-magic = (ROOT / "src/magic.c").read_text()
+bard = (SRC / "bard.c").read_text()
+psionics = (SRC / "psionics.c").read_text()
+magic = (SRC / "magic.c").read_text()
 
 bard_start = index(bard, "void bard_sleep(int l,")
 bard_end = index(bard, "void bard_calm(", bard_start)

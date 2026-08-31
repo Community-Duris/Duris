@@ -5,6 +5,7 @@ from playable_races[] -- mostly the undead forms reached in-game with
 'descend' -- to character creation, in their own labelled menu block.
 """
 
+from _paths import SRC
 import re
 from pathlib import Path
 from contract_text import contains, find, index, split_at
@@ -22,12 +23,12 @@ for marker in (
 
 
 # --- the toggle itself -------------------------------------------------------
-cfg = (ROOT / "src/creation_availability_config.c").read_text()
+cfg = (SRC / "creation_availability_config.c").read_text()
 assert contains(cfg, "bool creation_all_races_enabled(void)")
 assert contains(cfg, 'getenv("CREATION_ALL_RACES")')
 assert contains(cfg, 'strcasecmp(value, "TRUE")')
 assert "bool creation_all_races_enabled(void);" in (
-    ROOT / "src/creation_availability_config.h"
+    SRC / "creation_availability_config.h"
 ).read_text()
 
 # Documented in the committed template, and off by default there.
@@ -36,7 +37,7 @@ assert "CREATION_ALL_RACES=FALSE" in example
 
 
 # --- restricted_races[] must hold only non-roster player races ---------------
-defines = (ROOT / "src/defines.h").read_text()
+defines = (SRC / "defines.h").read_text()
 race_ids = {
     name: int(value)
     for name, value in re.findall(r"#define (RACE_[A-Z_]+)\s+(\d+)", defines)
@@ -45,7 +46,7 @@ player_max = race_ids[
     re.search(r"#define RACE_PLAYER_MAX\s+(RACE_[A-Z_]+)", defines).group(1)
 ]
 
-constant = (ROOT / "src/constant.c").read_text()
+constant = (SRC / "constant.c").read_text()
 
 
 def table_entries(source, marker):
@@ -77,7 +78,7 @@ assert not missing, f"player races in neither table: {sorted(missing)}"
 
 
 # --- telnet menu: separate, labelled block ----------------------------------
-nanny = (ROOT / "src/nanny.c").read_text()
+nanny = (SRC / "nanny.c").read_text()
 # Anchor on the definition, not the forward declaration: the signature alone
 # matches both.
 menu = split_at(nanny, "static void display_available_races(P_desc d)\n{", 1)[1]
@@ -110,7 +111,7 @@ assert contains(select, "if (GET_RACE(d->character) == RACE_NONE)")
 
 
 # --- websocket path stays in step -------------------------------------------
-ws = (ROOT / "src/ws_handlers.c").read_text()
+ws = (SRC / "ws_handlers.c").read_text()
 playable = split_at(ws, "static int ws_is_playable_race(int race)", 1)[1].split("\n}", 1)[0]
 assert contains(playable, "creation_all_races_enabled()")
 assert contains(playable, "ws_find_restricted_race(race)")
@@ -175,7 +176,7 @@ for rid in overrides:
 # --- class_table itself must stay untouched by the toggle -------------------
 # random.mob.c walks class_table to pick a class for random mobs; the creation
 # override must not leak into it.
-randmob = (ROOT / "src/random.mob.c").read_text()
+randmob = (SRC / "random.mob.c").read_text()
 assert contains(randmob, "class_table[race][class_idx]")
 assert not contains(randmob, "creation_class_align")
 

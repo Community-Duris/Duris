@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Fail-closed copyover ordering and live-process recovery contracts."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-copyover = (root / "src/copyover.c").read_text()
-comm = (root / "src/comm.c").read_text()
+copyover = (SRC / "copyover.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 body = copyover[copyover.index("bool copyover_save("):copyover.index(
     "static P_char copyover_load_player", copyover.index("bool copyover_save(")

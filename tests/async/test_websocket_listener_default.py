@@ -13,13 +13,14 @@ telnet default and still satisfies the production loopback requirement, so an
 unset address can no longer silently cost a deployment its WebSocket listener.
 """
 
+from _paths import SRC
 from pathlib import Path
 import sys
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-websocket = (ROOT / "src" / "websocket.c").read_text(encoding="utf-8", errors="replace")
+websocket = (SRC / "websocket.c").read_text(encoding="utf-8", errors="replace")
 example = (ROOT / ".env.example").read_text(encoding="utf-8", errors="replace")
 configuration = (ROOT / "docs" / "operations" / "CONFIGURATION.md").read_text(
     encoding="utf-8", errors="replace")

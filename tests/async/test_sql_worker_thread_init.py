@@ -12,6 +12,7 @@ Pin two things: the raw call is not reachable outside the shared helper, and the
 helper still initialises the library exactly once.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import shlex
@@ -21,8 +22,6 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 failures = []
 
 
@@ -63,14 +62,14 @@ for name in [
 ]:
     body = (SRC / name).read_text(encoding="utf-8", errors="replace")
     check(f"{name} routes through the helper",
-          "sql_worker_thread_init()" in body and '#include "sql_thread_init.h"' in body)
+          "sql_worker_thread_init()" in body and '#include "sql/sql_thread_init.h"' in body)
 
 # The behaviour itself: without the library init, MySQL 8 fails and the worker
 # would have exited. Compile against whichever client is installed and assert the
 # helper succeeds -- on MariaDB this passes either way, on MySQL 8 it is the
 # regression.
 PROBE = r'''
-#include "sql_thread_init.h"
+#include "sql/sql_thread_init.h"
 
 #include <cstdio>
 #include <thread>

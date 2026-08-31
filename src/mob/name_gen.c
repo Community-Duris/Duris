@@ -1,0 +1,182 @@
+
+/****************************************************************************/
+/* NAMN.C - Create random names.                                            */
+/****************************************************************************/
+/* Johan Danforth                                                           */
+/****************************************************************************/
+
+/****************************************************************************
+ * Modified by Kvark (June 2003)
+ *
+ * Made for durismud.
+ ****************************************************************************/
+
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "net/comm.h"
+#include "world/db.h"
+#include "world/events.h"
+#include "cmd/interp.h"
+#include "core/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "combat/arena.h"
+#include "combat/arenadef.h"
+#include "combat/justice.h"
+#include "core/mm.h"
+#include "item/objmisc.h"
+#include "magic/spells.h"
+#include "world/weather.h"
+/****************************************************************************/
+/* Compile Time parameters                                                  */
+/****************************************************************************/
+
+#define SYLLABLES_PER_SECTION 100
+#define SYLLABLE_LENGTH 100
+#define NAME_LENGTH 20
+
+/****************************************************************************/
+/* main                                                                     */
+/****************************************************************************/
+int get_name(char return_namn[256], int SEX, uint64_t id)
+{
+	int antal_start = 0;
+	int antal_mitt = 0;
+	int antal_slut = 0;
+	char tempstring[151];
+	tempstring[0] = '\0';
+	char start[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* start syllable               */
+	char mitt[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* middle syllable              */
+	char slut[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* ending syllable              */
+	char namn[NAME_LENGTH]; /* name                         */
+	FILE *infil = NULL;
+
+	memset(start, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
+	memset(mitt, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
+	memset(slut, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
+	memset(namn, 0, NAME_LENGTH);
+
+	SEX = number(0, 9);
+	switch (SEX)
+	{
+	case 0:
+		infil = fopen("lib/misc/names/f_male.nam", "r");
+		break;
+	case 1:
+		infil = fopen("lib/misc/names/f_female.nam", "r");
+		break;
+	case 2:
+		infil = fopen("lib/misc/names/ALVER.NAM", "r");
+		break;
+	case 3:
+		infil = fopen("lib/misc/names/DEVERRY2.NAM", "r");
+		break;
+	case 4:
+		infil = fopen("lib/misc/names/gnome2.nam", "r");
+		break;
+	case 5:
+		infil = fopen("lib/misc/names/kender1.nam", "r");
+		break;
+	case 6:
+		infil = fopen("lib/misc/names/orc.nam", "r");
+		break;
+	case 7:
+		infil = fopen("lib/misc/names/DVARGAR.NAM", "r");
+		break;
+	case 8:
+		infil = fopen("lib/misc/names/HOBER.NAM", "r");
+		break;
+	case 9:
+		infil = fopen("lib/misc/names/kerrel.nam", "r");
+		break;
+	}
+
+	if (infil == NULL)
+	{
+		printf("Cant open name file");
+		snprintf(return_namn, 256, "Cant locate name file");
+		return 0;
+		/* print the name               */
+	}
+	/* read file until [startstav] it found (starting syllable)                 */
+	while (strcmp(tempstring, "[startstav]") != 0)
+	{
+		memset(tempstring, 0, sizeof(tempstring));
+		if (fgets(tempstring, 150, infil) == NULL)
+			break;
+		size_t len = strlen(tempstring);
+		if (len >= 2 && tempstring[len - 2] == '\r')
+			tempstring[len - 2] = '\0';
+		else if (len >= 1)
+			tempstring[len - 1] = '\0'; /* remove linefeed          */
+	}
+	/* read file until [mittstav] is found (middle syllable)                    */
+	while (strcmp(tempstring, "[mittstav]") != 0)
+	{
+		memset(tempstring, 0, sizeof(tempstring));
+		if (fgets(tempstring, 150, infil) == NULL)
+			break;
+		size_t len = strlen(tempstring);
+		if (len >= 2 && tempstring[len - 2] == '\r')
+			tempstring[len - 2] = '\0';
+		else if (len >= 1)
+			tempstring[len - 1] = '\0'; /* remove linefeed          */
+		if ((tempstring[0] != '/') && (tempstring[0] != '['))
+		{
+			strlcpy(start[antal_start], tempstring, sizeof start[antal_start]);
+			antal_start++;
+		}
+	}
+	/* read file until [slutstav] is found (ending syllable)                    */
+	while (strcmp(tempstring, "[slutstav]") != 0)
+	{
+		memset(tempstring, 0, sizeof(tempstring));
+		if (fgets(tempstring, 150, infil) == NULL)
+			break;
+		size_t len = strlen(tempstring);
+		if (len >= 2 && tempstring[len - 2] == '\r')
+			tempstring[len - 2] = '\0';
+		else if (len >= 1)
+			tempstring[len - 1] = '\0'; /* remove linefeed          */
+		if ((tempstring[0] != '/') && (tempstring[0] != '['))
+		{
+			strlcpy(mitt[antal_mitt], tempstring, sizeof mitt[antal_mitt]);
+			antal_mitt++;
+		}
+	}
+	/* read file until [stop] is found (end of syllables)                       */
+	while (strcmp(tempstring, "[stop]") != 0)
+	{
+		memset(tempstring, 0, sizeof(tempstring));
+		if (fgets(tempstring, 150, infil) == NULL)
+			break;
+		size_t len = strlen(tempstring);
+		if (len >= 2 && tempstring[len - 2] == '\r')
+			tempstring[len - 2] = '\0';
+		else if (len >= 1)
+			tempstring[len - 1] = '\0'; /* remove linefeed          */
+		if ((tempstring[0] != '/') && (tempstring[0] != '['))
+		{
+			strlcpy(slut[antal_slut], tempstring, sizeof slut[antal_slut]);
+			antal_slut++;
+		}
+	}
+	fclose(infil);
+
+	/* correct the nr of available syllables...                                 */
+
+	antal_start--;
+	antal_mitt--;
+	antal_slut--;
+
+	if (!id)
+		id = number(0, 2147483647);
+
+	checked_snprintf(namn, sizeof namn, "%s%s%s", start[id % antal_start],
+			 mitt[id % antal_mitt], slut[id % antal_slut]);
+	strlcpy(return_namn, namn, 256);
+
+	return (SEX);
+}

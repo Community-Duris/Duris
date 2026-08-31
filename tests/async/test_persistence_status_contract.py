@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Source contract for truthful, bounded trusted persistence status."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-actinf = (ROOT / "src/actinf.c").read_text()
-actoth = (ROOT / "src/actoth.c").read_text()
-checkpoint = (ROOT / "src/persistence_checkpoint.c").read_text()
-queue = (ROOT / "src/persistence_queue.c").read_text()
+actinf = (SRC / "actinf.c").read_text()
+actoth = (SRC / "actoth.c").read_text()
+checkpoint = (SRC / "persistence_checkpoint.c").read_text()
+queue = (SRC / "persistence_queue.c").read_text()
 
 
 def function_has_lock(name: str, mutex: str) -> bool:

@@ -1,52 +1,53 @@
 #!/usr/bin/env python3
+from _paths import rel
 from pathlib import Path
 import sys
 
 checks = [
     (
-        'src/actoth.c',
+        rel("actoth.c"),
         'persistence_schedule_character_save(ch, 1, 2, "autosave")',
         'persistence_schedule_character_save(ch, 1, 2, "autosave")',
         1,
     ),
     (
-        'src/comm.c',
+        rel("comm.c"),
         'shutdown_cancelled=1',
         'if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))',
         1,
     ),
     (
-        'src/actnew.c',
+        rel("actnew.c"),
         'Failed to save %s after room move.',
         'if (!do_save_silent(ch, 1))',
         2,
     ),
     (
-        'src/tradeskill.c',
+        rel("tradeskill.c"),
         'Failed to save %s after tradeskill change.',
         'if (!do_save_silent(pl, 1))',
         5,
     ),
     (
-        'src/epic_skills.c',
+        rel("epic_skills.c"),
         'Failed to save %s after epic skill purchase.',
         'if (!do_save_silent(pl, 1))',
         1,
     ),
     (
-        'src/nexus_stones.c',
+        rel("nexus_stones.c"),
         'Failed to save %s after nexus sage training.',
         'if (!do_save_silent(pl, 1))',
         1,
     ),
     (
-        'src/magic.c',
+        rel("magic.c"),
         'Failed to save %s after soulbind.',
         'if (!do_save_silent(victim, 1))',
         1,
     ),
     (
-        'src/actoth.c',
+        rel("actoth.c"),
         'Failed to save %s after new character setup.',
         'if (!do_save_silent(ch, 1))',
         1,

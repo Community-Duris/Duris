@@ -1,7 +1,7 @@
 #ifndef _SHIP_AUTO_
 #define _SHIP_AUTO_
 
-#include "ships.h"
+#include "ships/ships.h"
 
 // Timers
 #define AIT_WAIT 0

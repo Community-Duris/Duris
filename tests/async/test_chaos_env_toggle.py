@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regression coverage for the runtime CHAOS_MUD environment toggle."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
@@ -10,8 +11,6 @@ from contract_text import contains
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 makefile = (SRC / "Makefile").read_text()
 example = (ROOT / ".env.example").read_text()
 config = (SRC / "chaos_config.c").read_text()
@@ -30,7 +29,7 @@ assert "defined(CHAOS_MUD)" not in consumers
 assert "chaos_mud_enabled()" in consumers
 
 HARNESS = r"""
-#include "chaos_config.h"
+#include "combat/chaos_config.h"
 
 #include <stdio.h>
 

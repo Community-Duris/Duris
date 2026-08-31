@@ -1,0 +1,38 @@
+/* Caer tannad shout proc, nice and simple */
+#include <ctype.h>
+#include <list>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <time.h>
+;
+
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "net/comm.h"
+#include "world/db.h"
+#include "world/events.h"
+#include "cmd/interp.h"
+#include "core/utils.h"
+#include "guild/assocs.h"
+#include "combat/damage.h"
+#include "world/graph.h"
+#include "combat/justice.h"
+#include "classes/reavers.h"
+#include "specs/specs.caertannad.h"
+#include "world/specs.prototypes.h"
+#include "magic/spells.h"
+#include "world/weather.h"
+
+int caertannad_summon(P_char ch, P_char tch, int cmd, char * /*arg*/)
+{
+	int helpers[] = { 78478, 78480, 0 };
+	if (cmd == -10)
+		return TRUE;
+	if (!tch && !number(0, 4))
+		return shout_and_hunt(ch, 100,
+				      "&+CMages! Soldiers! To arms! &+CAnnihilate &=LC%s&n&+C!&n",
+				      NULL, helpers, 0, 0);
+
+	return FALSE;
+}

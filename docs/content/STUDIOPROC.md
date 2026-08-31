@@ -88,8 +88,8 @@ bound room proc whether it wants a periodic tick.
 
 Every anchor predates 2020, so future merges carry five one-liners.
 
-New files: `src/studioproc.c` (the parser, binder, dispatch and
-primitives), `src/studioproc.h` (the public surface — boot, the three
+New files: `src/mob/studioproc.c` (the parser, binder, dispatch and
+primitives), `src/mob/studioproc.h` (the public surface — boot, the three
 generic procs, the three hook entry points), and `docs/legacy/src/howto_trg.txt`
 (the builder reference, written in the shape of `docs/legacy/src/howto_add.txt`).
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for private-chest password hardening."""
 
+from _paths import SRC
 import ctypes
 import hashlib
 import subprocess
@@ -9,7 +10,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 password_hash = (SRC / "password_hash.c").read_text()
 sql_player = (SRC / "sql_player.c").read_text()
 storage = (SRC / "storage_lockers.c").read_text()
@@ -37,6 +37,8 @@ with tempfile.TemporaryDirectory(prefix="duris-chest-hash-") as temp_dir:
             "-Werror",
             "-fPIC",
             "-shared",
+            "-I",
+            str(SRC),
             str(SRC / "password_hash.c"),
             "-o",
             str(library_path),
@@ -84,8 +86,8 @@ assert "crypt_r(password" in password_hash
 assert "CRYPTO_memcmp" in password_hash
 assert "OPENSSL_cleanse" in password_hash
 assert "#define BCRYPT_PASSWORD_MAX_BYTES 72" in header
-assert '#include "password_hash.h"' in account
-assert '#include "password_hash.h"' in ws
+assert '#include "account/password_hash.h"' in account
+assert '#include "account/password_hash.h"' in ws
 assert "char *bcrypt_hash_password" not in account
 assert "FREE(new_hash)" not in account
 assert "FREE(hash)" not in account + ws

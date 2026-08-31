@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 """Runtime identity, journal, ordering, fence, retry, replay, and bound contracts."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-COMMAND = (ROOT / "src/critical_command.c").read_text()
-JOURNAL = (ROOT / "src/critical_command_journal.c").read_text()
-COORDINATOR = (ROOT / "src/critical_command_coordinator.c").read_text()
-HEADER = (ROOT / "src/critical_command_coordinator.h").read_text()
+COMMAND = (SRC / "critical_command.c").read_text()
+JOURNAL = (SRC / "critical_command_journal.c").read_text()
+COORDINATOR = (SRC / "critical_command_coordinator.c").read_text()
+HEADER = (SRC / "critical_command_coordinator.h").read_text()
 
 
 HARNESS = r'''
-#include "critical_command_coordinator.h"
+#include "persistence/critical_command_coordinator.h"
 
 #include <cassert>
 #include <chrono>
@@ -346,8 +347,8 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-command-") as temporary:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-            "-pthread", "-Isrc", str(source), "src/critical_command.c",
-            "src/critical_command_journal.c", "src/critical_command_coordinator.c",
+            "-pthread", "-Isrc", str(source), rel("critical_command.c"),
+            rel("critical_command_journal.c"), rel("critical_command_coordinator.c"),
             "-lz", "-lcrypto", "-o", str(binary),
         ],
         cwd=ROOT,
@@ -371,10 +372,10 @@ assert COORDINATOR.index("critical_command_journal_append(command)") < COORDINAT
     "work_available.notify_all();\n\treturn critical_submit_result::accepted"
 )
 
-MAKEFILE = (ROOT / "src/Makefile").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
-ACTINF = (ROOT / "src/actinf.c").read_text()
+MAKEFILE = (SRC / "Makefile").read_text()
+COMM = (SRC / "comm.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
+ACTINF = (SRC / "actinf.c").read_text()
 for object_name in (
     "critical_command.o",
     "critical_command_journal.o",

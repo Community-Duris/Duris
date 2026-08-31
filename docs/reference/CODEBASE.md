@@ -98,7 +98,7 @@ Public API in `ships.h`. Ship index data at `lib/etc/ship_index`.
 
 ## Configuration and data
 
-- Compile-time: `src/config.h` (ports, pulses, paths), `src/sql.h`
+- Compile-time: `src/core/config.h` (ports, pulses, paths), `src/sql/sql.h`
   (credentials), Makefile defines.
 - Runtime data: `lib/` — `duris.properties`, per-feature `*.cfg`
   (`crafting.cfg`, `mining.cfg`, `hardcore.cfg`, `frag_cap.cfg`,

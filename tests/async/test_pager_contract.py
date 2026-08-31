@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "modify.c").read_text()
+source = (SRC / "modify.c").read_text()
 start = source.index("void show_string(")
 end = source.index("\n//--------------------------------------------------------------------", start)
 show_string = source[start:end]

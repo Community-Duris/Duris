@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Account projection recovery and post-extraction cache regressions."""
 
+from _paths import SRC
 import os
 from pathlib import Path
 import subprocess
@@ -10,9 +11,9 @@ import tempfile
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-account = (ROOT / "src" / "account.c").read_text(encoding="utf-8", errors="replace")
-sql = (ROOT / "src" / "sql.c").read_text(encoding="utf-8", errors="replace")
-sql_player = (ROOT / "src" / "sql_player.c").read_text(
+account = (SRC / "account.c").read_text(encoding="utf-8", errors="replace")
+sql = (SRC / "sql.c").read_text(encoding="utf-8", errors="replace")
+sql_player = (SRC / "sql_player.c").read_text(
     encoding="utf-8", errors="replace"
 )
 mysql_sql_player = sql_player[sql_player.index("\n#else\n\n// globals") :]

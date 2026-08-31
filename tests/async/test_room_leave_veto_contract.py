@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Regression contract for room-hook leave veto and duplicate room insertion."""
+from _paths import SRC
 from pathlib import Path
 import re
 from contract_text import contains, count, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
-handler = (ROOT / "src/handler.c").read_text()
-actmove = (ROOT / "src/actmove.c").read_text()
-lockers = (ROOT / "src/storage_lockers.c").read_text()
-interp = (ROOT / "src/interp.h").read_text()
-rooms = (ROOT / "src/specs.room.c").read_text()
+handler = (SRC / "handler.c").read_text()
+actmove = (SRC / "actmove.c").read_text()
+lockers = (SRC / "storage_lockers.c").read_text()
+interp = (SRC / "interp.h").read_text()
+rooms = (SRC / "specs.room.c").read_text()
 
 assert contains(interp, "#define CMD_FROMROOM")
 assert contains(interp, "#define ROOM_PROC_LEAVE_VETO")

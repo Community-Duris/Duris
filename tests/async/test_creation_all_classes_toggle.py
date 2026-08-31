@@ -1,13 +1,12 @@
 """Source contracts for the CREATION_ALL_CLASSES character-creation override."""
 
+from _paths import SRC
 import re
 from pathlib import Path
 from contract_text import contains, find, index
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 impl = (SRC / "creation_availability_config.c").read_text()
 header = (SRC / "creation_availability_config.h").read_text()
 nanny = (SRC / "nanny.c").read_text()

@@ -28,7 +28,7 @@ about.
 | Option | Meaning |
 | --- | --- |
 | `--tool=TOOL` | `memcheck` (default), `helgrind`, `drd`, `massif`, `callgrind` |
-| `--port N` | Bind port, default 4000. **7777 is refused**: it is `DFLT_PORT`, and `src/sql.c` only redirects to `duris_dev` on other ports. |
+| `--port N` | Bind port, default 4000. **7777 is refused**: it is `DFLT_PORT`, and `src/sql/sql.c` only redirects to `duris_dev` on other ports. |
 | `--build` | `make -C src`, then copy `bin/server/dms_new` to `bin/server/dms` |
 | `--gen-suppressions` | Print paste-ready suppression blocks for every error |
 | `--trace-children` | Follow `exec()` across a copyover (off by default) |

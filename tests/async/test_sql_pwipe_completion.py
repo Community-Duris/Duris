@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/sql.c").read_text()
+source = (SRC / "sql.c").read_text()
 start = source.rindex("bool sql_pwipe(int code_verify)")
 end = source.index("void sql_log_player_login", start)
 body = source[start:end]

@@ -9,7 +9,7 @@
 #include <chrono>
 #include <unistd.h>
 
-#include "persistence_queue.h"
+#include "persistence/persistence_queue.h"
 
 void wizlog(int, const char *, ...) {}
 void logit(const char *, const char *, ...) {}

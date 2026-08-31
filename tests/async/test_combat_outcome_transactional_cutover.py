@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Bounded codec, mutation route, schema, and publication contracts for PvP outcomes."""
 
+from _paths import SRC
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,10 +9,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
-#include "combat_outcome_command.h"
+#include "combat/combat_outcome_command.h"
 #include <cassert>
 #include <cstring>
 

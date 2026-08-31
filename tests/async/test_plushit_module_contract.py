@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/plushit.c").read_text()
-header = (ROOT / "src/plushit.h").read_text()
-fight = (ROOT / "src/fight.c").read_text()
-makefile = (ROOT / "src/Makefile").read_text()
+source = (SRC / "plushit.c").read_text()
+header = (SRC / "plushit.h").read_text()
+fight = (SRC / "fight.c").read_text()
+makefile = (SRC / "Makefile").read_text()
 properties = (ROOT / "lib/duris.properties").read_text()
 
 # the module owns the whole rule
@@ -32,7 +33,7 @@ assert contains(source, "IS_PC(victim) || IS_TRUSTED(ch)")
 
 # fight.c carries exactly one guard, and it only ever aborts the swing
 assert fight.count("plushit_blocks(") == 1
-assert contains(fight, '#include "plushit.h"')
+assert contains(fight, '#include "item/plushit.h"')
 assert contains(fight, "if (plushit_blocks(ch, victim, weapon))")
 
 # one object line

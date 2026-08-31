@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Regression checks for auction bid transaction leak, cargo commit rollback, and ship db_id reset."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 root = Path(__file__).resolve().parents[2]
 
 # 1. Auction bid failure paths must rollback owned transactions
-auction = (root / "src/auction_houses.c").read_text()
+auction = (SRC / "auction_houses.c").read_text()
 assert contains(auction, "if (own_txn) sql_rollback();")
 assert auction.count("sql_rollback();") >= 10
 
 # 2. Cargo commit failure must attempt rollback
-cargo = (root / "src/ships/ship_cargo.c").read_text()
+cargo = (SRC / "ships/ship_cargo.c").read_text()
 assert contains(cargo, "logit(LOG_DEBUG, \"write_cargo(): commit failed\");\n\t\tsql_rollback();")
 
 # 3. Ship db_id must be reset to -1 on post-INSERT failure paths
-sql_player = (root / "src/sql_player.c").read_text()
+sql_player = (SRC / "sql_player.c").read_text()
 # At least 4 reset points: query failure, no row, armor/crew/slot failure, batch failure
 assert sql_player.count("ship->db_id = -1;") >= 4
 

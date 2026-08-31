@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """NPC essence balance supports global level gates and sparse zone overrides."""
+from _paths import SRC
 from pathlib import Path
 root = Path(__file__).resolve().parents[2]
-src = (root / "src/enhance.c").read_text()
+src = (SRC / "enhance.c").read_text()
 cfg = (root / "lib/enhance.cfg").read_text()
 for marker in (
     "enhance_essence_minimum_level",

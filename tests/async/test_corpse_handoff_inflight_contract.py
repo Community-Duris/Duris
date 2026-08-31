@@ -23,16 +23,17 @@ even though nothing was lost. Two source contracts are at fault:
    container.
 """
 
+from _paths import SRC
 from pathlib import Path
 import sys
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-fight = (ROOT / "src" / "fight.c").read_text(encoding="utf-8", errors="replace")
-movement = (ROOT / "src" / "item_movement_transaction.c").read_text(
+fight = (SRC / "fight.c").read_text(encoding="utf-8", errors="replace")
+movement = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace")
-specs = (ROOT / "src" / "specs.object.c").read_text(encoding="utf-8", errors="replace")
+specs = (SRC / "specs.object.c").read_text(encoding="utf-8", errors="replace")
 
 
 def body(text, signature):

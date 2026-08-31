@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Regression contract: enhancement policy belongs to the enhance module."""
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-header = (ROOT / "src/enhance.h").read_text()
-enhance = (ROOT / "src/enhance.c").read_text()
-fight = (ROOT / "src/fight.c").read_text()
-db = (ROOT / "src/db.c").read_text()
-comm = (ROOT / "src/comm.c").read_text()
+header = (SRC / "enhance.h").read_text()
+enhance = (SRC / "enhance.c").read_text()
+fight = (SRC / "fight.c").read_text()
+db = (SRC / "db.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 for symbol in (
     "boot_enhancement_system(void)",

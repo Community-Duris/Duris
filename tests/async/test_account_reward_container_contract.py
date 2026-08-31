@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Divine reward containers never duplicate or destroy ordinary contents."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
-reward = (ROOT / "src/account_reward.c").read_text()
-header = (ROOT / "src/account_reward.h").read_text()
-fight = (ROOT / "src/fight.c").read_text()
+reward = (SRC / "account_reward.c").read_text()
+header = (SRC / "account_reward.h").read_text()
+fight = (SRC / "fight.c").read_text()
 migration = (ROOT / "migrations/account_bound_rewards.sql").read_text()
 bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
 
@@ -32,7 +33,7 @@ assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(
 # invokes it before the first empty corpse snapshot and ownership submission; player
 # inventory remains visible until each transfer commits.
 assert contains(header, "void account_bound_reward_prepare_player_corpse(P_char ch, P_obj corpse);")
-assert contains(fight, '#include "account_reward.h"')
+assert contains(fight, '#include "account/account_reward.h"')
 hook = "account_bound_reward_prepare_player_corpse(ch, corpse);"
 assert hook in fight
 make_corpse = fight[index(fight, "P_obj make_corpse"):]

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "nanny.c").read_text()
+source = (SRC / "nanny.c").read_text()
 
 keepchar = source[
     source.index("void select_keepchar(") : source.index("void display_stats(")

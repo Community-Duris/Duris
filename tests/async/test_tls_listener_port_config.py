@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Contract checks for an independently configurable TLS telnet listener."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-COMM = (ROOT / "src/comm.c").read_text()
+COMM = (SRC / "comm.c").read_text()
 ENV_EXAMPLE = (ROOT / ".env.example").read_text()
 CONFIGURATION = (ROOT / "docs/operations/CONFIGURATION.md").read_text()
 

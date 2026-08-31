@@ -1,18 +1,18 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "comm.h"
-#include "db.h"
-#include "events.h"
-#include "interp.h"
-#include "utils.h"
-#include "ship_npc.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "net/comm.h"
+#include "world/db.h"
+#include "world/events.h"
+#include "cmd/interp.h"
+#include "core/utils.h"
+#include "ships/ship_npc.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "map.h"
-#include "objmisc.h"
-#include "ship_npc_ai.h"
-#include "spells.h"
+#include "world/map.h"
+#include "item/objmisc.h"
+#include "ships/ship_npc_ai.h"
+#include "magic/spells.h"
 
 extern int top_of_world;
 

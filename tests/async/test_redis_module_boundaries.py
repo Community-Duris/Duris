@@ -1,33 +1,34 @@
 #!/usr/bin/env python3
 """Source contracts for Redis and player-checkpoint module ownership."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REDIS_HEADER = (ROOT / "src/redis.h").read_text(encoding="ascii")
-REDIS_SOURCE = (ROOT / "src/redis.c").read_text(encoding="ascii")
-LIFECYCLE_HEADER = (ROOT / "src/redis_lifecycle.h").read_text(encoding="ascii")
-WORLD_RUNTIME_HEADER = (ROOT / "src/redis_world_runtime.h").read_text(encoding="ascii")
-WORLD_RUNTIME_SOURCE = (ROOT / "src/redis_world_runtime.c").read_text(encoding="ascii")
-WIZARD_HEADER = (ROOT / "src/redis_wizard.h").read_text(encoding="ascii")
-CHECKPOINT_HEADER = (ROOT / "src/persistence_checkpoint.h").read_text(encoding="ascii")
-CHECKPOINT_SOURCE = (ROOT / "src/persistence_checkpoint.c").read_text(encoding="ascii")
-DONATION_HEADER = (ROOT / "src/redis_donation_runtime.h").read_text(encoding="ascii")
-DONATION_SOURCE = (ROOT / "src/redis_donation_runtime.c").read_text(encoding="ascii")
-PRESENCE_HEADER = (ROOT / "src/redis_presence_runtime.h").read_text(encoding="ascii")
-PRESENCE_SOURCE = (ROOT / "src/redis_presence_runtime.c").read_text(encoding="ascii")
-REPORT_HEADER = (ROOT / "src/redis_report_cache.h").read_text(encoding="ascii")
-REPORT_SOURCE = (ROOT / "src/redis_report_cache.c").read_text(encoding="ascii")
-RUNTIME_CONFIG_HEADER = (ROOT / "src/redis_runtime_config.h").read_text(encoding="ascii")
-RUNTIME_CONFIG_SOURCE = (ROOT / "src/redis_runtime_config.c").read_text(encoding="ascii")
-SHIP_HEADER = (ROOT / "src/redis_ship_legacy.h").read_text(encoding="ascii")
-SHIP_SOURCE = (ROOT / "src/redis_ship_legacy.c").read_text(encoding="ascii")
-MAINTENANCE_HEADER = (ROOT / "src/redis_maintenance.h").read_text(encoding="ascii")
-MAINTENANCE_SOURCE = (ROOT / "src/redis_maintenance.c").read_text(encoding="ascii")
-FLOOR_RUNTIME_HEADER = (ROOT / "src/redis_floor_runtime.h").read_text(encoding="ascii")
-FLOOR_RUNTIME_SOURCE = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
-MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
+REDIS_HEADER = (SRC / "redis.h").read_text(encoding="ascii")
+REDIS_SOURCE = (SRC / "redis.c").read_text(encoding="ascii")
+LIFECYCLE_HEADER = (SRC / "redis_lifecycle.h").read_text(encoding="ascii")
+WORLD_RUNTIME_HEADER = (SRC / "redis_world_runtime.h").read_text(encoding="ascii")
+WORLD_RUNTIME_SOURCE = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
+WIZARD_HEADER = (SRC / "redis_wizard.h").read_text(encoding="ascii")
+CHECKPOINT_HEADER = (SRC / "persistence_checkpoint.h").read_text(encoding="ascii")
+CHECKPOINT_SOURCE = (SRC / "persistence_checkpoint.c").read_text(encoding="ascii")
+DONATION_HEADER = (SRC / "redis_donation_runtime.h").read_text(encoding="ascii")
+DONATION_SOURCE = (SRC / "redis_donation_runtime.c").read_text(encoding="ascii")
+PRESENCE_HEADER = (SRC / "redis_presence_runtime.h").read_text(encoding="ascii")
+PRESENCE_SOURCE = (SRC / "redis_presence_runtime.c").read_text(encoding="ascii")
+REPORT_HEADER = (SRC / "redis_report_cache.h").read_text(encoding="ascii")
+REPORT_SOURCE = (SRC / "redis_report_cache.c").read_text(encoding="ascii")
+RUNTIME_CONFIG_HEADER = (SRC / "redis_runtime_config.h").read_text(encoding="ascii")
+RUNTIME_CONFIG_SOURCE = (SRC / "redis_runtime_config.c").read_text(encoding="ascii")
+SHIP_HEADER = (SRC / "redis_ship_legacy.h").read_text(encoding="ascii")
+SHIP_SOURCE = (SRC / "redis_ship_legacy.c").read_text(encoding="ascii")
+MAINTENANCE_HEADER = (SRC / "redis_maintenance.h").read_text(encoding="ascii")
+MAINTENANCE_SOURCE = (SRC / "redis_maintenance.c").read_text(encoding="ascii")
+FLOOR_RUNTIME_HEADER = (SRC / "redis_floor_runtime.h").read_text(encoding="ascii")
+FLOOR_RUNTIME_SOURCE = (SRC / "redis_floor_runtime.c").read_text(encoding="ascii")
+MAKEFILE = (SRC / "Makefile").read_text(encoding="ascii")
 
 
 CHECKPOINT_API = (
@@ -69,8 +70,8 @@ assert "redis_donation_runtime.o" in MAKEFILE
 assert "redis_donation_enabled" not in REDIS_SOURCE
 assert "broadcast_donation_nchat" not in REDIS_SOURCE
 
-events = (ROOT / "src/new_events.c").read_text(encoding="utf-8")
-assert '#include "redis_donation_runtime.h"' in events
+events = (SRC / "new_events.c").read_text(encoding="utf-8")
+assert '#include "redis/redis_donation_runtime.h"' in events
 assert "redis_donation_runtime_enabled()" in events
 
 for symbol in (
@@ -89,9 +90,9 @@ assert "redis_presence_worker_submit_offline" in PRESENCE_SOURCE
 assert "redis_presence_worker_submit_clear" in PRESENCE_SOURCE
 assert "redis_presence_runtime.o" in MAKEFILE
 for filename in ("actoth.c", "nanny.c"):
-    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
-    assert '#include "redis_presence_runtime.h"' in source
-    assert '#include "redis.h"' not in source
+    source = (SRC / filename).read_text(encoding="utf-8")
+    assert '#include "redis/redis_presence_runtime.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in (
     "redis_report_cache_configure",
@@ -141,9 +142,9 @@ report_only_callers = (
     "zone_touch_transaction.c",
 )
 for filename in report_only_callers:
-    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
-    assert '#include "redis_report_cache.h"' in source
-    assert '#include "redis.h"' not in source
+    source = (SRC / filename).read_text(encoding="utf-8")
+    assert '#include "redis/redis_report_cache.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in (
     "redis_floor_runtime_configure",
@@ -167,9 +168,9 @@ for filename in (
     "persistence_checkpoint.c",
     "world_recovery_pipeline.c",
 ):
-    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
-    assert '#include "redis_floor_runtime.h"' in source
-    assert '#include "redis.h"' not in source
+    source = (SRC / filename).read_text(encoding="utf-8")
+    assert '#include "redis/redis_floor_runtime.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in (
     "redis_runtime_connections_configure",
@@ -207,9 +208,9 @@ assert "redis_ship_legacy_worker_init(redis_connections.maintenance)" in REDIS_S
 assert "REDIS_SHIP_SNAPSHOT_PATTERN" in SHIP_SOURCE
 assert "redis_ship_legacy.o" in MAKEFILE
 for filename in ("sql_player.c", "ships/ship_base.c"):
-    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
-    assert '#include "redis_ship_legacy.h"' in source
-    assert '#include "redis.h"' not in source
+    source = (SRC / filename).read_text(encoding="utf-8")
+    assert '#include "redis/redis_ship_legacy.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 for symbol in ("redis_clear_pwipe_state", "redis_validate_pwipe_state"):
     assert symbol in MAINTENANCE_HEADER
@@ -218,9 +219,9 @@ for symbol in ("redis_maintenance_clear", "redis_maintenance_validate"):
     assert symbol in MAINTENANCE_HEADER
     assert symbol in MAINTENANCE_SOURCE
 assert "redis_maintenance.o" in MAKEFILE
-sql = (ROOT / "src/sql.c").read_text(encoding="utf-8")
-assert '#include "redis_maintenance.h"' in sql
-assert '#include "redis.h"' not in sql
+sql = (SRC / "sql.c").read_text(encoding="utf-8")
+assert '#include "redis/redis_maintenance.h"' in sql
+assert '#include "redis/redis.h"' not in sql
 
 assert "#error \"redis.h is retired" in REDIS_HEADER
 for symbol in ("redis_init", "redis_cleanup", "redis_runtime_enabled"):
@@ -248,15 +249,15 @@ for token in (
     assert token not in REDIS_SOURCE
 assert "redis_world_runtime.o" in MAKEFILE
 for filename, header in (
-    ("comm.c", "redis_world_runtime.h"),
-    ("copyover.c", "redis_world_runtime.h"),
-    ("new_events.c", "redis_world_runtime.h"),
-    ("wizredis.c", "redis_world_runtime.h"),
-    ("interp.c", "redis_wizard.h"),
+    ("comm.c", "redis/redis_world_runtime.h"),
+    ("copyover.c", "redis/redis_world_runtime.h"),
+    ("new_events.c", "redis/redis_world_runtime.h"),
+    ("wizredis.c", "redis/redis_world_runtime.h"),
+    ("interp.c", "redis/redis_wizard.h"),
 ):
-    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
+    source = (SRC / filename).read_text(encoding="utf-8")
     assert f'#include "{header}"' in source
-    assert '#include "redis.h"' not in source
+    assert '#include "redis/redis.h"' not in source
 
 checkpoint_only_callers = (
     "actinf.c",
@@ -269,13 +270,13 @@ checkpoint_only_callers = (
     "world_quest.c",
 )
 for filename in checkpoint_only_callers:
-    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
-    assert '#include "persistence_checkpoint.h"' in source
-    assert '#include "redis.h"' not in source
+    source = (SRC / filename).read_text(encoding="utf-8")
+    assert '#include "persistence/persistence_checkpoint.h"' in source
+    assert '#include "redis/redis.h"' not in source
 
 redis_includers = []
-for source_path in (ROOT / "src").rglob("*.[ch]"):
-    if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
+for source_path in SRC.rglob("*.[ch]"):
+    if '#include "redis/redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
 assert redis_includers == []
 

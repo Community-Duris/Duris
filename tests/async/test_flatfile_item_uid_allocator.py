@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,8 +21,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-uid-test-") as temporar
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_item_uid_allocator_harness.cpp",
-            "src/flatfile_item_uid_allocator.c",
-            "src/flatfile_store.c",
+            rel("flatfile_item_uid_allocator.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",

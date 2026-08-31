@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-actobj = (ROOT / "src/actobj.c").read_text()
+actobj = (SRC / "actobj.c").read_text()
 checks = []
 
 fn_match = re.search(r"static bool do_get_try_container_item\(.*?\n\}", actobj, re.S)

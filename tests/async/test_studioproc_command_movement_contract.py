@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Regression contracts for studioproc commands and movement lifetime safety."""
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/studioproc.c").read_text()
-proclib = (ROOT / "src/studioproclib.c").read_text()
+source = (SRC / "studioproc.c").read_text()
+proclib = (SRC / "studioproclib.c").read_text()
 
 command_start = index(source, "static int sp_do_command(")
 command_end = index(source, "static int sp_execute(", command_start)

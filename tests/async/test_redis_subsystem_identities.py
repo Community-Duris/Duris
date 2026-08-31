@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Verify Redis credentials remain isolated and routed by subsystem."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
-WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="ascii")
-CONFIG = (ROOT / "src" / "redis_runtime_config.c").read_text(encoding="ascii")
-MAINTENANCE = (ROOT / "src" / "redis_maintenance.c").read_text(encoding="ascii")
-SHIP = (ROOT / "src" / "redis_ship_legacy.c").read_text(encoding="ascii")
+SOURCE = (SRC / "redis.c").read_text(encoding="ascii")
+WORLD = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
+CONFIG = (SRC / "redis_runtime_config.c").read_text(encoding="ascii")
+MAINTENANCE = (SRC / "redis_maintenance.c").read_text(encoding="ascii")
+SHIP = (SRC / "redis_ship_legacy.c").read_text(encoding="ascii")
 CLEAR = (ROOT / "scripts" / "clear-duris-redis-keys.sh").read_text(encoding="ascii")
 WRAPPER = (ROOT / "scripts" / "clear-redis.sh").read_text(encoding="ascii")
 

@@ -7,12 +7,12 @@
  * ***************************************************************************
  */
 
-#include "structs.h"
-#include "utils.h"
-#include "config.h"
-#include "objmisc.h"
-#include "ships.h"
-#include "spells.h"
+#include "core/structs.h"
+#include "core/utils.h"
+#include "core/config.h"
+#include "item/objmisc.h"
+#include "ships/ships.h"
+#include "magic/spells.h"
 
 /* new Ship Constants */
 const PortData ports[NUM_PORTS] = {

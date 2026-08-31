@@ -1,5 +1,6 @@
 """Runtime regression for logit() recreating missing parent directories."""
 
+from _paths import SRC
 import shlex
 import subprocess
 import tempfile
@@ -46,10 +47,10 @@ int main(int argc, char **argv)
             "-ffunction-sections",
             "-fdata-sections",
             "-I",
-            str(ROOT / "src"),
+            str(SRC),
             *mysql_includes,
             "-c",
-            str(ROOT / "src" / "utility.c"),
+            str(SRC / "utility.c"),
             "-o",
             str(utility_object),
         ],

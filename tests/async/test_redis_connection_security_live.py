@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import shutil
 import socket
 import subprocess
@@ -61,7 +62,7 @@ def main() -> None:
             raise SystemExit(f"{executable} is required")
 
     harness = r'''
-#include "redis_connection.h"
+#include "redis/redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
@@ -197,7 +198,7 @@ int main(int argc, char **argv)
             [
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
-                "-I", str(ROOT / "src"), str(ROOT / "src" / "redis_connection.c"),
+                "-I", str(SRC), str(SRC / "redis_connection.c"),
                 str(source), "-lhiredis", "-lhiredis_ssl", "-lssl", "-lcrypto",
                 "-pthread", "-o", str(binary),
             ],

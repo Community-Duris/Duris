@@ -19,15 +19,16 @@ produced these results:
   - No crash, segfault, or hang occurred in any scenario
 """
 
+from _paths import source
 import os
 import sys
 import re
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PERSISTENCE_QUEUE = os.path.join(REPO_ROOT, "src", "persistence_queue.c")
-SQL_POOL = os.path.join(REPO_ROOT, "src", "sql_pool.c")
-SQL_C = os.path.join(REPO_ROOT, "src", "sql.c")
-UTILITY_C = os.path.join(REPO_ROOT, "src", "utility.c")
+PERSISTENCE_QUEUE = str(source("persistence_queue.c"))
+SQL_POOL = str(source("sql_pool.c"))
+SQL_C = str(source("sql.c"))
+UTILITY_C = str(source("utility.c"))
 
 errors = []
 checks_passed = 0
@@ -94,7 +95,7 @@ else:
 
 # ── Test 5: Pwipe fencing gates exist ──
 sql_source = read_file(SQL_C)
-comm_source = read_file(os.path.join(REPO_ROOT, "src", "comm.c"))
+comm_source = read_file(str(source("comm.c")))
 if "_pwipe" in comm_source and "shutdownflag" in comm_source:
     checks_passed += 1
     print("Pwipe fencing gates present: ok")
@@ -150,7 +151,7 @@ else:
     errors.append("Fallback pwipe quarantine not found")
 
 # ── Test 10: COMMIT failure preserves transaction state ──
-sql_player_path = os.path.join(REPO_ROOT, "src", "sql_player.c")
+sql_player_path = str(source("sql_player.c"))
 if os.path.exists(sql_player_path):
     sp_source = read_file(sql_player_path)
     if "in_transaction" in sp_source and "COMMIT" in sp_source:

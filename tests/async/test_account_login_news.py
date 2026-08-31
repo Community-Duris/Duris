@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Regression contract for displaying news during account login."""
 
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ACCOUNT = (ROOT / "src/account.c").read_text(encoding="utf-8")
+ACCOUNT = (SRC / "account.c").read_text(encoding="utf-8")
 
 
 def function_body(source, signature):

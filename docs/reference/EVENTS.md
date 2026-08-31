@@ -6,15 +6,15 @@ game-loop context and incident-derived design constraints, see
 
 The implementation is split by responsibility:
 
-- `src/new_events.c` owns the timer wheel, scheduling, ordering, execution,
+- `src/world/new_events.c` owns the timer wheel, scheduling, ordering, execution,
   cancellation, overload recovery, diagnostics, and invariant checks.
-- `src/nevent_periodic.c` owns the process-local registry, uniqueness, cadence,
+- `src/world/nevent_periodic.c` owns the process-local registry, uniqueness, cadence,
   and health of recurring jobs.
-- `src/events.c` contains callbacks and callback-specific helpers such as
+- `src/world/events.c` contains callbacks and callback-specific helpers such as
   regeneration, command waits, room events, and zone resets. It is not a
   second scheduler.
-- `src/event_names.c` maps callback addresses to diagnostic names.
-- `src/events.h` contains only the regeneration selector and the current
+- `src/world/event_names.c` maps callback addresses to diagnostic names.
+- `src/world/events.h` contains only the regeneration selector and the current
   character/object event-list traversal helpers. The old numeric event-type
   scheduler no longer exists.
 

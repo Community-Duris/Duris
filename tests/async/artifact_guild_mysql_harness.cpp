@@ -1,5 +1,5 @@
-#include "artifact_guild_command.h"
-#include "critical_command_repository.h"
+#include "guild/artifact_guild_command.h"
+#include "persistence/critical_command_repository.h"
 
 #include <cassert>
 #include <cstdio>

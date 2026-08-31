@@ -45,10 +45,10 @@ for path in tracked_files():
     if any(marker in data for marker in private_key_markers):
         failures.append(f"{relative} contains a tracked private key")
 
-sql_header = (ROOT / "src/sql.h").read_text()
+sql_header = (ROOT / "src/sql/sql.h").read_text()
 for token in ("DB_HOST_DEFAULT", "DB_USER_DEFAULT", "DB_PASSWD_DEFAULT", "DB_NAME_DEFAULT"):
     if token in sql_header:
-        failures.append(f"src/sql.h restores compiled database default {token}")
+        failures.append(f"src/sql/sql.h restores compiled database default {token}")
 
 production_import = (ROOT / "scripts/import_help_to_prod.sh").read_text()
 for token in ("${DB_USER:-", "${DB_PASSWD:-"):
@@ -65,7 +65,7 @@ epic_payout_migration = (ROOT / "migrations/epic-zone-payout.sql").read_text()
 if re.search(r"mysql\s+-uduris\s+-pduris", epic_payout_migration):
     failures.append("epic payout migration documents public database credentials")
 
-chest_sources = (ROOT / "src/sql_player.c").read_text() + (ROOT / "src/storage_lockers.c").read_text()
+chest_sources = (ROOT / "src/sql/sql_player.c").read_text() + (ROOT / "src/item/storage_lockers.c").read_text()
 if re.search(r"password_hash\s*=\s*SHA2|password_hash[^\n]+SHA2", chest_sources):
     failures.append("private chest SQL restores unsalted SHA2 password handling")
 

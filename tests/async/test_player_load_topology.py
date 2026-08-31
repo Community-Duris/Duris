@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regression coverage for self-healing saved item placement."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "player_load_repository.h"
+#include "player/player_load_repository.h"
 
 #include <cassert>
 #include <vector>
@@ -132,7 +133,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-topology-") as temp_d
             "-Werror",
             "-Isrc",
             str(source),
-            "src/player_load_topology.c",
+            rel("player_load_topology.c"),
             "-o",
             str(binary),
         ],
@@ -141,9 +142,9 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-topology-") as temp_d
     )
     subprocess.run([str(binary)], check=True, timeout=20)
 
-repository = (ROOT / "src/player_load_repository.c").read_text()
-flatfile = (ROOT / "src/flatfile_player_repository.c").read_text()
-materialize = (ROOT / "src/player_load_materialize.c").read_text()
+repository = (SRC / "player_load_repository.c").read_text()
+flatfile = (SRC / "flatfile_player_repository.c").read_text()
+materialize = (SRC / "player_load_materialize.c").read_text()
 for source in (repository, flatfile):
     assert "player_load_reconcile_item_topology" in source
 assert "outcome=topology_repaired" in materialize

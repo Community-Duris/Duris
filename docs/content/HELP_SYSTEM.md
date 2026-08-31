@@ -5,9 +5,9 @@ runtime serving.
 
 ## Runtime path (what players see)
 
-The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
+The `help` command (`do_help`, `src/cmd/actinf.c:6527`) does two things:
 
-1. **`wiki_help()`** (`src/wikihelp.c`) - in database-backed mode, queries the
+1. **`wiki_help()`** (`src/cmd/wikihelp.c`) - in database-backed mode, queries the
    `pages` table on the main MySQL connection:
 
    ```sql
@@ -15,7 +15,7 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
      ORDER BY title ASC LIMIT <N>
    ```
 
-   (`WIKIHELP_RESULTS_LIMIT` is 100, `src/wikihelp.h`.) One match renders
+   (`WIKIHELP_RESULTS_LIMIT` is 100, `src/cmd/wikihelp.h`.) One match renders
    the full entry; multiple matches render the exact match plus "see also"
    links. User input is escaped (`escape_str()` wraps
    `mysql_real_escape_string`). Misses are logged to `lib/etc/help`
@@ -24,7 +24,7 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
    into ANSI-colored output. Requests are rate-limited by the
    `help.cooldown.secs` property (default 2s).
 
-   Two page features are applied at render time (`src/wikihelp.c`,
+   Two page features are applied at render time (`src/cmd/wikihelp.c`,
    `wiki_help_single()`):
 
    - **Redirects**: a row with `category_id` 1 whose text starts with
@@ -38,14 +38,14 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
 
 2. **`attrib_help()`** - appends per-command attributes (stat usage)
     loaded at boot from `docs/lib/information/command_attributes.txt`
-    (`src/wikihelp.c`, boot loader). If the file is missing, only a debug log
+    (`src/cmd/wikihelp.c`, boot loader). If the file is missing, only a debug log
     line notes it. Coverage is complete: every command name registered in
-    `src/interp.c` has an entry, plus legacy entries keyed by ability names
+    `src/cmd/interp.c` has an entry, plus legacy entries keyed by ability names
     that are not commands (`apply poison`, `parry`, ...) which serve
     `help <ability>` lookups. Each entry lists the `GET_C_*` stats its
     handler (or skill-gated helper chain) actually uses; commands whose
     handlers consult no stats carry just the header line. The loader holds
-    up to `CMD_ATTRIB_MAX` entries (1024, `src/wikihelp.h`) and bounds-checks
+    up to `CMD_ATTRIB_MAX` entries (1024, `src/cmd/wikihelp.h`) and bounds-checks
     the count, logging and skipping anything beyond the cap.
 
 Without MySQL (`-D__NO_MYSQL__` builds), the same command loads and caches the
@@ -85,7 +85,7 @@ lib/information/*          help/                      database
   and `pages` (help, help.1/2, guild/ship/kingdom helps, faq, rules, info,
   credits, wizlist, hints).
 - `hints.txt` now lives at `docs/lib/information/hints.txt`; the script reads
-  it from there (the login screen streams it via `src/nanny.c`).
+  it from there (the login screen streams it via `src/account/nanny.c`).
 - Imports the parsed help entries from `help/duris_help_parsed.hlp` (~500+
   topics); the help index is parsed inline by an embedded Python heredoc in
   the script (~1500 entries as of the immortal-command and full
@@ -99,8 +99,8 @@ lib/information/*          help/                      database
   `PURGE (Spell)` stores page title `PURGE`; quoted titles keep everything
   inside the quotes - `"ECHO (IMMORTAL)"` stores the full string. Use
   quoting whenever you need parentheses in a page title.
-- motd/news/wizmotd are cached into memory at boot (`src/db.c`) and re-read
-  only by the immortal `page` command (level 60+, `src/actcomm.c`). After
+- motd/news/wizmotd are cached into memory at boot (`src/world/db.c`) and re-read
+  only by the immortal `page` command (level 60+, `src/cmd/actcomm.c`). After
   importing new copies, run `page` or restart; otherwise players keep
   seeing the old text.
 - Content is hex-encoded into `DELETE`+`INSERT` SQL so arbitrary text survives;

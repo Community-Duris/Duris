@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 from contract_text import find, index
 
-text = Path(__file__).resolve().parents[2].joinpath('src/ships/ship_base.c').read_text()
+text = (SRC / "ships/ship_base.c").read_text()
 
 flush_fn = find(text, 'void flush_pending_ship_saves(void)')
 loop = find(text, 'for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))', flush_fn)

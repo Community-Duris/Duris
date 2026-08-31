@@ -1,5 +1,5 @@
-#include "critical_command_repository.h"
-#include "epic_command.h"
+#include "persistence/critical_command_repository.h"
+#include "world/epic_command.h"
 
 #include <cassert>
 #include <cerrno>

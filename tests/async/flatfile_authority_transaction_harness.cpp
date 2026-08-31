@@ -1,5 +1,5 @@
-#include "flatfile_authority_transaction.h"
-#include "flatfile_store.h"
+#include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_store.h"
 
 #include <array>
 #include <cstdint>

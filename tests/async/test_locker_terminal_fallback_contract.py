@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fail-closed contracts for every terminal locker sync fallback path."""
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/locker_async.c").read_text()
+source = (SRC / "locker_async.c").read_text()
 
 helper_start = source.index("static int locker_sync_fallback_durable")
 helper_end = source.index("\n}\n", helper_start) + 3

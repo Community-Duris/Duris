@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -22,36 +23,36 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_repository_harness.cpp",
-            "src/flatfile_player_repository.c",
-            "src/player_load_topology.c",
-            "src/flatfile_identity_repository.c",
-            "src/flatfile_item_repository.c",
-            "src/flatfile_corpse_repository.c",
-            "src/flatfile_locker_repository.c",
-            "src/flatfile_world_item_repository.c",
-            "src/flatfile_artifact_repository.c",
-            "src/flatfile_shop_trade_repository.c",
-            "src/flatfile_shop_trade_materialization.c",
-            "src/flatfile_shopkeeper_repository.c",
-            "src/flatfile_auction_repository.c",
-            "src/flatfile_boon_repository.c",
-            "src/flatfile_player_domain_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/player_snapshot_codec.c",
-            "src/flatfile_store.c",
-            "src/item_transfer_command.c",
-            "src/corpse_lifecycle_command.c",
-            "src/shop_trade_command.c",
-            "src/critical_command.c",
-            "src/epic_command.c",
-            "src/currency_command.c",
-            "src/auction_command.c",
-            "src/combat_outcome_command.c",
-            "src/boon_reward_command.c",
-            "src/boon_shop_command.c",
-            "src/persistence_observability.c",
-            "src/persistence_mode.c",
-            "src/flatfile_ip_activity_repository.c",
+            rel("flatfile_player_repository.c"),
+            rel("player_load_topology.c"),
+            rel("flatfile_identity_repository.c"),
+            rel("flatfile_item_repository.c"),
+            rel("flatfile_corpse_repository.c"),
+            rel("flatfile_locker_repository.c"),
+            rel("flatfile_world_item_repository.c"),
+            rel("flatfile_artifact_repository.c"),
+            rel("flatfile_shop_trade_repository.c"),
+            rel("flatfile_shop_trade_materialization.c"),
+            rel("flatfile_shopkeeper_repository.c"),
+            rel("flatfile_auction_repository.c"),
+            rel("flatfile_boon_repository.c"),
+            rel("flatfile_player_domain_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("player_snapshot_codec.c"),
+            rel("flatfile_store.c"),
+            rel("item_transfer_command.c"),
+            rel("corpse_lifecycle_command.c"),
+            rel("shop_trade_command.c"),
+            rel("critical_command.c"),
+            rel("epic_command.c"),
+            rel("currency_command.c"),
+            rel("auction_command.c"),
+            rel("combat_outcome_command.c"),
+            rel("boon_reward_command.c"),
+            rel("boon_shop_command.c"),
+            rel("persistence_observability.c"),
+            rel("persistence_mode.c"),
+            rel("flatfile_ip_activity_repository.c"),
             "-lcrypto",
             "-pthread",
             "-o",
@@ -76,9 +77,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
 
-    domain_source = (ROOT / "src/flatfile_player_domain_repository.c").read_text()
-    player_source = (ROOT / "src/flatfile_player_repository.c").read_text()
-    materialize_source = (ROOT / "src/player_load_materialize.c").read_text()
+    domain_source = (SRC / "flatfile_player_domain_repository.c").read_text()
+    player_source = (SRC / "flatfile_player_repository.c").read_text()
+    materialize_source = (SRC / "player_load_materialize.c").read_text()
     for token in (
         "constexpr uint32_t domain_format_version = 3",
         "base_stat_revision",

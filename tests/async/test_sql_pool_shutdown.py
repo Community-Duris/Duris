@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/sql_pool.c').read_text()
+text = (SRC / "sql_pool.c").read_text()
 acquire_start = text.index('MYSQL *sql_pool_acquire')
 release_start = text.index('void sql_pool_release', acquire_start)
 acquire = text[acquire_start:release_start]

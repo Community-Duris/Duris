@@ -1,8 +1,9 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/enhance.c").read_text()
+source = (SRC / "enhance.c").read_text()
 config = (ROOT / "lib/enhance.cfg").read_text()
 
 # Administrators can repeat a numeric zone or vnum line to exclude any number

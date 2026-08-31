@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Source-contract checks for transaction ownership and commit ordering fixes."""
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-locker = (root / "src/storage_lockers.c").read_text()
-auction = (root / "src/auction_houses.c").read_text()
-auction_repository = (root / "src/auction_repository.c").read_text()
-critical_repository = (root / "src/critical_command_repository.c").read_text()
-auction_transaction = (root / "src/auction_transaction.c").read_text()
-copyover = (root / "src/copyover.c").read_text()
-ships = (root / "src/ships/ship_base.c").read_text()
+locker = (SRC / "storage_lockers.c").read_text()
+auction = (SRC / "auction_houses.c").read_text()
+auction_repository = (SRC / "auction_repository.c").read_text()
+critical_repository = (SRC / "critical_command_repository.c").read_text()
+auction_transaction = (SRC / "auction_transaction.c").read_text()
+copyover = (SRC / "copyover.c").read_text()
+ships = (SRC / "ships/ship_base.c").read_text()
 
 # LockerSave moves inventory via LockerToPFile then hands public SQL to
 # the async worker. Sync SQL txn ownership is no longer in this function.

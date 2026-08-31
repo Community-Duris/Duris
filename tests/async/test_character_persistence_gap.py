@@ -10,19 +10,20 @@ Covers docs/ongoing-projects/ongoing/character-creation-persistence-gap.md:
   8. enter_game converts fallback room vnums before indexing the mini world
 """
 
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ACCOUNT = (ROOT / "src/account.c").read_text()
-DEFINES = (ROOT / "src/defines.h").read_text()
-FIGHT = (ROOT / "src/fight.c").read_text()
-FILES = (ROOT / "src/files.c").read_text()
-LOAD_MATERIALIZE = (ROOT / "src/player_load_materialize.c").read_text()
-LOAD_REPOSITORY = (ROOT / "src/player_load_repository.c").read_text()
-LOAD_REPOSITORY_H = (ROOT / "src/player_load_repository.h").read_text()
-NANNY = (ROOT / "src/nanny.c").read_text()
-SAVE_PIPELINE = (ROOT / "src/player_save_pipeline.c").read_text()
-SQL_PLAYER = (ROOT / "src/sql_player.c").read_text()
+ACCOUNT = (SRC / "account.c").read_text()
+DEFINES = (SRC / "defines.h").read_text()
+FIGHT = (SRC / "fight.c").read_text()
+FILES = (SRC / "files.c").read_text()
+LOAD_MATERIALIZE = (SRC / "player_load_materialize.c").read_text()
+LOAD_REPOSITORY = (SRC / "player_load_repository.c").read_text()
+LOAD_REPOSITORY_H = (SRC / "player_load_repository.h").read_text()
+NANNY = (SRC / "nanny.c").read_text()
+SAVE_PIPELINE = (SRC / "player_save_pipeline.c").read_text()
+SQL_PLAYER = (SRC / "sql_player.c").read_text()
 MIGRATION = (
     ROOT / "migrations/immutable/0002_player_item_metadata_uniqueness.sql"
 ).read_text()

@@ -1,0 +1,134 @@
+#ifndef __EPIC_H__
+#define __EPIC_H__
+
+#include <string>
+#include <vector>
+#include "world/zone_touch_command.h"
+using namespace std;
+
+struct critical_operation_id;
+
+#define EPIC_SMALL_STONE 358
+#define EPIC_LARGE_STONE 359
+#define EPIC_MONOLITH 360
+
+#define EPIC_ZONE_TYPE_NONE 0
+#define EPIC_ZONE_TYPE_SMALL 1
+#define EPIC_ZONE_TYPE_LARGE 2
+#define EPIC_ZONE_TYPE_MONOLITH 3
+
+#define EPIC_ZONE_ALIGNMENT_MAX 5
+#define EPIC_ZONE_ALIGNMENT_MIN -5
+
+#define EPIC_REWARD_ITEM 1
+#define EPIC_REWARD_SKILL 2
+#define EPIC_REWARD_LEVEL 3
+#define EPIC_MAX_PRESTIGE 12
+
+struct epic_trophy_data
+{
+	epic_trophy_data(int _z, int _c)
+		: zone_number(_z)
+		, count(_c)
+	{
+	}
+	int zone_number;
+	int count;
+};
+
+struct epic_zone_data
+{
+	epic_zone_data(int _number, string _name, float _freq, int _alignment, long _last_touch = 0)
+		: number(_number)
+		, name(_name)
+		, freq(_freq)
+		, alignment(_alignment)
+		, last_touch(_last_touch)
+	{
+	}
+	int number;
+	string name;
+	float freq;
+	int alignment;
+	long last_touch;
+	int displayed_alignment() const;
+};
+
+struct epic_zone_completion
+{
+	epic_zone_completion(int _number, int _done_at, int _delta)
+		: number(_number)
+		, done_at(_done_at)
+		, delta(_delta)
+	{
+	}
+	int number;
+	int done_at;
+	int delta;
+};
+
+void create_epic_skills();
+void epic_initialization();
+void do_epic(P_char ch, char *arg, int cmd);
+void do_epic_trophy(P_char ch, char *arg, int cmd);
+void do_epic_zones(P_char ch, char *arg, int cmd);
+void do_epic_share(P_char ch, char *arg, int cmd);
+vector<string> get_epic_players(int racewar);
+vector<epic_trophy_data> get_epic_zone_trophy(P_char ch);
+int modify_by_epic_trophy(P_char ch, int amount, int zone_number);
+void gain_epic(P_char, int type, int data, int amount);
+void group_gain_epic(P_char, int type, int data, int amount);
+void epic_frag(P_char, int victim_pid, int amount);
+int epic_calculate_pvp_award(P_char ch, int amount);
+void epic_publish_pvp_award(P_char ch, int amount);
+const char *epic_prestige(P_char);
+void init_guild_frags();
+void epic_feed_artifacts(P_char ch, int epics, int epic_type);
+void epic_publish_zone_touch(const zone_touch_result &result);
+void do_epic_reset(P_char ch, char *arg, int cmd);
+void do_epic_reset_norefund(P_char ch, char *arg, int cmd);
+void do_infuse(P_char ch, char *arg, int cmd);
+struct affected_type *get_epic_task(P_char ch);
+bool has_epic_task(P_char ch);
+
+int epic_stone(P_obj obj, P_char ch, int cmd, char *arg);
+void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value);
+void epic_free_level(P_char ch);
+void epic_stone_level_char(P_obj obj, P_char ch);
+void epic_stone_set_affect(P_char ch);
+int epic_stone_payout(P_obj obj, P_char ch);
+void epic_stone_absorb(P_obj obj);
+
+void update_epic_zone_alignment(int zone_number, int delta);
+float get_epic_zone_alignment_mod(int zone_number, ubyte racewar);
+void update_epic_zone_mods();
+void update_epic_zone_frequency(int zone_number);
+vector<epic_zone_data> get_epic_zones();
+char *generate_epic_zones_output(void);
+float get_epic_zone_frequency_mod(int zone_number);
+void epic_zone_erase_touch(int);
+bool epic_zone_done_now(int zone_number);
+bool epic_zone_done(int zone_number);
+void epic_zone_balance();
+size_t epic_zone_completion_snapshot(int64_t *values, size_t capacity);
+int zone2saveable(int zone_index);
+int saveable2zone(int saved_zone);
+void epic_choose_new_epic_task(P_char ch);
+
+#define GET_EPIC_POINTS(ch) (IS_NPC(ch) ? 0 : ch->only.pc->epics)
+
+#define EPIC_ZONE 0 // Touching epic stones.
+#define EPIC_PVP 1 // PvP encounters.
+#define EPIC_ELITE_MOB 2 // Killing Elite mobs of high lvls.
+#define EPIC_QUEST 3 // Bartender quests give epics at high lvls.
+#define EPIC_RANDOM_ZONE 4 // Completing random zones.
+#define EPIC_NEXUS_STONE 5 // Touching nexus.
+#define EPIC_SHIP_PVP 6 // Ship pvp.
+#define EPIC_BOON 7 // from boons.
+#define EPIC_BOTTLE 8 // Epic bottle bought in store for transferring epics.
+#define EPIC_STRAHDME 9 // You strahd me at hello achievement.
+#define EPIC_RANDOMMOB 10 // Single epic point randomly gained when killing mobs.
+
+#define SPILL_BLOOD 10000000
+
+#endif

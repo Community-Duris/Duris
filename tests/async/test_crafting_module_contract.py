@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Modern Craft and Forge must be dispatched by the dedicated module."""
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-header = (root / "src/crafting.h").read_text()
-source = (root / "src/crafting.c").read_text()
-craft = (root / "src/actnew.c").read_text()
-forge = (root / "src/tradeskill.c").read_text()
+header = (SRC / "crafting.h").read_text()
+source = (SRC / "crafting.c").read_text()
+craft = (SRC / "actnew.c").read_text()
+forge = (SRC / "tradeskill.c").read_text()
 config = (root / "lib/crafting.cfg").read_text()
 
 assert "crafting_build_plan" in source

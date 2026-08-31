@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise isolated, scoped pwipe cleanup against a disposable Redis server."""
 
+from _paths import rel
 from pathlib import Path
 import shutil
 import socket
@@ -12,9 +13,9 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "redis_connection.h"
-#include "redis_maintenance.h"
-#include "redis_command_observability.h"
+#include "redis/redis_connection.h"
+#include "redis/redis_maintenance.h"
+#include "redis/redis_command_observability.h"
 
 #include <hiredis/hiredis.h>
 
@@ -153,9 +154,9 @@ with tempfile.TemporaryDirectory(prefix="duris-redis-maintenance-") as temp_dir:
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-Isrc",
-            str(source), "src/redis_maintenance.c", "src/redis_ship_legacy.c",
-            "src/redis_connection.c", "src/redis_command_observability.c",
-            "src/redis_namespace.c", "-lhiredis", "-lhiredis_ssl", "-lssl",
+            str(source), rel("redis_maintenance.c"), rel("redis_ship_legacy.c"),
+            rel("redis_connection.c"), rel("redis_command_observability.c"),
+            rel("redis_namespace.c"), "-lhiredis", "-lhiredis_ssl", "-lssl",
             "-lcrypto", "-pthread", "-o", str(binary),
         ],
         cwd=ROOT,

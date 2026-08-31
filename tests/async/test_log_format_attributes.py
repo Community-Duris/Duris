@@ -7,13 +7,14 @@ specifiers and player-controlled format strings compile silently under
 -Wformat=2 -Werror. These annotations are what makes that class of defect
 a build failure, so they are contractual.
 """
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-prototypes = (ROOT / "src/prototypes.h").read_text()
-utility = (ROOT / "src/utility.h").read_text()
-sql = (ROOT / "src/sql.h").read_text()
+prototypes = (SRC / "prototypes.h").read_text()
+utility = (SRC / "utility.h").read_text()
+sql = (SRC / "sql.h").read_text()
 
 # (declaration, format-index, first-vararg-index)
 EXPECTED = [

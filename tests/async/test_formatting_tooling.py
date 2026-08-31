@@ -7,6 +7,7 @@ it encodes does not silently drift, and that the guidance in AGENTS.md and
 README.md still matches what the tooling actually does.
 """
 
+from _paths import SRC, rel
 import os
 import re
 import shutil
@@ -65,7 +66,7 @@ for key, value in (
 # src/*.c is compiled as C++20 by src/Makefile; the formatter must parse it the
 # same way the compiler does.
 assert "Standard: c++20" in config, ".clang-format no longer targets c++20"
-makefile = (ROOT / "src/Makefile").read_text()
+makefile = (SRC / "Makefile").read_text()
 assert "-std=c++20" in makefile, "src/Makefile no longer builds C++20 -- resync Standard"
 
 # The keys that made the file unloadable must never come back.
@@ -101,7 +102,7 @@ with tempfile.TemporaryDirectory() as temp_dir:
     fake_bin.mkdir()
     shutil.copy2(SCRIPT, fixture / "scripts/format.sh")
     (fixture / ".clang-format").write_text("---\n")
-    probe = fixture / "src/probe.c"
+    probe = fixture / rel("probe.c")
     probe.write_text("stage0\n")
 
     fake_git = fake_bin / "git"
@@ -275,7 +276,7 @@ if clang_format:
 
     # This fence is deliberate and must stay: the format string makes
     # clang-format oscillate instead of reaching a fixpoint.
-    actnew = (ROOT / "src/actnew.c").read_text()
+    actnew = (SRC / "actnew.c").read_text()
     assert "// clang-format off" in actnew, (
         "src/actnew.c lost the fence around do_vote()'s fprintf; without it "
         "clang-format never reaches a fixpoint"
@@ -284,8 +285,8 @@ if clang_format:
     import glob as _glob
 
     stranded = []
-    for path in _glob.glob(str(ROOT / "src/**/*.h"), recursive=True) + _glob.glob(
-        str(ROOT / "src/**/*.c"), recursive=True
+    for path in _glob.glob(str(SRC / "**/*.h"), recursive=True) + _glob.glob(
+        str(SRC / "**/*.c"), recursive=True
     ):
         lines = open(path, errors="replace").read().split("\n")
         for i, line in enumerate(lines[:-1]):

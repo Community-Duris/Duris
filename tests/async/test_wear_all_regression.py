@@ -12,6 +12,7 @@ Verifies:
 8. OBJ_VNUM and GET_OBJ_PROC macros in src/utils.h guard obj->R_num >= 0.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
@@ -19,12 +20,12 @@ from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 
-affects = (ROOT / "src" / "affects.c").read_text(encoding="utf-8", errors="replace")
-structs = (ROOT / "src" / "structs.h").read_text(encoding="utf-8", errors="replace")
-db = (ROOT / "src" / "db.c").read_text(encoding="utf-8", errors="replace")
-actobj = (ROOT / "src" / "actobj.c").read_text(encoding="utf-8", errors="replace")
-actinf = (ROOT / "src" / "actinf.c").read_text(encoding="utf-8", errors="replace")
-utils = (ROOT / "src" / "utils.h").read_text(encoding="utf-8", errors="replace")
+affects = (SRC / "affects.c").read_text(encoding="utf-8", errors="replace")
+structs = (SRC / "structs.h").read_text(encoding="utf-8", errors="replace")
+db = (SRC / "db.c").read_text(encoding="utf-8", errors="replace")
+actobj = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
+actinf = (SRC / "actinf.c").read_text(encoding="utf-8", errors="replace")
+utils = (SRC / "utils.h").read_text(encoding="utf-8", errors="replace")
 
 checks = []
 

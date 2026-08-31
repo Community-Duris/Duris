@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Typed nevent payload, stable identity, and mob-hunt migration regressions."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
@@ -8,10 +9,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 OWNED_PAYLOAD_HARNESS = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 #include <cstdlib>
 #include <vector>
@@ -96,7 +95,7 @@ int main()
 '''
 
 IDENTITY_HARNESS = r'''
-#include "character_identity.c"
+#include "account/character_identity.c"
 
 #include <cstdarg>
 #include <cstdlib>
@@ -138,7 +137,7 @@ int main()
 '''
 
 RAW_TRIVIAL_SOURCE = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 static void callback(P_char, P_char, P_obj, void *)
 {
@@ -152,7 +151,7 @@ void schedule_trivial()
 '''
 
 RAW_NONTRIVIAL_SOURCE = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 static void callback(P_char, P_char, P_obj, void *)
 {

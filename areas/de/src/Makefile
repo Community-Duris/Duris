@@ -15,7 +15,7 @@ OPTS     = -O2
 CXX_STANDARD = -std=c++20
 CCFLAGS  = $(CXX_STANDARD) -D__UNIX__ -Wno-deprecated -D_DE_
 CFLAGS   = $(CXX_STANDARD) -D__UNIX__ -D_DE_
-INCLUDES = -I.
+INCLUDES = -I. -I../../../src
 LIBS     = -lncurses -lstdc++
 
 # files that would be compiled as dynamic libs if USE_SHARED was defined

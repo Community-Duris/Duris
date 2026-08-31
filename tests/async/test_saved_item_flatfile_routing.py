@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Source contracts for restored saved-world-item routing."""
 
+from _paths import SRC
 from pathlib import Path
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 class SavedItemFlatfileRoutingTests(unittest.TestCase):
     def test_historical_entry_points_do_not_reach_sql_in_flat_primary(self):
         files = (SRC / "files.c").read_text()

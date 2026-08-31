@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Runtime contract for the boot-time Hardcore configuration loader."""
 
+from _paths import SRC
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "src/hardcore_config.c"
-HEADER_DIR = ROOT / "src"
+SOURCE = SRC / "hardcore_config.c"
+HEADER_DIR = SRC
 CONFIG = ROOT / "lib/hardcore.cfg"
 
 PROBE = r'''
 #include <stdio.h>
-#include "hardcore_config.h"
+#include "world/hardcore_config.h"
 
 void logit(const char *file, const char *format, ...)
 {

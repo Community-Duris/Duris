@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-QUEUE = (ROOT / "src/persistence_queue.c").read_text()
+QUEUE = (SRC / "persistence_queue.c").read_text()
 
 workers = (
     "persistence_item_event_worker_main",

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Contracts for player-corpse SQL identity reconstruction."""
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-sql_player = (ROOT / "src/sql_player.c").read_text()
+sql_player = (SRC / "sql_player.c").read_text()
 migration = (ROOT / "migrations/corpse_persistence_state.sql").read_text()
 runner = (ROOT / "migrations/run_migration.sh").read_text()
 bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()

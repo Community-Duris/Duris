@@ -7,13 +7,14 @@ rather than tidying code.  They are repaired now; these contracts keep them
 repaired.  See docs/guides/BUILDING.md ("Warning profile") for the compiler policy the
 cleanup established, and docs/reference/CODEBASE.md for the conventions it enforces.
 """
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 
 
 def src(name):
-    return (root / "src" / name).read_text()
+    return (SRC / name).read_text()
 
 
 actoth = src("actoth.c")

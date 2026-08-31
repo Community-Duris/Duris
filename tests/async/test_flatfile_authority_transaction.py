@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -21,8 +22,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-authority-transaction-") as 
             "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "tests/async/flatfile_authority_transaction_harness.cpp",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",

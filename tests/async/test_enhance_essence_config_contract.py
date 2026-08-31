@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Contract for configurable NPC death essence drops."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
-enhance = (ROOT / "src/enhance.c").read_text()
+enhance = (SRC / "enhance.c").read_text()
 config = (ROOT / "lib/enhance.cfg").read_text()
 
 for key in (

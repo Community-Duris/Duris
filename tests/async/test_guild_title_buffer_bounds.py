@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regression contract for Guild's fixed-size default-title buffers."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 root = Path(__file__).resolve().parents[2]
-source = (root / "src" / "assocs.c").read_text()
+source = (SRC / "assocs.c").read_text()
 
 constructors_start = source.index("Guild::Guild(char *_name")
 constructors_end = source.index("\nvoid Guild::initialize()", constructors_start)

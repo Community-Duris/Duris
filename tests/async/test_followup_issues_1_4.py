@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Focused source regressions for locker, auction, and ship follow-up fixes."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains
 
 root = Path(__file__).resolve().parents[2]
-locker = (root / "src/storage_lockers.c").read_text()
-auction = (root / "src/auction_houses.c").read_text()
-auction_repository = (root / "src/auction_repository.c").read_text()
-critical_repository = (root / "src/critical_command_repository.c").read_text()
-ship = (root / "src/ships/ship_base.c").read_text()
-handler = (root / "src/handler.c").read_text()
+locker = (SRC / "storage_lockers.c").read_text()
+auction = (SRC / "auction_houses.c").read_text()
+auction_repository = (SRC / "auction_repository.c").read_text()
+critical_repository = (SRC / "critical_command_repository.c").read_text()
+ship = (SRC / "ships/ship_base.c").read_text()
+handler = (SRC / "handler.c").read_text()
 
 # Locker chest strings must be assembled within their fixed-size buffers.
 chest_start = locker.index("LockerChest::CreateChestObject")

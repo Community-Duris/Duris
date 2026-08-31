@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/actobj.c').read_text()
+text = (SRC / "actobj.c").read_text()
 if_guard = text.find('if (!do_save_silent(ch, 1))')
 log = text.find('Failed to save %s after level mushroom')
 extract = text.find('extract_obj(temp);', if_guard)

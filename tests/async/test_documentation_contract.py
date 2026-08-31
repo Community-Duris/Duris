@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import re
 import unittest
 from pathlib import Path
@@ -193,7 +194,7 @@ class DocumentationContractTest(unittest.TestCase):
     def test_configuration_names_match_runtime_surface(self) -> None:
         configuration = self.text[ROOT / "docs/operations/CONFIGURATION.md"]
         example = (ROOT / ".env.example").read_text()
-        runtime = (ROOT / "src/sql.c").read_text() + (ROOT / "src/comm.c").read_text()
+        runtime = (SRC / "sql.c").read_text() + (SRC / "comm.c").read_text()
         required = (
             "ENVIRONMENT",
             "DB_HOST",

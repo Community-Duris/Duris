@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/alliances.c').read_text()
+text = (SRC / "alliances.c").read_text()
 
 start = text.find('void save_alliances()')
 if start == -1:

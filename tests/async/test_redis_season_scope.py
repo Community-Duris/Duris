@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Every active Redis surface is bound to one boot-captured SQL season epoch."""
 
+from _paths import SRC
 from pathlib import Path
 import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REGISTRY = (ROOT / "src" / "redis_key_registry.def").read_text(encoding="ascii")
-REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
-WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="ascii")
-MAINTENANCE = (ROOT / "src" / "redis_maintenance.c").read_text(encoding="ascii")
-REPORT = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
-PRESENCE = (ROOT / "src" / "redis_presence_worker.c").read_text(encoding="ascii")
-PRESENCE_HEADER = (ROOT / "src" / "redis_presence_worker.h").read_text(encoding="ascii")
-DONATION = (ROOT / "src" / "redis_donation_worker.c").read_text(encoding="ascii")
-DONATION_HEADER = (ROOT / "src" / "redis_donation_worker.h").read_text(encoding="ascii")
-NAMESPACE = (ROOT / "src" / "redis_namespace.c").read_text(encoding="ascii")
+REGISTRY = (SRC / "redis_key_registry.def").read_text(encoding="ascii")
+REDIS = (SRC / "redis.c").read_text(encoding="ascii")
+WORLD = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
+MAINTENANCE = (SRC / "redis_maintenance.c").read_text(encoding="ascii")
+REPORT = (SRC / "redis_report_cache.c").read_text(encoding="ascii")
+PRESENCE = (SRC / "redis_presence_worker.c").read_text(encoding="ascii")
+PRESENCE_HEADER = (SRC / "redis_presence_worker.h").read_text(encoding="ascii")
+DONATION = (SRC / "redis_donation_worker.c").read_text(encoding="ascii")
+DONATION_HEADER = (SRC / "redis_donation_worker.h").read_text(encoding="ascii")
+NAMESPACE = (SRC / "redis_namespace.c").read_text(encoding="ascii")
 
 surfaces = re.findall(
     r'^REDIS_SURFACE\(([A-Z0-9_]+), "([^"]+)", "([^"]+)", '

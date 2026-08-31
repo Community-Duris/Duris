@@ -5,12 +5,13 @@ Both helpers below used to write through `struct damage_messages`, whose members
 now hold immutable text.  Each formatted with MAX_STRING_LENGTH (65536) into a
 caller buffer that was much smaller, so each takes the caller's real size now.
 """
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-fight = (root / "src/fight.c").read_text()
-reavers = (root / "src/reavers.c").read_text()
-structs = (root / "src/structs.h").read_text()
+fight = (SRC / "fight.c").read_text()
+reavers = (SRC / "reavers.c").read_text()
+structs = (SRC / "structs.h").read_text()
 
 failures = []
 

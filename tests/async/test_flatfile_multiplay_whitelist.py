@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -25,8 +26,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-multiplay-whitelist-") a
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_multiplay_whitelist_harness.cpp",
-            "src/multiplay_whitelist.c",
-            "src/flatfile_store.c",
+            rel("multiplay_whitelist.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-o",

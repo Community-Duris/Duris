@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Typed session audit and fail-closed legacy raw queue retirement contracts."""
 
+from _paths import SRC
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,10 +9,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
-#include "session_audit_command.h"
+#include "account/session_audit_command.h"
 #include <cassert>
 
 int main()

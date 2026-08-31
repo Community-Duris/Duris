@@ -1,3 +1,4 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -11,7 +12,7 @@ for path in paths:
     assert "dedupe_key" in text
 authoritative = (ROOT / "migrations/run_migration.sh").read_text()
 assert '"$SCRIPT_DIR/persistence_contract.sql"' in authoritative
-sql = (ROOT / "src/sql.c").read_text()
+sql = (SRC / "sql.c").read_text()
 assert "ON DUPLICATE KEY UPDATE id=id" in sql
 assert "dedupe_key" in sql
 print("scalar persistence idempotency checks passed")

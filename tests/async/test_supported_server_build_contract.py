@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Keep the documented server build matrix aligned with the maintained target."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-makefile = (ROOT / "src" / "Makefile").read_text(encoding="ascii")
+makefile = (SRC / "Makefile").read_text(encoding="ascii")
 building = (ROOT / "docs" / "guides" / "BUILDING.md").read_text(encoding="ascii")
 help_system = (ROOT / "docs" / "content" / "HELP_SYSTEM.md").read_text(encoding="ascii")
 building_words = " ".join(building.split())

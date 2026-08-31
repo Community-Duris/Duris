@@ -1,7 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 LIB = ROOT / "lib"
 
 config = (LIB / "creation_availability.cfg").read_text()

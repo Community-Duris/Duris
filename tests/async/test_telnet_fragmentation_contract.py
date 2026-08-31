@@ -1,9 +1,10 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-comm = (ROOT / "src" / "comm.c").read_text(encoding="utf-8", errors="replace")
-mccp = (ROOT / "src" / "mccp.c").read_text(encoding="utf-8", errors="replace")
-nanny = (ROOT / "src" / "nanny.c").read_text(encoding="utf-8", errors="replace")
+comm = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
+mccp = (SRC / "mccp.c").read_text(encoding="utf-8", errors="replace")
+nanny = (SRC / "nanny.c").read_text(encoding="utf-8", errors="replace")
 
 # Fragmented Telnet commands must remain buffered until the next socket read.
 assert "memmove(bp, buf + i, len - i);" in comm

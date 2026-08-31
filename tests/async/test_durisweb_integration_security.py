@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Contracts for the remediated DurisWeb integration findings."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WS = (ROOT / "src" / "websocket.c").read_text()
-HANDLERS = (ROOT / "src" / "ws_handlers.c").read_text()
-AUTH = (ROOT / "src" / "ws_auth.h").read_text()
-GMCP = (ROOT / "src" / "gmcp.c").read_text()
-HEADER = (ROOT / "src" / "websocket.h").read_text()
-STRUCTS = (ROOT / "src" / "structs.h").read_text()
+WS = (SRC / "websocket.c").read_text()
+HANDLERS = (SRC / "ws_handlers.c").read_text()
+AUTH = (SRC / "ws_auth.h").read_text()
+GMCP = (SRC / "gmcp.c").read_text()
+HEADER = (SRC / "websocket.h").read_text()
+STRUCTS = (SRC / "structs.h").read_text()
 
 # Site and new-character bans cover WebSocket clients after trusted proxy
 # metadata has been applied.
@@ -64,6 +65,6 @@ assert HANDLERS.count("if (durisweb_private_presence_enabled())") >= 2
 # categories are absent.
 assert "ws_cmd_handler handler" in HANDLERS
 assert "for (const auto &entry : handlers)" in HANDLERS
-assert "TEXT_COMBAT" not in (ROOT / "src" / "json_utils.h").read_text()
+assert "TEXT_COMBAT" not in (SRC / "json_utils.h").read_text()
 
 print("DurisWeb integration security contracts passed")

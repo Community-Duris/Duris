@@ -1,22 +1,22 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "comm.h"
-#include "db.h"
-#include "events.h"
-#include "interp.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "net/comm.h"
+#include "world/db.h"
+#include "world/events.h"
+#include "cmd/interp.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "epic.h"
-#include "graph.h"
-#include "objmisc.h"
-#include "ship_auto.h"
-#include "ship_npc.h"
-#include "ship_npc_ai.h"
-#include "spells.h"
+#include "world/epic.h"
+#include "world/graph.h"
+#include "item/objmisc.h"
+#include "ships/ship_auto.h"
+#include "ships/ship_npc.h"
+#include "ships/ship_npc_ai.h"
+#include "magic/spells.h"
 
 // char  arc[3];
 extern char buf[MAX_STRING_LENGTH];

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import hashlib
 import hmac
 import json
@@ -47,11 +48,11 @@ def signed_event(**updates: object) -> str:
 
 
 def main() -> None:
-    redis = (ROOT / "src" / "redis.c").read_text(encoding="utf-8")
-    runtime = (ROOT / "src" / "redis_donation_runtime.c").read_text(encoding="utf-8")
-    worker = (ROOT / "src" / "redis_donation_worker.c").read_text(encoding="utf-8")
-    worker_header = (ROOT / "src" / "redis_donation_worker.h").read_text(encoding="utf-8")
-    events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8")
+    redis = (SRC / "redis.c").read_text(encoding="utf-8")
+    runtime = (SRC / "redis_donation_runtime.c").read_text(encoding="utf-8")
+    worker = (SRC / "redis_donation_worker.c").read_text(encoding="utf-8")
+    worker_header = (SRC / "redis_donation_worker.h").read_text(encoding="utf-8")
+    events = (SRC / "new_events.c").read_text(encoding="utf-8")
     assert 'getenv("REDIS_DONATION_SUBSCRIBER")' in redis
     assert 'getenv("REDIS_DONATION_SECRET")' in redis
     assert "redis_donation_runtime_enabled()" in events
@@ -63,7 +64,7 @@ def main() -> None:
     assert "REDIS_DONATION_WORK_BATCH" in worker_header
 
     harness = r'''
-#include "donation_event.h"
+#include "economy/donation_event.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -97,8 +98,8 @@ int main(int argc, char **argv)
                 "-Wextra",
                 "-Werror",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "donation_event.c"),
+                str(SRC),
+                str(SRC / "donation_event.c"),
                 str(harness_path),
                 "-lcjson",
                 "-lcrypto",

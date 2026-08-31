@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -27,8 +28,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-cargo-") as temporary:
             "-Isrc/ships",
             "-I/usr/include/libxml2",
             "tests/async/flatfile_cargo_market_harness.cpp",
-            "src/ships/ship_cargo.c",
-            "src/flatfile_store.c",
+            rel("ship_cargo.c"),
+            rel("flatfile_store.c"),
             "-Wl,--gc-sections",
             "-lcrypto",
             "-pthread",
@@ -64,7 +65,7 @@ preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/ships/ship_cargo.c",
+        rel("ship_cargo.c"),
     ],
     cwd=ROOT,
     check=True,
@@ -102,7 +103,7 @@ maintenance = subprocess.run(
         "-Isrc/ships",
         "-E",
         "-P",
-        "src/maintenance_repository.c",
+        rel("maintenance_repository.c"),
     ],
     cwd=ROOT,
     check=True,
@@ -115,7 +116,7 @@ pool_acquire = execute.index("MYSQL *connection = sql_pool_acquire()")
 if flat_apply > pool_acquire:
     raise SystemExit("client-free cargo maintenance reaches the SQL pool before flat persistence")
 
-database_source = ROOT.joinpath("src/ships/ship_cargo.c").read_text()
+database_source = (SRC / "ships/ship_cargo.c").read_text()
 for sql_token in (
     "select type, port_id, cargo_type, modifier from ship_cargo_market_mods",
     "delete from ship_cargo_market_mods; delete from ship_cargo_prices;",

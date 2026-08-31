@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
+source = (SRC / "new_events.c").read_text(encoding="utf-8", errors="replace")
 
 assert '"NEVENT SLOW:' in source
 assert "slowest_name" in source

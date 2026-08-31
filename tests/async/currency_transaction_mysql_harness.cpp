@@ -1,5 +1,5 @@
-#include "critical_command_repository.h"
-#include "currency_command.h"
+#include "persistence/critical_command_repository.h"
+#include "economy/currency_command.h"
 
 #include <mysql.h>
 

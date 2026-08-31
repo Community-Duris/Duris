@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/ships/ship_cargo.c').read_text()
+text = (SRC / "ships/ship_cargo.c").read_text()
 start = text.find('int write_cargo()')
 if start == -1:
     print('missing write_cargo')

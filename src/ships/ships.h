@@ -1,8 +1,8 @@
 #ifndef _SHIPS_H_
 #define _SHIPS_H_
 
-#include "structs.h"
-#include "defines.h"
+#include "core/structs.h"
+#include "core/defines.h"
 
 #include <stdint.h>
 

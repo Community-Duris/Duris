@@ -5,11 +5,12 @@ The project removed every flag that used to live in LEGACY_WARNING_EXCEPTIONS.
 This pins that outcome so a reintroduced suppression fails a test rather than
 quietly restoring 9,947 hidden diagnostics.
 """
+from _paths import SRC
 from pathlib import Path
 import re
 
 root = Path(__file__).resolve().parents[2]
-makefile = (root / "src/Makefile").read_text()
+makefile = (SRC / "Makefile").read_text()
 inventory = (root / "scripts/warning-inventory.sh").read_text()
 
 failures = []
@@ -41,7 +42,7 @@ check("LEGACY_WARNING_EXCEPTIONS is gone", "LEGACY_WARNING_EXCEPTIONS" not in ma
 check("-Werror is still on", "-Werror" in makefile)
 
 # The build must not carry file-wide suppressions either.
-src = root / "src"
+src = SRC
 pragma_offenders = []
 for path in list(src.rglob("*.c")) + list(src.rglob("*.h")) + list(src.rglob("*.cpp")):
     text = path.read_text(errors="replace")

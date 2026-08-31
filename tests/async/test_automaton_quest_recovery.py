@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Keep automaton quest setup on the side of the world-authority boundary."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 root = Path(__file__).resolve().parents[2]
-ship_base = (root / "src" / "ships" / "ship_base.c").read_text()
-comm = (root / "src" / "comm.c").read_text()
+ship_base = (SRC / "ships" / "ship_base.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 initializer_start = ship_base.index("void initialize_ships()")
 initializer = ship_base[initializer_start:ship_base.index("\nvoid shutdown_ships()", initializer_start)]

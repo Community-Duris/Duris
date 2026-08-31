@@ -1,21 +1,21 @@
-#include "prototypes.h"
-#include "structs.h"
-#include "comm.h"
-#include "db.h"
-#include "events.h"
-#include "interp.h"
+#include "core/prototypes.h"
+#include "core/structs.h"
+#include "net/comm.h"
+#include "world/db.h"
+#include "world/events.h"
+#include "cmd/interp.h"
 #include "limits.h"
-#include "utility.h"
-#include "utils.h"
+#include "core/utility.h"
+#include "core/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "ctf.h"
-#include "gmcp.h"
-#include "map.h"
-#include "ship_auto.h"
-#include "ship_npc.h"
-#include "ship_npc_ai.h"
+#include "combat/ctf.h"
+#include "net/gmcp.h"
+#include "world/map.h"
+#include "ships/ship_auto.h"
+#include "ships/ship_npc.h"
+#include "ships/ship_npc_ai.h"
 
 extern char buf[MAX_STRING_LENGTH];
 extern char arg1[MAX_STRING_LENGTH];

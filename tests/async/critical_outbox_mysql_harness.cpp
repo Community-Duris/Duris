@@ -1,4 +1,4 @@
-#include "critical_outbox.h"
+#include "persistence/critical_outbox.h"
 
 #include <cassert>
 #include <chrono>

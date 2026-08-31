@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/sql_player.c').read_text()
+text = (SRC / "sql_player.c").read_text()
 
 flush = text.find('void sql_save_dirty_shopkeepers(void)')
 keeper_found = text.find('if (keeper)', flush)

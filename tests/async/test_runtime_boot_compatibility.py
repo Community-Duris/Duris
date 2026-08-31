@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import json
 import subprocess
 import sys
@@ -17,9 +18,9 @@ import validate_runtime_compatibility as runtime  # noqa: E402
 
 class RuntimeBootCompatibilityTest(unittest.TestCase):
     def setUp(self):
-        self.sql = (ROOT / "src/sql.c").read_text()
-        self.comm = (ROOT / "src/comm.c").read_text()
-        self.header = (ROOT / "src/runtime_compatibility_contract.h").read_text()
+        self.sql = (SRC / "sql.c").read_text()
+        self.comm = (SRC / "comm.c").read_text()
+        self.header = (SRC / "runtime_compatibility_contract.h").read_text()
 
     def test_manifests_and_compiled_contract_are_synchronized(self):
         report = runtime.validate()

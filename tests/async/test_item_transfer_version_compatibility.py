@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Executable compatibility regression for revisioned item-transfer reasons."""
 
+from _paths import rel
 import subprocess
 import tempfile
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
-#include "item_transfer_command.h"
+#include "item/item_transfer_command.h"
 
 #include <cassert>
 namespace
@@ -151,8 +152,8 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
             "-Werror",
             "-Isrc",
             str(source),
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
             "-lcrypto",
             "-o",
             str(binary),

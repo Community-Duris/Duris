@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Behavioral cancellation and scheduler-accounting invariants under ASan/UBSan."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
@@ -8,10 +9,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
-#include "new_events.c"
+#include "world/new_events.c"
 
 bool nevent_periodic_begin(P_nevent)
 {

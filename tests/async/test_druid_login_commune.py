@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Regression contract for restarting passive communion on player login."""
 
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains, index, split_at
 
 ROOT = Path(__file__).resolve().parents[2]
-nanny = (ROOT / "src/nanny.c").read_text()
+nanny = (SRC / "nanny.c").read_text()
 
 enter_game = split_at(nanny, "void enter_game(P_desc d)", 1)[1]
 enter_game = enter_game.split("void nanny(", 1)[0]

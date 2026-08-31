@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime validation for versioned artifact cache payloads."""
 
+from _paths import SRC, rel
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "artifact_cache_codec.h"
+#include "guild/artifact_cache_codec.h"
 
 #include <cassert>
 #include <cjson/cJSON.h>
@@ -51,7 +52,7 @@ with tempfile.TemporaryDirectory(prefix="duris-artifact-cache-") as temp:
             "-Werror",
             "-Isrc",
             str(source),
-            "src/artifact_cache_codec.c",
+            rel("artifact_cache_codec.c"),
             "-lcjson",
             "-o",
             str(binary),
@@ -63,7 +64,7 @@ with tempfile.TemporaryDirectory(prefix="duris-artifact-cache-") as temp:
     )
     subprocess.run([str(binary)], check=True)
 
-artifact = (ROOT / "src" / "artifact.c").read_text(encoding="utf-8")
+artifact = (SRC / "artifact.c").read_text(encoding="utf-8")
 listing_start = artifact.index("void list_artifacts_sql", artifact.index("void do_artifact_sql"))
 listing = artifact[
     listing_start : artifact.index("void arti_remove_sql", listing_start)
@@ -74,7 +75,7 @@ assert "redis_cache_artifact_list(type, Godlist, json)" in listing
 assert "Artifact data is temporarily unavailable." in listing
 assert "Cache error." not in listing
 
-redis = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
+redis = (SRC / "redis_report_cache.c").read_text(encoding="ascii")
 cache_start = redis.index("void redis_cache_artifact_list")
 cache_end = redis.index("char *redis_get_artifact_list", cache_start)
 cache = redis[cache_start:cache_end]

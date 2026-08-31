@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-DISPATCHER = (ROOT / "src/flatfile_item_repository.c").read_text()
+DISPATCHER = (SRC / "flatfile_item_repository.c").read_text()
 for token in (
     "command.type == critical_command_type::corpse_lifecycle",
     "flatfile_corpse_repository_apply(root, command)",
@@ -30,32 +31,32 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_corpse_repository_harness.cpp",
-            "src/flatfile_corpse_repository.c",
-            "src/flatfile_item_repository.c",
-            "src/flatfile_shop_trade_repository.c",
-            "src/flatfile_shop_trade_materialization.c",
-            "src/flatfile_locker_repository.c",
-            "src/flatfile_world_item_repository.c",
-            "src/flatfile_artifact_repository.c",
-            "src/flatfile_shopkeeper_repository.c",
-            "src/flatfile_auction_repository.c",
-            "src/flatfile_boon_repository.c",
-            "src/flatfile_player_domain_repository.c",
-            "src/flatfile_ip_activity_repository.c",
-            "src/corpse_lifecycle_command.c",
-            "src/item_transfer_command.c",
-            "src/player_snapshot_codec.c",
-            "src/shop_trade_command.c",
-            "src/critical_command.c",
-            "src/epic_command.c",
-            "src/currency_command.c",
-            "src/auction_command.c",
-            "src/combat_outcome_command.c",
-            "src/boon_reward_command.c",
-            "src/boon_shop_command.c",
-            "src/persistence_mode.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_corpse_repository.c"),
+            rel("flatfile_item_repository.c"),
+            rel("flatfile_shop_trade_repository.c"),
+            rel("flatfile_shop_trade_materialization.c"),
+            rel("flatfile_locker_repository.c"),
+            rel("flatfile_world_item_repository.c"),
+            rel("flatfile_artifact_repository.c"),
+            rel("flatfile_shopkeeper_repository.c"),
+            rel("flatfile_auction_repository.c"),
+            rel("flatfile_boon_repository.c"),
+            rel("flatfile_player_domain_repository.c"),
+            rel("flatfile_ip_activity_repository.c"),
+            rel("corpse_lifecycle_command.c"),
+            rel("item_transfer_command.c"),
+            rel("player_snapshot_codec.c"),
+            rel("shop_trade_command.c"),
+            rel("critical_command.c"),
+            rel("epic_command.c"),
+            rel("currency_command.c"),
+            rel("auction_command.c"),
+            rel("combat_outcome_command.c"),
+            rel("boon_reward_command.c"),
+            rel("boon_shop_command.c"),
+            rel("persistence_mode.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",

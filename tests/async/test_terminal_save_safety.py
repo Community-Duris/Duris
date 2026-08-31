@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Fail-closed source contracts for destructive character save transitions."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-read = lambda name: (root / "src" / name).read_text()
+read = lambda name: (SRC / name).read_text()
 
 files = read("files.c")
 actoth = read("actoth.c")

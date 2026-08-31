@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """Runtime coverage for overlap-safe, checked fixed-buffer formatting."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r"""
-#include "safe_format.h"
+#include "core/safe_format.h"
 
 #include <stdio.h>
 #include <string.h>

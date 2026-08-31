@@ -77,7 +77,7 @@ if ! [[ "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1024 || PORT > 65535 )); then
   exit 2
 fi
 
-# Port 7777 is DFLT_PORT (src/config.h); src/sql.c only redirects to the
+# Port 7777 is DFLT_PORT (src/core/config.h); src/sql/sql.c only redirects to the
 # development database when RUNNING_PORT != DFLT_PORT, so 7777 means live
 # player data.  A Valgrind run is 20-50x slower than native and is expected to
 # be killed mid-session, so it must never touch production.

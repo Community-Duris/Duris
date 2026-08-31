@@ -1,10 +1,11 @@
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-structs = (ROOT / "src" / "structs.h").read_text()
-header = (ROOT / "src" / "websocket.h").read_text()
-ws = (ROOT / "src" / "websocket.c").read_text()
-comm = (ROOT / "src" / "comm.c").read_text()
+structs = (SRC / "structs.h").read_text()
+header = (SRC / "websocket.h").read_text()
+ws = (SRC / "websocket.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 assert "WS_MAX_OUTPUT_BYTES" in header
 assert "WS_CONTROL_OUTPUT_RESERVE" in header

@@ -14,13 +14,12 @@ Verifies:
 10. Casting-blocked command hints lead players to the abort command.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 def check(name, ok):
     if not ok:
         print(f"FAIL: {name}")

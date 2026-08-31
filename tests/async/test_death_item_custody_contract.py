@@ -20,6 +20,7 @@ deferred instead of being saved and extracted, so the chain drains against a
 live character and the two sides stay in agreement.
 """
 
+from _paths import SRC
 from pathlib import Path
 import re
 import sys
@@ -27,11 +28,11 @@ import sys
 from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
-fight = (ROOT / "src" / "fight.c").read_text(encoding="utf-8", errors="replace")
-actoth = (ROOT / "src" / "actoth.c").read_text(encoding="utf-8", errors="replace")
-movement = (ROOT / "src" / "item_movement_transaction.c").read_text(
+fight = (SRC / "fight.c").read_text(encoding="utf-8", errors="replace")
+actoth = (SRC / "actoth.c").read_text(encoding="utf-8", errors="replace")
+movement = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace")
-repository = (ROOT / "src" / "player_load_repository.c").read_text(
+repository = (SRC / "player_load_repository.c").read_text(
     encoding="utf-8", errors="replace")
 
 

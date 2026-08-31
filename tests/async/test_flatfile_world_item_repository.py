@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,12 +21,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-world-item-") as temporary:
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_world_item_repository_harness.cpp",
-            "src/flatfile_world_item_repository.c",
-            "src/player_snapshot_codec.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
-            "src/item_transfer_command.c",
-            "src/critical_command.c",
+            rel("flatfile_world_item_repository.c"),
+            rel("player_snapshot_codec.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
+            rel("item_transfer_command.c"),
+            rel("critical_command.c"),
             "-lcrypto",
             "-pthread",
             "-o",

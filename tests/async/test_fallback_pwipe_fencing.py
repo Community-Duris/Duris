@@ -1,7 +1,8 @@
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, count, find, index
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 start = index(source, "int persistence_write_fallback_event_line")
 end = source.index("\n}\n", start) + 3
 body = source[start:end]

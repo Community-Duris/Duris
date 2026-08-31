@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime checks for scoped Redis endpoint and identity configuration."""
 
+from _paths import rel
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "redis_runtime_config.h"
+#include "redis/redis_runtime_config.h"
 
 #include <cassert>
 #include <cstdio>
@@ -119,8 +120,8 @@ with tempfile.TemporaryDirectory(prefix="duris-redis-runtime-config-") as temp:
             "-fno-omit-frame-pointer",
             "-Isrc",
             str(source),
-            "src/redis_runtime_config.c",
-            "src/redis_connection.c",
+            rel("redis_runtime_config.c"),
+            rel("redis_connection.c"),
             "-lhiredis",
             "-lhiredis_ssl",
             "-lssl",

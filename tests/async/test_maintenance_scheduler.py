@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime and source contracts for the bounded maintenance scheduler."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 import shlex
@@ -9,15 +10,15 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/maintenance_scheduler.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
-SNAPSHOT = (ROOT / "src/maintenance_snapshot.c").read_text()
-REPOSITORY = (ROOT / "src/maintenance_repository.c").read_text()
-NEW_EVENTS = (ROOT / "src/new_events.c").read_text()
+SOURCE = (SRC / "maintenance_scheduler.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
+SNAPSHOT = (SRC / "maintenance_snapshot.c").read_text()
+REPOSITORY = (SRC / "maintenance_repository.c").read_text()
+NEW_EVENTS = (SRC / "new_events.c").read_text()
 
 HARNESS = r'''
-#include "maintenance_scheduler.h"
+#include "persistence/maintenance_scheduler.h"
 
 #include <atomic>
 #include <cassert>
@@ -224,8 +225,8 @@ with tempfile.TemporaryDirectory(prefix="duris-maintenance-scheduler-") as temp_
     mysql_libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
     subprocess.run(
         ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-         "-pthread", "-Isrc", *mysql_cflags, str(source), "src/maintenance_scheduler.c",
-         "src/persistence_observability.c", *mysql_libs, "-o", str(binary)],
+         "-pthread", "-Isrc", *mysql_cflags, str(source), rel("maintenance_scheduler.c"),
+         rel("persistence_observability.c"), *mysql_libs, "-o", str(binary)],
         cwd=ROOT, check=True,
     )
     state_file = Path(temp_dir) / "scheduler.state"
@@ -249,7 +250,7 @@ for contract in (
     "maintenance_scheduler_shutdown", "maintenance_scheduler_quiesce",
     "maintenance_scheduler_drain", "persist_state",
 ):
-    assert contract in SOURCE or contract in (ROOT / "src/maintenance_scheduler.h").read_text()
+    assert contract in SOURCE or contract in (SRC / "maintenance_scheduler.h").read_text()
 
 assert "J_NAME" not in SOURCE and "account_name" not in SOURCE
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/sql_player.c').read_text()
+text = (SRC / "sql_player.c").read_text()
 
 save_player_start = text.find('bool sql_save_player(P_char ch, int type, int room)')
 items_start = text.find('bool sql_save_player_items(P_char ch)')

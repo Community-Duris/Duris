@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Regression: valid player input must clear idle state before queue delay."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, find, index
 
 root = Path(__file__).resolve().parents[2]
-comm = (root / "src/comm.c").read_text()
+comm = (SRC / "comm.c").read_text()
 
 start = index(comm, "static void process_line(P_desc t, char *in)\n{")
 end = index(comm, "\n}\n\n/*\n * ****************************************************************", start)

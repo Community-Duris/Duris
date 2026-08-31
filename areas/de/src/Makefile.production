@@ -14,7 +14,7 @@ endif
 OPTS     = -O2
 CCFLAGS  = -D__UNIX__ -Wno-deprecated -D_DE_
 CFLAGS   = -D__UNIX__ -D_DE_
-INCLUDES = -I.
+INCLUDES = -I. -I../../../src
 LIBS     = -lncurses -lstdc++
 
 # files that would be compiled as dynamic libs if USE_SHARED was defined

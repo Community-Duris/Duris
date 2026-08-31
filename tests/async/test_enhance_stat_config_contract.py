@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Configured superior-stat values must drive their documented mechanics."""
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/enhance.c").read_text()
+source = (SRC / "enhance.c").read_text()
 for key in (
     "enhance_stat_cap_multiplier",
     "enhance_stat_platinum_base",

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,9 +21,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-association-") as temporary:
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_association_repository_harness.cpp",
-            "src/flatfile_association_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_association_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",
@@ -57,7 +58,7 @@ preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/assocs.c",
+        rel("assocs.c"),
     ],
     cwd=ROOT,
     text=True,
@@ -96,7 +97,7 @@ for query in (
     if query in preprocess.stdout:
         raise SystemExit(f"client-free guild runtime still contains SQL: {query}")
 
-source = (ROOT / "src/assocs.c").read_text()
+source = (SRC / "assocs.c").read_text()
 for token in (
     'sscanf(buf, "%u %ld %ld %13s %c"',
     'sscanf(buf, "%13s %u %u %c"',
@@ -116,7 +117,7 @@ alliance_preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/alliances.c",
+        rel("alliances.c"),
     ],
     cwd=ROOT,
     text=True,
@@ -151,8 +152,8 @@ guildhall_preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/guildhall_db.c",
-        "src/guildhall.c",
+        rel("guildhall_db.c"),
+        rel("guildhall.c"),
     ],
     cwd=ROOT,
     text=True,
@@ -194,8 +195,8 @@ outpost_preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/outposts.c",
-        "src/buildings.c",
+        rel("outposts.c"),
+        rel("buildings.c"),
     ],
     cwd=ROOT,
     text=True,

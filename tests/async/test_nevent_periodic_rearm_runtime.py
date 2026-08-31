@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Periodic nevent registry runtime and migration contracts."""
 
+from _paths import SRC
 import os
 import subprocess
 import tempfile
@@ -8,10 +9,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
-#include "prototypes.h"
+#include "core/prototypes.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -349,8 +348,8 @@ checkpoint = (SRC / "persistence_checkpoint.c").read_text(encoding="utf-8")
 database = (SRC / "db.c").read_text(encoding="utf-8")
 
 object_event_harness = f'''
-#include "prototypes.h"
-#include "interp.h"
+#include "core/prototypes.h"
+#include "cmd/interp.h"
 
 #include <cstdlib>
 

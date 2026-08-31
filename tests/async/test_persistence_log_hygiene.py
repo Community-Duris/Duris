@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Reject private values and bypasses in reviewed persistence diagnostics."""
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
 REVIEWED = [
     "sql.c",
     "sql_persistence_raw.c",

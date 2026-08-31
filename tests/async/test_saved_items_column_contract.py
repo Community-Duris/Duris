@@ -17,6 +17,7 @@ Two defects motivate these checks.
    reboot while the same item inside a container kept them.
 """
 
+from _paths import SRC
 import re
 from pathlib import Path
 
@@ -26,7 +27,7 @@ INSERT_MARKER = "INSERT INTO saved_items ("
 ROOT_MARKER = "FROM saved_items WHERE container_id IS NULL"
 CHILD_MARKER = "FROM saved_items WHERE item_key='%s' AND container_id="
 
-sql_player = (ROOT / "src/sql_player.c").read_text()
+sql_player = (SRC / "sql_player.c").read_text()
 SQL_LINES = sql_player.splitlines()
 
 

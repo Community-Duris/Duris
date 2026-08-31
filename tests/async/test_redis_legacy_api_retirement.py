@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Contracts for removal of retired Redis UID state and unused exports."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REDIS = (ROOT / "src" / "redis.c").read_text(encoding="utf-8")
-WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="utf-8")
-HEADER = (ROOT / "src" / "redis.h").read_text(encoding="utf-8")
-ADMIN = (ROOT / "src" / "wizredis.c").read_text(encoding="utf-8")
+REDIS = (SRC / "redis.c").read_text(encoding="utf-8")
+WORLD = (SRC / "redis_world_runtime.c").read_text(encoding="utf-8")
+HEADER = (SRC / "redis.h").read_text(encoding="utf-8")
+ADMIN = (SRC / "wizredis.c").read_text(encoding="utf-8")
 
 for retired in (
     "mud:next_obj_uid",

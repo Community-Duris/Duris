@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/epic.c').read_text()
+text = (SRC / "epic.c").read_text()
 reset_guard = text.count('logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));')
 refund_guard = text.count('logit(LOG_WIZ, "Failed to save %s after epic skill refund.", GET_NAME(ch));')
 wrapped_tch = text.count('if (!do_save_silent(t_ch, 1))')

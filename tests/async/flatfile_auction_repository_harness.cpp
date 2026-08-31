@@ -1,6 +1,6 @@
-#include "flatfile_auction_repository.h"
-#include "flatfile_item_repository.h"
-#include "flatfile_player_domain_repository.h"
+#include "flatfile/flatfile_auction_repository.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
 
 #include <cerrno>
 #include <cstdlib>

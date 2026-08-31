@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 start = source.index("static int persistence_large_event_log_writer")
 end = source.index("\n}\n", start) + 3
 body = source[start:end]

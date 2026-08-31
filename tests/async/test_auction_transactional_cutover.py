@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Command-codec, route, schema, and publication contracts for auction cutover."""
 
+from _paths import SRC
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,11 +9,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 HARNESS = r'''
-#include "auction_command.h"
+#include "economy/auction_command.h"
 #include <cassert>
 #include <cstring>
 

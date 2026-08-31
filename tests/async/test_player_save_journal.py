@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Runtime crash/corruption contracts for the typed player snapshot journal."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-JOURNAL = (ROOT / "src/player_save_journal.c").read_text()
-CODEC = (ROOT / "src/player_snapshot_codec.c").read_text()
-WORKER = (ROOT / "src/player_save_worker.c").read_text()
-DIAGNOSTICS = (ROOT / "src/actinf.c").read_text()
+JOURNAL = (SRC / "player_save_journal.c").read_text()
+CODEC = (SRC / "player_snapshot_codec.c").read_text()
+WORKER = (SRC / "player_save_worker.c").read_text()
+DIAGNOSTICS = (SRC / "actinf.c").read_text()
 
 
 HARNESS = r'''
-#include "player_save_journal.h"
-#include "player_snapshot_codec.h"
+#include "player/player_save_journal.h"
+#include "player/player_snapshot_codec.h"
 
 #include <cassert>
 #include <cstdint>
@@ -236,8 +237,8 @@ with tempfile.TemporaryDirectory(prefix="duris-player-journal-") as temp_dir:
             "-pthread",
             "-Isrc",
             str(source),
-            "src/player_snapshot_codec.c",
-            "src/player_save_journal.c",
+            rel("player_snapshot_codec.c"),
+            rel("player_save_journal.c"),
             "-o",
             str(binary),
         ],

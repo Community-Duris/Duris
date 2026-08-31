@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-text = (Path(__file__).resolve().parents[2] / "src/sql_player.c").read_text()
+text = (SRC / "sql_player.c").read_text()
 start = text.rfind("bool sql_commit(void)")
 end = text.find("bool sql_rollback(void)", start)
 commit = text[start:end]

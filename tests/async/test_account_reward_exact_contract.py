@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Source contracts for exact account-reward grants, expiry, cooldown, and pwipe policy."""
+from _paths import SRC
 from pathlib import Path
 from contract_text import contains, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/account_reward.c").read_text()
-snapshot_source = (ROOT / "src/account_reward_snapshot.c").read_text()
-header = (ROOT / "src/account_reward.h").read_text()
-nanny = (ROOT / "src/nanny.c").read_text()
-sql_source = (ROOT / "src/sql.c").read_text()
+source = (SRC / "account_reward.c").read_text()
+snapshot_source = (SRC / "account_reward_snapshot.c").read_text()
+header = (SRC / "account_reward.h").read_text()
+nanny = (SRC / "nanny.c").read_text()
+sql_source = (SRC / "sql.c").read_text()
 bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
 migration = (ROOT / "migrations/account_bound_rewards.sql").read_text()
 verifier = (ROOT / "migrations/verify_account_bound_rewards.sh").read_text()
-makefile = (ROOT / "src/Makefile").read_text()
-comm = (ROOT / "src/comm.c").read_text()
+makefile = (SRC / "Makefile").read_text()
+comm = (SRC / "comm.c").read_text()
 
-config_source_path = ROOT / "src/account_reward_config.c"
-config_header_path = ROOT / "src/account_reward_config.h"
+config_source_path = SRC / "account_reward_config.c"
+config_header_path = SRC / "account_reward_config.h"
 config_file_path = ROOT / "lib/account_rewards.cfg"
 assert config_source_path.exists()
 assert config_header_path.exists()

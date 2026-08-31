@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise versioned report-cache countdown framing and freshness checks."""
 
+from _paths import SRC, rel
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "report_cache_codec.h"
+#include "persistence/report_cache_codec.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -72,7 +73,7 @@ with tempfile.TemporaryDirectory(prefix="duris-report-cache-") as temp:
             "-fno-omit-frame-pointer",
             "-Isrc",
             str(source),
-            "src/report_cache_codec.c",
+            rel("report_cache_codec.c"),
             "-o",
             str(binary),
         ],
@@ -83,8 +84,8 @@ with tempfile.TemporaryDirectory(prefix="duris-report-cache-") as temp:
     )
     subprocess.run([str(binary)], check=True)
 
-redis = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
-comm = (ROOT / "src" / "comm.c").read_text(encoding="ascii")
+redis = (SRC / "redis_report_cache.c").read_text(encoding="ascii")
+comm = (SRC / "comm.c").read_text(encoding="ascii")
 assert "named_report_cache_ttl_seconds = 86400" in redis
 assert "fraglist_cache_ttl_seconds = 900" in redis
 assert "report_cache_countdown_encode" in redis

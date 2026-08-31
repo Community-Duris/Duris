@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-source = (Path(__file__).resolve().parents[2] / "src/utility.c").read_text()
+source = (SRC / "utility.c").read_text()
 
 for start_marker, enqueue_name, label in (
     ("int persistence_flush_item_events(int max_events)", "persistence_item_event_queue_enqueue(line)", "item"),

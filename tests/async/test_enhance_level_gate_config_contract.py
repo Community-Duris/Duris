@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Legacy enhancement level gate is a documented live configuration control."""
+from _paths import SRC
 from pathlib import Path
-src = (Path(__file__).resolve().parents[2] / "src/enhance.c").read_text()
+src = (SRC / "enhance.c").read_text()
 cfg = (Path(__file__).resolve().parents[2] / "lib/enhance.cfg").read_text()
 assert "enhance_level_gate_multiplier" in src
 assert '"enhance.level.gate.multiplier"' in src

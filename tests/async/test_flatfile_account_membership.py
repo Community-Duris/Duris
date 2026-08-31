@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-ACCOUNT = (ROOT / "src/account.c").read_text()
-ADAPTER = (ROOT / "src/flatfile_account_adapter.c").read_text()
-FILES = (ROOT / "src/files.c").read_text()
+ACCOUNT = (SRC / "account.c").read_text()
+ADAPTER = (SRC / "flatfile_account_adapter.c").read_text()
+FILES = (SRC / "files.c").read_text()
 
 assert "flatfile_account_state_release(loaded)" in ACCOUNT
 assert "str_dup(loaded->acct_name" in ACCOUNT
@@ -35,13 +36,13 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-membership-test-") as tempor
             "-D__NO_MYSQL__",
             "-Isrc",
             "tests/async/flatfile_account_membership_harness.cpp",
-            "src/flatfile_account_adapter.c",
-            "src/flatfile_account_repository.c",
-            "src/flatfile_identity_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
-            "src/persistence_mode.c",
-            "src/flatfile_ip_activity_repository.c",
+            rel("flatfile_account_adapter.c"),
+            rel("flatfile_account_repository.c"),
+            rel("flatfile_identity_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
+            rel("persistence_mode.c"),
+            rel("flatfile_ip_activity_repository.c"),
             "-lcrypto",
             "-pthread",
             "-o",

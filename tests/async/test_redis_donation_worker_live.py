@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from _paths import SRC
 import hashlib
 import hmac
 import json
@@ -58,8 +59,8 @@ def main() -> None:
         raise SystemExit("redis-server and redis-cli are required")
 
     harness = r'''
-#include "redis_donation_worker.h"
-#include "redis_connection.h"
+#include "redis/redis_donation_worker.h"
+#include "redis/redis_connection.h"
 
 #include <cassert>
 #include <chrono>
@@ -144,11 +145,11 @@ int main(int argc, char **argv)
                 "-fsanitize=address,undefined",
                 "-fno-omit-frame-pointer",
                 "-I",
-                str(ROOT / "src"),
-                str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_donation_worker.c"),
-                str(ROOT / "src" / "redis_command_observability.c"),
-                str(ROOT / "src" / "donation_event.c"),
+                str(SRC),
+                str(SRC / "redis_connection.c"),
+                str(SRC / "redis_donation_worker.c"),
+                str(SRC / "redis_command_observability.c"),
+                str(SRC / "donation_event.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",

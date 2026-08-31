@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """Runtime regressions for JSON command parsing and untrusted text escaping."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
-#include "json_utils.h"
+#include "core/json_utils.h"
 
 #include <cstdio>
 #include <cstdlib>

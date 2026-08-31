@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """Runtime regression coverage for untrusted Unicode conversion paths."""
 
+from _paths import SRC
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 HARNESS = r'''
-#include "unicode.h"
+#include "net/unicode.h"
 
 #include <cstdarg>
 #include <cstdio>

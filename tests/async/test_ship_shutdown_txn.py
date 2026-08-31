@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 from contract_text import contains, find, index
 
-text = Path(__file__).resolve().parents[2].joinpath('src/ships/ship_base.c').read_text()
+text = (SRC / "ships/ship_base.c").read_text()
 start = find(text, 'void shutdown_ships()')
 if start == -1:
     print('missing shutdown_ships')

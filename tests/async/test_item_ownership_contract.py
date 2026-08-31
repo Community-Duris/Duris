@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Source and schema contracts for authoritative item ownership."""
 
+from _paths import SRC
 from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
-
 class ItemOwnershipContractTests(unittest.TestCase):
     def test_schema_and_guarded_tools_are_wired(self):
         migration = (ROOT / "migrations/item_ownership_ledger.sql").read_text()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,7 +21,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-") as temporary:
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_help_catalog_harness.cpp",
-            "src/flatfile_help_catalog.c",
+            rel("flatfile_help_catalog.c"),
             "-o",
             str(binary),
         ],
@@ -56,8 +57,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_help_runtime_harness.cpp",
-            "src/wikihelp.c",
-            "src/flatfile_help_catalog.c",
+            rel("wikihelp.c"),
+            rel("flatfile_help_catalog.c"),
             "-Wl,--gc-sections",
             "-o",
             str(runtime_binary),
@@ -81,8 +82,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-") as temporary:
             "-Isrc/no_mysql",
             "-Isrc",
             "tests/async/flatfile_mud_info_runtime_harness.cpp",
-            "src/sql.c",
-            "src/flatfile_help_catalog.c",
+            rel("sql.c"),
+            rel("flatfile_help_catalog.c"),
             "-Wl,--gc-sections",
             "-o",
             str(mud_info_binary),

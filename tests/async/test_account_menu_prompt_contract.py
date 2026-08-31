@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Regression contracts for account-menu prompting and selection rendering."""
 
+from _paths import SRC
 from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-ACCOUNT = (ROOT / "src/account.c").read_text(encoding="utf-8", errors="replace")
-COMM = (ROOT / "src/comm.c").read_text(encoding="utf-8", errors="replace")
+ACCOUNT = (SRC / "account.c").read_text(encoding="utf-8", errors="replace")
+COMM = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
 
 
 def function_body(source, signature):

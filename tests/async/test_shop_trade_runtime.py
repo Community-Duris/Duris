@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Runtime shop revision and bounded payload-builder regression."""
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SOURCE = (ROOT / "src/shop_trade_runtime.c").read_text()
+SOURCE = (SRC / "shop_trade_runtime.c").read_text()
 
 for token in (
     "player_item_snapshot_tree_capture(selected",
@@ -33,7 +34,7 @@ for mutation in ("obj_from_char(", "obj_to_char(", "extract_obj(", "ADD_MONEY(",
         raise SystemExit(f"shop trade payload builder mutates live state through {mutation}")
 
 HARNESS = r'''
-#include "shop_trade_runtime.h"
+#include "economy/shop_trade_runtime.h"
 
 #include <cassert>
 #include <cstdint>
@@ -81,7 +82,7 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-trade-runtime-") as temporar
             "-fdata-sections",
             "-Isrc",
             str(source),
-            "src/shop_trade_runtime.c",
+            rel("shop_trade_runtime.c"),
             "-Wl,--gc-sections",
             "-o",
             str(binary),

@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """Final Phase 01 ordering, ownership, fault, and bounded-load gate."""
 
+from _paths import SRC, rel
 import subprocess
 import tempfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REDIS = (ROOT / "src/redis.c").read_text()
-REDIS_WORLD = (ROOT / "src/redis_world_runtime.c").read_text()
-WORKER = (ROOT / "src/player_save_worker.c").read_text()
-PIPELINE = (ROOT / "src/player_save_pipeline.c").read_text()
-WORLD = (ROOT / "src/world_recovery_pipeline.c").read_text()
-COMM = (ROOT / "src/comm.c").read_text()
-COPYOVER = (ROOT / "src/copyover.c").read_text()
-WIZREDIS = (ROOT / "src/wizredis.c").read_text()
+REDIS = (SRC / "redis.c").read_text()
+REDIS_WORLD = (SRC / "redis_world_runtime.c").read_text()
+WORKER = (SRC / "player_save_worker.c").read_text()
+PIPELINE = (SRC / "player_save_pipeline.c").read_text()
+WORLD = (SRC / "world_recovery_pipeline.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+COPYOVER = (SRC / "copyover.c").read_text()
+WIZREDIS = (SRC / "wizredis.c").read_text()
 
 
 HARNESS = r'''
-#include "player_revision_state.h"
-#include "player_save_worker.h"
+#include "player/player_revision_state.h"
+#include "player/player_save_worker.h"
 
 #include <cassert>
 #include <chrono>
@@ -138,8 +139,8 @@ with tempfile.TemporaryDirectory(prefix="duris-phase01-gate-") as temp_dir:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-            "-pthread", "-Isrc", str(source), "src/player_save_worker.c",
-            "src/player_revision_state.c", "src/persistence_observability.c",
+            "-pthread", "-Isrc", str(source), rel("player_save_worker.c"),
+            rel("player_revision_state.c"), rel("persistence_observability.c"),
             "-lmysqlclient", "-o", str(binary),
         ],
         cwd=ROOT,

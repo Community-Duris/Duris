@@ -23,7 +23,7 @@ E
 ```
 
 `<mask>` is the unsigned numeric combination of the desired `AFF5_*` values
-from `src/defines.h`. The marker and value may be on separate lines because
+from `src/core/defines.h`. The marker and value may be on separate lines because
 the loader treats whitespace uniformly.
 
 Objects without a `B5` marker retain a zero fifth mask and parse exactly as

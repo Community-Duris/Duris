@@ -7,17 +7,18 @@ share one scoring helper, and that every constant the port references is a
 real Duris constant rather than a leftover RoL one.
 """
 
+from _paths import SRC
 import re
 from pathlib import Path
 from contract_text import contains, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
-ACTWIZ_C = (ROOT / "src/actwiz.c").read_text()
-INTERP_C = (ROOT / "src/interp.c").read_text()
-INTERP_H = (ROOT / "src/interp.h").read_text()
-CONFIG_H = (ROOT / "src/config.h").read_text()
-DEFINES_H = (ROOT / "src/defines.h").read_text()
-PROTOTYPES_H = (ROOT / "src/prototypes.h").read_text()
+ACTWIZ_C = (SRC / "actwiz.c").read_text()
+INTERP_C = (SRC / "interp.c").read_text()
+INTERP_H = (SRC / "interp.h").read_text()
+CONFIG_H = (SRC / "config.h").read_text()
+DEFINES_H = (SRC / "defines.h").read_text()
+PROTOTYPES_H = (SRC / "prototypes.h").read_text()
 
 # --------------------------------------------------------------------------
 # 1. Command table wiring.  interp.c looks a command up with old_search_block,

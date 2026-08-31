@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import rel
 import pathlib
 import subprocess
 import tempfile
@@ -20,9 +21,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-identity-test-") as temporar
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_identity_repository_harness.cpp",
-            "src/flatfile_identity_repository.c",
-            "src/flatfile_authority_transaction.c",
-            "src/flatfile_store.c",
+            rel("flatfile_identity_repository.c"),
+            rel("flatfile_authority_transaction.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-o",

@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Runtime database and listener trust-boundary source contracts."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-sql_h = (root / "src/sql.h").read_text()
-sql = (root / "src/sql.c").read_text()
-env_file = (root / "src/env_file.c").read_text()
-runtime_contract = (root / "src/runtime_compatibility_contract.h").read_text()
-pool = (root / "src/sql_pool.c").read_text()
-player = (root / "src/sql_player.c").read_text()
-comm = (root / "src/comm.c").read_text()
-comm_h = (root / "src/comm.h").read_text()
-websocket = (root / "src/websocket.c").read_text()
-ssl = (root / "src/ssl.c").read_text()
+sql_h = (SRC / "sql.h").read_text()
+sql = (SRC / "sql.c").read_text()
+env_file = (SRC / "env_file.c").read_text()
+runtime_contract = (SRC / "runtime_compatibility_contract.h").read_text()
+pool = (SRC / "sql_pool.c").read_text()
+player = (SRC / "sql_player.c").read_text()
+comm = (SRC / "comm.c").read_text()
+comm_h = (SRC / "comm.h").read_text()
+websocket = (SRC / "websocket.c").read_text()
+ssl = (SRC / "ssl.c").read_text()
 example = (root / ".env.example").read_text()
 config = (root / "docs/operations/CONFIGURATION.md").read_text()
 readme = (root / "README.md").read_text()

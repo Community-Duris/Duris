@@ -7,12 +7,12 @@ Verifies that every mysql_store_result(DB) call in the reviewed files
 is followed by a NULL check before the result is used.
 """
 
+from _paths import source
 import re
 import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SRC = os.path.join(REPO, "src")
 
 # Files where NULL checks were added
 FILES_WITH_NULL_CHECKS = [
@@ -38,7 +38,7 @@ total_checks_found = 0
 total_store_result_calls = 0
 
 for fname in FILES_WITH_NULL_CHECKS:
-    fpath = os.path.join(SRC, fname)
+    fpath = str(source(fname))
     if not os.path.exists(fpath):
         errors.append(f"  {fname}: file not found")
         continue
@@ -90,7 +90,7 @@ for fname in FILES_WITH_NULL_CHECKS:
 
 # Also verify that the NULL checks use LOG_DEBUG (not LOG_ERROR)
 for fname in FILES_WITH_NULL_CHECKS:
-    fpath = os.path.join(SRC, fname)
+    fpath = str(source(fname))
     if not os.path.exists(fpath):
         continue
     with open(fpath, "r", errors="replace") as f:

@@ -5,7 +5,7 @@
     {
       "id": "PL_NAME_001",
       "owner": "player-load identity",
-      "source": "src/player_load_repository.c",
+      "source": "src/player/player_load_repository.c",
       "tables": {"player_data": 10000},
       "parameter_types": ["varchar(64)"],
       "ordering": "single row",
@@ -16,7 +16,7 @@
     {
       "id": "PL_PVP_001",
       "owner": "recent PvP hydration",
-      "source": "src/player_load_repository.c",
+      "source": "src/player/player_load_repository.c",
       "tables": {"pkill_info": 100000, "pkill_event": 25000},
       "parameter_types": ["uint32 pid", "enum victim"],
       "ordering": "event stamp descending, participation ID descending; limit 20",
@@ -27,7 +27,7 @@
     {
       "id": "PL_EPIC_001",
       "owner": "epic completion hydration",
-      "source": "src/player_load_repository.c",
+      "source": "src/player/player_load_repository.c",
       "tables": {"epic_gain": 100000, "epic_ledger": 100000},
       "parameter_types": ["uint32 pid", "smallint reason"],
       "ordering": "zone number ascending unique",
@@ -38,7 +38,7 @@
     {
       "id": "LOAD_ITEMS_001",
       "owner": "player item hydration",
-      "source": "src/player_load_repository.c",
+      "source": "src/player/player_load_repository.c",
       "tables": {"player_items": 250000},
       "parameter_types": ["uint32 pid"],
       "ordering": "database ID ascending",
@@ -49,7 +49,7 @@
     {
       "id": "ZONE_TOUCH_001",
       "owner": "zone lifecycle cursor",
-      "source": "src/epic.c",
+      "source": "src/world/epic.c",
       "tables": {"zone_touches": 100000},
       "parameter_types": ["int zone", "timestamp cursor"],
       "ordering": "touched time then ID",
@@ -60,7 +60,7 @@
     {
       "id": "FRAG_RACE_001",
       "owner": "active race leaderboard",
-      "source": "src/fraglist.c",
+      "source": "src/combat/fraglist.c",
       "tables": {"frag_leaderboard": 25000},
       "parameter_types": ["varchar race", "nullable deletion"],
       "ordering": "total frags descending",
@@ -71,7 +71,7 @@
     {
       "id": "QUEST_TROPHY_001",
       "owner": "quest trophy window",
-      "source": "src/sql.c",
+      "source": "src/sql/sql.c",
       "tables": {"quest_trophy": 100000},
       "parameter_types": ["int mob vnum", "timestamp cutoff"],
       "ordering": "aggregate",
@@ -82,7 +82,7 @@
     {
       "id": "OUTBOX_CLAIM_001",
       "owner": "critical outbox delivery",
-      "source": "src/critical_outbox.c",
+      "source": "src/persistence/critical_outbox.c",
       "tables": {"critical_outbox": 100000},
       "parameter_types": ["tinyint status", "timestamp due", "uint64 cursor"],
       "ordering": "next attempt then outbox ID",

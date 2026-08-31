@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -26,9 +27,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-nexus-") as temporary:
             "-ffunction-sections",
             "-fdata-sections",
             "tests/async/flatfile_nexus_repository_harness.cpp",
-            "src/nexus_stones.c",
-            "src/flatfile_nexus_repository.c",
-            "src/flatfile_store.c",
+            rel("nexus_stones.c"),
+            rel("flatfile_nexus_repository.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-pthread",
             "-Wl,--gc-sections",
@@ -64,7 +65,7 @@ preprocess = subprocess.run(
         "-I/usr/include/libxml2",
         "-E",
         "-P",
-        "src/nexus_stones.c",
+        rel("nexus_stones.c"),
     ],
     cwd=ROOT,
     text=True,
@@ -95,7 +96,7 @@ for database_call in (
     if database_call in preprocess.stdout:
         raise SystemExit(f"client-free nexus runtime retained database call: {database_call}")
 
-source = ROOT.joinpath("src/nexus_stones.c").read_text()
+source = (SRC / "nexus_stones.c").read_text()
 for database_call in (
     'SELECT id, name, room_vnum, align FROM nexus_stones',
     'UPDATE nexus_stones SET align',
@@ -110,6 +111,6 @@ for mapping in (
     if mapping not in source:
         raise SystemExit(f"MariaDB nexus info mapping is incomplete: {mapping}")
 
-makefile = ROOT.joinpath("src/Makefile").read_text()
+makefile = (SRC / "Makefile").read_text()
 if "flatfile_nexus_repository.o" not in makefile:
     raise SystemExit("flat nexus repository is not linked into the server")

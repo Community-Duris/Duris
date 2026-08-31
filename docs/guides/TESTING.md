@@ -23,7 +23,7 @@ tests/
 **Source-contract tests** — read the C sources as text and assert structural
 invariants (a guard exists, a call site was not reintroduced, an ordering
 holds). Example (`tests/async/test_sql_pool_shutdown.py`): slices out
-`sql_pool_acquire`/`sql_pool_shutdown` from `src/sql_pool.c` and asserts the
+`sql_pool_acquire`/`sql_pool_shutdown` from `src/sql/sql_pool.c` and asserts the
 closing-pool checks are present. These need no database and no build.
 
 **Behavioral tests** — boot or exercise server logic where feasible; most

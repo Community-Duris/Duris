@@ -5,6 +5,7 @@ The runtime socket-pair harness exercises the authoritative handshake, frame,
 and nonblocking output paths. These source contracts keep the RFC 6455 safety
 rules and event-loop integration reviewable alongside it.
 """
+from _paths import SRC
 from pathlib import Path
 
 from contract_text import contains, count, index
@@ -27,15 +28,15 @@ class ContractSource(str):
         return result
 
 ROOT = Path(__file__).resolve().parents[2]
-HEADER = ContractSource((ROOT / "src/websocket.h").read_text())
-SOURCE = ContractSource((ROOT / "src/websocket.c").read_text())
-WS_HANDLERS = ContractSource((ROOT / "src/ws_handlers.c").read_text())
-COMM = ContractSource((ROOT / "src/comm.c").read_text())
-GMCP = ContractSource((ROOT / "src/gmcp.c").read_text())
-MCCP = ContractSource((ROOT / "src/mccp.c").read_text())
-GMCP_H = ContractSource((ROOT / "src/gmcp.h").read_text())
+HEADER = ContractSource((SRC / "websocket.h").read_text())
+SOURCE = ContractSource((SRC / "websocket.c").read_text())
+WS_HANDLERS = ContractSource((SRC / "ws_handlers.c").read_text())
+COMM = ContractSource((SRC / "comm.c").read_text())
+GMCP = ContractSource((SRC / "gmcp.c").read_text())
+MCCP = ContractSource((SRC / "mccp.c").read_text())
+GMCP_H = ContractSource((SRC / "gmcp.h").read_text())
 HARNESS = ContractSource((ROOT / "tests/async/websocket_runtime_harness.cpp").read_text())
-AUTH = ContractSource((ROOT / "src/ws_auth.h").read_text())
+AUTH = ContractSource((SRC / "ws_auth.h").read_text())
 
 
 def function_body(source: str, signature: str, next_signature: str) -> str:
@@ -169,8 +170,8 @@ def test_authentication_fails_closed_without_configured_secret():
     assert 'DURISWEB_SECRET_DEFAULT' not in WS_HANDLERS
     assert 'DURISWEB_SECRET_DEFAULT' not in GMCP
     assert 'if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge' in AUTH
-    assert '#include "ws_auth.h"' in WS_HANDLERS
-    assert '#include "ws_auth.h"' in GMCP
+    assert '#include "net/ws_auth.h"' in WS_HANDLERS
+    assert '#include "net/ws_auth.h"' in GMCP
     assert 'strlen(sig) != 64' in AUTH
     assert 'CRYPTO_memcmp' in AUTH
     assert 'offset = -1' in AUTH and 'offset <= 1' in AUTH

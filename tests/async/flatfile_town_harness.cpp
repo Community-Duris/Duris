@@ -1,5 +1,5 @@
-#include "persistence_mode.h"
-#include "sql_player.h"
+#include "persistence/persistence_mode.h"
+#include "sql/sql_player.h"
 
 #include <cstdlib>
 #include <filesystem>

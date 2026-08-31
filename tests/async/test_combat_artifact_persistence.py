@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Combat and artifact persistence-boundary source contracts."""
 
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-fight_text = (root / "src/fight.c").read_text()
-sql_text = (root / "src/sql.c").read_text()
-sql_header = (root / "src/sql.h").read_text()
-artifact_text = (root / "src/artifact.c").read_text()
+fight_text = (SRC / "fight.c").read_text()
+sql_text = (SRC / "sql.c").read_text()
+sql_header = (SRC / "sql.h").read_text()
+artifact_text = (SRC / "artifact.c").read_text()
 
 
 def function(text: str, signature: str, next_signature: str) -> str:

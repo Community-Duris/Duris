@@ -1,9 +1,10 @@
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-utility = (root / "src/utility.c").read_text()
-prototypes = (root / "src/prototypes.h").read_text()
-actwiz = (root / "src/actwiz.c").read_text()
+utility = (SRC / "utility.c").read_text()
+prototypes = (SRC / "prototypes.h").read_text()
+actwiz = (SRC / "actwiz.c").read_text()
 
 assert "int persistence_quarantine_fallback_events(void)" in utility
 assert "access(LOG_EVENT, F_OK)" in utility

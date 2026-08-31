@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -21,8 +22,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-shop-trophy-") as tempor
             "-Werror",
             "-Isrc",
             "tests/async/flatfile_shop_trophy_history_harness.cpp",
-            "src/flatfile_shop_trophy_history.c",
-            "src/flatfile_store.c",
+            rel("flatfile_shop_trophy_history.c"),
+            rel("flatfile_store.c"),
             "-lcrypto",
             "-o",
             str(binary),
@@ -32,8 +33,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-shop-trophy-") as tempor
     )
     subprocess.run([str(binary), str(temporary_path / "state")], cwd=ROOT, check=True)
 
-sql_source = (ROOT / "src/sql.c").read_text()
-shop_source = (ROOT / "src/shop.c").read_text()
+sql_source = (SRC / "sql.c").read_text()
+shop_source = (SRC / "shop.c").read_text()
 
 no_mysql = sql_source[sql_source.index("#ifdef __NO_MYSQL__") : sql_source.index("#else", sql_source.index("#ifdef __NO_MYSQL__"))]
 if "return flat_sql_shop_trophy(obj);" not in no_mysql or "return flat_sql_shop_sell(ch, obj, value);" not in no_mysql:

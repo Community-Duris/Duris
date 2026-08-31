@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Minimal boot must stay isolated from generated full-world data."""
 
+from _paths import SRC
 import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 MINIMAL = ROOT / "areas_mini"
-COMM = (ROOT / "src/comm.c").read_text()
-DB = (ROOT / "src/db.c").read_text()
-SHOP = (ROOT / "src/shop.c").read_text()
-STUDIOPROC = (ROOT / "src/studioproc.c").read_text()
-WEATHER = (ROOT / "src/weather.c").read_text()
+COMM = (SRC / "comm.c").read_text()
+DB = (SRC / "db.c").read_text()
+SHOP = (SRC / "shop.c").read_text()
+STUDIOPROC = (SRC / "studioproc.c").read_text()
+WEATHER = (SRC / "weather.c").read_text()
 CYCLE = (ROOT / "scripts/cycle_mud.sh").read_text()
 
 required = (

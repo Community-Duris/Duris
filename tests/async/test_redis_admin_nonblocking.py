@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Redis administrator commands must remain truthful and network-free online."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-WIZ = (ROOT / "src" / "wizredis.c").read_text()
-REDIS = (ROOT / "src" / "redis.c").read_text()
-DONATION = (ROOT / "src" / "redis_donation_runtime.c").read_text()
-HEADER = (ROOT / "src" / "redis.h").read_text()
-REPORT = (ROOT / "src" / "redis_report_cache.c").read_text()
-REPORT_HEADER = (ROOT / "src" / "redis_report_cache.h").read_text()
+WIZ = (SRC / "wizredis.c").read_text()
+REDIS = (SRC / "redis.c").read_text()
+DONATION = (SRC / "redis_donation_runtime.c").read_text()
+HEADER = (SRC / "redis.h").read_text()
+REPORT = (SRC / "redis_report_cache.c").read_text()
+REPORT_HEADER = (SRC / "redis_report_cache.h").read_text()
 
 
 def section(source: str, start: str, end: str) -> str:

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from _paths import SRC
 from pathlib import Path
 import sys
 
-text = Path(__file__).resolve().parents[2].joinpath('src/actwiz.c').read_text()
+text = (SRC / "actwiz.c").read_text()
 count = text.count('if (!do_save_silent(victim, 1))')
 log = text.count('logit(LOG_WIZ, "Failed to save %s after wizard flag change.", GET_NAME(victim));')
 

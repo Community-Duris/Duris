@@ -8,7 +8,7 @@ documentation work must consume this inventory instead of introducing independen
 store lists.
 
 Redis keys, patterns, prefixes, and channels have an additional runtime-authoritative
-inventory in `src/redis_key_registry.def`. The C++ runtime consumes its constants, the
+inventory in `src/redis/redis_key_registry.def`. The C++ runtime consumes its constants, the
 lifecycle validator derives Redis store IDs and locators from it, and destructive
 maintenance is checked against its owned patterns. A new hardcoded `mud:` or
 `ship:snapshot:` literal outside the registry fails focused validation.

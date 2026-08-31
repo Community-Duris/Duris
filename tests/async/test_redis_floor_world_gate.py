@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Floor-delta work exists only when Redis world recovery is enabled."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
-WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="ascii")
-FLOOR = (ROOT / "src" / "redis_floor_runtime.c").read_text(encoding="ascii")
-CHECKPOINT = (ROOT / "src" / "persistence_checkpoint.c").read_text(encoding="ascii")
-HEADER = (ROOT / "src" / "redis.h").read_text(encoding="ascii")
-FLOOR_HEADER = (ROOT / "src" / "redis_floor_runtime.h").read_text(encoding="ascii")
-ACTOBJ = (ROOT / "src" / "actobj.c").read_text(encoding="utf-8")
+REDIS = (SRC / "redis.c").read_text(encoding="ascii")
+WORLD = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
+FLOOR = (SRC / "redis_floor_runtime.c").read_text(encoding="ascii")
+CHECKPOINT = (SRC / "persistence_checkpoint.c").read_text(encoding="ascii")
+HEADER = (SRC / "redis.h").read_text(encoding="ascii")
+FLOOR_HEADER = (SRC / "redis_floor_runtime.h").read_text(encoding="ascii")
+ACTOBJ = (SRC / "actobj.c").read_text(encoding="utf-8")
 
 
 def section(start: str, end: str, source: str = WORLD) -> str:

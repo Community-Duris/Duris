@@ -1,9 +1,10 @@
+from _paths import rel
 from pathlib import Path
 
 base = Path(__file__).resolve().parents[2]
-ship_base = (base / 'src/ships/ship_base.c').read_text()
-modify = (base / 'src/modify.c').read_text()
-specs = (base / 'src/specs.gellz.c').read_text()
+ship_base = (base / rel("ship_base.c")).read_text()
+modify = (base / rel("modify.c")).read_text()
+specs = (base / rel("specs.gellz.c")).read_text()
 
 ok = True
 checks = {

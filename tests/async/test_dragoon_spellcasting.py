@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Source-contract and regression tests for Dragoon class spellcasting and slot mechanics."""
+from _paths import SRC
 from pathlib import Path
 import sys, re
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-
 def check(name, ok):
 	if not ok:
 		print(f"FAIL: {name}")

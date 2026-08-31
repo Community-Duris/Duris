@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Runtime JSON escaping and source contracts for Redis presence privacy."""
 
+from _paths import SRC, rel
 from pathlib import Path
 import subprocess
 import tempfile
@@ -8,8 +9,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
-#include "redis_presence_payload.h"
-#include "presence_policy.h"
+#include "redis/redis_presence_payload.h"
+#include "persistence/presence_policy.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -68,7 +69,7 @@ with tempfile.TemporaryDirectory(prefix="duris-presence-") as temp:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-Isrc",
-            str(source), "src/redis_presence_payload.c", "src/presence_policy.c",
+            str(source), rel("redis_presence_payload.c"), rel("presence_policy.c"),
             "-lcjson", "-o", str(binary),
         ],
         cwd=ROOT,
@@ -78,7 +79,7 @@ with tempfile.TemporaryDirectory(prefix="duris-presence-") as temp:
     )
     subprocess.run([str(binary)], check=True)
 
-runtime = (ROOT / "src" / "redis_presence_runtime.c").read_text(encoding="ascii")
+runtime = (SRC / "redis_presence_runtime.c").read_text(encoding="ascii")
 online = runtime[
     runtime.index("void redis_player_online") : runtime.index("void redis_player_offline")
 ]
@@ -99,7 +100,7 @@ assert "redis_presence_worker_submit_clear" in clear
 for path in (online, offline, clear):
     assert "redis_command" not in path and "redis_ctx" not in path
 
-handlers = (ROOT / "src" / "ws_handlers.c").read_text(encoding="utf-8")
+handlers = (SRC / "ws_handlers.c").read_text(encoding="utf-8")
 assert "ws_private_presence_enabled" not in handlers
 assert "durisweb_presence_character_visible" in handlers
 assert "durisweb_private_presence_enabled" in handlers

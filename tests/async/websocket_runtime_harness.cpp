@@ -1,5 +1,5 @@
-#include "structs.h"
-#include "websocket.h"
+#include "core/structs.h"
+#include "net/websocket.h"
 #include <cJSON.h>
 #include <errno.h>
 #include <fcntl.h>

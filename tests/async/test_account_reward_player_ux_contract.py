@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Player divineclaim UX: list, one-at-a-time summon, dismiss, and login choice."""
+from _paths import SRC
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "src/account_reward.c").read_text()
-config_source = (ROOT / "src/account_reward_config.c").read_text()
-config_header = (ROOT / "src/account_reward_config.h").read_text()
+source = (SRC / "account_reward.c").read_text()
+config_source = (SRC / "account_reward_config.c").read_text()
+config_header = (SRC / "account_reward_config.h").read_text()
 config_file = (ROOT / "lib/account_rewards.cfg").read_text()
 
 # Player grammar is separate from the trusted management parser.

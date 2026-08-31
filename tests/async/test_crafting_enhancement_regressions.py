@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Regression contracts for verified legacy forge and modenhance defects."""
+from _paths import SRC
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-tradeskill = (root / "src/tradeskill.c").read_text()
-forge_items = (root / "src/forge_items.c").read_text()
-enhance = (root / "src/enhance.c").read_text()
-crafting = (root / "src/crafting.c").read_text()
+tradeskill = (SRC / "tradeskill.c").read_text()
+forge_items = (SRC / "forge_items.c").read_text()
+enhance = (SRC / "enhance.c").read_text()
+crafting = (SRC / "crafting.c").read_text()
 
 assert "Price tiers follow ore count" in tradeskill
 assert "sizeof(forge_prices) / sizeof(forge_prices[0])" in tradeskill

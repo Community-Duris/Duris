@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from _paths import SRC, rel
 import pathlib
 import subprocess
 import tempfile
@@ -19,7 +20,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-codec-") as temporary:
             "-Werror",
             "-Isrc",
             "tests/async/player_item_snapshot_codec_harness.cpp",
-            "src/player_snapshot_codec.c",
+            rel("player_snapshot_codec.c"),
             "-o",
             str(binary),
         ],
@@ -41,7 +42,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-codec-") as temporary:
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
 
-codec_source = (ROOT / "src/player_snapshot_codec.c").read_text()
+codec_source = (SRC / "player_snapshot_codec.c").read_text()
 for token in (
     "encode_items(out, snapshot.items)",
     "decode_items(in, snapshot.items)",

@@ -1,6 +1,7 @@
+from _paths import SRC
 from pathlib import Path
 
-text = (Path(__file__).resolve().parents[2] / "src/sql_pool.c").read_text()
+text = (SRC / "sql_pool.c").read_text()
 
 assert "pool_closing" in text
 assert "pool_closing = 1" in text

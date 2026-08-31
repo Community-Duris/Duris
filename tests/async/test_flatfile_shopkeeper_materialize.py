@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Source contract for fail-closed detached shopkeeper materialization."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HEADER = (ROOT / "src/flatfile_shopkeeper_materialize.h").read_text()
-SOURCE = (ROOT / "src/flatfile_shopkeeper_materialize.c").read_text()
+HEADER = (SRC / "flatfile_shopkeeper_materialize.h").read_text()
+SOURCE = (SRC / "flatfile_shopkeeper_materialize.c").read_text()
 
 for token in (
     "real_mobile(record.mob_vnum)",

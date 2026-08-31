@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Require independent authentication for Redis world-recovery generations."""
 
+from _paths import SRC
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
-WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="ascii")
-STORE = (ROOT / "src" / "redis_world_store.c").read_text(encoding="ascii")
-HEADER = (ROOT / "src" / "redis_world_store.h").read_text(encoding="ascii")
+REDIS = (SRC / "redis.c").read_text(encoding="ascii")
+WORLD = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
+STORE = (SRC / "redis_world_store.c").read_text(encoding="ascii")
+HEADER = (SRC / "redis_world_store.h").read_text(encoding="ascii")
 
 assert "REDIS_WORLD_STATE_SECRET" in WORLD
 assert "REDIS_WORLD_STATE_SECRET_PREVIOUS" in WORLD

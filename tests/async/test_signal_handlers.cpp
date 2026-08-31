@@ -19,7 +19,7 @@ void fatal_boot_error(const char *, const char *, ...)
 	std::abort();
 }
 
-#include "../../src/signals.c"
+#include "../../src/core/signals.c"
 
 namespace
 {
