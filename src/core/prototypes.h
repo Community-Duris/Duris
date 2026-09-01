@@ -2886,6 +2886,14 @@ void do_properties(P_char, char *, int);
 float get_property(const char *, double);
 int get_property(const char *, int);
 float get_property(const char *, double, bool);
+/* DurisWeb hook toggles. Reads durisweb.hook.<id> from duris.properties.
+   Unknown keys default to enabled so an older properties file cannot
+   silently disable a live integration. Values >= 0.5 count as enabled. */
+bool durisweb_hook_enabled(const char *hook_id);
+/* Set one exact DurisWeb hook property in memory and persist it atomically. */
+bool set_durisweb_hook_enabled(const char *hook_id, bool enabled);
+/* True when the key belongs to the durisweb.hook. family. */
+bool is_durisweb_hook_property(const char *key);
 int get_property(const char *, int, bool);
 
 /* nq.c */

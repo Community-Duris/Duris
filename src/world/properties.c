@@ -10,6 +10,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/ws_handlers.h"
 #include "core/utils.h"
 #include <fnmatch.h>
 #include <stdio.h>
@@ -89,6 +90,30 @@ int get_property(const char *key, int default_value)
 	return get_property(key, default_value, true);
 }
 
+#define DURISWEB_HOOK_PREFIX "durisweb.hook."
+
+bool is_durisweb_hook_property(const char *key)
+{
+	if (!key)
+		return FALSE;
+	return strncmp(key, DURISWEB_HOOK_PREFIX, strlen(DURISWEB_HOOK_PREFIX)) == 0;
+}
+
+bool durisweb_hook_enabled(const char *hook_id)
+{
+	char key[128];
+
+	if (!hook_id || !*hook_id)
+		return FALSE;
+
+	if (snprintf(key, sizeof(key), DURISWEB_HOOK_PREFIX "%s", hook_id) >= (int)sizeof(key))
+		return FALSE;
+
+	/* Default enabled, and not fussy: a missing key is the normal case on a
+	   properties file that predates a hook, and must not log on every event. */
+	return get_property(key, 1.0, false) >= 0.5f;
+}
+
 int get_property(const char *key, int default_value, bool fuss)
 {
 	float float_prop = get_property(key, (float)default_value, fuss);
@@ -148,6 +173,117 @@ int parse_property(struct property *property, char *buf)
 	property->value = value;
 	property->old_value = value;
 	return 1;
+}
+
+static bool persist_durisweb_hook_property(const char *key, float value)
+{
+	FILE *source = fopen(PROPERTIES_FILE, "r");
+	FILE *target;
+	char line[1024];
+	bool found = FALSE;
+	bool ok = TRUE;
+	bool wrote_any = FALSE;
+	bool ended_with_newline = TRUE;
+
+	if (!source)
+		return FALSE;
+	target = fopen(PROPERTIES_FILE ".new", "w");
+	if (!target)
+	{
+		fclose(source);
+		return FALSE;
+	}
+
+	while (fgets(line, sizeof(line), source) != NULL)
+	{
+		struct property parsed;
+		if (parse_property(&parsed, line))
+		{
+			if (!strcmp(parsed.key, key))
+			{
+				checked_snprintf(line, sizeof(line), "%s=%.3f\n", key, value);
+				found = TRUE;
+			}
+			FREE(parsed.key);
+		}
+		if (fputs(line, target) == EOF)
+		{
+			ok = FALSE;
+			break;
+		}
+		wrote_any = TRUE;
+		ended_with_newline = line[strlen(line) - 1] == '\n';
+	}
+
+	if (ferror(source))
+		ok = FALSE;
+	if (ok && !found)
+	{
+		if (wrote_any && !ended_with_newline && fputc('\n', target) == EOF)
+			ok = FALSE;
+		if (ok && fprintf(target, "%s=%.3f\n", key, value) < 0)
+			ok = FALSE;
+		else if (ok)
+			found = TRUE;
+	}
+	if (fflush(target) != 0)
+		ok = FALSE;
+	if (fclose(target) != 0)
+		ok = FALSE;
+	fclose(source);
+
+	if (!ok || !found || rename(PROPERTIES_FILE ".new", PROPERTIES_FILE) != 0)
+	{
+		remove(PROPERTIES_FILE ".new");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+bool set_durisweb_hook_enabled(const char *hook_id, bool enabled)
+{
+	char key[128];
+	struct property *result;
+	float old_value;
+	float new_value = enabled ? 1.0f : 0.0f;
+
+	if (!hook_id || !*hook_id ||
+	    snprintf(key, sizeof(key), DURISWEB_HOOK_PREFIX "%s", hook_id) >= (int)sizeof(key))
+		return FALSE;
+	if (!ws_is_durisweb_mud_gated_hook(hook_id))
+		return FALSE;
+
+	result = (struct property *)bsearch(key, duris_properties, properties_count,
+					    sizeof(struct property), key_property_comp);
+	if (!result)
+	{
+		if (properties_count >= MAX_PROPERTIES ||
+		    !persist_durisweb_hook_property(key, new_value))
+			return FALSE;
+
+		result = &duris_properties[properties_count++];
+		result->key = (char *)str_dup(key);
+		result->value = new_value;
+		result->old_value = new_value;
+		qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
+	}
+	else
+	{
+		old_value = result->value;
+		result->value = new_value;
+		if (!persist_durisweb_hook_property(key, new_value))
+		{
+			result->value = old_value;
+			return FALSE;
+		}
+
+		result->old_value = new_value;
+	}
+
+	apply_properties();
+	logit(LOG_WIZ, "DurisWeb service set %s to %.3f", key, new_value);
+	ws_broadcast_durisweb_hook_state();
+	return TRUE;
 }
 
 int load_properties(struct property *properties)
@@ -291,12 +427,16 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 			if (val_string && sscanf(val_string, "%f", &new_value) == 1)
 			{
 				bool success = FALSE;
+				bool hook_changed = FALSE;
 				for (i = 0; i < properties_count; i++)
 				{
 					if (fnmatch(pattern, duris_properties[i].key,
 						    FNM_CASEFOLD) == 0)
 					{
 						duris_properties[i].value = new_value;
+						if (is_durisweb_hook_property(
+							    duris_properties[i].key))
+							hook_changed = TRUE;
 						checked_snprintf(buf, 256, "%s set %s to %.3f",
 								 ch->player.name,
 								 duris_properties[i].key,
@@ -316,6 +456,13 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 				else
 				{
 					apply_properties();
+					/* Push only when a durisweb.hook. key actually
+					   changed. Tested against the matched keys rather
+					   than the pattern, because the pattern is an
+					   fnmatch glob: "properties set * 0.000" changes
+					   hook keys without naming them. */
+					if (hook_changed)
+						ws_broadcast_durisweb_hook_state();
 				}
 			}
 			else
@@ -324,6 +471,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		else if (!strcmp(command, "reload") && (GET_LEVEL(ch) >= FORGER))
 		{
 			initialize_properties();
+			/* A reload can change many hook keys at once. */
+			ws_broadcast_durisweb_hook_state();
 		}
 		else if (!strcmp(command, "save") && (GET_LEVEL(ch) >= FORGER))
 		{
@@ -331,10 +480,13 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		}
 		else if (!strcmp(command, "revert") && (GET_LEVEL(ch) >= FORGER))
 		{
+			bool hook_changed = FALSE;
 			for (i = 0; i < properties_count; i++)
 			{
 				if (duris_properties[i].value != duris_properties[i].old_value)
 				{
+					if (is_durisweb_hook_property(duris_properties[i].key))
+						hook_changed = TRUE;
 					checked_snprintf(buf, 256,
 							 "%s reverted to %.3f from %.3f\r\n",
 							 duris_properties[i].key,
@@ -345,6 +497,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 				}
 			}
 			apply_properties();
+			if (hook_changed)
+				ws_broadcast_durisweb_hook_state();
 			snprintf(buf, 256, "%s reverted property changes.", ch->player.name);
 			wizlog(57, "%s", buf);
 			logit(LOG_WIZ, "%s", buf);

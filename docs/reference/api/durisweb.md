@@ -22,7 +22,104 @@ for clock skew. GMCP peers request the same challenge with
 
 For zero-downtime key rotation, deploy the new key as `DURISWEB_SECRET`, retain
 the old key temporarily as `DURISWEB_SECRET_PREVIOUS`, switch the backend, then
-remove the previous key.
+remove the previous key. The backend signs with the current key first and makes
+exactly one retry with the previous key after an authentication rejection; it
+does not loop between credentials.
+
+## Hook toggles
+
+Every event and service command the MUD serves can be disabled individually by
+an operator. Ids are shared with the DurisWeb repository and are defined there
+at `backend/src/hooks/registry.ts`.
+
+Eight ids are gated on the MUD side: `auction_new`, `auction_bid`,
+`auction_close`, `player_presence`, `mud_shutdown`, `wholist`,
+`admin_delete_character`, and `donation_delivery`.
+
+Each maps to a `durisweb.hook.<id>` key in `lib/duris.properties`. Values are
+floats; anything `>= 0.5` counts as enabled, and a missing key defaults to
+enabled so an older properties file cannot disable a live integration. Change
+one at runtime with `properties set durisweb.hook.<id> 0.000` -- no restart.
+
+A disabled hook emits nothing at the source. Broadcasts return before building
+a payload; `admin_delete_character` returns an explicit error to the caller,
+since a request path has someone waiting on a response; `donation_delivery`
+drains its queue and drops, logging one line per pulse, so events cannot
+accumulate and flood on re-enable.
+
+`connection_log` is deliberately **not** gated here. The lines DurisWeb parses
+out of `logs/log/comm` are ordinary `LOG_COMM` operational logs the MUD writes
+for its own purposes, so suppressing them would remove admin-facing records to
+control a web integration. That toggle lives on the DurisWeb side and stops
+ingestion, not logging.
+
+Request current state with:
+
+```json
+{"cmd":"durisweb_hook_state","data":{}}
+```
+
+The response, also pushed unsolicited whenever a `durisweb.hook.*` property
+changes via `properties set` or `properties reload`:
+
+```json
+{
+  "type": "hook_state",
+  "schema_version": 1,
+  "hooks": {
+    "auction_new": {"enabled": true},
+    "auction_bid": {"enabled": true},
+    "auction_close": {"enabled": true},
+    "player_presence": {"enabled": true},
+    "mud_shutdown": {"enabled": true},
+    "wholist": {"enabled": true},
+    "admin_delete_character": {"enabled": true},
+    "donation_delivery": {"enabled": true}
+  }
+}
+```
+
+`durisweb_hook_state` requires an authenticated service connection. An
+unauthenticated descriptor sending it is closed, as with other service commands.
+
+Set one MUD-owned hook with the authenticated service command:
+
+```json
+{
+  "cmd": "durisweb_hook_set",
+  "data": {
+    "requestId": "durisweb_hook_set_42_1788264000000",
+    "hook": "auction_new",
+    "enabled": false,
+    "actor": "operator-account"
+  }
+}
+```
+
+`requestId` must be a non-empty string of at most 128 bytes, `hook` must be one
+of the exact eight MUD-gated ids above, and `enabled` must be a JSON boolean.
+The current backend adds `requestId` and supplies the authenticated website
+actor; the MUD never treats `actor` as authorization.
+
+The MUD updates the game-thread property, rewrites `lib/duris.properties`
+through `lib/duris.properties.new` plus rename, applies the property, and pushes
+the complete `hook_state` frame. It then acknowledges the request:
+
+```json
+{
+  "type": "durisweb_hook_set",
+  "success": true,
+  "requestId": "durisweb_hook_set_42_1788264000000",
+  "hook": "auction_new",
+  "enabled": false
+}
+```
+
+On failure, `success` is false and `error` is a bounded operational message.
+The pushed state frame may arrive before the acknowledgement; clients must
+correlate the acknowledgement by `requestId` and confirm the observed state.
+Unlike the in-game `properties set` command, this service command persists
+automatically and does not require `properties save`.
 
 ## Authorization and data
 
