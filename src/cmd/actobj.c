@@ -128,6 +128,7 @@ static bool get_trace_enabled(void)
 static bool uses_generic_item_ownership(P_obj object)
 {
 	return object && object->obj_uid > 0 && object->type != ITEM_MONEY &&
+	       !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
 	       !(object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE));
 }
 

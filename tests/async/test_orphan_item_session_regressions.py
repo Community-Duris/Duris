@@ -43,9 +43,43 @@ failures = []
 
 
 def check(name, ok):
+    """Record one source-contract result for the final process status."""
     print(("[PASS] " if ok else "[FAIL] ") + name)
     if not ok:
         failures.append(name)
+
+
+def condition_after(source, anchor):
+    """Return the complete parenthesized C++ if-condition after an anchor."""
+    start = source.index("if (", source.index(anchor)) + len("if (")
+    depth = 1
+    for pos in range(start, len(source)):
+        if source[pos] == "(":
+            depth += 1
+        elif source[pos] == ")":
+            depth -= 1
+            if depth == 0:
+                return source[start:pos]
+    raise AssertionError(f"unterminated condition after: {anchor}")
+
+
+def braced_block_after(source, anchor):
+    """Return the complete C++ brace block following an anchor."""
+    brace = source.index("{", source.index(anchor))
+    depth = 0
+    for pos in range(brace, len(source)):
+        if source[pos] == "{":
+            depth += 1
+        elif source[pos] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[brace + 1 : pos]
+    raise AssertionError(f"unterminated block after: {anchor}")
+
+
+def normalize_cxx(source):
+    """Remove formatting whitespace before comparing a C++ expression."""
+    return "".join(source.split())
 
 
 # 1. Wizard-loaded objects reach the ownership ledger.
@@ -129,11 +163,17 @@ check("transfer serialization does not masquerade as an unowned player save",
 # Every remaining direct grant is fenced at the low-level player publication boundary.
 to_char = handler[handler.index("void obj_to_char("):]
 to_char = to_char[:to_char.index("void obj_from_char(")]
-check("obj_to_char defers every missing or mismatched player ownership row",
-      "GET_PID(ch) > 0" in to_char
-      and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in to_char
-      and "item_owner_identity_equal(ownership.owner, player)" in to_char
-      and "item_creation_grant_submit_to_player(ch, object, ch)" in to_char)
+ownership_guard = condition_after(to_char, "// A persisted generic item")
+ownership_guard_body = braced_block_after(to_char, "// A persisted generic item")
+check("obj_to_char defers missing or mismatched generic ownership rows",
+      normalize_cxx(ownership_guard)
+      == normalize_cxx("""IS_PC(ch) && GET_PID(ch) > 0 && object->obj_uid &&
+      object->type != ITEM_MONEY && !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
+      !(object->type == ITEM_CORPSE &&
+        IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE))""")
+      and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in ownership_guard_body
+      and "item_owner_identity_equal(ownership.owner, player)" in ownership_guard_body
+      and "item_creation_grant_submit_to_player(ch, object, ch)" in ownership_guard_body)
 check("new characters initialize their item-owner revision before receiving equipment",
       "item_ownership_runtime_hydrate_owner(" in nanny
       and "item_owner_type::player" in nanny[nanny.index("void init_char("):])
