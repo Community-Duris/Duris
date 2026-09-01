@@ -67,8 +67,9 @@ The rules, each checked against every square:
   - Clear of every other realm. Two realms may not even touch: there is
     always at least one unclaimed square between them.
 
-'kingdom survey' judges the ground you are standing on and reports,
-square by square, exactly what would refuse you.
+'kingdom map' judges the ground square by square and lists exactly what
+would refuse you. A guild with no realm yet is shown the ground its own
+guildhall stands on, so a site can be read before it is committed to.
 
 
 TAKING AND LOSING LAND
@@ -82,16 +83,18 @@ own, every cycle. If the treasury cannot pay, the realm decays in this
 order:
 
   1. The guards go home.
-  2. The harvest nodes fall dormant.
+  2. The realm stops banking what its people gather.
   3. One OUTER RING is lost per further missed payment.
 
-Paying stops the slide wherever it has reached, and the guards and the
-nodes come back. LAND ALREADY LOST DOES NOT RETURN ON PAYMENT - a ring
-that has reverted must be claimed again from scratch, at full price.
+Paying stops the slide wherever it has reached; the guards return and
+the stores begin filling again. LAND ALREADY LOST DOES NOT RETURN ON
+PAYMENT - a ring that has reverted must be claimed again from scratch,
+at full price.
 
-'kingdom abandon' gives up your most recent square voluntarily.
-Territory always stays contiguous, so it is always the last square taken
-that goes first.
+'kingdom abandon' gives up your most recent square voluntarily. It
+asks first and takes nothing until you type 'kingdom abandon confirm',
+because there is no refund. Territory always stays contiguous, so it
+is always the last square taken that goes first.
 
 
 GUARDS
@@ -104,35 +107,92 @@ and they are not a bodyguard.
 
 RESOURCES
 ---------
-Owned squares carry harvest nodes, and what a node yields depends on the
-ground it stands on. What you gather goes into the realm's own stores.
+Harvest nodes are scattered at random across the whole world, the
+surface and the Underdark alike. They are not kingdom property, and
+they are not put on kingdom ground: a node is never placed on a square
+a realm already holds, so the work is always found out in the world.
+Claim the ground out from under one and it does not become yours: the
+node is swept away, to load again somewhere else.
+
+ANYONE MAY WORK A NODE. You need not belong to a kingdom, and you need
+not be standing on anyone's land - if you find one, you can work it.
+The work takes a few moments of steady effort and it tires you, and you
+must be on your feet and out of a fight to begin. What you draw goes
+into YOUR OWN realm's stores, so a gatherer with no realm behind them
+fills nothing. The ground is worked all the same: the draw is spent
+whoever swings, and what a landless gatherer cuts loose is left where
+it lies.
+
+A KINGDOM'S ADVANTAGE IS THE YIELD, NOT THE NODE. A realm draws best
+on the resources its own ground produces - but only once it holds
+ENOUGH of the right land. Every TWENTY owned squares that favour a
+resource add one step to what your people draw of it, anywhere in the
+world, so a young realm's first ring promises nothing yet, while a
+full realm of eighty forest squares takes roughly five times the
+timber a landless gatherer does. Ground counts by what it is and by
+what it borders - a realm along the coast draws water better though it
+can hold no water square - and a square that favours two things counts
+for both. Territory buys a better hand at every node in the world, not
+a fence around any of them.
+
+Some ground is richer than others, and a node holds only so many draws;
+take the last of them and it is worked out and gone. A node that has
+been broken into does not wait for ever either: once the first draw is
+taken it rots away after a time, whether or not anyone comes back to
+finish it. What is lost is replaced: every part of the world is
+restocked toward its accustomed count of each resource, however hard
+it is worked, so the supply moves about rather than running down.
+
+Nodes are drawn on the overhead map as a coloured letter - s for a
+seam of stone, t for timber, f for fibre, w for water, and m for the
+fungal stands of the Underdark. Everyone sees them, with no skill or
+distance test to pass - even the deep forest that hides men and beasts
+on the map does not hide a node, for a stand of timber IS the visible
+feature of a forest - though anything else standing on the square is
+drawn ahead of the node. Underdark nodes are drawn dimmer than surface
+ones, and what grows below is not what grows above: an ore seam
+for a seam of stone, a fungal stand for timber, cave silk for flax and
+reed, a dark pool for a spring. They give up the same four things -
+mineral, wood, fibre and water.
+
+'kingdom survey' reports the node on the square you are standing on:
+what it yields, how good the ground is, and how many draws are left.
 
 BE CLEAR ABOUT THIS: RESOURCES PUT INTO A REALM CANNOT BE TAKEN OUT
 AGAIN. They are not the guild bank and they are not spending money. They
 exist to be spent on the realm itself, and once given they are given.
 
-Nodes lie dormant while upkeep is unpaid.
+A realm in arrears banks nothing. That is rung two of the ladder above,
+and it lifts the moment the upkeep is paid.
 
 
 SUBCOMMANDS
 -----------
-kingdom            - with no argument, your realm's status.
+kingdom            - with no argument, your realm's status, or the
+                     short command summary while there is no realm.
 kingdom status     - territory, rings, treasury standing, guards, stores.
 kingdom map        - the nine-by-nine grid: what you hold, what is next,
-                     and what is blocked.
-kingdom survey     - judge the ground you are standing on as a site for a
-                     realm, square by square, before committing to it.
+                     and what is blocked. Before there is a realm it
+                     judges the ground your guildhall stands on.
+kingdom survey     - what the node on this square yields, how good the
+                     ground is, and how many draws are left in it.
 kingdom convert    - turn your guild into a kingdom. This grants NO land,
                      only the right to start claiming it.
 kingdom claim      - take the next square in the sequence.
-kingdom abandon    - give up your most recent square.
+kingdom abandon    - give up your most recent square. Does nothing
+                     until you add 'confirm', because nothing is
+                     refunded.
 kingdom harvest    - work the node on the square you are standing on.
-kingdom deposit    - put gathered resources into the realm's stores.
-kingdom guards     - review the garrison.
-kingdom help       - this text.
+kingdom deposit    - pay coin into the guild treasury that upkeep draws
+                     on. Wants a bank and a coin string, like
+                     '500 gold 20 silver'.
+kingdom guards     - how large a garrison the realm may field.
+kingdom help       - a short built-in summary, with your server's own
+                     prices filled in; 'help kingdoms' is this text.
 
 'kingdom c' and 'kingdom s' are ambiguous - c is shared by claim and
 convert, s by status and survey - and will ask which you meant rather
-than guess, because each pair contains something that spends money.
+than guess; claim and convert in particular both spend the treasury's
+money.
 
 See also: SOCIETY, GUILDHALL

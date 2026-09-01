@@ -68,8 +68,9 @@ long kingdom_claim_cost(int index)
 	 * floor stops a negative entry turning the price into a payment TO the
 	 * guild. The ceiling stops `each * index` overflowing a signed long,
 	 * which would be undefined behaviour reached from a config typo; INT_MAX
-	 * is the natural cap because Guild::sub_money() takes ints and nothing
-	 * dearer than that is payable anyway. */
+	 * per knob keeps every price this function can produce well inside a
+	 * long (see the sum bound below) while still pricing land far beyond
+	 * any treasury that will ever exist. */
 	const long ceiling = (long)INT_MAX;
 	long base = kingdom_cfg.claim_cost_base > 0 ? kingdom_cfg.claim_cost_base : 0;
 	long each = kingdom_cfg.claim_cost_per_square > 0 ? kingdom_cfg.claim_cost_per_square : 0;
@@ -116,147 +117,77 @@ long kingdom_ring_cost(int ring)
 /* ------------------------------------------------------------------ *
  * Paying out of the guild treasury
  * ------------------------------------------------------------------ *
- * DENOMINATIONS. 1 platinum = 1000 copper, 1 gold = 100, 1 silver = 10.
- * Proven from src/world/outposts.c:1650-1657, which decomposes a copper
- * upkeep total by exactly those divisors before charging a guild. Kingdom
- * prices are configured in copper.
+ * DENOMINATIONS. 1 platinum = 1000 copper, 1 gold = 100, 1 silver = 10
+ * (GET_MONEY, src/core/utils.h:467). Kingdom prices are configured in
+ * copper.
  *
- * THE NO-CHANGE-MAKING TRAP (src/guild/assocs.c:213-230). Guild::sub_money()
- * tests EACH denomination against its own balance:
- *
- *     if (... || platinum < (unsigned)p || gold < (unsigned)g ||
- *         silver < (unsigned)s || copper < (unsigned)c)
- *             return FALSE;
- *
- * so a treasury holding 500 platinum and no gold cannot pay a bill written as
- * "3 platinum and 2 gold" -- it fails on the gold while sitting on 500 times
- * the money. It cannot break a coin. src/world/outposts.c:1650-1660 charges
- * guild upkeep in precisely that shape and inherits the bug, which is why
- * ruling 3 asks for a new signed-safe Guild::sub_copper().
- *
- * That helper belongs to the Guild class, which this lane does not own, so
- * what follows is a mitigation and not the fix. Two facts about sub_money()
- * make a safe one possible:
- *
- *   1. it performs every check before it mutates anything, so a refusal is
- *      atomic -- there is no partial debit to unwind; and
- *   2. it writes its ledger line only after succeeding, so a refusal leaves
- *      no trace in the guild's books.
- *
- * A failed call is therefore free, and we may PROBE. We try a short fixed list
- * of splits that each sum to EXACTLY the price -- the fewest-coins split
- * first, then "pay the whole bill in one denomination" for each denomination
- * the price divides into evenly -- and take the first the treasury accepts.
- * No candidate ever over- or under-charges, so the guild is never silently
- * surcharged and the mud is never silently shortchanged; a rich treasury
- * simply gets offered more than one shape of the same bill.
+ * Charging goes through Guild::sub_copper() (RULINGS.md 3, guild/assocs.c),
+ * which values the whole purse in copper, checks it ONCE against the price,
+ * and makes change across the denominations. This file used to probe
+ * Guild::sub_money() with a short list of exact-sum splits, because
+ * sub_money() tests each denomination against its own balance and cannot
+ * break a coin -- but a purse of 5 gold and 20 silver holds 700 copper and
+ * matched none of the four spellings of 700, so a claim the treasury could
+ * plainly afford was refused. sub_copper() removed the need for any of that;
+ * the splitting that survives below is for MESSAGES only and never decides
+ * what is payable.
  */
 
 #define KINGDOM_COPPER_PER_PLATINUM 1000L
 #define KINGDOM_COPPER_PER_GOLD 100L
 #define KINGDOM_COPPER_PER_SILVER 10L
 
-struct kingdom_coins
+/* Fewest-coins rendering of a copper price, for refusal messages. Display
+ * only: Guild::sub_copper() alone decides what the treasury can pay.
+ * coins_to_string() returns a STATIC buffer (src/core/utility.c:7289), so at
+ * most one result may be live in a format call at a time. */
+static const char *kingdom_price_string(long price)
 {
-	int platinum;
-	int gold;
-	int silver;
-	int copper;
-};
-
-static bool kingdom_coins_equal(const kingdom_coins &a, const kingdom_coins &b)
-{
-	return a.platinum == b.platinum && a.gold == b.gold && a.silver == b.silver &&
-	       a.copper == b.copper;
-}
-
-/* Fewest-coins decomposition of a copper price. False when the price is not
- * payable at all: Guild::sub_money() takes ints, so anything past INT_MAX is
- * refused here rather than allowed to wrap into a negative charge. */
-static bool kingdom_split_price(long price, kingdom_coins *out)
-{
-	if (!out || price <= 0 || price > (long)INT_MAX)
+	/* Unreachable from the one caller, which charges only positive prices,
+	 * but coins_to_string() cannot render all-zero coins: it falls through
+	 * every branch, logs, and returns an empty string. Answer in words. */
+	if (price <= 0)
 	{
-		return false;
+		return "nothing";
 	}
 
+	/* kingdom_claim_cost() caps each config knob at INT_MAX, so a price is
+	 * at most 81 * INT_MAX and the platinum count at most a thousandth of
+	 * that -- comfortably inside coins_to_string()'s int parameters. */
 	long rest = price;
 
-	out->platinum = (int)(rest / KINGDOM_COPPER_PER_PLATINUM);
+	const int plat = (int)(rest / KINGDOM_COPPER_PER_PLATINUM);
 	rest %= KINGDOM_COPPER_PER_PLATINUM;
-	out->gold = (int)(rest / KINGDOM_COPPER_PER_GOLD);
+	const int gold = (int)(rest / KINGDOM_COPPER_PER_GOLD);
 	rest %= KINGDOM_COPPER_PER_GOLD;
-	out->silver = (int)(rest / KINGDOM_COPPER_PER_SILVER);
+	const int silver = (int)(rest / KINGDOM_COPPER_PER_SILVER);
 	rest %= KINGDOM_COPPER_PER_SILVER;
-	out->copper = (int)rest;
 
-	return true;
+	return coins_to_string(plat, gold, silver, (int)rest, "&+y");
 }
 
-/* Debit `price` copper from the guild. True only if the whole price was taken. */
+/* Debit `price` copper from the guild. True only if the whole price was
+ * taken; sub_copper() checks before it mutates, so a refusal is atomic and
+ * leaves no ledger line. */
 static bool kingdom_pay_from_treasury(P_Guild guild, long price)
 {
-	kingdom_coins split = {};
-
-	if (!guild || !kingdom_split_price(price, &split))
+	if (!guild || price <= 0)
 	{
 		return false;
 	}
 
-	/* At most four: the fewest-coins split, plus one all-gold, one all-silver
-	 * and one all-copper candidate. */
-	kingdom_coins candidates[4] = {};
-	int count = 0;
-
-	candidates[count++] = split;
-
-	kingdom_coins alt = {};
-
-	if (price % KINGDOM_COPPER_PER_GOLD == 0)
+	if (!guild->sub_copper(price))
 	{
-		alt = kingdom_coins{};
-		alt.gold = (int)(price / KINGDOM_COPPER_PER_GOLD);
-		if (!kingdom_coins_equal(alt, split))
-		{
-			candidates[count++] = alt;
-		}
+		return false;
 	}
 
-	if (price % KINGDOM_COPPER_PER_SILVER == 0)
-	{
-		alt = kingdom_coins{};
-		alt.silver = (int)(price / KINGDOM_COPPER_PER_SILVER);
-		if (!kingdom_coins_equal(alt, split))
-		{
-			candidates[count++] = alt;
-		}
-	}
-
-	alt = kingdom_coins{};
-	alt.copper = (int)price;
-	if (!kingdom_coins_equal(alt, split))
-	{
-		candidates[count++] = alt;
-	}
-
-	for (int i = 0; i < count; i++)
-	{
-		if (!guild->sub_money(candidates[i].platinum, candidates[i].gold,
-				      candidates[i].silver, candidates[i].copper))
-		{
-			continue;
-		}
-
-		/* sub_money() adjusts the balances and writes the ledger but does
-		 * not persist. Every other Guild mutator -- set_name,
-		 * add_prestige, add_construction and the rest in guild/assocs.h --
-		 * calls save() itself, so a debit that skipped it would be undone
-		 * by the next reboot. */
-		guild->save();
-		return true;
-	}
-
-	return false;
+	/* sub_copper() adjusts the balances and writes the ledger but does
+	 * not persist. Every other Guild mutator -- set_name,
+	 * add_prestige, add_construction and the rest in guild/assocs.h --
+	 * calls save() itself, so a debit that skipped it would be undone
+	 * by the next reboot. */
+	guild->save();
+	return true;
 }
 
 /* ------------------------------------------------------------------ *
@@ -621,30 +552,20 @@ bool kingdom_claim_next(P_char ch)
 	}
 
 	const long price = kingdom_claim_cost(index);
-	kingdom_coins shown = {};
 
-	/* A price of zero is a deliberate configuration -- both cost knobs set to
-	 * 0 means land is free on this mud -- and must go through as a free
-	 * claim rather than dead-end in the debit, which refuses non-positive
-	 * amounts. kingdom_claim_cost() clamps away negatives, so zero is the
-	 * only such case. */
-	if (price > 0 && !kingdom_split_price(price, &shown))
-	{
-		logit(LOG_KINGDOM, "CLAIM: assoc %d asked for square %d at an unusable price %ld.",
-		      realm->assoc_id, index, price);
-		send_to_char("The price of that square cannot be reckoned.\r\n", ch);
-		return false;
-	}
-
-	/* Everything is validated. Only now does money move. */
+	/* Everything is validated. Only now does money move. A price of zero is
+	 * a deliberate configuration -- both cost knobs set to 0 means land is
+	 * free on this mud -- and must go through as a free claim rather than
+	 * dead-end in the debit, which refuses non-positive amounts.
+	 * kingdom_claim_cost() clamps away negatives, so zero is the only such
+	 * case. */
 	if (price > 0 && !kingdom_pay_from_treasury(guild, price))
 	{
 		char poor[MAX_INPUT_LENGTH];
 
 		snprintf(poor, sizeof(poor),
 			 "Your guild treasury cannot pay the %s that square costs.\r\n",
-			 coins_to_string(shown.platinum, shown.gold, shown.silver, shown.copper,
-					 "&+y"));
+			 kingdom_price_string(price));
 		send_to_char(poor, ch);
 		return false;
 	}

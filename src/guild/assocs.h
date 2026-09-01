@@ -279,6 +279,12 @@ class Guild
 	void ledger(P_char ch, char *args);
 	bool is_clan();
 	bool is_guild();
+	/* True when this guild holds a kingdom realm. Unlike its two neighbours
+	 * above -- declared for years with no definition anywhere -- this one is
+	 * DEFINED (assocs.c), delegating to the kingdom module's seam. The old
+	 * declaration was removed with the retired kingdom surfaces; this is the
+	 * new module's, not a survivor of the old one. */
+	bool is_kingdom();
 	void kick(P_char victim);
 	void kick(P_char kicker, char *char_name);
 	bool sub_money(int p, int g, int s, int c);

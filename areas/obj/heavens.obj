@@ -4940,6 +4940,70 @@ A very small vial has been discarded here.~
 17 7 1 2 7 0 0 8404993 0 0 0
 3 3 27 1542 0 0 0 0
 0 5200 100
+#477
+seam stone mineral node _node_~
+&+La seam of pale &+wstone&n~
+&+LA &+yseam&+L of pale &+wstone&+L breaks the surface here.&n~
+~
+12 11 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#478
+stand timber wood node _node_~
+&+La stand of good &+ytimber&n~
+&+LA stand of good &+ytimber&+L grows close and straight here.&n~
+~
+12 6 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#479
+bed flax reeds fibre node _node_~
+&+La bed of &+gflax and reed&n~
+&+LA bed of &+gflax and reed&+L crowds the low ground here.&n~
+~
+12 42 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#480
+spring water clean node _node_~
+&+La &+cclean spring&n~
+&+LA &+cclean spring&+L wells up out of the ground here.&n~
+~
+12 40 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#481
+seam ore iron mineral node _node_~
+&+La seam of raw &+ciron &+Lore&n~
+&+LA seam of raw &+ciron &+Lore veins the cavern wall here.&n~
+~
+12 15 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#482
+stand fungus fungal mushroom wood node _node_~
+&+La stand of thick-stalked &+Wfungus&n~
+&+LA stand of thick-stalked &+Wfungus&+L rises from the cavern floor here.&n~
+~
+12 6 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#483
+silk cave web fibre node _node_~
+&+La drift of &+Wcave silk&n~
+&+LA drift of &+Wcave silk&+L hangs in pale ropes from the stone here.&n~
+~
+12 3 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
+#484
+pool dark still water node _node_~
+&+La still &+bdark pool&n~
+&+LA still &+bdark pool&+L lies cold in a hollow of the rock here.&n~
+~
+12 40 3 0 5 0 0 0 0 0 0
+10 0 0 0 0 0 0 0
+0 0 100
 #498
 compact pile bones~
 &+La compact pile of &+Wbones&n~

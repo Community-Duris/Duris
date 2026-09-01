@@ -1239,7 +1239,19 @@ bool construct_main_guildhall(P_Guild guild, int outside_vnum, int racewar)
 
 	Guildhall::add(gh);
 
-	return gh->reload();
+	const bool reloaded = gh->reload();
+
+	/* A guild whose main hall was destroyed keeps a dormant realm, so
+	 * building a new main hall is the player-visible way to re-site the
+	 * realm's anchor. Fire the hook only after the hall is committed --
+	 * saved, added to Guildhall::guildhalls and reloaded -- because the
+	 * hook finds the main hall through that vector. For a guild with no
+	 * realm the hook is a no-op, so the ordinary first-hall build is
+	 * unchanged; for a dormant realm it re-resolves the anchor and
+	 * re-judges the footprint before any territory is re-adopted. */
+	kingdom_on_guildhall_changed(gh->assoc_id);
+
+	return reloaded;
 }
 
 bool construct_new_guildhall_room(int id, int from_vnum, int dir)
@@ -1306,9 +1318,22 @@ bool destroy_guildhall(int id)
 {
 	if (Guildhall *gh = Guildhall::find_by_id(id))
 	{
+		/* Guildhall::remove() frees gh, so take the owner id first. */
+		const int assoc_id = gh->assoc_id;
+
 		gh->deinit();
 		gh->destroy();
 		Guildhall::remove(gh);
+
+		/* Only now, after remove() has committed the erase and dropped
+		 * the hall from Guildhall::guildhalls, re-resolve the realm
+		 * anchored on it: the hook looks the main hall up in that
+		 * vector, so calling it any earlier would still find the razed
+		 * hall and change nothing. With the hall gone it drops the
+		 * banner, guards, node exclusion and square index, and the
+		 * realm goes dormant instead of staying anchored to a ruin
+		 * until reboot. */
+		kingdom_on_guildhall_changed(assoc_id);
 		return TRUE;
 	}
 	return FALSE;
@@ -1414,7 +1439,18 @@ bool move_guildhall(Guildhall *gh, int vnum)
 		return FALSE;
 	}
 
-	return gh->reload();
+	const bool reloaded = gh->reload();
+
+	/* The move is committed: save() has written the new outside_vnum and
+	 * reload() has rebuilt the hall against it. A failed reload does not
+	 * un-move the hall -- the new square is already saved -- so the hook
+	 * runs on that path too, not just on success. The realm anchored on
+	 * this hall re-resolves from the new square, and the hook re-judges
+	 * the whole footprint before adopting it, so a move can no longer
+	 * carry territory onto ground the realm could never claim. */
+	kingdom_on_guildhall_changed(gh->assoc_id);
+
+	return reloaded;
 }
 
 // Making guildhalls only avail in towns - 8/22/13 Drannak

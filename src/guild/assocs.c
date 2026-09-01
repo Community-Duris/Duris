@@ -12,10 +12,12 @@
 #include "guild/assocs.h"
 #include <string.h>
 #include <strings.h>
+#include <limits.h>
 #include "guild/alliances.h"
 #include "world/epic.h"
 #include "core/files.h"
 #include "guild/guildhall.h"
+#include "kingdom/kingdom.h"
 #include "economy/nexus_stones.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
@@ -325,26 +327,80 @@ bool Guild::sub_copper(long amount)
 	if (held < static_cast<long long>(amount))
 		return FALSE;
 
-	const long long before_p = platinum, before_g = gold, before_s = silver,
-			before_c = copper;
-
 	long long left = held - static_cast<long long>(amount);
-	platinum = static_cast<unsigned int>(left / 1000);
-	left %= 1000;
-	gold = static_cast<unsigned int>(left / 100);
-	left %= 100;
-	silver = static_cast<unsigned int>(left / 10);
-	left %= 10;
+
+	/* The counters are unsigned int, and left/1000 platinum can exceed
+	 * UINT_MAX (four full counters hold ~1111*UINT_MAX copper), so a
+	 * straight cast would wrap. Saturate the counter instead and roll the
+	 * excess into the next denomination down. Because `held` was itself
+	 * composed of four in-range counters, the remainder always fits by the
+	 * time copper is reached, so no coin is lost.
+	 */
+	const long long denom_cap = static_cast<long long>(UINT_MAX);
+	bool saturated = false;
+
+	if (left / 1000 > denom_cap)
+	{
+		saturated = true;
+		platinum = static_cast<unsigned int>(denom_cap);
+		left -= denom_cap * 1000;
+	}
+	else
+	{
+		platinum = static_cast<unsigned int>(left / 1000);
+		left %= 1000;
+	}
+	if (left / 100 > denom_cap)
+	{
+		saturated = true;
+		gold = static_cast<unsigned int>(denom_cap);
+		left -= denom_cap * 100;
+	}
+	else
+	{
+		gold = static_cast<unsigned int>(left / 100);
+		left %= 100;
+	}
+	if (left / 10 > denom_cap)
+	{
+		saturated = true;
+		silver = static_cast<unsigned int>(denom_cap);
+		left -= denom_cap * 10;
+	}
+	else
+	{
+		silver = static_cast<unsigned int>(left / 10);
+		left %= 10;
+	}
 	copper = static_cast<unsigned int>(left);
 
-	/* Report what actually left the vault, denomination by denomination, so the
-	 * ledger reads the same way a sub_money() line does. */
+	if (saturated)
+		logit(LOG_STATUS,
+		      "Guild %s: treasury balance overflowed a coin counter in"
+		      " sub_copper(); denomination(s) saturated at %u.",
+		      name, UINT_MAX);
+
+	/* Ledger the single TOTAL debited, in the canonical decomposition of
+	 * `amount` -- NOT per-denomination deltas, which go negative for any
+	 * denomination that INCREASED while change was being made ('withdrew
+	 * -9 gold'). */
+	const long long amt = static_cast<long long>(amount);
 	write_transaction_to_ledger(
 		"System", "withdrew",
-		coins_to_string(static_cast<int>(before_p - platinum), static_cast<int>(before_g - gold),
-				static_cast<int>(before_s - silver),
-				static_cast<int>(before_c - copper), "&+y"));
+		coins_to_string(
+			static_cast<int>(MIN(amt / 1000, static_cast<long long>(INT_MAX))),
+			static_cast<int>((amt % 1000) / 100),
+			static_cast<int>((amt % 100) / 10),
+			static_cast<int>(amt % 10), "&+y"));
 	return TRUE;
+}
+
+/* A kingdom is a guild that holds a realm. The realm itself lives in the
+ * kingdom module; this is just the seam query, so the answer can never go
+ * stale against the module's own bookkeeping. */
+bool Guild::is_kingdom()
+{
+	return kingdom_guild_has_realm(static_cast<int>(get_id()));
 }
 
 void Guild::add_frags(P_char ch, long new_frags)
@@ -914,6 +970,15 @@ Guild::~Guild()
 	P_Guild iterator = guild_list;
 	char filename[MAX_STRING_LENGTH];
 	P_char member;
+
+	/* Tear down any kingdom realm FIRST, before this object goes away.
+	 * Guild ids are reused -- found_asc() hands out the lowest free id --
+	 * so a realm left behind would be silently inherited by the next guild
+	 * on this id, and its guard NPCs would keep a dangling GET_ASSOC
+	 * pointer (dereferenced in actwiz.c). Sitting at the top of the
+	 * destructor covers every deletion path. Safe when no realm exists.
+	 */
+	kingdom_on_guild_deleted(static_cast<int>(get_id()));
 
 	for (member = character_list; member; member = member->next)
 	{

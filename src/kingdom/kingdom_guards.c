@@ -19,12 +19,28 @@
  *          keep the guards already standing on them,
  *          extract the rest, spawn into the gaps.
  *
- *  That is also the answer to duplicates across a reboot. Mobs are not saved,
- *  so after a restart the world holds no guards and the first refresh spawns
- *  exactly the allowance. If instead this file wrote down which mob stood
- *  where, every reboot would either resurrect a stale roster on top of the
- *  fresh one or need a reconciliation pass anyway -- so it keeps only the
- *  reconciliation and throws the roster away.
+ *  That is also the answer to duplicates across a restart, but the two kinds
+ *  of restart get there differently, and an earlier draft of this banner got
+ *  the second one wrong. A COLD BOOT holds no guards -- no zone file loads
+ *  them -- so the first refresh simply spawns the allowance. A COPYOVER is the
+ *  opposite: copyover_save() writes EVERY living NPC to copyover.dat, guards
+ *  included (write_mob_entry(), persistence/copyover.c:183-245), and
+ *  copyover_recover() re-spawns each one via read_mobile() and copies back
+ *  room, hp, gold and birthplace (persistence/copyover.c:1061-1199). What it
+ *  does NOT copy back is this module's realm stamp: struct copyover_mob has no
+ *  field for the npc value[] slots, and read_mobile() zeroes them on load
+ *  (world/db.c:1970-1973), so last cycle's garrison comes back stamped 0 --
+ *  guards of no realm -- while the next refresh musters the allowance afresh
+ *  beside it. The orphan sweep in kingdom_guards_refresh_all() is what removes
+ *  them: it despawns every guard-prototype mob whose stamp does not resolve to
+ *  a live realm, stamp 0 explicitly included. Note the boot order in
+ *  net/comm.c's boot sequence: kingdom_initialize() -- and therefore its
+ *  refresh_all -- runs BEFORE copyover_recover() restores the old roster, so
+ *  the sweep that clears it is the first refresh_all AFTER the recovery, not
+ *  the boot-time one. If this file instead wrote its own roster down, every
+ *  restart would either resurrect a stale roster on top of the fresh one or
+ *  need this same reconciliation anyway -- so it keeps only the reconciliation
+ *  and throws the roster away.
  *
  *  THE LADDER (ruled 2026-08-28, RULINGS.md "6 -- UPKEEP DEGRADATION")
  *  ------------------------------------------------------------------
@@ -44,6 +60,28 @@
  *  character's state afterwards, and every despawn re-tests char_in_list()
  *  immediately before extracting -- the same guard char_to_room() itself uses
  *  after running a room proc (world/handler.c:1402).
+ *
+ *  Re-audited 2026-09-01, line by line through world/handler.c:1119-1406, and
+ *  the answer is narrower than "it can free anything". Of char_to_room()'s
+ *  FALSE returns only ONE frees the argument:
+ *
+ *    !IS_ALIVE(ch)        (:1131-1134) returns FALSE, frees nothing
+ *    room < 0 && IS_NPC   (:1136-1145) extract_char()s and returns FALSE
+ *                                      -- THE ONE FREEING PATH
+ *    already in a room    (:1154-1160) returns FALSE, frees nothing
+ *    room proc / sector   (:1397-1406 and below) FREE, but are UNREACHABLE
+ *                                      from here: KINGDOM_GUARD_ENTRY_DIR is
+ *                                      negative, so :1375-1378 has already
+ *                                      returned TRUE before any of them run.
+ *
+ *  So the freeing path is guarded twice over -- kingdom_guard_valid_rnum()
+ *  refuses a negative rnum before the call, and the failure branch still
+ *  consults char_in_list() rather than the character -- and the post-call
+ *  handling below is correct as written. char_in_list() (core/utility.c:568)
+ *  only COMPARES the pointer against character_list and never dereferences it,
+ *  which is what makes it safe to ask about a pointer that may already be
+ *  freed; nothing is allocated between the free and the question, so the
+ *  address cannot have been recycled under it either.
  *
  *  Sibling files inside src/kingdom/ are cited by FUNCTION NAME rather than by
  *  line, because they are being written alongside this one and a line number
@@ -78,27 +116,34 @@ extern P_index mob_index;
  * ------------------------------------------------------------------ */
 
 /*
- * The mob a kingdom guard is loaded from.
+ * The mob a kingdom guard is loaded from: VMOB_KINGDOM_GUARD, declared in
+ * kingdom_internal.h beside the harvest-node object vnums.
  *
- * Deliberately NOT a tuning value: struct kingdom_config is frozen for this
- * change and has no field for a vnum, and a second reader of lib/kingdom.cfg
- * opened here would be a second place for the file's meaning to drift. 97810
- * sits inside the builders' band that world/buildings.h:17-34 already reserves
- * for subsystem-owned prototypes and is unused there -- 97800, 97801, 97820
- * and 97821 are the only numbers that band spends, and 97899 is its ceiling.
+ * IT IS NOT DEFINED HERE, AND THAT IS THE POINT. This file used to carry its
+ * own #define of 97810 on the reasoning that the number sat inside the
+ * builders' subsystem band in world/buildings.h and was unspent there. The
+ * reasoning was sound and the number was still wrong, because "unspent in a
+ * header's comment block" is not the same fact as "present in a .mob file",
+ * and 97810 was in NO .mob file at all. read_mobile(97810, VIRTUAL) therefore
+ * resolved real_mobile() to -1 and returned 0 (world/db.c:1930-1937), so every
+ * spawn failed and the garrison never appeared -- silently, because that
+ * particular log line is compiled out (see kingdom_guard_spawn_one()).
  *
- * It is NOT OUTPOST_GATEGUARD_WAR (97801) on purpose: IS_OP_GOLEM()
- * (world/buildings.h:36) matches purely on that vnum, and specs.assign.c:1129
- * binds outpost_gateguard_proc to it, so a kingdom guard sharing the number
- * would run the outpost's special procedure and answer to the outpost's
- * ownership tests.
+ * The vnum now lives in the header because the .mob record and this loader
+ * have to agree and one definition is the only way to keep them in step. It is
+ * still deliberately NOT a tuning value: struct kingdom_config is frozen for
+ * this change and has no field for a vnum, and a second reader of
+ * lib/kingdom.cfg opened here would be a second place for the file's meaning
+ * to drift.
  *
  * When the prototype is absent from the world the module simply fields no
  * guards -- the same state an operator produces with
  * kingdom.guards.per.squares set above 80 -- and says so once rather than once
- * per realm per upkeep cycle.
+ * per realm per upkeep cycle. That fallback is what MASKED the bad vnum, so it
+ * is worth being explicit that it is a safety net and not a test: only
+ * kingdom_guard_rnum() answering >= 0 against a real heavens.mob record proves
+ * the number is right.
  */
-#define KINGDOM_GUARD_MOB_VNUM 97810
 
 /*
  * Which npc value slot carries the owning association id.
@@ -166,7 +211,7 @@ static int kingdom_guard_rnum(void)
 	if (mob_index == NULL)
 		return -1;
 
-	return real_mobile(KINGDOM_GUARD_MOB_VNUM);
+	return real_mobile(VMOB_KINGDOM_GUARD);
 }
 
 /* True when this character is a kingdom guard of any realm. Tested in this
@@ -180,6 +225,30 @@ static bool kingdom_char_is_guard(P_char ch, int guard_rnum)
 	if (!IS_NPC(ch))
 		return false;
 	if (ch->only.npc == NULL)
+		return false;
+
+	/*
+	 * A nameless mob is never claimed, however well its R_num matches, because
+	 * the only thing this module ever does with a guard it recognises is
+	 * extract_char() it -- and extract_char() opens with
+	 * `if (!(*ch->player.name))` (world/handler.c:4680), which dereferences a
+	 * null name rather than testing for one.
+	 *
+	 * That mob is reachable: read_mobile() pushes the new character onto
+	 * character_list (world/db.c:1960-1962) BEFORE it reads the strings, and
+	 * its "Error with mob: No name" path returns NULL without unlinking
+	 * (world/db.c:1983-1990), so a .mob file truncated mid-record leaves a
+	 * half-built mob on the list carrying this very R_num and a stamp of 0.
+	 * kingdom_guards_refresh_all()'s orphan sweep would find it -- assoc 0
+	 * belongs to no realm -- and crash the server trying to tidy it away.
+	 *
+	 * Refusing to recognise it is the honest answer: this module can neither
+	 * identify whose it is nor remove it safely, so it treats it as it treats
+	 * every other broken mob in the world, which is not at all. It costs
+	 * nothing on the normal path, where read_mobile() has either read the name
+	 * or taken the shared mob_index[].keys pointer.
+	 */
+	if (ch->player.name == NULL || *ch->player.name == '\0')
 		return false;
 
 	/* R_num is compared directly rather than through GET_VNUM(), which
@@ -362,9 +431,35 @@ static bool kingdom_guard_spawn_one(const kingdom_realm &realm, int rnum, P_Guil
 	if (!kingdom_guard_valid_rnum(rnum))
 		return false;
 
-	mob = read_mobile(KINGDOM_GUARD_MOB_VNUM, VIRTUAL);
+	mob = read_mobile(VMOB_KINGDOM_GUARD, VIRTUAL);
 	if (mob == NULL)
-		return false; /* read_mobile() has already logged the reason */
+	{
+		/*
+		 * Not logged here, but only after checking that read_mobile() really
+		 * does log every failure this call site can reach. It has four NULL
+		 * returns (world/db.c:1930-2086):
+		 *
+		 *   vnum not in the database   SILENT. The log line is wrapped in
+		 *                              `#if defined(DB_NOTIFY) && DB_NOTIFY`
+		 *                              and core/config.h:39 reads
+		 *                              `#define DB_NOTIFYoff` -- a missing
+		 *                              space, so DB_NOTIFY is undefined and
+		 *                              that line is compiled out of the whole
+		 *                              server. This is what made the old
+		 *                              97810 fail without a word. It cannot
+		 *                              be reached from here: the caller has
+		 *                              already proved the rnum resolves.
+		 *   no only.npc struct         wizlog(56) + logit(LOG_DEBUG)
+		 *   no name in the record      wizlog(56)
+		 *   malformed stat line        logit(LOG_DEBUG), and extract_char()s
+		 *                              the half-built mob itself
+		 *
+		 * So the three reachable failures all speak, and a fourth line from
+		 * this module would only repeat them once per unmanned post per
+		 * upkeep cycle.
+		 */
+		return false;
+	}
 
 	/* The realm stamp goes on before anything can move the mob, so a guard
 	 * is identifiable even if the very next call extracts it. */
@@ -372,7 +467,7 @@ static bool kingdom_guard_spawn_one(const kingdom_realm &realm, int rnum, P_Guil
 
 	/* The engine's own convention for a guild-owned NPC: Guild::update()
 	 * walks character_list and skips NPCs precisely because outpost and
-	 * guildhall guards carry this (guild/assocs.c:3670-3674), and
+	 * guildhall guards carry this (guild/assocs.c:3724-3728), and
 	 * Building::load_gateguard() sets it the same way (world/buildings.c:707).
 	 * A NULL guild is tolerated -- the stamp above is what this module reads,
 	 * and the pointer is a courtesy to the rest of the server. */
@@ -440,7 +535,19 @@ static int kingdom_guard_extract_all(std::vector<P_char> &doomed)
  * The public roster operations
  * ------------------------------------------------------------------ */
 
-/* How many guards of this realm are standing anywhere in the world. */
+/*
+ * How many of this realm's guards are standing in the world RIGHT NOW: a live
+ * census of character_list by realm stamp, not a read of the allowance.
+ *
+ * That distinction is the point for its caller, the `kingdom guards` display
+ * (kingdom_cmds.c), which shows this beside kingdom_guard_allowance() as
+ * standing-versus-permitted: the two disagree exactly while a refresh has not
+ * yet caught up with a change -- an arrears rung, lost territory, guards
+ * killed at their posts -- which is precisely what a player asking the
+ * command wants to see. Guards are counted wherever they stand, on post or
+ * off, because a mis-posted guard still exists until the next refresh removes
+ * it and a census that hid it would just be the allowance again.
+ */
 int kingdom_guards_count(int assoc_id)
 {
 	const int guard_rnum = kingdom_guard_rnum();
@@ -461,12 +568,17 @@ int kingdom_guards_count(int assoc_id)
 /*
  * Send every one of this realm's guards home. Returns how many were removed.
  *
+ * The caller is kingdom_on_guild_deleted() (kingdom.c): when a guild is
+ * disbanded its garrison must leave with it, immediately, not linger until the
+ * next sweep notices the realm is gone -- association ids are reused, so a
+ * leftover guard would be adopted by the id's next owner. That hook runs
+ * BEFORE the Guild object is freed, which is fine either way here, because
+ * guards are matched on the stamped int id and never on GET_ASSOC()'s
+ * pointer.
+ *
  * NOT gated on kingdom_cfg.enabled: switching the feature off must be able to
  * clear the world of guards, and a realm being deleted must be able to clear
- * its own whatever the config says. kingdom_on_guild_deleted() is the caller
- * that matters, and it is documented as running BEFORE the Guild object is
- * freed -- which is fine either way here, because guards are matched on the
- * stamped int id and never on GET_ASSOC()'s pointer.
+ * its own whatever the config says.
  */
 int kingdom_guards_despawn(int assoc_id)
 {
@@ -535,7 +647,7 @@ int kingdom_guards_refresh(const kingdom_realm &realm)
 			warned = true;
 			logit(LOG_KINGDOM,
 			      "mob %d is not in the world; realms will field no guards.",
-			      KINGDOM_GUARD_MOB_VNUM);
+			      VMOB_KINGDOM_GUARD);
 		}
 		return 0;
 	}
@@ -621,17 +733,27 @@ int kingdom_guards_refresh(const kingdom_realm &realm)
 }
 
 /*
- * Reconcile every realm, and clear away guards whose realm no longer exists.
+ * Reconcile every realm, and clear away guards whose stamp does not resolve to
+ * a live realm.
  *
- * The orphan sweep is not belt and braces: association ids are reused --
- * found_asc() hands out the lowest free id, which is why kingdom.h insists a
- * deleted guild's realm is dropped before the id can be reissued -- so a guard
- * left standing with a stamp of 7 would be silently adopted by the next realm
- * to take id 7.
+ * The orphan sweep is not belt and braces; it has three real customers:
  *
- * It also removes any hand-loaded copy of the prototype, since an unstamped
- * mob carries assoc 0 and no realm answers to that. The vnum belongs to this
- * module, so that is the intended reading rather than a side effect.
+ *   - reused association ids. found_asc() hands out the lowest free id, which
+ *     is why kingdom.h insists a deleted guild's realm is dropped before the
+ *     id can be reissued -- a guard left standing with a stamp of 7 would be
+ *     silently adopted by the next realm to take id 7.
+ *   - copyover survivors. copyover_recover() restores last cycle's guards
+ *     with their stamp zeroed (see the file banner), so after a copyover the
+ *     whole old garrison stands here stamped 0, doubled up with the fresh one.
+ *   - hand-loaded copies of the prototype, which carry assoc 0 the same way.
+ *     The vnum belongs to this module, so removing them is the intended
+ *     reading rather than a side effect.
+ *
+ * The last two are why stamp 0 is refused EXPLICITLY, by
+ * kingdom_guard_valid_assoc(), rather than left to a map lookup: kingdom.h's
+ * kingdom_guild_has_realm() answers for ids that could name an association,
+ * and "no owner at all" should not depend on kingdom_realms merely happening
+ * never to hold a key of 0.
  */
 void kingdom_guards_refresh_all(void)
 {
@@ -645,13 +767,20 @@ void kingdom_guards_refresh_all(void)
 		{
 			if (!kingdom_char_is_guard(tch, guard_rnum))
 				continue;
-			if (kingdom_realms.count(KINGDOM_GUARD_ASSOC(tch)) == 0)
+
+			/* A guard stands only for a stamp that is a plausible
+			 * association id AND names a live realm. The first test is
+			 * what despawns the stamp-0 copyover survivors and hand-loads;
+			 * the second is the same answer Guild::is_kingdom() gets. */
+			const int stamp = KINGDOM_GUARD_ASSOC(tch);
+			if (!kingdom_guard_valid_assoc(stamp) || !kingdom_guild_has_realm(stamp))
 				orphans.push_back(tch);
 		}
 
 		const int swept = kingdom_guard_extract_all(orphans);
 		if (swept > 0)
-			logit(LOG_KINGDOM, "swept %d guard(s) whose realm no longer exists.",
+			logit(LOG_KINGDOM,
+			      "swept %d guard(s) whose stamp resolves to no live realm.",
 			      swept);
 	}
 

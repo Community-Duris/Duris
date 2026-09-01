@@ -45,6 +45,22 @@
  *  `kingdom claim` while arrears != KARR_CURRENT, so clearing the rung is
  *  what reopens buying land.
  *
+ *  CADENCE AND CRASHES
+ *  -------------------
+ *  Two clocks matter here, and both survive a reboot:
+ *
+ *    WHEN a realm is next billed derives from its PERSISTED
+ *    upkeep_paid_through -- a realm is due once a full period has passed
+ *    since it last paid. The in-memory cycle stamp below only throttles the
+ *    sweep; it decides nothing about who owes. So the first sweep after a
+ *    boot does not re-bill realms that paid shortly before the restart.
+ *
+ *    WHAT a payment took is persisted the same cycle it is taken:
+ *    Guild::sub_copper() moves in-memory counters only, so every debited
+ *    treasury gets a Guild::save() after the sweep, BEFORE the realm flush
+ *    that records the payment. A crash between callbacks can therefore never
+ *    keep the "paid" mark while dropping the coin it was paid with.
+ *
  *  Sibling files inside src/kingdom/ are cited by FUNCTION NAME rather than by
  *  line: they are still being written alongside this one, so a line number
  *  into them would be stale before it was read. Engine files outside this
@@ -64,7 +80,7 @@
  *  that has already missed three consecutive cycles.
  *
  *  The sweep walks a snapshot of the association ids rather than the map's
- *  iterators, which is the discipline EVENTS.md:186-188 asks of every periodic
+ *  iterators, which is the discipline EVENTS.md:185-186 asks of every periodic
  *  scan: "stable cursors or runtime-ID snapshots so entity removal between
  *  slices cannot invalidate traversal state".
  *
@@ -91,7 +107,7 @@
 #include <ctime>
 #include <vector>
 
-/* net/comm.c:333 defines this as a plain `long` and world/db.c:426 sets it to
+/* net/comm.c:340 defines this as a plain `long` and world/db.c:426 sets it to
  * time(0) at boot. world/db.c:60 and world/epic.c:40 redeclare it unqualified,
  * which is the spelling matched here (world/outposts.c:65 says
  * `extern const long`, and the mismatch is only survivable because plain
@@ -103,8 +119,8 @@ static const char KINGDOM_STEWARD[] = "The Kingdom Steward";
 
 /* Coin denominations are decimal, and the guild treasury never carries between
  * them: Guild::deposit() folds a member's purse into copper as
- * p*1000 + g*100 + s*10 + c (guild/assocs.c:2562, and again at 2587) but then
- * adds each coin to its own counter untouched (guild/assocs.c:2567-2570). */
+ * p*1000 + g*100 + s*10 + c (guild/assocs.c:2616, and again at 2641) but then
+ * adds each coin to its own counter untouched (guild/assocs.c:2621-2624). */
 #define KINGDOM_COPPER_PER_PLATINUM 1000
 #define KINGDOM_COPPER_PER_GOLD 100
 #define KINGDOM_COPPER_PER_SILVER 10
@@ -244,7 +260,13 @@ void kingdom_clear_arrears(kingdom_realm &realm)
  * Guild::sub_copper() (RULINGS.md 3) settles it properly: it values the whole
  * purse, checks it once, and makes change across the denominations. Upkeep is
  * the case that needs it, because the charge scales with territory and so lands
- * on arbitrary amounts rather than authored ones. */
+ * on arbitrary amounts rather than authored ones.
+ *
+ * The debit is IN-MEMORY ONLY: sub_copper() moves the counters and writes the
+ * ledger line, but neither it nor sub_money() runs Guild::save()
+ * (guild/assocs.c:655) -- the engine's one path, sql and flatfile both, that
+ * writes the counters out. The sweep saves every charged guild after the loop;
+ * a caller that skipped that would see the payment undone at the next boot. */
 static bool charge_treasury(P_Guild guild, long copper_total)
 {
 	if (!guild)
@@ -278,25 +300,28 @@ static const char *arrears_text(int arrears)
  * The periodic callback
  * ------------------------------------------------------------------ */
 
-/* When the last cycle actually charged, as a guard against billing twice.
+/* When the last sweep ran: the throttle that turns a fast tick into the
+ * configured billing period.
  *
- * The periodic registry owns the cadence, but the interval it is registered
- * with is fixed at boot while kingdom_cfg.upkeep_period_seconds can be
- * reloaded, and the registry counts PULSES rather than seconds -- WAIT_SEC is
- * 4 of them to the second (core/config.h:105). A registration that forgot that
- * conversion would bill every realm four times as often and walk the arrears
- * ladder four times as fast. Coin taken cannot be un-taken and a reverted ring
- * is gone for good, so refuse to run twice inside one configured period and
- * say so in the log rather than failing silently.
+ * The registered interval is fixed at boot and counted in PULSES (WAIT_SEC is
+ * 4 of them to the second, core/config.h:105), while
+ * kingdom_cfg.upkeep_period_seconds is config and can be reloaded, so the
+ * wiring ticks this callback much faster than realms are billed -- once a
+ * minute against a default period of an hour -- and the stamp here throttles
+ * the sweep down to at most one per configured period. That also makes the
+ * billing rate independent of the registered interval: a tick registered too
+ * fast (or with the pulse conversion forgotten) cannot over-bill or walk the
+ * arrears ladder early, it just burns a cheap early return.
  *
- * This never suppresses a legitimate cycle. Under either periodic policy the
- * real gap between callbacks is at least the registered interval, so an
- * interval that matches the configured period always clears the test:
- * fixed_delay adds the interval to the callback's completion
- * (world/nevent_periodic.c:313), and fixed_rate does NOT replay a backlog --
- * periodic_fixed_rate_due() advances the deadline past the current tick and
- * merely counts what it skipped into missed_runs
- * (world/nevent_periodic.c:132-146). */
+ * Being called before the period is up is therefore the NORMAL case -- the
+ * overwhelming majority of ticks -- and the not-yet-due return is deliberately
+ * SILENT: logging it would write a line a minute, forever. Actual charges,
+ * arrears, and the end-of-cycle summary are still logged.
+ *
+ * The stamp is in-memory, so on the first tick after a boot it throttles
+ * nothing. Reboot cadence is honoured anyway, because the sweep derives each
+ * realm's due time from the PERSISTED upkeep_paid_through and skips realms
+ * whose paid period has not yet run out. */
 static time_t kingdom_upkeep_last_cycle = 0;
 
 void kingdom_upkeep_event(void)
@@ -318,11 +343,8 @@ void kingdom_upkeep_event(void)
 		 (now - kingdom_upkeep_last_cycle) <
 			 static_cast<time_t>(kingdom_cfg.upkeep_period_seconds))
 	{
-		logit(LOG_KINGDOM,
-		      "upkeep: called %ld seconds after the last cycle but the configured "
-		      "period is %d; skipping so nobody is billed twice",
-		      static_cast<long>(now - kingdom_upkeep_last_cycle),
-		      kingdom_cfg.upkeep_period_seconds);
+		/* Not yet due. The tick outruns the period by design, so this
+		 * is the routine path -- silent, per the note on the stamp. */
 		return;
 	}
 	kingdom_upkeep_last_cycle = now;
@@ -335,6 +357,15 @@ void kingdom_upkeep_event(void)
 	assoc_ids.reserve(kingdom_realms.size());
 	for (const auto &entry : kingdom_realms)
 		assoc_ids.push_back(entry.first);
+
+	/* Association ids whose treasury was actually debited this sweep. Their
+	 * guilds must be SAVED after the loop -- the debit is in-memory until
+	 * Guild::save() runs (see charge_treasury) -- and ids rather than
+	 * P_Guild pointers are kept, on the same discipline as the realm
+	 * snapshot above. kingdom_realms is keyed by assoc_id, so no id can
+	 * appear twice. */
+	std::vector<int> charged_ids;
+	charged_ids.reserve(assoc_ids.size());
 
 	const bool in_boot_grace =
 		(now >= static_cast<time_t>(boot_time)) &&
@@ -352,6 +383,32 @@ void kingdom_upkeep_event(void)
 
 		kingdom_realm *realm = kingdom_find_realm(assoc_id);
 		if (!realm)
+			continue;
+
+		if (realm->upkeep_paid_through > now)
+		{
+			/* The wall clock stepped backwards past the last payment.
+			 * Re-arm from here -- exactly as the cycle stamp does --
+			 * so the realm owes one period from NOW instead of
+			 * sitting unbillable until the clock overtakes the old
+			 * stamp. */
+			realm->upkeep_paid_through = now;
+			realm->dirty = true;
+			touched++;
+		}
+
+		/* THE CADENCE IS THE REALM'S, NOT THE PROCESS'S. A realm is due
+		 * only once a full period has passed since its PERSISTED
+		 * upkeep_paid_through, which is what makes cadence survive a
+		 * reboot: a realm that paid ten minutes before a restart is not
+		 * re-billed on the first post-boot sweep, and a realm founded
+		 * mid-cycle (kingdom_claim_next() stamps a fresh realm's
+		 * paid_through) is not billed seconds later. Silent: a realm
+		 * inside its paid period is the unremarkable case, not an
+		 * anomaly. */
+		if (kingdom_cfg.upkeep_period_seconds > 0 &&
+		    (now - realm->upkeep_paid_through) <
+			    static_cast<time_t>(kingdom_cfg.upkeep_period_seconds))
 			continue;
 
 		const long due = kingdom_upkeep_due(*realm);
@@ -388,6 +445,7 @@ void kingdom_upkeep_event(void)
 			realm->upkeep_paid_through = now;
 			realm->dirty = true;
 			kingdom_clear_arrears(*realm);
+			charged_ids.push_back(realm->assoc_id);
 			paid++;
 			touched++;
 
@@ -463,6 +521,28 @@ void kingdom_upkeep_event(void)
 
 	if (touched)
 	{
+		/* Persist the DEBITS, and do it BEFORE the realm flush that
+		 * records them as paid. The treasury counters live on the Guild
+		 * and Guild::save() (guild/assocs.c:655) is the engine's only
+		 * write path for them -- sql and flatfile both -- so a paid
+		 * realm flushed without its guild would have the payment undone
+		 * at the next boot while upkeep_paid_through stood: free upkeep
+		 * after any crash. This order points the remaining crash window
+		 * the safe way round: a crash between the two writes re-bills a
+		 * realm that already paid, rather than un-billing one.
+		 *
+		 * Batched here, like the realm flush, rather than inside the
+		 * sweep: flat-mode Guild::save() re-reads the whole association
+		 * store per call, which is fine once per charged guild per
+		 * cycle and not fine on the per-realm path. Re-looked-up by id
+		 * for the same reason the sweep re-looks-up realms. */
+		for (const int charged_id : charged_ids)
+		{
+			P_Guild charged_guild = get_guild_from_id(charged_id);
+			if (charged_guild)
+				charged_guild->save();
+		}
+
 		/* One flush for the whole sweep: the record writes are what make
 		 * this job expensive, and batching keeps the callback's cost off
 		 * the per-realm path. Both kingdom_db_flush_dirty() backends walk
@@ -473,4 +553,11 @@ void kingdom_upkeep_event(void)
 		      "upkeep: cycle complete; %d realm(s) paid, %d in default, %d written", paid,
 		      defaulted, touched);
 	}
+
+	/* Reconcile every garrison against what the realms now hold. This tick is
+	 * where arrears rungs move -- guards go at KARR_GUARDS_GONE and come back
+	 * when the debt clears -- and where territory lost to a reverted ring
+	 * changes the allowance, so it is the right place to settle up. Cheap
+	 * when nothing changed: refresh is idempotent. */
+	kingdom_guards_refresh_all();
 }

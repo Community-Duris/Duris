@@ -58,9 +58,12 @@ bool kingdom_enabled(void);
  * ------------------------------------------------------------------ */
 
 /* The association id owning the map square this room is, or 0 for none.
- * O(1): the module keeps a vnum-keyed index rather than scanning realms,
- * because this is called from movement and from the map renderer. */
+ * O(1) against a vnum-keyed index, so it is safe to ask from movement and
+ * the map renderer. */
 int kingdom_owner_of_room(int rnum);
+
+/* True when this association has a realm. Backs Guild::is_kingdom(). */
+bool kingdom_guild_has_realm(int assoc_id);
 
 /* True when `ch` belongs to the guild that owns this room's square. */
 bool kingdom_char_owns_room(struct char_data *ch, int rnum);
@@ -88,8 +91,8 @@ const char *kingdom_room_banner(int rnum);
 bool kingdom_footprint_check(int hall_rnum, int racewar, char *why, size_t why_len);
 
 /* Minimum separation between two guildhall centres, in map squares, so that
- * two 9x9 footprints cannot even touch. Exposed for the guildhall subsystem's
- * own messaging. */
+ * two 9x9 footprints cannot even touch. Used by the module's own refusal and
+ * help text; exposed so engine messaging MAY quote it too. */
 int kingdom_min_hall_separation(void);
 
 /* ------------------------------------------------------------------ *

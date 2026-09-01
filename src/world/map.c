@@ -121,6 +121,17 @@ enum
 	CONTAINS_MINE,
 	CONTAINS_GEMMINE,
 	CONTAINS_CARGO,
+	// Category 5b: kingdom harvest nodes. APPENDED AT THE END so that every
+	// existing CONTAINS_* keeps its value. sector_symbol[] and glyph_names[]
+	// below are indexed by this enum, so they gain entries in this same order.
+	CONTAINS_NODE_STONE,
+	CONTAINS_NODE_TIMBER,
+	CONTAINS_NODE_FIBRE,
+	CONTAINS_NODE_SPRING,
+	CONTAINS_NODE_ORE,
+	CONTAINS_NODE_FUNGUS,
+	CONTAINS_NODE_SILK,
+	CONTAINS_NODE_POOL,
 	CONTAINS_MAX
 };
 
@@ -205,6 +216,18 @@ const AnsiString sector_symbol[NUM_GLYPHS] = {
 	"&+Ym", // mine
 	"&+ym", // gem mine
 	"&=bLo", // cargo
+
+	// Kingdom harvest nodes. Surface bright, Underdark dim, one hue per
+	// resource -- except fungus, which takes the mushroom magenta of
+	// SECT_UNDRWLD_MUSHROOM so a fungal stand never reads as a tree.
+	"&+Ws", // node: stone seam (surface)
+	"&+Gt", // node: timber stand (surface)
+	"&+Yf", // node: flax and reeds (surface)
+	"&+Cw", // node: clean spring (surface)
+	"&+ws", // node: ore seam (Underdark)
+	"&+mm", // node: fungal stand (Underdark)
+	"&+mf", // node: cave silk (Underdark)
+	"&+cw", // node: dark pool (Underdark)
 };
 
 // mostly sector_types but some have unfitting names
@@ -239,6 +262,8 @@ const char *glyph_names[NUM_GLYPHS] = {
 	"evil_pc", // by align not side
 	"group",	"pc",	       "mob",	       "portal",      "guildhall", "corpse",
 	"track",	"blood",       "old_blood",    "mine",	      "gem_mine",  "cargo",
+	"node_stone",	"node_timber", "node_fibre",   "node_spring",
+	"node_ore",	"node_fungus", "node_silk",    "node_pool",
 };
 
 unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
@@ -336,6 +361,48 @@ bool calculate_map_coords(int room1, int room2, int &x, int &y)
 	return true;
 }
 
+/* ------------------------------------------------------------------------ *
+ * Kingdom harvest nodes
+ * ------------------------------------------------------------------------ *
+ * A node is an ordinary object lying in a room, exactly like the ore and gem
+ * mines, so the map draws it the same way: a coloured letter picked by the
+ * prototype vnum. Surface 477-480, Underdark 481-484.
+ *
+ * The vnums are repeated here rather than included. They live in
+ * src/kingdom/kingdom_internal.h, which states it is private to src/kingdom/,
+ * and the public kingdom/kingdom.h does not export them -- so map.c widens no
+ * includes for this. Keep this block in step with that header; better still,
+ * hoist those eight defines into world/vnum.obj.h, which map.c already
+ * includes beside VOBJ_MINE, and index off them directly.
+ */
+static const int VOBJ_KINGDOM_NODE_FIRST = 477;
+static const int VOBJ_KINGDOM_NODE_LAST = 484;
+
+static const int kingdom_node_glyph_tab[VOBJ_KINGDOM_NODE_LAST - VOBJ_KINGDOM_NODE_FIRST + 1] = {
+	CONTAINS_NODE_STONE, /* 477 a seam of stone   */
+	CONTAINS_NODE_TIMBER, /* 478 a stand of timber */
+	CONTAINS_NODE_FIBRE, /* 479 flax and reeds    */
+	CONTAINS_NODE_SPRING, /* 480 a clean spring    */
+	CONTAINS_NODE_ORE, /* 481 an ore seam       */
+	CONTAINS_NODE_FUNGUS, /* 482 a fungal stand    */
+	CONTAINS_NODE_SILK, /* 483 cave silk         */
+	CONTAINS_NODE_POOL, /* 484 a dark pool       */
+};
+
+/* Map glyph for a harvest node lying in a room, or CONTAINS_NOTHING when this
+ * object is not one. Anyone may work a node -- the kingdom advantage is a yield
+ * bonus, not access -- so there is deliberately no innate, side or distance
+ * gate on seeing one, unlike the mines. */
+static int kingdom_node_glyph(P_obj obj)
+{
+	int vnum = OBJ_VNUM(obj);
+
+	if (vnum < VOBJ_KINGDOM_NODE_FIRST || vnum > VOBJ_KINGDOM_NODE_LAST)
+		return CONTAINS_NOTHING;
+
+	return kingdom_node_glyph_tab[vnum - VOBJ_KINGDOM_NODE_FIRST];
+}
+
 /* takes rnum */
 
 int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
@@ -343,6 +410,7 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 	P_obj obj; // For looping through objs in a room.
 	P_char who; // For looping through chars in a room.
 	int val = CONTAINS_MAX + 1;
+	int node_val = CONTAINS_MAX + 1; // kingdom harvest node glyph alone; see HIDDEN_BY_FOREST below
 	int from_room = ch->in_room;
 
 	if (!IS_ALIVE(ch) || room <= 0)
@@ -457,6 +525,12 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 			{
 				val = MIN(val, CONTAINS_MINE);
 			}
+			// Harvest nodes are visible to everyone; see kingdom_node_glyph.
+			else if (int node_glyph = kingdom_node_glyph(obj))
+			{
+				val = MIN(val, node_glyph);
+				node_val = MIN(node_val, node_glyph);
+			}
 			// Using track scan ?
 			else if ((OBJ_VNUM(obj) == VNUM_TRACKS) && !IS_OWN_TRACK(ch, obj) &&
 				 ((distance <= (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) / 20)) ||
@@ -514,9 +588,18 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 	{
 		return CONTAINS_MAGIC_LIGHT;
 	}
-	// Forest covers up Lifeforms and Objects.
+	// Forest covers up Lifeforms and Objects...
 	if (HIDDEN_BY_FOREST(from_room, room))
 	{
+		// ...except the eight kingdom harvest nodes (vnums 477-484): a stand
+		// of timber IS the visible feature of the forest, and placement
+		// steers wood onto SECT_FOREST, so concealing them would blank most
+		// timber stands. node_val is kept apart from val because val is a
+		// MIN over every object glyph: a concealed higher-priority object in
+		// the same room (corpse, track, blood, portal) would shadow the node
+		// in val, so a range test on val alone would still hide the node.
+		if (node_val < CONTAINS_MAX)
+			return node_val;
 		return CONTAINS_NOTHING;
 	}
 

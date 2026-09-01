@@ -142,6 +142,71 @@ static void kingdom_clear_anchor(kingdom_realm &realm)
 }
 
 /* ------------------------------------------------------------------ *
+ * Failed realm-row deletes, remembered for retry
+ * ------------------------------------------------------------------ *
+ * Association ids are REUSED -- found_asc() hands out the lowest free id
+ * (guild/assocs.c:350-354) -- so a realm row whose DELETE failed is not a
+ * leak: it is territory waiting to be inherited by the next guild to take
+ * that id at the next boot's kingdom_db_load_all(). Logging the failure once
+ * does not change that outcome; retrying the delete does. Failed ids wait
+ * here and are retried from this file's DB-touching entry points (the two
+ * hooks and kingdom_shutdown()).
+ *
+ * The list is in-memory only, deliberately: a row that outlives a crash is
+ * re-loaded at the next boot and re-swept by kingdom_initialize()'s orphan
+ * pass, which is the durable backstop. That backstop has one hole -- an id
+ * re-issued to a NEW guild before the retry lands makes the orphan sweep see
+ * a live association and keep the row -- which is exactly why the runtime
+ * retry exists rather than leaving it all to boot.
+ */
+static std::vector<int> kingdom_failed_deletes;
+
+/* Delete a realm's DB row, remembering the id for retry when the backend
+ * refuses. Every realm-row delete in this file goes through here so no
+ * failure path can forget to remember. */
+static void kingdom_delete_realm_row(int assoc_id)
+{
+	if (kingdom_db_delete_realm(assoc_id))
+		return;
+
+	/* No duplicates: a second failure of the same id IS the retry. */
+	if (std::find(kingdom_failed_deletes.begin(), kingdom_failed_deletes.end(), assoc_id) ==
+	    kingdom_failed_deletes.end())
+		kingdom_failed_deletes.push_back(assoc_id);
+
+	logit(LOG_KINGDOM,
+	      "realm row for association %d could not be deleted; remembered for retry.",
+	      assoc_id);
+}
+
+/* Retry every remembered delete, keeping the ones that fail again. Cheap when
+ * the list is empty, which is always except while the backend is refusing
+ * deletes. Gated on enabled because the kingdom tables are only guaranteed to
+ * exist while the feature is on (see kingdom_on_guild_deleted()). */
+static void kingdom_retry_failed_deletes(void)
+{
+	std::vector<int> still_failed;
+
+	if (kingdom_failed_deletes.empty())
+		return;
+	if (!kingdom_cfg.enabled)
+		return;
+
+	for (size_t i = 0; i < kingdom_failed_deletes.size(); i++)
+	{
+		const int assoc_id = kingdom_failed_deletes[i];
+
+		if (kingdom_db_delete_realm(assoc_id))
+			logit(LOG_KINGDOM, "realm row for association %d deleted on retry.",
+			      assoc_id);
+		else
+			still_failed.push_back(assoc_id);
+	}
+
+	kingdom_failed_deletes.swap(still_failed);
+}
+
+/* ------------------------------------------------------------------ *
  * The realm table
  * ------------------------------------------------------------------ */
 
@@ -219,11 +284,22 @@ static void kingdom_index_realm_squares(const kingdom_realm &realm)
 	if (claim_top < 0)
 		claim_top = 0;
 
-	for (int index = 1; index <= claim_top; index++)
+	/* Index 0 is the SEAT: the hall's own map square. It is not a claim --
+	 * kingdom_offset_for_index() rejects index 0 by design -- but the square
+	 * belongs to the realm all the same, and leaving it out made
+	 * kingdom_owner_of_room() answer 0 there: a resource node could load ON
+	 * the guildhall, and banner/ownership queries for the hall square said
+	 * "unclaimed". kingdom_unindex_realm() erases by assoc_id VALUE, so the
+	 * seat row leaves the index together with the claims. */
+	for (int index = 0; index <= claim_top; index++)
 	{
 		/* kingdom_room_for_claim() refuses to leave the map grid, unlike
-		 * calculate_relative_room(), which wraps toroidally. */
-		const int rnum = kingdom_room_for_claim(realm.hall_rnum, index);
+		 * calculate_relative_room(), which wraps toroidally. The seat needs no
+		 * geometry: kingdom_resolve_anchor() has already proven hall_rnum sits
+		 * on the map grid. */
+		const int rnum = (index == 0)
+					 ? realm.hall_rnum
+					 : kingdom_room_for_claim(realm.hall_rnum, index);
 		if (!kingdom_valid_rnum(rnum))
 			continue;
 
@@ -251,9 +327,10 @@ static void kingdom_index_realm_squares(const kingdom_realm &realm)
  * A REBUILD, which is what kingdom_internal.h calls it: the realm's existing
  * rows go FIRST.
  *
- * highest_claim SHRINKS as well as grows -- `kingdom abandon` releases a ring
- * (kingdom_claim.c:702) and the arrears ladder reverts one per missed cycle
- * (kingdom_upkeep.c:147) -- and an add-only rebuild would leave every released
+ * highest_claim SHRINKS as well as grows -- `kingdom abandon` releases the
+ * single last-claimed square (kingdom_abandon_last, kingdom_claim.c) and the
+ * arrears ladder reverts one outer ring per missed cycle (revert_outer_ring,
+ * kingdom_upkeep.c) -- and an add-only rebuild would leave every released
  * square still resolving to this realm in kingdom_owner_of_room(). Callers
  * that already unindex first are unharmed: erasing rows that are gone is free.
  */
@@ -396,6 +473,11 @@ void kingdom_initialize(void)
 	kingdom_square_index.clear();
 	kingdom_realms.clear();
 
+	/* Stale after any re-initialise: a row whose delete failed is re-loaded
+	 * below and, if still orphaned, re-detected by the sweep -- which
+	 * repopulates this list on a second failure. */
+	kingdom_failed_deletes.clear();
+
 	if (!kingdom_cfg.enabled)
 	{
 		logit(LOG_KINGDOM, "kingdoms are disabled in lib/kingdom.cfg; no realms loaded.");
@@ -403,8 +485,31 @@ void kingdom_initialize(void)
 	}
 
 	if (!kingdom_db_load_all())
-		logit(LOG_KINGDOM, "kingdom_db_load_all() failed; continuing with %zu realm(s).",
+	{
+		/*
+		 * REFUSE TO RUN OVER A TABLE WE COULD NOT READ. Both backends
+		 * return false only for genuine failure -- a failed or truncated
+		 * SELECT, schema drift, a missing state root, a corrupt authority
+		 * file -- never for "no kingdoms yet" (kingdom_db.c documents each
+		 * case). Running live anyway would treat every unloaded realm's
+		 * territory as unowned: claimable by others, buildable over, and
+		 * the orphan sweep below would DELETE rows it merely failed to
+		 * read. A disabled subsystem is honest; a half-loaded one corrupts.
+		 *
+		 * Self-disabling flips kingdom_cfg.enabled in memory only --
+		 * lib/kingdom.cfg is untouched -- so the next boot tries again.
+		 */
+		logit(LOG_KINGDOM,
+		      "kingdom_db_load_all() FAILED; disabling kingdoms for this boot "
+		      "rather than running over an empty or partial table (%zu realm(s) "
+		      "partially loaded, now dropped). Likely cause: the kingdom_realms "
+		      "table is missing -- it is not in the boot schema contract yet.",
 		      kingdom_realms.size());
+		kingdom_square_index.clear();
+		kingdom_realms.clear();
+		kingdom_cfg.enabled = false;
+		return;
+	}
 
 	/*
 	 * Association ids are REUSED -- found_asc() hands out the lowest free id
@@ -423,13 +528,19 @@ void kingdom_initialize(void)
 
 		/* Collected first, erased second: kingdom_db_delete_realm() is
 		 * another module's code and must not be able to invalidate an
-		 * iterator into kingdom_realms while we are still holding one. */
+		 * iterator into kingdom_realms while we are still holding one.
+		 *
+		 * The DB row goes too, not just the memory, and through the
+		 * remember-on-failure path: a row merely dropped from memory would
+		 * be re-loaded next boot, and by then the id may belong to a new
+		 * guild -- at which point this sweep would see a live association
+		 * and hand the new guild the dead realm's territory. */
 		for (size_t i = 0; i < orphans.size(); i++)
 		{
 			logit(LOG_KINGDOM, "realm for association %d has no association; deleting.",
 			      orphans[i]);
 			kingdom_realms.erase(orphans[i]);
-			kingdom_db_delete_realm(orphans[i]);
+			kingdom_delete_realm_row(orphans[i]);
 		}
 	}
 	else if (!kingdom_realms.empty())
@@ -445,6 +556,27 @@ void kingdom_initialize(void)
 
 	kingdom_reindex_all();
 
+	/* Nodes last, and unconditionally: they are scattered across the WHOLE
+	 * world rather than over kingdom land, so their sweep does not depend on
+	 * any realm existing -- but it does need the index built first, because
+	 * placement refuses to load a node on a square a realm controls
+	 * (kingdom_node_invalid_room(), ruling 1). The credit is the digger's,
+	 * not the ground's: ANYONE may harvest, and a member's yield bonus comes
+	 * from the TYPE of land their own realm controls. It self-gates on
+	 * kingdom_enabled().
+	 *
+	 * Without this call the whole harvest subsystem is inert: the spec proc
+	 * is never bound to prototypes 477-480, the spawn windows stay zeroed and
+	 * the reload never starts. An adversarial review caught exactly that. */
+	kingdom_harvest_initialize();
+
+	/* And post the garrisons. After the index, because a guard is placed on
+	 * a square the realm owns, and after the anchors are resolved. Without
+	 * this the guard prototype is never read_mobile()'d and no garrison ever
+	 * appears -- the same inert-because-uncalled defect the review found in
+	 * the harvest lane. */
+	kingdom_guards_refresh_all();
+
 	logit(LOG_KINGDOM, "kingdoms enabled: %zu realm(s) holding %zu square(s).",
 	      kingdom_realms.size(), kingdom_square_index.size());
 }
@@ -455,6 +587,17 @@ void kingdom_shutdown(void)
 	 * empty realm table writes nothing, so a second call is a no-op. */
 	if (kingdom_cfg.enabled && !kingdom_realms.empty())
 		kingdom_db_flush_dirty();
+
+	/* Last chance before the process goes: a delete the backend refused
+	 * earlier is retried here, or its row survives to the next boot's
+	 * orphan sweep. Self-gates on enabled, and on an empty list. */
+	kingdom_retry_failed_deletes();
+	kingdom_failed_deletes.clear();
+
+	/* Reap the placed nodes and stop the reload before the maps go, or the
+	 * sweep would keep running against a cleared index. */
+	kingdom_guards_despawn_all();
+	kingdom_harvest_shutdown();
 
 	kingdom_square_index.clear();
 	kingdom_realms.clear();
@@ -488,6 +631,24 @@ int kingdom_owner_of_room(int rnum)
 	return it->second;
 }
 
+/* Backs Guild::is_kingdom(). O(1): one hash find against the realm table.
+ * The enabled gate is explicit rather than an inference from the table being
+ * empty, because the header promises "false when disabled" and an inference
+ * would quietly break if the load/clear choreography above ever changed. */
+bool kingdom_guild_has_realm(int assoc_id)
+{
+	if (!kingdom_cfg.enabled)
+		return false;
+
+	return kingdom_find_realm(assoc_id) != NULL;
+}
+
+/*
+ * NO ENGINE CALLER YET. The movement lane is wiring the realm-banner path
+ * (cmd/actmove.c already asks kingdom_owner_of_room()) and may consume this
+ * next; it is kept exported because the membership subtlety below is easy to
+ * get wrong at a call site.
+ */
 bool kingdom_char_owns_room(struct char_data *ch, int rnum)
 {
 	if (!ch)
@@ -594,10 +755,27 @@ void kingdom_on_guild_deleted(int assoc_id)
 	if (!kingdom_valid_assoc(assoc_id))
 		return;
 
+	/* An earlier delete the backend refused is retried on every pass through
+	 * here, BEFORE this deletion's own work: if the id being deleted is a
+	 * reuse of one still on the failed list, its stale row goes first. */
+	kingdom_retry_failed_deletes();
+
 	/* Unconditional, not gated on kingdom_cfg.enabled: with the feature off
 	 * both containers are empty and this costs nothing, and gating it would
 	 * mean an id reused during a disabled period inherited a live index. */
 	kingdom_unindex_realm(assoc_id);
+
+	/* Same reasoning for the cached terrain tally: ids are reused, and a
+	 * recycled id must not inherit the dead realm's yield-bonus tally.
+	 * Erasing a row that is not there is free. */
+	kingdom_harvest_release(assoc_id);
+
+	/* And the garrison: guards are matched on the association id STAMPED into
+	 * them, never on GET_ASSOC()'s pointer (kingdom_guards.c), so this works
+	 * before or after the Guild object dies and despawning zero guards is a
+	 * single cheap sweep. Left standing, a dead guild's guards would fight on
+	 * for nobody -- or for the next guild to be founded on this id. */
+	kingdom_guards_despawn(assoc_id);
 
 	if (kingdom_realms.erase(assoc_id) == 0)
 		return; /* no realm: an ordinary guild being deleted */
@@ -609,9 +787,13 @@ void kingdom_on_guild_deleted(int assoc_id)
 	 * tables are only guaranteed to exist then. A row orphaned while the
 	 * feature is off is swept up by kingdom_initialize() the next time it is
 	 * switched on, before any realm is indexed.
+	 *
+	 * Through the remember-on-failure path: a DELETE the backend refuses is
+	 * retried at the next pass through this file's DB-touching entry points
+	 * rather than logged once and left for the next holder of the id.
 	 */
 	if (kingdom_cfg.enabled)
-		kingdom_db_delete_realm(assoc_id);
+		kingdom_delete_realm_row(assoc_id);
 }
 
 /*
@@ -626,11 +808,20 @@ void kingdom_on_guildhall_changed(int assoc_id)
 	if (!kingdom_valid_assoc(assoc_id))
 		return;
 
+	/* Same retry as kingdom_on_guild_deleted(): this hook writes the
+	 * database anyway, so it is a natural moment to settle old debts. */
+	kingdom_retry_failed_deletes();
+
 	kingdom_realm *realm = kingdom_find_realm(assoc_id);
 	if (!realm)
 		return;
 
 	kingdom_unindex_realm(assoc_id);
+
+	/* The terrain tally is derived from the anchor and the claim shape, and
+	 * both may be about to change. Drop the cached one with the index rows;
+	 * the next harvest recomputes it from whatever this hook decides. */
+	kingdom_harvest_prune(*realm);
 
 	Guildhall *hall = kingdom_main_hall_of(assoc_id);
 	if (!hall)

@@ -40,6 +40,45 @@ enum kingdom_resource {
 const char *kingdom_resource_name(int res);
 
 /* ------------------------------------------------------------------ *
+ * World-data vnums
+ * ------------------------------------------------------------------ *
+ * RULED 2026-09-01: harvest nodes are REAL OBJECTS scattered at random
+ * across the world, exactly as ore and gem mines are -- not virtual records
+ * on owned squares. So each resource needs a prototype, and the prototypes
+ * live in heavens.obj beside the mines they are modelled on (VOBJ_MINE 193,
+ * VOBJ_GEMMINE 434), inside that file's own 10-1300 block so no new area
+ * file and no areas/AREA manifest change is needed.
+ *
+ * 477-488 was measured free across every .obj file in areas/ (444 at the
+ * time of the sweep); 108-113 likewise across every .mob file (448). Keep
+ * these in step with the prototypes.
+ */
+/* TWO SETS, ruled 2026-09-01: nodes spawn in the Underdark as well as on the
+ * surface, and an Underdark node must be thematic -- a mushroom, not a tree.
+ * Same four resources either way; only the flavour and the map letter differ. */
+#define VOBJ_KINGDOM_NODE_MINERAL 477 /* a seam of stone   */
+#define VOBJ_KINGDOM_NODE_WOOD 478    /* a stand of timber */
+#define VOBJ_KINGDOM_NODE_FIBRE 479   /* flax and reeds    */
+#define VOBJ_KINGDOM_NODE_WATER 480   /* a clean spring    */
+
+#define VOBJ_KINGDOM_NODE_UD_MINERAL 481 /* an ore seam        */
+#define VOBJ_KINGDOM_NODE_UD_WOOD 482    /* a fungal stand     */
+#define VOBJ_KINGDOM_NODE_UD_FIBRE 483   /* cave silk          */
+#define VOBJ_KINGDOM_NODE_UD_WATER 484   /* a dark pool        */
+
+/* True when a node prototype is the Underdark variant. */
+bool kingdom_node_is_underdark(int vnum);
+/* The prototype for `res` in the given world half. */
+int kingdom_node_vnum_for(int res, bool underdark);
+
+/* The garrison mob. heavens.mob 108; 109-113 are reserved beside it should
+ * racewar-specific guards be wanted later. */
+#define VMOB_KINGDOM_GUARD 108
+
+/* Resource a node prototype yields, or -1 if the vnum is not a kingdom node. */
+int kingdom_resource_for_node_vnum(int vnum);
+
+/* ------------------------------------------------------------------ *
  * Arrears ladder
  * ------------------------------------------------------------------ *
  * Ruled 2026-08-28, in this order, halting wherever payment arrives:
@@ -197,14 +236,17 @@ int kingdom_guards_despawn_all(void);
 int kingdom_guards_refresh(const kingdom_realm &realm);
 void kingdom_guards_refresh_all(void);
 
-/* --- kingdom_harvest.c : resource nodes on owned squares --- */
-int kingdom_resource_for_room(int rnum);
+/* --- kingdom_harvest.c : world harvest nodes and the realm resource store --- */
 bool kingdom_nodes_dormant(const kingdom_realm &realm);
 long kingdom_resource_deposit(kingdom_realm &realm, int res, long amount);
 void kingdom_harvest_command(struct char_data *ch, char *argument);
 void kingdom_harvest_survey(struct char_data *ch);
 void kingdom_harvest_prune(const kingdom_realm &realm);
 void kingdom_harvest_release(int assoc_id);
+/* Bind the node prototypes to the spec proc, resolve the spawn regions and
+ * start the reload sweep. Called from kingdom_initialize(); self-gates on
+ * kingdom_enabled(), so it is safe to call unconditionally. */
+void kingdom_harvest_initialize(void);
 void kingdom_harvest_shutdown(void);
 
 /* --- kingdom_display.c : status, map overlay and the 9x9 ring grid --- *
@@ -216,7 +258,7 @@ void kingdom_show_grid(struct char_data *ch, int hall_rnum, int racewar, int ign
 		       int highest_claim, const char *heading);
 
 /* ------------------------------------------------------------------ *
- * Persistence (kingdom_db.c + flatfile_kingdom_repository.c)
+ * Persistence (kingdom_db.c, both backends behind __NO_MYSQL__)
  * ------------------------------------------------------------------ *
  * Dual backend on purpose: under the default mariadb build
  * persistence_mode_flatfile_root() returns NULL and no flat-file directories
