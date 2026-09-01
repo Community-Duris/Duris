@@ -5955,7 +5955,7 @@ void do_advance(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char name[MAX_INPUT_LENGTH], level[MAX_INPUT_LENGTH];
-	int newlevel = 0, oldlevel, i;
+	int newlevel = 0, oldlevel;
 
 	if (IS_NPC(ch))
 		return;
@@ -6042,8 +6042,7 @@ void do_advance(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	for (i = oldlevel; i < newlevel; i++)
-		advance_level(victim); //, TRUE); wipe2011
+	advance_to_level(victim, newlevel);
 
 	GET_EXP(victim) = 1;
 

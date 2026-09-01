@@ -9494,18 +9494,16 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 	{
 		do_wake(ch, NULL, 0);
 	}
-	if (!get_scheduled_excluding_current(ch, event_mob_hunt))
+	if (get_scheduled_excluding_current(ch, event_mob_hunt))
 	{
-		schedule_mob_hunt(ch, *data);
 		return;
 	}
 	if (GET_POS(ch) != POS_STANDING)
 	{
 		do_stand(ch, NULL, 0);
 	}
-	if (!get_scheduled_excluding_current(ch, event_mob_hunt))
+	if (get_scheduled_excluding_current(ch, event_mob_hunt))
 	{
-		schedule_mob_hunt(ch, *data);
 		return;
 	}
 	if (GET_STAT(ch) != STAT_NORMAL)

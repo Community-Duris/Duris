@@ -160,6 +160,7 @@ assert "obj_to_obj(obj, bag)" in chaos_code
 assert "AddSpellToSpellBook(ch, obj, j)" in chaos_code
 assert "has_eq_slot(ch, item->slot)" in chaos_code
 assert "can_char_use_item(ch, obj)" in chaos_code
+assert "REMOVE_BIT(obj->extra_flags, ITEM_SECRET);" in chaos_code
 assert chaos_code.count("item_creation_grant_submit_to_player_before_entry(ch, bag, ch)") == 1
 assert "item_creation_grant_submit_to_player(ch, obj, ch, bag)" not in chaos_code
 assert "item_creation_grant_mark_blocking(ch)" not in chaos_code

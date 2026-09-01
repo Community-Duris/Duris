@@ -223,6 +223,9 @@ sources = "\n".join(
 mobact = (SRC / "mobact.c").read_text(encoding="ascii")
 structs = (SRC / "structs.h").read_text(encoding="ascii")
 database = (SRC / "db.c").read_text(encoding="ascii")
+mob_hunt = mobact.split("void event_mob_hunt(", 1)[1].split(
+    "/* given a protector flagged mob", 1
+)[0]
 
 assert "add_event(event_mob_hunt" not in sources
 assert ".targ.victim" not in sources
@@ -230,6 +233,8 @@ assert ".targ.room" not in sources
 assert "target_runtime_id" in structs
 assert "allocate_character_runtime_id()" in database
 assert mobact.count("get_scheduled_excluding_current(ch, event_mob_hunt)") == 4
+assert mob_hunt.count("if (!get_scheduled_excluding_current(ch, event_mob_hunt))") == 2
+assert mob_hunt.count("if (get_scheduled_excluding_current(ch, event_mob_hunt))") == 2
 assert "schedule_mob_hunt(ch, *data);" in mobact
 assert "&data,\n\t\t\t\t  sizeof(hunt_data)" not in mobact
 

@@ -396,6 +396,7 @@ static void LoadNewbyShit(P_char ch, int *items)
 static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 {
 	obj->cost = 1;
+	REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 	if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON && obj->type != ITEM_SPELLBOOK &&
 	    obj->type != ITEM_LIGHT && obj->type != ITEM_TOTEM && IS_PC(ch))
 		SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
@@ -3031,10 +3032,7 @@ void enter_game(P_desc d)
 	}
 	// while ((GET_LEVEL(ch) < 56 && !IS_MULTICLASS_PC(ch)) || GET_LEVEL(ch) < 51)
 	//  changing this to conform with Kitsero's version of chaos
-	while (GET_LEVEL(ch) < 53)
-	{
-		advance_level(ch);
-	}
+	advance_to_level(ch, 53);
 #endif
 
 	// chaos - level them up, and setbit hardcore off them!
@@ -3049,10 +3047,7 @@ void enter_game(P_desc d)
 			ch->player.level =
 				54; // so they are raised one level, which will fix skills
 		}
-		while (GET_LEVEL(ch) < 56)
-		{
-			advance_level(ch);
-		}
+		advance_to_level(ch, 56);
 	}
 
 	epic_transaction_player_ready(ch);
