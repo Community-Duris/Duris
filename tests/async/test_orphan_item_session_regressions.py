@@ -126,11 +126,16 @@ check("transfer serialization does not masquerade as an unowned player save",
 # Every remaining direct grant is fenced at the low-level player publication boundary.
 to_char = handler[handler.index("void obj_to_char("):]
 to_char = to_char[:to_char.index("void obj_from_char(")]
-check("obj_to_char defers every missing or mismatched player ownership row",
+check("obj_to_char defers missing or mismatched generic ownership rows",
       "GET_PID(ch) > 0" in to_char
       and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in to_char
       and "item_owner_identity_equal(ownership.owner, player)" in to_char
       and "item_creation_grant_submit_to_player(ch, object, ch)" in to_char)
+check("obj_to_char keeps lifecycle-specific objects out of generic grants",
+      "object->type != ITEM_MONEY" in to_char
+      and "!IS_SET(object->extra_flags, ITEM_TRANSIENT)" in to_char
+      and "object->type == ITEM_CORPSE" in to_char
+      and "PC_CORPSE" in to_char)
 check("new characters initialize their item-owner revision before receiving equipment",
       "item_ownership_runtime_hydrate_owner(" in nanny
       and "item_owner_type::player" in nanny[nanny.index("void init_char("):])

@@ -34,6 +34,7 @@ def check(name, condition):
 do_drop = function_body(ACTOBJ, "void do_drop(")
 do_dropalldot = function_body(ACTOBJ, "void do_dropalldot(")
 do_put = function_body(ACTOBJ, "void do_put(")
+ownership_filter = function_body(ACTOBJ, "static bool uses_generic_item_ownership(")
 start_drop = function_body(ACTOBJ, "void start_bulk_drop(")
 drop_completion = function_body(ACTOBJ, "void bulk_drop_completion(")
 drop_finish = function_body(ACTOBJ, "void finish_bulk_drop_after_commit(")
@@ -60,6 +61,13 @@ ok &= check(
     "wallet coins retain their dedicated commands",
     'strcmp(name, "coins")' in do_dropalldot
     and 'strcmp(obj_name, "all.coins")' in do_put,
+)
+ok &= check(
+    "lifecycle-specific roots bypass generic ownership",
+    "object->type != ITEM_MONEY" in ownership_filter
+    and "!IS_SET(object->extra_flags, ITEM_TRANSIENT)" in ownership_filter
+    and "object->type == ITEM_CORPSE" in ownership_filter
+    and "PC_CORPSE" in ownership_filter,
 )
 
 ok &= check(

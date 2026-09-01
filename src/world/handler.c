@@ -1787,14 +1787,15 @@ void obj_to_char(P_obj object, P_char ch)
 		return;
 	}
 
-	// A persisted player payload may only contain objects whose active ownership row already
-	// names that player. PID-zero PC shells are synthetic locker/loading characters and do
-	// not write player_items. Legacy reward and special-procedure paths still create objects
-	// with read_object() and call obj_to_char() directly; defer those publications through
-	// the creation-grant queue instead of allowing another orphan player_items row. Normal
-	// get, give, shop and load completions have already advanced the runtime ledger, so they
-	// pass straight through here.
-	if (IS_PC(ch) && GET_PID(ch) > 0 && object->obj_uid)
+	// A persisted generic item may only reach a player after its active ownership row names
+	// that player. Money, transient objects, and player corpses have lifecycle-specific
+	// persistence and must remain synchronous. In particular, callers create money in
+	// NOWHERE and immediately put it into a container; deferring that temporary inventory
+	// placement races the container move against the grant callback. PID-zero PC shells are
+	// synthetic locker/loading characters and do not write player_items.
+	if (IS_PC(ch) && GET_PID(ch) > 0 && object->obj_uid && object->type != ITEM_MONEY &&
+	    !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
+	    !(object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE)))
 	{
 		const item_owner_identity player = { item_owner_type::player,
 						     static_cast<uint64_t>(GET_PID(ch)), 0 };
