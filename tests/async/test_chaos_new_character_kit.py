@@ -98,10 +98,30 @@ for array_name, body in array_matches:
         slot = slot_values[slot_name]
         vnum = int(raw_vnum)
         assert 0 <= slot < 43
+        assert vnum >= 0
         assert slot not in items, (array_name, slot)
         items[slot] = vnum
-        all_vnums.add(vnum)
+        if vnum:
+            all_vnums.add(vnum)
     kit_arrays[array_name] = items
+
+
+# The warrior sample replaces the five selected slots and explicitly suppresses
+# the three unresolved slots so its mercenary fallback cannot reintroduce 1252.
+warrior = kit_arrays["chaos_warrior_kit"]
+for slot_name, vnum in {
+    "WEAR_FINGER_R": 45510,
+    "WEAR_FINGER_L": 87511,
+    "WEAR_NECK_1": 44192,
+    "WEAR_FEET": 44194,
+    "WEAR_EARRING_L": 67269,
+}.items():
+    assert warrior[slot_values[slot_name]] == vnum
+for slot_name in ("WEAR_QUIVER", "GUILD_INSIGNIA", "WEAR_ATTACH_BELT_1"):
+    assert warrior[slot_values[slot_name]] == 0
+warrior_final = dict(kit_arrays["chaos_mercenary_kit"])
+warrior_final.update(warrior)
+assert 1252 not in warrior_final.values()
 
 
 # The 31 ordered profiles map the 30 class IDs plus the unused zero index.
@@ -135,6 +155,10 @@ assert numeric and numeric[0].split()[0] == "15"
 
 # The bag is queued first. Every gear item is then queued into that bag, and
 # command input remains blocked until the serialized grant queue completes.
+chaos_preparer = NANNY.split("static void prepare_chaos_kit_item", 1)[1].split(
+    "static void load_chaos_new_character_kit", 1
+)[0]
+assert "REMOVE_BIT(obj->extra_flags, ITEM_SECRET);" in chaos_preparer
 chaos_loader = NANNY.split("static void load_chaos_new_character_kit", 1)[1].split(
     "void load_obj_to_newbies", 1
 )[0]

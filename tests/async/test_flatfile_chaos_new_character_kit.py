@@ -54,7 +54,7 @@ def warrior_kit_vnums() -> set[int]:
 
     selected = kit("chaos_mercenary_kit")
     selected.update(kit("chaos_warrior_kit"))
-    return {96443, *selected.values()}
+    return {96443} | {vnum for vnum in selected.values() if vnum}
 
 
 def install_chaos_objects(run_root: pathlib.Path) -> None:
@@ -194,10 +194,62 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
 
                     client = MudClient(plain_port)
                     create_chaos_character(client)
+                    creation_transcript = bytes(client.transcript).decode(
+                        "utf-8", errors="replace"
+                    )
+                    require(
+                        creation_transcript.count("You advance to level 56.") == 1,
+                        "CHAOS catch-up did not emit one final-level notification:\n"
+                        + creation_transcript[-8000:],
+                    )
+                    require(
+                        "You raise a level!" not in creation_transcript,
+                        "CHAOS catch-up still emitted per-level notifications:\n"
+                        + creation_transcript[-8000:],
+                    )
+
+                    client.transcript.clear()
+                    client.send("chaos level 55")
+                    client.expect("You lose a level!", timeout=15)
+                    client.expect("Pos: standing >", timeout=15)
+                    client.transcript.clear()
+                    client.send("chaos level 56")
+                    client.expect("You raise a level!", timeout=15)
+                    client.expect("Pos: standing >", timeout=15)
+                    single_level_transcript = bytes(client.transcript).decode(
+                        "utf-8", errors="replace"
+                    )
+                    require(
+                        single_level_transcript.count("You raise a level!") == 1,
+                        "single-level advancement did not retain one notification:\n"
+                        + single_level_transcript,
+                    )
+                    require(
+                        "You advance to level" not in single_level_transcript,
+                        "single-level advancement used the batch notification:\n"
+                        + single_level_transcript,
+                    )
+
                     client.send("inventory")
                     client.expect("bottomless bag of", timeout=15)
+                    client.expect("Pos: standing >", timeout=15)
                     client.send("look in bottomless")
-                    client.expect("new random object", timeout=15)
+                    bag_contents = client.expect("Pos: standing >", timeout=15)
+                    for item_name in (
+                        "ring of the ultimium",
+                        "blue ring",
+                        "sapphire necklace",
+                        "boots of a",
+                        "multi-phased fish bone earring",
+                    ):
+                        require(
+                            item_name in bag_contents,
+                            f"CHAOS warrior kit omitted {item_name}:\n{bag_contents}",
+                        )
+                    require(
+                        "new random object" not in bag_contents,
+                        "CHAOS warrior kit still contains VNUM 1252",
+                    )
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.", timeout=30)
 

@@ -577,10 +577,31 @@ void githyanki_weapon(P_char ch)
  * Gain in various points
  */
 
+static void advance_level_impl(P_char ch, bool notify_player);
+
+static void notify_level_advancement(P_char ch, int previous_level)
+{
+	const int levels_gained = GET_LEVEL(ch) - previous_level;
+	P_char recipient = IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch;
+
+	if (levels_gained <= 0)
+		return;
+	if (levels_gained == 1)
+	{
+		send_to_char("&+WYou raise a level!&N\r\n", recipient);
+		return;
+	}
+
+	char message[128];
+	snprintf(message, sizeof(message), "&+WYou advance to level %d.&N\r\n", GET_LEVEL(ch));
+	send_to_char(message, recipient);
+}
+
 void illithid_advance_level(P_char ch)
 {
 	int minlvl = get_property("exp.maxExpLevel", 46);
 	int i;
+	const int previous_level = GET_LEVEL(ch);
 
 	if (GET_LEVEL(ch) >= 56)
 		return;
@@ -588,11 +609,12 @@ void illithid_advance_level(P_char ch)
 	for (i = GET_LEVEL(ch) + 1; i > minlvl && (new_exp_table[i] <= GET_EXP(ch)); i++)
 	{
 		GET_EXP(ch) -= new_exp_table[i];
-		advance_level(ch);
+		advance_level_impl(ch, false);
 	}
+	notify_level_advancement(ch, previous_level);
 }
 
-void advance_level(P_char ch)
+static void advance_level_impl(P_char ch, bool notify_player)
 {
 	/*  struct time_info_data playing_time;*/
 	int i;
@@ -616,8 +638,8 @@ void advance_level(P_char ch)
 		ch->specials.undead_spell_slots[(GET_LEVEL(ch) + 4) / 5] = 0;
 	}
 
-	send_to_char("&+WYou raise a level!&N\r\n",
-		     IS_SET(ch->specials.act, PLR_MORPH) ? ch->only.pc->switched : ch);
+	if (notify_player)
+		notify_level_advancement(ch, GET_LEVEL(ch) - 1);
 	logit(LOG_LEVEL, "Level %2d: %s", GET_LEVEL(ch), GET_NAME(ch));
 	ch->only.pc->prestige++;
 
@@ -705,6 +727,20 @@ void advance_level(P_char ch)
 
 	/* Schedule a deferred save to avoid lag from large inventories */
 	persistence_schedule_level_checkpoint(ch, 1, 2, "advance_level");
+}
+
+void advance_level(P_char ch)
+{
+	advance_level_impl(ch, true);
+}
+
+void advance_to_level(P_char ch, int target_level)
+{
+	const int previous_level = GET_LEVEL(ch);
+
+	while (GET_LEVEL(ch) < target_level)
+		advance_level_impl(ch, false);
+	notify_level_advancement(ch, previous_level);
 }
 
 /*
@@ -1412,6 +1448,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 	if (XP_final > 0)
 	{
+		const int previous_level = GET_LEVEL(ch);
+
 		// Hardcores should level via exp only. - Drannak 11/30/12
 		// Liches can lvl exp only too since they are solo on 3rd racewar side (again). 7/7/2015
 		if (((IS_HARDCORE(ch) && hardcore_config_get()->level_exp_bypass_property_cap) ||
@@ -1424,7 +1462,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (a)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
-				advance_level(ch);
+				advance_level_impl(ch, false);
 			}
 		}
 		else
@@ -1437,9 +1475,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (b)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
-				advance_level(ch);
+				advance_level_impl(ch, false);
 			}
 		}
+		notify_level_advancement(ch, previous_level);
 	}
 	else
 	{
