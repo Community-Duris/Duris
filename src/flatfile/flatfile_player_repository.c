@@ -352,7 +352,8 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 	if (consumed.size() > records.size())
 		goto invalid;
 	// An ownership record whose payload item is gone cannot be rebuilt, but it must not
-	// refuse the load either; the next full save reconciles the two files.
+	// refuse the load either. Preserve it for explicit operator repair; snapshot saves are
+	// not allowed to rewrite authoritative custody.
 	result->missing_payload_rows = records.size() - consumed.size();
 	result->item_owner_revision = owner_revision;
 	result->authoritative_item_count = consumed.size();

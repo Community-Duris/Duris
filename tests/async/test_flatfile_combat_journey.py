@@ -281,7 +281,25 @@ def complete_npc_combat_journey(client: MudClient) -> None:
     )
 
     client.send("kill raoul")
-    client.expect("is dead! R.I.P.", timeout=30)
+    combat_deadline = time.monotonic() + 45
+    while True:
+        remaining = combat_deadline - time.monotonic()
+        require(remaining > 0, "Raoul survived the combat journey timeout")
+        outcome, _ = client.expect_any(
+            (
+                "is dead! R.I.P.",
+                "You stumble, but recover in time!",
+                "You stumble in your attack, and jab at",
+                "You stumble in your attack, and hit yourself!",
+            ),
+            timeout=remaining,
+        )
+        if outcome == "is dead! R.I.P.":
+            break
+        # A fumble can intentionally stop combat before the initial hit engages
+        # either participant, or during a later round. Resume the journey just as
+        # a player would instead of waiting for a fight that is no longer active.
+        client.send("kill raoul")
     client.send("look")
     client.expect("corpse of raoul", timeout=10)
     client.send("look in corpse")

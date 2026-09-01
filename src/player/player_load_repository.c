@@ -766,7 +766,8 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		" GROUP BY owner_revision.revision,owner_revision.owner_id";
 	// A custody row whose payload row is gone cannot be rebuilt into an object, but it
 	// must not refuse the whole load either: the character owns everything else in the
-	// ledger. Count it, load the rest, and let the next full save reconcile the ledger.
+	// ledger. Count it and load the rest, but preserve the authoritative custody row for
+	// explicit operator repair; snapshot saves are not allowed to rewrite that authority.
 	size_t ownership_summary_rows = 0;
 	if (!load_rows(
 		    connection, ownership_summary_sql, result,

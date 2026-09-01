@@ -3021,9 +3021,10 @@ void object_list_new_owner(P_obj list, P_char ch)
 // on teardown paths where a transaction is impossible or pointless - shutdown, zone
 // resets, copyover, every object freed in bulk - and one durable submission per extracted
 // object is not viable there. The load path tolerates the resulting stale custody row
-// instead (counted as missing_payload_rows) and the next full save reconciles the ledger.
-// Destruction that does need a ledger record goes through the transfer pipeline with
-// item_transfer_reason::destruction rather than through here.
+// instead (counted as missing_payload_rows) and reports it for explicit operator repair;
+// snapshot saves deliberately cannot rewrite custody authority. Destruction that does need
+// a ledger record goes through the transfer pipeline with item_transfer_reason::destruction
+// rather than through here.
 void extract_obj(P_obj obj, int gone_for_good)
 {
 	int i;

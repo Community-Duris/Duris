@@ -10,8 +10,9 @@ rather than a runtime check because the code paths need a live world.
 1. do_load handed a wizard-created object straight over with obj_to_char() and
    submitted no transfer, so it arrived carrying a uid with no ledger row. That is
    how the orphan was created in the first place.
-2. extract_obj() deliberately does not retire the ledger row; the reasoning has to
-   stay written down or someone will "fix" it onto a teardown path.
+2. extract_obj() deliberately does not retire the ledger row; the reasoning and explicit
+   operator-repair requirement have to stay written down or someone will "fix" it onto a
+   teardown path or falsely promise that a snapshot save repairs custody authority.
 3. generate_modif() leaked its scratch copy and generate_desc() dropped every
    string its helpers returned - once per descriptor in the game, via ztestdesc.
 4. free_char() released every player string except long_descr, so each login that
@@ -74,7 +75,9 @@ check("an uncommitted establish does not leave the object in play",
 extract_preamble = handler[:handler.index("void extract_obj(")]
 check("extract_obj records why it leaves the ownership row alone",
       "does not retire" in extract_preamble[-900:]
-      and "missing_payload_rows" in extract_preamble[-900:])
+      and "missing_payload_rows" in extract_preamble[-900:]
+      and "explicit operator repair" in extract_preamble[-900:]
+      and "snapshot saves deliberately cannot rewrite custody authority" in extract_preamble[-900:])
 
 # 3. The description generators own and release their scratch strings.
 modif = utility[utility.index("char *generate_modif("):]

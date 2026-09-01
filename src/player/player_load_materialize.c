@@ -435,7 +435,7 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	if (result.missing_payload_rows)
 		logit(LOG_SYS,
 		      "player_load_materialize: component=items pid=%d outcome=missing_payload_rows "
-		      "count=%zu recovery=next_full_save",
+		      "count=%zu recovery=operator_repair",
 		      result.pid, result.missing_payload_rows);
 	reset_char(ch);
 	int hit_difference = 0;

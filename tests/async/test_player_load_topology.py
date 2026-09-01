@@ -149,5 +149,9 @@ for source in (repository, flatfile):
     assert "player_load_reconcile_item_topology" in source
 assert "outcome=topology_repaired" in materialize
 assert "recovery=next_full_save" in materialize
+missing_payload = materialize[materialize.index("if (result.missing_payload_rows)"):]
+missing_payload = missing_payload[:missing_payload.index("reset_char(ch);")]
+assert "recovery=operator_repair" in missing_payload
+assert "recovery=next_full_save" not in missing_payload
 
 print("player-load item topology self-healing passed")
