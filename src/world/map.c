@@ -141,7 +141,7 @@ enum
 	(world[to_room].sector_type == SECT_FOREST && world[from_room].sector_type != SECT_FOREST)
 
 extern const AnsiString sector_symbol[];
-const AnsiString sector_symbol[NUM_GLYPHS] = {
+const AnsiString sector_symbol[] = {
 	"&=wl^", /* * larger towns */
 	"&+L+", /* * roads */
 	"&+g.", /* * plains/fields */
@@ -231,7 +231,7 @@ const AnsiString sector_symbol[NUM_GLYPHS] = {
 };
 
 // mostly sector_types but some have unfitting names
-const char *glyph_names[NUM_GLYPHS] = {
+const char *glyph_names[] = {
 	"zone", // inside
 	"city",		"field",       "forest",       "hills",	      "mountain",
 	"reefs", // water-swim
@@ -265,6 +265,16 @@ const char *glyph_names[NUM_GLYPHS] = {
 	"node_stone",	"node_timber", "node_fibre",   "node_spring",
 	"node_ore",	"node_fungus", "node_silk",    "node_pool",
 };
+
+/* Both tables above are deliberately UNSIZED so these can count the
+ * initialisers actually written. With an explicit [NUM_GLYPHS] size, C++
+ * silently default-fills a short table, and every glyph after the gap
+ * renders blank; unsized, growing the CONTAINS_* enum out of step with
+ * either table fails the build right here instead. */
+static_assert(sizeof(sector_symbol) / sizeof(sector_symbol[0]) == NUM_GLYPHS,
+              "sector_symbol must have exactly one glyph per enum entry");
+static_assert(sizeof(glyph_names) / sizeof(glyph_names[0]) == NUM_GLYPHS,
+              "glyph_names must have exactly one name per enum entry");
 
 unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
 {

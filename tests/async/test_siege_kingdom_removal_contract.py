@@ -51,9 +51,14 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         self.assertEqual(present, [], f"forbidden production tokens: {present}")
         self.assertNotRegex(makefile, r"(?m)^\s*combat/siege\.o(?:\s|$)")
 
+        # The NEW kingdom module (src/kingdom/) revives Guild::is_kingdom with
+        # a real definition delegating to its seam. What must stay dead is the
+        # old declared-but-undefined form: if the declaration exists, the
+        # definition must too.
         associations = (SRC / "guild/assocs.h").read_text()
         migrate_stubs = (ROOT / "migrations/tools/migrate_stubs.c").read_text()
-        self.assertNotIn("is_kingdom", associations)
+        if "is_kingdom" in associations:
+            self.assertIn("bool Guild::is_kingdom()", (SRC / "guild/assocs.c").read_text())
         self.assertNotIn("is_kingdom", migrate_stubs)
 
     def test_feature_world_wiring_and_prototype_custody_are_safe(self) -> None:
@@ -120,14 +125,18 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         self.assertEqual(broken, [])
 
     def test_help_and_command_surfaces_are_retired_in_place(self) -> None:
-        self.assertFalse((ROOT / "lib/information/helpkingdoms").exists())
+        # helpkingdoms returned with the NEW kingdom module: the file now
+        # documents the ring-claim system and must be registered in the help
+        # catalog. The retired importer script must still not reference it,
+        # and every other in-place retirement below stands unchanged.
+        self.assertTrue((ROOT / "lib/information/helpkingdoms").exists())
 
         importer = (ROOT / "scripts/import_help_to_prod.sh").read_text()
         catalog = (SRC / "flatfile/flatfile_help_catalog.c").read_text()
         help_index = (ROOT / "lib/information/help_index").read_text()
         attributes = (ROOT / "docs/lib/information/command_attributes.txt").read_text()
-        for text in (importer, catalog):
-            self.assertNotIn("helpkingdoms", text)
+        self.assertIn("helpkingdoms", catalog)
+        self.assertNotIn("helpkingdoms", importer)
         self.assertNotIn("ADD (Immortal Command)", help_index)
         self.assertNotIn("Kingdom View", help_index)
         self.assertNotRegex(attributes, r"(?m)^(?:add|deploy)\s*$")
