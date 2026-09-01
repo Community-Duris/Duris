@@ -282,6 +282,16 @@ static const char *const DURISWEB_MUD_GATED_HOOKS[] = {
 #define DURISWEB_MUD_GATED_HOOK_COUNT                                                              \
 	(sizeof(DURISWEB_MUD_GATED_HOOKS) / sizeof(DURISWEB_MUD_GATED_HOOKS[0]))
 
+static bool ws_is_durisweb_mud_gated_hook(const char *hook_id)
+{
+	if (!hook_id)
+		return FALSE;
+	for (size_t i = 0; i < DURISWEB_MUD_GATED_HOOK_COUNT; i++)
+		if (!strcmp(hook_id, DURISWEB_MUD_GATED_HOOKS[i]))
+			return TRUE;
+	return FALSE;
+}
+
 /* Single serializer used by both the command response and the push, so the two
    cannot diverge. Caller owns the returned string and must free() it. */
 static char *ws_build_durisweb_hook_state_json(void)
@@ -343,6 +353,89 @@ void ws_cmd_durisweb_hook_state(struct descriptor_data *d, cJSON * /*data*/)
 
 	websocket_send_text(d, json);
 	free(json);
+}
+
+static void ws_send_durisweb_hook_set_response(struct descriptor_data *d, const char *request_id,
+						const char *hook_id, bool enabled, bool success,
+						const char *error)
+{
+	cJSON *result = cJSON_CreateObject();
+	char *json;
+	if (!result)
+		return;
+	cJSON_AddStringToObject(result, "type", "durisweb_hook_set");
+	cJSON_AddBoolToObject(result, "success", success);
+	if (request_id)
+		cJSON_AddStringToObject(result, "requestId", request_id);
+	if (hook_id)
+		cJSON_AddStringToObject(result, "hook", hook_id);
+	cJSON_AddBoolToObject(result, "enabled", enabled);
+	if (error)
+		cJSON_AddStringToObject(result, "error", error);
+	json = cJSON_PrintUnformatted(result);
+	if (json)
+	{
+		websocket_send_text(d, json);
+		free(json);
+	}
+	cJSON_Delete(result);
+}
+
+void ws_cmd_durisweb_hook_set(struct descriptor_data *d, cJSON *data)
+{
+	cJSON *request_json, *hook_json, *enabled_json;
+	const char *request_id = NULL;
+	const char *hook_id = NULL;
+	bool enabled = FALSE;
+
+	/* Authorization precedes parsing so an untrusted socket cannot probe ids. */
+	if (!d || !d->durisweb_verified)
+	{
+		if (d)
+			websocket_close(d, WS_CLOSE_POLICY_VIOLATION, "Not authorized");
+		return;
+	}
+	if (!data || !cJSON_IsObject(data))
+	{
+		ws_send_durisweb_hook_set_response(d, NULL, NULL, FALSE, FALSE, "Missing data");
+		return;
+	}
+
+	request_json = cJSON_GetObjectItem(data, "requestId");
+	hook_json = cJSON_GetObjectItem(data, "hook");
+	enabled_json = cJSON_GetObjectItem(data, "enabled");
+	if (!request_json || !cJSON_IsString(request_json) ||
+	    request_json->valuestring[0] == '\0' ||
+	    strlen(request_json->valuestring) > 128)
+	{
+		ws_send_durisweb_hook_set_response(d, NULL, NULL, FALSE, FALSE,
+						      "Invalid request id");
+		return;
+	}
+	request_id = request_json->valuestring;
+	if (!hook_json || !cJSON_IsString(hook_json) ||
+	    !ws_is_durisweb_mud_gated_hook(hook_json->valuestring))
+	{
+		ws_send_durisweb_hook_set_response(d, request_id, NULL, FALSE, FALSE,
+						      "Unknown hook id");
+		return;
+	}
+	hook_id = hook_json->valuestring;
+	if (!enabled_json || !cJSON_IsBool(enabled_json))
+	{
+		ws_send_durisweb_hook_set_response(d, request_id, hook_id, FALSE, FALSE,
+						      "Field enabled must be boolean");
+		return;
+	}
+	enabled = cJSON_IsTrue(enabled_json);
+
+	if (!set_durisweb_hook_enabled(hook_id, enabled))
+	{
+		ws_send_durisweb_hook_set_response(d, request_id, hook_id, enabled, FALSE,
+						      "Hook state could not be persisted");
+		return;
+	}
+	ws_send_durisweb_hook_set_response(d, request_id, hook_id, enabled, TRUE, NULL);
 }
 
 /* push current hook state to every authenticated durisweb peer */
@@ -3496,6 +3589,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 		{ "poll_vote", ws_cmd_poll_vote },
 		{ "request_wholist", ws_cmd_request_wholist },
 		{ "durisweb_hook_state", ws_cmd_durisweb_hook_state },
+		{ "durisweb_hook_set", ws_cmd_durisweb_hook_set },
 	};
 
 	if (!cmd)

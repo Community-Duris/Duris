@@ -43,6 +43,7 @@ void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data);
 
 /* durisweb hook toggle state: request handler and unsolicited push */
 void ws_cmd_durisweb_hook_state(struct descriptor_data *d, cJSON *data);
+void ws_cmd_durisweb_hook_set(struct descriptor_data *d, cJSON *data);
 void ws_broadcast_durisweb_hook_state(void);
 
 /* auction broadcasts to durisweb service */

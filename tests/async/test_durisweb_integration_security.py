@@ -57,6 +57,30 @@ assert "durisweb_auth_challenge_expires" in STRUCTS
 assert '"durisweb_challenge"' in HANDLERS
 assert '"Core.AuthChallenge"' in GMCP
 
+# Hook mutation stays on the authenticated command plane. Authorization is
+# checked before request parsing, ids are exact-whitelisted, and success is
+# coupled to durable property mutation plus the existing state broadcast.
+hook_set = HANDLERS[
+    HANDLERS.index("void ws_cmd_durisweb_hook_set") :
+    HANDLERS.index("void ws_broadcast_durisweb_hook_state")
+]
+assert hook_set.index("durisweb_verified") < hook_set.index('cJSON_GetObjectItem(data, "hook")')
+assert "ws_is_durisweb_mud_gated_hook" in hook_set
+assert "cJSON_IsBool(enabled_json)" in hook_set
+assert "request_json->valuestring[0] == '\\0'" in hook_set
+assert "set_durisweb_hook_enabled(hook_id, enabled)" in hook_set
+assert '"durisweb_hook_set"' in HANDLERS
+assert '{ "durisweb_hook_set", ws_cmd_durisweb_hook_set }' in HANDLERS
+
+properties = (SRC / "properties.c").read_text()
+setter = properties[properties.index("bool set_durisweb_hook_enabled") :]
+assert "persist_durisweb_hook_property" in setter
+assert "apply_properties()" in setter
+assert "ws_broadcast_durisweb_hook_state()" in setter
+assert '#define PROPERTIES_FILE "lib/duris.properties"' in properties
+assert 'fopen(PROPERTIES_FILE ".new", "w")' in properties
+assert 'rename(PROPERTIES_FILE ".new", PROPERTIES_FILE)' in properties
+
 # Private presence fields and invisible staff require an explicit scope.
 assert "durisweb_presence_character_visible" in HANDLERS
 assert HANDLERS.count("if (durisweb_private_presence_enabled())") >= 2

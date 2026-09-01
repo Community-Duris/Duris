@@ -175,6 +175,89 @@ int parse_property(struct property *property, char *buf)
 	return 1;
 }
 
+static bool persist_durisweb_hook_property(const char *key, float value)
+{
+	FILE *source = fopen(PROPERTIES_FILE, "r");
+	FILE *target;
+	char line[1024];
+	bool found = FALSE;
+	bool ok = TRUE;
+
+	if (!source)
+		return FALSE;
+	target = fopen(PROPERTIES_FILE ".new", "w");
+	if (!target)
+	{
+		fclose(source);
+		return FALSE;
+	}
+
+	while (fgets(line, sizeof(line), source) != NULL)
+	{
+		struct property parsed;
+		if (parse_property(&parsed, line))
+		{
+			if (!strcmp(parsed.key, key))
+			{
+				checked_snprintf(line, sizeof(line), "%s=%.3f\n", key, value);
+				found = TRUE;
+			}
+			FREE(parsed.key);
+		}
+		if (fputs(line, target) == EOF)
+		{
+			ok = FALSE;
+			break;
+		}
+	}
+
+	if (ferror(source))
+		ok = FALSE;
+	if (fflush(target) != 0)
+		ok = FALSE;
+	if (fclose(target) != 0)
+		ok = FALSE;
+	fclose(source);
+
+	if (!ok || !found || rename(PROPERTIES_FILE ".new", PROPERTIES_FILE) != 0)
+	{
+		remove(PROPERTIES_FILE ".new");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+bool set_durisweb_hook_enabled(const char *hook_id, bool enabled)
+{
+	char key[128];
+	struct property *result;
+	float old_value;
+	float new_value = enabled ? 1.0f : 0.0f;
+
+	if (!hook_id || !*hook_id ||
+	    snprintf(key, sizeof(key), DURISWEB_HOOK_PREFIX "%s", hook_id) >= (int)sizeof(key))
+		return FALSE;
+
+	result = (struct property *)bsearch(key, duris_properties, properties_count,
+					    sizeof(struct property), key_property_comp);
+	if (!result)
+		return FALSE;
+
+	old_value = result->value;
+	result->value = new_value;
+	if (!persist_durisweb_hook_property(key, new_value))
+	{
+		result->value = old_value;
+		return FALSE;
+	}
+
+	result->old_value = new_value;
+	apply_properties();
+	logit(LOG_WIZ, "DurisWeb service set %s to %.3f", key, new_value);
+	ws_broadcast_durisweb_hook_state();
+	return TRUE;
+}
+
 int load_properties(struct property *properties)
 {
 	FILE *f;
