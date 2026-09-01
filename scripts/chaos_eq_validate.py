@@ -80,6 +80,32 @@ def validate_item(
     return issues
 
 
+def catalog_referenced_vnums(catalog: dict[str, Any]) -> set[int]:
+    """Collect every object VNUM selected by a generated catalog."""
+    vnums: set[int] = set()
+    for matrix in catalog.get("profiles", {}).values():
+        for row in matrix.values():
+            for item in row.get("equipment", []) + row.get("support_items", []):
+                if item.get("vnum") is not None:
+                    vnums.add(int(item["vnum"]))
+    for fundamentals in catalog.get("fundamentals", {}).values():
+        for key in ("spellbook", "shaman_totem"):
+            item = fundamentals.get(key)
+            if item and item.get("vnum") is not None:
+                vnums.add(int(item["vnum"]))
+        for item in fundamentals.get("bard_instruments", []):
+            if item.get("vnum") is not None:
+                vnums.add(int(item["vnum"]))
+    for variations in catalog.get("optional_race_slot_variations", {}).values():
+        for item in variations:
+            if item.get("status") == "available" and item.get("vnum") is not None:
+                vnums.add(int(item["vnum"]))
+    for item in catalog.get("consumables", []):
+        if item.get("vnum") is not None:
+            vnums.add(int(item["vnum"]))
+    return vnums
+
+
 def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
     constants = parse_defines(repo_root / "src/core/defines.h")
     area_root = repo_root / "areas/obj"
@@ -87,6 +113,14 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
     wiki: dict[int, dict[str, Any]] = {}
     objects, area_diag = reconcile_area_objects(area_file_names(area_root, area_list), wiki, constants)
     issues: list[str] = []
+    referenced_vnums = catalog_referenced_vnums(catalog)
+    for duplicate in area_diag.get("duplicate_vnums", []):
+        vnum = int(duplicate.get("vnum", 0))
+        if duplicate.get("ambiguous") and vnum in referenced_vnums:
+            sources = ", ".join(str(source) for source in duplicate.get("sources", []))
+            issues.append(
+                f"catalog: VNUM {vnum}: ambiguous duplicate AREA prototypes ({sources})"
+            )
     if area_diag["parse_errors"]:
         issues.extend(f"area parser: {error}" for error in area_diag["parse_errors"])
     enhance_config = parse_enhance_config(repo_root / "lib/enhance.cfg", constants)
@@ -128,9 +162,12 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
     for profile, fundamentals in catalog.get("fundamentals", {}).items():
         book = fundamentals.get("spellbook")
         if book:
-            if not book.get("beltable"):
+            book_vnum = int(book["vnum"])
+            book_obj = objects.get(book_vnum)
+            attach_belt = constants.get("ITEM_ATTACH_BELT", 1 << 23)
+            if not book_obj or not (book_obj.wear_flags & attach_belt):
                 issues.append(f"{profile}: spellbook {book.get('vnum')} is not beltable")
-            metric = {"vnum": book["vnum"], "slot": -1}
+            metric = {"vnum": book_vnum, "slot": -1}
             issues.extend(
                 f"{profile}/spellbook: {issue}"
                 for issue in validate_item(metric, profile, None, objects, constants, enhance_config, allow_fundamental=True)

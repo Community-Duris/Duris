@@ -435,7 +435,7 @@ static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *it
 		logit(LOG_FILE, "Skipping unusable CHAOS kit item vnum %d for pid %d", item->vnum,
 		      GET_PID(ch));
 		extract_obj(obj, FALSE);
-		return false;
+		return true;
 	}
 	prepare_chaos_kit_item(ch, obj);
 	if (!obj_can_nest(obj, bag))

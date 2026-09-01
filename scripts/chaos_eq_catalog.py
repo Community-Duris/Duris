@@ -205,7 +205,9 @@ def fundamental_exceptions(metric: dict[str, Any]) -> list[str]:
     return [reason for reason in metric.get("exclusion_reasons", []) if reason not in allowed]
 
 
-def choose_book(metrics: dict[int, dict[str, Any]], profile: str) -> dict[str, Any] | None:
+def choose_book(
+    metrics: dict[int, dict[str, Any]], profile: str, class_ids: dict[str, Any]
+) -> dict[str, Any] | None:
     candidates = []
     for metric in metrics.values():
         if metric.get("type_name") != "spellbook":
@@ -222,7 +224,10 @@ def choose_book(metrics: dict[int, dict[str, Any]], profile: str) -> dict[str, A
             continue
         if not (int(metric["static"].get("wear_flags", 0)) & (1 << 23)):
             continue
-        if not all(metric.get("class_eligible", {}).get(str(class_id), False) for class_id in range(1, 31)):
+        if not all(
+            metric.get("class_eligible", {}).get(str(class_id), False)
+            for class_id in class_ids.values()
+        ):
             continue
         candidates.append(metric)
     candidates.sort(key=lambda metric: (metric.get("observed_players", 0), -metric.get("risk_score", 0), -metric["vnum"]), reverse=True)
@@ -299,6 +304,7 @@ def choose_support_consumables(analysis: dict[str, Any]) -> list[dict[str, Any]]
 
 
 def choose_optional_variations(analysis: dict[str, Any], profile: str, metrics: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    class_ids = analysis.get("class_ids", {})
     requirements = [
         ("four_hands", [25, 26, 31, 32, 33, 34], ["Thri-Kreen"], "HAS_FOUR_HANDS() or AFF3_FOUR_ARMS"),
         ("tail", [37], ["Centaur", "Minotaur", "Shadow Beast", "Kobold", "Tiefling"], "HAS_TAIL()"),
@@ -329,7 +335,10 @@ def choose_optional_variations(analysis: dict[str, Any], profile: str, metrics: 
                     continue
                 if profile == "enhanceable" and not metric.get("enhanceable"):
                     continue
-                if not all(metric.get("class_eligible", {}).get(str(class_id), False) for class_id in range(1, 31)):
+                if not all(
+                    metric.get("class_eligible", {}).get(str(class_id), False)
+                    for class_id in class_ids.values()
+                ):
                     continue
                 if not (int((metric.get("static") or {}).get("wear_flags", 0)) & SLOT_WEAR_BITS.get(slot, 0)):
                     continue
@@ -418,7 +427,7 @@ def build_fundamentals(analysis: dict[str, Any], metrics: dict[int, dict[str, An
     standard_book_row = None
     if standard_book:
         standard_book_row = {"vnum": 7, "name": standard_book["name"], "beltable": bool(int(standard_book["static"].get("wear_flags", 0)) & (1 << 23)), "enhanceable": False, "reason": "runtime master spellbook; dynamic spell filling remains in read_object()"}
-    alt_book = choose_book(metrics, "enhanceable")
+    alt_book = choose_book(metrics, "enhanceable", class_ids)
     alt_book_row = {"vnum": alt_book["vnum"], "name": alt_book["name"], "beltable": True, "enhanceable": True, "reason": "strict enhance-index alternative spellbook"} if alt_book else None
     instruments_standard = []
     instruments_alt = []

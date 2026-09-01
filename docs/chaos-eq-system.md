@@ -12,7 +12,7 @@ Status: generated from the July 2026 production snapshot and wired into the loca
 - Do not block commands for this pre-entry grant; announce `Your Chaos Equipment has been prepared!!` only after durable completion and entry.
 - The approval state `CON_ACCEPTWAIT` remains present but `approve_mode` is currently 0; if approval is re-enabled, schedule only from its approved transition rather than granting rejected characters.
 - Keep normal equipment portable at the item-data level and apply runtime `can_char_use_item()` and body-slot checks before putting an object in the bag.
-- Treat a missing/unusable required object as a fail-closed kit failure; only expected race/body-slot omissions are skipped.
+- Treat a missing object, nesting failure, or grant-queue failure as a fail-closed kit failure; skip individual objects rejected by runtime usability or unavailable race/body slots and continue with the remaining kit.
 - Keep consumables inside the bag, with bounded starter quantities based on high-level carried/container usage rather than copying observed stockpiles.
 - Treat Bard instruments, the master spellbook, and the Shaman three-sphere totem as explicit fundamentals instead of accidentally filtering them as ordinary gear.
 
@@ -22,7 +22,7 @@ Status: generated from the July 2026 production snapshot and wired into the loca
 - Characters: 131; level 51+: 100; level 56+: 26; observed maximum: 62.
 - Static object sources: 351 active area files and 19124 parsed object records.
 - Candidate templates after database/static reconciliation: 2733; generated class profiles: 30 standard and 30 enhanceable.
-- Archive inventory: `player_data` 785 rows; `player_items` 50,239 rows; `player_item_affects` 34,008 rows; `player_item_extra_descr` 289,015 rows; `wiki_objects` 19,661 rows; `classes` 31; `races` 101; all item rows were reachable through `container_id -> player_items.id`, with maximum observed nesting depth 3.
+- Analyzer input rows: `characters` 131; `items` 23503; `item_affects` 8561; `wiki_objects` 19661; `wiki_affects` 15931; `wiki_effects` 3304; `wiki_slots` 16135; `wiki_classes` 36257; `wiki_races` 2491; `classes` 31; `races` 101.
 - The archive contains duplicate object-UID groups, so object UID is not used as the container-tree key; row `id` is the authoritative parent/child identity.
 - Analytical cohort query rows: `player_data` 131; `player_items` 23503; saved item affects 8561; nested object metadata available in archive.
 - Source selection: `areas/obj` constrained by `areas/AREA`; item affects use saved instance rows when present and prototype affects otherwise.
@@ -206,9 +206,9 @@ Normal class profiles intentionally use the common equipment path. Optional rows
 | Arms | Ogre, Firbolg | Runtime rejects the main arms slot. |
 | Third/fourth weapons and extra limbs | HAS_FOUR_HANDS() | Only emitted through optional slot variants. |
 | Horse body | INNATE_HORSE_BODY | Only emitted when the runtime innate is present. |
-| Tail | Centaur, Minotaur, Psionic Beast, Kobold, Tiefling | Only emitted when the runtime tail check passes. |
+| Tail | Centaur, Minotaur, Shadow Beast, Kobold, Tiefling | Only emitted when the runtime tail check passes. |
 | Nose | Minotaur | Only emitted for Minotaur. |
-| Horns | Minotaur, Harpy, Psionic Beast, Tiefling | Only emitted for the runtime horn-bearing races. |
+| Horns | Minotaur, Harpy, Shadow Beast, Tiefling | Only emitted for the runtime horn-bearing races. |
 | Spider body | INNATE_SPIDER_BODY | Only emitted when the runtime innate is present. |
 | Rear legs / rear feet | None in current runtime | has_eq_slot() currently rejects both slots; documented as unavailable. |
 
@@ -2420,7 +2420,10 @@ Observed high-level characters: 0 (role/static fallback)
 
 ### Runtime changes
 
-- `src/account/nanny.c`: replaced the old placeholder-heavy Chaos tables and per-item grant chain with generated class/profile data, optional body-slot variants, bounded consumables, runtime slot checks, class/race checks, fail-closed required-item validation, one nested root-bag grant, and pre-entry scheduling after the accepted-rules baseline.
+- `src/account/nanny.c`: replaced the old placeholder-heavy Chaos tables and per-item grant chain with generated class/profile data, optional body-slot variants, bounded consumables, runtime slot checks, class/race checks, fail-closed missing/nesting/queue validation, runtime skipping of unusable items, one nested root-bag grant, and pre-entry scheduling after the accepted-rules baseline.
+- `scripts/chaos_eq_analyze.py`: parses fundamental object types from `defines.h`, requires the complete Shaman sphere mask, and preserves heterogeneous fundamental CSV columns.
+- `scripts/chaos_eq_catalog.py`: derives all-class eligibility checks from the analyzed class-ID map rather than a fixed class count.
+- `scripts/chaos_eq_validate.py`: rejects selected ambiguous duplicate prototypes and verifies the master spellbook belt flag from the active object definition.
 - `src/item/item_movement_transaction.c` / `.h`: added an explicit direct-to-self pre-entry grant mode that does not block commands and announces completion after entry, including completions retained until `player_ready()`.
 - `src/account/chaos_eq_data.h`: generated standard/enhanceable arrays for all 30 classes, optional variations, and shared consumables.
 - `src/combat/chaos_config.c` / `.h`: added `CHAOS_EQ_PROFILE=standard|enhanceable`; invalid values fail closed to standard.
@@ -2436,6 +2439,7 @@ python3 scripts/chaos_eq_analyze.py --repo-root . --docker-container chaos-eq-an
 python3 scripts/chaos_eq_catalog.py --analysis <analysis-dir>/analysis.json --output-dir <catalog-dir> --header-out <catalog-dir>/chaos_eq_data.h --repo-root .
 python3 scripts/chaos_eq_validate.py --catalog <catalog-dir>/catalog.json --repo-root .
 python3 tests/async/test_chaos_new_character_kit.py
+python3 tests/async/test_chaos_coderabbit_regressions.py
 python3 tests/async/test_chaos_preentry_grant.py
 python3 tests/async/test_master_spellbook.py
 python3 tests/async/test_chaos_env_toggle.py
@@ -2444,12 +2448,10 @@ make world
 make -C src -j2
 ```
 
-The verified results for this implementation snapshot are:
-- Analyzer: passed; 2,733 candidate templates and 131-character cohort.
-- Catalog generation and fail-closed validator: passed; zero validation issues.
-- All-class Chaos contract, pre-entry grant contract, master-spellbook, environment/profile, readiness, hardcore, and persistence contracts: passed.
-- Corrected isolated flat-file Chaos journey: passed; the grant was scheduled before game entry, the success message was emitted after entry, generated bag contents and consumable visibility were verified, save completed, and shutdown was clean.
-- Chaos-focused regression matrix: passed; `make build && make test TEST_MATCH=chaos TEST_JOBS=1` reported 6 passed, 0 failed.
+The generated results for this reference are:
+- Analyzer dataset: 2733 candidate templates and 131-character cohort.
+- Catalog: 30 standard and 30 enhanceable class profiles.
+- Runtime/build/test execution is recorded by the repository CI and PR evidence rather than embedded as a stale one-run claim in this generated report.
 
 ## Known limitations and follow-up
 

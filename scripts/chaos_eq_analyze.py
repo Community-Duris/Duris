@@ -1072,7 +1072,7 @@ def choose_fundamentals(
 
     totem_candidates: list[dict[str, Any]] = []
     for vnum, obj in all_objects.items():
-        if obj.object_type != constants.get("ITEM_TOTEM", 34) or not (obj.values[0] & TOTEM_SPHERE_MASK) == TOTEM_SPHERE_MASK:
+        if obj.object_type != constants.get("ITEM_TOTEM", 34) or (obj.values[0] & TOTEM_SPHERE_MASK) != TOTEM_SPHERE_MASK:
             continue
         metric = metrics_by_vnum.get(vnum)
         if metric and not fundamental_blocking_reasons(metric) and object_class_allowed(obj, shaman_id, constants):
@@ -1159,6 +1159,16 @@ def write_csv(path: Path, rows: list[dict[str, Any]], fields: list[str]) -> None
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def ordered_field_union(rows: list[dict[str, Any]], fallback: list[str]) -> list[str]:
+    """Return first-seen CSV columns from every row, or the fallback columns."""
+    fields: list[str] = []
+    for row in rows:
+        for key in row:
+            if key not in fields:
+                fields.append(key)
+    return fields or list(fallback)
 
 
 def analyze(args: argparse.Namespace) -> dict[str, Any]:
@@ -1288,8 +1298,13 @@ def analyze(args: argparse.Namespace) -> dict[str, Any]:
     # Static-only fundamentals must also be visible to the catalog.  Add every
     # instrument/totem/spellbook in the loaded object universe, but keep the
     # full metric list limited to observed cohort gear elsewhere.
+    fundamental_types = {
+        defines.get("ITEM_INSTRUMENT", 32),
+        defines.get("ITEM_SPELLBOOK", 33),
+        defines.get("ITEM_TOTEM", 34),
+    }
     for vnum, obj in area_objects.items():
-        if obj.object_type not in {32, 33, 34}:
+        if obj.object_type not in fundamental_types:
             continue
         usage.setdefault(vnum, {
             "vnum": vnum,
@@ -1508,7 +1523,7 @@ def analyze(args: argparse.Namespace) -> dict[str, Any]:
             for entry in entries:
                 recommendation_rows.append({"profile": profile, "class": class_name, **entry, "effect_summary": json.dumps(entry["effect_summary"], sort_keys=True)})
     write_csv(output_dir / "recommendations.csv", recommendation_rows, list(recommendation_rows[0]) if recommendation_rows else ["profile", "class", "slot", "vnum"])
-    write_csv(output_dir / "fundamentals.csv", fundamentals, list(fundamentals[0]) if fundamentals else ["role", "vnum"])
+    write_csv(output_dir / "fundamentals.csv", fundamentals, ordered_field_union(fundamentals, ["role", "vnum"]))
     consumable_rows = []
     for profile, entries in consumables.items():
         for entry in entries:

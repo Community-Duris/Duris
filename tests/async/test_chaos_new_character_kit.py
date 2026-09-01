@@ -85,7 +85,7 @@ for array_name, body in array_matches:
         slot = -1 if raw_slot == "WEAR_NONE" else int(raw_slot)
         vnum = int(raw_vnum)
         assert vnum != 1252, (array_name, vnum)
-        assert vnum in active_vnums, (array_name, vnum)
+        assert vnum in objects, (array_name, vnum)
         all_data_vnums.add(vnum)
         if slot >= 0:
             assert slot in CORE_SLOTS or slot == 18, (array_name, slot)
@@ -103,7 +103,7 @@ assert support_pairs and support_pairs[-1] == ("WEAR_NONE", "0")
 for raw_slot, raw_vnum in support_pairs[:-1]:
     vnum = int(raw_vnum)
     assert vnum != 1252
-    assert vnum in active_vnums
+    assert vnum in objects
     all_data_vnums.add(vnum)
 
 optional_matches = re.findall(
@@ -118,7 +118,7 @@ for body in optional_matches:
     for _, raw_vnum in pairs[:-1]:
         vnum = int(raw_vnum)
         assert vnum != 1252
-        assert vnum in active_vnums
+        assert vnum in objects
         all_data_vnums.add(vnum)
 
 # Every core item must be free of item-level policy violations and usable by

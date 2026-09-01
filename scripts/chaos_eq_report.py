@@ -24,9 +24,9 @@ RACE_SLOT_RULES = [
     ("Arms", "Ogre, Firbolg", "Runtime rejects the main arms slot."),
     ("Third/fourth weapons and extra limbs", "HAS_FOUR_HANDS()", "Only emitted through optional slot variants."),
     ("Horse body", "INNATE_HORSE_BODY", "Only emitted when the runtime innate is present."),
-    ("Tail", "Centaur, Minotaur, Psionic Beast, Kobold, Tiefling", "Only emitted when the runtime tail check passes."),
+    ("Tail", "Centaur, Minotaur, Shadow Beast, Kobold, Tiefling", "Only emitted when the runtime tail check passes."),
     ("Nose", "Minotaur", "Only emitted for Minotaur."),
-    ("Horns", "Minotaur, Harpy, Psionic Beast, Tiefling", "Only emitted for the runtime horn-bearing races."),
+    ("Horns", "Minotaur, Harpy, Shadow Beast, Tiefling", "Only emitted for the runtime horn-bearing races."),
     ("Spider body", "INNATE_SPIDER_BODY", "Only emitted when the runtime innate is present."),
     ("Rear legs / rear feet", "None in current runtime", "has_eq_slot() currently rejects both slots; documented as unavailable."),
 ]
@@ -67,6 +67,24 @@ def fmt_item(item: dict[str, Any]) -> str:
         f"observed {item.get('observed_players', 0)} players; "
         f"power {item.get('power_score', 0)}; risk {item.get('risk_score', 0)})"
     )
+
+
+def format_database_counts(counts: dict[str, Any]) -> str:
+    """Format the analyzer's actual input-row counts in stable order."""
+    names = (
+        "characters",
+        "items",
+        "item_affects",
+        "wiki_objects",
+        "wiki_affects",
+        "wiki_effects",
+        "wiki_slots",
+        "wiki_classes",
+        "wiki_races",
+        "classes",
+        "races",
+    )
+    return "; ".join(f"`{name}` {counts.get(name, 'n/a')}" for name in names)
 
 
 def render_effect_evidence(analysis: dict[str, Any]) -> list[str]:
@@ -184,7 +202,7 @@ def render_method(analysis: dict[str, Any], catalog: dict[str, Any]) -> list[str
         "- Do not block commands for this pre-entry grant; announce `Your Chaos Equipment has been prepared!!` only after durable completion and entry.",
         "- The approval state `CON_ACCEPTWAIT` remains present but `approve_mode` is currently 0; if approval is re-enabled, schedule only from its approved transition rather than granting rejected characters.",
         "- Keep normal equipment portable at the item-data level and apply runtime `can_char_use_item()` and body-slot checks before putting an object in the bag.",
-        "- Treat a missing/unusable required object as a fail-closed kit failure; only expected race/body-slot omissions are skipped.",
+        "- Treat a missing object, nesting failure, or grant-queue failure as a fail-closed kit failure; skip individual objects rejected by runtime usability or unavailable race/body slots and continue with the remaining kit.",
         "- Keep consumables inside the bag, with bounded starter quantities based on high-level carried/container usage rather than copying observed stockpiles.",
         "- Treat Bard instruments, the master spellbook, and the Shaman three-sphere totem as explicit fundamentals instead of accidentally filtering them as ordinary gear.",
         "",
@@ -194,7 +212,7 @@ def render_method(analysis: dict[str, Any], catalog: dict[str, Any]) -> list[str
         f"- Characters: {cohort.get('characters', 0)}; level 51+: {cohort.get('level_51_or_higher', 0)}; level 56+: {cohort.get('level_56_or_higher', 0)}; observed maximum: {cohort.get('max_level', 0)}.",
         f"- Static object sources: {analysis.get('static_reconciliation', {}).get('area_files', 0)} active area files and {analysis.get('static_reconciliation', {}).get('area_records', 0)} parsed object records.",
         f"- Candidate templates after database/static reconciliation: {len(analysis.get('candidates', []))}; generated class profiles: {len(catalog.get('profiles', {}).get('standard', {}))} standard and {len(catalog.get('profiles', {}).get('enhanceable', {}))} enhanceable.",
-        f"- Archive inventory: `player_data` 785 rows; `player_items` 50,239 rows; `player_item_affects` 34,008 rows; `player_item_extra_descr` 289,015 rows; `wiki_objects` 19,661 rows; `classes` 31; `races` 101; all item rows were reachable through `container_id -> player_items.id`, with maximum observed nesting depth 3.",
+        f"- Analyzer input rows: {format_database_counts(counts)}.",
         "- The archive contains duplicate object-UID groups, so object UID is not used as the container-tree key; row `id` is the authoritative parent/child identity.",
         f"- Analytical cohort query rows: `player_data` {counts.get('characters', 'n/a')}; `player_items` {counts.get('items', 'n/a')}; saved item affects {counts.get('item_affects', 'n/a')}; nested object metadata available in archive.",
         f"- Source selection: `{source.get('area_root', 'areas/obj')}` constrained by `{source.get('area_list', 'areas/AREA')}`; item affects use saved instance rows when present and prototype affects otherwise.",
@@ -214,13 +232,20 @@ def render_method(analysis: dict[str, Any], catalog: dict[str, Any]) -> list[str
     return lines
 
 
-def render_verification() -> list[str]:
+def render_verification(analysis: dict[str, Any], catalog: dict[str, Any]) -> list[str]:
+    cohort = analysis.get("cohort", {})
+    candidate_count = len(analysis.get("candidates", []))
+    standard_profiles = len(catalog.get("profiles", {}).get("standard", {}))
+    enhanceable_profiles = len(catalog.get("profiles", {}).get("enhanceable", {}))
     return [
         "## Implementation and verification notes",
         "",
         "### Runtime changes",
         "",
-        "- `src/account/nanny.c`: replaced the old placeholder-heavy Chaos tables and per-item grant chain with generated class/profile data, optional body-slot variants, bounded consumables, runtime slot checks, class/race checks, fail-closed required-item validation, one nested root-bag grant, and pre-entry scheduling after the accepted-rules baseline.",
+        "- `src/account/nanny.c`: replaced the old placeholder-heavy Chaos tables and per-item grant chain with generated class/profile data, optional body-slot variants, bounded consumables, runtime slot checks, class/race checks, fail-closed missing/nesting/queue validation, runtime skipping of unusable items, one nested root-bag grant, and pre-entry scheduling after the accepted-rules baseline.",
+        "- `scripts/chaos_eq_analyze.py`: parses fundamental object types from `defines.h`, requires the complete Shaman sphere mask, and preserves heterogeneous fundamental CSV columns.",
+        "- `scripts/chaos_eq_catalog.py`: derives all-class eligibility checks from the analyzed class-ID map rather than a fixed class count.",
+        "- `scripts/chaos_eq_validate.py`: rejects selected ambiguous duplicate prototypes and verifies the master spellbook belt flag from the active object definition.",
         "- `src/item/item_movement_transaction.c` / `.h`: added an explicit direct-to-self pre-entry grant mode that does not block commands and announces completion after entry, including completions retained until `player_ready()`.",
         "- `src/account/chaos_eq_data.h`: generated standard/enhanceable arrays for all 30 classes, optional variations, and shared consumables.",
         "- `src/combat/chaos_config.c` / `.h`: added `CHAOS_EQ_PROFILE=standard|enhanceable`; invalid values fail closed to standard.",
@@ -236,6 +261,7 @@ def render_verification() -> list[str]:
         "python3 scripts/chaos_eq_catalog.py --analysis <analysis-dir>/analysis.json --output-dir <catalog-dir> --header-out <catalog-dir>/chaos_eq_data.h --repo-root .",
         "python3 scripts/chaos_eq_validate.py --catalog <catalog-dir>/catalog.json --repo-root .",
         "python3 tests/async/test_chaos_new_character_kit.py",
+        "python3 tests/async/test_chaos_coderabbit_regressions.py",
         "python3 tests/async/test_chaos_preentry_grant.py",
         "python3 tests/async/test_master_spellbook.py",
         "python3 tests/async/test_chaos_env_toggle.py",
@@ -244,12 +270,10 @@ def render_verification() -> list[str]:
         "make -C src -j2",
         "```",
         "",
-        "The verified results for this implementation snapshot are:",
-        "- Analyzer: passed; 2,733 candidate templates and 131-character cohort.",
-        "- Catalog generation and fail-closed validator: passed; zero validation issues.",
-        "- All-class Chaos contract, pre-entry grant contract, master-spellbook, environment/profile, readiness, hardcore, and persistence contracts: passed.",
-        "- Corrected isolated flat-file Chaos journey: passed; the grant was scheduled before game entry, the success message was emitted after entry, generated bag contents and consumable visibility were verified, save completed, and shutdown was clean.",
-        "- Chaos-focused regression matrix: passed; `make build && make test TEST_MATCH=chaos TEST_JOBS=1` reported 6 passed, 0 failed.",
+        "The generated results for this reference are:",
+        f"- Analyzer dataset: {candidate_count} candidate templates and {cohort.get('characters', 0)}-character cohort.",
+        f"- Catalog: {standard_profiles} standard and {enhanceable_profiles} enhanceable class profiles.",
+        "- Runtime/build/test execution is recorded by the repository CI and PR evidence rather than embedded as a stale one-run claim in this generated report.",
         "",
         "## Known limitations and follow-up",
         "",
@@ -274,7 +298,7 @@ def render(analysis: dict[str, Any], catalog: dict[str, Any]) -> str:
     lines.extend(render_exclusions(analysis))
     lines.extend(render_profile(catalog, "standard", class_ids))
     lines.extend(render_profile(catalog, "enhanceable", class_ids))
-    lines.extend(render_verification())
+    lines.extend(render_verification(analysis, catalog))
     return "\n".join(lines).rstrip() + "\n"
 
 
