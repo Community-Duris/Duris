@@ -14,6 +14,10 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
 ./scripts/cycle_mud.sh --check-config  # validate the selected persistence mode only
 ```
 
+Set `DURIS_DEV_PORT` to use a different development plain-telnet port when
+another local service owns 4000. It accepts ports 1 through 65535 except the
+production port 7777; the default remains 4000.
+
 `cycle_mud.sh`:
 
 - Anchors itself to the repository root; loads `.env` if present.

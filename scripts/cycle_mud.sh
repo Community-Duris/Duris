@@ -70,7 +70,15 @@ if (( MINIMAL_MODE == 1 )); then
 fi
 MUD_PORT=7777
 if [ $DEV_MODE -eq 1 ]; then
-  MUD_PORT=4000
+  MUD_PORT="${DURIS_DEV_PORT:-4000}"
+  if ! [[ "$MUD_PORT" =~ ^[0-9]+$ ]] || (( MUD_PORT < 1 || MUD_PORT > 65535 )); then
+    echo "DURIS_DEV_PORT must be a decimal port from 1 through 65535" >&2
+    exit 1
+  fi
+  if (( MUD_PORT == 7777 )); then
+    echo "DURIS_DEV_PORT must not use production port 7777" >&2
+    exit 1
+  fi
 fi
 
 RESULT=53
@@ -123,6 +131,10 @@ if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
 fi
 if (( PRODUCTION_MODE == 1 )) && [[ "$ENVIRONMENT" != "production" ]]; then
   echo "--production requires ENVIRONMENT=production" >&2
+  exit 1
+fi
+if (( DEV_MODE == 1 )) && [[ "$ENVIRONMENT" != "local" ]]; then
+  echo "--dev and --minimal require ENVIRONMENT=local" >&2
   exit 1
 fi
 if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne 7777 ]]; then

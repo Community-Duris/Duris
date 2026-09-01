@@ -49,6 +49,31 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
         raise AssertionError("flat-file config check required a database:\n" + checked.stdout)
 
+    alternate_port_env = dict(flat_env)
+    alternate_port_env["DURIS_DEV_PORT"] = "14000"
+    checked = run(script, alternate_port_env, "--dev", "--check-config")
+    if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
+        raise AssertionError("alternate development port was rejected:\n" + checked.stdout)
+
+    production_port_env = dict(flat_env)
+    production_port_env["DURIS_DEV_PORT"] = "7777"
+    rejected = run(script, production_port_env, "--dev", "--check-config")
+    if rejected.returncode == 0 or "must not use production port 7777" not in rejected.stdout:
+        raise AssertionError("development launcher accepted production port 7777")
+
+    invalid_port_env = dict(flat_env)
+    invalid_port_env["DURIS_DEV_PORT"] = "not-a-port"
+    rejected = run(script, invalid_port_env, "--dev", "--check-config")
+    if rejected.returncode == 0 or "must be a decimal port" not in rejected.stdout:
+        raise AssertionError("development launcher accepted an invalid port")
+
+    production_env = dict(flat_env)
+    production_env["ENVIRONMENT"] = "production"
+    production_env["DURIS_DEV_PORT"] = "14000"
+    rejected = run(script, production_env, "--dev", "--check-config")
+    if rejected.returncode == 0 or "require ENVIRONMENT=local" not in rejected.stdout:
+        raise AssertionError("development launcher accepted a production environment")
+
     missing_root = dict(flat_env)
     del missing_root["FLATFILE_STATE_DIR"]
     rejected = run(script, missing_root, "--check-config")
