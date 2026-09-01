@@ -348,6 +348,47 @@ void item_drop_completion(P_char actor, bool committed, const item_transfer_resu
 	publish_player_drop(actor, object, context.room, context.floor_hint, context.quiet);
 }
 
+/*
+ * A refused submission used to collapse eight predicates into one sentence, which told
+ * neither the player nor the log which of them fired.  Split the two classes that differ
+ * operationally: a transient conflict clears itself and is worth retrying, while ledger
+ * state that disagrees with the live world keeps failing until staff reconcile it.  The
+ * structured line keeps the precise reason next to the item it was refused for.
+ */
+void report_movement_reject(P_char ch, item_movement_reject reason, const char *command,
+			    P_obj object)
+{
+	if (!ch)
+		return;
+	send_to_char(item_movement_reject_is_transient(reason) ?
+			     "That item is busy right now; try again in a moment.\r\n" :
+			     "That item's ownership records disagree with where it is; it "
+			     "cannot be moved until staff reconcile it.\r\n",
+		     ch);
+	logit(LOG_FILE, "item_movement: command=%s outcome=%s actor=%s uid=%llu vnum=%d", command,
+	      item_movement_reject_name(reason), J_NAME(ch),
+	      (unsigned long long)(object ? object->obj_uid : 0), object ? OBJ_VNUM(object) : -1);
+}
+
+/*
+ * The bulk variants move a forest in one transaction, so the failure belongs to the batch
+ * rather than to any single item; keep the "nothing happened" framing and add the reason.
+ */
+void report_batch_movement_reject(P_char ch, item_movement_reject reason, const char *command,
+				  const char *nothing_happened)
+{
+	if (!ch)
+		return;
+	send_to_char(nothing_happened, ch);
+	send_to_char(item_movement_reject_is_transient(reason) ?
+			     "Something is busy right now; try again in a moment.\r\n" :
+			     "An item's ownership records disagree with where it is; staff "
+			     "must reconcile it first.\r\n",
+		     ch);
+	logit(LOG_FILE, "item_movement: command=%s outcome=%s actor=%s scope=batch", command,
+	      item_movement_reject_name(reason), J_NAME(ch));
+}
+
 void item_give_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			  const uint8_t *encoded, size_t encoded_size)
 {
@@ -415,7 +456,17 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 	(void)stored;
 }
 
-bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int showit)
+/*
+ * Every put of a generic-ownership item is durable, including a put into a container the
+ * actor already owns.  Nesting is ledger state: item_current_owner carries the parent and
+ * root of each item, capture() in the movement transaction refuses a subtree whose ledger
+ * nesting disagrees with the live object tree, and player load rebuilds nesting from the
+ * ledger rather than from the saved rows.  A live-only obj_to_obj() therefore does not
+ * merely skip a write, it strands the container: every later give or drop of it fails
+ * preflight, and the contents un-nest on the next login.  Only objects outside generic
+ * ownership (coins, transients, PC corpse roots) and uid-less containers stay synchronous.
+ */
+bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 {
 	item_put_deferred = false;
 	if (item_put_ack_publication || !IS_PC(actor) || !uses_generic_item_ownership(object) ||
@@ -424,6 +475,7 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 	item_ownership_runtime_entry item_runtime = {}, container_runtime = {};
 	const bool item_known = item_ownership_runtime_lookup(object->obj_uid, &item_runtime);
 	item_owner_identity locker_destination = {};
+	item_movement_reject reject = item_movement_reject::none;
 	if (locker_owner_for_container(actor, container, &locker_destination))
 	{
 		const item_owner_identity source =
@@ -431,6 +483,11 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 				item_runtime.owner :
 				item_owner_identity{ item_owner_type::player,
 						     static_cast<uint64_t>(GET_PID(actor)), 0 };
+		/*
+		 * A locker chest is an owner, not a parent: its contents are ledger roots
+		 * owned by the chest.  An item already owned by this chest therefore has
+		 * nothing to record, so the live move is complete on its own.
+		 */
 		if (item_owner_identity_equal(source, locker_destination))
 			return false;
 		const put_movement_context context = { object->obj_uid, container->obj_uid,
@@ -438,8 +495,8 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 		if (!item_movement_transaction_submit(
 			    actor, object, NULL, source, locker_destination,
 			    item_transfer_reason::locker_deposit, locker_destination.context_id,
-			    item_put_completion, &context, sizeof(context)))
-			send_to_char("That item is busy or its ownership changed.\r\n", actor);
+			    item_put_completion, &context, sizeof(context), NULL, &reject))
+			report_movement_reject(actor, reject, "put", object);
 		else
 			item_put_deferred = true;
 		return true;
@@ -455,14 +512,13 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 		item_known ? item_runtime.owner :
 			     item_owner_identity{ item_owner_type::player,
 						  static_cast<uint64_t>(GET_PID(actor)), 0 };
-	if (item_owner_identity_equal(source, container_runtime.owner))
-		return false;
 	const item_owner_identity destination = container_runtime.owner;
 	const put_movement_context context = { object->obj_uid, container->obj_uid, showit };
 	if (!item_movement_transaction_submit(actor, object, container, source, destination,
 					      item_transfer_reason::player_put, container->obj_uid,
-					      item_put_completion, &context, sizeof(context)))
-		send_to_char("That item is busy or its ownership changed.\r\n", actor);
+					      item_put_completion, &context, sizeof(context), NULL,
+					      &reject))
+		report_movement_reject(actor, reject, "put", object);
 	else
 		item_put_deferred = true;
 	return true;
@@ -472,7 +528,7 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
  * One durable drop, submitted through the ownership pipeline.  The live move
  * happens in item_drop_completion() once the transaction commits.
  */
-bool submit_player_drop(P_char ch, P_obj object)
+bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 {
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(ch)), 0 };
@@ -486,7 +542,8 @@ bool submit_player_drop(P_char ch, P_obj object)
 							item_transfer_reason::locker_deposit :
 							item_transfer_reason::player_drop,
 						locker_deposit ? 0 : world[ch->in_room].number,
-						item_drop_completion, &context, sizeof(context));
+						item_drop_completion, &context, sizeof(context),
+						NULL, reject);
 }
 }
 
@@ -670,12 +727,16 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 							    item_transfer_reason::locker_withdraw :
 						    corpse ? item_transfer_reason::corpse_loot :
 							     item_transfer_reason::player_get;
+		// An unresolvable source owner is itself an authority gap, not a submission
+		// failure, so name it rather than reporting the submit's untouched reason.
+		item_movement_reject reject = item_movement_reject::owner_mismatch;
 		if (!item_owner_identity_valid(source) ||
 		    !item_movement_transaction_submit(ch, o_obj, NULL, source, destination, reason,
 						      o_obj->obj_uid, item_get_completion, &context,
-						      sizeof(context), corpse ? s_obj : NULL))
+						      sizeof(context), corpse ? s_obj : NULL,
+						      &reject))
 		{
-			send_to_char("That item is busy or lacks authoritative ownership.\r\n", ch);
+			report_movement_reject(ch, reject, "get", o_obj);
 			return;
 		}
 		item_get_deferred = true;
@@ -1759,14 +1820,13 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 		return;
 	}
 	const bulk_movement_context context = { actor_pid };
+	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_batch(
 		    actor, roots.data(), roots.size(), NULL, source_runtime.owner, destination,
 		    reason, static_cast<int64_t>(roots.front()->obj_uid), bulk_get_completion,
-		    &context, sizeof(context), corpse ? container : NULL))
+		    &context, sizeof(context), corpse ? container : NULL, &reject))
 	{
-		send_to_char(
-			"Nothing was taken; an item is busy or lacks authoritative ownership.\r\n",
-			actor);
+		report_batch_movement_reject(actor, reject, "get", "Nothing was taken.\r\n");
 		bulk_gets.erase(actor_pid);
 	}
 }
@@ -2882,16 +2942,15 @@ void start_bulk_drop(P_char actor, const char *filter, bool alldot)
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(actor)), 0 };
 	const bulk_movement_context context = { actor_pid };
+	item_movement_reject reject = item_movement_reject::none;
 	if (!item_movement_transaction_submit_batch(
 		    actor, roots.data(), roots.size(), NULL, source, destination,
 		    locker_deposit ? item_transfer_reason::locker_deposit :
 				     item_transfer_reason::player_drop,
 		    locker_deposit ? 0 : world[actor->in_room].number, bulk_drop_completion,
-		    &context, sizeof(context)))
+		    &context, sizeof(context), NULL, &reject))
 	{
-		send_to_char(
-			"Nothing was dropped; an item is busy or lacks authoritative ownership.\r\n",
-			actor);
+		report_batch_movement_reject(actor, reject, "drop", "Nothing was dropped.\r\n");
 		bulk_drops.erase(found);
 	}
 }
@@ -3335,10 +3394,11 @@ void do_drop(P_char ch, char *argument, int cmd)
 				{
 					if (IS_PC(ch) && uses_generic_item_ownership(tmp_object))
 					{
-						if (!submit_player_drop(ch, tmp_object))
-							send_to_char(
-								"That item is busy or lacks authoritative ownership.\r\n",
-								ch);
+						item_movement_reject reject =
+							item_movement_reject::none;
+						if (!submit_player_drop(ch, tmp_object, &reject))
+							report_movement_reject(ch, reject, "drop",
+									       tmp_object);
 						return;
 					}
 					snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %s.\r\n",
@@ -3702,13 +3762,13 @@ void start_bulk_put(P_char actor, P_obj container, const char *filter, bool alld
 		destination = container_runtime.owner;
 	}
 	const bulk_movement_context context = { actor_pid };
-	if (!item_movement_transaction_submit_batch(
-		    actor, roots.data(), roots.size(), ownership_target, source, destination,
-		    reason, reason_id, bulk_put_completion, &context, sizeof(context)))
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit_batch(actor, roots.data(), roots.size(),
+						    ownership_target, source, destination, reason,
+						    reason_id, bulk_put_completion, &context,
+						    sizeof(context), NULL, &reject))
 	{
-		send_to_char(
-			"Nothing was put away; an item is busy or lacks authoritative ownership.\r\n",
-			actor);
+		report_batch_movement_reject(actor, reject, "put", "Nothing was put away.\r\n");
 		bulk_puts.erase(found);
 	}
 }
@@ -3997,7 +4057,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 				if (s_obj->value[0] > s_obj->value[3])
 				{
-					if (defer_cross_owner_put(ch, o_obj, s_obj, showit))
+					if (defer_durable_put(ch, o_obj, s_obj, showit))
 						return TRUE;
 					if (showit)
 						send_to_char("Ok.\r\n", ch);
@@ -4105,7 +4165,7 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 					{
 #endif
-						if (defer_cross_owner_put(ch, o_obj, s_obj, showit))
+						if (defer_durable_put(ch, o_obj, s_obj, showit))
 							return TRUE;
 						if (showit)
 							send_to_char("Ok.\r\n", ch);
@@ -4411,10 +4471,12 @@ void do_give(P_char ch, char *argument, int cmd)
 		const give_movement_context context = { obj->obj_uid,
 							static_cast<uint32_t>(GET_PID(vict)),
 							ch->in_room };
-		if (!item_movement_transaction_submit(
-			    ch, obj, NULL, source, destination, item_transfer_reason::player_give,
-			    GET_PID(vict), item_give_completion, &context, sizeof(context)))
-			send_to_char("That item is busy or lacks authoritative ownership.\r\n", ch);
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit(ch, obj, NULL, source, destination,
+						      item_transfer_reason::player_give,
+						      GET_PID(vict), item_give_completion, &context,
+						      sizeof(context), NULL, &reject))
+			report_movement_reject(ch, reject, "give", obj);
 		return;
 	}
 	obj_from_char(obj);

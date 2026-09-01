@@ -17,6 +17,12 @@ item_revision_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_own
 owner_revision_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_owner_revision owner LEFT JOIN (SELECT owner_type,owner_id,owner_context_id,COUNT(DISTINCT operation_id) event_count FROM (SELECT operation_id,from_owner_type owner_type,from_owner_id owner_id,from_owner_context_id owner_context_id FROM item_ownership_ledger UNION ALL SELECT operation_id,to_owner_type,to_owner_id,to_owner_context_id FROM item_ownership_ledger) touched GROUP BY owner_type,owner_id,owner_context_id) ledger ON ledger.owner_type=owner.owner_type AND ledger.owner_id=owner.owner_id AND ledger.owner_context_id=owner.owner_context_id WHERE owner.revision<>COALESCE(ledger.event_count,0);")
 latest_owner_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owner current_item JOIN item_ownership_ledger ledger ON ledger.item_uid=current_item.item_uid AND ledger.item_revision=current_item.item_revision WHERE current_item.owner_type<>ledger.to_owner_type OR current_item.owner_id<>ledger.to_owner_id OR current_item.owner_context_id<>ledger.to_owner_context_id;")
 
-printf 'missing_baseline=%s\nitem_revision_mismatch=%s\nowner_revision_mismatch=%s\nlatest_owner_mismatch=%s\n' \
-    "$missing_baseline" "$item_revision_mismatch" "$owner_revision_mismatch" "$latest_owner_mismatch"
-[[ "$missing_baseline" == 0 && "$item_revision_mismatch" == 0 && "$owner_revision_mismatch" == 0 && "$latest_owner_mismatch" == 0 ]]
+# Nesting is ledger state too: capture() refuses a subtree whose recorded parent
+# disagrees with the live tree, and player load rebuilds nesting from these rows.
+# Drift here strands containers, so it belongs in the same drift report.
+nesting_mismatch=$("$SCRIPT_DIR/repair_item_nesting.sh" --check | sed -n 's/^nesting_mismatch=//p' || true)
+nesting_mismatch="${nesting_mismatch:-0}"
+
+printf 'missing_baseline=%s\nitem_revision_mismatch=%s\nowner_revision_mismatch=%s\nlatest_owner_mismatch=%s\nnesting_mismatch=%s\n' \
+    "$missing_baseline" "$item_revision_mismatch" "$owner_revision_mismatch" "$latest_owner_mismatch" "$nesting_mismatch"
+[[ "$missing_baseline" == 0 && "$item_revision_mismatch" == 0 && "$owner_revision_mismatch" == 0 && "$latest_owner_mismatch" == 0 && "$nesting_mismatch" == 0 ]]

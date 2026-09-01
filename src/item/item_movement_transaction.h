@@ -16,6 +16,28 @@ using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 					     unsigned int error_code, const uint8_t *context,
 					     size_t context_size);
 
+// A submission can be refused for reasons that are operationally very different: a
+// transient conflict the player should simply retry, versus ledger state that disagrees
+// with live topology and will never resolve on its own. Callers map this onto both the
+// player-facing text and the structured diagnostic, so the two classes stay separable.
+enum class item_movement_reject
+{
+	none,
+	invalid_request,
+	queue_saturated,
+	pending_conflict,
+	owner_mismatch,
+	missing_owner_revision,
+	topology_mismatch,
+	snapshot_failure,
+	allocation_failure,
+	command_build_failure,
+	coordinator_rejected,
+};
+
+const char *item_movement_reject_name(item_movement_reject reason);
+bool item_movement_reject_is_transient(item_movement_reject reason);
+
 struct item_movement_health
 {
 	uint64_t pending;
@@ -32,12 +54,14 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      const item_owner_identity &to_owner,
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
-				      size_t context_size, P_obj corpse_context = NULL);
+				      size_t context_size, P_obj corpse_context = NULL,
+				      item_movement_reject *reject = NULL);
 bool item_movement_transaction_submit_batch(
 	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
 	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
 	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
-	const void *context, size_t context_size, P_obj corpse_context = NULL);
+	const void *context, size_t context_size, P_obj corpse_context = NULL,
+	item_movement_reject *reject = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
