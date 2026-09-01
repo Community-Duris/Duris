@@ -13,6 +13,7 @@ MOVEMENT_HEADER = (SRC / "item_movement_transaction.h").read_text(
 
 
 def function_body(source, signature):
+    """Return one complete brace-delimited C++ function."""
     start = source.index(signature)
     brace = source.index("{", start)
     depth = 0
@@ -27,14 +28,23 @@ def function_body(source, signature):
 
 
 def check(name, condition):
+    """Print one source-contract result and return its truth value."""
     print(("PASS: " if condition else "FAIL: ") + name)
     return bool(condition)
+
+
+def normalize_cxx(source):
+    """Remove formatting whitespace before comparing a C++ expression."""
+    return "".join(source.split())
 
 
 do_drop = function_body(ACTOBJ, "void do_drop(")
 do_dropalldot = function_body(ACTOBJ, "void do_dropalldot(")
 do_put = function_body(ACTOBJ, "void do_put(")
 ownership_filter = function_body(ACTOBJ, "static bool uses_generic_item_ownership(")
+ownership_filter_body = ownership_filter[
+    ownership_filter.index("{") + 1 : ownership_filter.rindex("}")
+]
 start_drop = function_body(ACTOBJ, "void start_bulk_drop(")
 drop_completion = function_body(ACTOBJ, "void bulk_drop_completion(")
 drop_finish = function_body(ACTOBJ, "void finish_bulk_drop_after_commit(")
@@ -63,11 +73,14 @@ ok &= check(
     and 'strcmp(obj_name, "all.coins")' in do_put,
 )
 ok &= check(
-    "lifecycle-specific roots bypass generic ownership",
-    "object->type != ITEM_MONEY" in ownership_filter
-    and "!IS_SET(object->extra_flags, ITEM_TRANSIENT)" in ownership_filter
-    and "object->type == ITEM_CORPSE" in ownership_filter
-    and "PC_CORPSE" in ownership_filter,
+    "the complete ownership predicate bypasses lifecycle-specific roots",
+    normalize_cxx(ownership_filter_body)
+    == normalize_cxx(
+        """return object && object->obj_uid > 0 && object->type != ITEM_MONEY &&
+        !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
+        !(object->type == ITEM_CORPSE &&
+          IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE));"""
+    ),
 )
 
 ok &= check(
