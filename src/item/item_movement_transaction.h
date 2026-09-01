@@ -40,6 +40,8 @@ bool item_movement_transaction_submit_batch(
 	const void *context, size_t context_size, P_obj corpse_context = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
+bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
+						       P_char recipient);
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room);
 bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);

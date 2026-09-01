@@ -496,7 +496,7 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 
-	if (!item_creation_grant_submit_to_player(ch, bag, ch))
+	if (!item_creation_grant_submit_to_player_before_entry(ch, bag, ch))
 	{
 		extract_obj(bag, FALSE);
 		statuslog(56, "&+RALERT&n: CHAOS starter bag grant could not be queued");
@@ -505,8 +505,21 @@ static void load_chaos_new_character_kit(P_char ch)
 			ch);
 		return;
 	}
-	if (item_creation_grant_mark_blocking(ch))
-		send_to_char("Your CHAOS equipment kit is being prepared...\r\n", ch);
+}
+
+static void schedule_chaos_new_character_kit_before_entry(P_char ch)
+{
+	if (!ch || !chaos_mud_enabled())
+		return;
+	if (!writeCharacter(ch, 2, NOWHERE))
+	{
+		statuslog(56, "&+RALERT&n: new-player baseline save failed; CHAOS kit withheld");
+		send_to_char(
+			"Your CHAOS equipment kit could not be prepared safely; please contact staff.\r\n",
+			ch);
+		return;
+	}
+	load_chaos_new_character_kit(ch);
 }
 
 void load_obj_to_newbies(P_char ch)
@@ -2907,9 +2920,9 @@ void enter_game(P_desc d)
 		 * player does not exist yet. */
 		if (writeCharacter(ch, 1, NOWHERE))
 		{
-			if (chaos_mud_enabled())
-				load_chaos_new_character_kit(ch);
-			else
+			/* Chaos equipment is queued before CON_PLAYING, after the accepted
+			 * rules baseline; only the legacy non-Chaos kit starts here. */
+			if (!chaos_mud_enabled())
 				load_obj_to_newbies(ch);
 		}
 		else
@@ -6236,9 +6249,12 @@ void nanny(P_desc d, char *arg)
 			statuslog(d->character->player.level,
 				  "%s auto-accepted due to having been accepted before.",
 				  GET_NAME(d->character));
+			schedule_chaos_new_character_kit_before_entry(d->character);
 		}
 		else if (!IS_TRUSTED(d->character) && approve_mode)
 		{
+			/* Do not pregrant Chaos equipment before approval. If approval mode is
+			 * re-enabled, schedule it from the approval-success transition. */
 			SEND_TO_Q(
 				"Now you have to wait for your character to be approved by a god.\r\nProcess should not take long.\r\nIf no god is on to approve you, you will &+WNOT&N be auto-approved.\r\n",
 				d);
@@ -6251,7 +6267,10 @@ void nanny(P_desc d, char *arg)
 		{
 			// Approval mode is OFF - proceed directly
 			SEND_TO_Q("\r\n*** PRESS RETURN:\r\n", d);
-			writeCharacter(d->character, 2, NOWHERE);
+			if (chaos_mud_enabled())
+				schedule_chaos_new_character_kit_before_entry(d->character);
+			else
+				writeCharacter(d->character, 2, NOWHERE);
 			STATE(d) = CON_RMOTD;
 		}
 		/*    for (; isspace(*arg); arg++);

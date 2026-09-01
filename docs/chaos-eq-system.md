@@ -8,6 +8,9 @@ Status: generated from the July 2026 production snapshot and wired into the loca
 
 - Grant one nested starter bag through the existing durable creation-grant path instead of queueing every item as a separate critical write.
 - Provide two operator-selectable profiles: `standard` (observed high-end gear plus explicit class fundamentals) and `enhanceable` (strict boot-enhance-index-compatible alternatives).
+- Begin the Chaos grant after rules acceptance and the durable character baseline, before `CON_RMOTD`/`CON_PLAYING`, so persistence overlaps the last creation screens.
+- Do not block commands for this pre-entry grant; announce `Your Chaos Equipment has been prepared!!` only after durable completion and entry.
+- The approval state `CON_ACCEPTWAIT` remains present but `approve_mode` is currently 0; if approval is re-enabled, schedule only from its approved transition rather than granting rejected characters.
 - Keep normal equipment portable at the item-data level and apply runtime `can_char_use_item()` and body-slot checks before putting an object in the bag.
 - Treat a missing/unusable required object as a fail-closed kit failure; only expected race/body-slot omissions are skipped.
 - Keep consumables inside the bag, with bounded starter quantities based on high-level carried/container usage rather than copying observed stockpiles.
@@ -2417,12 +2420,14 @@ Observed high-level characters: 0 (role/static fallback)
 
 ### Runtime changes
 
-- `src/account/nanny.c`: replaced the old placeholder-heavy Chaos tables and per-item grant chain with generated class/profile data, optional body-slot variants, bounded consumables, runtime slot checks, class/race checks, fail-closed required-item validation, and one nested root-bag grant.
+- `src/account/nanny.c`: replaced the old placeholder-heavy Chaos tables and per-item grant chain with generated class/profile data, optional body-slot variants, bounded consumables, runtime slot checks, class/race checks, fail-closed required-item validation, one nested root-bag grant, and pre-entry scheduling after the accepted-rules baseline.
+- `src/item/item_movement_transaction.c` / `.h`: added an explicit direct-to-self pre-entry grant mode that does not block commands and announces completion after entry, including completions retained until `player_ready()`.
 - `src/account/chaos_eq_data.h`: generated standard/enhanceable arrays for all 30 classes, optional variations, and shared consumables.
 - `src/combat/chaos_config.c` / `.h`: added `CHAOS_EQ_PROFILE=standard|enhanceable`; invalid values fail closed to standard.
 - `areas/obj/limbo.obj`: added belt attachment to master spellbook VNUM 7 while preserving take/hold.
 - `tests/async/test_chaos_new_character_kit.py`: validates all class arrays, active VNUMs, policy exclusions, class/wear compatibility, fundamentals, optional arrays, and one-root submission.
-- `tests/async/test_flatfile_chaos_new_character_kit.py`: exercises real account/character creation, bag contents, consumable visibility, save, and clean shutdown using the generated Warrior profile.
+- `tests/async/test_chaos_preentry_grant.py`: validates pre-entry scheduling, non-blocking command semantics, PID validation exception boundaries, and post-entry announcement behavior.
+- `tests/async/test_flatfile_chaos_new_character_kit.py`: exercises real account/character creation, pre-entry scheduling, post-entry readiness messaging, bag contents, consumable visibility, save, and clean shutdown using the generated Warrior profile.
 
 ### Reproducible commands
 
@@ -2431,6 +2436,7 @@ python3 scripts/chaos_eq_analyze.py --repo-root . --docker-container chaos-eq-an
 python3 scripts/chaos_eq_catalog.py --analysis <analysis-dir>/analysis.json --output-dir <catalog-dir> --header-out <catalog-dir>/chaos_eq_data.h --repo-root .
 python3 scripts/chaos_eq_validate.py --catalog <catalog-dir>/catalog.json --repo-root .
 python3 tests/async/test_chaos_new_character_kit.py
+python3 tests/async/test_chaos_preentry_grant.py
 python3 tests/async/test_master_spellbook.py
 python3 tests/async/test_chaos_env_toggle.py
 python3 tests/async/test_flatfile_chaos_new_character_kit.py
@@ -2441,9 +2447,9 @@ make -C src -j2
 The verified results for this implementation snapshot are:
 - Analyzer: passed; 2,733 candidate templates and 131-character cohort.
 - Catalog generation and fail-closed validator: passed; zero validation issues.
-- All-class Chaos contract, master-spellbook, environment/profile, readiness, hardcore, and persistence contracts: passed.
-- Corrected isolated flat-file Chaos journey: passed; generated bag contents, consumable visibility, save, and clean shutdown were exercised.
-- Clean build and Chaos-focused regression matrix: passed; `make clean && make test-all TEST_MATCH=chaos TEST_JOBS=1` rebuilt the project and reported 5 passed, 0 failed.
+- All-class Chaos contract, pre-entry grant contract, master-spellbook, environment/profile, readiness, hardcore, and persistence contracts: passed.
+- Corrected isolated flat-file Chaos journey: passed; the grant was scheduled before game entry, the success message was emitted after entry, generated bag contents and consumable visibility were verified, save completed, and shutdown was clean.
+- Chaos-focused regression matrix: passed; `make build && make test TEST_MATCH=chaos TEST_JOBS=1` reported 6 passed, 0 failed.
 
 ## Known limitations and follow-up
 

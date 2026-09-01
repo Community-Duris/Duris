@@ -124,8 +124,11 @@ def create_chaos_character(client: MudClient) -> None:
     client.send("y")
     client.expect("PRESS RETURN")
     client.send("")
-    client.expect("Your CHAOS equipment kit is being prepared", timeout=30)
-    client.expect("Your starter kit is ready", timeout=60)
+    client.expect("Your Chaos Equipment has been prepared!!", timeout=60)
+    require(
+        "Your CHAOS equipment kit is being prepared" not in client.transcript.decode("utf-8", errors="replace"),
+        "Chaos creation still exposed the old blocking preparation message",
+    )
 
 
 def run_chaos_kit_journey(binary: pathlib.Path) -> None:
