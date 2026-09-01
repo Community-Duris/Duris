@@ -315,7 +315,10 @@ for production.
 `lib/duris.properties` carries one key per MUD-gated DurisWeb hook. Values are
 floats; `>= 0.5` is enabled, and a missing key defaults to enabled. Change them
 at runtime with `properties set <key> <value>`; no restart is required, and the
-MUD pushes the new state to connected DurisWeb peers.
+MUD pushes the new state to connected DurisWeb peers. That in-game command is
+in-memory until `properties save`. The authenticated
+`durisweb_hook_set` service command used by the website console persists its
+exact-whitelisted property atomically before acknowledging it.
 
 | Property | Gates |
 |----------|-------|
@@ -330,7 +333,10 @@ MUD pushes the new state to connected DurisWeb peers.
 
 Ids are shared with the DurisWeb repository and defined at
 `backend/src/hooks/registry.ts`. `connection_log` has no MUD property: it gates
-DurisWeb's ingestion, not the MUD's `LOG_COMM` operational logging.
+DurisWeb's ingestion, not the MUD's `LOG_COMM` operational logging. The other
+website-only ids (`flag_parsing`, `guild_parsing`, `zone_builder_parsing`, and
+`process_control`) likewise have no MUD property; `terminal` is always-on and
+controlled only by its permission and live-session checks.
 | `DURIS_TRUSTED_PROXY_IP` | One immediate proxy IP address whose `X-Forwarded-For` header may be trusted for WebSocket and telnet connections. If unset, forwarded addresses are ignored. This is an address allow-list, not a CIDR range. |
 
 WebSocket and `GET /health` listen on `DURIS_WEBSOCKET_PORT` (default `4050`).

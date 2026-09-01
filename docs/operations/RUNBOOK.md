@@ -372,7 +372,7 @@ discarded if the state changed mid-copy or the copy does not match the source.
 Restore with `scripts/restore_flatfile_backup.sh <generation-dir> <empty-state-dir>`. It
 verifies the generation against its manifest, refuses a non-empty target root, restores
 with owner-only modes, and re-verifies afterwards. If the manifest reports a pending
-authority transaction, the server replays it on the next boot — boot the restored root
+authority transaction, the server replays it on the next boot -- boot the restored root
 before comparing domain state.
 
 ### Migration procedure
@@ -577,6 +577,32 @@ disabled is visible in the logs rather than silent.
 `connection_log` is not in this list: DurisWeb's connection ingestion is toggled
 on the DurisWeb side, because the underlying `logs/log/comm` lines are the MUD's
 own operational records.
+
+### Reconciling from the DurisWeb hook console
+
+The website's Hook Control console uses the authenticated
+`durisweb_hook_set` command for the eight ids above. This path persists the MUD
+property atomically and pushes a complete state frame before acknowledgement;
+do not run `properties save` for a successful console change.
+
+Reconciliation is deliberately directional:
+
+1. To disable, the website closes its own gate first and then asks the MUD to
+   disable. A bridge failure therefore leaves delivery stopped locally and the
+   row shows the partial state.
+2. To enable, the website keeps its gate closed, asks the MUD to enable, waits
+   for the pushed state, and opens its own gate last. A timeout or refusal
+   cannot open delivery.
+
+For a `MISMATCH`, open the row details and confirm which end differs. Use Set
+Both Ends only after verifying the intended direction. For `UNKNOWN`, restore
+the authenticated bridge first; do not infer that the MUD is enabled. If the
+console reports a persistence error, inspect permissions and free space for
+`lib/duris.properties` and its `.new` sibling, then retry. Do not hand-edit the
+file while the MUD is running.
+
+The five website-only hooks show `MUD: N/A` and reconcile only the website
+gate. The terminal is always-on as the recovery path and cannot be reconciled.
 
 ## Runtime tuning
 

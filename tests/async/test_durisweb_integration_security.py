@@ -3,6 +3,7 @@
 
 from _paths import SRC
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -12,6 +13,16 @@ AUTH = (SRC / "ws_auth.h").read_text()
 GMCP = (SRC / "gmcp.c").read_text()
 HEADER = (SRC / "websocket.h").read_text()
 STRUCTS = (SRC / "structs.h").read_text()
+EXPECTED_MUD_HOOKS = (
+    "auction_new",
+    "auction_bid",
+    "auction_close",
+    "player_presence",
+    "mud_shutdown",
+    "wholist",
+    "admin_delete_character",
+    "donation_delivery",
+)
 
 # Site and new-character bans cover WebSocket clients after trusted proxy
 # metadata has been applied.
@@ -60,6 +71,21 @@ assert '"Core.AuthChallenge"' in GMCP
 # Hook mutation stays on the authenticated command plane. Authorization is
 # checked before request parsing, ids are exact-whitelisted, and success is
 # coupled to durable property mutation plus the existing state broadcast.
+hook_id_block = HANDLERS[
+    HANDLERS.index("static const char *const DURISWEB_MUD_GATED_HOOKS[]") :
+    HANDLERS.index("#define DURISWEB_MUD_GATED_HOOK_COUNT")
+]
+assert tuple(re.findall(r'"([a-z_]+)"', hook_id_block)) == EXPECTED_MUD_HOOKS
+
+hook_state = HANDLERS[
+    HANDLERS.index("void ws_cmd_durisweb_hook_state") :
+    HANDLERS.index("static void ws_send_durisweb_hook_set_response")
+]
+assert hook_state.index("durisweb_verified") < hook_state.index(
+    "ws_build_durisweb_hook_state_json"
+)
+assert '{ "durisweb_hook_state", ws_cmd_durisweb_hook_state }' in HANDLERS
+
 hook_set = HANDLERS[
     HANDLERS.index("void ws_cmd_durisweb_hook_set") :
     HANDLERS.index("void ws_broadcast_durisweb_hook_state")
@@ -68,6 +94,7 @@ assert hook_set.index("durisweb_verified") < hook_set.index('cJSON_GetObjectItem
 assert "ws_is_durisweb_mud_gated_hook" in hook_set
 assert "cJSON_IsBool(enabled_json)" in hook_set
 assert "request_json->valuestring[0] == '\\0'" in hook_set
+assert "strlen(request_json->valuestring) > 128" in hook_set
 assert "set_durisweb_hook_enabled(hook_id, enabled)" in hook_set
 assert '"durisweb_hook_set"' in HANDLERS
 assert '{ "durisweb_hook_set", ws_cmd_durisweb_hook_set }' in HANDLERS
@@ -80,6 +107,87 @@ assert "ws_broadcast_durisweb_hook_state()" in setter
 assert '#define PROPERTIES_FILE "lib/duris.properties"' in properties
 assert 'fopen(PROPERTIES_FILE ".new", "w")' in properties
 assert 'rename(PROPERTIES_FILE ".new", PROPERTIES_FILE)' in properties
+assert setter.index("persist_durisweb_hook_property") < setter.index(
+    "ws_broadcast_durisweb_hook_state"
+)
+
+# The shipped property file and MUD operator configuration table must contain
+# exactly the same eight property-backed ids, with no website-only inventions.
+property_file = (ROOT / "lib/duris.properties").read_text()
+property_ids = tuple(
+    re.findall(r"^durisweb\.hook\.([a-z_]+)=", property_file, re.MULTILINE)
+)
+assert property_ids == EXPECTED_MUD_HOOKS
+
+configuration = (ROOT / "docs/operations/CONFIGURATION.md").read_text()
+documented_property_ids = tuple(
+    re.findall(
+        r"^\| `durisweb\.hook\.([a-z_]+)` \|",
+        configuration,
+        re.MULTILINE,
+    )
+)
+assert documented_property_ids == EXPECTED_MUD_HOOKS
+
+api_reference = (ROOT / "docs/reference/api/durisweb.md").read_text()
+for hook_id in EXPECTED_MUD_HOOKS:
+    assert f"`{hook_id}`" in api_reference
+assert '`connection_log` is deliberately **not** gated here' in api_reference
+assert '"cmd": "durisweb_hook_set"' in api_reference
+for field in ('"requestId"', '"hook"', '"enabled"'):
+    assert field in api_reference
+assert "automatically and does not require" in api_reference
+assert "may arrive before the acknowledgement" in api_reference
+
+runbook = (ROOT / "docs/operations/RUNBOOK.md").read_text()
+assert "website closes its own gate first" in runbook
+assert "opens its own gate last" in runbook
+assert "For `UNKNOWN`, restore" in runbook
+assert "the authenticated bridge first" in runbook
+assert "The terminal is always-on" in runbook
+
+incident_response = (ROOT / "docs/operations/incident-response.md").read_text()
+assert "## DurisWeb Hook Mismatch Or Bridge Failure" in incident_response
+assert "never disable" in incident_response
+assert "Treat an omitted" in incident_response
+
+# Every emitter returns before constructing its payload. Player presence has
+# two emitters; request/worker hooks use their own explicit refusal or drop
+# behavior at the application boundary.
+emitter_boundaries = (
+    ("ws_broadcast_auction_new", "ws_broadcast_auction_bid", "auction_new"),
+    ("ws_broadcast_auction_bid", "ws_broadcast_auction_close", "auction_bid"),
+    ("ws_broadcast_auction_close", "ws_broadcast_mud_shutdown", "auction_close"),
+    ("ws_broadcast_mud_shutdown", "ws_broadcast_player_login", "mud_shutdown"),
+    ("ws_broadcast_player_login", "ws_broadcast_player_logout", "player_presence"),
+    ("ws_broadcast_player_logout", "ws_send_wholist_to_client", "player_presence"),
+    ("ws_send_wholist_to_client", "ws_cmd_request_wholist", "wholist"),
+)
+for start, end, hook_id in emitter_boundaries:
+    emitter = HANDLERS[HANDLERS.index(start) : HANDLERS.index(end)]
+    assert emitter.index(f'durisweb_hook_enabled("{hook_id}")') < emitter.index(
+        "cJSON_CreateObject"
+    )
+
+admin_delete = HANDLERS[
+    HANDLERS.index("void ws_cmd_admin_delete_character") :
+    HANDLERS.index("void ws_cmd_rested_bonus")
+]
+assert admin_delete.index('durisweb_hook_enabled("admin_delete_character")') < (
+    admin_delete.index("cJSON_GetObjectItem")
+)
+
+donation_runtime = (SRC / "redis_donation_runtime.c").read_text()
+donation_check = donation_runtime[
+    donation_runtime.index("void check_donation_messages") :
+    donation_runtime.index("bool redis_donation_runtime_enabled")
+]
+assert donation_check.index('durisweb_hook_enabled("donation_delivery")') < (
+    donation_check.index("redis_donation_worker_take")
+)
+assert donation_check.index("if (!hook_enabled)") < donation_check.index(
+    "broadcast_donation_nchat"
+)
 
 # Private presence fields and invisible staff require an explicit scope.
 assert "durisweb_presence_character_visible" in HANDLERS

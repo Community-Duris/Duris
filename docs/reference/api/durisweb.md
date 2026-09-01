@@ -22,7 +22,9 @@ for clock skew. GMCP peers request the same challenge with
 
 For zero-downtime key rotation, deploy the new key as `DURISWEB_SECRET`, retain
 the old key temporarily as `DURISWEB_SECRET_PREVIOUS`, switch the backend, then
-remove the previous key.
+remove the previous key. The backend signs with the current key first and makes
+exactly one retry with the previous key after an authentication rejection; it
+does not loop between credentials.
 
 ## Hook toggles
 
@@ -79,6 +81,45 @@ changes via `properties set` or `properties reload`:
 
 `durisweb_hook_state` requires an authenticated service connection. An
 unauthenticated descriptor sending it is closed, as with other service commands.
+
+Set one MUD-owned hook with the authenticated service command:
+
+```json
+{
+  "cmd": "durisweb_hook_set",
+  "data": {
+    "requestId": "durisweb_hook_set_42_1788264000000",
+    "hook": "auction_new",
+    "enabled": false,
+    "actor": "operator-account"
+  }
+}
+```
+
+`requestId` must be a non-empty string of at most 128 bytes, `hook` must be one
+of the exact eight MUD-gated ids above, and `enabled` must be a JSON boolean.
+The current backend adds `requestId` and supplies the authenticated website
+actor; the MUD never treats `actor` as authorization.
+
+The MUD updates the game-thread property, rewrites `lib/duris.properties`
+through `lib/duris.properties.new` plus rename, applies the property, and pushes
+the complete `hook_state` frame. It then acknowledges the request:
+
+```json
+{
+  "type": "durisweb_hook_set",
+  "success": true,
+  "requestId": "durisweb_hook_set_42_1788264000000",
+  "hook": "auction_new",
+  "enabled": false
+}
+```
+
+On failure, `success` is false and `error` is a bounded operational message.
+The pushed state frame may arrive before the acknowledgement; clients must
+correlate the acknowledgement by `requestId` and confirm the observed state.
+Unlike the in-game `properties set` command, this service command persists
+automatically and does not require `properties save`.
 
 ## Authorization and data
 
