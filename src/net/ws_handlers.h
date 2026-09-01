@@ -41,6 +41,10 @@ void ws_cmd_logout(struct descriptor_data *d, cJSON *data);
 /* durisweb service authentication */
 void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data);
 
+/* durisweb hook toggle state: request handler and unsolicited push */
+void ws_cmd_durisweb_hook_state(struct descriptor_data *d, cJSON *data);
+void ws_broadcast_durisweb_hook_state(void);
+
 /* auction broadcasts to durisweb service */
 void ws_broadcast_auction_new(int auction_id, const char *seller_name, const char *obj_short,
 			      int cur_price, int buy_price, int end_time);

@@ -264,12 +264,113 @@ static void ws_broadcast_service_json(const char *json)
 	}
 }
 
+/* ---------------------------------------------------------------------------
+ * DurisWeb hook state reporting
+ *
+ * Hook ids are defined in the DurisWeb repository at
+ * backend/src/hooks/registry.ts. The eight ids below are the MUD-gated subset;
+ * connection_log is deliberately absent because the lines DurisWeb parses are
+ * ordinary LOG_COMM operational logs the MUD writes for its own purposes.
+ * ------------------------------------------------------------------------ */
+
+static const char *const DURISWEB_MUD_GATED_HOOKS[] = {
+	"auction_new",	     "auction_bid",	  "auction_close",
+	"player_presence",   "mud_shutdown",	  "wholist",
+	"admin_delete_character", "donation_delivery",
+};
+
+#define DURISWEB_MUD_GATED_HOOK_COUNT                                                              \
+	(sizeof(DURISWEB_MUD_GATED_HOOKS) / sizeof(DURISWEB_MUD_GATED_HOOKS[0]))
+
+/* Single serializer used by both the command response and the push, so the two
+   cannot diverge. Caller owns the returned string and must free() it. */
+static char *ws_build_durisweb_hook_state_json(void)
+{
+	cJSON *root, *hooks;
+	char *json;
+
+	root = cJSON_CreateObject();
+	if (!root)
+		return NULL;
+
+	cJSON_AddStringToObject(root, "type", "hook_state");
+	cJSON_AddNumberToObject(root, "schema_version", 1);
+
+	hooks = cJSON_CreateObject();
+	if (!hooks)
+	{
+		cJSON_Delete(root);
+		return NULL;
+	}
+
+	for (size_t i = 0; i < DURISWEB_MUD_GATED_HOOK_COUNT; i++)
+	{
+		cJSON *entry = cJSON_CreateObject();
+		if (!entry)
+			continue;
+		cJSON_AddBoolToObject(entry, "enabled",
+				      durisweb_hook_enabled(DURISWEB_MUD_GATED_HOOKS[i]));
+		cJSON_AddItemToObject(hooks, DURISWEB_MUD_GATED_HOOKS[i], entry);
+	}
+
+	cJSON_AddItemToObject(root, "hooks", hooks);
+
+	json = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	return json;
+}
+
+/* durisweb service requests current hook toggle state */
+void ws_cmd_durisweb_hook_state(struct descriptor_data *d, cJSON * /*data*/)
+{
+	char *json;
+
+	/* Authorization first: an unauthenticated peer learns nothing about hook
+	   configuration, and the socket is closed as with other service commands. */
+	if (!d || !d->durisweb_verified)
+	{
+		if (d)
+		{
+			logit(LOG_COMM, "DurisWeb: hook_state requested on an unauthenticated socket");
+			websocket_close(d, WS_CLOSE_POLICY_VIOLATION, "Not authorized");
+		}
+		return;
+	}
+
+	json = ws_build_durisweb_hook_state_json();
+	if (!json)
+		return;
+
+	websocket_send_text(d, json);
+	free(json);
+}
+
+/* push current hook state to every authenticated durisweb peer */
+void ws_broadcast_durisweb_hook_state(void)
+{
+	char *json = ws_build_durisweb_hook_state_json();
+
+	if (!json)
+		return;
+
+	for (struct descriptor_data *d = descriptor_list; d; d = d->next)
+	{
+		if (d->websocket && d->durisweb_verified)
+			websocket_send_text(d, json);
+	}
+	free(json);
+}
+
 /* broadcast auction new to durisweb service */
 void ws_broadcast_auction_new(int auction_id, const char *seller_name, const char *obj_short,
 			      int cur_price, int buy_price, int end_time)
 {
 	cJSON *root, *data;
 	char *json;
+
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("auction_new"))
+		return;
 
 	root = cJSON_CreateObject();
 	if (!root)
@@ -302,6 +403,10 @@ void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_a
 	cJSON *root, *data;
 	char *json;
 
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("auction_bid"))
+		return;
+
 	root = cJSON_CreateObject();
 	if (!root)
 		return;
@@ -332,6 +437,10 @@ void ws_broadcast_auction_close(int auction_id, const char *winner_name, int win
 {
 	cJSON *root, *data;
 	char *json;
+
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("auction_close"))
+		return;
 
 	root = cJSON_CreateObject();
 	if (!root)
@@ -364,6 +473,10 @@ void ws_broadcast_mud_shutdown(const char *type)
 	cJSON *root, *data;
 	char *json;
 
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("mud_shutdown"))
+		return;
+
 	root = cJSON_CreateObject();
 	if (!root)
 		return;
@@ -388,6 +501,10 @@ void ws_broadcast_player_login(struct descriptor_data *player_d)
 {
 	cJSON *root, *data;
 	char *json;
+
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("player_presence"))
+		return;
 
 	if (!player_d || !player_d->character)
 		return;
@@ -432,6 +549,10 @@ void ws_broadcast_player_logout(const char *character, int faction)
 	cJSON *root, *data;
 	char *json;
 
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("player_presence"))
+		return;
+
 	if (!character)
 		return;
 
@@ -461,6 +582,10 @@ static void ws_send_wholist_to_client(struct descriptor_data *d)
 	struct descriptor_data *target;
 	cJSON *root, *data, *players, *player;
 	char *json;
+
+	/* DurisWeb hook gate: emit nothing at source when disabled. */
+	if (!durisweb_hook_enabled("wholist"))
+		return;
 
 	root = cJSON_CreateObject();
 	if (!root)
@@ -2706,6 +2831,17 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 	P_char ch;
 	P_acct target_acct;
 
+	/* DurisWeb hook gate. Authorization is checked first so an unauthenticated
+	   caller learns nothing about hook configuration; a disabled hook then
+	   refuses explicitly rather than silently, because this is a request path
+	   whose caller is waiting on a response. */
+	if (d->durisweb_verified && !durisweb_hook_enabled("admin_delete_character"))
+	{
+		ws_send_admin_delete_response(d, 0, NULL, NULL, NULL,
+					      "admin_delete_character hook is disabled on the MUD");
+		return;
+	}
+
 	/* only durisweb service can call this */
 	if (!d->durisweb_verified)
 	{
@@ -3359,6 +3495,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 		{ "poll_view", ws_cmd_poll_view },
 		{ "poll_vote", ws_cmd_poll_vote },
 		{ "request_wholist", ws_cmd_request_wholist },
+		{ "durisweb_hook_state", ws_cmd_durisweb_hook_state },
 	};
 
 	if (!cmd)

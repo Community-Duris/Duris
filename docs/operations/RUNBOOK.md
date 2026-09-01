@@ -552,6 +552,32 @@ Follow [`PHASE03_READINESS.md`](../gates/PHASE03_READINESS.md) only after prefli
 readiness result. Every injected fault must be torn down and the target restored before
 retry. A repair invalidates affected evidence and requires affected plus complete reruns.
 
+## Disabling a DurisWeb hook
+
+During an incident, any single DurisWeb integration can be cut without
+restarting the MUD and without affecting the others.
+
+```
+properties set durisweb.hook.<id> 0.000
+```
+
+Ids: `auction_new`, `auction_bid`, `auction_close`, `player_presence`,
+`mud_shutdown`, `wholist`, `admin_delete_character`, `donation_delivery`.
+Requires FORGER or above. Re-enable with `1.000`.
+
+The change takes effect immediately and is pushed to connected DurisWeb peers,
+which reflect it in their operator console within about ten seconds. It is
+in-memory only -- run `properties save` to persist across a restart, or
+`properties revert` to undo before saving.
+
+A disabled hook emits nothing at source. `donation_delivery` additionally logs
+one `LOG_SYS` line per pulse naming how many events it dropped, so a hook left
+disabled is visible in the logs rather than silent.
+
+`connection_log` is not in this list: DurisWeb's connection ingestion is toggled
+on the DurisWeb side, because the underlying `logs/log/comm` lines are the MUD's
+own operational records.
+
 ## Runtime tuning
 
 Server behavior knobs are exposed through the properties system:

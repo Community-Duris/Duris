@@ -59,13 +59,31 @@ void check_donation_messages(void)
 #ifndef __NO_REDIS__
 	if (!donation_enabled)
 		return;
+
+	/* DurisWeb hook gate. Read on the game thread, not the worker thread, so
+	   the properties array is never read concurrently with a properties set.
+	   When disabled we still drain the queue and drop, rather than leaving
+	   events to accumulate to the queue cap and then flood on re-enable. */
+	const bool hook_enabled = durisweb_hook_enabled("donation_delivery");
+	int dropped_while_disabled = 0;
+
 	for (int handled = 0; handled < REDIS_DONATION_MAX_MESSAGES_PER_PULSE; ++handled)
 	{
 		donation_event event = {};
 		if (!redis_donation_worker_take(&event))
 			break;
+		if (!hook_enabled)
+		{
+			++dropped_while_disabled;
+			continue;
+		}
 		broadcast_donation_nchat(&event);
 	}
+
+	/* One line per pulse, not per event, so a disabled hook cannot spam the log. */
+	if (dropped_while_disabled > 0)
+		logit(LOG_SYS, "donation: dropped %d event(s); durisweb.hook.donation_delivery is disabled",
+		      dropped_while_disabled);
 #endif
 }
 } // namespace

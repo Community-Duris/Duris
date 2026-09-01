@@ -309,6 +309,28 @@ for production.
 | `DURISWEB_SECRET` | Current shared key for one-time DurisWeb challenge-response authentication. See the DurisWeb API reference. |
 | `DURISWEB_SECRET_PREVIOUS` | Optional previous service key accepted during a bounded zero-downtime rotation. Remove it after every backend has switched. |
 | `DURISWEB_PRIVATE_PRESENCE` | Exact `TRUE` opts the authenticated backend into account names, IP addresses, client metadata, and invisible staff presence. The default WebSocket and Redis presence feeds omit them. |
+
+### DurisWeb hook toggles
+
+`lib/duris.properties` carries one key per MUD-gated DurisWeb hook. Values are
+floats; `>= 0.5` is enabled, and a missing key defaults to enabled. Change them
+at runtime with `properties set <key> <value>`; no restart is required, and the
+MUD pushes the new state to connected DurisWeb peers.
+
+| Property | Gates |
+|----------|-------|
+| `durisweb.hook.auction_new` | New auction broadcasts |
+| `durisweb.hook.auction_bid` | Auction bid broadcasts |
+| `durisweb.hook.auction_close` | Auction close broadcasts |
+| `durisweb.hook.player_presence` | Player login and logout broadcasts (both) |
+| `durisweb.hook.mud_shutdown` | Shutdown and crash notifications |
+| `durisweb.hook.wholist` | Wholist responses to `request_wholist` |
+| `durisweb.hook.admin_delete_character` | Administrative character deletion |
+| `durisweb.hook.donation_delivery` | Applying donation events from Redis |
+
+Ids are shared with the DurisWeb repository and defined at
+`backend/src/hooks/registry.ts`. `connection_log` has no MUD property: it gates
+DurisWeb's ingestion, not the MUD's `LOG_COMM` operational logging.
 | `DURIS_TRUSTED_PROXY_IP` | One immediate proxy IP address whose `X-Forwarded-For` header may be trusted for WebSocket and telnet connections. If unset, forwarded addresses are ignored. This is an address allow-list, not a CIDR range. |
 
 WebSocket and `GET /health` listen on `DURIS_WEBSOCKET_PORT` (default `4050`).

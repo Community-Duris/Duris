@@ -10,6 +10,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/ws_handlers.h"
 #include "core/utils.h"
 #include <fnmatch.h>
 #include <stdio.h>
@@ -87,6 +88,30 @@ float get_property(const char *key, double default_value)
 int get_property(const char *key, int default_value)
 {
 	return get_property(key, default_value, true);
+}
+
+#define DURISWEB_HOOK_PREFIX "durisweb.hook."
+
+bool is_durisweb_hook_property(const char *key)
+{
+	if (!key)
+		return FALSE;
+	return strncmp(key, DURISWEB_HOOK_PREFIX, strlen(DURISWEB_HOOK_PREFIX)) == 0;
+}
+
+bool durisweb_hook_enabled(const char *hook_id)
+{
+	char key[128];
+
+	if (!hook_id || !*hook_id)
+		return FALSE;
+
+	if (snprintf(key, sizeof(key), DURISWEB_HOOK_PREFIX "%s", hook_id) >= (int)sizeof(key))
+		return FALSE;
+
+	/* Default enabled, and not fussy: a missing key is the normal case on a
+	   properties file that predates a hook, and must not log on every event. */
+	return get_property(key, 1.0, false) >= 0.5f;
 }
 
 int get_property(const char *key, int default_value, bool fuss)
@@ -291,12 +316,15 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 			if (val_string && sscanf(val_string, "%f", &new_value) == 1)
 			{
 				bool success = FALSE;
+				bool hook_changed = FALSE;
 				for (i = 0; i < properties_count; i++)
 				{
 					if (fnmatch(pattern, duris_properties[i].key,
 						    FNM_CASEFOLD) == 0)
 					{
 						duris_properties[i].value = new_value;
+						if (is_durisweb_hook_property(duris_properties[i].key))
+							hook_changed = TRUE;
 						checked_snprintf(buf, 256, "%s set %s to %.3f",
 								 ch->player.name,
 								 duris_properties[i].key,
@@ -316,6 +344,13 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 				else
 				{
 					apply_properties();
+					/* Push only when a durisweb.hook. key actually
+					   changed. Tested against the matched keys rather
+					   than the pattern, because the pattern is an
+					   fnmatch glob: "properties set * 0.000" changes
+					   hook keys without naming them. */
+					if (hook_changed)
+						ws_broadcast_durisweb_hook_state();
 				}
 			}
 			else
@@ -324,6 +359,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		else if (!strcmp(command, "reload") && (GET_LEVEL(ch) >= FORGER))
 		{
 			initialize_properties();
+			/* A reload can change many hook keys at once. */
+			ws_broadcast_durisweb_hook_state();
 		}
 		else if (!strcmp(command, "save") && (GET_LEVEL(ch) >= FORGER))
 		{
