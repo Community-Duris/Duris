@@ -148,7 +148,7 @@ bool decode_items(const materialization_event &event, std::vector<player_item_sn
 	return !event.item_blob.empty() &&
 	       player_item_snapshot_list_decode(event.item_blob.data(), event.item_blob.size(),
 						items) == player_snapshot_codec_result::ok &&
-	       !items->empty() && items->size() <= SHOP_TRADE_MAX_ITEMS;
+	       !items->empty() && items->size() <= ITEM_TRANSFER_MAX_ITEMS;
 }
 
 bool encode_catalog(const materialization_catalog &catalog, std::vector<uint8_t> *bytes)
@@ -393,7 +393,7 @@ bool payload_items_match(const item_transfer_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
 	if (items.empty() || items.size() != payload.item_count ||
-	    items.front().object_uid != payload.selected_item_uid)
+	    items.front().object_uid != item_transfer_result_root(payload))
 		return false;
 	std::unordered_set<uint64_t> payload_uids;
 	try

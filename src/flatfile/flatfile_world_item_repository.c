@@ -483,7 +483,7 @@ bool payload_items_match(const item_transfer_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
 	if (items.empty() || items.size() != payload.item_count ||
-	    items.front().object_uid != payload.selected_item_uid)
+	    items.front().object_uid != item_transfer_result_root(payload))
 		return false;
 	std::unordered_set<uint64_t> expected;
 	try
@@ -1026,11 +1026,13 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 			}
 			else
 			{
+				std::vector<uint64_t> selected_roots;
 				std::vector<player_item_snapshot> selected;
 				std::vector<player_item_snapshot> remaining;
-				if (player_item_snapshot_extract_subtree(
-					    corpse->items, payload.selected_item_uid, &selected,
-					    &remaining) != player_snapshot_codec_result::ok)
+				if (!item_transfer_selected_roots(payload, &selected_roots) ||
+				    player_item_snapshot_extract_forest(
+					    corpse->items, selected_roots, &selected, &remaining) !=
+					    player_snapshot_codec_result::ok)
 					return flatfile_world_item_result::conflict;
 				std::vector<uint8_t> selected_blob;
 				if (player_item_snapshot_list_encode(selected, &selected_blob) !=
@@ -1140,18 +1142,30 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 					room_item_index(room->items,
 							payload.target_parent_item_uid) :
 					room->items.size();
-			if (payload.target_parent_item_uid &&
-			    (parent_index == room->items.size() ||
-			     !room_item_root_matches(room->items, parent_index,
-						     payload.target_root_item_uid) ||
-			     !apply_room_weight_delta(&room->items, parent_index,
-						      exact_items.front().weight)))
-				return flatfile_world_item_result::conflict;
+			if (payload.target_parent_item_uid)
+			{
+				int64_t selected_weight = 0;
+				for (const auto &item : exact_items)
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+					{
+						if (item.weight < 0 ||
+						    selected_weight > INT64_MAX - item.weight)
+							return flatfile_world_item_result::conflict;
+						selected_weight += item.weight;
+					}
+				if (parent_index == room->items.size() ||
+				    !room_item_root_matches(room->items, parent_index,
+							    payload.target_root_item_uid) ||
+				    !apply_room_weight_delta(&room->items, parent_index,
+							     selected_weight))
+					return flatfile_world_item_result::conflict;
+			}
 			const int32_t offset = static_cast<int32_t>(room->items.size());
 			for (size_t index = 0; index < exact_items.size(); ++index)
 			{
 				auto item = exact_items[index];
-				if (!index && payload.target_parent_item_uid)
+				if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    payload.target_parent_item_uid)
 					item.parent_index = static_cast<int32_t>(parent_index);
 				else if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
 					item.parent_index += offset;
@@ -1160,21 +1174,33 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 		}
 		else
 		{
-			const size_t selected_index =
-				room_item_index(room->items, payload.selected_item_uid);
-			if (selected_index == room->items.size())
+			std::vector<uint64_t> selected_roots;
+			if (!item_transfer_selected_roots(payload, &selected_roots))
 				return flatfile_world_item_result::conflict;
-			const int32_t parent_index = room->items[selected_index].parent_index;
-			if (parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
-			    !apply_room_weight_delta(
-				    &room->items, static_cast<size_t>(parent_index),
-				    -static_cast<int64_t>(exact_items.front().weight)))
-				return flatfile_world_item_result::conflict;
+			for (uint64_t selected_root : selected_roots)
+			{
+				const size_t selected_index =
+					room_item_index(room->items, selected_root);
+				auto exact_root =
+					std::find_if(exact_items.begin(), exact_items.end(),
+						     [&](const auto &item)
+						     { return item.object_uid == selected_root; });
+				if (selected_index == room->items.size() ||
+				    exact_root == exact_items.end())
+					return flatfile_world_item_result::conflict;
+				const int32_t parent_index =
+					room->items[selected_index].parent_index;
+				if (parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+				    !apply_room_weight_delta(
+					    &room->items, static_cast<size_t>(parent_index),
+					    -static_cast<int64_t>(exact_root->weight)))
+					return flatfile_world_item_result::conflict;
+			}
 			std::vector<player_item_snapshot> selected;
 			std::vector<player_item_snapshot> remaining;
-			if (player_item_snapshot_extract_subtree(
-				    room->items, payload.selected_item_uid, &selected,
-				    &remaining) != player_snapshot_codec_result::ok)
+			if (player_item_snapshot_extract_forest(room->items, selected_roots,
+								&selected, &remaining) !=
+			    player_snapshot_codec_result::ok)
 				return flatfile_world_item_result::conflict;
 			std::vector<uint8_t> selected_blob;
 			if (player_item_snapshot_list_encode(selected, &selected_blob) !=

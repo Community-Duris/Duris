@@ -170,6 +170,35 @@ bool capture_corpse_metadata(P_char actor, P_obj root, P_obj corpse, item_transf
 	return true;
 }
 
+bool capture_batch_corpse_metadata(P_char actor, P_obj const *roots, size_t root_count,
+				   P_obj corpse, item_transfer_reason reason,
+				   item_corpse_metadata *metadata)
+{
+	if (!actor || !roots || !root_count || !corpse || !metadata ||
+	    reason != item_transfer_reason::corpse_loot)
+		return false;
+	int64_t selected_weight = 0;
+	for (size_t index = 0; index < root_count; ++index)
+	{
+		P_obj root = roots[index];
+		if (!root || selected_weight > INT64_MAX - GET_OBJ_WEIGHT(root))
+			return false;
+		P_obj outer = root;
+		while (OBJ_INSIDE(outer) && outer->loc.inside)
+			outer = outer->loc.inside;
+		if (outer != corpse)
+			return false;
+		selected_weight += GET_OBJ_WEIGHT(root);
+	}
+	if (!capture_corpse_metadata(actor, roots[0], corpse, reason, metadata))
+		return false;
+	const int64_t post_weight = static_cast<int64_t>(corpse->weight) - selected_weight;
+	if (post_weight < INT32_MIN || post_weight > INT32_MAX)
+		return false;
+	metadata->weight = static_cast<int32_t>(post_weight);
+	return true;
+}
+
 P_obj find_item(uint64_t uid)
 {
 	for (P_obj object = object_list; object; object = object->next)
@@ -602,6 +631,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.target_parent_item_uid = target_container ? target_container->obj_uid : 0,
 		.expected_target_parent_revision = target_container ? target_runtime.item_revision :
 								      0,
+		.multi_root = false,
 		.item_count = static_cast<uint16_t>(items.size()),
 		.items = {},
 		.item_blob_size = 0,
@@ -653,6 +683,162 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	try
 	{
 		pending.emplace(key, entry);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	const critical_submit_result submitted =
+		critical_command_coordinator_submit(std::move(command));
+	if (submitted != critical_submit_result::accepted &&
+	    submitted != critical_submit_result::attached)
+	{
+		pending.erase(key);
+		++health.submission_failures;
+		return false;
+	}
+	++health.submitted;
+	account_health();
+	return true;
+}
+
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context)
+{
+	const bool corpse_transfer = reason == item_transfer_reason::corpse_loot;
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !roots || !root_count ||
+	    root_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
+	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX ||
+	    movement_conflicts(from_owner, to_owner) || corpse_transfer != (corpse_context != NULL))
+		return false;
+	item_ownership_runtime_entry target_runtime = {};
+	uint64_t from_revision = 0, to_revision = 0;
+	if ((target_container &&
+	     (!target_container->obj_uid ||
+	      !item_ownership_runtime_lookup(target_container->obj_uid, &target_runtime) ||
+	      !item_owner_identity_equal(target_runtime.owner, to_owner))) ||
+	    !item_ownership_runtime_owner_revision(from_owner, &from_revision) ||
+	    !item_ownership_runtime_owner_revision(to_owner, &to_revision))
+		return false;
+
+	std::vector<item_transfer_entry> items;
+	std::vector<player_item_snapshot> snapshots;
+	std::vector<P_obj> ordered_roots;
+	try
+	{
+		items.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		snapshots.reserve(ITEM_TRANSFER_MAX_ITEMS);
+		ordered_roots.assign(roots, roots + root_count);
+		std::sort(ordered_roots.begin(), ordered_roots.end(),
+			  [](P_obj left, P_obj right)
+			  {
+				  if (!left)
+					  return right != NULL;
+				  return right && left->obj_uid < right->obj_uid;
+			  });
+		for (size_t root_index = 0; root_index < root_count; ++root_index)
+		{
+			P_obj root = ordered_roots[root_index];
+			item_ownership_runtime_entry runtime = {};
+			if (!root || !root->obj_uid ||
+			    !item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
+			    !item_owner_identity_equal(runtime.owner, from_owner) ||
+			    !capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
+				return false;
+
+			std::vector<player_item_snapshot> tree;
+			if (player_item_snapshot_tree_capture(root, &tree, nullptr) !=
+				    player_snapshot_capture_result::ok ||
+			    tree.empty() || tree.size() > ITEM_TRANSFER_MAX_ITEMS ||
+			    snapshots.size() > ITEM_TRANSFER_MAX_ITEMS - tree.size())
+				return false;
+			const size_t offset = snapshots.size();
+			for (player_item_snapshot &snapshot : tree)
+			{
+				if (snapshot.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					snapshot.parent_index += static_cast<int32_t>(offset);
+				snapshots.push_back(std::move(snapshot));
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (items.empty() || items.size() != snapshots.size())
+		return false;
+	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
+		  { return left.item_uid < right.item_uid; });
+	if (std::adjacent_find(items.begin(), items.end(), [](const auto &left, const auto &right)
+			       { return left.item_uid == right.item_uid; }) != items.end())
+		return false;
+
+	item_transfer_payload payload = {
+		.from_owner = from_owner,
+		.to_owner = to_owner,
+		.reason = reason,
+		.reason_id = reason_id,
+		.expected_from_revision = from_revision,
+		.expected_to_revision = to_revision,
+		.selected_item_uid = 0,
+		.target_root_item_uid = target_container ? target_runtime.root_item_uid : 0,
+		.target_parent_item_uid = target_container ? target_container->obj_uid : 0,
+		.expected_target_parent_revision = target_container ? target_runtime.item_revision :
+								      0,
+		.multi_root = true,
+		.item_count = static_cast<uint16_t>(items.size()),
+		.items = {},
+		.item_blob_size = 0,
+		.item_blob = {},
+		.corpse = {}
+	};
+	for (size_t index = 0; index < items.size(); ++index)
+		payload.items[index] = items[index];
+	std::vector<uint8_t> item_blob;
+	if (player_item_snapshot_list_encode(snapshots, &item_blob) !=
+		    player_snapshot_codec_result::ok ||
+	    item_blob.empty() || item_blob.size() > payload.item_blob.size())
+		return false;
+	payload.item_blob_size = static_cast<uint32_t>(item_blob.size());
+	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
+	if (corpse_transfer &&
+	    !capture_batch_corpse_metadata(actor, ordered_roots.data(), ordered_roots.size(),
+					   corpse_context, reason, &payload.corpse))
+		return false;
+
+	critical_operation_id operation_id = {};
+	critical_command command = {};
+	if (!critical_operation_id_generate(&operation_id) ||
+	    !item_transfer_command_build(&command, operation_id, payload,
+					 critical_source_site::command,
+					 critical_deadline_class::interactive))
+		return false;
+	pending_movement entry = {
+		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
+		.payload = payload,
+		.requested_to_owner = to_owner,
+		.requested_target_parent_uid = target_container ? target_container->obj_uid : 0,
+		.requested_reason = reason,
+		.requested_reason_id = reason_id,
+		.requested_corpse_uid = corpse_context ? corpse_context->obj_uid : 0,
+		.adopting = false,
+		.adoption_only = false,
+		.completion = completion,
+		.context = {},
+		.context_size = context_size,
+		.completion_ready = false,
+		.completed = {}
+	};
+	if (context_size)
+		memcpy(entry.context.data(), context, context_size);
+	const std::string key = operation_key(operation_id);
+	try
+	{
+		pending.emplace(key, std::move(entry));
 	}
 	catch (const std::bad_alloc &)
 	{

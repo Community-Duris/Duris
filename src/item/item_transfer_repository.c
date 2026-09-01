@@ -113,7 +113,8 @@ bool owner_less(const item_owner_identity &left, const item_owner_identity &righ
 	return left.context_id < right.context_id;
 }
 
-bool load_root(MYSQL *connection, uint64_t root_item_uid, std::vector<current_item> *items)
+bool load_root(MYSQL *connection, uint64_t root_item_uid, std::vector<current_item> *items,
+	       bool append = false)
 {
 	static const char SQL[] =
 		"SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,"
@@ -121,7 +122,8 @@ bool load_root(MYSQL *connection, uint64_t root_item_uid, std::vector<current_it
 		"ORDER BY item_uid FOR UPDATE";
 	if (!items)
 		return false;
-	items->clear();
+	if (!append)
+		items->clear();
 	try
 	{
 		items->reserve(ITEM_TRANSFER_MAX_ITEMS + 1);
@@ -395,13 +397,13 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 		"parent_item_uid,from_owner_type,from_owner_id,from_owner_context_id,to_owner_type,"
 		"to_owner_id,to_owner_context_id,item_revision,from_owner_revision,to_owner_revision,"
 		"reason_type,reason_id,source_site) VALUES(?,?,?,?,IF(?=0,NULL,?),?,?,?,?,?,?,?,?,?,?,?,?)";
+	const item_transfer_entry &entry = payload.items[index];
+	uint64_t target_root = 0, target_parent = 0;
+	if (!item_transfer_target_topology(payload, entry.item_uid, &target_root, &target_parent))
+		return false;
 	MYSQL_STMT *statement = nullptr;
 	if (!prepare(&statement, connection, SQL))
 		return false;
-	const item_transfer_entry &entry = payload.items[index];
-	const uint64_t target_parent = entry.item_uid == payload.selected_item_uid ?
-					       payload.target_parent_item_uid :
-					       entry.parent_item_uid;
 	uint16_t event_index = static_cast<uint16_t>(index);
 	uint8_t from_type = static_cast<uint8_t>(payload.from_owner.type);
 	uint8_t to_type = static_cast<uint8_t>(payload.to_owner.type);
@@ -418,7 +420,7 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	bindings[1].is_unsigned = true;
 	uint64_t *unsigned_values[] = {
 		const_cast<uint64_t *>(&entry.item_uid),
-		const_cast<uint64_t *>(&payload.target_root_item_uid),
+		&target_root,
 		const_cast<uint64_t *>(&target_parent),
 		const_cast<uint64_t *>(&target_parent),
 	};
@@ -479,7 +481,7 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		errno = EINVAL;
 		return false;
 	}
-	*result = { payload.selected_item_uid, payload.item_count, 0, 0, 0, 0 };
+	*result = { item_transfer_result_root(payload), payload.item_count, 0, 0, 0, 0 };
 	*result_code = 0;
 	*mutation_applied = false;
 	uint64_t from_revision = 0, to_revision = 0;
@@ -513,9 +515,35 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		return true;
 	}
 	std::vector<current_item> current;
-	if (!load_root(connection, payload.items[0].root_item_uid, &current))
-		return false;
 	const bool creation = payload.from_owner.type == item_owner_type::system;
+	if (creation)
+	{
+		if (!load_root(connection, payload.items[0].root_item_uid, &current))
+			return false;
+	}
+	else
+	{
+		std::vector<uint64_t> source_roots;
+		try
+		{
+			for (size_t index = 0; index < payload.item_count; ++index)
+				source_roots.push_back(payload.items[index].root_item_uid);
+			std::sort(source_roots.begin(), source_roots.end());
+			source_roots.erase(std::unique(source_roots.begin(), source_roots.end()),
+					   source_roots.end());
+		}
+		catch (const std::bad_alloc &)
+		{
+			errno = ENOMEM;
+			return false;
+		}
+		for (size_t index = 0; index < source_roots.size(); ++index)
+			if (!load_root(connection, source_roots[index], &current, index != 0))
+				return false;
+		std::sort(current.begin(), current.end(),
+			  [](const current_item &left, const current_item &right)
+			  { return left.item_uid < right.item_uid; });
+	}
 	if ((creation && !current.empty()) || (!creation && current.empty()))
 	{
 		*result_code = creation ? EEXIST : ENOENT;
@@ -536,9 +564,15 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 	std::vector<current_item> selected;
 	if (!creation)
 	{
+		std::vector<uint64_t> selected_roots;
 		try
 		{
 			selected.reserve(payload.item_count);
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (item_transfer_selected_root(payload,
+								payload.items[index].item_uid) ==
+				    payload.items[index].item_uid)
+					selected_roots.push_back(payload.items[index].item_uid);
 		}
 		catch (const std::bad_alloc &)
 		{
@@ -550,7 +584,8 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 			uint64_t ancestor = candidate.item_uid;
 			for (size_t depth = 0; depth <= current.size(); ++depth)
 			{
-				if (ancestor == payload.selected_item_uid)
+				if (std::binary_search(selected_roots.begin(), selected_roots.end(),
+						       ancestor))
 				{
 					selected.push_back(candidate);
 					break;
@@ -632,12 +667,11 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		if (creation &&
 		    !insert_created_item(connection, payload.items[index], payload.to_owner))
 			return false;
-		const uint64_t target_parent = payload.items[index].item_uid ==
-							       payload.selected_item_uid ?
-						       payload.target_parent_item_uid :
-						       payload.items[index].parent_item_uid;
-		if (!update_item(connection, payload.items[index], payload.target_root_item_uid,
-				 target_parent, payload.to_owner, prior_revision,
+		uint64_t target_root = 0, target_parent = 0;
+		if (!item_transfer_target_topology(payload, payload.items[index].item_uid,
+						   &target_root, &target_parent) ||
+		    !update_item(connection, payload.items[index], target_root, target_parent,
+				 payload.to_owner, prior_revision,
 				 payload.to_owner.type == item_owner_type::destruction ?
 					 item_custody_state::destroyed :
 					 item_custody_state::active))

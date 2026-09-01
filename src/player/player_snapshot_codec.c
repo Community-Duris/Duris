@@ -1,5 +1,6 @@
 #include "player/player_snapshot_codec.h"
 
+#include <algorithm>
 #include <limits>
 #include <new>
 #include <type_traits>
@@ -397,6 +398,50 @@ player_item_snapshot_extract_subtree(const std::vector<player_item_snapshot> &it
 				}
 				remaining.push_back(std::move(item));
 			}
+		}
+		*selected_out = std::move(selected);
+		*remaining_out = std::move(remaining);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result
+player_item_snapshot_extract_forest(const std::vector<player_item_snapshot> &items,
+				    const std::vector<uint64_t> &selected_root_uids,
+				    std::vector<player_item_snapshot> *selected_out,
+				    std::vector<player_item_snapshot> *remaining_out)
+{
+	if (selected_root_uids.empty() || !selected_out || !remaining_out ||
+	    std::any_of(selected_root_uids.begin(), selected_root_uids.end(),
+			[](uint64_t uid) { return uid == 0; }) ||
+	    std::adjacent_find(selected_root_uids.begin(), selected_root_uids.end(),
+			       [](uint64_t left, uint64_t right)
+			       { return left >= right; }) != selected_root_uids.end())
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		std::vector<player_item_snapshot> selected;
+		std::vector<player_item_snapshot> remaining = items;
+		for (uint64_t selected_root_uid : selected_root_uids)
+		{
+			std::vector<player_item_snapshot> tree;
+			std::vector<player_item_snapshot> next_remaining;
+			const auto extracted = player_item_snapshot_extract_subtree(
+				remaining, selected_root_uid, &tree, &next_remaining);
+			if (extracted != player_snapshot_codec_result::ok)
+				return extracted;
+			const int32_t offset = static_cast<int32_t>(selected.size());
+			for (auto &item : tree)
+			{
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += offset;
+				selected.push_back(std::move(item));
+			}
+			remaining = std::move(next_remaining);
 		}
 		*selected_out = std::move(selected);
 		*remaining_out = std::move(remaining);

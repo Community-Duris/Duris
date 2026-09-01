@@ -33,6 +33,11 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context = NULL);
+bool item_movement_transaction_submit_batch(
+	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
+	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
+	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
+	const void *context, size_t context_size, P_obj corpse_context = NULL);
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container = NULL);
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room);

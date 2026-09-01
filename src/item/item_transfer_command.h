@@ -6,16 +6,19 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 5;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 6;
+constexpr uint16_t ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5;
 constexpr uint16_t ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4;
 constexpr uint16_t ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3;
 constexpr uint16_t ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION = 2;
-constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 12;
+constexpr size_t ITEM_TRANSFER_LEGACY_MAX_ITEMS = 12;
+constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 3000;
 constexpr size_t ITEM_TRANSFER_HEADER_BYTES = 96;
 constexpr size_t ITEM_TRANSFER_ENTRY_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_PAYLOAD_BYTES =
-	ITEM_TRANSFER_HEADER_BYTES + ITEM_TRANSFER_MAX_ITEMS * ITEM_TRANSFER_ENTRY_BYTES;
+	ITEM_TRANSFER_HEADER_BYTES + ITEM_TRANSFER_LEGACY_MAX_ITEMS * ITEM_TRANSFER_ENTRY_BYTES;
 constexpr size_t ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES = 128 * 1024;
 constexpr size_t ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES = 255;
 constexpr size_t ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES = 512;
@@ -111,6 +114,7 @@ struct item_transfer_payload
 	uint64_t target_root_item_uid;
 	uint64_t target_parent_item_uid;
 	uint64_t expected_target_parent_revision;
+	bool multi_root;
 	uint16_t item_count;
 	std::array<item_transfer_entry, ITEM_TRANSFER_MAX_ITEMS> items;
 	uint32_t item_blob_size;
@@ -130,6 +134,12 @@ struct item_transfer_result
 
 bool item_owner_identity_valid(const item_owner_identity &owner);
 bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right);
+uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint64_t item_uid);
+bool item_transfer_selected_roots(const item_transfer_payload &payload,
+				  std::vector<uint64_t> *roots);
+uint64_t item_transfer_result_root(const item_transfer_payload &payload);
+bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_t item_uid,
+				   uint64_t *root_item_uid, uint64_t *parent_item_uid);
 uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id);
 uint64_t item_shopkeeper_owner_id(uint32_t shop_id);
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key);

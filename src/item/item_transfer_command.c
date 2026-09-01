@@ -232,16 +232,62 @@ bool valid_reason(item_transfer_reason reason)
 	return reason > item_transfer_reason::unknown && reason <= item_transfer_reason::shop_sell;
 }
 
+const item_transfer_entry *find_payload_item(const item_transfer_payload &payload,
+					     uint64_t item_uid)
+{
+	auto found = std::lower_bound(payload.items.begin(),
+				      payload.items.begin() + payload.item_count, item_uid,
+				      [](const item_transfer_entry &entry, uint64_t uid)
+				      { return entry.item_uid < uid; });
+	return found != payload.items.begin() + payload.item_count && found->item_uid == item_uid ?
+		       &*found :
+		       nullptr;
+}
+
+uint64_t selected_root_for(const item_transfer_payload &payload, uint64_t item_uid)
+{
+	if (!payload.multi_root)
+		return payload.selected_item_uid ? payload.selected_item_uid :
+						   payload.items[0].root_item_uid;
+	const item_transfer_entry *entry = find_payload_item(payload, item_uid);
+	for (size_t depth = 0; entry && depth <= payload.item_count; ++depth)
+	{
+		const item_transfer_entry *parent =
+			find_payload_item(payload, entry->parent_item_uid);
+		if (!parent)
+			return entry->item_uid;
+		entry = parent;
+	}
+	return 0;
+}
+
+bool target_topology_for(const item_transfer_payload &payload, uint64_t item_uid,
+			 uint64_t *root_item_uid, uint64_t *parent_item_uid)
+{
+	const item_transfer_entry *entry = find_payload_item(payload, item_uid);
+	const uint64_t selected_root = selected_root_for(payload, item_uid);
+	if (!entry || !selected_root || !root_item_uid || !parent_item_uid)
+		return false;
+	*root_item_uid = payload.target_parent_item_uid ? payload.target_root_item_uid :
+							  selected_root;
+	*parent_item_uid = item_uid == selected_root ? payload.target_parent_item_uid :
+						       entry->parent_item_uid;
+	return *root_item_uid != 0;
+}
+
 bool validate_payload(const item_transfer_payload &payload, uint16_t payload_version)
 {
 	if (!item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
 	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     payload.item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS) ||
 	    payload.item_blob_size > payload.item_blob.size())
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
-	const bool corpse_context_required = payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	const bool corpse_context_required = payload_version >=
+						     ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 					     (corpse_create || corpse_loot);
 	if (corpse_context_required != payload.corpse.present ||
 	    (corpse_create && (payload.from_owner.type != item_owner_type::player ||
@@ -283,6 +329,39 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	    ((creation || destruction) &&
 	     item_owner_identity_equal(payload.from_owner, payload.to_owner)))
 		return false;
+	if (payload.multi_root)
+	{
+		const bool batch_reason = payload.reason == item_transfer_reason::player_get ||
+					  payload.reason == item_transfer_reason::player_drop ||
+					  payload.reason == item_transfer_reason::player_put ||
+					  payload.reason == item_transfer_reason::locker_deposit ||
+					  payload.reason == item_transfer_reason::locker_withdraw ||
+					  payload.reason == item_transfer_reason::corpse_loot;
+		if (payload_version != ITEM_TRANSFER_PAYLOAD_VERSION || payload.selected_item_uid ||
+		    creation || destruction || !batch_reason ||
+		    (payload.target_parent_item_uid ? !payload.target_root_item_uid :
+						      payload.target_root_item_uid != 0))
+			return false;
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &entry = payload.items[index];
+			if (!entry.item_uid || !entry.root_item_uid || entry.vnum <= 0 ||
+			    entry.expected_state != item_custody_state::active ||
+			    (index && payload.items[index - 1].item_uid >= entry.item_uid) ||
+			    entry.item_uid == payload.target_parent_item_uid)
+				return false;
+			const uint64_t selected_root = selected_root_for(payload, entry.item_uid);
+			const item_transfer_entry *selected =
+				find_payload_item(payload, selected_root);
+			if (!selected || selected->root_item_uid != entry.root_item_uid)
+				return false;
+			uint64_t target_root = 0, target_parent = 0;
+			if (!target_topology_for(payload, entry.item_uid, &target_root,
+						 &target_parent))
+				return false;
+		}
+		return true;
+	}
 	const uint64_t source_root = payload.items[0].root_item_uid;
 	const uint64_t selected = payload.selected_item_uid ? payload.selected_item_uid :
 							      source_root;
@@ -342,6 +421,55 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	return true;
 }
 } // namespace
+
+uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint64_t item_uid)
+{
+	return selected_root_for(payload, item_uid);
+}
+
+bool item_transfer_selected_roots(const item_transfer_payload &payload,
+				  std::vector<uint64_t> *roots)
+{
+	if (!roots)
+		return false;
+	try
+	{
+		roots->clear();
+		roots->reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+			if (selected_root_for(payload, payload.items[index].item_uid) ==
+			    payload.items[index].item_uid)
+				roots->push_back(payload.items[index].item_uid);
+		std::sort(roots->begin(), roots->end());
+		roots->erase(std::unique(roots->begin(), roots->end()), roots->end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return !roots->empty();
+}
+
+uint64_t item_transfer_result_root(const item_transfer_payload &payload)
+{
+	uint64_t result = 0;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const uint64_t selected_root =
+			selected_root_for(payload, payload.items[index].item_uid);
+		if (!selected_root)
+			return 0;
+		if (!result || selected_root < result)
+			result = selected_root;
+	}
+	return result;
+}
+
+bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_t item_uid,
+				   uint64_t *root_item_uid, uint64_t *parent_item_uid)
+{
+	return target_topology_for(payload, item_uid, root_item_uid, parent_item_uid);
+}
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
@@ -443,9 +571,10 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	if (!encoded || !validate_payload(payload, ITEM_TRANSFER_PAYLOAD_VERSION) ||
 	    !encode_corpse_context(payload.corpse, &corpse_context))
 		return false;
-	const size_t payload_size = ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
-				    payload.item_blob_size + sizeof(uint32_t) +
-				    corpse_context.size();
+	const size_t item_section_size =
+		ITEM_TRANSFER_HEADER_BYTES + payload.item_count * ITEM_TRANSFER_ENTRY_BYTES;
+	const size_t payload_size = item_section_size + sizeof(uint32_t) + payload.item_blob_size +
+				    sizeof(uint32_t) + corpse_context.size();
 	if (payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return false;
 	encoded->assign(payload_size, 0);
@@ -456,11 +585,15 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	put_u64(encoded->data() + REASON_ID_OFFSET, static_cast<uint64_t>(payload.reason_id));
 	put_u64(encoded->data() + FROM_REVISION_OFFSET, payload.expected_from_revision);
 	put_u64(encoded->data() + TO_REVISION_OFFSET, payload.expected_to_revision);
-	const uint64_t selected = payload.selected_item_uid ? payload.selected_item_uid :
-							      payload.items[0].root_item_uid;
+	const uint64_t selected = payload.multi_root ? 0 :
+						       (payload.selected_item_uid ?
+								payload.selected_item_uid :
+								payload.items[0].root_item_uid);
 	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
 	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
-		payload.target_root_item_uid ? payload.target_root_item_uid : selected);
+		payload.multi_root ?
+			payload.target_root_item_uid :
+			(payload.target_root_item_uid ? payload.target_root_item_uid : selected));
 	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
 	put_u64(encoded->data() + TARGET_PARENT_REVISION_OFFSET,
 		payload.expected_target_parent_revision);
@@ -476,11 +609,11 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 		put_u32(output + 32, static_cast<uint32_t>(entry.vnum));
 		output[36] = static_cast<uint8_t>(entry.expected_state);
 	}
-	put_u32(encoded->data() + ITEM_TRANSFER_PAYLOAD_BYTES, payload.item_blob_size);
+	put_u32(encoded->data() + item_section_size, payload.item_blob_size);
 	std::copy_n(payload.item_blob.begin(), payload.item_blob_size,
-		    encoded->begin() + ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t));
+		    encoded->begin() + item_section_size + sizeof(uint32_t));
 	const size_t corpse_size_offset =
-		ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) + payload.item_blob_size;
+		item_section_size + sizeof(uint32_t) + payload.item_blob_size;
 	put_u32(encoded->data() + corpse_size_offset, static_cast<uint32_t>(corpse_context.size()));
 	std::copy(corpse_context.begin(), corpse_context.end(),
 		  encoded->begin() + corpse_size_offset + sizeof(uint32_t));
@@ -492,11 +625,13 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
 	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION) ||
 	    (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION ?
-		     command.payload.size() < ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) :
+		     command.payload.size() < ITEM_TRANSFER_HEADER_BYTES +
+						      ITEM_TRANSFER_ENTRY_BYTES + sizeof(uint32_t) :
 		     command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES))
 		return false;
 	*payload = {};
@@ -514,9 +649,20 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
 	payload->expected_target_parent_revision =
 		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
+	payload->multi_root = command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+			      payload->selected_item_uid == 0;
 	if (!payload->item_count || payload->item_count > ITEM_TRANSFER_MAX_ITEMS)
 		return false;
-	for (size_t index = 0; index < ITEM_TRANSFER_MAX_ITEMS; ++index)
+	const bool variable_items = command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION;
+	if (!variable_items && payload->item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS)
+		return false;
+	const size_t encoded_item_count = variable_items ? payload->item_count :
+							   ITEM_TRANSFER_LEGACY_MAX_ITEMS;
+	const size_t item_section_size =
+		ITEM_TRANSFER_HEADER_BYTES + encoded_item_count * ITEM_TRANSFER_ENTRY_BYTES;
+	if (command.payload.size() < item_section_size)
+		return false;
+	for (size_t index = 0; index < encoded_item_count; ++index)
 	{
 		const uint8_t *input = command.payload.data() + ITEM_TRANSFER_HEADER_BYTES +
 				       index * ITEM_TRANSFER_ENTRY_BYTES;
@@ -536,15 +682,15 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	}
 	if (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
 	{
-		payload->item_blob_size =
-			get_u32(command.payload.data() + ITEM_TRANSFER_PAYLOAD_BYTES);
+		if (command.payload.size() < item_section_size + sizeof(uint32_t))
+			return false;
+		payload->item_blob_size = get_u32(command.payload.data() + item_section_size);
 		const size_t item_end =
-			ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) + payload->item_blob_size;
+			item_section_size + sizeof(uint32_t) + payload->item_blob_size;
 		if (payload->item_blob_size > payload->item_blob.size() ||
 		    item_end > command.payload.size())
 			return false;
-		std::copy_n(command.payload.begin() + ITEM_TRANSFER_PAYLOAD_BYTES +
-				    sizeof(uint32_t),
+		std::copy_n(command.payload.begin() + item_section_size + sizeof(uint32_t),
 			    payload->item_blob_size, payload->item_blob.begin());
 		if (command.payload_version == ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
 		{

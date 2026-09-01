@@ -31,5 +31,10 @@ player_item_snapshot_extract_subtree(const std::vector<player_item_snapshot> &it
 				     uint64_t selected_uid,
 				     std::vector<player_item_snapshot> *selected_out,
 				     std::vector<player_item_snapshot> *remaining_out);
+player_snapshot_codec_result
+player_item_snapshot_extract_forest(const std::vector<player_item_snapshot> &items,
+				    const std::vector<uint64_t> &selected_root_uids,
+				    std::vector<player_item_snapshot> *selected_out,
+				    std::vector<player_item_snapshot> *remaining_out);
 
 #endif

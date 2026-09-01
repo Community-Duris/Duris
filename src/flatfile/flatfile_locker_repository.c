@@ -456,7 +456,7 @@ bool payload_items_match(const item_transfer_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
 	if (items.empty() || items.size() != payload.item_count ||
-	    items.front().object_uid != payload.selected_item_uid)
+	    items.front().object_uid != item_transfer_result_root(payload))
 		return false;
 	std::unordered_set<uint64_t> expected;
 	try
@@ -696,11 +696,13 @@ flatfile_locker_prepare_item_transfer(const std::string &root, const flatfile_au
 		}
 		else
 		{
+			std::vector<uint64_t> selected_roots;
 			std::vector<player_item_snapshot> selected;
 			std::vector<player_item_snapshot> remaining;
-			if (player_item_snapshot_extract_subtree(
-				    chest->items, payload.selected_item_uid, &selected,
-				    &remaining) != player_snapshot_codec_result::ok)
+			if (!item_transfer_selected_roots(payload, &selected_roots) ||
+			    player_item_snapshot_extract_forest(chest->items, selected_roots,
+								&selected, &remaining) !=
+				    player_snapshot_codec_result::ok)
 				return flatfile_locker_result::conflict;
 			std::vector<uint8_t> selected_blob;
 			if (player_item_snapshot_list_encode(selected, &selected_blob) !=

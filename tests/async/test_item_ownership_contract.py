@@ -42,9 +42,11 @@ class ItemOwnershipContractTests(unittest.TestCase):
     def test_command_is_bounded_typed_revisioned_and_snapshot_capable(self):
         header = (SRC / "item_transfer_command.h").read_text()
         implementation = (SRC / "item_transfer_command.c").read_text()
-        self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 12", header)
+        self.assertIn("ITEM_TRANSFER_LEGACY_MAX_ITEMS = 12", header)
+        self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 3000", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
-        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 5", header)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 6", header)
+        self.assertIn("ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5", header)
         self.assertIn("ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4", header)
         self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3", header)
         self.assertIn("ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION = 2", header)

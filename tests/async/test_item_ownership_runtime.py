@@ -98,6 +98,28 @@ int main()
 	assert(item_ownership_runtime_lookup(203, &absent));
 	assert(absent.owner.type == item_owner_type::locker && absent.owner.id == 77);
 
+	const item_ownership_runtime_entry second_inventory = {
+		204, 204, 0, player, 4, 12, 11, item_custody_state::active
+	};
+	assert(item_ownership_runtime_hydrate_batch(&second_inventory, 1));
+	item_transfer_payload batch = {};
+	batch.from_owner = player;
+	batch.to_owner = room;
+	batch.reason = item_transfer_reason::player_drop;
+	batch.expected_from_revision = 12;
+	batch.expected_to_revision = 1;
+	batch.multi_root = true;
+	batch.item_count = 2;
+	batch.items[0] = { 101, 101, 0, 3, 8, item_custody_state::active };
+	batch.items[1] = { 204, 204, 0, 4, 11, item_custody_state::active };
+	assert(item_ownership_runtime_apply(batch, { 101, 2, 13, 2, 5, 0 }));
+	assert(item_ownership_runtime_lookup(101, &absent) &&
+	       item_owner_identity_equal(absent.owner, room) && absent.root_item_uid == 101 &&
+	       absent.parent_item_uid == 0 && absent.item_revision == 4);
+	assert(item_ownership_runtime_lookup(204, &absent) &&
+	       item_owner_identity_equal(absent.owner, room) && absent.root_item_uid == 204 &&
+	       absent.parent_item_uid == 0 && absent.item_revision == 5);
+
 	item_ownership_runtime_reset();
 	const item_owner_identity corpse = {
 		item_owner_type::corpse, item_corpse_owner_id(42, 20), 0
