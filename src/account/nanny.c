@@ -8,6 +8,7 @@
 #include "core/prototypes.h"
 #include "account/creation_availability_config.h"
 #include "combat/chaos_config.h"
+#include "account/chaos_eq_data.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -97,6 +98,7 @@ extern struct zone_data *zone_table;
 extern struct mm_ds *dead_mob_pool;
 extern char *greetings;
 extern char *greetinga1;
+extern bool has_eq_slot(P_char ch, int wear_slot);
 extern char *greetinga2;
 extern char *greetinga3;
 extern char *greetinga4;
@@ -391,321 +393,59 @@ static void LoadNewbyShit(P_char ch, int *items)
 	}
 }
 
-struct chaos_kit_item
-{
-	int slot;
-	int vnum;
-};
-
-struct chaos_kit_profile
-{
-	const chaos_kit_item *items;
-	const chaos_kit_item *fallback;
-};
-
-static const chaos_kit_item chaos_warrior_kit[] = {
-	{ WEAR_FINGER_R, 1252 },      { WEAR_FINGER_L, 1252 },
-	{ WEAR_NECK_1, 1252 },	      { WEAR_NECK_2, 87704 },
-	{ WEAR_BODY, 96072 },	      { WEAR_HEAD, 88301 },
-	{ WEAR_FEET, 1252 },	      { WEAR_HANDS, 77734 },
-	{ WEAR_ABOUT, 59302 },	      { WEAR_WAIST, 58401 },
-	{ WEAR_WRIST_R, 87548 },      { WEAR_WRIST_L, 87548 },
-	{ PRIMARY_WEAPON, 131200 },   { SECONDARY_WEAPON, 430 },
-	{ WEAR_EYES, 58387 },	      { WEAR_FACE, 91065 },
-	{ WEAR_EARRING_R, 58399 },    { WEAR_EARRING_L, 1252 },
-	{ WEAR_QUIVER, 1252 },	      { GUILD_INSIGNIA, 1252 },
-	{ WEAR_ATTACH_BELT_1, 1252 }, { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_ranger_kit[] = {
-	{ WEAR_FINGER_R, 19901 },      { WEAR_FINGER_L, 19901 },      { WEAR_NECK_1, 98949 },
-	{ WEAR_NECK_2, 98949 },	       { WEAR_BODY, 15141 },	      { WEAR_HEAD, 32450 },
-	{ WEAR_FEET, 34468 },	       { WEAR_HANDS, 88320 },	      { WEAR_ARMS, 31517 },
-	{ WEAR_ABOUT, 83342 },	       { WEAR_WAIST, 87707 },	      { WEAR_WRIST_R, 87523 },
-	{ WEAR_WRIST_L, 87523 },       { PRIMARY_WEAPON, 87612 },     { WEAR_EYES, 87576 },
-	{ WEAR_FACE, 89167 },	       { WEAR_EARRING_R, 55345 },     { WEAR_EARRING_L, 55345 },
-	{ WEAR_QUIVER, 89169 },	       { GUILD_INSIGNIA, 139806 },    { WEAR_BACK, 55169 },
-	{ WEAR_ATTACH_BELT_1, 83208 }, { WEAR_ATTACH_BELT_2, 28973 }, { WEAR_ATTACH_BELT_3, 87708 },
-	{ WEAR_HORSE_BODY, 87585 },    { WEAR_TAIL, 87574 },	      { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_psionicist_kit[] = {
-	{ WEAR_FINGER_R, 139804 },     { WEAR_FINGER_L, 30847 },  { WEAR_NECK_1, 142448 },
-	{ WEAR_NECK_2, 42226 },	       { WEAR_BODY, 38772 },	  { WEAR_HEAD, 83668 },
-	{ WEAR_LEGS, 83670 },	       { WEAR_FEET, 83671 },	  { WEAR_HANDS, 23806 },
-	{ WEAR_ARMS, 83669 },	       { WEAR_SHIELD, 19638 },	  { WEAR_ABOUT, 55061 },
-	{ WEAR_WAIST, 87528 },	       { WEAR_WRIST_R, 87550 },	  { WEAR_WRIST_L, 28911 },
-	{ PRIMARY_WEAPON, 6826 },      { WEAR_EYES, 1252 },	  { WEAR_FACE, 87546 },
-	{ WEAR_EARRING_R, 24402 },     { WEAR_EARRING_L, 24402 }, { WEAR_QUIVER, 139828 },
-	{ GUILD_INSIGNIA, 31315 },     { WEAR_BACK, 83181 },	  { WEAR_ATTACH_BELT_1, 139824 },
-	{ WEAR_ATTACH_BELT_2, 36891 }, { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_cleric_kit[] = { { WEAR_FINGER_R, 88317 },
-						   { WEAR_FINGER_L, 26639 },
-						   { WEAR_NECK_1, 14054 },
-						   { WEAR_NECK_2, 87601 },
-						   { WEAR_BODY, 78476 },
-						   { WEAR_HEAD, 53662 },
-						   { WEAR_LEGS, 55380 },
-						   { WEAR_FEET, 36753 },
-						   { WEAR_HANDS, 87565 },
-						   { WEAR_ARMS, 83202 },
-						   { WEAR_SHIELD, 5502 },
-						   { WEAR_ABOUT, 142451 },
-						   { WEAR_WAIST, 19926 },
-						   { WEAR_WRIST_R, 58378 },
-						   { WEAR_WRIST_L, 38660 },
-						   { PRIMARY_WEAPON, 139004 },
-						   { WEAR_EYES, 16224 },
-						   { WEAR_FACE, 25405 },
-						   { WEAR_EARRING_R, 24402 },
-						   { WEAR_EARRING_L, 19640 },
-						   { WEAR_QUIVER, 55424 },
-						   { GUILD_INSIGNIA, 31315 },
-						   { WEAR_ATTACH_BELT_1, 36898 },
-						   { WEAR_ATTACH_BELT_2, 28970 },
-						   { WEAR_ATTACH_BELT_3, 58808 },
-						   { WEAR_IOUN, 922 },
-						   { WEAR_NONE, 0 } };
-
-static const chaos_kit_item chaos_druid_kit[] = {
-	{ WEAR_FINGER_R, 1252 },       { WEAR_FINGER_L, 1252 }, { WEAR_NECK_1, 1252 },
-	{ WEAR_NECK_2, 1252 },	       { WEAR_BODY, 1252 },	{ WEAR_HEAD, 90030 },
-	{ WEAR_LEGS, 1252 },	       { WEAR_FEET, 1252 },	{ WEAR_HANDS, 82707 },
-	{ WEAR_ARMS, 99538 },	       { WEAR_SHIELD, 1252 },	{ WEAR_ABOUT, 83593 },
-	{ WEAR_WAIST, 1252 },	       { WEAR_WRIST_R, 1252 },	{ WEAR_WRIST_L, 138525 },
-	{ WEAR_EYES, 1252 },	       { WEAR_FACE, 7677 },	{ WEAR_EARRING_R, 29458 },
-	{ WEAR_EARRING_L, 1252 },      { WEAR_QUIVER, 35808 },	{ GUILD_INSIGNIA, 138517 },
-	{ WEAR_ATTACH_BELT_1, 29404 }, { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_shaman_kit[] = { { WEAR_FINGER_R, 9460 },
-						   { WEAR_FINGER_L, 1252 },
-						   { WEAR_NECK_1, 1252 },
-						   { WEAR_NECK_2, 1252 },
-						   { WEAR_BODY, 1252 },
-						   { WEAR_HEAD, 1252 },
-						   { WEAR_LEGS, 58365 },
-						   { WEAR_FEET, 22631 },
-						   { WEAR_HANDS, 1252 },
-						   { WEAR_ARMS, 78415 },
-						   { WEAR_SHIELD, 26604 },
-						   { WEAR_ABOUT, 1252 },
-						   { WEAR_WAIST, 1252 },
-						   { WEAR_WRIST_R, 16247 },
-						   { WEAR_WRIST_L, 138525 },
-						   { PRIMARY_WEAPON, 67262 },
-						   { HOLD, 1230 },
-						   { WEAR_EYES, 1252 },
-						   { WEAR_FACE, 1252 },
-						   { WEAR_EARRING_R, 24402 },
-						   { WEAR_EARRING_L, 26652 },
-						   { WEAR_QUIVER, 1252 },
-						   { GUILD_INSIGNIA, 1252 },
-						   { WEAR_BACK, 22956 },
-						   { WEAR_ATTACH_BELT_1, 44827 },
-						   { WEAR_NONE, 0 } };
-
-static const chaos_kit_item chaos_sorcerer_kit[] = {
-	{ WEAR_FINGER_R, 1252 },       { WEAR_FINGER_L, 1252 },	     { WEAR_NECK_1, 1252 },
-	{ WEAR_NECK_2, 13316 },	       { WEAR_BODY, 44170 },	     { WEAR_HEAD, 25719 },
-	{ WEAR_LEGS, 58365 },	       { WEAR_FEET, 1252 },	     { WEAR_HANDS, 59250 },
-	{ WEAR_ARMS, 78415 },	       { WEAR_SHIELD, 38761 },	     { WEAR_ABOUT, 1252 },
-	{ WEAR_WAIST, 9438 },	       { WEAR_WRIST_R, 1252 },	     { WEAR_WRIST_L, 1252 },
-	{ PRIMARY_WEAPON, 53661 },     { WEAR_EYES, 1252 },	     { WEAR_FACE, 1252 },
-	{ WEAR_EARRING_R, 1252 },      { WEAR_EARRING_L, 1252 },     { WEAR_QUIVER, 55424 },
-	{ GUILD_INSIGNIA, 1252 },      { WEAR_ATTACH_BELT_1, 1252 }, { WEAR_ATTACH_BELT_2, 58424 },
-	{ WEAR_ATTACH_BELT_3, 33711 }, { WEAR_IOUN, 59318 },	     { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_necromancer_kit[] = { { WEAR_FINGER_R, 424 },
-							{ WEAR_FINGER_L, 6831 },
-							{ WEAR_NECK_1, 142448 },
-							{ WEAR_NECK_2, 82018 },
-							{ WEAR_BODY, 58367 },
-							{ WEAR_HEAD, 1252 },
-							{ WEAR_LEGS, 142437 },
-							{ WEAR_FEET, 78059 },
-							{ WEAR_HANDS, 37141 },
-							{ WEAR_ARMS, 78415 },
-							{ WEAR_SHIELD, 1252 },
-							{ WEAR_ABOUT, 76050 },
-							{ WEAR_WAIST, 9438 },
-							{ WEAR_WRIST_R, 87529 },
-							{ WEAR_WRIST_L, 1252 },
-							{ PRIMARY_WEAPON, 9447 },
-							{ HOLD, 16262 },
-							{ WEAR_EYES, 12409 },
-							{ WEAR_FACE, 1252 },
-							{ WEAR_EARRING_R, 19639 },
-							{ WEAR_EARRING_L, 19639 },
-							{ WEAR_QUIVER, 55424 },
-							{ GUILD_INSIGNIA, 700005 },
-							{ WEAR_BACK, 377 },
-							{ WEAR_ATTACH_BELT_1, 36898 },
-							{ WEAR_ATTACH_BELT_2, 36898 },
-							{ WEAR_ATTACH_BELT_3, 3550 },
-							{ WEAR_NONE, 0 } };
-
-static const chaos_kit_item chaos_conjurer_kit[] = {
-	{ WEAR_FINGER_R, 87511 },  { WEAR_FINGER_L, 77722 },  { WEAR_NECK_1, 88321 },
-	{ WEAR_NECK_2, 87704 },	   { WEAR_BODY, 32815 },      { WEAR_HEAD, 76722 },
-	{ WEAR_LEGS, 83586 },	   { WEAR_FEET, 23809 },      { WEAR_HANDS, 1252 },
-	{ WEAR_ARMS, 78415 },	   { WEAR_SHIELD, 38739 },    { WEAR_ABOUT, 31527 },
-	{ WEAR_WAIST, 91040 },	   { WEAR_WRIST_R, 38621 },   { WEAR_WRIST_L, 78065 },
-	{ PRIMARY_WEAPON, 67274 }, { WEAR_EYES, 76656 },      { WEAR_FACE, 139809 },
-	{ WEAR_EARRING_R, 19639 }, { WEAR_EARRING_L, 87727 }, { WEAR_QUIVER, 55424 },
-	{ GUILD_INSIGNIA, 1252 },  { WEAR_BACK, 377 },	      { WEAR_ATTACH_BELT_1, 58424 },
-	{ WEAR_IOUN, 906 },	   { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_rogue_kit[] = {
-	{ WEAR_FINGER_R, 87574 }, { WEAR_FINGER_L, 78068 },	{ WEAR_NECK_1, 53619 },
-	{ WEAR_NECK_2, 69033 },	  { WEAR_BODY, 70954 },		{ WEAR_HEAD, 83209 },
-	{ WEAR_LEGS, 7674 },	  { WEAR_FEET, 38773 },		{ WEAR_HANDS, 76714 },
-	{ WEAR_ARMS, 98958 },	  { WEAR_ABOUT, 16269 },	{ WEAR_WRIST_R, 6726 },
-	{ WEAR_WRIST_L, 38621 },  { SECONDARY_WEAPON, 142445 }, { WEAR_EYES, 23059 },
-	{ WEAR_FACE, 89167 },	  { WEAR_EARRING_R, 55345 },	{ WEAR_EARRING_L, 130022 },
-	{ WEAR_QUIVER, 55040 },	  { GUILD_INSIGNIA, 58844 },	{ WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_mercenary_kit[] = { { WEAR_FINGER_R, 28921 },
-						      { WEAR_FINGER_L, 28921 },
-						      { WEAR_NECK_1, 98949 },
-						      { WEAR_NECK_2, 87704 },
-						      { WEAR_BODY, 70954 },
-						      { WEAR_HEAD, 6222 },
-						      { WEAR_LEGS, 83493 },
-						      { WEAR_FEET, 83587 },
-						      { WEAR_HANDS, 88320 },
-						      { WEAR_ARMS, 49136 },
-						      { WEAR_ABOUT, 87596 },
-						      { WEAR_WAIST, 500033 },
-						      { WEAR_WRIST_R, 16213 },
-						      { WEAR_WRIST_L, 28911 },
-						      { PRIMARY_WEAPON, 142419 },
-						      { SECONDARY_WEAPON, 88314 },
-						      { WEAR_EYES, 1252 },
-						      { WEAR_FACE, 32816 },
-						      { WEAR_EARRING_R, 83502 },
-						      { WEAR_EARRING_L, 16231 },
-						      { WEAR_QUIVER, 1252 },
-						      { GUILD_INSIGNIA, 83296 },
-						      { WEAR_BACK, 25757 },
-						      { WEAR_ATTACH_BELT_1, 36894 },
-						      { WEAR_NONE, 0 } };
-
-static const chaos_kit_item chaos_berserker_kit[] = {
-	{ WEAR_FINGER_R, 23064 },  { WEAR_FINGER_L, 6846 },	  { WEAR_NECK_1, 32628 },
-	{ WEAR_NECK_2, 1252 },	   { WEAR_BODY, 31313 },	  { WEAR_LEGS, 1252 },
-	{ WEAR_FEET, 34468 },	   { WEAR_HANDS, 1252 },	  { WEAR_ARMS, 78511 },
-	{ WEAR_ABOUT, 1252 },	   { WEAR_WAIST, 87575 },	  { WEAR_WRIST_R, 91020 },
-	{ WEAR_WRIST_L, 91020 },   { PRIMARY_WEAPON, 23805 },	  { SECONDARY_WEAPON, 51401 },
-	{ WEAR_EYES, 1252 },	   { WEAR_FACE, 1252 },		  { WEAR_EARRING_R, 4222 },
-	{ WEAR_EARRING_L, 78035 }, { WEAR_QUIVER, 55040 },	  { GUILD_INSIGNIA, 1252 },
-	{ WEAR_BACK, 55169 },	   { WEAR_ATTACH_BELT_1, 78013 }, { WEAR_TAIL, 1252 },
-	{ WEAR_NOSE, 1252 },	   { WEAR_HORN, 42276 },	  { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_illusionist_kit[] = {
-	{ WEAR_FINGER_R, 59172 },     { WEAR_FINGER_L, 1252 },
-	{ WEAR_NECK_1, 87704 },	      { WEAR_NECK_2, 58324 },
-	{ WEAR_BODY, 44170 },	      { WEAR_HEAD, 1252 },
-	{ WEAR_LEGS, 58365 },	      { WEAR_FEET, 1252 },
-	{ WEAR_HANDS, 59250 },	      { WEAR_ARMS, 78415 },
-	{ WEAR_SHIELD, 38761 },	      { WEAR_ABOUT, 1252 },
-	{ WEAR_WAIST, 77749 },	      { WEAR_WRIST_R, 58431 },
-	{ WEAR_WRIST_L, 1252 },	      { PRIMARY_WEAPON, 53661 },
-	{ WEAR_EYES, 1252 },	      { WEAR_FACE, 87539 },
-	{ WEAR_EARRING_R, 1252 },     { WEAR_EARRING_L, 1252 },
-	{ WEAR_QUIVER, 55424 },	      { GUILD_INSIGNIA, 1252 },
-	{ WEAR_ATTACH_BELT_1, 1252 }, { WEAR_ATTACH_BELT_2, 58424 },
-	{ WEAR_IOUN, 59318 },	      { WEAR_NONE, 0 }
-};
-
-static const chaos_kit_item chaos_ethermancer_kit[] = { { WEAR_FINGER_R, 138950 },
-							{ WEAR_FINGER_L, 138950 },
-							{ WEAR_NECK_1, 83439 },
-							{ WEAR_NECK_2, 26648 },
-							{ WEAR_BODY, 83451 },
-							{ WEAR_HEAD, 83668 },
-							{ WEAR_LEGS, 83670 },
-							{ WEAR_FEET, 83671 },
-							{ WEAR_HANDS, 34217 },
-							{ WEAR_ARMS, 83669 },
-							{ WEAR_SHIELD, 83627 },
-							{ WEAR_ABOUT, 83285 },
-							{ WEAR_WAIST, 83495 },
-							{ WEAR_WRIST_R, 83440 },
-							{ WEAR_WRIST_L, 6726 },
-							{ HOLD, 58424 },
-							{ WEAR_EYES, 31306 },
-							{ WEAR_FACE, 18740 },
-							{ WEAR_EARRING_R, 83502 },
-							{ WEAR_EARRING_L, 83502 },
-							{ WEAR_QUIVER, 1252 },
-							{ GUILD_INSIGNIA, 83296 },
-							{ WEAR_ATTACH_BELT_1, 38664 },
-							{ WEAR_ATTACH_BELT_2, 83611 },
-							{ WEAR_ATTACH_BELT_3, 40501 },
-							{ WEAR_IOUN, 921 },
-							{ WEAR_NONE, 0 } };
-
-/* Class IDs are flag2idx(CLASS_*), so index zero is intentionally unused. Classes
- * without a level-56 sample use the nearest class by combat and casting role. For
- * sampled classes, the fallback fills only slots absent from that class's sample. */
-static const chaos_kit_profile chaos_kit_profiles[CLASS_COUNT + 1] = {
-	{ NULL, NULL },
-	{ chaos_warrior_kit, chaos_mercenary_kit },
-	{ chaos_ranger_kit, chaos_mercenary_kit },
-	{ chaos_psionicist_kit, chaos_conjurer_kit },
-	{ NULL, chaos_warrior_kit },
-	{ NULL, chaos_warrior_kit },
-	{ chaos_cleric_kit, chaos_shaman_kit },
-	{ NULL, chaos_rogue_kit },
-	{ chaos_druid_kit, chaos_shaman_kit },
-	{ chaos_shaman_kit, chaos_cleric_kit },
-	{ chaos_sorcerer_kit, chaos_conjurer_kit },
-	{ chaos_necromancer_kit, chaos_sorcerer_kit },
-	{ chaos_conjurer_kit, chaos_sorcerer_kit },
-	{ chaos_rogue_kit, chaos_mercenary_kit },
-	{ NULL, chaos_rogue_kit },
-	{ chaos_mercenary_kit, chaos_warrior_kit },
-	{ NULL, chaos_rogue_kit },
-	{ NULL, chaos_rogue_kit },
-	{ NULL, chaos_necromancer_kit },
-	{ NULL, chaos_psionicist_kit },
-	{ NULL, chaos_mercenary_kit },
-	{ chaos_berserker_kit, chaos_warrior_kit },
-	{ NULL, chaos_ranger_kit },
-	{ chaos_illusionist_kit, chaos_sorcerer_kit },
-	{ NULL, chaos_druid_kit },
-	{ NULL, chaos_warrior_kit },
-	{ chaos_ethermancer_kit, chaos_cleric_kit },
-	{ NULL, chaos_warrior_kit },
-	{ NULL, chaos_cleric_kit },
-	{ NULL, chaos_conjurer_kit },
-	{ NULL, chaos_ranger_kit }
-};
-
-static void apply_chaos_kit_items(int *vnums, const chaos_kit_item *items, bool overwrite)
-{
-	if (!items)
-		return;
-	for (int i = 0; items[i].slot != WEAR_NONE; ++i)
-		if (items[i].slot >= 0 && items[i].slot < MAX_WEAR &&
-		    (overwrite || !vnums[items[i].slot]))
-			vnums[items[i].slot] = items[i].vnum;
-}
-
 static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 {
 	obj->cost = 1;
 	if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON && obj->type != ITEM_SPELLBOOK &&
 	    obj->type != ITEM_LIGHT && obj->type != ITEM_TOTEM && IS_PC(ch))
 		SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
+	if (obj->type == ITEM_SPELLBOOK && OBJ_VNUM(obj) != MASTER_SPELLBOOK_VNUM)
+	{
+		for (int j = FIRST_SPELL; j <= LAST_SPELL; j++)
+		{
+			if (get_spell_circle(ch, j) == 1 && AddSpellToSpellBook(ch, obj, j))
+				obj->value[3]++;
+		}
+	}
 	add_newbie_keyword(obj);
+}
+
+static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *item)
+{
+	if (!item || !item->vnum)
+		return true;
+	P_obj obj = read_object(item->vnum, VIRTUAL);
+	if (!obj)
+	{
+		logit(LOG_DEBUG, "Cannot load CHAOS kit item with virtual number: %d for %s",
+		      item->vnum, GET_NAME(ch));
+		return false;
+	}
+	if (item->slot >= 0 && item->slot != SECONDARY_WEAPON && !has_eq_slot(ch, item->slot))
+	{
+		logit(LOG_DEBUG,
+		      "Skipping CHAOS kit item vnum %d in unavailable slot %d for pid %d",
+		      item->vnum, item->slot, GET_PID(ch));
+		extract_obj(obj, FALSE);
+		return true;
+	}
+	if (item->slot >= 0 && !can_char_use_item(ch, obj))
+	{
+		logit(LOG_FILE, "Skipping unusable CHAOS kit item vnum %d for pid %d", item->vnum,
+		      GET_PID(ch));
+		extract_obj(obj, FALSE);
+		return false;
+	}
+	prepare_chaos_kit_item(ch, obj);
+	if (!obj_can_nest(obj, bag))
+	{
+		logit(LOG_FILE, "Cannot place CHAOS kit item vnum %d in starter bag for pid %d",
+		      item->vnum, GET_PID(ch));
+		extract_obj(obj, FALSE);
+		return false;
+	}
+	obj_to_obj(obj, bag);
+	return obj->loc.inside == bag;
 }
 
 static void load_chaos_new_character_kit(P_char ch)
@@ -726,6 +466,36 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 	prepare_chaos_kit_item(ch, bag);
+
+	int class_id = flag2idx(ch->player.m_class);
+	if (class_id < 1 || class_id > CLASS_COUNT)
+		class_id = flag2idx(CLASS_WARRIOR);
+	const int profile_id = chaos_eq_use_enhanceable_profile() ? 1 : 0;
+	const chaos_eq_profile &profile = chaos_eq_profiles[class_id][profile_id];
+	bool item_failure = false;
+	for (const chaos_kit_item *item = profile.items; item && item->vnum; ++item)
+		if (!append_chaos_kit_item(ch, bag, item))
+			item_failure = true;
+	const chaos_kit_item *optional_items = profile_id ? chaos_eq_enhanceable_optional_slots :
+							    chaos_eq_standard_optional_slots;
+	for (const chaos_kit_item *item = optional_items; item && item->vnum; ++item)
+		if (!append_chaos_kit_item(ch, bag, item))
+			item_failure = true;
+	for (const chaos_kit_item *item = chaos_eq_support_consumables; item && item->vnum; ++item)
+		if (!append_chaos_kit_item(ch, bag, item))
+			item_failure = true;
+	if (item_failure)
+	{
+		extract_obj(bag, FALSE);
+		statuslog(56,
+			  "&+RALERT&n: CHAOS starter kit contains an unavailable item for pid %d",
+			  GET_PID(ch));
+		send_to_char(
+			"Your CHAOS equipment kit could not be prepared; please contact staff.\r\n",
+			ch);
+		return;
+	}
+
 	if (!item_creation_grant_submit_to_player(ch, bag, ch))
 	{
 		extract_obj(bag, FALSE);
@@ -735,36 +505,6 @@ static void load_chaos_new_character_kit(P_char ch)
 			ch);
 		return;
 	}
-
-	int class_id = flag2idx(ch->player.m_class);
-	if (class_id < 1 || class_id > CLASS_COUNT)
-		class_id = flag2idx(CLASS_WARRIOR);
-	const chaos_kit_profile &profile = chaos_kit_profiles[class_id];
-	int vnums[MAX_WEAR] = {};
-	apply_chaos_kit_items(vnums, profile.fallback, false);
-	apply_chaos_kit_items(vnums, profile.items, true);
-
-	for (int slot = 0; slot < MAX_WEAR; ++slot)
-	{
-		if (!vnums[slot])
-			continue;
-		P_obj obj = read_object(vnums[slot], VIRTUAL);
-		if (!obj)
-		{
-			logit(LOG_DEBUG,
-			      "Cannot load CHAOS kit item with virtual number: %d for %s",
-			      vnums[slot], GET_NAME(ch));
-			continue;
-		}
-		prepare_chaos_kit_item(ch, obj);
-		if (!item_creation_grant_submit_to_player(ch, obj, ch, bag))
-		{
-			logit(LOG_FILE, "Could not queue CHAOS kit item vnum %d for pid %d",
-			      vnums[slot], GET_PID(ch));
-			extract_obj(obj, FALSE);
-		}
-	}
-
 	if (item_creation_grant_mark_blocking(ch))
 		send_to_char("Your CHAOS equipment kit is being prepared...\r\n", ch);
 }

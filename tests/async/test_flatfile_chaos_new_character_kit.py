@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a real CHAOS character and persist its bag-contained class kit."""
+"""Create a real CHAOS character and persist its generated class kit."""
 
 from __future__ import annotations
 
@@ -27,34 +27,26 @@ from test_flatfile_combat_journey import (
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+DATA_HEADER = ROOT / "src/account/chaos_eq_data.h"
 
 
 def warrior_kit_vnums() -> set[int]:
-    nanny = (ROOT / "src/account/nanny.c").read_text()
-    defines = (ROOT / "src/core/defines.h").read_text()
-    slots = {
-        name: int(value)
-        for name, value in re.findall(
-            r"(?m)^#define\s+([A-Z][A-Z0-9_]*)\s+(-?\d+)\b", defines
-        )
-    }
-
-    def kit(name: str) -> dict[int, int]:
+    """Return the Warrior standard profile plus the shared consumable pool."""
+    data = DATA_HEADER.read_text(encoding="utf-8", errors="replace")
+    values: set[int] = {96443}
+    for array_name in ("chaos_eq_standard_warrior", "chaos_eq_standard_optional_slots", "chaos_eq_support_consumables"):
         body = re.search(
-            rf"static const chaos_kit_item {name}\[\] = \{{(.*?)\}};", nanny, re.S
+            rf"static const chaos_kit_item {array_name}\[\] = \{{(.*?)\}};", data, re.S
         )
-        require(body is not None, f"missing {name}")
-        return {
-            slots[slot]: int(vnum)
-            for slot, vnum in re.findall(
-                r"\{\s*([A-Z0-9_]+),\s*(\d+)\s*\}", body.group(1)
-            )
-            if slot != "WEAR_NONE"
-        }
-
-    selected = kit("chaos_mercenary_kit")
-    selected.update(kit("chaos_warrior_kit"))
-    return {96443, *selected.values()}
+        require(body is not None, f"missing {array_name}")
+        assert body is not None
+        values.update(
+            int(vnum)
+            for _, vnum in re.findall(r"\{\s*(-?\d+|WEAR_NONE),\s*(\d+)\s*\}", body.group(1))
+            if int(vnum) != 0
+        )
+    require(1252 not in values, "placeholder VNUM remains in the runtime Warrior kit")
+    return values
 
 
 def install_chaos_objects(run_root: pathlib.Path) -> None:
@@ -166,6 +158,7 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                 "DURIS_WEBSOCKET_PORT": str(websocket_port),
                 "REDIS": "FALSE",
                 "CHAOS_MUD": "TRUE",
+                "CHAOS_EQ_PROFILE": "standard",
             }
 
             with output_path.open("w", encoding="utf-8") as output:
@@ -197,7 +190,9 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     client.send("inventory")
                     client.expect("bottomless bag of", timeout=15)
                     client.send("look in bottomless")
-                    client.expect("new random object", timeout=15)
+                    client.expect("dark misty potion", timeout=15)
+                    client.send("inventory")
+                    client.expect("a bottomless bag of", timeout=15)
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.", timeout=30)
 
@@ -209,9 +204,11 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     require(process.returncode == 0, "CHAOS server shutdown failed")
                     require(
                         "Cannot load CHAOS kit item" not in logs
-                        and "item creation grant did not commit" not in logs,
-                        "CHAOS kit logged an incomplete grant:\n" + logs,
+                        and "item creation grant did not commit" not in logs
+                        and "Skipping unusable CHAOS kit item" not in logs,
+                        "CHAOS kit logged an incomplete or unusable grant:\n" + logs,
                     )
+                    require("1252" not in server_output + logs, "placeholder VNUM reached the runtime journey")
                 except Exception as error:
                     output.flush()
                     server_output = output_path.read_text(errors="replace")
@@ -234,4 +231,4 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
 
 if __name__ == "__main__":
     run_chaos_kit_journey(build_flatfile_server())
-    print("flat-file CHAOS new-character bag and class kit journey passed")
+    print("flat-file CHAOS new-character bag and generated class kit journey passed")

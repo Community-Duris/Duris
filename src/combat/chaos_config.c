@@ -22,3 +22,23 @@ bool chaos_mud_enabled(void)
 	}
 	return enabled;
 }
+
+bool chaos_eq_use_enhanceable_profile(void)
+{
+	static int enhanceable = -1;
+	const char *value = getenv("CHAOS_EQ_PROFILE");
+
+	if (enhanceable >= 0)
+		return enhanceable;
+	if (!value || strcmp(value, "standard") == 0)
+		enhanceable = false;
+	else if (strcmp(value, "enhanceable") == 0)
+		enhanceable = true;
+	else
+	{
+		fprintf(stderr,
+			"CHAOS_EQ_PROFILE must be standard or enhanceable; using standard.\n");
+		enhanceable = false;
+	}
+	return enhanceable;
+}
