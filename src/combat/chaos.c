@@ -125,8 +125,8 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 			return send_to_char("Refusing to do a no-op operation!\n", ch);
 
 		GET_EXP(ch) = new_exp_table[GET_LEVEL(ch) + 1] / 2;
-		for (; oldl < newl; oldl++)
-			advance_level(ch);
+		if (oldl < newl)
+			advance_to_level(ch, newl);
 		for (; oldl > newl; oldl--)
 			lose_level(ch);
 

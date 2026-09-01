@@ -3290,10 +3290,7 @@ void enter_game(P_desc d)
 	}
 	// while ((GET_LEVEL(ch) < 56 && !IS_MULTICLASS_PC(ch)) || GET_LEVEL(ch) < 51)
 	//  changing this to conform with Kitsero's version of chaos
-	while (GET_LEVEL(ch) < 53)
-	{
-		advance_level(ch);
-	}
+	advance_to_level(ch, 53);
 #endif
 
 	// chaos - level them up, and setbit hardcore off them!
@@ -3308,10 +3305,7 @@ void enter_game(P_desc d)
 			ch->player.level =
 				54; // so they are raised one level, which will fix skills
 		}
-		while (GET_LEVEL(ch) < 56)
-		{
-			advance_level(ch);
-		}
+		advance_to_level(ch, 56);
 	}
 
 	epic_transaction_player_ready(ch);

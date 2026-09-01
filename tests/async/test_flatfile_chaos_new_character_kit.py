@@ -194,6 +194,42 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
 
                     client = MudClient(plain_port)
                     create_chaos_character(client)
+                    creation_transcript = bytes(client.transcript).decode(
+                        "utf-8", errors="replace"
+                    )
+                    require(
+                        creation_transcript.count("You advance to level 56.") == 1,
+                        "CHAOS catch-up did not emit one final-level notification:\n"
+                        + creation_transcript[-8000:],
+                    )
+                    require(
+                        "You raise a level!" not in creation_transcript,
+                        "CHAOS catch-up still emitted per-level notifications:\n"
+                        + creation_transcript[-8000:],
+                    )
+
+                    client.transcript.clear()
+                    client.send("chaos level 55")
+                    client.expect("You lose a level!", timeout=15)
+                    client.expect("Pos: standing >", timeout=15)
+                    client.transcript.clear()
+                    client.send("chaos level 56")
+                    client.expect("You raise a level!", timeout=15)
+                    client.expect("Pos: standing >", timeout=15)
+                    single_level_transcript = bytes(client.transcript).decode(
+                        "utf-8", errors="replace"
+                    )
+                    require(
+                        single_level_transcript.count("You raise a level!") == 1,
+                        "single-level advancement did not retain one notification:\n"
+                        + single_level_transcript,
+                    )
+                    require(
+                        "You advance to level" not in single_level_transcript,
+                        "single-level advancement used the batch notification:\n"
+                        + single_level_transcript,
+                    )
+
                     client.send("inventory")
                     client.expect("bottomless bag of", timeout=15)
                     client.expect("Pos: standing >", timeout=15)
