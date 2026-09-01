@@ -54,7 +54,7 @@ def warrior_kit_vnums() -> set[int]:
 
     selected = kit("chaos_mercenary_kit")
     selected.update(kit("chaos_warrior_kit"))
-    return {96443, *selected.values()}
+    return {96443} | {vnum for vnum in selected.values() if vnum}
 
 
 def install_chaos_objects(run_root: pathlib.Path) -> None:
@@ -196,8 +196,24 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     create_chaos_character(client)
                     client.send("inventory")
                     client.expect("bottomless bag of", timeout=15)
+                    client.expect("Pos: standing >", timeout=15)
                     client.send("look in bottomless")
-                    client.expect("new random object", timeout=15)
+                    bag_contents = client.expect("Pos: standing >", timeout=15)
+                    for item_name in (
+                        "ring of the ultimium",
+                        "blue ring",
+                        "sapphire necklace",
+                    ):
+                        require(
+                            item_name in bag_contents,
+                            f"CHAOS warrior kit omitted {item_name}:\n{bag_contents}",
+                        )
+                    # VNUM 67269 carries ITEM_SECRET, so normal players cannot see it
+                    # in container listings; the source contract verifies that mapping.
+                    require(
+                        "new random object" not in bag_contents,
+                        "CHAOS warrior kit still contains VNUM 1252",
+                    )
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.", timeout=30)
 

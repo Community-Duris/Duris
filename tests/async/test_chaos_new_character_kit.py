@@ -98,10 +98,30 @@ for array_name, body in array_matches:
         slot = slot_values[slot_name]
         vnum = int(raw_vnum)
         assert 0 <= slot < 43
+        assert vnum >= 0
         assert slot not in items, (array_name, slot)
         items[slot] = vnum
-        all_vnums.add(vnum)
+        if vnum:
+            all_vnums.add(vnum)
     kit_arrays[array_name] = items
+
+
+# The warrior sample replaces the five selected slots and explicitly suppresses
+# the three unresolved slots so its mercenary fallback cannot reintroduce 1252.
+warrior = kit_arrays["chaos_warrior_kit"]
+for slot_name, vnum in {
+    "WEAR_FINGER_R": 45510,
+    "WEAR_FINGER_L": 87511,
+    "WEAR_NECK_1": 44192,
+    "WEAR_FEET": 44192,
+    "WEAR_EARRING_L": 67269,
+}.items():
+    assert warrior[slot_values[slot_name]] == vnum
+for slot_name in ("WEAR_QUIVER", "GUILD_INSIGNIA", "WEAR_ATTACH_BELT_1"):
+    assert warrior[slot_values[slot_name]] == 0
+warrior_final = dict(kit_arrays["chaos_mercenary_kit"])
+warrior_final.update(warrior)
+assert 1252 not in warrior_final.values()
 
 
 # The 31 ordered profiles map the 30 class IDs plus the unused zero index.

@@ -404,17 +404,29 @@ struct chaos_kit_profile
 };
 
 static const chaos_kit_item chaos_warrior_kit[] = {
-	{ WEAR_FINGER_R, 1252 },      { WEAR_FINGER_L, 1252 },
-	{ WEAR_NECK_1, 1252 },	      { WEAR_NECK_2, 87704 },
-	{ WEAR_BODY, 96072 },	      { WEAR_HEAD, 88301 },
-	{ WEAR_FEET, 1252 },	      { WEAR_HANDS, 77734 },
-	{ WEAR_ABOUT, 59302 },	      { WEAR_WAIST, 58401 },
-	{ WEAR_WRIST_R, 87548 },      { WEAR_WRIST_L, 87548 },
-	{ PRIMARY_WEAPON, 131200 },   { SECONDARY_WEAPON, 430 },
-	{ WEAR_EYES, 58387 },	      { WEAR_FACE, 91065 },
-	{ WEAR_EARRING_R, 58399 },    { WEAR_EARRING_L, 1252 },
-	{ WEAR_QUIVER, 1252 },	      { GUILD_INSIGNIA, 1252 },
-	{ WEAR_ATTACH_BELT_1, 1252 }, { WEAR_NONE, 0 }
+	{ WEAR_FINGER_R, 45510 },
+	{ WEAR_FINGER_L, 87511 },
+	{ WEAR_NECK_1, 44192 },
+	{ WEAR_NECK_2, 87704 },
+	{ WEAR_BODY, 96072 },
+	{ WEAR_HEAD, 88301 },
+	{ WEAR_FEET, 44192 },
+	{ WEAR_HANDS, 77734 },
+	{ WEAR_ABOUT, 59302 },
+	{ WEAR_WAIST, 58401 },
+	{ WEAR_WRIST_R, 87548 },
+	{ WEAR_WRIST_L, 87548 },
+	{ PRIMARY_WEAPON, 131200 },
+	{ SECONDARY_WEAPON, 430 },
+	{ WEAR_EYES, 58387 },
+	{ WEAR_FACE, 91065 },
+	{ WEAR_EARRING_R, 58399 },
+	{ WEAR_EARRING_L, 67269 },
+	/* Zero suppresses the fallback item until a replacement is selected. */
+	{ WEAR_QUIVER, 0 },
+	{ GUILD_INSIGNIA, 0 },
+	{ WEAR_ATTACH_BELT_1, 0 },
+	{ WEAR_NONE, 0 }
 };
 
 static const chaos_kit_item chaos_ranger_kit[] = {
