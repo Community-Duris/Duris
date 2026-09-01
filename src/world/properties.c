@@ -182,6 +182,8 @@ static bool persist_durisweb_hook_property(const char *key, float value)
 	char line[1024];
 	bool found = FALSE;
 	bool ok = TRUE;
+	bool wrote_any = FALSE;
+	bool ended_with_newline = TRUE;
 
 	if (!source)
 		return FALSE;
@@ -209,10 +211,21 @@ static bool persist_durisweb_hook_property(const char *key, float value)
 			ok = FALSE;
 			break;
 		}
+		wrote_any = TRUE;
+		ended_with_newline = line[strlen(line) - 1] == '\n';
 	}
 
 	if (ferror(source))
 		ok = FALSE;
+	if (ok && !found)
+	{
+		if (wrote_any && !ended_with_newline && fputc('\n', target) == EOF)
+			ok = FALSE;
+		if (ok && fprintf(target, "%s=%.3f\n", key, value) < 0)
+			ok = FALSE;
+		else if (ok)
+			found = TRUE;
+	}
 	if (fflush(target) != 0)
 		ok = FALSE;
 	if (fclose(target) != 0)
@@ -237,21 +250,36 @@ bool set_durisweb_hook_enabled(const char *hook_id, bool enabled)
 	if (!hook_id || !*hook_id ||
 	    snprintf(key, sizeof(key), DURISWEB_HOOK_PREFIX "%s", hook_id) >= (int)sizeof(key))
 		return FALSE;
+	if (!ws_is_durisweb_mud_gated_hook(hook_id))
+		return FALSE;
 
 	result = (struct property *)bsearch(key, duris_properties, properties_count,
 					    sizeof(struct property), key_property_comp);
 	if (!result)
-		return FALSE;
-
-	old_value = result->value;
-	result->value = new_value;
-	if (!persist_durisweb_hook_property(key, new_value))
 	{
-		result->value = old_value;
-		return FALSE;
+		if (properties_count >= MAX_PROPERTIES ||
+		    !persist_durisweb_hook_property(key, new_value))
+			return FALSE;
+
+		result = &duris_properties[properties_count++];
+		result->key = (char *)str_dup(key);
+		result->value = new_value;
+		result->old_value = new_value;
+		qsort(duris_properties, properties_count, sizeof(struct property), property_comp);
+	}
+	else
+	{
+		old_value = result->value;
+		result->value = new_value;
+		if (!persist_durisweb_hook_property(key, new_value))
+		{
+			result->value = old_value;
+			return FALSE;
+		}
+
+		result->old_value = new_value;
 	}
 
-	result->old_value = new_value;
 	apply_properties();
 	logit(LOG_WIZ, "DurisWeb service set %s to %.3f", key, new_value);
 	ws_broadcast_durisweb_hook_state();
@@ -406,7 +434,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 						    FNM_CASEFOLD) == 0)
 					{
 						duris_properties[i].value = new_value;
-						if (is_durisweb_hook_property(duris_properties[i].key))
+						if (is_durisweb_hook_property(
+							    duris_properties[i].key))
 							hook_changed = TRUE;
 						checked_snprintf(buf, 256, "%s set %s to %.3f",
 								 ch->player.name,
@@ -451,10 +480,13 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		}
 		else if (!strcmp(command, "revert") && (GET_LEVEL(ch) >= FORGER))
 		{
+			bool hook_changed = FALSE;
 			for (i = 0; i < properties_count; i++)
 			{
 				if (duris_properties[i].value != duris_properties[i].old_value)
 				{
+					if (is_durisweb_hook_property(duris_properties[i].key))
+						hook_changed = TRUE;
 					checked_snprintf(buf, 256,
 							 "%s reverted to %.3f from %.3f\r\n",
 							 duris_properties[i].key,
@@ -465,6 +497,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 				}
 			}
 			apply_properties();
+			if (hook_changed)
+				ws_broadcast_durisweb_hook_state();
 			snprintf(buf, 256, "%s reverted property changes.", ch->player.name);
 			wizlog(57, "%s", buf);
 			logit(LOG_WIZ, "%s", buf);

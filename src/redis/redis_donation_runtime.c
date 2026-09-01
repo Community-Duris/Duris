@@ -82,7 +82,8 @@ void check_donation_messages(void)
 
 	/* One line per pulse, not per event, so a disabled hook cannot spam the log. */
 	if (dropped_while_disabled > 0)
-		logit(LOG_SYS, "donation: dropped %d event(s); durisweb.hook.donation_delivery is disabled",
+		logit(LOG_SYS,
+		      "donation: dropped %d event(s); durisweb.hook.donation_delivery is disabled",
 		      dropped_while_disabled);
 #endif
 }

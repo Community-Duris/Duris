@@ -102,10 +102,12 @@ assert '{ "durisweb_hook_set", ws_cmd_durisweb_hook_set }' in HANDLERS
 properties = (SRC / "properties.c").read_text()
 setter = properties[properties.index("bool set_durisweb_hook_enabled") :]
 assert "persist_durisweb_hook_property" in setter
+assert "ws_is_durisweb_mud_gated_hook(hook_id)" in setter
 assert "apply_properties()" in setter
 assert "ws_broadcast_durisweb_hook_state()" in setter
 assert '#define PROPERTIES_FILE "lib/duris.properties"' in properties
 assert 'fopen(PROPERTIES_FILE ".new", "w")' in properties
+assert 'fprintf(target, "%s=%.3f\\n", key, value)' in properties
 assert 'rename(PROPERTIES_FILE ".new", PROPERTIES_FILE)' in properties
 assert setter.index("persist_durisweb_hook_property") < setter.index(
     "ws_broadcast_durisweb_hook_state"
@@ -174,7 +176,25 @@ admin_delete = HANDLERS[
     HANDLERS.index("void ws_cmd_rested_bonus")
 ]
 assert admin_delete.index('durisweb_hook_enabled("admin_delete_character")') < (
-    admin_delete.index("cJSON_GetObjectItem")
+    admin_delete.index('cJSON_GetObjectItem(data, "account")')
+)
+assert admin_delete.index('cJSON_GetObjectItem(data, "requestId")') < (
+    admin_delete.index('durisweb_hook_enabled("admin_delete_character")')
+)
+assert 'strlen(request_id_json->valuestring) > 128' in admin_delete
+disabled_delete = admin_delete[
+    admin_delete.index('if (!durisweb_hook_enabled("admin_delete_character"))') :
+    admin_delete.index('account_json = cJSON_GetObjectItem(data, "account")')
+]
+assert "ws_send_admin_delete_response(d, 0, NULL, NULL, request_id" in disabled_delete
+
+revert = properties[
+    properties.index('else if (!strcmp(command, "revert")') :
+    properties.index("else\n\t\t\tshow_help = 1;")
+]
+assert "is_durisweb_hook_property" in revert
+assert revert.index("apply_properties()") < revert.index(
+    "ws_broadcast_durisweb_hook_state()"
 )
 
 donation_runtime = (SRC / "redis_donation_runtime.c").read_text()

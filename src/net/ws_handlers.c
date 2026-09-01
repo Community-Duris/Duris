@@ -274,15 +274,14 @@ static void ws_broadcast_service_json(const char *json)
  * ------------------------------------------------------------------------ */
 
 static const char *const DURISWEB_MUD_GATED_HOOKS[] = {
-	"auction_new",	     "auction_bid",	  "auction_close",
-	"player_presence",   "mud_shutdown",	  "wholist",
-	"admin_delete_character", "donation_delivery",
+	"auction_new",	"auction_bid", "auction_close",		 "player_presence",
+	"mud_shutdown", "wholist",     "admin_delete_character", "donation_delivery",
 };
 
-#define DURISWEB_MUD_GATED_HOOK_COUNT                                                              \
+#define DURISWEB_MUD_GATED_HOOK_COUNT \
 	(sizeof(DURISWEB_MUD_GATED_HOOKS) / sizeof(DURISWEB_MUD_GATED_HOOKS[0]))
 
-static bool ws_is_durisweb_mud_gated_hook(const char *hook_id)
+bool ws_is_durisweb_mud_gated_hook(const char *hook_id)
 {
 	if (!hook_id)
 		return FALSE;
@@ -341,7 +340,8 @@ void ws_cmd_durisweb_hook_state(struct descriptor_data *d, cJSON * /*data*/)
 	{
 		if (d)
 		{
-			logit(LOG_COMM, "DurisWeb: hook_state requested on an unauthenticated socket");
+			logit(LOG_COMM,
+			      "DurisWeb: hook_state requested on an unauthenticated socket");
 			websocket_close(d, WS_CLOSE_POLICY_VIOLATION, "Not authorized");
 		}
 		return;
@@ -356,8 +356,8 @@ void ws_cmd_durisweb_hook_state(struct descriptor_data *d, cJSON * /*data*/)
 }
 
 static void ws_send_durisweb_hook_set_response(struct descriptor_data *d, const char *request_id,
-						const char *hook_id, bool enabled, bool success,
-						const char *error)
+					       const char *hook_id, bool enabled, bool success,
+					       const char *error)
 {
 	cJSON *result = cJSON_CreateObject();
 	char *json;
@@ -405,11 +405,10 @@ void ws_cmd_durisweb_hook_set(struct descriptor_data *d, cJSON *data)
 	hook_json = cJSON_GetObjectItem(data, "hook");
 	enabled_json = cJSON_GetObjectItem(data, "enabled");
 	if (!request_json || !cJSON_IsString(request_json) ||
-	    request_json->valuestring[0] == '\0' ||
-	    strlen(request_json->valuestring) > 128)
+	    request_json->valuestring[0] == '\0' || strlen(request_json->valuestring) > 128)
 	{
 		ws_send_durisweb_hook_set_response(d, NULL, NULL, FALSE, FALSE,
-						      "Invalid request id");
+						   "Invalid request id");
 		return;
 	}
 	request_id = request_json->valuestring;
@@ -417,14 +416,14 @@ void ws_cmd_durisweb_hook_set(struct descriptor_data *d, cJSON *data)
 	    !ws_is_durisweb_mud_gated_hook(hook_json->valuestring))
 	{
 		ws_send_durisweb_hook_set_response(d, request_id, NULL, FALSE, FALSE,
-						      "Unknown hook id");
+						   "Unknown hook id");
 		return;
 	}
 	hook_id = hook_json->valuestring;
 	if (!enabled_json || !cJSON_IsBool(enabled_json))
 	{
 		ws_send_durisweb_hook_set_response(d, request_id, hook_id, FALSE, FALSE,
-						      "Field enabled must be boolean");
+						   "Field enabled must be boolean");
 		return;
 	}
 	enabled = cJSON_IsTrue(enabled_json);
@@ -432,7 +431,7 @@ void ws_cmd_durisweb_hook_set(struct descriptor_data *d, cJSON *data)
 	if (!set_durisweb_hook_enabled(hook_id, enabled))
 	{
 		ws_send_durisweb_hook_set_response(d, request_id, hook_id, enabled, FALSE,
-						      "Hook state could not be persisted");
+						   "Hook state could not be persisted");
 		return;
 	}
 	ws_send_durisweb_hook_set_response(d, request_id, hook_id, enabled, TRUE, NULL);
@@ -2924,17 +2923,6 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 	P_char ch;
 	P_acct target_acct;
 
-	/* DurisWeb hook gate. Authorization is checked first so an unauthenticated
-	   caller learns nothing about hook configuration; a disabled hook then
-	   refuses explicitly rather than silently, because this is a request path
-	   whose caller is waiting on a response. */
-	if (d->durisweb_verified && !durisweb_hook_enabled("admin_delete_character"))
-	{
-		ws_send_admin_delete_response(d, 0, NULL, NULL, NULL,
-					      "admin_delete_character hook is disabled on the MUD");
-		return;
-	}
-
 	/* only durisweb service can call this */
 	if (!d->durisweb_verified)
 	{
@@ -2942,17 +2930,32 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 
-	if (!data)
+	if (!data || !cJSON_IsObject(data))
 	{
 		ws_send_admin_delete_response(d, 0, NULL, NULL, NULL, "Missing data");
 		return;
 	}
 
-	/* extract requestId first for all responses */
+	/* Extract and validate requestId before the hook gate so an authenticated
+	   caller receives a correlated refusal instead of timing out. */
 	request_id_json = cJSON_GetObjectItem(data, "requestId");
-	request_id = (request_id_json && cJSON_IsString(request_id_json)) ?
-			     request_id_json->valuestring :
-			     NULL;
+	if (!request_id_json || !cJSON_IsString(request_id_json) ||
+	    request_id_json->valuestring[0] == '\0' || strlen(request_id_json->valuestring) > 128)
+	{
+		ws_send_admin_delete_response(d, 0, NULL, NULL, NULL, "Invalid request id");
+		return;
+	}
+	request_id = request_id_json->valuestring;
+
+	/* This request path refuses explicitly when disabled because its caller is
+	   waiting on a response. Authorization and correlation validation above
+	   still precede disclosure of hook state. */
+	if (!durisweb_hook_enabled("admin_delete_character"))
+	{
+		ws_send_admin_delete_response(d, 0, NULL, NULL, request_id,
+					      "admin_delete_character hook is disabled on the MUD");
+		return;
+	}
 
 	account_json = cJSON_GetObjectItem(data, "account");
 	name_json = cJSON_GetObjectItem(data, "name");
