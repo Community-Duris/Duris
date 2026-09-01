@@ -410,7 +410,7 @@ static const chaos_kit_item chaos_warrior_kit[] = {
 	{ WEAR_NECK_2, 87704 },
 	{ WEAR_BODY, 96072 },
 	{ WEAR_HEAD, 88301 },
-	{ WEAR_FEET, 44192 },
+	{ WEAR_FEET, 44194 },
 	{ WEAR_HANDS, 77734 },
 	{ WEAR_ABOUT, 59302 },
 	{ WEAR_WAIST, 58401 },
@@ -714,6 +714,7 @@ static void apply_chaos_kit_items(int *vnums, const chaos_kit_item *items, bool 
 static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 {
 	obj->cost = 1;
+	REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 	if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON && obj->type != ITEM_SPELLBOOK &&
 	    obj->type != ITEM_LIGHT && obj->type != ITEM_TOTEM && IS_PC(ch))
 		SET_BIT(obj->extra_flags, ITEM_TRANSIENT);

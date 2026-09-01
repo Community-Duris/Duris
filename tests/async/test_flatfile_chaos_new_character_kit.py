@@ -239,13 +239,13 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                         "ring of the ultimium",
                         "blue ring",
                         "sapphire necklace",
+                        "boots of a",
+                        "multi-phased fish bone earring",
                     ):
                         require(
                             item_name in bag_contents,
                             f"CHAOS warrior kit omitted {item_name}:\n{bag_contents}",
                         )
-                    # VNUM 67269 carries ITEM_SECRET, so normal players cannot see it
-                    # in container listings; the source contract verifies that mapping.
                     require(
                         "new random object" not in bag_contents,
                         "CHAOS warrior kit still contains VNUM 1252",

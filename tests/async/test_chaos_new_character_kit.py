@@ -113,7 +113,7 @@ for slot_name, vnum in {
     "WEAR_FINGER_R": 45510,
     "WEAR_FINGER_L": 87511,
     "WEAR_NECK_1": 44192,
-    "WEAR_FEET": 44192,
+    "WEAR_FEET": 44194,
     "WEAR_EARRING_L": 67269,
 }.items():
     assert warrior[slot_values[slot_name]] == vnum
@@ -155,6 +155,10 @@ assert numeric and numeric[0].split()[0] == "15"
 
 # The bag is queued first. Every gear item is then queued into that bag, and
 # command input remains blocked until the serialized grant queue completes.
+chaos_preparer = NANNY.split("static void prepare_chaos_kit_item", 1)[1].split(
+    "static void load_chaos_new_character_kit", 1
+)[0]
+assert "REMOVE_BIT(obj->extra_flags, ITEM_SECRET);" in chaos_preparer
 chaos_loader = NANNY.split("static void load_chaos_new_character_kit", 1)[1].split(
     "void load_obj_to_newbies", 1
 )[0]
