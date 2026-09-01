@@ -150,8 +150,8 @@ if len(owners) == 1:
             flags = nums[0].split()
             values = nums[1].split()
             all_ok &= check("prototype is an ITEM_SPELLBOOK (type 33)", flags[0] == "33")
-            all_ok &= check("prototype is takeable and holdable (wear flags 16385)",
-                            flags[7] == "16385")
+            all_ok &= check("prototype is takeable, holdable, and belt-attachable (8404993)",
+                            flags[7] == "8404993")
             all_ok &= check(f"value[0] is TONGUE_MAGIC ({TONGUE_MAGIC})",
                             values[0] == str(TONGUE_MAGIC))
             all_ok &= check(f"value[1] is the BOOK_CLASSES mask ({mask})",

@@ -53,6 +53,7 @@ struct pending_creation_grant
 	uint32_t recipient_pid;
 	int32_t room;
 	bool to_room;
+	bool allow_pre_entry;
 };
 
 struct creation_grant_queue
@@ -60,6 +61,7 @@ struct creation_grant_queue
 	std::deque<pending_creation_grant> requests;
 	bool active = false;
 	bool blocks_actor_commands = false;
+	bool announce_on_completion = false;
 };
 
 std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
@@ -230,11 +232,15 @@ bool creation_grant_request_valid(const pending_creation_grant &request)
 		return false;
 	if (request.to_room)
 		return request.room > NOWHERE && request.room <= top_of_world;
-	P_char recipient = find_player_by_pid(request.recipient_pid);
-	if (!recipient)
+	if (!request.allow_pre_entry && !find_player_by_pid(request.recipient_pid))
+		return false;
+	if (request.allow_pre_entry && request.target_container_uid)
 		return false;
 	if (!request.target_container_uid)
 		return true;
+	P_char recipient = find_player_by_pid(request.recipient_pid);
+	if (!recipient)
+		return false;
 	P_obj container = find_item(request.target_container_uid);
 	return container && OBJ_CARRIED_BY(container, recipient) &&
 	       GET_ITEM_TYPE(container) == ITEM_CONTAINER;
@@ -392,11 +398,17 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	if (queue.requests.empty())
 	{
 		const bool blocks_actor_commands = queue.blocks_actor_commands;
+		const bool announce_on_completion = queue.announce_on_completion;
 		creation_grants.erase(queue_found);
 		if (blocks_actor_commands && actor->desc)
 		{
 			send_to_char("Your starter kit is ready.\r\n", actor);
 			actor->desc->prompt_mode = TRUE;
+		}
+		else if (announce_on_completion && actor->desc &&
+			 actor->desc->connected == CON_PLAYING)
+		{
+			send_to_char("Your Chaos Equipment has been prepared!!\r\n", actor);
 		}
 		return;
 	}
@@ -442,12 +454,13 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue)
 }
 
 bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room,
-			  P_obj target_container, bool to_room)
+			  P_obj target_container, bool to_room, bool allow_pre_entry)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !object || !object->obj_uid ||
 	    !OBJ_NOWHERE(object) ||
 	    (to_room ? (room <= NOWHERE || room > top_of_world) :
-		       (!recipient || IS_NPC(recipient) || GET_PID(recipient) <= 0)))
+		       (!recipient || IS_NPC(recipient) || GET_PID(recipient) <= 0)) ||
+	    (allow_pre_entry && (to_room || target_container || recipient != actor)))
 		return false;
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	auto [found, inserted] = creation_grants.try_emplace(actor_pid);
@@ -465,12 +478,20 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 			creation_grants.erase(found);
 		return false;
 	}
+	if (allow_pre_entry && (!queue.requests.empty() || queue.active))
+	{
+		if (inserted)
+			creation_grants.erase(found);
+		return false;
+	}
+	if (allow_pre_entry)
+		queue.announce_on_completion = true;
 	try
 	{
 		queue.requests.push_back(
 			{ object->obj_uid, target_container ? target_container->obj_uid : 0,
-			  recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0, room,
-			  to_room });
+			  recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0, room, to_room,
+			  allow_pre_entry });
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -861,12 +882,18 @@ bool item_movement_transaction_submit_batch(
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
 					  P_obj target_container)
 {
-	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false);
+	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false,
+				    false);
+}
+
+bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient)
+{
+	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true);
 }
 
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room)
 {
-	return queue_creation_grant(actor, object, NULL, room, NULL, true);
+	return queue_creation_grant(actor, object, NULL, room, NULL, true, false);
 }
 
 bool item_creation_grant_mark_blocking(P_char actor)

@@ -1,201 +1,176 @@
 #!/usr/bin/env python3
-"""Contracts for the level-56 class kits granted to new CHAOS characters."""
+"""Contracts for generated, policy-checked CHAOS starter-kit data."""
 
-from pathlib import Path
+from __future__ import annotations
+
 import re
+import sys
+from pathlib import Path
 
-from _paths import SRC
+from _paths import ROOT, SRC
 
-
-ROOT = Path(__file__).resolve().parents[2]
-NANNY = (SRC / "account" / "nanny.c").read_text()
-MOVEMENT = (SRC / "item" / "item_movement_transaction.c").read_text()
-DEFINES = (SRC / "core" / "defines.h").read_text()
-CLASS_NAMES = [
-    "Warrior",
-    "Ranger",
-    "Psionicist",
-    "Paladin",
-    "Anti-Paladin",
-    "Cleric",
-    "Monk",
-    "Druid",
-    "Shaman",
-    "Sorcerer",
-    "Necromancer",
-    "Conjurer",
-    "Rogue",
-    "Assassin",
-    "Mercenary",
-    "Bard",
-    "Thief",
-    "Warlock",
-    "MindFlayer",
-    "Alchemist",
-    "Berserker",
-    "Reaver",
-    "Illusionist",
-    "Blighter",
-    "Dreadlord",
-    "Ethermancer",
-    "Avenger",
-    "Theurgist",
-    "Summoner",
-    "Dragoon",
-]
-KIT_ARRAY_NAMES = {
-    "chaos_warrior_kit",
-    "chaos_ranger_kit",
-    "chaos_psionicist_kit",
-    "chaos_cleric_kit",
-    "chaos_druid_kit",
-    "chaos_shaman_kit",
-    "chaos_sorcerer_kit",
-    "chaos_necromancer_kit",
-    "chaos_conjurer_kit",
-    "chaos_rogue_kit",
-    "chaos_mercenary_kit",
-    "chaos_berserker_kit",
-    "chaos_illusionist_kit",
-    "chaos_ethermancer_kit",
-}
-
-
-# The normal starter path remains intact; only the durable first-entry branch
-# selects the CHAOS kit.
-creation = NANNY.split("if (!GET_LEVEL(ch))", 1)[1].split(
-    "else if (IS_SET(ch->specials.act2", 1
-)[0]
-assert "if (writeCharacter(ch, 1, NOWHERE))" in creation
-assert "if (chaos_mud_enabled())" in creation
-assert "load_chaos_new_character_kit(ch);" in creation
-assert "else\n\t\t\t\tload_obj_to_newbies(ch);" in creation
-assert creation.index("writeCharacter(ch, 1, NOWHERE)") < creation.index(
-    "load_chaos_new_character_kit(ch)"
+sys.path.insert(0, str(ROOT / "scripts"))
+from chaos_eq_analyze import (  # noqa: E402
+    area_file_names,
+    item_exclusion_reasons,
+    object_class_allowed,
+    parse_defines,
+    reconcile_area_objects,
 )
-assert creation.count("load_chaos_new_character_kit(ch)") == 1
-assert creation.count("load_obj_to_newbies(ch)") == 1
 
+NANNY = (SRC / "nanny.c").read_text(encoding="utf-8", errors="replace")
+DATA = (SRC / "chaos_eq_data.h").read_text(encoding="utf-8", errors="replace")
+CONFIG = (SRC / "chaos_config.c").read_text(encoding="utf-8", errors="replace")
+ENV_EXAMPLE = (ROOT / ".env.example").read_text(encoding="utf-8", errors="replace")
+DEFINES_PATH = ROOT / "src/core/defines.h"
+DEFINES = parse_defines(DEFINES_PATH)
 
-slot_values = {
-    name: int(value)
-    for name, value in re.findall(r"(?m)^#define\s+([A-Z][A-Z0-9_]*)\s+(-?\d+)\b", DEFINES)
+CLASS_NAMES = [
+    "Warrior", "Ranger", "Psionicist", "Paladin", "Anti-Paladin", "Cleric",
+    "Monk", "Druid", "Shaman", "Sorcerer", "Necromancer", "Conjurer",
+    "Rogue", "Assassin", "Mercenary", "Bard", "Thief", "Warlock",
+    "MindFlayer", "Alchemist", "Berserker", "Reaver", "Illusionist",
+    "Blighter", "Dreadlord", "Ethermancer", "Avenger", "Theurgist",
+    "Summoner", "Dragoon",
+]
+CLASS_IDS = {name: index for index, name in enumerate(CLASS_NAMES, 1)}
+
+# Equipment in the generated per-class arrays. HOLD is populated only by the
+# class fundamentals; support entries use WEAR_NONE and are still bag items.
+CORE_SLOTS = set(range(1, 18)) | set(range(19, 25)) | set(range(27, 31))
+SLOT_WEAR_BITS = {
+    **{slot: 1 << 1 for slot in (1, 2)},
+    **{slot: 1 << 2 for slot in (3, 4)},
+    5: 1 << 3, 6: 1 << 4, 7: 1 << 5, 8: 1 << 6, 9: 1 << 7,
+    10: 1 << 8, 11: 1 << 9, 12: 1 << 10, 13: 1 << 11,
+    14: 1 << 12, 15: 1 << 12, 16: 1 << 13, 17: 1 << 13,
+    18: 1 << 14, 19: 1 << 17, 20: 1 << 18, 21: 1 << 19,
+    22: 1 << 19, 23: 1 << 20, 24: 1 << 21, 25: 1 << 13,
+    26: 1 << 13, 27: 1 << 22, 28: 1 << 23, 29: 1 << 23,
+    30: 1 << 23, 31: 1 << 8, 32: 1 << 7, 33: 1 << 12,
+    34: 1 << 12, 35: 1 << 24, 36: 1 << 5, 37: 1 << 25,
+    38: 1 << 6, 39: 1 << 26, 40: 1 << 27, 41: 1 << 28, 42: 1 << 29,
 }
-array_matches = re.findall(
-    r"static const chaos_kit_item (chaos_[a-z]+_kit)\[\] = \{(.*?)\};",
-    NANNY,
+
+area_paths = area_file_names(ROOT / "areas/obj", ROOT / "areas/AREA")
+area_text = "\n".join(path.read_text(encoding="utf-8", errors="replace") for path in area_paths)
+active_vnums = {int(value) for value in re.findall(r"(?m)^#(\d+)$", area_text) if int(value) != 9999999}
+objects, area_diagnostics = reconcile_area_objects(area_paths, {}, DEFINES)
+assert not area_diagnostics["parse_errors"], area_diagnostics["parse_errors"]
+assert 96443 in active_vnums
+assert 7 in active_vnums
+
+array_matches = [
+    (name, body)
+    for name, body in re.findall(
+        r"static const chaos_kit_item (chaos_eq_(?:standard|enhanceable)_[a-z0-9_]+)\[\] = \{(.*?)\};",
+        DATA,
+        re.S,
+    )
+    if not name.endswith("_optional_slots")
+]
+assert len(array_matches) == 60, len(array_matches)
+array_names = {name for name, _ in array_matches}
+for profile in ("standard", "enhanceable"):
+    assert {f"chaos_eq_{profile}_{re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')}" for name in CLASS_NAMES} <= array_names
+
+all_data_vnums: set[int] = set()
+parsed_arrays: dict[str, list[tuple[int, int]]] = {}
+for array_name, body in array_matches:
+    pairs = re.findall(r"\{\s*(-?\d+|WEAR_NONE),\s*(\d+)\s*\}", body)
+    assert pairs and pairs[-1] == ("WEAR_NONE", "0"), array_name
+    parsed: list[tuple[int, int]] = []
+    seen_slots: set[int] = set()
+    for raw_slot, raw_vnum in pairs[:-1]:
+        slot = -1 if raw_slot == "WEAR_NONE" else int(raw_slot)
+        vnum = int(raw_vnum)
+        assert vnum != 1252, (array_name, vnum)
+        assert vnum in objects, (array_name, vnum)
+        all_data_vnums.add(vnum)
+        if slot >= 0:
+            assert slot in CORE_SLOTS or slot == 18, (array_name, slot)
+            assert slot not in seen_slots, (array_name, slot)
+            seen_slots.add(slot)
+            obj = objects[vnum]
+            assert obj.wear_flags & SLOT_WEAR_BITS[slot], (array_name, slot, vnum)
+        parsed.append((slot, vnum))
+    parsed_arrays[array_name] = parsed
+
+support_body = re.search(r"static const chaos_kit_item chaos_eq_support_consumables\[\] = \{(.*?)\};", DATA, re.S)
+assert support_body
+support_pairs = re.findall(r"\{\s*(-?\d+|WEAR_NONE),\s*(\d+)\s*\}", support_body.group(1))
+assert support_pairs and support_pairs[-1] == ("WEAR_NONE", "0")
+for raw_slot, raw_vnum in support_pairs[:-1]:
+    vnum = int(raw_vnum)
+    assert vnum != 1252
+    assert vnum in objects
+    all_data_vnums.add(vnum)
+
+optional_matches = re.findall(
+    r"static const chaos_kit_item chaos_eq_(?:standard|enhanceable)_optional_slots\[\] = \{(.*?)\};",
+    DATA,
     re.S,
 )
-assert {name for name, _ in array_matches} == KIT_ARRAY_NAMES
-
-kit_arrays: dict[str, dict[int, int]] = {}
-all_vnums = {96443}
-for array_name, body in array_matches:
-    pairs = re.findall(r"\{\s*([A-Z0-9_]+),\s*(\d+)\s*\}", body)
+assert len(optional_matches) == 2
+for body in optional_matches:
+    pairs = re.findall(r"\{\s*(-?\d+|WEAR_NONE),\s*(\d+)\s*\}", body)
     assert pairs and pairs[-1] == ("WEAR_NONE", "0")
-    items: dict[int, int] = {}
-    for slot_name, raw_vnum in pairs[:-1]:
-        slot = slot_values[slot_name]
+    for _, raw_vnum in pairs[:-1]:
         vnum = int(raw_vnum)
-        assert 0 <= slot < 43
-        assert vnum >= 0
-        assert slot not in items, (array_name, slot)
-        items[slot] = vnum
-        if vnum:
-            all_vnums.add(vnum)
-    kit_arrays[array_name] = items
+        assert vnum != 1252
+        assert vnum in objects
+        all_data_vnums.add(vnum)
 
+# Every core item must be free of item-level policy violations and usable by
+# the class owning the generated array. Fundamental support rows may carry the
+# explicitly allowed quest/no-sell markers, but never artifact/Ioun/unique or
+# race restrictions.
+allowed_fundamental_exclusions = {"item_transient", "item_norent", "item_noshow", "item_nosell", "quest_item"}
+fundamental_vnums = {7, 83336, 88315, 138533, 138534, 138535, 138536, 138537, 138538, 1734, 1736, 1737, 1738, 28971, 33705}
+for array_name, pairs in parsed_arrays.items():
+    profile = "standard" if "_standard_" in array_name else "enhanceable"
+    class_key = array_name.split(f"chaos_eq_{profile}_", 1)[1]
+    class_name = next(name for name in CLASS_NAMES if re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_") == class_key)
+    class_id = CLASS_IDS[class_name]
+    for slot, vnum in pairs:
+        obj = objects[vnum]
+        reasons = item_exclusion_reasons(obj, DEFINES, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 30, 31, 32, 36, 37])
+        if slot >= 0:
+            if vnum in fundamental_vnums:
+                assert not [reason for reason in reasons if reason not in allowed_fundamental_exclusions], (array_name, slot, vnum, reasons)
+            else:
+                assert not reasons, (array_name, slot, vnum, reasons)
+            assert object_class_allowed(obj, class_id, DEFINES), (array_name, class_name, vnum)
+        else:
+            assert vnum in fundamental_vnums, (array_name, vnum)
+            assert not [reason for reason in reasons if reason not in allowed_fundamental_exclusions], (array_name, vnum, reasons)
 
-# The warrior sample replaces the five selected slots and explicitly suppresses
-# the three unresolved slots so its mercenary fallback cannot reintroduce 1252.
-warrior = kit_arrays["chaos_warrior_kit"]
-for slot_name, vnum in {
-    "WEAR_FINGER_R": 45510,
-    "WEAR_FINGER_L": 87511,
-    "WEAR_NECK_1": 44192,
-    "WEAR_FEET": 44194,
-    "WEAR_EARRING_L": 67269,
-}.items():
-    assert warrior[slot_values[slot_name]] == vnum
-for slot_name in ("WEAR_QUIVER", "GUILD_INSIGNIA", "WEAR_ATTACH_BELT_1"):
-    assert warrior[slot_values[slot_name]] == 0
-warrior_final = dict(kit_arrays["chaos_mercenary_kit"])
-warrior_final.update(warrior)
-assert 1252 not in warrior_final.values()
+# Profile table contains the unused zero row plus one row per class.
+profiles = DATA.split("static const chaos_eq_profile chaos_eq_profiles[CLASS_COUNT + 1][2] = {", 1)[1].split("};", 1)[0]
+assert len(re.findall(r"\{\s*\{\s*(?:NULL|chaos_eq_[a-z0-9_]+)\s*\},\s*\{\s*(?:NULL|chaos_eq_[a-z0-9_]+)\s*\}\s*\},", profiles)) == 31
 
+# The loader builds a single nested tree, preserves spellbook population, and
+# selects standard vs strict-enhanceable data through the profile gate.
+chaos_code = NANNY.split("static void prepare_chaos_kit_item", 1)[1].split("void load_obj_to_newbies", 1)[0]
+assert "chaos_eq_profiles[class_id][profile_id]" in chaos_code
+assert "chaos_eq_support_consumables" in chaos_code
+assert "chaos_eq_enhanceable_optional_slots" in chaos_code
+assert "chaos_eq_standard_optional_slots" in chaos_code
+assert "obj_to_obj(obj, bag)" in chaos_code
+assert "AddSpellToSpellBook(ch, obj, j)" in chaos_code
+assert "has_eq_slot(ch, item->slot)" in chaos_code
+assert "can_char_use_item(ch, obj)" in chaos_code
+assert "REMOVE_BIT(obj->extra_flags, ITEM_SECRET);" in chaos_code
+assert chaos_code.count("item_creation_grant_submit_to_player_before_entry(ch, bag, ch)") == 1
+assert "item_creation_grant_submit_to_player(ch, obj, ch, bag)" not in chaos_code
+assert "item_creation_grant_mark_blocking(ch)" not in chaos_code
+assert "1252" not in chaos_code
+assert chaos_code.index("if (item_failure)") < chaos_code.index("item_creation_grant_submit_to_player_before_entry(ch, bag, ch)")
+# The master spellbook remains the dynamic all-spells object and is beltable.
+master = objects[7]
+assert master.object_type == DEFINES["ITEM_SPELLBOOK"]
+assert master.wear_flags & DEFINES["ITEM_ATTACH_BELT"]
+assert "CHAOS_EQ_PROFILE" in CONFIG
+assert "CHAOS_EQ_PROFILE=standard" in ENV_EXAMPLE
 
-# The 31 ordered profiles map the 30 class IDs plus the unused zero index.
-profiles_body = NANNY.split(
-    "static const chaos_kit_profile chaos_kit_profiles[CLASS_COUNT + 1] = {", 1
-)[1].split("};", 1)[0]
-profiles = re.findall(r"\{\s*(NULL|chaos_[a-z]+_kit),\s*(NULL|chaos_[a-z]+_kit)\s*\}", profiles_body)
-assert len(profiles) == 31
-assert profiles[0] == ("NULL", "NULL")
-assert all(fallback != "NULL" for _, fallback in profiles[1:])
-for class_id, (items_name, fallback_name) in enumerate(profiles[1:], 1):
-    assert fallback_name in kit_arrays
-    own = {} if items_name == "NULL" else kit_arrays[items_name]
-    fallback = kit_arrays[fallback_name]
-    final = dict(fallback)
-    final.update(own)
-    assert final, CLASS_NAMES[class_id - 1]
-    assert len(final) == len(set(final)), CLASS_NAMES[class_id - 1]
-
-
-# Every static VNUM is installed, and 96443 remains a container prototype.
-world_obj = (ROOT / "areas" / "world.obj").read_text(errors="replace")
-for vnum in all_vnums:
-    assert re.search(rf"(?m)^#{vnum}$", world_obj), vnum
-bag_entry = re.search(r"(?ms)^#96443$\n(.*?)(?=^#\d+$)", world_obj)
-assert bag_entry
-bag_lines = bag_entry.group(1).splitlines()
-numeric = [line for line in bag_lines if re.fullmatch(r"[-0-9 ]+", line.strip()) and line.strip()]
-assert numeric and numeric[0].split()[0] == "15"
-
-
-# The bag is queued first. Every gear item is then queued into that bag, and
-# command input remains blocked until the serialized grant queue completes.
-chaos_preparer = NANNY.split("static void prepare_chaos_kit_item", 1)[1].split(
-    "static void load_chaos_new_character_kit", 1
-)[0]
-assert "REMOVE_BIT(obj->extra_flags, ITEM_SECRET);" in chaos_preparer
-chaos_loader = NANNY.split("static void load_chaos_new_character_kit", 1)[1].split(
-    "void load_obj_to_newbies", 1
-)[0]
-assert "bag_vnum = 96443" in chaos_loader
-assert chaos_loader.index("item_creation_grant_submit_to_player(ch, bag, ch)") < chaos_loader.index(
-    "item_creation_grant_submit_to_player(ch, obj, ch, bag)"
-)
-assert chaos_loader.index("item_creation_grant_submit_to_player(ch, obj, ch, bag)") < chaos_loader.index(
-    "item_creation_grant_mark_blocking(ch)"
-)
-
-
-# A pending root container may be named by later queued grants, but it must be
-# the same recipient's earlier top-level container request. Once the child
-# starts, its creation command records the durable parent and root.
-target_helper = MOVEMENT.split("bool creation_grant_target_available", 1)[1].split(
-    "void discard_creation_queue", 1
-)[0]
-for token in (
-    "GET_ITEM_TYPE(container) != ITEM_CONTAINER",
-    "OBJ_CARRIED_BY(container, recipient)",
-    "OBJ_NOWHERE(container)",
-    "!request.target_container_uid",
-    "request.item_uid == container->obj_uid",
-    "request.recipient_pid == recipient_pid",
-):
-    assert token in target_helper
-
-payload = MOVEMENT.split("item_transfer_payload payload = {", 1)[1].split("};", 1)[0]
-assert "target_container ? target_runtime.root_item_uid" in payload
-assert "target_container ? target_container->obj_uid" in payload
-assert "target_container ? target_runtime.item_revision" in payload
-assert "adopted && target_container" not in payload
-
-queue = MOVEMENT.split("bool queue_creation_grant", 1)[1].split("void account_health", 1)[0]
-assert queue.index("creation_grants.try_emplace") < queue.index(
-    "creation_grant_target_available"
-) < queue.index("queue.requests.push_back")
-
-print("CHAOS new-character class kit contracts passed")
+print("CHAOS generated kit, restrictions, fundamentals, and one-root grant contracts passed")
