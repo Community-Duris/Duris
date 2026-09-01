@@ -87,6 +87,47 @@ static critical_command single_creation(uint8_t discriminator, uint64_t item_uid
 	return command;
 }
 
+static critical_command nested_single_creation(uint8_t discriminator, uint64_t item_uid,
+					       uint64_t player_pid, uint64_t system_revision,
+					       uint64_t player_revision, uint64_t container_uid)
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::system, 0, 0 };
+	payload.to_owner = { item_owner_type::player, player_pid, 0 };
+	payload.reason = item_transfer_reason::creation;
+	payload.reason_id = 12;
+	payload.expected_from_revision = system_revision;
+	payload.expected_to_revision = player_revision;
+	payload.selected_item_uid = item_uid;
+	payload.target_root_item_uid = container_uid;
+	payload.target_parent_item_uid = container_uid;
+	payload.expected_target_parent_revision = 1;
+	payload.item_count = 1;
+	payload.items[0] = { item_uid, item_uid,
+			     0,	       ITEM_TRANSFER_ABSENT_REVISION,
+			     601,      item_custody_state::absent };
+	player_item_snapshot item = {};
+	item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	item.equipment_slot = -1;
+	item.object_uid = item_uid;
+	item.vnum = 601;
+	item.name = "nested created item";
+	std::vector<uint8_t> item_blob;
+	require(player_item_snapshot_list_encode({ item }, &item_blob) ==
+				player_snapshot_codec_result::ok &&
+			item_blob.size() <= payload.item_blob.size(),
+		"could not encode nested creation snapshot");
+	payload.item_blob_size = static_cast<uint32_t>(item_blob.size());
+	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
+	critical_command command = {};
+	require(item_transfer_command_build(&command, operation(discriminator), payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build nested single-item creation command");
+	command.accepted_at_usec = 5;
+	return command;
+}
+
 static item_transfer_result result_of(const critical_apply_result &applied)
 {
 	item_transfer_result result = {};
@@ -332,6 +373,36 @@ int main(int argc, char **argv)
 					flatfile_item_repository_result::unchanged,
 			"prepared player item destruction was not idempotent");
 	}
+
+	const fs::path nested_root = root / "nested-creation";
+	fs::create_directories(nested_root / "domains");
+	fs::permissions(nested_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(nested_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	critical_apply_result nested_applied = flatfile_item_repository_apply(
+		nested_root.string(), single_creation(14, 110, 43, 0));
+	require(nested_applied.outcome == critical_apply_outcome::applied &&
+			nested_applied.error_code == 0,
+		"nested-creation container did not apply: outcome=" +
+			std::to_string(static_cast<unsigned int>(nested_applied.outcome)) +
+			" error=" + std::to_string(nested_applied.error_code));
+	nested_applied = flatfile_item_repository_apply(
+		nested_root.string(), nested_single_creation(15, 111, 43, 1, 1, 110));
+	require(nested_applied.outcome == critical_apply_outcome::applied &&
+			nested_applied.error_code == 0,
+		"nested item creation did not apply: outcome=" +
+			std::to_string(static_cast<unsigned int>(nested_applied.outcome)) +
+			" error=" + std::to_string(nested_applied.error_code));
+	uint64_t nested_owner_revision = 0;
+	std::vector<flatfile_item_ownership_record> nested_items;
+	require(flatfile_item_repository_load_owner(
+			nested_root.string(), { item_owner_type::player, 43, 0 },
+			&nested_owner_revision, &nested_items,
+			&error) == flatfile_item_repository_result::ok &&
+			nested_owner_revision == 2 && nested_items.size() == 2 &&
+			nested_items[0].item_uid == 110 && nested_items[0].parent_item_uid == 0 &&
+			nested_items[1].item_uid == 111 && nested_items[1].root_item_uid == 110 &&
+			nested_items[1].parent_item_uid == 110,
+		"nested item creation topology did not round trip: " + error);
 
 	const critical_command create = creation(1);
 	critical_apply_result applied = flatfile_item_repository_apply(root.string(), create);

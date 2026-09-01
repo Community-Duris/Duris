@@ -243,10 +243,11 @@ int main()
 	       collision.error_code == EEXIST);
 
 	item_uid_allocator_reset_for_tests();
-	assert(item_uid_allocator_reserve(connection, 3));
+	assert(item_uid_allocator_reserve(connection, 4));
 	root_uid = item_uid_allocator_next();
 	child_uid = item_uid_allocator_next();
 	const uint64_t container_uid = item_uid_allocator_next();
+	const uint64_t nested_created_uid = item_uid_allocator_next();
 	system_revision = owner_revision(connection, system);
 	player_one_revision = owner_revision(connection, player_one);
 	critical_apply_result reparent_items_created =
@@ -269,12 +270,33 @@ int main()
 	assert(item_transfer_command_decode_result(container_created.result_payload.data(),
 						   container_created.result_size,
 						   &container_result));
+	root_uid = nested_created_uid;
+	child_uid = nested_created_uid;
+	auto nested_creation = payload(system, player_one, item_transfer_reason::creation,
+				       container_result.from_owner_revision,
+				       container_result.to_owner_revision,
+				       ITEM_TRANSFER_ABSENT_REVISION, 1);
+	nested_creation.selected_item_uid = nested_created_uid;
+	nested_creation.target_root_item_uid = container_uid;
+	nested_creation.target_parent_item_uid = container_uid;
+	nested_creation.expected_target_parent_revision = 1;
+	critical_apply_result nested_created = apply(connection, 13, nested_creation);
+	assert(nested_created.outcome == critical_apply_outcome::applied);
+	item_transfer_result nested_created_result = {};
+	assert(item_transfer_command_decode_result(nested_created.result_payload.data(),
+						   nested_created.result_size,
+						   &nested_created_result));
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				   std::to_string(nested_created_uid) +
+				   " AND root_item_uid=" + std::to_string(container_uid) +
+				   " AND parent_item_uid=" + std::to_string(container_uid))
+					  .c_str()) == 1);
 
 	root_uid = container_uid - 2;
 	child_uid = container_uid - 1;
 	auto reparent = payload(player_one, player_one, item_transfer_reason::player_put,
-				container_result.to_owner_revision,
-				container_result.to_owner_revision, 1);
+				nested_created_result.to_owner_revision,
+				nested_created_result.to_owner_revision, 1);
 	reparent.selected_item_uid = root_uid;
 	reparent.target_root_item_uid = container_uid;
 	reparent.target_parent_item_uid = container_uid;
@@ -313,9 +335,9 @@ int main()
 
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 2));
-	assert(item_uid_allocator_next() == allocator_start + 5);
 	assert(item_uid_allocator_next() == allocator_start + 6);
-	for (uint8_t id = 1; id <= 12; ++id)
+	assert(item_uid_allocator_next() == allocator_start + 7);
+	for (uint8_t id = 1; id <= 13; ++id)
 	{
 		const std::string hex = operation_hex(id);
 		execute(connection,

@@ -211,6 +211,25 @@ bool creation_grant_request_valid(const pending_creation_grant &request)
 	       GET_ITEM_TYPE(container) == ITEM_CONTAINER;
 }
 
+bool creation_grant_target_available(const creation_grant_queue &queue, P_obj container,
+				     P_char recipient)
+{
+	if (!container || !recipient || GET_ITEM_TYPE(container) != ITEM_CONTAINER)
+		return false;
+	if (OBJ_CARRIED_BY(container, recipient))
+		return true;
+	if (!OBJ_NOWHERE(container))
+		return false;
+	const uint32_t recipient_pid = static_cast<uint32_t>(GET_PID(recipient));
+	return std::any_of(queue.requests.begin(), queue.requests.end(),
+			   [&](const pending_creation_grant &request)
+			   {
+				   return !request.to_room && !request.target_container_uid &&
+					  request.item_uid == container->obj_uid &&
+					  request.recipient_pid == recipient_pid;
+			   });
+}
+
 void discard_creation_queue(P_char actor, creation_grant_queue &queue)
 {
 	const bool blocks_actor_commands = queue.blocks_actor_commands;
@@ -261,7 +280,7 @@ void pump_creation_grants()
 }
 
 void creation_grant_completion(P_char actor, bool committed, const item_transfer_result &,
-			       unsigned int, const uint8_t *encoded, size_t encoded_size)
+			       unsigned int error_code, const uint8_t *encoded, size_t encoded_size)
 {
 	if (!actor || !encoded || encoded_size != sizeof(uint64_t) || IS_NPC(actor) ||
 	    GET_PID(actor) <= 0)
@@ -280,6 +299,8 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	{
 		if (object && OBJ_NOWHERE(object))
 			extract_obj(object, FALSE);
+		logit(LOG_FILE, "item creation grant did not commit (uid=%llu error=%u)",
+		      (unsigned long long)request.item_uid, error_code);
 		send_to_char(
 			"The ownership authority did not commit; the granted item was discarded.\r\n",
 			actor);
@@ -397,13 +418,18 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !object || !object->obj_uid ||
 	    !OBJ_NOWHERE(object) ||
 	    (to_room ? (room <= NOWHERE || room > top_of_world) :
-		       (!recipient || IS_NPC(recipient) || GET_PID(recipient) <= 0)) ||
-	    (target_container && (to_room || !OBJ_CARRIED_BY(target_container, recipient) ||
-				  GET_ITEM_TYPE(target_container) != ITEM_CONTAINER)))
+		       (!recipient || IS_NPC(recipient) || GET_PID(recipient) <= 0)))
 		return false;
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	auto [found, inserted] = creation_grants.try_emplace(actor_pid);
 	creation_grant_queue &queue = found->second;
+	if (target_container &&
+	    (to_room || !creation_grant_target_available(queue, target_container, recipient)))
+	{
+		if (inserted)
+			creation_grants.erase(found);
+		return false;
+	}
 	if (queue.requests.size() >= ITEM_MOVEMENT_PENDING_MAX)
 	{
 		if (inserted)
@@ -571,12 +597,11 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.expected_from_revision = adopted ? from_revision : system_revision,
 		.expected_to_revision = adopted ? to_revision : from_revision,
 		.selected_item_uid = root->obj_uid,
-		.target_root_item_uid = adopted && target_container ? target_runtime.root_item_uid :
-								      root->obj_uid,
-		.target_parent_item_uid = adopted && target_container ? target_container->obj_uid :
-									0,
-		.expected_target_parent_revision =
-			adopted && target_container ? target_runtime.item_revision : 0,
+		.target_root_item_uid = target_container ? target_runtime.root_item_uid :
+							   root->obj_uid,
+		.target_parent_item_uid = target_container ? target_container->obj_uid : 0,
+		.expected_target_parent_revision = target_container ? target_runtime.item_revision :
+								      0,
 		.item_count = static_cast<uint16_t>(items.size()),
 		.items = {},
 		.item_blob_size = 0,
