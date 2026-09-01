@@ -293,6 +293,60 @@ bool Guild::sub_money(int p, int g, int s, int c)
 	return TRUE;
 }
 
+/*
+ * Debit `amount` copper from the treasury, making change across the
+ * denominations.
+ *
+ * WHY THIS EXISTS. Guild::sub_money(p,g,s,c) requires the treasury to hold at
+ * least the requested amount of EACH denomination separately, so a guild with
+ * 10 platinum and no copper cannot pay one copper. That is fine for an
+ * authored price expressed in the coins you expect to hold, and wrong for any
+ * charge whose size is COMPUTED -- kingdom upkeep scales with territory, so it
+ * lands on arbitrary denominations. src/world/outposts.c:1650 already inherits
+ * the same trap.
+ *
+ * The ratios are uniform 10:1 and are the engine's own, taken from GET_MONEY
+ * (src/core/utils.h:467): copper + 10*silver + 100*gold + 1000*platinum.
+ *
+ * Arithmetic is done in long long: the treasury counters are unsigned int, so
+ * a 32-bit intermediate could overflow on a wealthy guild, and an unsigned
+ * intermediate would turn any shortfall into a huge positive number rather
+ * than a negative one.
+ */
+bool Guild::sub_copper(long amount)
+{
+	if (amount < 0)
+		return FALSE;
+	if (amount == 0)
+		return TRUE;
+
+	const long long held = static_cast<long long>(copper) + 10LL * silver +
+			       100LL * gold + 1000LL * platinum;
+	if (held < static_cast<long long>(amount))
+		return FALSE;
+
+	const long long before_p = platinum, before_g = gold, before_s = silver,
+			before_c = copper;
+
+	long long left = held - static_cast<long long>(amount);
+	platinum = static_cast<unsigned int>(left / 1000);
+	left %= 1000;
+	gold = static_cast<unsigned int>(left / 100);
+	left %= 100;
+	silver = static_cast<unsigned int>(left / 10);
+	left %= 10;
+	copper = static_cast<unsigned int>(left);
+
+	/* Report what actually left the vault, denomination by denomination, so the
+	 * ledger reads the same way a sub_money() line does. */
+	write_transaction_to_ledger(
+		"System", "withdrew",
+		coins_to_string(static_cast<int>(before_p - platinum), static_cast<int>(before_g - gold),
+				static_cast<int>(before_s - silver),
+				static_cast<int>(before_c - copper), "&+y"));
+	return TRUE;
+}
+
 void Guild::add_frags(P_char ch, long new_frags)
 {
 	if (IS_NPC(ch))

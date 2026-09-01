@@ -16,6 +16,7 @@
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
+#include "kingdom/kingdom.h"
 #include "core/utils.h"
 #include <arpa/telnet.h>
 #include <ctype.h>
@@ -1104,7 +1105,8 @@ const char *command[MAX_CMD] = {
 	"eqrate",
 	"zcheck",
 	"abort",
-	"\n" /* MAX_CMD = 858, MAX_CMD_LIST = 1000 */
+	"kingdom",
+	"\n" /* MAX_CMD = 859, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -3093,6 +3095,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_MLIST, STAT_DEAD + POS_PRONE, do_mlist, IMMORTAL, FALSE);
 	CMD_Y(CMD_ZCHECK, STAT_DEAD + POS_PRONE, do_zcheck, IMMORTAL, FALSE);
 	CMD_Y(CMD_ABORT, STAT_RESTING + POS_PRONE, do_abort, 0, TRUE);
+	CMD_N(CMD_KINGDOM, STAT_RESTING + POS_STANDING, do_kingdom, 0, FALSE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 

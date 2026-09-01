@@ -46,6 +46,7 @@
 #include "net/gmcp.h"
 #include "world/graph.h"
 #include "guild/guildhall.h"
+#include "kingdom/kingdom.h"
 #include "world/hardcore.h"
 #include "core/json_utils.h"
 #include "core/lookup_process.h"
@@ -726,6 +727,12 @@ void run_the_game(int port, int sslport)
 
 		Guildhall::initialize();
 		fprintf(stderr, "-- Done loading guildhalls\r\n");
+
+		/* AFTER the guildhalls: a realm's anchor is a hall's outside square,
+		 * and the orphan sweep needs them loaded to tell a hall that is really
+		 * gone from one that simply has not booted yet. */
+		kingdom_initialize();
+		fprintf(stderr, "-- Done loading kingdoms\r\n");
 
 		init_auction_houses();
 

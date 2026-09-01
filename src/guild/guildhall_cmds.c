@@ -15,6 +15,7 @@
 #include <string.h>
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
+#include "kingdom/kingdom.h"
 #include "guild/guildhall_db.h"
 #include "combat/justice.h"
 #include "world/map.h"
@@ -1421,6 +1422,20 @@ bool move_guildhall(Guildhall *gh, int vnum)
 bool guildhall_map_check(P_char ch)
 {
 	int rroom = ch->in_room;
+
+	/* A hall is a kingdom's anchor, so the entire 9x9 footprint it would
+	 * eventually need must be claimable HERE, at placement time (ruled
+	 * 2026-08-28). Returns TRUE unconditionally while kingdoms are disabled,
+	 * so hall placement is unchanged unless the feature is switched on. */
+	{
+		char kingdom_why[KINGDOM_WHY_LEN] = "";
+		if (!kingdom_footprint_check(rroom, GET_RACEWAR(ch), kingdom_why,
+					     sizeof(kingdom_why)))
+		{
+			send_to_char(kingdom_why, ch);
+			return FALSE;
+		}
+	}
 
 	// Dranfat
 	if (Guildhall::find_by_vnum(world[rroom].number))

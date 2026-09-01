@@ -282,6 +282,9 @@ class Guild
 	void kick(P_char victim);
 	void kick(P_char kicker, char *char_name);
 	bool sub_money(int p, int g, int s, int c);
+	/* Change-making debit in copper. Prefer this for any charge whose size is
+	 * computed rather than authored -- sub_money() cannot make change. */
+	bool sub_copper(long amount);
 
 	void challenge(P_char member, P_char victim);
 	void deposit(P_char member, int p, int g, int s, int c);

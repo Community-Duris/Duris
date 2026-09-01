@@ -890,6 +890,7 @@ extern unsigned int game_locked_level;
 #define CMD_EQRATE 855 // Rate equipment prototypes by wear slot
 #define CMD_ZCHECK 856 // Read-only zone audit for builders
 #define CMD_ABORT 857
+#define CMD_KINGDOM 858
 
 /* The CMD_s below are not real commands, they are used in item special procedures to identify
  * when wearer gets hit in melee or nuked and when an item is poofing on ground.

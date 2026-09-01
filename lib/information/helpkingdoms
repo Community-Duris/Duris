@@ -1,0 +1,138 @@
+KINGDOMS
+--------
+Guild territory on the overhead map
+
+Syntax:   kingdom <subcommand>
+
+A guild that has raised a guildhall may go further and become a KINGDOM:
+a guild that holds land. Territory is measured in map squares, it is
+claimed one square at a time, it costs coin to take and coin to keep, and
+it can be lost again if the treasury runs dry.
+
+Kingdoms are an optional system. If your server has not enabled them the
+command will say so, and nothing below applies.
+
+
+THE SHAPE OF A REALM
+--------------------
+A realm is not drawn freehand. It grows outward from the guildhall
+entrance in four concentric rings:
+
+        ring 1     3x3      8 squares
+        ring 2     5x5     16 squares
+        ring 3     7x7     24 squares
+        ring 4     9x9     32 squares
+
+That is 80 claimable squares, plus the hall's own square in the middle -
+81 in all, a nine-by-nine block with the hall at its heart.
+
+The order is fixed. Within a ring, land is taken CLOCKWISE beginning due
+NORTH of the hall, and a ring must be finished before the next one opens.
+You cannot skip ahead, reach for a corner, or take a square out of turn.
+'kingdom claim' always takes the next square in the sequence, and
+'kingdom map' shows you which one that is.
+
+                77 78 79 80 49 50 51 52 53
+                76 46 47 48 25 26 27 28 54
+                75 45 23 24  9 10 11 29 55
+                74 44 22  8  1  2 12 30 56
+                73 43 21  7  @  3 13 31 57
+                72 42 20  6  5  4 14 32 58
+                71 41 19 18 17 16 15 33 59
+                70 40 39 38 37 36 35 34 60
+                69 68 67 66 65 64 63 62 61
+
+The @ is your hall. The numbers are the order the squares are taken in.
+
+
+WHERE A REALM MAY STAND
+-----------------------
+Every one of the 80 squares must be legal ground BEFORE THE GUILDHALL IS
+BUILT - not later, when you get round to claiming it. A hall may only be
+raised where a complete realm could one day fit, so a site that suits the
+hall itself can still be refused because square sixty-one falls in open
+water or off the edge of the map.
+
+The rules, each checked against every square:
+
+  - There must be a room there. Much of the world map is empty space
+    with nothing behind it, and empty space cannot be claimed.
+  - The ground must be settleable. Open water and impassable terrain
+    are out.
+  - THE UNDERDARK IS CLOSED TO REALMS ENTIRELY, for every race and
+    every alignment. There are no underground kingdoms.
+  - Not too close to a hometown, so a realm cannot wall a city in.
+  - Not too close to a zone entrance, so a realm cannot bottle up the
+    way into an area.
+  - Clear of every other realm. Two realms may not even touch: there is
+    always at least one unclaimed square between them.
+
+'kingdom survey' judges the ground you are standing on and reports,
+square by square, exactly what would refuse you.
+
+
+TAKING AND LOSING LAND
+----------------------
+Claiming costs coin from the guild treasury, and each square costs more
+than the one before it, so the outer ring is far dearer than the first.
+The prices are set by your server.
+
+Holding land costs coin as well. Upkeep is charged on every square you
+own, every cycle. If the treasury cannot pay, the realm decays in this
+order:
+
+  1. The guards go home.
+  2. The harvest nodes fall dormant.
+  3. One OUTER RING is lost per further missed payment.
+
+Paying stops the slide wherever it has reached, and the guards and the
+nodes come back. LAND ALREADY LOST DOES NOT RETURN ON PAYMENT - a ring
+that has reverted must be claimed again from scratch, at full price.
+
+'kingdom abandon' gives up your most recent square voluntarily.
+Territory always stays contiguous, so it is always the last square taken
+that goes first.
+
+
+GUARDS
+------
+A realm may keep guards in proportion to its size - one for every few
+squares held - so a full realm supports a real garrison and a young one
+supports very little. They stand on your land. They do not follow you
+and they are not a bodyguard.
+
+
+RESOURCES
+---------
+Owned squares carry harvest nodes, and what a node yields depends on the
+ground it stands on. What you gather goes into the realm's own stores.
+
+BE CLEAR ABOUT THIS: RESOURCES PUT INTO A REALM CANNOT BE TAKEN OUT
+AGAIN. They are not the guild bank and they are not spending money. They
+exist to be spent on the realm itself, and once given they are given.
+
+Nodes lie dormant while upkeep is unpaid.
+
+
+SUBCOMMANDS
+-----------
+kingdom            - with no argument, your realm's status.
+kingdom status     - territory, rings, treasury standing, guards, stores.
+kingdom map        - the nine-by-nine grid: what you hold, what is next,
+                     and what is blocked.
+kingdom survey     - judge the ground you are standing on as a site for a
+                     realm, square by square, before committing to it.
+kingdom convert    - turn your guild into a kingdom. This grants NO land,
+                     only the right to start claiming it.
+kingdom claim      - take the next square in the sequence.
+kingdom abandon    - give up your most recent square.
+kingdom harvest    - work the node on the square you are standing on.
+kingdom deposit    - put gathered resources into the realm's stores.
+kingdom guards     - review the garrison.
+kingdom help       - this text.
+
+'kingdom c' and 'kingdom s' are ambiguous - c is shared by claim and
+convert, s by status and survey - and will ask which you meant rather
+than guess, because each pair contains something that spends money.
+
+See also: SOCIETY, GUILDHALL
