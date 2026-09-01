@@ -250,22 +250,22 @@ hardened dormant persistence without reconnecting the normal runtime feature:
 
 ### Runtime state
 
-[`src/combat/siege.h`](../../../src/combat/siege.h#L4) contains a commented-out
+`src/combat/siege.h` contained a commented-out
 `SIEGE_ENABLED` definition. The normal build does not define it elsewhere.
 
 The following external entry points are all guarded by `#ifdef SIEGE_ENABLED`:
 
 | Runtime seam | Current location | Disabled behavior |
 | --- | --- | --- |
-| Town and siege boot | [`src/net/comm.c`](../../../src/net/comm.c#L762) | Does not load towns, siege objects, or special procedures |
-| Town deployment on zone reset | [`src/world/db.c`](../../../src/world/db.c#L3933) | Does not deploy guards or cavalry |
-| Gate movement checks | [`src/cmd/actmove.c`](../../../src/cmd/actmove.c#L726) | Does not block invaders with siege gates |
-| Attacking siege objects | [`src/cmd/actoff.c`](../../../src/cmd/actoff.c#L767) and [`src/cmd/actoff.c`](../../../src/cmd/actoff.c#L1727) | `hit` and `kill` cannot enter object combat |
-| Object-combat pulse | [`src/combat/fight.c`](../../../src/combat/fight.c#L9479) | No siege attacks execute |
-| Immortal `add` command | [`src/cmd/interp.c`](../../../src/cmd/interp.c#L2608) | Handler is not registered |
-| `IS_DESTROYING` | [`src/core/utils.h`](../../../src/core/utils.h#L738) | Expands to `false` |
+| Town and siege boot | `src/net/comm.c` | Does not load towns, siege objects, or special procedures |
+| Town deployment on zone reset | `src/world/db.c` | Does not deploy guards or cavalry |
+| Gate movement checks | `src/cmd/actmove.c` | Does not block invaders with siege gates |
+| Attacking siege objects | `src/cmd/actoff.c` | `hit` and `kill` cannot enter object combat |
+| Object-combat pulse | `src/combat/fight.c` | No siege attacks execute |
+| Immortal `add` command | `src/cmd/interp.c` | Handler is not registered |
+| `IS_DESTROYING` | `src/core/utils.h` | Expands to `false` |
 
-Despite that, [`src/Makefile`](../../../src/Makefile#L366) still links `siege.o`. The current
+Despite that, `src/Makefile` still links `siege.o`. The current
 default binary contains `init_towns`, `init_siege`, `warmaster`, `check_deploy`, `do_add`,
 siege SQL functions, and `siege_objects`. Disassembly found no external calls into the
 guarded feature entry points; calls among functions inside `siege.c`, including
@@ -273,13 +273,13 @@ guarded feature entry points; calls among functions inside `siege.c`, including
 
 The main source files contain 2,760 lines:
 
-- [`src/combat/siege.c`](../../../src/combat/siege.c): 2,718 lines
-- [`src/combat/siege.h`](../../../src/combat/siege.h): 42 lines
+- `src/combat/siege.c`: 2,718 lines
+- `src/combat/siege.h`: 42 lines
 
 ### What the implemented code actually does
 
 The live-looking implementation is not the kingdom design described by the help file.
-[`warmaster`](../../../src/combat/siege.c#L1743) finds a `town` by current zone and uses player
+`warmaster` finds a `town` by current zone and uses player
 surname rank to:
 
 - donate item value into town resources;
@@ -290,7 +290,7 @@ surname rank to:
 It does not use guild membership, kingdom membership, kingdom land, virtual troop
 movement, declarations of war, conquest, or the map ownership model.
 
-[`lib/information/helpkingdoms`](../../../lib/information/helpkingdoms#L2) calls itself a
+`lib/information/helpkingdoms` called itself a
 "Duris Kingdom Code Proposal" and describes systems which were never connected to the
 runtime.
 
@@ -302,11 +302,11 @@ Both supported persistence modes still carry feature code:
   `src/combat/siege.c`.
 - Under `__NO_MYSQL__`, `src/sql/sql_player.c` maintains a canonical `metadata/towns`
   authority, imports `Players/towns` when present, and otherwise seeds from the tracked
-  [`defaults/towns`](../../../defaults/towns) file.
+  `defaults/towns` file.
 - Under `__NO_MYSQL__`, `src/combat/siege.c` maintains a checksummed `metadata/siege` authority
   and imports the legacy `Players/siege` serialization.
-- [`tests/async/test_flatfile_towns.py`](../../../tests/async/test_flatfile_towns.py) and
-  [`tests/async/test_flatfile_siege.py`](../../../tests/async/test_flatfile_siege.py), with
+- `tests/async/test_flatfile_towns.py` and
+  `tests/async/test_flatfile_siege.py`, with
   their C++ harnesses, exercise these paths and have dedicated CI steps.
 
 The generic flat-file store, authority locking, backup mechanism, player/item custody
@@ -455,7 +455,7 @@ Do not remove these unrelated live concepts:
 - ordinary hometown logic;
 - guilds and associations.
 
-The active administrator text in [`src/guild/assocs.c`](../../../src/guild/assocs.c#L1784) should change
+The active administrator text in `src/guild/assocs.c` should change
 from "Standard Guilds and Kingdoms" to "Standard Guilds" because it currently advertises
 a system that does not exist.
 

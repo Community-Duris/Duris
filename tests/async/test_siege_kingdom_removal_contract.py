@@ -104,6 +104,21 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         quality = (ROOT / ".github/workflows/quality.yml").read_text()
         self.assertNotRegex(quality, r"test_flatfile_(?:towns|siege)\.py")
 
+    def test_retirement_report_local_links_resolve(self) -> None:
+        report_path = (
+            ROOT
+            / "docs/ongoing-projects/future/siege-kingdom-removal-research-2026-08-29.md"
+        )
+        links = re.findall(r"\]\(([^)]+)\)", report_path.read_text())
+        broken = []
+        for link in links:
+            target = link.split("#", 1)[0]
+            if not target or "://" in target or target.startswith("mailto:"):
+                continue
+            if not (report_path.parent / target).resolve().exists():
+                broken.append(link)
+        self.assertEqual(broken, [])
+
     def test_help_and_command_surfaces_are_retired_in_place(self) -> None:
         self.assertFalse((ROOT / "lib/information/helpkingdoms").exists())
 
