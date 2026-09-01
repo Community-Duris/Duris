@@ -508,7 +508,7 @@ static void load_chaos_new_character_kit(P_char ch)
 	}
 }
 
-static void schedule_chaos_new_character_kit_before_entry(P_char ch)
+void schedule_chaos_new_character_kit_before_entry(P_char ch)
 {
 	if (!ch || !chaos_mud_enabled())
 		return;

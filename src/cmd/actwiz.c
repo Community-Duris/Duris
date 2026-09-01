@@ -8212,6 +8212,7 @@ void do_approve(P_char ch, char *arg, int /*cmd*/)
 				SEND_TO_Q("\n*** PRESS RETURN:\n", d1);
 				STATE(d1) = CON_WELCOME;
 				approve_name(GET_NAME(d1->character));
+				schedule_chaos_new_character_kit_before_entry(d1->character);
 
 				return;
 			}

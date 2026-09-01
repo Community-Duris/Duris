@@ -9,6 +9,10 @@ import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 NANNY = (ROOT / "src/account/nanny.c").read_text(encoding="utf-8", errors="replace")
+ACTWIZ = (ROOT / "src/cmd/actwiz.c").read_text(encoding="utf-8", errors="replace")
+PROTOTYPES = (ROOT / "src/core/prototypes.h").read_text(
+    encoding="utf-8", errors="replace"
+)
 TRANSACTION_C = (ROOT / "src/item/item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace"
 )
@@ -24,9 +28,10 @@ enter_game = NANNY.split("void enter_game", 1)[1].split("void reconnect", 1)[0]
 chaos_loader = NANNY.split("static void load_chaos_new_character_kit", 1)[1].split(
     "void load_obj_to_newbies", 1
 )[0]
-schedule_helper = NANNY.split("static void schedule_chaos_new_character_kit_before_entry", 1)[1].split(
+schedule_helper = NANNY.split("void schedule_chaos_new_character_kit_before_entry", 1)[1].split(
     "void load_obj_to_newbies", 1
 )[0]
+approval_success = ACTWIZ.split("void do_approve", 1)[1].split("void do_invite", 1)[0]
 
 # The grant must have an explicit, non-blocking pre-entry mode.
 assert "item_creation_grant_submit_to_player_before_entry" in TRANSACTION_H
@@ -43,6 +48,15 @@ assert schedule_helper.index("writeCharacter(ch, 2, NOWHERE)") < schedule_helper
 assert "load_chaos_new_character_kit(ch);" not in enter_game
 assert "item_creation_grant_submit_to_player_before_entry(ch, bag, ch)" in chaos_loader
 assert "item_creation_grant_mark_blocking(ch)" not in chaos_loader
+
+# Approval mode must withhold the grant while a character waits, then schedule
+# it only after staff records a successful approval.
+approval_call = "schedule_chaos_new_character_kit_before_entry(d1->character)"
+assert "void schedule_chaos_new_character_kit_before_entry(P_char);" in PROTOTYPES
+assert approval_call in approval_success
+assert approval_success.index("approve_name(GET_NAME(d1->character))") < approval_success.index(
+    approval_call
+)
 
 # A pre-entry direct-to-player grant may validate by durable PID ownership, but
 # target-container grants must not silently inherit this exception.

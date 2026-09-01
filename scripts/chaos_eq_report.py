@@ -200,7 +200,7 @@ def render_method(analysis: dict[str, Any], catalog: dict[str, Any]) -> list[str
         "- Provide two operator-selectable profiles: `standard` (observed high-end gear plus explicit class fundamentals) and `enhanceable` (strict boot-enhance-index-compatible alternatives).",
         "- Begin the Chaos grant after rules acceptance and the durable character baseline, before `CON_RMOTD`/`CON_PLAYING`, so persistence overlaps the last creation screens.",
         "- Do not block commands for this pre-entry grant; announce `Your Chaos Equipment has been prepared!!` only after durable completion and entry.",
-        "- The approval state `CON_ACCEPTWAIT` remains present but `approve_mode` is currently 0; if approval is re-enabled, schedule only from its approved transition rather than granting rejected characters.",
+        "- When approval mode is enabled, withhold Chaos preparation in `CON_ACCEPTWAIT` and schedule it only from the successful staff approval transition.",
         "- Keep normal equipment portable at the item-data level and apply runtime `can_char_use_item()` and body-slot checks before putting an object in the bag.",
         "- Treat a missing object, nesting failure, or grant-queue failure as a fail-closed kit failure; skip individual objects rejected by runtime usability or unavailable race/body slots and continue with the remaining kit.",
         "- Keep consumables inside the bag, with bounded starter quantities based on high-level carried/container usage rather than copying observed stockpiles.",
