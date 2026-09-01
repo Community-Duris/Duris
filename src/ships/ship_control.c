@@ -1,3 +1,68 @@
+/*****************************************************
+ * ship_control.c
+ *
+ * The bridge: player commands for sailing and fighting a ship
+ *****************************************************/
+
+/*
+ * OVERVIEW -- where this file sits in the ship system
+ * ---------------------------------------------------
+ * Everything a player types while standing at a ship's control panel.  This
+ * file is almost entirely input handling: it validates, reports, and then
+ * calls the module that owns the actual behaviour.  If you are looking for
+ * how something *works*, it is not here -- follow the call out.
+ *
+ * The single entry point is ship_panel_proc() at the bottom of the file.  It
+ * is the special procedure attached to ShipData::panel, and every command in
+ * this file is reached through its dispatch.  Read it first.
+ *
+ * Command map
+ * -----------
+ *   order heading/speed         order_heading(), order_speed()
+ *                               -> set setheading/setspeed only; the ship
+ *                                  converges over several ticks
+ *   order sail                  order_sail() -> ship_auto.c autopilot
+ *   order maneuver              order_maneuver()  slow harbour movement
+ *   order undock / anchor       order_undock(), order_anchor()
+ *   order ram [off]             order_ram() -> ship_combat.c resolves impact
+ *   order fly / land            order_fly(), order_land() -> ship_base.c
+ *   order jettison / salvage    -> ship_utils.c cargo helpers
+ *   order signal                order_signal()  flag-hoist to a friendly ship
+ *   lock <id> / off             do_lock_target()
+ *   fire <arc|slot>             do_fire() -> do_fire_arc()/do_fire_weapon()
+ *                                  -> ship_combat.c fire_weapon()
+ *   scan [<id>]                 do_scan() -> ship_combat.c scan_target()
+ *   look ship/status            look_ship()      the main bridge display
+ *   look cargo/crew/contacts    look_cargo(), look_crew(), look_contacts()
+ *   look tactical [<x> <y>]     look_tactical_map()
+ *   look sight <slot>           look_weapon() -> ship_combat.c weaponsight()
+ *   look weaponspec/commands    look_weaponspec(), do_commands_help()
+ *   get money / coins           claim_coffer()
+ *
+ * Who may steer
+ * -------------
+ * Steering and gunnery are restricted to the ship's owner, anyone in the
+ * owner's group, or an immortal.  The check appears in three places
+ * (ship_panel_proc()'s CMD_ORDER branch, do_fire(), do_lock_target()) because
+ * each is reachable independently; keep them in step.  The "look" commands
+ * are open to any passenger.
+ *
+ * Orders are requests, not actions
+ * --------------------------------
+ * order_heading() and order_speed() do not turn or accelerate the ship; they
+ * write setheading/setspeed, and ship_activity() (ship_base.c) closes the gap
+ * a little each tick using get_next_heading_change() and
+ * get_next_speed_change() (ship_utils.c).  This is why a ship keeps swinging
+ * after the order is given, and why turning hard costs speed.
+ *
+ * The shared contacts[] buffer
+ * ----------------------------
+ * Every command that names a ship by its two-letter designation resolves it
+ * by calling getcontacts() and scanning the result.  contacts[] is a single
+ * global refilled on every call (see ship_utils.c), so a contact index never
+ * survives a call into another module -- always re-derive it.
+ */
+
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -23,6 +88,21 @@ extern char arg2[MAX_STRING_LENGTH];
 extern char arg3[MAX_STRING_LENGTH];
 extern char tmp_str[MAX_STRING_LENGTH];
 
+/*
+ * Half-width, in map cells, of the tactical display's widest reach: it draws
+ * columns x-11..x+11 and rows (100-y)-7..(100-y)+7.  Any centre coordinate
+ * kept this far from the edges of the 101x101 tactical_map[] keeps every one
+ * of those reads in bounds.
+ */
+#define MAP_VIEW_MARGIN 11
+
+/*
+ * "order sail <heading> <rooms>" -- hand the helm to the autopilot.
+ *
+ * Refuses while anchored or anywhere but open sea, then defers to
+ * engage_autopilot() (ship_auto.c), which parses the arguments.  Always
+ * returns TRUE.
+ */
 int order_sail(P_char ch, P_ship ship, char *arg1, char *arg2)
 {
 	if (SHIP_ANCHORED(ship))
@@ -38,6 +118,13 @@ int order_sail(P_char ch, P_ship ship, char *arg1, char *arg2)
 	return engage_autopilot(ch, ship, arg1, arg2);
 }
 
+/*
+ * "order jettison cargo [<crates>]" -- throw cargo overboard.
+ *
+ * Omitting the count jettisons everything.  Thin command wrapper around the
+ * jettison_cargo(P_char, P_ship, int) worker in ship_utils.c; note the two
+ * overloads share a name and differ only in the last parameter.
+ */
 int jettison_cargo(P_char ch, P_ship ship, char *arg)
 {
 	int crates = INT_MAX;
@@ -46,6 +133,11 @@ int jettison_cargo(P_char ch, P_ship ship, char *arg)
 	return jettison_cargo(ch, ship, crates);
 }
 
+/*
+ * "order jettison contraband [<crates>]" -- throw contraband overboard,
+ * usually with a customs cutter in sight.  Omitting the count jettisons the
+ * lot.  Wrapper around the worker in ship_utils.c.
+ */
 int jettison_contraband(P_char ch, P_ship ship, char *arg)
 {
 	int crates = INT_MAX;
@@ -54,6 +146,12 @@ int jettison_contraband(P_char ch, P_ship ship, char *arg)
 	return jettison_contraband(ch, ship, crates);
 }
 
+/*
+ * "order salvage [<crates>]" -- fish floating crates out of the water.
+ *
+ * The ship must be stopped.  Omitting the count takes as many as will fit.
+ * Wrapper around the worker in ship_utils.c.
+ */
 int salvage_cargo(P_char ch, P_ship ship, char *arg)
 {
 	if (ship->speed > 0)
@@ -69,6 +167,16 @@ int salvage_cargo(P_char ch, P_ship ship, char *arg)
 	return salvage_cargo(ch, ship, crates);
 }
 
+/*
+ * "order undock" -- start the countdown to leaving port (or weighing anchor).
+ *
+ * Checks the ship can actually sail: sails intact, not immobilised, and
+ * whatever check_undocking_conditions() requires (ship_base.c).  Then stamps
+ * the ship's race from the captain's racewar side, which is what decides who
+ * it is hostile to at sea and which flag other ships see, and starts the
+ * T_UNDOCK timer -- 30 ticks normally, 2 for an immortal.  ship_activity()
+ * completes the undock when it expires.
+ */
 int order_undock(P_char ch, P_ship ship)
 {
 	if (!SHIP_DOCKED(ship) && !SHIP_ANCHORED(ship))
@@ -127,6 +235,20 @@ int order_undock(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "order maneuver <N/E/S/W>" -- creep one room in a compass direction.
+ *
+ * The slow, careful move used to get in and out of harbours, as opposed to
+ * sailing under way.  Requires the ship undocked, on the water, mobile, doing
+ * 20 or less, and off maneuver cooldown; the crew must also have stood down
+ * from battlestations before it will enter a dockable room or leave the map.
+ * Deliberately refuses to work in open ocean -- that is what heading and
+ * speed are for.
+ *
+ * Stops the ship, moves both the hull object and ship->location, refreshes
+ * everyone's outside view, and docks (with a contraband inspection) if the
+ * destination is a dockable room.  Cancels any autopilot.  Always TRUE.
+ */
 int order_maneuver(P_char ch, P_ship ship, char *arg)
 {
 	if (SHIP_DOCKED(ship))
@@ -241,6 +363,13 @@ int order_maneuver(P_char ch, P_ship ship, char *arg)
 	}
 }
 
+/*
+ * "order anchor" -- drop anchor and let the crew start repairs.
+ *
+ * Refused while sinking, flying or docked.  Stops the ship, cancels the
+ * autopilot and raises the ANCHOR flag; ship_activity() then runs repairs
+ * each tick for as long as the ship stays anchored.  Always TRUE.
+ */
 int order_anchor(P_char ch, P_ship ship)
 {
 	if (SHIP_SINKING(ship))
@@ -277,6 +406,14 @@ int order_anchor(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "order ram" / "order ram off" -- arm or disarm ramming.
+ *
+ * Arming only sets the RAMMING flag and braces the crew; the actual impact is
+ * resolved by try_ram_ship() (ship_combat.c) when the ship reaches the
+ * target.  Requires a locked target, at least speed 20, and the ram cooldown
+ * to have expired.  Always TRUE.
+ */
 int order_ram(P_char ch, P_ship ship, char *arg)
 {
 	if (SHIP_SINKING(ship))
@@ -343,6 +480,13 @@ int order_ram(P_char ch, P_ship ship, char *arg)
 	}
 }
 
+/*
+ * "order heading <N/E/S/W/NW/NE/SE/SW or 0-360>" -- set the ordered heading.
+ *
+ * Only sets ship->setheading; the ship turns towards it a few degrees per
+ * tick, at get_turning_speed() (ship_utils.c).  With no argument, reports the
+ * current and ordered headings.  Always TRUE.
+ */
 int order_heading(P_char ch, P_ship ship, char *arg)
 {
 	int heading;
@@ -400,6 +544,12 @@ int order_heading(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * Whether anyone or anything aboard `ship` is carrying a CTF flag.
+ *
+ * Checks both loose objects (vnums 790-792) and characters holding a flag.
+ * Used by order_speed() to slow a flag runner down.
+ */
 int carrying_flag(P_ship ship)
 {
 	int i;
@@ -424,6 +574,17 @@ int carrying_flag(P_ship ship)
 	return 0;
 }
 
+/*
+ * "order speed <n>" -- set the ordered speed, 0 to the ship's maximum.
+ *
+ * Only sets ship->setspeed; the ship accelerates towards it over several
+ * ticks at get_acceleration() (ship_utils.c).  The maximum includes the
+ * captain's SEADOG bonus if they have it.  With no argument, reports the
+ * current and ordered speeds.
+ *
+ * A ship carrying a CTF flag is penalised here, quadratically in the ordered
+ * speed, so a laden flag runner cannot simply outrun pursuit.  Always TRUE.
+ */
 int order_speed(P_char ch, P_ship ship, char *arg)
 {
 	int speed;
@@ -518,6 +679,13 @@ int order_speed(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "order signal <ship id> <message>" -- flag-signal a nearby friendly ship.
+ *
+ * The recipient must be a current contact, undocked, within 20 rooms, and of
+ * the SAME race -- signals are flag hoists, and an enemy would not read them.
+ * The message reaches everyone aboard the target.  Always TRUE.
+ */
 int order_signal(P_char ch, P_ship ship, char *arg1, char *arg2)
 {
 	if (!*arg1)
@@ -574,6 +742,13 @@ int order_signal(P_char ch, P_ship ship, char *arg1, char *arg2)
 	return TRUE;
 }
 
+/*
+ * "order fly" -- lift the ship off the water.
+ *
+ * Requires either the AIR flag (a permanently airborne hull) or a fitted
+ * levistone that has finished recharging, and open map room to rise into.
+ * Defers to fly_ship() (ship_base.c).  Always TRUE.
+ */
 int order_fly(P_char ch, P_ship ship)
 {
 	int levi_slot = eq_levistone_slot(ship);
@@ -600,6 +775,10 @@ int order_fly(P_char ch, P_ship ship)
 	fly_ship(ship);
 	return TRUE;
 }
+/*
+ * "order land" -- set a flying ship back down, via land_ship() in
+ * ship_base.c.  Always TRUE.
+ */
 int order_land(P_char ch, P_ship ship)
 {
 	if (!SHIP_FLYING(ship))
@@ -611,6 +790,13 @@ int order_land(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "scan [<target id>]" -- have the lookout report on a ship.
+ *
+ * With no argument scans the currently locked target.  With an id, scans that
+ * contact.  Requires open sea.  The report itself is scan_target()
+ * (ship_combat.c), which enforces its own 20-room range limit.  Always TRUE.
+ */
 int do_scan(P_char ch, P_ship ship, char *arg)
 {
 	if (!IS_MAP_ROOM(ship->location))
@@ -642,6 +828,17 @@ int do_scan(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * Fire the single weapon in slot `w_num` at the ship's locked target.
+ *
+ * Validates everything before committing: the slot holds a weapon, the target
+ * is still a visible contact, the range is inside the weapon's band, the
+ * target bears in that weapon's mounted arc, and the weapon is undamaged,
+ * reloaded and has ammunition.  Each failure explains itself to `ch`.
+ *
+ * `ch` may be NULL when the NPC AI fires, in which case nothing is reported.
+ * Always returns TRUE.  Rebuilds the shared contacts[] buffer.
+ */
 int do_fire_weapon(P_ship ship, P_char ch, int w_num)
 {
 	if (w_num < 0 || w_num >= MAXSLOTS)
@@ -720,6 +917,14 @@ int do_fire_weapon(P_ship ship, P_char ch, int w_num)
 	return fire_weapon(ship, w_num, j, ch);
 }
 
+/*
+ * Fire every weapon mounted in `arc` -- a broadside.
+ *
+ * Each weapon goes through do_fire_weapon(), so weapons that are reloading,
+ * damaged or out of arc simply decline individually.  Stops immediately if
+ * the ship is anchored.  Reports when the arc carries no weapons at all.
+ * Always returns TRUE.
+ */
 int do_fire_arc(P_ship ship, P_char ch, int arc)
 {
 	int fired = 0;
@@ -738,13 +943,25 @@ int do_fire_arc(P_ship ship, P_char ch, int arc)
 	return TRUE;
 }
 
+/*
+ * "fire <fore|starboard|port|rear|<weapon slot>>" -- the gunnery command.
+ *
+ * Only the captain, a group-mate of the captain, or an immortal may give it.
+ * Refused while sinking, docked, anchored, off the map, without a locked
+ * target, or while the crew is still reeling from a mindblast or a ram.
+ *
+ * Immortals get an extra overload here: "fire pirate|hunter|escort [<level>]"
+ * spawns an NPC ship of that behaviour nearby, for testing.
+ *
+ * Always returns TRUE.
+ */
 int do_fire(P_char ch, P_ship ship, char *arg)
 {
 	if (!isname(GET_NAME(ch), SHIP_OWNER(ship)) && !IS_TRUSTED(ch) &&
 	    (ch->group == NULL ? 1 :
-	     get_char2(str_dup(SHIP_OWNER(ship))) == NULL ?
+	     get_char2(SHIP_OWNER(ship)) == NULL ?
 				 1 :
-				 (get_char2(str_dup(SHIP_OWNER(ship)))->group != ch->group)))
+				 (get_char2(SHIP_OWNER(ship))->group != ch->group)))
 	{
 		send_to_char("You are not the captain of this ship, the crew ignores you.\r\n", ch);
 		return TRUE;
@@ -857,13 +1074,25 @@ int do_fire(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "lock <ship id>" / "lock off" -- acquire or clear the gunnery target.
+ *
+ * Only the captain, a group-mate of the captain, or an immortal may give it.
+ * The target must be a visible contact and not docked -- shooting ships in
+ * port is against the sailor's code.  Locking sends the crew to
+ * battlestations.
+ *
+ * Immortals get extra sub-commands here for driving the NPC brain on any
+ * ship: "ai_off", "ai_pirate", "ai_hunter", "ai_escort", "ai_advanced" and
+ * "ai_basic".  Always returns TRUE.
+ */
 int do_lock_target(P_char ch, P_ship ship, char *arg)
 {
 	if (!isname(GET_NAME(ch), SHIP_OWNER(ship)) && !IS_TRUSTED(ch) &&
 	    (ch->group == NULL ? 1 :
-	     get_char2(str_dup(SHIP_OWNER(ship))) == NULL ?
+	     get_char2(SHIP_OWNER(ship)) == NULL ?
 				 1 :
-				 (get_char2(str_dup(SHIP_OWNER(ship)))->group != ch->group)))
+				 (get_char2(SHIP_OWNER(ship))->group != ch->group)))
 	{
 		send_to_char("You are not the captain of this ship, the crew ignores you.\r\n", ch);
 		return TRUE;
@@ -965,6 +1194,13 @@ int do_lock_target(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "look cargo" -- the cargo manifest, plus the coffer balance.
+ *
+ * Lists every cargo and contraband slot with its crate count and what was
+ * paid for it (contraband marked with a *), then the remaining and total
+ * cargo capacity.  Always TRUE.
+ */
 int look_cargo(P_char ch, P_ship ship)
 {
 	if (ship->money > 0)
@@ -1003,6 +1239,11 @@ int look_cargo(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "look crew" -- the crew sheet: which crew is hired, which chiefs are
+ * serving, the three skills, stamina, and the crew's passive bonuses.
+ * Always TRUE.
+ */
 int look_crew(P_char ch, P_ship ship)
 {
 	send_to_char_f(ch, "&+LCurrent crew: %s\r\n", ship_crew_data[ship->crew.index].name);
@@ -1044,6 +1285,14 @@ int look_crew(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "look sight <weapon slot>" -- the firing solution for one weapon.
+ *
+ * Reports the chance to hit the locked target from weaponsight()
+ * (ship_combat.c), after checking the slot is a working weapon and the target
+ * is still in sight.  This is the "aim before you shoot" command.
+ * Always TRUE.
+ */
 int look_weapon(P_char ch, P_ship ship, char *arg)
 {
 	if (!*arg)
@@ -1109,6 +1358,18 @@ int look_weapon(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "look tactical [<x> <y>]" -- the hex-grid chart of the surrounding ocean.
+ *
+ * With no arguments the chart is centred on the ship.  With coordinates it
+ * centres there instead, provided the point is within the crew's contact
+ * range (35 rooms plus the scout bonus) -- you cannot chart water your
+ * lookouts cannot see.
+ *
+ * Draws 23 columns and 15 rows around the centre from tactical_map, with
+ * terrain symbols for empty water and ship designations where ships are.
+ * Requires the ship to be undocked.  Always TRUE.
+ */
 int look_tactical_map(P_char ch, P_ship ship, char *arg1, char *arg2)
 {
 	int x, y, maxrange, lookrange;
@@ -1154,6 +1415,18 @@ int look_tactical_map(P_char ch, P_ship ship, char *arg1, char *arg2)
 			return TRUE;
 		}
 	}
+
+	/*
+	 * Everything below subscripts tactical_map[x - 11 .. x + 11][...] and
+	 * rows 100 - y - 7 .. 100 - y + 7, so both coordinates have to stay in
+	 * [MAP_VIEW_MARGIN, 100 - MAP_VIEW_MARGIN] for the reads to be in
+	 * bounds.  The range test above already keeps a player within 35 rooms
+	 * of the ship, and ship->x / ship->y sit at 50, so this clamp never
+	 * fires on any input that reaches it today -- it is here so the reads
+	 * stay safe if the ship's own map position is ever anything else.
+	 */
+	x = BOUNDED(MAP_VIEW_MARGIN, x, 100 - MAP_VIEW_MARGIN);
+	y = BOUNDED(MAP_VIEW_MARGIN, y, 100 - MAP_VIEW_MARGIN);
 
 	if (!getmap(ship, TRUE))
 	{
@@ -1204,6 +1477,14 @@ int look_tactical_map(P_char ch, P_ship ship, char *arg1, char *arg2)
 	return TRUE;
 }
 
+/*
+ * "look contacts" -- the sensor list: every ship in range with its
+ * designation, bearing, range and arc.
+ *
+ * Docked ships are hidden beyond 5 rooms, so a harbour full of moored hulls
+ * does not swamp the display.  Requires open sea and an undocked ship.
+ * Always TRUE.
+ */
 int look_contacts(P_char ch, P_ship ship)
 {
 	if (!IS_MAP_ROOM(ship->location) || SHIP_DOCKED(ship))
@@ -1262,6 +1543,10 @@ int look_contacts(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "look weaponspec" -- the reference card for the weapons this ship mounts:
+ * range band, damage, reload and arc for each.  Always TRUE.
+ */
 int look_weaponspec(P_char ch, P_ship ship)
 {
 	char rng[32], dam[48];
@@ -1315,6 +1600,16 @@ int look_weaponspec(P_char ch, P_ship ship)
 }
 
 char slot_desc[100];
+/*
+ * Format one slot as a line for the "look ship" display.
+ *
+ * Cargo and contraband show their crate count; weapons show position,
+ * remaining ammunition (or ** when destroyed) and condition; equipment shows
+ * its condition; anything else is blank.
+ *
+ * Returns a pointer to a shared static buffer that the next call overwrites.
+ * Print it immediately.  An out-of-range `sl` yields an empty string.
+ */
 char *generate_slot(P_ship ship, int sl)
 {
 	if (sl >= MAXSLOTS)
@@ -1356,6 +1651,10 @@ char *generate_slot(P_ship ship, int sl)
 	return slot_desc;
 }
 
+/*
+ * One-word status for displays, in priority order: SINKING, IMMOBILE,
+ * ANCHORED, DOCKED, or UNDOCKED.  Returns a coloured static literal.
+ */
 const char *get_ship_status(P_ship ship)
 {
 	return SHIP_SINKING(ship)  ? "&=LRSINKING&N" :
@@ -1365,6 +1664,14 @@ const char *get_ship_status(P_ship ship)
 				     "&+yUNDOCKED&N";
 }
 
+/*
+ * "look ship" / "look status" -- the main bridge display.
+ *
+ * The one screen a captain watches while sailing: name, captain, frags,
+ * status and designation; the locked target; per-arc armour and internal
+ * structure laid out around a hull diagram; speed range, sail condition and
+ * crew; and every occupied slot via generate_slot().  Always TRUE.
+ */
 int look_ship(P_char ch, P_ship ship)
 {
 	char name_format[20];
@@ -1468,6 +1775,14 @@ int look_ship(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "get money" / "get coins" at the panel -- take the ship's coffers.
+ *
+ * Salvage and bounty accumulate in ShipData::money rather than going straight
+ * to anyone's purse; this is how the captain collects it.  Only the ship's
+ * owner may, and the withdrawal is logged.  Returns FALSE for a non-owner,
+ * TRUE otherwise.
+ */
 int claim_coffer(P_char ch, P_ship ship)
 {
 	if (!isname(GET_NAME(ch), SHIP_OWNER(ship)))
@@ -1488,6 +1803,11 @@ int claim_coffer(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "look commands" -- print the full list of bridge commands, grouped into
+ * info, control and combat.  Keep this in step with ship_panel_proc()'s
+ * dispatch below; it is the only place players learn the syntax.
+ */
 int do_commands_help(P_ship /*ship*/, P_char ch)
 {
 	send_to_char("Info commands:\r\n", ch);
@@ -1519,6 +1839,25 @@ int do_commands_help(P_ship /*ship*/, P_char ch)
 	send_to_char(" order ram [off]\r\n", ch);
 	return TRUE;
 }
+/*
+ * Special procedure on the ship's control panel: the bridge command
+ * dispatcher, and the entry point for everything else in this file.
+ *
+ * Attached to ShipData::panel, so it fires for commands typed by anyone in
+ * the room containing that object.  It handles only CMD_GET, CMD_ORDER,
+ * CMD_SCAN, CMD_FIRE, CMD_LOCK and CMD_LOOK, and finds the owning ship by
+ * scanning the ship hash for the panel.
+ *
+ * CMD_ORDER carries the shared preconditions for every steering order --
+ * captain or group-mate or immortal, not under maintenance, not overloaded
+ * with passengers, not sinking, not mindblasted -- and then dispatches to the
+ * order_*() routines.  An "order" word it does not recognise is passed
+ * through to the ordinary do_order() command, so ordering a mob around from
+ * the bridge still works.
+ *
+ * Returns TRUE when the command was handled, FALSE to let normal command
+ * processing continue.
+ */
 int ship_panel_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	if (!ch && !cmd)
@@ -1587,9 +1926,9 @@ int ship_panel_proc(P_obj obj, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 
-		if (!isname(str_dup(SHIP_OWNER(ship)), GET_NAME(ch)) && !IS_TRUSTED(ch))
+		if (!isname(SHIP_OWNER(ship), GET_NAME(ch)) && !IS_TRUSTED(ch))
 		{
-			P_char real_owner = get_char2(str_dup(SHIP_OWNER(ship)));
+			P_char real_owner = get_char2(SHIP_OWNER(ship));
 			if (ch->group == NULL || real_owner == NULL ||
 			    real_owner->group != ch->group)
 			{

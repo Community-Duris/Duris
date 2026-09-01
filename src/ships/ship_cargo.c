@@ -1,4 +1,73 @@
 
+/*****************************************************
+ * ship_cargo.c
+ *
+ * Ship trade goods: the commodity market
+ *****************************************************/
+
+/*
+ * OVERVIEW -- where this file sits in the ship system
+ * ---------------------------------------------------
+ * The economy behind merchant shipping.  This file owns the *prices*; it does
+ * not own the buying and selling.  The player-facing "buy cargo" / "sell
+ * cargo" commands, and the customs inspection that catches contraband, all
+ * live in ship_shop.c and call in here for a number.
+ *
+ * The trade game in one paragraph
+ * -------------------------------
+ * There are NUM_PORTS ports, and each produces exactly one cargo commodity
+ * and one contraband commodity -- so "port index" and "commodity index" are
+ * the same number space throughout this file, which is why you keep seeing
+ * `[location][type]` pairs.  A port sells its own goods cheaply and pays well
+ * for other ports' goods; how well depends on cargo_location_mod[], a
+ * hand-tuned matrix of appetites.  Profit is the spread between the two, so
+ * knowing which runs pay is the whole skill of the merchant game.
+ *
+ * The three market matrices
+ * -------------------------
+ *   ship_cargo_market_mod[port][type]          live cargo multipliers
+ *   ship_contra_market_mod[port][type]         live contraband multipliers
+ *   ship_cargo_market_mod_delayed[port][type]  the lagged copy players see
+ *
+ * The diagonal ([p][p]) is a port trading its own commodity; everything else
+ * is one port trading another's.  Two forces move these numbers:
+ *
+ *   adjust_ship_market()  a player trade nudges one cell -- buying pushes the
+ *                         price up, selling pushes it down, scaled by volume.
+ *   adjust_cargo_market() a periodic drift pulls every cell back towards
+ *                         neutral, faster the further it has strayed.
+ *
+ * The delayed matrix exists so ordinary players cannot trade on a price move
+ * the instant it happens: they are shown a copy refreshed on its own timer
+ * (update_delayed_cargo_prices()).  Immortals see live prices.  Contraband
+ * has no delayed copy.
+ *
+ * Static data tables (all in this file)
+ * -------------------------------------
+ *   cargo_location_data[]  base cost of each port's cargo and contraband, and
+ *                          the ship-frag reputation needed to buy the latter
+ *   cargo_location_mod[]   each port's appetite for each other port's goods,
+ *                          as a percentage; the heart of the trade game
+ *   cargo_name[]           display names of the cargo commodities
+ *   contra_name[]          display names of the contraband commodities
+ * The port list itself (rooms and names) is ports[] in ship_variables.c.
+ *
+ * Money units
+ * -----------
+ * Every price function here returns COPPER, at 1000 copper to the platinum.
+ * The display grids divide by 1000 to show platinum.
+ *
+ * Persistence
+ * -----------
+ * The market is saved through read_cargo() / write_cargo(), which have two
+ * backends selected by __NO_MYSQL__: SQL tables, or a checksummed flat-file
+ * record built by the anonymous-namespace helpers at the top of this file.
+ * There is a third path -- cargo_maintenance_snapshot() /
+ * cargo_maintenance_complete() -- used when the periodic update is driven by
+ * the maintenance subsystem rather than by the game loop; it hands the work
+ * across as a flat array of int64 and is idempotent on retry.
+ */
+
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -70,17 +139,31 @@ struct flat_cargo_record
 	std::array<float, cargo_value_count> contraband = {};
 };
 
+/*
+ * Directory the flat-file market record lives in, or "" when the flat-file
+ * backend is not configured.
+ */
 std::string flat_cargo_directory()
 {
 	const char *root = persistence_mode_flatfile_root();
 	return root ? std::string(root) + "/metadata" : std::string();
 }
 
+/*
+ * Whether `value` is a believable market modifier: finite and within
+ * [0, 1000].  Every modifier that crosses the persistence boundary is checked
+ * against this, so a corrupt file cannot inject an infinity or a negative
+ * price into the live market.
+ */
 bool valid_market_modifier(float value)
 {
 	return std::isfinite(value) && value >= 0.0f && value <= 1000.0f;
 }
 
+/*
+ * Append `value` to `bytes` as 4 little-endian octets.  The record format is
+ * explicitly byte-ordered so a saved market survives a move between hosts.
+ */
 void append_u32(std::vector<uint8_t> *bytes, uint32_t value)
 {
 	for (size_t offset = 0; offset < sizeof(value); ++offset)
@@ -90,6 +173,9 @@ void append_u32(std::vector<uint8_t> *bytes, uint32_t value)
 	}
 }
 
+/*
+ * Append `value` to `bytes` as 8 little-endian octets.  See append_u32().
+ */
 void append_u64(std::vector<uint8_t> *bytes, uint64_t value)
 {
 	for (size_t offset = 0; offset < sizeof(value); ++offset)
@@ -99,6 +185,10 @@ void append_u64(std::vector<uint8_t> *bytes, uint64_t value)
 	}
 }
 
+/*
+ * Read a little-endian uint32 from `bytes`.  The caller must already have
+ * checked that at least 4 octets are available.
+ */
 uint32_t read_u32(const uint8_t *bytes)
 {
 	uint32_t value = 0;
@@ -107,6 +197,10 @@ uint32_t read_u32(const uint8_t *bytes)
 	return value;
 }
 
+/*
+ * Read a little-endian uint64 from `bytes`.  The caller must already have
+ * checked that at least 8 octets are available.
+ */
 uint64_t read_u64(const uint8_t *bytes)
 {
 	uint64_t value = 0;
@@ -115,6 +209,10 @@ uint64_t read_u64(const uint8_t *bytes)
 	return value;
 }
 
+/*
+ * Whether `record` is safe to write out or to load into the live market:
+ * a non-zero revision and every one of its modifiers plausible.
+ */
 bool valid_flat_cargo_record(const flat_cargo_record &record)
 {
 	if (!record.revision)
@@ -128,6 +226,13 @@ bool valid_flat_cargo_record(const flat_cargo_record &record)
 	return true;
 }
 
+/*
+ * Serialise `record` into `bytes`: magic, version, revision, the two
+ * modifier matrices, then a SHA-256 of everything before it.
+ *
+ * Returns false for a bad output pointer, an implausible record, or an
+ * allocation failure -- never a partially written buffer.
+ */
 bool encode_flat_cargo(const flat_cargo_record &record, std::vector<uint8_t> *bytes)
 {
 	static_assert(sizeof(float) == sizeof(uint32_t));
@@ -156,6 +261,14 @@ bool encode_flat_cargo(const flat_cargo_record &record, std::vector<uint8_t> *by
 	return bytes->size() == cargo_record_size;
 }
 
+/*
+ * Parse and verify a serialised market record.
+ *
+ * Checks length, magic, version and the trailing SHA-256 digest before
+ * accepting anything, then validates the decoded modifiers.  Returns false
+ * and leaves `record` untouched on any failure, so a damaged file degrades
+ * to "no record" rather than to a corrupt market.
+ */
 bool decode_flat_cargo(const std::vector<uint8_t> &bytes, flat_cargo_record *record)
 {
 	if (!record || bytes.size() != cargo_record_size ||
@@ -187,6 +300,13 @@ bool decode_flat_cargo(const std::vector<uint8_t> &bytes, flat_cargo_record *rec
 	return true;
 }
 
+/*
+ * Read and decode the market record from `directory`, assuming the caller
+ * already holds the store lock.
+ *
+ * Returns ok, not_found when the file is absent, invalid when it fails to
+ * decode, or io_error.  `error` receives a human-readable reason.
+ */
 flat_cargo_result read_flat_cargo_unlocked(const std::string &directory, flat_cargo_record *record,
 					   std::string *error)
 {
@@ -206,6 +326,10 @@ flat_cargo_result read_flat_cargo_unlocked(const std::string &directory, flat_ca
 	return flat_cargo_result::ok;
 }
 
+/*
+ * Take the store lock and read the market record.  The locked wrapper around
+ * read_flat_cargo_unlocked(); same return values.
+ */
 flat_cargo_result load_flat_cargo(flat_cargo_record *record, std::string *error)
 {
 	const std::string directory = flat_cargo_directory();
@@ -219,6 +343,15 @@ flat_cargo_result load_flat_cargo(flat_cargo_record *record, std::string *error)
 	return result;
 }
 
+/*
+ * Write `record` out under the store lock, bumping its revision past
+ * whatever is already on disk.
+ *
+ * Re-reading first is what makes the revision monotonic even if another
+ * writer got there in between; the write itself goes through the flat-file
+ * store's atomic replace, so a crash mid-save leaves the previous market
+ * intact rather than a truncated one.
+ */
 flat_cargo_result save_flat_cargo(flat_cargo_record record, std::string *error)
 {
 	const std::string directory = flat_cargo_directory();
@@ -255,6 +388,11 @@ flat_cargo_result save_flat_cargo(flat_cargo_record record, std::string *error)
 			 flat_cargo_result::invalid;
 }
 
+/*
+ * Snapshot the live market matrices into a flat_cargo_record ready to be
+ * saved.  Note that only the live cargo modifiers are captured -- the delayed
+ * copy is derived on load, not persisted.
+ */
 flat_cargo_record capture_flat_cargo()
 {
 	flat_cargo_record record;
@@ -268,6 +406,13 @@ flat_cargo_record capture_flat_cargo()
 	return record;
 }
 
+/*
+ * Install a loaded record over the live market.
+ *
+ * The delayed matrix is seeded from the same values rather than left at its
+ * previous contents, so a freshly loaded market is internally consistent
+ * until the next update_delayed_cargo_prices() tick.
+ */
 void replace_live_cargo(const flat_cargo_record &record)
 {
 	for (int port = 0; port < NUM_PORTS; ++port)
@@ -330,6 +475,11 @@ const char *contra_name[NUM_PORTS] = {
 	"&+WWhite Dragon &+rEggs&N",
 };
 
+/*
+ * Return every market modifier -- cargo, contraband and the delayed copy --
+ * to a neutral 1.0.  Used at boot before loading, and by the immortal
+ * "world cargo reset" command.
+ */
 void reset_cargo()
 {
 	for (int i = 0; i < NUM_PORTS; i++)
@@ -343,6 +493,14 @@ void reset_cargo()
 	}
 }
 
+/*
+ * Boot the cargo market: neutralise it, then load the persisted modifiers
+ * over the top and prime the maintenance timers.
+ *
+ * A failed load is fatal under the flat-file backend, where the market file
+ * is the sole authority; under MySQL it is logged and the neutral market is
+ * kept.
+ */
 void initialize_ship_cargo()
 {
 	reset_cargo();
@@ -359,6 +517,17 @@ void initialize_ship_cargo()
 	cargo_maintenance_last_delayed_update = get_timer("update_delayed_cargo_prices");
 }
 
+/*
+ * Load every market modifier from persistent storage into the live matrices.
+ *
+ * Both backends validate each record before applying it -- port and commodity
+ * indices in range, the modifier finite and within [0, 1000] -- so a bad row
+ * is skipped rather than corrupting the market.  The delayed matrix is seeded
+ * from the same values.
+ *
+ * Returns FALSE on a backend failure, in which case the live market is left
+ * as it was.
+ */
 int read_cargo()
 {
 #ifdef __NO_MYSQL__
@@ -431,6 +600,17 @@ int read_cargo()
 #endif
 }
 
+/*
+ * Persist the current market: both modifier matrices, plus a denormalised
+ * price table for out-of-game reporting.
+ *
+ * Under MySQL this replaces both tables inside a transaction -- one it starts
+ * itself only if the caller has not already opened one, so it nests safely
+ * inside a larger ship transaction.  Under the flat-file backend it is a
+ * single atomic record write.
+ *
+ * Returns FALSE and rolls back its own transaction on any failure.
+ */
 int write_cargo()
 {
 #ifdef __NO_MYSQL__
@@ -549,6 +729,18 @@ ship.contraband.sellPriceMod=1.0
 ship.contraband.buyPriceMod=1.0
 */
 
+/*
+ * Drift every market modifier back towards its configured neutral value.
+ *
+ * The correction is proportional to how far the modifier has strayed, so a
+ * badly distorted route recovers fast and a nearly neutral one barely moves;
+ * this is what stops a single trader permanently flattening a route.  The
+ * diagonal (a port trading its own commodity) uses the sell-side rates and
+ * everything else the buy-side rates.
+ *
+ * All four rates and both neutral points are runtime properties -- see the
+ * ship.cargo.* / ship.contraband.* block above.
+ */
 static void adjust_cargo_market()
 {
 	int i, j;
@@ -664,6 +856,14 @@ static void adjust_cargo_market()
 	}
 }
 
+/*
+ * Run the periodic market drift and persist the result.
+ *
+ * Self-throttling: does nothing unless ship.cargo.update.secs has elapsed
+ * since the last run, or `force` is true (the immortal "world cargo update"
+ * command).  Also clears any pending maintenance snapshot, since the values
+ * it captured are now stale.
+ */
 void update_cargo(bool force)
 {
 	if (!force && !has_elapsed("update_cargo", get_property("ship.cargo.update.secs", 1800)))
@@ -678,11 +878,22 @@ void update_cargo(bool force)
 	cargo_maintenance_value_count = 0;
 }
 
+/*
+ * update_cargo(false) -- the ordinary throttled tick.  Separate overload so
+ * it can be used where a no-argument callback is wanted.
+ */
 void update_cargo()
 {
 	update_cargo(false);
 }
 
+/*
+ * Copy the live cargo market into the delayed matrix that players are shown.
+ *
+ * Self-throttling on ship.cargo.updateDelayedPrices.secs.  This lag is the
+ * whole point of the delayed matrix: players trade on prices up to an update
+ * period old, so nobody can react to a market move the instant it happens.
+ */
 void update_delayed_cargo_prices()
 {
 	if (!has_elapsed("update_delayed_cargo_prices",
@@ -705,7 +916,12 @@ void update_delayed_cargo_prices()
 	cargo_maintenance_last_delayed_update = time(nullptr);
 }
 
-// this gets run once every minute
+/*
+ * Per-minute market tick, called from the main game loop.
+ *
+ * Both halves are self-throttling -- they check their own timers and return
+ * immediately when not yet due -- so calling this every minute is cheap.
+ */
 void cargo_activity()
 {
 	update_cargo();
@@ -713,6 +929,19 @@ void cargo_activity()
 }
 
 #ifdef __NO_MYSQL__
+/*
+ * Apply a market-maintenance batch produced by cargo_maintenance_snapshot()
+ * under the flat-file backend.
+ *
+ * `values` is the flat int64 encoding that crossed the maintenance boundary:
+ * [0] timestamp, [1] whether the market update is due, [2] whether the
+ * delayed update is due, then four values per (port, type) pair.  Modifiers
+ * travel as fixed-point millionths and are converted back to float here.
+ *
+ * Every field is re-validated on the way in -- this is a trust boundary, not
+ * an internal call -- and the whole batch is rejected on the first bad value.
+ * Returns false without touching anything in that case.
+ */
 bool flatfile_cargo_maintenance_apply(const int64_t *values, size_t count)
 {
 	constexpr size_t expected = 3 + NUM_PORTS * NUM_PORTS * 4;
@@ -751,6 +980,19 @@ bool flatfile_cargo_maintenance_apply(const int64_t *values, size_t count)
 }
 #endif
 
+/*
+ * Capture the work for one market-maintenance pass into a flat value array
+ * that the maintenance subsystem can hand off and later confirm.
+ *
+ * Returns 0 when nothing is due yet or `capacity` is too small; otherwise
+ * fills `values` and returns how many entries were written.  Repeating the
+ * call with the same `work_id` replays the cached snapshot rather than
+ * recomputing, so a retry cannot drift the market twice.
+ *
+ * Note that the drift and the delayed-price copy happen HERE, not in the
+ * apply step -- the snapshot is the state after the update, and
+ * cargo_maintenance_complete() only decides whether to keep the timestamps.
+ */
 size_t cargo_maintenance_snapshot(uint64_t work_id, int64_t *values, size_t capacity)
 {
 	constexpr size_t required = 3 + NUM_PORTS * NUM_PORTS * 4;
@@ -797,6 +1039,14 @@ size_t cargo_maintenance_snapshot(uint64_t work_id, int64_t *values, size_t capa
 	return cargo_maintenance_value_count;
 }
 
+/*
+ * Close out the maintenance pass identified by `work_id`.
+ *
+ * On success the "last updated" timestamps advance, so the next pass is not
+ * due for another interval; on failure they are left alone and the work will
+ * be offered again.  Either way the cached snapshot is dropped.  A `work_id`
+ * that does not match the outstanding pass is ignored.
+ */
 void cargo_maintenance_complete(uint64_t work_id, bool success)
 {
 	if (work_id != cargo_maintenance_work_id)
@@ -812,12 +1062,32 @@ void cargo_maintenance_complete(uint64_t work_id, bool success)
 	cargo_maintenance_value_count = 0;
 }
 
+/*
+ * Log a matrix of sailing distances between every pair of ports, plus the
+ * shortest, longest and average routes.
+ *
+ * A design tool: the numbers it prints are what cargo_location_mod[] in this
+ * file was hand-tuned against, so re-run it after moving a port or changing
+ * the sailable coastline and re-check that table.  Distances come from a
+ * Dijkstra search over ship-navigable edges, not straight-line range.
+ *
+ * NOTE FOR MAINTAINERS: currently dormant -- nothing in the tree calls it.
+ * It is kept because regenerating the distance matrix by hand is worse.
+ */
 void calculate_port_distances()
 {
 	logit(LOG_SHIP, "Calculating distances between ports...");
 
 	char line[MAX_STRING_LENGTH];
 	char buff[MAX_STRING_LENGTH];
+
+	/*
+	 * `line` is accumulated with strcat() throughout, so it has to start as
+	 * a valid empty string -- strcat() onto uninitialised stack would read
+	 * past whatever garbage happened to be there.  Every later reuse of the
+	 * buffer resets it the same way.
+	 */
+	line[0] = '\0';
 	strcat(line, "       ");
 
 	for (int i = 0; i < NUM_PORTS; i++)
@@ -919,7 +1189,18 @@ void calculate_port_distances()
 	      (int)avg_distance / count);
 }
 
-// i.e. the price the port charges to sell its cargo
+/*
+ * Price, in copper, that the port at `location` charges for one crate of its
+ * OWN cargo -- the buy-side price from the player's point of view.
+ *
+ * Base commodity cost scaled by the port's self-modifier, which
+ * adjust_ship_market() pushes up every time someone buys here.
+ *
+ * `delayed` true reads the hourly-lagged copy of the market instead of the
+ * live one; that is what ordinary players are shown, so they cannot trade on
+ * price movements faster than the rest of the world sees them.  Immortals see
+ * live prices.
+ */
 int cargo_sell_price(int location, bool delayed)
 {
 	// the port sells its own cargo at just base price * market mod
@@ -935,7 +1216,18 @@ int cargo_sell_price(int location, bool delayed)
 	}
 }
 
-// i.e. the price the port will pay to buy cargo
+/*
+ * Price, in copper, that the port at `location` will PAY for one crate of
+ * `type`'s cargo -- the sell-side price from the player's point of view.
+ *
+ * This is where the trade game lives: the payout scales with
+ * cargo_location_mod[location][type], each port's appetite for each other
+ * port's goods, so profit comes from knowing which runs pay.  Selling a
+ * commodity back to the port that produces it fetches only half its list
+ * price.
+ *
+ * `delayed` has the same meaning as in cargo_sell_price().
+ */
 int cargo_buy_price(int location, int type, bool delayed)
 {
 	if (location == type)
@@ -955,7 +1247,11 @@ int cargo_buy_price(int location, int type, bool delayed)
 	}
 }
 
-// i.e. the price the port charges to sell its contraband
+/*
+ * Price, in copper, that the port at `location` charges for one crate of its
+ * own contraband.  The contraband mirror of cargo_sell_price(); contraband has
+ * no delayed-price variant, so everyone sees the live market.
+ */
 int contra_sell_price(int location)
 {
 	// the port sells its own contraband at just base price * market mod
@@ -963,7 +1259,11 @@ int contra_sell_price(int location)
 		     ship_contra_market_mod[location][location]);
 }
 
-// i.e. the price the port will pay to buy contraband
+/*
+ * Price, in copper, that the port at `location` will pay for one crate of
+ * `type`'s contraband.  The contraband mirror of cargo_buy_price(), including
+ * the half-price penalty for selling a commodity back to its source.
+ */
 int contra_buy_price(int location, int type)
 {
 	if (location == type)
@@ -975,6 +1275,18 @@ int contra_buy_price(int location, int type)
 			     ship_contra_market_mod[location][type]);
 }
 
+/*
+ * Move the market in response to a player trade, then persist it.
+ *
+ * `transaction` is SOLD_CARGO / BOUGHT_CARGO / SOLD_CONTRA / BOUGHT_CONTRA
+ * -- named from the player's side, so SOLD_* pushes the price DOWN (the port
+ * now has more of it) and BOUGHT_* pushes it UP.  `volume` is the number of
+ * crates, and the move scales with it, so a big shipment moves the market
+ * more than a small one.
+ *
+ * The four rates are runtime properties; contraband moves several times
+ * further per crate than ordinary cargo.
+ */
 void adjust_ship_market(int transaction, int location, int type, int volume)
 {
 	if (transaction == SOLD_CARGO)
@@ -1012,11 +1324,22 @@ void adjust_ship_market(int transaction, int location, int type, int volume)
 	}
 }
 
+/*
+ * Ship frags needed before a port will sell you contraband of `type`.
+ * Smugglers have to be known before they are trusted.
+ */
 int required_ship_frags_for_contraband(int type)
 {
 	return cargo_location_data[type].required_frags;
 }
 
+/*
+ * Whether `ship` is reputable enough to buy contraband of `type`.
+ *
+ * Two ways to qualify: enough ship frags outright, or a crew skilled enough
+ * across all three disciplines to substitute for a reputation -- weighted
+ * towards sailing, which is the hardest of the three to fake.
+ */
 bool can_buy_contraband(P_ship ship, int type)
 {
 	int frags = required_ship_frags_for_contraband(type);
@@ -1030,6 +1353,10 @@ bool can_buy_contraband(P_ship ship, int type)
 	return false;
 }
 
+/*
+ * Display name of cargo commodity `type`, with colour codes.  Returns "" for
+ * an out-of-range type, so it is safe to call on an unset slot index.
+ */
 const char *cargo_type_name(int type)
 {
 	if (type < 0 || type >= NUM_PORTS)
@@ -1038,6 +1365,10 @@ const char *cargo_type_name(int type)
 	return cargo_name[type];
 }
 
+/*
+ * Display name of contraband commodity `type`, with colour codes.  Returns
+ * "" for an out-of-range type.
+ */
 const char *contra_type_name(int type)
 {
 	if (type < 0 || type >= NUM_PORTS)
@@ -1046,6 +1377,16 @@ const char *contra_type_name(int type)
 	return contra_name[type];
 }
 
+/*
+ * Print the full cargo price grid to `ch`: commodities down the side, ports
+ * across the top.
+ *
+ * The diagonal is each port's own selling price (white); everything else is
+ * what that port pays, coloured green when it beats the source port's asking
+ * price -- i.e. when the run is profitable -- and red when it does not.
+ *
+ * Immortals see live prices; everyone else sees the hourly-delayed copy.
+ */
 void show_cargo_prices(P_char ch)
 {
 	char line[MAX_STRING_LENGTH];
@@ -1121,6 +1462,11 @@ void show_cargo_prices(P_char ch)
 		ch);
 }
 
+/*
+ * Print the full contraband price grid to `ch`, in the same layout and with
+ * the same colour convention as show_cargo_prices().  Contraband has no
+ * delayed matrix, so these are always live prices.
+ */
 void show_contra_prices(P_char ch)
 {
 	char line[MAX_STRING_LENGTH];
@@ -1183,6 +1529,13 @@ void show_contra_prices(P_char ch)
 	send_to_char("\r\nAll prices in platinum per crate.\r\n", ch);
 }
 
+/*
+ * Special procedure for the immortal cargo-info item.
+ *
+ * Must be held, and only responds to immortals.  "look cargo" prints the
+ * cargo price grid; "look ships" lists every ship in the game with its
+ * location and status flags.  Returns TRUE when it handled the command.
+ */
 int ship_cargo_info_stick(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	ShipVisitor svs;
@@ -1244,6 +1597,14 @@ int ship_cargo_info_stick(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
+/*
+ * The immortal "world cargo" command.
+ *
+ * No argument prints both price grids.  "reload" re-reads the market from
+ * storage, "reset" flattens every modifier to 1.0, "save" writes the current
+ * market out, and "update" forces a drift tick that would otherwise wait for
+ * its timer.
+ */
 void do_world_cargo(P_char ch, char *arg)
 {
 	if (!ch)

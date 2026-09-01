@@ -25,6 +25,11 @@
 
 extern char buf[MAX_STRING_LENGTH];
 
+/*
+ * Whether the weapon in slot `w_num` is usable at all: not destroyed, not
+ * damaged, and with ammunition left.  Says nothing about whether it can fire
+ * THIS tick -- see weapon_ready_to_fire().
+ */
 static bool weapon_ok(P_ship ship, int w_num)
 {
 	if (SHIP_WEAPON_DESTROYED(ship, w_num))
@@ -36,6 +41,11 @@ static bool weapon_ok(P_ship ship, int w_num)
 	return true;
 }
 
+/*
+ * Whether the weapon in slot `w_num` can be fired right now: usable, finished
+ * reloading, and the ship not disabled by a mindblast or still shaken from a
+ * ram.
+ */
 static bool weapon_ready_to_fire(P_ship ship, int w_num)
 {
 	if (!weapon_ok(ship, w_num))
@@ -49,6 +59,13 @@ static bool weapon_ready_to_fire(P_ship ship, int w_num)
 	return true;
 }
 
+/*
+ * Relative bearing of the centre line of `arc`, in degrees from the ship's
+ * own heading: fore 0, starboard 90, rear 180, port 270.
+ *
+ * The AI steers by this: to bring an arc to bear on a target, it wants
+ * new_heading = target bearing - this.
+ */
 static float get_arc_central_bearing(int arc)
 {
 	switch (arc)
@@ -65,6 +82,11 @@ static float get_arc_central_bearing(int arc)
 	return 0;
 }
 
+/*
+ * Width of `arc` in degrees: 80 for fore and rear, 100 for the beams.
+ * Mirrors the thresholds in get_arc() (ship_utils.c) -- the beams are the
+ * wider, and therefore easier, targets.
+ */
 static int get_arc_width(int arc)
 {
 	switch (arc)
@@ -79,6 +101,12 @@ static int get_arc_width(int arc)
 	return 0;
 }
 
+/*
+ * Whether `ship` is moving slowly enough to be boarded.
+ *
+ * Merchants can be taken at up to BOARDING_SPEED; a warship has to be brought
+ * to a complete stop first, which is what makes taking one hard.
+ */
 static bool is_boardable(P_ship ship)
 {
 	if (ship->speed > BOARDING_SPEED)
@@ -88,6 +116,12 @@ static bool is_boardable(P_ship ship)
 	return true;
 }
 
+/*
+ * Whether `ship` has a loaded weapon with a maximum range under 5 rooms.
+ *
+ * Used to decide against charging straight in: a ship with short-range guns
+ * punishes anyone who closes to grapple.
+ */
 static bool has_close_range_weapons(P_ship ship)
 {
 	for (int slot = 0; slot < MAXSLOTS; slot++)
@@ -102,6 +136,17 @@ static bool has_close_range_weapons(P_ship ship)
 	return false;
 }
 
+/*
+ * Attach a new brain to ship `s`.
+ *
+ * Starts idling with no target and no escort, on the BASIC behaviour (see
+ * load_npc_ship() in ship_npc.c, which raises `advanced` afterwards according
+ * to the ship's level).  Hull weight over 200 marks the ship heavy, which
+ * makes it protect its rear arc and lets it engage several targets at once.
+ *
+ * `ch` is an optional immortal to stream AI debug commentary to; NULL in
+ * normal play.
+ */
 NPCShipAI::NPCShipAI(P_ship s, P_char ch)
 {
 	ship = s;
@@ -145,6 +190,28 @@ NPCShipAI::NPCShipAI(P_ship s, P_char ch)
 	new_heading = 0;
 }
 
+/*
+ * Run one AI tick for this ship.  Called from ship_activity() (ship_base.c).
+ *
+ * Returns immediately if the ship is off the map, sinking, mindblasted, or
+ * has no captain left on the bridge -- kill the captain and the ship stops
+ * thinking, which is the point of boarding it.
+ *
+ * Refills the two shared globals ONCE per tick (getmap() then getcontacts()),
+ * which is why every routine below can index contacts[] freely without
+ * refreshing it; contacts_count is the live count.
+ *
+ * Then dispatches on `mode`:
+ *   NPC_AI_ENGAGING   out of ammo -> RUNNING; target gone -> CRUISING;
+ *                     immobile -> fight from where it lies; land in the way ->
+ *                     fire over it and pathfind around; ram if worthwhile;
+ *                     board if the target has been slowed enough; otherwise
+ *                     hand off to the basic or advanced manoeuvre routine
+ *   NPC_AI_RUNNING    flee the target, or resume cruising once it is gone
+ *   NPC_AI_CRUISING   pirates and hunters look for prey, escorts shadow their
+ *                     charge, then fall through to...
+ *   NPC_AI_LEAVING    sail on, and despawn once nobody is watching
+ */
 void NPCShipAI::activity()
 {
 	if (!IS_MAP_ROOM(ship->location) || SHIP_SINKING(ship))
@@ -275,6 +342,13 @@ void NPCShipAI::activity()
 	};
 }
 
+/*
+ * Sail on with nothing in particular to do.
+ *
+ * Runs repairs and reloads, and turns away when land comes within 5 rooms --
+ * committing to one turn direction until clear, so the ship does not dither
+ * on the boundary.
+ */
 void NPCShipAI::cruise()
 {
 	// send_message_to_debug_char("Cruising: \r\n");
@@ -295,6 +369,11 @@ void NPCShipAI::cruise()
 	set_new_dir();
 }
 
+/*
+ * Use quiet time to put the ship back in order: repair sails and hull and
+ * reload empty weapons.  Called from cruise(), so it only happens when the
+ * ship is not in combat.
+ */
 void NPCShipAI::reload_and_repair()
 {
 	if (ship->mainsail < SHIP_MAX_SAIL(ship))
@@ -329,6 +408,16 @@ void NPCShipAI::reload_and_repair()
 	}
 }
 
+/*
+ * React to being shot at by `attacker`.
+ *
+ * Ignored if already running or engaging -- the AI does not thrash between
+ * targets mid-fight.  Otherwise `attacker` becomes the target and the ship
+ * engages.  An escort shot by its own charge stops being an escort and turns
+ * hunter.
+ *
+ * Called from attacked_by() in ship_combat.c whenever a volley lands.
+ */
 void NPCShipAI::attacked_by(P_ship attacker)
 {
 	if (mode != NPC_AI_RUNNING && mode != NPC_AI_ENGAGING)
@@ -340,6 +429,13 @@ void NPCShipAI::attacked_by(P_ship attacker)
 	}
 }
 
+/*
+ * React to the ship this one is ESCORTING being shot at.
+ *
+ * Only takes effect if this ship has no target of its own, so a busy escort
+ * is not pulled off.  This is what makes attacking a guarded merchant bring
+ * its escorts down on you.
+ */
 void NPCShipAI::escort_attacked_by(P_ship attacker)
 {
 	if (ship->target == 0)
@@ -350,6 +446,17 @@ void NPCShipAI::escort_attacked_by(P_ship attacker)
 	}
 }
 
+/*
+ * Despawn the ship if its errand is over and nobody would notice.
+ *
+ * Only considered when the maintenance countdown reaches 1.  Refuses while a
+ * player is aboard, and pushes the countdown back another 10 ticks if any
+ * non-NPC, undocked ship is still in contact -- ships do not vanish in front
+ * of witnesses.
+ *
+ * Returns TRUE only if the ship was actually destroyed, in which case the
+ * caller must not touch it again.
+ */
 bool NPCShipAI::try_unload()
 {
 	if (ship->timer[T_MAINTENANCE] == 1)
@@ -369,6 +476,13 @@ bool NPCShipAI::try_unload()
 	return FALSE;
 }
 
+/*
+ * Whether anyone is still commanding the ship.
+ *
+ * True when an NPC running npc_ship_crew_captain_func() is on the bridge, or
+ * an immortal is standing there.  activity() bails out when this is false, so
+ * killing the captain is how a boarding party disables an NPC ship.
+ */
 bool NPCShipAI::check_for_captain_on_bridge()
 {
 	P_char ch, ch_next;
@@ -392,6 +506,15 @@ bool NPCShipAI::check_for_captain_on_bridge()
 	return false;
 }
 
+/*
+ * Shadow the ship this one is escorting.
+ *
+ * Beyond 5 rooms it intercepts; inside that it matches the charge's heading
+ * and speed so it does not overrun.  Land between the two is routed around.
+ *
+ * Losing the charge from contact starts a 300-tick countdown to despawn.
+ * Returns false when there is nothing to escort or the ship cannot move.
+ */
 bool NPCShipAI::do_escort()
 {
 	if (SHIP_IMMOBILE(ship))
@@ -443,6 +566,13 @@ bool NPCShipAI::do_escort()
 // GENERAL COMBAT ///////
 /////////////////////////
 
+/*
+ * Re-find the existing target in this tick's contacts and refresh the cached
+ * firing geometry.
+ *
+ * Returns false when the target has docked, sunk or slipped out of contact,
+ * and starts a 300-tick countdown to despawn.
+ */
 bool NPCShipAI::find_current_target()
 {
 	for (int i = 0; i < contacts_count; i++)
@@ -460,6 +590,15 @@ bool NPCShipAI::find_current_target()
 	return false;
 }
 
+/*
+ * Pick something to attack from this tick's contacts.
+ *
+ * Takes the first valid target (see is_valid_target()) that is not carrying a
+ * diplomat -- diplomatic ships are left alone.  Cyric's Revenge never
+ * aggresses; its old target-selection code is kept commented out below.
+ *
+ * Returns true and sets ship->target when something was found.
+ */
 bool NPCShipAI::find_new_target()
 {
 	int i = 0;
@@ -521,6 +660,15 @@ found:
 	// send_message_to_debug("Found new target: %s\r\n", contacts[i].ship->id);
 	return true;
 }
+/*
+ * Cache the firing geometry for contacts[`i`]: the target's bearing, range,
+ * map position, which of OUR arcs it bears in (t_arc), and which of ITS arcs
+ * we bear in (s_arc).
+ *
+ * Everything in the combat routines reads these cached values rather than
+ * recomputing them, so this must be called whenever the target changes or the
+ * tick advances.
+ */
 void NPCShipAI::update_target(int i) // index in contacts
 {
 	t_contact = i;
@@ -534,6 +682,13 @@ void NPCShipAI::update_target(int i) // index in contacts
 	s_arc = get_arc(ship->target->heading, s_bearing);
 }
 
+/*
+ * Whether `tar` is something this ship will attack.
+ *
+ * Never a docked or sinking ship.  The current target always stays valid.
+ * Otherwise the ship must belong to one of the four player racewar sides --
+ * which is what stops NPC ships attacking each other.
+ */
 bool NPCShipAI::is_valid_target(P_ship tar)
 {
 	if (SHIP_DOCKED(tar))
@@ -551,6 +706,14 @@ bool NPCShipAI::is_valid_target(P_ship tar)
 		tar->race == SQUIDSHIP);
 }
 
+/*
+ * Whether any weapon still has ammunition, caching the answer in
+ * `out_of_ammo`.
+ *
+ * Cyric's Revenge is special-cased: it slowly regenerates ammunition in
+ * combat, so it never runs dry.  Everything else that empties its magazines
+ * breaks off and runs.
+ */
 bool NPCShipAI::check_ammo()
 {
 	out_of_ammo = true;
@@ -571,6 +734,12 @@ bool NPCShipAI::check_ammo()
 	return !out_of_ammo;
 }
 
+/*
+ * Occasionally throw cargo overboard while under fire, to lighten the ship
+ * and buy speed.  Cargo goes roughly one tick in thirty, contraband one in a
+ * hundred -- which is also a small gift to whoever is chasing, since half of
+ * it survives as salvageable crates.
+ */
 void NPCShipAI::check_for_jettison()
 {
 	if (SHIP_CARGO(ship) > 0 && !number(0, 30))
@@ -583,6 +752,11 @@ void NPCShipAI::check_for_jettison()
 	}
 }
 
+/*
+ * Whether the ship is in position to send a boarding party across: the target
+ * slow enough to board, this ship down to boarding speed, and both occupying
+ * the same map cell.
+ */
 bool NPCShipAI::check_boarding_conditions()
 {
 	if (!is_boardable(ship->target))
@@ -594,6 +768,21 @@ bool NPCShipAI::check_boarding_conditions()
 	return true;
 }
 
+/*
+ * Send a boarding party onto the target.
+ *
+ * Loads grunt mobs from this crew's outer roster directly into the target's
+ * rooms -- the bridge first, then scattered through the rest -- filling half
+ * the rooms for a high-tier crew and three quarters for a lower one.  The
+ * message the victims see depends on the crew tier and on whether this is a
+ * pirate or a hunter.
+ *
+ * A PIRATE then loots the hold and breaks off, switching to NPC_AI_LEAVING
+ * with a countdown to despawn: it came for the cargo, not the kill.  A hunter
+ * stays and keeps fighting.
+ *
+ * Records the target in `did_board` so the same ship is never boarded twice.
+ */
 void NPCShipAI::board_target()
 {
 	// send_message_to_debug("=============BOARDING TARGET=============\r\n");
@@ -633,7 +822,12 @@ void NPCShipAI::board_target()
 	if (!load_npc_ship_crew_member(ship->target, ship->target->bridge, grunt, 0))
 		return;
 	board_count--;
-	while (board_count)
+	/*
+	 * `> 0`, not `!= 0`: board_count is derived from the target's room
+	 * count and is at least 1 for every real hull, but a zero would make
+	 * `!= 0` count downwards without end.
+	 */
+	while (board_count > 0)
 	{
 		int room_no = number(1, ship->target->room_count - 1);
 		grunt = crew_data->outer_grunts[number(0, grunt_count - 1)];
@@ -653,6 +847,14 @@ void NPCShipAI::board_target()
 }
 
 int add_crate(P_ship ship, int index, int type);
+/*
+ * Transfer part of the target's hold to this ship.
+ *
+ * Deliberately not everything: a random 40-60% of what is taken is destroyed
+ * in the transfer and another 40-60% is left behind, so a robbed captain
+ * keeps something and the pirate is limited by its own remaining capacity.
+ * At least one crate is taken from every occupied slot.
+ */
 void NPCShipAI::steal_target_cargo()
 {
 	int total_load = SHIP_CARGO_LOAD(ship->target);
@@ -697,6 +899,17 @@ void NPCShipAI::steal_target_cargo()
 	update_ship_status(ship);
 }
 
+/*
+ * Steer straight at the target.
+ *
+ * Refuses against a mobile target that has short-range weapons -- charging
+ * into those is how NPC ships die.  `for_boarding` true also throttles back
+ * on the approach, to 40 inside 3 rooms and to boarding speed inside 1, so
+ * the ship arrives slow enough to grapple.
+ *
+ * Returns false when charging was rejected, leaving the caller to manoeuvre
+ * instead.
+ */
 bool NPCShipAI::charge_target(bool for_boarding)
 {
 	if (!SHIP_IMMOBILE(ship->target) &&
@@ -716,6 +929,11 @@ bool NPCShipAI::charge_target(bool for_boarding)
 	return true;
 }
 
+/*
+ * Pursue the target on an intercept course rather than by pointing at where
+ * it is now (see calc_intercept_heading()), falling back to a direct bearing
+ * if the intercept course runs into land.  Returns false if immobile.
+ */
 bool NPCShipAI::chase()
 {
 	if (SHIP_IMMOBILE(ship))
@@ -728,6 +946,16 @@ bool NPCShipAI::chase()
 	return true;
 }
 
+/*
+ * Pathfind around an obstruction towards `dest`.
+ *
+ * Runs a Dijkstra search over ship-navigable rooms and steers along the first
+ * leg of the route.  Called when check_dir_for_land_from() reports land
+ * between this ship and where it wants to be.
+ *
+ * Returns false when immobile or when no route exists -- the caller then
+ * usually gives up and runs.
+ */
 bool NPCShipAI::go_around_land(P_ship dest)
 {
 	if (SHIP_IMMOBILE(ship))
@@ -770,6 +998,11 @@ bool NPCShipAI::go_around_land(P_ship dest)
 	return true;
 }
 
+/*
+ * Flee the target: turn directly away, and if that heads into land, fan out
+ * in 30-degree steps to either side looking for open water.  As a last resort
+ * it will run TOWARDS the target if that is the only water left.
+ */
 void NPCShipAI::run_away()
 {
 	// TODO: smarter choice?
@@ -800,6 +1033,13 @@ void NPCShipAI::run_away()
 	set_new_dir();
 }
 
+/*
+ * Heading that closes on a target bearing `tb` away and steering `th`.
+ *
+ * Roughly the average of the two, which leads the target instead of chasing
+ * its wake, with extra lead applied when the target is crossing sharply
+ * (beyond 90 degrees off).  Returns a normalised compass heading.
+ */
 float NPCShipAI::calc_intercept_heading(float tb, float th)
 {
 	if (tb >= th)
@@ -822,6 +1062,16 @@ float NPCShipAI::calc_intercept_heading(float tb, float th)
 	return new_h;
 }
 
+/*
+ * Whether ramming is a good trade for this ship.
+ *
+ * No against a target more than half again its own hull weight, and no if its
+ * own hull is in poor shape -- any arc already breached, or any of the three
+ * forward arcs down to half armour.  A ram hurts the rammer too.
+ *
+ * Note the ordering of the tests: the `== 0` checks come first so the
+ * `maxarmor / armor` ratios below them cannot divide by zero.
+ */
 bool NPCShipAI::worth_ramming()
 {
 	if ((float)SHIP_HULL_WEIGHT(ship->target) / (float)SHIP_HULL_WEIGHT(ship) >= 1.5)
@@ -842,6 +1092,14 @@ bool NPCShipAI::worth_ramming()
 }
 
 int check_ram_arc(float heading, float bearing, float size);
+/*
+ * Whether a ram can be attempted this tick: off cooldown, inside 1 room, above
+ * boarding speed, target within the 120-degree bow cone, and both ships at
+ * the same altitude.
+ *
+ * A basic (non-advanced) AI additionally only tries two times in three
+ * against a target it is not trying to board -- dumb captains ram less.
+ */
 bool NPCShipAI::check_ram()
 {
 	if (ship->timer[T_RAM] != 0)
@@ -863,6 +1121,12 @@ bool NPCShipAI::check_ram()
 	return true;
 }
 
+/*
+ * Ram the target, landing first if this ship is flying.
+ *
+ * A successful impact that leaves the target boardable is followed straight
+ * up with a boarding party -- ramming to grapple is the pirate's opening.
+ */
 void NPCShipAI::ram_target()
 {
 	// send_message_to_debug("\r\nRamming!\r\n");
@@ -882,6 +1146,19 @@ void NPCShipAI::ram_target()
 // BASIC COMBAT /////////
 /////////////////////////
 
+/*
+ * The BASIC combat brain: fight by pointing a loaded arc at the target.
+ *
+ * Fires whatever already bears, then picks a manoeuvre in priority order:
+ *   1. if the target's facing arc is destroyed, circle to find a live side
+ *   2. turn an arc that is loaded (or nearly) and already in range
+ *   3. if a loaded weapon is too close to use, break distance
+ *   4. turn the arc that will reload soonest
+ *   5. otherwise just chase
+ *
+ * Compare advanced_combat_maneuver(), which predicts the target's movement
+ * instead of reacting to its current position.
+ */
 void NPCShipAI::basic_combat_maneuver()
 {
 	if (!ship->target)
@@ -925,6 +1202,14 @@ void NPCShipAI::basic_combat_maneuver()
 	set_new_dir();
 }
 
+/*
+ * Fire every weapon that already bears on a target in range.
+ *
+ * Locks the heading first so the ship does not swing off the solution as it
+ * shoots.  A heavy ship (`is_multi_target`) makes a second pass and gives any
+ * still-loaded weapon a shot at a DIFFERENT valid contact, so a dreadnought
+ * can engage a whole squadron at once.
+ */
 void NPCShipAI::b_attack()
 { // if we have a ready gun pointing to target in range, fire it right away!
 	for (int w_num = 0; w_num < MAXSLOTS; w_num++)
@@ -971,6 +1256,14 @@ void NPCShipAI::b_attack()
 	}
 }
 
+/*
+ * Survey the ship's weapons against the current range and cache the result.
+ *
+ * Fills `active_arc[]` with, per arc, the shortest reload timer among weapons
+ * that are in a good firing band -- so 0 means "this arc can shoot now".
+ * Also sets `too_close` (a loaded weapon whose minimum range is not met) and
+ * `too_far`.  The manoeuvre routines steer off these three.
+ */
 void NPCShipAI::b_check_weapons()
 {
 	too_close = 0;
@@ -1009,6 +1302,14 @@ void NPCShipAI::b_check_weapons()
 	}
 }
 
+/*
+ * Work around to a different side of a target whose `arc` is already
+ * destroyed -- there is nothing left to shoot at on that face.
+ *
+ * Beyond 8 rooms it just closes.  Closer in it picks whichever of the
+ * target's other sides has the most open water behind it and pathfinds to a
+ * point off that side.  Returns false if no route exists.
+ */
 bool NPCShipAI::b_circle_around_arc(int arc)
 {
 	if (t_range >= 8)
@@ -1081,6 +1382,14 @@ bool NPCShipAI::b_circle_around_arc(int arc)
 	return true;
 }
 
+/*
+ * Turn to bring an arc that can fire now (or within 4 ticks) onto the target,
+ * trying arcs in the order b_set_arc_priority() gives.
+ *
+ * A heavy ship refuses to swing its rear arc more than 60 degrees -- exposing
+ * a dreadnought's stern is worse than not firing.  Returns false when no arc
+ * is close enough to ready.
+ */
 bool NPCShipAI::b_turn_active_weapon()
 {
 	if (ship->timer[T_RAM_WEAPONS] > 0)
@@ -1105,6 +1414,11 @@ bool NPCShipAI::b_turn_active_weapon()
 	return false;
 }
 
+/*
+ * Fallback for b_turn_active_weapon(): turn towards whichever arc will be
+ * ready soonest, however long that is.  Same heavy-ship rear-arc protection.
+ * Returns false when no arc has a usable weapon at all.
+ */
 bool NPCShipAI::b_turn_reloading_weapon()
 {
 	int best_arc = -1, best_time = 1000;
@@ -1129,6 +1443,11 @@ bool NPCShipAI::b_turn_reloading_weapon()
 	return false;
 }
 
+/*
+ * Open the range to at least `distance`, for when the ship has closed inside
+ * its own weapons' minimum range.  Returns false if immobile, or true
+ * immediately if already far enough out.
+ */
 bool NPCShipAI::b_make_distance(float distance)
 {
 	if (SHIP_IMMOBILE(ship))
@@ -1218,6 +1537,22 @@ bool NPCShipAI::b_make_distance(float distance)
 	return false;
 }
 
+/*
+ * Commit `new_heading` to the ship and choose a safe speed to hold it at.
+ *
+ * Every manoeuvre routine ends here.  Two things are layered on top of the
+ * requested heading:
+ *
+ *   - Land braking: the ship slows sharply as land closes on either the
+ *     current or the new heading -- down to speed 1 within a tenth of a room.
+ *     This is what keeps the AI off the rocks.
+ *   - Turn braking (advanced AI only): a turn of 90 degrees or more drops to
+ *     just above boarding speed, 60 degrees or more to half; a ship that is
+ *     barely moving turns much faster (see get_turning_speed() in
+ *     ship_utils.c), so slowing down IS the turn.
+ *
+ * Finally clamps to maxspeed and to any speed_restriction the caller set.
+ */
 void NPCShipAI::set_new_dir()
 {
 	normalize_direction(new_heading);
@@ -1261,6 +1596,14 @@ void NPCShipAI::set_new_dir()
 	// send_message_to_debug("heading=%d, speed=%d\r\n", (int)ship->setheading, ship->setspeed);
 }
 
+/*
+ * Order the four arcs by how cheap each is to bring onto the target, writing
+ * the result into `arc_priority[4]`.
+ *
+ * The arc the target is already in comes first, the opposite arc last, and
+ * the two beams are ordered by which way the target is drifting -- so the
+ * ship turns the short way round.
+ */
 void NPCShipAI::b_set_arc_priority(float current_bearing, int current_arc, int *arc_priority)
 {
 	switch (current_arc)
@@ -1332,6 +1675,10 @@ void NPCShipAI::b_set_arc_priority(float current_bearing, int current_arc, int *
 	};
 }
 
+/*
+ * Fight from a standstill: fire what bears, then turn the best available arc
+ * onto the target.  All a disabled ship can still do is point its guns.
+ */
 void NPCShipAI::immobile_maneuver()
 {
 	b_attack();
@@ -1354,6 +1701,25 @@ void NPCShipAI::immobile_maneuver()
 // ADVANCED COMBAT //////
 /////////////////////////
 
+/*
+ * The ADVANCED combat brain: fight by predicting where the target will be.
+ *
+ * Beyond 10 rooms it simply closes.  Inside that it runs the full cycle each
+ * tick:
+ *   a_attack()                 fire, holding shots that would be better in a
+ *                              moment
+ *   a_update_side_props()      what each of OUR arcs can do at this range
+ *   a_predict_target(3)        extrapolate the target three ticks forward
+ *                              from its current turn rate and speed
+ *   a_update_target_side_props() what each of ITS sides looks like there
+ *   a_choose_target_side()     pick the weakest side to attack
+ *   a_calc_rotations()         work out the rotations that reach it
+ *   a_choose_rotation()        pick the cheaper direction to circle
+ *   a_immediate_turn() or a_choose_dest_point()
+ *
+ * The result is a ship that circles onto a chosen face of its target and
+ * holds station there, rather than reacting to where the target is now.
+ */
 void NPCShipAI::advanced_combat_maneuver()
 {
 	if (!ship->target)
@@ -1385,6 +1751,14 @@ void NPCShipAI::advanced_combat_maneuver()
 	set_new_dir();
 }
 
+/*
+ * Fire, with restraint.
+ *
+ * Unlike b_attack(), which shoots at anything that bears, this weighs whether
+ * a weapon is better held for a moment -- a shot fired now at a poor angle is
+ * a magazine wasted and a long reload.  Heavy ships still spread fire across
+ * multiple contacts.
+ */
 void NPCShipAI::a_attack()
 {
 	char to_fire[MAXSLOTS], can_fire_but_not_right = 0;
@@ -1546,6 +1920,17 @@ void NPCShipAI::a_attack()
 	}
 }
 
+/*
+ * Extrapolate the target `steps` ticks into the future.
+ *
+ * Assumes it holds its current turn rate (measured against the heading
+ * remembered from last tick) and speed, then walks that forward.  Fills
+ * curr_x/curr_y and the current arc angles, then proj_x/proj_y, the projected
+ * arc angles, and the projected range and bearings both ways.
+ *
+ * This prediction is the whole difference between the advanced AI and the
+ * basic one: everything downstream aims at where the target WILL be.
+ */
 void NPCShipAI::a_predict_target(int steps)
 {
 	float hd = ship->target->heading;
@@ -1595,6 +1980,12 @@ void NPCShipAI::a_predict_target(int steps)
 		proj_tb += 360;
 }
 
+/*
+ * Summarise what each of this ship's four arcs can do right now: soonest
+ * ready time, damage available, and the minimum, good and maximum ranges of
+ * its weapons.  Also records min_range_total, the closest this ship wants to
+ * be to anything.  Read by the target-side and rotation choices.
+ */
 void NPCShipAI::a_update_side_props()
 {
 	min_range_total = INF_RANGE;
@@ -1659,6 +2050,11 @@ void NPCShipAI::a_update_side_props()
 	}
 }
 
+/*
+ * Summarise each of the TARGET's four sides at its predicted position: how
+ * much armour and structure is left, and how much open water lies off that
+ * side -- there is no point circling to a face backed onto rocks.
+ */
 void NPCShipAI::a_update_target_side_props()
 {
 	t_max_range = INF_RANGE;
@@ -1724,6 +2120,10 @@ void NPCShipAI::a_update_target_side_props()
 		t_min_range = 0;
 }
 
+/*
+ * Choose which side of the target to attack: the weakest one that still has
+ * something left and has room to manoeuvre off.  Stored in `target_side`.
+ */
 void NPCShipAI::a_choose_target_side() // TODO: choose another one if too close to land?
 {
 	P_ship target = ship->target;
@@ -1745,6 +2145,12 @@ void NPCShipAI::a_choose_target_side() // TODO: choose another one if too close 
 	}
 }
 
+/*
+ * Work out the four angular distances from the ship's projected bearing to
+ * the clockwise and anticlockwise edges of the chosen target side, and set
+ * `within_target_side` if it is already inside that window.  Feeds
+ * a_choose_rotation().
+ */
 void NPCShipAI::a_calc_rotations()
 {
 	int delta = (target_side == SLOT_FORE || target_side == SLOT_REAR) ? 30 : 40;
@@ -1775,6 +2181,14 @@ void NPCShipAI::a_calc_rotations()
 	// send_message_to_debug("cw_cw=%d, cw_ccw=%d, ccw_cw=%d, ccw_ccw=%d\r\n", cw_cw, cw_ccw, ccw_cw, ccw_ccw);
 }
 
+/*
+ * Pick which way to circle -- clockwise or anticlockwise -- and with which of
+ * this ship's own arcs facing the target.
+ *
+ * Weighs the four combinations from a_calc_rotations() by how far each has to
+ * turn and whether it would need this ship to swap firing sides.  Sets
+ * `chosen_rot` and `chosen_side`.
+ */
 void NPCShipAI::a_choose_rotation()
 {
 	float proj_tb_rel = proj_tb - ship->heading;
@@ -1914,6 +2328,13 @@ void NPCShipAI::a_choose_rotation()
 	// TODO: no weapons?
 }
 
+/*
+ * Take the chosen rotation directly when the ship is already close to where
+ * it wants to be, without routing through a waypoint.
+ *
+ * Returns false when the geometry needs the fuller treatment in
+ * a_choose_dest_point().
+ */
 bool NPCShipAI::a_immediate_turn()
 {
 	int delta = (target_side == SLOT_FORE || target_side == SLOT_REAR) ? 30 : 40;
@@ -1966,6 +2387,11 @@ bool NPCShipAI::a_immediate_turn()
 	return false;
 }
 
+/*
+ * Pick a waypoint on the circle around the target's predicted position and
+ * steer for it -- the fallback when a_immediate_turn() cannot get there in
+ * one move.  This is what produces the advanced AI's circling behaviour.
+ */
 void NPCShipAI::a_choose_dest_point()
 {
 	float dest_angle = proj_sb + ((chosen_rot == 1) ? 30 : -30);
@@ -2153,6 +2579,10 @@ int NPCShipAI::check_dir_for_land_from(float cur_x, float cur_y, float heading, 
 	return 0;
 }
 
+/*
+ * Whether (`x`, `y`) is inside the 101x101 tactical map.  Every read of
+ * tactical_map[] in this file is gated on this.
+ */
 bool NPCShipAI::inside_map(float x, float y)
 {
 	if ((int)x < 0 || (int)x > 100)
@@ -2162,6 +2592,10 @@ bool NPCShipAI::inside_map(float x, float y)
 	return true;
 }
 
+/*
+ * Real room index `range` map cells from (`x`, `y`) along compass heading
+ * `dir`, or 0 if that falls off the map.
+ */
 int NPCShipAI::get_room_in_direction_from(float x, float y, float dir, float range)
 {
 	float rx, ry;
@@ -2170,11 +2604,19 @@ int NPCShipAI::get_room_in_direction_from(float x, float y, float dir, float ran
 	return 0;
 }
 
+/*
+ * Real room index at tactical map position (`x`, `y`).  The caller must have
+ * checked inside_map() first -- this does not.
+ */
 int NPCShipAI::get_room_at(float x, float y)
 {
 	return tactical_map[(int)x][100 - (int)y].rroom;
 }
 
+/*
+ * Project (`x`, `y`) `range` cells along compass heading `dir`, writing the
+ * result to `rx`/`ry`.  Returns false if the result is off the map.
+ */
 bool NPCShipAI::get_coord_in_direction_from(float x, float y, float dir, float range, float &rx,
 					    float &ry)
 {
@@ -2188,6 +2630,17 @@ bool NPCShipAI::get_coord_in_direction_from(float x, float y, float dir, float r
 	return true;
 }
 
+/*
+ * Stream a formatted AI trace line to the immortal watching this ship.
+ *
+ * `debug_char` is NULL in normal play and send_to_char() ignores that, so the
+ * call is harmless -- but it formats into the shared global `buf` first, so
+ * do not call it while anything else is using that buffer.
+ *
+ * Most call sites throughout this file are commented out; uncomment them (and
+ * attach a debug char with "lock ai_..." from the bridge) to watch the AI
+ * reason.
+ */
 void NPCShipAI::send_message_to_debug_char(const char *fmt, ...)
 {
 	va_list args;
