@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 6;
 constexpr uint16_t ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5;
@@ -134,6 +135,8 @@ struct item_transfer_result
 bool item_owner_identity_valid(const item_owner_identity &owner);
 bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right);
 uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint64_t item_uid);
+bool item_transfer_selected_roots(const item_transfer_payload &payload,
+				  std::vector<uint64_t> *roots);
 uint64_t item_transfer_result_root(const item_transfer_payload &payload);
 bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_t item_uid,
 				   uint64_t *root_item_uid, uint64_t *parent_item_uid);

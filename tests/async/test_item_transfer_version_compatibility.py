@@ -8,6 +8,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+COMMAND_SOURCE = (ROOT / "src/item/item_transfer_command.c").read_text(
+    encoding="utf-8", errors="replace"
+)
 
 HARNESS = r'''
 #include "item/item_transfer_command.h"
@@ -73,6 +76,10 @@ int main()
 	assert(decoded.item_blob_size == payload.item_blob_size);
 	assert(decoded.item_blob[2] == payload.item_blob[2]);
 	assert(!decoded.corpse.present);
+	auto truncated_variable = command;
+	truncated_variable.payload.resize(ITEM_TRANSFER_HEADER_BYTES +
+					  ITEM_TRANSFER_ENTRY_BYTES);
+	assert(!item_transfer_command_decode_payload(truncated_variable, &decoded));
 
 	std::vector<uint8_t> legacy_payload(ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
 					    payload.item_blob_size);
@@ -86,6 +93,14 @@ int main()
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.item_blob_size == payload.item_blob_size);
 	assert(!decoded.corpse.present);
+	for (uint16_t version : { ITEM_TRANSFER_EXACT_PAYLOAD_VERSION,
+				  ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION })
+	{
+		auto truncated_fixed = command;
+		truncated_fixed.payload_version = version;
+		truncated_fixed.payload.resize(ITEM_TRANSFER_PAYLOAD_BYTES);
+		assert(!item_transfer_command_decode_payload(truncated_fixed, &decoded));
+	}
 
 	command.payload.resize(ITEM_TRANSFER_PAYLOAD_BYTES);
 	command.payload_version = ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION;
@@ -165,12 +180,20 @@ int main()
 	assert(decoded.multi_root && decoded.selected_item_uid == 0 &&
 	       item_transfer_result_root(decoded) == 100 &&
 	       item_transfer_selected_root(decoded, 200) == 200);
+	std::vector<uint64_t> selected_roots;
+	assert(item_transfer_selected_roots(decoded, &selected_roots));
+	assert((selected_roots == std::vector<uint64_t>{ 100, 200 }));
 	uint64_t target_root = 0, target_parent = 1;
 	assert(item_transfer_target_topology(decoded, 200, &target_root, &target_parent));
 	assert(target_root == 200 && target_parent == 0);
 	return 0;
 }
 '''
+
+assert (
+    "command.payload.size() < item_section_size + sizeof(uint32_t)"
+    in COMMAND_SOURCE
+), "v4-v6 item blob length reads must be bounds-checked"
 
 
 with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_dir:

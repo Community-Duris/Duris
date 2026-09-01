@@ -76,6 +76,12 @@ ok &= check(
     and "ITEM2_NOLOOT" in select_item,
 )
 ok &= check(
+    "bulk corpse pickup waits for lifecycle settlement before selection",
+    "corpse_lifecycle_transaction_busy" in start_bulk
+    and start_bulk.index("corpse_lifecycle_transaction_busy")
+    < start_bulk.index("bulk_get_state state"),
+)
+ok &= check(
     "all durable roots submit in one multi-root movement",
     start_bulk.count("item_movement_transaction_submit_batch(") == 1
     and "roots.data(), roots.size()" in start_bulk

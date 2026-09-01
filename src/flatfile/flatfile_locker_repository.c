@@ -474,25 +474,6 @@ bool payload_items_match(const item_transfer_payload &payload,
 			   [&](const auto &item) { return expected.contains(item.object_uid); });
 }
 
-bool payload_selected_roots(const item_transfer_payload &payload, std::vector<uint64_t> *roots)
-{
-	if (!roots)
-		return false;
-	try
-	{
-		roots->clear();
-		for (size_t index = 0; index < payload.item_count; ++index)
-			if (item_transfer_selected_root(payload, payload.items[index].item_uid) ==
-			    payload.items[index].item_uid)
-				roots->push_back(payload.items[index].item_uid);
-	}
-	catch (const std::bad_alloc &)
-	{
-		return false;
-	}
-	return !roots->empty();
-}
-
 } // namespace
 
 flatfile_locker_result flatfile_locker_establish(
@@ -718,7 +699,7 @@ flatfile_locker_prepare_item_transfer(const std::string &root, const flatfile_au
 			std::vector<uint64_t> selected_roots;
 			std::vector<player_item_snapshot> selected;
 			std::vector<player_item_snapshot> remaining;
-			if (!payload_selected_roots(payload, &selected_roots) ||
+			if (!item_transfer_selected_roots(payload, &selected_roots) ||
 			    player_item_snapshot_extract_forest(chest->items, selected_roots,
 								&selected, &remaining) !=
 				    player_snapshot_codec_result::ok)

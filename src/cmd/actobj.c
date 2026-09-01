@@ -1666,6 +1666,15 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
 		return;
 	}
+	if (corpse && container &&
+	    corpse_lifecycle_transaction_busy(
+		    static_cast<uint32_t>(container->value[CORPSE_PID]),
+		    static_cast<uint32_t>(container->value[CORPSE_SAVEID])))
+	{
+		send_to_char("That corpse is settling into the world; try again shortly.\r\n",
+			     actor);
+		return;
+	}
 	bulk_get_state state = {
 		actor->in_room, container ? container->obj_uid : 0, {}, {}, 0, false, corpse
 	};

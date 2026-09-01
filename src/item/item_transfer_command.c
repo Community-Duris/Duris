@@ -427,6 +427,29 @@ uint64_t item_transfer_selected_root(const item_transfer_payload &payload, uint6
 	return selected_root_for(payload, item_uid);
 }
 
+bool item_transfer_selected_roots(const item_transfer_payload &payload,
+				  std::vector<uint64_t> *roots)
+{
+	if (!roots)
+		return false;
+	try
+	{
+		roots->clear();
+		roots->reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+			if (selected_root_for(payload, payload.items[index].item_uid) ==
+			    payload.items[index].item_uid)
+				roots->push_back(payload.items[index].item_uid);
+		std::sort(roots->begin(), roots->end());
+		roots->erase(std::unique(roots->begin(), roots->end()), roots->end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return !roots->empty();
+}
+
 uint64_t item_transfer_result_root(const item_transfer_payload &payload)
 {
 	uint64_t result = 0;
@@ -659,6 +682,8 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	}
 	if (command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION)
 	{
+		if (command.payload.size() < item_section_size + sizeof(uint32_t))
+			return false;
 		payload->item_blob_size = get_u32(command.payload.data() + item_section_size);
 		const size_t item_end =
 			item_section_size + sizeof(uint32_t) + payload->item_blob_size;
