@@ -4782,7 +4782,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "oldsmartprompt",
 				      "ban",
 				      "logmsg",
-				      "no locate",
+				      "nolocate",
 				      "titles", // 30
 				      "battle",
 				      "shipmap",
@@ -4801,7 +4801,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "spec4", // 45
 				      "spec_timer",
 				      "heal",
-				      "group needed",
+				      "groupneeded",
 				      "experience",
 				      "showspec", // 50
 				      "hint",
@@ -4813,7 +4813,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "beep",
 				      "underline",
 				      "surname",
-				      "no level", // 60
+				      "nolevel", // 60
 				      "epic",
 				      "petdamage",
 				      "guildname",
@@ -4926,6 +4926,7 @@ void do_more(P_char ch, char *arg, int /*cmd*/)
 		command_interpreter(ch, arg);
 }
 
+/** Toggle a player flag or apply a parsed yes/no value, honoring reversed flags. */
 static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int reverse = 0)
 {
 	if (!*arg)
@@ -4946,6 +4947,12 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 #define PLR2_TOG(flag) plr_tog(PLR2_FLAGS(ch), flag, arg)
 #define PLR3_TOG(flag) plr_tog(PLR3_FLAGS(ch), flag, arg)
 
+/**
+ * Display or update a player toggle.
+ *
+ * Canonical names are single tokens. Compatibility aliases are normalized
+ * before the optional on/off value is parsed.
+ */
 void do_toggle(P_char ch, char *arg, int /*cmd*/)
 {
 	int i, j, tog_nr = -1, result = -1, number;
@@ -4973,6 +4980,31 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 	}
 
 	arg = one_argument(arg, Gbuf1);
+	if (!str_cmp(Gbuf1, "no-locate"))
+		strcpy(Gbuf1, "nolocate");
+	else if (!str_cmp(Gbuf1, "group-needed"))
+		strcpy(Gbuf1, "groupneeded");
+	else if (!str_cmp(Gbuf1, "no-level"))
+		strcpy(Gbuf1, "nolevel");
+	else if (!str_cmp(Gbuf1, "no") || !str_cmp(Gbuf1, "group"))
+	{
+		char *value = one_argument(arg, Gbuf3);
+		if (!str_cmp(Gbuf1, "no") && !str_cmp(Gbuf3, "locate"))
+		{
+			strcpy(Gbuf1, "nolocate");
+			arg = value;
+		}
+		else if (!str_cmp(Gbuf1, "no") && !str_cmp(Gbuf3, "level"))
+		{
+			strcpy(Gbuf1, "nolevel");
+			arg = value;
+		}
+		else if (!str_cmp(Gbuf1, "group") && !str_cmp(Gbuf3, "needed"))
+		{
+			strcpy(Gbuf1, "groupneeded");
+			arg = value;
+		}
+	}
 	number = atoi(arg);
 	tog_nr = (old_search_block(Gbuf1, 0, strlen(Gbuf1), toggles_list, 0) - 1);
 

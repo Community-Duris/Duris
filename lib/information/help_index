@@ -16746,13 +16746,19 @@ NOTE: If you are a higher level player with an interest in helping new
 See also: TOGGLE, NCHAT, NEWBIE
 
 #
-TOGGLE_NOLOCATE (Command)
+"NO LOCATE NO-LOCATE TOGGLE_NOLOCATE" (Command)
 ===========================================================================
 Syntax:         toggle nolocate
+                toggle no-locate
+                toggle no locate
 
-This option determines whether or not anyone can use you as a target for 
-teleport spells. Evil and Undead aligned player's do not have the option of
-turning this feature ON.
+When this option is ON, most character-targeting teleport abilities fail for
+characters you have not met through the introduction system. Some relocation
+abilities require both an introduction and your consent. Other restrictions
+specific to each ability still apply, so No Locate is not complete immunity
+from every form of magical travel. It does not affect the Locate Object spell.
+
+Evil- and Undead-aligned characters cannot turn this option ON.
 ===========================================================================
 See also: TOGGLE
 
