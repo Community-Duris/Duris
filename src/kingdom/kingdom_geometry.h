@@ -197,8 +197,12 @@ int kingdom_index_for_offset(int dx, int dy);
  * World access -- room <-> map square
  * ------------------------------------------------------------------ */
 
-/* Zone-local square of a room. Returns false when the room is invalid or its
- * zone is not a ZONE_MAP zone. `zone` receives the zone index. */
+/* Zone-local square of a room. Returns false when the room is invalid, its
+ * zone is not a ZONE_MAP zone, or its vnum falls past the bottom of that
+ * zone's grid -- a map zone may define MORE rooms than its grid holds, and
+ * folding a tail room such as the surface zone's "Dispersement" rooms back
+ * onto a real row would alias it onto a square that kingdom_room_at() answers
+ * with a different room. `zone` receives the zone index. */
 bool kingdom_square_of_room(int rnum, int *zone, int *x, int *y);
 
 /* The room at zone-local (x,y), or 0 when there is none.

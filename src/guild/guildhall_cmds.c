@@ -1314,6 +1314,10 @@ bool construct_golem(Guildhall *gh, int slot, int type)
 	return gh->reload();
 }
 
+/* Tear down the guildhall with this id: unbuild its rooms, drop the record,
+ * and tell the kingdom module its seat moved -- a realm whose main hall is
+ * gone goes dormant, so the notification is not optional. False when no hall
+ * carries the id or the record could not be removed. */
 bool destroy_guildhall(int id)
 {
 	if (Guildhall *gh = Guildhall::find_by_id(id))
@@ -1426,6 +1430,10 @@ void guildhall_info(Guildhall *gh, P_char ch)
 	}
 }
 
+/* Relocate `gh` so its entrance is `vnum`, rebuilding its rooms at the new
+ * seat and notifying the kingdom module, whose realm re-anchors (or goes
+ * dormant) on the strength of what now stands there. False when the vnum is
+ * not a real room or the move could not be completed. */
 bool move_guildhall(Guildhall *gh, int vnum)
 {
 	if (!real_room0(vnum))

@@ -771,6 +771,13 @@ void Guild::initialize()
 #endif
 }
 
+/* Contract in assocs.h. Returns true when the guild record is durable, false
+ * when the write failed -- every failure path alerts before returning, so a
+ * caller that only needs to abort its own work can test the result and stay
+ * silent. Under MariaDB the write joins an enclosing transaction when the
+ * caller opened one (sql_save_guild()), which is what lets the kingdom upkeep
+ * sweep land a treasury debit and the realm record that explains it as one
+ * unit; under the flat-file build there is no transaction to join. */
 bool Guild::save()
 {
 #ifdef __NO_MYSQL__

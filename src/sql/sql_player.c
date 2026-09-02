@@ -10670,6 +10670,13 @@ bool sql_delete_ship(const char *owner_name)
 	return true;
 }
 
+/* Write one guild -- its row, then its ranks and members -- returning true
+ * only when all three landed. The ranks and members are replaced wholesale,
+ * so they are wrapped in a transaction: the DELETEs run before the INSERTs,
+ * and a failure mid-loop would otherwise leave the guild with stale or empty
+ * ranks. When the caller already opened a transaction this JOINS it instead
+ * of nesting, and then a failure returns false WITHOUT rolling back, leaving
+ * that decision to the owner. */
 bool sql_save_guild(Guild *guild)
 {
 	if (!DB || !guild)

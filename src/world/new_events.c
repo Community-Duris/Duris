@@ -1889,6 +1889,9 @@ static void nevent_register_periodic_job(const char *key, event_func_type callba
 		      static_cast<unsigned int>(result));
 }
 
+/* Build the event system at boot: size and seed the event pool, then register
+ * every periodic job the server runs. Intervals here are in PULSES, so a job
+ * expressed in seconds must carry the * WAIT_SEC factor. */
 void ne_init_events(void)
 {
 	int j = 0, i = 0;

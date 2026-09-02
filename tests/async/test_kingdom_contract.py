@@ -70,6 +70,8 @@ def strip_comments(text: str) -> str:
     numbers and statement anchors survive."""
 
     def blank(m: re.Match) -> str:
+        """The matched comment with every character but newline replaced by a
+        space, so offsets and line numbers survive the strip."""
         return re.sub(r"[^\n]", " ", m.group(0))
 
     text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)

@@ -31,6 +31,8 @@ def strip_comments(text: str) -> str:
     cannot be satisfied by prose describing it."""
 
     def blank(match: re.Match) -> str:
+        """The matched comment, every character but newline replaced by a
+        space, so offsets and line numbers survive the strip."""
         return re.sub(r"[^\n]", " ", match.group(0))
 
     text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
@@ -38,27 +40,41 @@ def strip_comments(text: str) -> str:
 
 
 def function_body(text: str, signature: str) -> str | None:
-    """The brace-matched body of the first function definition whose head
-    matches the `signature` regex, comments stripped; None when absent."""
+    """The brace-matched body of the first function DEFINITION whose head
+    matches the `signature` regex, comments stripped; None when absent.
+
+    A PROTOTYPE is not a definition. Taking the next '{' anywhere after the
+    match would let a declaration such as `bool Guild::is_kingdom();` hand
+    back the body of the next unrelated function, so a pin asking what
+    is_kingdom does could be satisfied by a stranger. Only a parameter list
+    and trailing qualifiers may stand between the head and the body, so a ';'
+    or a '}' in that gap means the match was a declaration; skip it and keep
+    looking. Same rule as function_bodies() in test_kingdom_contract.py."""
     code = strip_comments(text)
-    match = re.search(signature, code)
-    if match is None:
-        return None
-    start = code.find("{", match.end())
-    if start < 0:
-        return None
-    depth = 0
-    for index in range(start, len(code)):
-        if code[index] == "{":
-            depth += 1
-        elif code[index] == "}":
-            depth -= 1
-            if depth == 0:
-                return code[start : index + 1]
+    for match in re.finditer(signature, code):
+        start = code.find("{", match.end())
+        if start < 0:
+            continue
+        gap = code[match.end() : start]
+        if ";" in gap or "}" in gap:
+            continue
+        depth = 0
+        for index in range(start, len(code)):
+            if code[index] == "{":
+                depth += 1
+            elif code[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    return code[start : index + 1]
     return None
 
 
 class SiegeKingdomRemovalContractTest(unittest.TestCase):
+    """Pins the siege/kingdom retirement: the retired runtime, world wiring and
+    SQL surfaces stay gone, the gated prototypes stay in custody, and the two
+    surfaces the new kingdom module legitimately revives are the only
+    exceptions."""
+
     def test_runtime_implementation_and_destruction_state_are_absent(self) -> None:
         """siege.c/.h, their tokens and the destruction state are gone from
         src/, while the revived Guild::is_kingdom delegates to the module."""
