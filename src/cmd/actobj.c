@@ -128,6 +128,12 @@ static bool get_trace_enabled(void)
 	return cached != 0;
 }
 
+/**
+ * Return whether an object's topology changes must use generic ownership.
+ *
+ * Active transient objects participate when their authoritative runtime row exists;
+ * unowned transient objects retain synchronous behavior.
+ */
 static bool uses_generic_item_ownership(P_obj object)
 {
 	if (!object || object->obj_uid == 0 || object->type == ITEM_MONEY ||
@@ -500,7 +506,7 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 	(void)stored;
 }
 
-/*
+/**
  * Every put of a generic-ownership item is durable, including a put into a container the
  * actor already owns.  Nesting is ledger state: item_current_owner carries the parent and
  * root of each item, capture() in the movement transaction refuses a subtree whose ledger
@@ -2850,9 +2856,13 @@ void drop_transient_object(P_char actor, P_obj object, bulk_drop_state &state)
 		writeCorpse(object);
 }
 
+/**
+ * Publish synchronous drop candidates after the durable batch has committed.
+ *
+ * Coins, unowned transient objects, and PC corpse roots remain on this path.
+ */
 void finish_bulk_drop_after_commit(P_char actor, bulk_drop_state &state)
 {
-	/* Coins, unowned transient objects, and PC corpse roots stay synchronous. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
@@ -3866,9 +3876,13 @@ bool bulk_put_permitted(P_char actor, P_obj object, P_obj container, int64_t &we
 	return true;
 }
 
+/**
+ * Publish synchronous put candidates after the durable batch has committed.
+ *
+ * Coins, unowned transient objects, and PC corpse roots remain on this path.
+ */
 void finish_bulk_put_after_commit(P_char actor, bulk_put_state &state, P_obj container)
 {
-	/* Coins, unowned transient objects, and PC corpse roots stay synchronous. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
