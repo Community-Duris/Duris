@@ -172,6 +172,19 @@ int main()
 	assert(result.wallet.amount[0] == 3 && result.wallet.amount[3] == 5);
 	assert(result.wallet_revision == 3 && result.bank_revision == 3);
 
+	const currency_vector coin_drop_debit = { { -2, 0, 0, 0 } };
+	critical_command coin_drop = command_for(pid, account.c_str(), coin_drop_debit, empty,
+						 currency_reason_type::wallet_spend);
+	operations.push_back(operation_hex(coin_drop.operation_id));
+	applied = critical_command_repository_apply(connection, coin_drop);
+	assert(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0);
+	result = result_of(applied);
+	assert(result.wallet.amount[0] == 1 && result.wallet.amount[3] == 5);
+	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(coin_drop.operation_id) + "') AND reason_type=" +
+		      std::to_string(
+			      static_cast<unsigned int>(currency_reason_type::wallet_spend))) == 1);
+
 	execute("UPDATE account_banks SET bank_copper=2147483647 WHERE id=" +
 		std::to_string(bank_id));
 	const currency_vector overflow_delta = { { 1, 0, 0, 0 } };
@@ -183,15 +196,15 @@ int main()
 	       applied.error_code == ERANGE);
 	execute("UPDATE account_banks SET bank_copper=10 WHERE id=" + std::to_string(bank_id));
 
-	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)) == 3);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)) == 1);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(pid)) == 5);
 	assert(scalar("SELECT bank_platinum FROM account_banks WHERE id=" +
 		      std::to_string(bank_id)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + std::to_string(pid)) ==
-	       3);
+	       4);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox o JOIN currency_ledger l "
 		      "ON l.operation_id=o.operation_id WHERE l.pid=" +
-		      std::to_string(pid)) == 3);
+		      std::to_string(pid)) == 4);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +
 		      operation_hex(rejected.operation_id) + "')") == 0);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +

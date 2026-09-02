@@ -379,7 +379,6 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+C4) Display account information&n\r\n", d);
 		SEND_TO_Q("&+Y5) Change registered email address&n\r\n", d);
 		SEND_TO_Q("&+Y6) Change account password&n\r\n", d);
-		SEND_TO_Q("&+R7) Delete this account&n\r\n", d);
 		SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
 		SEND_TO_Q("\r\n", d);
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
@@ -446,8 +445,11 @@ void display_account_menu(P_desc d, char *arg)
 		break;
 
 	case 7:
-		STATE(d) = CON_ACCT_DELETE_ACCT;
-		delete_account(d, NULL);
+		SEND_TO_Q(
+			"Account deletion is not available from the game menu. Please contact staff if you need help with your account.\r\n",
+			d);
+		STATE(d) = CON_DISPLAY_ACCT_MENU;
+		display_account_menu(d, NULL);
 		break;
 
 	case 8:
@@ -2124,12 +2126,10 @@ void add_char_to_account(P_desc d)
 	c->secondary_class = player->player.secondary_class;
 	c->next = d->account->acct_character_list;
 	d->account->acct_character_list = c;
-	if (-1 == write_account(d->account))
-	{
-		statuslog(56, "&+RALERT&n: account character-entry save failed");
-		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
-				  "add character save failed");
-	}
+	/* The new pid has been allocated, but no player_data row exists yet. Writing the
+	 * account here skips that unresolved mapping and then reloads the account, which
+	 * discards this live entry until the next login. The first character save commits
+	 * player_data plus account_characters and publishes the completed projection. */
 }
 
 int sync_account_character_projection(P_char player, int room, int persist)
@@ -2340,9 +2340,21 @@ void account_display_info(P_desc d, char * /*arg*/)
 	return;
 }
 
-void delete_account(P_desc /*d*/, char * /*arg*/) {}
+void delete_account(P_desc d, char * /*arg*/)
+{
+	if (!d)
+		return;
+	SEND_TO_Q(
+		"Account deletion is not available from the game menu. Please contact staff if you need help with your account.\r\n",
+		d);
+	STATE(d) = CON_DISPLAY_ACCT_MENU;
+	display_account_menu(d, NULL);
+}
 
-void verify_delete_account(P_desc /*d*/, char * /*arg*/) {}
+void verify_delete_account(P_desc d, char *arg)
+{
+	delete_account(d, arg);
+}
 
 #ifndef __NO_MYSQL__
 /* Release a DTO from sql_load_account() whose contents were never transferred to

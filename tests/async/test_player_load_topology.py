@@ -68,6 +68,7 @@ int main()
     // before the replacement projection landed.
     {
         std::vector<player_item_snapshot> items = { item(100), item(101) };
+        items[1].equipment_slot = 5;
         std::vector<player_load_item_identity> identities = {
             identity(10, 100, 100, 0, 0), identity(11, 101, 100, 100, 0)
         };
@@ -75,6 +76,7 @@ int main()
         reconcile(&items, &identities, &promoted, &repaired);
         assert(promoted == 0 && repaired == 1);
         assert(items[1].parent_index == 0);
+        assert(items[1].equipment_slot == 0);
         assert(identities[1].serialized_parent_id == 10);
     }
 

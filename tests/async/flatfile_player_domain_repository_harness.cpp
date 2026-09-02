@@ -98,16 +98,17 @@ static critical_command epic(int64_t delta, uint64_t expected_revision, uint8_t 
 	return command;
 }
 
-static critical_command currency(currency_vector wallet_delta, currency_vector bank_delta,
-				 uint64_t wallet_revision, uint64_t bank_revision,
-				 uint8_t operation)
+static critical_command
+currency(currency_vector wallet_delta, currency_vector bank_delta, uint64_t wallet_revision,
+	 uint64_t bank_revision, uint8_t operation,
+	 currency_reason_type reason = currency_reason_type::operator_adjustment)
 {
 	critical_operation_id operation_id = {};
 	operation_id.bytes[0] = operation;
 	currency_command_payload payload = {};
 	payload.pid = 42;
 	payload.racewar = 1;
-	payload.reason = currency_reason_type::operator_adjustment;
+	payload.reason = reason;
 	payload.reason_id = 88;
 	strcpy(payload.account_name.data(), "account-one");
 	payload.wallet_delta = wallet_delta;
@@ -317,7 +318,6 @@ int main(int argc, char **argv)
 	applied = flatfile_player_domain_apply(root.string(), interrupted_currency);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"recovered currency transaction did not replay from its operation ledger");
-
 	critical_command combat_outcome = combat(20);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_BANK", "1", 1);
 	applied = flatfile_player_domain_apply(root.string(), combat_outcome);
@@ -358,6 +358,16 @@ int main(int argc, char **argv)
 			flatfile_player_domain_apply(root.string(), stale_combat).error_code ==
 				ESTALE,
 		"stale combat decision was not durably replayed");
+
+	critical_command coin_drop_debit = currency({ { -2, 0, 0, 0 } }, { { 0, 0, 0, 0 } }, 3, 5,
+						    14, currency_reason_type::wallet_spend);
+	applied = flatfile_player_domain_apply(root.string(), coin_drop_debit);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			currency_command_decode_result(applied.result_payload.data(),
+						       applied.result_size, &currency_result) &&
+			currency_result.wallet.amount[0] == 1 &&
+			currency_result.wallet_revision == 4 && currency_result.bank_revision == 6,
+		"coin-command wallet debit did not apply through flatfile currency authority");
 
 	convert_player_domain_to_v2(domains / "player-45.domain");
 	require(flatfile_player_domain_load(root.string(), 45, "account-one", 1, &loaded, &error) ==

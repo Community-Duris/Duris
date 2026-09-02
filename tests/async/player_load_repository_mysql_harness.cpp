@@ -231,13 +231,16 @@ int main()
 	execute_sql(connection,
 		    "UPDATE item_current_owner SET root_item_uid=900001,parent_item_uid=900001 "
 		    "WHERE item_uid=900002");
-	execute_sql(connection, "UPDATE player_items SET container_id=NULL WHERE id=1002");
+	execute_sql(connection,
+		    "UPDATE player_items SET container_id=NULL,equip_slot=5 WHERE id=1002");
 	player_load_result stale_flat_projection = execute_load(connection, request, 94);
 	assert(stale_flat_projection.outcome == player_load_outcome::applied);
 	assert(stale_flat_projection.repaired_item_rows == 1 &&
 	       stale_flat_projection.snapshot.items[1].parent_index == 0 &&
+	       stale_flat_projection.snapshot.items[1].equipment_slot == 0 &&
 	       stale_flat_projection.item_identities[1].serialized_parent_id == 1001);
-	execute_sql(connection, "UPDATE player_items SET container_id=1001 WHERE id=1002");
+	execute_sql(connection,
+		    "UPDATE player_items SET container_id=1001,equip_slot=0 WHERE id=1002");
 
 	// A committed ownership move can outrun the replacement player snapshot. The
 	// ownership ledger is authoritative, so the stale payload row is skipped and its

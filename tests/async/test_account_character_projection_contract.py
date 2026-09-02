@@ -144,6 +144,15 @@ checks.append(
     )
 )
 
+add_character = body(account, "void add_char_to_account(P_desc d)")
+checks.append(
+    (
+        "a new character remains in the live account until its first player save",
+        contains(add_character, "d->account->acct_character_list = c;")
+        and not contains(add_character, "write_account("),
+    )
+)
+
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:
     print(f"[{'PASS' if ok else 'FAIL'}] {name}")

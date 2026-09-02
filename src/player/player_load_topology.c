@@ -72,10 +72,16 @@ bool player_load_reconcile_item_topology(std::vector<player_item_snapshot> *item
 			return false;
 		parents[index] = parent->second;
 		const uint64_t resolved_database_id = (*identities)[parent->second].database_id;
-		if (identity.serialized_parent_id != resolved_database_id)
+		if (identity.serialized_parent_id != resolved_database_id ||
+		    item.equipment_slot != 0)
 			++*repaired_item_rows;
 		identity.serialized_parent_id = resolved_database_id;
 		item.parent_index = static_cast<int32_t>(parent->second);
+		/* Custody parentage is authoritative. A lagging terminal snapshot can still
+		 * claim that the same item is equipped; retaining that slot creates an item
+		 * which is both worn and nested, and materialization rejects the whole
+		 * character. A nested item is ordinary container inventory after recovery. */
+		item.equipment_slot = 0;
 	}
 
 	// Resolve parents before children even when a repaired parent appears later in the
