@@ -111,6 +111,9 @@ int wield_item_size(P_char ch, P_obj obj)
  *   writing ~10 log lines for every pickup by every character in the game, mobs
  *   included.  Keep them, but make them opt-in via GET_TRACE.
  */
+/**
+ * Return whether GET_TRACE diagnostics are enabled for this process.
+ */
 static bool get_trace_enabled(void)
 {
 	static int cached = -1;
@@ -477,6 +480,11 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	studioproc_give(recipient, object, actor);
 }
 
+/**
+ * Publish a committed durable put to the live object graph.
+ *
+ * Failed commits and stale live topology leave the object's placement unchanged.
+ */
 void item_put_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			 const uint8_t *encoded, size_t encoded_size)
 {
@@ -2807,6 +2815,11 @@ bool bulk_drop_permitted(P_char actor, P_obj object, bulk_drop_state &state)
 	return true;
 }
 
+/**
+ * Move one synchronous bulk-drop candidate into the actor's current room.
+ *
+ * The move publishes player feedback, audit logging, and applicable floor or corpse state.
+ */
 void drop_transient_object(P_char actor, P_obj object, bulk_drop_state &state)
 {
 	if (!state.alldot)
@@ -3840,6 +3853,12 @@ bool bulk_put_destination_available(P_char actor, P_obj container)
 	       !IS_SET(container->value[1], CONT_CLOSED);
 }
 
+/**
+ * Validate one bulk-put candidate and accumulate its destination capacity.
+ *
+ * Return true when the item is eligible and fits the cumulative quiver, weight, and space
+ * limits.
+ */
 bool bulk_put_permitted(P_char actor, P_obj object, P_obj container, int64_t &weight,
 			int64_t &space, int64_t &quiver_count)
 {
