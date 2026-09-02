@@ -48,6 +48,70 @@ extern std::vector<Building *> buildings;
 // Internal variables
 P_Guild guild_list = NULL;
 
+void forget_deleted_guild_member(const char *character_name)
+{
+	if (!character_name || !character_name[0])
+		return;
+
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_association_record> records;
+	std::string error;
+	const char *root = persistence_mode_flatfile_root();
+	const bool have_durable_state = root && flatfile_association_list(root, &records, &error) ==
+							flatfile_association_result::ok;
+#endif
+
+	for (P_Guild guild = guild_list; guild; guild = guild->next_guild)
+	{
+		P_member *link = &guild->members;
+		while (*link)
+		{
+			if (strcasecmp((*link)->name, character_name))
+			{
+				link = &(*link)->next;
+				continue;
+			}
+			P_member removed = *link;
+			*link = removed->next;
+			removed->next = NULL;
+			delete removed;
+			if (guild->member_count)
+				--guild->member_count;
+			break;
+		}
+
+		if (!strcasecmp(guild->frags.topfragger, character_name))
+		{
+			guild->frags.topfragger[0] = '\0';
+			guild->frags.top_frags = 0;
+		}
+
+#ifdef __NO_MYSQL__
+		if (!have_durable_state)
+			continue;
+		auto durable = std::lower_bound(records.begin(), records.end(), guild->id_number,
+						[](const auto &record, unsigned int id)
+						{ return record.association_id < id; });
+		if (durable == records.end() || durable->association_id != guild->id_number ||
+		    durable->frags < LONG_MIN || durable->frags > LONG_MAX ||
+		    durable->top_frags < 0 || durable->top_frags > LONG_MAX)
+			continue;
+		guild->frags.frags = durable->frags;
+		guild->frags.top_frags = durable->top_frags;
+		if (durable->top_fragger.empty())
+			guild->frags.topfragger[0] = '\0';
+#endif
+	}
+
+#ifdef __NO_MYSQL__
+	if (!have_durable_state)
+		persistence_alert(AVATAR, "associations", "redacted", "none", "none",
+				  "delete_runtime_reconcile",
+				  "could not load durable guild state after account deletion: %s",
+				  error.c_str());
+#endif
+}
+
 bool Guild::is_allied_with(P_Guild ally)
 {
 	P_Alliance alliance = get_alliance();

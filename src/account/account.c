@@ -26,13 +26,24 @@
 #include "player/player_name.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_save_pipeline.h"
+#include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
+#include "persistence/locker_async.h"
+#include "persistence/maintenance_scheduler.h"
 #include "persistence/persistence_observability.h"
 #include "flatfile/flatfile_account_adapter.h"
+#include "flatfile/flatfile_account_delete.h"
+#include "persistence/persistence_mode.h"
+#include "ships/ships.h"
+#include "guild/assocs.h"
 #include "net/ws_handlers.h"
 
 #include <unordered_map>
 #include <new>
+#include <string>
 #include <utility>
+#include <vector>
 
 // External Stuff
 extern P_index obj_index;
@@ -51,6 +62,176 @@ struct acct_entry *account_list = NULL;
 namespace
 {
 std::unordered_map<uint64_t, player_load_result> ready_player_loads;
+
+struct account_deletion_identity
+{
+	int pid = 0;
+	std::string name;
+};
+
+bool account_password_matches(P_acct account, char *password)
+{
+	if (!account || !account->acct_password || !password)
+		return false;
+	if (is_bcrypt_hash(account->acct_password))
+		return bcrypt_verify_password(password, account->acct_password) != 0;
+	return !strcmp(CRYPT2(password, account->acct_password), account->acct_password);
+}
+
+void display_account_deletion_confirmation(P_desc d, bool retry)
+{
+	if (!d || !d->account || !d->account->acct_name)
+		return;
+	char prompt[1024];
+	checked_snprintf(
+		prompt, sizeof(prompt),
+		retry ? "\r\n&+RAccount deletion is already in progress.&n\r\n"
+			"Type the exact account name &+W%s&n to retry completion: " :
+			"\r\n&+R!!! PERMANENT ACCOUNT DELETION !!!&n\r\n"
+			"Every character and all live account data will be permanently deleted.\r\n"
+			"This cannot be cancelled after the deletion fence is written.\r\n\r\n"
+			"Type the exact account name &+W%s&n to continue, or &+WCANCEL&n: ",
+		d->account->acct_name);
+	SEND_TO_Q(prompt, d);
+	d->prompt_mode = TRUE;
+}
+
+bool capture_account_deletion_identities(P_desc d,
+					 std::vector<account_deletion_identity> *identities)
+{
+	if (!d || !d->account || !d->account->acct_name || !identities)
+		return false;
+	identities->clear();
+	auto append = [&](int pid, const char *name)
+	{
+		if (pid <= 0 || !name || !name[0])
+			return false;
+		for (const auto &identity : *identities)
+			if (identity.pid == pid)
+				return !strcasecmp(identity.name.c_str(), name);
+		try
+		{
+			identities->push_back({ pid, name });
+			return true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	};
+	for (struct acct_chars *character = d->account->acct_character_list; character;
+	     character = character->next)
+		if (!append(character->pid, character->charname))
+			return false;
+	for (P_desc other = descriptor_list; other; other = other->next)
+		if (other->account && other->account->acct_name && other->character &&
+		    !strcasecmp(other->account->acct_name, d->account->acct_name) &&
+		    !append(GET_PID(other->character), GET_NAME(other->character)))
+			return false;
+	return true;
+}
+
+bool account_deletion_locker_runtime_active(
+	const std::string &account_name, const std::vector<account_deletion_identity> &identities)
+{
+	std::string account_prefix = "account." + account_name + ".";
+	for (P_char character = character_list; character; character = character->next)
+	{
+		const char *name = GET_NAME(character);
+		if (!name)
+			continue;
+		if (!strncasecmp(name, account_prefix.c_str(), account_prefix.size()) &&
+		    strstr(name + account_prefix.size(), ".locker"))
+			return true;
+		for (const auto &identity : identities)
+		{
+			std::string locker_name = identity.name + ".locker";
+			if (!strcasecmp(name, locker_name.c_str()))
+				return true;
+		}
+	}
+	return false;
+}
+
+void close_other_account_sessions(P_desc d)
+{
+	if (!d || !d->account || !d->account->acct_name)
+		return;
+	for (P_desc other = descriptor_list, next = NULL; other; other = next)
+	{
+		next = other->next;
+		if (other != d && other->account && other->account->acct_name &&
+		    !strcasecmp(other->account->acct_name, d->account->acct_name))
+		{
+			SEND_TO_Q("\r\nYour account is being permanently deleted.\r\n", other);
+			close_socket(other);
+		}
+	}
+}
+
+class account_deletion_drain_guard
+{
+    public:
+	account_deletion_drain_guard()
+	{
+		maintenance_scheduler_quiesce();
+		critical_command_coordinator_quiesce();
+		critical_outbox_quiesce();
+	}
+
+	~account_deletion_drain_guard()
+	{
+		if (player_quiesced_)
+			player_save_pipeline_resume();
+		critical_outbox_resume();
+		critical_command_coordinator_resume();
+		maintenance_scheduler_resume();
+	}
+
+	bool drain()
+	{
+		if (!maintenance_scheduler_drain(3000) ||
+		    !critical_command_coordinator_drain(3000) || !critical_outbox_drain(3000) ||
+		    !persistence_flush_all_character_saves())
+			return false;
+		player_save_pipeline_quiesce();
+		player_quiesced_ = true;
+		return player_save_pipeline_drain(3000) && locker_async_drain(3000);
+	}
+
+    private:
+	bool player_quiesced_ = false;
+};
+
+void remove_deleted_account_runtime(P_desc deleting_session,
+				    const std::vector<account_deletion_identity> &identities)
+{
+	for (const auto &identity : identities)
+	{
+		forget_deleted_guild_member(identity.name.c_str());
+		delete_ship_runtime(identity.name.c_str());
+	}
+	for (P_char character = character_list, next = NULL; character; character = next)
+	{
+		next = character->next;
+		if (IS_NPC(character))
+			continue;
+		for (const auto &identity : identities)
+			if (GET_PID(character) == identity.pid)
+			{
+				if (character->desc)
+				{
+					P_desc character_desc = character->desc;
+					character->desc = NULL;
+					character_desc->character = NULL;
+					if (character_desc != deleting_session)
+						close_socket(character_desc);
+				}
+				extract_char_after_terminal_save(character);
+				break;
+			}
+	}
+}
 
 void display_account_login_pages(P_desc d)
 {
@@ -272,28 +453,22 @@ void get_account_password(P_desc d, char *arg)
 	}
 
 	// Check password - support both bcrypt (new) and MD5 (legacy)
-	int password_valid = 0;
-	int needs_upgrade = 0;
-
-	if (is_bcrypt_hash(d->account->acct_password))
-	{
-		// Modern bcrypt hash
-		password_valid = bcrypt_verify_password(arg, d->account->acct_password);
-	}
-	else
-	{
-		// Legacy MD5 hash - verify with CRYPT2
-		password_valid = (strcmp(CRYPT2(arg, d->account->acct_password),
-					 d->account->acct_password) == 0);
-		if (password_valid)
-			needs_upgrade = 1; // Upgrade to bcrypt after successful login
-	}
+	const int password_valid = account_password_matches(d->account, arg);
+	const int needs_upgrade = password_valid && !is_bcrypt_hash(d->account->acct_password);
 
 	if (!password_valid)
 	{
 		SEND_TO_Q("Invalid Password ... disconnecting\r\n", d);
 		d->account = free_account(d->account);
 		STATE(d) = CON_FLUSH;
+		return;
+	}
+
+	if (d->account->acct_blocked == ACCOUNT_BLOCK_DELETION)
+	{
+		echo_on(d);
+		STATE(d) = CON_ACCT_VERIFY_DELETE_ACCT;
+		display_account_deletion_confirmation(d, true);
 		return;
 	}
 
@@ -379,6 +554,7 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+C4) Display account information&n\r\n", d);
 		SEND_TO_Q("&+Y5) Change registered email address&n\r\n", d);
 		SEND_TO_Q("&+Y6) Change account password&n\r\n", d);
+		SEND_TO_Q("&+R7) Delete this account&n\r\n", d);
 		SEND_TO_Q("&+C8) Check rested bonus&n\r\n", d);
 		SEND_TO_Q("\r\n", d);
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
@@ -445,11 +621,8 @@ void display_account_menu(P_desc d, char *arg)
 		break;
 
 	case 7:
-		SEND_TO_Q(
-			"Account deletion is not available from the game menu. Please contact staff if you need help with your account.\r\n",
-			d);
-		STATE(d) = CON_DISPLAY_ACCT_MENU;
-		display_account_menu(d, NULL);
+		STATE(d) = CON_ACCT_DELETE_ACCT;
+		delete_account(d, NULL);
 		break;
 
 	case 8:
@@ -2350,20 +2523,157 @@ void account_display_info(P_desc d, char * /*arg*/)
 	return;
 }
 
-void delete_account(P_desc d, char * /*arg*/)
+void delete_account(P_desc d, char *arg)
 {
-	if (!d)
+	if (!d || !d->account || !d->account->acct_name)
 		return;
-	SEND_TO_Q(
-		"Account deletion is not available from the game menu. Please contact staff if you need help with your account.\r\n",
-		d);
-	STATE(d) = CON_DISPLAY_ACCT_MENU;
-	display_account_menu(d, NULL);
+	if (!arg)
+	{
+		SEND_TO_Q("\r\nRe-enter your account password to begin permanent account deletion, "
+			  "or type CANCEL: ",
+			  d);
+		d->prompt_mode = TRUE;
+		echo_off(d);
+		return;
+	}
+	while (isspace(static_cast<unsigned char>(*arg)))
+		arg++;
+	if (!strcasecmp(arg, "cancel"))
+	{
+		echo_on(d);
+		SEND_TO_Q("\r\nAccount deletion cancelled.\r\n", d);
+		STATE(d) = CON_DISPLAY_ACCT_MENU;
+		display_account_menu(d, NULL);
+		return;
+	}
+	if (!account_password_matches(d->account, arg))
+	{
+		echo_on(d);
+		SEND_TO_Q("\r\nInvalid password. Account deletion cancelled.\r\n", d);
+		STATE(d) = CON_DISPLAY_ACCT_MENU;
+		display_account_menu(d, NULL);
+		return;
+	}
+	echo_on(d);
+	STATE(d) = CON_ACCT_VERIFY_DELETE_ACCT;
+	display_account_deletion_confirmation(d, false);
 }
 
 void verify_delete_account(P_desc d, char *arg)
 {
-	delete_account(d, arg);
+	if (!d || !d->account || !d->account->acct_name)
+		return;
+	const bool fenced = d->account->acct_blocked == ACCOUNT_BLOCK_DELETION;
+	if (!arg)
+	{
+		display_account_deletion_confirmation(d, fenced);
+		return;
+	}
+	while (isspace(static_cast<unsigned char>(*arg)))
+		arg++;
+	char *end = arg + strlen(arg);
+	while (end > arg && isspace(static_cast<unsigned char>(end[-1])))
+		*--end = '\0';
+	if (!strcasecmp(arg, "cancel"))
+	{
+		if (fenced)
+		{
+			SEND_TO_Q("\r\nDeletion has already started and cannot be cancelled. "
+				  "Retry the exact account name or contact an immortal.\r\n",
+				  d);
+			display_account_deletion_confirmation(d, true);
+			return;
+		}
+		SEND_TO_Q("\r\nAccount deletion cancelled.\r\n", d);
+		STATE(d) = CON_DISPLAY_ACCT_MENU;
+		display_account_menu(d, NULL);
+		return;
+	}
+	if (strcmp(arg, d->account->acct_name))
+	{
+		SEND_TO_Q("\r\nThe account name did not match exactly.\r\n", d);
+		display_account_deletion_confirmation(d, fenced);
+		return;
+	}
+
+	if (!fenced)
+	{
+		const char previous_block = d->account->acct_blocked;
+		d->account->acct_blocked = ACCOUNT_BLOCK_DELETION;
+		if (write_account(d->account) != 1)
+		{
+			d->account->acct_blocked = previous_block;
+			SEND_TO_Q(
+				"\r\nAccount deletion could not establish its durable fence; no data "
+				"was deleted. Please contact an immortal.\r\n",
+				d);
+			STATE(d) = CON_DISPLAY_ACCT_MENU;
+			display_account_menu(d, NULL);
+			return;
+		}
+		statuslog(56, "account deletion fenced (account=redacted)");
+	}
+
+	std::vector<account_deletion_identity> identities;
+	if (!capture_account_deletion_identities(d, &identities))
+	{
+		SEND_TO_Q("\r\nAccount deletion could not capture stable character identities.\r\n",
+			  d);
+		display_account_deletion_confirmation(d, true);
+		return;
+	}
+	const std::string account_name = d->account->acct_name;
+	if (account_deletion_locker_runtime_active(account_name, identities))
+	{
+		SEND_TO_Q("\r\nAccount deletion is waiting for an open locker to finish saving. "
+			  "Please retry shortly.\r\n",
+			  d);
+		display_account_deletion_confirmation(d, true);
+		return;
+	}
+	close_other_account_sessions(d);
+
+	bool deleted = false;
+	{
+		account_deletion_drain_guard drain_guard;
+		flush_pending_ship_saves();
+		if (drain_pending_ship_saves() && drain_guard.drain())
+		{
+#ifndef __NO_MYSQL__
+			deleted = sql_delete_account(account_name.c_str());
+#else
+			std::string error;
+			const auto result = flatfile_account_delete(
+				persistence_mode_flatfile_root(), account_name, &error);
+			deleted = result == flatfile_account_delete_result::ok ||
+				  result == flatfile_account_delete_result::already_deleted;
+			if (!deleted)
+				logit(LOG_FILE, "flat-file account deletion failed: %s",
+				      error.empty() ? "unspecified authority failure" :
+						      error.c_str());
+#endif
+			if (deleted)
+				remove_deleted_account_runtime(d, identities);
+		}
+	}
+
+	if (!deleted)
+	{
+		persistence_alert(AVATAR, "account_delete", "redacted", "fenced", "none",
+				  "delete_failed", NULL);
+		SEND_TO_Q("\r\nAccount deletion did not complete. The account remains fenced; "
+			  "please retry or contact an immortal.\r\n",
+			  d);
+		display_account_deletion_confirmation(d, true);
+		return;
+	}
+
+	statuslog(56, "account deletion completed (account=redacted characters=%zu)",
+		  identities.size());
+	SEND_TO_Q("\r\n&+GYour account and all of its characters were permanently deleted.&n\r\n",
+		  d);
+	d->account = free_account(d->account);
+	STATE(d) = CON_FLUSH;
 }
 
 #ifndef __NO_MYSQL__

@@ -13,6 +13,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
     binary = temporary_path / "flatfile_character_delete_test"
     sources = [
         "tests/async/flatfile_character_delete_harness.cpp",
+        rel("flatfile_account_delete.c"),
+        rel("flatfile_account_repository.c"),
         rel("flatfile_character_delete.c"),
         rel("flatfile_account_reward_summon_repository.c"),
         rel("flatfile_artifact_repository.c"),

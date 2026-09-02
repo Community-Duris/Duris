@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The disabled account-erasure policy cannot leave menu clients in a dead state."""
+"""The implemented account deletion flow is reachable from the account menu."""
 
 from _paths import SRC
 from contract_text import contains
@@ -27,15 +27,14 @@ case_7 = menu[menu.index("case 7:") : menu.index("case 8:")]
 delete = body("void delete_account(")
 verify = body("void verify_delete_account(")
 
-assert "Delete this account" not in menu
+assert "Delete this account" in menu
 assert "case 7:" in menu
-assert "Account deletion is not available" in menu
-assert contains(case_7, "STATE(d) = CON_DISPLAY_ACCT_MENU;")
-assert contains(case_7, "display_account_menu(d, NULL);")
-assert "delete_account(" not in case_7
-assert contains(delete, "Account deletion is not available")
-assert contains(delete, "STATE(d) = CON_DISPLAY_ACCT_MENU;")
-assert contains(delete, "display_account_menu(d, NULL);")
-assert contains(verify, "delete_account(d, arg);")
+assert "Account deletion is not available" not in menu
+assert contains(case_7, "STATE(d) = CON_ACCT_DELETE_ACCT;")
+assert contains(case_7, "delete_account(d, NULL);")
+assert contains(delete, "account_password_matches(d->account, arg)")
+assert contains(delete, "STATE(d) = CON_ACCT_VERIFY_DELETE_ACCT;")
+assert contains(verify, "d->account->acct_blocked = ACCOUNT_BLOCK_DELETION")
+assert contains(verify, "sql_delete_account(account_name.c_str())")
 
-print("disabled account deletion returns every menu state to a usable prompt")
+print("account deletion is reachable and guarded from the account menu")

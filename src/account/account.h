@@ -16,6 +16,9 @@
 #define ACCT_GOOD 1
 #define ACCT_EVIL 2
 
+/* Persisted before account deletion crosses its cancellation boundary. */
+#define ACCOUNT_BLOCK_DELETION 2
+
 #define MAX_CHARS_PER_ACCOUNT 16
 
 struct acct_ip

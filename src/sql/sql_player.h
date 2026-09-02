@@ -111,6 +111,9 @@ int sql_repair_account_character_projection(const char *account_name);
 // check if account exists
 bool sql_account_exists(const char *name);
 
+// permanently remove one fenced account and all of its live character state
+bool sql_delete_account(const char *name);
+
 // link player to account (updates player_data.account_name)
 
 // ============================================================================

@@ -75,5 +75,9 @@ flatfile_player_domain_result
 flatfile_player_domain_prepare_remove(const std::string &root, const flatfile_authority_lock &lock,
 				      uint32_t pid, flatfile_authority_operation *operation,
 				      std::string *error);
+flatfile_player_domain_result flatfile_player_domain_prepare_account_remove(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::string &account_name, std::vector<flatfile_authority_operation> *operations,
+	std::string *error);
 
 #endif

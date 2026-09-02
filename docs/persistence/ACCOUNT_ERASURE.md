@@ -2,11 +2,38 @@
 
 Canonical account erasure is **not enabled**. The lifecycle manifest has no approved
 destructive actions, every store's controller decision remains pending, and inspection
-reports all 188 stores as `retain` with `request_state=blocked_by_policy`. No live
-database/file mutator or account-menu erasure hook exists.
+reports all 194 stores as `retain` with `request_state=blocked_by_policy`.
 
 Session 10 defines the safety boundary that any future approved adapter must satisfy.
 It is an engineering control, not legal advice or approval to erase records.
+
+## Player-initiated live account deletion
+
+Account-menu option 7 implements a narrower operational deletion path. It permanently
+removes the selected persistence backend's login credential, character authorities,
+and live character/account state. It does **not** activate the canonical 194-store
+privacy-erasure manifest, create a legal erasure tombstone, or claim that retained
+history and backups contain no direct identifiers.
+
+The player must re-enter the account password and then type the exact, case-sensitive
+account name. Confirmation first persists `ACCOUNT_BLOCK_DELETION`; that mutation fence
+cannot be cancelled. Other sessions are disconnected and asynchronous snapshot,
+critical-command, locker, maintenance, and ship writers are drained before deletion.
+A fenced account resumes at the confirmation/retry prompt after reconnecting, and any
+failure leaves the fence in place rather than reopening the account.
+
+MariaDB performs disposition and removal in one transaction, locks and verifies the
+fence, rejects identities involved in an open auction, deletes character state, and
+removes the account credential last. Flat-file mode uses the existing complete
+character-deletion authority transaction for each identity, then atomically removes
+shared account banks, active membership, and the credential through the recoverable
+authority journal. Both paths report success only after credential and character
+membership reconciliation.
+
+No per-account archive is created. Normal full-system backups remain the operator's
+recovery mechanism within their existing retention policy; restoring one does not
+provide the no-resurrection guarantees of the separately blocked canonical erasure
+design below.
 
 ## Request and ordering
 
@@ -54,6 +81,8 @@ has been scanned, and the erased account remains uncredentialed and unloadable.
 ```sh
 python3 scripts/account_erasure.py inspect
 python3 tests/async/test_account_erasure.py
+python3 tests/async/test_account_deletion_contract.py
+python3 tests/async/test_flatfile_character_delete.py
 tests/async/run_account_erasure_schema_mysql.sh
 ```
 

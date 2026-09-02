@@ -1,4 +1,6 @@
 #include "economy/boon.h"
+#include "flatfile/flatfile_account_delete.h"
+#include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_character_delete.h"
 #include "flatfile/flatfile_artifact_repository.h"
@@ -42,7 +44,7 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
-static player_snapshot make_snapshot(int32_t pid)
+static player_snapshot make_snapshot(int32_t pid, const char *name = "Player")
 {
 	player_snapshot snapshot = {};
 	snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
@@ -50,7 +52,7 @@ static player_snapshot make_snapshot(int32_t pid)
 	snapshot.revision = 1;
 	snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
 	snapshot.encoded_size_bound = 4096;
-	snapshot.status_strings.push_back({ player_status_string_field::name, "Player" });
+	snapshot.status_strings.push_back({ player_status_string_field::name, name });
 	snapshot.status_integers.push_back({ player_status_field::racewar, 0, 0, false });
 	snapshot.status_integers.push_back({ player_status_field::copper, 1, 0, true });
 	snapshot.status_integers.push_back({ player_status_field::silver, 2, 0, true });
@@ -72,11 +74,14 @@ static player_snapshot make_snapshot(int32_t pid)
 static void establish(const fs::path &root, bool establish_boons)
 {
 	fs::create_directories(root / "players");
+	fs::create_directories(root / "identities/accounts");
 	fs::create_directories(root / "identities/names");
 	fs::create_directories(root / "domains");
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "players", fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "identities", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "identities/accounts", fs::perms::owner_all,
+			fs::perm_options::replace);
 	fs::permissions(root / "identities/names", fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
 	std::string error;
@@ -267,6 +272,60 @@ static void establish(const fs::path &root, bool establish_boons)
 		"shop materialization baseline commit failed: " + error);
 }
 
+static uint64_t save_account(const fs::path &root, int8_t blocked, uint64_t expected_revision = 0)
+{
+	flatfile_account_record account;
+	account.name = "Account";
+	account.email = "account@example.test";
+	account.password_hash = "$2b$test-hash";
+	account.blocked = blocked;
+	account.confirmed = 1;
+	uint64_t revision = 0;
+	std::string error;
+	require(flatfile_account_save(root.string(), account, expected_revision, &revision,
+				      &error) == flatfile_account_result::ok,
+		"account baseline failed: " + error);
+	return revision;
+}
+
+static void add_second_character(const fs::path &root)
+{
+	std::string error;
+	int32_t pid = 0;
+	require(flatfile_identity_allocate_pid(root.string(), &pid, &error) ==
+				flatfile_identity_result::ok &&
+			pid == 2,
+		"second identity allocation failed: " + error);
+	require(flatfile_identity_claim(root.string(), pid, "Other", "Account", &error) ==
+			flatfile_identity_result::ok,
+		"second identity claim failed: " + error);
+	const auto applied =
+		flatfile_player_snapshot_apply(root.string(), make_snapshot(pid, "Other"), &error);
+	require(applied.outcome == player_save_apply_outcome::applied,
+		"second player baseline failed: " + error);
+}
+
+static void establish_empty_account(const fs::path &root)
+{
+	fs::create_directories(root / "players");
+	fs::create_directories(root / "identities/accounts");
+	fs::create_directories(root / "identities/names");
+	fs::create_directories(root / "domains");
+	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "players", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "identities", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "identities/accounts", fs::perms::owner_all,
+			fs::perm_options::replace);
+	fs::permissions(root / "identities/names", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	std::string error;
+	int32_t unused_pid = 0;
+	require(flatfile_identity_allocate_pid(root.string(), &unused_pid, &error) ==
+			flatfile_identity_result::ok,
+		"empty account identity catalog failed: " + error);
+	save_account(root, 2);
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -426,6 +485,68 @@ int main(int argc, char **argv)
 			boons.size() == 1 && boons[0].target_pid == 0 && !boons[0].active,
 		"maximal deletion did not release the player's boon: " + error);
 
-	std::cout << "flat-file character deletion passed\n";
+	const fs::path account = fs::path(argv[1]) / "account";
+	establish(account, true);
+	add_second_character(account);
+	require(save_account(account, 0) == 1, "unfenced account revision was not 1");
+	error.clear();
+	require(flatfile_account_delete(account.string(), "Account", &error) ==
+			flatfile_account_delete_result::conflict,
+		"unfenced account deletion did not fail closed");
+	require(flatfile_identity_lookup_pid(account.string(), 1, &identity, &error) ==
+				flatfile_identity_result::ok &&
+			identity.active,
+		"unfenced account deletion changed character authority");
+	require(save_account(account, 2, 1) == 2, "account fence did not publish revision 2");
+	require(fs::exists(account / "domains/bank-account-0.domain"),
+		"account baseline did not establish its shared bank");
+	error.clear();
+	const auto account_deleted = flatfile_account_delete(account.string(), "aCcOuNt", &error);
+	require(account_deleted == flatfile_account_delete_result::ok,
+		"multi-character account deletion failed (result=" +
+			std::to_string(static_cast<int>(account_deleted)) + "): " + error);
+	bool account_exists = true;
+	require(flatfile_account_exists(account.string(), "Account", &account_exists, &error) ==
+				flatfile_account_result::ok &&
+			!account_exists,
+		"account deletion retained the credential record");
+	for (int32_t pid : { 1, 2 })
+	{
+		require(flatfile_identity_lookup_pid(account.string(), pid, &identity, &error) ==
+					flatfile_identity_result::ok &&
+				!identity.active && identity.blocked,
+			"account deletion retained an active character identity");
+		require(flatfile_player_snapshot_load(account.string(), pid, &snapshot, &error) ==
+				flatfile_player_load_result::not_found,
+			"account deletion retained a character snapshot");
+	}
+	require(!fs::exists(account / "domains/bank-account-0.domain"),
+		"account deletion retained the shared account bank");
+	require(flatfile_account_delete(account.string(), "Account", &error) ==
+			flatfile_account_delete_result::already_deleted,
+		"completed account deletion was not idempotent: " + error);
+
+	const fs::path account_recovery = fs::path(argv[1]) / "account-recovery";
+	establish_empty_account(account_recovery);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	error.clear();
+	require(flatfile_account_delete(account_recovery.string(), "Account", &error) ==
+			flatfile_account_delete_result::io_error,
+		"fault injection did not interrupt final account deletion");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(fs::exists(account_recovery / "domains/.critical-authority-transaction"),
+		"interrupted account deletion did not leave a recovery journal");
+	error.clear();
+	require(flatfile_account_delete(account_recovery.string(), "Account", &error) ==
+			flatfile_account_delete_result::already_deleted,
+		"final account deletion recovery was not idempotent: " + error);
+	require(!fs::exists(account_recovery / "domains/.critical-authority-transaction"),
+		"recovered account deletion retained its journal");
+	require(flatfile_account_exists(account_recovery.string(), "Account", &account_exists,
+					&error) == flatfile_account_result::ok &&
+			!account_exists,
+		"recovered account deletion retained the credential record");
+
+	std::cout << "flat-file character and account deletion passed\n";
 	return 0;
 }

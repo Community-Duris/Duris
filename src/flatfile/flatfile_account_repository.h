@@ -98,6 +98,11 @@ flatfile_account_prepare_save(const std::string &root, const flatfile_account_lo
 			      const flatfile_account_record &record, uint64_t expected_revision,
 			      flatfile_authority_operation *operation, uint64_t *committed_revision,
 			      std::string *error);
+flatfile_account_result
+flatfile_account_prepare_remove(const std::string &root, const flatfile_account_lock &account_lock,
+				const flatfile_authority_lock &authority_lock,
+				const std::string &name, uint64_t expected_revision,
+				flatfile_authority_operation *operation, std::string *error);
 flatfile_account_result flatfile_account_exists(const std::string &root, const std::string &name,
 						bool *exists, std::string *error);
 

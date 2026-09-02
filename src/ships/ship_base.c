@@ -3481,16 +3481,15 @@ void display_shipfrags(P_char ch)
 /*
  * Delete the ship owned by `owner_name`, if there is one.
  *
- * The by-name overload used when a player is deleted.  Removes the ship from
- * the hash before deleting it, which the P_ship overload requires of its
- * caller.  Does nothing when the owner has no ship.
+ * Removes the ship from the hash before deleting it, which the P_ship overload
+ * requires of its caller.  `persist` is false only when an owning transaction
+ * has already removed the durable row.  Does nothing when the owner has no ship.
  */
-void delete_ship(char *owner_name)
+static void delete_ship_by_owner(const char *owner_name, bool persist)
 {
 	P_ship ship;
 	ShipVisitor svs;
 
-	CAP(owner_name);
 	// First, we hunt for the ship, and make sure there is one (we can use the same loop as above).
 	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
 	{
@@ -3500,14 +3499,25 @@ void delete_ship(char *owner_name)
 			continue;
 		}
 		// Check if we have the right ship using the same code as to display the owner's name
-		if (!strcmp(owner_name, SHIP_OWNER(svs)))
+		if (!strcasecmp(owner_name, SHIP_OWNER(svs)))
 		{
 			debug("&+RDeleting ship (%s)...&n", owner_name);
 			ship = svs;
 			shipObjHash.erase(svs);
-			delete_ship(ship);
+			delete_ship(ship, !persist);
 			return;
 		}
 	}
 	debug("Could not find ship (%s) to delete.", owner_name);
+}
+
+void delete_ship(char *owner_name)
+{
+	CAP(owner_name);
+	delete_ship_by_owner(owner_name, true);
+}
+
+void delete_ship_runtime(const char *owner_name)
+{
+	delete_ship_by_owner(owner_name, false);
 }

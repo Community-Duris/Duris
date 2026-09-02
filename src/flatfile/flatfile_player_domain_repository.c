@@ -1104,6 +1104,44 @@ flatfile_player_domain_prepare_remove(const std::string &root, const flatfile_au
 	return flatfile_player_domain_result::ok;
 }
 
+flatfile_player_domain_result flatfile_player_domain_prepare_account_remove(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::string &account_name, std::vector<flatfile_authority_operation> *operations,
+	std::string *error)
+{
+	std::string account;
+	if (!operations || !lock.matches(root) || !canonical_account(account_name, &account))
+		return flatfile_player_domain_result::invalid;
+	operations->clear();
+	const auto recovered = recover_authority(root, lock, error);
+	if (recovered != flatfile_player_domain_result::ok)
+		return recovered;
+	try
+	{
+		/* Account banks use the complete RACEWAR_* range (none through neutral). */
+		for (int racewar = 0; racewar <= 4; ++racewar)
+		{
+			bank_record bank;
+			const auto loaded = load_bank(root, account, static_cast<int8_t>(racewar),
+						      &bank, error);
+			if (loaded == flatfile_player_domain_result::not_found)
+				continue;
+			if (loaded != flatfile_player_domain_result::ok)
+				return loaded;
+			operations->push_back(
+				{ flatfile_authority_store::domains,
+				  flatfile_authority_operation_kind::remove,
+				  bank_filename(account, static_cast<int8_t>(racewar)),
+				  {} });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	return flatfile_player_domain_result::ok;
+}
+
 critical_apply_result apply_epic_command(const std::string &root, const critical_command &command)
 {
 	epic_command_payload payload = {};
