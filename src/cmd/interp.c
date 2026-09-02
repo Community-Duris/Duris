@@ -1227,7 +1227,8 @@ bool cmd_allowed_while_casting(int cmd)
 
 /** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
- * a different authoritative view, so these must wait for its publication. */
+ * a different authoritative view, so item moves and synchronous consumers must
+ * wait for its publication. */
 bool cmd_depends_on_item_movement(int cmd)
 {
 	switch (cmd)
@@ -1243,6 +1244,22 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_GRAB:
 	case CMD_HOLD:
 	case CMD_REMOVE:
+	case CMD_APPLY:
+	case CMD_BANDAGE:
+	case CMD_DRINK:
+	case CMD_EAT:
+	case CMD_FILL:
+	case CMD_POUR:
+	case CMD_QUAFF:
+	case CMD_RECITE:
+	case CMD_RELOAD:
+	case CMD_SALVAGE:
+	case CMD_SIP:
+	case CMD_SMOKE:
+	case CMD_TASTE:
+	case CMD_THROW:
+	case CMD_THROWPOTION:
+	case CMD_USE:
 	case CMD_OPEN:
 	case CMD_CLOSE:
 	case CMD_EMPTY:

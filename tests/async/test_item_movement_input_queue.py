@@ -37,7 +37,10 @@ DEPENDS = extract(INTERP_PATH, "bool cmd_depends_on_item_movement(int cmd)")
 for command in (
     "CMD_GET", "CMD_TAKE", "CMD_DROP", "CMD_PUT", "CMD_GIVE", "CMD_WEAR",
     "CMD_WIELD", "CMD_GRAB", "CMD_HOLD", "CMD_REMOVE", "CMD_EQUIPMENT",
-    "CMD_INVENTORY", "CMD_FIRE",
+    "CMD_INVENTORY", "CMD_FIRE", "CMD_APPLY", "CMD_BANDAGE", "CMD_DRINK",
+    "CMD_EAT", "CMD_FILL", "CMD_POUR", "CMD_QUAFF", "CMD_RECITE",
+    "CMD_RELOAD", "CMD_SALVAGE", "CMD_SIP", "CMD_SMOKE", "CMD_TASTE",
+    "CMD_THROW", "CMD_THROWPOTION", "CMD_USE",
 ):
     assert command in DEPENDS
 
@@ -99,20 +102,38 @@ PRELUDE = r'''
 #define CMD_EQUIPMENT 21
 #define CMD_INVENTORY 22
 #define CMD_FIRE 23
+#define CMD_APPLY 24
+#define CMD_BANDAGE 25
+#define CMD_DRINK 26
+#define CMD_EAT 27
+#define CMD_FILL 28
+#define CMD_POUR 29
+#define CMD_QUAFF 30
+#define CMD_RECITE 31
+#define CMD_RELOAD 32
+#define CMD_SALVAGE 33
+#define CMD_SIP 34
+#define CMD_SMOKE 35
+#define CMD_TASTE 36
+#define CMD_THROW 37
+#define CMD_THROWPOTION 38
+#define CMD_USE 39
 
 static const char *command[] = {
 	"get", "take", "drop", "put", "give", "wear", "wield", "grab", "hold",
 	"remove", "open", "close", "empty", "junk", "donate", "sacrifice", "buy",
-	"sell", "look", "score", "equipment", "inventory", "fire", "\n"
+	"sell", "look", "score", "equipment", "inventory", "fire", "apply", "bandage",
+	"drink", "eat", "fill", "pour", "quaff", "recite", "reload", "salvage", "sip",
+	"smoke", "taste", "throw", "throwpotion", "use", "\n"
 };
 
 P_obj object_list = NULL;
 P_char character_list = NULL;
-static index_data object_indexes[2] = {};
+static index_data object_indexes[3] = {};
 P_index obj_index = object_indexes;
 static room_data rooms[1] = {};
 P_room world = rooms;
-int top_of_objt = 1;
+int top_of_objt = 2;
 extern const int top_of_world = 0;
 
 static bool command_submitted = false;
@@ -201,13 +222,16 @@ static void check_intact(struct txt_q *q)
 
 static P_obj published_roots[2] = {};
 static P_obj published_bow = NULL;
+static P_obj published_cloak = NULL;
 static int publication_count = 0;
 static int bow_publication_count = 0;
+static int cloak_publication_count = 0;
 static int score_dispatches = 0;
 static int put_dispatches = 0;
 static int equipment_dispatches = 0;
 static int inventory_dispatches = 0;
 static int wear_failures = 0;
+static int wear_successes = 0;
 static int wield_dispatches = 0;
 static int fire_dispatches = 0;
 static P_obj fixture_backpack = NULL;
@@ -248,6 +272,23 @@ static void held_bow_get_completion(P_char actor, bool committed,
 	actor->carrying = published_bow;
 	world[0].contents = NULL;
 	++bow_publication_count;
+}
+
+static void held_cloak_get_completion(P_char actor, bool committed,
+				      const item_transfer_result &result, unsigned int error_code,
+				      const uint8_t *, size_t)
+{
+	assert(actor && committed && error_code == 0 && result.item_count == 1);
+	item_ownership_runtime_entry ownership = {};
+	assert(published_cloak);
+	assert(item_ownership_runtime_lookup(published_cloak->obj_uid, &ownership));
+	assert(ownership.owner.type == item_owner_type::player);
+	published_cloak->loc_p = LOC_CARRIED;
+	published_cloak->loc.carrying = actor;
+	published_cloak->next_content = actor->carrying;
+	actor->carrying = published_cloak;
+	world[0].contents = NULL;
+	++cloak_publication_count;
 }
 
 static int carried_count(P_char actor)
@@ -306,6 +347,17 @@ void command_interpreter(P_char actor, char *input)
 		++wear_failures;
 		return;
 	}
+	if (!strcmp(input, "wear cloak"))
+	{
+		assert(actor->carrying == published_cloak);
+		actor->carrying = published_cloak->next_content;
+		published_cloak->next_content = NULL;
+		published_cloak->loc_p = LOC_WORN;
+		published_cloak->loc.wearing = actor;
+		actor->equipment[1] = published_cloak;
+		++wear_successes;
+		return;
+	}
 	if (!strcmp(input, "wield bow"))
 	{
 		assert(actor->carrying == published_bow);
@@ -337,6 +389,7 @@ int main()
 
 	object_indexes[0].virtual_number = 100;
 	object_indexes[1].virtual_number = 101;
+	object_indexes[2].virtual_number = 102;
 	obj_data first_roast = {};
 	first_roast.obj_uid = 100;
 	first_roast.R_num = 0;
@@ -352,6 +405,11 @@ int main()
 	bow.R_num = 1;
 	bow.loc_p = LOC_ROOM;
 	bow.loc.room = 0;
+	obj_data cloak = {};
+	cloak.obj_uid = 103;
+	cloak.R_num = 2;
+	cloak.loc_p = LOC_ROOM;
+	cloak.loc.room = 0;
 	obj_data backpack = {};
 	backpack.obj_uid = 200;
 	backpack.R_num = 0;
@@ -360,7 +418,8 @@ int main()
 	actor.carrying = &backpack;
 	first_roast.next = &second_roast;
 	second_roast.next = &bow;
-	bow.next = &backpack;
+	bow.next = &cloak;
+	cloak.next = &backpack;
 	first_roast.next_content = &second_roast;
 	object_list = &first_roast;
 	world[0].number = 500;
@@ -368,6 +427,7 @@ int main()
 	published_roots[0] = &first_roast;
 	published_roots[1] = &second_roast;
 	published_bow = &bow;
+	published_cloak = &cloak;
 	fixture_backpack = &backpack;
 
 	item_ownership_runtime_reset();
@@ -398,6 +458,11 @@ int main()
 	assert(!input_allowed_while_item_moving("equipment"));
 	assert(!input_allowed_while_item_moving("inventory"));
 	assert(!input_allowed_while_item_moving("fire target"));
+	assert(!input_allowed_while_item_moving("eat roast"));
+	assert(!input_allowed_while_item_moving("quaff potion"));
+	assert(!input_allowed_while_item_moving("recite scroll"));
+	assert(!input_allowed_while_item_moving("reload bow arrow"));
+	assert(!input_allowed_while_item_moving("use wand target"));
 	assert(input_allowed_while_item_moving("score"));
 	assert(input_allowed_while_item_moving("look"));
 	assert(input_allowed_while_item_moving("say still here"));
@@ -500,6 +565,46 @@ int main()
 	assert(q.head == NULL && q.tail == NULL);
 	assert(wield_dispatches == 1 && fire_dispatches == 1);
 	assert(actor.equipment[0] == &bow);
+
+	/* A direct get-then-wear sequence succeeds after publication, separately
+	   from the intentional wear failure after the earlier put command. */
+	const item_ownership_runtime_entry cloak_entry = {
+		103, 103, 0, room_owner, 1, 5, 102, item_custody_state::active
+	};
+	assert(item_ownership_runtime_hydrate(cloak_entry));
+	cloak.loc_p = LOC_ROOM;
+	cloak.loc.room = 0;
+	world[0].contents = &cloak;
+	command_submitted = false;
+	submitted_command = {};
+	P_obj cloak_root[] = { &cloak };
+	assert(item_movement_transaction_submit_batch(
+		&actor, cloak_root, 1, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, cloak.obj_uid,
+		held_cloak_get_completion, NULL, 0));
+	assert(item_movement_transaction_player_busy(&actor));
+	push(&q, "wear cloak");
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
+	assert(wear_successes == 0);
+
+	result = { 103, 1, 6, 10, 2, 0 };
+	completion = {};
+	completion.operation_id = submitted_command.operation_id;
+	completion.outcome = critical_apply_outcome::applied;
+	encoded = {};
+	assert(item_transfer_command_encode_result(result, &encoded));
+	completion.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	item_movement_transaction_handle_completions(&completion, 1);
+	assert(cloak_publication_count == 1);
+	assert(!item_movement_transaction_player_busy(&actor));
+
+	assert(get_playing_cmd_from_q(&actor, &q, dest));
+	expect_text(dest, "wear cloak", "wear after cloak publication");
+	dispatch_playing_command(&actor, dest);
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
+	assert(q.head == NULL && q.tail == NULL);
+	assert(wear_successes == 1 && actor.equipment[1] == &cloak);
 
 	/* Pulling a safe tail keeps the queue appendable while a dependent head
 	   remains parked. */
