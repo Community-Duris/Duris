@@ -53,7 +53,8 @@
  * which is smaller than a single realm's own reach. */
 #define KINGDOM_MIN_HALL_SEPARATION (2 * KINGDOM_FOOTPRINT_RADIUS + 2)
 
-struct kingdom_offset {
+struct kingdom_offset
+{
 	int dx; /* +east */
 	int dy; /* +south */
 };
@@ -62,7 +63,8 @@ struct kingdom_offset {
  * The claim order, generated at compile time
  * ------------------------------------------------------------------ */
 
-namespace kingdom_geometry_detail {
+namespace kingdom_geometry_detail
+{
 
 /* One-based indexing: slot 0 is the hall itself and is never claimed, so
  * kingdom_claim_order()[n] is the offset of claim number n directly. */
@@ -71,22 +73,23 @@ using claim_table = std::array<kingdom_offset, KINGDOM_MAX_SQUARES + 1>;
 constexpr claim_table build_claim_order()
 {
 	claim_table t{};
-	t[0] = kingdom_offset{0, 0}; /* the hall */
+	t[0] = kingdom_offset{ 0, 0 }; /* the hall */
 
 	std::size_t n = 1;
-	for (int r = 1; r <= KINGDOM_MAX_RING; ++r) {
+	for (int r = 1; r <= KINGDOM_MAX_RING; ++r)
+	{
 		/* Clockwise from due north. Each leg stops one short of the
 		 * corner the next leg starts on, so no square is emitted twice. */
 		for (int x = 0; x <= r; ++x) /* north edge, centre -> NE corner */
-			t[n++] = kingdom_offset{x, -r};
+			t[n++] = kingdom_offset{ x, -r };
 		for (int y = -r + 1; y <= r; ++y) /* east edge, down to SE corner */
-			t[n++] = kingdom_offset{r, y};
+			t[n++] = kingdom_offset{ r, y };
 		for (int x = r - 1; x >= -r; --x) /* south edge, west to SW corner */
-			t[n++] = kingdom_offset{x, r};
+			t[n++] = kingdom_offset{ x, r };
 		for (int y = r - 1; y >= -r; --y) /* west edge, north to NW corner */
-			t[n++] = kingdom_offset{-r, y};
+			t[n++] = kingdom_offset{ -r, y };
 		for (int x = -r + 1; x < 0; ++x) /* north edge, back toward centre */
-			t[n++] = kingdom_offset{x, -r};
+			t[n++] = kingdom_offset{ x, -r };
 	}
 	return t;
 }
@@ -101,22 +104,30 @@ constexpr int chebyshev(int dx, int dy)
 } /* namespace kingdom_geometry_detail */
 
 constexpr kingdom_geometry_detail::claim_table KINGDOM_CLAIM_ORDER =
-    kingdom_geometry_detail::build_claim_order();
+	kingdom_geometry_detail::build_claim_order();
 
 /* ------------------------------------------------------------------ *
  * Compile-time proof of the table's shape
  * ------------------------------------------------------------------ */
 
-namespace kingdom_geometry_detail {
+namespace kingdom_geometry_detail
+{
 
 /* Squares in ring r, and the last claim index of ring r. */
-constexpr int ring_size(int r) { return 8 * r; }
-constexpr int ring_last_index(int r) { return 4 * r * (r + 1); }
+constexpr int ring_size(int r)
+{
+	return 8 * r;
+}
+constexpr int ring_last_index(int r)
+{
+	return 4 * r * (r + 1);
+}
 
 constexpr bool table_is_sound()
 {
 	/* every claimed square sits on the ring its index implies */
-	for (int r = 1; r <= KINGDOM_MAX_RING; ++r) {
+	for (int r = 1; r <= KINGDOM_MAX_RING; ++r)
+	{
 		const int lo = ring_last_index(r - 1) + 1;
 		const int hi = ring_last_index(r);
 		if (hi - lo + 1 != ring_size(r))
@@ -126,7 +137,8 @@ constexpr bool table_is_sound()
 				return false;
 	}
 	/* no square is claimed twice, and none is the hall */
-	for (std::size_t i = 1; i <= KINGDOM_MAX_SQUARES; ++i) {
+	for (std::size_t i = 1; i <= KINGDOM_MAX_SQUARES; ++i)
+	{
 		if (KINGDOM_CLAIM_ORDER[i].dx == 0 && KINGDOM_CLAIM_ORDER[i].dy == 0)
 			return false;
 		for (std::size_t j = i + 1; j <= KINGDOM_MAX_SQUARES; ++j)
@@ -140,21 +152,21 @@ constexpr bool table_is_sound()
 } /* namespace kingdom_geometry_detail */
 
 static_assert(kingdom_geometry_detail::ring_last_index(KINGDOM_MAX_RING) == KINGDOM_MAX_SQUARES,
-              "the four rings must total exactly 80 claimable squares");
+	      "the four rings must total exactly 80 claimable squares");
 static_assert(kingdom_geometry_detail::ring_last_index(1) == 8, "ring 1 ends at claim 8");
 static_assert(kingdom_geometry_detail::ring_last_index(2) == 24, "ring 2 ends at claim 24");
 static_assert(kingdom_geometry_detail::ring_last_index(3) == 48, "ring 3 ends at claim 48");
 /* claim 1 is due north; claim 2 is the north-east diagonal, i.e. clockwise */
 static_assert(KINGDOM_CLAIM_ORDER[1].dx == 0 && KINGDOM_CLAIM_ORDER[1].dy == -1,
-              "claim 1 is the square due NORTH of the hall");
+	      "claim 1 is the square due NORTH of the hall");
 static_assert(KINGDOM_CLAIM_ORDER[2].dx == 1 && KINGDOM_CLAIM_ORDER[2].dy == -1,
-              "claim 2 is north-east: the ring runs CLOCKWISE");
+	      "claim 2 is north-east: the ring runs CLOCKWISE");
 static_assert(KINGDOM_CLAIM_ORDER[8].dx == -1 && KINGDOM_CLAIM_ORDER[8].dy == -1,
-              "claim 8 closes ring 1 on the north-west diagonal");
+	      "claim 8 closes ring 1 on the north-west diagonal");
 static_assert(KINGDOM_CLAIM_ORDER[9].dx == 0 && KINGDOM_CLAIM_ORDER[9].dy == -2,
-              "claim 9 opens ring 2 due north again");
+	      "claim 9 opens ring 2 due north again");
 static_assert(kingdom_geometry_detail::table_is_sound(),
-              "claim order must cover each ring exactly once, with no repeats");
+	      "claim order must cover each ring exactly once, with no repeats");
 
 /* ------------------------------------------------------------------ *
  * Pure index helpers (no world access)

@@ -27,7 +27,10 @@ extern int top_of_world;
  * ------------------------------------------------------------------ */
 
 /* The last claim index of ring r is 4r(r+1): 8, 24, 48, 80. */
-static int ring_last(int ring) { return 4 * ring * (ring + 1); }
+static int ring_last(int ring)
+{
+	return 4 * ring * (ring + 1);
+}
 
 int kingdom_ring_for_index(int index)
 {
@@ -92,7 +95,10 @@ int kingdom_index_for_offset(int dx, int dy)
 /* True when rnum indexes a real room. rnum 0 is rejected on purpose: it is
  * both the first room and real_room0()'s "no such vnum" answer, and every
  * caller here means the latter. */
-static bool valid_rnum(int rnum) { return rnum > 0 && rnum <= top_of_world; }
+static bool valid_rnum(int rnum)
+{
+	return rnum > 0 && rnum <= top_of_world;
+}
 
 bool kingdom_square_of_room(int rnum, int *zone_out, int *x, int *y)
 {

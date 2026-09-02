@@ -780,8 +780,7 @@ void kingdom_guards_refresh_all(void)
 		const int swept = kingdom_guard_extract_all(orphans);
 		if (swept > 0)
 			logit(LOG_KINGDOM,
-			      "swept %d guard(s) whose stamp resolves to no live realm.",
-			      swept);
+			      "swept %d guard(s) whose stamp resolves to no live realm.", swept);
 	}
 
 	/* kingdom_guards_refresh() only reads kingdom_realms -- it never inserts

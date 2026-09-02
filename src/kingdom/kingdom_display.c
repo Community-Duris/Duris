@@ -252,7 +252,7 @@ void kingdom_show_grid(struct char_data *ch, int hall_rnum, int racewar, int ign
 			}
 
 			const int verdict =
-			    kingdom_judge_square(hall_rnum, index, racewar, ignore_assoc);
+				kingdom_judge_square(hall_rnum, index, racewar, ignore_assoc);
 
 			if (verdict != KSQ_OK)
 			{
@@ -301,8 +301,7 @@ void kingdom_show_grid(struct char_data *ch, int hall_rnum, int racewar, int ign
 				continue;
 			named += tally[verdict];
 			APPENDF(out, "    &+R%2d&n %s -- %s\r\n", tally[verdict],
-				tally[verdict] == 1 ? "square " : "squares",
-				verdict_text(verdict));
+				tally[verdict] == 1 ? "square " : "squares", verdict_text(verdict));
 		}
 
 		/* A verdict outside KSQ_OK..KSQ_HAS_GUILDHALL cannot happen while
@@ -391,7 +390,10 @@ void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 			in_ring = size;
 
 		APPENDF(out, "  %s%d: %2d/%2d&n",
-			in_ring == size ? "&+G" : in_ring > 0 ? "&+Y" : "&+w", ring, in_ring, size);
+			in_ring == size ? "&+G" :
+			in_ring > 0	? "&+Y" :
+					  "&+w",
+			ring, in_ring, size);
 	}
 	APPENDF(out, "\r\n");
 
@@ -417,16 +419,18 @@ void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 		kingdom_offset_for_index(next, &ndx, &ndy);
 		describe_offset(ndx, ndy, where, sizeof(where));
 
-		const int verdict = kingdom_judge_square(realm.hall_rnum, next, racewar,
-							 realm.assoc_id);
+		const int verdict =
+			kingdom_judge_square(realm.hall_rnum, next, racewar, realm.assoc_id);
 
 		if (verdict == KSQ_OK)
-			APPENDF(out, " &+wNext claim &n: &+Y#%d&n (ring %d), %s"
-				     " -- &+Y%ld&n coin\r\n",
+			APPENDF(out,
+				" &+wNext claim &n: &+Y#%d&n (ring %d), %s"
+				" -- &+Y%ld&n coin\r\n",
 				next, ring, where, kingdom_claim_cost(next));
 		else
-			APPENDF(out, " &+wNext claim &n: &+R#%d&n (ring %d), %s"
-				     " -- &+Rbarred: %s&n\r\n",
+			APPENDF(out,
+				" &+wNext claim &n: &+R#%d&n (ring %d), %s"
+				" -- &+Rbarred: %s&n\r\n",
 				next, ring, where, verdict_text(verdict));
 
 		APPENDF(out, " &+wRing %d     &n: %d squares, &+Y%ld&n coin for the whole ring\r\n",
@@ -436,8 +440,9 @@ void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 	APPENDF(out, " &+wGuards     &n: &+G%d&n permitted &+w(1 per %d squares held)&n\r\n",
 		kingdom_guard_allowance(realm), kingdom_cfg.guards_per_squares);
 
-	APPENDF(out, " &+wUpkeep     &n: &+Y%ld&n coin due &+w(%ld per square per cycle, a cycle is"
-		     " %d minutes)&n\r\n",
+	APPENDF(out,
+		" &+wUpkeep     &n: &+Y%ld&n coin due &+w(%ld per square per cycle, a cycle is"
+		" %d minutes)&n\r\n",
 		kingdom_upkeep_due(realm), kingdom_cfg.upkeep_per_square,
 		kingdom_cfg.upkeep_period_seconds / 60);
 
@@ -508,7 +513,7 @@ const char *kingdom_room_banner(int rnum)
 		    kingdom_square_of_room(rnum, &here_zone, &here_x, &here_y) &&
 		    hall_zone == here_zone)
 			ring = kingdom_ring_for_index(
-			    kingdom_index_for_offset(here_x - hall_x, here_y - hall_y));
+				kingdom_index_for_offset(here_x - hall_x, here_y - hall_y));
 	}
 
 	banner[0] = '\0';

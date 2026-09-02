@@ -297,12 +297,14 @@ bool kingdom_node_is_underdark(int vnum)
  * The Tharnadia Rift stays small because it IS small: ten thousand vnums
  * against the map's hundred and sixty thousand.
  */
-struct kingdom_node_quota {
+struct kingdom_node_quota
+{
 	const char *prop; /* duris.properties key overriding `count` */
 	int count; /* nodes of this resource kept loaded in this region */
 };
 
-struct kingdom_node_region {
+struct kingdom_node_region
+{
 	const char *name; /* for logs */
 	int start_vnum; /* first room vnum of the region, inclusive */
 	int end_vnum; /* last room vnum of the region, inclusive */
@@ -347,7 +349,8 @@ constexpr int KINGDOM_NODE_REGION_COUNT =
  * rooms of a vnum range occupy one contiguous run of rnums; this finds that
  * run's ends by inspection, and leaves last < first for a region with no rooms
  * at all, so placement skips it instead of indexing the table with -1. */
-struct kingdom_node_window {
+struct kingdom_node_window
+{
 	int first;
 	int last;
 };
@@ -811,8 +814,7 @@ static void kingdom_node_resolve_windows(void)
  */
 #define KINGDOM_NODE_RICHNESS_TIERS 4
 
-static const char *const kingdom_node_richness_descs[KINGDOM_NODE_HALVES][KRES_MAX]
-						    [KINGDOM_NODE_RICHNESS_TIERS] = {
+static const char *const kingdom_node_richness_descs[KINGDOM_NODE_HALVES][KRES_MAX][KINGDOM_NODE_RICHNESS_TIERS] = {
 	{ /* surface */
 	  { /* a seam of stone */
 	    "&+LThe seam here is thin and broken, and the stone will not give up much.&n",
@@ -1076,7 +1078,8 @@ static int kingdom_node_target_count(int region, int res)
 	return wanted;
 }
 
-struct kingdom_node_reload_data {
+struct kingdom_node_reload_data
+{
 	int region;
 	unsigned int generation;
 };
@@ -1167,8 +1170,7 @@ static void kingdom_node_reload_event(P_char /*ch*/, P_char /*victim*/, P_obj, v
 	if (!data)
 		return;
 
-	const struct kingdom_node_reload_data work =
-		*(const struct kingdom_node_reload_data *)data;
+	const struct kingdom_node_reload_data work = *(const struct kingdom_node_reload_data *)data;
 
 	/* A sweep left over from a previous initialise, or from before a
 	 * shutdown. Dying without rescheduling is what keeps exactly one chain
@@ -1236,7 +1238,8 @@ static int kingdom_node_proc(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
  * A stamp mismatch recomputes in place, so there is no invalidation hook that
  * can be forgotten. kingdom_harvest_prune()/_release() drop entries as well,
  * for the day something starts calling them. */
-struct kingdom_terrain_tally {
+struct kingdom_terrain_tally
+{
 	int realm_id;
 	int hall_rnum;
 	int highest_claim;
@@ -1422,8 +1425,7 @@ void kingdom_harvest_initialize(void)
 			 * resource -> prototype, and this loop going through it
 			 * is what keeps every path in the module answering the
 			 * same vnum. */
-			const int vnum =
-				kingdom_node_vnum_for(res, half == KINGDOM_NODE_UNDERDARK);
+			const int vnum = kingdom_node_vnum_for(res, half == KINGDOM_NODE_UNDERDARK);
 			const int r_num = real_object(vnum);
 
 			if (r_num < 0)
@@ -1433,8 +1435,8 @@ void kingdom_harvest_initialize(void)
 				      "database; that resource will not spawn %s.",
 				      vnum, half == KINGDOM_NODE_UNDERDARK ? "underdark " : "",
 				      kingdom_resource_name(res),
-				      half == KINGDOM_NODE_UNDERDARK ? "in the Underdark"
-								     : "on the surface");
+				      half == KINGDOM_NODE_UNDERDARK ? "in the Underdark" :
+								       "on the surface");
 				continue;
 			}
 
@@ -1534,7 +1536,8 @@ void kingdom_harvest_shutdown(void)
  * about the digger's membership that four seconds can falsify. The realm is
  * re-derived from the character on every tick, and the node is re-found by
  * number. */
-struct kingdom_harvest_work {
+struct kingdom_harvest_work
+{
 	int room_vnum;
 	int ticks;
 };
@@ -1596,8 +1599,8 @@ static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data
 	if (!kingdom_enabled())
 		return;
 
-	if (!ch->desc || IS_FIGHTING(ch) || !IS_AWAKE(ch) ||
-	    IS_STUNNED(ch) || IS_CASTING(ch) || !MIN_POS(ch, POS_STANDING + STAT_NORMAL))
+	if (!ch->desc || IS_FIGHTING(ch) || !IS_AWAKE(ch) || IS_STUNNED(ch) || IS_CASTING(ch) ||
+	    !MIN_POS(ch, POS_STANDING + STAT_NORMAL))
 	{
 		send_to_char("You stop working the land.\r\n", ch);
 		return;
@@ -1672,9 +1675,8 @@ static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data
 	long banked = 0;
 
 	if (realm && !kingdom_nodes_dormant(*realm))
-		banked = kingdom_resource_deposit(*realm, res,
-						  kingdom_harvest_yield(*realm, res,
-									node->value[1]));
+		banked = kingdom_resource_deposit(
+			*realm, res, kingdom_harvest_yield(*realm, res, node->value[1]));
 
 	/*
 	 * THE CHARGE IS SPENT WHATEVER THE OUTCOME. The ground does not care who
@@ -1685,8 +1687,8 @@ static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data
 	node->value[0]--;
 
 	if (banked > 0)
-		send_to_char_f(ch, "&+yYou add &+Y%ld&+y %s to your realm's stores.&n\r\n",
-			       banked, kingdom_resource_name(res));
+		send_to_char_f(ch, "&+yYou add &+Y%ld&+y %s to your realm's stores.&n\r\n", banked,
+			       kingdom_resource_name(res));
 	else if (!realm)
 		send_to_char_f(ch,
 			       "&+LYou work the %s free, but you serve no realm and it is left "
