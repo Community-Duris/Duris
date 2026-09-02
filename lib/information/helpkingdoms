@@ -66,6 +66,9 @@ The rules, each checked against every square:
     way into an area.
   - Clear of every other realm. Two realms may not even touch: there is
     always at least one unclaimed square between them.
+  - No guildhall may stand on it - not another guild's, and not one of
+    your own outposts either. A hall has its own square; a realm
+    cannot take it.
 
 'kingdom map' judges the ground square by square and lists exactly what
 would refuse you. A guild with no realm yet is shown the ground its own
@@ -91,10 +94,48 @@ the stores begin filling again. LAND ALREADY LOST DOES NOT RETURN ON
 PAYMENT - a ring that has reverted must be claimed again from scratch,
 at full price.
 
+A REALM IN ARREARS MAY NOT CLAIM. While upkeep is owed 'kingdom claim'
+is refused outright, so a guild cannot buy back the very ring it is
+losing; settle the debt and the next payment reopens it. A realm that
+the ladder has stripped all the way back to the hall square owes
+nothing, and with nothing owed there is nothing to settle: it may
+begin claiming again from square one at once.
+
 'kingdom abandon' gives up your most recent square voluntarily. It
 asks first and takes nothing until you type 'kingdom abandon confirm',
 because there is no refund. Territory always stays contiguous, so it
-is always the last square taken that goes first.
+is always the last square taken that goes first. Abandoning is allowed
+even in arrears: shedding squares is how a realm shrinks its upkeep
+back to something it can pay.
+
+Converting, claiming and abandoning are the LEADER'S acts alone. They
+spend the treasury and change what the guild owes every cycle, and no
+lesser rank may do them.
+
+
+THE HALL AND THE REALM
+----------------------
+A realm is territory only because a guildhall stands at its centre,
+and it lives or dies with the hall.
+
+If the main hall MOVES, the claims follow it: the same count of
+squares is laid out again around the new site, in the same order. The
+new ground is judged first, every square of it, exactly as at
+placement. If any square is refused the claims do not move and the
+realm goes DORMANT instead.
+
+If the main hall is DESTROYED, or the guild is left with outposts
+only, the realm goes dormant likewise. A dormant realm is not
+dissolved: its claims and its stores are kept, but it holds no ground,
+'kingdom status' and 'kingdom map' report that it has no centre,
+nothing can be claimed or abandoned, and NO UPKEEP IS CHARGED while it
+sleeps. Its stores still take what its people gather. Raise a main
+hall again and the realm wakes with its claims intact - on the old
+square at once, or on a new one after the same judging as a move.
+
+If the GUILD ITSELF IS DELETED, the realm is deleted with it: the land
+is released, the guards are dismissed and the stores are gone. There
+is nothing to inherit; a guild founded afterwards starts from nothing.
 
 
 GUARDS
@@ -127,13 +168,22 @@ A KINGDOM'S ADVANTAGE IS THE YIELD, NOT THE NODE. A realm draws best
 on the resources its own ground produces - but only once it holds
 ENOUGH of the right land. Every TWENTY owned squares that favour a
 resource add one step to what your people draw of it, anywhere in the
-world, so a young realm's first ring promises nothing yet, while a
-full realm of eighty forest squares takes roughly five times the
-timber a landless gatherer does. Ground counts by what it is and by
-what it borders - a realm along the coast draws water better though it
-can hold no water square - and a square that favours two things counts
-for both. Territory buys a better hand at every node in the world, not
-a fence around any of them.
+world, so a young realm's first ring promises nothing yet. A draw is
+worth its steps - one for the node itself, one for each grade of
+richness above poor, one for each twenty favouring squares - and then
+up to as many again on top, at random. So a realm with no forest to
+its name takes one or two timber from a poor stand, and a full realm
+of eighty forest squares takes five to ten from the same stand: FIVE
+TIMES AS MUCH. The land's steps are added to the node's, not
+multiplied by them, so the advantage is widest at a poor node and
+narrows at a rich one - at a mother lode the same full realm takes
+eight to sixteen against four to eight, twice as much. The comparison
+is always between realms: a gatherer with no realm at all banks
+nothing anywhere, however rich the ground. Ground counts by what it
+is and by what it borders - a realm along the coast draws water better
+though it can hold no water square - and a square that favours two
+things counts for both. Territory buys a better hand at every node in
+the world, not a fence around any of them.
 
 Some ground is richer than others, and a node holds only so many draws;
 take the last of them and it is worked out and gone. A node that has
@@ -177,22 +227,38 @@ kingdom map        - the nine-by-nine grid: what you hold, what is next,
 kingdom survey     - what the node on this square yields, how good the
                      ground is, and how many draws are left in it.
 kingdom convert    - turn your guild into a kingdom. This grants NO land,
-                     only the right to start claiming it.
-kingdom claim      - take the next square in the sequence.
+                     only the right to start claiming it. (leader)
+kingdom claim      - take the next square in the sequence. (leader)
 kingdom abandon    - give up your most recent square. Does nothing
                      until you add 'confirm', because nothing is
-                     refunded.
+                     refunded. (leader)
 kingdom harvest    - work the node on the square you are standing on.
 kingdom deposit    - pay coin into the guild treasury that upkeep draws
                      on. Wants a bank and a coin string, like
-                     '500 gold 20 silver'.
+                     '500 gold 20 silver'. Any member may pay in.
 kingdom guards     - how large a garrison the realm may field.
 kingdom help       - a short built-in summary, with your server's own
                      prices filled in; 'help kingdoms' is this text.
 
-'kingdom c' and 'kingdom s' are ambiguous - c is shared by claim and
-convert, s by status and survey - and will ask which you meant rather
-than guess; claim and convert in particular both spend the treasury's
-money.
+'kingdom c', 'kingdom s' and 'kingdom h' are ambiguous - c is shared
+by claim and convert, s by status and survey, h by help and harvest -
+and will ask which you meant rather than guess; claim and convert in
+particular both spend the treasury's money.
+
+
+WHO MAY USE IT, AND WHEN
+------------------------
+The command itself asks only that you are awake. You may read the
+status, the map or the garrison while resting or lying down. Working
+a node is the exception: to begin you must be standing and out of a
+fight, and you must stay standing, awake and unengaged for the work to
+finish, or it stops where it is.
+
+'kingdom harvest' and 'kingdom survey' need no guild at all. Every
+other verb is for FULL MEMBERS of a guild, and belonging to one is not
+the same as being a full member of it: an applicant, a banned
+character or one on parole has no realm to speak for, and nothing they
+gather is banked either. Converting, claiming and abandoning are the
+leader's alone, as above.
 
 See also: SOCIETY, GUILDHALL

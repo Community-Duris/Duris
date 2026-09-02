@@ -21,12 +21,47 @@ COMPATIBILITY_PROTOTYPES_RETAINED = False
 
 
 def source_text() -> str:
+    """Every .c and .h under src/, concatenated."""
     paths = sorted((*SRC.rglob("*.c"), *SRC.rglob("*.h")))
     return "\n".join(path.read_text(errors="replace") for path in paths)
 
 
+def strip_comments(text: str) -> str:
+    """Blank out /* */ and // comments, keeping newlines, so a pin on code
+    cannot be satisfied by prose describing it."""
+
+    def blank(match: re.Match) -> str:
+        return re.sub(r"[^\n]", " ", match.group(0))
+
+    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
+    return re.sub(r"//[^\n]*", blank, text)
+
+
+def function_body(text: str, signature: str) -> str | None:
+    """The brace-matched body of the first function definition whose head
+    matches the `signature` regex, comments stripped; None when absent."""
+    code = strip_comments(text)
+    match = re.search(signature, code)
+    if match is None:
+        return None
+    start = code.find("{", match.end())
+    if start < 0:
+        return None
+    depth = 0
+    for index in range(start, len(code)):
+        if code[index] == "{":
+            depth += 1
+        elif code[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return code[start : index + 1]
+    return None
+
+
 class SiegeKingdomRemovalContractTest(unittest.TestCase):
     def test_runtime_implementation_and_destruction_state_are_absent(self) -> None:
+        """siege.c/.h, their tokens and the destruction state are gone from
+        src/, while the revived Guild::is_kingdom delegates to the module."""
         self.assertFalse((SRC / "combat/siege.c").exists())
         self.assertFalse((SRC / "combat/siege.h").exists())
 
@@ -54,14 +89,25 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         # The NEW kingdom module (src/kingdom/) revives Guild::is_kingdom with
         # a real definition delegating to its seam. What must stay dead is the
         # old declared-but-undefined form, so BOTH halves are required: the
-        # declaration in the header and the definition in assocs.c.
-        associations = (SRC / "guild/assocs.h").read_text()
+        # declaration in the header (any spelling of an argument-less bool
+        # method) and a DEFINITION in assocs.c whose body delegates to
+        # kingdom_guild_has_realm() rather than re-deriving the answer.
+        associations = strip_comments((SRC / "guild/assocs.h").read_text())
         migrate_stubs = (ROOT / "migrations/tools/migrate_stubs.c").read_text()
-        self.assertIn("bool is_kingdom();", associations)
-        self.assertIn("bool Guild::is_kingdom()", (SRC / "guild/assocs.c").read_text())
+        self.assertRegex(
+            associations, r"\bbool\s+is_kingdom\s*\(\s*(?:void)?\s*\)\s*(?:const\s*)?;"
+        )
+        definition = function_body(
+            (SRC / "guild/assocs.c").read_text(),
+            r"\bbool\s+Guild::is_kingdom\s*\(\s*(?:void)?\s*\)\s*(?:const\s*)?",
+        )
+        self.assertIsNotNone(definition, "Guild::is_kingdom has no definition in assocs.c")
+        self.assertRegex(definition, r"\bkingdom_guild_has_realm\s*\(")
         self.assertNotIn("is_kingdom", migrate_stubs)
 
     def test_feature_world_wiring_and_prototype_custody_are_safe(self) -> None:
+        """The siege area, its zone loads, shop entries and gated prototypes
+        are absent from the world files."""
         for relative in (
             "areas/mob/siege.mob",
             "areas/obj/siege.obj",
@@ -97,6 +143,8 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
             self.assertEqual(gated_minimal, set())
 
     def test_feature_flatfile_authorities_and_regressions_are_absent(self) -> None:
+        """The towns/siege flat authorities and their tests are gone and no
+        longer wired into CI."""
         for relative in (
             "defaults/towns",
             "tests/async/test_flatfile_towns.py",
@@ -110,6 +158,7 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         self.assertNotRegex(quality, r"test_flatfile_(?:towns|siege)\.py")
 
     def test_retirement_report_local_links_resolve(self) -> None:
+        """Every relative link in the retirement research report resolves."""
         report_path = (
             ROOT
             / "docs/ongoing-projects/future/siege-kingdom-removal-research-2026-08-29.md"
@@ -125,10 +174,16 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         self.assertEqual(broken, [])
 
     def test_help_and_command_surfaces_are_retired_in_place(self) -> None:
+        """The old siege help, `add`/`deploy` commands and Kingdom View toggle
+        stay retired; the new helpkingdoms file is registered."""
         # helpkingdoms returned with the NEW kingdom module: the file now
         # documents the ring-claim system and must be registered in the help
-        # catalog. The retired importer script must still not reference it,
-        # and every other in-place retirement below stands unchanged.
+        # catalog (flat build) and is ALLOWED back in the production importer
+        # (MariaDB build; test_kingdom_contract.py pins its presence). What
+        # commit 552230d47 retired from the help surfaces, and what must stay
+        # retired, is the old siege material: the `add` and `deploy` immortal
+        # commands and the "Kingdom View" toggle. Every other in-place
+        # retirement below stands unchanged.
         self.assertTrue((ROOT / "lib/information/helpkingdoms").exists())
 
         importer = (ROOT / "scripts/import_help_to_prod.sh").read_text()
@@ -136,7 +191,9 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         help_index = (ROOT / "lib/information/help_index").read_text()
         attributes = (ROOT / "docs/lib/information/command_attributes.txt").read_text()
         self.assertIn("helpkingdoms", catalog)
-        self.assertNotIn("helpkingdoms", importer)
+        for retired_surface in ("Kingdom View", "ADD (Immortal Command)", "DEPLOY (Immortal Command)"):
+            self.assertNotIn(retired_surface, importer)
+        self.assertNotRegex(importer, r'(?m)^\s*\["(?:add|deploy)"\]=')
         self.assertNotIn("ADD (Immortal Command)", help_index)
         self.assertNotIn("Kingdom View", help_index)
         self.assertNotRegex(attributes, r"(?m)^(?:add|deploy)\s*$")
@@ -160,6 +217,8 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         self.assertNotRegex(structs, r"\bPLR2_KINGDOMVIEW\b")
 
     def test_runtime_sql_is_detached_but_schema_tombstones_remain(self) -> None:
+        """No runtime SQL touches the retired tables; the lifecycle manifest
+        still retains them as compatibility tombstones."""
         runtime_sql = "\n".join(
             (SRC / relative).read_text()
             for relative in ("sql/sql.c", "sql/sql_player.c", "sql/sql_player.h")
