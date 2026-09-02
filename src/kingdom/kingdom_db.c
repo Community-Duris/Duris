@@ -99,14 +99,30 @@ constexpr size_t kingdom_realm_maximum = 65536;
  * KINGDOM_MAX_SQUARES read back from a corrupt store would walk off the end
  * of that table; arrears indexes the ladder.
  *
- * Both backends treat a failure the same way, and it is per RECORD, never
- * per store: the MariaDB loader logs and skips the row and goes on to the
- * next; the flat-file decoder logs and drops the record from the decoded
- * catalogue and goes on, and the next publish writes the catalogue without
- * it. Only the flat file's checksum, layout and assoc_id ordering fail the
- * whole load. Both save paths (single-record and flush) refuse to write a
- * record that fails this, leaving it dirty in memory. Losing one guild's
- * territory is the outcome in every case, rather than the process. */
+ * Both backends reject per RECORD and never per store, and both log the
+ * rejection -- but THE TWO END STATES ARE NOT THE SAME, and an operator
+ * reading the log has to know which backend produced it:
+ *
+ *   MariaDB: the loader logs the row and skips it. Nothing on the load path
+ *     deletes or rewrites a row it refused, so the corrupt row is still in
+ *     kingdom_realms after the boot that rejected it: readable for forensics
+ *     and repairable by hand, after which the next boot loads it. (Not
+ *     immortal -- a later upsert for that same assoc_id, or
+ *     kingdom_on_guild_deleted()'s DELETE, still replaces or removes it. The
+ *     point is only that the REJECTION itself destroys nothing.)
+ *
+ *   Flat file: the decoder logs the record and drops it from the decoded
+ *     catalogue, and every write republishes the whole authority file from
+ *     that catalogue. So the FIRST publish after the drop -- any single-realm
+ *     save, any flush -- writes the file without the record and ERASES IT
+ *     FROM DISK for good. THE FLAT-FILE DROP IS DESTRUCTIVE AND THE SQL DROP
+ *     IS NOT: copy the authority file aside before running a server that has
+ *     logged one, or the evidence goes with the next write.
+ *
+ * Only the flat file's checksum, layout and assoc_id ordering fail the whole
+ * load. Both save paths (single-record and flush) refuse to write a record
+ * that fails this, leaving it dirty in memory. Losing one guild's territory
+ * is the outcome in every case, rather than the process. */
 bool record_is_sane(const kingdom_realm &realm)
 {
 	if (realm.assoc_id <= 0 || realm.realm_id < 0)
@@ -155,9 +171,12 @@ constexpr unsigned int kingdom_realm_column_count = 11;
 
 /* Replace kingdom_realms with every row of the kingdom_realms table, anchors
  * unresolved and flags clear. Rows with a NULL column, a record that fails
- * record_is_sane() or a duplicate assoc_id are logged and skipped. False when
- * the SELECT fails, the column count is wrong, memory runs out, or the cap
- * truncates the load -- never for an empty table. */
+ * record_is_sane() or a duplicate assoc_id are skipped, each with its own log
+ * line naming the row, and then counted in the closing "rejected" total. A
+ * skipped row is left in the table -- see the record_is_sane() banner for why
+ * that differs from the flat-file backend. False when the SELECT fails, the
+ * column count is wrong, memory runs out, or the cap truncates the load --
+ * never for an empty table. */
 bool kingdom_db_load_all(void)
 {
 	kingdom_realms.clear();
@@ -208,12 +227,29 @@ bool kingdom_db_load_all(void)
 				break;
 			}
 
-			bool row_is_whole = true;
+			unsigned int null_column = kingdom_realm_column_count;
 			for (unsigned int column = 0; column < kingdom_realm_column_count; column++)
 				if (!row[column])
-					row_is_whole = false;
-			if (!row_is_whole)
+				{
+					null_column = column;
+					break;
+				}
+			if (null_column != kingdom_realm_column_count)
 			{
+				/* One line per rejected row, the same shape as the
+				 * corrupt-record drop below: the aggregate "rejected"
+				 * total at the foot cannot tell an operator WHICH row
+				 * to repair. The column is reported as its index into
+				 * kingdom_realm_columns, which is printed with it,
+				 * rather than as a second name list that could drift
+				 * out of step with the SELECT. assoc_id is printed as
+				 * the raw string because assoc_id is row[0] and may be
+				 * the NULL column itself. */
+				logit(LOG_KINGDOM,
+				      "kingdom_db_load_all: rejecting a row of kingdom_realms "
+				      "(assoc_id %s): column %u of \"%s\", counting from 0, is "
+				      "NULL; the row is left in the table for repair",
+				      row[0] ? row[0] : "NULL", null_column, kingdom_realm_columns);
 				rejected++;
 				continue;
 			}
@@ -236,7 +272,8 @@ bool kingdom_db_load_all(void)
 			{
 				logit(LOG_KINGDOM,
 				      "kingdom_db_load_all: rejecting corrupt row for "
-				      "association %d (claim %d, arrears %d)",
+				      "association %d (claim %d, arrears %d); the row is left "
+				      "in the table for repair",
 				      realm.assoc_id, realm.highest_claim, realm.arrears);
 				rejected++;
 				continue;
@@ -276,7 +313,15 @@ bool kingdom_db_load_all(void)
 
 /* Upsert one realm's row, joining any open transaction (qry() runs on the
  * shared connection). False when the record fails record_is_sane() or the
- * statement fails; the caller's dirty flag is untouched either way. */
+ * statement fails; the caller's dirty flag is untouched either way.
+ *
+ * THIS PRIMITIVE DOES NOT TEST payment_pending, deliberately: it is what
+ * kingdom_persist_payment() calls to publish a pending record together with
+ * the guild debit that justifies it, so a guard here would deadlock that
+ * pairing. The obligation is therefore the CALLER's -- every call to this
+ * function from outside kingdom_db.c and kingdom_persist_payment() must be
+ * guarded by !payment_pending and leave a pending record dirty for
+ * kingdom_upkeep_retry_pending() to carry. */
 bool kingdom_db_save_realm(const kingdom_realm &realm)
 {
 	if (!record_is_sane(realm))
@@ -597,8 +642,11 @@ bool encode_catalog(const kingdom_catalog &catalog, std::vector<uint8_t> *bytes)
  * for a bad magic, version, length, revision, checksum or record count, a
  * short or over-long payload, or records out of assoc_id order. A record whose
  * FIELDS fail record_is_sane() is logged and dropped on its own and decoding
- * continues, matching the MariaDB loader's per-row rejection; the next
- * publish then writes the catalogue without it. */
+ * continues, matching the MariaDB loader's per-row rejection in shape but NOT
+ * in what it leaves behind: the next publish rewrites this whole file from the
+ * decoded catalogue, so the dropped record is erased from disk permanently,
+ * whereas the MariaDB loader leaves its rejected row in the table for
+ * forensics and hand repair. See the record_is_sane() banner. */
 bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 {
 	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
@@ -675,8 +723,9 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 			{
 				logit(LOG_KINGDOM,
 				      "kingdom_db: dropping a corrupt realm record for "
-				      "association %d (claim %d, arrears %d); it is lost at "
-				      "the next write",
+				      "association %d (claim %d, arrears %d); the next write "
+				      "of this file ERASES it from disk -- copy the realm "
+				      "authority aside now if it is wanted for repair",
 				      record.assoc_id, record.highest_claim, record.arrears);
 				continue;
 			}
@@ -845,7 +894,15 @@ bool kingdom_db_load_all(void)
  * fails record_is_sane(), there is no state root, the lock, the load, the
  * merge or the publish fails. One full catalogue rewrite per call, which is
  * why a paid realm waits for the sweep's batched kingdom_db_flush_dirty()
- * instead of coming through here. */
+ * instead of coming through here.
+ *
+ * THIS PRIMITIVE DOES NOT TEST payment_pending, deliberately: it is what
+ * kingdom_persist_payment() calls to publish a pending record once the guild
+ * debit that justifies it has been written, so a guard here would deadlock
+ * that pairing. The obligation is therefore the CALLER's -- every call to this
+ * function from outside kingdom_db.c and kingdom_persist_payment() must be
+ * guarded by !payment_pending and leave a pending record dirty for
+ * kingdom_upkeep_retry_pending() to carry. */
 bool kingdom_db_save_realm(const kingdom_realm &realm)
 {
 	if (!record_is_sane(realm))

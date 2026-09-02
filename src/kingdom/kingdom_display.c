@@ -324,9 +324,12 @@ void kingdom_show_map(struct char_data *ch, const kingdom_realm &realm)
 	if (!ch)
 		return;
 
+	/* An unresolved anchor means no main hall stands on the seat (destroyed,
+	 * demoted or moved) as often as it means the room itself is gone, so the
+	 * refusal names the seat rather than the map. */
 	if (!valid_rnum(realm.hall_rnum))
 	{
-		send_to_char("Your realm's seat cannot be found on the map.\r\n", ch);
+		send_to_char("Your realm has no seat to draw its lands around.\r\n", ch);
 		return;
 	}
 

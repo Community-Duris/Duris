@@ -1389,8 +1389,17 @@ long kingdom_resource_deposit(kingdom_realm &realm, int res, long amount)
 	 * generic kingdom_db_flush_dirty(), which kingdom_upkeep_event()
 	 * (kingdom_upkeep.c) runs on its once-a-minute tick, and which
 	 * kingdom_shutdown() and kingdom_flush_persistent_state() (kingdom.c)
-	 * run on the way out and across a copyover. A crash inside that window
-	 * loses at most a minute of harvesting, never a payment. */
+	 * run on the way out and across a copyover. A crash normally costs at
+	 * most a tick of harvesting.
+	 *
+	 * NOT ALWAYS A TICK, THOUGH. Every one of those flushes skips a realm
+	 * flagged payment_pending -- the record may not be published while a
+	 * debit it accounts for is still unpaired with its guild -- so deposits
+	 * made into a held realm are not written at all until
+	 * kingdom_upkeep_retry_pending() lands the pair. A crash before that
+	 * loses every deposit banked since the hold began, not a tick's worth.
+	 * They are resources, not coin: the safe thing to lose, and the reason
+	 * this path does not try to force a write of its own. */
 	realm.dirty = true;
 
 	return banked;

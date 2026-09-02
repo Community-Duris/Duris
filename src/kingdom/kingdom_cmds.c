@@ -132,13 +132,16 @@ static int kingdom_racewar_of(P_Guild guild)
  * (src/core/utility.c:7291), so exactly ONE result may be live at a time --
  * never pass two of these into a single format string.
  *
- * The all-zero case is reachable -- kingdom_upkeep_due() answers 0 for a
- * realm that owns nothing (kingdom_upkeep.c:133-134), which is every realm
- * between `kingdom convert` and its first `kingdom claim`, and again whenever
- * an operator sets upkeep_per_square to 0 (:136-138) -- and coins_to_string
- * renders it itself: with no denomination set it returns "nothing" in the
- * caller's colour (src/core/utility.c:7355-7358), so no special case is
- * needed here. */
+ * The all-zero case is reachable. kingdom_upkeep_due() (kingdom_upkeep.c)
+ * answers 0 for a realm that owns nothing, which is every realm between
+ * `kingdom convert` and its first `kingdom claim`; for a realm whose anchor
+ * no longer resolves, which is a dormant one; and for any realm at all once
+ * an operator sets upkeep_per_square to 0. Cited by FUNCTION NAME and not by
+ * line: that is this module's rule for its own cross-references, and the line
+ * numbers this comment used to carry had already gone stale under a rewrite
+ * of that file. coins_to_string renders the zero itself:
+ * with no denomination set it returns "nothing" in the caller's colour
+ * (src/core/utility.c:7355-7358), so no special case is needed here. */
 static const char *kingdom_coin_string(long copper_total)
 {
 	if (copper_total < 0)
@@ -174,12 +177,17 @@ static kingdom_realm *kingdom_reader_realm(P_char ch, P_Guild guild)
 
 	/* hall_rnum is 0 until this succeeds, and 0 is real_room0's answer for
 	 * "no such vnum" as well as for the first room, so an unresolved anchor
-	 * must be reported rather than used. */
+	 * must be reported rather than used.
+	 *
+	 * The wording names the HALL, not the map: resolving now also fails when
+	 * the association's main hall no longer stands on the realm's seat --
+	 * destroyed, demoted to an outpost, or moved -- and in those cases the
+	 * map room itself is still perfectly findable. */
 	if (!kingdom_resolve_anchor(*realm))
 	{
-		send_to_char(
-			"Your guildhall cannot be found on the map, so the realm has no centre.\r\n",
-			ch);
+		send_to_char("No main guildhall of yours stands on the realm's seat, so it has "
+			     "no centre.\r\n",
+			     ch);
 		return NULL;
 	}
 	return realm;
@@ -370,8 +378,9 @@ static void kingdom_cmd_guards(P_char ch, P_Guild guild)
 
 	/* kingdom_guard_allowance() owns the scaling and kingdom_guards_count()
 	 * owns the head-count (one walk of character_list matching this realm's
-	 * stamped guards, kingdom_guards.c:523). This reports the numbers they
-	 * return and never recomputes either from the square count. */
+	 * stamped guards; kingdom_guards.c, cited by function name as this module
+	 * cites its own). This reports the numbers they return and never
+	 * recomputes either from the square count. */
 	const int allowance = kingdom_guard_allowance(*realm);
 
 	send_to_char_f(ch,

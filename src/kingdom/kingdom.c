@@ -145,6 +145,41 @@ static void kingdom_clear_anchor(kingdom_realm &realm)
 	realm.hall_y = -1;
 }
 
+/* The MAIN guildhall this realm is anchored on, or NULL when no such hall
+ * stands at realm.hall_vnum. THE ONE test for "does this realm still have a
+ * seat", asked by kingdom_resolve_anchor() and by the boot audit in
+ * kingdom_reindex_all() so the two cannot drift apart.
+ *
+ * "The vnum resolves to a map room" is NOT that test: destroy_guildhall()
+ * erases the hall and frees the object (guild/guildhall_cmds.c:1304-1312,
+ * guild/guildhall.c:96-115) while the map room it stood on carries on
+ * existing, so a realm whose hall is gone would go on resolving forever.
+ *
+ * `moved_to` is optional and only for the caller's log: it is set to 0 when
+ * the association has no main hall at all, and to the hall's own outside_vnum
+ * when a main hall stands somewhere other than realm.hall_vnum. It is written
+ * on every call, including the successful one (0 then), so a caller never
+ * reads a stale value. */
+static Guildhall *kingdom_anchor_hall(const kingdom_realm &realm, int *moved_to)
+{
+	Guildhall *hall = kingdom_main_hall(realm.assoc_id);
+
+	if (moved_to)
+		*moved_to = 0;
+
+	if (!hall)
+		return NULL;
+
+	if (hall->outside_vnum != realm.hall_vnum)
+	{
+		if (moved_to)
+			*moved_to = hall->outside_vnum;
+		return NULL;
+	}
+
+	return hall;
+}
+
 /* ------------------------------------------------------------------ *
  * Failed realm-row deletes, remembered for retry
  * ------------------------------------------------------------------ *
@@ -232,7 +267,13 @@ kingdom_realm *kingdom_find_realm(int assoc_id)
 
 /* Re-derive hall_rnum/zone_idx/hall_x/hall_y from the persisted hall_vnum,
  * clearing them first. False -- with the anchor left cleared, so the realm is
- * dormant -- when the vnum is unset, names no room, or is not a map room. */
+ * dormant -- when the vnum is unset, when the association's main guildhall no
+ * longer stands on it, when it names no room, or when that room is not a map
+ * room.
+ *
+ * DORMANCY IS STICKY, and the hall test is what makes it so: it is asked on
+ * every re-resolution, not only at boot, so a realm the boot audit found
+ * hall-less cannot be quietly re-anchored by the next verb that calls this. */
 bool kingdom_resolve_anchor(kingdom_realm &realm)
 {
 	int zone_idx = -1, hall_x = -1, hall_y = -1;
@@ -244,6 +285,21 @@ bool kingdom_resolve_anchor(kingdom_realm &realm)
 	kingdom_clear_anchor(realm);
 
 	if (realm.hall_vnum <= 0)
+		return false;
+
+	/* A destroyed hall leaves its map room standing, so the room resolving
+	 * below is no evidence of a seat: require the association's own MAIN
+	 * hall to stand on hall_vnum. Without this, a realm made dormant because
+	 * its hall was razed, demoted to an outpost or moved would be re-anchored
+	 * by any verb that re-resolves -- and with the anchor back would come its
+	 * billing, its garrison and its right to claim.
+	 *
+	 * Gated on kingdom_halls_loaded() for the same reason the boot audit in
+	 * kingdom_reindex_all() is: an empty hall list means Guildhall::initialize()
+	 * has almost certainly not run yet rather than that every hall on the
+	 * server was demolished, and a too-early call must do LESS, not unanchor
+	 * every realm. */
+	if (kingdom_halls_loaded() && !kingdom_anchor_hall(realm, NULL))
 		return false;
 
 	const int rnum = real_room0(realm.hall_vnum);
@@ -410,25 +466,29 @@ void kingdom_reindex_all(void)
 		 * ground means judging it, and kingdom_judge_footprint() is the
 		 * placement authority's call, not a boot loop's. Dormant and
 		 * loudly logged is recoverable; misplaced territory is not.
+		 *
+		 * kingdom_resolve_anchor() below asks kingdom_anchor_hall() the
+		 * same question and would refuse on its own; this block is here to
+		 * SAY WHICH of the two things happened, which is what an
+		 * administrator reads afterwards. One predicate, asked twice --
+		 * not two predicates.
 		 */
 		if (halls_loaded)
 		{
-			const Guildhall *hall = kingdom_main_hall(ids[i]);
+			int moved_to = 0;
 
-			if (!hall)
+			if (!kingdom_anchor_hall(*realm, &moved_to))
 			{
 				kingdom_clear_anchor(*realm);
-				logit(LOG_KINGDOM, "realm %d: no main guildhall; realm dormant.",
-				      realm->assoc_id);
-				continue;
-			}
-			if (hall->outside_vnum != realm->hall_vnum)
-			{
-				kingdom_clear_anchor(*realm);
-				logit(LOG_KINGDOM,
-				      "realm %d: anchored on vnum %d but its main hall "
-				      "stands on %d; realm dormant.",
-				      realm->assoc_id, realm->hall_vnum, hall->outside_vnum);
+				if (moved_to)
+					logit(LOG_KINGDOM,
+					      "realm %d: anchored on vnum %d but its main hall "
+					      "stands on %d; realm dormant.",
+					      realm->assoc_id, realm->hall_vnum, moved_to);
+				else
+					logit(LOG_KINGDOM,
+					      "realm %d: no main guildhall; realm dormant.",
+					      realm->assoc_id);
 				continue;
 			}
 		}
@@ -855,7 +915,9 @@ void kingdom_on_guild_deleted(int assoc_id)
  * whose new footprint fails the placement authority all leave the realm
  * DORMANT (anchor cleared, highest_claim and hall_vnum kept) and return
  * false. A hall that did not move is re-resolved and re-indexed without
- * re-judging; one that did move is judged, adopted, re-indexed and saved.
+ * re-judging; one that did move is judged, adopted, re-indexed, and written --
+ * unless the realm is holding a payment that is not yet durable, in which case
+ * the record is left dirty for the paired retry instead of being published.
  */
 static bool kingdom_rehome_realm(kingdom_realm &realm)
 {
@@ -936,9 +998,34 @@ static bool kingdom_rehome_realm(kingdom_realm &realm)
 
 	kingdom_reindex_realm(realm);
 
-	/* No coin moved, so this is a plain realm write, not a paired one. A
-	 * refused write leaves the record dirty for the next flush. */
+	/*
+	 * THE PENDING RULE. Every kingdom_db_save_realm() outside kingdom_db.c
+	 * and kingdom_persist_payment() must be guarded by !payment_pending.
+	 *
+	 * A realm carrying payment_pending has had coin taken from its guild in
+	 * memory only. Its record already holds the paid mark and the rung that
+	 * debit bought, so publishing it here -- for a reason as innocent as a
+	 * moved hall -- would put a paid mark on disk over a treasury that still
+	 * shows the coin: exactly the half-state payment_pending exists to
+	 * prevent. The new anchor is in the record and the record stays DIRTY,
+	 * so kingdom_upkeep_retry_pending() carries the anchor to disk together
+	 * with the guild whenever the pair lands.
+	 *
+	 * When nothing is pending no coin moved here either, so this is a plain
+	 * realm write rather than a paired one, and a refused write leaves the
+	 * record dirty for the next flush.
+	 */
 	realm.dirty = true;
+
+	if (realm.payment_pending)
+	{
+		logit(LOG_KINGDOM,
+		      "realm %d: re-anchored on vnum %d, but a payment is not yet durable; the "
+		      "record is held for the paired retry.",
+		      assoc_id, realm.hall_vnum);
+		return true;
+	}
+
 	if (kingdom_db_save_realm(realm))
 		realm.dirty = false;
 	return true;

@@ -54,14 +54,28 @@
  *
  *  DORMANT REALMS ARE NOT BILLED
  *  -----------------------------
- *  A realm whose anchor is unresolved (hall_rnum 0: the main hall destroyed,
- *  moved somewhere illegal, or a row inherited by a reused association id and
- *  not yet audited) owns no squares in the index, cannot claim and cannot
- *  abandon. kingdom_upkeep_due() answers 0 for it, the sweep tells the guild
- *  once per cycle that the realm lies dormant, and its arrears state is left
- *  exactly as it was: neither advanced nor forgiven. Its upkeep_paid_through
- *  is not moved either, so the first sweep after the hall stands again bills
- *  one period from then.
+ *  A realm is DORMANT when its anchor will not resolve (hall_rnum 0). Since
+ *  kingdom_resolve_anchor() requires the association's own MAIN guildhall to
+ *  stand on the persisted hall_vnum, that covers a hall destroyed, demoted to
+ *  outposts or moved elsewhere, as well as a vnum that no longer names a map
+ *  room and a row inherited by a reused association id and not yet audited.
+ *  Dormancy is sticky: nothing re-anchors a realm until a main hall stands on
+ *  its square again.
+ *
+ *  A dormant realm owns no squares in the index, cannot claim and cannot
+ *  abandon. kingdom_upkeep_due() answers 0 for it, and the sweep skips it --
+ *  telling the guild once per cycle that the realm lies dormant -- WHATEVER
+ *  it holds on paper, including nothing at all. Nothing about its state is
+ *  touched: not the rung, not missed_cycles, not upkeep_paid_through. A debt
+ *  outstanding when the hall fell is still owed when one stands again, and a
+ *  landless dormant realm keeps whatever rung it was on rather than being
+ *  quietly returned to KARR_CURRENT by the owes-nothing branch below.
+ *
+ *  Because upkeep_paid_through is left where it was, the first sweep after the
+ *  hall stands again finds the paid period long expired and bills ONE cycle's
+ *  upkeep straight away -- one charge, not one per period of dormancy -- and
+ *  re-stamps the paid mark to that moment. A realm that cannot pay it takes a
+ *  single rung, counted from wherever the ladder already stood.
  *
  *  CADENCE AND CRASHES
  *  -------------------
@@ -98,9 +112,24 @@
  *                 failed guild write marks the realm payment_pending exactly
  *                 as above, and no realm write is attempted.
  *
- *    In neither mode can a paid mark reach disk without its debit: the flush
- *    never publishes a payment_pending record, and the flat-file realm write
- *    is never attempted before the guild's has succeeded.
+ *    THE PENDING RULE. A paid mark must never reach disk without its debit,
+ *    and kingdom_db_save_realm() is a primitive that cannot enforce that for
+ *    itself: kingdom_persist_payment() is precisely the caller that must be
+ *    allowed to publish a pending record, because it writes the guild in the
+ *    same breath. So the obligation falls on every OTHER caller. Each
+ *    kingdom_db_save_realm() outside kingdom_db.c and kingdom_persist_payment()
+ *    -- the default write at the end of the sweep below, kingdom_rehome_realm()
+ *    in kingdom.c after a hall change, the abandon path in kingdom_claim.c --
+ *    has to test realm.payment_pending first and, when it is set, write
+ *    nothing and leave the record DIRTY. The change it wanted to save is in
+ *    the record either way, and kingdom_upkeep_retry_pending() carries the
+ *    record to disk with its guild when the pair lands. An unguarded writer
+ *    would publish the pending realm's paid mark (and any raised
+ *    highest_claim) over a treasury that still shows the coin -- the exact
+ *    half-state payment_pending exists to prevent. Both backends'
+ *    kingdom_db_flush_dirty() skip pending records for the same reason, and
+ *    the flat-file realm write is never attempted before the guild's has
+ *    succeeded.
  *
  *    A DEFAULT (a rung advanced, a ring reverted) moves no coin, so it is
  *    written on its own the moment it is applied, and a failed write leaves
@@ -183,6 +212,13 @@ static const char KINGDOM_STEWARD[] = "The Kingdom Steward";
  * the first time after boot has had its whole period of uptime to deposit and
  * gets none; otherwise every restart would forgive one rung to every realm
  * that happened to come due in the following hour.
+ *
+ * ONE WARNING PER REALM PER BOOT, not "free until the hour is out": the window
+ * is wall-clock but the excuse is counted, in kingdom_boot_grace_used below.
+ * With a billing period shorter than this window -- an operator may set
+ * upkeep_period_seconds to anything -- an insolvent realm would otherwise be
+ * swept, warned and forgiven again on every cycle inside the hour, and the
+ * ladder would not advance at all until the window closed.
  *
  * The outposts spell the window as `real_time_passed(time(0), boot_time).hour
  * < 1 && .day < 1`, which is wrong for a long-lived process -- those fields
@@ -566,6 +602,26 @@ static const char *arrears_text(int arrears)
  * The periodic callback
  * ------------------------------------------------------------------ */
 
+/* Association ids that have already spent their post-boot grace this process.
+ * In-memory only and never persisted: the window it belongs to ends with this
+ * boot, and kingdom_upkeep_reset() empties it. */
+static std::vector<int> kingdom_boot_grace_used;
+
+/* Take this association's ONE post-boot grace: true the first time it is asked
+ * for in this process, false on every later ask. Called only from the branch
+ * that has already established the realm is inside the grace window and fell
+ * due during the downtime, so an id reaches this list only when it is actually
+ * being excused. */
+static bool take_boot_grace(int assoc_id)
+{
+	for (const int id : kingdom_boot_grace_used)
+		if (id == assoc_id)
+			return false;
+
+	kingdom_boot_grace_used.push_back(assoc_id);
+	return true;
+}
+
 /* When the last sweep ran: the throttle that turns a fast tick into the
  * configured billing period.
  *
@@ -592,12 +648,13 @@ static const char *arrears_text(int arrears)
  * whose paid period has not yet run out. */
 static time_t kingdom_upkeep_last_cycle = 0;
 
-/* Clear the pending-payment list and the cycle stamp. For kingdom_shutdown();
- * a pending payment dropped here is lost with the process, and the realm is
- * billed again for the period at the next boot. */
+/* Clear the pending-payment list, the spent boot graces and the cycle stamp.
+ * For kingdom_shutdown(); a pending payment dropped here is lost with the
+ * process, and the realm is billed again for the period at the next boot. */
 void kingdom_upkeep_reset(void)
 {
 	kingdom_pending_payments.clear();
+	kingdom_boot_grace_used.clear();
 	kingdom_upkeep_last_cycle = 0;
 }
 
@@ -734,14 +791,26 @@ void kingdom_upkeep_event(void)
 			continue;
 		}
 
-		if (realm->hall_rnum <= 0 && realm->highest_claim > 0)
+		if (realm->hall_rnum <= 0)
 		{
-			/* DORMANT: land on paper, no hall to rule it from. Not
-			 * billed, and the ladder is neither advanced nor forgiven --
-			 * a debt outstanding when the hall fell is still owed when
-			 * it stands again. upkeep_paid_through is left alone too,
-			 * so the realm is due again as soon as it is anchored. Once
-			 * per cycle, because only a due realm reaches this line. */
+			/* DORMANT: no hall to rule from, whatever the realm holds on
+			 * paper. Not billed, and NOTHING about its state moves --
+			 * not the rung, not missed_cycles, not upkeep_paid_through --
+			 * so a debt outstanding when the hall fell is still owed when
+			 * one stands again, and the realm is due again the moment it
+			 * is anchored.
+			 *
+			 * The test deliberately does not ask for highest_claim > 0.
+			 * A dormant realm holding nothing would otherwise fall
+			 * through to the owes-nothing branch below, which moves the
+			 * paid mark and clears the rung -- forgiving a debt and
+			 * re-stamping a clock for a realm the header promises is
+			 * left untouched. It cannot wedge itself out of the game by
+			 * keeping a rung it can never pay off, either: it cannot
+			 * claim while dormant in any case, and once anchored the
+			 * owes-nothing branch clears the rung on the first sweep.
+			 *
+			 * Once per cycle, because only a due realm reaches here. */
 			send_to_guild(guild, KINGDOM_STEWARD,
 				      "The realm lies dormant: with no hall to rule from, the "
 				      "crown asks no upkeep of it until one stands again.");
@@ -803,13 +872,21 @@ void kingdom_upkeep_event(void)
 		/* get_name() returns a std::string BY VALUE (guild/assocs.h:196);
 		 * the temporary outlives each logit() call it is spelled in. */
 		if (in_boot_grace &&
-		    realm->upkeep_paid_through + period <= static_cast<time_t>(boot_time))
+		    realm->upkeep_paid_through + period <= static_cast<time_t>(boot_time) &&
+		    take_boot_grace(realm->assoc_id))
 		{
 			/* This realm fell due while the server was down, so its
 			 * officers have had no chance to deposit: one free warning.
 			 * The charge was still attempted, so a solvent realm still
 			 * pays. A realm that only came due after boot is outside this
-			 * branch and takes the rung. */
+			 * branch and takes the rung.
+			 *
+			 * take_boot_grace() is LAST in the condition on purpose: it
+			 * consumes the excuse, and only a realm that would actually
+			 * be forgiven may spend it. It is also what makes this "this
+			 * once" rather than "free for an hour" -- with a billing
+			 * period shorter than the window, the same realm would
+			 * otherwise be excused on every sweep inside it. */
 			send_to_guild(guild, KINGDOM_STEWARD,
 				      "The stewards will hold their hand this once, the realm "
 				      "having only just stirred. Deposit coin before the next "
@@ -859,8 +936,15 @@ void kingdom_upkeep_event(void)
 		 * -- and any reverted ring -- durable NOW rather than at the
 		 * sweep's end: a crash before the batched flush would otherwise
 		 * forgive the missed cycle. Failure leaves the record dirty for
-		 * the flush below to retry. */
-		if (kingdom_db_save_realm(*realm))
+		 * the flush below to retry.
+		 *
+		 * The payment_pending test is THE PENDING RULE spelled out: this
+		 * realm cannot in fact be pending here -- the sweep skipped every
+		 * pending realm before billing, and the failed charge above
+		 * attempted no write -- but every direct writer in the module
+		 * reads the same, and a later edit that reordered the sweep would
+		 * find the guard already in place. */
+		if (!realm->payment_pending && kingdom_db_save_realm(*realm))
 			realm->dirty = false;
 	}
 
