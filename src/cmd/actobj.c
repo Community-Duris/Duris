@@ -111,6 +111,9 @@ int wield_item_size(P_char ch, P_obj obj)
  *   writing ~10 log lines for every pickup by every character in the game, mobs
  *   included.  Keep them, but make them opt-in via GET_TRACE.
  */
+/**
+ * Return whether GET_TRACE diagnostics are enabled for this process.
+ */
 static bool get_trace_enabled(void)
 {
 	static int cached = -1;
@@ -128,11 +131,22 @@ static bool get_trace_enabled(void)
 	return cached != 0;
 }
 
+/**
+ * Return whether an object's topology changes must use generic ownership.
+ *
+ * Active transient objects participate when their authoritative runtime row exists;
+ * unowned transient objects retain synchronous behavior.
+ */
 static bool uses_generic_item_ownership(P_obj object)
 {
-	return object && object->obj_uid > 0 && object->type != ITEM_MONEY &&
-	       !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
-	       !(object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE));
+	if (!object || object->obj_uid == 0 || object->type == ITEM_MONEY ||
+	    (object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE)))
+		return false;
+	if (!IS_SET(object->extra_flags, ITEM_TRANSIENT))
+		return true;
+	item_ownership_runtime_entry ownership = {};
+	return item_ownership_runtime_lookup(object->obj_uid, &ownership) &&
+	       ownership.state == item_custody_state::active;
 }
 
 #define GETDBG_LOG(...)                                \
@@ -466,6 +480,11 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	studioproc_give(recipient, object, actor);
 }
 
+/**
+ * Publish a committed durable put to the live object graph.
+ *
+ * Failed commits and stale live topology leave the object's placement unchanged.
+ */
 void item_put_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			 const uint8_t *encoded, size_t encoded_size)
 {
@@ -495,7 +514,7 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
 	(void)stored;
 }
 
-/*
+/**
  * Every put of a generic-ownership item is durable, including a put into a container the
  * actor already owns.  Nesting is ledger state: item_current_owner carries the parent and
  * root of each item, capture() in the movement transaction refuses a subtree whose ledger
@@ -503,7 +522,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
  * ledger rather than from the saved rows.  A live-only obj_to_obj() therefore does not
  * merely skip a write, it strands the container: every later give or drop of it fails
  * preflight, and the contents un-nest on the next login.  Only objects outside generic
- * ownership (coins, transients, PC corpse roots) and uid-less containers stay synchronous.
+ * ownership (coins, unowned transients, PC corpse roots) and uid-less containers stay
+ * synchronous.
  */
 bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 {
@@ -2795,6 +2815,11 @@ bool bulk_drop_permitted(P_char actor, P_obj object, bulk_drop_state &state)
 	return true;
 }
 
+/**
+ * Move one synchronous bulk-drop candidate into the actor's current room.
+ *
+ * The move publishes player feedback, audit logging, and applicable floor or corpse state.
+ */
 void drop_transient_object(P_char actor, P_obj object, bulk_drop_state &state)
 {
 	if (!state.alldot)
@@ -2844,9 +2869,13 @@ void drop_transient_object(P_char actor, P_obj object, bulk_drop_state &state)
 		writeCorpse(object);
 }
 
+/**
+ * Publish synchronous drop candidates after the durable batch has committed.
+ *
+ * Coins, unowned transient objects, and PC corpse roots remain on this path.
+ */
 void finish_bulk_drop_after_commit(P_char actor, bulk_drop_state &state)
 {
-	/* Coins, transient objects, and PC corpse roots do not use generic ownership. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
@@ -3824,6 +3853,12 @@ bool bulk_put_destination_available(P_char actor, P_obj container)
 	       !IS_SET(container->value[1], CONT_CLOSED);
 }
 
+/**
+ * Validate one bulk-put candidate and accumulate its destination capacity.
+ *
+ * Return true when the item is eligible and fits the cumulative quiver, weight, and space
+ * limits.
+ */
 bool bulk_put_permitted(P_char actor, P_obj object, P_obj container, int64_t &weight,
 			int64_t &space, int64_t &quiver_count)
 {
@@ -3860,9 +3895,13 @@ bool bulk_put_permitted(P_char actor, P_obj object, P_obj container, int64_t &we
 	return true;
 }
 
+/**
+ * Publish synchronous put candidates after the durable batch has committed.
+ *
+ * Coins, unowned transient objects, and PC corpse roots remain on this path.
+ */
 void finish_bulk_put_after_commit(P_char actor, bulk_put_state &state, P_obj container)
 {
-	/* Coins, transient objects, and PC corpse roots do not use generic ownership. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
