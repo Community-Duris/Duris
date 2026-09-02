@@ -10786,6 +10786,12 @@ bool sql_save_guild(Guild *guild)
 		}
 	}
 
+	/* The own_txn test on the rollback is redundant TODAY -- only the owner
+	 * reaches sql_commit() -- and is kept on purpose. Every sql_rollback() in
+	 * this function is guarded by the same test, which is what makes "never
+	 * roll back a transaction an enclosing caller opened" checkable rather
+	 * than a property re-derived per branch; a contract test enforces it. If
+	 * the commit condition is ever widened, the guard is already right. */
 	if (own_txn && !sql_commit())
 	{
 		logit(LOG_DEBUG, "sql_save_guild: failed to commit for guild %u", gid);

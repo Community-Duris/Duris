@@ -134,9 +134,22 @@ bool kingdom_square_of_room(int rnum, int *zone_out, int *x, int *y)
 		return false;
 
 	/* Same formula the engine uses (src/world/map.c:254-260) and the same one
-	 * GMCP publishes as worldX/worldY (src/net/gmcp.c:456-472). */
+	 * GMCP publishes as worldX/worldY (src/net/gmcp.c:456-472), with one
+	 * deliberate difference: the engine folds the row with `% mapy`, and this
+	 * must not.
+	 *
+	 * A map zone may define MORE rooms than its grid holds -- the surface zone
+	 * has 160,004 in a 400x400 grid, the last four being its Dispersement
+	 * rooms -- and folding sends every one of them to row 0, so offset 160000
+	 * reports square (0,0). kingdom_room_at() guards the square -> room
+	 * direction by asking this function to map back, but that cannot catch a
+	 * HALL that already stands in a tail room: its square would be reported
+	 * as (0,0) and the realm anchored on top of whatever genuinely occupies
+	 * that square. A room outside the grid has no square, so refuse it. */
 	const int local_x = offset % zone->mapx;
-	const int local_y = (offset / zone->mapx) % zone->mapy;
+	const int local_y = offset / zone->mapx;
+	if (local_y >= zone->mapy)
+		return false;
 
 	if (zone_out)
 		*zone_out = zone_idx;

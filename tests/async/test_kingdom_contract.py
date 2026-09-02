@@ -881,6 +881,39 @@ def test_pending_write_rule_is_obeyed_by_every_call_site() -> None:
     )
 
 
+def test_a_room_outside_the_grid_has_no_square() -> None:
+    """kingdom_square_of_room() must REFUSE a room whose offset lies past the
+    end of its zone's grid, not fold it back with a modulo.
+
+    A map zone may define more rooms than its grid holds -- the surface zone
+    has 160,004 in a 400x400 grid -- and `(offset / mapx) % mapy` sends every
+    one of those tail rooms to row 0, so offset 160000 reports square (0,0).
+    kingdom_room_at() guards the square -> room direction by mapping back, but
+    nothing catches a HALL already standing in a tail room: its square would
+    read as (0,0) and the realm would be anchored over whatever genuinely
+    occupies it."""
+    geometry = read("src/kingdom/kingdom_geometry.c")
+    bodies = function_bodies(
+        geometry, r"\bbool\s+kingdom_square_of_room\s*\("
+    )
+    check(len(bodies) == 1, "kingdom_square_of_room is defined once", f"{len(bodies)}")
+    if bodies:
+        body = strip_comments(bodies[0])
+        row = re.search(r"local_y\s*=\s*([^;]+);", body)
+        check(row is not None, "kingdom_square_of_room derives a local row")
+        if row:
+            check(
+                "%" not in row.group(1),
+                "the row is NOT folded back into the grid with a modulo",
+                f"local_y = {row.group(1).strip()}",
+            )
+        check(
+            re.search(r"local_y\s*>=\s*\w+->mapy", body) is not None,
+            "a row past the end of the grid is refused",
+            "no `local_y >= zone->mapy` bound test in the body",
+        )
+
+
 def test_dormancy_is_sticky_and_unbilled() -> None:
     """A realm whose main hall no longer stands is DORMANT: it cannot be
     re-anchored by a verb that merely re-resolves the vnum, and it is billed
