@@ -1216,7 +1216,7 @@ int old_search_block(const char *argument, const uint begin, uint length, const 
 	return (found ? guess : -1);
 }
 
-/*
+/**
  * Commands the casting gate in command_interpreter() lets through while
  * AFF2_CASTING is set.  Kept in one place so comm.c and the gate cannot drift.
  */
@@ -1225,7 +1225,7 @@ bool cmd_allowed_while_casting(int cmd)
 	return (cmd == CMD_PETITION || cmd == CMD_RETURN || cmd == CMD_ABORT);
 }
 
-/* Commands whose result depends on the player's live inventory or equipment.
+/** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
  * a different authoritative view, so these must wait for its publication. */
 bool cmd_depends_on_item_movement(int cmd)
@@ -1250,12 +1250,15 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_SACRIFICE:
 	case CMD_BUY:
 	case CMD_SELL:
+	case CMD_EQUIPMENT:
+	case CMD_INVENTORY:
 		return true;
 	default:
 		return false;
 	}
 }
 
+/** Resolve the command token at the start of a queued input line. */
 static int input_command_number(const char *input)
 {
 	char word[MAX_INPUT_LENGTH];
@@ -1278,7 +1281,7 @@ static int input_command_number(const char *input)
 	return old_search_block(word, 0, len, command, 2);
 }
 
-/*
+/**
  * comm.c pumps a casting player's input queue so 'abort' can reach the
  * interpreter, and peeks at the head of that queue with this first: anything
  * the gate would only reject stays queued as type-ahead and runs when the cast
@@ -1292,6 +1295,7 @@ bool input_allowed_while_casting(const char *input)
 	return cmd_allowed_while_casting(input_command_number(input));
 }
 
+/** Allow only commands independent of unpublished item movement state. */
 bool input_allowed_while_item_moving(const char *input)
 {
 	if (!input)

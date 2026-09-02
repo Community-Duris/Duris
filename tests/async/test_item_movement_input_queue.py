@@ -5,10 +5,11 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from _paths import SRC
+from _paths import ROOT, SRC, rel
 
 
 def extract(source: Path, signature: str) -> str:
+    """Return one complete C/C++ function beginning at ``signature``."""
     text = source.read_text(encoding="utf-8", errors="replace")
     start = text.index(signature)
     depth = 0
@@ -30,12 +31,12 @@ DEPENDS = extract(INTERP_PATH, "bool cmd_depends_on_item_movement(int cmd)")
 
 for command in (
     "CMD_GET", "CMD_TAKE", "CMD_DROP", "CMD_PUT", "CMD_GIVE", "CMD_WEAR",
-    "CMD_WIELD", "CMD_GRAB", "CMD_HOLD", "CMD_REMOVE",
+    "CMD_WIELD", "CMD_GRAB", "CMD_HOLD", "CMD_REMOVE", "CMD_EQUIPMENT",
+    "CMD_INVENTORY",
 ):
     assert command in DEPENDS
 
-assert "item_movement_transaction_player_busy(t_ch)" in COMM
-assert "get_item_movement_cmd_from_q(&point->input, comm)" in COMM
+assert "get_playing_cmd_from_q(t_ch, &point->input, comm)" in COMM
 assert "int get_item_movement_cmd_from_q(struct txt_q *, char *);" in PROTOTYPES
 
 SEARCH = extract(INTERP_PATH, "int old_search_block(const char *argument")
@@ -48,39 +49,23 @@ GET_FILTERED = extract(
 GET_MOVEMENT = extract(
     COMM_PATH, "int get_item_movement_cmd_from_q(struct txt_q *queue, char *dest)"
 )
+GET_PLAYING = extract(
+    COMM_PATH, "static int get_playing_cmd_from_q(P_char character, struct txt_q *queue,"
+)
 
 PRELUDE = r'''
+#include "core/utils.h"
+#include "item/item_movement_transaction.h"
+#include "item/item_ownership_runtime.h"
+#include "item/item_transfer_command.h"
+#include "persistence/persistence_checkpoint.h"
+
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-#define MAX_INPUT_LENGTH 512
-#define LOG_COMM 0
-#define FALSE false
-#define TRUE true
-#define LOWER(c) (((c) >= 'A' && (c) <= 'Z') ? ((c) + ('a' - 'A')) : (c))
-#define FREE(i)          \
-	{                \
-		free(i); \
-		(i) = NULL;      \
-	}
-
-typedef unsigned int uint;
-
-struct txt_block
-{
-	char *text;
-	struct txt_block *next;
-};
-
-struct txt_q
-{
-	struct txt_block *head;
-	struct txt_block *tail;
-};
-
-static void logit(int, const char *, ...) {}
+#include <utility>
 
 #define CMD_NONE 0
 #define CMD_GET 1
@@ -103,12 +88,57 @@ static void logit(int, const char *, ...) {}
 #define CMD_SELL 18
 #define CMD_LOOK 19
 #define CMD_SCORE 20
+#define CMD_EQUIPMENT 21
+#define CMD_INVENTORY 22
 
 static const char *command[] = {
 	"get", "take", "drop", "put", "give", "wear", "wield", "grab", "hold",
 	"remove", "open", "close", "empty", "junk", "donate", "sacrifice", "buy",
-	"sell", "look", "score", "\n"
+	"sell", "look", "score", "equipment", "inventory", "\n"
 };
+
+P_obj object_list = NULL;
+P_char character_list = NULL;
+static index_data object_indexes[1] = {};
+P_index obj_index = object_indexes;
+static room_data rooms[1] = {};
+P_room world = rooms;
+int top_of_objt = 0;
+extern const int top_of_world = 0;
+
+static bool command_submitted = false;
+static critical_command submitted_command = {};
+
+void logit(const char *, const char *, ...) {}
+void __free(void *memory, const char *, int) { free(memory); }
+void send_to_char(const char *, P_char) {}
+void send_to_char(const char *, P_char, int) {}
+void extract_obj(P_obj, int) {}
+void obj_from_char(P_obj) {}
+void obj_to_char(P_obj, P_char) {}
+void obj_to_obj(P_obj, P_obj) {}
+void obj_to_room(P_obj, int) {}
+void mark_player_dirty_components(int, player_component_mask_t) {}
+
+P_char find_player_by_pid(int pid)
+{
+	return character_list && character_list->only.pc && character_list->only.pc->pid == pid ?
+		       character_list :
+		       NULL;
+}
+
+[[noreturn]] int panic_corruption_int(const char *, const char *, ...)
+{
+	abort();
+}
+
+critical_submit_result critical_command_coordinator_submit(critical_command queued)
+{
+	assert(!command_submitted);
+	command_submitted = true;
+	submitted_command = std::move(queued);
+	return critical_submit_result::accepted;
+}
 
 int old_search_block(const char *argument, const uint begin, uint length, const char **list,
 		     const int mode);
@@ -157,40 +187,141 @@ static void check_intact(struct txt_q *q)
 	assert(q->tail == last);
 }
 
+static P_obj published_roots[2] = {};
+static int publication_count = 0;
+
+static void held_bulk_get_completion(P_char actor, bool committed,
+				     const item_transfer_result &result, unsigned int error_code,
+				     const uint8_t *, size_t)
+{
+	assert(actor && committed && error_code == 0 && result.item_count == 2);
+	item_ownership_runtime_entry ownership = {};
+	for (P_obj root : published_roots)
+	{
+		assert(root);
+		assert(item_ownership_runtime_lookup(root->obj_uid, &ownership));
+		assert(ownership.owner.type == item_owner_type::player);
+		root->loc_p = LOC_CARRIED;
+		root->loc.carrying = actor;
+	}
+	published_roots[0]->next_content = published_roots[1];
+	published_roots[1]->next_content = NULL;
+	actor->carrying = published_roots[0];
+	world[0].contents = NULL;
+	++publication_count;
+}
+
+static int carried_count(P_char actor)
+{
+	int count = 0;
+	for (P_obj object = actor->carrying; object; object = object->next_content)
+		++count;
+	return count;
+}
+
 int main()
 {
+	pc_only_data player = {};
+	player.pid = 42;
+	char_data actor = {};
+	actor.only.pc = &player;
+	actor.in_room = 0;
+	character_list = &actor;
+
+	object_indexes[0].virtual_number = 100;
+	obj_data first_roast = {};
+	first_roast.obj_uid = 100;
+	first_roast.R_num = 0;
+	first_roast.loc_p = LOC_ROOM;
+	first_roast.loc.room = 0;
+	obj_data second_roast = {};
+	second_roast.obj_uid = 101;
+	second_roast.R_num = 0;
+	second_roast.loc_p = LOC_ROOM;
+	second_roast.loc.room = 0;
+	first_roast.next = &second_roast;
+	first_roast.next_content = &second_roast;
+	object_list = &first_roast;
+	world[0].number = 500;
+	world[0].contents = &first_roast;
+	published_roots[0] = &first_roast;
+	published_roots[1] = &second_roast;
+
+	item_ownership_runtime_reset();
+	item_movement_transaction_reset_for_tests();
+	const item_owner_identity room_owner = { item_owner_type::room, 500, 0 };
+	const item_owner_identity player_owner = { item_owner_type::player, 42, 0 };
+	const item_ownership_runtime_entry room_items[] = {
+		{ 100, 100, 0, room_owner, 1, 3, 100, item_custody_state::active },
+		{ 101, 101, 0, room_owner, 1, 3, 100, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(room_items, 2));
+	assert(item_ownership_runtime_hydrate_owner(player_owner, 7));
+	P_obj roots[] = { &first_roast, &second_roast };
+	assert(item_movement_transaction_submit_batch(
+		&actor, roots, 2, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0));
+	assert(command_submitted);
+	assert(item_movement_transaction_player_busy(&actor));
+	assert(actor.carrying == NULL && publication_count == 0);
+
 	char dest[MAX_INPUT_LENGTH];
 	struct txt_q q = {};
 
 	assert(!input_allowed_while_item_moving("put all.roast bp"));
 	assert(!input_allowed_while_item_moving("  WEAR roast"));
 	assert(!input_allowed_while_item_moving("gi roast friend"));
+	assert(!input_allowed_while_item_moving("equipment"));
+	assert(!input_allowed_while_item_moving("inventory"));
 	assert(input_allowed_while_item_moving("score"));
 	assert(input_allowed_while_item_moving("look"));
 	assert(input_allowed_while_item_moving("say still here"));
 	assert(!input_allowed_while_item_moving(NULL));
 
-	/* The bulk get was already dequeued and its completion is held.  Its
-	   dependent put and wear remain queued while unrelated input can run. */
+	/* The real movement transaction is pending while its captured coordinator
+	   command is held. Dependent commands remain queued while score can run. */
 	push(&q, "put all.roast bp");
 	push(&q, "score");
+	push(&q, "equipment");
+	push(&q, "inventory");
 	push(&q, "wear roast");
-	assert(get_item_movement_cmd_from_q(&q, dest));
+	assert(get_playing_cmd_from_q(&actor, &q, dest));
 	expect_text(dest, "score", "safe command during movement");
 	check_intact(&q);
 	expect_text(q.head->text, "put all.roast bp", "put remains at head");
 	expect_text(q.tail->text, "wear roast", "wear remains at tail");
 	strcpy(dest, "sentinel");
-	assert(!get_item_movement_cmd_from_q(&q, dest));
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
 	expect_text(dest, "sentinel", "dependent-only queue is untouched");
 
-	/* Releasing the held completion returns the command loop to its normal
-	   FIFO dequeue path, so both dependent commands execute exactly once. */
-	assert(get_from_q(&q, dest));
-	expect_text(dest, "put all.roast bp", "put after publication");
-	assert(get_from_q(&q, dest));
-	expect_text(dest, "wear roast", "wear after publication");
-	assert(!get_from_q(&q, dest));
+	/* Release the captured production command through the real item-movement
+	   completion handler. Registry publication precedes the bulk-get callback. */
+	item_transfer_result result = { 100, 2, 4, 8, 2, 0 };
+	critical_completion completion = {};
+	completion.operation_id = submitted_command.operation_id;
+	completion.outcome = critical_apply_outcome::applied;
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
+	assert(item_transfer_command_encode_result(result, &encoded));
+	completion.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	item_movement_transaction_handle_completions(&completion, 1);
+	assert(publication_count == 1);
+	assert(!item_movement_transaction_player_busy(&actor));
+	assert(carried_count(&actor) == 2);
+
+	/* The normal command path now observes the published inventory and returns
+	   each dependent command exactly once in its original order. */
+	const char *expected[] = {
+		"put all.roast bp", "equipment", "inventory", "wear roast"
+	};
+	for (const char *command_text : expected)
+	{
+		assert(get_playing_cmd_from_q(&actor, &q, dest));
+		expect_text(dest, command_text, "dependent command after publication");
+		assert(carried_count(&actor) == 2);
+	}
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
 	assert(q.head == NULL);
 	q.tail = NULL;
 
@@ -215,6 +346,7 @@ int main()
 
 
 def main() -> int:
+    """Compile and execute the item-movement queue regression."""
     harness = "\n".join([
         PRELUDE,
         SEARCH,
@@ -224,6 +356,7 @@ def main() -> int:
         GET_FROM_Q,
         GET_FILTERED,
         GET_MOVEMENT,
+        GET_PLAYING,
         DRIVER,
     ])
     with tempfile.TemporaryDirectory() as directory:
@@ -233,8 +366,17 @@ def main() -> int:
         subprocess.run(
             [
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g",
-                "-fsanitize=address,undefined", str(source), "-o", str(binary),
+                "-O1", "-ffunction-sections", "-fdata-sections",
+                "-fsanitize=address,undefined", "-Isrc", str(source),
+                rel("item_movement_transaction.c"),
+                rel("item_ownership_runtime.c"),
+                rel("item_transfer_command.c"),
+                rel("critical_command.c"),
+                rel("player_snapshot_capture.c"),
+                rel("player_snapshot_codec.c"),
+                "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
             ],
+            cwd=ROOT,
             check=True,
         )
         subprocess.run([str(binary)], check=True)

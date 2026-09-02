@@ -278,6 +278,7 @@ int main()
 
 
 def main() -> int:
+    """Compile and execute the isolated casting queue regression."""
     harness = "\n".join([
         PRELUDE,
         SEARCH_BLOCK,

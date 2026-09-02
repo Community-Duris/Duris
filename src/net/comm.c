@@ -972,12 +972,20 @@ static double loop_monotonic_seconds(void)
 	return (double)now.tv_sec + (double)now.tv_nsec / 1E9;
 }
 
+/** Select normal or item-gated dequeue from the transaction's live busy state. */
+static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *dest)
+{
+	return character && item_movement_transaction_player_busy(character) ?
+		       get_item_movement_cmd_from_q(queue, dest) :
+		       get_from_q(queue, dest);
+}
+
+/** Run the server pulse loop, including selective input-queue dispatch. */
 void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;
 	bool casting_input = FALSE;
 	bool creation_grant_input = FALSE;
-	bool item_movement_input = FALSE;
 	P_desc point, next_point;
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
@@ -1507,17 +1515,15 @@ resume_game_loop:
 				 point->connected == CON_PLAYING && !point->showstr_count &&
 				 !point->str);
 			creation_grant_input = t_ch && item_creation_grant_blocks_commands(t_ch);
-			item_movement_input = (t_ch && point->connected == CON_PLAYING &&
-					       !point->showstr_count && !point->str &&
-					       item_movement_transaction_player_busy(t_ch));
 
 			if ((!t_ch ||
 			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
 			      (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
 			       point->original))) &&
 			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :
-			     item_movement_input ?
-					     get_item_movement_cmd_from_q(&point->input, comm) :
+			     point->connected == CON_PLAYING && !point->showstr_count &&
+					     !point->str ?
+					     get_playing_cmd_from_q(t_ch, &point->input, comm) :
 					     get_from_q(&point->input, comm)))
 			{
 				if (t_ch)
@@ -2059,7 +2065,7 @@ int get_from_q(struct txt_q *queue, char *dest)
 	return (1);
 }
 
-/* Pull the first command accepted by a selective queue gate, leaving every
+/** Pull the first command accepted by a selective queue gate, leaving every
  * skipped entry linked in its original order. */
 static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allowed)(const char *))
 {
@@ -2096,12 +2102,13 @@ static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allow
 	return (0);
 }
 
+/** Dequeue the first command that may run while the character is casting. */
 int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
 {
 	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_casting);
 }
 
-/*
+/**
  * Ownership transactions publish live item moves asynchronously.  Pull safe
  * commands from behind item-dependent type-ahead while leaving the dependent
  * commands in FIFO order for the first pulse after publication.
