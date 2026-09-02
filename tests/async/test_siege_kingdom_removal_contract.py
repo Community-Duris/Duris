@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 import unittest
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _source_contract import function_body, strip_comments  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -24,49 +27,6 @@ def source_text() -> str:
     """Every .c and .h under src/, concatenated."""
     paths = sorted((*SRC.rglob("*.c"), *SRC.rglob("*.h")))
     return "\n".join(path.read_text(errors="replace") for path in paths)
-
-
-def strip_comments(text: str) -> str:
-    """Blank out /* */ and // comments, keeping newlines, so a pin on code
-    cannot be satisfied by prose describing it."""
-
-    def blank(match: re.Match) -> str:
-        """The matched comment, every character but newline replaced by a
-        space, so offsets and line numbers survive the strip."""
-        return re.sub(r"[^\n]", " ", match.group(0))
-
-    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
-    return re.sub(r"//[^\n]*", blank, text)
-
-
-def function_body(text: str, signature: str) -> str | None:
-    """The brace-matched body of the first function DEFINITION whose head
-    matches the `signature` regex, comments stripped; None when absent.
-
-    A PROTOTYPE is not a definition. Taking the next '{' anywhere after the
-    match would let a declaration such as `bool Guild::is_kingdom();` hand
-    back the body of the next unrelated function, so a pin asking what
-    is_kingdom does could be satisfied by a stranger. Only a parameter list
-    and trailing qualifiers may stand between the head and the body, so a ';'
-    or a '}' in that gap means the match was a declaration; skip it and keep
-    looking. Same rule as function_bodies() in test_kingdom_contract.py."""
-    code = strip_comments(text)
-    for match in re.finditer(signature, code):
-        start = code.find("{", match.end())
-        if start < 0:
-            continue
-        gap = code[match.end() : start]
-        if ";" in gap or "}" in gap:
-            continue
-        depth = 0
-        for index in range(start, len(code)):
-            if code[index] == "{":
-                depth += 1
-            elif code[index] == "}":
-                depth -= 1
-                if depth == 0:
-                    return code[start : index + 1]
-    return None
 
 
 class SiegeKingdomRemovalContractTest(unittest.TestCase):
@@ -221,13 +181,15 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         self.assertIsNotNone(table, "importer HELP_FILES table not found")
         entries = dict(re.findall(r'\["([^"]+)"\]="([^"]*)"', table.group(1)))
         self.assertEqual(entries.get("helpkingdoms"), "kingdoms")
-        # hints.txt is read from docs/, exactly as the import loop reads it.
-        missing = [
-            name
-            for name in entries
-            if not (ROOT / "docs/lib/information" / name).exists()
-            and not (ROOT / "lib/information" / name).exists()
-        ]
+        # Resolve each name the way the import loop does -- hints.txt from
+        # docs/, everything else from lib/information -- rather than accepting
+        # EITHER directory. A file present only in the wrong one is skipped at
+        # import time, which is the failure this pin exists to catch.
+        def imported_path(name: str) -> Path:
+            root = "docs/lib/information" if name == "hints.txt" else "lib/information"
+            return ROOT / root / name
+
+        missing = [name for name in entries if not imported_path(name).exists()]
         self.assertEqual(missing, [], f"importer names help files that do not exist: {missing}")
 
         # THE HELP INDEX and the command attributes DID carry the retired

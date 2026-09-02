@@ -39,6 +39,15 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _source_contract import (  # noqa: E402
+    block_start,
+    enclosing_definition,
+    function_bodies,
+    strip_comments,
+    top_level_definitions,
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 
@@ -59,113 +68,6 @@ def check(ok: bool, label: str, extra: str = "") -> None:
         failures.append(label)
         print(f"FAIL: {label}" + (f"\n      {extra}" if extra else ""))
 
-
-# --------------------------------------------------------------------- *
-# Source-parsing helpers
-# --------------------------------------------------------------------- *
-
-
-def strip_comments(text: str) -> str:
-    """Blank out /* */ and // comments, keeping every newline so that line
-    numbers and statement anchors survive."""
-
-    def blank(m: re.Match) -> str:
-        """The matched comment with every character but newline replaced by a
-        space, so offsets and line numbers survive the strip."""
-        return re.sub(r"[^\n]", " ", m.group(0))
-
-    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
-    text = re.sub(r"//[^\n]*", blank, text)
-    return text
-
-
-def function_bodies(text: str, signature: str) -> list:
-    """Every brace-matched body of a function DEFINITION whose head matches the
-    `signature` regex (which must end at, or before, the opening brace).
-    Comments are stripped first, so neither the match nor the body can be
-    satisfied by a comment. Returns [] when there is no definition.
-
-    A PROTOTYPE is not a definition. An earlier draft took the next '{'
-    anywhere after the match, so `bool move_guildhall(Guildhall *, int);` at
-    the top of guildhall_cmds.c handed back the body of the next unrelated
-    function (check_gh_home) -- and a pin asking "does move_guildhall notify
-    the realm" could then be satisfied by a stranger, or pass while the real
-    definition stopped notifying. Only a parameter list and trailing
-    qualifiers may stand between the head and the body, so a ';' or a '}' in
-    that gap means the match was a declaration and this brace belongs to
-    something else."""
-    code = strip_comments(text)
-    bodies = []
-    for m in re.finditer(signature, code):
-        start = code.find("{", m.end())
-        if start < 0:
-            continue
-        gap = code[m.end() : start]
-        if ";" in gap or "}" in gap:
-            continue
-        depth = 0
-        for i in range(start, len(code)):
-            if code[i] == "{":
-                depth += 1
-            elif code[i] == "}":
-                depth -= 1
-                if depth == 0:
-                    bodies.append(code[start : i + 1])
-                    break
-    return bodies
-
-
-def block_start(code: str, pos: int) -> int:
-    """Index just past the '{' that opens the innermost block containing
-    `pos`, or 0 when `pos` is not inside one. `code` must already be
-    comment-stripped."""
-    depth = 0
-    for i in range(pos - 1, -1, -1):
-        if code[i] == "}":
-            depth += 1
-        elif code[i] == "{":
-            if depth == 0:
-                return i + 1
-            depth -= 1
-    return 0
-
-
-def top_level_definitions(text: str) -> list:
-    """(name, start, end) for every top-level brace block in a translation
-    unit, comments stripped, where `name` is the first identifier called in
-    the block's head (a function's own name) or None for a block that is not
-    a function -- a struct or an array initialiser. Used to answer "which
-    function is this call site in?" without hard-coding line numbers."""
-    code = strip_comments(text)
-    defs = []
-    depth = 0
-    head_start = 0
-    open_at = -1
-    for i, ch in enumerate(code):
-        if depth == 0 and ch in ";}":
-            head_start = i + 1
-        if ch == "{":
-            if depth == 0:
-                open_at = i
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0 and open_at >= 0:
-                head = code[head_start:open_at]
-                names = re.findall(r"(\w+)\s*\(", head)
-                defs.append((names[0] if names else None, open_at, i + 1))
-                head_start = i + 1
-                open_at = -1
-    return defs
-
-
-def enclosing_definition(defs: list, pos: int):
-    """The (name, start, end) triple from top_level_definitions() containing
-    `pos`, or None when the position sits outside every top-level block."""
-    for name, start, end in defs:
-        if start <= pos < end:
-            return (name, start, end)
-    return None
 
 
 def statement_present(text: str, call: str) -> bool:
@@ -1142,3 +1044,4 @@ if failures:
     print(f"\n{len(failures)} kingdom source-contract check(s) failed.")
     sys.exit(1)
 print("\nkingdom source contracts: OK")
+

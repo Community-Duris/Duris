@@ -385,12 +385,32 @@ bool Guild::sub_copper(long amount)
 	 * denomination that INCREASED while change was being made ('withdrew
 	 * -9 gold'). */
 	const long long amt = static_cast<long long>(amount);
-	write_transaction_to_ledger(
-		"System", "withdrew",
-		coins_to_string(static_cast<int>(MIN(amt / 1000, static_cast<long long>(INT_MAX))),
-				static_cast<int>((amt % 1000) / 100),
-				static_cast<int>((amt % 100) / 10), static_cast<int>(amt % 10),
-				"&+y"));
+	const long long plat = amt / 1000;
+
+	if (plat > static_cast<long long>(INT_MAX))
+	{
+		/* coins_to_string() counts each denomination in an int, and four full
+		 * unsigned counters hold about 4.77 trillion copper -- so a debit this
+		 * large has a platinum count the formatter cannot represent. Clamping
+		 * it, as this line once did, records a SMALLER withdrawal than the
+		 * treasury actually lost. An audit line that understates the debit is
+		 * worse than an unusual-looking one, so state the exact total. */
+		char exact[64];
+		const int written = snprintf(exact, sizeof(exact), "&+y%lld copper&n", amt);
+
+		write_transaction_to_ledger("System", "withdrew",
+					    (written > 0 &&
+					     static_cast<size_t>(written) < sizeof(exact)) ?
+						    exact :
+						    "&+yan amount too large to render&n");
+		return TRUE;
+	}
+
+	write_transaction_to_ledger("System", "withdrew",
+				    coins_to_string(static_cast<int>(plat),
+						    static_cast<int>((amt % 1000) / 100),
+						    static_cast<int>((amt % 100) / 10),
+						    static_cast<int>(amt % 10), "&+y"));
 	return TRUE;
 }
 
