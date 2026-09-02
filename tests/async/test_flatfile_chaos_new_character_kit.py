@@ -504,5 +504,6 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
 
 
 if __name__ == "__main__":
-    run_chaos_kit_journey(build_flatfile_server())
+    with tempfile.TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-") as build_tmp:
+        run_chaos_kit_journey(build_flatfile_server(pathlib.Path(build_tmp)))
     print("flat-file CHAOS new-character bag and generated class kit journey passed")
