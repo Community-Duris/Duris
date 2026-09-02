@@ -234,7 +234,7 @@
       "sequence": 6,
       "description": "Add the guild kingdom realm territory and upkeep table",
       "apply": "immutable/0006_kingdom_realms.sql",
-      "apply_checksum": "ffa263b952e2dfb00e54187ebb4cd2257e3eee84e1e5e786e515863d95f9ed56",
+      "apply_checksum": "f146b2236b7c982bc909ec981f2d2d06831f21fc224824f670607811506e5c93",
       "verify": "immutable/0006_kingdom_realms.sh",
       "verify_checksum": "c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697",
       "compatibility": "mysql8-mariadb10"

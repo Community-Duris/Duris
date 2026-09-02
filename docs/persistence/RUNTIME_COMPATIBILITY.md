@@ -16,10 +16,15 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0005_level_cap_singleton`, producing 173 current tables. An
-existing database must first complete the guarded legacy upgrade and verified
-baseline adoption described in [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md).
-Never run migration or destructive verification commands against production.
+The current head is `0006_kingdom_realms`, and the contract still describes 173
+current tables. 0006 creates `kingdom_realms`, but that table is deliberately
+held out of the boot contract's table inventory until the maintainers reseal the
+normalized metadata fingerprints on live MySQL 8 and MariaDB 10.11; the ledger
+identity is enforced regardless, so a database left at head
+`0005_level_cap_singleton` fails this gate. An existing database must first
+complete the guarded legacy upgrade and verified baseline adoption described in
+[IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md). Never run migration or
+destructive verification commands against production.
 
 Compatibility fingerprints and table counts use the positive 173-table runtime
 inventory. Additional tables restored from a combined game/website dump are ignored

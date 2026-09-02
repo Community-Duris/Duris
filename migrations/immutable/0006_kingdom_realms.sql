@@ -10,8 +10,11 @@
 -- Harvested stores are spendable on the realm but never withdrawn, which is
 -- why they do not live in the guild coin treasury. upkeep_paid_through is a
 -- Unix time; arrears is the ladder 0 current, 1 guards gone, 2 nodes dormant,
--- 3 rings reverting. The table is not yet part of the runtime boot contract:
+-- 3 rings reverting. The TABLE is not yet in the boot contract's table list, so
 -- kingdom_initialize() disables kingdoms for the boot when it cannot be read.
+-- That is not permission to skip this migration: the boot gate in src/sql/sql.c
+-- requires the 0006 ledger row and applied count 6, so a database left at head
+-- 0005 refuses to boot.
 
 CREATE TABLE IF NOT EXISTS kingdom_realms (
     assoc_id INT NOT NULL,
@@ -27,3 +30,29 @@ CREATE TABLE IF NOT EXISTS kingdom_realms (
     missed_cycles INT NOT NULL DEFAULT 0,
     PRIMARY KEY (assoc_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- A database that already ran the pre-registration migrations/kingdom_realms.sql
+-- (deleted when this migration was registered) has the table with the server's
+-- default collation for utf8mb4 -- utf8mb4_0900_ai_ci on MySQL 8,
+-- utf8mb4_general_ci on MariaDB 10.11 -- because that file carried no COLLATE
+-- clause. CREATE TABLE IF NOT EXISTS is a no-op there, so without this step the
+-- verifier's table_collation check would fail on that database forever.
+-- Converge it. Every column is an integer, so CONVERT TO rewrites no character
+-- data and no row value changes. On a table already at utf8mb4_unicode_ci the
+-- guard selects the no-op branch and issues no ALTER at all, which is what keeps
+-- this file exactly re-runnable.
+SET @kingdom_realms_collation_drift = (
+    SELECT COUNT(*)
+    FROM information_schema.tables
+    WHERE table_schema = DATABASE()
+      AND table_name = 'kingdom_realms'
+      AND table_collation <> 'utf8mb4_unicode_ci'
+);
+SET @kingdom_realms_collation_sql = IF(
+    @kingdom_realms_collation_drift = 0,
+    'SELECT 1',
+    'ALTER TABLE kingdom_realms CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+);
+PREPARE kingdom_realms_collation_stmt FROM @kingdom_realms_collation_sql;
+EXECUTE kingdom_realms_collation_stmt;
+DEALLOCATE PREPARE kingdom_realms_collation_stmt;

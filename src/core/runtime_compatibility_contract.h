@@ -61,11 +61,11 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
 constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0006_kingdom_realms";
 constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 6;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"ffa263b952e2dfb00e54187ebb4cd2257e3eee84e1e5e786e515863d95f9ed56";
+	"f146b2236b7c982bc909ec981f2d2d06831f21fc224824f670607811506e5c93";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
 	"c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"314256eb8e8c7c5b4c8c1c1e98f623c705ddeefdd54d49faed26fa7f15acf92f";
+	"f0ad406519cd02e048b91c247d9a40c28edd6f00b5a35ae54509871c63a543c5";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
