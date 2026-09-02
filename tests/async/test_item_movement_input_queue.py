@@ -129,11 +129,11 @@ static const char *command[] = {
 
 P_obj object_list = NULL;
 P_char character_list = NULL;
-static index_data object_indexes[3] = {};
+static index_data object_indexes[4] = {};
 P_index obj_index = object_indexes;
 static room_data rooms[1] = {};
 P_room world = rooms;
-int top_of_objt = 2;
+int top_of_objt = 3;
 extern const int top_of_world = 0;
 
 static bool command_submitted = false;
@@ -234,6 +234,7 @@ static int wear_failures = 0;
 static int wear_successes = 0;
 static int wield_dispatches = 0;
 static int fire_dispatches = 0;
+static int stale_completion_callbacks = 0;
 static P_obj fixture_backpack = NULL;
 
 static void held_bulk_get_completion(P_char actor, bool committed,
@@ -289,6 +290,12 @@ static void held_cloak_get_completion(P_char actor, bool committed,
 	actor->carrying = published_cloak;
 	world[0].contents = NULL;
 	++cloak_publication_count;
+}
+
+static void stale_registry_completion(P_char, bool, const item_transfer_result &, unsigned int,
+				      const uint8_t *, size_t)
+{
+	++stale_completion_callbacks;
 }
 
 static int carried_count(P_char actor)
@@ -390,6 +397,7 @@ int main()
 	object_indexes[0].virtual_number = 100;
 	object_indexes[1].virtual_number = 101;
 	object_indexes[2].virtual_number = 102;
+	object_indexes[3].virtual_number = 103;
 	obj_data first_roast = {};
 	first_roast.obj_uid = 100;
 	first_roast.R_num = 0;
@@ -410,6 +418,11 @@ int main()
 	cloak.R_num = 2;
 	cloak.loc_p = LOC_ROOM;
 	cloak.loc.room = 0;
+	obj_data fault = {};
+	fault.obj_uid = 104;
+	fault.R_num = 3;
+	fault.loc_p = LOC_ROOM;
+	fault.loc.room = 0;
 	obj_data backpack = {};
 	backpack.obj_uid = 200;
 	backpack.R_num = 0;
@@ -419,7 +432,8 @@ int main()
 	first_roast.next = &second_roast;
 	second_roast.next = &bow;
 	bow.next = &cloak;
-	cloak.next = &backpack;
+	cloak.next = &fault;
+	fault.next = &backpack;
 	first_roast.next_content = &second_roast;
 	object_list = &first_roast;
 	world[0].number = 500;
@@ -619,6 +633,51 @@ int main()
 	expect_text(dest, "score", "append after tail extraction");
 	check_intact(&q);
 	drain(&q);
+
+	/* A committed completion whose live registry revision is stale must retain
+	   the transaction and its dependent queue hold instead of calling back. */
+	const item_ownership_runtime_entry fault_entry = {
+		104, 104, 0, room_owner, 1, 6, 103, item_custody_state::active
+	};
+	assert(item_ownership_runtime_hydrate(fault_entry));
+	fault.loc_p = LOC_ROOM;
+	fault.loc.room = 0;
+	world[0].contents = &fault;
+	command_submitted = false;
+	submitted_command = {};
+	P_obj fault_root[] = { &fault };
+	assert(item_movement_transaction_submit_batch(
+		&actor, fault_root, 1, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, fault.obj_uid,
+		stale_registry_completion, NULL, 0));
+	assert(item_movement_transaction_player_busy(&actor));
+	const item_ownership_runtime_entry stale_fault_entry = {
+		104, 104, 0, room_owner, 2, 6, 103, item_custody_state::active
+	};
+	assert(item_ownership_runtime_hydrate(stale_fault_entry));
+	result = { 104, 1, 7, 11, 2, 0 };
+	completion = {};
+	completion.operation_id = submitted_command.operation_id;
+	completion.outcome = critical_apply_outcome::applied;
+	encoded = {};
+	assert(item_transfer_command_encode_result(result, &encoded));
+	completion.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	item_movement_transaction_handle_completions(&completion, 1);
+	const item_movement_health movement_health = item_movement_transaction_health_copy();
+	assert(movement_health.pending == 1 && movement_health.stale_publications == 1);
+	assert(stale_completion_callbacks == 0);
+	assert(item_movement_transaction_player_busy(&actor));
+	item_movement_transaction_player_ready(&actor);
+	assert(item_movement_transaction_player_busy(&actor));
+	assert(item_movement_transaction_health_copy().stale_publications == 1);
+	push(&q, "wear fault");
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
+	check_intact(&q);
+	expect_text(q.head->text, "wear fault", "stale publication keeps dependent hold");
+	drain(&q);
+	item_movement_transaction_reset_for_tests();
+	assert(!item_movement_transaction_player_busy(&actor));
 
 	printf("item movement input queue runtime: ok\n");
 	return 0;
