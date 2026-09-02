@@ -13,8 +13,11 @@ ACTOTH = ROOT / "src/cmd/actoth.c"
 
 
 class ToggleDispatchContractTest(unittest.TestCase):
+    """Protect the source-level contract between toggle names and dispatch cases."""
+
     @classmethod
     def setUpClass(cls) -> None:
+        """Extract toggle names, messages, and switch cases from the source."""
         cls.source = ACTOTH.read_text()
         names_body = cls.source.split("static const char *toggles_list[] = {", 1)[1].split(
             "};", 1
@@ -35,6 +38,7 @@ class ToggleDispatchContractTest(unittest.TestCase):
         }
 
     def test_parallel_arrays_stay_aligned(self) -> None:
+        """Require one reachable single-token name for every toggle message."""
         self.assertEqual(self.names[-1], r"\n")
         self.assertEqual(self.message_count, len(self.names) - 1)
         self.assertNotIn("kingdom", self.names)
@@ -48,6 +52,7 @@ class ToggleDispatchContractTest(unittest.TestCase):
         )
 
     def test_multiword_toggle_spellings_and_values(self) -> None:
+        """Verify canonical names and compatibility aliases preserve values."""
         expected = {
             29: "nolocate",
             48: "groupneeded",
@@ -81,6 +86,7 @@ class ToggleDispatchContractTest(unittest.TestCase):
         self.assertEqual(parser.count("arg = value;"), 3)
 
     def test_post_retirement_dispatch_indexes(self) -> None:
+        """Keep active dispatch indexes stable after retired toggle slots."""
         expected = {
             32: ("shipmap", "PLR2_SHIPMAP"),
             33: ("take", "PLR2_NOTAKE"),

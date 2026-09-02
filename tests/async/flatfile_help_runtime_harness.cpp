@@ -8,6 +8,7 @@ using namespace std;
 
 void logit(const char *, const char *, ...) {}
 
+/** Exit the test harness with a diagnostic when a requirement fails. */
 static void require(bool condition, const string &message)
 {
 	if (!condition)
@@ -17,6 +18,7 @@ static void require(bool condition, const string &message)
 	}
 }
 
+/** Exercise flat-file help lookup, including the supported No Locate aliases. */
 int main()
 {
 	const string default_help = wiki_help("");

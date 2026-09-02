@@ -4946,6 +4946,12 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 #define PLR2_TOG(flag) plr_tog(PLR2_FLAGS(ch), flag, arg)
 #define PLR3_TOG(flag) plr_tog(PLR3_FLAGS(ch), flag, arg)
 
+/**
+ * Display or update a player toggle.
+ *
+ * Canonical names are single tokens. Compatibility aliases are normalized
+ * before the optional on/off value is parsed.
+ */
 void do_toggle(P_char ch, char *arg, int /*cmd*/)
 {
 	int i, j, tog_nr = -1, result = -1, number;
