@@ -231,13 +231,16 @@ int main()
 	execute_sql(connection,
 		    "UPDATE item_current_owner SET root_item_uid=900001,parent_item_uid=900001 "
 		    "WHERE item_uid=900002");
-	execute_sql(connection, "UPDATE player_items SET container_id=NULL WHERE id=1002");
+	execute_sql(connection,
+		    "UPDATE player_items SET container_id=NULL,equip_slot=5 WHERE id=1002");
 	player_load_result stale_flat_projection = execute_load(connection, request, 94);
 	assert(stale_flat_projection.outcome == player_load_outcome::applied);
 	assert(stale_flat_projection.repaired_item_rows == 1 &&
 	       stale_flat_projection.snapshot.items[1].parent_index == 0 &&
+	       stale_flat_projection.snapshot.items[1].equipment_slot == 0 &&
 	       stale_flat_projection.item_identities[1].serialized_parent_id == 1001);
-	execute_sql(connection, "UPDATE player_items SET container_id=1001 WHERE id=1002");
+	execute_sql(connection,
+		    "UPDATE player_items SET container_id=1001,equip_slot=0 WHERE id=1002");
 
 	// A committed ownership move can outrun the replacement player snapshot. The
 	// ownership ledger is authoritative, so the stale payload row is skipped and its
@@ -261,14 +264,18 @@ int main()
 
 	// Losing a container's payload row must not take its contents down with it: item
 	// 1002 sits inside 1001, and orphaning 1001 promotes 1002 to the top level.
+	execute_sql(connection, "UPDATE player_items SET equip_slot=5 WHERE id=1002");
 	execute_sql(connection, "DELETE FROM item_current_owner WHERE item_uid=900001");
 	player_load_result promoted = execute_load(connection, request, 92);
 	assert(promoted.outcome == player_load_outcome::applied);
 	assert(promoted.snapshot.items.size() == 2 && promoted.authoritative_item_count == 2);
-	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1);
+	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1 &&
+	       promoted.repaired_item_rows == 1);
 	for (size_t index = 0; index < promoted.item_identities.size(); ++index)
 	{
 		assert(promoted.snapshot.items[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT);
+		if (promoted.item_identities[index].item_uid == 900002)
+			assert(promoted.snapshot.items[index].equipment_slot == 0);
 		assert(!promoted.item_identities[index].parent_item_uid);
 		assert(promoted.item_identities[index].root_item_uid ==
 		       promoted.item_identities[index].item_uid);

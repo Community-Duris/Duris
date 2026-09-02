@@ -32,6 +32,7 @@
 #include "sql/sql.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
+#include "economy/currency_transaction.h"
 #include "world/vnum.obj.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
@@ -39,6 +40,7 @@
 #include "item/storage_lockers.h"
 
 #include <new>
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -204,6 +206,42 @@ struct put_movement_context
 	uint64_t container_uid;
 	int32_t showit;
 };
+
+enum class coin_debit_action : uint8_t
+{
+	drop,
+	put,
+	give,
+};
+
+constexpr uint8_t COIN_DEBIT_ACCIDENTAL = 1U << 0;
+constexpr uint8_t COIN_DEBIT_ALL = 1U << 1;
+
+struct coin_debit_context
+{
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> amount;
+	uint64_t target_runtime_id;
+	uint64_t container_uid;
+	int32_t room;
+	coin_debit_action action;
+	uint8_t coin_type;
+	uint8_t flags;
+	uint8_t reserved;
+};
+
+struct coin_give_credit_context
+{
+	uint64_t sender_runtime_id;
+	int64_t value;
+	int32_t amount;
+	int32_t room;
+	uint8_t coin_type;
+	uint8_t debit_committed;
+	std::array<uint8_t, 6> reserved;
+};
+
+static_assert(sizeof(coin_debit_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
+static_assert(sizeof(coin_give_credit_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
 
 struct bulk_put_state
 {
@@ -2952,15 +2990,370 @@ void start_bulk_drop(P_char actor, const char *filter, bool alldot)
 		bulk_drops.erase(found);
 	}
 }
+
+int64_t coin_debit_value(const coin_debit_context &context)
+{
+	static constexpr std::array<int64_t, CURRENCY_DENOMINATION_COUNT> values = { 1, 10, 100,
+										     1000 };
+	int64_t total = 0;
+	for (size_t index = 0; index < context.amount.size(); ++index)
+		total += static_cast<int64_t>(context.amount[index]) * values[index];
+	return total;
+}
+
+void refund_committed_coin_debit(P_char actor, int64_t value, int64_t reason_id)
+{
+	if (!actor || value <= 0)
+		return;
+	if (IS_PC(actor) && GET_PID(actor) > 0)
+	{
+		/* Compensation must remain rebasable if another wallet reward was queued while
+		 * the original debit was in flight. */
+		if (!currency_transaction_submit_wallet_value(
+			    actor, value, currency_reason_type::wallet_reward, reason_id,
+			    critical_source_site::recovery, critical_deadline_class::recovery,
+			    nullptr, nullptr, 0))
+			persistence_alert(AVATAR, "currency", "coin_refund", "none", "none",
+					  "submission_failed", "pid=%d value=%lld", GET_PID(actor),
+					  static_cast<long long>(value));
+		return;
+	}
+	if (value <= INT_MAX)
+		ADD_MONEY(actor, static_cast<int>(value));
+}
+
+bool coin_put_destination_available(P_char actor, P_obj container)
+{
+	if (!actor || !container || !container->obj_uid ||
+	    (!OBJ_CARRIED_BY(container, actor) && !OBJ_WORN_BY(container, actor) &&
+	     (!OBJ_ROOM(container) || container->loc.room != actor->in_room)))
+		return false;
+	const int type = GET_ITEM_TYPE(container);
+	return (type == ITEM_CONTAINER || type == ITEM_STORAGE || type == ITEM_CORPSE) &&
+	       !IS_SET(container->value[1], CONT_CLOSED);
+}
+
+void announce_coin_give(P_char sender, P_char recipient, const coin_give_credit_context &context)
+{
+	if (!recipient)
+		return;
+	char line[MAX_STRING_LENGTH];
+	if (sender)
+	{
+		send_to_char("Ok.\r\n", sender);
+		snprintf(line, sizeof(line), "%s gives you %d %s coins.\r\n",
+			 PERS(sender, recipient, FALSE), context.amount,
+			 coin_names[context.coin_type]);
+		send_to_char(line, recipient);
+		if (sender->in_room == recipient->in_room)
+		{
+			snprintf(line, sizeof(line), "$n gives some %s to $N",
+				 coin_names[context.coin_type]);
+			act(line, TRUE, sender, 0, recipient, TO_NOTVICT);
+		}
+		if (((context.coin_type == 3) && (context.amount > 999)) ||
+		    ((context.coin_type == 2) && (context.amount > 99)))
+		{
+			wizlog(56, "%s gives %s %d %s in [%d]", J_NAME(sender), J_NAME(recipient),
+			       context.amount, (context.coin_type == 3) ? "plat" : "gold",
+			       world[context.room].number);
+			logit(LOG_DEBUG, "%s gives %s %d %s in [%d]", J_NAME(sender),
+			      J_NAME(recipient), context.amount,
+			      (context.coin_type == 3) ? "plat" : "gold",
+			      world[context.room].number);
+		}
+		if (IS_TRUSTED(sender))
+		{
+			wizlog(GET_LEVEL(sender), "%s gives %s %d %s coins.", J_NAME(sender),
+			       J_NAME(recipient), context.amount, coin_names[context.coin_type]);
+			logit(LOG_WIZ, "%s gives %s %d %s coins.", J_NAME(sender),
+			      J_NAME(recipient), context.amount, coin_names[context.coin_type]);
+			sql_log(sender, WIZLOG, "Gave %s %d %s coins.", J_NAME(recipient),
+				context.amount, coin_names[context.coin_type]);
+		}
+	}
+	else
+	{
+		snprintf(line, sizeof(line), "You receive %d %s coins.\r\n", context.amount,
+			 coin_names[context.coin_type]);
+		send_to_char(line, recipient);
+	}
+	gmcp_char_vitals(recipient);
+}
+
+void coin_give_credit_completion(P_char recipient, bool committed, const currency_command_result &,
+				 unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	coin_give_credit_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	P_char sender = find_character_by_runtime_id(context.sender_runtime_id);
+	if (!committed)
+	{
+		if (sender)
+		{
+			if (context.debit_committed)
+			{
+				refund_committed_coin_debit(sender, context.value, context.room);
+				send_to_char(
+					"The coin transfer did not commit; your coins are being restored.\r\n",
+					sender);
+			}
+			else
+				send_to_char(
+					"The coin transfer did not commit; nothing changed.\r\n",
+					sender);
+		}
+		else if (context.debit_committed)
+			persistence_alert(
+				AVATAR, "currency", "give_credit", "none", "none", "sender_offline",
+				"sender_runtime_id=%llu value=%lld",
+				static_cast<unsigned long long>(context.sender_runtime_id),
+				static_cast<long long>(context.value));
+		if (recipient)
+			send_to_char("The coin transfer did not commit; nothing was credited.\r\n",
+				     recipient);
+		return;
+	}
+	announce_coin_give(sender, recipient, context);
+}
+
+bool begin_coin_give_credit(P_char sender, P_char recipient, const coin_debit_context &debit,
+			    bool debit_committed)
+{
+	if (!sender || !recipient || debit.coin_type >= CURRENCY_DENOMINATION_COUNT)
+		return false;
+	const int64_t value = coin_debit_value(debit);
+	coin_give_credit_context context = { sender->runtime_id,
+					     value,
+					     debit.amount[debit.coin_type],
+					     debit.room,
+					     debit.coin_type,
+					     static_cast<uint8_t>(debit_committed),
+					     {} };
+	if (IS_PC(recipient))
+	{
+		if (GET_PID(recipient) <= 0)
+			return false;
+		return currency_transaction_submit_wallet_value(
+			recipient, value, currency_reason_type::wallet_reward,
+			IS_PC(sender) ? GET_PID(sender) : 0, critical_source_site::command,
+			critical_deadline_class::interactive, coin_give_credit_completion, &context,
+			sizeof(context));
+	}
+
+	if (value > INT_MAX)
+		return false;
+	ADD_MONEY(recipient, static_cast<int>(value));
+	announce_coin_give(sender, recipient, context);
+	return true;
+}
+
+void restore_container_money(P_obj container,
+			     const std::array<int32_t, CURRENCY_DENOMINATION_COUNT> &amount)
+{
+	if (!container)
+		return;
+	P_obj restored = create_money(amount[0], amount[1], amount[2], amount[3]);
+	if (restored)
+		obj_to_obj(restored, container);
+}
+
+bool publish_coin_put(P_char actor, const coin_debit_context &context)
+{
+	P_obj container = find_live_item_uid(context.container_uid);
+	if (!coin_put_destination_available(actor, container))
+		return false;
+
+	P_obj old_money = NULL;
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> old_amount = {};
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> combined = context.amount;
+	for (P_obj object = container->contains; object; object = object->next_content)
+		if (object->type == ITEM_MONEY)
+		{
+			old_money = object;
+			for (size_t index = 0; index < combined.size(); ++index)
+			{
+				old_amount[index] = object->value[index];
+				if (old_amount[index] > INT_MAX - combined[index])
+					return false;
+				combined[index] += old_amount[index];
+			}
+			break;
+		}
+
+	P_obj money = create_money(combined[0], combined[1], combined[2], combined[3]);
+	if (!money)
+		return false;
+	obj_to_char(money, actor);
+	if (old_money)
+		extract_obj(old_money);
+	if (!put(actor, money, container, FALSE))
+	{
+		extract_obj(money);
+		if (old_money)
+			restore_container_money(container, old_amount);
+		return false;
+	}
+
+	char line[MAX_STRING_LENGTH];
+	snprintf(
+		line, sizeof(line),
+		"You put %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coins into $P.",
+		context.amount[3], context.amount[2], context.amount[1], context.amount[0]);
+	act(line, TRUE, actor, 0, container, TO_CHAR);
+	act("$n puts some coins into $P.", TRUE, actor, 0, container, TO_ROOM);
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	if (IS_PC(actor))
+		mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
+	if (GET_ITEM_TYPE(container) == ITEM_STORAGE)
+		writeSavedItem(container);
+	return true;
+}
+
+void publish_coin_drop(P_char actor, const coin_debit_context &context)
+{
+	P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],
+				   context.amount[3]);
+	if (!money)
+	{
+		refund_committed_coin_debit(actor, coin_debit_value(context), context.room);
+		send_to_char("The coins could not be placed; your wallet is being restored.\r\n",
+			     actor);
+		return;
+	}
+	const int64_t value = coin_debit_value(context);
+	if (context.flags & COIN_DEBIT_ALL)
+	{
+		const int64_t coin_count = static_cast<int64_t>(context.amount[0]) +
+					   context.amount[1] + context.amount[2] +
+					   context.amount[3];
+		char line[MAX_STRING_LENGTH];
+		snprintf(
+			line, sizeof(line),
+			"You drop %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coin%s.\r\n",
+			context.amount[3], context.amount[2], context.amount[1], context.amount[0],
+			coin_count > 1 ? "s" : "");
+		send_to_char(line, actor);
+		act("$n drops some coins.", TRUE, actor, 0, 0, TO_ROOM);
+	}
+	else
+	{
+		if (context.flags & COIN_DEBIT_ACCIDENTAL)
+			send_to_char(
+				"Oops, trying to juggle too many loose coins, you drop a few.\r\n",
+				actor);
+		else
+			send_to_char("OK.\r\n", actor);
+		char line[MAX_STRING_LENGTH];
+		snprintf(line, sizeof(line), "$n drops some %s coins.",
+			 coin_names[context.coin_type]);
+		act(line, FALSE, actor, 0, 0, TO_ROOM);
+	}
+
+	if (value > 99000)
+	{
+		wizlog(MINLVLIMMORTAL, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(actor),
+		       context.amount[3], context.amount[2], context.amount[1], context.amount[0],
+		       world[context.room].number);
+		logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(actor),
+		      context.amount[3], context.amount[2], context.amount[1], context.amount[0],
+		      world[context.room].number);
+	}
+	obj_to_room(money, context.room);
+}
+
+void coin_debit_completion(P_char actor, bool committed, const currency_command_result &,
+			   unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor)
+		return;
+	if (!committed)
+	{
+		send_to_char("The coin debit did not commit; nothing changed.\r\n", actor);
+		return;
+	}
+	coin_debit_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+	{
+		persistence_alert(AVATAR, "currency", "coin_publish", "none", "none",
+				  "invalid_context", "pid=%d", IS_PC(actor) ? GET_PID(actor) : 0);
+		return;
+	}
+	memcpy(&context, encoded, sizeof(context));
+	const int64_t value = coin_debit_value(context);
+	if (context.room < 0 || context.room > top_of_world || actor->in_room != context.room)
+	{
+		refund_committed_coin_debit(actor, value, context.room);
+		send_to_char("The coin destination changed; your wallet is being restored.\r\n",
+			     actor);
+		return;
+	}
+
+	switch (context.action)
+	{
+	case coin_debit_action::drop:
+		publish_coin_drop(actor, context);
+		break;
+	case coin_debit_action::put:
+		if (!publish_coin_put(actor, context))
+		{
+			refund_committed_coin_debit(actor, value, context.container_uid);
+			send_to_char(
+				"The coins could not be put away; your wallet is being restored.\r\n",
+				actor);
+		}
+		break;
+	case coin_debit_action::give:
+	{
+		P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
+		if (!recipient || recipient->in_room != context.room ||
+		    !begin_coin_give_credit(actor, recipient, context, true))
+		{
+			refund_committed_coin_debit(actor, value, context.target_runtime_id);
+			send_to_char(
+				"The coin transfer could not be completed; your wallet is being restored.\r\n",
+				actor);
+		}
+		break;
+	}
+	}
+}
+
+bool submit_coin_debit(P_char actor, const coin_debit_context &context)
+{
+	const int64_t value = coin_debit_value(context);
+	if (!actor || value <= 0)
+		return false;
+	if (IS_PC(actor) && GET_PID(actor) > 0)
+	{
+		int64_t reason_id = context.room;
+		if (context.action == coin_debit_action::put)
+			reason_id = static_cast<int64_t>(context.container_uid);
+		else if (context.action == coin_debit_action::give)
+			reason_id = static_cast<int64_t>(context.target_runtime_id);
+		return currency_transaction_submit_wallet_value(
+			actor, -value, currency_reason_type::wallet_spend, reason_id,
+			critical_source_site::command, critical_deadline_class::interactive,
+			coin_debit_completion, &context, sizeof(context));
+	}
+	if (value > INT_MAX || SUB_MONEY(actor, static_cast<int>(value), 0) != 0)
+		return false;
+	coin_debit_completion(actor, true, {}, 0, reinterpret_cast<const uint8_t *>(&context),
+			      sizeof(context));
+	return true;
+}
 }
 
 void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 {
 	P_obj tmp_object, next_object;
 	int total = 0;
-	int plat, silv, gold, copp;
 	char Gbuf1[MAX_STRING_LENGTH];
-	char Gbuf3[MAX_STRING_LENGTH];
 	if (IS_PC(ch) && strcmp(name, "coins"))
 	{
 		start_bulk_drop(ch, name, true);
@@ -2969,12 +3362,16 @@ void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 
 	if (!strcmp(name, "coins"))
 	{
-		plat = ch->points.cash[0];
-		gold = ch->points.cash[1];
-		silv = ch->points.cash[2];
-		copp = ch->points.cash[3];
-
-		if ((plat + gold + silv + copp) == 0)
+		coin_debit_context context = { { GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),
+						 GET_PLATINUM(ch) },
+					       0,
+					       0,
+					       ch->in_room,
+					       coin_debit_action::drop,
+					       0,
+					       COIN_DEBIT_ALL,
+					       0 };
+		if (coin_debit_value(context) == 0)
 		{
 			act("But you do not have any coins.", TRUE, ch, 0, 0, TO_CHAR);
 			return;
@@ -2986,43 +3383,8 @@ void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 			send_to_char("You can't drop coins here.\r\n", ch);
 			return;
 		}
-
-		snprintf(
-			Gbuf3, MAX_STRING_LENGTH,
-			"You drop %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coin%s.\n\r",
-			copp, silv, gold, plat, ((plat + gold + silv + copp) > 1) ? "s" : "");
-		act(Gbuf3, TRUE, ch, 0, 0, TO_CHAR);
-		act("$n drops some coins.", TRUE, ch, 0, 0, TO_ROOM);
-
-		tmp_object = create_money(plat, gold, silv, copp);
-
-		ch->points.cash[0] -= plat;
-		ch->points.cash[1] -= gold;
-		ch->points.cash[2] -= silv;
-		ch->points.cash[3] -= copp;
-
-		if ((plat * 1000 + gold * 100 + silv * 10 + copp) > 99000)
-		{
-			wizlog(MINLVLIMMORTAL, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch),
-			       plat, gold, silv, copp, world[ch->in_room].number);
-			logit(LOG_DEBUG, "%s drops %d p %d g %d s %d c in [%d]", J_NAME(ch), plat,
-			      gold, silv, copp, world[ch->in_room].number);
-		}
-
-		// DEFERRED: use-after-free — obj_to_room may free tmp_object if it
-		// merges with existing money on the floor. Callers below dereference
-		// tmp_object (obj_uid, redis_log_floor_drop) after this call.
-		obj_to_room(tmp_object, ch->in_room);
-
-		if (IS_PC(ch))
-		{
-			if (tmp_object->obj_uid > 0)
-				redis_log_floor_drop(tmp_object, world[ch->in_room].number);
-			mark_player_dirty_components(
-				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
-						     PLAYER_COMPONENT_INVENTORY);
-		}
-
+		if (!submit_coin_debit(ch, context))
+			send_to_char("The coin debit could not start; nothing changed.\r\n", ch);
 		return;
 	}
 
@@ -3191,92 +3553,18 @@ void do_drop(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		if (cmd == 1 && IS_PC(ch))
-			send_to_char(
-				"Oops, trying to juggle too many loose coins, you drop a few.\r\n",
-				ch);
-		else
-			send_to_char("OK.\r\n", ch);
-
-		if (IS_PC(ch))
-		{
-			if (((ctype == 3) && (amount > 999)) || ((ctype == 2) && (amount > 99)))
-			{
-				wizlog(MINLVLIMMORTAL, "%s drops %d %s in [%d]", J_NAME(ch), amount,
-				       (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
-				logit(LOG_DEBUG, "%s drops %d %s in [%d]", J_NAME(ch), amount,
-				      (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
-				sql_log(ch, WIZLOG, "Dropped %d %s", amount,
-					(ctype == 3) ? "plat" : "gold");
-			}
-			switch (ctype)
-			{
-			case 0:
-				if (IS_TRUSTED(ch))
-				{
-					logit(LOG_WIZ, "%s drops %d copper coins [%d]",
-					      GET_NAME(ch), amount, world[ch->in_room].number);
-					sql_log(ch, WIZLOG, "Dropped %d copper coins", amount);
-				}
-				act("$n drops some &+ycopper&N coins.", FALSE, ch, 0, 0, TO_ROOM);
-				tmp_object = create_money(amount, 0, 0, 0);
-				if (SUB_MONEY(ch, amount, 0) != 0)
-					return;
-				break;
-			case 1:
-				if (IS_TRUSTED(ch))
-				{
-					logit(LOG_WIZ, "%s drops %d silver coins [%d]",
-					      GET_NAME(ch), amount, world[ch->in_room].number);
-					sql_log(ch, WIZLOG, "Dropped %d silver coins", amount);
-				}
-				act("$n drops some &+wsilver&n coins.", FALSE, ch, 0, 0, TO_ROOM);
-				tmp_object = create_money(0, amount, 0, 0);
-				if (SUB_MONEY(ch, amount * 10, 0) != 0)
-					return;
-				break;
-			case 2:
-				if (IS_TRUSTED(ch))
-				{
-					logit(LOG_WIZ, "%s drops %d gold coins [%d]", GET_NAME(ch),
-					      amount, world[ch->in_room].number);
-					sql_log(ch, WIZLOG, "Dropped %d gold coins", amount);
-				}
-				act("$n drops some &+Ygold&N coins.", FALSE, ch, 0, 0, TO_ROOM);
-				tmp_object = create_money(0, 0, amount, 0);
-				if (SUB_MONEY(ch, amount * 100, 0) != 0)
-					return;
-				break;
-			case 3:
-				if (IS_TRUSTED(ch))
-				{
-					logit(LOG_WIZ, "%s drops %d platinum coins [%d]",
-					      GET_NAME(ch), amount, world[ch->in_room].number);
-					sql_log(ch, WIZLOG, "Dropped %d platinum coins", amount);
-				}
-				act("$n drops some &+Wplatinum&N coins.", FALSE, ch, 0, 0, TO_ROOM);
-				tmp_object = create_money(0, 0, 0, amount);
-				if (SUB_MONEY(ch, amount * 1000, 0) != 0)
-					return;
-				break;
-			}
-
-			if (tmp_object && (ch->in_room != NOWHERE))
-				obj_to_room(tmp_object, ch->in_room);
-			else
-			{
-				logit(LOG_EXIT, "do_drop: no tmp_object or ch in NOWHERE");
-				return;
-			}
-		}
-		if (IS_PC(ch))
-			mark_player_dirty_components(
-				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
-						     PLAYER_COMPONENT_INVENTORY);
-
-		/* Send GMCP update for dropped coins */
-		gmcp_char_vitals(ch);
-
+		coin_debit_context context = { {},
+					       0,
+					       0,
+					       ch->in_room,
+					       coin_debit_action::drop,
+					       static_cast<uint8_t>(ctype),
+					       static_cast<uint8_t>(
+						       cmd == 1 ? COIN_DEBIT_ACCIDENTAL : 0),
+					       0 };
+		context.amount[ctype] = amount;
+		if (!submit_coin_debit(ch, context))
+			send_to_char("The coin debit could not start; nothing changed.\r\n", ch);
 		return;
 	}
 	if (*Gbuf1)
@@ -3774,11 +4062,11 @@ void start_bulk_put(P_char actor, P_obj container, const char *filter, bool alld
 
 void do_put(P_char ch, char *argument, int /*cmd*/)
 {
-	P_obj o_obj = NULL, s_obj = NULL, tmp_obj, next_obj;
+	P_obj o_obj = NULL, s_obj = NULL, next_obj;
 	P_char t_ch;
 	int amount, ctype, count = 0, attempted = 0;
 	int plat = 0, gold = 0, silv = 0, copp = 0;
-	int p, g, s, c, type = 0;
+	int type = 0;
 	char buf[MAX_STRING_LENGTH];
 	char obj_name[MAX_STRING_LENGTH];
 	char cont_name[MAX_STRING_LENGTH];
@@ -3807,8 +4095,13 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 		amount = atoi(obj_name);
 		argument = one_argument(argument, obj_name);
 		ctype = coin_type(obj_name);
+		if (ctype < 0 || amount <= 0)
+		{
+			send_to_char("Specify a positive amount and a valid coin type.\r\n", ch);
+			return;
+		}
 
-		if (ctype >= 0 && ch->points.cash[ctype] < amount)
+		if (ch->points.cash[ctype] < amount)
 		{
 			snprintf(buf, MAX_STRING_LENGTH, "You do not have that many %s coins!\r\n",
 				 coin_names[ctype]);
@@ -3831,10 +4124,10 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 	else if (!strcmp(obj_name, "all.coins"))
 	{
 		type = PUT_COINS;
-		plat = ch->points.cash[3];
-		gold = ch->points.cash[2];
-		silv = ch->points.cash[1];
-		copp = ch->points.cash[0];
+		plat = GET_PLATINUM(ch);
+		gold = GET_GOLD(ch);
+		silv = GET_SILVER(ch);
+		copp = GET_COPPER(ch);
 	}
 	else if (sscanf(obj_name, "all.%s", buf) == 1)
 	{
@@ -3869,45 +4162,29 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (type == PUT_COINS && (attempted = plat + gold + silv + copp > 0))
+	if (type == PUT_COINS)
 	{
-		p = plat;
-		g = gold;
-		s = silv;
-		c = copp;
-		for (tmp_obj = s_obj->contains; tmp_obj; tmp_obj = tmp_obj->next_content)
+		if (!(plat || gold || silv || copp))
 		{
-			if (tmp_obj->type == ITEM_MONEY)
-			{
-				p += tmp_obj->value[3];
-				g += tmp_obj->value[2];
-				s += tmp_obj->value[1];
-				c += tmp_obj->value[0];
-				break;
-			}
+			send_to_char("You don't have any coins to put in it.\r\n", ch);
+			return;
 		}
-		o_obj = create_money(c, s, g, p);
-		obj_to_char(o_obj, ch);
-		if ((count = put(ch, o_obj, s_obj, TRUE)))
+		if (!coin_put_destination_available(ch, s_obj))
 		{
-			snprintf(
-				buf, MAX_STRING_LENGTH,
-				"You put %d &+Wplatinum&n, %d &+Ygold&n, %d silver, and %d &+ycopper&n coins into $P.",
-				plat, gold, silv, copp);
-			act(buf, TRUE, ch, 0, s_obj, TO_CHAR);
-			ch->points.cash[3] -= plat;
-			ch->points.cash[2] -= gold;
-			ch->points.cash[1] -= silv;
-			ch->points.cash[0] -= copp;
-			if (tmp_obj)
-			{
-				extract_obj(tmp_obj);
-			}
+			send_to_char("It is not an open, durable container.\r\n", ch);
+			return;
 		}
-		else
-		{
-			extract_obj(o_obj);
-		}
+		coin_debit_context context = { { copp, silv, gold, plat },
+					       0,
+					       s_obj->obj_uid,
+					       ch->in_room,
+					       coin_debit_action::put,
+					       0,
+					       0,
+					       0 };
+		if (!submit_coin_debit(ch, context))
+			send_to_char("The coin debit could not start; nothing changed.\r\n", ch);
+		return;
 	}
 
 	if (type == PUT_ITEM)
@@ -4335,57 +4612,24 @@ void do_give(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		send_to_char("Ok.\r\n", ch);
-
-		if (((ctype == 3) && (amount > 999)) || ((ctype == 2) && (amount > 99)))
+		coin_debit_context context = { {},
+					       vict->runtime_id,
+					       0,
+					       ch->in_room,
+					       coin_debit_action::give,
+					       static_cast<uint8_t>(ctype),
+					       0,
+					       0 };
+		context.amount[ctype] = amount;
+		if (IS_PC(ch) && GET_LEVEL(ch) >= MAXLVL)
 		{
-			wizlog(56, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict), amount,
-			       (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
-			logit(LOG_DEBUG, "%s gives %s %d %s in [%d]", J_NAME(ch), J_NAME(vict),
-			      amount, (ctype == 3) ? "plat" : "gold", world[ch->in_room].number);
+			if (!begin_coin_give_credit(ch, vict, context, false))
+				send_to_char(
+					"The coin credit could not start; nothing changed.\r\n",
+					ch);
 		}
-		if (IS_TRUSTED(ch))
-		{
-			wizlog(GET_LEVEL(ch), "%s gives %s %d %s coins.", J_NAME(ch), J_NAME(vict),
-			       amount, coin_names[ctype]);
-			logit(LOG_WIZ, "%s gives %s %d %s coins.", J_NAME(ch), J_NAME(vict), amount,
-			      coin_names[ctype]);
-			sql_log(ch, WIZLOG, "Gave %s %d %s coins.", J_NAME(vict), amount,
-				coin_names[ctype]);
-		}
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s gives you %d %s coins.\r\n",
-			 PERS(ch, vict, FALSE), amount, coin_names[ctype]);
-		send_to_char(Gbuf1, vict);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n gives some %s to $N", coin_names[ctype]);
-		act(Gbuf1, TRUE, ch, 0, vict, TO_NOTVICT);
-
-		if (IS_NPC(ch) || (GET_LEVEL(ch) < MAXLVL))
-			ch->points.cash[ctype] -= amount;
-		vict->points.cash[ctype] += amount;
-
-		if (ch != vict)
-		{
-			if (IS_PC(ch))
-				mark_player_dirty_components(GET_PID(ch),
-							     PLAYER_COMPONENT_STATUS |
-								     PLAYER_COMPONENT_EQUIPMENT |
-								     PLAYER_COMPONENT_INVENTORY);
-			if (IS_PC(vict))
-				mark_player_dirty_components(GET_PID(vict),
-							     PLAYER_COMPONENT_STATUS |
-								     PLAYER_COMPONENT_EQUIPMENT |
-								     PLAYER_COMPONENT_INVENTORY);
-		}
-
-		/* Send GMCP updates for coin transfer */
-		gmcp_char_vitals(ch);
-		gmcp_char_vitals(vict);
-
-		/*
-		 * added by DTS 5/18/95 to solve light bug
-		 */
-		char_light(ch);
-		room_light(ch->in_room, REAL);
+		else if (!submit_coin_debit(ch, context))
+			send_to_char("The coin debit could not start; nothing changed.\r\n", ch);
 		return;
 	}
 	argument = one_argument(argument, vict_name);

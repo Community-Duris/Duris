@@ -144,6 +144,27 @@ checks.append(
     )
 )
 
+add_character = body(account, "void add_char_to_account(P_desc d)")
+flatfile_add_character = add_character[
+    add_character.index("#ifdef __NO_MYSQL__") : add_character.index("#else")
+]
+mariadb_add_character = add_character[
+    add_character.index("#else") : add_character.index("#endif")
+]
+checks.append(
+    (
+        "a new character remains in the live account until its first player save",
+        contains(add_character, "d->account->acct_character_list = c;")
+        and not contains(mariadb_add_character, "write_account("),
+    )
+)
+checks.append(
+    (
+        "flatfile accounts persist a new character before its first player save",
+        contains(flatfile_add_character, "write_account(d->account)"),
+    )
+)
+
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:
     print(f"[{'PASS' if ok else 'FAIL'}] {name}")
