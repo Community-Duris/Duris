@@ -1302,6 +1302,22 @@ D 0 1 0 6
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
 8 8 0
+#108
+kingdom guard garrison sentry~
+&+wa kingdom guard&N~
+&+wA kingdom guard stands watch here, spear grounded, eyes on the road.&N
+~
+   &+wA soldier of the realm, posted to hold this ground and no other.  The
+&+wtabard is plain, cut for service rather than for show, and the mail
+&+wbeneath it has been mended far more often than it has been polished.
+&+wNothing in the kit says where this one was raised, only who pays the
+&+wwage: whichever crown holds the land underfoot.&N
+~
+10314 0 0 0 33554440 0 0 0 100 S
+H 0 1 0 -1
+45 0 0 1d1+1 1d1+1
+0.0.0.0 0
+8 8 1
 #200
 dark shadow demon shape~
 &+La dark shadow&n~

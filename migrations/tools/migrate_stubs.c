@@ -167,7 +167,12 @@ Guild::Guild(char *_name, unsigned int _racewar, unsigned int _id_number, unsign
 	// stub
 }
 
-void Guild::save() {}
+// Guild::save reports success without touching the database: the tool
+// persists guilds through sql_save_guild() below, not through this method.
+bool Guild::save()
+{
+	return true;
+}
 unsigned int Guild::get_max_members()
 {
 	return 100;

@@ -419,6 +419,17 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/track.o \
 				 economy/tradeskill.o \
 				 combat/trap.o \
+				 kingdom/kingdom.o \
+				 kingdom/kingdom_geometry.o \
+				 kingdom/kingdom_config.o \
+				 kingdom/kingdom_placement.o \
+				 kingdom/kingdom_claim.o \
+				 kingdom/kingdom_upkeep.o \
+				 kingdom/kingdom_harvest.o \
+				 kingdom/kingdom_guards.o \
+				 kingdom/kingdom_display.o \
+				 kingdom/kingdom_cmds.o \
+				 kingdom/kingdom_db.o \
 				 world/transport.o \
 				 item/trophy.o \
 				 net/unicode.o \

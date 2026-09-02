@@ -60,6 +60,17 @@
 #define VOBJ_POISON_VIAL_MOVELEAK 474
 #define VOBJ_POISON_VIAL_SLOWNESS 475
 #define VOBJ_POISON_VIAL_MADNESS 476
+/* Kingdom harvest nodes (src/kingdom/): surface 477-480, Underdark 481-484.
+ * The eight are CONTIGUOUS and in this order on purpose -- world/map.c indexes
+ * its glyph table off them and static_asserts the layout. */
+#define VOBJ_KINGDOM_NODE_MINERAL 477 /* a seam of stone   */
+#define VOBJ_KINGDOM_NODE_WOOD 478 /* a stand of timber */
+#define VOBJ_KINGDOM_NODE_FIBRE 479 /* flax and reeds    */
+#define VOBJ_KINGDOM_NODE_WATER 480 /* a clean spring    */
+#define VOBJ_KINGDOM_NODE_UD_MINERAL 481 /* an ore seam       */
+#define VOBJ_KINGDOM_NODE_UD_WOOD 482 /* a fungal stand    */
+#define VOBJ_KINGDOM_NODE_UD_FIBRE 483 /* cave silk         */
+#define VOBJ_KINGDOM_NODE_UD_WATER 484 /* a dark pool       */
 
 #define VOBJ_RANDOM_ARMOR 1252
 #define VOBJ_RANDOM_THRUSTED 1253

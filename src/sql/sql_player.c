@@ -10670,6 +10670,13 @@ bool sql_delete_ship(const char *owner_name)
 	return true;
 }
 
+/* Write one guild -- its row, then its ranks and members -- returning true
+ * only when all three landed. The ranks and members are replaced wholesale,
+ * so they are wrapped in a transaction: the DELETEs run before the INSERTs,
+ * and a failure mid-loop would otherwise leave the guild with stale or empty
+ * ranks. When the caller already opened a transaction this JOINS it instead
+ * of nesting, and then a failure returns false WITHOUT rolling back, leaving
+ * that decision to the owner. */
 bool sql_save_guild(Guild *guild)
 {
 	if (!DB || !guild)
@@ -10705,7 +10712,13 @@ bool sql_save_guild(Guild *guild)
 	// start transaction for ranks + members (DELETEs run before INSERTs, so a
 	// failure mid-loop would otherwise leave the guild with stale or empty
 	// ranks/members)
-	if (!sql_begin_transaction())
+	/* Join an enclosing transaction when the caller opened one -- the kingdom
+	 * upkeep sweep pairs this save with its realm record so a crash can never
+	 * separate a treasury debit from the payment it made -- and otherwise own
+	 * one. Inside a joined transaction a failure returns false WITHOUT rolling
+	 * back; the owner does that. Same pattern as sql_soft_delete_character(). */
+	const bool own_txn = !sql_in_transaction();
+	if (own_txn && !sql_begin_transaction())
 	{
 		logit(LOG_DEBUG, "sql_save_guild: failed to start transaction for guild %u", gid);
 		return false;
@@ -10716,7 +10729,8 @@ bool sql_save_guild(Guild *guild)
 	if (!sql_run_query(query))
 	{
 		logit(LOG_DEBUG, "sql_save_guild: failed to delete old ranks for guild %u", gid);
-		sql_rollback();
+		if (own_txn)
+			sql_rollback();
 		return false;
 	}
 	for (int i = 0; i < ASC_NUM_RANKS; i++)
@@ -10734,7 +10748,8 @@ bool sql_save_guild(Guild *guild)
 		{
 			logit(LOG_DEBUG, "sql_save_guild: failed to insert rank %d for guild %u", i,
 			      gid);
-			sql_rollback();
+			if (own_txn)
+				sql_rollback();
 			return false;
 		}
 	}
@@ -10744,7 +10759,8 @@ bool sql_save_guild(Guild *guild)
 	if (!sql_run_query(query))
 	{
 		logit(LOG_DEBUG, "sql_save_guild: failed to delete old members for guild %u", gid);
-		sql_rollback();
+		if (own_txn)
+			sql_rollback();
 		return false;
 	}
 	for (P_member mem = guild->members; mem; mem = mem->next)
@@ -10771,15 +10787,23 @@ bool sql_save_guild(Guild *guild)
 		{
 			logit(LOG_DEBUG, "sql_save_guild: failed to insert member for guild %u",
 			      gid);
-			sql_rollback();
+			if (own_txn)
+				sql_rollback();
 			return false;
 		}
 	}
 
-	if (!sql_commit())
+	/* The own_txn test on the rollback is redundant TODAY -- only the owner
+	 * reaches sql_commit() -- and is kept on purpose. Every sql_rollback() in
+	 * this function is guarded by the same test, which is what makes "never
+	 * roll back a transaction an enclosing caller opened" checkable rather
+	 * than a property re-derived per branch; a contract test enforces it. If
+	 * the commit condition is ever widened, the guard is already right. */
+	if (own_txn && !sql_commit())
 	{
 		logit(LOG_DEBUG, "sql_save_guild: failed to commit for guild %u", gid);
-		sql_rollback();
+		if (own_txn)
+			sql_rollback();
 		return false;
 	}
 

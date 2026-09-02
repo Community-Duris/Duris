@@ -32,6 +32,7 @@
 #include "world/db.h"
 #include "world/events.h"
 #include "world/event_names.h"
+#include "kingdom/kingdom.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "persistence/copyover.h"
@@ -1867,6 +1868,15 @@ void ne_init_event_pool(void)
 	nevent_assert_pool_accounting("ne_init_event_pool");
 }
 
+/* The kingdom module deliberately keeps engine types out of its public
+ * header, so its upkeep entry point is void(void). Adapt it to the
+ * registry's event_func_type here rather than leaking P_char into
+ * kingdom.h. */
+static void kingdom_upkeep_tick(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
+{
+	kingdom_upkeep_event();
+}
+
 static void nevent_register_periodic_job(const char *key, event_func_type callback,
 					 unsigned long long initial_delay,
 					 unsigned long long interval, nevent_periodic_policy policy,
@@ -1879,6 +1889,9 @@ static void nevent_register_periodic_job(const char *key, event_func_type callba
 		      static_cast<unsigned int>(result));
 }
 
+/* Build the event system at boot: size and seed the event pool, then register
+ * every periodic job the server runs. Intervals here are in PULSES, so a job
+ * expressed in seconds must carry the * WAIT_SEC factor. */
 void ne_init_events(void)
 {
 	int j = 0, i = 0;
@@ -1963,6 +1976,13 @@ void ne_init_events(void)
 	/* miscellaneous character looping */
 	nevent_register_periodic_job("generic-character-sweep", generic_char_event, 20 * WAIT_SEC,
 				     5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
+
+	// Kingdom upkeep: charge each realm, and walk the arrears ladder when it
+	// cannot pay. Always registered; kingdom_upkeep_event() returns at once
+	// while the subsystem is disabled. The * WAIT_SEC factor is MANDATORY --
+	// the registry counts PULSES, so omitting it charges upkeep 4x too often.
+	nevent_register_periodic_job("kingdom-upkeep", kingdom_upkeep_tick, 60 * WAIT_SEC,
+				     60 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
 
 	// Checks to see if artifact souls are ready to merge.
 	nevent_register_periodic_job("artifact-bind", event_artifact_check_bind_sql, 15 * WAIT_SEC,

@@ -46,6 +46,7 @@
 #include "net/gmcp.h"
 #include "world/graph.h"
 #include "guild/guildhall.h"
+#include "kingdom/kingdom.h"
 #include "world/hardcore.h"
 #include "core/json_utils.h"
 #include "core/lookup_process.h"
@@ -727,6 +728,12 @@ void run_the_game(int port, int sslport)
 		Guildhall::initialize();
 		fprintf(stderr, "-- Done loading guildhalls\r\n");
 
+		/* AFTER the guildhalls: a realm's anchor is a hall's outside square,
+		 * and the orphan sweep needs them loaded to tell a hall that is really
+		 * gone from one that simply has not booted yet. */
+		kingdom_initialize();
+		fprintf(stderr, "-- Done loading kingdoms\r\n");
+
 		init_auction_houses();
 
 		reset_racewar_stat_mods();
@@ -866,6 +873,10 @@ void run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
+	/* Flush dirty realms and reap the placed resource nodes while the
+	 * world and the store are still up. Idempotent and self-gating, so
+	 * a build with kingdoms disabled pays nothing here. */
+	kingdom_shutdown();
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
@@ -1880,6 +1891,20 @@ resume_game_loop:
 
 	if (_copyover)
 	{
+		/* Flush dirty realm records (harvested deposits) before the exec.
+		 * There are two distinct kingdom flush paths, on purpose:
+		 *   1. Normal shutdown: game_loop() returns and main() runs
+		 *      kingdom_shutdown(), which flushes and then tears down.
+		 *   2. Copyover: a successful copyover_save() execs the new binary
+		 *      and never returns, so path 1 is never reached -- the flush
+		 *      must happen HERE, beside the other pre-exec saves.
+		 * Only the flush, not kingdom_shutdown(): if copyover_save()
+		 * fails we resume the game loop below, and the shutdown's guard
+		 * despawn and index clear would leave the live game with a dead
+		 * kingdom subsystem. The flush is idempotent (it only writes
+		 * realms still marked dirty), so the eventual kingdom_shutdown()
+		 * after a failed copyover re-flushes nothing. */
+		kingdom_flush_persistent_state();
 		if (!copyover_save(s, S, WS))
 		{
 			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",

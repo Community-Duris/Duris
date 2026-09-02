@@ -10,11 +10,11 @@
     "mariadb10_11": "7ab4d5acca0f4125c5a95114dd375df859768c4c2ade97abe6fb68b73ecb19e1"
   },
   "migration_head": {
-    "id": "0005_level_cap_singleton",
-    "sequence": 5,
-    "apply_checksum": "a83264e2f9241e328bcf76eefa192a0d10b0b4122917e56ef12ad39a35bc6132",
-    "verify_checksum": "4974eb5bf494251d83fc9c3f0c381a61f3afbd80e4eae6f9f291ea5b5c77b77f",
-    "history_checksum": "31d99c8d9bd9bbc551046cb448e75e8a61bd9d2d3ab4c58795865d096b3e055e"
+    "id": "0006_kingdom_realms",
+    "sequence": 6,
+    "apply_checksum": "f146b2236b7c982bc909ec981f2d2d06831f21fc224824f670607811506e5c93",
+    "verify_checksum": "c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697",
+    "history_checksum": "f0ad406519cd02e048b91c247d9a40c28edd6f00b5a35ae54509871c63a543c5"
   },
   "connection": {
     "character_set": "utf8mb4",

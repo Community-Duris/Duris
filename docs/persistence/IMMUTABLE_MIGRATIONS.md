@@ -35,12 +35,37 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-The current immutable head is `0005_level_cap_singleton`. After it is applied, the
-runtime schema contains 173 tables and the history singleton records applied
-count 5 plus the exact history checksum. If a pre-b029 launcher already created
-the legacy `server_reboots` shape, 0004 copies every lifecycle row into the
-canonical table and atomically swaps it into place; an interrupted conversion
-can be retried without making the legacy table unavailable or duplicating rows.
+The current immutable head is `0006_kingdom_realms`. After it is applied, the
+database contains the 173-table runtime boot contract plus the `kingdom_realms`
+table, and the history singleton records applied count 6 plus the exact history
+checksum. If a pre-b029 launcher already created the legacy `server_reboots`
+shape, 0004 copies every lifecycle row into the canonical table and atomically
+swaps it into place; an interrupted conversion can be retried without making the
+legacy table unavailable or duplicating rows. 0006 creates the guild kingdom
+realm table with a guarded `CREATE TABLE IF NOT EXISTS` and then converges a
+database that already ran the deleted pre-registration
+`migrations/kingdom_realms.sql`: that file carried no `COLLATE` clause, so its
+table holds the character set's default collation instead of
+`utf8mb4_unicode_ci`, and a guarded `CONVERT TO CHARACTER SET utf8mb4 COLLATE
+utf8mb4_unicode_ci` brings it to the verified shape. Every column is an integer,
+so the conversion changes no stored value, and on an already-correct table the
+guard issues no `ALTER` at all, which is what keeps 0006 exactly re-runnable.
+
+`kingdom_realms` is deliberately outside the boot contract's *table list*:
+`runtime_compatibility_manifest.json` still counts 173 runtime tables, so a boot
+in which `kingdom_initialize()` cannot read the table disables kingdoms for that
+boot rather than running over it. That is not permission to skip 0006. The
+*ledger* is still fail-closed, exactly as it is for every other immutable
+migration: `src/core/runtime_compatibility_contract.h` compiles
+`RUNTIME_MIGRATION_HEAD_ID = "0006_kingdom_realms"` with sequence 6, and
+`sql_verify_boot_database()` in `src/sql/sql.c` requires the matching
+`mud_schema_history` row, its two checksums, and `applied_count=6` in
+`mud_schema_migration_state`. On the MariaDB/MySQL backend a database left at
+head `0005_level_cap_singleton` therefore refuses to boot, aborting with
+`COMPAT-E002`. An operator upgrading an existing database must apply 0006 with
+`python3 scripts/migration_runner.py run`, which applies the SQL, runs the
+verifier, and only then writes the history row and advances the head, before
+starting the server.
 
 ## Post-baseline migration contract
 

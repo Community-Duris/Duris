@@ -127,8 +127,9 @@ transaction, replay, or idempotency identifiers.
   re-runnable by design.
 - `migrations/migration_manifest.json` and `scripts/migration_runner.py` -- the
   immutable manifest-driven path for every migration after the verified Session 11
-  baseline. The current immutable head restores the `level_cap` singleton, producing the
-  173-table schema. See [IMMUTABLE_MIGRATIONS.md](../persistence/IMMUTABLE_MIGRATIONS.md).
+  baseline. The current immutable head adds the `kingdom_realms` table on top of the
+  173-table boot contract. See
+  [IMMUTABLE_MIGRATIONS.md](../persistence/IMMUTABLE_MIGRATIONS.md).
 - `migrations/runtime_compatibility_manifest.json` and
   `migrations/verify_runtime_compatibility.sh` -- the read-only pre-boot contract for
   migration history, full metadata shape, storage engine, collation, and supported
@@ -197,6 +198,7 @@ Rules of thumb (enforced by repo conventions):
 | persistence event tables | Remaining bounded compatibility events; not the player/critical authority |
 | frag leaderboard tables | Auto-populated as players log in and save |
 | `corpses`, `corpse_items` | Player corpses across restarts (see below) |
+| `kingdom_realms` | Guild kingdom realm territory (one claim integer per guild), harvested resource stores, and upkeep/arrears state; created by immutable migration 0006, read positionally by `src/kingdom/kingdom_db.c`, and outside the runtime boot contract until the maintainers reseal the metadata fingerprints |
 
 ### Player corpses
 

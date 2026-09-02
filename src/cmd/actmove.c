@@ -27,6 +27,7 @@
 #include "economy/tradeskill.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
+#include "kingdom/kingdom.h"
 
 /*
  * external variables
@@ -1827,6 +1828,29 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 
 	char_light(ch);
 	room_light(ch->in_room, REAL);
+
+	/*
+	 * Kingdom realm banner (kingdom/kingdom.h): announce stepping ONTO
+	 * kingdom land.  Fires only when the destination map square is owned
+	 * and its owner differs from the square just left -- so nothing on
+	 * leaving realm land and nothing while moving within one realm.  Both
+	 * queries are O(1) vnum-index lookups, safe on every move.  was_in is
+	 * never NOWHERE here (guarded at the top of this function).
+	 */
+	if (ch->desc && IS_MAP_ROOM(ch->in_room))
+	{
+		int realm_owner = kingdom_owner_of_room(ch->in_room);
+
+		if ((realm_owner > 0) && (realm_owner != kingdom_owner_of_room(was_in)))
+		{
+			const char *realm_banner = kingdom_room_banner(ch->in_room);
+
+			if (realm_banner)
+			{
+				send_to_char(realm_banner, ch);
+			}
+		}
+	}
 
 	/*
 	 * penalty for sneak skill, slower movement, perm sneak doesn't have

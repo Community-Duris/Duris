@@ -12,10 +12,12 @@
 #include "guild/assocs.h"
 #include <string.h>
 #include <strings.h>
+#include <limits.h>
 #include "guild/alliances.h"
 #include "world/epic.h"
 #include "core/files.h"
 #include "guild/guildhall.h"
+#include "kingdom/kingdom.h"
 #include "economy/nexus_stones.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
@@ -291,6 +293,133 @@ bool Guild::sub_money(int p, int g, int s, int c)
 	write_transaction_to_ledger(str_dup("System"), "withdrew",
 				    coins_to_string(p, g, s, c, "&+y"));
 	return TRUE;
+}
+
+/*
+ * Debit `amount` copper from the treasury, making change across the
+ * denominations.
+ *
+ * WHY THIS EXISTS. Guild::sub_money(p,g,s,c) requires the treasury to hold at
+ * least the requested amount of EACH denomination separately, so a guild with
+ * 10 platinum and no copper cannot pay one copper. That is fine for an
+ * authored price expressed in the coins you expect to hold, and wrong for any
+ * charge whose size is COMPUTED -- kingdom upkeep scales with territory, so it
+ * lands on arbitrary denominations. src/world/outposts.c:1650 already inherits
+ * the same trap.
+ *
+ * The ratios are uniform 10:1 and are the engine's own, taken from GET_MONEY
+ * (src/core/utils.h:467): copper + 10*silver + 100*gold + 1000*platinum.
+ *
+ * Arithmetic is done in long long: the treasury counters are unsigned int, so
+ * a 32-bit intermediate could overflow on a wealthy guild, and an unsigned
+ * intermediate would turn any shortfall into a huge positive number rather
+ * than a negative one.
+ */
+bool Guild::sub_copper(long amount)
+{
+	if (amount < 0)
+		return FALSE;
+	if (amount == 0)
+		return TRUE;
+
+	const long long held =
+		static_cast<long long>(copper) + 10LL * silver + 100LL * gold + 1000LL * platinum;
+	if (held < static_cast<long long>(amount))
+		return FALSE;
+
+	long long left = held - static_cast<long long>(amount);
+
+	/* The counters are unsigned int, and left/1000 platinum can exceed
+	 * UINT_MAX (four full counters hold ~1111*UINT_MAX copper), so a
+	 * straight cast would wrap. Saturate the counter instead and roll the
+	 * excess into the next denomination down. Because `held` was itself
+	 * composed of four in-range counters, the remainder always fits by the
+	 * time copper is reached, so no coin is lost.
+	 */
+	const long long denom_cap = static_cast<long long>(UINT_MAX);
+	bool saturated = false;
+
+	if (left / 1000 > denom_cap)
+	{
+		saturated = true;
+		platinum = static_cast<unsigned int>(denom_cap);
+		left -= denom_cap * 1000;
+	}
+	else
+	{
+		platinum = static_cast<unsigned int>(left / 1000);
+		left %= 1000;
+	}
+	if (left / 100 > denom_cap)
+	{
+		saturated = true;
+		gold = static_cast<unsigned int>(denom_cap);
+		left -= denom_cap * 100;
+	}
+	else
+	{
+		gold = static_cast<unsigned int>(left / 100);
+		left %= 100;
+	}
+	if (left / 10 > denom_cap)
+	{
+		saturated = true;
+		silver = static_cast<unsigned int>(denom_cap);
+		left -= denom_cap * 10;
+	}
+	else
+	{
+		silver = static_cast<unsigned int>(left / 10);
+		left %= 10;
+	}
+	copper = static_cast<unsigned int>(left);
+
+	if (saturated)
+		logit(LOG_STATUS,
+		      "Guild %s: treasury balance overflowed a coin counter in"
+		      " sub_copper(); denomination(s) saturated at %u.",
+		      name, UINT_MAX);
+
+	/* Ledger the single TOTAL debited, in the canonical decomposition of
+	 * `amount` -- NOT per-denomination deltas, which go negative for any
+	 * denomination that INCREASED while change was being made ('withdrew
+	 * -9 gold'). */
+	const long long amt = static_cast<long long>(amount);
+	const long long plat = amt / 1000;
+
+	if (plat > static_cast<long long>(INT_MAX))
+	{
+		/* coins_to_string() counts each denomination in an int, and four full
+		 * unsigned counters hold about 4.77 trillion copper -- so a debit this
+		 * large has a platinum count the formatter cannot represent. Clamping
+		 * it, as this line once did, records a SMALLER withdrawal than the
+		 * treasury actually lost. An audit line that understates the debit is
+		 * worse than an unusual-looking one, so state the exact total. */
+		char exact[64];
+		const int written = snprintf(exact, sizeof(exact), "&+y%lld copper&n", amt);
+
+		write_transaction_to_ledger("System", "withdrew",
+					    (written > 0 &&
+					     static_cast<size_t>(written) < sizeof(exact)) ?
+						    exact :
+						    "&+yan amount too large to render&n");
+		return TRUE;
+	}
+
+	write_transaction_to_ledger("System", "withdrew",
+				    coins_to_string(static_cast<int>(plat),
+						    static_cast<int>((amt % 1000) / 100),
+						    static_cast<int>((amt % 100) / 10),
+						    static_cast<int>(amt % 10), "&+y"));
+	return TRUE;
+}
+
+/* A kingdom is a guild that holds a realm. The realm itself lives in the
+ * kingdom module; this is just the seam query, so the answer can never go
+ * stale against the module's own bookkeeping. */
+bool Guild::is_kingdom()
+{
+	return kingdom_guild_has_realm(static_cast<int>(get_id()));
 }
 
 void Guild::add_frags(P_char ch, long new_frags)
@@ -662,7 +791,14 @@ void Guild::initialize()
 #endif
 }
 
-void Guild::save()
+/* Contract in assocs.h. Returns true when the guild record is durable, false
+ * when the write failed -- every failure path alerts before returning, so a
+ * caller that only needs to abort its own work can test the result and stay
+ * silent. Under MariaDB the write joins an enclosing transaction when the
+ * caller opened one (sql_save_guild()), which is what lets the kingdom upkeep
+ * sweep land a treasury debit and the realm record that explains it as one
+ * unit; under the flat-file build there is no transaction to join. */
+bool Guild::save()
 {
 #ifdef __NO_MYSQL__
 	const char *root = persistence_mode_flatfile_root();
@@ -670,7 +806,7 @@ void Guild::save()
 	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 				  "flat guild save has no state root");
-		return;
+		return false;
 	}
 	update_online_members();
 	std::string error;
@@ -681,7 +817,7 @@ void Guild::save()
 	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 				  "flat guild read failed: %s", error.c_str());
-		return;
+		return false;
 	}
 	const flatfile_association_record *existing = NULL;
 	if (listed == flatfile_association_result::ok)
@@ -718,7 +854,7 @@ void Guild::save()
 			persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 					  "flat guild member identity is unavailable: %s",
 					  current->name);
-			return;
+			return false;
 		}
 		flatfile_association_member_record member = {};
 		member.pid = pid;
@@ -748,11 +884,19 @@ void Guild::save()
 	const auto saved = flatfile_association_save(root, record, &error);
 	if (saved != flatfile_association_result::ok &&
 	    saved != flatfile_association_result::unchanged)
+	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 				  "flat guild save failed: %s", error.c_str());
+		return false;
+	}
+	return true;
 #else
 	if (!sql_save_guild(this))
+	{
 		debug("Guild::save: sql_save_guild failed for guild %u", id_number);
+		return false;
+	}
+	return true;
 #endif
 }
 
@@ -860,6 +1004,15 @@ Guild::~Guild()
 	P_Guild iterator = guild_list;
 	char filename[MAX_STRING_LENGTH];
 	P_char member;
+
+	/* Tear down any kingdom realm FIRST, before this object goes away.
+	 * Guild ids are reused -- found_asc() hands out the lowest free id --
+	 * so a realm left behind would be silently inherited by the next guild
+	 * on this id, and its guard NPCs would keep a dangling GET_ASSOC
+	 * pointer (dereferenced in actwiz.c). Sitting at the top of the
+	 * destructor covers every deletion path. Safe when no realm exists.
+	 */
+	kingdom_on_guild_deleted(static_cast<int>(get_id()));
 
 	for (member = character_list; member; member = member->next)
 	{
