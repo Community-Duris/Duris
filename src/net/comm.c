@@ -972,6 +972,24 @@ static double loop_monotonic_seconds(void)
 	return (double)now.tv_sec + (double)now.tv_nsec / 1E9;
 }
 
+/** Select normal or item-gated dequeue from the transaction's live busy state. */
+static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *dest)
+{
+	return character && item_movement_transaction_player_busy(character) ?
+		       get_item_movement_cmd_from_q(queue, dest) :
+		       get_from_q(queue, dest);
+}
+
+/** Send a dequeued playing-state command through the normal command dispatcher. */
+static void dispatch_playing_command(P_char character, char *input)
+{
+	if (character && character->desc && IS_SET(character->specials.act, PLR_PAGING_ON))
+		process_with_paging(character, input);
+	else
+		command_interpreter(character, input);
+}
+
+/** Run the server pulse loop, including selective input-queue dispatch. */
 void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;
@@ -1498,7 +1516,9 @@ resume_game_loop:
 			 * Read their queue only for a command the casting gate in
 			 * command_interpreter() will actually run ('abort', 'petition',
 			 * 'return'); everything else stays queued as type-ahead instead
-			 * of being drained one line per pulse and rejected. */
+			 * of being drained one line per pulse and rejected.  Pending item
+			 * movements use the same queue preservation below, while still
+			 * allowing unrelated commands to run. */
 			casting_input =
 				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
 				 point->connected == CON_PLAYING && !point->showstr_count &&
@@ -1510,6 +1530,9 @@ resume_game_loop:
 			      (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
 			       point->original))) &&
 			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :
+			     point->connected == CON_PLAYING && !point->showstr_count &&
+					     !point->str ?
+					     get_playing_cmd_from_q(t_ch, &point->input, comm) :
 					     get_from_q(&point->input, comm)))
 			{
 				if (t_ch)
@@ -1523,15 +1546,7 @@ resume_game_loop:
 				else if (point->str) /* mail, boards */
 					string_add(point, comm);
 				else if (point->connected == CON_PLAYING)
-				{
-					if (t_ch && t_ch->desc &&
-					    IS_SET(t_ch->specials.act, PLR_PAGING_ON))
-					{
-						process_with_paging(t_ch, comm);
-					}
-					else
-						command_interpreter(t_ch, comm);
-				}
+					dispatch_playing_command(t_ch, comm);
 				else
 				{
 					point->wait = 0;
@@ -2020,6 +2035,7 @@ resume_game_loop:
  * ******************************************************************
  */
 
+/** Remove the queue head and clear the tail when the queue becomes empty. */
 int get_from_q(struct txt_q *queue, char *dest)
 {
 	struct txt_block *tmp;
@@ -2044,6 +2060,8 @@ int get_from_q(struct txt_q *queue, char *dest)
 	tmp = queue->head;
 	strcpy(dest, queue->head->text);
 	queue->head = queue->head->next;
+	if (!queue->head)
+		queue->tail = NULL;
 
 	FREE(tmp->text);
 	FREE(tmp);
@@ -2051,26 +2069,22 @@ int get_from_q(struct txt_q *queue, char *dest)
 	return (1);
 }
 
-/*
- * Pull the first command a casting character is actually allowed to run out of
- * their input queue, skipping (and leaving queued) everything else.  Taking it
- * out of order matters: a player who typed something else before deciding to
- * 'abort' would otherwise sit behind their own type-ahead until the chant ended.
- */
-int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
+/** Pull the first command accepted by a selective queue gate, leaving every
+ * skipped entry linked in its original order. */
+static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allowed)(const char *))
 {
 	struct txt_block *prev = NULL;
 	struct txt_block *tmp;
 
-	if (!queue || !dest)
+	if (!queue || !dest || !allowed)
 	{
-		logit(LOG_COMM, "call to get_casting_cmd_from_q with bogus arguments");
+		logit(LOG_COMM, "call to get_filtered_cmd_from_q with bogus arguments");
 		return (0);
 	}
 
 	for (tmp = queue->head; tmp; prev = tmp, tmp = tmp->next)
 	{
-		if (!input_allowed_while_casting(tmp->text))
+		if (!allowed(tmp->text))
 			continue;
 
 		strcpy(dest, tmp->text);
@@ -2090,6 +2104,22 @@ int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
 	}
 
 	return (0);
+}
+
+/** Dequeue the first command that may run while the character is casting. */
+int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
+{
+	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_casting);
+}
+
+/**
+ * Ownership transactions publish live item moves asynchronously.  Pull safe
+ * commands from behind item-dependent type-ahead while leaving the dependent
+ * commands in FIFO order for the first pulse after publication.
+ */
+int get_item_movement_cmd_from_q(struct txt_q *queue, char *dest)
+{
+	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_item_moving);
 }
 
 /*

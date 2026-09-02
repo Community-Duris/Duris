@@ -87,7 +87,7 @@ all_ok &= check("comm.c pumps input when IS_AFFECTED2(t_ch, AFF2_CASTING)",
                 re.search(r"casting_input =\s*\(t_ch && !CAN_ACT\(t_ch\) &&\s*IS_AFFECTED2\(t_ch, AFF2_CASTING\)",
                           comm_c) is not None)
 all_ok &= check("comm.c only reads a casting character's queue through the casting path",
-                re.search(r"casting_input \? get_casting_cmd_from_q\(&point->input, comm\) :\s*get_from_q\(&point->input, comm\)",
+                re.search(r"casting_input\s*\? get_casting_cmd_from_q\(&point->input, comm\)",
                           comm_c) is not None)
 # Type-ahead must survive: only a command the casting gate will actually run is
 # dequeued, so everything else stays queued instead of being drained and rejected.
@@ -96,12 +96,17 @@ all_ok &= check("get_casting_cmd_from_q() defined in comm.c", q is not None)
 if q:
     body = q.group(1)
     all_ok &= check("get_casting_cmd_from_q() filters with input_allowed_while_casting()",
-                    "input_allowed_while_casting(tmp->text)" in body)
+                    "input_allowed_while_casting" in body)
+filtered = re.search(
+    r"static int get_filtered_cmd_from_q\(.*?\)\s*\{(.*?)\n\}", comm_c, re.S)
+all_ok &= check("filtered queue extraction helper is defined in comm.c", filtered is not None)
+if filtered:
+    body = filtered.group(1)
     # An 'abort' typed after other type-ahead must not sit behind it, and
     # unlinking a middle/tail entry must keep queue->tail valid for write_to_q().
-    all_ok &= check("get_casting_cmd_from_q() extracts out of order",
+    all_ok &= check("filtered queue helper extracts out of order",
                     "prev->next = tmp->next;" in body and "queue->head = tmp->next;" in body)
-    all_ok &= check("get_casting_cmd_from_q() keeps queue->tail valid",
+    all_ok &= check("filtered queue helper keeps queue->tail valid",
                     "queue->tail == tmp" in body and "queue->tail = prev;" in body)
 all_ok &= check("get_casting_cmd_from_q declared in prototypes.h",
                 "int get_casting_cmd_from_q(struct txt_q *, char *);" in

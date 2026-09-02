@@ -40,6 +40,7 @@ struct pending_movement
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context;
 	size_t context_size;
 	bool completion_ready;
+	bool publication_failed;
 	critical_completion completed;
 };
 
@@ -550,6 +551,7 @@ void account_health()
 	}
 }
 
+/** Publish a completion, retaining committed work if the live registry cannot advance. */
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
 	pending_movement &entry = found->second;
@@ -562,6 +564,17 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	bool registry_applied = false;
 	if (committed)
 		registry_applied = item_ownership_runtime_apply(entry.payload, result);
+	if (committed && !registry_applied)
+	{
+		if (!entry.publication_failed)
+		{
+			entry.publication_failed = true;
+			++health.rejected;
+			++health.stale_publications;
+		}
+		account_health();
+		return;
+	}
 	if (entry.adopting && committed && registry_applied)
 	{
 		if (entry.adoption_only)
@@ -615,11 +628,7 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	if (committed && registry_applied)
 		++health.committed;
 	else
-	{
 		++health.rejected;
-		if (committed)
-			++health.stale_publications;
-	}
 	account_health();
 }
 }
@@ -734,6 +743,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.context = {},
 		.context_size = context_size,
 		.completion_ready = false,
+		.publication_failed = false,
 		.completed = {}
 	};
 	if (context_size)
@@ -902,6 +912,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		.context = {},
 		.context_size = context_size,
 		.completion_ready = false,
+		.publication_failed = false,
 		.completed = {}
 	};
 	if (context_size)
@@ -1025,6 +1036,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 	account_health();
 }
 
+/** Publish ready work for a player, stopping if a stale completion must remain held. */
 void item_movement_transaction_player_ready(P_char actor)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
@@ -1042,7 +1054,10 @@ void item_movement_transaction_player_ready(P_char actor)
 		if (found == pending.end())
 			break;
 		/* publish may invoke a callback that inserts and rehashes pending. */
+		const std::string key = found->first;
 		publish(found, actor);
+		if (pending.find(key) != pending.end())
+			break;
 	}
 	pump_creation_grants();
 }
