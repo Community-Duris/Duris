@@ -189,6 +189,91 @@ bool load_root(MYSQL *connection, uint64_t root_item_uid, std::vector<current_it
 			    fetched == MYSQL_NO_DATA || items->size() > ITEM_TRANSFER_MAX_ITEMS);
 }
 
+bool load_owner(MYSQL *connection, const item_owner_identity &owner,
+		std::vector<current_item> *items)
+{
+	static const char SQL[] =
+		"SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,"
+		"item_revision,vnum,state FROM item_current_owner WHERE owner_type=? AND owner_id=? "
+		"AND owner_context_id=? ORDER BY item_uid FOR UPDATE";
+	if (!items)
+		return false;
+	items->clear();
+	try
+	{
+		items->reserve(ITEM_TRANSFER_MAX_ITEMS + 1);
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return false;
+	uint8_t owner_type = static_cast<uint8_t>(owner.type);
+	MYSQL_BIND parameters[3] = {};
+	parameters[0].buffer_type = MYSQL_TYPE_TINY;
+	parameters[0].buffer = &owner_type;
+	parameters[0].is_unsigned = true;
+	parameters[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	parameters[1].buffer = const_cast<uint64_t *>(&owner.id);
+	parameters[1].is_unsigned = true;
+	parameters[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	parameters[2].buffer = const_cast<uint64_t *>(&owner.context_id);
+	parameters[2].is_unsigned = true;
+	if (mysql_stmt_bind_param(statement, parameters) != 0 ||
+	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
+		return statement_ok(statement, false);
+	current_item item = {};
+	mysql_null_indicator parent_null = 0;
+	MYSQL_BIND output[9] = {};
+	output[0].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[0].buffer = &item.item_uid;
+	output[0].is_unsigned = true;
+	output[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[1].buffer = &item.root_item_uid;
+	output[1].is_unsigned = true;
+	output[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[2].buffer = &item.parent_item_uid;
+	output[2].is_unsigned = true;
+	output[2].is_null = &parent_null;
+	output[3].buffer_type = MYSQL_TYPE_TINY;
+	output[3].buffer = &item.owner_type;
+	output[3].is_unsigned = true;
+	output[4].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[4].buffer = &item.owner_id;
+	output[4].is_unsigned = true;
+	output[5].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[5].buffer = &item.owner_context_id;
+	output[5].is_unsigned = true;
+	output[6].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[6].buffer = &item.item_revision;
+	output[6].is_unsigned = true;
+	output[7].buffer_type = MYSQL_TYPE_LONG;
+	output[7].buffer = &item.vnum;
+	output[8].buffer_type = MYSQL_TYPE_TINY;
+	output[8].buffer = &item.state;
+	output[8].is_unsigned = true;
+	if (mysql_stmt_bind_result(statement, output) != 0)
+		return statement_ok(statement, false);
+	int fetched = 0;
+	while ((fetched = mysql_stmt_fetch(statement)) == 0)
+	{
+		item.parent_item_uid = parent_null ? 0 : item.parent_item_uid;
+		items->push_back(item);
+		if (items->size() > ITEM_TRANSFER_MAX_ITEMS)
+			break;
+		item = {};
+		parent_null = 0;
+	}
+	const bool complete = fetched == MYSQL_NO_DATA;
+	const bool within_limit = items->size() <= ITEM_TRANSFER_MAX_ITEMS;
+	if (!within_limit)
+		errno = EMSGSIZE;
+	return statement_ok(statement, complete && within_limit);
+}
+
 bool item_exists(MYSQL *connection, uint64_t item_uid, bool *found)
 {
 	static const char SQL[] =
@@ -689,5 +774,83 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 	result->from_owner_revision = from_revision + 1;
 	result->to_owner_revision = same_owner ? from_revision + 1 : to_revision + 1;
 	*mutation_applied = true;
+	return true;
+}
+
+bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner_identity *owners,
+					     size_t owner_count)
+{
+	if (!connection || (!owners && owner_count))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	for (size_t owner_index = 0; owner_index < owner_count; ++owner_index)
+	{
+		const item_owner_identity &owner = owners[owner_index];
+		if (!item_owner_identity_valid(owner) ||
+		    item_owner_identity_equal(owner, destruction))
+		{
+			errno = EINVAL;
+			return false;
+		}
+		if (std::find_if(owners, owners + owner_index, [&](const item_owner_identity &prior)
+				 { return item_owner_identity_equal(prior, owner); }) !=
+		    owners + owner_index)
+			continue;
+
+		uint64_t from_revision = 0, to_revision = 0;
+		if (!ensure_owner(connection, owner) || !ensure_owner(connection, destruction) ||
+		    !lock_owner(connection, owner, &from_revision) ||
+		    !lock_owner(connection, destruction, &to_revision))
+			return false;
+		std::vector<current_item> current;
+		if (!load_owner(connection, owner, &current))
+			return false;
+		if (current.empty())
+			continue;
+
+		item_transfer_payload payload = {};
+		payload.from_owner = owner;
+		payload.to_owner = destruction;
+		payload.reason = item_transfer_reason::destruction;
+		payload.expected_from_revision = from_revision;
+		payload.expected_to_revision = to_revision;
+		payload.multi_root = true;
+		payload.item_count = static_cast<uint16_t>(current.size());
+		for (size_t item_index = 0; item_index < current.size(); ++item_index)
+		{
+			const current_item &item = current[item_index];
+			payload.items[item_index] = { item.item_uid,
+						      item.root_item_uid,
+						      item.parent_item_uid,
+						      item.item_revision,
+						      item.vnum,
+						      static_cast<item_custody_state>(item.state) };
+		}
+
+		critical_operation_id operation_id = {};
+		critical_command command = {};
+		if (!critical_operation_id_generate(&operation_id) ||
+		    !item_transfer_command_build(&command, operation_id, payload,
+						 critical_source_site::operator_repair,
+						 critical_deadline_class::terminal))
+		{
+			errno = EINVAL;
+			return false;
+		}
+		item_transfer_result result = {};
+		unsigned int result_code = 0;
+		bool mutation_applied = false;
+		if (!item_transfer_repository_execute(connection, command, &result, &result_code,
+						      &mutation_applied) ||
+		    result_code || !mutation_applied)
+		{
+			if (result_code)
+				errno = static_cast<int>(result_code);
+			return false;
+		}
+	}
 	return true;
 }

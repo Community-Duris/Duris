@@ -228,6 +228,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
 				 flatfile/flatfile_account_repository.o \
+				 flatfile/flatfile_account_delete.o \
 				 flatfile/flatfile_account_reward_summon_repository.o \
 				 flatfile/flatfile_account_adapter.o \
 				 flatfile/flatfile_identity_repository.o \

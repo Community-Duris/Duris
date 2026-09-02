@@ -178,8 +178,11 @@ struct guild_frag_info
 
 typedef struct Guild *P_Guild;
 
+void forget_deleted_guild_member(const char *character_name);
+
 class Guild
 {
+	friend void forget_deleted_guild_member(const char *character_name);
 	friend bool sql_save_guild(Guild *guild);
 	friend Guild *sql_load_guild(unsigned int guild_id);
 	friend bool sql_load_all_guilds();

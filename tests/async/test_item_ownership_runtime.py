@@ -315,6 +315,31 @@ int main()
 	       owner_revision == 4);
 	assert(item_ownership_runtime_owner_revision(nested_room, &owner_revision) &&
 	       owner_revision == 6);
+
+	item_ownership_runtime_reset();
+	const item_owner_identity deleted_player = { item_owner_type::player, 80, 0 };
+	const item_owner_identity deleted_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(80, 50), 0
+	};
+	const item_owner_identity retained_player = { item_owner_type::player, 81, 0 };
+	const item_ownership_runtime_entry deletion_domain[] = {
+		{ 700, 700, 0, deleted_player, 1, 2, 60, item_custody_state::active },
+		{ 701, 701, 0, deleted_corpse, 1, 3, 61, item_custody_state::active },
+		{ 702, 702, 0, retained_player, 1, 4, 62, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_many_atomic(deletion_domain, 3));
+	item_ownership_runtime_forget_player_domain(80);
+	assert(!item_ownership_runtime_lookup(700, &absent));
+	assert(!item_ownership_runtime_lookup(701, &absent));
+	/* Missing valid owners are rehydrated at revision zero by the lookup API. */
+	assert(item_ownership_runtime_owner_revision(deleted_player, &owner_revision) &&
+	       owner_revision == 0);
+	assert(item_ownership_runtime_owner_revision(deleted_corpse, &owner_revision) &&
+	       owner_revision == 0);
+	assert(item_ownership_runtime_lookup(702, &absent) &&
+	       item_owner_identity_equal(absent.owner, retained_player));
+	assert(item_ownership_runtime_owner_revision(retained_player, &owner_revision) &&
+	       owner_revision == 4);
 	return 0;
 }
 '''

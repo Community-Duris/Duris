@@ -396,6 +396,29 @@ flatfile_account_prepare_save(const std::string &root, const flatfile_account_lo
 	return flatfile_account_result::ok;
 }
 
+flatfile_account_result
+flatfile_account_prepare_remove(const std::string &root, const flatfile_account_lock &account_lock,
+				const flatfile_authority_lock &authority_lock,
+				const std::string &name, uint64_t expected_revision,
+				flatfile_authority_operation *operation, std::string *error)
+{
+	std::string canonical;
+	if (!operation || !expected_revision || !account_lock.matches(root) ||
+	    !authority_lock.matches(root) || !canonical_name(name, &canonical))
+		return flatfile_account_result::invalid;
+	*operation = {};
+	flatfile_account_record existing;
+	const flatfile_account_result current = load_unlocked(root, name, &existing, error);
+	if (current != flatfile_account_result::ok)
+		return current;
+	if (existing.revision != expected_revision)
+		return flatfile_account_result::conflict;
+	operation->store = flatfile_authority_store::accounts;
+	operation->kind = flatfile_authority_operation_kind::remove;
+	operation->filename = account_filename(canonical);
+	return flatfile_account_result::ok;
+}
+
 flatfile_account_result flatfile_account_exists(const std::string &root, const std::string &name,
 						bool *exists, std::string *error)
 {

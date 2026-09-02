@@ -711,6 +711,7 @@ int load_ship(P_ship shipdata, int to_room);
 
 void delete_ship(P_ship ship, bool npc = false);
 void delete_ship(char *owner_name);
+void delete_ship_runtime(const char *owner_name);
 void clear_references_to_ship(P_ship ship);
 
 void init_ship_layout(P_ship ship);

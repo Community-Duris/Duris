@@ -47,6 +47,7 @@ bool item_ownership_runtime_apply_corpse_nested_release(uint32_t owner_pid, uint
 							const corpse_lifecycle_result &result);
 void item_ownership_runtime_forget(uint64_t item_uid);
 void item_ownership_runtime_forget_owner(const item_owner_identity &owner);
+void item_ownership_runtime_forget_player_domain(uint32_t player_pid);
 void item_ownership_runtime_reset(void);
 size_t item_ownership_runtime_size(void);
 
