@@ -503,8 +503,6 @@ bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 	}
 	if (!item_ownership_runtime_lookup(container->obj_uid, &container_runtime))
 	{
-		if (OBJ_CARRIED_BY(container, actor))
-			return false;
 		send_to_char("That container lacks authoritative ownership.\r\n", actor);
 		return true;
 	}

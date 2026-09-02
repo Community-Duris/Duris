@@ -20,8 +20,28 @@ latest_owner_mismatch=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM item_current_owne
 # Nesting is ledger state too: capture() refuses a subtree whose recorded parent
 # disagrees with the live tree, and player load rebuilds nesting from these rows.
 # Drift here strands containers, so it belongs in the same drift report.
-nesting_mismatch=$("$SCRIPT_DIR/repair_item_nesting.sh" --check | sed -n 's/^nesting_mismatch=//p' || true)
-nesting_mismatch="${nesting_mismatch:-0}"
+if nesting_output=$("$SCRIPT_DIR/repair_item_nesting.sh" --check); then
+  nesting_status=0
+else
+  nesting_status=$?
+fi
+if [[ "$nesting_output" =~ ^nesting_mismatch=([0-9]+)$ ]]; then
+  nesting_mismatch="${BASH_REMATCH[1]}"
+else
+  [[ -z "$nesting_output" ]] || printf '%s\n' "$nesting_output" >&2
+  (( nesting_status != 0 )) && exit "$nesting_status"
+  echo 'item nesting checker returned malformed output' >&2
+  exit 1
+fi
+if (( nesting_status != 0 && nesting_status != 1 )); then
+  exit "$nesting_status"
+fi
+if (( (nesting_status == 0 && nesting_mismatch != 0) ||
+      (nesting_status != 0 && nesting_mismatch == 0) )); then
+  echo 'item nesting checker returned an inconsistent status' >&2
+  (( nesting_status != 0 )) && exit "$nesting_status"
+  exit 1
+fi
 
 printf 'missing_baseline=%s\nitem_revision_mismatch=%s\nowner_revision_mismatch=%s\nlatest_owner_mismatch=%s\nnesting_mismatch=%s\n' \
     "$missing_baseline" "$item_revision_mismatch" "$owner_revision_mismatch" "$latest_owner_mismatch" "$nesting_mismatch"
