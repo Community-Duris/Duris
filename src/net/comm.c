@@ -980,6 +980,15 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 		       get_from_q(queue, dest);
 }
 
+/** Send a dequeued playing-state command through the normal command dispatcher. */
+static void dispatch_playing_command(P_char character, char *input)
+{
+	if (character && character->desc && IS_SET(character->specials.act, PLR_PAGING_ON))
+		process_with_paging(character, input);
+	else
+		command_interpreter(character, input);
+}
+
 /** Run the server pulse loop, including selective input-queue dispatch. */
 void game_loop(int port, int sslport)
 {
@@ -1537,15 +1546,7 @@ resume_game_loop:
 				else if (point->str) /* mail, boards */
 					string_add(point, comm);
 				else if (point->connected == CON_PLAYING)
-				{
-					if (t_ch && t_ch->desc &&
-					    IS_SET(t_ch->specials.act, PLR_PAGING_ON))
-					{
-						process_with_paging(t_ch, comm);
-					}
-					else
-						command_interpreter(t_ch, comm);
-				}
+					dispatch_playing_command(t_ch, comm);
 				else
 				{
 					point->wait = 0;

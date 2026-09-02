@@ -1239,6 +1239,7 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_GIVE:
 	case CMD_WEAR:
 	case CMD_WIELD:
+	case CMD_FIRE:
 	case CMD_GRAB:
 	case CMD_HOLD:
 	case CMD_REMOVE:

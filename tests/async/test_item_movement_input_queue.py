@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Runtime regression for type-ahead across item movement publication."""
+"""Exercise production queue/dispatch boundaries around held item publication.
+
+The compiled harness links the real transaction runtime and supplies focused
+command fixtures behind the production playing-state dispatcher so inventory
+and equipment outcomes can be asserted without linking the full game server.
+"""
 
 from pathlib import Path
 import subprocess
@@ -32,7 +37,7 @@ DEPENDS = extract(INTERP_PATH, "bool cmd_depends_on_item_movement(int cmd)")
 for command in (
     "CMD_GET", "CMD_TAKE", "CMD_DROP", "CMD_PUT", "CMD_GIVE", "CMD_WEAR",
     "CMD_WIELD", "CMD_GRAB", "CMD_HOLD", "CMD_REMOVE", "CMD_EQUIPMENT",
-    "CMD_INVENTORY",
+    "CMD_INVENTORY", "CMD_FIRE",
 ):
     assert command in DEPENDS
 
@@ -51,6 +56,9 @@ GET_MOVEMENT = extract(
 )
 GET_PLAYING = extract(
     COMM_PATH, "static int get_playing_cmd_from_q(P_char character, struct txt_q *queue,"
+)
+DISPATCH_PLAYING = extract(
+    COMM_PATH, "static void dispatch_playing_command(P_char character, char *input)"
 )
 
 PRELUDE = r'''
@@ -90,20 +98,21 @@ PRELUDE = r'''
 #define CMD_SCORE 20
 #define CMD_EQUIPMENT 21
 #define CMD_INVENTORY 22
+#define CMD_FIRE 23
 
 static const char *command[] = {
 	"get", "take", "drop", "put", "give", "wear", "wield", "grab", "hold",
 	"remove", "open", "close", "empty", "junk", "donate", "sacrifice", "buy",
-	"sell", "look", "score", "equipment", "inventory", "\n"
+	"sell", "look", "score", "equipment", "inventory", "fire", "\n"
 };
 
 P_obj object_list = NULL;
 P_char character_list = NULL;
-static index_data object_indexes[1] = {};
+static index_data object_indexes[2] = {};
 P_index obj_index = object_indexes;
 static room_data rooms[1] = {};
 P_room world = rooms;
-int top_of_objt = 0;
+int top_of_objt = 1;
 extern const int top_of_world = 0;
 
 static bool command_submitted = false;
@@ -139,6 +148,9 @@ critical_submit_result critical_command_coordinator_submit(critical_command queu
 	submitted_command = std::move(queued);
 	return critical_submit_result::accepted;
 }
+
+void command_interpreter(P_char character, char *input);
+void process_with_paging(P_char character, char *input);
 
 int old_search_block(const char *argument, const uint begin, uint length, const char **list,
 		     const int mode);
@@ -188,7 +200,17 @@ static void check_intact(struct txt_q *q)
 }
 
 static P_obj published_roots[2] = {};
+static P_obj published_bow = NULL;
 static int publication_count = 0;
+static int bow_publication_count = 0;
+static int score_dispatches = 0;
+static int put_dispatches = 0;
+static int equipment_dispatches = 0;
+static int inventory_dispatches = 0;
+static int wear_failures = 0;
+static int wield_dispatches = 0;
+static int fire_dispatches = 0;
+static P_obj fixture_backpack = NULL;
 
 static void held_bulk_get_completion(P_char actor, bool committed,
 				     const item_transfer_result &result, unsigned int error_code,
@@ -205,10 +227,27 @@ static void held_bulk_get_completion(P_char actor, bool committed,
 		root->loc.carrying = actor;
 	}
 	published_roots[0]->next_content = published_roots[1];
-	published_roots[1]->next_content = NULL;
+	published_roots[1]->next_content = actor->carrying;
 	actor->carrying = published_roots[0];
 	world[0].contents = NULL;
 	++publication_count;
+}
+
+static void held_bow_get_completion(P_char actor, bool committed,
+				    const item_transfer_result &result, unsigned int error_code,
+				    const uint8_t *, size_t)
+{
+	assert(actor && committed && error_code == 0 && result.item_count == 1);
+	item_ownership_runtime_entry ownership = {};
+	assert(published_bow);
+	assert(item_ownership_runtime_lookup(published_bow->obj_uid, &ownership));
+	assert(ownership.owner.type == item_owner_type::player);
+	published_bow->loc_p = LOC_CARRIED;
+	published_bow->loc.carrying = actor;
+	published_bow->next_content = actor->carrying;
+	actor->carrying = published_bow;
+	world[0].contents = NULL;
+	++bow_publication_count;
 }
 
 static int carried_count(P_char actor)
@@ -217,6 +256,74 @@ static int carried_count(P_char actor)
 	for (P_obj object = actor->carrying; object; object = object->next_content)
 		++count;
 	return count;
+}
+
+void process_with_paging(P_char, char *)
+{
+	abort();
+}
+
+void command_interpreter(P_char actor, char *input)
+{
+	assert(actor && input && fixture_backpack);
+	if (!strcmp(input, "score"))
+	{
+		++score_dispatches;
+		return;
+	}
+	if (!strcmp(input, "put all.roast bp"))
+	{
+		assert(actor->carrying == published_roots[0]);
+		assert(published_roots[0]->next_content == published_roots[1]);
+		assert(published_roots[1]->next_content == fixture_backpack);
+		actor->carrying = fixture_backpack;
+		fixture_backpack->next_content = NULL;
+		fixture_backpack->contains = published_roots[0];
+		for (P_obj root : published_roots)
+		{
+			root->loc_p = LOC_INSIDE;
+			root->loc.inside = fixture_backpack;
+		}
+		published_roots[1]->next_content = NULL;
+		++put_dispatches;
+		return;
+	}
+	if (!strcmp(input, "equipment"))
+	{
+		assert(publication_count == 1 && fixture_backpack->contains == published_roots[0]);
+		++equipment_dispatches;
+		return;
+	}
+	if (!strcmp(input, "inventory"))
+	{
+		assert(actor->carrying == fixture_backpack && fixture_backpack->contains);
+		++inventory_dispatches;
+		return;
+	}
+	if (!strcmp(input, "wear roast"))
+	{
+		assert(actor->carrying == fixture_backpack && fixture_backpack->contains);
+		++wear_failures;
+		return;
+	}
+	if (!strcmp(input, "wield bow"))
+	{
+		assert(actor->carrying == published_bow);
+		actor->carrying = published_bow->next_content;
+		published_bow->next_content = NULL;
+		published_bow->loc_p = LOC_WORN;
+		published_bow->loc.wearing = actor;
+		actor->equipment[0] = published_bow;
+		++wield_dispatches;
+		return;
+	}
+	if (!strcmp(input, "fire target"))
+	{
+		assert(actor->equipment[0] == published_bow);
+		++fire_dispatches;
+		return;
+	}
+	abort();
 }
 
 int main()
@@ -229,6 +336,7 @@ int main()
 	character_list = &actor;
 
 	object_indexes[0].virtual_number = 100;
+	object_indexes[1].virtual_number = 101;
 	obj_data first_roast = {};
 	first_roast.obj_uid = 100;
 	first_roast.R_num = 0;
@@ -239,13 +347,28 @@ int main()
 	second_roast.R_num = 0;
 	second_roast.loc_p = LOC_ROOM;
 	second_roast.loc.room = 0;
+	obj_data bow = {};
+	bow.obj_uid = 102;
+	bow.R_num = 1;
+	bow.loc_p = LOC_ROOM;
+	bow.loc.room = 0;
+	obj_data backpack = {};
+	backpack.obj_uid = 200;
+	backpack.R_num = 0;
+	backpack.loc_p = LOC_CARRIED;
+	backpack.loc.carrying = &actor;
+	actor.carrying = &backpack;
 	first_roast.next = &second_roast;
+	second_roast.next = &bow;
+	bow.next = &backpack;
 	first_roast.next_content = &second_roast;
 	object_list = &first_roast;
 	world[0].number = 500;
 	world[0].contents = &first_roast;
 	published_roots[0] = &first_roast;
 	published_roots[1] = &second_roast;
+	published_bow = &bow;
+	fixture_backpack = &backpack;
 
 	item_ownership_runtime_reset();
 	item_movement_transaction_reset_for_tests();
@@ -264,7 +387,7 @@ int main()
 		held_bulk_get_completion, NULL, 0));
 	assert(command_submitted);
 	assert(item_movement_transaction_player_busy(&actor));
-	assert(actor.carrying == NULL && publication_count == 0);
+	assert(actor.carrying == &backpack && publication_count == 0);
 
 	char dest[MAX_INPUT_LENGTH];
 	struct txt_q q = {};
@@ -274,6 +397,7 @@ int main()
 	assert(!input_allowed_while_item_moving("gi roast friend"));
 	assert(!input_allowed_while_item_moving("equipment"));
 	assert(!input_allowed_while_item_moving("inventory"));
+	assert(!input_allowed_while_item_moving("fire target"));
 	assert(input_allowed_while_item_moving("score"));
 	assert(input_allowed_while_item_moving("look"));
 	assert(input_allowed_while_item_moving("say still here"));
@@ -288,6 +412,8 @@ int main()
 	push(&q, "wear roast");
 	assert(get_playing_cmd_from_q(&actor, &q, dest));
 	expect_text(dest, "score", "safe command during movement");
+	dispatch_playing_command(&actor, dest);
+	assert(score_dispatches == 1);
 	check_intact(&q);
 	expect_text(q.head->text, "put all.roast bp", "put remains at head");
 	expect_text(q.tail->text, "wear roast", "wear remains at tail");
@@ -308,7 +434,7 @@ int main()
 	item_movement_transaction_handle_completions(&completion, 1);
 	assert(publication_count == 1);
 	assert(!item_movement_transaction_player_busy(&actor));
-	assert(carried_count(&actor) == 2);
+	assert(carried_count(&actor) == 3);
 
 	/* The normal command path now observes the published inventory and returns
 	   each dependent command exactly once in its original order. */
@@ -319,11 +445,61 @@ int main()
 	{
 		assert(get_playing_cmd_from_q(&actor, &q, dest));
 		expect_text(dest, command_text, "dependent command after publication");
-		assert(carried_count(&actor) == 2);
+		dispatch_playing_command(&actor, dest);
 	}
 	assert(!get_playing_cmd_from_q(&actor, &q, dest));
 	assert(q.head == NULL);
 	q.tail = NULL;
+	assert(put_dispatches == 1);
+	assert(equipment_dispatches == 1);
+	assert(inventory_dispatches == 1);
+	assert(wear_failures == 1);
+	assert(actor.carrying == &backpack && backpack.contains == &first_roast);
+
+	/* A second held get proves fire cannot jump ahead of wield while the bow is
+	   unpublished, then executes both through the normal dispatcher in FIFO. */
+	const item_ownership_runtime_entry bow_entry = {
+		102, 102, 0, room_owner, 1, 4, 101, item_custody_state::active
+	};
+	assert(item_ownership_runtime_hydrate(bow_entry));
+	bow.loc_p = LOC_ROOM;
+	bow.loc.room = 0;
+	world[0].contents = &bow;
+	command_submitted = false;
+	submitted_command = {};
+	P_obj bow_root[] = { &bow };
+	assert(item_movement_transaction_submit_batch(
+		&actor, bow_root, 1, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, bow.obj_uid,
+		held_bow_get_completion, NULL, 0));
+	assert(item_movement_transaction_player_busy(&actor));
+	push(&q, "wield bow");
+	push(&q, "fire target");
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
+	assert(wield_dispatches == 0 && fire_dispatches == 0);
+
+	result = { 102, 1, 5, 9, 2, 0 };
+	completion = {};
+	completion.operation_id = submitted_command.operation_id;
+	completion.outcome = critical_apply_outcome::applied;
+	encoded = {};
+	assert(item_transfer_command_encode_result(result, &encoded));
+	completion.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	item_movement_transaction_handle_completions(&completion, 1);
+	assert(bow_publication_count == 1);
+	assert(!item_movement_transaction_player_busy(&actor));
+
+	assert(get_playing_cmd_from_q(&actor, &q, dest));
+	expect_text(dest, "wield bow", "wield after bow publication");
+	dispatch_playing_command(&actor, dest);
+	assert(get_playing_cmd_from_q(&actor, &q, dest));
+	expect_text(dest, "fire target", "fire after wield");
+	dispatch_playing_command(&actor, dest);
+	assert(!get_playing_cmd_from_q(&actor, &q, dest));
+	q.tail = NULL;
+	assert(wield_dispatches == 1 && fire_dispatches == 1);
+	assert(actor.equipment[0] == &bow);
 
 	/* Pulling a safe tail keeps the queue appendable while a dependent head
 	   remains parked. */
@@ -357,6 +533,7 @@ def main() -> int:
         GET_FILTERED,
         GET_MOVEMENT,
         GET_PLAYING,
+        DISPATCH_PLAYING,
         DRIVER,
     ])
     with tempfile.TemporaryDirectory() as directory:
