@@ -1434,8 +1434,10 @@ P_ship try_load_npc_ship(P_ship target, NPC_AI_Type type, int level, int locatio
  * Pick a random NPC ship fit-out matching the given constraints.
  *
  * Any of `level`, `m_class` and `speed` may be -1 to mean "don't care";
- * `speed` is a MINIMUM hull speed.  Selection is uniform over the matching
- * entries of npcShipSetup[].
+ * `speed` is a MINIMUM hull speed.  Selection starts from a random rank across
+ * the full setup table and cycles through matching entries until that rank is
+ * reached; it is not strictly uniform when the match count does not divide the
+ * table size.
  *
  * Returns NULL when nothing in the table matches.
  */

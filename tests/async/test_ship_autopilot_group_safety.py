@@ -33,6 +33,8 @@ caravel = npc_source[start:end]
 for slot in (1, 2, 3):
     assert contains(caravel, f"set_weapon(ship, {slot}, W_MEDIUM_BAL, SIDE_PORT);")
 assert caravel.count("W_MEDIUM_BAL, SIDE_PORT") == 3
+assert not contains(npc_source, "Selection is uniform over the matching")
+assert contains(npc_source, "it is not strictly uniform")
 
 shop_source = (SRC / "ships/ship_shop.c").read_text()
 assert not contains(shop_source, "a rejected transaction refunds through")
