@@ -646,6 +646,28 @@ void item_ownership_runtime_forget_owner(const item_owner_identity &owner)
 		owner_revisions.erase(owner);
 }
 
+void item_ownership_runtime_forget_player_domain(uint32_t player_pid)
+{
+	if (!player_pid)
+		return;
+	const auto belongs_to_player = [player_pid](const item_owner_identity &owner)
+	{
+		return (owner.type == item_owner_type::player && owner.id == player_pid) ||
+		       (owner.type == item_owner_type::corpse &&
+			static_cast<uint32_t>(owner.id >> 32) == player_pid);
+	};
+	for (auto entry = entries.begin(); entry != entries.end();)
+		if (belongs_to_player(entry->second.owner))
+			entry = entries.erase(entry);
+		else
+			++entry;
+	for (auto owner = owner_revisions.begin(); owner != owner_revisions.end();)
+		if (belongs_to_player(owner->first))
+			owner = owner_revisions.erase(owner);
+		else
+			++owner;
+}
+
 void item_ownership_runtime_reset(void)
 {
 	entries.clear();

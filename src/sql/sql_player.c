@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <algorithm>
+#include <new>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -38,6 +39,7 @@
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
 #include "item/item_transfer_command.h"
+#include "item/item_transfer_repository.h"
 
 // external tables
 extern P_index obj_index;
@@ -5517,6 +5519,91 @@ bool sql_delete_account(const char *name)
 	}
 	mysql_free_result(result);
 
+	{
+		/* Snapshot persistence never writes custody authority. Resolve the exact
+		 * player, corpse, and locker owners here, then let the item repository move
+		 * their complete topology to ledgered destruction inside this transaction. */
+		std::vector<item_owner_identity> item_owners;
+		const auto collect_item_owners = [&](MYSQL_RES *owner_result)
+		{
+			MYSQL_ROW owner_row = NULL;
+			while ((owner_row = mysql_fetch_row(owner_result)))
+			{
+				if (!owner_row[0] || !owner_row[1] || !owner_row[2] ||
+				    item_owners.size() >= 4096)
+					return false;
+				const unsigned long owner_type = strtoul(owner_row[0], NULL, 10);
+				item_owner_identity owner = {
+					static_cast<item_owner_type>(owner_type),
+					strtoull(owner_row[1], NULL, 10),
+					strtoull(owner_row[2], NULL, 10),
+				};
+				if (owner_type > UINT8_MAX || !item_owner_identity_valid(owner))
+					return false;
+				const auto duplicate = std::find_if(
+					item_owners.begin(), item_owners.end(),
+					[&](const auto &candidate)
+					{ return item_owner_identity_equal(candidate, owner); });
+				if (duplicate == item_owners.end())
+					try
+					{
+						item_owners.push_back(owner);
+					}
+					catch (const std::bad_alloc &)
+					{
+						return false;
+					}
+			}
+			return true;
+		};
+		for (const auto &[pid, character_name] : identities)
+		{
+			(void)character_name;
+			snprintf(query, sizeof(query),
+				 "SELECT DISTINCT owner_type,owner_id,owner_context_id "
+				 "FROM item_current_owner WHERE "
+				 "(owner_type=1 AND owner_id=%d) OR "
+				 "(owner_type=4 AND (owner_id >> 32)=%d) OR "
+				 "(owner_type=5 AND owner_id IN "
+				 "(SELECT id FROM lockers WHERE owner_pid=%d))",
+				 pid, pid, pid);
+			result = db_query("%s", query);
+			if (!result)
+				goto fail;
+			const bool collected = collect_item_owners(result);
+			mysql_free_result(result);
+			if (!collected)
+				goto fail;
+		}
+		int written =
+			snprintf(query, sizeof(query),
+				 "SELECT DISTINCT ico.owner_type,ico.owner_id,ico.owner_context_id "
+				 "FROM item_current_owner ico JOIN lockers l ON l.id=ico.owner_id "
+				 "WHERE ico.owner_type=5 AND LOWER(l.locker_name) IN "
+				 "(LOWER(CONCAT('account.','%s','.0.locker'))"
+				 ","
+				 "LOWER(CONCAT('account.','%s','.1.locker'))"
+				 ","
+				 "LOWER(CONCAT('account.','%s','.2.locker'))"
+				 ","
+				 "LOWER(CONCAT('account.','%s','.3.locker'))"
+				 ","
+				 "LOWER(CONCAT('account.','%s','.4.locker')))",
+				 escaped_account, escaped_account, escaped_account, escaped_account,
+				 escaped_account);
+		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
+			goto fail;
+		result = db_query("%s", query);
+		if (!result)
+			goto fail;
+		const bool account_lockers_collected = collect_item_owners(result);
+		mysql_free_result(result);
+		if (!account_lockers_collected ||
+		    !item_transfer_repository_destroy_owners(DB, item_owners.data(),
+							     item_owners.size()))
+			goto fail;
+	}
+
 	for (const auto &[pid, character_name] : identities)
 	{
 		char *escaped_character = sql_escape_string(character_name.c_str());
@@ -5577,22 +5664,6 @@ bool sql_delete_account(const char *name)
 			 "revision=revision+1 WHERE (location=%d AND loc_type IN (3,5)) OR "
 			 "bind_owner_pid=%d",
 			 pid, pid, pid, pid);
-		if (!sql_run_query(query))
-		{
-			free(escaped_character);
-			goto fail;
-		}
-
-		/* Current item authority must no longer advertise inventory that is
-		 * about to cascade out of player_data. Type 8 is destruction. */
-		snprintf(query, sizeof(query),
-			 "UPDATE item_current_owner SET owner_type=8,owner_id=0,owner_context_id=0,"
-			 "state=2,item_revision=item_revision+1 WHERE "
-			 "(owner_type=1 AND owner_id=%d) OR "
-			 "(owner_type=4 AND (owner_id >> 32)=%d) OR "
-			 "(owner_type=5 AND owner_id IN "
-			 "(SELECT id FROM lockers WHERE owner_pid=%d))",
-			 pid, pid, pid);
 		if (!sql_run_query(query))
 		{
 			free(escaped_character);
@@ -5723,31 +5794,15 @@ bool sql_delete_account(const char *name)
 	{
 		/* Account lockers in the live locker subsystem are keyed by this exact
 		 * finite set of names and do not carry an account foreign key. */
-		int written = snprintf(
-			query, sizeof(query),
-			"UPDATE item_current_owner SET owner_type=8,owner_id=0,owner_context_id=0,"
-			"state=2,item_revision=item_revision+1 WHERE owner_type=5 AND owner_id IN "
-			"(SELECT id FROM lockers WHERE LOWER(locker_name) IN "
-			"(LOWER(CONCAT('account.','%s','.0.locker')),"
-			"LOWER(CONCAT('account.','%s','.1.locker')),"
-			"LOWER(CONCAT('account.','%s','.2.locker')),"
-			"LOWER(CONCAT('account.','%s','.3.locker')),"
-			"LOWER(CONCAT('account.','%s','.4.locker'))))",
-			escaped_account, escaped_account, escaped_account, escaped_account,
-			escaped_account);
-		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
-			goto fail;
-		if (!sql_run_query(query))
-			goto fail;
-		written = snprintf(query, sizeof(query),
-				   "DELETE FROM locker_access WHERE LOWER(owner) IN "
-				   "(LOWER(CONCAT('account.','%s','.0.locker')),"
-				   "LOWER(CONCAT('account.','%s','.1.locker')),"
-				   "LOWER(CONCAT('account.','%s','.2.locker')),"
-				   "LOWER(CONCAT('account.','%s','.3.locker')),"
-				   "LOWER(CONCAT('account.','%s','.4.locker')))",
-				   escaped_account, escaped_account, escaped_account,
-				   escaped_account, escaped_account);
+		int written = snprintf(query, sizeof(query),
+				       "DELETE FROM locker_access WHERE LOWER(owner) IN "
+				       "(LOWER(CONCAT('account.','%s','.0.locker')),"
+				       "LOWER(CONCAT('account.','%s','.1.locker')),"
+				       "LOWER(CONCAT('account.','%s','.2.locker')),"
+				       "LOWER(CONCAT('account.','%s','.3.locker')),"
+				       "LOWER(CONCAT('account.','%s','.4.locker')))",
+				       escaped_account, escaped_account, escaped_account,
+				       escaped_account, escaped_account);
 		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
 			goto fail;
 		if (!sql_run_query(query))

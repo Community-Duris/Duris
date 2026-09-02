@@ -7,6 +7,9 @@ from contract_text import contains, count as source_count, index
 
 ACCOUNT = (SRC / "account.c").read_text(encoding="utf-8", errors="replace")
 SQL_PLAYER = (SRC / "sql_player.c").read_text(encoding="utf-8", errors="replace")
+ITEM_REPOSITORY = (SRC / "item_transfer_repository.c").read_text(
+    encoding="utf-8", errors="replace"
+)
 FLAT_DELETE = (SRC / "flatfile_account_delete.c").read_text(
     encoding="utf-8", errors="replace"
 )
@@ -40,6 +43,9 @@ sql_delete = function_body(SQL_PLAYER, "bool sql_delete_account(", last=True)
 flat_delete = function_body(FLAT_DELETE, "flatfile_account_delete_result flatfile_account_delete(")
 guild_forget = function_body(GUILD, "void forget_deleted_guild_member(")
 ship_runtime_remove = function_body(SHIP, "void delete_ship_runtime(")
+destroy_item_owners = function_body(
+    ITEM_REPOSITORY, "bool item_transfer_repository_destroy_owners("
+)
 
 # The destructive flow reuses login's bcrypt/legacy verifier and protects password input.
 assert "account_password_matches(d->account, arg)" in password
@@ -80,6 +86,9 @@ close_descriptor = runtime_remove.index("close_socket(character_desc)")
 extract_character = runtime_remove.index("extract_char_after_terminal_save(character)")
 assert detach_character < detach_descriptor < close_descriptor < extract_character
 assert contains(runtime_remove, "player_revision_forget(identity.pid)")
+assert contains(
+    runtime_remove, "item_ownership_runtime_forget_player_domain(identity.pid)"
+)
 assert contains(runtime_remove, "redis_invalidate_ship_snapshot(identity.name.c_str())")
 assert contains(runtime_remove, "forget_deleted_guild_member(identity.name.c_str())")
 assert contains(runtime_remove, "delete_ship_runtime(identity.name.c_str())")
@@ -114,6 +123,9 @@ account_locker_remove = sql_delete[
 assert source_count(
     account_locker_remove,
     "written < 0 || static_cast<size_t>(written) >= sizeof(query)",
+) == 2
+assert source_count(
+    sql_delete, "written < 0 || static_cast<size_t>(written) >= sizeof(query)"
 ) == 3
 player_remove = sql_delete.index('"DELETE FROM player_data WHERE pid=%d"')
 projection_remove = index(sql_delete, '{ "account_characters", "account_name" }')
@@ -125,6 +137,11 @@ assert contains(sql_delete, "mysql_affected_rows(DB) != 1")
 assert "status=1" in sql_delete
 assert "(owner_type=4 AND (owner_id >> 32)=%d)" in sql_delete
 assert "(owner_type=5 AND owner_id IN" in sql_delete
+assert "UPDATE item_current_owner" not in sql_delete
+assert "item_transfer_repository_destroy_owners" in sql_delete
+assert "item_transfer_reason::destruction" in destroy_item_owners
+assert "item_transfer_command_build" in destroy_item_owners
+assert "item_transfer_repository_execute" in destroy_item_owners
 assert "UPDATE guilds g JOIN guild_members gm" in sql_delete
 assert sql_delete.index("UPDATE guilds g JOIN guild_members gm") < sql_delete.index(
     "DELETE FROM guild_members"
