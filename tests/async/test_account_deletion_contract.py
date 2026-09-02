@@ -144,6 +144,14 @@ assert contains(sql_delete, "mysql_affected_rows(DB) != 1")
 assert "status=1" in sql_delete
 assert "(owner_type=4 AND (owner_id >> 32)=%d)" in sql_delete
 assert "(owner_type=5 AND owner_id IN" in sql_delete
+identity_allocation = sql_delete[
+    sql_delete.index("identities.emplace_back") : sql_delete.index(
+        "else if (strcasecmp", sql_delete.index("identities.emplace_back")
+    )
+]
+assert "catch (const std::bad_alloc &)" in identity_allocation
+assert "mysql_free_result(result);" in identity_allocation
+assert "goto fail;" in identity_allocation
 assert "UPDATE item_current_owner" not in sql_delete
 assert "item_transfer_repository_destroy_owners" in sql_delete
 assert "item_transfer_reason::destruction" in destroy_item_owners

@@ -5537,7 +5537,15 @@ bool sql_delete_account(const char *name)
 						    [pid](const auto &identity)
 						    { return identity.first == pid; });
 		if (duplicate == identities.end())
-			identities.emplace_back(pid, row[1]);
+			try
+			{
+				identities.emplace_back(pid, row[1]);
+			}
+			catch (const std::bad_alloc &)
+			{
+				mysql_free_result(result);
+				goto fail;
+			}
 		else if (strcasecmp(duplicate->second.c_str(), row[1]))
 		{
 			mysql_free_result(result);
