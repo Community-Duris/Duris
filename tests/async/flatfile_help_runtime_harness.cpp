@@ -6,6 +6,7 @@ using namespace std;
 #include <cstdlib>
 #include <iostream>
 
+/** Provide the logging symbol required by the isolated help runtime. */
 void logit(const char *, const char *, ...) {}
 
 /** Exit the test harness with a diagnostic when a requirement fails. */

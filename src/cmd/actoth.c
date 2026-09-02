@@ -4926,6 +4926,7 @@ void do_more(P_char ch, char *arg, int /*cmd*/)
 		command_interpreter(ch, arg);
 }
 
+/** Toggle a player flag or apply a parsed yes/no value, honoring reversed flags. */
 static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int reverse = 0)
 {
 	if (!*arg)
