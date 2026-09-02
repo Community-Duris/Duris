@@ -35,12 +35,17 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-The current immutable head is `0005_level_cap_singleton`. After it is applied, the
-runtime schema contains 173 tables and the history singleton records applied
-count 5 plus the exact history checksum. If a pre-b029 launcher already created
-the legacy `server_reboots` shape, 0004 copies every lifecycle row into the
-canonical table and atomically swaps it into place; an interrupted conversion
-can be retried without making the legacy table unavailable or duplicating rows.
+The current immutable head is `0006_kingdom_realms`. After it is applied, the
+database contains the 173-table runtime boot contract plus the `kingdom_realms`
+table, and the history singleton records applied count 6 plus the exact history
+checksum. If a pre-b029 launcher already created the legacy `server_reboots`
+shape, 0004 copies every lifecycle row into the canonical table and atomically
+swaps it into place; an interrupted conversion can be retried without making the
+legacy table unavailable or duplicating rows. 0006 creates the guild kingdom
+realm table with a plain guarded `CREATE TABLE IF NOT EXISTS`; it is not yet in
+the runtime boot contract (`runtime_compatibility_manifest.json` still lists 173
+tables), so a database without it still boots and `kingdom_initialize()` disables
+kingdoms for that boot rather than running over a table it could not read.
 
 ## Post-baseline migration contract
 

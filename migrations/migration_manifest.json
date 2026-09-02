@@ -228,6 +228,16 @@
       "verify": "immutable/0005_level_cap_singleton.sh",
       "verify_checksum": "4974eb5bf494251d83fc9c3f0c381a61f3afbd80e4eae6f9f291ea5b5c77b77f",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0006_kingdom_realms",
+      "sequence": 6,
+      "description": "Add the guild kingdom realm territory and upkeep table",
+      "apply": "immutable/0006_kingdom_realms.sql",
+      "apply_checksum": "ffa263b952e2dfb00e54187ebb4cd2257e3eee84e1e5e786e515863d95f9ed56",
+      "verify": "immutable/0006_kingdom_realms.sh",
+      "verify_checksum": "c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }
