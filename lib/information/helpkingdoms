@@ -89,17 +89,21 @@ order:
   2. The realm stops banking what its people gather.
   3. One OUTER RING is lost per further missed payment.
 
-Paying stops the slide wherever it has reached; the guards return and
-the stores begin filling again. LAND ALREADY LOST DOES NOT RETURN ON
-PAYMENT - a ring that has reverted must be claimed again from scratch,
-at full price.
+Depositing coin does not itself lift a rung. The ladder unwinds at the
+next reckoning, when the charge is actually met: that payment stops the
+slide wherever it has reached, and in the same cycle the guards march
+back and the stores begin filling again. LAND ALREADY LOST DOES NOT
+RETURN ON PAYMENT - a ring that has reverted must be claimed again from
+scratch, at full price.
 
 A REALM IN ARREARS MAY NOT CLAIM. While upkeep is owed 'kingdom claim'
 is refused outright, so a guild cannot buy back the very ring it is
 losing; settle the debt and the next payment reopens it. A realm that
 the ladder has stripped all the way back to the hall square owes
 nothing, and with nothing owed there is nothing to settle: it may
-begin claiming again from square one at once.
+begin claiming again from square one at once. That first square steps
+it off the ladder, so its guards and its stores come back with the
+land.
 
 'kingdom abandon' gives up your most recent square voluntarily. It
 asks first and takes nothing until you type 'kingdom abandon confirm',
@@ -125,13 +129,38 @@ placement. If any square is refused the claims do not move and the
 realm goes DORMANT instead.
 
 If the main hall is DESTROYED, or the guild is left with outposts
-only, the realm goes dormant likewise. A dormant realm is not
-dissolved: its claims and its stores are kept, but it holds no ground,
-'kingdom status' and 'kingdom map' report that it has no centre,
-nothing can be claimed or abandoned, and NO UPKEEP IS CHARGED while it
-sleeps. Its stores still take what its people gather. Raise a main
-hall again and the realm wakes with its claims intact - on the old
-square at once, or on a new one after the same judging as a move.
+only, the realm goes dormant likewise. DORMANCY STICKS: a realm is
+anchored only while a MAIN guildhall of its guild actually stands on
+the square the realm records, so the room the hall stood in being
+still there wakes nothing. Nothing wakes a realm but a hall.
+
+A dormant realm is not dissolved. Its claims are kept, and so is the
+record of where its hall stood - but it holds no ground. Not one
+square answers to it, so for every question the world asks about
+ownership its land is simply unclaimed. Its guards go home the moment
+the hall does, and none may be posted while it sleeps. 'kingdom
+status', 'kingdom map' and 'kingdom guards' will not report on it at
+all: each answers only that the guildhall cannot be found, so the
+realm has no centre. Nothing can be claimed, and nothing abandoned.
+
+NO UPKEEP IS CHARGED while it sleeps, and the steward says so once a
+cycle, whatever the realm holds on paper. A debt already on the
+ladder is neither advanced nor forgiven: the rung it slept on is the
+rung it wakes on. Nor does the sleep run up a bill - the first
+reckoning after it wakes asks one cycle's upkeep, not one for every
+cycle it slept.
+
+Its stores still take what its people gather, and the treasury still
+takes coin, so a guild can pay down its debt and lay in resources
+while it rebuilds. What lapses with the hall is the land's advantage:
+with no centre to measure from, none of the realm's squares count as
+favouring anything, and its gatherers draw as though the realm held
+nothing at all.
+
+Raise a main hall again and the realm wakes with its claims intact -
+on the old square at once, or on a new one only if all eighty squares
+of the new footprint pass the same judging as a move. If one square is
+refused it stays dormant.
 
 If the GUILD ITSELF IS DELETED, the realm is deleted with it: the land
 is released, the guards are dismissed and the stores are gone. There
@@ -142,8 +171,11 @@ GUARDS
 ------
 A realm may keep guards in proportion to its size - one for every few
 squares held - so a full realm supports a real garrison and a young one
-supports very little. They stand on your land. They do not follow you
-and they are not a bodyguard.
+supports very little. That count is a ceiling, not a promise: a realm
+with upkeep unpaid may field none at all, the guards being the first
+rung of the ladder, and a dormant realm may field none either, having
+no ground to post them on. They stand on your land. They do not follow
+you and they are not a bodyguard.
 
 
 RESOURCES
@@ -212,8 +244,10 @@ BE CLEAR ABOUT THIS: RESOURCES PUT INTO A REALM CANNOT BE TAKEN OUT
 AGAIN. They are not the guild bank and they are not spending money. They
 exist to be spent on the realm itself, and once given they are given.
 
-A realm in arrears banks nothing. That is rung two of the ladder above,
-and it lifts the moment the upkeep is paid.
+A realm TWO rungs into arrears banks nothing. One missed cycle costs
+only the guards; the second stops the stores, and they stay stopped
+until a reckoning the treasury can actually meet - paying coin in
+between reckonings does not restart them by itself.
 
 
 SUBCOMMANDS
