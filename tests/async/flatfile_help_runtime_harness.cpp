@@ -32,6 +32,12 @@ int main()
 	const string missing = wiki_help("definitely missing topic");
 	require(missing.find("no help topics") != string::npos,
 		"missing help did not preserve the user-facing result");
+	for (const char *query : { "nolocate", "no locate", "no-locate", "toggle_nolocate" })
+	{
+		const string no_locate = wiki_help(query);
+		require(no_locate.find("introduction system") != string::npos,
+			"No Locate help alias did not render the dedicated topic");
+	}
 	cout << "flat-file help runtime passed\n";
 	return 0;
 }

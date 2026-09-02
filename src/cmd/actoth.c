@@ -4782,7 +4782,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "oldsmartprompt",
 				      "ban",
 				      "logmsg",
-				      "no locate",
+				      "nolocate",
 				      "titles", // 30
 				      "battle",
 				      "shipmap",
@@ -4801,7 +4801,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "spec4", // 45
 				      "spec_timer",
 				      "heal",
-				      "group needed",
+				      "groupneeded",
 				      "experience",
 				      "showspec", // 50
 				      "hint",
@@ -4813,7 +4813,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "beep",
 				      "underline",
 				      "surname",
-				      "no level", // 60
+				      "nolevel", // 60
 				      "epic",
 				      "petdamage",
 				      "guildname",
@@ -4973,6 +4973,31 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 	}
 
 	arg = one_argument(arg, Gbuf1);
+	if (!str_cmp(Gbuf1, "no-locate"))
+		strcpy(Gbuf1, "nolocate");
+	else if (!str_cmp(Gbuf1, "group-needed"))
+		strcpy(Gbuf1, "groupneeded");
+	else if (!str_cmp(Gbuf1, "no-level"))
+		strcpy(Gbuf1, "nolevel");
+	else if (!str_cmp(Gbuf1, "no") || !str_cmp(Gbuf1, "group"))
+	{
+		char *value = one_argument(arg, Gbuf3);
+		if (!str_cmp(Gbuf1, "no") && !str_cmp(Gbuf3, "locate"))
+		{
+			strcpy(Gbuf1, "nolocate");
+			arg = value;
+		}
+		else if (!str_cmp(Gbuf1, "no") && !str_cmp(Gbuf3, "level"))
+		{
+			strcpy(Gbuf1, "nolevel");
+			arg = value;
+		}
+		else if (!str_cmp(Gbuf1, "group") && !str_cmp(Gbuf3, "needed"))
+		{
+			strcpy(Gbuf1, "groupneeded");
+			arg = value;
+		}
+	}
 	number = atoi(arg);
 	tog_nr = (old_search_block(Gbuf1, 0, strlen(Gbuf1), toggles_list, 0) - 1);
 

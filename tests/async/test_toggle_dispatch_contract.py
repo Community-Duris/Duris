@@ -38,6 +38,47 @@ class ToggleDispatchContractTest(unittest.TestCase):
         self.assertEqual(self.names[-1], r"\n")
         self.assertEqual(self.message_count, len(self.names) - 1)
         self.assertNotIn("kingdom", self.names)
+        self.assertFalse(
+            [
+                name
+                for name in self.names[:-1]
+                if any(character.isspace() for character in name)
+            ],
+            "toggle names must be reachable by the first-token dispatcher",
+        )
+
+    def test_multiword_toggle_spellings_and_values(self) -> None:
+        expected = {
+            29: "nolocate",
+            48: "groupneeded",
+            60: "nolevel",
+        }
+        for index, name in expected.items():
+            with self.subTest(name=name):
+                self.assertEqual(self.names[index], name)
+                for value in ("", "on", "off"):
+                    arguments = f"{name} {value}".split()
+                    self.assertEqual(arguments[0], self.names[index])
+                    self.assertEqual(arguments[1:], [value] if value else [])
+
+        parser = self.source.split("arg = one_argument(arg, Gbuf1);", 1)[1].split(
+            "number = atoi(arg);", 1
+        )[0]
+        for alias, canonical in {
+            "no-locate": "nolocate",
+            "group-needed": "groupneeded",
+            "no-level": "nolevel",
+        }.items():
+            self.assertIn(f'!str_cmp(Gbuf1, "{alias}")', parser)
+            self.assertIn(f'strcpy(Gbuf1, "{canonical}");', parser)
+        for second_word, canonical in {
+            "locate": "nolocate",
+            "level": "nolevel",
+            "needed": "groupneeded",
+        }.items():
+            self.assertIn(f'!str_cmp(Gbuf3, "{second_word}")', parser)
+            self.assertIn(f'strcpy(Gbuf1, "{canonical}");', parser)
+        self.assertEqual(parser.count("arg = value;"), 3)
 
     def test_post_retirement_dispatch_indexes(self) -> None:
         expected = {
@@ -52,7 +93,7 @@ class ToggleDispatchContractTest(unittest.TestCase):
             40: ("nchat", "PLR2_NCHAT"),
             41: ("damage", "PLR2_DAMAGE"),
             47: ("heal", "PLR2_HEAL"),
-            48: ("group needed", "PLR2_LGROUP"),
+            48: ("groupneeded", "PLR2_LGROUP"),
             49: ("experience", "PLR2_EXP"),
             50: ("showspec", "PLR2_SPEC"),
             51: ("hint", "PLR2_HINT_CHANNEL"),
@@ -64,7 +105,7 @@ class ToggleDispatchContractTest(unittest.TestCase):
             57: ("beep", "PLR3_NOBEEP"),
             58: ("underline", "PLR3_UNDERLINE"),
             59: ("surname", "PLR3_SURNAMES"),
-            60: ("no level", "PLR3_NOLEVEL"),
+            60: ("nolevel", "PLR3_NOLEVEL"),
             61: ("epic", "PLR3_EPICWATCH"),
             62: ("petdamage", "PLR3_PET_DAMAGE"),
             63: ("guildname", "PLR3_GUILDNAME"),
