@@ -20,10 +20,25 @@ assert "enhance_stat.enabled=1" in config
 # dispatcher whether the gate is enabled or disabled.
 enabled_path = source.index("if (!*second && enhance_stat_enabled)")
 legacy_start = source.index("/* Original 2-arg enhance */")
-legacy_material_lookup = source.index("get_obj_in_list_vis(ch, second, ch->carrying)", legacy_start)
+pouch_lookup = source.index("pouch = chaos_material_pouch_find(ch);", legacy_start)
+pouch_assign = source.index("material = pouch;", legacy_start)
+legacy_material_lookup = source.index("material = get_obj_in_list_vis(ch, second, ch->carrying);", legacy_start)
+missing_material = source.index("if (!material)", legacy_start)
 essence_dispatch = source.index("modenhance(ch, source, material);", legacy_start)
-assert enabled_path < legacy_start < legacy_material_lookup < essence_dispatch
+assert enabled_path < legacy_start < pouch_lookup < pouch_assign < legacy_material_lookup < missing_material < essence_dispatch
 assert "if (stat_idx != -1 && enhance_stat_enabled)" not in source
+
+# A named Chaos pouch is a virtual legacy donor: resolve it through nested/belt
+# ownership, use the source's wear flags/value, and never extract the pouch.
+assert "chaos_material_pouch_find(ch)" in source
+assert "chaos_material_pouch_is_active(material)" in source
+assert "if (!pouch_material && itemvalue(material) < minval)" in source
+assert "if (!pouch_material)" in source
+assert "chaos_material_pouch_is_active(pouch)" in source
+legacy_success = source.index("obj_to_char(robj, ch);", source.index("void enhance"))
+pouch_cleanup_guard = source.index("if (!pouch_material)", legacy_success)
+physical_donor_extract = source.index("obj_from_char(material);", legacy_success)
+assert pouch_cleanup_guard < physical_donor_extract
 
 # With the lane disabled, `enhance <item>` retains its pre-feature prompt.
 assert "And which object is the enhancement object?" in source

@@ -63,6 +63,7 @@ using namespace std;
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "world/vnum.obj.h"
+#include "combat/chaos_materials.h"
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "world/weather.h"
@@ -2853,6 +2854,16 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 								       short_desc);
 						}
 					}
+					else if (chaos_material_pouch_is_active(tmp_object))
+					{
+						send_to_char(
+							chaos_material_pouch_contents_description(
+								tmp_object),
+							ch);
+						list_obj_to_char(tmp_object->contains, ch,
+								 LISTOBJ_SHORTDESC | LISTOBJ_STATS,
+								 FALSE);
+					}
 					else
 					{
 						snprintf(buf, MAX_STRING_LENGTH, "%s contains:%s",
@@ -3625,6 +3636,14 @@ void do_examine(P_char ch, char *argument, int /*cmd*/)
 			     FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_OBJ_EQUIP | FIND_CHAR_ROOM |
 				     FIND_NO_TRACKS,
 			     ch, &tmp_char, &tmp_object);
+	}
+
+	if (tmp_object && chaos_material_pouch_is_active(tmp_object))
+	{
+		send_to_char(chaos_material_pouch_contents_description(tmp_object), ch);
+		list_obj_to_char(tmp_object->contains, ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS,
+				 FALSE);
+		return;
 	}
 
 	// check legend lore

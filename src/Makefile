@@ -141,7 +141,8 @@ OBJS =  $(SHIP_OBJS) \
 				 world/buildings.o \
          economy/cardgames.o \
          combat/chaos.o \
-				 combat/chaos_config.o \
+				combat/chaos_materials.o \
+				combat/chaos_config.o \
 				 net/comm.o \
 				 persistence/copyover.o \
 				 core/common.o \

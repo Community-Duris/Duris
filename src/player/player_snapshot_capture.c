@@ -337,7 +337,8 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 	row.generated_key = object->g_key;
 	row.vnum = obj_index[object->R_num].virtual_number;
 	row.type = object->type;
-	row.string_mask = object->str_mask;
+	row.string_mask = object->str_mask &
+			  (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
 	row.wear_flags = object->wear_flags;
 	row.extra_flags = object->extra_flags;
 	row.anti_flags = object->anti_flags;

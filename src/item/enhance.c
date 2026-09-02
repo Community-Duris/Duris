@@ -21,6 +21,7 @@
 #include "item/enhance.h"
 #include "economy/tradeskill.h"
 #include "item/objmisc.h"
+#include "combat/chaos_materials.h"
 
 /* Forward declarations for hash functions used in enhance() and do_enhance() */
 static int enhance_hash(int key);
@@ -55,6 +56,7 @@ struct enhance_essence_zone_rule
 };
 static struct enhance_essence_zone_rule enhance_essence_zone_rules[ENHANCE_ESSENCE_MAX_ZONE_RULES];
 static int enhance_essence_zone_rule_count = 0;
+static bool enhancement_system_ready = false;
 
 /* World tables needed to map an object template vnum back to its origin zone. */
 extern P_room world;
@@ -73,13 +75,16 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	if (!ch || !source || !material)
 		return;
 
+	const bool pouch_material = chaos_material_pouch_is_active(material) &&
+				    chaos_material_pouch_find(ch) == material;
+
 	if (is_enhance_banned(source))
 	{
 		act("&+RYour $p&+R has too many conflicting enchantments to be enhanced.&n", FALSE,
 		    ch, source, 0, TO_CHAR);
 		return;
 	}
-	if (is_enhance_banned(material))
+	if (!pouch_material && is_enhance_banned(material))
 	{
 		act("&+RYour $p&+R cannot be used as an enhancement material&n.", FALSE, ch,
 		    material, 0, TO_CHAR);
@@ -94,8 +99,11 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	// Only search matching wear flags unless none matching, then just search source wear flags.
 	//  We skip ITEM_TAKE 'cause it's not really a wear flag.  We skip ITEM_HOLD, ITEM_ATTACH_BELT, and
 	//  ITEM_WEAR_BACK because these are too common and override what people really want (i.e. a quiver).
-	wearflags = (source->wear_flags & material->wear_flags) &
-		    ~(ITEM_TAKE | ITEM_HOLD | ITEM_ATTACH_BELT | ITEM_WEAR_BACK);
+	wearflags = pouch_material ?
+			    (source->wear_flags &
+			     ~(ITEM_TAKE | ITEM_HOLD | ITEM_ATTACH_BELT | ITEM_WEAR_BACK)) :
+			    (source->wear_flags & material->wear_flags) &
+				    ~(ITEM_TAKE | ITEM_HOLD | ITEM_ATTACH_BELT | ITEM_WEAR_BACK);
 	if (!wearflags)
 		wearflags = (source->wear_flags) &
 			    ~(ITEM_TAKE | ITEM_HOLD | ITEM_ATTACH_BELT | ITEM_WEAR_BACK);
@@ -120,7 +128,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	if (IS_SET(source->wear_flags, ITEM_GUILD_INSIGNIA))
 		minval += enhance_guild_insignia_ival_bonus;
 
-	if (itemvalue(material) < minval)
+	if (!pouch_material && itemvalue(material) < minval)
 	{
 		char source_description[MAX_STRING_LENGTH];
 		snprintf(source_description, MAX_STRING_LENGTH, "%s", source->short_description);
@@ -272,8 +280,11 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	obj_to_char(robj, ch);
 	obj_from_char(source);
 	extract_obj(source);
-	obj_from_char(material);
-	extract_obj(material);
+	if (!pouch_material)
+	{
+		obj_from_char(material);
+		extract_obj(material);
+	}
 	statuslog(ch->player.level,
 		  "&+BEnhancement&n:&n %s&n just got [%d] '%s&n' ival [%d] at [%d]!", GET_NAME(ch),
 		  obj_index[robj->R_num].virtual_number, robj->short_description, itemvalue(robj),
@@ -522,9 +533,12 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 	return plan->slot_count > 0;
 }
 
-static bool superior_plan_has_materials(P_char ch, const struct superior_enhancement_plan *plan)
+static bool superior_plan_has_materials(P_char ch, P_obj pouch,
+					const struct superior_enhancement_plan *plan)
 {
 	int i;
+	if (pouch)
+		return TRUE;
 	for (i = 0; i < plan->material_count; i++)
 		if (vnum_in_inv(ch, plan->materials[i].vnum) < plan->materials[i].count)
 			return FALSE;
@@ -532,7 +546,7 @@ static bool superior_plan_has_materials(P_char ch, const struct superior_enhance
 }
 
 /* Aggregate-only preview: do not reveal affected stat names, values, or caps. */
-static void show_superior_requirements(P_char ch, P_obj item,
+static void show_superior_requirements(P_char ch, P_obj item, P_obj pouch,
 				       const struct superior_enhancement_plan *plan)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -546,27 +560,30 @@ static void show_superior_requirements(P_char ch, P_obj item,
 		 "&+YSuperior enhancements remaining:&n &+W%d&n\r\n"
 		 "&+YMaterials required for the next enhancement:&n\r\n",
 		 plan->remaining_enhancements);
-	for (i = 0; i < plan->material_count; i++)
-	{
-		enhance_material_name(plan->materials[i].vnum, name, sizeof(name));
-		checked_snprintf(line, sizeof(line), "  &+W%d&n %s &+w(you have %d)&n\r\n",
-				 plan->materials[i].count, name,
-				 vnum_in_inv(ch, plan->materials[i].vnum));
-		strcat(buf, line);
-	}
+	if (pouch)
+		strcat(buf, "  Chaos craft pouch supplies all raw materials (not consumed).\r\n");
+	else
+		for (i = 0; i < plan->material_count; i++)
+		{
+			enhance_material_name(plan->materials[i].vnum, name, sizeof(name));
+			checked_snprintf(line, sizeof(line), "  &+W%d&n %s &+w(you have %d)&n\r\n",
+					 plan->materials[i].count, name,
+					 vnum_in_inv(ch, plan->materials[i].vnum));
+			strcat(buf, line);
+		}
 	strcat(buf, "&+ySyntax:&n enhance <item>\r\n");
 	send_to_char(buf, ch);
 }
 
 /* Validate first, then consume the entire aggregate tribute and upgrade every planned slot. */
-static bool perform_superior_enhancement(P_char ch, P_obj source,
+static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 					 const struct superior_enhancement_plan *plan)
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
 	int cost = enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival;
 
-	if (!superior_plan_has_materials(ch, plan))
+	if (!superior_plan_has_materials(ch, pouch, plan))
 		return FALSE;
 	if (GET_MONEY(ch) < cost)
 	{
@@ -576,14 +593,36 @@ static bool perform_superior_enhancement(P_char ch, P_obj source,
 		send_to_char(buf, ch);
 		return FALSE;
 	}
+	if (pouch)
+	{
+		chaos_material_pouch_usage generated[MAX_SUPERIOR_MATERIALS];
+		for (i = 0; i < plan->material_count; ++i)
+			generated[i] = { plan->materials[i].vnum,
+					 static_cast<uint64_t>(plan->materials[i].count) };
+		if (!chaos_material_pouch_can_record_generated(ch, generated, plan->material_count))
+		{
+			chaos_material_pouch_report_generated_failure(ch, "superior-enhance");
+			return FALSE;
+		}
+	}
 
 	/* All availability checks precede every state mutation, preserving atomicity. */
 	SUB_MONEY(ch, cost, 0);
-	for (i = 0; i < plan->material_count; i++)
-		vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
+	if (!pouch)
+		for (i = 0; i < plan->material_count; i++)
+			vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
 	for (i = 0; i < plan->slot_count; i++)
 		source->affected[plan->slots[i]].modifier++;
 	mark_item_superior(source);
+	if (pouch)
+	{
+		chaos_material_pouch_usage generated[MAX_SUPERIOR_MATERIALS];
+		for (i = 0; i < plan->material_count; ++i)
+			generated[i] = { plan->materials[i].vnum,
+					 static_cast<uint64_t>(plan->materials[i].count) };
+		if (!chaos_material_pouch_record_generated(ch, generated, plan->material_count))
+			chaos_material_pouch_report_generated_failure(ch, "superior-enhance");
+	}
 
 	snprintf(
 		buf, sizeof(buf),
@@ -600,6 +639,7 @@ static bool perform_superior_enhancement(P_char ch, P_obj source,
 void do_enhance(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj source, material;
+	P_obj pouch;
 	char first[MAX_INPUT_LENGTH];
 	char second[MAX_INPUT_LENGTH];
 	char rest[MAX_INPUT_LENGTH];
@@ -638,6 +678,13 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 			    0, 0, TO_CHAR);
 			return;
 		}
+		if (chaos_material_pouch_is(source))
+		{
+			send_to_char(
+				"The Chaos craft pouch is a material source, not an enhancement target.\r\n",
+				ch);
+			return;
+		}
 		if (!is_salvageable(source))
 		{
 			act("&+yYour $p&+y cannot be used in this way... try something else&n.",
@@ -666,18 +713,22 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 				ch);
 			return;
 		}
-		if (!superior_plan_has_materials(ch, &plan))
+		pouch = chaos_material_pouch_find(ch);
+		if (!superior_plan_has_materials(ch, pouch, &plan))
 		{
-			show_superior_requirements(ch, source, &plan);
+			show_superior_requirements(ch, source, pouch, &plan);
 			return;
 		}
-		perform_superior_enhancement(ch, source, &plan);
+		perform_superior_enhancement(ch, source, pouch, &plan);
 		return;
 	}
 
 	/* Original 2-arg enhance */
 	half_chop(argument, first, rest);
 	half_chop(rest, second, rest);
+	pouch = chaos_material_pouch_find(ch);
+	const bool pouch_material_requested = pouch && chaos_material_pouch_is_active(pouch) &&
+					      isname(second, pouch->name);
 
 	if (!(source = get_obj_in_list_vis(ch, first, ch->carrying)))
 	{
@@ -686,13 +737,17 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (!(material = get_obj_in_list_vis(ch, second, ch->carrying)))
+	if (pouch_material_requested)
+		material = pouch;
+	else
+		material = get_obj_in_list_vis(ch, second, ch->carrying);
+	if (!material)
 	{
 		if (enhance_stat_enabled)
 		{
 			struct superior_enhancement_plan plan;
 			if (build_superior_enhancement_plan(source, &plan))
-				show_superior_requirements(ch, source, &plan);
+				show_superior_requirements(ch, source, pouch, &plan);
 			else
 				send_to_char(
 					"&+yThis item has no further superior enhancement available.\r\n",
@@ -708,13 +763,20 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("&+yYou cannot enhance an item with itself!\r\n", ch);
 		return;
 	}
+	if (chaos_material_pouch_is(source) ||
+	    (chaos_material_pouch_is(material) && !pouch_material_requested))
+	{
+		send_to_char("The Chaos craft pouch cannot be used as an enhancement donor.\r\n",
+			     ch);
+		return;
+	}
 	if (!is_salvageable(source))
 	{
 		act("&+yYour $p&+y cannot be used in this way... try something else&n.", FALSE, ch,
 		    source, 0, TO_CHAR);
 		return;
 	}
-	if (!is_salvageable(material))
+	if (!pouch_material_requested && !is_salvageable(material))
 	{
 		act("&+yYour $p&+y cannot be used in this way... try something else&n.", FALSE, ch,
 		    material, 0, TO_CHAR);
@@ -726,7 +788,8 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 	// If source is a weapon, material must be either a weapon or an essence.
-	if (IS_SET(source->wear_flags, ITEM_WIELD) && !IS_SET(material->wear_flags, ITEM_WIELD) &&
+	if (!pouch_material_requested && IS_SET(source->wear_flags, ITEM_WIELD) &&
+	    !IS_SET(material->wear_flags, ITEM_WIELD) &&
 	    (OBJ_VNUM(material) < 400238 || OBJ_VNUM(material) > 400258))
 	{
 		send_to_char("&+YWeapons&+y can only enhance other &+Yweapons&n!\r\n", ch);
@@ -1918,10 +1981,18 @@ void load_enhance_index(void)
 /* Enhancement lifecycle/event boundary. Other gameplay systems call these
 			* hooks, but enhancement configuration and reward-selection policy remains
 			* owned by this module. */
+bool enhancement_system_is_ready(void)
+{
+	return enhancement_system_ready;
+}
+
 void boot_enhancement_system(void)
 {
+	if (enhancement_system_ready)
+		return;
 	load_enhance_config();
 	load_enhance_index();
+	enhancement_system_ready = true;
 }
 
 void enhance_on_eligible_npc_death(P_char ch, P_char killer)

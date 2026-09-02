@@ -28,6 +28,7 @@ void enhance(P_char ch, P_obj source, P_obj material);
 void do_enhance(P_char ch, char *argument, int cmd);
 void modenhance(P_char ch, P_obj source, P_obj material);
 void boot_enhancement_system(void);
+bool enhancement_system_is_ready(void);
 void enhance_on_eligible_npc_death(P_char ch, P_char killer);
 void enhance_on_npc_item_reset_skipped(P_char mob, P_obj missing_item);
 

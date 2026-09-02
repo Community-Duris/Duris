@@ -2203,7 +2203,10 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 #endif
 
 	/* save character to disk */
-	writeCharacter(ch, RENT_QUIT, NOWHERE);
+	if (chaos_mud_enabled())
+		schedule_chaos_new_character_kit_before_entry(ch);
+	else
+		writeCharacter(ch, RENT_QUIT, NOWHERE);
 
 	logit(LOG_NEW, "%s [%s] new WebSocket player.", GET_NAME(ch), d->host);
 	statuslog(ch->player.level, "%s [%s] new WebSocket player.", GET_NAME(ch), d->host);

@@ -140,7 +140,7 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 						bool complete_snapshot_state)
 {
 	constexpr uint8_t allowed_string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 |
-						STRUNG_DESC3;
+						STRUNG_DESC3 | STRUNG_EDESC;
 	if ((item.string_mask & ~allowed_string_mask) ||
 	    identity.database_id > static_cast<uint64_t>(INT_MAX) ||
 	    identity.item_uid > static_cast<uint64_t>(ULONG_MAX) ||

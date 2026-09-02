@@ -13,6 +13,7 @@
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "world/vnum.obj.h"
+#include "combat/chaos_materials.h"
 #include <stdio.h>
 #include <string.h>
 extern P_room world;
@@ -34,6 +35,8 @@ bool grant_salvage_item(P_char ch, P_obj object)
 
 bool is_salvageable(P_obj temp)
 {
+	if (chaos_material_pouch_is(temp))
+		return FALSE;
 	if (!temp || GET_ITEM_TYPE(temp) == ITEM_CORPSE)
 		return FALSE;
 

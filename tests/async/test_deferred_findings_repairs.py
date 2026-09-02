@@ -84,7 +84,7 @@ check(
 check(
     "enhance() still computes and enforces the material floor",
     "minval = itemvalue(source) - enhance_material_ival_delta;" in enhance
-    and "if (itemvalue(material) < minval)" in enhance,
+    and "if (!pouch_material && itemvalue(material) < minval)" in enhance,
 )
 check(
     "modenhance() records why the floor does not apply to essences",

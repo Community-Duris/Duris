@@ -64,7 +64,7 @@ uint64_t get_u64(const uint8_t *input)
 bool valid_reason(currency_reason_type reason)
 {
 	return reason > currency_reason_type::unknown &&
-	       reason <= currency_reason_type::operator_adjustment;
+	       reason <= currency_reason_type::chaos_starter_reward;
 }
 
 bool valid_name(const char *name, size_t *length)
@@ -141,6 +141,26 @@ bool currency_command_is_rebasable_wallet_reward(const currency_command_payload 
 		positive = positive || payload.wallet_delta.amount[index] > 0;
 	}
 	return positive;
+}
+
+bool currency_command_is_rebasable_bank_reward(const currency_command_payload &payload)
+{
+	if (payload.reason != currency_reason_type::chaos_starter_reward)
+		return false;
+	bool positive_bank = false;
+	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
+	{
+		if (payload.wallet_delta.amount[index] || payload.bank_delta.amount[index] < 0)
+			return false;
+		positive_bank = positive_bank || payload.bank_delta.amount[index] > 0;
+	}
+	return positive_bank;
+}
+
+bool currency_command_is_rebasable_reward(const currency_command_payload &payload)
+{
+	return currency_command_is_rebasable_wallet_reward(payload) ||
+	       currency_command_is_rebasable_bank_reward(payload);
 }
 
 bool currency_command_encode_payload(const currency_command_payload &payload,

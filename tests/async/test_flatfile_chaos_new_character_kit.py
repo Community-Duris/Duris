@@ -21,6 +21,7 @@ from test_flatfile_combat_journey import (
     build_flatfile_server,
     generate_certificate,
     make_fixture,
+    reconnect_character,
     require,
     runtime_logs,
 )
@@ -45,6 +46,11 @@ def warrior_kit_vnums() -> set[int]:
             for _, vnum in re.findall(r"\{\s*(-?\d+|WEAR_NONE),\s*(\d+)\s*\}", body.group(1))
             if int(vnum) != 0
         )
+    values.add(400300)
+    values.add(400000)
+    values.add(400001)
+    values.add(400291)
+    values.add(18000)
     require(1252 not in values, "placeholder VNUM remains in the runtime Warrior kit")
     return values
 
@@ -59,6 +65,30 @@ def install_chaos_objects(run_root: pathlib.Path) -> None:
             r"(?ms)(^#(\d+)$\n.*?)(?=^#\d+$|^\$~$)", mini_objects
         )
     }
+    entries.update(
+        {
+            22801: """#22801
+chaos_test_ring~
+a plain Chaos test ring~
+A plain Chaos test ring lies here for the legacy enhancement regression.~
+~
+11 1 3 0 0 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+1 1 100
+""",
+            22802: """#22802
+chaos_test_ring_upgrade~
+an improved plain Chaos test ring~
+An improved plain Chaos test ring lies here.~
+~
+11 1 3 0 0 0 0 3 0 0 0
+0 0 0 0 0 0 0 0
+1 1 100
+A
+1 1
+""",
+        }
+    )
     for vnum in sorted(warrior_kit_vnums()):
         if vnum in entries:
             continue
@@ -124,11 +154,143 @@ def create_chaos_character(client: MudClient) -> None:
     client.send("y")
     client.expect("PRESS RETURN")
     client.send("")
-    client.expect("Your Chaos Equipment has been prepared!!", timeout=60)
+    client.expect("Your Chaos Equipment has been prepared!!", timeout=300)
+    transcript = client.transcript.decode("utf-8", errors="replace")
+    require("A free frigate!" in transcript, "Chaos tattoo reward did not advertise a Frigate")
     require(
         "Your CHAOS equipment kit is being prepared" not in client.transcript.decode("utf-8", errors="replace"),
         "Chaos creation still exposed the old blocking preparation message",
     )
+
+
+def expect_paged(client: MudClient, needle: str) -> None:
+    while True:
+        matched, _ = client.expect_any((needle, "[Return to continue", "Pos: standing >"), timeout=30)
+        if matched == needle:
+            return
+        if matched == "[Return to continue":
+            client.send("")
+            continue
+        raise AssertionError(f"{needle!r} was not found before the command prompt")
+
+
+def finish_paged(client: MudClient) -> None:
+    while True:
+        matched, _ = client.expect_any(("[Return to continue", "Pos: standing >"), timeout=30)
+        if matched == "Pos: standing >":
+            return
+        client.send("")
+
+
+def inspect_chaos_material_pouch(client: MudClient, retrieve: bool = True) -> None:
+    if retrieve:
+        client.transcript.clear()
+        client.send("look in bottomless")
+        expect_paged(client, "a compact Chaos craft pouch")
+        finish_paged(client)
+
+        client.send("get pouch bag")
+        client.expect("You get", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+
+        client.send("chaos pouchseed")
+        client.expect("Chaos pouch test materials prepared", timeout=30)
+        client.expect("Your starter kit is ready.", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+        for _ in range(20):
+            client.transcript.clear()
+            client.send("inventory")
+            inventory = client.expect("Pos: standing >", timeout=30)
+            if "small feather" in inventory and "strange green stone" in inventory:
+                break
+            time.sleep(0.25)
+        else:
+            raise AssertionError("pouch test materials were not granted within 20 retries")
+        client.send("put all pouch")
+        client.expect("You record 3 collected materials", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+        client.transcript.clear()
+        client.send("inventory")
+        post_collection_inventory = client.expect("Pos: standing >", timeout=30)
+        require(
+            "small feather" not in post_collection_inventory
+            and "strange green stone" not in post_collection_inventory,
+            "put all pouch left collected materials in the player inventory:\n"
+            + post_collection_inventory,
+        )
+
+        client.transcript.clear()
+        client.send("look in pouch")
+        client.expect("Inside the compact Chaos craft pouch scoreboard", timeout=30)
+        client.expect("Generated /", timeout=30)
+        client.expect("0 generated / 1 collected", timeout=30)
+        client.expect("400000", timeout=30)
+        scoreboard = bytes(client.transcript).decode("utf-8", errors="replace")
+        positions = [scoreboard.find(f"[{vnum}]") for vnum in (400000, 400001, 400291)]
+        require(
+            all(position >= 0 for position in positions) and positions == sorted(positions),
+            "pouch scoreboard did not sort collected materials by VNUM:\n" + scoreboard,
+        )
+        client.expect("Pos: standing >", timeout=30)
+
+        client.transcript.clear()
+        client.send("encrust answerer 400291")
+        client.expect("The Chaos craft pouch generated", timeout=30)
+        client.expect("1 x a strange green stone", timeout=30)
+        client.expect("400291", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+
+        client.transcript.clear()
+        client.send("look in pouch")
+        client.expect("1 generated / 1 collected", timeout=30)
+        client.expect("400291", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+
+        client.send("chaos pouchgenerate 30")
+        client.expect("The Chaos craft pouch generated", timeout=30)
+        client.expect("30 x a small feather", timeout=30)
+        client.expect("400000", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+
+        client.send("chaos platinum")
+        client.expect("Here's", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+        for _ in range(120):
+            client.transcript.clear()
+            client.send("score")
+            score = client.expect("Pos: standing >", timeout=30)
+            if "10000 platinum" in score:
+                break
+            time.sleep(0.25)
+        else:
+            raise AssertionError("Chaos platinum test credit was not published")
+        client.send("enhance chaos_test_ring pouch")
+        client.expect("Your enhancement is a success!", timeout=60)
+        client.expect("Final item value", timeout=60)
+        client.expect("Pos: standing >", timeout=30)
+        client.transcript.clear()
+        client.send("examine pouch")
+        client.expect("Inside the compact Chaos craft pouch", timeout=30)
+        client.expect("Material requirements are supplied without consuming the pouch", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
+
+    client.transcript.clear()
+    client.send("look in pouch")
+    client.expect("Inside the compact Chaos craft pouch", timeout=30)
+    client.expect("Catalog: salvage", timeout=30)
+    client.expect("encrust 400291-400299", timeout=30)
+    client.expect("Pos: standing >", timeout=30)
+
+    client.transcript.clear()
+    client.send("examine pouch")
+    client.expect("Inside the compact Chaos craft pouch", timeout=30)
+    client.expect("Material requirements are supplied without consuming the pouch", timeout=30)
+    client.expect("Pos: standing >", timeout=30)
+
+    if retrieve:
+        client.send("wear pouch")
+        client.expect("attach", timeout=30)
+        client.expect("Pos: standing >", timeout=30)
 
 
 def run_chaos_kit_journey(binary: pathlib.Path) -> None:
@@ -161,7 +323,10 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                 "DURIS_WEBSOCKET_PORT": str(websocket_port),
                 "REDIS": "FALSE",
                 "CHAOS_MUD": "TRUE",
+                "CHAOS_TEST_COMMANDS": "TRUE",
                 "CHAOS_EQ_PROFILE": "standard",
+                "CHAOS_STARTER_BONUSES": "TRUE",
+                "CHAOS_STARTER_MATERIALS": "TRUE",
             }
 
             with output_path.open("w", encoding="utf-8") as output:
@@ -226,41 +391,98 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                         + single_level_transcript,
                     )
 
-                    client.send("inventory")
-                    client.expect("bottomless bag of", timeout=15)
-                    client.expect("Pos: standing >", timeout=15)
-                    client.send("look in bottomless")
-                    bag_contents = client.expect("dark misty potion", timeout=15)
-                    while True:
-                        matched, page = client.expect_any(
-                            ("[Return to continue", "Pos: standing >"), timeout=15
-                        )
-                        bag_contents += page
-                        if matched == "Pos: standing >":
-                            break
-                        client.send("")
-                    require(
-                        "new random object" not in bag_contents,
-                        "CHAOS warrior kit still contains VNUM 1252",
-                    )
-                    client.send("inventory")
-                    client.expect("a bottomless bag of", timeout=15)
+                    inspect_chaos_material_pouch(client)
                     client.send("save")
-                    client.expect(f"Save complete for {CHARACTER}.", timeout=30)
+                    client.expect(f"Save complete for {CHARACTER}.", timeout=120)
 
                     process.send_signal(signal.SIGTERM)
-                    process.wait(timeout=30)
+                    process.wait(timeout=120)
                     output.flush()
                     server_output = output_path.read_text(errors="replace")
                     logs = runtime_logs(run_root)
+                    epic_grant = re.search(
+                        r"CHAOS starter granted ([0-9]+) no-specialization epic skills to pid 1", logs
+                    )
+                    require(
+                        epic_grant is not None and int(epic_grant.group(1)) > 0,
+                        "Chaos starter granted no eligible epic skills:\\n" + logs,
+                    )
                     require(process.returncode == 0, "CHAOS server shutdown failed")
                     require(
                         "Cannot load CHAOS kit item" not in logs
                         and "item creation grant did not commit" not in logs
-                        and "Skipping unusable CHAOS kit item" not in logs,
+                        and "Skipping unusable CHAOS kit item" not in logs
+                        and "CHAOS starter epic grant could not be queued" not in logs
+                        and "CHAOS starter bank grant could not be queued" not in logs
+                        and "CHAOS starter material reserve committed" not in logs
+                        and "CHAOS starter epic grant committed for pid 1 balance=20000" in logs
+                        and "CHAOS starter bank grant committed for pid 1 platinum=1000000" in logs
+                        and "CHAOS starter granted " in logs,
                         "CHAOS kit logged an incomplete or unusable grant:\n" + logs,
                     )
                     require("1252" not in server_output + logs, "placeholder VNUM reached the runtime journey")
+
+                    if client is not None:
+                        client.close()
+                        client = None
+                    reload_plain_port, reload_tls_port, reload_websocket_port = available_ports()
+                    reload_environment = environment.copy()
+                    reload_environment.update(
+                        {
+                            "DURIS_TLS_PORT": str(reload_tls_port),
+                            "DURIS_WEBSOCKET_PORT": str(reload_websocket_port),
+                        }
+                    )
+                    reload_output_path = run_root / "server-reload.out"
+                    with reload_output_path.open("w", encoding="utf-8") as reload_output:
+                        reload_process = subprocess.Popen(
+                            [str(binary), "--minimal", "-s", "-d", str(run_root), str(reload_plain_port)],
+                            cwd=run_root,
+                            env=reload_environment,
+                            text=True,
+                            stdout=reload_output,
+                            stderr=subprocess.STDOUT,
+                        )
+                        reload_client = None
+                        try:
+                            reload_deadline = time.monotonic() + 120
+                            reload_boot = ""
+                            while time.monotonic() < reload_deadline:
+                                reload_output.flush()
+                                reload_boot = reload_output_path.read_text(errors="replace")
+                                if "Entering game loop." in reload_boot or reload_process.poll() is not None:
+                                    break
+                                time.sleep(0.1)
+                            require(
+                                "Entering game loop." in reload_boot,
+                                "flat-file reload server did not boot:\n" + reload_boot[-8000:],
+                            )
+                            reload_client = reconnect_character(reload_plain_port)
+                            inspect_chaos_material_pouch(reload_client, retrieve=False)
+                            reload_client.send("quit")
+                            reload_client.expect("ACCOUNT MENU", timeout=60)
+                            reload_client.send("0")
+                        finally:
+                            if reload_client is not None:
+                                reload_client.close()
+                            if reload_process.poll() is None:
+                                reload_process.terminate()
+                                try:
+                                    reload_process.wait(timeout=120)
+                                except subprocess.TimeoutExpired:
+                                    reload_process.kill()
+                                    reload_process.wait(timeout=5)
+                        require(
+                            reload_process.returncode == 0,
+                            "flat-file reload server shutdown failed",
+                        )
+                        reload_output.flush()
+                        reload_boot = reload_output_path.read_text(errors="replace")
+                        require(
+                            "limit_exceeded" not in reload_boot
+                            and "component_failure" not in reload_boot,
+                            "flat-file reload rejected the Chaos material inventory snapshot:\n" + reload_boot[-8000:],
+                        )
                 except Exception as error:
                     output.flush()
                     server_output = output_path.read_text(errors="replace")

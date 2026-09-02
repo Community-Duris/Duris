@@ -209,6 +209,61 @@ epic_teacher_skill epic_teachers[] = {
 	{}
 };
 
+namespace
+{
+const epic_teacher_skill *find_epic_teacher_for_skill(int skill)
+{
+	for (int index = 0; epic_teachers[index].vnum; ++index)
+		if (epic_teachers[index].skill == skill)
+			return &epic_teachers[index];
+	return nullptr;
+}
+
+bool epic_reward_available_without_specialization(P_char ch, const epic_reward &reward,
+						  const epic_teacher_skill &teacher)
+{
+	if (!ch || reward.type != EPIC_REWARD_SKILL || reward.value <= 0 ||
+	    (reward.classes && !IS_SET(reward.classes, ch->player.m_class) &&
+	     !IS_SET(reward.classes, ch->player.secondary_class)))
+		return false;
+	if (IS_THRIKREEN(ch) && reward.value == SKILL_DEVASTATING_CRITICAL)
+		return false;
+	if (teacher.deny_skill && GET_CHAR_SKILL(ch, teacher.deny_skill))
+		return false;
+	if (teacher.pre_requisite &&
+	    GET_CHAR_SKILL(ch, teacher.pre_requisite) < teacher.pre_req_lvl)
+		return false;
+	return teacher.max > 0;
+}
+} // namespace
+
+int grant_epic_skills_without_specialization(P_char ch)
+{
+	if (!ch || IS_NPC(ch) || IS_SPECIALIZED(ch))
+		return 0;
+
+	for (int skill = FIRST_SKILL; skill <= LAST_SKILL; ++skill)
+		if (IS_EPIC_SKILL(skill))
+			ch->only.pc->skills[skill].learned = ch->only.pc->skills[skill].taught = 0;
+
+	int granted = 0;
+	for (int index = 0; epic_rewards[index].type; ++index)
+	{
+		const epic_reward &reward = epic_rewards[index];
+		const epic_teacher_skill *teacher = find_epic_teacher_for_skill(reward.value);
+		if (!teacher || !epic_reward_available_without_specialization(ch, reward, *teacher))
+			continue;
+		const int current = GET_CHAR_SKILL(ch, reward.value);
+		const int ceiling = BOUNDED(0, teacher->max, 100);
+		if (current >= ceiling)
+			continue;
+		ch->only.pc->skills[reward.value].learned = ceiling;
+		ch->only.pc->skills[reward.value].taught = ceiling;
+		++granted;
+	}
+	return granted;
+}
+
 void create_epic_skills()
 {
 	SKILL_CREATE("mine", SKILL_MINE, TAR_EPIC);

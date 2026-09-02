@@ -40,6 +40,12 @@ bool currency_transaction_submit(P_char character, const currency_vector &wallet
 				 critical_deadline_class deadline_class,
 				 currency_completion_fn completion, const void *context,
 				 size_t context_size);
+bool currency_transaction_submit_identified(
+	P_char character, const critical_operation_id &operation_id,
+	const currency_vector &wallet_delta, const currency_vector &bank_delta,
+	currency_reason_type reason, int64_t reason_id, critical_source_site source_site,
+	critical_deadline_class deadline_class, currency_completion_fn completion,
+	const void *context, size_t context_size);
 bool currency_transaction_submit_wallet_value(P_char character, int64_t value_delta,
 					      currency_reason_type reason, int64_t reason_id,
 					      critical_source_site source_site,
