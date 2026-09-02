@@ -49,6 +49,13 @@ void kingdom_initialize(void);
 /* Release everything. Idempotent. */
 void kingdom_shutdown(void);
 
+/* Persist dirty realm records WITHOUT tearing the subsystem down. The copyover
+ * path needs exactly this: a successful copyover execs the new binary and never
+ * reaches kingdom_shutdown(), while a FAILED one resumes the game loop, where
+ * the shutdown's guard despawn and index clear would leave a dead subsystem
+ * inside a live game. Idempotent: only realms still marked dirty are written. */
+void kingdom_flush_persistent_state(void);
+
 /* True when lib/kingdom.cfg enabled the subsystem. Every public entry point
  * below is a no-op or a permissive answer when this is false. */
 bool kingdom_enabled(void);

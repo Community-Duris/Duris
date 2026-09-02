@@ -83,9 +83,13 @@ static bool kingdom_valid_assoc(int assoc_id)
  * GH_TYPE_MAIN only, with no outpost fallback: `kingdom convert` anchors a new
  * realm on the main hall (kingdom_claim.c:456), so an outpost that could never
  * have founded a realm must not silently become one's anchor either. Two
- * copies of a predicate drift, and the weaker one lies.
+ * copies of a predicate drift, and the weaker one lies -- a review found
+ * three copies of this one, and the copy in kingdom_cmds.c matched on
+ * gh->guild->get_id(), so a hall whose guild pointer was NULL could found a
+ * realm through `convert` yet show no land through `map`. This is now the
+ * module's ONE finder, exported through kingdom_internal.h.
  */
-static Guildhall *kingdom_main_hall_of(int assoc_id)
+Guildhall *kingdom_main_hall(int assoc_id)
 {
 	if (!kingdom_valid_assoc(assoc_id))
 		return NULL;
@@ -175,8 +179,7 @@ static void kingdom_delete_realm_row(int assoc_id)
 		kingdom_failed_deletes.push_back(assoc_id);
 
 	logit(LOG_KINGDOM,
-	      "realm row for association %d could not be deleted; remembered for retry.",
-	      assoc_id);
+	      "realm row for association %d could not be deleted; remembered for retry.", assoc_id);
 }
 
 /* Retry every remembered delete, keeping the ones that fail again. Cheap when
@@ -297,9 +300,8 @@ static void kingdom_index_realm_squares(const kingdom_realm &realm)
 		 * calculate_relative_room(), which wraps toroidally. The seat needs no
 		 * geometry: kingdom_resolve_anchor() has already proven hall_rnum sits
 		 * on the map grid. */
-		const int rnum = (index == 0)
-					 ? realm.hall_rnum
-					 : kingdom_room_for_claim(realm.hall_rnum, index);
+		const int rnum = (index == 0) ? realm.hall_rnum :
+						kingdom_room_for_claim(realm.hall_rnum, index);
 		if (!kingdom_valid_rnum(rnum))
 			continue;
 
@@ -404,13 +406,12 @@ void kingdom_reindex_all(void)
 		 */
 		if (halls_loaded)
 		{
-			const Guildhall *hall = kingdom_main_hall_of(ids[i]);
+			const Guildhall *hall = kingdom_main_hall(ids[i]);
 
 			if (!hall)
 			{
 				kingdom_clear_anchor(*realm);
-				logit(LOG_KINGDOM,
-				      "realm %d: no main guildhall; realm dormant.",
+				logit(LOG_KINGDOM, "realm %d: no main guildhall; realm dormant.",
 				      realm->assoc_id);
 				continue;
 			}
@@ -581,6 +582,12 @@ void kingdom_initialize(void)
 	      kingdom_realms.size(), kingdom_square_index.size());
 }
 
+void kingdom_flush_persistent_state(void)
+{
+	if (kingdom_cfg.enabled && !kingdom_realms.empty())
+		kingdom_db_flush_dirty();
+}
+
 void kingdom_shutdown(void)
 {
 	/* Idempotent: clearing an already-empty map is free, and flushing an
@@ -723,13 +730,13 @@ bool kingdom_footprint_check(int hall_rnum, int racewar, char *why, size_t why_l
 		if (bad_index >= 1)
 			written = snprintf(why, why_len,
 					   "A kingdom's %dx%d domain will not fit here "
-					   "(square %d of %d: %s).",
+					   "(square %d of %d: %s).\r\n",
 					   KINGDOM_FOOTPRINT_SIDE, KINGDOM_FOOTPRINT_SIDE,
 					   bad_index, KINGDOM_MAX_SQUARES,
 					   kingdom_verdict_text(verdict));
 		else
 			written = snprintf(why, why_len,
-					   "A kingdom's %dx%d domain will not fit here (%s).",
+					   "A kingdom's %dx%d domain will not fit here (%s).\r\n",
 					   KINGDOM_FOOTPRINT_SIDE, KINGDOM_FOOTPRINT_SIDE,
 					   kingdom_verdict_text(verdict));
 
@@ -823,7 +830,7 @@ void kingdom_on_guildhall_changed(int assoc_id)
 	 * the next harvest recomputes it from whatever this hook decides. */
 	kingdom_harvest_prune(*realm);
 
-	Guildhall *hall = kingdom_main_hall_of(assoc_id);
+	Guildhall *hall = kingdom_main_hall(assoc_id);
 	if (!hall)
 	{
 		/* Destroyed -- or demoted to outposts, which cannot anchor a realm.

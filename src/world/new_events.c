@@ -1872,8 +1872,7 @@ void ne_init_event_pool(void)
  * header, so its upkeep entry point is void(void). Adapt it to the
  * registry's event_func_type here rather than leaking P_char into
  * kingdom.h. */
-static void kingdom_upkeep_tick(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/,
-				void * /*data*/)
+static void kingdom_upkeep_tick(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	kingdom_upkeep_event();
 }

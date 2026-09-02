@@ -102,30 +102,10 @@ static const char *KINGDOM_NO_REALM =
  * Small local helpers
  * ------------------------------------------------------------------ */
 
-/* The guild's MAIN guildhall, for surveying a site before any realm exists.
- *
- * Deliberately not Guildhall::find_by_assoc_id() (src/guild/guildhall.c:133):
- * that helper dereferences guildhalls[i]->guild with no NULL check, and it
- * returns the FIRST hall of ANY type, an outpost included. A realm anchors on
- * the main hall's outside square and nothing else. */
-static Guildhall *kingdom_main_hall_of(int assoc_id)
-{
-	if (assoc_id <= 0)
-		return NULL;
-
-	for (size_t i = 0; i < Guildhall::guildhalls.size(); i++)
-	{
-		Guildhall *hall = Guildhall::guildhalls[i];
-
-		if (!hall || !hall->guild)
-			continue;
-		if (hall->type != GH_TYPE_MAIN)
-			continue;
-		if (hall->guild->get_id() == static_cast<unsigned int>(assoc_id))
-			return hall;
-	}
-	return NULL;
-}
+/* The guild's MAIN guildhall, for surveying a site before any realm exists,
+ * comes from kingdom_main_hall() in kingdom.c: the module's one finder. A copy
+ * here once matched on hall->guild->get_id() and skipped every hall whose guild
+ * pointer was NULL, so `convert` and `map` disagreed about the same hall. */
 
 /* The racewar a prospective site is judged against: the owning guild's own,
  * which Guild::set_racewar keeps inside 1..MAX_RACEWAR
@@ -235,7 +215,7 @@ static void kingdom_cmd_map(P_char ch, P_Guild guild)
 	/* No realm yet. Survey the ground the guildhall stands on, so a leader
 	 * can see whether `kingdom convert` will be accepted before trying it.
 	 * highest_claim 0 means "nothing held"; the grid judges the rest. */
-	Guildhall *hall = kingdom_main_hall_of(assoc_id);
+	Guildhall *hall = kingdom_main_hall(assoc_id);
 
 	if (!hall)
 	{

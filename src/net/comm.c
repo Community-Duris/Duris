@@ -304,12 +304,6 @@ bool newHardcoreBoard(P_char ch, const char *arg, int cmd);
 void format_to_snoopers(char *from_string, char *to_string);
 extern void update_breath_weapon_properties();
 extern void update_regen_properties();
-/* Declared in kingdom_internal.h, which is private to src/kingdom/; the
- * public kingdom.h deliberately does not export it. The copyover path needs
- * this bare realm flush -- kingdom_shutdown() would also despawn the realm
- * guards and clear the live square index, which must not happen when a
- * failed copyover resumes the game loop. */
-extern void kingdom_db_flush_dirty(void);
 static void greet(P_desc newd);
 static void note_player_input_activity(P_desc t, const char *input);
 static void process_line(P_desc t, char *in);
@@ -1904,13 +1898,13 @@ resume_game_loop:
 		 *   2. Copyover: a successful copyover_save() execs the new binary
 		 *      and never returns, so path 1 is never reached -- the flush
 		 *      must happen HERE, beside the other pre-exec saves.
-		 * Only the bare flush, not kingdom_shutdown(): if copyover_save()
+		 * Only the flush, not kingdom_shutdown(): if copyover_save()
 		 * fails we resume the game loop below, and the shutdown's guard
 		 * despawn and index clear would leave the live game with a dead
 		 * kingdom subsystem. The flush is idempotent (it only writes
 		 * realms still marked dirty), so the eventual kingdom_shutdown()
 		 * after a failed copyover re-flushes nothing. */
-		kingdom_db_flush_dirty();
+		kingdom_flush_persistent_state();
 		if (!copyover_save(s, S, WS))
 		{
 			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",

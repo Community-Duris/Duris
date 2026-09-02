@@ -16,6 +16,9 @@
 
 #include "kingdom/kingdom.h"
 #include "kingdom/kingdom_geometry.h"
+#include "world/vnum.obj.h"
+
+class Guildhall;
 
 #define LOG_KINGDOM "logs/log/kingdom"
 
@@ -29,7 +32,8 @@
  *
  * Upkeep is charged in COIN, not in these.
  */
-enum kingdom_resource {
+enum kingdom_resource
+{
 	KRES_MINERAL = 0,
 	KRES_WOOD,
 	KRES_FIBRE,
@@ -56,15 +60,9 @@ const char *kingdom_resource_name(int res);
 /* TWO SETS, ruled 2026-09-01: nodes spawn in the Underdark as well as on the
  * surface, and an Underdark node must be thematic -- a mushroom, not a tree.
  * Same four resources either way; only the flavour and the map letter differ. */
-#define VOBJ_KINGDOM_NODE_MINERAL 477 /* a seam of stone   */
-#define VOBJ_KINGDOM_NODE_WOOD 478    /* a stand of timber */
-#define VOBJ_KINGDOM_NODE_FIBRE 479   /* flax and reeds    */
-#define VOBJ_KINGDOM_NODE_WATER 480   /* a clean spring    */
-
-#define VOBJ_KINGDOM_NODE_UD_MINERAL 481 /* an ore seam        */
-#define VOBJ_KINGDOM_NODE_UD_WOOD 482    /* a fungal stand     */
-#define VOBJ_KINGDOM_NODE_UD_FIBRE 483   /* cave silk          */
-#define VOBJ_KINGDOM_NODE_UD_WATER 484   /* a dark pool        */
+/* The eight prototype vnums, VOBJ_KINGDOM_NODE_MINERAL .. _UD_WATER, are
+ * defined in world/vnum.obj.h (included above) beside VOBJ_MINE and
+ * VOBJ_GEMMINE, so the map renderer and this module read ONE definition. */
 
 /* True when a node prototype is the Underdark variant. */
 bool kingdom_node_is_underdark(int vnum);
@@ -88,7 +86,8 @@ int kingdom_resource_for_node_vnum(int vnum);
  *   3+ one OUTER ring reverts per missed cycle
  * Reclaiming a reverted ring costs the full original price again.
  */
-enum kingdom_arrears {
+enum kingdom_arrears
+{
 	KARR_CURRENT = 0,
 	KARR_GUARDS_GONE,
 	KARR_NODES_DORMANT,
@@ -104,7 +103,8 @@ enum kingdom_arrears {
  * no per-square rows, no 80-row rewrite when a guard dies, and reverting a
  * ring is just lowering highest_claim to a ring boundary.
  */
-struct kingdom_realm {
+struct kingdom_realm
+{
 	int realm_id = 0;
 	int assoc_id = 0;
 
@@ -118,7 +118,7 @@ struct kingdom_realm {
 
 	int highest_claim = 0; /* 0..KINGDOM_MAX_SQUARES */
 
-	long resources[KRES_MAX] = {0, 0, 0, 0};
+	long resources[KRES_MAX] = { 0, 0, 0, 0 };
 
 	time_t upkeep_paid_through = 0;
 	int arrears = KARR_CURRENT;
@@ -152,7 +152,8 @@ bool kingdom_resolve_anchor(kingdom_realm &realm);
 /* ------------------------------------------------------------------ *
  * Config (kingdom_config.c) -- lib/kingdom.cfg with compiled fallbacks
  * ------------------------------------------------------------------ */
-struct kingdom_config {
+struct kingdom_config
+{
 	bool enabled = false;
 	/* Coin cost of claim n, before any multiplier: base + per_square * n. */
 	long claim_cost_base = 25000;
@@ -179,15 +180,16 @@ void kingdom_config_load(void);
  * re-derives the rule, because two copies of an availability predicate drift
  * and the weaker one lies.
  */
-enum kingdom_square_verdict {
+enum kingdom_square_verdict
+{
 	KSQ_OK = 0,
-	KSQ_NO_ROOM,        /* sparse map: nothing behind the square */
-	KSQ_OFF_GRID,       /* would leave the map zone */
-	KSQ_BAD_SECTOR,     /* impassable / water / not settleable */
-	KSQ_UNDERDARK,      /* absolute ban, ruled 2026-08-28 */
+	KSQ_NO_ROOM, /* sparse map: nothing behind the square */
+	KSQ_OFF_GRID, /* would leave the map zone */
+	KSQ_BAD_SECTOR, /* impassable / water / not settleable */
+	KSQ_UNDERDARK, /* absolute ban, ruled 2026-08-28 */
 	KSQ_NEAR_HOMETOWN,
 	KSQ_NEAR_ENTRANCE,
-	KSQ_OTHER_REALM,    /* inside another realm's footprint */
+	KSQ_OTHER_REALM, /* inside another realm's footprint */
 	KSQ_HAS_GUILDHALL
 };
 
@@ -214,6 +216,13 @@ int kingdom_judge_footprint(int hall_rnum, int racewar, int ignore_assoc, int *b
  * own line citations had already gone stale during authoring; a line number
  * in a comment is a second copy of a moving target.
  */
+
+/* --- kingdom.c : the module core --- */
+/* The guild's MAIN hall, or NULL: matched on the persisted assoc_id, never on
+ * gh->guild (the loader leaves that NULL when the association is gone), and
+ * GH_TYPE_MAIN only, because an outpost can never anchor a realm. THE ONE
+ * finder -- three copies once disagreed about the same hall. */
+Guildhall *kingdom_main_hall(int assoc_id);
 
 /* --- kingdom_claim.c : conversion and the claim/abandon state machine --- */
 long kingdom_claim_cost(int index);

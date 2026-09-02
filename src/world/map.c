@@ -262,8 +262,8 @@ const char *glyph_names[] = {
 	"evil_pc", // by align not side
 	"group",	"pc",	       "mob",	       "portal",      "guildhall", "corpse",
 	"track",	"blood",       "old_blood",    "mine",	      "gem_mine",  "cargo",
-	"node_stone",	"node_timber", "node_fibre",   "node_spring",
-	"node_ore",	"node_fungus", "node_silk",    "node_pool",
+	"node_stone",	"node_timber", "node_fibre",   "node_spring", "node_ore",  "node_fungus",
+	"node_silk",	"node_pool",
 };
 
 /* Both tables above are deliberately UNSIZED so these can count the
@@ -272,9 +272,9 @@ const char *glyph_names[] = {
  * renders blank; unsized, growing the CONTAINS_* enum out of step with
  * either table fails the build right here instead. */
 static_assert(sizeof(sector_symbol) / sizeof(sector_symbol[0]) == NUM_GLYPHS,
-              "sector_symbol must have exactly one glyph per enum entry");
+	      "sector_symbol must have exactly one glyph per enum entry");
 static_assert(sizeof(glyph_names) / sizeof(glyph_names[0]) == NUM_GLYPHS,
-              "glyph_names must have exactly one name per enum entry");
+	      "glyph_names must have exactly one name per enum entry");
 
 unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
 {
@@ -378,15 +378,21 @@ bool calculate_map_coords(int room1, int room2, int &x, int &y)
  * mines, so the map draws it the same way: a coloured letter picked by the
  * prototype vnum. Surface 477-480, Underdark 481-484.
  *
- * The vnums are repeated here rather than included. They live in
- * src/kingdom/kingdom_internal.h, which states it is private to src/kingdom/,
- * and the public kingdom/kingdom.h does not export them -- so map.c widens no
- * includes for this. Keep this block in step with that header; better still,
- * hoist those eight defines into world/vnum.obj.h, which map.c already
- * includes beside VOBJ_MINE, and index off them directly.
+ * The vnums come from world/vnum.obj.h -- the ONE definition the kingdom
+ * module reads too -- and the table below is indexed off them. The
+ * static_assert pins what that indexing relies on: eight contiguous vnums in
+ * table order.
  */
-static const int VOBJ_KINGDOM_NODE_FIRST = 477;
-static const int VOBJ_KINGDOM_NODE_LAST = 484;
+#define VOBJ_KINGDOM_NODE_FIRST VOBJ_KINGDOM_NODE_MINERAL
+#define VOBJ_KINGDOM_NODE_LAST VOBJ_KINGDOM_NODE_UD_WATER
+static_assert(VOBJ_KINGDOM_NODE_WOOD == VOBJ_KINGDOM_NODE_MINERAL + 1 &&
+		      VOBJ_KINGDOM_NODE_FIBRE == VOBJ_KINGDOM_NODE_MINERAL + 2 &&
+		      VOBJ_KINGDOM_NODE_WATER == VOBJ_KINGDOM_NODE_MINERAL + 3 &&
+		      VOBJ_KINGDOM_NODE_UD_MINERAL == VOBJ_KINGDOM_NODE_MINERAL + 4 &&
+		      VOBJ_KINGDOM_NODE_UD_WOOD == VOBJ_KINGDOM_NODE_MINERAL + 5 &&
+		      VOBJ_KINGDOM_NODE_UD_FIBRE == VOBJ_KINGDOM_NODE_MINERAL + 6 &&
+		      VOBJ_KINGDOM_NODE_UD_WATER == VOBJ_KINGDOM_NODE_MINERAL + 7,
+	      "kingdom node vnums must be contiguous, in glyph-table order");
 
 static const int kingdom_node_glyph_tab[VOBJ_KINGDOM_NODE_LAST - VOBJ_KINGDOM_NODE_FIRST + 1] = {
 	CONTAINS_NODE_STONE, /* 477 a seam of stone   */
@@ -420,7 +426,8 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 	P_obj obj; // For looping through objs in a room.
 	P_char who; // For looping through chars in a room.
 	int val = CONTAINS_MAX + 1;
-	int node_val = CONTAINS_MAX + 1; // kingdom harvest node glyph alone; see HIDDEN_BY_FOREST below
+	int node_val =
+		CONTAINS_MAX + 1; // kingdom harvest node glyph alone; see HIDDEN_BY_FOREST below
 	int from_room = ch->in_room;
 
 	if (!IS_ALIVE(ch) || room <= 0)

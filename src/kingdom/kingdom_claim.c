@@ -202,44 +202,8 @@ static bool kingdom_valid_rnum(int rnum)
 	return rnum > 0;
 }
 
-/* The guild's MAIN hall, or NULL.
- *
- * Not Guildhall::find_by_assoc_id(): that finder dereferences gh->guild with
- * no null check (src/guild/guildhall.c:140-141) even though the loader leaves
- * that pointer null whenever get_guild_from_id() misses
- * (src/guild/guildhall_db.c:394), and it returns the first hall of ANY type --
- * a guild may also own outposts (GH_TYPE_OUTPOST), and an outpost must never
- * anchor a realm. Matching on the persisted assoc_id field touches no
- * possibly-null pointer at all. */
-static Guildhall *kingdom_main_hall(int assoc_id)
-{
-	if (assoc_id <= 0)
-	{
-		return NULL;
-	}
-
-	for (size_t i = 0; i < Guildhall::guildhalls.size(); i++)
-	{
-		Guildhall *gh = Guildhall::guildhalls[i];
-
-		if (!gh)
-		{
-			continue;
-		}
-		if (gh->assoc_id != assoc_id)
-		{
-			continue;
-		}
-		if (gh->type != GH_TYPE_MAIN)
-		{
-			continue;
-		}
-
-		return gh;
-	}
-
-	return NULL;
-}
+/* The guild's MAIN hall comes from kingdom_main_hall() in kingdom.c -- the
+ * module's one finder, declared in kingdom_internal.h. */
 
 /* Realm ids are only a stable surrogate for the persisted row -- realms are
  * keyed by association id everywhere else. Hand out one past the highest in
@@ -471,8 +435,8 @@ bool kingdom_convert_guild(P_char ch)
 
 	if (!realm)
 	{
-		logit(LOG_KINGDOM,
-		      "CONVERT: realm for assoc %d vanished immediately after insert.", assoc_id);
+		logit(LOG_KINGDOM, "CONVERT: realm for assoc %d vanished immediately after insert.",
+		      assoc_id);
 		send_to_char("Something went wrong founding your realm.\r\n", ch);
 		return false;
 	}
@@ -538,8 +502,8 @@ bool kingdom_claim_next(P_char ch)
 	 * a square may belong to a realm; nothing here second-guesses it or
 	 * caches its answer. The realm's own association is excluded so that a
 	 * realm never collides with itself. */
-	const int verdict = kingdom_judge_square(realm->hall_rnum, index,
-						 (int)guild->get_racewar(), realm->assoc_id);
+	const int verdict = kingdom_judge_square(realm->hall_rnum, index, (int)guild->get_racewar(),
+						 realm->assoc_id);
 
 	if (verdict != KSQ_OK)
 	{
@@ -579,8 +543,7 @@ bool kingdom_claim_next(P_char ch)
 	const int claimed_rnum = kingdom_room_for_claim(realm->hall_rnum, index);
 	const int claimed_vnum = kingdom_valid_rnum(claimed_rnum) ? world[claimed_rnum].number : 0;
 
-	logit(LOG_KINGDOM,
-	      "CLAIM: %s (assoc %d) took square %d (ring %d, vnum %d) for %ld copper.",
+	logit(LOG_KINGDOM, "CLAIM: %s (assoc %d) took square %d (ring %d, vnum %d) for %ld copper.",
 	      guild->get_name().c_str(), realm->assoc_id, index, ring, claimed_vnum, price);
 
 	char told[MAX_INPUT_LENGTH];
@@ -636,8 +599,8 @@ bool kingdom_abandon_last(P_char ch)
 
 	/* Read the room BEFORE shrinking, while the square is still ours. */
 	const int released_rnum = kingdom_room_for_claim(realm->hall_rnum, index);
-	const int released_vnum =
-		kingdom_valid_rnum(released_rnum) ? world[released_rnum].number : 0;
+	const int released_vnum = kingdom_valid_rnum(released_rnum) ? world[released_rnum].number :
+								      0;
 
 	realm->highest_claim = index - 1;
 

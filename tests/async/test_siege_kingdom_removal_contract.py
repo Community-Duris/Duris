@@ -53,12 +53,12 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
 
         # The NEW kingdom module (src/kingdom/) revives Guild::is_kingdom with
         # a real definition delegating to its seam. What must stay dead is the
-        # old declared-but-undefined form: if the declaration exists, the
-        # definition must too.
+        # old declared-but-undefined form, so BOTH halves are required: the
+        # declaration in the header and the definition in assocs.c.
         associations = (SRC / "guild/assocs.h").read_text()
         migrate_stubs = (ROOT / "migrations/tools/migrate_stubs.c").read_text()
-        if "is_kingdom" in associations:
-            self.assertIn("bool Guild::is_kingdom()", (SRC / "guild/assocs.c").read_text())
+        self.assertIn("bool is_kingdom();", associations)
+        self.assertIn("bool Guild::is_kingdom()", (SRC / "guild/assocs.c").read_text())
         self.assertNotIn("is_kingdom", migrate_stubs)
 
     def test_feature_world_wiring_and_prototype_custody_are_safe(self) -> None:

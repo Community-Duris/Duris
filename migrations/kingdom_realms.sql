@@ -57,7 +57,7 @@ set @sql = if(@tbl_exists = 0,
 
     primary key (assoc_id)
 ) engine=innodb default charset=utf8mb4',
-'select "kingdom_realms already exists"');
+'select ''kingdom_realms already exists''');
 
 prepare stmt from @sql;
 execute stmt;
