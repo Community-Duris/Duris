@@ -130,9 +130,14 @@ static bool get_trace_enabled(void)
 
 static bool uses_generic_item_ownership(P_obj object)
 {
-	return object && object->obj_uid > 0 && object->type != ITEM_MONEY &&
-	       !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
-	       !(object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE));
+	if (!object || object->obj_uid == 0 || object->type == ITEM_MONEY ||
+	    (object->type == ITEM_CORPSE && IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE)))
+		return false;
+	if (!IS_SET(object->extra_flags, ITEM_TRANSIENT))
+		return true;
+	item_ownership_runtime_entry ownership = {};
+	return item_ownership_runtime_lookup(object->obj_uid, &ownership) &&
+	       ownership.state == item_custody_state::active;
 }
 
 #define GETDBG_LOG(...)                                \
@@ -503,7 +508,8 @@ void item_put_completion(P_char actor, bool committed, const item_transfer_resul
  * ledger rather than from the saved rows.  A live-only obj_to_obj() therefore does not
  * merely skip a write, it strands the container: every later give or drop of it fails
  * preflight, and the contents un-nest on the next login.  Only objects outside generic
- * ownership (coins, transients, PC corpse roots) and uid-less containers stay synchronous.
+ * ownership (coins, unowned transients, PC corpse roots) and uid-less containers stay
+ * synchronous.
  */
 bool defer_durable_put(P_char actor, P_obj object, P_obj container, int showit)
 {
@@ -2846,7 +2852,7 @@ void drop_transient_object(P_char actor, P_obj object, bulk_drop_state &state)
 
 void finish_bulk_drop_after_commit(P_char actor, bulk_drop_state &state)
 {
-	/* Coins, transient objects, and PC corpse roots do not use generic ownership. */
+	/* Coins, unowned transient objects, and PC corpse roots stay synchronous. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
@@ -3862,7 +3868,7 @@ bool bulk_put_permitted(P_char actor, P_obj object, P_obj container, int64_t &we
 
 void finish_bulk_put_after_commit(P_char actor, bulk_put_state &state, P_obj container)
 {
-	/* Coins, transient objects, and PC corpse roots do not use generic ownership. */
+	/* Coins, unowned transient objects, and PC corpse roots stay synchronous. */
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;

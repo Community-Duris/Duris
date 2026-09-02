@@ -7,6 +7,7 @@ import os
 import pathlib
 import re
 import signal
+import struct
 import subprocess
 import tempfile
 import time
@@ -29,6 +30,57 @@ from test_flatfile_combat_journey import (
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA_HEADER = ROOT / "src/account/chaos_eq_data.h"
+TRANSIENT_RING_VNUM = 88317
+STARTER_BAG_VNUM = 96443
+
+
+def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, int]]]:
+    """Read the isolated flatfile ownership catalog grouped by object VNUM."""
+    data = (state_root / "domains/item_ownership").read_bytes()
+    header_size = 8 + 4 + 4 + 8 + 32
+    require(data[:8] == b"DUROWN\0\0", "flatfile item ownership magic changed")
+    version, payload_size, revision = struct.unpack_from("<IIQ", data, 8)
+    require(version == 2 and revision > 0, "flatfile item ownership header is invalid")
+    require(payload_size == len(data) - header_size, "flatfile item ownership size is invalid")
+    payload = data[header_size:]
+    owner_count, item_count, _ = struct.unpack_from("<III", payload)
+    offset = struct.calcsize("<III") + owner_count * struct.calcsize("<BQQQ")
+    item_format = "<QQQBQQQiB"
+    item_size = struct.calcsize(item_format)
+    require(offset + item_count * item_size <= len(payload), "flatfile item ownership rows are truncated")
+    by_vnum: dict[int, list[dict[str, int]]] = {}
+    for _ in range(item_count):
+        (
+            item_uid,
+            root_item_uid,
+            parent_item_uid,
+            owner_type,
+            owner_id,
+            owner_context_id,
+            item_revision,
+            vnum,
+            state,
+        ) = struct.unpack_from(item_format, payload, offset)
+        offset += item_size
+        by_vnum.setdefault(vnum, []).append(
+            {
+                "item_uid": item_uid,
+                "root_item_uid": root_item_uid,
+                "parent_item_uid": parent_item_uid,
+                "owner_type": owner_type,
+                "owner_id": owner_id,
+                "owner_context_id": owner_context_id,
+                "item_revision": item_revision,
+                "state": state,
+            }
+        )
+    return by_vnum
+
+
+def one_owned_item(state_root: pathlib.Path, vnum: int) -> dict[str, int]:
+    matches = read_item_ownership(state_root).get(vnum, [])
+    require(len(matches) == 1, f"expected exactly one ownership row for VNUM {vnum}")
+    return matches[0]
 
 
 def warrior_kit_vnums() -> set[int]:
@@ -391,7 +443,48 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                         + single_level_transcript,
                     )
 
+                    bag_authority = one_owned_item(state_root, STARTER_BAG_VNUM)
+                    ring_before_get = one_owned_item(state_root, TRANSIENT_RING_VNUM)
+                    require(
+                        ring_before_get["root_item_uid"] == bag_authority["item_uid"]
+                        and ring_before_get["parent_item_uid"] == bag_authority["item_uid"]
+                        and ring_before_get["owner_type"] == 1
+                        and ring_before_get["owner_id"] == 1
+                        and ring_before_get["state"] == 1,
+                        "transient starter ring was not granted as a durable bag child",
+                    )
+
+                    client.send("get liquid bottomless")
+                    client.expect("You get", timeout=30)
+                    client.expect("Pos: standing >", timeout=30)
+                    ring_after_get = one_owned_item(state_root, TRANSIENT_RING_VNUM)
+                    require(
+                        ring_after_get["item_uid"] == ring_before_get["item_uid"]
+                        and ring_after_get["root_item_uid"] == ring_after_get["item_uid"]
+                        and ring_after_get["parent_item_uid"] == 0
+                        and ring_after_get["owner_type"] == 1
+                        and ring_after_get["owner_id"] == 1
+                        and ring_after_get["state"] == 1
+                        and ring_after_get["item_revision"]
+                        > ring_before_get["item_revision"],
+                        "transient starter ring authority did not move from the bag to a player root",
+                    )
+
+                    client.send("wear liquid")
+                    client.expect("ring finger", timeout=30)
+                    client.expect("Pos: standing >", timeout=30)
+
                     inspect_chaos_material_pouch(client)
+                    client.send("put all bottomless")
+                    client.expect("You put 3 items", timeout=30)
+                    client.expect("Pos: standing >", timeout=30)
+                    client.transcript.clear()
+                    client.send("equipment")
+                    equipment = client.expect("Pos: standing >", timeout=30).lower()
+                    require(
+                        "ring of liquid rock" in equipment,
+                        "put all bottomless moved worn Chaos equipment:\n" + equipment,
+                    )
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.", timeout=120)
 
@@ -458,7 +551,42 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                                 "flat-file reload server did not boot:\n" + reload_boot[-8000:],
                             )
                             reload_client = reconnect_character(reload_plain_port)
+                            reload_client.send("get pouch bottomless")
+                            reload_client.expect("You get", timeout=30)
+                            reload_client.expect("Pos: standing >", timeout=30)
                             inspect_chaos_material_pouch(reload_client, retrieve=False)
+                            reload_client.transcript.clear()
+                            reload_client.send("equipment")
+                            reload_equipment = reload_client.expect(
+                                "Pos: standing >", timeout=30
+                            ).lower()
+                            require(
+                                "ring of liquid rock" in reload_equipment,
+                                "Chaos equipment did not survive restart in its worn slots:\n"
+                                + reload_equipment,
+                            )
+                            reload_client.transcript.clear()
+                            reload_client.send("look in bottomless")
+                            finish_paged(reload_client)
+                            reload_bag = bytes(reload_client.transcript).decode(
+                                "utf-8", errors="replace"
+                            ).lower()
+                            require(
+                                "ring of liquid rock" not in reload_bag,
+                                "worn transient starter ring rematerialized in the bag:\n"
+                                + reload_bag,
+                            )
+                            ring_after_reload = one_owned_item(
+                                state_root, TRANSIENT_RING_VNUM
+                            )
+                            require(
+                                ring_after_reload["item_uid"]
+                                == ring_after_get["item_uid"]
+                                and ring_after_reload["root_item_uid"]
+                                == ring_after_reload["item_uid"]
+                                and ring_after_reload["parent_item_uid"] == 0,
+                                "reloaded transient starter ring authority was not a player root",
+                            )
                             reload_client.send("quit")
                             reload_client.expect("ACCOUNT MENU", timeout=60)
                             reload_client.send("0")
@@ -482,6 +610,13 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                             "limit_exceeded" not in reload_boot
                             and "component_failure" not in reload_boot,
                             "flat-file reload rejected the Chaos material inventory snapshot:\n" + reload_boot[-8000:],
+                        )
+                        reload_logs = runtime_logs(run_root)
+                        require(
+                            "player_load_materialize: component=items pid=1 outcome=topology_repaired"
+                            not in reload_logs,
+                            "correctly moved Chaos equipment triggered topology repair:\n"
+                            + reload_logs,
                         )
                 except Exception as error:
                     output.flush()
