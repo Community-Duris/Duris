@@ -4,9 +4,14 @@
 from _paths import ROOT
 
 
-SOURCE = (ROOT / "tests/async/test_flatfile_combat_journey.py").read_text()
+SOURCES = (
+    (ROOT / "tests/async/test_flatfile_combat_journey.py").read_text(),
+    (ROOT / "tests/async/test_flatfile_chaos_new_character_kit.py").read_text(),
+)
 
-assert 'f"flatfile-combat-{os.getpid()}"' in SOURCE
-assert 'ROOT / "bin/tests/flatfile-combat"' not in SOURCE
+for source in SOURCES:
+    assert 'TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-")' in source
+    assert "build_flatfile_server(pathlib.Path(build_tmp))" in source
+    assert 'ROOT / "bin/tests/flatfile-combat"' not in source
 
-print("parallel flat-file journey build isolation contract passed")
+print("parallel flat-file journey build isolation and cleanup contract passed")

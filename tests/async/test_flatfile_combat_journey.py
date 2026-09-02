@@ -395,12 +395,8 @@ def verify_recovered_loot(port: int) -> None:
         client.close()
 
 
-def build_flatfile_server() -> pathlib.Path:
-    """Build this process's isolated flat-file journey server."""
-    # The Chaos kit journey imports this builder, and the root regression runner
-    # executes both scripts concurrently.  A per-process output prevents one
-    # linker from replacing the binary while the other journey is running it.
-    build_root = ROOT / "bin/tests" / f"flatfile-combat-{os.getpid()}"
+def build_flatfile_server(build_root: pathlib.Path) -> pathlib.Path:
+    """Build an isolated flat-file journey server under build_root."""
     binary = build_root / "server/dms_new"
     build = subprocess.run(
         [
@@ -527,5 +523,9 @@ def run_journey(binary: pathlib.Path) -> None:
 
 
 if __name__ == "__main__":
-    run_journey(build_flatfile_server())
+    # The root regression runner executes this and the Chaos kit journey
+    # concurrently. Distinct temporary build roots prevent linker/runtime races
+    # and are removed after each journey, including on failure.
+    with tempfile.TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-") as build_tmp:
+        run_journey(build_flatfile_server(pathlib.Path(build_tmp)))
     print("flat-file combat, player death, corpse recovery, save, and reconnect journey passed")
