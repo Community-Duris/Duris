@@ -4,7 +4,12 @@
 The MariaDB half is reached by the server's own boot; the __NO_MYSQL__ half
 was, until this test, compiled by CI and executed by nothing. The harness
 links kingdom_db.c against the real flatfile_store.c under a temporary root
-and drives save, load, delete and flush through corruption and merge cases.
+and drives save, load, delete and flush through merge cases, whole-file
+rejections (bad magic, unknown version, zero revision, an over-cap record
+count, a broken checksum, a truncated payload) and the per-record drop on
+both sides: the flush skipping one insane record of a batch, and
+decode_catalog() dropping one insane on-disk record from an otherwise-sound
+catalogue that then heals at the next publish.
 Modelled on test_flatfile_nexus_repository.py.
 """
 

@@ -191,9 +191,31 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         help_index = (ROOT / "lib/information/help_index").read_text()
         attributes = (ROOT / "docs/lib/information/command_attributes.txt").read_text()
         self.assertIn("helpkingdoms", catalog)
-        for retired_surface in ("Kingdom View", "ADD (Immortal Command)", "DEPLOY (Immortal Command)"):
-            self.assertNotIn(retired_surface, importer)
-        self.assertNotRegex(importer, r'(?m)^\s*\["(?:add|deploy)"\]=')
+
+        # THE IMPORTER. It is a bash map from help FILE to page title, so help
+        # TITLES ("Kingdom View", "ADD (Immortal Command)") could never appear
+        # in it and forbidding them pinned nothing -- neither did forbidding
+        # ["add"]/["deploy"] entries, which never existed either. The single
+        # importer line 552230d47 actually touched was ["helpkingdoms"], and
+        # the kingdom module deliberately restored it. So pin what is true and
+        # load-bearing: the entry is back, and every file the importer names
+        # still exists, which is what keeps a retired help file from being
+        # listed and silently skipped at import time.
+        table = re.search(r"declare\s+-A\s+HELP_FILES=\((.*?)\n\)", importer, re.S)
+        self.assertIsNotNone(table, "importer HELP_FILES table not found")
+        entries = dict(re.findall(r'\["([^"]+)"\]="([^"]*)"', table.group(1)))
+        self.assertEqual(entries.get("helpkingdoms"), "kingdoms")
+        # hints.txt is read from docs/, exactly as the import loop reads it.
+        missing = [
+            name
+            for name in entries
+            if not (ROOT / "docs/lib/information" / name).exists()
+            and not (ROOT / "lib/information" / name).exists()
+        ]
+        self.assertEqual(missing, [], f"importer names help files that do not exist: {missing}")
+
+        # THE HELP INDEX and the command attributes DID carry the retired
+        # surfaces, and 552230d47 removed them: these can fail.
         self.assertNotIn("ADD (Immortal Command)", help_index)
         self.assertNotIn("Kingdom View", help_index)
         self.assertNotRegex(attributes, r"(?m)^(?:add|deploy)\s*$")
