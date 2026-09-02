@@ -32,6 +32,8 @@ static int ring_last(int ring)
 	return 4 * ring * (ring + 1);
 }
 
+/* Ring 1..KINGDOM_MAX_RING holding claim `index`, or 0 outside 1..80: the
+ * first ring whose last index (ring_last()) reaches it. */
 int kingdom_ring_for_index(int index)
 {
 	if (index < 1 || index > KINGDOM_MAX_SQUARES)
@@ -42,6 +44,8 @@ int kingdom_ring_for_index(int index)
 	return 0;
 }
 
+/* First claim index of `ring`: one past the previous ring's last, so ring 1
+ * starts at 1. 0 for a ring outside 1..KINGDOM_MAX_RING. */
 int kingdom_ring_first_index(int ring)
 {
 	if (ring < 1 || ring > KINGDOM_MAX_RING)
@@ -49,6 +53,7 @@ int kingdom_ring_first_index(int ring)
 	return ring_last(ring - 1) + 1;
 }
 
+/* Last claim index of `ring`, 4r(r+1); 0 for a ring outside 1..KINGDOM_MAX_RING. */
 int kingdom_ring_last_index(int ring)
 {
 	if (ring < 1 || ring > KINGDOM_MAX_RING)
@@ -56,6 +61,7 @@ int kingdom_ring_last_index(int ring)
 	return ring_last(ring);
 }
 
+/* Squares on `ring`, 8r; 0 for a ring outside 1..KINGDOM_MAX_RING. */
 int kingdom_ring_size(int ring)
 {
 	if (ring < 1 || ring > KINGDOM_MAX_RING)
@@ -63,6 +69,8 @@ int kingdom_ring_size(int ring)
 	return 8 * ring;
 }
 
+/* Contract in kingdom_geometry.h. A straight read of KINGDOM_CLAIM_ORDER;
+ * either output pointer may be NULL. */
 bool kingdom_offset_for_index(int index, int *dx, int *dy)
 {
 	if (index < 1 || index > KINGDOM_MAX_SQUARES)
@@ -74,6 +82,9 @@ bool kingdom_offset_for_index(int index, int *dx, int *dy)
 	return true;
 }
 
+/* Contract in kingdom_geometry.h. A linear search of the 80-entry table once
+ * the cheap rejections -- the hall itself, anything outside the 9x9
+ * footprint -- are out of the way. */
 int kingdom_index_for_offset(int dx, int dy)
 {
 	if (dx == 0 && dy == 0)
@@ -100,6 +111,10 @@ static bool valid_rnum(int rnum)
 	return rnum > 0 && rnum <= top_of_world;
 }
 
+/* Contract in kingdom_geometry.h. Derives (x,y) from the room's vnum offset
+ * within its zone by the engine's own row-major formula; rnum 0 and any room
+ * outside a map zone are refused. The outputs, each of which may be NULL, are
+ * written only on success. */
 bool kingdom_square_of_room(int rnum, int *zone_out, int *x, int *y)
 {
 	if (!valid_rnum(rnum))
@@ -132,6 +147,10 @@ bool kingdom_square_of_room(int rnum, int *zone_out, int *x, int *y)
 	return true;
 }
 
+/* Contract in kingdom_geometry.h. Refuses to leave the grid rather than wrap,
+ * treats real_room0()'s 0 as "no room", and accepts only a room that
+ * kingdom_square_of_room() maps back to the square asked for -- which rejects
+ * the surface zone's aliasing "Dispersement" rooms. */
 int kingdom_room_at(int zone_idx, int x, int y)
 {
 	if (zone_idx < 0)
@@ -172,6 +191,8 @@ int kingdom_room_at(int zone_idx, int x, int y)
 	return rnum;
 }
 
+/* Contract in kingdom_geometry.h. Composes the helpers above: the offset for
+ * the index, the square of the hall, then the room at hall + offset. */
 int kingdom_room_for_claim(int hall_rnum, int index)
 {
 	int dx = 0, dy = 0;

@@ -90,10 +90,10 @@ static std::string realm_name(int assoc_id)
 	return name;
 }
 
-/* Racewar side of the owning guild, or 0 when the guild is gone.
- * kingdom_judge_square() takes it for the racewar-sensitive siting rules; the
- * Underdark ban is absolute and does not depend on it (RULINGS.md, answer 5),
- * so a 0 here degrades the grid's accuracy rather than inverting it. */
+/* Racewar side of the owning guild, or 0 when the guild is gone. Passed
+ * through to kingdom_judge_square(), which carries the parameter on its seam
+ * but -- the Underdark ban being absolute (RULINGS.md, answer 5) -- consults
+ * no racewar-sensitive rule, so a 0 here changes no verdict today. */
 static int realm_racewar(int assoc_id)
 {
 	P_Guild guild = get_guild_from_id(assoc_id);
@@ -341,6 +341,9 @@ void kingdom_show_map(struct char_data *ch, const kingdom_realm &realm)
  * The status table
  * ------------------------------------------------------------------ */
 
+/* The realm status table: seat, territory by ring, the next claim with its
+ * price or the reason it is barred, guards, upkeep, standing and resources.
+ * Reads the record and asks the placement authority; decides nothing itself. */
 void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 {
 	char out[KINGDOM_DISPLAY_BUF] = "";

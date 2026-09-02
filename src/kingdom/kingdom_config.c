@@ -104,6 +104,8 @@ static const kingdom_config kingdom_defaults{};
  * Scalar parsing
  * ------------------------------------------------------------------ */
 
+/* Whole decimal text -> long. Refuses a partial parse and an out-of-range
+ * value; *result is written only on success. */
 static bool kingdom_parse_long(const char *text, long *result)
 {
 	char *end;
@@ -119,6 +121,8 @@ static bool kingdom_parse_long(const char *text, long *result)
 	return true;
 }
 
+/* true/yes/1 and false/no/0, exact and case-sensitive. Anything else is
+ * refused and leaves *result untouched. */
 static bool kingdom_parse_bool(const char *text, bool *result)
 {
 	if (!strcmp(text, "true") || !strcmp(text, "yes") || !strcmp(text, "1"))
@@ -134,6 +138,8 @@ static bool kingdom_parse_bool(const char *text, bool *result)
 	return false;
 }
 
+/* Store `value` in *field if it parses as a long within [low, high]; otherwise
+ * log the rejection and leave the field -- the compiled default -- alone. */
 static void kingdom_set_long(const char *key, const char *value, long *field, long low, long high)
 {
 	long parsed;
@@ -147,6 +153,8 @@ static void kingdom_set_long(const char *key, const char *value, long *field, lo
 	*field = parsed;
 }
 
+/* As kingdom_set_long() for an int field. The bounds are ints, so a value that
+ * passes the range check narrows without truncation. */
 static void kingdom_set_int(const char *key, const char *value, int *field, int low, int high)
 {
 	long parsed;
@@ -161,6 +169,8 @@ static void kingdom_set_int(const char *key, const char *value, int *field, int 
 	*field = (int)parsed;
 }
 
+/* Store `value` in *field if kingdom_parse_bool() accepts it; otherwise log
+ * the rejection and leave the field -- the compiled default -- alone. */
 static void kingdom_set_bool(const char *key, const char *value, bool *field)
 {
 	bool parsed;
@@ -222,6 +232,10 @@ static bool kingdom_apply_value(const char *key, const char *value)
  * The loader
  * ------------------------------------------------------------------ */
 
+/* Reset kingdom_cfg to the compiled defaults, then overlay lib/kingdom.cfg if
+ * it exists: one key=value per line, '#'/';' comments and [section] headers
+ * skipped, every recognised value range-checked before it displaces a default.
+ * A missing file is normal and leaves kingdoms disabled. */
 void kingdom_config_load(void)
 {
 	FILE *fp;
@@ -326,6 +340,8 @@ static const char *const kingdom_resource_names[] = { "mineral", "wood", "fibre"
 static_assert((int)(sizeof(kingdom_resource_names) / sizeof(kingdom_resource_names[0])) == KRES_MAX,
 	      "every kingdom_resource needs a name in kingdom_resource_names");
 
+/* Display name of a kingdom_resource, or "unknown" for any index outside
+ * 0..KRES_MAX-1. Never NULL. */
 const char *kingdom_resource_name(int res)
 {
 	/* Callers pass indices that came from persisted rows and from player

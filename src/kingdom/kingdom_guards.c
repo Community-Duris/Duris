@@ -257,6 +257,9 @@ static bool kingdom_char_is_guard(P_char ch, int guard_rnum)
 	return ch->only.npc->R_num == guard_rnum;
 }
 
+/* True when `ch` is a kingdom guard whose realm stamp is `assoc_id`. Every
+ * per-realm walk of character_list asks this; the stamp is compared as an int
+ * and GET_ASSOC()'s pointer is never read. */
 static bool kingdom_char_is_guard_of(P_char ch, int guard_rnum, int assoc_id)
 {
 	if (!kingdom_char_is_guard(ch, guard_rnum))
@@ -621,8 +624,12 @@ int kingdom_guards_despawn_all(void)
  * return the number of guards standing afterwards.
  *
  * Idempotent: calling it twice in a row does nothing the second time, which is
- * what lets the same function serve boot, the upkeep cycle, a claim, an
- * abandon, an arrears rung and a payment.
+ * what lets one function serve every moment the garrison can change. It is
+ * reached through kingdom_guards_refresh_all() from kingdom_initialize() at
+ * boot and from kingdom_upkeep_event() after each cycle -- the cycle being
+ * where an arrears rung moves and where a paid debt restores the allowance --
+ * and, for the one realm they change, from kingdom_claim_next(),
+ * kingdom_abandon_last() and kingdom_on_guildhall_changed().
  */
 int kingdom_guards_refresh(const kingdom_realm &realm)
 {

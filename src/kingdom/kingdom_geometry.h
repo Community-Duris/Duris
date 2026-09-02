@@ -70,6 +70,8 @@ namespace kingdom_geometry_detail
  * kingdom_claim_order()[n] is the offset of claim number n directly. */
 using claim_table = std::array<kingdom_offset, KINGDOM_MAX_SQUARES + 1>;
 
+/* Generates the whole table by walking each ring clockwise from due north,
+ * ring 1 outward. Evaluated at compile time to initialise KINGDOM_CLAIM_ORDER. */
 constexpr claim_table build_claim_order()
 {
 	claim_table t{};
@@ -94,6 +96,7 @@ constexpr claim_table build_claim_order()
 	return t;
 }
 
+/* Chebyshev (box) distance of an offset from the hall, i.e. the ring it lies on. */
 constexpr int chebyshev(int dx, int dy)
 {
 	const int ax = dx < 0 ? -dx : dx;
@@ -113,16 +116,20 @@ constexpr kingdom_geometry_detail::claim_table KINGDOM_CLAIM_ORDER =
 namespace kingdom_geometry_detail
 {
 
-/* Squares in ring r, and the last claim index of ring r. */
+/* Squares in ring r: 8r. */
 constexpr int ring_size(int r)
 {
 	return 8 * r;
 }
+/* Last claim index of ring r: 4r(r+1), so 8, 24, 48, 80. */
 constexpr int ring_last_index(int r)
 {
 	return 4 * r * (r + 1);
 }
 
+/* Compile-time proof of the table: each ring holds ring_size() indices, every
+ * one at that ring's Chebyshev distance, and no offset -- the hall included --
+ * appears among the claims more than once. */
 constexpr bool table_is_sound()
 {
 	/* every claimed square sits on the ring its index implies */

@@ -216,6 +216,10 @@ static const struct room_data *kingdom_gates_world = NULL;
 static int kingdom_gates_top = -1;
 static bool kingdom_gates_built = false;
 
+/* Build -- or rebuild, if the world table has been replaced since -- the
+ * per-zone hometown and zone-entrance gate lists and the Underdark zone set,
+ * in one pass over every map-square room. A no-op once built against the
+ * current world; kingdom_judge_square() calls it lazily. */
 static void kingdom_build_gate_cache(void)
 {
 	size_t home_total = 0;
@@ -436,6 +440,9 @@ static bool kingdom_square_has_guildhall(int rnum)
  * The judgements
  * ------------------------------------------------------------------ */
 
+/* The verdict on claim `index` of a realm seated at hall_rnum, tested in the
+ * banner's order so the first refusal is the most fundamental one. A bad index
+ * and a seat that will not resolve to a map square both answer KSQ_OFF_GRID. */
 int kingdom_judge_square(int hall_rnum, int index, int racewar, int ignore_assoc)
 {
 	int dx = 0, dy = 0;
