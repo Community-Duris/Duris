@@ -5428,6 +5428,26 @@ bool sql_account_exists(const char *name)
 	return exists;
 }
 
+constexpr unsigned int ACCOUNT_LOCKER_SLOT_COUNT = 5;
+
+static bool sql_format_account_locker_name_list(char *output, size_t output_size,
+						const char *escaped_account)
+{
+	if (!output || !output_size || !escaped_account)
+		return false;
+	size_t used = 0;
+	for (unsigned int slot = 0; slot < ACCOUNT_LOCKER_SLOT_COUNT; ++slot)
+	{
+		const int written = snprintf(output + used, output_size - used,
+					     "%sLOWER(CONCAT('account.','%s','.%u.locker'))",
+					     slot ? "," : "", escaped_account, slot);
+		if (written < 0 || static_cast<size_t>(written) >= output_size - used)
+			return false;
+		used += static_cast<size_t>(written);
+	}
+	return true;
+}
+
 bool sql_delete_account(const char *name)
 {
 	if (!DB || !name || !name[0])
@@ -5436,6 +5456,13 @@ bool sql_delete_account(const char *name)
 	char *escaped_account = sql_escape_string(name);
 	if (!escaped_account)
 		return false;
+	char account_locker_names[2048];
+	if (!sql_format_account_locker_name_list(account_locker_names, sizeof(account_locker_names),
+						 escaped_account))
+	{
+		free(escaped_account);
+		return false;
+	}
 	if (sql_in_transaction())
 	{
 		free(escaped_account);
@@ -5579,18 +5606,8 @@ bool sql_delete_account(const char *name)
 			snprintf(query, sizeof(query),
 				 "SELECT DISTINCT ico.owner_type,ico.owner_id,ico.owner_context_id "
 				 "FROM item_current_owner ico JOIN lockers l ON l.id=ico.owner_id "
-				 "WHERE ico.owner_type=5 AND LOWER(l.locker_name) IN "
-				 "(LOWER(CONCAT('account.','%s','.0.locker'))"
-				 ","
-				 "LOWER(CONCAT('account.','%s','.1.locker'))"
-				 ","
-				 "LOWER(CONCAT('account.','%s','.2.locker'))"
-				 ","
-				 "LOWER(CONCAT('account.','%s','.3.locker'))"
-				 ","
-				 "LOWER(CONCAT('account.','%s','.4.locker')))",
-				 escaped_account, escaped_account, escaped_account, escaped_account,
-				 escaped_account);
+				 "WHERE ico.owner_type=5 AND LOWER(l.locker_name) IN (%s)",
+				 account_locker_names);
 		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
 			goto fail;
 		result = db_query("%s", query);
@@ -5795,27 +5812,15 @@ bool sql_delete_account(const char *name)
 		/* Account lockers in the live locker subsystem are keyed by this exact
 		 * finite set of names and do not carry an account foreign key. */
 		int written = snprintf(query, sizeof(query),
-				       "DELETE FROM locker_access WHERE LOWER(owner) IN "
-				       "(LOWER(CONCAT('account.','%s','.0.locker')),"
-				       "LOWER(CONCAT('account.','%s','.1.locker')),"
-				       "LOWER(CONCAT('account.','%s','.2.locker')),"
-				       "LOWER(CONCAT('account.','%s','.3.locker')),"
-				       "LOWER(CONCAT('account.','%s','.4.locker')))",
-				       escaped_account, escaped_account, escaped_account,
-				       escaped_account, escaped_account);
+				       "DELETE FROM locker_access WHERE LOWER(owner) IN (%s)",
+				       account_locker_names);
 		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
 			goto fail;
 		if (!sql_run_query(query))
 			goto fail;
 		written = snprintf(query, sizeof(query),
-				   "DELETE FROM lockers WHERE LOWER(locker_name) IN "
-				   "(LOWER(CONCAT('account.','%s','.0.locker')),"
-				   "LOWER(CONCAT('account.','%s','.1.locker')),"
-				   "LOWER(CONCAT('account.','%s','.2.locker')),"
-				   "LOWER(CONCAT('account.','%s','.3.locker')),"
-				   "LOWER(CONCAT('account.','%s','.4.locker')))",
-				   escaped_account, escaped_account, escaped_account,
-				   escaped_account, escaped_account);
+				   "DELETE FROM lockers WHERE LOWER(locker_name) IN (%s)",
+				   account_locker_names);
 		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
 			goto fail;
 		if (!sql_run_query(query))

@@ -331,6 +331,11 @@ int main()
 	item_ownership_runtime_forget_player_domain(80);
 	assert(!item_ownership_runtime_lookup(700, &absent));
 	assert(!item_ownership_runtime_lookup(701, &absent));
+	/* Missing valid owners are rehydrated at revision zero by the lookup API. */
+	assert(item_ownership_runtime_owner_revision(deleted_player, &owner_revision) &&
+	       owner_revision == 0);
+	assert(item_ownership_runtime_owner_revision(deleted_corpse, &owner_revision) &&
+	       owner_revision == 0);
 	assert(item_ownership_runtime_lookup(702, &absent) &&
 	       item_owner_identity_equal(absent.owner, retained_player));
 	assert(item_ownership_runtime_owner_revision(retained_player, &owner_revision) &&

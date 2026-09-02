@@ -46,6 +46,9 @@ ship_runtime_remove = function_body(SHIP, "void delete_ship_runtime(")
 destroy_item_owners = function_body(
     ITEM_REPOSITORY, "bool item_transfer_repository_destroy_owners("
 )
+format_account_lockers = function_body(
+    SQL_PLAYER, "static bool sql_format_account_locker_name_list("
+)
 
 # The destructive flow reuses login's bcrypt/legacy verifier and protects password input.
 assert "account_password_matches(d->account, arg)" in password
@@ -127,6 +130,10 @@ assert source_count(
 assert source_count(
     sql_delete, "written < 0 || static_cast<size_t>(written) >= sizeof(query)"
 ) == 3
+assert "ACCOUNT_LOCKER_SLOT_COUNT = 5" in SQL_PLAYER
+assert "slot < ACCOUNT_LOCKER_SLOT_COUNT" in format_account_lockers
+assert "sql_format_account_locker_name_list(account_locker_names" in sql_delete
+assert ".0.locker" not in sql_delete
 player_remove = sql_delete.index('"DELETE FROM player_data WHERE pid=%d"')
 projection_remove = index(sql_delete, '{ "account_characters", "account_name" }')
 credential_remove = sql_delete.index('"DELETE FROM accounts WHERE LOWER(account_name)')
