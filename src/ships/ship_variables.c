@@ -7,6 +7,28 @@
  * ***************************************************************************
  */
 
+/*
+ * OVERVIEW -- the ship system's static data
+ * ------------------------------------------
+ * This file is the data catalogue consumed by every other ship module.  It
+ * contains no behaviour: ports, crews and chiefs, weapons and equipment,
+ * hull statistics, per-hull mount permissions, armour layouts, and tactical
+ * map symbols all live in the tables below.
+ *
+ * Most array positions are public identifiers, not merely presentation
+ * order.  ShipData stores hull, crew, chief, weapon and equipment indices;
+ * persistence writes those integers unchanged, and gameplay macros use them
+ * directly as subscripts.  Consequently existing rows must not be reordered
+ * or inserted in the middle.  Append a new id, update the matching MAX*
+ * constant in ships.h, and extend every parallel permission/property table.
+ *
+ * The table schemas are declared in ships.h.  The column guides above each
+ * initializer are deliberately kept beside the data because several adjacent
+ * integer fields share the same type but use different units.  Prices are in
+ * the ship economy's base coin unit, crew skills are thousand-scaled values,
+ * headings and firing arcs are degrees, and timers are ship_activity() ticks.
+ */
+
 #include "core/structs.h"
 #include "core/utils.h"
 #include "core/config.h"

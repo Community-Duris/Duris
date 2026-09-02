@@ -5,6 +5,86 @@
  *Updated with warships. Nov08 -Lucrot                        *
  **************************************************************/
 
+/*
+ * OVERVIEW -- where this file sits in the ship system
+ * ---------------------------------------------------
+ * The spine of the ship subsystem: it owns a ship's whole life, and it owns
+ * the clock.  Every other ship_*.c file is called from here, directly or
+ * indirectly.  Start here after ships.h and ship_utils.c.
+ *
+ * A ship's life
+ * -------------
+ *   new_ship()                allocate, apply class defaults, build the
+ *                             ABSTRACT room graph, claim a runtime identity
+ *   name_ship()               name it and rebuild every derived string
+ *   load_ship()               claim real rooms, place the hull object and the
+ *                             control panel, raise LOADED
+ *   ... play ...              ship_activity() ticks it; ship_control.c steers
+ *                             it; ship_combat.c shoots at it
+ *   sink_ship()               (ship_combat.c) starts the sinking timer
+ *   finish_sinking()          timer expired: player ships are downgraded to a
+ *                             sloop and docked in Davy Jones' locker; NPC
+ *                             ships are deleted outright
+ *   delete_ship()             release the rooms, the objects and the ship
+ *
+ * Until LOADED is set a ship exists only as data -- most of the subsystem
+ * skips it.  ShipData::runtime_ref is claimed in new_ship() and released in
+ * delete_ship(); see ship_identity.c for why anything that must outlive a
+ * ship stores that rather than a P_ship.
+ *
+ * Rooms: three separate ideas, do not confuse them
+ * ------------------------------------------------
+ *   ship->location  the OCEAN room the hull sits in, as a real room index
+ *   ship->room[]    the ship's INTERIOR rooms, as vnums, plus the exits
+ *                   between them.  Built in two stages:
+ *                     set_ship_layout()          the abstract graph for the
+ *                                                class (exits are slot
+ *                                                indices, not vnums)
+ *                     set_ship_physical_layout() claims real rooms out of the
+ *                                                shared pool and wires them up
+ *   ship->anchor    the dock the ship returns to
+ *
+ * Interior rooms come from a FIXED POOL (VROOM_SHIPS_START..VROOM_SHIPS_END).
+ * A room is "in use" when its funct is ship_room_proc; find_free_ship_room()
+ * scans for one that is not.  clear_ship_layout() is what returns them, so a
+ * path that destroys a ship without calling it strands those rooms for the
+ * lifetime of the process.
+ *
+ * The per-tick heartbeat
+ * ----------------------
+ * ship_activity() runs once per clock pulse over every loaded ship and is
+ * where sailing actually happens -- timers, crew stamina, repairs, the
+ * undocking sequence, convergence of speed and heading on their ordered
+ * values, movement between ocean rooms, ramming, reloads, and finally the
+ * autopilot and the NPC AI.  Read its own comment before changing it; the
+ * `return` after finish_sinking() is load-bearing.
+ *
+ * Persistence
+ * -----------
+ * Do not write ships synchronously.  Call queue_ship_save(ship, reason) after
+ * anything worth keeping; flush_pending_ship_saves() writes them at the end
+ * of the tick, skipping ships whose ship_save_signature() has not changed and
+ * retrying failures later.  write_ship() is the immediate path and is only
+ * for callers that must know the write succeeded -- renames, which roll back
+ * on failure.  drain_pending_ship_saves() is the copyover path: it ignores
+ * the retry gate and reports whether everything is durable, so copyover can
+ * be aborted rather than lose ship state.
+ *
+ * Two backends sit behind all of that, selected by __NO_MYSQL__: SQL tables,
+ * or a validated flat-file record built by the static flat_ship_*() helpers
+ * near the top of this file.  Everything crossing that boundary is
+ * range-checked on the way in -- see flat_ship_slot_is_loadable() for why
+ * slot indices in particular matter.
+ *
+ * A note on string ownership
+ * --------------------------
+ * ShipData's strings are str_dup()ed and privately owned, but the HULL
+ * OBJECT's name and descriptions are shared across every object of that
+ * prototype by read_object() (world/db.c).  That is why name_ship() drops
+ * those pointers instead of freeing them.  Read the comment there before
+ * "fixing" what looks like a leak.
+ */
+
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -53,6 +133,17 @@ struct ship_insurance_context
 	int platinum;
 };
 
+/*
+ * Completion callback for a ship-insurance bank deposit.
+ *
+ * `raw_context` carries a ship_insurance_context describing the payout; it is
+ * copied out because the caller's buffer does not outlive this call.
+ *
+ * On a rejected transaction the money is staged at the auction house instead
+ * so the player is never simply out of pocket, and if even that fails the
+ * failure is escalated to the wizlog.  `owner` may be NULL if the player
+ * logged out while the transaction was in flight.
+ */
 static void ship_insurance_committed(P_char owner, bool committed,
 				     const currency_command_result & /*result*/,
 				     unsigned int /*error_code*/, const uint8_t *raw_context,
@@ -86,6 +177,10 @@ static void ship_insurance_committed(P_char owner, bool committed,
 	      context.platinum);
 }
 
+/*
+ * Fold `len` bytes of `data` into `hash` (FNV-1a).  Building block for
+ * ship_save_signature().
+ */
 static unsigned long long ship_save_signature_mix(unsigned long long hash, const void *data,
 						  size_t len)
 {
@@ -98,6 +193,17 @@ static unsigned long long ship_save_signature_mix(unsigned long long hash, const
 	return hash;
 }
 
+/*
+ * Fingerprint of every persisted field of `ship`.
+ *
+ * Used to skip pointless writes: queue_ship_save() records the signature of
+ * the last state actually written, and the flush compares against it, so a
+ * ship that has not really changed does not hit the database.  Two ships that
+ * would serialise identically hash identically; anything not persisted is
+ * deliberately left out of the mix.
+ *
+ * Returns 0 for a NULL ship.
+ */
 unsigned long long ship_save_signature(const P_ship ship)
 {
 	unsigned long long hash = 1469598103934665603ULL;
@@ -177,6 +283,11 @@ int shiperror, davy_jones_locker_rnum, ship_transit_rnum;
 struct ShipFragData shipfrags[20];
 
 #ifdef __NO_MYSQL__
+/*
+ * Convert a crew skill to the fixed-point thousandths the flat-file record
+ * stores.  Returns false (leaving `*milli` untouched) for a value that is not
+ * finite or does not fit an int32, so a corrupt skill cannot be written out.
+ */
 static bool flat_ship_skill_milli(float value, int32_t *milli)
 {
 	const double scaled = static_cast<double>(value) * 1000.0;
@@ -187,6 +298,14 @@ static bool flat_ship_skill_milli(float value, int32_t *milli)
 	return true;
 }
 
+/*
+ * Whether a persisted slot record can safely be loaded into a ShipSlot.
+ *
+ * This is the trust boundary for slot data: it checks the slot index, the
+ * mounting position and -- crucially -- that the item index is in range for
+ * the slot's OWN type, since ShipSlot::index subscripts a different table
+ * (weapon_data, equipment_data, or the commodity names) depending on `type`.
+ */
 static bool flat_ship_slot_is_loadable(const flatfile_ship_slot_record &slot)
 {
 	if (slot.slot_index >= MAXSLOTS || slot.position < -1 || slot.position > SLOT_EQUI)
@@ -208,6 +327,10 @@ static bool flat_ship_slot_is_loadable(const flatfile_ship_slot_record &slot)
 	}
 }
 
+/*
+ * Resolve an owner name to a player id for records that predate pid storage.
+ * Returns false when the name has no identity, leaving `*pid` untouched.
+ */
 static bool flat_ship_resolve_legacy_owner(const char *owner_name, uint32_t *pid,
 					   std::string *error)
 {
@@ -218,6 +341,13 @@ static bool flat_ship_resolve_legacy_owner(const char *owner_name, uint32_t *pid
 	return true;
 }
 
+/*
+ * Serialise a live ship into a flat-file record.
+ *
+ * Validates the runtime fields it is about to persist -- owner, class, race,
+ * db id -- and refuses rather than writing a record that could not be loaded
+ * back.  `error` receives a reason on failure.
+ */
 static bool flat_ship_capture(P_ship ship, flatfile_ship_record *record, std::string *error)
 {
 	if (!ship || !record || !ship->ownername || ship->db_id < -1 || ship->m_class < 0 ||
@@ -297,6 +427,13 @@ static bool flat_ship_capture(P_ship ship, flatfile_ship_record *record, std::st
 	return true;
 }
 
+/*
+ * Whether a flat-file ship record is safe to materialise.
+ *
+ * The load-side counterpart of flat_ship_capture()'s validation: every field
+ * that will be used as an array subscript or a table index is range-checked
+ * here, so a damaged file is rejected instead of corrupting the world.
+ */
 static bool flat_ship_record_is_loadable(const flatfile_ship_record &record, std::string *error)
 {
 	if (record.ship_id > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
@@ -326,6 +463,13 @@ static bool flat_ship_record_is_loadable(const flatfile_ship_record &record, std
 	return true;
 }
 
+/*
+ * Build a live ship from a validated flat-file record and load it into the
+ * world.
+ *
+ * Refuses records that fail flat_ship_record_is_loadable().  `error` receives
+ * a reason on failure.  This is the flat-file half of read_ships().
+ */
 static bool flat_ship_materialize(const flatfile_ship_record &record, std::string *error)
 {
 	P_ship ship = new_ship(record.ship_class);
@@ -391,9 +535,18 @@ static bool flat_ship_materialize(const flatfile_ship_record &record, std::strin
 }
 #endif
 
-//--------------------------------------------------------------------
-// load all ships from file into the world
-//--------------------------------------------------------------------
+/*
+ * Boot the whole ship subsystem.  Called once from the world loader.
+ *
+ * Wires the ship special procedures onto their prototype objects, resolves
+ * the two fixed rooms the system needs (Davy Jones' locker for wrecks and
+ * the transit room), loads every persisted ship, reaps the ones flagged
+ * TO_DELETE, and then brings up the cargo market, Cyric's Revenge and the
+ * automatons quest.
+ *
+ * A failed ship load is fatal under the flat-file backend, where the ship
+ * file is the sole authority; under MySQL it is logged and boot continues.
+ */
 void initialize_ships()
 {
 	obj_index[real_object0(VOBJ_PANEL)].func.obj = ship_panel_proc;
@@ -433,9 +586,15 @@ void initialize_ships()
 	}
 }
 
-//--------------------------------------------------------------------
-// pre shutdown operations: dock all ships and put sailors to land
-//--------------------------------------------------------------------
+/*
+ * Bring every ship home before the server stops.
+ *
+ * Puts each ship's passengers ashore and docks the hull, so nobody comes
+ * back to find themselves in a ship room that no longer exists, then
+ * persists every ship in one batched transaction.  Called during an orderly
+ * shutdown; see drain_pending_ship_saves() for the copyover path, which has
+ * different durability requirements.
+ */
 void shutdown_ships()
 {
 	int i;
@@ -513,9 +672,25 @@ void shutdown_ships()
 #endif
 }
 
-//--------------------------------------------------------------------
-// create new ship of given class
-//--------------------------------------------------------------------
+/*
+ * Allocate a ship of hull class `m_class` and register it.
+ *
+ * Sets every field to its class default -- full armour and sail, empty
+ * slots, default crew, no chiefs, the docked placeholder designation "**",
+ * centred on the tactical map -- builds the abstract room layout, and claims
+ * a process-local runtime identity.  The ship is added to shipObjHash but is
+ * NOT yet loaded into the world; call load_ship() for that.
+ *
+ * The caller still has to set ownername and call name_ship().
+ *
+ * Returns NULL with a code in the global `shiperror` when the game is at
+ * MAXSHIPS or a prototype object is missing.
+ *
+ * KNOWN CAVEAT: the two prototype-object failure paths return without
+ * freeing the part-built ship, and the second leaves it in shipObjHash.
+ * Both only fire if the ship or panel prototype is missing from the object
+ * database, which is a broken-world condition rather than a runtime one.
+ */
 struct ShipData *new_ship(int m_class, bool /*npc*/)
 {
 	if (shipObjHash.size() >= MAXSHIPS)
@@ -590,9 +765,20 @@ struct ShipData *new_ship(int m_class, bool /*npc*/)
 	return ship;
 }
 
-//--------------------------------------------------------------------
-// set ship object names with ship name in them
-//--------------------------------------------------------------------
+/*
+ * Give `ship` a name and rebuild every string derived from it: the hull
+ * object's keywords, short description and room description, and the ship's
+ * own keyword string.
+ *
+ * NOTE ON THE NULL-WITHOUT-FREE PATTERN BELOW.  The three shipobj strings are
+ * NOT owned by this object -- read_object() (world/db.c) deliberately shares
+ * one copy of each string across every object of a prototype, so freeing
+ * them here would corrupt every other ship object in the game.  Dropping the
+ * pointer is the correct thing to do.  ship->name and ship->keywords are
+ * privately str_dup()ed and could in principle be freed; they are not, so a
+ * rename leaks those two.  Renames are rare, and the uniform pattern is left
+ * alone rather than made subtly inconsistent.
+ */
 void name_ship(const char *name, P_ship ship)
 {
 	if (ship->name != NULL)
@@ -620,6 +806,20 @@ void name_ship(const char *name, P_ship ship)
 	ship->keywords = str_dup(buf);
 }
 
+/*
+ * Rewrite the room titles of every room inside `ship` to include its name.
+ *
+ * Room 0 is always the bridge; the rest are "Aboard the ...", except that
+ * warship classes rename specific room indices to launch decks, docking bays
+ * and holds.  Those index lists are per class and hard-coded -- they must
+ * match the room graph that set_ship_layout() builds for the same class.
+ *
+ * Sets `shiperror` and returns early if a room vnum does not resolve.
+ *
+ * NOTE: the old room title is dropped without being freed.  That is
+ * deliberate -- world[].name may point at a shared string owned by the world
+ * file, and freeing it would corrupt other rooms.
+ */
 void name_ship_rooms(P_ship ship)
 {
 	for (int i = 0; i < ship->room_count; i++)
@@ -708,6 +908,17 @@ void name_ship_rooms(P_ship ship)
 	}
 }
 
+/*
+ * Rename the ship owned by `owner_name` to `new_name`, on `ch`'s authority.
+ *
+ * Validates the new name through check_ship_name(), updates the ship, its
+ * hull object's descriptions and all its room titles, then persists.  Returns
+ * FALSE (having explained to `ch`) when there is no such ship, the name is
+ * rejected, or the save fails.
+ *
+ * NOTE: a failed save leaves the ship renamed in memory but not on disk;
+ * unlike rename_ship_owner() below, this path has no rollback.
+ */
 bool rename_ship(P_char ch, char *owner_name, char *new_name)
 {
 	P_ship temp;
@@ -742,6 +953,16 @@ bool rename_ship(P_char ch, char *owner_name, char *new_name)
 	return TRUE;
 }
 
+/*
+ * Mark `ship` as needing to be written out, to be flushed later in the tick.
+ *
+ * Call this after ANY change worth persisting rather than writing
+ * immediately: repeated calls in one tick collapse into a single write, and
+ * the flush additionally skips ships whose ship_save_signature() has not
+ * actually changed.  `reason` is for the debug log and may be NULL.
+ *
+ * NPC ships and unloaded ships are never persisted and are ignored here.
+ */
 void queue_ship_save(P_ship ship, const char *reason)
 {
 	if (!ship || IS_NPC_SHIP(ship) || !SHIP_LOADED(ship))
@@ -762,6 +983,18 @@ void queue_ship_save(P_ship ship, const char *reason)
 	ship->save_retry_after = 0;
 }
 
+/*
+ * Transfer the ship owned by `old_name` to `new_name` -- used when a player
+ * is renamed.
+ *
+ * Fully transactional in memory: the previous owner and ship name are copied
+ * aside first, and if the save fails both are restored before returning
+ * FALSE.  On success the Redis snapshot for the old name is invalidated and
+ * the legacy per-owner ship file is unlinked.
+ *
+ * Returns FALSE when there is no such ship, `new_name` is empty, or the save
+ * failed (with the ship left exactly as it was).
+ */
 bool rename_ship_owner(char *old_name, char *new_name)
 {
 	P_ship ship;
@@ -810,9 +1043,16 @@ bool rename_ship_owner(char *old_name, char *new_name)
 	return TRUE;
 }
 
-//--------------------------------------------------------------------
-// load ship into the world
-//--------------------------------------------------------------------
+/*
+ * Bring `ship` into the world at `to_room` (a real room index).
+ *
+ * Carves out the ship's interior rooms, places the hull object and the
+ * control panel, and raises the LOADED flag -- until that flag is set the
+ * ship exists only as data and most of the ship system skips it.
+ *
+ * Returns FALSE, with a code in the global `shiperror`, if the hull object
+ * or panel is missing or the room pool could not satisfy the layout.
+ */
 int load_ship(P_ship ship, int to_room)
 {
 	if (ship->shipobj == NULL)
@@ -906,9 +1146,25 @@ int load_ship(P_ship ship, int to_room)
 	return TRUE;
 }
 
-//--------------------------------------------------------------------
-// delete ship completely
-//--------------------------------------------------------------------
+/*
+ * Destroy `ship` and free it.
+ *
+ * CALLER CONTRACT: the ship must already have been removed from
+ * shipObjHash -- this routine does not do it, and re-adds the ship on the
+ * error paths below on the assumption that it is currently out.  After this
+ * returns, every P_ship pointing at it dangles; anything that needed to
+ * outlive the ship should have been holding a ShipRuntimeRef instead (see
+ * ship_identity.c).
+ *
+ * `npc` true skips the persistent delete, since NPC ships are never saved.
+ * For a player ship, a failed database delete ABORTS the removal -- the ship
+ * is put back in the hash and left alive, rather than being destroyed in
+ * memory while its row survives on disk.
+ *
+ * KNOWN LEAK: ship->name, ->ownername, ->id and ->keywords are str_dup()ed
+ * and are not released here.  Left alone deliberately; see the note in
+ * name_ship() about which ship strings are and are not privately owned.
+ */
 void delete_ship(P_ship ship, bool npc)
 {
 	if (!npc)
@@ -947,6 +1203,12 @@ void delete_ship(P_ship ship, bool npc)
 	unregister_ship_runtime(ship);
 	clear_ship_layout(ship);
 	clear_references_to_ship(ship);
+	/*
+	 * The autopilot block is a separate allocation hanging off the ship, so
+	 * it has to be released before the ship itself goes; nothing else holds
+	 * a pointer to it.
+	 */
+	clear_autopilot(ship);
 
 	obj_from_room(ship->panel);
 	obj_from_room(ship->shipobj);
@@ -965,6 +1227,15 @@ void delete_ship(P_ship ship, bool npc)
 	FREE(ship);
 }
 
+/*
+ * Drop every other ship's target lock on `ship`, telling those crews their
+ * target is lost.
+ *
+ * Must be called before a ship is deleted or docked -- ShipData::target is a
+ * raw pointer, and this is what stops it dangling.  See also
+ * ship_identity.c, which solves the same problem for state that has to
+ * survive a delay.
+ */
 void clear_references_to_ship(P_ship ship)
 {
 	ShipVisitor svs;
@@ -978,9 +1249,18 @@ void clear_references_to_ship(P_ship ship)
 	}
 }
 
-//--------------------------------------------------------------------
-// set ship rooms layout
-//--------------------------------------------------------------------
+/*
+ * Fill in the ABSTRACT room graph for hull class `m_class`.
+ *
+ * Every ship class has a fixed interior shape, defined here as a table of
+ * exits between room slots 0..room_count-1.  Room 0 is always the bridge;
+ * ship->entrance is the slot players board and leave through.  The numbers
+ * stored in the exits are slot indices, not room vnums -- real rooms are
+ * only assigned later, by set_ship_physical_layout().
+ *
+ * These per-class shapes must stay in step with the per-class room-title
+ * lists in name_ship_rooms(); the two are indexed the same way.
+ */
 void set_ship_layout(P_ship ship, int m_class)
 {
 	//    int to_room = 0;
@@ -1238,6 +1518,11 @@ void set_ship_layout(P_ship ship, int m_class)
 	}
 }
 
+/*
+ * Blank the ship's room graph: every room vnum and every exit set to -1
+ * ("unused").  Called once when a ship is created, before
+ * set_ship_layout() fills in the class's shape.
+ */
 void init_ship_layout(P_ship ship)
 {
 	for (int j = 0; j < MAX_SHIP_ROOM; j++)
@@ -1248,6 +1533,14 @@ void init_ship_layout(P_ship ship)
 	}
 }
 
+/*
+ * Return the ship's rooms to the free pool.
+ *
+ * Frees every exit the ship created, detaches ship_room_proc from each room
+ * so find_free_ship_room() will hand it out again, and resets the ship's
+ * room bookkeeping.  Called when a ship is unloaded or deleted; failing to
+ * call it permanently strands those rooms.
+ */
 void clear_ship_layout(P_ship ship)
 {
 	for (int j = 0; j < MAX_SHIP_ROOM; j++)
@@ -1273,6 +1566,17 @@ void clear_ship_layout(P_ship ship)
 	ship->room_count = 0;
 }
 
+/*
+ * Find an unused room vnum in the ship zone.
+ *
+ * Ship interiors are carved out of a fixed pool of rooms
+ * (VROOM_SHIPS_START..VROOM_SHIPS_END); a room is "in use" when its funct is
+ * ship_room_proc.  The first three are reserved (Davy Jones' locker, the
+ * transit room and the undead ferry), so the scan starts past them.
+ *
+ * Returns -1 when the pool is exhausted OR when it reaches a vnum that does
+ * not exist -- the pool has to be contiguous.
+ */
 int find_free_ship_room()
 {
 	int rroom, vroom;
@@ -1293,6 +1597,20 @@ int find_free_ship_room()
 	return -1;
 }
 
+/*
+ * Turn the ship's abstract room graph into real world rooms.
+ *
+ * Two passes: claim a free room for each of the ship's rooms, then wire up
+ * the exits between them (creating direction data where the graph has an
+ * exit and freeing it where it does not).  Finally records the bridge and
+ * entrance room vnums and titles every room.
+ *
+ * Returns FALSE if the room pool is exhausted or a vnum fails to resolve.
+ *
+ * CAVEAT: a mid-way failure leaves the rooms already claimed still marked
+ * with ship_room_proc.  The caller is expected to treat this as fatal for the
+ * ship (load_ship() does) rather than retrying.
+ */
 bool set_ship_physical_layout(P_ship ship)
 {
 	int vroom, rroom, to_room;
@@ -1364,9 +1682,15 @@ bool set_ship_physical_layout(P_ship ship)
 	return TRUE;
 }
 
-//--------------------------------------------------------------------
-// (re)set ships armor
-//--------------------------------------------------------------------
+/*
+ * Reload `ship`'s per-arc armour and internal-structure maxima from its
+ * class's entry in ship_arc_properties[].
+ *
+ * `equal` true also fills the current values to full -- a new or repaired
+ * ship.  `equal` false keeps the current values but clamps them to the new
+ * maxima, which is what a hull downgrade needs so a shrinking ship does not
+ * end up with more armour than it can carry.
+ */
 void set_ship_armor(P_ship ship, bool equal)
 {
 	ship->maxarmor[SIDE_FORE] = ship_arc_properties[ship->m_class].armor[SIDE_FORE];
@@ -1409,9 +1733,17 @@ void set_ship_armor(P_ship ship, bool equal)
 	}
 }
 
-//--------------------------------------------------------------------
-// reset ship state to its class default
-//--------------------------------------------------------------------
+/*
+ * Return `ship` to its class's factory condition: full armour and internals,
+ * full sail, full repair pool, stopped.
+ *
+ * `clear_slots` true -- the default -- also empties every slot, discarding
+ * weapons, equipment and cargo.  Pass false to keep the fit-out, which is
+ * what a repair wants.
+ *
+ * Used after a hull change and by finish_sinking(), which downgrades a sunk
+ * player ship to a sloop and resets it here.
+ */
 void reset_ship(P_ship ship, bool clear_slots)
 {
 	set_ship_armor(ship, true);
@@ -1460,6 +1792,18 @@ void reset_ship(P_ship ship, bool clear_slots)
 // This proc is added to rooms inside ship
 //--------------------------------------------------------------------
 
+/*
+ * Special procedure attached to every room INSIDE a ship.
+ *
+ * Handles what is special about being aboard: leaving the ship through the
+ * entrance, boarding another ship alongside, and the movement and look
+ * restrictions that apply at sea.  Attached by set_ship_physical_layout(),
+ * detached by clear_ship_layout() -- which is also how the room pool tracks
+ * which rooms are in use.
+ *
+ * Returns TRUE when the command was handled, FALSE to fall through to normal
+ * processing.
+ */
 int ship_room_proc([[maybe_unused]] int room, P_char ch, int cmd, char *arg)
 {
 	int i, j, k;
@@ -1609,9 +1953,16 @@ int ship_room_proc([[maybe_unused]] int room, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-//--------------------------------------------------------------------
-// This proc is added to all ship objects.
-//--------------------------------------------------------------------
+/*
+ * Special procedure attached to every ship's HULL object -- the thing
+ * floating in the ocean room, as opposed to the control panel inside.
+ *
+ * Handles what people outside a ship can do with it: looking at it and
+ * boarding it.  Finds the owning ship through shipObjHash.
+ *
+ * Returns TRUE when the command was handled, FALSE to fall through to
+ * normal command processing.
+ */
 int ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	char name[MAX_INPUT_LENGTH];
@@ -1687,6 +2038,12 @@ int ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 bool is_npc_ship_name(const char *);
+/*
+ * Validate a proposed ship name, explaining any rejection to `ch`.
+ *
+ * Enforces length, permitted characters and colour-code limits, and screens
+ * against the obscenity list.  Returns TRUE when the name may be used.
+ */
 bool check_ship_name(P_ship ship, P_char ch, char *name)
 {
 	char plain[MAX_STRING_LENGTH];
@@ -1743,6 +2100,16 @@ bool check_ship_name(P_ship ship, P_char ch, char *name)
 	return true;
 }
 
+/*
+ * Whether `ship` may leave port right now, explaining any refusal to `ch`.
+ *
+ * Covers the conditions that are not simply damage: the captain's level
+ * against the hull class `m_class`, outstanding maintenance, passenger count
+ * against capacity, and the state of the crew.  Called from order_undock()
+ * (ship_control.c) before the undock timer starts.
+ *
+ * Returns TRUE when undocking may proceed.
+ */
 bool check_undocking_conditions(P_ship ship, int m_class, P_char ch)
 {
 	int arc_weapons[4], arc_weapon_weight[4];
@@ -1809,9 +2176,31 @@ bool check_undocking_conditions(P_ship ship, int m_class, P_char ch)
 	return TRUE;
 }
 
-//--------------------------------------------------------------------
-// Per-clock ship activity
-//--------------------------------------------------------------------
+/*
+ * The ship system's heartbeat: one tick for every loaded ship.  Called from
+ * the main game loop.  This is the routine that makes ships actually sail.
+ *
+ * Per ship, in order:
+ *   1. count down all MAXTIMERS timers and announce the ones that expire
+ *   2. regenerate (or report exhausted) crew stamina
+ *   3. hold or stand down from battlestations
+ *   4. run crew repairs on sails, armour and internals
+ *   5. finish a sinking whose timer has run out
+ *   6. step the undocking sequence, which is a scripted countdown
+ *   7. converge speed and heading on their ordered values, charging crew
+ *      stamina for the effort
+ *   8. move the ship between ocean rooms as its position crosses a boundary,
+ *      or try to avoid running aground
+ *   9. resolve ramming if the target has come within one room
+ *  10. tick weapon reload timers
+ *  11. run the autopilot and the NPC AI
+ *
+ * WARNING -- do not turn the `return` after finish_sinking() into a
+ * `continue`.  finish_sinking() FREES an NPC ship and erases it from the
+ * hash, which strands the iterator; bailing out of the whole sweep is what
+ * keeps that from being a use-after-free.  The cost is that ships later in
+ * the hash lose one tick whenever a ship finishes sinking.
+ */
 void ship_activity()
 {
 	int j, k, loc;
@@ -2104,6 +2493,15 @@ void ship_activity()
 			if (ship->timer[T_SINKING] == 0)
 			{
 				finish_sinking(ship);
+				/*
+				 * NOT a `continue`.  For an NPC ship,
+				 * finish_sinking() erases it from shipObjHash
+				 * and frees it, which leaves `svs` pointing at
+				 * freed memory -- get_next() would then read
+				 * through it.  Abandoning the whole sweep is
+				 * the price of keeping that safe; the ships
+				 * after this one simply lose a tick.
+				 */
 				return;
 			}
 		}
@@ -2485,6 +2883,17 @@ void ship_activity()
 	}
 }
 
+/*
+ * Put `ship` alongside in `to_room` and raise DOCKED.
+ *
+ * Records the room as the ship's anchor point for next time, drops any target
+ * lock and any locks other ships had on it, restores the repair pool, resets
+ * the contact designation to the docked placeholder "**", and refreshes crew
+ * stamina.
+ *
+ * `to_room` is a REAL room index.  Room 0 is treated as "the room went away"
+ * and the ship is moved back to its recorded anchor instead.
+ */
 void dock_ship(P_ship ship, int to_room)
 {
 	// Add in Docking event
@@ -2517,6 +2926,14 @@ void dock_ship(P_ship ship, int to_room)
 	update_ship_status(ship);
 }
 
+/*
+ * Run `ship` aground.
+ *
+ * Deals a number of hits proportional to hull weight; the first always lands
+ * on the forward arc and the rest scatter across arcs and sails.  Then
+ * reconciles the damage through update_ship_status(), which may sink the ship
+ * outright.
+ */
 void crash_land(P_ship ship)
 {
 	act_to_all_in_ship(ship, "&+yCRUNCH!! Your ship crashes into land!&N");
@@ -2542,6 +2959,28 @@ void crash_land(P_ship ship)
 	update_ship_status(ship);
 }
 
+/*
+ * Complete a sinking whose T_SINKING timer has expired.  Called only from
+ * ship_activity().
+ *
+ * Postponed for another 30 ticks if this is an NPC ship with players still
+ * aboard, so nobody is destroyed with the wreck.
+ *
+ * Otherwise the interior is cleared, the hold is dumped, and then the two
+ * kinds of ship part ways:
+ *
+ *   - A PLAYER ship is NOT destroyed.  Insurance is paid to the owner's bank
+ *     (falling back to the auction house, and then to the ship's own coffers,
+ *     so the money is never simply lost), the hull is downgraded to a sloop,
+ *     and the wreck is docked in Davy Jones' locker for the owner to collect.
+ *     Insurance is 90% when sunk by an NPC, 75% for a merchant, 50% for a
+ *     warship, and nothing at all for a sloop.
+ *   - An NPC ship is erased from the hash and deleted.
+ *
+ * IMPORTANT FOR CALLERS: in the NPC case this FREES the ship.  ship_activity()
+ * returns immediately after calling it for exactly that reason -- see the
+ * comment at that call site before changing it.
+ */
 void finish_sinking(P_ship ship)
 {
 	// The zone ship does not sink completely.
@@ -2594,7 +3033,7 @@ void finish_sinking(P_ship ship)
 						  0.50); // only partial insurance for warships
 		}
 
-		P_char owner = get_char2(str_dup(SHIP_OWNER(ship)));
+		P_char owner = get_char2(SHIP_OWNER(ship));
 		int insurance_platinum = insurance / 1000;
 		bool insurance_deposited = insurance_platinum == 0;
 		if (owner && insurance_platinum > 0)
@@ -2663,6 +3102,17 @@ void finish_sinking(P_ship ship)
 	}
 }
 
+/*
+ * Delayed event handler: bring a summoned ship into port.
+ *
+ * `data` is a string of "<owner name> <real room>".  Finds that owner's ship
+ * and, provided it is not at battlestations and not sinking, moves it to the
+ * room and docks it there, running a contraband inspection and clearing the
+ * hold on arrival.
+ *
+ * Silently does nothing if the ship cannot be found or is busy fighting --
+ * which is the point: you cannot summon your way out of a battle.
+ */
 void summon_ship_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int to_room;
@@ -2694,6 +3144,13 @@ void summon_ship_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *da
 	}
 }
 
+/*
+ * Lift `ship` off the water.
+ *
+ * Raises FLYING, puts the ship at altitude, and starts the levistone's
+ * duration timer (LEVISTONE_TIME) unless the hull is permanently airborne.
+ * The precondition checks live in order_fly() (ship_control.c).
+ */
 void fly_ship(P_ship ship)
 {
 	if (!IS_SET(ship->flags, FLYING))
@@ -2715,6 +3172,13 @@ void fly_ship(P_ship ship)
 	update_ship_status(ship);
 }
 
+/*
+ * Set a flying ship back down.
+ *
+ * Clears FLYING and returns the ship to the surface, starting the levistone's
+ * recharge (LEVISTONE_RECHARGE).  If the ship is over terrain it cannot float
+ * on, landing damages it -- a levistone running out over land is expensive.
+ */
 void land_ship(P_ship ship)
 {
 	if (IS_SET(ship->flags, FLYING))
@@ -2760,9 +3224,16 @@ void land_ship(P_ship ship)
 	update_ship_status(ship);
 }
 
-//--------------------------------------------------------------------
-// Writing ships to disk
-//--------------------------------------------------------------------
+/*
+ * Persist one ship immediately, through whichever backend is configured.
+ *
+ * Prefer queue_ship_save() in normal code: it coalesces repeated changes
+ * within a tick and skips writes for ships that have not really changed.
+ * Call this directly only where the write must be known to have succeeded
+ * before continuing -- renames do, because they roll back on failure.
+ *
+ * Returns FALSE on any backend failure.
+ */
 int write_ship(P_ship ship)
 {
 	if (IS_NPC_SHIP(ship))
@@ -2803,6 +3274,14 @@ int write_ship(P_ship ship)
 #endif
 }
 
+/*
+ * Write out every ship that queue_ship_save() has marked, unless its
+ * ship_save_signature() shows nothing actually changed.
+ *
+ * A failed save is not lost: the ship keeps its pending mark and a retry
+ * gate (ShipData::save_retry_after) so it is attempted again later rather
+ * than hammered every tick.
+ */
 void flush_pending_ship_saves(void)
 {
 	time_t now = time(NULL);
@@ -2865,6 +3344,15 @@ bool drain_pending_ship_saves(void)
 	return drained;
 }
 
+/*
+ * Load every ship from persistent storage at boot.
+ *
+ * Dispatches to the SQL or flat-file backend.  Ships that fail validation are
+ * skipped with a log line rather than aborting the load; ships flagged
+ * TO_DELETE are loaded and then removed by initialize_ships().
+ *
+ * Returns FALSE on a backend-level failure.
+ */
 int read_ships()
 {
 #ifndef __NO_MYSQL__
@@ -2913,9 +3401,13 @@ int read_ships()
 #endif
 }
 
-//--------------------------------------------------------------------
-// Top-frags table update
-//--------------------------------------------------------------------
+/*
+ * Rebuild the shipfrags[] leaderboard: the highest-reputation ships in the
+ * game, in descending order.  Called periodically; read by
+ * display_shipfrags().  NPC ships and negative-frag ships are excluded; ties
+ * retain the hash visitor's order.  The table owns no ships -- its pointers
+ * are refreshed wholesale on every call.
+ */
 void update_shipfrags()
 {
 	for (int index = 0; index < 20; ++index)
@@ -2940,6 +3432,10 @@ void update_shipfrags()
 	}
 }
 
+/*
+ * Print the ship frag leaderboard -- the top ships by reputation -- to `ch`.
+ * Reads the shipfrags[] table that update_shipfrags() maintains.
+ */
 void display_shipfrags(P_char ch)
 {
 	send_to_char("&+L10 most dangerous ships\r\n", ch);
@@ -2982,6 +3478,13 @@ void display_shipfrags(P_char ch)
 	}
 }
 
+/*
+ * Delete the ship owned by `owner_name`, if there is one.
+ *
+ * The by-name overload used when a player is deleted.  Removes the ship from
+ * the hash before deleting it, which the P_ship overload requires of its
+ * caller.  Does nothing when the owner has no ship.
+ */
 void delete_ship(char *owner_name)
 {
 	P_ship ship;

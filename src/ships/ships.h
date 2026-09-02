@@ -1,6 +1,45 @@
 #ifndef _SHIPS_H_
 #define _SHIPS_H_
 
+/*
+ * Public data model and cross-module interface for the ship subsystem.
+ *
+ * Read this header first, then follow responsibility to one implementation:
+ *
+ *   ship_base.c       lifetime, interior rooms, heartbeat and persistence
+ *   ship_control.c    player bridge commands
+ *   ship_combat.c     firing, damage, sinking and rewards
+ *   ship_cargo.c      port markets and cargo movement
+ *   ship_shop.c       purchases, repairs and crew hiring
+ *   ship_utils.c      shared calculations, contacts and ShipData methods
+ *   ship_auto.c       player autopilot
+ *   ship_npc*.c       NPC content and decision-making
+ *   ship_identity.c   generation-checked references for deferred events
+ *   ship_variables.c  immutable indexed gameplay tables
+ *
+ * Index and unit conventions
+ * --------------------------
+ * Hull, weapon, equipment and crew values stored on ShipData are zero-based
+ * array indices.  ShipTypeData::_classid is the historical one-based external
+ * id.  Sides are FORE/PORT/REAR/STAR (0..3), headings are compass degrees with
+ * 0 north and 90 east, and x/y/z are floating tactical-map coordinates.
+ * `location` and most function room arguments are real-room indices, while
+ * ShipRoom::roomnum and `anchor` are virtual room numbers unless a function's
+ * contract says otherwise.
+ *
+ * Ownership and lifetime
+ * ----------------------
+ * P_ship is a non-owning pointer.  ShipData is created by new_ship() and must
+ * be released through delete_ship(), which also clears rooms, objects, AI and
+ * cross-ship references.  Work that outlives the current call stores a
+ * ShipRuntimeRef and resolves it through ship_identity.c instead.  ShipData's
+ * name strings are owned by the ship; its hull object's prototype strings
+ * are shared (see name_ship() in ship_base.c).
+ *
+ * Static-table identifiers are persisted verbatim.  Never reorder existing
+ * rows or renumber constants; append and extend every parallel table instead.
+ */
+
 #include "core/structs.h"
 #include "core/defines.h"
 
@@ -651,6 +690,7 @@ extern const char *ship_symbol[NUM_SECT_TYPES];
 void initialize_ships();
 void shutdown_ships();
 
+/* Dormant legacy flat-file index API: retained declaration, no caller or definition. */
 int write_ships_index();
 int write_ship(P_ship ship);
 int read_ships();

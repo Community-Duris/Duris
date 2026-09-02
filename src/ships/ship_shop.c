@@ -1,3 +1,67 @@
+/*****************************************************
+ * ship_shop.c
+ *
+ * The shipwright and the crew hall
+ *****************************************************/
+
+/*
+ * OVERVIEW -- where this file sits in the ship system
+ * ---------------------------------------------------
+ * Every way a player spends money on a ship.  Two special procedures front
+ * the whole file and are the only entry points worth reading first:
+ *
+ *   ship_shop_proc()  the SHIPWRIGHT: hulls, weapons, equipment, cargo,
+ *                     contraband, repairs, reloading, renaming, summoning
+ *   crew_shop_proc()  the CREW HALL: hiring crews and chiefs
+ *
+ * Everything else here is a handler one of those two dispatches to.
+ *
+ * The shipwright's commands
+ * -------------------------
+ *   list   cargo / weapons / equipment / hulls
+ *   buy    hull / weapon / equipment / cargo / contraband / name / swap
+ *   sell   cargo / contraband / <slot> / ship (disabled)
+ *   repair all / sail / armor / internal / weapon
+ *   reload all / <slot>
+ *   summon
+ *
+ * Prices and availability come from the static tables in ship_variables.c
+ * (weapon_data[], equipment_data[], ship_type_data[], ship_allowed_weapons[],
+ * ship_allowed_equipment[], ship_arc_properties[]) and, for trade goods, from
+ * the live market in ship_cargo.c.  Nothing in this file decides a price on
+ * its own; if a number looks wrong, look in those two places.
+ *
+ * Buying a hull is asynchronous
+ * -----------------------------
+ * buy_hull() does NOT change the ship.  Hulls can cost epic points, which go
+ * through the epic transaction service, so the purchase is packaged into a
+ * ship_hull_purchase_context and submitted; the ship only changes later, in
+ * ship_hull_purchase_committed().  A rejected transaction takes no points;
+ * refund_ship_epics() applies only when a committed purchase cannot complete.
+ * Everything else in this file is synchronous.
+ *
+ * Build time
+ * ----------
+ * Most purchases and repairs add to ship->timer[T_MAINTENANCE], during which
+ * the ship cannot leave port.  Build time scales with the size of the job,
+ * is halved by the quickbuild effect, and is multiplied by five for a hull
+ * change while ocean_pvp_state() is true -- wartime hull changes take longer.
+ *
+ * Customs
+ * -------
+ * check_contraband() lives here rather than in ship_cargo.c because it is
+ * part of arriving at a shop's port.  It is called from the docking paths in
+ * ship_control.c and ship_base.c, not from this file's own commands.
+ *
+ * The automatons quest
+ * --------------------
+ * The tail of the file (moonstone_fragment(), erzul_proc(),
+ * load_moonstone_fragments() and the has_moonstone*() helpers) is a
+ * self-contained quest that unlocks the Magical Automatons crew.  It is
+ * bolted on here because its reward is a crew hire; it shares nothing else
+ * with the shop code.
+ */
+
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -45,6 +109,10 @@ struct ship_hull_purchase_context
 	char name[32];
 };
 
+/*
+ * Give back the epic points a hull purchase charged, when the purchase could
+ * not be completed.  A no-op when the hull cost no epics.
+ */
 void refund_ship_epics(P_char ch, const ship_hull_purchase_context &context)
 {
 	if (context.epic_cost > 0)
@@ -53,6 +121,21 @@ void refund_ship_epics(P_char ch, const ship_hull_purchase_context &context)
 					critical_deadline_class::recovery, nullptr, nullptr, 0);
 }
 
+/*
+ * Completion callback for a hull purchase's epic-point transaction: the point
+ * at which the ship actually changes.
+ *
+ * `raw_context` carries the ship_hull_purchase_context describing the sale.
+ * A rejected transaction refunds nothing (the points were never taken).  On
+ * success this either creates and loads a brand new ship, or -- for an upgrade
+ * -- empties the existing hull, swaps its class and resets it.  Then it
+ * settles the coin difference, consumes any free-sloop grant, and charges
+ * build time.
+ *
+ * Build time scales with how far the hull class moved, is halved by the
+ * quickbuild effect, and is multiplied by five while the ocean is in a PvP
+ * state, so wartime hull changes take five times longer.
+ */
 void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_result &,
 				  unsigned int, const uint8_t *raw_context, size_t context_size)
 {
@@ -137,6 +220,14 @@ void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_
 		       buildtime / 75);
 }
 
+/*
+ * Start a hull purchase.
+ *
+ * Purchases that cost no epic points complete synchronously; the rest are
+ * submitted to the epic transaction service and complete later in
+ * ship_hull_purchase_committed().  Returns false, having told `ch`, only when
+ * the transaction could not be submitted at all.
+ */
 bool submit_ship_hull_purchase(P_char ch, const ship_hull_purchase_context &context)
 {
 	if (context.epic_cost == 0)
@@ -157,6 +248,13 @@ bool submit_ship_hull_purchase(P_char ch, const ship_hull_purchase_context &cont
 }
 } // namespace
 
+/*
+ * "list cargo" at a shipwright -- what this port sells and what it pays.
+ *
+ * Shows the local commodity's price and, for a captain with a ship here
+ * (`owned`), the profit on every crate currently in the hold if it were sold
+ * at this port.  Always TRUE.
+ */
 int list_cargo(P_char ch, P_ship ship, bool owned)
 {
 	int portnum, cost, profit;
@@ -333,6 +431,14 @@ int list_cargo(P_char ch, P_ship ship, bool owned)
 	return TRUE;
 }
 
+/*
+ * "list weapons" -- the weapons this port sells, with cost, weight, range
+ * band, damage and reload.
+ *
+ * Weapons the ship's hull class cannot mount (ship_allowed_weapons[]) or the
+ * captain has not earned are marked as unavailable rather than hidden, so
+ * players can see what to aim for.  Always TRUE.
+ */
 int list_weapons(P_char ch, P_ship ship, int owned)
 {
 	char rng[32], dam[48];
@@ -400,6 +506,11 @@ int list_weapons(P_char ch, P_ship ship, int owned)
 	return TRUE;
 }
 
+/*
+ * "list equipment" -- the equipment this port sells (ram, levistone,
+ * diplomat), with cost and weight, marking what this hull may carry.
+ * Always TRUE.
+ */
 int list_equipment(P_char ch, P_ship ship, int owned)
 {
 	int weight, cost;
@@ -446,9 +557,13 @@ int list_equipment(P_char ch, P_ship ship, int owned)
 	return TRUE;
 }
 
-// Returns a  string with the value of the epic cost of the hull type
-//   with preceeding spaces to make the length total 6 (excluding the terminating char).
-// If epic cost is 0, just returns 6 spaces.
+/*
+ * The epic-point cost of `hull_type`, right-aligned in a 6-character field
+ * for the hull listing, or six spaces when the hull costs no epic points.
+ *
+ * Returns a pointer to a static buffer that the next call overwrites; print
+ * it immediately.
+ */
 const char *epic_cost_string(int hull_type)
 {
 	// We have length 8 here, just in case somewhere in the future we get in the millions.
@@ -464,6 +579,13 @@ const char *epic_cost_string(int hull_type)
 	return buf;
 }
 
+/*
+ * "list hulls" -- the hull classes for sale, with price, capacity, speed and
+ * the level needed.
+ *
+ * For a captain who already owns a ship (`owned`), prices are shown as the
+ * upgrade or downgrade difference rather than the full cost.  Always TRUE.
+ */
 int list_hulls(P_char ch, P_ship ship, int owned)
 {
 	if (owned)
@@ -588,6 +710,17 @@ int list_hulls(P_char ch, P_ship ship, int owned)
 	return TRUE;
 }
 
+/*
+ * "summon" at a shipwright -- have your ship sail itself to this port.
+ *
+ * Refused while the ship is sinking or at battlestations, and the captain
+ * must be raidable, so summoning is not an escape from a fight.  The arrival
+ * is a delayed event (summon_ship_event() in ship_base.c) rather than
+ * immediate.
+ *
+ * `time_only` true just reports how long an already-summoned ship still has
+ * to run, instead of starting a new summons.  Always TRUE.
+ */
 int summon_ship(P_char ch, P_ship ship, bool time_only)
 {
 	char buf[32];
@@ -734,6 +867,13 @@ int summon_ship(P_char ch, P_ship ship, bool time_only)
 	return TRUE;
 }
 
+/*
+ * Sell the cargo in one slot at port `rroom`.
+ *
+ * Pays cargo_buy_price() per crate, reports the profit or loss against what
+ * was paid, moves the market with adjust_ship_market(), and clears the slot.
+ * Returns the amount paid.
+ */
 int sell_cargo_slot(P_char ch, P_ship ship, int slot, int rroom)
 {
 	int type = ship->slot[slot].index;
@@ -819,6 +959,12 @@ int sell_cargo_slot(P_char ch, P_ship ship, int slot, int rroom)
 	return cost;
 }
 
+/*
+ * "sell cargo [<slot>]" -- sell cargo at the current port.
+ *
+ * `slot` of -1 sells every cargo slot; otherwise just that one.  Refuses
+ * when the ship is not here or the port does not buy.  Always TRUE.
+ */
 int sell_cargo(P_char ch, P_ship ship, int slot)
 {
 	int rroom, i;
@@ -902,6 +1048,10 @@ int sell_cargo(P_char ch, P_ship ship, int slot)
 	return TRUE;
 }
 
+/*
+ * Sell the contraband in one slot at port `rroom`, at contra_buy_price() per
+ * crate, moving the market afterwards.  Returns the amount paid.
+ */
 int sell_contra_slot(P_char ch, P_ship ship, int slot, int rroom)
 {
 	int type = ship->slot[slot].index;
@@ -948,6 +1098,10 @@ int sell_contra_slot(P_char ch, P_ship ship, int slot, int rroom)
 	//}
 }
 
+/*
+ * "sell contraband [<slot>]" -- sell contraband at the current port.
+ * `slot` of -1 sells every contraband slot.  Always TRUE.
+ */
 int sell_contra(P_char ch, P_ship ship, int slot)
 {
 	if (ship->location != ch->in_room)
@@ -1016,6 +1170,16 @@ int sell_contra(P_char ch, P_ship ship, int slot)
 	return TRUE;
 }
 
+/*
+ * "sell <slot number>" -- sell whatever occupies one slot back to the
+ * shipwright.
+ *
+ * Weapons fetch 90% of list, or 10% if damaged.  Equipment and cargo have
+ * their own rules; selling the diplomat also forces the contraband it was
+ * covering to be dealt with.  The ship must be in this room.
+ *
+ * `slot` is player-supplied and is range-checked here.  Always TRUE.
+ */
 int sell_slot(P_char ch, P_ship ship, int slot)
 {
 	int value;
@@ -1113,6 +1277,18 @@ int sell_slot(P_char ch, P_ship ship, int slot)
 	return TRUE;
 }
 
+/*
+ * Run a customs inspection as `ship` docks at `to_room`.
+ *
+ * Does nothing unless the room is a port and the ship is carrying something.
+ * Each contraband crate is rolled for individually; the confiscation chance
+ * rises with how much contraband is aboard, falls with the ship's frag
+ * reputation (smugglers with a name are less troubled), and falls further the
+ * more ORDINARY cargo is aboard to hide it in -- but never drops below 5%.
+ *
+ * A port never confiscates its own contraband, which is what makes short
+ * smuggling runs viable.  Confiscations are logged and announced.
+ */
 void check_contraband(P_ship ship, int to_room)
 {
 	int rroom = 0;
@@ -1199,6 +1375,13 @@ void check_contraband(P_ship ship, int to_room)
 		act_to_all_in_ship(ship, "&+L...&+Bbut don't find anything suspicious.&n");
 }
 
+/*
+ * "sell ship confirm" -- sell the entire ship back.
+ *
+ * DISABLED: the routine refuses immediately and the rest of the body is
+ * unreachable.  It is kept as the reference implementation should whole-ship
+ * sales ever be re-enabled.  Always TRUE.
+ */
 int sell_ship(P_char ch, P_ship ship, const char *arg)
 {
 	int i = 0, k = 0, j;
@@ -1249,6 +1432,13 @@ int sell_ship(P_char ch, P_ship ship, const char *arg)
 	return TRUE;
 }
 
+/*
+ * "repair all" -- price up and carry out every outstanding repair: sails,
+ * all four armour arcs, all four internal arcs, and every damaged weapon.
+ *
+ * Charges the sum of the individual repairs and adds their combined build
+ * time to the maintenance timer.  Always TRUE.
+ */
 int repair_all(P_char ch, P_ship ship)
 {
 	int cost = 0, buildtime = 0;
@@ -1326,6 +1516,10 @@ int repair_all(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "repair sail" -- restore the mainsail to full, priced by how much is
+ * missing.  Always TRUE.
+ */
 int repair_sail(P_char ch, P_ship ship)
 {
 	int total_damage = SHIP_MAX_SAIL(ship) - ship->mainsail;
@@ -1368,6 +1562,10 @@ int repair_sail(P_char ch, P_ship ship)
 	return TRUE;
 }
 
+/*
+ * "repair armor [<arc>]" -- restore armour on one arc, or on all four when
+ * `arg` is empty or "all".  Priced per point restored.  Always TRUE.
+ */
 int repair_armor(P_char ch, P_ship ship, char *arg)
 {
 	int cost, buildtime, total_damage, j;
@@ -1460,6 +1658,11 @@ int repair_armor(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "repair internal [<arc>]" -- restore internal structure on one arc, or on
+ * all four.  More expensive per point than armour, since this is the damage
+ * that sinks ships.  Always TRUE.
+ */
 int repair_internal(P_char ch, P_ship ship, char *arg)
 {
 	int cost, buildtime, total_damage, j;
@@ -1555,6 +1758,14 @@ int repair_internal(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "repair weapon <slot>" -- repair one damaged weapon.
+ *
+ * A destroyed weapon (damage >= 100) costs half its list price and a long
+ * build; a merely damaged one is priced by how damaged it is.
+ *
+ * `slot` is player-supplied and is range-checked here.  Always TRUE.
+ */
 int repair_weapon(P_char ch, P_ship ship, char *arg)
 {
 	int cost, buildtime;
@@ -1566,7 +1777,8 @@ int repair_weapon(P_char ch, P_ship ship, char *arg)
 		return TRUE;
 	}
 	int slot = atoi(arg);
-	if (slot > MAXSLOTS || slot < 0)
+	/* Valid subscripts are 0..MAXSLOTS-1; `> MAXSLOTS` would admit MAXSLOTS. */
+	if (slot >= MAXSLOTS || slot < 0)
 	{
 		send_to_char("Invalid weapon slot number.\n"
 			     "&+YSyntax: '&+grepair &+Gw&+geapon <weapon slot number>&+Y'.&n\n",
@@ -1616,6 +1828,11 @@ int repair_weapon(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "reload <all|weapon slot>" -- buy ammunition for one weapon or for every
+ * weapon aboard.  Priced per round and per weapon type; already-full weapons
+ * are skipped.  `arg` is player-supplied and range-checked.  Always TRUE.
+ */
 int reload_ammo(P_char ch, P_ship ship, char *arg)
 {
 	char weapons_to_reload[MAXSLOTS];
@@ -1709,6 +1926,13 @@ int reload_ammo(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "buy name <new name>" -- rename a ship at the shipwright.
+ *
+ * Validates the name, charges the fee, and defers to the rename machinery in
+ * ship_base.c.  Note this is the SHOP overload; the free function of the same
+ * name in ship_base.c is the one that does the work.  Always TRUE.
+ */
 int rename_ship(P_char ch, P_ship ship, char *new_name)
 {
 	if (!new_name || !*new_name)
@@ -1747,6 +1971,14 @@ int rename_ship(P_char ch, P_ship ship, char *new_name)
 	return TRUE;
 }
 
+/*
+ * "buy cargo <crates>" -- load cargo at the current port.
+ *
+ * Limited by the lesser of the ship's cargo rating and its remaining weight
+ * allowance.  Charges cargo_sell_price() per crate, records the price paid on
+ * the slot so profit can be shown later, and moves the market upwards.
+ * Always TRUE.
+ */
 int buy_cargo(P_char ch, P_ship ship, char *arg)
 {
 	int rroom = 0, asked_for, slot;
@@ -1894,6 +2126,15 @@ int buy_cargo(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "buy contraband <crates>" -- load contraband at the current port.
+ *
+ * On top of the cargo limits, the ship needs the reputation for this
+ * commodity (can_buy_contraband(), ship_cargo.c), and the contraband
+ * allowance shrinks in proportion to how much of the hold is already full.
+ * Contraband moves the market much further per crate than ordinary cargo.
+ * Always TRUE.
+ */
 int buy_contra(P_char ch, P_ship ship, char *arg)
 {
 	int rroom = 0, slot;
@@ -2072,6 +2313,16 @@ int buy_contra(P_char ch, P_ship ship, char *arg)
 	return TRUE;
 }
 
+/*
+ * "buy weapon <number> <fore|rear|port|starboard>" -- mount a weapon.
+ *
+ * Checks in order: the weapon number is valid, the arc name is valid, the
+ * hull class may mount this weapon (ship_allowed_weapons[]), the arc has a
+ * free mount and enough weapon-weight allowance for it
+ * (ship_arc_properties[]), the ship has the spare weight, the captain has the
+ * frags and crew experience, only one capital item is carried, and the money
+ * is there.  Then fits it and charges build time.  Always TRUE.
+ */
 int buy_weapon(P_char ch, P_ship ship, char *arg1, char *arg2)
 {
 	struct affected_type *paf = get_spell_from_char(ch, AIP_CARGOCOUNT);
@@ -2226,6 +2477,14 @@ int buy_weapon(P_char ch, P_ship ship, char *arg1, char *arg2)
 	return TRUE;
 }
 
+/*
+ * "buy equipment <number>" -- fit a ram, levistone or diplomat.
+ *
+ * Same shape of checks as buy_weapon(), against ship_allowed_equipment[] and
+ * the capital-item limit.  Ram and levistone weights scale with the hull, so
+ * the weight check uses the ship-specific figures from ship_utils.c.
+ * Always TRUE.
+ */
 int buy_equipment(P_char ch, P_ship ship, char *arg1)
 {
 	struct affected_type *paf = get_spell_from_char(ch, AIP_CARGOCOUNT);
@@ -2347,6 +2606,21 @@ int buy_equipment(P_char ch, P_ship ship, char *arg1)
 	return TRUE;
 }
 
+/*
+ * "buy hull <number> [<name>]" -- buy a first ship, or change hull class.
+ *
+ * `arg2` is the ship's name and is required only when the captain does not
+ * already own one.  Note the valid range excludes the last class, which is
+ * NPC-only.
+ *
+ * Checks level, money, and epic points, then hands off to
+ * submit_ship_hull_purchase() -- the ship is NOT changed here.  Everything
+ * that actually happens, including the build time, happens in
+ * ship_hull_purchase_committed() once the epic transaction settles.
+ *
+ * Changing hulls empties the ship and puts everyone ashore, which is why it
+ * is priced as the difference and charged build time both ways.  Always TRUE.
+ */
 int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 {
 	int cost, buildtime, hull_type, oldhull;
@@ -2608,7 +2882,17 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 	return TRUE;
 }
 
-// Swaps the contents of slot 1 with slot 2.
+/*
+ * "buy swap <slot> <slot>" -- exchange the contents of two slots.
+ *
+ * How a captain re-arranges an existing fit-out without selling and
+ * rebuying it: moving a weapon between arcs, or shuffling cargo.  Both slot
+ * numbers are player-supplied and are range-checked here.
+ *
+ * Note this swaps the slot RECORDS wholesale, mounting position included,
+ * so no arc-capacity check is needed -- the two mounts simply trade places.
+ * Always TRUE.
+ */
 int swap_slots(P_char ch, P_ship ship, char *arg1, char *arg2)
 {
 	if (!*arg1 || !is_number(arg1) || !*arg2 || !is_number(arg2))
@@ -2639,6 +2923,17 @@ int swap_slots(P_char ch, P_ship ship, char *arg1, char *arg2)
 	return TRUE;
 }
 
+/*
+ * Special procedure for the shipwright: the shop command dispatcher.
+ *
+ * Handles CMD_SUMMON, CMD_LIST, CMD_BUY, CMD_RELOAD, CMD_REPAIR and CMD_SELL
+ * for a living player.  Finds the caller's ship by owner name, and requires
+ * the ship to be in this room for everything except summoning, listing, and
+ * selling the ship itself.
+ *
+ * Returns TRUE when the command was handled, FALSE to fall through -- which
+ * is also how ferry-ticket automats sharing the room keep working.
+ */
 int ship_shop_proc(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	P_ship ship;
@@ -2921,6 +3216,16 @@ const int good_crew_shops[] = { 43220, 43222, 133075, 28197 };
 const int evil_crew_shops[] = { 43221, 9704, 22481, 22648 };
 
 int look_crew(P_char ch, P_ship ship);
+/*
+ * Special procedure for a crew hall: "list" and "hire" for crews and chiefs.
+ *
+ * Halls are aligned -- good-side halls turn away racewar-evil characters and
+ * vice versa -- and each crew and chief lists the rooms it can be hired in
+ * (ShipCrewData::hire_room()), so what is on offer varies by port.  Hiring
+ * also requires the frags or the crew skills the entry demands.
+ *
+ * The caller must own a ship.  Returns TRUE when handled.
+ */
 int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 {
 	int n;
@@ -3186,6 +3491,13 @@ int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 #define IS_MOONSTONE_CORE(obj) (obj_index[obj->R_num].virtual_number == AUTOMATONS_MOONSTONE_CORE)
 #define IS_MOONSTONE_PART(obj) (IS_MOONSTONE_FRAGMENT(obj) || IS_MOONSTONE_CORE(obj))
 
+/*
+ * Special procedure on a moonstone fragment, part of the automatons quest
+ * that unlocks the Magical Automatons crew.
+ *
+ * Drives the fragment's periodic behaviour while carried and its reactions to
+ * being handled.  Returns TRUE when it handled the command.
+ */
 int moonstone_fragment(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
@@ -3243,6 +3555,10 @@ int moonstone_fragment(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 	return FALSE;
 }
 
+/*
+ * The broken moonstone piece in `ch`'s inventory, or NULL.  Carrying one is
+ * what makes Erzul refuse to deal (see erzul_proc()).
+ */
 P_obj has_moonstone_part(P_char ch)
 {
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
@@ -3252,6 +3568,9 @@ P_obj has_moonstone_part(P_char ch)
 	}
 	return NULL;
 }
+/*
+ * The moonstone fragment in `ch`'s inventory, or NULL.
+ */
 P_obj has_moonstone_fragment(P_char ch)
 {
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
@@ -3261,6 +3580,10 @@ P_obj has_moonstone_fragment(P_char ch)
 	}
 	return NULL;
 }
+/*
+ * The intact moonstone in `ch`'s inventory, or NULL -- the finished quest
+ * item that buys the automaton crew.
+ */
 P_obj has_moonstone(P_char ch)
 {
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
@@ -3271,6 +3594,14 @@ P_obj has_moonstone(P_char ch)
 	return NULL;
 }
 
+/*
+ * Seed the automatons quest at boot: place the moonstone fragment on its
+ * holder mob.
+ *
+ * Returns FALSE if the fragment prototype is missing.  Called from
+ * initialize_ships(), and skipped during Redis world recovery so a restart
+ * does not duplicate quest items.
+ */
 bool load_moonstone_fragments()
 {
 	P_char olhydra = 0;
@@ -3318,6 +3649,16 @@ bool load_moonstone_fragments()
 	return TRUE;
 }
 
+/*
+ * Special procedure for Erzul, who trades the Magical Automatons crew for a
+ * completed moonstone.
+ *
+ * `ch` is Erzul, `pl` the player interacting.  Responds to CMD_ASK: a player
+ * carrying a BROKEN moonstone part is berated and refused; one carrying the
+ * intact stone can buy the automaton crew.
+ *
+ * Returns TRUE when it handled the command.
+ */
 int erzul_proc(P_char ch, P_char pl, int cmd, char *arg)
 {
 	/*

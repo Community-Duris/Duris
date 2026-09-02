@@ -1,6 +1,22 @@
 #ifndef _SHIP_NPC_AI_H_
 #define _SHIP_NPC_AI_H_
 
+/*
+ * Per-ship NPC decision state.
+ *
+ * NPCShipAI is owned by ShipData::npc_ai and ticked from ship_activity().
+ * Its methods are implemented in ship_npc_ai.c; ship_npc.c creates the hull,
+ * chooses whether the advanced combat path is enabled, and attaches the
+ * instance.  The fields are grouped in the order activity() establishes
+ * them: lifecycle/state-machine data, the current contact solution, basic
+ * combat scratch state, advanced prediction state, then map utilities.
+ *
+ * `ship`, `escort`, and ShipData::target are non-owning runtime pointers.
+ * clear_references_to_ship() clears them before a ship is deleted.  Contact
+ * indices are ephemeral positions in the global contacts[] snapshot and must
+ * be refreshed rather than retained across activity ticks.
+ */
+
 #include "ships/ships.h"
 
 // must be a value that survives float conversion exactly

@@ -1,3 +1,74 @@
+/*****************************************************
+ * ship_combat.c
+ *
+ * Ship-to-ship combat: gunnery, ramming, damage, sinking
+ *****************************************************/
+
+/*
+ * OVERVIEW -- where this file sits in the ship system
+ * ---------------------------------------------------
+ * Everything that happens when two ships fight.  The player commands that
+ * start a fight ("target", "fire", "ram", "sight") live in ship_control.c and
+ * call in here; the NPC side calls in from ship_npc_ai.c.  This file owns the
+ * resolution, not the input.
+ *
+ * The firing pipeline, end to end
+ * -------------------------------
+ *   weaponsight()      computes the hit chance NOW, from the projected
+ *                      positions of both ships one tick ahead
+ *   fire_weapon()      announces the shot, spends ammunition, starts the
+ *                      reload, and schedules the volley to land later
+ *   volley_hit_event() the delayed handler: rolls against the hit chance that
+ *                      was frozen at firing time, then applies damage
+ *                      fragment by fragment
+ *   damage_sail() /    apply one fragment to sails or to one hull arc
+ *   damage_hull()
+ *   update_ship_status() reconciles the damage with the ship's capabilities,
+ *                      and is what actually notices a ship has sunk
+ *   sink_ship()        starts the sinking timer and settles all rewards
+ *   finish_sinking()   (ship_base.c) destroys the ship when the timer expires
+ *
+ * The key design point is that the hit chance is computed once, at the moment
+ * of firing, and carried on the volley.  A defender cannot manoeuvre out of a
+ * shot that is already in the air.
+ *
+ * Volleys outlive their ships
+ * ---------------------------
+ * A volley can land after either ship has been deleted, so VolleyData stores
+ * ShipRuntimeRefs rather than pointers and volley_hit_event() resolves them
+ * through resolve_volley_endpoints().  See ship_identity.c for why.  Never
+ * put a raw P_ship into a delayed event.
+ *
+ * The damage model
+ * ----------------
+ * A hull has four arcs (SIDE_FORE / PORT / REAR / STAR), and each arc has
+ * ARMOUR over INTERNAL structure.  Armour absorbs first; overkill spills
+ * through.  A shot that fails to break the armour can still critical
+ * (armor_pierce) and carry half its damage inside.  Once an arc's internals
+ * are gone that arc is "breached"; TWO breached arcs sink the ship.  Hits on
+ * a breached arc are deflected around inside the wreck and are certain to
+ * wreck a weapon.  Beam arcs are wider targets than fore and rear, which is
+ * why they carry more armour -- see ship_arc_properties[] in
+ * ship_variables.c.
+ *
+ * The reward split
+ * ----------------
+ * sink_ship() does not simply pay the ship that fired the last shot.  Frags
+ * are divided by the number of same-race warships in contact, and salvage and
+ * bounty by the number of GROUPED ships in contact; then every grouped ship
+ * present is paid its share.  Docked ships and sloops neither dilute nor
+ * share.  NPC kills pay much less than player kills, and being sunk by an NPC
+ * costs no reputation.
+ *
+ * The shared contacts[] buffer
+ * ----------------------------
+ * Almost everything here indexes contacts[], which getcontacts() (ship_utils.c)
+ * refills from scratch.  Several routines here call getcontacts() themselves --
+ * scan_target(), sink_ship(), try_ram_ship(), volley_hit_event() -- so a
+ * caller holding a contact index across a call into this file will find it
+ * pointing at a different ship.  Re-derive the index instead.
+ */
+
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -21,6 +92,19 @@
 // char  arc[3];
 extern char buf[MAX_STRING_LENGTH];
 
+/*
+ * Reduce incoming `dam` according to `ch`'s SHIP_SHIP_DAMAGE_CONTROL skill.
+ *
+ * Removes a flat 4-24% of the damage depending on skill, taking whole points
+ * first and then rolling for the fractional remainder, and never takes the
+ * result below 1.
+ *
+ * Returns `dam` unchanged for a dead character, damage below 2, or no skill.
+ *
+ * NOTE FOR MAINTAINERS: currently dormant.  Both call sites, in damage_sail()
+ * and damage_hull(), are commented out; the skill is defined but not wired
+ * into ship damage.
+ */
 int epic_ship_damage_control(P_char ch, int dam)
 {
 	int skill;
@@ -66,6 +150,13 @@ int epic_ship_damage_control(P_char ch, int dam)
 	return dam;
 }
 
+/*
+ * Knock everyone aboard `ship` off their feet for `timer` pulses.
+ *
+ * Forces each occupant to sitting and applies the wait.  Immortals are
+ * exempt.  Used by mindblast weapons and by the occasional hull hit that
+ * "knocks you off your feet".
+ */
 void stun_all_in_ship(P_ship ship, int timer)
 {
 	int i;
@@ -90,6 +181,19 @@ void stun_all_in_ship(P_ship ship, int timer)
 }
 
 float range(float x1, float y1, float z1, float x2, float y2, float z2);
+/*
+ * Print `ship`'s lookout report on `target` to `ch`.
+ *
+ * Shows per-arc armour and internal structure with condition colouring,
+ * position, range, bearing, heading, the arc the target bears in, its status
+ * flags and colours, its raised flag (which is how you tell an evil ship from
+ * a goodie one before committing), and every weapon it mounts.
+ *
+ * Requires the target to be a current contact within 20 rooms plus the crew's
+ * scout bonus -- outside that, `ch` is simply told "Out of range."
+ *
+ * Rebuilds the shared contacts[] buffer as a side effect.
+ */
 void scan_target(P_ship ship, P_ship target, P_char ch)
 {
 	int i, j, k;
@@ -209,6 +313,14 @@ void scan_target(P_ship ship, P_ship target, P_char ch)
 	}
 }
 
+/*
+ * Cash value of sinking `target`, before the fleet split.
+ *
+ * Scales the hull's list price by how intact the wreck is across all four
+ * arcs, then adds each surviving weapon at half list (a tenth if damaged),
+ * and finally divides by the ship.sinking.rewardDivider property.  Sloops
+ * (class 0) are worth nothing.
+ */
 int calc_salvage(P_ship target)
 {
 	int k = 0, max = 0, j, salvage = 0;
@@ -246,16 +358,35 @@ int calc_salvage(P_ship target)
 	return salvage;
 }
 
+/*
+ * Ship frags awarded for sinking `ship` -- simply its hull weight, so bigger
+ * kills are worth more.
+ */
 int calc_frag_gain(P_ship ship)
 {
 	return SHIP_HULL_WEIGHT(ship);
 }
 
+/*
+ * Bounty paid for sinking a notorious ship, proportional to the frags the
+ * target had accumulated and scaled by ship.sinking.rewardDivider.  Only
+ * paid when the target had over 100 frags; see sink_ship().
+ */
 int calc_bounty(P_ship target)
 {
 	return (int)(target->frags * 10000 / get_property("ship.sinking.rewardDivider", 7.0));
 }
 
+/*
+ * Award `frags` for sinking `target` to `ship`, and train its crew.
+ *
+ * NPC kills are worth far less: Cyric's Revenge pays a fifth, and any other
+ * NPC ship pays no frags at all, only a tenth of the figure as crew
+ * training.  That is deliberate -- frags are a PvP reputation, not a grind.
+ *
+ * Crew training is always awarded, on all three skills.  A captain aboard for
+ * a 20+ frag kill also earns EPIC_SHIP_PVP progress.  Always returns true.
+ */
 bool ship_gain_frags(P_ship ship, P_ship target, int frags)
 {
 	if (frags > 0)
@@ -296,6 +427,16 @@ bool ship_gain_frags(P_ship ship, P_ship target, int frags)
 	return true;
 }
 
+/*
+ * Apply the cost of being sunk to `ship`.
+ *
+ * The crew takes casualties -- a percentage replaced with green hands, which
+ * drags their trained skills back towards base -- and the ship loses `frags`
+ * from its reputation, floored at zero.
+ *
+ * Being sunk by an NPC is gentler: lighter casualties scaled by hull size,
+ * and no frag loss at all.  Always returns true.
+ */
 bool ship_loss_on_sink(P_ship ship, P_ship attacker, int frags)
 {
 	float members_loss;
@@ -339,6 +480,12 @@ bool ship_loss_on_sink(P_ship ship, P_ship attacker, int frags)
 	return true;
 }
 
+/*
+ * Pay `salvage` and `bounty` into `ship`'s coffers and tell the crew.
+ *
+ * The money lands in ShipData::money, not in anyone's pocket -- it has to be
+ * collected aboard with "get money".  Always returns true.
+ */
 bool ship_gain_money(P_ship ship, P_ship target, int salvage, int bounty)
 {
 	if (salvage > 0)
@@ -366,6 +513,27 @@ bool ship_gain_money(P_ship ship, P_ship target, int salvage, int bounty)
 	return true;
 }
 
+/*
+ * Begin sinking `ship` and settle every reward and penalty for the kill.
+ *
+ * Clears anchor/ramming, cancels the autopilot, lands the ship if it was
+ * flying, raises SINKING, and starts the T_SINKING countdown -- short for a
+ * player ship, much longer for an NPC ship so the wreck can be looted, and
+ * longest of all for Cyric's Revenge.  finish_sinking() (ship_base.c) does
+ * the actual destruction when the timer runs out.
+ *
+ * `attacker` may be NULL for an accidental sinking, in which case no rewards
+ * are paid.  Otherwise:
+ *   - An NPC attacker credits its escortee, if it is escorting a player ship;
+ *     otherwise nobody is credited.
+ *   - Frags are only awarded across a race boundary.
+ *   - Rewards are then SPLIT: frags by the number of same-race warships in
+ *     contact, salvage and bounty by the number of grouped ships in contact.
+ *     Docked ships and sloops do not count towards, or share in, either.
+ *   - Every grouped ship present is paid, not just the one that fired.
+ *
+ * Always returns true.
+ */
 bool sink_ship(P_ship ship, P_ship attacker)
 {
 	int i;
@@ -472,7 +640,8 @@ bool sink_ship(P_ship ship, P_ship attacker)
 			int fleet_size_grouped = 1;
 			int fleet_size_total = 1;
 			int k = getcontacts(ship);
-			P_char ch1 = get_char2(str_dup(SHIP_OWNER(gainer)));
+			/* get_char2() copies the name; do not str_dup() into it. */
+			P_char ch1 = get_char2(SHIP_OWNER(gainer));
 			for (i = 0; i < k; i++)
 			{
 				if (contacts[i].ship == gainer)
@@ -488,7 +657,7 @@ bool sink_ship(P_ship ship, P_ship attacker)
 					fleet_size_total++;
 				}
 
-				P_char ch2 = get_char2(str_dup(SHIP_OWNER(contacts[i].ship)));
+				P_char ch2 = get_char2(SHIP_OWNER(contacts[i].ship));
 				if (ch1 && ch2 && ch2->group && ch2->group == ch1->group)
 				{
 					fleet_size_grouped++;
@@ -506,7 +675,7 @@ bool sink_ship(P_ship ship, P_ship attacker)
 				if (contacts[i].ship->m_class == SH_SLOOP)
 					continue;
 
-				P_char ch2 = get_char2(str_dup(SHIP_OWNER(contacts[i].ship)));
+				P_char ch2 = get_char2(SHIP_OWNER(contacts[i].ship));
 				if ((contacts[i].ship == gainer) ||
 				    (ch1 && ch2 && ch2->group && ch2->group == ch1->group))
 				{
@@ -532,6 +701,16 @@ bool sink_ship(P_ship ship, P_ship attacker)
 	return true;
 }
 
+/*
+ * Notify the NPC AI that `target` has been attacked by `attacker`.
+ *
+ * Tells the target's own brain, and also every NPC ship in the first
+ * `contact_counter` entries of contacts[] that is escorting the target -- so
+ * shooting a merchant brings its escorts down on you.
+ *
+ * `contact_counter` must be the count from the getcontacts() call whose
+ * results are still in contacts[].
+ */
 void attacked_by(P_ship target, P_ship attacker, int contact_counter)
 {
 	if (target->npc_ai)
@@ -544,6 +723,28 @@ void attacked_by(P_ship target, P_ship attacker, int contact_counter)
 	}
 }
 
+/*
+ * Delayed event handler: resolve a volley that was fired some pulses ago.
+ *
+ * `data` is the VolleyData that fire_weapon() attached.  Both endpoints are
+ * stored as ShipRuntimeRefs and resolved here, so a volley whose attacker or
+ * target sank in flight is simply dropped (see ship_identity.c).  Volleys
+ * against a docked target, or one that ducked into a zone, are also dropped.
+ *
+ * On arrival the target is forced to battlestations, both crews are marked
+ * for PvP, and the shot is rolled with dice(2,50) against the hit chance that
+ * was computed at FIRING time -- not now -- so the defender cannot dodge by
+ * manoeuvring after the shot is away.
+ *
+ * A hit is resolved fragment by fragment: each fragment either strikes the
+ * sails (chance from the weapon's sail_hit) or the hull, with the hull arc
+ * picked by scattering the firing bearing across the weapon's hit_arc.  A
+ * RANGEDAM weapon interpolates its damage by range instead of rolling it.
+ * MINDBLAST weapons additionally stun and disorient the whole crew.
+ *
+ * If the target left sight while the volley was in flight, the shot resolves
+ * from bearing 0 at range 35 -- an accepted approximation.
+ */
 void volley_hit_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	VolleyData *vd = (VolleyData *)data;
@@ -683,6 +884,16 @@ void volley_hit_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *dat
 	return;
 }
 
+/*
+ * Apply `dam` to `target`'s mainsail and announce it to all three audiences:
+ * the attacker's crew, the target's crew, and nearby ships.
+ *
+ * `attacker` may be NULL for damage with no ship behind it.  Damage is
+ * floored at 1.  Always returns TRUE.
+ *
+ * Note the sail is reduced without clamping here; update_ship_status() is
+ * what floors it at zero and recomputes the resulting speed.
+ */
 int damage_sail(P_ship attacker, P_ship target, int dam)
 {
 	/*P_char captain = captain_is_aboard(target);
@@ -716,6 +927,24 @@ int damage_sail(P_ship attacker, P_ship target, int dam)
 	return TRUE;
 }
 
+/*
+ * Apply `dam` to `target`'s hull in `arc`, announcing it to all three
+ * audiences.
+ *
+ * Armour absorbs first.  A shot that does not break through still has an
+ * `armor_pierce` percent chance of a CRITICAL HIT that carries half its
+ * damage into the internal structure and greatly raises the chance of
+ * wrecking a weapon; otherwise it stops at the armour.  Overkill damage
+ * spills through into the internals.
+ *
+ * Once an arc's internals are gone, roughly a third of subsequent hits are
+ * deflected inside the wreckage into another arc that still has structure,
+ * and hits on a hollowed-out arc are certain to wreck a weapon.
+ *
+ * `attacker` may be NULL.  Damage is floored at 1.  Always returns TRUE.
+ * Call update_ship_status() afterwards -- it is what notices the ship has
+ * been holed badly enough to sink.
+ */
 int damage_hull(P_ship attacker, P_ship target, int dam, int arc, int armor_pierce)
 {
 	/*P_char captain = captain_is_aboard(target);
@@ -798,6 +1027,18 @@ int damage_hull(P_ship attacker, P_ship target, int dam, int arc, int armor_pier
 	return TRUE;
 }
 
+/*
+ * As damage_hull(), but for damage dealt by a CHARACTER rather than a ship --
+ * spells and the like fired at a hull from outside.
+ *
+ * Same armour, critical-hit and internal-deflection rules.  Returns FALSE for
+ * a NULL attacker, otherwise TRUE.
+ *
+ * KNOWN QUIRK, deliberately left alone: the damage_weapon() call below passes
+ * `target` as the attacker, so the target's own crew sees the attacker-side
+ * "You damage a ..." message as well as their own.  Changing it would change
+ * player-visible output, so it is recorded here rather than silently altered.
+ */
 int ch_damage_hull(P_char attacker, P_ship target, int dam, int arc, int armor_pierce)
 {
 	if (!attacker)
@@ -870,6 +1111,14 @@ int ch_damage_hull(P_char attacker, P_ship target, int dam, int arc, int armor_p
 	return TRUE;
 }
 
+/*
+ * Wreck one of `target`'s weapons in `arc`.
+ *
+ * Picks at random among the arc's weapons that are not already destroyed and
+ * adds `dam` to its damage level; past 100 the weapon is destroyed outright.
+ * Does nothing if the arc has no surviving weapons.  `attacker` may be NULL,
+ * in which case only the target's crew is told.
+ */
 void damage_weapon(P_ship attacker, P_ship target, int arc, int dam)
 {
 	int arc_weapons[MAXSLOTS];
@@ -907,6 +1156,11 @@ void damage_weapon(P_ship attacker, P_ship target, int arc, int dam)
 	}
 }
 
+/*
+ * Bring `ship` to a dead stop because its crew is spent: sets the anchor
+ * flag, orders speed zero, and announces it inside and out.  Called when crew
+ * stamina bottoms out.
+ */
 void force_anchor(P_ship ship)
 {
 	act_to_all_in_ship(ship, "&=LRYour ship functions have ceased due to crew fatigue!&N\r\n");
@@ -917,6 +1171,20 @@ void force_anchor(P_ship ship)
 	ship->setspeed = 0;
 }
 
+/*
+ * Reconcile a ship's damage state with its capabilities.  Call this after
+ * ANYTHING that changes armour, internals, sails, weight or crew.
+ *
+ * Clamps negative armour/internals/sail to zero, counts how many arcs are
+ * completely holed, and then:
+ *   - two or more breached arcs sinks an undocked ship outright, crediting
+ *     `attacker` (which may be NULL for an accident);
+ *   - otherwise recomputes maxspeed, announcing the transition when the ship
+ *     becomes immobile or recovers.
+ *
+ * Returns immediately for a ship already sinking, so the sink path is not
+ * re-entered.  A docked ship also drops its target here.
+ */
 void update_ship_status(P_ship ship, P_ship attacker)
 {
 	int breach_count = 0;
@@ -965,6 +1233,12 @@ void update_ship_status(P_ship ship, P_ship attacker)
 	}
 }
 
+/*
+ * Whether `bearing` falls within a `size`-degree cone centred on `heading`.
+ *
+ * The two wrap adjustments are what make the test work across the 0/360
+ * boundary.  Returns TRUE when inside the cone.
+ */
 int check_ram_arc(float heading, float bearing, float size)
 {
 	size /= 2;
@@ -980,6 +1254,17 @@ int check_ram_arc(float heading, float bearing, float size)
 	return FALSE;
 }
 
+/*
+ * Attempt to ram `target`, which bears `tbearing` from `ship`.
+ *
+ * The target must lie within a 120-degree cone ahead, and both ships must be
+ * at the same altitude -- a flying ship passes harmlessly over a surface one.
+ * The outcome depends on the ram equipment fitted, the closing geometry, and
+ * the relative sizes of the two hulls.
+ *
+ * Alerts the target's NPC AI (and its escorts) before resolving.  Returns
+ * FALSE when the attempt could not be made, clearing the RAMMING flag.
+ */
 int try_ram_ship(P_ship ship, P_ship target, float tbearing)
 {
 	int k = getcontacts(target);
@@ -1306,6 +1591,33 @@ int try_ram_ship(P_ship ship, P_ship target, float tbearing)
   return 0;
 }*/
 
+/*
+ * Percentage chance that the weapon in `slot` hits contact `t_contact`.
+ *
+ * This is the ship system's whole gunnery model.  It works by projecting BOTH
+ * ships one tick forward -- applying their pending turns and speed changes --
+ * and measuring how much the firing solution will have moved by the time the
+ * shot could land.  Three components of that movement matter:
+ *
+ *   orthogonal speed  how fast the target crosses the line of fire
+ *   angle speed       how fast the bearing to it is swinging
+ *   closing speed     how fast the range is changing
+ *
+ * Ballistic weapons (catapults, BALLISTIC flag) are lofted, so they care most
+ * about closing speed; direct-fire weapons care most about crossing and
+ * bearing rate.  On top of that:
+ *
+ *   - a bigger target is easier to hit, and increasingly so the faster the
+ *     firing solution is changing;
+ *   - accuracy improves sharply below three quarters of maximum range;
+ *   - a skilled gun crew cuts the miss chance, a tired one scales the hit
+ *     chance down;
+ *   - a flying target is half again harder to hit.
+ *
+ * Returns 0 when the contact is outside the weapon's range band, otherwise a
+ * value clamped to 1..100.  The result is computed once, at firing time, and
+ * carried on the volley -- see volley_hit_event().
+ */
 int weaponsight(P_ship ship, int slot, int t_contact, P_char /*ch*/)
 {
 	float max = (float)weapon_data[ship->slot[slot].index].max_range;
@@ -1435,12 +1747,36 @@ int weaponsight(P_ship ship, int slot, int t_contact, P_char /*ch*/)
 	return (int)(hit_chance * 100);
 }
 
+/*
+ * Fire slot `w_num` at contact `t_contact`, computing the hit chance first.
+ *
+ * Convenience overload: calls weaponsight() and hands the result to the
+ * four-argument fire_weapon().  `ch` is the gunner, used only for messages
+ * and may be NULL.
+ */
 int fire_weapon(P_ship ship, int w_num, int t_contact, P_char ch)
 {
 	int hit_chance = weaponsight(ship, w_num, t_contact, ch);
 	return fire_weapon(ship, w_num, t_contact, hit_chance, ch);
 }
 
+/*
+ * Fire slot `w_num` at contact `t_contact` with a pre-computed `hit_chance`.
+ *
+ * Announces the shot to all four audiences, then schedules a
+ * volley_hit_event() to land after a flight time proportional to range (with
+ * a +/-10% random spread), carrying the hit chance frozen at this moment.
+ * Both crews are marked for PvP and the firing ship goes to battlestations.
+ *
+ * Also spends a round of ammunition, starts the reload timer (shortened by
+ * gunnery skill, lengthened by fatigue), drains crew stamina in proportion to
+ * the weapon's weight relative to the hull, and trains the gun crew slightly
+ * when firing at a legitimate target.
+ *
+ * `ch` may be NULL; it is only used for the last-round-of-ammo warning.
+ * Always returns TRUE.  The caller must have validated `w_num` and
+ * `t_contact`.
+ */
 int fire_weapon(P_ship ship, int w_num, int t_contact, int hit_chance, P_char ch)
 {
 	P_ship target = contacts[t_contact].ship;
