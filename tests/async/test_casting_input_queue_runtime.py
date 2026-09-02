@@ -8,8 +8,9 @@ that unlinks an allowed command out of the middle of a descriptor's input queue
 had no runtime evidence at all.  A wrong tail pointer there corrupts the next
 write_to_q() rather than failing visibly.
 
-This lifts the two functions verbatim out of the tree, compiles them against
-the real struct txt_q layout, and runs the extraction cases.
+This lifts the parser and selective queue functions verbatim out of the tree,
+compiles them against the real struct txt_q layout, and runs the extraction
+cases.
 """
 
 from _paths import SRC
@@ -37,7 +38,12 @@ def extract(source: Path, signature: str) -> str:
 
 
 GET_CASTING = extract(SRC / "comm.c", "int get_casting_cmd_from_q(struct txt_q *queue, char *dest)")
+GET_FILTERED = extract(
+    SRC / "comm.c",
+    "static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest,",
+)
 ALLOWED = extract(SRC / "interp.c", "bool input_allowed_while_casting(const char *input)")
+COMMAND_NUMBER = extract(SRC / "interp.c", "static int input_command_number(const char *input)")
 SEARCH_BLOCK = extract(SRC / "interp.c", "int old_search_block(const char *argument")
 
 # Mirrors src/structs.h; the layout is what the extracted code walks.
@@ -77,6 +83,7 @@ static void logit(int, const char *, ...) {}
 /* old_search_block() returns a 1-based index -- the real CMD_* constants are
    defined that way too (CMD_ABORT 857 for "abort" at offset 856), so this
    stand-in table keeps the same convention. */
+#define CMD_NONE 0
 #define CMD_PETITION 1
 #define CMD_RETURN 2
 #define CMD_ABORT 3
@@ -271,7 +278,15 @@ int main()
 
 
 def main() -> int:
-    harness = "\n".join([PRELUDE, SEARCH_BLOCK, ALLOWED, GET_CASTING, DRIVER])
+    harness = "\n".join([
+        PRELUDE,
+        SEARCH_BLOCK,
+        COMMAND_NUMBER,
+        ALLOWED,
+        GET_FILTERED,
+        GET_CASTING,
+        DRIVER,
+    ])
     with tempfile.TemporaryDirectory() as directory:
         source = Path(directory) / "casting_input_queue.cpp"
         binary = Path(directory) / "casting_input_queue"

@@ -1225,20 +1225,45 @@ bool cmd_allowed_while_casting(int cmd)
 	return (cmd == CMD_PETITION || cmd == CMD_RETURN || cmd == CMD_ABORT);
 }
 
-/*
- * comm.c pumps a casting player's input queue so 'abort' can reach the
- * interpreter, and peeks at the head of that queue with this first: anything
- * the gate would only reject stays queued as type-ahead and runs when the cast
- * finishes, the way it did before 'abort' existed.
- */
-bool input_allowed_while_casting(const char *input)
+/* Commands whose result depends on the player's live inventory or equipment.
+ * A pending ownership transaction has already committed or is about to commit
+ * a different authoritative view, so these must wait for its publication. */
+bool cmd_depends_on_item_movement(int cmd)
+{
+	switch (cmd)
+	{
+	case CMD_GET:
+	case CMD_TAKE:
+	case CMD_DROP:
+	case CMD_PUT:
+	case CMD_GIVE:
+	case CMD_WEAR:
+	case CMD_WIELD:
+	case CMD_GRAB:
+	case CMD_HOLD:
+	case CMD_REMOVE:
+	case CMD_OPEN:
+	case CMD_CLOSE:
+	case CMD_EMPTY:
+	case CMD_JUNK:
+	case CMD_DONATE:
+	case CMD_SACRIFICE:
+	case CMD_BUY:
+	case CMD_SELL:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static int input_command_number(const char *input)
 {
 	char word[MAX_INPUT_LENGTH];
 	uint begin = 0;
 	uint len = 0;
 
 	if (!input)
-		return FALSE;
+		return CMD_NONE;
 
 	while (input[begin] == ' ')
 		begin++;
@@ -1250,10 +1275,29 @@ bool input_allowed_while_casting(const char *input)
 	}
 	word[len] = '\0';
 
-	if (!len)
+	return old_search_block(word, 0, len, command, 2);
+}
+
+/*
+ * comm.c pumps a casting player's input queue so 'abort' can reach the
+ * interpreter, and peeks at the head of that queue with this first: anything
+ * the gate would only reject stays queued as type-ahead and runs when the cast
+ * finishes, the way it did before 'abort' existed.
+ */
+bool input_allowed_while_casting(const char *input)
+{
+	if (!input)
 		return FALSE;
 
-	return cmd_allowed_while_casting(old_search_block(word, 0, len, command, 2));
+	return cmd_allowed_while_casting(input_command_number(input));
+}
+
+bool input_allowed_while_item_moving(const char *input)
+{
+	if (!input)
+		return FALSE;
+
+	return !cmd_depends_on_item_movement(input_command_number(input));
 }
 
 /*

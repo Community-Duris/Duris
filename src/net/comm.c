@@ -977,6 +977,7 @@ void game_loop(int port, int sslport)
 	P_char t_ch = NULL;
 	bool casting_input = FALSE;
 	bool creation_grant_input = FALSE;
+	bool item_movement_input = FALSE;
 	P_desc point, next_point;
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
@@ -1498,18 +1499,25 @@ resume_game_loop:
 			 * Read their queue only for a command the casting gate in
 			 * command_interpreter() will actually run ('abort', 'petition',
 			 * 'return'); everything else stays queued as type-ahead instead
-			 * of being drained one line per pulse and rejected. */
+			 * of being drained one line per pulse and rejected.  Pending item
+			 * movements use the same queue preservation below, while still
+			 * allowing unrelated commands to run. */
 			casting_input =
 				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
 				 point->connected == CON_PLAYING && !point->showstr_count &&
 				 !point->str);
 			creation_grant_input = t_ch && item_creation_grant_blocks_commands(t_ch);
+			item_movement_input = (t_ch && point->connected == CON_PLAYING &&
+					       !point->showstr_count && !point->str &&
+					       item_movement_transaction_player_busy(t_ch));
 
 			if ((!t_ch ||
 			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
 			      (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
 			       point->original))) &&
 			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :
+			     item_movement_input ?
+					     get_item_movement_cmd_from_q(&point->input, comm) :
 					     get_from_q(&point->input, comm)))
 			{
 				if (t_ch)
@@ -2051,26 +2059,22 @@ int get_from_q(struct txt_q *queue, char *dest)
 	return (1);
 }
 
-/*
- * Pull the first command a casting character is actually allowed to run out of
- * their input queue, skipping (and leaving queued) everything else.  Taking it
- * out of order matters: a player who typed something else before deciding to
- * 'abort' would otherwise sit behind their own type-ahead until the chant ended.
- */
-int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
+/* Pull the first command accepted by a selective queue gate, leaving every
+ * skipped entry linked in its original order. */
+static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allowed)(const char *))
 {
 	struct txt_block *prev = NULL;
 	struct txt_block *tmp;
 
-	if (!queue || !dest)
+	if (!queue || !dest || !allowed)
 	{
-		logit(LOG_COMM, "call to get_casting_cmd_from_q with bogus arguments");
+		logit(LOG_COMM, "call to get_filtered_cmd_from_q with bogus arguments");
 		return (0);
 	}
 
 	for (tmp = queue->head; tmp; prev = tmp, tmp = tmp->next)
 	{
-		if (!input_allowed_while_casting(tmp->text))
+		if (!allowed(tmp->text))
 			continue;
 
 		strcpy(dest, tmp->text);
@@ -2090,6 +2094,21 @@ int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
 	}
 
 	return (0);
+}
+
+int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
+{
+	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_casting);
+}
+
+/*
+ * Ownership transactions publish live item moves asynchronously.  Pull safe
+ * commands from behind item-dependent type-ahead while leaving the dependent
+ * commands in FIFO order for the first pulse after publication.
+ */
+int get_item_movement_cmd_from_q(struct txt_q *queue, char *dest)
+{
+	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_item_moving);
 }
 
 /*
