@@ -36,15 +36,16 @@
  * buy_hull() does NOT change the ship.  Hulls can cost epic points, which go
  * through the epic transaction service, so the purchase is packaged into a
  * ship_hull_purchase_context and submitted; the ship only changes later, in
- * ship_hull_purchase_committed(), and a rejected transaction refunds through
- * refund_ship_epics().  Everything else in this file is synchronous.
+ * ship_hull_purchase_committed().  A rejected transaction takes no points;
+ * refund_ship_epics() applies only when a committed purchase cannot complete.
+ * Everything else in this file is synchronous.
  *
  * Build time
  * ----------
  * Most purchases and repairs add to ship->timer[T_MAINTENANCE], during which
  * the ship cannot leave port.  Build time scales with the size of the job,
  * is halved by the quickbuild effect, and is multiplied by five for a hull
- * change while ocean_pvp_state() is true -- you cannot re-hull mid-war.
+ * change while ocean_pvp_state() is true -- wartime hull changes take longer.
  *
  * Customs
  * -------
@@ -133,7 +134,7 @@ void refund_ship_epics(P_char ch, const ship_hull_purchase_context &context)
  *
  * Build time scales with how far the hull class moved, is halved by the
  * quickbuild effect, and is multiplied by five while the ocean is in a PvP
- * state, so you cannot re-hull your way out of a war.
+ * state, so wartime hull changes take five times longer.
  */
 void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_result &,
 				  unsigned int, const uint8_t *raw_context, size_t context_size)

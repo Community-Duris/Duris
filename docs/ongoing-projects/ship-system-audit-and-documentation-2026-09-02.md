@@ -5,14 +5,14 @@ Status: **complete**. Started/completed: 2026-09-02. Branch:
 
 ## Goal
 
-Audit `src/ships/` for defects and fix them **without changing any game
-mechanics**, and bring the subsystem to 100% docstring coverage plus enough
+Audit `src/ships/` for defects and fix them without speculative game-mechanic
+changes, and bring the subsystem to 100% docstring coverage plus enough
 navigational commentary that a developer new to the codebase can find their way
 around it.
 
 ## Non-goals
 
-- No mechanic, balance, formula, or message changes.
+- No unrelated mechanic, balance, formula, or message changes.
 - No refactors, renames, or file moves.
 - No new abstractions, dependencies, or test infrastructure.
 - No schema/migration/persistence-format changes.
@@ -78,6 +78,8 @@ memory-safety, **P3** correctness, **P4** clarity only (no code change).
 | 11 | P2 | `ship_combat.c` (×3), `ship_control.c` (×5), `ship_base.c` (×1) | `get_char2(str_dup(SHIP_OWNER(ship)))` and `isname(str_dup(...), ...)` — nine straight memory leaks. `get_char2()` copies the name into its own stack buffer (`src/world/handler.c:2435`) and `isname()` only compares; neither takes ownership, so every `str_dup()` was lost. Two of the sites are inside per-contact loops in `sink_ship()`, so the leak scaled with the number of ships present at a kill. Now the owner string is passed directly — byte-identical argument, no allocation. |
 | 12 | P2 | `ship_npc_ai.c` `NPCShipAI::b_turn_active_weapon()` | `arc_priority[4]` was uninitialised before being passed to `b_set_arc_priority()`. Every normal caller supplies one of the four values returned by `get_arc()`, which overwrites all four entries, but corrupt or future input could leave the array indeterminate and feed an out-of-bounds `active_arc[]` index. It now starts with the stable fore/port/rear/star order; all valid paths still overwrite it, so current mechanics are byte-for-byte unchanged. |
 | 13 | P2 | `ship_auto.c` `shipgroupremove()` | The dormant non-leader removal path freed its own node without unlinking it from the leader's list, then looped and dereferenced a null cursor. It now verifies the group metadata, locates the predecessor, splices out exactly that member, and only then releases it. The group API has no callers, so no active mechanic changes; the intended valid-path behavior is preserved and protected by `test_ship_autopilot_group_safety.py`. |
+| 14 | P2 | `ship_auto.c` `engage_autopilot()` | The new projection clamp used index 100 even though `getmap()` populates only indices 0..99. A clamped course could therefore read stale `rroom` state. The clamp now stops at 99 while retaining the established `100 - y` coordinate inversion. |
+| 15 | P3 | `ship_npc.c` `setup_npc_caravel_03()` | All three port ballistas were written to slot 1, so each call replaced the previous weapon and the documented level-1 caravel spawned with only one. The three ballistas now occupy distinct slots 1, 2, and 3. |
 
 ### Found, NOT fixed (needs an owner decision)
 
@@ -161,5 +163,5 @@ entry points.
 
 The full `src/ships/` audit is complete. All function definitions are
 documented, every module/header has newcomer navigation appropriate to what it
-owns, 13 proven defects are repaired, and the three questions that require a
+owns, 15 proven defects are repaired, and the three questions that require a
 mechanic or message decision remain explicitly recorded rather than changed.

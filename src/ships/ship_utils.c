@@ -36,8 +36,8 @@
  * valid until the next call that rebuilds them.  Never hold an index or a
  * pointer into one across a call that might refill it:
  *
- *   tactical_map[101][101]  the 101x101 patch of ocean around one ship.
- *                           Rebuilt by getmap().
+ *   tactical_map[101][101]  backing storage for the 100x100 populated patch
+ *                           around one ship. Rebuilt by getmap() at 0..99.
  *   contacts[MAXSHIPS]      the ships visible from one ship, in map order.
  *                           Rebuilt by getcontacts().  This is the array that
  *                           every "target <n>" command indexes into.
@@ -962,7 +962,8 @@ void assignid(P_ship ship, const char *id, bool npc)
 }
 
 /*
- * Fill the global tactical_map[101][101] with the ocean around `ship`.
+ * Fill indices 0..99 of the global tactical_map[101][101] buffer with the
+ * ocean around `ship`.
  *
  * This is the ship system's scratch view of the world and MUST be called
  * before anything reads tactical_map -- getcontacts(), the autopilot, the

@@ -469,8 +469,8 @@ void setup_npc_caravel_03(P_ship ship) // level 1
 {
 	set_weapon(ship, 0, W_MEDIUM_CAT, SIDE_FORE);
 	set_weapon(ship, 1, W_MEDIUM_BAL, SIDE_PORT);
-	set_weapon(ship, 1, W_MEDIUM_BAL, SIDE_PORT);
-	set_weapon(ship, 1, W_MEDIUM_BAL, SIDE_PORT);
+	set_weapon(ship, 2, W_MEDIUM_BAL, SIDE_PORT);
+	set_weapon(ship, 3, W_MEDIUM_BAL, SIDE_PORT);
 	ship->crew.sail_skill = 500;
 	ship->crew.guns_skill = 500;
 	ship->crew.rpar_skill = 500;

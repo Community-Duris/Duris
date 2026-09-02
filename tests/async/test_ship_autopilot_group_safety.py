@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source regression for safe non-leader autopilot group removal."""
+"""Source regressions for ship-audit review fixes."""
 
 from _paths import SRC
 from contract_text import contains
@@ -21,4 +21,22 @@ clear = member.index("autopilot->group = NULL;", release)
 assert splice < release < clear
 assert not contains(member, "if ((tmpgroup = autopilot->group))")
 
-print("autopilot group member removal unlinks before release")
+# Projection must clamp to getmap()'s populated 0..99 range without changing
+# the map's established 100-y coordinate inversion.
+assert contains(source, "#define AUTOPILOT_MAP_MAX 99")
+assert contains(source, "int map_y = 100 - (int)(ydist + ship->y);")
+
+npc_source = (SRC / "ships/ship_npc.c").read_text()
+start = npc_source.index("void setup_npc_caravel_03(")
+end = npc_source.index("void setup_npc_caravel_04(", start)
+caravel = npc_source[start:end]
+for slot in (1, 2, 3):
+    assert contains(caravel, f"set_weapon(ship, {slot}, W_MEDIUM_BAL, SIDE_PORT);")
+assert caravel.count("W_MEDIUM_BAL, SIDE_PORT") == 3
+
+shop_source = (SRC / "ships/ship_shop.c").read_text()
+assert not contains(shop_source, "a rejected transaction refunds through")
+assert not contains(shop_source, "you cannot re-hull")
+assert contains(shop_source, "wartime hull changes take five times longer")
+
+print("ship audit review regressions passed")

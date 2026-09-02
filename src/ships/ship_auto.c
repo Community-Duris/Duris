@@ -30,12 +30,12 @@
  *
  * Coordinate conventions used below
  * ---------------------------------
- * getmap() (ship_utils.c) fills the global tactical_map[101][101] with the
- * 101x101 patch of ocean centred on the ship, and ShipData::x / ::y are the
- * ship's own indices into that patch -- they sit at (50, 50) for a normal
- * ship (see reset_ship() in ship_base.c).  The map's y axis is inverted with
- * respect to compass north, which is why every lookup here reads
- * tactical_map[x][100 - y].
+ * getmap() (ship_utils.c) fills indices 0..99 of the global
+ * tactical_map[101][101] buffer with a 100x100 patch of ocean centred on the
+ * ship, and ShipData::x / ::y are the ship's own coordinates in that patch --
+ * they sit at (50, 50) for a normal ship (see reset_ship() in ship_base.c).
+ * The map's y axis is inverted with respect to compass north, which is why
+ * lookups convert it with 100 - y before clamping to the populated range.
  *
  * Bearings are compass degrees: 0 = north, 90 = east, 180 = south, 270 = west.
  */
@@ -59,10 +59,10 @@
 extern char buf[MAX_STRING_LENGTH];
 
 /*
- * Highest tactical_map[] index that getmap() populates.  The array is
- * [101][101], so valid subscripts are 0..100 on both axes.
+ * Highest tactical_map[] index that getmap() populates.  The backing array is
+ * [101][101], but getmap() writes only subscripts 0..99 on both axes.
  */
-#define AUTOPILOT_MAP_MAX 100
+#define AUTOPILOT_MAP_MAX 99
 
 /*
  * Largest distance, in map rooms, that "order sail" will accept.  Kept as a
@@ -304,7 +304,7 @@ int engage_autopilot(P_char ch, P_ship ship, char *arg1, char *arg2)
 	int xdist = (int)(sin(rad) * (dist + 1));
 	int ydist = (int)(cos(rad) * (dist + 1));
 	int map_x = (int)(xdist + ship->x);
-	int map_y = AUTOPILOT_MAP_MAX - (int)(ydist + ship->y);
+	int map_y = 100 - (int)(ydist + ship->y);
 
 	/*
 	 * ship->x / ship->y are normally (50, 50), which keeps the projection
