@@ -396,6 +396,7 @@ def verify_recovered_loot(port: int) -> None:
 
 
 def build_flatfile_server() -> pathlib.Path:
+    """Build this process's isolated flat-file journey server."""
     # The Chaos kit journey imports this builder, and the root regression runner
     # executes both scripts concurrently.  A per-process output prevents one
     # linker from replacing the binary while the other journey is running it.

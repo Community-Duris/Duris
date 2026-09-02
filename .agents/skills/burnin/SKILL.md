@@ -24,6 +24,12 @@ merely because one phase passes.
   listener before a graceful signal. Never use broad `kill`/`pkill`. Wait for both processes and
   their ports to close. Treat another checkout owning a required port as a blocker, not as
   authorization to stop it.
+- Before stopping an authorized production instance, identify its exact production service unit
+  and manager and record the known-good artifact and rollback/start path. After every production
+  stop, restart through that same service path, which must invoke `cycle_mud.sh --production`;
+  never invoke `start_mud.sh --dev` when `ENVIRONMENT=production`. If a later phase fails, restore
+  the known-good artifact and restart the production service before reporting the failure unless
+  the user explicitly requested that it remain stopped.
 - Do not skip an unavailable gate. Diagnose safe prerequisites; if Docker, credentials, or
   another external dependency remains unavailable, report the burn-in as incomplete.
 
@@ -57,8 +63,10 @@ merely because one phase passes.
 
 ## Live burn-in
 
-1. Record current log boundaries, start this checkout with `./scripts/start_mud.sh --dev`, and wait
-   for `./scripts/healthcheck.sh` to pass. Throughout boot and the smoke test, follow
+1. Record current log boundaries. For `ENVIRONMENT=local`, start this checkout with
+   `./scripts/start_mud.sh --dev`. For an authorized `ENVIRONMENT=production` run, start the exact
+   production service identified before shutdown, using the same service manager. Wait for
+   `./scripts/healthcheck.sh` to pass. Throughout boot and the smoke test, follow
    `logs/duris-console.log` and every current regular file under `logs/log/`, including files created
    after monitoring begins. Investigate unexpected output as well as obvious warning, error, fatal,
    assertion, crash, and persistence messages.
