@@ -78,6 +78,7 @@ def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, in
 
 
 def one_owned_item(state_root: pathlib.Path, vnum: int) -> dict[str, int]:
+    """Return the sole authoritative ownership row for an expected fixture item."""
     matches = read_item_ownership(state_root).get(vnum, [])
     require(len(matches) == 1, f"expected exactly one ownership row for VNUM {vnum}")
     return matches[0]
@@ -108,6 +109,7 @@ def warrior_kit_vnums() -> set[int]:
 
 
 def install_chaos_objects(run_root: pathlib.Path) -> None:
+    """Install the Warrior Chaos kit objects into the isolated minimal world."""
     world_objects = (ROOT / "areas/world.obj").read_text(errors="replace")
     mini_path = run_root / "areas_mini/mini.obj"
     mini_objects = mini_path.read_text(errors="replace")
@@ -154,6 +156,7 @@ A
 
 
 def create_chaos_character(client: MudClient) -> None:
+    """Drive character creation through a standard Warrior Chaos starter grant."""
     entry, _ = client.expect_any(("term type", "account name"))
     if entry == "term type":
         client.send("9")
@@ -216,6 +219,7 @@ def create_chaos_character(client: MudClient) -> None:
 
 
 def expect_paged(client: MudClient, needle: str) -> None:
+    """Advance paged output until the requested text appears or the prompt returns."""
     while True:
         matched, _ = client.expect_any((needle, "[Return to continue", "Pos: standing >"), timeout=30)
         if matched == needle:
@@ -227,6 +231,7 @@ def expect_paged(client: MudClient, needle: str) -> None:
 
 
 def finish_paged(client: MudClient) -> None:
+    """Advance through the remaining pages until the standing prompt appears."""
     while True:
         matched, _ = client.expect_any(("[Return to continue", "Pos: standing >"), timeout=30)
         if matched == "Pos: standing >":
@@ -235,6 +240,7 @@ def finish_paged(client: MudClient) -> None:
 
 
 def inspect_chaos_material_pouch(client: MudClient, retrieve: bool = True) -> None:
+    """Exercise the material pouch and optionally retrieve its test inputs first."""
     if retrieve:
         client.transcript.clear()
         client.send("look in bottomless")
@@ -346,6 +352,7 @@ def inspect_chaos_material_pouch(client: MudClient, retrieve: bool = True) -> No
 
 
 def run_chaos_kit_journey(binary: pathlib.Path) -> None:
+    """Verify Chaos starter ownership and equipment across an isolated restart."""
     with tempfile.TemporaryDirectory(prefix="duris-chaos-kit-state-") as state_tmp:
         with tempfile.TemporaryDirectory(prefix="duris-chaos-kit-run-") as run_tmp:
             state_root = pathlib.Path(state_tmp)
