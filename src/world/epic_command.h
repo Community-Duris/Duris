@@ -32,6 +32,7 @@ enum class epic_reason_type : uint16_t
 	ascend_descend,
 	ship_purchase,
 	admin_adjustment,
+	chaos_starter_reward,
 };
 
 enum epic_command_flag : uint16_t

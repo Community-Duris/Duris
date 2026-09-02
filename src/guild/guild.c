@@ -70,7 +70,7 @@ void update_skills(P_char ch)
 		skllvl = GET_LVL_FOR_SKILL(ch, skl);
 		if (IS_EPIC_SKILL(skl))
 		{
-			if (chaos_mode)
+			if (chaos_mode && !chaos_starter_epic_skills_enabled())
 			{
 				ch->only.pc->skills[skl].taught = 100;
 				ch->only.pc->skills[skl].learned = 100;

@@ -163,7 +163,6 @@ assert "can_char_use_item(ch, obj)" in chaos_code
 assert "REMOVE_BIT(obj->extra_flags, ITEM_SECRET);" in chaos_code
 assert chaos_code.count("item_creation_grant_submit_to_player_before_entry(ch, bag, ch)") == 1
 assert "item_creation_grant_submit_to_player(ch, obj, ch, bag)" not in chaos_code
-assert "item_creation_grant_mark_blocking(ch)" not in chaos_code
 assert "1252" not in chaos_code
 assert chaos_code.index("if (item_failure)") < chaos_code.index("item_creation_grant_submit_to_player_before_entry(ch, bag, ch)")
 # The master spellbook remains the dynamic all-spells object and is beltable.

@@ -34,6 +34,7 @@
 #include "economy/crafting.h"
 #include "economy/currency_transaction.h"
 #include "world/vnum.obj.h"
+#include "combat/chaos_materials.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -4070,6 +4071,7 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 	char buf[MAX_STRING_LENGTH];
 	char obj_name[MAX_STRING_LENGTH];
 	char cont_name[MAX_STRING_LENGTH];
+	bool chaos_pouch_target = false;
 
 	if (IS_ANIMAL(ch) && IS_NPC(ch))
 	{
@@ -4158,7 +4160,27 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 
 	if (!s_obj)
 	{
+		for (int slot = WEAR_ATTACH_BELT_1; slot <= WEAR_ATTACH_BELT_3; ++slot)
+			if (P_obj pouch = ch->equipment[slot];
+			    chaos_material_pouch_is_active(pouch) && isname(cont_name, pouch->name))
+			{
+				s_obj = pouch;
+				break;
+			}
+	}
+
+	if (!s_obj)
+	{
 		send_to_char("Into what?\r\n", ch);
+		return;
+	}
+
+	chaos_pouch_target = chaos_material_pouch_is_active(s_obj);
+	if (chaos_pouch_target && type == PUT_COINS)
+	{
+		send_to_char(
+			"The Chaos craft pouch only collects crafting materials, not coins.\r\n",
+			ch);
 		return;
 	}
 
@@ -4192,32 +4214,60 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 		attempted = generic_find(obj_name, FIND_OBJ_INV, ch, &t_ch, &o_obj);
 		if (attempted != 0)
 		{
-			count = put(ch, o_obj, s_obj, TRUE);
+			if (chaos_pouch_target)
+			{
+				if (!chaos_material_pouch_collect_object(s_obj, o_obj))
+				{
+					send_to_char(
+						"The Chaos craft pouch only collects supported crafting materials.\r\n",
+						ch);
+					return;
+				}
+				count = 1;
+			}
+			else
+				count = put(ch, o_obj, s_obj, TRUE);
 		}
 	}
 	else if (type == PUT_ALL || type == PUT_ALLDOT)
 	{
-		/* A durable container serialises the moves; ownership revisions make
-		 * concurrent submissions for one player unsafe. */
-		if (IS_PC(ch) && s_obj->obj_uid > 0)
+		if (chaos_pouch_target)
 		{
-			start_bulk_put(ch, s_obj, type == PUT_ALLDOT ? obj_name : NULL,
-				       type == PUT_ALLDOT);
-			return;
+			count = chaos_material_pouch_collect_inventory(
+				ch, s_obj, type == PUT_ALLDOT ? obj_name : NULL);
+			attempted = count > 0;
 		}
-		for (o_obj = ch->carrying; o_obj; o_obj = next_obj)
+		else
 		{
-			next_obj = o_obj->next_content;
-			if (o_obj == s_obj)
-				continue;
-			if (!CAN_SEE_OBJ(ch, o_obj) && type != PUT_ALL)
-				continue;
-			if (type == PUT_ALLDOT && !isname(obj_name, o_obj->name))
-				continue;
-			attempted = 1;
-			if (put(ch, o_obj, s_obj, FALSE))
-				count++;
+			/* A durable container serialises the moves; ownership revisions make
+			 * concurrent submissions for one player unsafe. */
+			if (IS_PC(ch) && s_obj->obj_uid > 0)
+			{
+				start_bulk_put(ch, s_obj, type == PUT_ALLDOT ? obj_name : NULL,
+					       type == PUT_ALLDOT);
+				return;
+			}
+			for (o_obj = ch->carrying; o_obj; o_obj = next_obj)
+			{
+				next_obj = o_obj->next_content;
+				if (o_obj == s_obj)
+					continue;
+				if (!CAN_SEE_OBJ(ch, o_obj) && type != PUT_ALL)
+					continue;
+				if (type == PUT_ALLDOT && !isname(obj_name, o_obj->name))
+					continue;
+				attempted = 1;
+				if (put(ch, o_obj, s_obj, FALSE))
+					count++;
+			}
 		}
+	}
+	if (chaos_pouch_target && attempted == 0)
+	{
+		send_to_char(
+			"The Chaos craft pouch only collects supported crafting materials.\r\n",
+			ch);
+		return;
 	}
 	if (attempted == 0)
 	{
@@ -4234,7 +4284,16 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 	}
 	else if (count)
 	{
-		if (type == PUT_ALL)
+		if (chaos_pouch_target)
+		{
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "You record %d collected material%s in $p's scoreboard.", count,
+				 count == 1 ? "" : "s");
+			act(buf, FALSE, ch, s_obj, 0, TO_CHAR);
+			act("$n records collected materials in $p's scoreboard.", TRUE, ch, s_obj,
+			    0, TO_ROOM);
+		}
+		else if (type == PUT_ALL)
 		{
 			snprintf(buf, MAX_STRING_LENGTH, "You put %d items into $p.", count);
 			act(buf, FALSE, ch, s_obj, 0, TO_CHAR);

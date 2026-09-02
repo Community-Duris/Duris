@@ -1,7 +1,12 @@
 #include "net/comm.h"
 #include "core/prototypes.h"
 #include "ships/ships.h"
+#include "combat/chaos_materials.h"
+#include "item/enhance.h"
+#include "item/item_movement_transaction.h"
 #include "core/utils.h"
+
+#include <stdlib.h>
 
 extern long new_exp_table[];
 
@@ -86,15 +91,44 @@ static void chaos_side(P_char ch, const char *arg)
 	send_to_char("There's no such side.\n", ch);
 }
 
+static void chaos_pouch_test_seed(P_char ch)
+{
+	static bool enhancement_ready = false;
+	static constexpr int vnums[] = { 400000, 400001, 400291, 18000, 22801 };
+	for (int vnum : vnums)
+	{
+		P_obj object = read_object(vnum, VIRTUAL);
+		if (object)
+			obj_to_char(object, ch);
+	}
+	if (!enhancement_ready)
+	{
+		boot_enhancement_system();
+		enhancement_ready = true;
+	}
+	send_to_char("Chaos pouch test materials prepared.\r\n", ch);
+}
+
+static void chaos_pouch_test_generate(P_char ch, const char *arg)
+{
+	const int count = atoi(arg);
+	if (count <= 0 || count > 1000)
+	{
+		send_to_char("Chaos pouch test generation count must be 1..1000.\r\n", ch);
+		return;
+	}
+	const chaos_material_pouch_usage usage = { 400000, static_cast<uint64_t>(count) };
+	if (!chaos_material_pouch_record_generated(ch, &usage, 1))
+		send_to_char("Chaos pouch test generation was not recorded.\r\n", ch);
+}
+
 void do_chaos(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!IS_PC(ch))
 		return;
 
-#ifndef TEST_MUD
-	if (!IS_TRUSTED(ch))
+	if (!IS_TRUSTED(ch) && !chaos_test_commands_enabled())
 		return send_to_char("No, you can't have pony.  Not yours.\n", ch);
-#endif
 
 	char buff[MAX_STRING_LENGTH];
 
@@ -104,6 +138,14 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 
 	if (!*buff)
 		goto noarg;
+
+	if (chaos_test_commands_enabled())
+	{
+		if (is_abbrev(buff, "pouchseed"))
+			return chaos_pouch_test_seed(ch);
+		if (is_abbrev(buff, "pouchgenerate"))
+			return chaos_pouch_test_generate(ch, arg);
+	}
 
 	if (is_abbrev(buff, "platinum") || is_abbrev(buff, "plats"))
 	{

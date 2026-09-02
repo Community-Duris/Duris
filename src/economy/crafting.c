@@ -16,6 +16,7 @@
 #include "magic/spells.h"
 #include "world/vnum.obj.h"
 #include "economy/crafting.h"
+#include "combat/chaos_materials.h"
 #include "core/utils.h"
 #include "sql/sql_player.h"
 #include <math.h>
@@ -799,6 +800,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 
 		// If we're going to require multiple essences, we need to change this to int numAffects ...
 		bool hasAffect = has_affect(tobj);
+		const bool chaos_pouch = chaos_material_pouch_available(ch);
 
 		int invLowMats = 0; // Number of lowest quality materials in inventory.
 		int invHighMats = 0; // Number of highest quality materials in inventory.
@@ -820,7 +822,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		}
 
 		// Check mats in inventory vs mats needed.
-		if (invLowMats < numLowest || invHighMats < numHighest)
+		if (!chaos_pouch && (invLowMats < numLowest || invHighMats < numHighest))
 		{
 			send_to_char(
 				"You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n",
@@ -864,13 +866,14 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			nextObj = inventory->next_content;
 			invVnum = OBJ_VNUM(inventory);
 
-			if ((numLowest > 0) && (invVnum == lowQualityMaterialVnum))
+			if (!chaos_pouch && (numLowest > 0) && (invVnum == lowQualityMaterialVnum))
 			{
 				obj_from_char(inventory);
 				extract_obj(inventory);
 				numLowest--;
 			}
-			else if ((numHighest > 0) && (invVnum == highQualityMaterialVnum))
+			else if (!chaos_pouch && (numHighest > 0) &&
+				 (invVnum == highQualityMaterialVnum))
 			{
 				obj_from_char(inventory);
 				extract_obj(inventory);
@@ -915,6 +918,14 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			extract_obj(matLowest);
 			extract_obj(matHighest);
 			return;
+		}
+		if (chaos_pouch)
+		{
+			const chaos_material_pouch_usage generated[] = {
+				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowest) },
+				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighest) },
+			};
+			chaos_material_pouch_record_generated(ch, generated, ARRAY_SIZE(generated));
 		}
 		act("&+W$n &+Ldelicately opens their &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and starts their work...\r\n"
 		    "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
@@ -1363,6 +1374,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 		lowQualityMaterialVnum = plan.low_material_vnum;
 		highQualityMaterialVnum = plan.high_material_vnum;
 		hasAffect = plan.magical;
+		const bool chaos_pouch = chaos_material_pouch_available(ch);
 
 		/* Foundry code here (not requiring one atm I guess):
 		if( !check_foundry(ch) )
@@ -1407,8 +1419,8 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 			extract_obj(obj);
 			return;
 		}
-		if ((hasAffect && invEssences < 1) || (invLowMats < numLowQuality) ||
-		    (invHighMats < numHighQuality))
+		if ((hasAffect && invEssences < 1) ||
+		    (!chaos_pouch && (invLowMats < numLowQuality || invHighMats < numHighQuality)))
 		{
 			send_to_char(
 				"You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n",
@@ -1423,12 +1435,14 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 			invNextObj = inventory->next_content;
 			invVnum = OBJ_VNUM(inventory);
 
-			if ((invVnum == lowQualityMaterialVnum) && (numLowQuality > 0))
+			if (!chaos_pouch && (invVnum == lowQualityMaterialVnum) &&
+			    (numLowQuality > 0))
 			{
 				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
 				numLowQuality--;
 			}
-			else if ((invVnum == highQualityMaterialVnum) && (numHighQuality > 0))
+			else if (!chaos_pouch && (invVnum == highQualityMaterialVnum) &&
+				 (numHighQuality > 0))
 			{
 				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
 				numHighQuality--;
@@ -1461,6 +1475,14 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 		       objVnum, itemvalue(obj));
 		if (!grant_crafted_item(ch, obj))
 			return;
+		if (chaos_pouch)
+		{
+			const chaos_material_pouch_usage generated[] = {
+				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowQuality) },
+				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighQuality) },
+			};
+			chaos_material_pouch_record_generated(ch, generated, ARRAY_SIZE(generated));
+		}
 
 		act("&+W$n &+Lgently takes their &+ymaterials&+L, their &nflux&+L, and places them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"
 		    "&+W$n &+Lremoves the &+yitems &+Lfrom the &+rheat &+Land starts to &nhammer &+Laway at the mixture..\r\n"

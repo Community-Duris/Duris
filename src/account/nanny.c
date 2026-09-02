@@ -51,9 +51,12 @@
 #include "redis/redis_presence_runtime.h"
 #include "ships/ships.h"
 #include "classes/specializations.h"
+#include "classes/epic_skills.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
 #include "sql/sql_player.h"
+#include "persistence/critical_command.h"
+#include "world/vnum.obj.h"
 #include "world/vnum.room.h"
 #include "net/ws_handlers.h"
 #include "core/safe_format.h"
@@ -411,6 +414,106 @@ static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 	add_newbie_keyword(obj);
 }
 
+static constexpr uint32_t CHAOS_STARTER_EPIC_OPERATION_DOMAIN = 0x43484550;
+static constexpr uint32_t CHAOS_STARTER_BANK_OPERATION_DOMAIN = 0x43484250;
+
+static bool chaos_starter_operation_id(P_char ch, uint32_t domain,
+				       critical_operation_id *operation_id)
+{
+	if (!ch || GET_PID(ch) <= 0 || !operation_id || !domain)
+		return false;
+	critical_operation_id seed = {};
+	const uint64_t pid = static_cast<uint64_t>(GET_PID(ch));
+	memcpy(seed.bytes.data(), "CHAOSEED", 8);
+	memcpy(seed.bytes.data() + 8, &pid, sizeof(pid));
+	return critical_operation_id_derive(seed, domain, 1, operation_id);
+}
+
+static void chaos_epic_starter_grant_complete(P_char ch, bool committed,
+					      const epic_command_result &result,
+					      unsigned int error_code, const uint8_t * /*context*/,
+					      size_t /*context_size*/)
+{
+	if (!committed)
+	{
+		logit(LOG_FILE, "CHAOS starter epic grant was rejected for pid %d error=%u",
+		      ch ? GET_PID(ch) : 0, error_code);
+		if (ch)
+			send_to_char(
+				"Your Chaos epic reserve could not be prepared; please contact staff.\r\n",
+				ch);
+	}
+	else
+	{
+		logit(LOG_FILE, "CHAOS starter epic grant committed for pid %d balance=%lld",
+		      ch ? GET_PID(ch) : 0, (long long)result.balance);
+		statuslog(56, "CHAOS starter epic grant committed for pid %d balance=%lld",
+			  ch ? GET_PID(ch) : 0, (long long)result.balance);
+	}
+}
+
+static void chaos_bank_starter_grant_complete(P_char ch, bool committed,
+					      const currency_command_result &result,
+					      unsigned int error_code, const uint8_t * /*context*/,
+					      size_t /*context_size*/)
+{
+	if (!committed)
+	{
+		logit(LOG_FILE, "CHAOS starter bank grant was rejected for pid %d error=%u",
+		      ch ? GET_PID(ch) : 0, error_code);
+		if (ch)
+			send_to_char(
+				"Your Chaos bank reserve could not be prepared; please contact staff.\r\n",
+				ch);
+	}
+	else
+	{
+		logit(LOG_FILE, "CHAOS starter bank grant committed for pid %d platinum=%lld",
+		      ch ? GET_PID(ch) : 0, (long long)result.bank.amount[3]);
+		statuslog(56, "CHAOS starter bank grant committed for pid %d platinum=%lld",
+			  ch ? GET_PID(ch) : 0, (long long)result.bank.amount[3]);
+	}
+}
+
+static void schedule_chaos_starting_ledgers(P_char ch)
+{
+	if (!ch || !chaos_starter_bonuses_enabled())
+		return;
+	if (chaos_starter_epic_points_enabled())
+	{
+		critical_operation_id operation_id = {};
+		if (!chaos_starter_operation_id(ch, CHAOS_STARTER_EPIC_OPERATION_DOMAIN,
+						&operation_id) ||
+		    !epic_transaction_submit_identified(
+			    ch, operation_id, 20000, epic_reason_type::chaos_starter_reward,
+			    GET_PID(ch), 0, critical_source_site::login,
+			    critical_deadline_class::recovery, chaos_epic_starter_grant_complete,
+			    nullptr, 0))
+		{
+			logit(LOG_FILE, "CHAOS starter epic grant could not be queued for pid %d",
+			      GET_PID(ch));
+		}
+	}
+}
+
+static void schedule_chaos_starting_bank(P_char ch)
+{
+	if (!ch || !chaos_starter_bonuses_enabled() || !chaos_starter_bank_platinum_enabled())
+		return;
+	currency_vector bank_delta = {};
+	bank_delta.amount[3] = 1000000;
+	critical_operation_id operation_id = {};
+	if (!chaos_starter_operation_id(ch, CHAOS_STARTER_BANK_OPERATION_DOMAIN, &operation_id) ||
+	    !currency_transaction_submit_identified(
+		    ch, operation_id, {}, bank_delta, currency_reason_type::chaos_starter_reward,
+		    GET_PID(ch), critical_source_site::login, critical_deadline_class::recovery,
+		    chaos_bank_starter_grant_complete, nullptr, 0))
+	{
+		logit(LOG_FILE, "CHAOS starter bank grant could not be queued for pid %d",
+		      GET_PID(ch));
+	}
+}
+
 static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *item)
 {
 	if (!item || !item->vnum)
@@ -438,6 +541,8 @@ static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *it
 		return true;
 	}
 	prepare_chaos_kit_item(ch, obj);
+	if (OBJ_VNUM(obj) == VOBJ_CHAOS_CRAFT_POUCH)
+		REMOVE_BIT(obj->extra_flags, ITEM_TRANSIENT);
 	if (!obj_can_nest(obj, bag))
 	{
 		logit(LOG_FILE, "Cannot place CHAOS kit item vnum %d in starter bag for pid %d",
@@ -485,6 +590,12 @@ static void load_chaos_new_character_kit(P_char ch)
 	for (const chaos_kit_item *item = chaos_eq_support_consumables; item && item->vnum; ++item)
 		if (!append_chaos_kit_item(ch, bag, item))
 			item_failure = true;
+	if (chaos_starter_materials_enabled())
+	{
+		const chaos_kit_item pouch = { WEAR_NONE, VOBJ_CHAOS_CRAFT_POUCH };
+		if (!append_chaos_kit_item(ch, bag, &pouch))
+			item_failure = true;
+	}
 	if (item_failure)
 	{
 		extract_obj(bag, FALSE);
@@ -2484,6 +2595,7 @@ void enter_game(P_desc d)
 	char Gbuf1[MAX_STRING_LENGTH], timestr[MAX_STRING_LENGTH];
 	bool nobonus = FALSE;
 	P_char ch = d->character;
+	const bool new_character = ch && GET_LEVEL(ch) == 0;
 	P_desc i;
 	P_nevent evp;
 	P_Guild guild;
@@ -3000,27 +3112,27 @@ void enter_game(P_desc d)
 		loginlog(GET_LEVEL(ch), "&+GIMMORTAL&n: (%s) [%s] has logged on.%s", GET_NAME(ch),
 			 d->host, Gbuf1);
 
-		//  /* multiplay check */
-		//  for (P_desc k = descriptor_list; k; k = k->next)
-		//  {
-		//    if( d == k || !k->character )
-		//      continue;
-		//
-		//    if (k->connected == CON_PLAYING && d->host && k->host && !str_cmp(d->host, k->host) )
-		//    {
-		//      logit(LOG_STATUS, "%s and %s are logged in from the same IP address",
-		//            d->character->player.name, k->character->player.name);
-		//      sql_log(d->character, PLAYERLOG, "%s and %s logged in from same IP address", d->character->player.name, k->character->player.name);
-		//
-		//      if( d->character->in_room != k->character->in_room )
-		//      {
-		//        wizlog(AVATAR, "%s and %s are logged in from the same IP address but not in the same room",
-		//               d->character->player.name, k->character->player.name);
-		//      }
-		//    }
-		//  }
+	//  /* multiplay check */
+	//  for (P_desc k = descriptor_list; k; k = k->next)
+	//  {
+	//    if( d == k || !k->character )
+	//      continue;
+	//
+	//    if (k->connected == CON_PLAYING && d->host && k->host && !str_cmp(d->host, k->host) )
+	//    {
+	//      logit(LOG_STATUS, "%s and %s are logged in from the same IP address",
+	//            d->character->player.name, k->character->player.name);
+	//      sql_log(d->character, PLAYERLOG, "%s and %s logged in from same IP address", d->character->player.name, k->character->player.name);
+	//
+	//      if( d->character->in_room != k->character->in_room )
+	//      {
+	//        wizlog(AVATAR, "%s and %s are logged in from the same IP address but not in the same room",
+	//               d->character->player.name, k->character->player.name);
+	//      }
+	//    }
+	//  }
 
-		// CTF - level them up, and setbit hardcore off them!
+	// CTF - level them up, and setbit hardcore off them!
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	// setbit hardcore off according to policy
 	if (hardcore_config_get()->disable_in_ctf)
@@ -3048,8 +3160,27 @@ void enter_game(P_desc d)
 				54; // so they are raised one level, which will fix skills
 		}
 		advance_to_level(ch, 56);
+		if (new_character && chaos_starter_epic_skills_enabled())
+		{
+			const int granted_epic_skills =
+				grant_epic_skills_without_specialization(ch);
+			logit(LOG_FILE,
+			      "CHAOS starter granted %d no-specialization epic skills to pid %d",
+			      granted_epic_skills, GET_PID(ch));
+			statuslog(
+				56,
+				"CHAOS starter granted %d no-specialization epic skills to pid %d",
+				granted_epic_skills, GET_PID(ch));
+		}
+		if (new_character && chaos_starter_frigate_enabled())
+			grant_chaos_tattoo_achievement(ch);
 	}
 
+	if (new_character)
+	{
+		schedule_chaos_starting_ledgers(ch);
+		schedule_chaos_starting_bank(ch);
+	}
 	epic_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
 	item_movement_transaction_player_ready(ch);

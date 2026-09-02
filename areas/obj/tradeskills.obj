@@ -2429,3 +2429,20 @@ strange dark bloodstone _strange_~
 13 15 3 0 7 0 0 1 0 0 0
 0 0 0 0 0 0 25 0
 0 0 100 16 0 0 0
+
+#400300
+chaos craft pouch universal materials~
+a compact Chaos craft pouch~
+A compact Chaos craft pouch is here, its fabric shimmering with a tightly packed catalog of crafting materials.~
+~
+15 3 3 0 7 0 0 8404993 0 0 0
+25 0 0 25 0 0 0 0
+1 0 100
+E
+chaos craft pouch universal materials~
+The pouch interior is a compact, bottomless catalog:
+  Salvage: all material tiers (400000-400209)
+  Encrust: all jewels (400291-400299)
+It supplies material requirements without being consumed.
+Tools, essences, fees, and other requirements still apply.
+~

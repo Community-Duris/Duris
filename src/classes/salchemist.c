@@ -21,6 +21,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 #include "combat/damage.h"
 #include "core/defines.h"
 #include "world/epic.h"
@@ -33,6 +35,7 @@
 #include "sql/sql.h"
 #include "world/vnum.obj.h"
 #include "world/weather.h"
+#include "combat/chaos_materials.h"
 
 /*
  * external variables
@@ -1121,6 +1124,7 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 
 	P_obj item;
 	P_obj jewel;
+	bool virtual_jewel = false;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_ENCRUST))
 	{
@@ -1140,6 +1144,13 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (!item)
 	{
 		act("What item do you wish to encrust?", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+	if (chaos_material_pouch_is(item))
+	{
+		send_to_char(
+			"The Chaos craft pouch is a material source, not an encrust target.\r\n",
+			ch);
 		return;
 	}
 
@@ -1177,25 +1188,60 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 	jewel = get_obj_in_list_vis(ch, arg2, ch->carrying);
+	if (!jewel && chaos_material_pouch_available(ch))
+	{
+		char *end = NULL;
+		errno = 0;
+		const long jewel_vnum = strtol(arg2, &end, 10);
+		if (errno != ERANGE && end != arg2 && end && !*end &&
+		    jewel_vnum >= ENCRUST_VNUM_BEGIN && jewel_vnum <= ENCRUST_VNUM_END)
+		{
+			jewel = read_object(static_cast<int>(jewel_vnum), VIRTUAL);
+			virtual_jewel = jewel != NULL;
+		}
+	}
 
 	// Add a check if this is a encrustable item...
 	if (!jewel)
 	{
-		act("What item do you wish to encrust?", FALSE, ch, 0, 0, TO_CHAR);
+		if (chaos_material_pouch_available(ch))
+			act("Use an encrust jewel VNUM from 400291 through 400299 with the Chaos craft pouch.",
+			    FALSE, ch, 0, 0, TO_CHAR);
+		else
+			act("What item do you wish to encrust?", FALSE, ch, 0, 0, TO_CHAR);
+		return;
+	}
+	if (chaos_material_pouch_is(jewel))
+	{
+		act("Use an encrust jewel VNUM from 400291 through 400299 with the Chaos craft pouch.",
+		    FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 	if (!IS_ENCRUSTABLE(jewel))
 	{
+		if (virtual_jewel)
+			extract_obj(jewel);
 		act("Is THAT a jewel?!?!?", FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 	if (jewel->value[6] == 0)
+	{
+		if (virtual_jewel)
+			extract_obj(jewel);
 		return send_to_char("This jewel no workie, go tell a god.\n", ch);
+	}
 
 	if (jewel == item)
 	{
+		if (virtual_jewel)
+			extract_obj(jewel);
 		act("Try finding a suitable item to encrust with, bub.", FALSE, ch, 0, 0, TO_CHAR);
 		return;
+	}
+	if (virtual_jewel)
+	{
+		const chaos_material_pouch_usage generated = { OBJ_VNUM(jewel), 1 };
+		chaos_material_pouch_record_generated(ch, &generated, 1);
 	}
 
 	snprintf(buf2, MAX_STRING_LENGTH, "%s attempts to encrust %s with %s...", GET_NAME(ch),
@@ -1225,6 +1271,8 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 
 	if (!new_item)
 	{
+		if (virtual_jewel)
+			extract_obj(jewel);
 		return;
 	}
 

@@ -3,6 +3,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "world/achievements.h"
+#include "combat/chaos_config.h"
 #include <string.h>
 #include "world/epic.h"
 #include "ships/ships.h"
@@ -375,13 +376,18 @@ void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 			}
 			else
 			{
+				const bool chaos_frigate = chaos_starter_frigate_enabled();
 				send_to_char(
-					"&+yCheck the &+Wdocks &+yfor your reward: &+WA free sloop&+y!&n\n\r",
+					chaos_frigate ?
+						"&+yCheck the &+Wdocks &+yfor your reward: &+WA free frigate&+y!&n\n\r" :
+						"&+yCheck the &+Wdocks &+yfor your reward: &+WA free sloop&+y!&n\n\r",
 					ch);
 				send_to_char(
-					"&+y(Type &+g'list hull'&+y at any docks where you can buy a ship.)&n\n\r",
+					chaos_frigate ?
+						"&+y(Type &+g'list hull'&+y at any docks, then claim the frigate reward.)&n\n\r" :
+						"&+y(Type &+g'list hull'&+y at any docks where you can buy a ship.)&n\n\r",
 					ch);
-				// Tag them for a free sloop.
+				// Retain AIP_FREESLOOP as the compatibility marker for the tattoo reward.
 				apply_achievement(ch, AIP_FREESLOOP);
 			}
 			if (!paf)
@@ -534,6 +540,49 @@ void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 			gain_epic(ch, EPIC_STRAHDME, 0, 1000);
 		}
 	}
+}
+
+void grant_chaos_tattoo_achievement(P_char ch)
+{
+	if (!ch || IS_NPC(ch) || GET_LEVEL(ch) < 30)
+		return;
+	struct affected_type *progress = get_spell_from_char(ch, AIP_LEVELACHIEVEMENT);
+	if (affected_by_spell(ch, AIP_FREESLOOP))
+	{
+		if (!progress)
+			progress = apply_achievement(ch, AIP_LEVELACHIEVEMENT);
+		if (progress && progress->modifier < 30)
+			progress->modifier = 30;
+		return;
+	}
+
+	send_to_char(
+		"&+rCon&+Rgra&+Wtula&+Rtio&+rns! You have completed the &+RThe Sailor's Tattoo&+r achievement!&n\r\n",
+		ch);
+	send_to_char(
+		"&+yThis &+Yachievement&+y rewards a small &+bS&+Ba&+bi&+Bl&+bo&+Br&+b'&+Bs&n &+yTattoo&+y on your forearm.&n\r\n",
+		ch);
+	if (get_ship_from_owner(GET_NAME(ch)))
+	{
+		send_to_char(
+			"&+ySeeing as you already own a ship, here's &n100 &+WPlatinum&+y!&n\n\r",
+			ch);
+		ADD_MONEY(ch, 100000);
+	}
+	else
+	{
+		send_to_char(
+			"&+yCheck the &+Wdocks &+yfor your reward: &+WA free frigate&+y!&n\n\r",
+			ch);
+		send_to_char(
+			"&+y(Type &+g'list hull'&+y at any docks, then claim the frigate reward.)&n\n\r",
+			ch);
+		apply_achievement(ch, AIP_FREESLOOP);
+	}
+	if (!progress)
+		progress = apply_achievement(ch, AIP_LEVELACHIEVEMENT);
+	if (progress && progress->modifier < 30)
+		progress->modifier = 30;
 }
 
 affected_type *apply_achievement(P_char ch, int ach)

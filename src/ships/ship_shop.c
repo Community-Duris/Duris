@@ -83,6 +83,7 @@
 #include "world/map.h"
 #include "economy/nexus_stones.h"
 #include "ships/ships.h"
+#include "combat/chaos_config.h"
 #include "magic/spells.h"
 
 extern char buf[MAX_STRING_LENGTH];
@@ -105,7 +106,7 @@ struct ship_hull_purchase_context
 	int room;
 	bool owned;
 	bool quickbuild;
-	bool free_sloop;
+	bool free_tattoo_hull;
 	char name[32];
 };
 
@@ -195,7 +196,7 @@ void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_
 		SUB_MONEY(ch, context.coin_delta, 0);
 	else if (context.coin_delta < 0)
 		ADD_MONEY(ch, -context.coin_delta);
-	if (context.free_sloop)
+	if (context.free_tattoo_hull)
 		affect_from_char(ch, AIP_FREESLOOP);
 	int buildtime = context.owned ?
 				75 * (context.hull_type > context.old_hull ?
@@ -588,6 +589,8 @@ const char *epic_cost_string(int hull_type)
  */
 int list_hulls(P_char ch, P_ship ship, int owned)
 {
+	const bool chaos_frigate_reward = chaos_starter_frigate_enabled();
+	const int tattoo_reward_hull = chaos_frigate_reward ? SH_FRIGATE : SH_SLOOP;
 	if (owned)
 	{
 		send_to_char("&+gHull Upgrades\n", ch);
@@ -698,10 +701,12 @@ int list_hulls(P_char ch, P_ship ship, int owned)
 		}
 		if (affected_by_spell(ch, AIP_FREESLOOP))
 		{
-			send_to_char("\r\n&+yYou qualify for a &+WFree Sloop&+y!&n\n\r", ch);
-			send_to_char(
-				"&+yTo claim this reward, use the command '&+Gbuy hull 1 <name>&+y' where <name> is the name of your ship (ansi color allowed).&n\n\r",
-				ch);
+			send_to_char_f(ch, "\r\n&+yYou qualify for a &+WFree %s&+y!&n\n\r",
+				       SHIPTYPE_NAME(tattoo_reward_hull));
+			send_to_char_f(
+				ch,
+				"&+yTo claim this reward, use the command '&+Gbuy hull %d <name>&+y' where <name> is the name of your ship (ansi color allowed).&n\n\r",
+				tattoo_reward_hull + 1);
 		}
 		send_to_char("\n&+YRead HELP WARSHIP before buying one!&n\n", ch);
 		send_to_char("To buy a ship, type '&+gbuy &+Gh&+gull <number> <name of ship>&n'.\n",
@@ -2626,7 +2631,11 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 	int cost, buildtime, hull_type, oldhull;
 	struct affected_type *paf = get_spell_from_char(ch, AIP_CARGOCOUNT);
 	bool quickbuild = (paf && paf->modifier >= 10000) ? TRUE : FALSE;
-	bool free_sloop = false;
+	bool free_tattoo_hull = false;
+	const bool chaos_frigate_reward = chaos_starter_frigate_enabled();
+	const int tattoo_reward_hull = chaos_frigate_reward ? SH_FRIGATE : SH_SLOOP;
+	const int tattoo_discount = chaos_frigate_reward ? SHIPTYPE_COST(tattoo_reward_hull) :
+							   100000;
 
 	hull_type = atoi(arg1) - 1;
 	// Note: hull_type MAXSHIPCLASS - 1 is a NPC - Only ship class.
@@ -2721,7 +2730,7 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 							       .room = ch->in_room,
 							       .owned = true,
 							       .quickbuild = quickbuild,
-							       .free_sloop = false,
+							       .free_tattoo_hull = false,
 							       .name = {} };
 			submit_ship_hull_purchase(ch, context);
 			return TRUE;
@@ -2742,7 +2751,7 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 							       .room = ch->in_room,
 							       .owned = true,
 							       .quickbuild = quickbuild,
-							       .free_sloop = false,
+							       .free_tattoo_hull = false,
 							       .name = {} };
 			submit_ship_hull_purchase(ch, context);
 			return TRUE;
@@ -2787,19 +2796,25 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 			send_to_char("That ship name is too long for a pending purchase.\n", ch);
 			return TRUE;
 		}
-		if (affected_by_spell(ch, AIP_FREESLOOP))
+		if (affected_by_spell(ch, AIP_FREESLOOP) &&
+		    (!chaos_frigate_reward || hull_type == tattoo_reward_hull))
 		{
-			if ((GET_MONEY(ch) >= SHIPTYPE_COST(hull_type) - 100000) &&
+			if ((GET_MONEY(ch) >= SHIPTYPE_COST(hull_type) - tattoo_discount) &&
 			    GET_EPIC_POINTS(ch) >= SHIPTYPE_EPIC_COST(hull_type))
 			{
-				send_to_char(
-					"You show your &+ysmall &+bS&+Ba&+bi&+Bl&+bo&+Br&+b'&+Bs&n &+yTattoo&n for a discount.&n\n\r",
-					ch);
-				free_sloop = true;
+				send_to_char_f(
+					ch,
+					chaos_frigate_reward ?
+						"You show your &+ySailor's Tattoo&n for a free &+W%s&n reward.&n\n\r" :
+						"You show your &+ysmall &+bS&+Ba&+bi&+Bl&+bo&+Br&+b'&+Bs&n &+yTattoo&n for a discount.&n\n\r",
+					chaos_frigate_reward ? SHIPTYPE_NAME(tattoo_reward_hull) :
+							       "Sloop");
+				free_tattoo_hull = true;
 			}
 		}
 
-		if (GET_MONEY(ch) + (free_sloop ? 100000 : 0) < SHIPTYPE_COST(hull_type) ||
+		if (GET_MONEY(ch) + (free_tattoo_hull ? tattoo_discount : 0) <
+			    SHIPTYPE_COST(hull_type) ||
 		    GET_EPIC_POINTS(ch) < SHIPTYPE_EPIC_COST(hull_type))
 		{
 			if (SHIPTYPE_EPIC_COST(hull_type) > 0)
@@ -2816,16 +2831,18 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 			}
 			return TRUE;
 		}
-		ship_hull_purchase_context context = { .hull_type = hull_type,
-						       .old_hull = -1,
-						       .coin_delta = SHIPTYPE_COST(hull_type) -
-								     (free_sloop ? 100000 : 0),
-						       .epic_cost = SHIPTYPE_EPIC_COST(hull_type),
-						       .room = ch->in_room,
-						       .owned = false,
-						       .quickbuild = quickbuild,
-						       .free_sloop = free_sloop,
-						       .name = {} };
+		ship_hull_purchase_context context = {
+			.hull_type = hull_type,
+			.old_hull = -1,
+			.coin_delta =
+				SHIPTYPE_COST(hull_type) - (free_tattoo_hull ? tattoo_discount : 0),
+			.epic_cost = SHIPTYPE_EPIC_COST(hull_type),
+			.room = ch->in_room,
+			.owned = false,
+			.quickbuild = quickbuild,
+			.free_tattoo_hull = free_tattoo_hull,
+			.name = {}
+		};
 		snprintf(context.name, sizeof(context.name), "%s", arg2);
 		submit_ship_hull_purchase(ch, context);
 		return TRUE;

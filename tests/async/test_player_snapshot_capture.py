@@ -2,6 +2,7 @@
 """Contracts for bounded immutable player snapshot capture."""
 
 from _paths import SRC
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -11,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 DTO = (SRC / "player_snapshot.h").read_text()
 CAPTURE_HEADER = (SRC / "player_snapshot_capture.h").read_text()
 CAPTURE = (SRC / "player_snapshot_capture.c").read_text()
+CAPTURE_COMPACT = re.sub(r"\s+", "", CAPTURE)
+LOAD_ITEMS = (SRC / "player_load_items.c").read_text()
+LOAD_ITEMS_COMPACT = re.sub(r"\s+", "", LOAD_ITEMS)
 
 
 HARNESS = r'''
@@ -146,6 +150,8 @@ for mutation in (
 assert "std::unordered_set<const obj_data *> &seen" in CAPTURE
 assert "PLAYER_SNAPSHOT_NO_PARENT" in CAPTURE
 assert "parent_index" in CAPTURE
+assert "row.string_mask=object->str_mask&(STRUNG_KEYS|STRUNG_DESC1|STRUNG_DESC2|STRUNG_DESC3)" in CAPTURE_COMPACT
+assert "STRUNG_DESC3|STRUNG_EDESC" in LOAD_ITEMS_COMPACT
 assert CAPTURE.count("*snapshot_out = std::move(snapshot);") == 1
 assert CAPTURE.index("player_snapshot snapshot = {};") < CAPTURE.index(
     "*snapshot_out = std::move(snapshot);"
