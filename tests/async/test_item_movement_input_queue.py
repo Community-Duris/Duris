@@ -449,7 +449,7 @@ int main()
 	}
 	assert(!get_playing_cmd_from_q(&actor, &q, dest));
 	assert(q.head == NULL);
-	q.tail = NULL;
+	assert(q.tail == NULL);
 	assert(put_dispatches == 1);
 	assert(equipment_dispatches == 1);
 	assert(inventory_dispatches == 1);
@@ -497,7 +497,7 @@ int main()
 	expect_text(dest, "fire target", "fire after wield");
 	dispatch_playing_command(&actor, dest);
 	assert(!get_playing_cmd_from_q(&actor, &q, dest));
-	q.tail = NULL;
+	assert(q.head == NULL && q.tail == NULL);
 	assert(wield_dispatches == 1 && fire_dispatches == 1);
 	assert(actor.equipment[0] == &bow);
 

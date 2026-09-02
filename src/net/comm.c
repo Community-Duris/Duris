@@ -2035,6 +2035,7 @@ resume_game_loop:
  * ******************************************************************
  */
 
+/** Remove the queue head and clear the tail when the queue becomes empty. */
 int get_from_q(struct txt_q *queue, char *dest)
 {
 	struct txt_block *tmp;
@@ -2059,6 +2060,8 @@ int get_from_q(struct txt_q *queue, char *dest)
 	tmp = queue->head;
 	strcpy(dest, queue->head->text);
 	queue->head = queue->head->next;
+	if (!queue->head)
+		queue->tail = NULL;
 
 	FREE(tmp->text);
 	FREE(tmp);
