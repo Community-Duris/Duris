@@ -1,6 +1,7 @@
 # Ship system audit + documentation pass
 
-Status: **in progress**. Started: 2026-09-02. Branch: `master` (working tree).
+Status: **complete**. Started/completed: 2026-09-02. Branch:
+`quick-ship-audit` (working tree based on `8621d1a7`).
 
 ## Goal
 
@@ -20,29 +21,30 @@ around it.
 
 ## Scope
 
-`src/ships/` — 11 `.c` files and 4 headers, ~19,400 lines, ~440 functions.
+`src/ships/` — 11 `.c` files and 4 headers, 23,796 lines and 429 function
+definitions.
 
 | File | Lines | ~Fns | Audited | Documented |
 | --- | ---: | ---: | :---: | :---: |
-| `ship_auto.c` | 452 | 11 | yes | **yes (11/11)** |
-| `ship_base.c` | 3010 | 45 | partial | — |
-| `ship_cargo.c` | 1280 | 40 | yes | **yes (40/40)** |
-| `ship_combat.c` | 1503 | 23 | yes | **yes (23/23)** |
-| `ship_control.c` | 1770 | 31 | partial | — |
-| `ship_identity.c` | 95 | 4 | yes | **yes (4/4)** |
-| `ship_npc.c` | 1424 | 64 | — | — |
-| `ship_npc_ai.c` | 2211 | 59 | — | — |
-| `ship_shop.c` | 3481 | 37 | partial | — |
-| `ship_utils.c` | 1981 | 116 | yes | **yes (116/116)** |
-| `ship_variables.c` | 1022 | 0 (tables) | yes | n/a — tables |
-| `ships.h` | 884 | — | yes | — |
-| `ship_auto.h` | 47 | — | yes | — |
-| `ship_npc.h` | 62 | — | — | — |
-| `ship_npc_ai.h` | 175 | — | — | — |
+| `ship_auto.c` | 654 | 11 | yes | **yes (11/11)** |
+| `ship_base.c` | 3513 | 45 | yes | **yes (45/45)** |
+| `ship_cargo.c` | 1641 | 40 | yes | **yes (40/40)** |
+| `ship_combat.c` | 1839 | 23 | yes | **yes (23/23)** |
+| `ship_control.c` | 2109 | 31 | yes | **yes (31/31)** |
+| `ship_identity.c` | 240 | 4 | yes | **yes (4/4)** |
+| `ship_npc.c` | 2096 | 63 | yes | **yes (63/63)** |
+| `ship_npc_ai.c` | 2731 | 59 | yes | **yes (59/59)** |
+| `ship_shop.c` | 3821 | 37 | yes | **yes (37/37)** |
+| `ship_utils.c` | 2860 | 116 | yes | **yes (116/116)** |
+| `ship_variables.c` | 1044 | 0 (tables) | yes | **yes (module guide)** |
+| `ships.h` | 924 | — | yes | **yes (model/API guide)** |
+| `ship_auto.h` | 58 | — | yes | **yes (state guide)** |
+| `ship_npc.h` | 75 | — | yes | **yes (content/spawn guide)** |
+| `ship_npc_ai.h` | 191 | — | yes | **yes (AI state guide)** |
 
-Docstring coverage is measured with
-`python3 <scratchpad>/cover.py src/ships/<file>.c`, which flags any top-level
-definition with no comment block directly above it.
+Docstring coverage is measured from Universal Ctags' C function inventory. A
+definition is covered only when the nearest preceding nonblank line closes a
+comment block. The final result is **429/429 (100%)**, with zero gaps.
 
 ## Baseline
 
@@ -74,6 +76,8 @@ memory-safety, **P3** correctness, **P4** clarity only (no code change).
 | 9 | P4 | `ship_utils.c` `ShipSlot::get_weight()` | `if (type == SLOT_WEAPON) {…} if (type == SLOT_EQUIPMENT) {…} else if …` — the second `if` was missing an `else`. Harmless (the conditions are mutually exclusive) but fragile; now `else if`, which is exactly behaviour-preserving. |
 | 10 | P2 | `ship_cargo.c` `calculate_port_distances()` | `strcat()` onto an uninitialised `char line[MAX_STRING_LENGTH]` — it walked whatever stack garbage was there looking for a NUL, then appended past it. Every later reuse of the buffer correctly does `line[0] = '\0'` first; only the first one was missing. Now initialised. |
 | 11 | P2 | `ship_combat.c` (×3), `ship_control.c` (×5), `ship_base.c` (×1) | `get_char2(str_dup(SHIP_OWNER(ship)))` and `isname(str_dup(...), ...)` — nine straight memory leaks. `get_char2()` copies the name into its own stack buffer (`src/world/handler.c:2435`) and `isname()` only compares; neither takes ownership, so every `str_dup()` was lost. Two of the sites are inside per-contact loops in `sink_ship()`, so the leak scaled with the number of ships present at a kill. Now the owner string is passed directly — byte-identical argument, no allocation. |
+| 12 | P2 | `ship_npc_ai.c` `NPCShipAI::b_turn_active_weapon()` | `arc_priority[4]` was uninitialised before being passed to `b_set_arc_priority()`. Every normal caller supplies one of the four values returned by `get_arc()`, which overwrites all four entries, but corrupt or future input could leave the array indeterminate and feed an out-of-bounds `active_arc[]` index. It now starts with the stable fore/port/rear/star order; all valid paths still overwrite it, so current mechanics are byte-for-byte unchanged. |
+| 13 | P2 | `ship_auto.c` `shipgroupremove()` | The dormant non-leader removal path freed its own node without unlinking it from the leader's list, then looped and dereferenced a null cursor. It now verifies the group metadata, locates the predecessor, splices out exactly that member, and only then releases it. The group API has no callers, so no active mechanic changes; the intended valid-path behavior is preserved and protected by `test_ship_autopilot_group_safety.py`. |
 
 ### Found, NOT fixed (needs an owner decision)
 
@@ -103,7 +107,9 @@ memory-safety, **P3** correctness, **P4** clarity only (no code change).
 
 - `ship_auto.c` `shipgroupadd()` / `shipgroupremove()` — ship "groups" have no
   caller anywhere in the tree and no `shipai_data` ever gets a non-NULL
-  `->group`. Both carry comment banners saying so.
+  `->group`. Both carry comment banners saying so. The proven unsafe unlink in
+  `shipgroupremove()` was still repaired because it was a concrete memory-safety
+  defect, not a mechanic choice.
 - `ship_auto.c` `initialize_shipai()` and the file-static `autopilot` handle —
   never called, no header declaration.
 
@@ -119,30 +125,41 @@ memory-safety, **P3** correctness, **P4** clarity only (no code change).
 - `ReflowComments: false` is set in `.clang-format`, so hand-wrapped comment
   prose is preserved.
 
+The final navigation pass also added subsystem/model maps to all four headers,
+an AI state-machine guide to `ship_npc_ai.c`, and table/index/units guidance to
+`ship_variables.c`. Dormant declarations in `ships.h` and `ship_npc.h` are
+identified at their declaration sites rather than silently appearing to be live
+entry points.
+
+## Audit method
+
+- Read every implementation and header in `src/ships/`, following caller and
+  ownership paths outside the directory only where needed to prove behavior.
+- Checked player/admin numeric input before slot, crew, chief, contact, room,
+  arc, and tactical-map indexing.
+- Checked allocation/release ownership, linked-list mutation, nullable state,
+  fixed-buffer construction, persistence boundaries, and dormant declarations.
+- Ran Clang Static Analyzer core, C++, and Unix checks over all 11 `.c` files.
+  The final pass reports no diagnostics in those check families.
+- Kept the three mechanic/message questions in *Found, NOT fixed* unchanged.
+  Conversion cleanup, broad `atoi()` replacement, dead-store cleanup, and
+  failure-path refactors were rejected as unproven churn or out of scope.
+
 ## Validation
 
-- `make -C src` after every file (must stay exit 0 under `-Werror`).
-- `clang-format --dry-run -Werror src/ships/*.c src/ships/*.h` after every file.
-- Ship-related regression tests under `tests/async/`. All 13 pass as of the
-  fixes above:
-  `test_ship_cargo_txn`, `test_ship_nested_transaction`,
-  `test_ship_owner_rename_failure`, `test_ship_rename_save_guards`,
-  `test_ship_save_guards`, `test_ship_save_queue_dedup`,
-  `test_ship_shop_list_contract`, `test_ship_shutdown_txn`,
-  `test_nevent_ship_volley_runtime`, `test_redis_ship_snapshot_invalidation`,
-  `test_auction_ship_txn_fixes`, `test_flatfile_ship_repository`,
-  `test_flatfile_cargo_market`.
+- `make -C src`: clean full build under the project's `-Werror` flags.
+- `clang-format --dry-run -Werror src/ships/*.c src/ships/*.h`: clean.
+- `git diff --check`: clean.
+- Universal Ctags comment audit: **429/429 definitions documented; 0 gaps**.
+- Clang Static Analyzer (`core`, `cplusplus`, `unix`): all 11 implementation
+  files clean after the two latent safety repairs.
+- All **56/56** Python regressions discovered with
+  `rg -l 'ships/|ship_|SHIP_' tests/async/test_*.py` pass, including the new
+  focused group-removal regression.
 
-## Resume checklist
+## Completion result
 
-1. `git status` — expect only `src/ships/*` and this file modified.
-2. `make -C src` to confirm the tree still builds.
-3. Pick the next file with a `—` in the Scope table's *Documented* column.
-4. Audit and document that file in one pass; land any fix it turns up
-   immediately, verify, and add a row to *Fixed*.
-5. Re-run the 13 ship tests before the final report.
-
-Helper scripts used this session live in the session scratchpad
-(`doc.py` inserts a comment block above a unique anchor line, `cover.py`
-reports undocumented definitions, `verify.sh` runs clang-format + build).
-They are throwaway tooling and are deliberately not checked in.
+The full `src/ships/` audit is complete. All function definitions are
+documented, every module/header has newcomer navigation appropriate to what it
+owns, 13 proven defects are repaired, and the three questions that require a
+mechanic or message decision remain explicitly recorded rather than changed.

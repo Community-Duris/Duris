@@ -3404,11 +3404,10 @@ int read_ships()
 /*
  * Rebuild the shipfrags[] leaderboard: the highest-reputation ships in the
  * game, in descending order.  Called periodically; read by
- * display_shipfrags().
+ * display_shipfrags().  NPC ships and negative-frag ships are excluded; ties
+ * retain the hash visitor's order.  The table owns no ships -- its pointers
+ * are refreshed wholesale on every call.
  */
-//--------------------------------------------------------------------
-// Top-frags table update
-//--------------------------------------------------------------------
 void update_shipfrags()
 {
 	for (int index = 0; index < 20; ++index)

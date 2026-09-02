@@ -1,6 +1,17 @@
 #ifndef _SHIP_NPC_H_
 #define _SHIP_NPC_H_
 
+/*
+ * NPC-ship content and spawn interface.
+ *
+ * ship_npc.c owns NPCShipSetup fit-outs, crew rosters, pirate spawning and
+ * the two unique ships.  This header exposes that content to the ship
+ * heartbeat and NPCShipAI; steering and combat decisions belong in
+ * ship_npc_ai.h instead.  NPCShipSetup::level selects both a fit-out and AI
+ * difficulty, while NPCShipCrewData maps that level to the mobs and treasure
+ * loaded into the generated interior rooms.
+ */
+
 #include "ships/ship_npc_ai.h"
 #include "ships/ships.h"
 
@@ -52,10 +63,12 @@ int npc_ship_crew_board_func(P_char ch, P_char player, int cmd, char *arg);
 #define CYRICS_REVENGE_NEXUS_STONE NEXUS_STONE_ENLIL
 #define ZONE_SHIP_ZONE_ENTRANCE 142201
 bool load_cyrics_revenge();
+/* Declaration retained for the disabled zone-ship reference code. */
 bool load_zone_ship();
 bool load_cyrics_revenge_crew(P_ship ship);
 int get_cyrics_revenge_nexus_rvnum(P_ship cyrics_revenge);
 extern P_ship cyrics_revenge;
+/* No definition while the zone-ship implementation in ship_npc.c is disabled. */
 extern P_ship zone_ship;
 extern bool nexus_to_cyrics_revenge;
 

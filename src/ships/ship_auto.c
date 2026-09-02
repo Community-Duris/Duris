@@ -410,21 +410,25 @@ int shipgroupremove(struct shipai_data *autopilot)
 		}
 		return TRUE;
 	}
-	tmpgroup = autopilot->group->leader->group;
-	while (tmpgroup)
+	tmpgroup2 = autopilot->group;
+	if (!tmpgroup2->leader || !tmpgroup2->leader->group)
 	{
-		if ((tmpgroup = autopilot->group))
-		{
-			tmpgroup2 = tmpgroup;
-			tmpgroup = tmpgroup->next;
-			tmpgroup2->leader = NULL;
-			tmpgroup2->ai = NULL;
-			FREE(tmpgroup2);
-			autopilot->group = NULL;
-			continue;
-		}
+		return FALSE;
+	}
+	tmpgroup = tmpgroup2->leader->group;
+	while (tmpgroup && tmpgroup->next != tmpgroup2)
+	{
 		tmpgroup = tmpgroup->next;
 	}
+	if (!tmpgroup)
+	{
+		return FALSE;
+	}
+	tmpgroup->next = tmpgroup2->next;
+	tmpgroup2->leader = NULL;
+	tmpgroup2->ai = NULL;
+	FREE(tmpgroup2);
+	autopilot->group = NULL;
 	return TRUE;
 }
 

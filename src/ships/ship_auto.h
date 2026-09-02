@@ -1,6 +1,17 @@
 #ifndef _SHIP_AUTO_
 #define _SHIP_AUTO_
 
+/*
+ * Legacy autopilot state shared by ship_auto.c and ShipData.
+ *
+ * Player autopilot currently uses shipai_data as a short-lived route/order:
+ * engage_autopilot() allocates it, autopilot_activity() advances it from the
+ * ship heartbeat, and stop_autopilot()/clear_autopilot() release it.  The
+ * group links and most AI type/mode constants belong to the older dormant
+ * group implementation documented in ship_auto.c; NPC combat uses the
+ * separate NPCShipAI type in ship_npc_ai.h.
+ */
+
 #include "ships/ships.h"
 
 // Timers

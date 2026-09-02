@@ -4,6 +4,52 @@
  * NPC Ship AI routines
  *****************************************************/
 
+/*
+ * OVERVIEW -- where this file sits in the ship system
+ * ---------------------------------------------------
+ * The BEHAVIOUR half of NPC shipping.  ship_npc.c creates and outfits NPC
+ * ships; this file supplies the NPCShipAI brain attached to ShipData::npc_ai.
+ * ship_activity() (ship_base.c) calls activity() once per ship tick after
+ * movement and reload processing have completed.
+ *
+ * The activity state machine
+ * --------------------------
+ *   NPC_AI_IDLING     acquire a valid target or resume escort/cruise duties
+ *   NPC_AI_ENGAGING   update the contact snapshot and run basic or advanced
+ *                     combat manoeuvring
+ *   NPC_AI_CRUISING   sail toward an assigned destination
+ *   NPC_AI_LEAVING    move away before the ship is eligible to unload
+ *   NPC_AI_RUNNING    disengage from a threat
+ *   NPC_AI_LOOTING    board and strip a disabled target
+ *
+ * activity() is the dispatcher.  Read it before an individual action: it
+ * establishes the contact and target state that most later methods assume.
+ * NPCShipAI stores raw ship pointers, so delete_ship() must call
+ * clear_references_to_ship() before releasing a target or escort.
+ *
+ * Combat paths
+ * ------------
+ * BASIC combat is reactive: rank the four weapon arcs, turn a useful arc onto
+ * the target, and open or close range.  ADVANCED combat predicts both ships,
+ * evaluates rotations and broadside destinations, then applies the selected
+ * heading.  Both paths ultimately use the same ship_control/ship_combat
+ * mechanics as players; this file chooses orders but does not move a ship or
+ * resolve damage itself.
+ *
+ * Navigation and coordinates
+ * --------------------------
+ * Headings use ship-system compass degrees (0 north, 90 east).  Floating
+ * x/y positions are coordinates in tactical_map[101][101], whose second
+ * array subscript is inverted as 100-y.  The utility methods at the end of
+ * the file centralise bounds checks, room lookup and land probing; preserve
+ * those guards whenever adding a new steering decision.
+ *
+ * Debugging
+ * ---------
+ * debug_char is normally NULL.  An immortal can be attached at spawn time to
+ * receive send_message_to_debug_char() traces without changing AI decisions.
+ */
+
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1395,7 +1441,13 @@ bool NPCShipAI::b_turn_active_weapon()
 	if (ship->timer[T_RAM_WEAPONS] > 0)
 		return false;
 
-	int arc_priority[4];
+	/*
+	 * Keep a complete safe order even if a caller ever supplies an arc
+	 * outside SIDE_FORE..SIDE_STAR.  b_set_arc_priority() replaces every
+	 * entry for all arcs get_arc() can return, so normal AI decisions are
+	 * byte-for-byte unchanged.
+	 */
+	int arc_priority[4] = { SLOT_FORE, SLOT_PORT, SLOT_REAR, SLOT_STAR };
 	b_set_arc_priority(t_bearing, t_arc, arc_priority);
 	for (int i = 0; i < 4; i++)
 	{
@@ -2457,7 +2509,15 @@ void NPCShipAI::a_choose_dest_point()
 // UTILITIES /////////////////////
 //////////////////////////////////
 
-// returns exact dir or max_range if not found
+/*
+ * Exact travel distance from (`x`, `y`) to the first non-sailable map cell on
+ * heading `dir`, capped at `max_range`.
+ *
+ * Walks grid boundaries rather than sampling whole rooms, so callers can
+ * place projected destinations immediately short of land.  Returns
+ * `max_range` when no obstruction is found before the cap or the probe leaves
+ * the interior of the tactical map.
+ */
 float NPCShipAI::calc_land_dist(float x, float y, float dir, float max_range)
 {
 	float loc_range;
@@ -2558,7 +2618,14 @@ float NPCShipAI::calc_land_dist(float x, float y, float dir, float max_range)
 	return max_range;
 }
 
-// returns the distance to land or 0 if none
+/*
+ * Whole-room distance to land from (`cur_x`, `cur_y`) along `heading`.
+ *
+ * Checks at most the integer part of `range` against the tactical map already
+ * populated for this activity tick.  Returns the first 1-based step whose
+ * room is not a valid sailing location, or 0 when the path is clear or leaves
+ * the map.
+ */
 int NPCShipAI::check_dir_for_land_from(float cur_x, float cur_y, float heading, float range)
 { // tactical_map is supposed to be filled already
 	float rad = heading * M_PI / 180.000;
