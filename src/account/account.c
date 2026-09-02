@@ -2126,10 +2126,20 @@ void add_char_to_account(P_desc d)
 	c->secondary_class = player->player.secondary_class;
 	c->next = d->account->acct_character_list;
 	d->account->acct_character_list = c;
+
+#ifdef __NO_MYSQL__
+	if (-1 == write_account(d->account))
+	{
+		statuslog(56, "&+RALERT&n: account character-entry save failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  "add character save failed");
+	}
+#else
 	/* The new pid has been allocated, but no player_data row exists yet. Writing the
 	 * account here skips that unresolved mapping and then reloads the account, which
 	 * discards this live entry until the next login. The first character save commits
 	 * player_data plus account_characters and publishes the completed projection. */
+#endif
 }
 
 int sync_account_character_projection(P_char player, int room, int persist)
