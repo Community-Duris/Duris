@@ -60,10 +60,13 @@ bool player_load_reconcile_item_topology(std::vector<player_item_snapshot> *item
 		const auto parent = uid_indices.find(identity.parent_item_uid);
 		if (parent == uid_indices.end())
 		{
+			if (item.equipment_slot != 0)
+				++*repaired_item_rows;
 			identity.serialized_parent_id = 0;
 			identity.parent_item_uid = 0;
 			identity.root_item_uid = identity.item_uid;
 			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			item.equipment_slot = 0;
 			promoted[index] = true;
 			++*promoted_item_rows;
 			continue;

@@ -264,14 +264,18 @@ int main()
 
 	// Losing a container's payload row must not take its contents down with it: item
 	// 1002 sits inside 1001, and orphaning 1001 promotes 1002 to the top level.
+	execute_sql(connection, "UPDATE player_items SET equip_slot=5 WHERE id=1002");
 	execute_sql(connection, "DELETE FROM item_current_owner WHERE item_uid=900001");
 	player_load_result promoted = execute_load(connection, request, 92);
 	assert(promoted.outcome == player_load_outcome::applied);
 	assert(promoted.snapshot.items.size() == 2 && promoted.authoritative_item_count == 2);
-	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1);
+	assert(promoted.stale_item_rows == 1 && promoted.promoted_item_rows == 1 &&
+	       promoted.repaired_item_rows == 1);
 	for (size_t index = 0; index < promoted.item_identities.size(); ++index)
 	{
 		assert(promoted.snapshot.items[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT);
+		if (promoted.item_identities[index].item_uid == 900002)
+			assert(promoted.snapshot.items[index].equipment_slot == 0);
 		assert(!promoted.item_identities[index].parent_item_uid);
 		assert(promoted.item_identities[index].root_item_uid ==
 		       promoted.item_identities[index].item_uid);

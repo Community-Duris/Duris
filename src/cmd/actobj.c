@@ -236,7 +236,8 @@ struct coin_give_credit_context
 	int32_t amount;
 	int32_t room;
 	uint8_t coin_type;
-	std::array<uint8_t, 7> reserved;
+	uint8_t debit_committed;
+	std::array<uint8_t, 6> reserved;
 };
 
 static_assert(sizeof(coin_debit_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
@@ -3092,12 +3093,19 @@ void coin_give_credit_completion(P_char recipient, bool committed, const currenc
 	{
 		if (sender)
 		{
-			refund_committed_coin_debit(sender, context.value, context.room);
-			send_to_char(
-				"The coin transfer did not commit; your coins are being restored.\r\n",
-				sender);
+			if (context.debit_committed)
+			{
+				refund_committed_coin_debit(sender, context.value, context.room);
+				send_to_char(
+					"The coin transfer did not commit; your coins are being restored.\r\n",
+					sender);
+			}
+			else
+				send_to_char(
+					"The coin transfer did not commit; nothing changed.\r\n",
+					sender);
 		}
-		else
+		else if (context.debit_committed)
 			persistence_alert(
 				AVATAR, "currency", "give_credit", "none", "none", "sender_offline",
 				"sender_runtime_id=%llu value=%lld",
@@ -3111,15 +3119,19 @@ void coin_give_credit_completion(P_char recipient, bool committed, const currenc
 	announce_coin_give(sender, recipient, context);
 }
 
-bool begin_coin_give_credit(P_char sender, P_char recipient, const coin_debit_context &debit)
+bool begin_coin_give_credit(P_char sender, P_char recipient, const coin_debit_context &debit,
+			    bool debit_committed)
 {
 	if (!sender || !recipient || debit.coin_type >= CURRENCY_DENOMINATION_COUNT)
 		return false;
 	const int64_t value = coin_debit_value(debit);
-	coin_give_credit_context context = {
-		sender->runtime_id, value,	     debit.amount[debit.coin_type],
-		debit.room,	    debit.coin_type, {}
-	};
+	coin_give_credit_context context = { sender->runtime_id,
+					     value,
+					     debit.amount[debit.coin_type],
+					     debit.room,
+					     debit.coin_type,
+					     static_cast<uint8_t>(debit_committed),
+					     {} };
 	if (IS_PC(recipient))
 	{
 		if (GET_PID(recipient) <= 0)
@@ -3300,7 +3312,7 @@ void coin_debit_completion(P_char actor, bool committed, const currency_command_
 	{
 		P_char recipient = find_character_by_runtime_id(context.target_runtime_id);
 		if (!recipient || recipient->in_room != context.room ||
-		    !begin_coin_give_credit(actor, recipient, context))
+		    !begin_coin_give_credit(actor, recipient, context, true))
 		{
 			refund_committed_coin_debit(actor, value, context.target_runtime_id);
 			send_to_char(
@@ -4611,7 +4623,7 @@ void do_give(P_char ch, char *argument, int cmd)
 		context.amount[ctype] = amount;
 		if (IS_PC(ch) && GET_LEVEL(ch) >= MAXLVL)
 		{
-			if (!begin_coin_give_credit(ch, vict, context))
+			if (!begin_coin_give_credit(ch, vict, context, false))
 				send_to_char(
 					"The coin credit could not start; nothing changed.\r\n",
 					ch);

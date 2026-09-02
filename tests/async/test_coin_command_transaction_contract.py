@@ -31,6 +31,7 @@ completion = body("void coin_debit_completion(")
 publish_drop = body("void publish_coin_drop(")
 publish_put = body("bool publish_coin_put(")
 give_credit = body("bool begin_coin_give_credit(")
+give_completion = body("void coin_give_credit_completion(")
 
 for name, command in (
     ("drop all.coins", drop_all),
@@ -51,7 +52,7 @@ assert failed < dispatch
 assert "The coin debit did not commit; nothing changed." in completion
 assert "publish_coin_drop(actor, context)" in completion
 assert "publish_coin_put(actor, context)" in completion
-assert "begin_coin_give_credit(actor, recipient, context)" in completion
+assert "begin_coin_give_credit(actor, recipient, context, true)" in completion
 
 assert "create_money(" in publish_drop
 assert "obj_to_room(" in publish_drop
@@ -59,6 +60,11 @@ assert "create_money(" in publish_put
 assert "put(actor, money, container, FALSE)" in publish_put
 assert "currency_transaction_submit_wallet_value(" in give_credit
 assert "recipient, value, currency_reason_type::wallet_reward" in give_credit
+assert "uint8_t debit_committed;" in ACTOBJ
+assert "static_cast<uint8_t>(debit_committed)" in give_credit
+assert "if (context.debit_committed)" in give_completion
+assert "refund_committed_coin_debit(sender, context.value, context.room)" in give_completion
+assert "begin_coin_give_credit(ch, vict, context, false)" in give
 
 direct_cash_write = re.compile(r"points\.cash\[[^]]+\]\s*(?:[+\-]=|=(?!=))")
 assert not direct_cash_write.search(ACTOBJ)
