@@ -230,6 +230,9 @@ kingdom_realm *kingdom_find_realm(int assoc_id)
 	return &it->second;
 }
 
+/* Re-derive hall_rnum/zone_idx/hall_x/hall_y from the persisted hall_vnum,
+ * clearing them first. False -- with the anchor left cleared, so the realm is
+ * dormant -- when the vnum is unset, names no room, or is not a map room. */
 bool kingdom_resolve_anchor(kingdom_realm &realm)
 {
 	int zone_idx = -1, hall_x = -1, hall_y = -1;
@@ -368,6 +371,10 @@ void kingdom_unindex_realm(int assoc_id)
 	}
 }
 
+/* Rebuild the whole square index from scratch: clear it, then for every realm
+ * in ascending assoc_id order audit the anchor against the guild's main hall
+ * (when halls are loaded), re-resolve it, and index its squares. A realm whose
+ * hall is missing, moved or unresolvable is left unanchored and logged. */
 void kingdom_reindex_all(void)
 {
 	std::vector<int> ids;
@@ -567,7 +574,8 @@ void kingdom_initialize(void)
 	 * kingdom_enabled().
 	 *
 	 * Without this call the whole harvest subsystem is inert: the spec proc
-	 * is never bound to prototypes 477-480, the spawn windows stay zeroed and
+	 * is never bound to the eight node prototypes (477-484: four surface,
+	 * four Underdark, world/vnum.obj.h), the spawn windows stay zeroed and
 	 * the reload never starts. An adversarial review caught exactly that. */
 	kingdom_harvest_initialize();
 
@@ -582,18 +590,36 @@ void kingdom_initialize(void)
 	      kingdom_realms.size(), kingdom_square_index.size());
 }
 
+/* The copyover flush: retry any payment pair still pending, then write every
+ * dirty realm that is not held for a pending payment. Tears nothing down --
+ * a failed copyover resumes the game loop over this state. */
 void kingdom_flush_persistent_state(void)
 {
 	if (kingdom_cfg.enabled && !kingdom_realms.empty())
+	{
+		/* Pairs first: a pending payment is a debit that lives only in
+		 * memory, and the flush below deliberately will not publish its
+		 * realm alone. */
+		kingdom_upkeep_retry_pending();
 		kingdom_db_flush_dirty();
+	}
 }
 
+/* Final write-out and teardown: retry pending payment pairs, flush dirty
+ * realms, retry failed row deletes, despawn guards and nodes, then empty
+ * every container and the upkeep module's state. Idempotent. */
 void kingdom_shutdown(void)
 {
 	/* Idempotent: clearing an already-empty map is free, and flushing an
 	 * empty realm table writes nothing, so a second call is a no-op. */
 	if (kingdom_cfg.enabled && !kingdom_realms.empty())
+	{
+		/* Last chance for a payment pair that has not landed; the flush
+		 * skips a realm still pending after this, and its debit dies with
+		 * the process (the realm is billed again next boot). */
+		kingdom_upkeep_retry_pending();
 		kingdom_db_flush_dirty();
+	}
 
 	/* Last chance before the process goes: a delete the backend refused
 	 * earlier is retried here, or its row survives to the next boot's
@@ -608,8 +634,14 @@ void kingdom_shutdown(void)
 
 	kingdom_square_index.clear();
 	kingdom_realms.clear();
+
+	/* After the flush and the clears: the pending list and the cycle stamp
+	 * are meaningless once no realm exists. */
+	kingdom_upkeep_reset();
 }
 
+/* The feature switch as currently loaded, including a self-disable after a
+ * failed kingdom_db_load_all(). */
 bool kingdom_enabled(void)
 {
 	return kingdom_cfg.enabled;
@@ -619,6 +651,8 @@ bool kingdom_enabled(void)
  * Queries
  * ------------------------------------------------------------------ */
 
+/* Association id owning the room at rnum, or 0: one hash lookup keyed on the
+ * room's vnum, with an empty-index fast path for the common case. */
 int kingdom_owner_of_room(int rnum)
 {
 	/* The hot path. With kingdoms off, or on but with no territory claimed
@@ -685,11 +719,17 @@ bool kingdom_char_owns_room(struct char_data *ch, int rnum)
  * The guildhall placement gate
  * ------------------------------------------------------------------ */
 
+/* The compiled Chebyshev distance two main halls must keep apart, for the
+ * guildhall placement code. */
 int kingdom_min_hall_separation(void)
 {
 	return KINGDOM_MIN_HALL_SEPARATION;
 }
 
+/* The guildhall placement gate: true when kingdoms are off or every one of
+ * the 80 squares around hall_rnum passes kingdom_judge_footprint(); false
+ * otherwise, with a player-readable reason written to `why` when the buffer
+ * is at least KINGDOM_WHY_LEN bytes. */
 bool kingdom_footprint_check(int hall_rnum, int racewar, char *why, size_t why_len)
 {
 	int bad_index = 0;
@@ -772,6 +812,11 @@ void kingdom_on_guild_deleted(int assoc_id)
 	 * mean an id reused during a disabled period inherited a live index. */
 	kingdom_unindex_realm(assoc_id);
 
+	/* And any payment pair still waiting to be retried under this id: a
+	 * reused id must not inherit it, and the debit it stood for dies with
+	 * the guild. Unconditional for the same reason as the unindex. */
+	kingdom_upkeep_forget_guild(assoc_id);
+
 	/* Same reasoning for the cached terrain tally: ids are reused, and a
 	 * recycled id must not inherit the dead realm's yield-bonus tally.
 	 * Erasing a row that is not there is free. */
@@ -804,11 +849,110 @@ void kingdom_on_guild_deleted(int assoc_id)
 }
 
 /*
+ * Re-anchor a realm on its guild's current main hall after a hall change,
+ * and say whether it is anchored afterwards. The realm's old index rows must
+ * already be gone. A missing hall, an unresolvable vnum, or a moved hall
+ * whose new footprint fails the placement authority all leave the realm
+ * DORMANT (anchor cleared, highest_claim and hall_vnum kept) and return
+ * false. A hall that did not move is re-resolved and re-indexed without
+ * re-judging; one that did move is judged, adopted, re-indexed and saved.
+ */
+static bool kingdom_rehome_realm(kingdom_realm &realm)
+{
+	const int assoc_id = realm.assoc_id;
+
+	Guildhall *hall = kingdom_main_hall(assoc_id);
+	if (!hall)
+	{
+		/* Destroyed -- or demoted to outposts, which cannot anchor a realm.
+		 * Keep highest_claim and hall_vnum: the realm is dormant, not
+		 * dissolved, and owns nothing until a main hall exists again.
+		 * kingdom_reindex_all() re-audits this at every boot, so dormancy
+		 * survives a reboot even if this hook is never called. */
+		kingdom_clear_anchor(realm);
+		logit(LOG_KINGDOM, "realm %d has no main guildhall; realm dormant.", assoc_id);
+		return false;
+	}
+
+	if (hall->outside_vnum == realm.hall_vnum)
+	{
+		/* The hall did not actually move: a room was added, or it was
+		 * reloaded. Re-resolve and re-index, and do NOT re-judge the
+		 * footprint -- a realm that already exists must not be dissolved
+		 * because the world changed around it. */
+		if (!kingdom_resolve_anchor(realm))
+		{
+			logit(LOG_KINGDOM, "realm %d: guildhall vnum %d unresolvable; dormant.",
+			      assoc_id, realm.hall_vnum);
+			return false;
+		}
+		kingdom_reindex_realm(realm);
+		return true;
+	}
+
+	/*
+	 * The anchor really moved, so the same highest_claim now describes a
+	 * different 80 squares. Ask the single authority whether those squares
+	 * are a legal realm BEFORE adopting them: stamping ownership onto
+	 * unvetted ground could put a realm in the Underdark, on top of a
+	 * hometown, or against another realm's footprint. If it fails, the realm
+	 * goes dormant and a human can look at the log -- which is recoverable,
+	 * where silently misplaced territory is not.
+	 */
+	{
+		kingdom_realm probe = realm;
+		int bad_index = 0;
+
+		probe.hall_vnum = hall->outside_vnum;
+		if (!kingdom_resolve_anchor(probe))
+		{
+			logit(LOG_KINGDOM,
+			      "realm %d: new guildhall vnum %d is not a map room; dormant.",
+			      assoc_id, hall->outside_vnum);
+			kingdom_clear_anchor(realm);
+			return false;
+		}
+
+		const int verdict = kingdom_judge_footprint(probe.hall_rnum, hall->racewar,
+							    assoc_id, &bad_index);
+		if (verdict != KSQ_OK)
+		{
+			logit(LOG_KINGDOM,
+			      "realm %d: guildhall moved to vnum %d, but square %d of %d is "
+			      "ineligible (%s); realm dormant.",
+			      assoc_id, hall->outside_vnum, bad_index, KINGDOM_MAX_SQUARES,
+			      kingdom_verdict_text(verdict));
+			kingdom_clear_anchor(realm);
+			return false;
+		}
+
+		logit(LOG_KINGDOM,
+		      "realm %d: guildhall moved from vnum %d to %d; %d claim(s) "
+		      "follow the hall.",
+		      assoc_id, realm.hall_vnum, hall->outside_vnum, realm.highest_claim);
+
+		realm = probe;
+	}
+
+	kingdom_reindex_realm(realm);
+
+	/* No coin moved, so this is a plain realm write, not a paired one. A
+	 * refused write leaves the record dirty for the next flush. */
+	realm.dirty = true;
+	if (kingdom_db_save_realm(realm))
+		realm.dirty = false;
+	return true;
+}
+
+/*
  * A hall moved or was destroyed.
  *
  * The realm's whole territory is expressed relative to the hall square, so the
  * old index entries are wrong the instant this is called and are dropped
- * first, whatever happens afterwards.
+ * first, whatever happens afterwards. The garrison is settled before
+ * returning as well: a realm made dormant here has its guards despawned at
+ * once, and a re-anchored one has them re-posted, rather than either standing
+ * on the old squares until the next upkeep tick reconciles them.
  */
 void kingdom_on_guildhall_changed(int assoc_id)
 {
@@ -830,80 +974,11 @@ void kingdom_on_guildhall_changed(int assoc_id)
 	 * the next harvest recomputes it from whatever this hook decides. */
 	kingdom_harvest_prune(*realm);
 
-	Guildhall *hall = kingdom_main_hall(assoc_id);
-	if (!hall)
-	{
-		/* Destroyed -- or demoted to outposts, which cannot anchor a realm.
-		 * Keep highest_claim and hall_vnum: the realm is dormant, not
-		 * dissolved, and owns nothing until a main hall exists again.
-		 * kingdom_reindex_all() re-audits this at every boot, so dormancy
-		 * survives a reboot even if this hook is never called. */
-		kingdom_clear_anchor(*realm);
-		logit(LOG_KINGDOM, "realm %d has no main guildhall; realm dormant.", assoc_id);
-		return;
-	}
-
-	if (hall->outside_vnum == realm->hall_vnum)
-	{
-		/* The hall did not actually move: a room was added, or it was
-		 * reloaded. Re-resolve and re-index, and do NOT re-judge the
-		 * footprint -- a realm that already exists must not be dissolved
-		 * because the world changed around it. */
-		if (!kingdom_resolve_anchor(*realm))
-			logit(LOG_KINGDOM, "realm %d: guildhall vnum %d unresolvable; dormant.",
-			      assoc_id, realm->hall_vnum);
-		else
-			kingdom_reindex_realm(*realm);
-		return;
-	}
-
-	/*
-	 * The anchor really moved, so the same highest_claim now describes a
-	 * different 80 squares. Ask the single authority whether those squares
-	 * are a legal realm BEFORE adopting them: stamping ownership onto
-	 * unvetted ground could put a realm in the Underdark, on top of a
-	 * hometown, or against another realm's footprint. If it fails, the realm
-	 * goes dormant and a human can look at the log -- which is recoverable,
-	 * where silently misplaced territory is not.
-	 */
-	{
-		kingdom_realm probe = *realm;
-		int bad_index = 0;
-
-		probe.hall_vnum = hall->outside_vnum;
-		if (!kingdom_resolve_anchor(probe))
-		{
-			logit(LOG_KINGDOM,
-			      "realm %d: new guildhall vnum %d is not a map room; dormant.",
-			      assoc_id, hall->outside_vnum);
-			kingdom_clear_anchor(*realm);
-			return;
-		}
-
-		const int verdict = kingdom_judge_footprint(probe.hall_rnum, hall->racewar,
-							    assoc_id, &bad_index);
-		if (verdict != KSQ_OK)
-		{
-			logit(LOG_KINGDOM,
-			      "realm %d: guildhall moved to vnum %d, but square %d of %d is "
-			      "ineligible (%s); realm dormant.",
-			      assoc_id, hall->outside_vnum, bad_index, KINGDOM_MAX_SQUARES,
-			      kingdom_verdict_text(verdict));
-			kingdom_clear_anchor(*realm);
-			return;
-		}
-
-		logit(LOG_KINGDOM,
-		      "realm %d: guildhall moved from vnum %d to %d; %d claim(s) "
-		      "follow the hall.",
-		      assoc_id, realm->hall_vnum, hall->outside_vnum, realm->highest_claim);
-
-		*realm = probe;
-	}
-
-	kingdom_reindex_realm(*realm);
-
-	realm->dirty = true;
-	if (kingdom_db_save_realm(*realm))
-		realm->dirty = false;
+	/* Neither branch can invalidate `realm`: kingdom_rehome_realm() touches
+	 * kingdom_square_index and the record itself, never kingdom_realms, and
+	 * the guard calls only read the realm table. */
+	if (kingdom_rehome_realm(*realm))
+		(void)kingdom_guards_refresh(*realm);
+	else
+		(void)kingdom_guards_despawn(assoc_id);
 }

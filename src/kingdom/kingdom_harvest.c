@@ -241,6 +241,8 @@ static_assert((int)(sizeof(kingdom_node_prototypes) / sizeof(kingdom_node_protot
 		      KINGDOM_NODE_HALVES,
 	      "the prototype table has exactly two halves: surface and Underdark");
 
+/* The prototype vnum that spawns for `res` in the given half of the world,
+ * read from the table above; 0 for a resource outside 0..KRES_MAX-1. */
 int kingdom_node_vnum_for(int res, bool underdark)
 {
 	/* 0, not -1: the header specifies 0 for an unknown resource, and 0 is
@@ -252,11 +254,10 @@ int kingdom_node_vnum_for(int res, bool underdark)
 				      [res];
 }
 
-/* kingdom_node_vnum_for_resource() is GONE: it predated the Underdark set,
- * answered only the surface vnum, and nothing called it. Its declaration in
- * kingdom_internal.h (line 79) should be removed with it -- the header is
- * frozen for this lane, so that removal is asked for rather than made. */
-
+/* The resource a node prototype yields, found by searching BOTH halves of the
+ * table, so a surface seam and an Underdark ore seam both answer KRES_MINERAL;
+ * -1 when the vnum is not a kingdom node at all. This is the test every
+ * "is this object one of ours" check in the file goes through. */
 int kingdom_resource_for_node_vnum(int vnum)
 {
 	for (int half = 0; half < KINGDOM_NODE_HALVES; half++)
@@ -267,6 +268,8 @@ int kingdom_resource_for_node_vnum(int vnum)
 	return -1;
 }
 
+/* True when `vnum` is one of the four Underdark prototypes (the table's second
+ * row); false for a surface prototype and for any vnum that is not a node. */
 bool kingdom_node_is_underdark(int vnum)
 {
 	for (int res = 0; res < KRES_MAX; res++)
@@ -386,11 +389,16 @@ static bool kingdom_harvest_valid_rnum(int rnum)
  * first worked, and 0 while it is pristine.
  */
 
+/* The current wall-clock time in whole minutes since the epoch -- the unit
+ * value[2] is stamped in, so the two are directly comparable. */
 static int kingdom_node_now_minutes(void)
 {
 	return static_cast<int>(time(0) / 60);
 }
 
+/* How many minutes a partially worked node survives, from the
+ * kingdom.nodes.decayMins property, clamped to 1..KINGDOM_NODE_DECAY_MINS_MAX
+ * (a week) so a typo cannot make decay effectively infinite. */
 static int kingdom_node_decay_mins(void)
 {
 	int mins = get_property("kingdom.nodes.decayMins", KINGDOM_NODE_DECAY_MINS_DEFAULT);
@@ -698,13 +706,16 @@ static bool kingdom_node_should_reap(P_obj obj, int rnum, int now_min, int decay
 
 /*
  * Clear one room of dead nodes -- the "checked when touched" half of the lazy
- * expiry.
+ * expiry, and the one reap a CLAIM can call directly: kingdom_claim.c runs it
+ * on the square it has just taken, so a node enclosed by the new border goes
+ * at once rather than at the next sweep. Exported for that caller; declared in
+ * kingdom_internal.h.
  *
  * next_content is read BEFORE the extraction, because extract_obj() ends in
  * free_obj() (world/handler.c). Extracting a top-level room object cannot free
  * one of its siblings, so the saved pointer stays good.
  */
-static void kingdom_node_reap_room(int rnum)
+void kingdom_node_reap_room(int rnum)
 {
 	if (!kingdom_harvest_valid_rnum(rnum))
 		return;
@@ -1165,6 +1176,10 @@ static void kingdom_nodes_reload(int region)
 	kingdom_node_schedule_sweep(region);
 }
 
+/* The event body behind kingdom_node_schedule_sweep(): copies the region and
+ * generation out of the payload, drops a sweep whose generation is stale or
+ * that fires after shutdown, and otherwise runs kingdom_nodes_reload() --
+ * which reschedules itself, so this never does. */
 static void kingdom_node_reload_event(P_char /*ch*/, P_char /*victim*/, P_obj, void *data)
 {
 	if (!data)
@@ -1368,6 +1383,14 @@ long kingdom_resource_deposit(kingdom_realm &realm, int res, long amount)
 	const long banked = amount < headroom ? amount : headroom;
 
 	realm.resources[res] += banked;
+
+	/* Marked, NOT written. This deposit is not a money-bearing change, so it
+	 * does not go through kingdom_persist_payment(); it is published by the
+	 * generic kingdom_db_flush_dirty(), which kingdom_upkeep_event()
+	 * (kingdom_upkeep.c) runs on its once-a-minute tick, and which
+	 * kingdom_shutdown() and kingdom_flush_persistent_state() (kingdom.c)
+	 * run on the way out and across a copyover. A crash inside that window
+	 * loses at most a minute of harvesting, never a payment. */
 	realm.dirty = true;
 
 	return banked;
@@ -1755,9 +1778,20 @@ void kingdom_harvest_command(struct char_data *ch, char * /*argument*/)
 		return;
 	}
 
-	if (!MIN_POS(ch, POS_STANDING + STAT_NORMAL))
+	/* MIN_POS(ch, POS_STANDING + STAT_NORMAL) tests two things at once --
+	 * the STAT (resting, sleeping, stunned...) and the POSITION (prone,
+	 * sitting, standing) -- and a player who is merely sitting fails it while
+	 * being nothing like "relaxed". Asked separately so each refusal names
+	 * what the player actually has to change. */
+	if (GET_STAT(ch) < STAT_NORMAL)
 	{
 		send_to_char("You are far too relaxed to work.\r\n", ch);
+		return;
+	}
+
+	if (GET_POS(ch) < POS_STANDING)
+	{
+		send_to_char("You must be standing to work the land.\r\n", ch);
 		return;
 	}
 

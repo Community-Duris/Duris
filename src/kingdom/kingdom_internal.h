@@ -18,6 +18,7 @@
 #include "kingdom/kingdom_geometry.h"
 #include "world/vnum.obj.h"
 
+class Guild;
 class Guildhall;
 
 #define LOG_KINGDOM "logs/log/kingdom"
@@ -125,6 +126,13 @@ struct kingdom_realm
 	int missed_cycles = 0;
 
 	bool dirty = false;
+
+	/* A payment was taken in memory but its PAIRED write -- the debited
+	 * guild together with this record -- has not yet landed. While set, the
+	 * generic flush must NOT publish this record (it would record a payment
+	 * the guild has not durably made) and the sweep must not bill again; the
+	 * pair is retried by kingdom_upkeep_retry_pending(). Never persisted. */
+	bool payment_pending = false;
 };
 
 /* ------------------------------------------------------------------ *
@@ -235,6 +243,21 @@ bool kingdom_abandon_last(struct char_data *ch);
 long kingdom_upkeep_due(const kingdom_realm &realm);
 void kingdom_apply_arrears(kingdom_realm &realm);
 void kingdom_clear_arrears(kingdom_realm &realm);
+/* Make a money-bearing change durable as ONE unit: the guild whose treasury
+ * moved and the realm record that explains why. One SQL transaction under
+ * MariaDB; paired guild-first writes under the flat-file build. False marks
+ * the realm payment_pending for kingdom_upkeep_retry_pending() and never
+ * lets the generic flush publish the record alone. Used by upkeep, claim
+ * and convert -- any path that debits a treasury and records the result. */
+bool kingdom_persist_payment(Guild *guild, kingdom_realm &realm);
+/* Retry every pending pair; called at the top of each sweep, before the
+ * shutdown flush and before the copyover flush. */
+void kingdom_upkeep_retry_pending(void);
+/* A guild is going away: forget any pending retry keyed on its id, so a
+ * reused association id never inherits it. */
+void kingdom_upkeep_forget_guild(int assoc_id);
+/* Drop all upkeep module state (pending lists, cycle stamp). Shutdown only. */
+void kingdom_upkeep_reset(void);
 
 /* --- kingdom_guards.c : the garrison --- */
 int kingdom_guard_allowance(const kingdom_realm &realm);
@@ -252,6 +275,10 @@ void kingdom_harvest_command(struct char_data *ch, char *argument);
 void kingdom_harvest_survey(struct char_data *ch);
 void kingdom_harvest_prune(const kingdom_realm &realm);
 void kingdom_harvest_release(int assoc_id);
+/* Extract every node in one room that has expired or now stands on land a
+ * realm controls. A claim calls it for the square it just took, so a node
+ * enclosed by the new border is gone at once rather than on the next sweep. */
+void kingdom_node_reap_room(int rnum);
 /* Bind the node prototypes to the spec proc, resolve the spawn regions and
  * start the reload sweep. Called from kingdom_initialize(); self-gates on
  * kingdom_enabled(), so it is safe to call unconditionally. */

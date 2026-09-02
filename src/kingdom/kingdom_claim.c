@@ -24,7 +24,12 @@
  *  ORDER OF OPERATIONS, WHICH NEVER VARIES:
  *      validate everything -> take the coin -> mutate the realm -> persist.
  *  Nothing is charged for a claim that is going to be refused, and no square
- *  is granted that has not been paid for.
+ *  is granted that has not been paid for. The persist step of any path that
+ *  touched the treasury is kingdom_persist_payment() (kingdom_upkeep.c): the
+ *  debited guild and the realm record are written as ONE unit, so a crash
+ *  between them can neither keep the coin without the square nor the square
+ *  without the coin. A write that fails leaves the claim standing in memory,
+ *  flagged payment_pending, and the pair is retried by the upkeep sweep.
  *
  *  NO SPECIAL CASE FOR RECLAIMING. Ruling 6 says a ring reverted for unpaid
  *  upkeep costs the full original price to take back. Because claiming always
@@ -54,6 +59,11 @@ extern struct room_data *world;
  * Prices
  * ------------------------------------------------------------------ */
 
+/* Copper price of claim `index` (1..KINGDOM_MAX_SQUARES): base + per_square *
+ * index from lib/kingdom.cfg, with both knobs clamped to 0..INT_MAX first.
+ * 0 for an index outside the range. A pure function of the index, which is
+ * what makes retaking a reverted ring cost exactly what it cost the first
+ * time. */
 long kingdom_claim_cost(int index)
 {
 	if (index < 1 || index > KINGDOM_MAX_SQUARES)
@@ -89,6 +99,9 @@ long kingdom_claim_cost(int index)
 	return base + (each * (long)index);
 }
 
+/* Copper price of every square in `ring` (1..KINGDOM_MAX_RING) taken
+ * together: the sum of kingdom_claim_cost() over the ring's index range,
+ * or 0 for a ring the geometry does not know. */
 long kingdom_ring_cost(int ring)
 {
 	const int first = kingdom_ring_first_index(ring);
@@ -166,9 +179,17 @@ static const char *kingdom_price_string(long price)
 	return coins_to_string(plat, gold, silver, (int)rest, "&+y");
 }
 
-/* Debit `price` copper from the guild. True only if the whole price was
- * taken; sub_copper() checks before it mutates, so a refusal is atomic and
- * leaves no ledger line. */
+/* Debit `price` copper from the guild's IN-MEMORY treasury. True only if the
+ * whole price was taken; sub_copper() checks before it mutates, so a refusal
+ * is atomic and leaves no ledger line.
+ *
+ * NO REFUND, NO SAVE. Once this answers true the coin is gone: nothing that
+ * follows in a claim can fail in a way that hands it back (ruling 6, and the
+ * file header). And sub_copper() adjusts the balances and writes the ledger
+ * but does not write the guild out -- that is deliberately left to
+ * kingdom_persist_payment(), which saves the guild and the realm record in
+ * the same unit. A save here would publish the debit on its own and reopen
+ * the crash window between "coin taken" and "square recorded". */
 static bool kingdom_pay_from_treasury(P_Guild guild, long price)
 {
 	if (!guild || price <= 0)
@@ -176,18 +197,7 @@ static bool kingdom_pay_from_treasury(P_Guild guild, long price)
 		return false;
 	}
 
-	if (!guild->sub_copper(price))
-	{
-		return false;
-	}
-
-	/* sub_copper() adjusts the balances and writes the ledger but does
-	 * not persist. Every other Guild mutator -- set_name,
-	 * add_prestige, add_construction and the rest in guild/assocs.h --
-	 * calls save() itself, so a debit that skipped it would be undone
-	 * by the next reboot. */
-	guild->save();
-	return true;
+	return guild->sub_copper(price);
 }
 
 /* ------------------------------------------------------------------ *
@@ -235,23 +245,57 @@ static void kingdom_refresh_index(const kingdom_realm &realm)
 	kingdom_reindex_realm(realm);
 }
 
-/* Persist a realm whose money-bearing state just changed. By the time this
- * runs the coin has already left the treasury, so a failed write must not be
- * silent: the realm is left dirty for kingdom_db_flush_dirty() to retry, and
- * the failure is logged with everything needed to reconstruct it by hand. */
-static void kingdom_persist_realm(kingdom_realm &realm)
+/* Persist a realm whose state changed WITHOUT any coin moving -- abandon is
+ * the one such path here. Money-bearing paths must not use this: they go
+ * through kingdom_persist_payment(), which writes the guild alongside.
+ * True when the record is on disk. False leaves the realm dirty for
+ * kingdom_db_flush_dirty() to retry and logs everything needed to
+ * reconstruct the write by hand. */
+static bool kingdom_persist_realm(kingdom_realm &realm)
 {
 	realm.dirty = true;
 
 	if (kingdom_db_save_realm(realm))
 	{
 		realm.dirty = false;
-		return;
+		return true;
 	}
 
 	logit(LOG_KINGDOM,
 	      "SAVE FAILED: realm %d (assoc %d, hall vnum %d, %d squares) left dirty for retry.",
 	      realm.realm_id, realm.assoc_id, realm.hall_vnum, realm.highest_claim);
+	return false;
+}
+
+/* Make a realm change durable TOGETHER WITH the guild whose treasury it
+ * belongs to. True when the pair is on disk. False means the change stands
+ * in memory (any debit is kept -- there is no refund path), the helper has
+ * flagged the realm payment_pending so the generic flush leaves it alone,
+ * and the pair will be retried by kingdom_upkeep_retry_pending(); the
+ * failure is logged here with the verb that caused it. The actor is told by
+ * kingdom_tell_record_pending(), after the verb's own message. */
+static bool kingdom_persist_paid_change(P_Guild guild, kingdom_realm &realm, const char *verb)
+{
+	if (kingdom_persist_payment(guild, realm))
+	{
+		return true;
+	}
+
+	logit(LOG_KINGDOM,
+	      "%s: realm %d (assoc %d, hall vnum %d, %d squares) could not be written with its "
+	      "guild; left payment_pending for retry.",
+	      verb, realm.realm_id, realm.assoc_id, realm.hall_vnum, realm.highest_claim);
+	return false;
+}
+
+/* Tell the actor that the verb took effect but its record is not on disk
+ * yet and will be retried. Sent AFTER the verb's own message, so the player
+ * learns what happened before learning that it is still pending. */
+static void kingdom_tell_record_pending(P_char ch)
+{
+	send_to_char("The change stands, but your realm's records could not be written just "
+		     "now; they will be retried shortly.\r\n",
+		     ch);
 }
 
 /* The shared front door for all three verbs: the subsystem must be on, and the
@@ -442,12 +486,24 @@ bool kingdom_convert_guild(P_char ch)
 	}
 
 	kingdom_refresh_index(*realm);
-	kingdom_persist_realm(*realm);
 
-	logit(LOG_KINGDOM, "CONVERT: %s (assoc %d) founded realm %d on hall vnum %d.",
-	      guild->get_name().c_str(), assoc_id, realm->realm_id, realm->hall_vnum);
+	/* Conversion moves no coin, but the founding record is written through
+	 * the paired path all the same: the guild row and its brand-new realm row
+	 * land in one unit, and a founding that could not be written is retried
+	 * with its guild by the upkeep sweep rather than published alone by the
+	 * generic flush. The realm exists in memory either way -- the guild IS a
+	 * kingdom from this line on, whatever the disk says yet. */
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "CONVERT");
+
+	logit(LOG_KINGDOM, "CONVERT: %s (assoc %d) founded realm %d on hall vnum %d%s.",
+	      guild->get_name().c_str(), assoc_id, realm->realm_id, realm->hall_vnum,
+	      durable ? "" : " (record pending)");
 
 	send_to_char("Your guild is now a kingdom. Its realm holds no land yet.\r\n", ch);
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
 	send_to_guild(guild, "The Royal Herald",
 		      "Our guild is now a kingdom. The land around our hall awaits claiming.");
 
@@ -482,8 +538,15 @@ bool kingdom_claim_next(P_char ch)
 	 * have despawned and whose outer ring is reverting for want of upkeep
 	 * cannot coherently be buying more land at the same time, and allowing it
 	 * would let a guild buy back the very ring it is losing. Pay first;
-	 * kingdom_clear_arrears() reopens this. */
-	if (realm->arrears != KARR_CURRENT)
+	 * kingdom_clear_arrears() reopens this.
+	 *
+	 * UNLESS NOTHING IS OWED. A realm the ladder has stripped to its last
+	 * square, or to none, owes nothing -- upkeep scales with squares held --
+	 * and there is no payment left that could ever clear the rung. Refusing
+	 * it would wedge the realm out of the game for good: it cannot pay, so it
+	 * cannot claim, so it can never again have anything to pay for. The
+	 * refusal stands whenever a debt is actually outstanding. */
+	if (realm->arrears != KARR_CURRENT && kingdom_upkeep_due(*realm) > 0)
 	{
 		send_to_char("Your realm owes upkeep. Settle the debt before taking more land.\r\n",
 			     ch);
@@ -537,14 +600,33 @@ bool kingdom_claim_next(P_char ch)
 	realm->highest_claim = index;
 
 	kingdom_refresh_index(*realm);
-	kingdom_persist_realm(*realm);
+
+	/* The coin is gone and the square is ours in memory; now make the two
+	 * facts durable as one. A free claim (price 0) takes the same path: the
+	 * guild write is then a no-op in effect, and one persist path for every
+	 * claim beats a second one that is only exercised on muds where land is
+	 * free. */
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "CLAIM");
 
 	const int ring = kingdom_ring_for_index(index);
 	const int claimed_rnum = kingdom_room_for_claim(realm->hall_rnum, index);
 	const int claimed_vnum = kingdom_valid_rnum(claimed_rnum) ? world[claimed_rnum].number : 0;
 
-	logit(LOG_KINGDOM, "CLAIM: %s (assoc %d) took square %d (ring %d, vnum %d) for %ld copper.",
-	      guild->get_name().c_str(), realm->assoc_id, index, ring, claimed_vnum, price);
+	/* The land changed, so the world must agree with it at once rather than
+	 * on the next sweep: the garrison's allowance grows with the square
+	 * count, and a harvest node standing on the square just taken is now on
+	 * land a realm controls, which ruling 1 forbids. Both happen AFTER the
+	 * index refresh, because both read kingdom_owner_of_room(). */
+	kingdom_guards_refresh(*realm);
+	if (kingdom_valid_rnum(claimed_rnum))
+	{
+		kingdom_node_reap_room(claimed_rnum);
+	}
+
+	logit(LOG_KINGDOM,
+	      "CLAIM: %s (assoc %d) took square %d (ring %d, vnum %d) for %ld copper%s.",
+	      guild->get_name().c_str(), realm->assoc_id, index, ring, claimed_vnum, price,
+	      durable ? "" : " (record pending)");
 
 	char told[MAX_INPUT_LENGTH];
 
@@ -552,6 +634,10 @@ bool kingdom_claim_next(P_char ch)
 		 "You claim square %d of %d for your realm. Ring %d of %d, %d squares held.\r\n",
 		 index, KINGDOM_MAX_SQUARES, ring, KINGDOM_MAX_RING, realm->highest_claim);
 	send_to_char(told, ch);
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
 
 	snprintf(told, sizeof(told), "The realm claims new ground: %d of %d squares now held.",
 		 realm->highest_claim, KINGDOM_MAX_SQUARES);
@@ -605,11 +691,18 @@ bool kingdom_abandon_last(P_char ch)
 	realm->highest_claim = index - 1;
 
 	kingdom_refresh_index(*realm);
-	kingdom_persist_realm(*realm);
 
-	logit(LOG_KINGDOM, "ABANDON: %s (assoc %d) released square %d (vnum %d); %d remain.",
+	/* No coin moved, so the realm record travels alone: kingdom_persist_realm
+	 * and the generic dirty flush, not the paired payment path. */
+	const bool durable = kingdom_persist_realm(*realm);
+
+	/* Fewer squares may mean fewer guards allowed; reconcile now so a guard
+	 * never stands on ground the realm has just given up. */
+	kingdom_guards_refresh(*realm);
+
+	logit(LOG_KINGDOM, "ABANDON: %s (assoc %d) released square %d (vnum %d); %d remain%s.",
 	      guild->get_name().c_str(), realm->assoc_id, index, released_vnum,
-	      realm->highest_claim);
+	      realm->highest_claim, durable ? "" : " (record pending)");
 
 	char told[MAX_INPUT_LENGTH];
 
@@ -618,6 +711,11 @@ bool kingdom_abandon_last(P_char ch)
 		 "refunded.\r\n",
 		 index, realm->highest_claim, KINGDOM_MAX_SQUARES);
 	send_to_char(told, ch);
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
 
 	snprintf(told, sizeof(told), "The realm gives up ground: %d of %d squares now held.",
 		 realm->highest_claim, KINGDOM_MAX_SQUARES);

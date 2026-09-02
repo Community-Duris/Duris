@@ -21,9 +21,11 @@
  *  sentence composed here.
  *
  *  What this file does own is the small amount that is genuinely dispatch:
- *  the guild gate on the realm verbs (any member may look at their own realm;
- *  no rank is asked), the DELIBERATE ABSENCE of that gate on `harvest` and
- *  `survey` -- nodes belong to nobody and anyone may work one, so those two
+ *  the guild gate on the realm verbs (any MEMBER may look at their own realm;
+ *  no rank is asked -- but membership is the engine's own three-part test,
+ *  not a bare GET_ASSOC(), see do_kingdom), the DELIBERATE ABSENCE of that
+ *  gate on `harvest` and `survey` -- nodes belong to nobody and anyone may
+ *  work one, so those two
  *  verbs go straight through to kingdom_harvest.c, which speaks for itself to
  *  a guildless actor -- the confirmation step in front of an irreversible
  *  abandon, the treasury deposit that funds upkeep, and the help text.
@@ -91,9 +93,13 @@ static const char *KINGDOM_SYNTAX =
 
 static const char *KINGDOM_DISABLED = "Kingdoms are not enabled on this world.\r\n";
 
+/* Said to anyone the membership test in do_kingdom refuses: the guildless,
+ * but also an applicant, a banned ex-member, an enemy and someone on parole,
+ * none of whom is a member in good standing. The wording covers all of them. */
 static const char *KINGDOM_NO_GUILD =
-	"You are not in a guild, so you have no realm to speak for. You can still\r\n"
-	"'&+Wkingdom harvest&n' or '&+Wkingdom survey&n' any node you find.\r\n";
+	"You are not a member in good standing of any guild, so you have no realm to\r\n"
+	"speak for. You can still '&+Wkingdom harvest&n' or '&+Wkingdom survey&n' any\r\n"
+	"node you find.\r\n";
 
 static const char *KINGDOM_NO_REALM =
 	"Your guild is not a kingdom. A leader must use '&+Wkingdom convert&n' first.\r\n";
@@ -153,8 +159,9 @@ static const char *kingdom_coin_string(long copper_total)
 
 /* The reader's realm, with its anchor refreshed. NULL after explaining why.
  * Looking at your own realm is not a leader's privilege: the callers ask only
- * that the actor is in a guild (the gate in do_kingdom), deliberately NOT the
- * leader-tier gate the mutating verbs carry inside kingdom_claim.c. */
+ * that the actor is a member in good standing of a guild (the gate in
+ * do_kingdom), deliberately NOT the leader-tier gate the mutating verbs carry
+ * inside kingdom_claim.c. */
 static kingdom_realm *kingdom_reader_realm(P_char ch, P_Guild guild)
 {
 	kingdom_realm *realm = kingdom_find_realm(static_cast<int>(guild->get_id()));
@@ -182,6 +189,8 @@ static kingdom_realm *kingdom_reader_realm(P_char ch, P_Guild guild)
  * kingdom status
  * ------------------------------------------------------------------ */
 
+/* Print the realm's status table (kingdom_display.c) for the reader's own
+ * realm; kingdom_reader_realm() has already explained any refusal. */
 static void kingdom_cmd_status(P_char ch, P_Guild guild)
 {
 	kingdom_realm *realm = kingdom_reader_realm(ch, guild);
@@ -196,6 +205,9 @@ static void kingdom_cmd_status(P_char ch, P_Guild guild)
  * kingdom map
  * ------------------------------------------------------------------ */
 
+/* Draw the 9x9 ring grid: the realm's own footprint when one exists, or else
+ * the ground around the guild's main hall so a leader can judge a site before
+ * converting. Refuses when the guild has no hall or the hall is off the map. */
 static void kingdom_cmd_map(P_char ch, P_Guild guild)
 {
 	const int assoc_id = static_cast<int>(guild->get_id());
@@ -347,6 +359,8 @@ static void kingdom_cmd_deposit(P_char ch, P_Guild guild, char *rest)
  * kingdom guards
  * ------------------------------------------------------------------ */
 
+/* Report the realm's guard allowance against the guards actually standing,
+ * and point at `kingdom status` when arrears have taken the garrison. */
 static void kingdom_cmd_guards(P_char ch, P_Guild guild)
 {
 	kingdom_realm *realm = kingdom_reader_realm(ch, guild);
@@ -454,6 +468,10 @@ static void kingdom_cmd_help(P_char ch)
  * The command
  * ------------------------------------------------------------------ */
 
+/* `kingdom <verb> [rest]`: parse the verb as typed, refuse the three
+ * ambiguous single letters, dispatch help/survey/harvest to anyone, then
+ * apply the membership gate and dispatch the realm verbs. A bare `kingdom`
+ * shows the status table to a realm's member and the syntax to anyone else. */
 void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 {
 	if (!ch || IS_NPC(ch))
@@ -547,7 +565,15 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 
 	P_Guild guild = GET_ASSOC(ch);
 
-	if (!guild)
+	/* GET_ASSOC() alone is NOT membership: Guild::apply() points an
+	 * applicant's assoc pointer at the guild it is applying to, and a banned
+	 * character keeps the pointer too. The realm verbs below read the realm's
+	 * arrears rung, its stores and its guard count, none of which an
+	 * applicant, a banned ex-member, an enemy or someone on parole has any
+	 * business seeing -- so this is the module's own membership rule, the
+	 * one kingdom_char_owns_room() (kingdom.c) and IS_ASSOC_MEMBER
+	 * (guild/assocs.h) spell out, not a bare null test. */
+	if (!guild || !IS_MEMBER(GET_A_BITS(ch)) || !GT_PAROLE(GET_A_BITS(ch)))
 	{
 		send_to_char(KINGDOM_NO_GUILD, ch);
 		return;

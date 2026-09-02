@@ -24,6 +24,13 @@
  *  costs the full original price. That asymmetry is the whole point of the
  *  ruling, so kingdom_clear_arrears() never touches highest_claim.
  *
+ *  The one place the rung clears WITHOUT a payment is the bottom of the
+ *  ladder: when the last ring reverts and highest_claim reaches 0 the realm
+ *  owes nothing -- upkeep scales with squares held -- and no payment could
+ *  ever clear the rung, so kingdom_apply_arrears() clears it itself. Leaving
+ *  it set would have `kingdom claim` refuse with "settle the debt" over a debt
+ *  of zero, wedging the realm out of the game for good.
+ *
  *  THE LADDER IS STATE, NOT AN ERRAND
  *  ----------------------------------
  *  Nothing here hunts down guard mobs or switches nodes off. The realm record
@@ -36,14 +43,25 @@
  *                                (kingdom_nodes_dormant(), kingdom_harvest.c,
  *                                 is exactly that test)
  *      guards  are permitted     only while realm.arrears <  KARR_GUARDS_GONE
- *                                (kingdom_guard_allowance() must apply this;
- *                                 see the note in the lane report)
+ *                                (kingdom_guard_allowance(), kingdom_guards.c,
+ *                                 applies it)
  *
  *  Keeping it as state makes "restore on payment" free: clearing the rung
  *  restores both, with no bookkeeping of which mob stood where. It also means
  *  the ladder gates expansion for nothing -- kingdom_claim_next() refuses
- *  `kingdom claim` while arrears != KARR_CURRENT, so clearing the rung is
- *  what reopens buying land.
+ *  `kingdom claim` while arrears != KARR_CURRENT and something is owed, so
+ *  clearing the rung is what reopens buying land.
+ *
+ *  DORMANT REALMS ARE NOT BILLED
+ *  -----------------------------
+ *  A realm whose anchor is unresolved (hall_rnum 0: the main hall destroyed,
+ *  moved somewhere illegal, or a row inherited by a reused association id and
+ *  not yet audited) owns no squares in the index, cannot claim and cannot
+ *  abandon. kingdom_upkeep_due() answers 0 for it, the sweep tells the guild
+ *  once per cycle that the realm lies dormant, and its arrears state is left
+ *  exactly as it was: neither advanced nor forgiven. Its upkeep_paid_through
+ *  is not moved either, so the first sweep after the hall stands again bills
+ *  one period from then.
  *
  *  CADENCE AND CRASHES
  *  -------------------
@@ -55,16 +73,41 @@
  *    sweep; it decides nothing about who owes. So the first sweep after a
  *    boot does not re-bill realms that paid shortly before the restart.
  *
- *    WHAT a payment took is persisted the moment it is taken:
- *    Guild::sub_copper() moves in-memory counters only, so persist_payment()
- *    writes the debited guild and the realm's paid mark TOGETHER, inside one
- *    SQL transaction under MariaDB (Guild::save() joins it). A crash can then
- *    neither keep the "paid" mark while dropping the coin (free upkeep) nor
- *    keep the debit while dropping the mark (a double bill). The flat-file
- *    build has no transaction to offer, so there the two writes are merely
- *    paired, guild first: the surviving window is one realm's pair of writes
- *    and it points the safe way round -- a crash inside it re-bills a paid
- *    realm rather than un-billing one.
+ *    WHAT a payment took is written when it is taken, by
+ *    kingdom_persist_payment(), and the guarantee differs by build mode:
+ *
+ *      MariaDB    the debited guild and the realm's paid mark are written
+ *                 inside ONE transaction, or neither is written. No crash
+ *                 can keep one without the other. When the transaction
+ *                 cannot be opened, or either write or the commit fails,
+ *                 nothing is left written: the realm is marked
+ *                 payment_pending, the debit stands in memory, the generic
+ *                 flush withholds the record and the sweep stops billing
+ *                 the realm until kingdom_upkeep_retry_pending() lands the
+ *                 pair. A crash while pending loses the in-memory debit, so
+ *                 the realm is billed again for the same period -- the safe
+ *                 direction.
+ *
+ *      flat-file  there is no transaction. The guild is written first and
+ *                 alone; the realm is left DIRTY for the end-of-sweep
+ *                 kingdom_db_flush_dirty(), which writes every dirty realm in
+ *                 one catalogue rewrite. The window is the rest of the sweep:
+ *                 a crash after the guild write and before that flush keeps
+ *                 the debit and loses the paid mark, so the realm is billed
+ *                 again at the next boot -- again the safe direction. A
+ *                 failed guild write marks the realm payment_pending exactly
+ *                 as above, and no realm write is attempted.
+ *
+ *    In neither mode can a paid mark reach disk without its debit: the flush
+ *    never publishes a payment_pending record, and the flat-file realm write
+ *    is never attempted before the guild's has succeeded.
+ *
+ *    A DEFAULT (a rung advanced, a ring reverted) moves no coin, so it is
+ *    written on its own the moment it is applied, and a failed write leaves
+ *    the record dirty for the next flush. Deposits and the other non-payment
+ *    changes that only set `dirty` are flushed on EVERY tick, not just at the
+ *    sweep -- see kingdom_upkeep_event() -- so they wait at most one tick
+ *    rather than one billing period to reach disk.
  *
  *  Sibling files inside src/kingdom/ are cited by FUNCTION NAME rather than by
  *  line: they are still being written alongside this one, so a line number
@@ -135,9 +178,15 @@ static const char KINGDOM_STEWARD[] = "The Kingdom Steward";
  * intent of the outpost job (world/outposts.c:1675-1676): officers who were
  * offline through a restart get one warning before anything is taken.
  *
- * The outposts spell this as `real_time_passed(time(0), boot_time).hour < 1 &&
- * .day < 1`, which is wrong for a long-lived process -- those fields are
- * hour-within-day and day-within-month, so an uptime of exactly one month
+ * The grace is for realms that fell due DURING the downtime -- ones whose
+ * paid period had already run out by boot_time. A realm that falls due for
+ * the first time after boot has had its whole period of uptime to deposit and
+ * gets none; otherwise every restart would forgive one rung to every realm
+ * that happened to come due in the following hour.
+ *
+ * The outposts spell the window as `real_time_passed(time(0), boot_time).hour
+ * < 1 && .day < 1`, which is wrong for a long-lived process -- those fields
+ * are hour-within-day and day-within-month, so an uptime of exactly one month
  * reads as zero hours and zero days and silently re-opens the grace window.
  * A plain difference cannot do that. */
 #define KINGDOM_UPKEEP_BOOT_GRACE_SECONDS 3600
@@ -150,10 +199,19 @@ static const char KINGDOM_STEWARD[] = "The Kingdom Steward";
  * What is owed
  * ------------------------------------------------------------------ */
 
+/* Coin owed for one cycle: upkeep_per_square times the squares held,
+ * saturating at INT_MAX. Zero for a realm holding nothing, for one whose
+ * anchor is unresolved (dormant: it cannot use the land), and when the
+ * operator has switched upkeep off. */
 long kingdom_upkeep_due(const kingdom_realm &realm)
 {
 	if (realm.highest_claim <= 0)
 		return 0; /* a realm that owns nothing owes nothing */
+
+	/* No hall to rule from: the land is on paper only, the index holds none
+	 * of its squares, and claim/abandon both refuse. Not billed. */
+	if (realm.hall_rnum <= 0)
+		return 0;
 
 	const long per_square = kingdom_cfg.upkeep_per_square;
 	if (per_square <= 0)
@@ -210,6 +268,11 @@ static bool revert_outer_ring(kingdom_realm &realm)
 	return true;
 }
 
+/* Record one missed cycle: normalise a corrupt rung, count the miss, advance
+ * one rung (stopping at KARR_RINGS_REVERTING), and on the bottom rung revert
+ * the outer ring. When that reversion leaves highest_claim at 0 the rung is
+ * cleared again, because a realm holding nothing owes nothing and could never
+ * pay its way off the ladder. Always dirties the record. */
 void kingdom_apply_arrears(kingdom_realm &realm)
 {
 	/* A persisted rung outside the enum would otherwise skip the reversion
@@ -232,8 +295,15 @@ void kingdom_apply_arrears(kingdom_realm &realm)
 		(void)revert_outer_ring(realm);
 
 	realm.dirty = true;
+
+	/* Nothing left to take and nothing left to owe: the debt dies with the
+	 * land. kingdom_clear_arrears() dirties the record itself. */
+	if (realm.highest_claim <= 0)
+		kingdom_clear_arrears(realm);
 }
 
+/* Return the realm to KARR_CURRENT with no missed cycles, dirtying the record
+ * only when something actually changed. highest_claim is untouched. */
 void kingdom_clear_arrears(kingdom_realm &realm)
 {
 	if (realm.arrears == KARR_CURRENT && realm.missed_cycles == 0)
@@ -271,9 +341,9 @@ void kingdom_clear_arrears(kingdom_realm &realm)
  * The debit is IN-MEMORY ONLY: sub_copper() moves the counters and writes the
  * ledger line, but neither it nor sub_money() runs Guild::save()
  * (guild/assocs.c:655) -- the engine's one path, sql and flatfile both, that
- * writes the counters out. persist_payment() writes the guild and the realm
- * together right after the debit; a caller that skipped that would see the
- * payment undone at the next boot. */
+ * writes the counters out. kingdom_persist_payment() writes the guild and the
+ * realm together right after the debit; a caller that skipped that would see
+ * the payment undone at the next boot. */
 static bool charge_treasury(P_Guild guild, long copper_total)
 {
 	if (!guild)
@@ -284,82 +354,199 @@ static bool charge_treasury(P_Guild guild, long copper_total)
 	return guild->sub_copper(copper_total);
 }
 
-/* Guilds whose debited counters could not be written when they were charged.
- * Retried at the top of every sweep until Guild::save() succeeds, so a debit
- * that lives only in memory does not wait for some unrelated guild write. */
-static std::vector<int> kingdom_unsaved_guild_ids;
+/* ------------------------------------------------------------------ *
+ * Making a payment durable
+ * ------------------------------------------------------------------ */
 
-static void remember_unsaved_guild(int assoc_id)
+/* Association ids of realms whose payment pair has not landed. Each is
+ * retried as a PAIR by kingdom_upkeep_retry_pending(); while listed, its realm
+ * carries payment_pending, which keeps every flush from publishing the record
+ * and the sweep from billing it again. In-memory only, on purpose: the debit
+ * it stands for is in-memory too, so a crash loses both together and the
+ * realm is simply billed again for the same period. */
+static std::vector<int> kingdom_pending_payments;
+
+/* Add an association id to the pending list, once. */
+static void remember_pending(int assoc_id)
 {
-	for (const int id : kingdom_unsaved_guild_ids)
+	for (const int id : kingdom_pending_payments)
 		if (id == assoc_id)
 			return;
-	kingdom_unsaved_guild_ids.push_back(assoc_id);
+	kingdom_pending_payments.push_back(assoc_id);
 }
 
-static void retry_unsaved_guilds(void)
+/* Remove an association id from the pending list; a no-op when absent. */
+static void forget_pending(int assoc_id)
 {
-	for (size_t i = 0; i < kingdom_unsaved_guild_ids.size();)
+	for (size_t i = 0; i < kingdom_pending_payments.size(); i++)
 	{
-		P_Guild guild = get_guild_from_id(kingdom_unsaved_guild_ids[i]);
+		if (kingdom_pending_payments[i] == assoc_id)
+		{
+			kingdom_pending_payments.erase(kingdom_pending_payments.begin() +
+						       static_cast<long>(i));
+			return;
+		}
+	}
+}
 
-		/* Gone, or written: either way there is nothing left to retry. */
-		if (!guild || guild->save())
-			kingdom_unsaved_guild_ids.erase(kingdom_unsaved_guild_ids.begin() +
-							static_cast<long>(i));
+/* Mark a realm's payment as not yet durable: set payment_pending, list the id
+ * for kingdom_upkeep_retry_pending(), and log why. The debit stays in memory,
+ * so the realm is not charged twice within this process. */
+static void hold_payment(kingdom_realm &realm, const char *why)
+{
+	realm.payment_pending = true;
+	remember_pending(realm.assoc_id);
+	logit(LOG_KINGDOM,
+	      "upkeep: payment for realm %d (association %d) is NOT durable: %.128s; the "
+	      "record is held back from every flush and the pair will be retried",
+	      realm.realm_id, realm.assoc_id, why);
+}
+
+/* Write the debited guild and this realm's record as ONE unit and report
+ * whether they are durable. What each build mode guarantees:
+ *
+ *   MariaDB    If a transaction is already open the two writes JOIN it and
+ *              true means both ran; commit or rollback is the owner's, and
+ *              its rollback undoes both together. Otherwise this function
+ *              owns one: guild, then realm, then commit, rolling back on any
+ *              failure. If the transaction cannot be opened NOTHING is
+ *              written -- never an unpaired write -- and the realm is held.
+ *              On success the record is clean; no flush is needed.
+ *
+ *   flat-file  Guild::save() first and alone. On success the realm is left
+ *              DIRTY, not pending, for the batched end-of-sweep flush: one
+ *              catalogue rewrite for every realm of the sweep rather than one
+ *              per realm. The window that leaves -- guild written, realm
+ *              flush lost to a crash -- re-bills the realm, the safe
+ *              direction. A failed guild write holds the realm and attempts
+ *              no realm write.
+ *
+ * False in either mode means hold_payment() ran: payment_pending is set, the
+ * id is listed for retry, and the debit stands in memory. */
+bool kingdom_persist_payment(Guild *guild, kingdom_realm &realm)
+{
+	if (!guild)
+	{
+		hold_payment(realm, "no guild object to write");
+		return false;
+	}
+
+#ifndef __NO_MYSQL__
+	bool ok;
+
+	if (sql_in_transaction())
+	{
+		/* Joining: Guild::save() -> sql_save_guild() joins the same open
+		 * transaction. A failed write here leaves the owner's transaction
+		 * half-applied, which is why it must roll back on our false. */
+		ok = guild->save() && kingdom_db_save_realm(realm);
+	}
+	else
+	{
+		if (!sql_begin_transaction())
+		{
+			hold_payment(realm, "could not open a transaction; nothing written");
+			return false;
+		}
+
+		ok = guild->save() && kingdom_db_save_realm(realm);
+		if (ok)
+			ok = sql_commit();
+		if (!ok)
+			sql_rollback(); /* sql_commit() keeps ownership on failure */
+	}
+
+	if (!ok)
+	{
+		hold_payment(realm, "guild or realm write failed; nothing committed");
+		return false;
+	}
+
+	realm.dirty = false;
+	realm.payment_pending = false;
+	return true;
+#else
+	if (!guild->save())
+	{
+		hold_payment(realm, "guild write failed; realm record withheld");
+		return false;
+	}
+
+	/* Guild is on disk. The realm waits for the batched flush -- one
+	 * catalogue rewrite per sweep, not one per realm -- and is dirty, not
+	 * pending, because the debit it records is already durable. */
+	realm.dirty = true;
+	realm.payment_pending = false;
+	return true;
+#endif
+}
+
+/* Retry every held payment as a PAIR through kingdom_persist_payment(). An id
+ * whose realm is gone is dropped; one whose guild is gone has its realm's
+ * payment_pending cleared and is dropped with a log, since the debit died
+ * with the guild and there is nothing left to pair; anything else leaves the
+ * list only when the pair lands. */
+void kingdom_upkeep_retry_pending(void)
+{
+	size_t i = 0;
+
+	while (i < kingdom_pending_payments.size())
+	{
+		const int assoc_id = kingdom_pending_payments[i];
+		kingdom_realm *realm = kingdom_find_realm(assoc_id);
+		bool settled;
+
+		if (!realm)
+		{
+			settled = true; /* realm erased; nothing left to write */
+		}
+		else
+		{
+			P_Guild guild = get_guild_from_id(assoc_id);
+
+			if (!guild)
+			{
+				realm->payment_pending = false;
+				logit(LOG_KINGDOM,
+				      "upkeep: realm %d (association %d) had a payment pending but "
+				      "its guild is gone; the pending payment is dropped",
+				      realm->realm_id, assoc_id);
+				settled = true;
+			}
+			else
+			{
+				/* On failure this re-lists the same id, which the
+				 * dedup in remember_pending() makes a no-op. */
+				settled = kingdom_persist_payment(guild, *realm);
+				if (settled)
+					logit(LOG_KINGDOM,
+					      "upkeep: pending payment for realm %d (association %d) "
+					      "is now durable",
+					      realm->realm_id, assoc_id);
+			}
+		}
+
+		if (settled)
+			kingdom_pending_payments.erase(kingdom_pending_payments.begin() +
+						       static_cast<long>(i));
 		else
 			i++;
 	}
 }
 
-/* Make one realm's payment DURABLE: the guild's debited counters and the
- * realm's paid mark, together.
- *
- * Under MariaDB the two writes share ONE transaction, so a crash between them
- * can no longer double-bill (guild saved, realm not) or forgive (realm saved,
- * guild not) a cycle; Guild::save() joins the transaction it finds open.
- * Under the flat-file build sql_begin_transaction() is a stub that answers
- * false, so the writes are merely PAIRED, guild first: the residual window is
- * one realm's pair of writes rather than a whole sweep's, and it points the
- * safe way round (a crash re-bills a paid realm rather than un-billing one).
- *
- * False leaves the realm dirty for kingdom_db_flush_dirty() to retry and
- * queues the guild for retry_unsaved_guilds(); the debit itself stands in
- * memory throughout, so nothing is charged twice. */
-static bool persist_payment(P_Guild guild, kingdom_realm &realm)
+/* Drop any pending retry keyed on this association id. The realm record
+ * itself is the caller's to erase; this only stops a reused id from
+ * inheriting the dead guild's retry. */
+void kingdom_upkeep_forget_guild(int assoc_id)
 {
-	const bool own_txn = !sql_in_transaction() && sql_begin_transaction();
-
-	bool ok = guild->save();
-	if (ok)
-		ok = kingdom_db_save_realm(realm);
-
-	if (own_txn)
-	{
-		if (ok)
-			ok = sql_commit();
-		if (!ok)
-			sql_rollback();
-	}
-
-	if (ok)
-	{
-		realm.dirty = false;
-		return true;
-	}
-
-	remember_unsaved_guild(realm.assoc_id);
-	logit(LOG_KINGDOM,
-	      "upkeep: payment for realm %d (association %d) is NOT yet durable; "
-	      "the realm record and the guild save will be retried",
-	      realm.realm_id, realm.assoc_id);
-	return false;
+	forget_pending(assoc_id);
 }
 
 /* ------------------------------------------------------------------ *
  * Player-facing text for a rung
  * ------------------------------------------------------------------ */
 
+/* The steward's notice for the rung a default has just reached. */
 static const char *arrears_text(int arrears)
 {
 	switch (arrears)
@@ -395,7 +582,9 @@ static const char *arrears_text(int arrears)
  * Being called before the period is up is therefore the NORMAL case -- the
  * overwhelming majority of ticks -- and the not-yet-due return is deliberately
  * SILENT: logging it would write a line a minute, forever. Actual charges,
- * arrears, and the end-of-cycle summary are still logged.
+ * arrears, and the end-of-cycle summary are still logged. The one thing a
+ * not-yet-due tick does first is flush dirty records, so a deposit does not
+ * wait for the sweep.
  *
  * The stamp is in-memory, so on the first tick after a boot it throttles
  * nothing. Reboot cadence is honoured anyway, because the sweep derives each
@@ -403,6 +592,30 @@ static const char *arrears_text(int arrears)
  * whose paid period has not yet run out. */
 static time_t kingdom_upkeep_last_cycle = 0;
 
+/* Clear the pending-payment list and the cycle stamp. For kingdom_shutdown();
+ * a pending payment dropped here is lost with the process, and the realm is
+ * billed again for the period at the next boot. */
+void kingdom_upkeep_reset(void)
+{
+	kingdom_pending_payments.clear();
+	kingdom_upkeep_last_cycle = 0;
+}
+
+/* True when some realm is dirty and NOT held back for a pending payment --
+ * the only records kingdom_db_flush_dirty() would write. */
+static bool any_flushable_realm(void)
+{
+	for (const auto &entry : kingdom_realms)
+		if (entry.second.dirty && !entry.second.payment_pending)
+			return true;
+	return false;
+}
+
+/* The periodic callback. Every tick: flush dirty, non-pending realms. Once
+ * per configured period: retry held payment pairs, then sweep every realm --
+ * skip those inside their paid period, held for a pending payment, or
+ * dormant; bill the rest, advancing the arrears ladder for any that cannot
+ * pay -- flush what the sweep dirtied, and reconcile every garrison. */
 void kingdom_upkeep_event(void)
 {
 	if (!kingdom_enabled())
@@ -411,6 +624,19 @@ void kingdom_upkeep_event(void)
 		return;
 
 	const time_t now = time(0);
+	const time_t period = (kingdom_cfg.upkeep_period_seconds > 0) ?
+				      static_cast<time_t>(kingdom_cfg.upkeep_period_seconds) :
+				      0;
+
+	/* Deposits and the other bookkeeping that only sets `dirty` would
+	 * otherwise sit in memory until the next DUE sweep -- an hour by
+	 * default. Under MariaDB this is one upsert per dirty realm; under the
+	 * flat-file build it is one catalogue rewrite, and only when something
+	 * is dirty. Records held for a pending payment are never written here:
+	 * kingdom_db_flush_dirty() skips them, and this gate keeps the call
+	 * (and its log line) off the routine path when only those are dirty. */
+	if (any_flushable_realm())
+		kingdom_db_flush_dirty();
 
 	if (kingdom_upkeep_last_cycle > now)
 	{
@@ -418,15 +644,18 @@ void kingdom_upkeep_event(void)
 		 * refusing to charge until the old stamp is overtaken. */
 		kingdom_upkeep_last_cycle = 0;
 	}
-	else if (kingdom_upkeep_last_cycle != 0 && kingdom_cfg.upkeep_period_seconds > 0 &&
-		 (now - kingdom_upkeep_last_cycle) <
-			 static_cast<time_t>(kingdom_cfg.upkeep_period_seconds))
+	else if (kingdom_upkeep_last_cycle != 0 && period > 0 &&
+		 (now - kingdom_upkeep_last_cycle) < period)
 	{
 		/* Not yet due. The tick outruns the period by design, so this
 		 * is the routine path -- silent, per the note on the stamp. */
 		return;
 	}
 	kingdom_upkeep_last_cycle = now;
+
+	/* A payment whose pair did not land last cycle is still only in memory;
+	 * try again before charging anyone. */
+	kingdom_upkeep_retry_pending();
 
 	/* Sweep a snapshot of the KEYS, not the map's iterators. Re-looking-up
 	 * each realm means nothing here holds a pointer into kingdom_realms
@@ -437,10 +666,6 @@ void kingdom_upkeep_event(void)
 	for (const auto &entry : kingdom_realms)
 		assoc_ids.push_back(entry.first);
 
-	/* A debit whose guild write failed last cycle is still only in memory;
-	 * try again before charging anyone new. */
-	retry_unsaved_guilds();
-
 	const bool in_boot_grace =
 		(now >= static_cast<time_t>(boot_time)) &&
 		((now - static_cast<time_t>(boot_time)) < KINGDOM_UPKEEP_BOOT_GRACE_SECONDS);
@@ -448,7 +673,7 @@ void kingdom_upkeep_event(void)
 	/* `touched` counts every realm whose record was dirtied, not just the
 	 * two interesting outcomes -- a realm that owes nothing still has its
 	 * upkeep_paid_through moved, and flushing only on paid/defaulted would
-	 * leave that write sitting in memory until some unrelated code flushed. */
+	 * leave that write sitting in memory until the next tick's flush. */
 	int paid = 0, defaulted = 0, touched = 0;
 
 	for (const int assoc_id : assoc_ids)
@@ -458,6 +683,18 @@ void kingdom_upkeep_event(void)
 		kingdom_realm *realm = kingdom_find_realm(assoc_id);
 		if (!realm)
 			continue;
+
+		if (realm->payment_pending)
+		{
+			/* Its last payment is not yet durable, and the retry above
+			 * could not land it. Billing again would debit a treasury
+			 * the store may never accept, once per cycle, forever. */
+			logit(LOG_KINGDOM,
+			      "upkeep: realm %d (association %d) has a payment pending and "
+			      "is not billed this cycle",
+			      realm->realm_id, realm->assoc_id);
+			continue;
+		}
 
 		if (realm->upkeep_paid_through > now)
 		{
@@ -480,23 +717,8 @@ void kingdom_upkeep_event(void)
 		 * paid_through) is not billed seconds later. Silent: a realm
 		 * inside its paid period is the unremarkable case, not an
 		 * anomaly. */
-		if (kingdom_cfg.upkeep_period_seconds > 0 &&
-		    (now - realm->upkeep_paid_through) <
-			    static_cast<time_t>(kingdom_cfg.upkeep_period_seconds))
+		if (period > 0 && (now - realm->upkeep_paid_through) < period)
 			continue;
-
-		const long due = kingdom_upkeep_due(*realm);
-		if (due <= 0)
-		{
-			/* Owns nothing, or upkeep is switched off. Either way the
-			 * realm is not in default, and there is no rung left worth
-			 * holding it on -- its guard allowance is already zero. */
-			realm->upkeep_paid_through = now;
-			realm->dirty = true;
-			kingdom_clear_arrears(*realm);
-			touched++;
-			continue;
-		}
 
 		P_Guild guild = get_guild_from_id(realm->assoc_id);
 		if (!guild)
@@ -512,6 +734,38 @@ void kingdom_upkeep_event(void)
 			continue;
 		}
 
+		if (realm->hall_rnum <= 0 && realm->highest_claim > 0)
+		{
+			/* DORMANT: land on paper, no hall to rule it from. Not
+			 * billed, and the ladder is neither advanced nor forgiven --
+			 * a debt outstanding when the hall fell is still owed when
+			 * it stands again. upkeep_paid_through is left alone too,
+			 * so the realm is due again as soon as it is anchored. Once
+			 * per cycle, because only a due realm reaches this line. */
+			send_to_guild(guild, KINGDOM_STEWARD,
+				      "The realm lies dormant: with no hall to rule from, the "
+				      "crown asks no upkeep of it until one stands again.");
+			logit(LOG_KINGDOM,
+			      "upkeep: realm %d (association %d, %.64s) is dormant (anchor "
+			      "unresolved, hall vnum %d); not billed, rung %d kept",
+			      realm->realm_id, realm->assoc_id, guild->get_name().c_str(),
+			      realm->hall_vnum, realm->arrears);
+			continue;
+		}
+
+		const long due = kingdom_upkeep_due(*realm);
+		if (due <= 0)
+		{
+			/* Owns nothing, or upkeep is switched off. Either way the
+			 * realm is not in default, and there is no rung left worth
+			 * holding it on -- its guard allowance is already zero. */
+			realm->upkeep_paid_through = now;
+			realm->dirty = true;
+			kingdom_clear_arrears(*realm);
+			touched++;
+			continue;
+		}
+
 		if (charge_treasury(guild, due))
 		{
 			const bool was_behind = (realm->arrears != KARR_CURRENT);
@@ -519,7 +773,9 @@ void kingdom_upkeep_event(void)
 			realm->upkeep_paid_through = now;
 			realm->dirty = true;
 			kingdom_clear_arrears(*realm);
-			persist_payment(guild, *realm);
+			/* False has already held the realm (payment_pending) and
+			 * logged; the coin stays taken in memory. */
+			(void)kingdom_persist_payment(guild, *realm);
 			paid++;
 			touched++;
 
@@ -546,19 +802,21 @@ void kingdom_upkeep_event(void)
 
 		/* get_name() returns a std::string BY VALUE (guild/assocs.h:196);
 		 * the temporary outlives each logit() call it is spelled in. */
-		if (in_boot_grace)
+		if (in_boot_grace &&
+		    realm->upkeep_paid_through + period <= static_cast<time_t>(boot_time))
 		{
-			/* One free warning after a restart: officers who were
-			 * offline through the downtime have not had a chance to
-			 * deposit. The charge was still attempted, so a solvent
-			 * realm still pays. */
+			/* This realm fell due while the server was down, so its
+			 * officers have had no chance to deposit: one free warning.
+			 * The charge was still attempted, so a solvent realm still
+			 * pays. A realm that only came due after boot is outside this
+			 * branch and takes the rung. */
 			send_to_guild(guild, KINGDOM_STEWARD,
 				      "The stewards will hold their hand this once, the realm "
 				      "having only just stirred. Deposit coin before the next "
 				      "reckoning.");
 			logit(LOG_KINGDOM,
 			      "upkeep: realm %d (association %d, %.64s) could not pay %ld; "
-			      "boot grace, ladder not advanced",
+			      "fell due during downtime, boot grace, ladder not advanced",
 			      realm->realm_id, realm->assoc_id, guild->get_name().c_str(), due);
 			continue;
 		}
@@ -568,22 +826,27 @@ void kingdom_upkeep_event(void)
 		defaulted++;
 		touched++;
 
-		send_to_guild(guild, KINGDOM_STEWARD, arrears_text(realm->arrears));
-
 		if (realm->highest_claim != claim_before)
 		{
+			/* Land was lost, so the rung reached was the bottom one --
+			 * even if kingdom_apply_arrears() has already cleared it
+			 * because nothing is left to owe. */
+			send_to_guild(guild, KINGDOM_STEWARD, arrears_text(KARR_RINGS_REVERTING));
 			snprintf(msg, sizeof(msg),
 				 "The outermost ring slips from your grasp; %d of the realm's "
 				 "%d squares remain. Reclaiming it will cost the full price.",
 				 realm->highest_claim, KINGDOM_MAX_SQUARES);
 			send_to_guild(guild, KINGDOM_STEWARD, msg);
+
+			if (realm->highest_claim <= 0)
+				send_to_guild(guild, KINGDOM_STEWARD,
+					      "Nothing remains of the realm but the hall itself. "
+					      "No debt is owed on it; land may be claimed again "
+					      "at full price.");
 		}
-		else if (realm->arrears == KARR_RINGS_REVERTING)
+		else
 		{
-			/* Bottom rung with nothing left to take: the realm holds
-			 * only its guildhall square and cannot be reduced further. */
-			send_to_guild(guild, KINGDOM_STEWARD,
-				      "Nothing remains of the realm but the hall itself.");
+			send_to_guild(guild, KINGDOM_STEWARD, arrears_text(realm->arrears));
 		}
 
 		logit(LOG_KINGDOM,
@@ -592,23 +855,26 @@ void kingdom_upkeep_event(void)
 		      realm->realm_id, realm->assoc_id, guild->get_name().c_str(), due,
 		      realm->arrears, realm->missed_cycles, claim_before, realm->highest_claim);
 
-		/* Make the rung -- and any reverted ring -- durable NOW rather
-		 * than at the sweep's end: a crash before a batched flush would
-		 * otherwise forgive the missed cycle. Failure leaves the record
-		 * dirty for the flush below to retry. */
+		/* A default moves no coin, so it needs no pairing. Make the rung
+		 * -- and any reverted ring -- durable NOW rather than at the
+		 * sweep's end: a crash before the batched flush would otherwise
+		 * forgive the missed cycle. Failure leaves the record dirty for
+		 * the flush below to retry. */
 		if (kingdom_db_save_realm(*realm))
 			realm->dirty = false;
 	}
 
 	if (touched)
 	{
-		/* Every PAYMENT and every DEFAULT was made durable inside the loop
-		 * (persist_payment pairs the guild and realm writes; a default
-		 * saves its realm at once). What is still dirty here is the cheap
-		 * bookkeeping -- realms owing nothing, clock re-arms -- plus any
-		 * write that failed above, which this flush retries. Both
-		 * kingdom_db_flush_dirty() backends walk kingdom_realms by
-		 * reference and never erase from it, so flushing after the sweep
+		/* Under MariaDB every PAYMENT is already durable in its own
+		 * transaction and every DEFAULT was written as it was applied, so
+		 * what remains dirty here is the cheap bookkeeping -- realms
+		 * owing nothing, clock re-arms -- plus any write that failed
+		 * above. Under the flat-file build the paid realms are dirty too,
+		 * by design: this is the one catalogue rewrite that publishes
+		 * their paid marks, after their guilds were written. Records held
+		 * for a pending payment are skipped by both backends. Neither
+		 * backend erases from kingdom_realms, so flushing after the sweep
 		 * costs nothing. */
 		kingdom_db_flush_dirty();
 		logit(LOG_KINGDOM,

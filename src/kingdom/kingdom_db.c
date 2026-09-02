@@ -97,9 +97,16 @@ constexpr size_t kingdom_realm_maximum = 65536;
 /* REJECT a bad record rather than repair it. highest_claim indexes
  * KINGDOM_CLAIM_ORDER in every other file of this module, so a value past
  * KINGDOM_MAX_SQUARES read back from a corrupt store would walk off the end
- * of that table; arrears indexes the ladder. A realm that fails this is
- * dropped with a log, which loses one guild's territory rather than the
- * process. */
+ * of that table; arrears indexes the ladder.
+ *
+ * Both backends treat a failure the same way, and it is per RECORD, never
+ * per store: the MariaDB loader logs and skips the row and goes on to the
+ * next; the flat-file decoder logs and drops the record from the decoded
+ * catalogue and goes on, and the next publish writes the catalogue without
+ * it. Only the flat file's checksum, layout and assoc_id ordering fail the
+ * whole load. Both save paths (single-record and flush) refuse to write a
+ * record that fails this, leaving it dirty in memory. Losing one guild's
+ * territory is the outcome in every case, rather than the process. */
 bool record_is_sane(const kingdom_realm &realm)
 {
 	if (realm.assoc_id <= 0 || realm.realm_id < 0)
@@ -146,6 +153,11 @@ const char *const kingdom_realm_columns = "assoc_id,realm_id,hall_vnum,highest_c
 constexpr unsigned int kingdom_realm_column_count = 11;
 } /* namespace */
 
+/* Replace kingdom_realms with every row of the kingdom_realms table, anchors
+ * unresolved and flags clear. Rows with a NULL column, a record that fails
+ * record_is_sane() or a duplicate assoc_id are logged and skipped. False when
+ * the SELECT fails, the column count is wrong, memory runs out, or the cap
+ * truncates the load -- never for an empty table. */
 bool kingdom_db_load_all(void)
 {
 	kingdom_realms.clear();
@@ -216,8 +228,9 @@ bool kingdom_db_load_all(void)
 			realm.upkeep_paid_through = static_cast<time_t>(strtoll(row[8], NULL, 10));
 			realm.arrears = atoi(row[9]);
 			realm.missed_cycles = atoi(row[10]);
-			/* Anchor left unresolved on purpose -- see the file banner. */
-			realm.dirty = false; /* just read: by definition clean */
+			/* Anchor left unresolved on purpose -- see the file banner.
+			 * dirty and payment_pending are runtime-only and stay at
+			 * their defaults: just read, by definition clean. */
 
 			if (!record_is_sane(realm))
 			{
@@ -261,6 +274,9 @@ bool kingdom_db_load_all(void)
 	return complete;
 }
 
+/* Upsert one realm's row, joining any open transaction (qry() runs on the
+ * shared connection). False when the record fails record_is_sane() or the
+ * statement fails; the caller's dirty flag is untouched either way. */
 bool kingdom_db_save_realm(const kingdom_realm &realm)
 {
 	if (!record_is_sane(realm))
@@ -298,6 +314,8 @@ bool kingdom_db_save_realm(const kingdom_realm &realm)
 	return true;
 }
 
+/* Delete the row for assoc_id. True when the statement ran, whether or not a
+ * row matched; false for a non-positive id or a failed statement. */
 bool kingdom_db_delete_realm(int assoc_id)
 {
 	if (assoc_id <= 0)
@@ -317,15 +335,29 @@ bool kingdom_db_delete_realm(int assoc_id)
 	return true;
 }
 
+/* Upsert every dirty realm, one statement each, clearing dirty on success. A
+ * realm with payment_pending set is HELD BACK -- not written, counted and
+ * logged -- because its record carries a paid mark whose guild debit is not
+ * yet durable; kingdom_persist_payment() writes that pair. A failed upsert
+ * leaves the record dirty for the next flush. Never erases from the map. */
 void kingdom_db_flush_dirty(void)
 {
 	size_t saved = 0;
 	size_t failed = 0;
+	size_t held = 0;
 
 	for (auto &entry : kingdom_realms)
 	{
 		if (!entry.second.dirty)
 			continue;
+		if (entry.second.payment_pending)
+		{
+			/* Publishing this alone would record a payment the guild has
+			 * not durably made. It stays dirty AND pending until the pair
+			 * lands through kingdom_upkeep_retry_pending(). */
+			held++;
+			continue;
+		}
 		if (kingdom_db_save_realm(entry.second))
 		{
 			entry.second.dirty = false;
@@ -339,9 +371,11 @@ void kingdom_db_flush_dirty(void)
 		}
 	}
 
-	if (failed)
-		logit(LOG_KINGDOM, "kingdom_db_flush_dirty: saved %zu realms, %zu still pending",
-		      saved, failed);
+	if (failed || held)
+		logit(LOG_KINGDOM,
+		      "kingdom_db_flush_dirty: saved %zu realms, %zu failed and still dirty, "
+		      "%zu held back (payment pending)",
+		      saved, failed, held);
 }
 
 #else /* __NO_MYSQL__ */
@@ -389,6 +423,8 @@ struct encoder
 	std::vector<uint8_t> bytes;
 	bool valid = true;
 
+	/* Append `value` little-endian in sizeof(T) bytes; an allocation
+	 * failure clears `valid` and every later call is ignored. */
 	template <typename T> void number(T value)
 	{
 		/* Once a push has failed there is no partial file worth building:
@@ -412,6 +448,8 @@ struct encoder
 		}
 	}
 
+	/* Append `size` bytes verbatim; a NULL pointer with a non-zero size, or
+	 * an allocation failure, clears `valid`. */
 	void raw(const uint8_t *data, size_t size)
 	{
 		if (!valid || (!data && size))
@@ -436,6 +474,8 @@ struct decoder
 	size_t size;
 	size_t offset = 0;
 
+	/* Read sizeof(T) little-endian bytes at the cursor into *value and
+	 * advance; false, with nothing consumed, when fewer remain. */
 	template <typename T> bool number(T *value)
 	{
 		if (!value || size - offset < sizeof(T))
@@ -449,6 +489,8 @@ struct decoder
 	}
 };
 
+/* The directory under the flat-file state root that holds the realm
+ * authority and its lock file. */
 std::string metadata_directory(const std::string &root)
 {
 	return root + "/metadata";
@@ -476,22 +518,42 @@ bool flat_root(std::string *root)
 	return true;
 }
 
-bool records_are_sane(const std::vector<kingdom_realm> &records)
+/* The LAYOUT half of catalogue sanity: at most kingdom_realm_maximum records
+ * in strictly increasing assoc_id order. This is what the decoder demands of
+ * a file as a whole; it says nothing about the fields of any one record. */
+bool records_are_ordered(const std::vector<kingdom_realm> &records)
 {
 	if (records.size() > kingdom_realm_maximum)
 		return false;
-	for (size_t index = 0; index < records.size(); ++index)
+	for (size_t index = 1; index < records.size(); ++index)
 	{
-		if (!record_is_sane(records[index]))
-			return false;
 		/* Strictly increasing assoc_id: this both keeps the file canonical
 		 * and makes a duplicated realm unrepresentable. */
-		if (index && records[index - 1].assoc_id >= records[index].assoc_id)
+		if (records[index - 1].assoc_id >= records[index].assoc_id)
 			return false;
 	}
 	return true;
 }
 
+/* Full catalogue sanity, for the ENCODER: ordered, and every record passes
+ * record_is_sane(). The decoder does not use this -- it drops an insane record
+ * individually -- so a catalogue that came through decode_catalog() always
+ * satisfies it, and a caller upserting a record it has already checked
+ * cannot break it. */
+bool records_are_sane(const std::vector<kingdom_realm> &records)
+{
+	if (!records_are_ordered(records))
+		return false;
+	for (const auto &record : records)
+		if (!record_is_sane(record))
+			return false;
+	return true;
+}
+
+/* Serialise a catalogue into the on-disk image: magic, version, payload
+ * length, revision, SHA-256 of the payload, then the payload of count +
+ * records. False for a NULL output, a zero revision, an unsane catalogue, an
+ * allocation failure, or an image over kingdom_file_maximum_bytes. */
 bool encode_catalog(const kingdom_catalog &catalog, std::vector<uint8_t> *bytes)
 {
 	if (!bytes || !catalog.revision || !records_are_sane(catalog.records))
@@ -531,6 +593,12 @@ bool encode_catalog(const kingdom_catalog &catalog, std::vector<uint8_t> *bytes)
 	return true;
 }
 
+/* Parse an on-disk image into a catalogue. False -- the whole file rejected --
+ * for a bad magic, version, length, revision, checksum or record count, a
+ * short or over-long payload, or records out of assoc_id order. A record whose
+ * FIELDS fail record_is_sane() is logged and dropped on its own and decoding
+ * continues, matching the MariaDB loader's per-row rejection; the next
+ * publish then writes the catalogue without it. */
 bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 {
 	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
@@ -590,13 +658,42 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 		record.upkeep_paid_through = static_cast<time_t>(upkeep);
 		/* Anchor stays unresolved and the record is clean: see the banner. */
 	}
-	if (payload.offset != payload.size || !records_are_sane(decoded.records))
+	if (payload.offset != payload.size || !records_are_ordered(decoded.records))
 		return false;
+
+	/* Per-record sanity is judged AFTER the layout is proven, and record by
+	 * record: one corrupt field costs that realm, not the catalogue. The
+	 * order check above ran over every record, dropped ones included, so a
+	 * kept subsequence is still strictly ordered. */
+	{
+		size_t kept = 0;
+		for (size_t index = 0; index < decoded.records.size(); ++index)
+		{
+			const kingdom_realm &record = decoded.records[index];
+
+			if (!record_is_sane(record))
+			{
+				logit(LOG_KINGDOM,
+				      "kingdom_db: dropping a corrupt realm record for "
+				      "association %d (claim %d, arrears %d); it is lost at "
+				      "the next write",
+				      record.assoc_id, record.highest_claim, record.arrears);
+				continue;
+			}
+			if (kept != index)
+				decoded.records[kept] = record;
+			kept++;
+		}
+		decoded.records.resize(kept);
+	}
 
 	*catalog = std::move(decoded);
 	return true;
 }
 
+/* Read and decode the realm authority under `root`. not_found for an absent
+ * file, io_error for an unreadable one, invalid for one that fails
+ * decode_catalog(); each failure is logged. */
 flat_result load_catalog(const std::string &root, kingdom_catalog *catalog)
 {
 	std::vector<uint8_t> bytes;
@@ -620,6 +717,9 @@ flat_result load_catalog(const std::string &root, kingdom_catalog *catalog)
 	return flat_result::ok;
 }
 
+/* Bump the catalogue's revision, encode it and write it atomically as the
+ * realm authority. False, logged, when the revision would wrap, the catalogue
+ * will not encode, or the write fails; the caller must hold the lock. */
 bool publish_catalog(const std::string &root, kingdom_catalog *catalog)
 {
 	if (!catalog || catalog->revision == std::numeric_limits<uint64_t>::max())
@@ -643,6 +743,9 @@ bool publish_catalog(const std::string &root, kingdom_catalog *catalog)
 	return true;
 }
 
+/* Take the advisory lock on the realm authority, storing its descriptor in
+ * *lock_fd for flatfile_lock_release(). False, logged, when the root is empty,
+ * the pointer is NULL or the lock cannot be taken. */
 bool acquire_lock(const std::string &root, int *lock_fd)
 {
 	std::string error;
@@ -658,8 +761,9 @@ bool acquire_lock(const std::string &root, int *lock_fd)
 }
 
 /* Insert or replace one realm, keeping the vector sorted by assoc_id so
- * records_are_sane() holds and the file stays canonical. `dirty` is a runtime
- * flag that is never encoded, so the stored copy carries it cleared. */
+ * records_are_sane() holds and the file stays canonical. `dirty` and
+ * `payment_pending` are runtime flags that are never encoded, so the stored
+ * copy carries both cleared. False only on allocation failure. */
 bool upsert_record(std::vector<kingdom_realm> *records, const kingdom_realm &realm)
 {
 	if (!records)
@@ -667,6 +771,7 @@ bool upsert_record(std::vector<kingdom_realm> *records, const kingdom_realm &rea
 
 	kingdom_realm stored = realm;
 	stored.dirty = false;
+	stored.payment_pending = false;
 
 	const auto position = std::lower_bound(records->begin(), records->end(), stored.assoc_id,
 					       [](const kingdom_realm &candidate, int value)
@@ -686,6 +791,11 @@ bool upsert_record(std::vector<kingdom_realm> *records, const kingdom_realm &rea
 }
 } /* namespace */
 
+/* Replace kingdom_realms with the records of the realm authority file,
+ * anchors unresolved and flags clear. True for an absent file (an empty
+ * world); false when persistence has no flat-file root, the file is
+ * unreadable or corrupt as a whole, or memory runs out. Individual corrupt
+ * records were already dropped and logged by decode_catalog(). */
 bool kingdom_db_load_all(void)
 {
 	kingdom_realms.clear();
@@ -729,6 +839,13 @@ bool kingdom_db_load_all(void)
 	return true;
 }
 
+/* Write ONE realm: under the lock, load the catalogue from disk, upsert this
+ * record into it and publish the whole file again. A missing file is created;
+ * a corrupt or unreadable one is never overwritten. False when the record
+ * fails record_is_sane(), there is no state root, the lock, the load, the
+ * merge or the publish fails. One full catalogue rewrite per call, which is
+ * why a paid realm waits for the sweep's batched kingdom_db_flush_dirty()
+ * instead of coming through here. */
 bool kingdom_db_save_realm(const kingdom_realm &realm)
 {
 	if (!record_is_sane(realm))
@@ -779,6 +896,10 @@ bool kingdom_db_save_realm(const kingdom_realm &realm)
 	return published;
 }
 
+/* Remove one realm's record from the authority file under the lock and
+ * publish it again. True when the file or the record is absent (idempotent);
+ * false for a non-positive id, no state root, or a failed lock, load or
+ * publish. */
 bool kingdom_db_delete_realm(int assoc_id)
 {
 	if (assoc_id <= 0)
@@ -833,12 +954,31 @@ bool kingdom_db_delete_realm(int assoc_id)
 	return published;
 }
 
+/* Merge every dirty realm into the on-disk catalogue and publish it ONCE,
+ * clearing dirty on the records that were written. A realm with
+ * payment_pending set is HELD BACK -- not merged, counted and logged -- because
+ * its paid mark's guild debit is not yet durable; kingdom_persist_payment()
+ * owns that pair. A record failing record_is_sane() is skipped and stays
+ * dirty. Nothing is written when no record qualifies; a failed publish leaves
+ * every flag set for the next flush. Never erases from the map. */
 void kingdom_db_flush_dirty(void)
 {
 	size_t pending = 0;
+	size_t held = 0;
 	for (const auto &entry : kingdom_realms)
-		if (entry.second.dirty)
+	{
+		if (!entry.second.dirty)
+			continue;
+		if (entry.second.payment_pending)
+			held++;
+		else
 			pending++;
+	}
+	if (held)
+		logit(LOG_KINGDOM,
+		      "kingdom_db_flush_dirty: %zu realm(s) held back (payment pending), "
+		      "%zu to write",
+		      held, pending);
 	if (!pending)
 		return;
 
@@ -874,6 +1014,8 @@ void kingdom_db_flush_dirty(void)
 	{
 		if (!entry.second.dirty)
 			continue;
+		if (entry.second.payment_pending)
+			continue; /* held back: counted and logged above */
 		if (!record_is_sane(entry.second))
 		{
 			logit(LOG_KINGDOM,
