@@ -2,7 +2,7 @@
 """Safety and backend contracts for player-initiated account deletion."""
 
 from _paths import SRC
-from contract_text import contains, index
+from contract_text import contains, count as source_count, index
 
 
 ACCOUNT = (SRC / "account.c").read_text(encoding="utf-8", errors="replace")
@@ -106,6 +106,15 @@ already_deleted = sql_delete[missing_account:fence_check]
 assert contains(already_deleted, "strtoull(row[0], NULL, 10) == 0")
 assert contains(already_deleted, "if (!already_deleted) goto fail;")
 assert contains(already_deleted, "return true;")
+account_locker_remove = sql_delete[
+    index(sql_delete, "/* Account lockers in the live locker subsystem") : index(
+        sql_delete, "struct account_delete_spec"
+    )
+]
+assert source_count(
+    account_locker_remove,
+    "written < 0 || static_cast<size_t>(written) >= sizeof(query)",
+) == 3
 player_remove = sql_delete.index('"DELETE FROM player_data WHERE pid=%d"')
 projection_remove = index(sql_delete, '{ "account_characters", "account_name" }')
 credential_remove = sql_delete.index('"DELETE FROM accounts WHERE LOWER(account_name)')

@@ -5723,39 +5723,46 @@ bool sql_delete_account(const char *name)
 	{
 		/* Account lockers in the live locker subsystem are keyed by this exact
 		 * finite set of names and do not carry an account foreign key. */
-		snprintf(query, sizeof(query),
-			 "UPDATE item_current_owner SET owner_type=8,owner_id=0,owner_context_id=0,"
-			 "state=2,item_revision=item_revision+1 WHERE owner_type=5 AND owner_id IN "
-			 "(SELECT id FROM lockers WHERE LOWER(locker_name) IN "
-			 "(LOWER(CONCAT('account.','%s','.0.locker')),"
-			 "LOWER(CONCAT('account.','%s','.1.locker')),"
-			 "LOWER(CONCAT('account.','%s','.2.locker')),"
-			 "LOWER(CONCAT('account.','%s','.3.locker')),"
-			 "LOWER(CONCAT('account.','%s','.4.locker'))))",
-			 escaped_account, escaped_account, escaped_account, escaped_account,
-			 escaped_account);
+		int written = snprintf(
+			query, sizeof(query),
+			"UPDATE item_current_owner SET owner_type=8,owner_id=0,owner_context_id=0,"
+			"state=2,item_revision=item_revision+1 WHERE owner_type=5 AND owner_id IN "
+			"(SELECT id FROM lockers WHERE LOWER(locker_name) IN "
+			"(LOWER(CONCAT('account.','%s','.0.locker')),"
+			"LOWER(CONCAT('account.','%s','.1.locker')),"
+			"LOWER(CONCAT('account.','%s','.2.locker')),"
+			"LOWER(CONCAT('account.','%s','.3.locker')),"
+			"LOWER(CONCAT('account.','%s','.4.locker'))))",
+			escaped_account, escaped_account, escaped_account, escaped_account,
+			escaped_account);
+		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
+			goto fail;
 		if (!sql_run_query(query))
 			goto fail;
-		snprintf(query, sizeof(query),
-			 "DELETE FROM locker_access WHERE LOWER(owner) IN "
-			 "(LOWER(CONCAT('account.','%s','.0.locker')),"
-			 "LOWER(CONCAT('account.','%s','.1.locker')),"
-			 "LOWER(CONCAT('account.','%s','.2.locker')),"
-			 "LOWER(CONCAT('account.','%s','.3.locker')),"
-			 "LOWER(CONCAT('account.','%s','.4.locker')))",
-			 escaped_account, escaped_account, escaped_account, escaped_account,
-			 escaped_account);
+		written = snprintf(query, sizeof(query),
+				   "DELETE FROM locker_access WHERE LOWER(owner) IN "
+				   "(LOWER(CONCAT('account.','%s','.0.locker')),"
+				   "LOWER(CONCAT('account.','%s','.1.locker')),"
+				   "LOWER(CONCAT('account.','%s','.2.locker')),"
+				   "LOWER(CONCAT('account.','%s','.3.locker')),"
+				   "LOWER(CONCAT('account.','%s','.4.locker')))",
+				   escaped_account, escaped_account, escaped_account,
+				   escaped_account, escaped_account);
+		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
+			goto fail;
 		if (!sql_run_query(query))
 			goto fail;
-		snprintf(query, sizeof(query),
-			 "DELETE FROM lockers WHERE LOWER(locker_name) IN "
-			 "(LOWER(CONCAT('account.','%s','.0.locker')),"
-			 "LOWER(CONCAT('account.','%s','.1.locker')),"
-			 "LOWER(CONCAT('account.','%s','.2.locker')),"
-			 "LOWER(CONCAT('account.','%s','.3.locker')),"
-			 "LOWER(CONCAT('account.','%s','.4.locker')))",
-			 escaped_account, escaped_account, escaped_account, escaped_account,
-			 escaped_account);
+		written = snprintf(query, sizeof(query),
+				   "DELETE FROM lockers WHERE LOWER(locker_name) IN "
+				   "(LOWER(CONCAT('account.','%s','.0.locker')),"
+				   "LOWER(CONCAT('account.','%s','.1.locker')),"
+				   "LOWER(CONCAT('account.','%s','.2.locker')),"
+				   "LOWER(CONCAT('account.','%s','.3.locker')),"
+				   "LOWER(CONCAT('account.','%s','.4.locker')))",
+				   escaped_account, escaped_account, escaped_account,
+				   escaped_account, escaped_account);
+		if (written < 0 || static_cast<size_t>(written) >= sizeof(query))
+			goto fail;
 		if (!sql_run_query(query))
 			goto fail;
 
