@@ -55,11 +55,16 @@
  *    sweep; it decides nothing about who owes. So the first sweep after a
  *    boot does not re-bill realms that paid shortly before the restart.
  *
- *    WHAT a payment took is persisted the same cycle it is taken:
- *    Guild::sub_copper() moves in-memory counters only, so every debited
- *    treasury gets a Guild::save() after the sweep, BEFORE the realm flush
- *    that records the payment. A crash between callbacks can therefore never
- *    keep the "paid" mark while dropping the coin it was paid with.
+ *    WHAT a payment took is persisted the moment it is taken:
+ *    Guild::sub_copper() moves in-memory counters only, so persist_payment()
+ *    writes the debited guild and the realm's paid mark TOGETHER, inside one
+ *    SQL transaction under MariaDB (Guild::save() joins it). A crash can then
+ *    neither keep the "paid" mark while dropping the coin (free upkeep) nor
+ *    keep the debit while dropping the mark (a double bill). The flat-file
+ *    build has no transaction to offer, so there the two writes are merely
+ *    paired, guild first: the surviving window is one realm's pair of writes
+ *    and it points the safe way round -- a crash inside it re-bills a paid
+ *    realm rather than un-billing one.
  *
  *  Sibling files inside src/kingdom/ are cited by FUNCTION NAME rather than by
  *  line: they are still being written alongside this one, so a line number
@@ -101,6 +106,7 @@
 #include "core/prototypes.h"
 #include "core/utility.h"
 #include "guild/assocs.h"
+#include "sql/sql_player.h" /* transaction helpers; stubs under __NO_MYSQL__ */
 
 #include <climits>
 #include <cstdio>
@@ -265,8 +271,9 @@ void kingdom_clear_arrears(kingdom_realm &realm)
  * The debit is IN-MEMORY ONLY: sub_copper() moves the counters and writes the
  * ledger line, but neither it nor sub_money() runs Guild::save()
  * (guild/assocs.c:655) -- the engine's one path, sql and flatfile both, that
- * writes the counters out. The sweep saves every charged guild after the loop;
- * a caller that skipped that would see the payment undone at the next boot. */
+ * writes the counters out. persist_payment() writes the guild and the realm
+ * together right after the debit; a caller that skipped that would see the
+ * payment undone at the next boot. */
 static bool charge_treasury(P_Guild guild, long copper_total)
 {
 	if (!guild)
@@ -275,6 +282,78 @@ static bool charge_treasury(P_Guild guild, long copper_total)
 		return true; /* nothing owed is trivially paid */
 
 	return guild->sub_copper(copper_total);
+}
+
+/* Guilds whose debited counters could not be written when they were charged.
+ * Retried at the top of every sweep until Guild::save() succeeds, so a debit
+ * that lives only in memory does not wait for some unrelated guild write. */
+static std::vector<int> kingdom_unsaved_guild_ids;
+
+static void remember_unsaved_guild(int assoc_id)
+{
+	for (const int id : kingdom_unsaved_guild_ids)
+		if (id == assoc_id)
+			return;
+	kingdom_unsaved_guild_ids.push_back(assoc_id);
+}
+
+static void retry_unsaved_guilds(void)
+{
+	for (size_t i = 0; i < kingdom_unsaved_guild_ids.size();)
+	{
+		P_Guild guild = get_guild_from_id(kingdom_unsaved_guild_ids[i]);
+
+		/* Gone, or written: either way there is nothing left to retry. */
+		if (!guild || guild->save())
+			kingdom_unsaved_guild_ids.erase(kingdom_unsaved_guild_ids.begin() +
+							static_cast<long>(i));
+		else
+			i++;
+	}
+}
+
+/* Make one realm's payment DURABLE: the guild's debited counters and the
+ * realm's paid mark, together.
+ *
+ * Under MariaDB the two writes share ONE transaction, so a crash between them
+ * can no longer double-bill (guild saved, realm not) or forgive (realm saved,
+ * guild not) a cycle; Guild::save() joins the transaction it finds open.
+ * Under the flat-file build sql_begin_transaction() is a stub that answers
+ * false, so the writes are merely PAIRED, guild first: the residual window is
+ * one realm's pair of writes rather than a whole sweep's, and it points the
+ * safe way round (a crash re-bills a paid realm rather than un-billing one).
+ *
+ * False leaves the realm dirty for kingdom_db_flush_dirty() to retry and
+ * queues the guild for retry_unsaved_guilds(); the debit itself stands in
+ * memory throughout, so nothing is charged twice. */
+static bool persist_payment(P_Guild guild, kingdom_realm &realm)
+{
+	const bool own_txn = !sql_in_transaction() && sql_begin_transaction();
+
+	bool ok = guild->save();
+	if (ok)
+		ok = kingdom_db_save_realm(realm);
+
+	if (own_txn)
+	{
+		if (ok)
+			ok = sql_commit();
+		if (!ok)
+			sql_rollback();
+	}
+
+	if (ok)
+	{
+		realm.dirty = false;
+		return true;
+	}
+
+	remember_unsaved_guild(realm.assoc_id);
+	logit(LOG_KINGDOM,
+	      "upkeep: payment for realm %d (association %d) is NOT yet durable; "
+	      "the realm record and the guild save will be retried",
+	      realm.realm_id, realm.assoc_id);
+	return false;
 }
 
 /* ------------------------------------------------------------------ *
@@ -358,14 +437,9 @@ void kingdom_upkeep_event(void)
 	for (const auto &entry : kingdom_realms)
 		assoc_ids.push_back(entry.first);
 
-	/* Association ids whose treasury was actually debited this sweep. Their
-	 * guilds must be SAVED after the loop -- the debit is in-memory until
-	 * Guild::save() runs (see charge_treasury) -- and ids rather than
-	 * P_Guild pointers are kept, on the same discipline as the realm
-	 * snapshot above. kingdom_realms is keyed by assoc_id, so no id can
-	 * appear twice. */
-	std::vector<int> charged_ids;
-	charged_ids.reserve(assoc_ids.size());
+	/* A debit whose guild write failed last cycle is still only in memory;
+	 * try again before charging anyone new. */
+	retry_unsaved_guilds();
 
 	const bool in_boot_grace =
 		(now >= static_cast<time_t>(boot_time)) &&
@@ -445,7 +519,7 @@ void kingdom_upkeep_event(void)
 			realm->upkeep_paid_through = now;
 			realm->dirty = true;
 			kingdom_clear_arrears(*realm);
-			charged_ids.push_back(realm->assoc_id);
+			persist_payment(guild, *realm);
 			paid++;
 			touched++;
 
@@ -517,37 +591,25 @@ void kingdom_upkeep_event(void)
 		      "missed_cycles %d, claims %d -> %d",
 		      realm->realm_id, realm->assoc_id, guild->get_name().c_str(), due,
 		      realm->arrears, realm->missed_cycles, claim_before, realm->highest_claim);
+
+		/* Make the rung -- and any reverted ring -- durable NOW rather
+		 * than at the sweep's end: a crash before a batched flush would
+		 * otherwise forgive the missed cycle. Failure leaves the record
+		 * dirty for the flush below to retry. */
+		if (kingdom_db_save_realm(*realm))
+			realm->dirty = false;
 	}
 
 	if (touched)
 	{
-		/* Persist the DEBITS, and do it BEFORE the realm flush that
-		 * records them as paid. The treasury counters live on the Guild
-		 * and Guild::save() (guild/assocs.c:655) is the engine's only
-		 * write path for them -- sql and flatfile both -- so a paid
-		 * realm flushed without its guild would have the payment undone
-		 * at the next boot while upkeep_paid_through stood: free upkeep
-		 * after any crash. This order points the remaining crash window
-		 * the safe way round: a crash between the two writes re-bills a
-		 * realm that already paid, rather than un-billing one.
-		 *
-		 * Batched here, like the realm flush, rather than inside the
-		 * sweep: flat-mode Guild::save() re-reads the whole association
-		 * store per call, which is fine once per charged guild per
-		 * cycle and not fine on the per-realm path. Re-looked-up by id
-		 * for the same reason the sweep re-looks-up realms. */
-		for (const int charged_id : charged_ids)
-		{
-			P_Guild charged_guild = get_guild_from_id(charged_id);
-			if (charged_guild)
-				charged_guild->save();
-		}
-
-		/* One flush for the whole sweep: the record writes are what make
-		 * this job expensive, and batching keeps the callback's cost off
-		 * the per-realm path. Both kingdom_db_flush_dirty() backends walk
-		 * kingdom_realms by reference and never erase from it, so doing it
-		 * after the sweep rather than inside it costs nothing. */
+		/* Every PAYMENT and every DEFAULT was made durable inside the loop
+		 * (persist_payment pairs the guild and realm writes; a default
+		 * saves its realm at once). What is still dirty here is the cheap
+		 * bookkeeping -- realms owing nothing, clock re-arms -- plus any
+		 * write that failed above, which this flush retries. Both
+		 * kingdom_db_flush_dirty() backends walk kingdom_realms by
+		 * reference and never erase from it, so flushing after the sweep
+		 * costs nothing. */
 		kingdom_db_flush_dirty();
 		logit(LOG_KINGDOM,
 		      "upkeep: cycle complete; %d realm(s) paid, %d in default, %d written", paid,

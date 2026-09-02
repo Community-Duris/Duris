@@ -305,7 +305,10 @@ class Guild
 
 	void name_title(P_char member, char *title_info);
 
-	void save();
+	/* Write the guild out, sql or flat file. True when the record is durable
+	 * (or unchanged); false when the write failed and was logged. Joins an
+	 * enclosing SQL transaction if the caller opened one. */
+	bool save();
 
 	static void initialize();
 	Guild(char *_name, unsigned int _racewar, unsigned int _id_number, unsigned long _prestige,

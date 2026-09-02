@@ -322,8 +322,8 @@ bool Guild::sub_copper(long amount)
 	if (amount == 0)
 		return TRUE;
 
-	const long long held = static_cast<long long>(copper) + 10LL * silver +
-			       100LL * gold + 1000LL * platinum;
+	const long long held =
+		static_cast<long long>(copper) + 10LL * silver + 100LL * gold + 1000LL * platinum;
 	if (held < static_cast<long long>(amount))
 		return FALSE;
 
@@ -387,11 +387,10 @@ bool Guild::sub_copper(long amount)
 	const long long amt = static_cast<long long>(amount);
 	write_transaction_to_ledger(
 		"System", "withdrew",
-		coins_to_string(
-			static_cast<int>(MIN(amt / 1000, static_cast<long long>(INT_MAX))),
-			static_cast<int>((amt % 1000) / 100),
-			static_cast<int>((amt % 100) / 10),
-			static_cast<int>(amt % 10), "&+y"));
+		coins_to_string(static_cast<int>(MIN(amt / 1000, static_cast<long long>(INT_MAX))),
+				static_cast<int>((amt % 1000) / 100),
+				static_cast<int>((amt % 100) / 10), static_cast<int>(amt % 10),
+				"&+y"));
 	return TRUE;
 }
 
@@ -772,7 +771,7 @@ void Guild::initialize()
 #endif
 }
 
-void Guild::save()
+bool Guild::save()
 {
 #ifdef __NO_MYSQL__
 	const char *root = persistence_mode_flatfile_root();
@@ -780,7 +779,7 @@ void Guild::save()
 	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 				  "flat guild save has no state root");
-		return;
+		return false;
 	}
 	update_online_members();
 	std::string error;
@@ -791,7 +790,7 @@ void Guild::save()
 	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 				  "flat guild read failed: %s", error.c_str());
-		return;
+		return false;
 	}
 	const flatfile_association_record *existing = NULL;
 	if (listed == flatfile_association_result::ok)
@@ -828,7 +827,7 @@ void Guild::save()
 			persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 					  "flat guild member identity is unavailable: %s",
 					  current->name);
-			return;
+			return false;
 		}
 		flatfile_association_member_record member = {};
 		member.pid = pid;
@@ -858,11 +857,19 @@ void Guild::save()
 	const auto saved = flatfile_association_save(root, record, &error);
 	if (saved != flatfile_association_result::ok &&
 	    saved != flatfile_association_result::unchanged)
+	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
 				  "flat guild save failed: %s", error.c_str());
+		return false;
+	}
+	return true;
 #else
 	if (!sql_save_guild(this))
+	{
 		debug("Guild::save: sql_save_guild failed for guild %u", id_number);
+		return false;
+	}
+	return true;
 #endif
 }
 
