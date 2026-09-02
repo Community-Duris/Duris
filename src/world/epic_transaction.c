@@ -62,6 +62,21 @@ bool publish(std::unordered_map<std::string, pending_epic>::iterator found, P_ch
 	pending.erase(found);
 	return true;
 }
+
+bool publish_completed_if_available(const std::string &key,
+				    const critical_operation_id &operation_id, P_char character)
+{
+	critical_completion completion = {};
+	if (!critical_command_coordinator_get_completed(operation_id, &completion))
+		return false;
+	auto found = pending.find(key);
+	if (found == pending.end())
+		return false;
+	found->second.completed = completion;
+	found->second.completion_ready = true;
+	publish(found, character);
+	return true;
+}
 } // namespace
 
 bool epic_transaction_publish_balance(P_char character, int64_t balance, uint64_t revision)
@@ -120,6 +135,8 @@ bool epic_transaction_submit_identified(P_char character, const critical_operati
 		return false;
 	}
 	++health.submitted;
+	if (submitted == critical_submit_result::attached)
+		publish_completed_if_available(key, operation_id, character);
 	health.pending = pending.size();
 	return true;
 }

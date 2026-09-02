@@ -2854,12 +2854,15 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 								       short_desc);
 						}
 					}
-					else if (chaos_material_pouch_is(tmp_object))
+					else if (chaos_material_pouch_is_active(tmp_object))
 					{
 						send_to_char(
 							chaos_material_pouch_contents_description(
 								tmp_object),
 							ch);
+						list_obj_to_char(tmp_object->contains, ch,
+								 LISTOBJ_SHORTDESC | LISTOBJ_STATS,
+								 FALSE);
 					}
 					else
 					{
@@ -3635,9 +3638,11 @@ void do_examine(P_char ch, char *argument, int /*cmd*/)
 			     ch, &tmp_char, &tmp_object);
 	}
 
-	if (tmp_object && chaos_material_pouch_is(tmp_object))
+	if (tmp_object && chaos_material_pouch_is_active(tmp_object))
 	{
 		send_to_char(chaos_material_pouch_contents_description(tmp_object), ch);
+		list_obj_to_char(tmp_object->contains, ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS,
+				 FALSE);
 		return;
 	}
 

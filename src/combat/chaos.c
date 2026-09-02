@@ -93,19 +93,22 @@ static void chaos_side(P_char ch, const char *arg)
 
 static void chaos_pouch_test_seed(P_char ch)
 {
-	static bool enhancement_ready = false;
 	static constexpr int vnums[] = { 400000, 400001, 400291, 18000, 22801 };
+	bool queued = false;
 	for (int vnum : vnums)
 	{
 		P_obj object = read_object(vnum, VIRTUAL);
-		if (object)
-			obj_to_char(object, ch);
+		if (!object)
+			continue;
+		if (item_creation_grant_submit_to_player(ch, object, ch))
+			queued = true;
+		else
+			extract_obj(object, FALSE);
 	}
-	if (!enhancement_ready)
-	{
+	if (queued)
+		item_creation_grant_mark_blocking(ch);
+	if (!enhancement_system_is_ready())
 		boot_enhancement_system();
-		enhancement_ready = true;
-	}
 	send_to_char("Chaos pouch test materials prepared.\r\n", ch);
 }
 

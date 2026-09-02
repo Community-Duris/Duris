@@ -854,6 +854,22 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			extract_obj(matHighest);
 			return;
 		}
+		if (chaos_pouch)
+		{
+			const chaos_material_pouch_usage generated[] = {
+				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowest) },
+				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighest) },
+			};
+			if (!chaos_material_pouch_can_record_generated(ch, generated,
+								       ARRAY_SIZE(generated)))
+			{
+				chaos_material_pouch_report_generated_failure(ch, "craft");
+				extract_obj(tobj);
+				extract_obj(matLowest);
+				extract_obj(matHighest);
+				return;
+			}
+		}
 
 		// Remove the materials from inventory...  Since we are changing the inventory
 		//   list, we need to use nextObj instead of just going to inventory->next_content.
@@ -925,7 +941,9 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowest) },
 				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighest) },
 			};
-			chaos_material_pouch_record_generated(ch, generated, ARRAY_SIZE(generated));
+			if (!chaos_material_pouch_record_generated(ch, generated,
+								   ARRAY_SIZE(generated)))
+				chaos_material_pouch_report_generated_failure(ch, "craft");
 		}
 		act("&+W$n &+Ldelicately opens their &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and starts their work...\r\n"
 		    "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
@@ -1428,6 +1446,20 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 			extract_obj(obj);
 			return;
 		}
+		if (chaos_pouch)
+		{
+			const chaos_material_pouch_usage generated[] = {
+				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowQuality) },
+				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighQuality) },
+			};
+			if (!chaos_material_pouch_can_record_generated(ch, generated,
+								       ARRAY_SIZE(generated)))
+			{
+				chaos_material_pouch_report_generated_failure(ch, "forge");
+				extract_obj(obj);
+				return;
+			}
+		}
 
 		// Ok, ch has the materials needed to create obj in inventory.. Now take them away, muahahah!
 		for (inventory = ch->carrying; inventory; inventory = invNextObj)
@@ -1481,7 +1513,9 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 				{ lowQualityMaterialVnum, static_cast<uint64_t>(numLowQuality) },
 				{ highQualityMaterialVnum, static_cast<uint64_t>(numHighQuality) },
 			};
-			chaos_material_pouch_record_generated(ch, generated, ARRAY_SIZE(generated));
+			if (!chaos_material_pouch_record_generated(ch, generated,
+								   ARRAY_SIZE(generated)))
+				chaos_material_pouch_report_generated_failure(ch, "forge");
 		}
 
 		act("&+W$n &+Lgently takes their &+ymaterials&+L, their &nflux&+L, and places them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"

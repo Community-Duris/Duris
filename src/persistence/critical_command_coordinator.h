@@ -92,6 +92,8 @@ bool critical_command_coordinator_init(const char *journal_directory, critical_a
 				       unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
+bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
+						critical_completion *completion);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);

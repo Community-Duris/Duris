@@ -4216,14 +4216,14 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 		{
 			if (chaos_pouch_target)
 			{
-				if (!chaos_material_pouch_collect_object(s_obj, o_obj))
+				if (!chaos_material_pouch_collect_object(ch, s_obj, o_obj))
 				{
 					send_to_char(
-						"The Chaos craft pouch only collects supported crafting materials.\r\n",
+						"The Chaos craft pouch collection could not start; nothing changed.\r\n",
 						ch);
 					return;
 				}
-				count = 1;
+				return;
 			}
 			else
 				count = put(ch, o_obj, s_obj, TRUE);
@@ -4235,7 +4235,19 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 		{
 			count = chaos_material_pouch_collect_inventory(
 				ch, s_obj, type == PUT_ALLDOT ? obj_name : NULL);
-			attempted = count > 0;
+			if (count < 0)
+			{
+				send_to_char(
+					"The Chaos craft pouch collection could not start; nothing changed.\r\n",
+					ch);
+			}
+			else if (count == 0)
+			{
+				send_to_char(
+					"The Chaos craft pouch only collects supported crafting materials.\r\n",
+					ch);
+			}
+			return;
 		}
 		else
 		{

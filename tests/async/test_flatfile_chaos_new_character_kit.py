@@ -195,6 +195,7 @@ def inspect_chaos_material_pouch(client: MudClient, retrieve: bool = True) -> No
 
         client.send("chaos pouchseed")
         client.expect("Chaos pouch test materials prepared", timeout=30)
+        client.expect("Your starter kit is ready.", timeout=30)
         client.expect("Pos: standing >", timeout=30)
         for _ in range(20):
             client.transcript.clear()
@@ -208,6 +209,15 @@ def inspect_chaos_material_pouch(client: MudClient, retrieve: bool = True) -> No
         client.send("put all pouch")
         client.expect("You record 3 collected materials", timeout=30)
         client.expect("Pos: standing >", timeout=30)
+        client.transcript.clear()
+        client.send("inventory")
+        post_collection_inventory = client.expect("Pos: standing >", timeout=30)
+        require(
+            "small feather" not in post_collection_inventory
+            and "strange green stone" not in post_collection_inventory,
+            "put all pouch left collected materials in the player inventory:\n"
+            + post_collection_inventory,
+        )
 
         client.transcript.clear()
         client.send("look in pouch")
@@ -216,8 +226,9 @@ def inspect_chaos_material_pouch(client: MudClient, retrieve: bool = True) -> No
         client.expect("0 generated / 1 collected", timeout=30)
         client.expect("400000", timeout=30)
         scoreboard = bytes(client.transcript).decode("utf-8", errors="replace")
+        positions = [scoreboard.find(f"[{vnum}]") for vnum in (400000, 400001, 400291)]
         require(
-            scoreboard.index("[400000]") < scoreboard.index("[400001]") < scoreboard.index("[400291]"),
+            all(position >= 0 for position in positions) and positions == sorted(positions),
             "pouch scoreboard did not sort collected materials by VNUM:\n" + scoreboard,
         )
         client.expect("Pos: standing >", timeout=30)

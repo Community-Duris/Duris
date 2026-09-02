@@ -56,6 +56,7 @@
 #include "sql/sql.h"
 #include "sql/sql_player.h"
 #include "persistence/critical_command.h"
+#include "persistence/persistence_checkpoint.h"
 #include "world/vnum.obj.h"
 #include "world/vnum.room.h"
 #include "net/ws_handlers.h"
@@ -429,6 +430,16 @@ static bool chaos_starter_operation_id(P_char ch, uint32_t domain,
 	return critical_operation_id_derive(seed, domain, 1, operation_id);
 }
 
+static void mark_chaos_starter_reward_intents(P_char ch)
+{
+	if (!ch || !chaos_starter_bonuses_enabled())
+		return;
+	if (chaos_starter_epic_points_enabled())
+		SET_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_EPIC_PENDING);
+	if (chaos_starter_bank_platinum_enabled())
+		SET_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING);
+}
+
 static void chaos_epic_starter_grant_complete(P_char ch, bool committed,
 					      const epic_command_result &result,
 					      unsigned int error_code, const uint8_t * /*context*/,
@@ -445,6 +456,11 @@ static void chaos_epic_starter_grant_complete(P_char ch, bool committed,
 	}
 	else
 	{
+		if (ch)
+		{
+			REMOVE_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_EPIC_PENDING);
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+		}
 		logit(LOG_FILE, "CHAOS starter epic grant committed for pid %d balance=%lld",
 		      ch ? GET_PID(ch) : 0, (long long)result.balance);
 		statuslog(56, "CHAOS starter epic grant committed for pid %d balance=%lld",
@@ -468,6 +484,11 @@ static void chaos_bank_starter_grant_complete(P_char ch, bool committed,
 	}
 	else
 	{
+		if (ch)
+		{
+			REMOVE_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING);
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+		}
 		logit(LOG_FILE, "CHAOS starter bank grant committed for pid %d platinum=%lld",
 		      ch ? GET_PID(ch) : 0, (long long)result.bank.amount[3]);
 		statuslog(56, "CHAOS starter bank grant committed for pid %d platinum=%lld",
@@ -477,7 +498,8 @@ static void chaos_bank_starter_grant_complete(P_char ch, bool committed,
 
 static void schedule_chaos_starting_ledgers(P_char ch)
 {
-	if (!ch || !chaos_starter_bonuses_enabled())
+	if (!ch || !chaos_starter_bonuses_enabled() ||
+	    !IS_SET(ch->specials.act3, PLR3_CHAOS_STARTER_EPIC_PENDING))
 		return;
 	if (chaos_starter_epic_points_enabled())
 	{
@@ -498,7 +520,8 @@ static void schedule_chaos_starting_ledgers(P_char ch)
 
 static void schedule_chaos_starting_bank(P_char ch)
 {
-	if (!ch || !chaos_starter_bonuses_enabled() || !chaos_starter_bank_platinum_enabled())
+	if (!ch || !chaos_starter_bonuses_enabled() || !chaos_starter_bank_platinum_enabled() ||
+	    !IS_SET(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING))
 		return;
 	currency_vector bank_delta = {};
 	bank_delta.amount[3] = 1000000;
@@ -623,6 +646,7 @@ void schedule_chaos_new_character_kit_before_entry(P_char ch)
 {
 	if (!ch || !chaos_mud_enabled())
 		return;
+	mark_chaos_starter_reward_intents(ch);
 	if (!writeCharacter(ch, 2, NOWHERE))
 	{
 		statuslog(56, "&+RALERT&n: new-player baseline save failed; CHAOS kit withheld");
@@ -3112,27 +3136,27 @@ void enter_game(P_desc d)
 		loginlog(GET_LEVEL(ch), "&+GIMMORTAL&n: (%s) [%s] has logged on.%s", GET_NAME(ch),
 			 d->host, Gbuf1);
 
-	//  /* multiplay check */
-	//  for (P_desc k = descriptor_list; k; k = k->next)
-	//  {
-	//    if( d == k || !k->character )
-	//      continue;
-	//
-	//    if (k->connected == CON_PLAYING && d->host && k->host && !str_cmp(d->host, k->host) )
-	//    {
-	//      logit(LOG_STATUS, "%s and %s are logged in from the same IP address",
-	//            d->character->player.name, k->character->player.name);
-	//      sql_log(d->character, PLAYERLOG, "%s and %s logged in from same IP address", d->character->player.name, k->character->player.name);
-	//
-	//      if( d->character->in_room != k->character->in_room )
-	//      {
-	//        wizlog(AVATAR, "%s and %s are logged in from the same IP address but not in the same room",
-	//               d->character->player.name, k->character->player.name);
-	//      }
-	//    }
-	//  }
+		//  /* multiplay check */
+		//  for (P_desc k = descriptor_list; k; k = k->next)
+		//  {
+		//    if( d == k || !k->character )
+		//      continue;
+		//
+		//    if (k->connected == CON_PLAYING && d->host && k->host && !str_cmp(d->host, k->host) )
+		//    {
+		//      logit(LOG_STATUS, "%s and %s are logged in from the same IP address",
+		//            d->character->player.name, k->character->player.name);
+		//      sql_log(d->character, PLAYERLOG, "%s and %s logged in from same IP address", d->character->player.name, k->character->player.name);
+		//
+		//      if( d->character->in_room != k->character->in_room )
+		//      {
+		//        wizlog(AVATAR, "%s and %s are logged in from the same IP address but not in the same room",
+		//               d->character->player.name, k->character->player.name);
+		//      }
+		//    }
+		//  }
 
-	// CTF - level them up, and setbit hardcore off them!
+		// CTF - level them up, and setbit hardcore off them!
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	// setbit hardcore off according to policy
 	if (hardcore_config_get()->disable_in_ctf)
@@ -3177,6 +3201,9 @@ void enter_game(P_desc d)
 	}
 
 	if (new_character)
+		mark_chaos_starter_reward_intents(ch);
+	if (IS_SET(ch->specials.act3, PLR3_CHAOS_STARTER_EPIC_PENDING) ||
+	    IS_SET(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING))
 	{
 		schedule_chaos_starting_ledgers(ch);
 		schedule_chaos_starting_bank(ch);

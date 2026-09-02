@@ -2,7 +2,9 @@
 #include "combat/chaos_materials.h"
 
 #include "economy/tradeskill.h"
+#include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
+#include "net/comm.h"
 #include "persistence/persistence_checkpoint.h"
 
 #include <algorithm>
@@ -15,10 +17,12 @@
 #include <new>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 extern P_index obj_index;
+extern P_obj object_list;
 
 namespace
 {
@@ -35,6 +39,22 @@ struct pouch_score
 
 using score_table = std::array<pouch_score, CHAOS_MATERIAL_TYPES>;
 using usage_table = std::array<chaos_material_pouch_usage, CHAOS_MATERIAL_TYPES>;
+
+struct pending_pouch_collection
+{
+	uint64_t pouch_uid;
+	std::vector<uint64_t> material_uids;
+	usage_table usage;
+	size_t usage_count;
+};
+
+struct pouch_collection_context
+{
+	uint32_t actor_pid;
+	uint64_t pouch_uid;
+};
+
+std::unordered_map<uint32_t, pending_pouch_collection> pending_collections;
 
 struct ledger_chunk
 {
@@ -268,7 +288,8 @@ bool merge_usage(const chaos_material_pouch_usage *usage, size_t usage_count, us
 }
 
 bool update_scores(P_obj pouch, const chaos_material_pouch_usage *usage, size_t usage_count,
-		   bool generated)
+		   bool generated, usage_table *merged_output = nullptr,
+		   size_t *merged_count_output = nullptr)
 {
 	if (!chaos_material_pouch_is_active(pouch))
 		return false;
@@ -276,6 +297,10 @@ bool update_scores(P_obj pouch, const chaos_material_pouch_usage *usage, size_t 
 	size_t merged_count = 0;
 	if (!merge_usage(usage, usage_count, &merged, &merged_count))
 		return false;
+	if (merged_output)
+		*merged_output = merged;
+	if (merged_count_output)
+		*merged_count_output = merged_count;
 	score_table scores = {};
 	if (!read_scores(pouch, &scores))
 	{
@@ -327,14 +352,169 @@ void echo_generated(P_char ch, const usage_table &usage, size_t usage_count)
 	output << ".\r\n";
 	send_to_char(output.str().c_str(), ch);
 }
+
+P_obj find_live_object(uint64_t uid)
+{
+	if (!uid)
+		return nullptr;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+			return object;
+	return nullptr;
+}
+
+void extract_collected_objects(const pending_pouch_collection &collection)
+{
+	for (uint64_t uid : collection.material_uids)
+		if (P_obj material = find_live_object(uid))
+			extract_obj(material, FALSE);
+}
+
+void chaos_material_pouch_collection_completion(P_char actor, bool committed,
+						const item_transfer_result &,
+						unsigned int error_code, const uint8_t *encoded,
+						size_t encoded_size)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	auto found = pending_collections.find(actor_pid);
+	if (found == pending_collections.end())
+		return;
+	pending_pouch_collection collection = std::move(found->second);
+	pending_collections.erase(found);
+
+	pouch_collection_context context = {};
+	const bool valid_context = encoded && encoded_size == sizeof(context);
+	if (valid_context)
+		memcpy(&context, encoded, sizeof(context));
+	if (!valid_context || context.actor_pid != actor_pid ||
+	    context.pouch_uid != collection.pouch_uid)
+	{
+		logit(LOG_FILE,
+		      "CHAOS pouch collection completion had invalid context pid=%u pouch_uid=%llu",
+		      actor_pid, static_cast<unsigned long long>(collection.pouch_uid));
+	}
+	if (!committed)
+	{
+		logit(LOG_FILE,
+		      "CHAOS pouch collection did not commit pid=%u pouch_uid=%llu error=%u",
+		      actor_pid, static_cast<unsigned long long>(collection.pouch_uid), error_code);
+		P_obj pouch = find_live_object(collection.pouch_uid);
+		const bool reverted =
+			pouch && chaos_material_pouch_revert_collected(
+					 pouch, collection.usage.data(), collection.usage_count);
+		if (reverted)
+		{
+			mark_player_dirty_components(actor_pid, PLAYER_COMPONENT_STATUS |
+									PLAYER_COMPONENT_EQUIPMENT |
+									PLAYER_COMPONENT_INVENTORY);
+			send_to_char(
+				"The Chaos craft pouch collection did not commit; materials were retained. Please try again.\r\n",
+				actor);
+		}
+		else
+		{
+			logit(LOG_FILE,
+			      "CHAOS pouch collection could not roll back scoreboard pid=%u pouch_uid=%llu",
+			      actor_pid, static_cast<unsigned long long>(collection.pouch_uid));
+			send_to_char(
+				"The Chaos craft pouch collection did not commit, but its scoreboard could not be rolled back; please contact staff before retrying.\r\n",
+				actor);
+		}
+		return;
+	}
+
+	P_obj pouch = find_live_object(collection.pouch_uid);
+	extract_collected_objects(collection);
+	mark_player_dirty_components(actor_pid, PLAYER_COMPONENT_STATUS |
+							PLAYER_COMPONENT_EQUIPMENT |
+							PLAYER_COMPONENT_INVENTORY);
+
+	const int count = static_cast<int>(collection.material_uids.size());
+	if (pouch)
+	{
+		char message[MAX_STRING_LENGTH];
+		snprintf(message, sizeof(message),
+			 "You record %d collected material%s in $p's scoreboard.", count,
+			 count == 1 ? "" : "s");
+		act(message, FALSE, actor, pouch, 0, TO_CHAR);
+		act("$n records collected materials in $p's scoreboard.", TRUE, actor, pouch, 0,
+		    TO_ROOM);
+	}
+	else
+		send_to_char("The Chaos craft pouch recorded the collected materials.\r\n", actor);
+}
+
+bool submit_pouch_collection(P_char actor, P_obj pouch, P_obj const *roots, size_t root_count,
+			     const usage_table &usage, size_t usage_count)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 ||
+	    !chaos_material_pouch_is_active(pouch) || !pouch->obj_uid || !roots || !root_count ||
+	    !usage_count || usage_count > usage.size())
+		return false;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (pending_collections.find(actor_pid) != pending_collections.end())
+		return false;
+
+	pending_pouch_collection collection = {};
+	collection.pouch_uid = pouch->obj_uid;
+	collection.usage = usage;
+	collection.usage_count = usage_count;
+	try
+	{
+		collection.material_uids.reserve(root_count);
+		for (size_t index = 0; index < root_count; ++index)
+		{
+			if (!roots[index] || !roots[index]->obj_uid)
+				return false;
+			collection.material_uids.push_back(roots[index]->obj_uid);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!pending_collections.emplace(actor_pid, std::move(collection)).second)
+		return false;
+	if (!chaos_material_pouch_record_collected(pouch, usage.data(), usage_count))
+	{
+		pending_collections.erase(actor_pid);
+		return false;
+	}
+
+	const item_owner_identity source = { item_owner_type::player,
+					     static_cast<uint64_t>(GET_PID(actor)), 0 };
+	const item_owner_identity destination = { item_owner_type::destruction, 0, 0 };
+	const pouch_collection_context context = { actor_pid, pouch->obj_uid };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit_batch(actor, roots, root_count, NULL, source,
+						    destination, item_transfer_reason::destruction,
+						    0, chaos_material_pouch_collection_completion,
+						    &context, sizeof(context), NULL, &reject))
+	{
+		if (!chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count))
+			logit(LOG_FILE,
+			      "CHAOS pouch collection could not roll back scoreboard pid=%u pouch_uid=%llu",
+			      actor_pid, static_cast<unsigned long long>(pouch->obj_uid));
+		pending_collections.erase(actor_pid);
+		logit(LOG_FILE, "CHAOS pouch collection could not be queued pid=%u reason=%s",
+		      actor_pid, item_movement_reject_name(reject));
+		return false;
+	}
+	return true;
+}
 } // namespace
 
 P_obj chaos_material_pouch_find(P_char ch)
 {
 	if (!ch || IS_NPC(ch) || !chaos_starter_materials_enabled())
 		return nullptr;
-	for (P_obj object = ch->carrying; object; object = object->next_content)
-		if (P_obj pouch = chaos_material_pouch_find_nested(object))
+	const size_t budget = CHAOS_MATERIAL_POUCH_SEARCH_BUDGET;
+	size_t carrying_budget = budget;
+	for (P_obj object = ch->carrying; object && carrying_budget;
+	     object = object->next_content, --carrying_budget)
+		if (P_obj pouch = chaos_material_pouch_find_nested(object, budget))
 			return pouch;
 	for (int slot = WEAR_ATTACH_BELT_1; slot <= WEAR_ATTACH_BELT_3; ++slot)
 		if (P_obj pouch = chaos_material_pouch_find_nested(ch->equipment[slot]))
@@ -347,9 +527,51 @@ bool chaos_material_pouch_available(P_char ch)
 	return chaos_material_pouch_find(ch) != nullptr;
 }
 
+void chaos_material_pouch_report_generated_failure(P_char ch, const char *operation)
+{
+	const char *operation_name = operation && *operation ? operation : "unknown";
+	logit(LOG_FILE, "CHAOS pouch generated-material ledger write failed operation=%s pid=%d",
+	      operation_name, ch ? GET_PID(ch) : 0);
+	if (ch)
+		send_to_char(
+			"The Chaos craft pouch scoreboard could not record the generated materials; please contact staff.\r\n",
+			ch);
+}
+
 bool chaos_material_pouch_vnum_supported(int vnum)
 {
 	return material_index(vnum) >= 0;
+}
+
+bool chaos_material_pouch_can_record_generated(P_char ch, const chaos_material_pouch_usage *usage,
+					       size_t usage_count)
+{
+	P_obj pouch = chaos_material_pouch_find(ch);
+	if (!pouch)
+		return false;
+	usage_table merged = {};
+	size_t merged_count = 0;
+	if (!merge_usage(usage, usage_count, &merged, &merged_count))
+		return false;
+	score_table scores = {};
+	if (!read_scores(pouch, &scores))
+		return false;
+	for (size_t index = 0; index < merged_count; ++index)
+	{
+		const int slot = material_index(merged[index].vnum);
+		if (scores[slot].generated > UINT64_MAX - merged[index].count)
+			return false;
+		scores[slot].generated += merged[index].count;
+	}
+	try
+	{
+		std::vector<std::string> chunks;
+		return build_ledger_chunks(scores, &chunks);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }
 
 bool chaos_material_pouch_record_generated(P_char ch, const chaos_material_pouch_usage *usage,
@@ -360,8 +582,7 @@ bool chaos_material_pouch_record_generated(P_char ch, const chaos_material_pouch
 		return false;
 	usage_table merged = {};
 	size_t merged_count = 0;
-	if (!merge_usage(usage, usage_count, &merged, &merged_count) ||
-	    !update_scores(pouch, usage, usage_count, true))
+	if (!update_scores(pouch, usage, usage_count, true, &merged, &merged_count))
 		return false;
 	if (merged_count)
 		echo_generated(ch, merged, merged_count);
@@ -378,17 +599,40 @@ bool chaos_material_pouch_record_collected(P_obj pouch, const chaos_material_pou
 	return update_scores(pouch, usage, usage_count, false);
 }
 
-bool chaos_material_pouch_collect_object(P_obj pouch, P_obj material)
+bool chaos_material_pouch_revert_collected(P_obj pouch, const chaos_material_pouch_usage *usage,
+					   size_t usage_count)
 {
-	if (!chaos_material_pouch_is_active(pouch) || !material || material == pouch ||
+	if (!chaos_material_pouch_is_active(pouch))
+		return false;
+	usage_table merged = {};
+	size_t merged_count = 0;
+	if (!merge_usage(usage, usage_count, &merged, &merged_count))
+		return false;
+	score_table scores = {};
+	if (!read_scores(pouch, &scores))
+		return false;
+	for (size_t index = 0; index < merged_count; ++index)
+	{
+		const int slot = material_index(merged[index].vnum);
+		if (scores[slot].collected < merged[index].count)
+			return false;
+		scores[slot].collected -= merged[index].count;
+	}
+	return write_scores(pouch, scores);
+}
+
+bool chaos_material_pouch_collect_object(P_char ch, P_obj pouch, P_obj material)
+{
+	if (!ch || !chaos_material_pouch_is_active(pouch) || !material || material == pouch ||
 	    !chaos_material_pouch_vnum_supported(OBJ_VNUM(material)))
 		return false;
 	const chaos_material_pouch_usage usage = { OBJ_VNUM(material), 1 };
-	if (!chaos_material_pouch_record_collected(pouch, &usage, 1))
+	const P_obj roots[] = { material };
+	usage_table merged = {};
+	size_t merged_count = 0;
+	if (!merge_usage(&usage, 1, &merged, &merged_count))
 		return false;
-	obj_from_char(material);
-	extract_obj(material);
-	return true;
+	return submit_pouch_collection(ch, pouch, roots, ARRAY_SIZE(roots), merged, merged_count);
 }
 
 int chaos_material_pouch_collect_inventory(P_char ch, P_obj pouch, const char *filter)
@@ -424,16 +668,13 @@ int chaos_material_pouch_collect_inventory(P_char ch, P_obj pouch, const char *f
 	}
 	catch (const std::bad_alloc &)
 	{
-		return 0;
+		return -1;
 	}
-	if (selected.empty() ||
-	    !chaos_material_pouch_record_collected(pouch, usage.data(), usage_count))
+	if (selected.empty())
 		return 0;
-	for (P_obj object : selected)
-	{
-		obj_from_char(object);
-		extract_obj(object);
-	}
+	if (!submit_pouch_collection(ch, pouch, selected.data(), selected.size(), usage,
+				     usage_count))
+		return -1;
 	return static_cast<int>(selected.size());
 }
 

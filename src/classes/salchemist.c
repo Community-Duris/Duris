@@ -1241,7 +1241,12 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	if (virtual_jewel)
 	{
 		const chaos_material_pouch_usage generated = { OBJ_VNUM(jewel), 1 };
-		chaos_material_pouch_record_generated(ch, &generated, 1);
+		if (!chaos_material_pouch_record_generated(ch, &generated, 1))
+		{
+			chaos_material_pouch_report_generated_failure(ch, "encrust");
+			extract_obj(jewel);
+			return;
+		}
 	}
 
 	snprintf(buf2, MAX_STRING_LENGTH, "%s attempts to encrust %s with %s...", GET_NAME(ch),

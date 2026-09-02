@@ -287,6 +287,10 @@ int main(int argc, char **argv)
         return critical_command_coordinator_health_copy().completed == 9;
     });
     assert(state.attempts[4] == 2);
+    critical_completion cached = {};
+    assert(critical_command_coordinator_get_completed(d.operation_id, &cached));
+    assert(critical_operation_id_equal(cached.operation_id, d.operation_id));
+    assert(cached.outcome == critical_apply_outcome::applied);
     auto health = critical_command_coordinator_health_copy();
     assert(health.ambiguous == 1 && health.retries == 1 && health.fenced_keys == 0);
     assert(critical_command_coordinator_submit(d) == critical_submit_result::attached);
@@ -362,6 +366,7 @@ for contract in (
     "CRITICAL_COORDINATOR_MAX_BYTES = 64 * 1024 * 1024",
     "CRITICAL_COORDINATOR_MAX_RETRIES = 8",
     "CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES = 8 * 1024 * 1024",
+    "critical_command_coordinator_get_completed",
 ):
     assert contract in HEADER
 for forbidden in ("P_char", "P_obj", "MYSQL", "redis", "sql_"):

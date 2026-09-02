@@ -56,6 +56,7 @@ struct enhance_essence_zone_rule
 };
 static struct enhance_essence_zone_rule enhance_essence_zone_rules[ENHANCE_ESSENCE_MAX_ZONE_RULES];
 static int enhance_essence_zone_rule_count = 0;
+static bool enhancement_system_ready = false;
 
 /* World tables needed to map an object template vnum back to its origin zone. */
 extern P_room world;
@@ -532,10 +533,11 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 	return plan->slot_count > 0;
 }
 
-static bool superior_plan_has_materials(P_char ch, const struct superior_enhancement_plan *plan)
+static bool superior_plan_has_materials(P_char ch, P_obj pouch,
+					const struct superior_enhancement_plan *plan)
 {
 	int i;
-	if (chaos_material_pouch_available(ch))
+	if (pouch)
 		return TRUE;
 	for (i = 0; i < plan->material_count; i++)
 		if (vnum_in_inv(ch, plan->materials[i].vnum) < plan->materials[i].count)
@@ -544,7 +546,7 @@ static bool superior_plan_has_materials(P_char ch, const struct superior_enhance
 }
 
 /* Aggregate-only preview: do not reveal affected stat names, values, or caps. */
-static void show_superior_requirements(P_char ch, P_obj item,
+static void show_superior_requirements(P_char ch, P_obj item, P_obj pouch,
 				       const struct superior_enhancement_plan *plan)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -558,7 +560,7 @@ static void show_superior_requirements(P_char ch, P_obj item,
 		 "&+YSuperior enhancements remaining:&n &+W%d&n\r\n"
 		 "&+YMaterials required for the next enhancement:&n\r\n",
 		 plan->remaining_enhancements);
-	if (chaos_material_pouch_available(ch))
+	if (pouch)
 		strcat(buf, "  Chaos craft pouch supplies all raw materials (not consumed).\r\n");
 	else
 		for (i = 0; i < plan->material_count; i++)
@@ -574,14 +576,14 @@ static void show_superior_requirements(P_char ch, P_obj item,
 }
 
 /* Validate first, then consume the entire aggregate tribute and upgrade every planned slot. */
-static bool perform_superior_enhancement(P_char ch, P_obj source,
+static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 					 const struct superior_enhancement_plan *plan)
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
 	int cost = enhance_stat_platinum_base + itemvalue(source) * enhance_stat_platinum_per_ival;
 
-	if (!superior_plan_has_materials(ch, plan))
+	if (!superior_plan_has_materials(ch, pouch, plan))
 		return FALSE;
 	if (GET_MONEY(ch) < cost)
 	{
@@ -591,22 +593,35 @@ static bool perform_superior_enhancement(P_char ch, P_obj source,
 		send_to_char(buf, ch);
 		return FALSE;
 	}
-
-	/* All availability checks precede every state mutation, preserving atomicity. */
-	SUB_MONEY(ch, cost, 0);
-	if (!chaos_material_pouch_available(ch))
-		for (i = 0; i < plan->material_count; i++)
-			vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
-	for (i = 0; i < plan->slot_count; i++)
-		source->affected[plan->slots[i]].modifier++;
-	mark_item_superior(source);
-	if (chaos_material_pouch_available(ch))
+	if (pouch)
 	{
 		chaos_material_pouch_usage generated[MAX_SUPERIOR_MATERIALS];
 		for (i = 0; i < plan->material_count; ++i)
 			generated[i] = { plan->materials[i].vnum,
 					 static_cast<uint64_t>(plan->materials[i].count) };
-		chaos_material_pouch_record_generated(ch, generated, plan->material_count);
+		if (!chaos_material_pouch_can_record_generated(ch, generated, plan->material_count))
+		{
+			chaos_material_pouch_report_generated_failure(ch, "superior-enhance");
+			return FALSE;
+		}
+	}
+
+	/* All availability checks precede every state mutation, preserving atomicity. */
+	SUB_MONEY(ch, cost, 0);
+	if (!pouch)
+		for (i = 0; i < plan->material_count; i++)
+			vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count);
+	for (i = 0; i < plan->slot_count; i++)
+		source->affected[plan->slots[i]].modifier++;
+	mark_item_superior(source);
+	if (pouch)
+	{
+		chaos_material_pouch_usage generated[MAX_SUPERIOR_MATERIALS];
+		for (i = 0; i < plan->material_count; ++i)
+			generated[i] = { plan->materials[i].vnum,
+					 static_cast<uint64_t>(plan->materials[i].count) };
+		if (!chaos_material_pouch_record_generated(ch, generated, plan->material_count))
+			chaos_material_pouch_report_generated_failure(ch, "superior-enhance");
 	}
 
 	snprintf(
@@ -698,12 +713,13 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 				ch);
 			return;
 		}
-		if (!superior_plan_has_materials(ch, &plan))
+		pouch = chaos_material_pouch_find(ch);
+		if (!superior_plan_has_materials(ch, pouch, &plan))
 		{
-			show_superior_requirements(ch, source, &plan);
+			show_superior_requirements(ch, source, pouch, &plan);
 			return;
 		}
-		perform_superior_enhancement(ch, source, &plan);
+		perform_superior_enhancement(ch, source, pouch, &plan);
 		return;
 	}
 
@@ -731,7 +747,7 @@ void do_enhance(P_char ch, char *argument, int /*cmd*/)
 		{
 			struct superior_enhancement_plan plan;
 			if (build_superior_enhancement_plan(source, &plan))
-				show_superior_requirements(ch, source, &plan);
+				show_superior_requirements(ch, source, pouch, &plan);
 			else
 				send_to_char(
 					"&+yThis item has no further superior enhancement available.\r\n",
@@ -1965,10 +1981,18 @@ void load_enhance_index(void)
 /* Enhancement lifecycle/event boundary. Other gameplay systems call these
 			* hooks, but enhancement configuration and reward-selection policy remains
 			* owned by this module. */
+bool enhancement_system_is_ready(void)
+{
+	return enhancement_system_ready;
+}
+
 void boot_enhancement_system(void)
 {
+	if (enhancement_system_ready)
+		return;
 	load_enhance_config();
 	load_enhance_index();
+	enhancement_system_ready = true;
 }
 
 void enhance_on_eligible_npc_death(P_char ch, P_char killer)

@@ -34,6 +34,7 @@ CURRENCY_TRANSACTION_HEADER = source("currency_transaction.h").read_text(encodin
 CURRENCY_COMMAND = source("currency_command.c").read_text(encoding="utf-8", errors="replace")
 WS_HANDLERS = source("ws_handlers.c").read_text(encoding="utf-8", errors="replace")
 GUILD = source("guild.c").read_text(encoding="utf-8", errors="replace")
+STRUCTS = source("structs.h").read_text(encoding="utf-8", errors="replace")
 ENV_EXAMPLE = (ROOT / ".env.example").read_text(encoding="utf-8", errors="replace")
 
 switches = (
@@ -65,9 +66,18 @@ skill_grant = NANNY.index("grant_epic_skills_without_specialization(ch);")
 tattoo_init = NANNY.index("grant_chaos_tattoo_achievement(ch);")
 post_entry_save = NANNY.index("if (!writeCharacter(ch, 1, NOWHERE))")
 assert baseline < kit < ledgers
+assert "mark_chaos_starter_reward_intents(ch);\n\tif (!writeCharacter(ch, 2, NOWHERE))" in NANNY
 assert chaos_level < skill_grant < tattoo_init < post_entry_save
 assert "if (new_character && chaos_starter_epic_skills_enabled())" in NANNY
 assert "if (new_character && chaos_starter_frigate_enabled())" in NANNY
+assert "PLR3_CHAOS_STARTER_EPIC_PENDING" in STRUCTS
+assert "PLR3_CHAOS_STARTER_BANK_PENDING" in STRUCTS
+assert "mark_chaos_starter_reward_intents" in NANNY
+assert "IS_SET(ch->specials.act3, PLR3_CHAOS_STARTER_EPIC_PENDING)" in NANNY
+assert "IS_SET(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING)" in NANNY
+assert "REMOVE_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_EPIC_PENDING)" in NANNY
+assert "REMOVE_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING)" in NANNY
+assert "mark_player_dirty_components" in NANNY
 assert "if (!ch || !chaos_starter_bonuses_enabled())" in NANNY
 
 assert "epic_transaction_submit_identified(ch,operation_id,20000" in NANNY_COMPACT
@@ -83,6 +93,7 @@ assert "teacher.deny_skill && GET_CHAR_SKILL(ch, teacher.deny_skill)" in EPIC
 assert "teacher.pre_requisite" in EPIC
 assert "ch->only.pc->skills[reward.value].learned = ceiling;" in EPIC
 assert "grant_epic_skills_without_specialization" in EPIC_HEADER
+assert "if (chaos_mode && !chaos_starter_epic_skills_enabled())" in GUILD
 
 assert "chaos_starter_reward" in EPIC_COMMAND
 assert "reason <= epic_reason_type::chaos_starter_reward" in EPIC_CODEC
@@ -111,20 +122,22 @@ assert "chaos_material_pouch_contents_description" in MATERIALS
 assert "VOBJ_CHAOS_CRAFT_POUCH" in NANNY
 assert "REMOVE_BIT(obj->extra_flags, ITEM_TRANSIENT)" in NANNY
 assert "chaos_starter_materials_enabled()" in NANNY
-assert "chaos_material_pouch_available" in source("crafting.c").read_text(
-    encoding="utf-8", errors="replace"
-)
 CRAFTING = source("crafting.c").read_text(encoding="utf-8", errors="replace")
+assert "chaos_material_pouch_available" in CRAFTING
 assert "!chaos_pouch && (invLowMats < numLowest || invHighMats < numHighest)" in CRAFTING
 assert "!chaos_pouch && (numLowest > 0)" in CRAFTING
 assert "!chaos_pouch && (invVnum == lowQualityMaterialVnum)" in CRAFTING
-assert "chaos_material_pouch_available" in source("enhance.c").read_text(
-    encoding="utf-8", errors="replace"
-)
+assert "chaos_material_pouch_report_generated_failure" in CRAFTING
+assert CRAFTING.count("chaos_material_pouch_report_generated_failure") >= 2
+assert "chaos_material_pouch_can_record_generated" in CRAFTING
+assert "if (!chaos_material_pouch_record_generated" in CRAFTING
 ENHANCE = source("enhance.c").read_text(encoding="utf-8", errors="replace")
-assert "if (!chaos_material_pouch_available(ch))" in ENHANCE
+assert "if (!pouch)" in ENHANCE
 assert "chaos_material_pouch_is(source)" in ENHANCE
 assert "chaos_material_pouch_is(material)" in ENHANCE
+assert "chaos_material_pouch_report_generated_failure" in ENHANCE
+assert "chaos_material_pouch_can_record_generated" in ENHANCE
+assert "superior_plan_has_materials(ch, pouch" in ENHANCE
 SALVAGE = source("salvage.c").read_text(encoding="utf-8", errors="replace")
 assert "chaos_material_pouch_is(temp)" in SALVAGE
 SALCHEMIST = source("salchemist.c").read_text(encoding="utf-8", errors="replace")
@@ -133,17 +146,34 @@ assert "chaos_material_pouch_is(item)" in SALCHEMIST
 assert "chaos_material_pouch_is(jewel)" in SALCHEMIST
 assert "read_object(static_cast<int>(jewel_vnum), VIRTUAL)" in SALCHEMIST
 assert "virtual_jewel" in SALCHEMIST
+assert "chaos_material_pouch_report_generated_failure" in SALCHEMIST
+assert "if (!chaos_material_pouch_record_generated" in SALCHEMIST
 CHAOS = source("chaos.c").read_text(encoding="utf-8", errors="replace")
 ACTINF = source("actinf.c").read_text(encoding="utf-8", errors="replace")
 ACTOBJ = source("actobj.c").read_text(encoding="utf-8", errors="replace")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="utf-8", errors="replace")
 assert "chaos_material_pouch_contents_description" in ACTINF
-assert "chaos_material_pouch_is(tmp_object)" in ACTINF
+assert "chaos_material_pouch_is_active(tmp_object)" in ACTINF
+assert "chaos_material_pouch_is(tmp_object)" not in ACTINF
 assert "CHAOS_POUCH_LEDGER" in MATERIALS_C
 assert "chaos_material_pouch_record_generated" in MATERIALS
+assert "chaos_material_pouch_can_record_generated" in MATERIALS
 assert "chaos_material_pouch_record_collected" in MATERIALS
 assert "chaos_material_pouch_scoreboard" in MATERIALS
 assert "chaos_material_pouch_collect_inventory" in ACTOBJ
+assert "item_transfer_reason::destruction" in MATERIALS_C
+assert "item_movement_transaction_submit_batch" in MATERIALS_C
+assert "chaos_material_pouch_collection_completion" in MATERIALS_C
+assert "chaos_material_pouch_revert_collected" in MATERIALS_C
+assert "obj_from_char(material)" not in MATERIALS_C
+assert "extract_obj(material, FALSE)" in MATERIALS_C
+assert MATERIALS_C.index("chaos_material_pouch_record_collected(pouch, usage.data(), usage_count)") < MATERIALS_C.index(
+    "item_movement_transaction_submit_batch(actor, roots, root_count"
+)
+assert MATERIALS_C.index("chaos_material_pouch_revert_collected(pouch, usage.data(), usage_count)") < MATERIALS_C.index(
+    "pending_collections.erase(actor_pid);\n\t\tlogit(LOG_FILE, \"CHAOS pouch collection could not be queued"
+)
+assert "CHAOS_MATERIAL_POUCH_SEARCH_BUDGET" in MATERIALS
 assert "WEAR_ATTACH_BELT_1" in ACTOBJ
 assert "WEAR_ATTACH_BELT_3" in ACTOBJ
 assert "Chaos craft pouch generated" in MATERIALS_C
@@ -151,6 +181,9 @@ assert "std::sort" in MATERIALS_C
 assert "combat/chaos_materials.o" in MAKEFILE
 assert "#ifdef TEST_MUD" not in CHAOS
 assert "chaos_test_commands_enabled" in CHAOS
+assert "item_creation_grant_submit_to_player" in CHAOS
+assert "item_creation_grant_mark_blocking" in CHAOS
+assert "enhancement_system_is_ready" in CHAOS
 assert "boot_enhancement_system" in CHAOS
 assert "pouchseed" in CHAOS
 assert "pouchgenerate" in CHAOS

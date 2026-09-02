@@ -79,6 +79,21 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 	return true;
 }
 
+bool publish_completed_if_available(const std::string &key,
+				    const critical_operation_id &operation_id, P_char character)
+{
+	critical_completion completion = {};
+	if (!critical_command_coordinator_get_completed(operation_id, &completion))
+		return false;
+	auto found = pending.find(key);
+	if (found == pending.end())
+		return false;
+	found->second.completed = completion;
+	found->second.completion_ready = true;
+	publish(found, character);
+	return true;
+}
+
 void update_retained_health()
 {
 	health.pending = pending.size();
@@ -247,6 +262,8 @@ bool currency_transaction_submit_identified(
 		return false;
 	}
 	++health.submitted;
+	if (submitted == critical_submit_result::attached)
+		publish_completed_if_available(key, operation_id, character);
 	update_retained_health();
 	return true;
 }

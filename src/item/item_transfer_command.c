@@ -336,9 +336,10 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 					  payload.reason == item_transfer_reason::player_put ||
 					  payload.reason == item_transfer_reason::locker_deposit ||
 					  payload.reason == item_transfer_reason::locker_withdraw ||
-					  payload.reason == item_transfer_reason::corpse_loot;
+					  payload.reason == item_transfer_reason::corpse_loot ||
+					  payload.reason == item_transfer_reason::destruction;
 		if (payload_version != ITEM_TRANSFER_PAYLOAD_VERSION || payload.selected_item_uid ||
-		    creation || destruction || !batch_reason ||
+		    creation || !batch_reason ||
 		    (payload.target_parent_item_uid ? !payload.target_root_item_uid :
 						      payload.target_root_item_uid != 0))
 			return false;

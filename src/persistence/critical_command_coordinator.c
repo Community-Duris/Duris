@@ -30,6 +30,7 @@ struct operation_state
 struct completed_state
 {
 	critical_command command;
+	critical_completion completion;
 	size_t encoded_size;
 };
 
@@ -162,16 +163,20 @@ void update_depth()
 	health.completed_cache = completed_cache.size();
 }
 
-void remember_completed(const std::string &identity, const critical_command &command)
+void remember_completed(const std::string &identity, const critical_command &command,
+			const critical_completion &completion)
 {
 	std::vector<uint8_t> encoded;
-	if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok ||
-	    encoded.size() > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES)
+	if (critical_command_encode(command, &encoded) != critical_command_codec_result::ok)
+		return;
+	const size_t retained_size = encoded.size() + sizeof(critical_completion);
+	if (encoded.size() > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES ||
+	    retained_size < encoded.size() ||
+	    retained_size > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES)
 		return;
 	while (!completed_order.empty() &&
 	       (completed_cache.size() >= CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX ||
-		completed_cache_bytes >
-			CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES - encoded.size()))
+		completed_cache_bytes > CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES - retained_size))
 	{
 		auto found = completed_cache.find(completed_order.front());
 		if (found != completed_cache.end())
@@ -183,11 +188,11 @@ void remember_completed(const std::string &identity, const critical_command &com
 	}
 	try
 	{
-		completed_cache.emplace(identity,
-					completed_state{ .command = command,
-							 .encoded_size = encoded.size() });
+		completed_cache.emplace(identity, completed_state{ .command = command,
+								   .completion = completion,
+								   .encoded_size = retained_size });
 		completed_order.push_back(identity);
-		completed_cache_bytes += encoded.size();
+		completed_cache_bytes += retained_size;
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -508,6 +513,19 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 	return critical_submit_result::accepted;
 }
 
+bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
+						critical_completion *completion)
+{
+	if (!completion || critical_operation_id_is_zero(operation_id))
+		return false;
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const auto found = completed_cache.find(operation_key(operation_id));
+	if (found == completed_cache.end())
+		return false;
+	*completion = found->second.completion;
+	return true;
+}
+
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity)
 {
 	if (capacity && !completions)
@@ -558,7 +576,7 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		}
 		state.completed = true;
 		remove_fences(identity, state.command);
-		remember_completed(identity, state.command);
+		remember_completed(identity, state.command, completion);
 		if (completion.outcome == critical_apply_outcome::terminal_failure)
 			++health.terminal_failures;
 		++health.completed;
