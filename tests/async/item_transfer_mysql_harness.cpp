@@ -189,15 +189,24 @@ int main()
 			      created_result.to_owner_revision - 1, player_two_revision, 1));
 	assert(stale.outcome == critical_apply_outcome::terminal_failure &&
 	       stale.error_code == ESTALE);
-	critical_apply_result moved =
-		apply(connection, 4,
-		      payload(player_one, player_two, item_transfer_reason::synthetic,
-			      created_result.to_owner_revision, player_two_revision, 1));
+	const auto give_payload = payload(player_one, player_two, item_transfer_reason::player_give,
+					  created_result.to_owner_revision, player_two_revision, 1);
+	critical_apply_result moved = apply(connection, 4, give_payload);
 	assert(moved.outcome == critical_apply_outcome::applied);
 	item_transfer_result moved_result = {};
 	assert(item_transfer_command_decode_result(moved.result_payload.data(), moved.result_size,
 						   &moved_result));
 	assert(moved_result.max_item_revision == 2);
+	critical_apply_result replayed_give = apply(connection, 4, give_payload);
+	item_transfer_result replayed_give_result = {};
+	// The populated cross-owner give must apply exactly once when its operation is replayed.
+	assert(replayed_give.outcome == critical_apply_outcome::already_applied &&
+	       item_transfer_command_decode_result(replayed_give.result_payload.data(),
+						   replayed_give.result_size,
+						   &replayed_give_result) &&
+	       replayed_give_result.from_owner_revision == moved_result.from_owner_revision &&
+	       replayed_give_result.to_owner_revision == moved_result.to_owner_revision &&
+	       replayed_give_result.max_item_revision == moved_result.max_item_revision);
 
 	uint64_t destruction_revision = owner_revision(connection, destroyed);
 	execute(connection, ("UPDATE item_current_owner SET item_revision=18446744073709551615 "

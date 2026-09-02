@@ -268,6 +268,19 @@ operation identity, or write failure rolls back without publishing in-memory mov
 Use the read-only reconciliation scripts in `migrations/reconcile_*.sh`; do not repair
 ledgers by hand.
 
+`root_item_uid` and `parent_item_uid` make containment part of that authority, not a
+derived convenience. A transfer refuses any subtree whose recorded nesting disagrees
+with the live object tree, and player load rebuilds nesting from these columns rather
+than from the saved custody rows, so a command that moves an item into a container
+without submitting a transfer strands the container: it can no longer be given or
+dropped, and its contents un-nest on the next login. Every command that reparents a
+generic-ownership item must therefore submit a transfer, including a move within a
+single owner. `migrations/reconcile_item_ownership.sh` reports such drift as
+`nesting_mismatch`, and `migrations/repair_item_nesting.sh` repairs it from the saved
+container linkage (`--check` reports without writing). The repair rewrites only
+`parent_item_uid` and `root_item_uid`, never ownership or `item_revision`, which stay
+ledger-derived.
+
 ## Maintenance and data lifecycle
 
 The maintenance scheduler gives each registered job a stable offset, row/time budget,

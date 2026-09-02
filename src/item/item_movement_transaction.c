@@ -72,6 +72,12 @@ std::string operation_key(const critical_operation_id &operation_id)
 			   operation_id.bytes.size());
 }
 
+bool reject_with(item_movement_reject *reject, item_movement_reject reason)
+{
+	*reject = reason;
+	return false;
+}
+
 bool owner_conflicts(const pending_movement &entry, const item_owner_identity &owner)
 {
 	return item_owner_identity_equal(entry.payload.from_owner, owner) ||
@@ -94,10 +100,33 @@ bool capture(P_obj object, uint64_t root_uid, uint64_t parent_uid,
 	if (!object || !items || !object->obj_uid || items->size() >= ITEM_TRANSFER_MAX_ITEMS)
 		return false;
 	item_ownership_runtime_entry runtime = {};
-	if (!item_ownership_runtime_lookup(object->obj_uid, &runtime) ||
-	    runtime.root_item_uid != root_uid || runtime.parent_item_uid != parent_uid ||
-	    runtime.vnum != OBJ_VNUM(object) || runtime.state != item_custody_state::active)
+	if (!item_ownership_runtime_lookup(object->obj_uid, &runtime))
+	{
+		logit(LOG_FILE,
+		      "item_movement: outcome=topology_mismatch cause=missing_ledger_row "
+		      "uid=%llu vnum=%d live(root=%llu,parent=%llu)",
+		      (unsigned long long)object->obj_uid, OBJ_VNUM(object),
+		      (unsigned long long)root_uid, (unsigned long long)parent_uid);
 		return false;
+	}
+	// The nesting the ledger records has to match the nesting the object tree actually
+	// has. A command that moved an item between containers without submitting a transfer
+	// leaves the two disagreeing, and this is the only place that disagreement surfaces,
+	// so name both sides rather than letting the caller guess which predicate failed.
+	if (runtime.root_item_uid != root_uid || runtime.parent_item_uid != parent_uid ||
+	    runtime.vnum != OBJ_VNUM(object) || runtime.state != item_custody_state::active)
+	{
+		logit(LOG_FILE,
+		      "item_movement: outcome=topology_mismatch uid=%llu "
+		      "ledger(root=%llu,parent=%llu,vnum=%d,state=%u) "
+		      "live(root=%llu,parent=%llu,vnum=%d)",
+		      (unsigned long long)runtime.item_uid,
+		      (unsigned long long)runtime.root_item_uid,
+		      (unsigned long long)runtime.parent_item_uid, runtime.vnum,
+		      (unsigned int)runtime.state, (unsigned long long)root_uid,
+		      (unsigned long long)parent_uid, OBJ_VNUM(object));
+		return false;
+	}
 	items->push_back({ runtime.item_uid, runtime.root_item_uid, runtime.parent_item_uid,
 			   runtime.item_revision, runtime.vnum, runtime.state });
 	for (P_obj child = object->contains; child; child = child->next_content)
@@ -600,15 +629,23 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      const item_owner_identity &to_owner,
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
-				      size_t context_size, P_obj corpse_context)
+				      size_t context_size, P_obj corpse_context,
+				      item_movement_reject *reject)
 {
+	item_movement_reject discarded = item_movement_reject::none;
+	if (!reject)
+		reject = &discarded;
+	*reject = item_movement_reject::none;
 	const bool corpse_transfer = reason == item_transfer_reason::corpse_create ||
 				     reason == item_transfer_reason::corpse_loot;
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX ||
-	    movement_conflicts(from_owner, to_owner) || corpse_transfer != (corpse_context != NULL))
-		return false;
+	    corpse_transfer != (corpse_context != NULL))
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
+		return reject_with(reject, item_movement_reject::queue_saturated);
+	if (movement_conflicts(from_owner, to_owner))
+		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry runtime = {};
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
@@ -617,10 +654,11 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	    (target_container &&
 	     (!target_container->obj_uid ||
 	      !item_ownership_runtime_lookup(target_container->obj_uid, &target_runtime) ||
-	      !item_owner_identity_equal(target_runtime.owner, to_owner))) ||
-	    !item_ownership_runtime_owner_revision(from_owner, &from_revision) ||
+	      !item_owner_identity_equal(target_runtime.owner, to_owner))))
+		return reject_with(reject, item_movement_reject::owner_mismatch);
+	if (!item_ownership_runtime_owner_revision(from_owner, &from_revision) ||
 	    !item_ownership_runtime_owner_revision(to_owner, &to_revision))
-		return false;
+		return reject_with(reject, item_movement_reject::missing_owner_revision);
 	std::vector<item_transfer_entry> items;
 	try
 	{
@@ -628,17 +666,17 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	}
 	catch (const std::bad_alloc &)
 	{
-		return false;
+		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	if (!(adopted ? capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items) :
 			capture_absent(root, root->obj_uid, 0, &items)))
-		return false;
+		return reject_with(reject, item_movement_reject::topology_mismatch);
 	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });
 	const item_owner_identity system_owner = { item_owner_type::system, 0, 0 };
 	uint64_t system_revision = 0;
 	if (!adopted && !item_ownership_runtime_owner_revision(system_owner, &system_revision))
-		return false;
+		return reject_with(reject, item_movement_reject::missing_owner_revision);
 	item_transfer_payload payload = {
 		.from_owner = adopted ? from_owner : system_owner,
 		.to_owner = adopted ? to_owner : from_owner,
@@ -669,19 +707,19 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	    player_item_snapshot_list_encode(snapshots, &item_blob) !=
 		    player_snapshot_codec_result::ok ||
 	    item_blob.empty() || item_blob.size() > payload.item_blob.size())
-		return false;
+		return reject_with(reject, item_movement_reject::snapshot_failure);
 	payload.item_blob_size = static_cast<uint32_t>(item_blob.size());
 	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
 	if (adopted && corpse_transfer &&
 	    !capture_corpse_metadata(actor, root, corpse_context, reason, &payload.corpse))
-		return false;
+		return reject_with(reject, item_movement_reject::invalid_request);
 	critical_operation_id operation_id = {};
 	critical_command command = {};
 	if (!critical_operation_id_generate(&operation_id) ||
 	    !item_transfer_command_build(&command, operation_id, payload,
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
-		return false;
+		return reject_with(reject, item_movement_reject::command_build_failure);
 	pending_movement entry = {
 		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
 		.payload = payload,
@@ -707,7 +745,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	}
 	catch (const std::bad_alloc &)
 	{
-		return false;
+		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
 		critical_command_coordinator_submit(std::move(command));
@@ -716,35 +754,46 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	{
 		pending.erase(key);
 		++health.submission_failures;
-		return false;
+		return reject_with(reject, item_movement_reject::coordinator_rejected);
 	}
 	++health.submitted;
 	account_health();
 	return true;
 }
 
-bool item_movement_transaction_submit_batch(
-	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
-	const item_owner_identity &from_owner, const item_owner_identity &to_owner,
-	item_transfer_reason reason, int64_t reason_id, item_movement_completion_fn completion,
-	const void *context, size_t context_size, P_obj corpse_context)
+bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, size_t root_count,
+					    P_obj target_container,
+					    const item_owner_identity &from_owner,
+					    const item_owner_identity &to_owner,
+					    item_transfer_reason reason, int64_t reason_id,
+					    item_movement_completion_fn completion,
+					    const void *context, size_t context_size,
+					    P_obj corpse_context, item_movement_reject *reject)
 {
+	item_movement_reject discarded = item_movement_reject::none;
+	if (!reject)
+		reject = &discarded;
+	*reject = item_movement_reject::none;
 	const bool corpse_transfer = reason == item_transfer_reason::corpse_loot;
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !roots || !root_count ||
 	    root_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX ||
-	    movement_conflicts(from_owner, to_owner) || corpse_transfer != (corpse_context != NULL))
-		return false;
+	    corpse_transfer != (corpse_context != NULL))
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
+		return reject_with(reject, item_movement_reject::queue_saturated);
+	if (movement_conflicts(from_owner, to_owner))
+		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
-	if ((target_container &&
-	     (!target_container->obj_uid ||
-	      !item_ownership_runtime_lookup(target_container->obj_uid, &target_runtime) ||
-	      !item_owner_identity_equal(target_runtime.owner, to_owner))) ||
-	    !item_ownership_runtime_owner_revision(from_owner, &from_revision) ||
+	if (target_container &&
+	    (!target_container->obj_uid ||
+	     !item_ownership_runtime_lookup(target_container->obj_uid, &target_runtime) ||
+	     !item_owner_identity_equal(target_runtime.owner, to_owner)))
+		return reject_with(reject, item_movement_reject::owner_mismatch);
+	if (!item_ownership_runtime_owner_revision(from_owner, &from_revision) ||
 	    !item_ownership_runtime_owner_revision(to_owner, &to_revision))
-		return false;
+		return reject_with(reject, item_movement_reject::missing_owner_revision);
 
 	std::vector<item_transfer_entry> items;
 	std::vector<player_item_snapshot> snapshots;
@@ -767,16 +816,17 @@ bool item_movement_transaction_submit_batch(
 			item_ownership_runtime_entry runtime = {};
 			if (!root || !root->obj_uid ||
 			    !item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
-			    !item_owner_identity_equal(runtime.owner, from_owner) ||
-			    !capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
-				return false;
+			    !item_owner_identity_equal(runtime.owner, from_owner))
+				return reject_with(reject, item_movement_reject::owner_mismatch);
+			if (!capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
+				return reject_with(reject, item_movement_reject::topology_mismatch);
 
 			std::vector<player_item_snapshot> tree;
 			if (player_item_snapshot_tree_capture(root, &tree, nullptr) !=
 				    player_snapshot_capture_result::ok ||
 			    tree.empty() || tree.size() > ITEM_TRANSFER_MAX_ITEMS ||
 			    snapshots.size() > ITEM_TRANSFER_MAX_ITEMS - tree.size())
-				return false;
+				return reject_with(reject, item_movement_reject::snapshot_failure);
 			const size_t offset = snapshots.size();
 			for (player_item_snapshot &snapshot : tree)
 			{
@@ -788,15 +838,15 @@ bool item_movement_transaction_submit_batch(
 	}
 	catch (const std::bad_alloc &)
 	{
-		return false;
+		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	if (items.empty() || items.size() != snapshots.size())
-		return false;
+		return reject_with(reject, item_movement_reject::snapshot_failure);
 	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });
 	if (std::adjacent_find(items.begin(), items.end(), [](const auto &left, const auto &right)
 			       { return left.item_uid == right.item_uid; }) != items.end())
-		return false;
+		return reject_with(reject, item_movement_reject::topology_mismatch);
 
 	item_transfer_payload payload = {
 		.from_owner = from_owner,
@@ -823,13 +873,13 @@ bool item_movement_transaction_submit_batch(
 	if (player_item_snapshot_list_encode(snapshots, &item_blob) !=
 		    player_snapshot_codec_result::ok ||
 	    item_blob.empty() || item_blob.size() > payload.item_blob.size())
-		return false;
+		return reject_with(reject, item_movement_reject::snapshot_failure);
 	payload.item_blob_size = static_cast<uint32_t>(item_blob.size());
 	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
 	if (corpse_transfer &&
 	    !capture_batch_corpse_metadata(actor, ordered_roots.data(), ordered_roots.size(),
 					   corpse_context, reason, &payload.corpse))
-		return false;
+		return reject_with(reject, item_movement_reject::invalid_request);
 
 	critical_operation_id operation_id = {};
 	critical_command command = {};
@@ -837,7 +887,7 @@ bool item_movement_transaction_submit_batch(
 	    !item_transfer_command_build(&command, operation_id, payload,
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
-		return false;
+		return reject_with(reject, item_movement_reject::command_build_failure);
 	pending_movement entry = {
 		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
 		.payload = payload,
@@ -863,7 +913,7 @@ bool item_movement_transaction_submit_batch(
 	}
 	catch (const std::bad_alloc &)
 	{
-		return false;
+		return reject_with(reject, item_movement_reject::allocation_failure);
 	}
 	const critical_submit_result submitted =
 		critical_command_coordinator_submit(std::move(command));
@@ -872,11 +922,52 @@ bool item_movement_transaction_submit_batch(
 	{
 		pending.erase(key);
 		++health.submission_failures;
-		return false;
+		return reject_with(reject, item_movement_reject::coordinator_rejected);
 	}
 	++health.submitted;
 	account_health();
 	return true;
+}
+
+const char *item_movement_reject_name(item_movement_reject reason)
+{
+	switch (reason)
+	{
+	case item_movement_reject::none:
+		return "none";
+	case item_movement_reject::invalid_request:
+		return "invalid_request";
+	case item_movement_reject::queue_saturated:
+		return "queue_saturated";
+	case item_movement_reject::pending_conflict:
+		return "pending_conflict";
+	case item_movement_reject::owner_mismatch:
+		return "owner_mismatch";
+	case item_movement_reject::missing_owner_revision:
+		return "missing_owner_revision";
+	case item_movement_reject::topology_mismatch:
+		return "topology_mismatch";
+	case item_movement_reject::snapshot_failure:
+		return "snapshot_failure";
+	case item_movement_reject::allocation_failure:
+		return "allocation_failure";
+	case item_movement_reject::command_build_failure:
+		return "command_build_failure";
+	case item_movement_reject::coordinator_rejected:
+		return "coordinator_rejected";
+	}
+	return "unknown";
+}
+
+// Transient rejections clear on their own once the in-flight work drains, so telling the
+// player to retry is honest. The rest describe ledger state that disagrees with the live
+// world and will keep failing until it is reconciled; retry advice there is a lie.
+bool item_movement_reject_is_transient(item_movement_reject reason)
+{
+	return reason == item_movement_reject::pending_conflict ||
+	       reason == item_movement_reject::queue_saturated ||
+	       reason == item_movement_reject::allocation_failure ||
+	       reason == item_movement_reject::coordinator_rejected;
 }
 
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
