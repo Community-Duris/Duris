@@ -5455,7 +5455,29 @@ bool sql_delete_account(const char *name)
 	if (!result)
 		goto fail;
 	row = mysql_fetch_row(result);
-	if (!row || !row[0] || atoi(row[0]) != 2 || mysql_fetch_row(result))
+	if (!row)
+	{
+		mysql_free_result(result);
+		snprintf(
+			query, sizeof(query),
+			"SELECT (SELECT COUNT(*) FROM accounts WHERE LOWER(account_name)=LOWER('%s'))+"
+			"(SELECT COUNT(*) FROM player_data WHERE LOWER(account_name)=LOWER('%s'))+"
+			"(SELECT COUNT(*) FROM account_characters WHERE LOWER(account_name)=LOWER('%s'))",
+			escaped_account, escaped_account, escaped_account);
+		result = db_query("%s", query);
+		if (!result)
+			goto fail;
+		row = mysql_fetch_row(result);
+		const bool already_deleted = row && row[0] && strtoull(row[0], NULL, 10) == 0 &&
+					     !mysql_fetch_row(result);
+		mysql_free_result(result);
+		if (!already_deleted)
+			goto fail;
+		sql_rollback();
+		free(escaped_account);
+		return true;
+	}
+	if (!row[0] || atoi(row[0]) != ACCOUNT_BLOCK_DELETION || mysql_fetch_row(result))
 	{
 		mysql_free_result(result);
 		goto fail;
@@ -5789,11 +5811,6 @@ bool sql_delete_account(const char *name)
 		return false;
 	}
 	free(escaped_account);
-	for (const auto &[pid, character_name] : identities)
-	{
-		player_revision_forget(pid);
-		redis_invalidate_ship_snapshot(character_name.c_str());
-	}
 	return true;
 
 fail:

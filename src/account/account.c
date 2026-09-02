@@ -26,6 +26,7 @@
 #include "player/player_name.h"
 #include "player/player_load_materialize.h"
 #include "player/player_load_pipeline.h"
+#include "player/player_revision_state.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
@@ -38,6 +39,7 @@
 #include "ships/ships.h"
 #include "guild/assocs.h"
 #include "net/ws_handlers.h"
+#include "redis/redis_ship_legacy.h"
 
 #include <unordered_map>
 #include <new>
@@ -208,6 +210,8 @@ void remove_deleted_account_runtime(P_desc deleting_session,
 {
 	for (const auto &identity : identities)
 	{
+		player_revision_forget(identity.pid);
+		redis_invalidate_ship_snapshot(identity.name.c_str());
 		forget_deleted_guild_member(identity.name.c_str());
 		delete_ship_runtime(identity.name.c_str());
 	}

@@ -2,6 +2,7 @@
 """Safety and backend contracts for player-initiated account deletion."""
 
 from _paths import SRC
+from contract_text import contains, index
 
 
 ACCOUNT = (SRC / "account.c").read_text(encoding="utf-8", errors="replace")
@@ -78,8 +79,10 @@ detach_descriptor = runtime_remove.index("character_desc->character = NULL")
 close_descriptor = runtime_remove.index("close_socket(character_desc)")
 extract_character = runtime_remove.index("extract_char_after_terminal_save(character)")
 assert detach_character < detach_descriptor < close_descriptor < extract_character
-assert "forget_deleted_guild_member(identity.name.c_str())" in ACCOUNT
-assert "delete_ship_runtime(identity.name.c_str())" in ACCOUNT
+assert contains(runtime_remove, "player_revision_forget(identity.pid)")
+assert contains(runtime_remove, "redis_invalidate_ship_snapshot(identity.name.c_str())")
+assert contains(runtime_remove, "forget_deleted_guild_member(identity.name.c_str())")
+assert contains(runtime_remove, "delete_ship_runtime(identity.name.c_str())")
 assert "delete_ship_by_owner(owner_name, false)" in ship_runtime_remove
 assert "P_member *link = &guild->members" in guild_forget
 assert "flatfile_association_list(root, &records, &error)" in guild_forget
@@ -95,14 +98,21 @@ assert "flatfile_account_delete(" in confirm_delete
 # reconciled absent, and only then committed.
 assert "if (sql_in_transaction())" in sql_delete
 assert sql_delete.index("sql_begin_transaction()") < sql_delete.index("FOR UPDATE")
-assert "atoi(row[0]) != 2" in sql_delete
+assert contains(sql_delete, "atoi(row[0]) != ACCOUNT_BLOCK_DELETION")
+fence_lock = index(sql_delete, '"SELECT blocked FROM accounts')
+missing_account = index(sql_delete, "if (!row)", fence_lock)
+fence_check = index(sql_delete, "atoi(row[0]) != ACCOUNT_BLOCK_DELETION", missing_account)
+already_deleted = sql_delete[missing_account:fence_check]
+assert contains(already_deleted, "strtoull(row[0], NULL, 10) == 0")
+assert contains(already_deleted, "if (!already_deleted) goto fail;")
+assert contains(already_deleted, "return true;")
 player_remove = sql_delete.index('"DELETE FROM player_data WHERE pid=%d"')
-projection_remove = sql_delete.index('{ "account_characters", "account_name" }')
+projection_remove = index(sql_delete, '{ "account_characters", "account_name" }')
 credential_remove = sql_delete.index('"DELETE FROM accounts WHERE LOWER(account_name)')
-reconcile = sql_delete.index('"SELECT (SELECT COUNT(*) FROM accounts')
+reconcile = sql_delete.index('"SELECT (SELECT COUNT(*) FROM accounts', credential_remove)
 commit = sql_delete.index("sql_commit()")
 assert player_remove < projection_remove < credential_remove < reconcile < commit
-assert "mysql_affected_rows(DB) != 1" in sql_delete
+assert contains(sql_delete, "mysql_affected_rows(DB) != 1")
 assert "status=1" in sql_delete
 assert "(owner_type=4 AND (owner_id >> 32)=%d)" in sql_delete
 assert "(owner_type=5 AND owner_id IN" in sql_delete
