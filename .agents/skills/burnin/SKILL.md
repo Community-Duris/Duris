@@ -1,7 +1,7 @@
 ---
 name: burnin
 description: >-
-  Exhaustively qualify a local DurisMUD checkout by stopping its server, running every
+  Exhaustively qualify a DurisMUD checkout by stopping its server, running every
   regression and isolated database test, clean-building all maintained code, repairing every
   finding, then booting and smoke-testing with the configured staff character. Use for an
   explicit full burn-in or stability pass, not routine focused validation.
@@ -16,15 +16,15 @@ merely because one phase passes.
 
 - Work from the repository root. Read `AGENTS.md`, `README.md`, the root `Makefile`, and the
   starting/stopping section of `docs/operations/RUNBOOK.md`; inspect the worktree first.
-- Read only the required `.env` fields without printing their values. Proceed only when
-  `ENVIRONMENT=local`; never operate on production/remote services or data. Preserve unrelated
-  changes and all player/runtime data.
-- Stop only the local instance belonging to this checkout. Prefer the matching user service or
-  the in-game immortal `shutdown`; otherwise identify the exact supervisor and child by working
-  directory, command line, and listener before a graceful signal. Never use broad `kill`/`pkill`.
-  Wait for both processes and their ports to close. Treat another checkout owning a required port
-  as a blocker, not as authorization to stop it.
-- Do not skip an unavailable gate. Diagnose safe local prerequisites; if Docker, credentials, or
+- Read only the required `.env` fields without printing their values. Unless the user authorizes
+  otherwise, proceed only when `ENVIRONMENT=local`. User authorization overrides this local-only
+  rule. Preserve unrelated changes and all player/runtime data.
+- Stop the instance under test. Prefer the matching user service or the in-game immortal
+  `shutdown`; otherwise identify the supervisor and child by working directory, command line, and
+  listener before a graceful signal. Never use broad `kill`/`pkill`. Wait for both processes and
+  their ports to close. Treat another checkout owning a required port as a blocker, not as
+  authorization to stop it.
+- Do not skip an unavailable gate. Diagnose safe prerequisites; if Docker, credentials, or
   another external dependency remains unavailable, report the burn-in as incomplete.
 
 ## Repair loop
@@ -70,7 +70,7 @@ merely because one phase passes.
    a clean logout.
 3. Keep monitoring through a short post-logout soak. If anything is wrong, capture evidence, stop
    this exact instance, repair it, and restart the entire repair and live-burn-in loop. Finish only
-   after a full clean pass following the final change; leave the healthy development MUD running
+   after a full clean pass following the final change; leave the healthy MUD running
    unless the user requested otherwise.
 
 Report fixes, exact commands and results, log files and observation interval, staff smoke commands,
