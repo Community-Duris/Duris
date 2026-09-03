@@ -37,6 +37,9 @@ def provision(state_root: pathlib.Path) -> None:
     (state_root / "identities/accounts/6163636f756e74.acct").write_bytes(b"account-generation-1")
     (state_root / "players/1.player").write_bytes(b"player-generation-1")
     (state_root / "domains/boons.domain").write_bytes(b"boons-generation-1")
+    (state_root / "domains/locker_catalog").write_bytes(
+        b"version-2-account-locker-generation-1"
+    )
     for path in state_root.rglob("*"):
         path.chmod(0o700 if path.is_dir() else 0o600)
     state_root.chmod(0o700)
@@ -148,6 +151,11 @@ with tempfile.TemporaryDirectory(prefix="duris-backup-drill-") as temporary:
     require(
         digest_tree(restore_root) == digest_tree(state_root),
         "restored root does not match the captured generation",
+    )
+    require(
+        (restore_root / "domains/locker_catalog").read_bytes()
+        == b"version-2-account-locker-generation-1",
+        "restore did not preserve the account locker catalog generation",
     )
     require(
         not (restore_root / "MANIFEST.sha256").exists(),

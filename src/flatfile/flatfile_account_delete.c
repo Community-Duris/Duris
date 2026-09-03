@@ -4,6 +4,8 @@
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_character_delete.h"
 #include "flatfile/flatfile_identity_repository.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 
 #include <new>
@@ -56,6 +58,26 @@ flatfile_account_delete_result map_domain(flatfile_player_domain_result result)
 	if (result == flatfile_player_domain_result::conflict)
 		return flatfile_account_delete_result::conflict;
 	if (result == flatfile_player_domain_result::io_error)
+		return flatfile_account_delete_result::io_error;
+	return flatfile_account_delete_result::invalid;
+}
+
+flatfile_account_delete_result map_locker(flatfile_locker_result result)
+{
+	if (result == flatfile_locker_result::not_found)
+		return flatfile_account_delete_result::not_found;
+	if (result == flatfile_locker_result::conflict)
+		return flatfile_account_delete_result::conflict;
+	if (result == flatfile_locker_result::io_error)
+		return flatfile_account_delete_result::io_error;
+	return flatfile_account_delete_result::invalid;
+}
+
+flatfile_account_delete_result map_item(flatfile_item_repository_result result)
+{
+	if (result == flatfile_item_repository_result::not_found)
+		return flatfile_account_delete_result::not_found;
+	if (result == flatfile_item_repository_result::io_error)
 		return flatfile_account_delete_result::io_error;
 	return flatfile_account_delete_result::invalid;
 }
@@ -134,6 +156,26 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 			return map_domain(banks);
 		try
 		{
+			flatfile_locker_player_removal locker_removal;
+			const auto locker = flatfile_locker_prepare_account_remove(
+				root, authority_lock, account_name, &locker_removal, error);
+			if (locker == flatfile_locker_result::ok)
+			{
+				flatfile_authority_operation item_operation;
+				const auto item = flatfile_item_repository_prepare_locker_remove(
+					root, authority_lock, locker_removal.custody,
+					&item_operation, error);
+				if (item == flatfile_item_repository_result::ok)
+					operations.push_back(std::move(item_operation));
+				else if (item != flatfile_item_repository_result::unchanged)
+					return map_item(item);
+				operations.push_back(std::move(locker_removal.operation));
+			}
+			else if (locker != flatfile_locker_result::unchanged)
+			{
+				return map_locker(locker);
+			}
+
 			flatfile_authority_operation identity_operation;
 			const auto identities = flatfile_identity_prepare_sync_account(
 				root, identity_lock, authority_lock, account_name, {},

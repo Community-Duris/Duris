@@ -150,9 +150,28 @@ static void establish(const fs::path &root, bool establish_boons)
 	guild_locker.owner_assoc_id = 7;
 	guild_locker.revision = 1;
 	guild_locker.chests = { guild_chest };
-	require(flatfile_locker_establish(root.string(), { guild_locker, player_locker },
+	player_item_snapshot account_item = locker_item;
+	account_item.object_uid = 903;
+	account_item.vnum = 3903;
+	account_item.name = "account stored item";
+	flatfile_locker_chest_record account_chest = {};
+	account_chest.chest_id = 31;
+	account_chest.chest_name = "public";
+	account_chest.is_public = true;
+	account_chest.revision = 1;
+	account_chest.items = { account_item };
+	flatfile_locker_record account_locker = {};
+	account_locker.locker_id = 30;
+	account_locker.locker_name = "account.account.1.locker";
+	account_locker.account_owner = flatfile_account_locker_identity{ "account", 1 };
+	account_locker.racewar = 1;
+	account_locker.revision = 1;
+	account_locker.chests = { account_chest };
+	require(flatfile_locker_establish(root.string(),
+					  { guild_locker, player_locker, account_locker },
 					  { { "player.locker", "guest", 1 },
-					    { "guild.7.locker", "player", 1 } },
+					    { "guild.7.locker", "player", 1 },
+					    { "account.account.1.locker", "visitor", 1 } },
 					  &error) == flatfile_locker_result::ok,
 		"locker baseline failed: " + error);
 	flatfile_association_record association = {};
@@ -205,6 +224,13 @@ static void establish(const fs::path &root, bool establish_boons)
 			{ { 900, 900, 0, locker_owner, 1, 3900, item_custody_state::active } },
 			&error) == flatfile_item_baseline_result::applied,
 		"locker custody baseline failed: " + error);
+	const item_owner_identity account_locker_owner = { item_owner_type::locker, 30, 31 };
+	require(flatfile_item_repository_establish_owner(root.string(), account_locker_owner,
+							 { { 903, 903, 0, account_locker_owner, 1,
+							     3903, item_custody_state::active } },
+							 &error) ==
+			flatfile_item_baseline_result::applied,
+		"account locker custody baseline failed: " + error);
 	const item_owner_identity corpse_owner = { item_owner_type::corpse,
 						   item_corpse_owner_id(1, 40), 0 };
 	require(flatfile_item_repository_establish_owner(
@@ -323,6 +349,9 @@ static void establish_empty_account(const fs::path &root)
 	require(flatfile_identity_allocate_pid(root.string(), &unused_pid, &error) ==
 			flatfile_identity_result::ok,
 		"empty account identity catalog failed: " + error);
+	require(flatfile_locker_establish(root.string(), {}, {}, &error) ==
+			flatfile_locker_result::ok,
+		"empty locker catalog baseline failed: " + error);
 	save_account(root, 2);
 }
 
@@ -389,8 +418,11 @@ int main(int argc, char **argv)
 	std::vector<flatfile_locker_access_record> locker_access;
 	require(flatfile_locker_list(root.string(), &lockers, &locker_access, &error) ==
 				flatfile_locker_result::ok &&
-			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 &&
-			locker_access.empty(),
+			lockers.size() == 2 && lockers[0].owner_assoc_id == 7 &&
+			lockers[1].account_owner &&
+			lockers[1].account_owner->account_name == "account" &&
+			locker_access.size() == 1 &&
+			locker_access[0].owner_name == "account.account.1.locker",
 		"recovered deletion retained player locker or access state");
 	std::vector<flatfile_association_record> associations;
 	require(flatfile_association_list(root.string(), &associations, &error) ==
@@ -522,6 +554,17 @@ int main(int argc, char **argv)
 	}
 	require(!fs::exists(account / "domains/bank-account-0.domain"),
 		"account deletion retained the shared account bank");
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(account.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 &&
+			locker_access.empty(),
+		"account deletion retained its typed locker or access policy");
+	require(flatfile_item_repository_load_owner(
+			account.string(), { item_owner_type::locker, 30, 31 }, &owner_revision,
+			&items, &error) == flatfile_item_repository_result::not_found,
+		"account deletion retained account locker item custody");
 	require(flatfile_account_delete(account.string(), "Account", &error) ==
 			flatfile_account_delete_result::already_deleted,
 		"completed account deletion was not idempotent: " + error);

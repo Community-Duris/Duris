@@ -6,6 +6,7 @@
 #include "player/player_snapshot.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,12 +21,19 @@ struct flatfile_locker_chest_record
 	std::vector<player_item_snapshot> items;
 };
 
+struct flatfile_account_locker_identity
+{
+	std::string account_name;
+	int8_t racewar_side = 0;
+};
+
 struct flatfile_locker_record
 {
 	uint32_t locker_id = 0;
 	std::string locker_name;
 	int32_t owner_pid = 0;
 	int32_t owner_assoc_id = 0;
+	std::optional<flatfile_account_locker_identity> account_owner;
 	int8_t racewar = 0;
 	int8_t race = 0;
 	uint64_t revision = 0;
@@ -87,6 +95,10 @@ flatfile_locker_result
 flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
 				      uint32_t pid, const std::string &player_name,
 				      flatfile_locker_player_removal *removal, std::string *error);
+flatfile_locker_result
+flatfile_locker_prepare_account_remove(const std::string &root, const flatfile_authority_lock &lock,
+				       const std::string &account_name,
+				       flatfile_locker_player_removal *removal, std::string *error);
 flatfile_locker_result
 flatfile_locker_prepare_item_transfer(const std::string &root, const flatfile_authority_lock &lock,
 				      const item_transfer_payload &payload,

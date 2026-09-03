@@ -108,6 +108,10 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_lock
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
 	flatfile_authority_operation *operation, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_prepare_locker_remove(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	flatfile_authority_operation *operation, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
