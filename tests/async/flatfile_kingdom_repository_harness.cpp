@@ -36,10 +36,19 @@ namespace
 {
 /* On-disk layout, mirrored from kingdom_db.c's flat-file half: magic 8,
  * version u32, payload length u32, revision u64, SHA-256 32; then a u32 record
- * count and 64 bytes per realm (4 x i32, 4 x i64, i64, 2 x i32), assoc_id
- * first. Reading it back independently is what pins the layout. */
+ * count and, per realm, assoc_id first:
+ *
+ *     version 1    4 x i32, 4 x i64, i64, 2 x i32                = 64 bytes
+ *     version 2    all of that, then 16 guard slots of
+ *                  (i32 class, i32 level) and the champion's i32  = 196 bytes
+ *
+ * Reading the image back independently is what pins the layout, so the roster
+ * is spelled out here in the same terms rather than deferred to a constant
+ * from the code under test; the slot count is copied for the same reason the
+ * record maximum below is. */
 constexpr size_t header_size = 8 + 4 + 4 + 8 + 32;
-constexpr size_t record_size = 4 * 4 + 4 * 8 + 8 + 2 * 4;
+constexpr size_t guard_slots = 16;
+constexpr size_t record_size = 4 * 4 + 4 * 8 + 8 + 2 * 4 + guard_slots * (4 + 4) + 4;
 /* Header field offsets, for the hand-edited images below. */
 constexpr size_t version_offset = 8;
 constexpr size_t payload_length_offset = 12;
@@ -178,19 +187,22 @@ std::vector<int> stored_ids(const fs::path &root)
  * round trip evidence. Used to put the decoder's record-count cap on its
  * boundary: at the cap this is a valid catalogue, one past it nothing but
  * the cap can be what rejects it. */
-std::vector<uint8_t> catalog_image(int32_t count)
+std::vector<uint8_t> catalog_image(int32_t count, int32_t version = 2)
 {
-	const size_t payload_size = 4 + static_cast<size_t>(count) * record_size;
+	/* A version 1 record stops before the roster; a version 2 one carries
+	 * it. Both are valid images, which is the point of taking the version:
+	 * the decoder must still read the older layout. */
+	const size_t width = version >= 2 ? record_size : record_size - (guard_slots * 8 + 4);
+	const size_t payload_size = 4 + static_cast<size_t>(count) * width;
 	std::vector<uint8_t> image(header_size + payload_size, 0);
 	const uint8_t magic[8] = { 'D', 'U', 'R', 'K', 'I', 'N', 'G', 0 };
 	memcpy(image.data(), magic, sizeof(magic));
-	put_le32(image, version_offset, 1);
+	put_le32(image, version_offset, version);
 	put_le32(image, payload_length_offset, static_cast<int32_t>(payload_size));
 	image[revision_offset] = 1; /* revision 1: little-endian, the rest zero */
 	put_le32(image, header_size, count);
 	for (int32_t index = 0; index < count; ++index)
-		put_le32(image, header_size + 4 + static_cast<size_t>(index) * record_size,
-			 index + 1);
+		put_le32(image, header_size + 4 + static_cast<size_t>(index) * width, index + 1);
 	reseal(image);
 	return image;
 }
@@ -502,9 +514,18 @@ int main(int argc, char **argv)
 	broken[0] = static_cast<uint8_t>(broken[0] ^ 0xff);
 	require_rejected(heal, broken, realm3, "a file with the wrong magic was accepted");
 
+	/* 3 is one past the version this build writes. 2 is NOT tested here any
+	 * more and must not be: the roster change made 2 the current version,
+	 * and 1 is still read on purpose so a server upgraded across that change
+	 * does not present every realm as never having existed. Both of those
+	 * are checked as ACCEPTANCES below. */
 	broken = sound;
-	put_le32(broken, version_offset, 2);
+	put_le32(broken, version_offset, 3);
 	require_rejected(heal, broken, realm3, "a file of an unknown version was accepted");
+
+	broken = sound;
+	put_le32(broken, version_offset, 0);
+	require_rejected(heal, broken, realm3, "a file of version 0 was accepted");
 
 	broken = sound;
 	std::fill(broken.begin() + static_cast<std::ptrdiff_t>(revision_offset),
@@ -534,6 +555,26 @@ int main(int argc, char **argv)
 	require_rejected(cap, catalog_image(kingdom_realm_cap + 1), realm3,
 			 "a catalogue one record past the cap was accepted");
 	passed("the record-count cap admits the cap itself and rejects one past it");
+
+	/* --- a VERSION 1 file still loads, with empty rosters ---
+	 * The roster change of 2026-09-04 moved the file to version 2. A server
+	 * upgraded across it has a version 1 authority on disk, and refusing that
+	 * file would present every realm on the server as never having existed --
+	 * the single worst reading of "the format changed". So version 1 must
+	 * still decode, and a version 1 record means exactly what it says: no
+	 * guard was ever bought, because guards were derived from land then. */
+	const fs::path older = base / "v1";
+	prepare_root(older);
+	persistence_root = older.string();
+	write_file(authority_of(older), catalog_image(3, 1));
+	kingdom_realms.clear();
+	require(kingdom_db_load_all() && kingdom_realms.size() == 3,
+		"a version 1 authority file was rejected");
+	for (const auto &entry : kingdom_realms)
+		for (int slot = 0; slot < 16; ++slot)
+			require(entry.second.guards[slot].level == 0,
+				"a version 1 record decoded with a guard on its roster");
+	passed("a version 1 authority still loads, with every roster empty");
 
 	/* Back to the catalogue the remaining sections measure. */
 	persistence_root = state.string();

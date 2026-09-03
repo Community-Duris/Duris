@@ -76,11 +76,55 @@ extern struct room_data *world;
  * Prices
  * ------------------------------------------------------------------ */
 
-/* Copper price of claim `index` (1..KINGDOM_MAX_SQUARES): base + per_square *
- * index from lib/kingdom.cfg, with both knobs clamped to 0..INT_MAX first.
- * 0 for an index outside the range. A pure function of the index, which is
- * what makes retaking a reverted ring cost exactly what it cost the first
- * time. */
+/* `base` compounded by the configured growth (index - 1) times, clamped.
+ *
+ * The one place the claim curve is implemented: coin and material both ride
+ * it, and a second copy of a price formula is exactly the sort of thing that
+ * drifts until a square costs one amount to quote and another to buy. */
+static long kingdom_compound(long base, int index)
+{
+	const long ceiling = (long)INT_MAX;
+	long value = base > 0 ? base : 0;
+	long growth = kingdom_cfg.claim_cost_growth_permille;
+
+	/* Below 1000 land would get CHEAPER as a realm grew, inverting the whole
+	 * point of the curve. 1000 exactly is the degenerate flat case and is
+	 * allowed, because an operator may genuinely want a fixed price. */
+	if (growth < 1000)
+	{
+		growth = 1000;
+	}
+	if (value > ceiling)
+	{
+		value = ceiling;
+	}
+
+	for (int step = 1; step < index; step++)
+	{
+		/* Tested BEFORE the multiply rather than after: `value * growth`
+		 * overflowing is undefined behaviour, so it must not happen even
+		 * once. Reaching the ceiling is not an error -- it prices land
+		 * beyond any treasury that will ever exist, which is the honest
+		 * answer to a runaway config. */
+		if (value > ceiling / growth * 1000)
+		{
+			return ceiling;
+		}
+
+		value = (value * growth) / 1000;
+
+		if (value > ceiling)
+		{
+			return ceiling;
+		}
+	}
+
+	return value;
+}
+
+/* Copper price of claim `index` (1..KINGDOM_MAX_SQUARES), 0 outside it. A pure
+ * function of the index, which is what makes retaking a reverted ring cost
+ * exactly what it cost the first time. */
 long kingdom_claim_cost(int index)
 {
 	if (index < 1 || index > KINGDOM_MAX_SQUARES)
@@ -88,32 +132,40 @@ long kingdom_claim_cost(int index)
 		return 0;
 	}
 
-	/* base + per_square * n, as documented on kingdom_config.
+	/* base * growth^(index-1), COMPOUNDING, as documented on kingdom_config.
 	 *
-	 * Both terms come from lib/kingdom.cfg, which is a hand-edited file, so
-	 * they are clamped at BOTH ends before any arithmetic touches them. The
-	 * floor stops a negative entry turning the price into a payment TO the
-	 * guild. The ceiling stops `each * index` overflowing a signed long,
-	 * which would be undefined behaviour reached from a config typo; INT_MAX
-	 * per knob keeps every price this function can produce well inside a
-	 * long (see the sum bound below) while still pricing land far beyond
-	 * any treasury that will ever exist. */
-	const long ceiling = (long)INT_MAX;
-	long base = kingdom_cfg.claim_cost_base > 0 ? kingdom_cfg.claim_cost_base : 0;
-	long each = kingdom_cfg.claim_cost_per_square > 0 ? kingdom_cfg.claim_cost_per_square : 0;
+	 * Both terms come from lib/kingdom.cfg, a hand-edited file, so they are
+	 * clamped before any arithmetic touches them. The floor stops a negative
+	 * entry turning the price into a payment TO the guild; the ceiling stops
+	 * a compounding curve running away, which matters far more here than it
+	 * did for the old linear one -- at the shipped x1.05 the eightieth square
+	 * is about 47,200 platinum, but a typo of x2 would reach 2^79 and blow
+	 * past a long well before index 80.
+	 *
+	 * Integer arithmetic end to end: growth is per mille, and each step
+	 * multiplies then divides, so two servers always agree on a price. The
+	 * rounding-down that costs is a few copper against a true exponential,
+	 * which is a fair trade for an answer that does not depend on a float
+	 * unit's mood. */
+	return kingdom_compound(kingdom_cfg.claim_cost_base, index);
+}
 
-	if (base > ceiling)
+/* Units of EVERY resource that claim `index` costs on top of the coin, or 0
+ * for an index the geometry does not know.
+ *
+ * Ruled 2026-09-03: land is bought with worked material as well as money, and
+ * with all four kinds, so a realm cannot expand on one sort of ground alone --
+ * it must send people out across the whole map. The amount rides the same
+ * curve as the coin, so the last square is as much harder in labour as it is
+ * in treasure. */
+long kingdom_claim_material_cost(int index)
+{
+	if (index < 1 || index > KINGDOM_MAX_SQUARES)
 	{
-		base = ceiling;
-	}
-	if (each > ceiling)
-	{
-		each = ceiling;
+		return 0;
 	}
 
-	/* At most INT_MAX + INT_MAX * 80, which is ~1.7e11 -- comfortably inside
-	 * a 64-bit long, so the sum below cannot overflow. */
-	return base + (each * (long)index);
+	return kingdom_compound(kingdom_cfg.claim_material_base, index);
 }
 
 /* Copper price of every square in `ring` (1..KINGDOM_MAX_RING) taken
@@ -630,9 +682,60 @@ bool kingdom_claim_next(P_char ch)
 	}
 
 	const long price = kingdom_claim_cost(index);
+	const long material = kingdom_claim_material_cost(index);
+
+	long bill[KRES_MAX];
+
+	for (int res = 0; res < KRES_MAX; res++)
+	{
+		bill[res] = material;
+	}
+
+	/* MATERIAL IS CHECKED BEFORE COIN MOVES, and that order is the whole of
+	 * the safety here. Ruling 6 says nothing in this module refunds, so a
+	 * claim that debited the treasury and only then discovered the realm was
+	 * two logs short would burn the coin for nothing. The store is read
+	 * first, refused loudly with the shortfall named, and only spent once the
+	 * coin is already gone -- at which point kingdom_resource_spend() cannot
+	 * fail, because nothing between the two runs a tick or another command. */
+	if (material > 0)
+	{
+		/* Four clauses at most, each "999999 more mineral" and a comma;
+		 * sized for that rather than for MAX_INPUT_LENGTH so the refusal
+		 * it feeds cannot be said to overrun its own buffer. */
+		char lack[192];
+
+		lack[0] = '\0';
+
+		for (int res = 0; res < KRES_MAX; res++)
+		{
+			if (realm->resources[res] >= material)
+			{
+				continue;
+			}
+
+			char one[64];
+
+			snprintf(one, sizeof(one), "%s%ld more %s", lack[0] ? ", " : "",
+				 material - realm->resources[res], kingdom_resource_name(res));
+			strncat(lack, one, sizeof(lack) - strlen(lack) - 1);
+		}
+
+		if (lack[0])
+		{
+			char poor[MAX_INPUT_LENGTH];
+
+			snprintf(poor, sizeof(poor),
+				 "That square wants %ld of every worked resource as well as coin. "
+				 "Your realm needs %s.\r\n",
+				 material, lack);
+			send_to_char(poor, ch);
+			return false;
+		}
+	}
 
 	/* Everything is validated. Only now does money move. A price of zero is
-	 * a deliberate configuration -- both cost knobs set to 0 means land is
+	 * a deliberate configuration -- the cost knobs set to 0 means land is
 	 * free on this mud -- and must go through as a free claim rather than
 	 * dead-end in the debit, which refuses non-positive amounts.
 	 * kingdom_claim_cost() clamps away negatives, so zero is the only such
@@ -646,6 +749,14 @@ bool kingdom_claim_next(P_char ch)
 			 kingdom_price_string(price));
 		send_to_char(poor, ch);
 		return false;
+	}
+
+	/* Checked above, so this cannot refuse for want of material; it can still
+	 * answer false on a mud configured for no material at all, which is why
+	 * the call is gated on the same condition the check was. */
+	if (material > 0)
+	{
+		kingdom_resource_spend(*realm, bill);
 	}
 
 	realm->highest_claim = index;
@@ -678,9 +789,10 @@ bool kingdom_claim_next(P_char ch)
 	const int claimed_vnum = kingdom_valid_rnum(claimed_rnum) ? world[claimed_rnum].number : 0;
 
 	logit(LOG_KINGDOM,
-	      "CLAIM: %s (assoc %d) took square %d (ring %d, vnum %d) for %ld copper%s.",
+	      "CLAIM: %s (assoc %d) took square %d (ring %d, vnum %d) for %ld copper and %ld of "
+	      "each resource%s.",
 	      guild->get_name().c_str(), realm->assoc_id, index, ring, claimed_vnum, price,
-	      durable ? "" : " (record pending)");
+	      material, durable ? "" : " (record pending)");
 
 	char told[MAX_INPUT_LENGTH];
 
@@ -709,7 +821,7 @@ bool kingdom_claim_next(P_char ch)
 	 * before the claimer had been told the claim went through and before
 	 * anyone had been told there was new land to garrison. Cause is
 	 * announced first, consequence second. */
-	kingdom_guards_refresh(*realm);
+	kingdom_garrison_refresh(*realm);
 	if (kingdom_valid_rnum(claimed_rnum))
 	{
 		kingdom_node_reap_room(claimed_rnum);
@@ -773,7 +885,7 @@ bool kingdom_abandon_last(P_char ch)
 
 	/* Fewer squares may mean fewer guards allowed; reconcile now so a guard
 	 * never stands on ground the realm has just given up. */
-	kingdom_guards_refresh(*realm);
+	kingdom_garrison_refresh(*realm);
 
 	logit(LOG_KINGDOM, "ABANDON: %s (assoc %d) released square %d (vnum %d); %d remain%s.",
 	      guild->get_name().c_str(), realm->assoc_id, index, released_vnum,
@@ -797,4 +909,514 @@ bool kingdom_abandon_last(P_char ch)
 	send_to_guild(guild, "The Royal Herald", told);
 
 	return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * The garrison roster
+ * ------------------------------------------------------------------ *
+ * Ruled 2026-09-04. Guards are BOUGHT, one at a time, and promoted with the
+ * realm's completed rings. The three verbs live here rather than in
+ * kingdom_guards.c because each one spends the treasury and must land the
+ * realm and the guild as a single paired write -- which is what this file is
+ * for -- while kingdom_guards.c owns the arithmetic (what a promotion costs,
+ * how high the land allows) and the standing-up of bodies.
+ *
+ * Nothing here despawns or spawns a guard directly. Every verb ends with
+ * kingdom_guards_refresh(), which reconciles the world against the roster it
+ * has just changed; a hire therefore makes a guard appear and a promotion
+ * replaces the old body with a stronger one, both through the one
+ * reconciliation path that also handles boot, arrears and lost land.
+ */
+
+/* `kingdom roster`. Read-only, and the only roster verb any member may run:
+ * seeing who the guild is paying for is not a leader's privilege. */
+void kingdom_roster_show(P_char ch)
+{
+	if (!ch || IS_NPC(ch) || !kingdom_enabled())
+	{
+		return;
+	}
+
+	P_Guild guild = GET_ASSOC(ch);
+
+	if (!guild || !IS_MEMBER(GET_A_BITS(ch)) || !GT_PAROLE(GET_A_BITS(ch)))
+	{
+		send_to_char("You do not belong to a guild.\r\n", ch);
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_find_realm((int)guild->get_id());
+
+	if (!realm)
+	{
+		send_to_char("Your guild is not a kingdom.\r\n", ch);
+		return;
+	}
+
+	const int cap = kingdom_guard_level_cap(*realm);
+	const int permitted = kingdom_guard_allowance(*realm);
+	const int bought = kingdom_roster_count(*realm);
+
+	char line[MAX_INPUT_LENGTH];
+
+	send_to_char("&+WThe realm's garrison&n\r\n\r\n", ch);
+
+	if (bought == 0)
+	{
+		send_to_char("  No guards on the books.\r\n", ch);
+	}
+	else
+	{
+		send_to_char("   &+w#  class         level  to promote&n\r\n", ch);
+	}
+
+	for (int slot = 0; slot < KINGDOM_GUARD_SLOTS; slot++)
+	{
+		if (realm->guards[slot].level <= 0)
+		{
+			continue;
+		}
+
+		const int level = realm->guards[slot].level;
+		const long step =
+			kingdom_guard_promotion_cost(level, level + KINGDOM_GUARD_TIER_STEP);
+
+		if (level >= cap)
+		{
+			snprintf(line, sizeof(line), "  %2d  %-12s  %5d  %s\r\n", slot + 1,
+				 kingdom_guard_class_name(realm->guards[slot].guard_class), level,
+				 level >= KINGDOM_GUARD_TOP_LEVEL ?
+					 "at the highest rank there is" :
+					 "held back by the realm's land");
+		}
+		else
+		{
+			snprintf(line, sizeof(line), "  %2d  %-12s  %5d  %s to level %d\r\n",
+				 slot + 1,
+				 kingdom_guard_class_name(realm->guards[slot].guard_class), level,
+				 kingdom_price_string(step), level + KINGDOM_GUARD_TIER_STEP);
+		}
+		send_to_char(line, ch);
+	}
+
+	if (realm->champion_class)
+	{
+		/* The champion is not slot 17 of the same list -- it is not
+		 * promoted, not replaced and not counted against the land's
+		 * allowance -- so it gets its own line rather than a row that
+		 * would invite 'kingdom promote 17'. */
+		/* champion_class is exactly two CLASS_* bits, set together by
+		 * kingdom_roster_champion() and never changed. Split into the
+		 * lower bit and the remainder to name them both; with two bits
+		 * set the remainder IS the higher one. */
+		const int lower = realm->champion_class & -realm->champion_class;
+		const int higher = realm->champion_class & ~lower;
+
+		snprintf(line, sizeof(line),
+			 "\r\n  &+YChampion&n: level %d, sworn to %s and %s.\r\n",
+			 KINGDOM_CHAMPION_LEVEL, kingdom_guard_class_name(lower),
+			 kingdom_guard_class_name(higher));
+		send_to_char(line, ch);
+	}
+	else if (realm->highest_claim >= KINGDOM_MAX_SQUARES)
+	{
+		snprintf(line, sizeof(line),
+			 "\r\n  Your realm holds every square: it may raise a champion for %s "
+			 "('&+Wkingdom champion <class> <class>&n').\r\n",
+			 kingdom_price_string(KINGDOM_CHAMPION_COST));
+		send_to_char(line, ch);
+	}
+
+	snprintf(line, sizeof(line),
+		 "\r\n  %d bought, %d the land permits, level %d the highest the land allows.\r\n",
+		 bought, permitted, cap);
+	send_to_char(line, ch);
+
+	if (bought < permitted)
+	{
+		snprintf(line, sizeof(line),
+			 "  A new guard costs %s: '&+Wkingdom hire <class>&n'.\r\n",
+			 kingdom_price_string(kingdom_cfg.guard_cost_base));
+		send_to_char(line, ch);
+	}
+	else if (bought >= KINGDOM_GUARD_SLOTS)
+	{
+		send_to_char("  The roster is full.\r\n", ch);
+	}
+	else
+	{
+		send_to_char("  More land is needed before another guard may be raised.\r\n", ch);
+	}
+
+	send_to_char("  '&+Wkingdom promote <#> [class]&n' raises one two levels. A guard's "
+		     "rank never falls.\r\n",
+		     ch);
+}
+
+/* `kingdom hire <class>`. One guard, at the base price, at the prototype's own
+ * level. The class is chosen now and may be changed at each promotion. */
+void kingdom_roster_hire(P_char ch, char *rest)
+{
+	P_Guild guild = kingdom_actor_guild(ch);
+
+	if (!guild)
+	{
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_actor_realm(ch, guild);
+
+	if (!realm)
+	{
+		return;
+	}
+
+	char classes[256];
+
+	kingdom_guard_class_list(classes, sizeof(classes));
+
+	char wanted[MAX_INPUT_LENGTH];
+
+	one_argument(rest, wanted);
+
+	const int guard_class = kingdom_guard_class_by_name(wanted);
+
+	if (!guard_class)
+	{
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "Name the guard's calling: %s.\r\nFor example '&+Wkingdom hire "
+			 "warrior&n'.\r\n",
+			 classes);
+		send_to_char(say, ch);
+		return;
+	}
+
+	const int permitted = kingdom_guard_allowance(*realm);
+	const int bought = kingdom_roster_count(*realm);
+
+	if (bought >= KINGDOM_GUARD_SLOTS)
+	{
+		send_to_char("The roster is full; no realm may keep more.\r\n", ch);
+		return;
+	}
+
+	if (bought >= permitted)
+	{
+		char say[MAX_INPUT_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "Your land supports %d guard(s) and you have %d. Claim more ground "
+			 "before raising another.\r\n",
+			 permitted, bought);
+		send_to_char(say, ch);
+		return;
+	}
+
+	/* The first empty slot, so a guard killed off the books is replaced in
+	 * the number the roster listing already showed rather than appended at
+	 * the end and renumbering everything below it. */
+	int slot = -1;
+
+	for (int i = 0; i < KINGDOM_GUARD_SLOTS; i++)
+	{
+		if (realm->guards[i].level <= 0)
+		{
+			slot = i;
+			break;
+		}
+	}
+
+	if (slot < 0)
+	{
+		send_to_char("The roster is full; no realm may keep more.\r\n", ch);
+		return;
+	}
+
+	const long price = kingdom_cfg.guard_cost_base;
+
+	if (price > 0 && !kingdom_pay_from_treasury(guild, price))
+	{
+		char poor[MAX_INPUT_LENGTH];
+
+		snprintf(poor, sizeof(poor),
+			 "Your guild treasury cannot pay the %s a guard costs.\r\n",
+			 kingdom_price_string(price));
+		send_to_char(poor, ch);
+		return;
+	}
+
+	realm->guards[slot].guard_class = guard_class;
+	realm->guards[slot].level = KINGDOM_GUARD_BASE_LEVEL;
+
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "HIRE");
+
+	char told[MAX_INPUT_LENGTH];
+
+	snprintf(told, sizeof(told),
+		 "A %s takes the realm's coin and the realm's oath. Guard #%d, level %d.\r\n",
+		 kingdom_guard_class_name(guard_class), slot + 1, KINGDOM_GUARD_BASE_LEVEL);
+	send_to_char(told, ch);
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
+
+	snprintf(told, sizeof(told), "A %s is sworn into the realm's garrison.",
+		 kingdom_guard_class_name(guard_class));
+	send_to_guild(guild, "The Kingdom Marshal", told);
+
+	logit(LOG_KINGDOM, "HIRE: %s (assoc %d) raised guard %d, %s, for %ld copper%s.",
+	      guild->get_name().c_str(), realm->assoc_id, slot + 1,
+	      kingdom_guard_class_name(guard_class), price, durable ? "" : " (record pending)");
+
+	/* The body appears here, through the one reconciliation path. */
+	kingdom_garrison_refresh(*realm);
+}
+
+/* `kingdom promote <#> [class]`. Two levels, at the price of one tier, up to
+ * whatever the realm's completed rings allow. The class may be changed at the
+ * same time -- a promotion is the natural moment to re-school a guard -- but
+ * the LEVEL never falls, which is why there is no demote verb and no way to
+ * spend the difference back. */
+void kingdom_roster_upgrade(P_char ch, char *rest)
+{
+	P_Guild guild = kingdom_actor_guild(ch);
+
+	if (!guild)
+	{
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_actor_realm(ch, guild);
+
+	if (!realm)
+	{
+		return;
+	}
+
+	char which[MAX_INPUT_LENGTH];
+	char wanted[MAX_INPUT_LENGTH];
+
+	rest = one_argument(rest, which);
+	one_argument(rest, wanted);
+
+	const int slot = atoi(which) - 1;
+
+	if (slot < 0 || slot >= KINGDOM_GUARD_SLOTS || realm->guards[slot].level <= 0)
+	{
+		send_to_char("Name the guard by its number on '&+Wkingdom roster&n', as "
+			     "'&+Wkingdom promote 3&n'.\r\n",
+			     ch);
+		return;
+	}
+
+	/* An empty second word keeps the guard's present calling; a named one
+	 * must be a calling a guard may take. */
+	int guard_class = realm->guards[slot].guard_class;
+
+	if (*wanted)
+	{
+		guard_class = kingdom_guard_class_by_name(wanted);
+
+		if (!guard_class)
+		{
+			char classes[256];
+			char say[MAX_STRING_LENGTH];
+
+			kingdom_guard_class_list(classes, sizeof(classes));
+			snprintf(say, sizeof(say),
+				 "No guard takes that calling. Choose from: %s.\r\n", classes);
+			send_to_char(say, ch);
+			return;
+		}
+	}
+
+	const int level = realm->guards[slot].level;
+	const int cap = kingdom_guard_level_cap(*realm);
+	const int to = level + KINGDOM_GUARD_TIER_STEP;
+
+	if (level >= KINGDOM_GUARD_TOP_LEVEL)
+	{
+		send_to_char("That guard stands at the highest rank a realm can raise.\r\n", ch);
+		return;
+	}
+
+	if (to > cap)
+	{
+		char say[MAX_INPUT_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "Your realm's land supports level %d, and that guard is already there. "
+			 "Complete the next ring first.\r\n",
+			 cap);
+		send_to_char(say, ch);
+		return;
+	}
+
+	const long price = kingdom_guard_promotion_cost(level, to);
+
+	if (price > 0 && !kingdom_pay_from_treasury(guild, price))
+	{
+		char poor[MAX_INPUT_LENGTH];
+
+		snprintf(poor, sizeof(poor),
+			 "Your guild treasury cannot pay the %s that promotion costs.\r\n",
+			 kingdom_price_string(price));
+		send_to_char(poor, ch);
+		return;
+	}
+
+	const int was_class = realm->guards[slot].guard_class;
+
+	realm->guards[slot].level = to;
+	realm->guards[slot].guard_class = guard_class;
+
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "PROMOTE");
+
+	char told[MAX_INPUT_LENGTH];
+
+	if (guard_class != was_class)
+	{
+		snprintf(told, sizeof(told),
+			 "Guard #%d is raised to level %d and re-schooled from %s to %s.\r\n",
+			 slot + 1, to, kingdom_guard_class_name(was_class),
+			 kingdom_guard_class_name(guard_class));
+	}
+	else
+	{
+		snprintf(told, sizeof(told), "Guard #%d is raised to level %d.\r\n", slot + 1, to);
+	}
+	send_to_char(told, ch);
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
+
+	snprintf(told, sizeof(told), "A %s of the garrison is raised to level %d.",
+		 kingdom_guard_class_name(guard_class), to);
+	send_to_guild(guild, "The Kingdom Marshal", told);
+
+	logit(LOG_KINGDOM, "PROMOTE: %s (assoc %d) raised guard %d to %d (%s) for %ld copper%s.",
+	      guild->get_name().c_str(), realm->assoc_id, slot + 1, to,
+	      kingdom_guard_class_name(guard_class), price, durable ? "" : " (record pending)");
+
+	/* The old body no longer matches its roster line's level, so the
+	 * reconciler replaces it with one that does. */
+	kingdom_garrison_refresh(*realm);
+}
+
+/*
+ * `kingdom champion <class> <class>`. One per realm, and only for a realm that
+ * holds all eighty squares.
+ *
+ * TWO CALLINGS, NOT ONE. The champion is the module's only multiclass mob, so
+ * the verb takes two class names and refuses one -- a realm that wants a plain
+ * warrior has fifteen guard slots for that. They must differ, because a
+ * multiclass of one thing is just that thing at a higher price.
+ *
+ * There is no upgrade path and no refund: the champion is level 60 the moment
+ * it is raised and stays there. Losing a square sends it home rather than
+ * unmaking it, and it takes the field again when the eightieth square is
+ * retaken -- the guild does not pay twice for land it already bought once.
+ */
+void kingdom_roster_champion(P_char ch, char *rest)
+{
+	P_Guild guild = kingdom_actor_guild(ch);
+
+	if (!guild)
+	{
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_actor_realm(ch, guild);
+
+	if (!realm)
+	{
+		return;
+	}
+
+	if (realm->champion_class)
+	{
+		send_to_char("Your realm already has its champion. There is only ever one.\r\n",
+			     ch);
+		return;
+	}
+
+	if (realm->highest_claim < KINGDOM_MAX_SQUARES)
+	{
+		char say[MAX_INPUT_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "A champion answers only to a realm that holds every square. Yours "
+			 "holds %d of %d.\r\n",
+			 realm->highest_claim, KINGDOM_MAX_SQUARES);
+		send_to_char(say, ch);
+		return;
+	}
+
+	char first[MAX_INPUT_LENGTH];
+	char second[MAX_INPUT_LENGTH];
+
+	rest = one_argument(rest, first);
+	one_argument(rest, second);
+
+	const int class_one = kingdom_guard_class_by_name(first);
+	const int class_two = kingdom_guard_class_by_name(second);
+
+	if (!class_one || !class_two || class_one == class_two)
+	{
+		char classes[256];
+		char say[MAX_STRING_LENGTH];
+
+		kingdom_guard_class_list(classes, sizeof(classes));
+		snprintf(say, sizeof(say),
+			 "A champion is sworn to TWO callings, and they must differ. Choose from: "
+			 "%s.\r\nFor example '&+Wkingdom champion warrior cleric&n'.\r\n",
+			 classes);
+		send_to_char(say, ch);
+		return;
+	}
+
+	const long price = KINGDOM_CHAMPION_COST;
+
+	if (!kingdom_pay_from_treasury(guild, price))
+	{
+		char poor[MAX_INPUT_LENGTH];
+
+		snprintf(poor, sizeof(poor),
+			 "Your guild treasury cannot pay the %s a champion costs.\r\n",
+			 kingdom_price_string(price));
+		send_to_char(poor, ch);
+		return;
+	}
+
+	realm->champion_class = class_one | class_two;
+
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "CHAMPION");
+
+	char told[MAX_INPUT_LENGTH];
+
+	snprintf(told, sizeof(told),
+		 "The realm raises its champion: a %s and %s both, at level %d.\r\n",
+		 kingdom_guard_class_name(class_one), kingdom_guard_class_name(class_two),
+		 KINGDOM_CHAMPION_LEVEL);
+	send_to_char(told, ch);
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
+
+	send_to_guild(guild, "The Kingdom Marshal",
+		      "The realm raises a champion, and a banner with it.");
+
+	logit(LOG_KINGDOM, "CHAMPION: %s (assoc %d) raised a %s/%s champion for %ld copper%s.",
+	      guild->get_name().c_str(), realm->assoc_id, kingdom_guard_class_name(class_one),
+	      kingdom_guard_class_name(class_two), price, durable ? "" : " (record pending)");
+
+	kingdom_champion_refresh(*realm);
 }

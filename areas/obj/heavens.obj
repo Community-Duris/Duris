@@ -5004,6 +5004,22 @@ pool dark still water node _node_~
 12 40 3 0 5 0 0 0 0 0 0
 10 0 0 0 0 0 0 0
 0 0 100
+#485
+banner combat war kingdom _banner_~
+&+Rthe banner of combat&n~
+&+RA &+ybanner of combat&+R stands planted in the earth here, its cloth snapping.&n~
+~
+12 6 3 0 5 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
+#486
+banner sanctity holy kingdom _banner_~
+&+Wthe banner of sanctity&n~
+&+WA &+Ybanner of sanctity&+W stands planted in the earth here, still and bright.&n~
+~
+12 6 3 0 5 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 100
 #498
 compact pile bones~
 &+La compact pile of &+Wbones&n~

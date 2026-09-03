@@ -10,11 +10,11 @@
     "mariadb10_11": "92dd682008ba94f8aecc63595dc46f9d6f1f865adecd174e58e2a2ce14220f2c"
   },
   "migration_head": {
-    "id": "0008_statistics_date_index",
-    "sequence": 8,
-    "apply_checksum": "19b11144dd55241d624de95eb5f1648049823ab5e40ab6029ce7ea5535b5cb60",
-    "verify_checksum": "d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90",
-    "history_checksum": "0ea545de3ada35686b935dbb86b6f4cae64e01622b37baadddc76d6e9667929f"
+    "id": "0009_kingdom_garrison",
+    "sequence": 9,
+    "apply_checksum": "e295446be0ae22bb48989db87166641b8f8f599fa711133a3fd3f8370db9d8b3",
+    "verify_checksum": "79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9",
+    "history_checksum": "37fabde7d3c00518b92b35519442106b74dcb92fd18eebc6251c3470da56f561"
   },
   "connection": {
     "character_set": "utf8mb4",

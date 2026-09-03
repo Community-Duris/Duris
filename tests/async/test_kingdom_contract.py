@@ -1150,9 +1150,15 @@ def test_verbs_settle_the_world_they_changed() -> None:
     check(len(claim) == 1, "kingdom_claim_next is defined", f"{len(claim)}")
     check(len(abandon) == 1, "kingdom_abandon_last is defined", f"{len(abandon)}")
     check(len(hall) == 1, "kingdom_on_guildhall_changed is defined", f"{len(hall)}")
+    # kingdom_garrison_refresh(), NOT kingdom_guards_refresh(): since the roster
+    # ruling of 2026-09-04 there are two things to reconcile -- the bought guards
+    # and the champion -- and the combined entry point is the one every caller
+    # outside kingdom_guards.c must use. Pinning the inner one here would let a
+    # caller reconcile the guards and silently leave the champion standing on
+    # land its realm no longer holds.
     if claim:
         check(
-            "kingdom_guards_refresh(" in claim[0],
+            "kingdom_garrison_refresh(" in claim[0],
             "a claim refreshes the garrison (the allowance grows with the square count)",
         )
         check(
@@ -1161,12 +1167,12 @@ def test_verbs_settle_the_world_they_changed() -> None:
         )
     if abandon:
         check(
-            "kingdom_guards_refresh(" in abandon[0],
+            "kingdom_garrison_refresh(" in abandon[0],
             "an abandon refreshes the garrison (no guard on ground just given up)",
         )
     if hall:
         check(
-            "kingdom_guards_refresh(" in hall[0] and "kingdom_guards_despawn(" in hall[0],
+            "kingdom_garrison_refresh(" in hall[0] and "kingdom_guards_despawn(" in hall[0],
             "a hall change re-posts the garrison when re-anchored and despawns it when the "
             "realm goes dormant",
         )
@@ -1210,6 +1216,269 @@ def test_realm_verbs_test_membership_not_a_bare_assoc_pointer() -> None:
             "the mutating verbs' front door tests IS_MEMBER and the leader tier (GT_DEPUTY), "
             "which is strictly above GT_PAROLE",
         )
+
+
+def test_land_is_paid_for_in_material_before_any_coin_moves() -> None:
+    """Ruled 2026-09-04: a square costs coin AND all four resources.
+
+    The ORDER is the contract, not just the charge. Nothing in this module
+    refunds (ruling 6), so a claim that debited the treasury and only then
+    discovered the realm was short of wood would burn the coin for nothing.
+    The store must therefore be tested before kingdom_pay_from_treasury() is
+    reached, and spent only after it has answered.
+    """
+    body = function_bodies(read("src/kingdom/kingdom_claim.c"),
+                           r"\bbool\s+kingdom_claim_next\s*\(")
+    check(len(body) == 1, "kingdom_claim_next is defined", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    check("kingdom_claim_material_cost(" in code,
+          "a claim prices the material as well as the coin")
+    check("kingdom_resource_spend(" in code, "a claim actually spends the material")
+    short = code.find("realm->resources[")
+    pay = code.find("kingdom_pay_from_treasury(")
+    spend = code.find("kingdom_resource_spend(")
+    check(-1 < short < pay,
+          "the realm's stores are checked BEFORE the treasury is debited "
+          "(there is no refund for a claim that fails after the coin is gone)",
+          f"check at {short}, debit at {pay}")
+    check(pay < spend,
+          "the material is spent only after the coin was taken, so a refused "
+          "payment leaves the stores untouched",
+          f"debit at {pay}, spend at {spend}")
+
+
+def test_the_store_has_exactly_one_way_out() -> None:
+    """Resources are spendable on kingdom benefits and on nothing else.
+
+    kingdom_resource_spend() is the only outward path and it is ALL OR NOTHING:
+    a realm short of one resource must pay none of them, or a refused claim
+    would leave a realm poorer with nothing to show for it.
+    """
+    harvest = read("src/kingdom/kingdom_harvest.c")
+    body = function_bodies(harvest, r"\bbool\s+kingdom_resource_spend\s*\(")
+    check(len(body) == 1, "kingdom_resource_spend is defined once", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    # Every shortfall must return before any counter moves: the decrement loop
+    # is the LAST thing in the function.
+    check(code.find("return false") < code.find("realm.resources[res] -= costs[res]"),
+          "every refusal returns before a single counter is decremented")
+    check("realm.dirty = true" in code,
+          "spending marks the realm dirty so the change is published")
+
+
+def test_guards_patrol_within_the_border_and_are_never_sentinel() -> None:
+    """Ruled 2026-09-04: the garrison walks the ground it is paid to hold.
+
+    ACT_SENTINEL STAYS SET, and that is not a contradiction. MobCanGo() refuses
+    a sentinel mob every direction, so the ENGINE's wander -- which knows about
+    zones and nothing about realms -- cannot walk a guard off the territory;
+    do_move() does not consult the flag at all, so this module's own patrol
+    moves it perfectly well. Containment is therefore ours to enforce, and the
+    one rule is that a step's DESTINATION must belong to the guard's own realm.
+    Asking kingdom_owner_of_room() of the destination is what stops a guard
+    being lured across a border, and what walks it back in when a ring reverts
+    under its feet.
+    """
+    guards = read("src/kingdom/kingdom_guards.c")
+    spawn = function_bodies(guards, r"\bstatic\s+bool\s+kingdom_guard_spawn_one\s*\(")
+    check(len(spawn) == 1, "kingdom_guard_spawn_one is defined", f"{len(spawn)}")
+    if spawn:
+        code = strip_comments(spawn[0])
+        check("SET_BIT(mob->specials.act, ACT_SENTINEL)" in code,
+              "a spawned guard keeps ACT_SENTINEL, so the engine's own wander "
+              "cannot move it off the realm")
+        check("REMOVE_BIT(mob->specials.act, ACT_SENTINEL)" not in code,
+              "nothing in the spawner clears ACT_SENTINEL, which would hand the "
+              "engine back the ability to move a guard")
+    enter = function_bodies(guards, r"\bstatic\s+bool\s+kingdom_guard_may_enter\s*\(")
+    check(len(enter) == 1, "kingdom_guard_may_enter is defined", f"{len(enter)}")
+    if enter:
+        check("kingdom_owner_of_room(to_room)" in strip_comments(enter[0]),
+              "a patrol step is judged on the DESTINATION's owner, so a guard "
+              "cannot be lured off its realm")
+
+
+def test_the_standing_loadout_is_applied_in_code_not_left_to_world_data() -> None:
+    """The garrison's competence is a rule of the module, not of one .mob file.
+
+    Every flag ruled on 2026-09-04 is set by kingdom_guard_outfit() rather than
+    written into areas/mob/heavens.mob, so a stray area edit cannot quietly
+    produce a guard that anyone can walk past invisible.
+    """
+    body = function_bodies(read("src/kingdom/kingdom_guards.c"),
+                           r"\bstatic\s+void\s+kingdom_guard_outfit\s*\(")
+    check(len(body) == 1, "kingdom_guard_outfit is defined", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    for flag in ("AFF_DETECT_INVISIBLE", "AFF_SENSE_LIFE", "AFF_INFRAVISION",
+                 "AFF2_ULTRAVISION", "AFF_FARSEE", "AFF_AWARE", "AFF_HASTE",
+                 "AFF_STONE_SKIN", "AFF2_GLOBE", "AFF4_NOFEAR", "AFF_FLY",
+                 "AFF3_SWIMMING", "ACT_NO_SUMMON", "ACT_BREAK_CHARM",
+                 "ACT_IMMUNE_TO_PARA", "ACT_ELITE", "ACT_SCAVENGER",
+                 "ACT_MEMORY", "ACT_CANFLY", "ACT_CANSWIM", "ACT_PROTECTOR"):
+        check(flag in code, f"every guard is given {flag}")
+    check("AGGR_EVIL_RACE" in code and "AGGR_GOOD_RACE" in code,
+          "a guard is aggressive to the OPPOSING racewar side, both ways round")
+
+
+def test_the_champion_needs_the_whole_map_and_two_callings() -> None:
+    """One champion, only for a realm holding all eighty squares.
+
+    Both gates are pinned because either one alone would be a different
+    feature: without the square test a young realm could buy a level-60 mob,
+    and without the two-class test the champion would be an ordinary guard at
+    five times the price.
+    """
+    body = function_bodies(read("src/kingdom/kingdom_claim.c"),
+                           r"\bvoid\s+kingdom_roster_champion\s*\(")
+    check(len(body) == 1, "kingdom_roster_champion is defined", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    check("highest_claim < KINGDOM_MAX_SQUARES" in code,
+          "a champion is refused to a realm that does not hold every square")
+    check("class_one == class_two" in code,
+          "a champion's two callings must differ")
+    check("realm->champion_class" in code, "the champion is recorded on the realm")
+    check("kingdom_champion_refresh(" in code,
+          "raising a champion puts it in the world through the reconciler")
+
+
+def test_the_banner_ticks_and_can_be_broken() -> None:
+    """A banner is a thing in a room, not an aura.
+
+    The whole design rests on it being destructible: an attacking party must
+    be able to spend rounds on the banner instead of on the garrison. So the
+    proc must arm its own tick (CMD_SET_PERIODIC -> TRUE), buff on CMD_PERIODIC,
+    and take damage from CMD_KILL / CMD_HIT.
+    """
+    guards = read("src/kingdom/kingdom_guards.c")
+    body = function_bodies(guards, r"\bint\s+kingdom_banner_proc\s*\(")
+    check(len(body) == 1, "kingdom_banner_proc is defined", f"{len(body)}")
+    if body:
+        code = strip_comments(body[0])
+        check("CMD_SET_PERIODIC" in code and "CMD_PERIODIC" in code,
+              "the banner arms and answers its own periodic tick")
+        check("CMD_KILL" in code and "CMD_HIT" in code,
+              "the banner can be attacked")
+        check("extract_obj(" in code, "a banner destroyed leaves the world")
+        check("REMOVE_BIT" in code and "AFF_INFERNAL_FURY" in code,
+              "breaking the banner takes its buff away at once, so a banner "
+              "that fell cannot go on helping")
+    bind = function_bodies(guards, r"\bvoid\s+kingdom_guards_bind_proc\s*\(")
+    check(len(bind) == 1, "kingdom_guards_bind_proc is defined", f"{len(bind)}")
+    if bind:
+        code = strip_comments(bind[0])
+        check("kingdom_guard_proc" in code and "kingdom_champion_proc" in code
+              and "kingdom_banner_proc" in code,
+              "all three procs are bound, or the feature is inert world data")
+        check("real_object(" in code and "real_object0(" not in code,
+              "banner prototypes resolve with real_object(), never real_object0() "
+              "-- which answers 0 both for the first object and for a missing vnum")
+
+
+def test_the_spec_heartbeat_is_armed_at_both_ends() -> None:
+    """The patrol runs on the spec heartbeat, and arming it takes TWO things.
+
+    read_mobile() arms event_mob_proc only for a mob carrying ACT_SPEC whose
+    proc then answers TRUE to CMD_SET_PERIODIC (world/db.c). Miss either half
+    and the guards silently stand exactly where they were posted -- the
+    pre-2026-09-04 behaviour, with no error anywhere to say so.
+
+    ACT_SPEC IS DERIVED, NEVER PERSISTED: read_mobile() sets it for any
+    prototype with a bound function and strips it from any without one, and
+    test_boot_log_hygiene.py refuses the bit in area sources. So the world-data
+    half of the pair is not a flag in heavens.mob -- it is the BINDING, which
+    must happen at initialize() before any guard can be spawned. That is what
+    is pinned here.
+
+    It also pins CMD_PERIODIC as the command the patrol listens for: the
+    CMD_MOB_MUNDANE dispatch to spec procs in mobact.c is commented out, so a
+    patrol written against that command would never once run.
+    """
+    guards = read("src/kingdom/kingdom_guards.c")
+    for name in ("kingdom_guard_proc", "kingdom_champion_proc"):
+        bodies = function_bodies(guards, r"\bint\s+" + name + r"\s*\(")
+        check(len(bodies) == 1, f"{name} is defined", f"{len(bodies)}")
+        if not bodies:
+            continue
+        code = strip_comments(bodies[0])
+        arm = code.find("CMD_SET_PERIODIC")
+        check(arm >= 0 and "return TRUE" in code[arm:arm + 120],
+              f"{name} answers TRUE to CMD_SET_PERIODIC, which is what arms its "
+              "heartbeat")
+        check("CMD_PERIODIC" in code.replace("CMD_SET_PERIODIC", ""),
+              f"{name} acts on CMD_PERIODIC, the live heartbeat -- not on "
+              "CMD_MOB_MUNDANE, whose dispatch to spec procs is commented out")
+    check("CMD_KILL" not in strip_comments(
+              function_bodies(guards, r"\bint\s+kingdom_guard_proc\s*\(")[0]),
+          "a guard reacts to CMD_GOTHIT alone: special() offers every command "
+          "typed in a room to every mob in it, so reacting to CMD_KILL would "
+          "muster the garrison at someone killing a rat nearby")
+
+    # The binding half. read_mobile() derives ACT_SPEC from a bound function on
+    # every spawn, so the contract is that the binding happens at initialize --
+    # before a guard can be read_mobile()'d -- and not that a flag sits in the
+    # area file, which test_boot_log_hygiene.py forbids.
+    boot = function_bodies(read("src/kingdom/kingdom.c"),
+                           r"\bvoid\s+kingdom_initialize\s*\(")
+    check(len(boot) == 1, "kingdom_initialize is defined", f"{len(boot)}")
+    if boot:
+        code = strip_comments(boot[0])
+        bind = code.find("kingdom_guards_bind_proc(")
+        spawn = code.find("kingdom_guards_refresh_all(")
+        check(bind >= 0, "the procs are bound at initialize, or every guard "
+                         "spawns without ACT_SPEC and never patrols")
+        check(-1 < bind < spawn,
+              "the binding happens BEFORE the first refresh, because "
+              "read_mobile() derives ACT_SPEC from the bound function at the "
+              "moment of the spawn",
+              f"bind at {bind}, refresh at {spawn}")
+
+    # And the bit must NOT be persisted in the area source: it is derived, and
+    # test_boot_log_hygiene.py fails the whole build if an area file carries it.
+    mob = read("areas/mob/heavens.mob")
+    for vnum in ("#108", "#109"):
+        block = mob.split(vnum + "\n", 1)
+        check(len(block) == 2, f"heavens.mob carries {vnum}")
+        if len(block) != 2:
+            continue
+        stat_line = next((line for line in block[1].splitlines()
+                          if line.strip().endswith(" S") and line[:1].isdigit()), "")
+        flags = int(stat_line.split()[0]) if stat_line else 0
+        check(not flags & 1,
+              f"heavens.mob {vnum} does NOT persist the derived ACT_SPEC bit",
+              f"act flags {flags}")
+
+
+def test_prospect_is_open_to_everyone() -> None:
+    """`kingdom prospect` must dispatch AHEAD of the guild membership gate.
+
+    It is the verb someone uses to decide whether founding a guild is worth
+    it, so demanding the guild would make it useless exactly when it is
+    wanted. Pinned by position: the dispatch must come before GET_ASSOC() is
+    read for the membership test.
+    """
+    body = function_bodies(read("src/kingdom/kingdom_cmds.c"),
+                           r"\bvoid\s+do_kingdom\s*\(")
+    check(len(body) == 1, "do_kingdom is defined", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    prospect = code.find("kingdom_prospect(")
+    gate = code.find("P_Guild guild = GET_ASSOC(ch)")
+    check(-1 < prospect < gate,
+          "prospect dispatches before the guild gate, so it needs no guild",
+          f"prospect at {prospect}, gate at {gate}")
+    check('str_cmp(token, "p")' in code,
+          "a bare 'p' is refused as ambiguous rather than silently becoming "
+          "prospect, since promote shares the letter and sits on the far side "
+          "of the gate")
 
 
 for _name, _fn in sorted(globals().items()):

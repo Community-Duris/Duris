@@ -1315,8 +1315,25 @@ kingdom guard garrison sentry~
 ~
 10314 0 0 0 33554440 0 0 0 100 S
 H 0 1 0 -1
-45 0 0 1d1+1 1d1+1
-0.0.0.0 0
+45 -3 -100 45d60+1500 5d6+20
+0.0.0.0 120000
+8 8 1
+#109
+kingdom champion banner marshal~
+&+Ythe Kingdom Champion&N~
+&+YThe realm's champion stands here, a furled banner braced at the shoulder.&N
+~
+   &+YThe first of the realm's soldiers, and the only one a crown may raise.
+&+YThe surcoat is the same plain cut every guard on the border wears, but
+&+Ythe mail beneath it is a different thing entirely, and the arms above it
+&+Ywere earned rather than issued.  A furled banner rides braced at one
+&+Yshoulder, its cloth wound tight to the staff; whatever device is worked
+&+Yinto it is not shown to anyone who has not seen it planted.&N
+~
+10314 0 0 0 33554440 0 0 0 100 S
+H 0 1 0 -1
+60 -8 -150 60d150+7000 8d6+40
+0.0.0.0 500000
 8 8 1
 #200
 dark shadow demon shape~

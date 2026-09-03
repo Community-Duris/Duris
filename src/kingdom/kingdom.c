@@ -644,6 +644,7 @@ void kingdom_initialize(void)
 	 * this the guard prototype is never read_mobile()'d and no garrison ever
 	 * appears -- the same inert-because-uncalled defect the review found in
 	 * the harvest lane. */
+	kingdom_guards_bind_proc();
 	kingdom_guards_refresh_all();
 
 	logit(LOG_KINGDOM, "kingdoms enabled: %zu realm(s) holding %zu square(s).",
@@ -1080,7 +1081,7 @@ void kingdom_on_guildhall_changed(int assoc_id)
 	 * kingdom_square_index and the record itself, never kingdom_realms, and
 	 * the guard calls only read the realm table. */
 	if (kingdom_rehome_realm(*realm))
-		(void)kingdom_guards_refresh(*realm);
+		(void)kingdom_garrison_refresh(*realm);
 	else
 		(void)kingdom_guards_despawn(assoc_id);
 }

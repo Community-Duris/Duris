@@ -1397,10 +1397,11 @@ static long kingdom_harvest_yield(const kingdom_realm &realm, int res, int richn
 /* Add to a realm's store, clamped at KINGDOM_RESOURCE_CAP. Returns what was
  * actually banked, which is 0 when the store is already full.
  *
- * This is the ONLY function in the module that moves a resource, and it only
- * ever moves it inward. There is no matching withdraw and there must never be
- * one: the ruling is that these counters are spendable on kingdom benefits and
- * on nothing else. */
+ * The store moves in exactly two ways: inward here, and outward through
+ * kingdom_resource_spend() below. There is no third way and there must never
+ * be one -- no trade, no transfer, no sale back into coin. The ruling is that
+ * these counters are spendable on kingdom benefits and on nothing else, and
+ * this pair of functions is the whole of what keeps that true. */
 long kingdom_resource_deposit(kingdom_realm &realm, int res, long amount)
 {
 	if (res < 0 || res >= KRES_MAX || amount <= 0)
@@ -1433,6 +1434,52 @@ long kingdom_resource_deposit(kingdom_realm &realm, int res, long amount)
 	realm.dirty = true;
 
 	return banked;
+}
+
+/* Take `costs[res]` of every resource from a realm's store, ALL OR NOTHING.
+ * True only if the whole bill was taken; a realm short of even one kind pays
+ * nothing and keeps everything.
+ *
+ * The all-or-nothing shape is not a nicety. A claim charges coin and material
+ * together, and a partial material debit followed by a refusal would leave a
+ * realm poorer with nothing to show, in a module whose ruling 6 says nothing
+ * refunds. So the whole bill is checked before a single counter moves.
+ *
+ * Like the deposit, this marks the realm dirty rather than writing it. A claim
+ * publishes both the guild and the realm through kingdom_persist_paid_change()
+ * a few lines after calling this, which is the pairing that matters; anything
+ * else that spends material is free to leave it to the ordinary flush. */
+bool kingdom_resource_spend(kingdom_realm &realm, const long costs[KRES_MAX])
+{
+	if (!costs)
+		return false;
+
+	bool wanted = false;
+
+	for (int res = 0; res < KRES_MAX; res++)
+	{
+		if (costs[res] < 0)
+			return false;
+		if (costs[res] == 0)
+			continue;
+		if (realm.resources[res] < costs[res])
+			return false;
+		wanted = true;
+	}
+
+	/* A bill of nothing is not a purchase. Answering true would let a
+	 * caller read "paid" from a call that moved no material, which is the
+	 * kind of quiet success that hides a mis-set config; answering false
+	 * makes a zero-material mud take the caller's free path instead. */
+	if (!wanted)
+		return false;
+
+	for (int res = 0; res < KRES_MAX; res++)
+		realm.resources[res] -= costs[res];
+
+	realm.dirty = true;
+
+	return true;
 }
 
 /* kingdom_resource_for_room() from the pre-ruling design is GONE: the
