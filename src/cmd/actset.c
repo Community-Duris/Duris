@@ -841,20 +841,20 @@ static void setbit_ship(P_char ch, char *name, char *flag, char *val, int on_off
 	}
 	if (SAME_STRING(flag, "sailskill"))
 	{
-		ship->crew.sail_skill = atoi(val);
-		update_ship_status(ship);
+		set_crew_skills(ship, atoi(val), ship->crew.guns_skill, ship->crew.rpar_skill,
+				"staff sailskill");
 		return;
 	}
 	if (SAME_STRING(flag, "gunskill"))
 	{
-		ship->crew.guns_skill = atoi(val);
-		update_ship_status(ship);
+		set_crew_skills(ship, ship->crew.sail_skill, atoi(val), ship->crew.rpar_skill,
+				"staff gunskill");
 		return;
 	}
 	if (SAME_STRING(flag, "repairskill"))
 	{
-		ship->crew.rpar_skill = atoi(val);
-		update_ship_status(ship);
+		set_crew_skills(ship, ship->crew.sail_skill, ship->crew.guns_skill, atoi(val),
+				"staff repairskill");
 		return;
 	}
 	if (SAME_STRING(flag, "capacity"))
