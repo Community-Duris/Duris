@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -49,7 +50,35 @@ def preprocessed_chaos(*defines: str) -> str:
     ).stdout
 
 
-def assert_gate(source: str, variant: str) -> None:
+def expanded_trusted_expression() -> str:
+    command = [
+        "g++",
+        "-std=c++20",
+        "-D__NO_TESTS__",
+        "-I.",
+        "-I../tests/async",
+        "-E",
+        "-P",
+        "-x",
+        "c++",
+        "-",
+    ]
+    probe = '#include "core/utils.h"\nbool chaos_trust_marker(P_char ch) { return IS_TRUSTED(ch); }\n'
+    output = subprocess.run(
+        command,
+        cwd=SRC,
+        input=probe,
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout
+    marker = next(
+        line for line in output.splitlines() if "chaos_trust_marker" in line
+    )
+    return marker.split("return ", 1)[1].split(";", 1)[0].strip()
+
+
+def assert_gate(source: str, variant: str, trusted_expression: str | None = None) -> None:
     # Preprocessed output also contains the header prototype, so select the
     # final occurrence: the real function definition.
     body = extract_function(source[source.rindex("void do_chaos(") :], "void do_chaos(")
@@ -60,7 +89,12 @@ def assert_gate(source: str, variant: str) -> None:
             line for line in body.splitlines() if "chaos_mud_enabled()" in line
         ]
         assert chaos_gate_lines, f"Chaos-mode gate missing in {variant} build"
-        assert "||" in chaos_gate_lines[0], (
+        normalized_gate = re.sub(r"\s+", "", chaos_gate_lines[0])
+        normalized_trusted = re.sub(r"\s+", "", trusted_expression or "")
+        assert normalized_trusted in normalized_gate, (
+            f"expanded trusted predicate missing in {variant} build"
+        )
+        assert "||" in chaos_gate_lines[0] and "!chaos_mud_enabled()" in normalized_gate, (
             f"trusted check is not unconditional in {variant} build"
         )
         gate_index = body.index(chaos_gate_lines[0])
@@ -74,8 +108,9 @@ def assert_gate(source: str, variant: str) -> None:
 
 source = CHAOS.read_text(encoding="utf-8")
 assert_gate(source, "source")
-assert_gate(preprocessed_chaos(), "non-TEST_MUD")
-assert_gate(preprocessed_chaos("TEST_MUD"), "TEST_MUD")
+trusted_expression = expanded_trusted_expression()
+assert_gate(preprocessed_chaos(), "non-TEST_MUD", trusted_expression)
+assert_gate(preprocessed_chaos("TEST_MUD"), "TEST_MUD", trusted_expression)
 
 # The command registration is a position gate, not the authorization boundary.
 interp = (SRC / "cmd/interp.c").read_text(encoding="utf-8")
