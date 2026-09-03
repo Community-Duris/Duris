@@ -214,6 +214,31 @@ class LegacyDumpImportTest(unittest.TestCase):
                     self.valid_config(), Path("env"), Path("dump"), Path("backup"))
         self.assertEqual(events, ["backup", "wipe", "restore"])
 
+    def test_materialization_readiness_failure_restores_backup(self):
+        events: list[str] = []
+        with mock.patch.object(legacy, "validate_dump", return_value="0" * 64), \
+                mock.patch.object(legacy, "active_connections", return_value=0), \
+                mock.patch.object(legacy, "create_backup",
+                                  side_effect=lambda *_: events.append("backup")), \
+                mock.patch.object(legacy, "wipe_target",
+                                  side_effect=lambda *_: events.append("wipe")), \
+                mock.patch.object(legacy, "import_stream",
+                                  side_effect=lambda *_args, **_kwargs: events.append("import")), \
+                mock.patch.object(legacy, "table_counts",
+                                  side_effect=({"accounts": 1}, {"accounts": 1})), \
+                mock.patch.object(legacy, "run_migrations",
+                                  side_effect=lambda *_: events.append("migrate")), \
+                mock.patch.object(legacy, "runtime_tables", return_value={"accounts"}), \
+                mock.patch.object(legacy, "run_materialization_readiness",
+                                  side_effect=legacy.LegacyImportError("not loadable")), \
+                mock.patch.object(legacy, "restore_backup",
+                                  side_effect=lambda *_: events.append("restore")):
+            with self.assertRaisesRegex(legacy.LegacyImportError, "not loadable"):
+                legacy.import_legacy_dump(
+                    self.valid_config(), Path("env"), Path("dump"), Path("backup"))
+        self.assertEqual(
+            events, ["backup", "wipe", "import", "migrate", "restore"])
+
     def test_account_bank_migration_ignores_only_duplicate_keys(self):
         migration = (ROOT / "migrations/run_migration.sh").read_text()
         section = migration[

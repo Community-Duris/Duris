@@ -44,6 +44,7 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | 5. Converge | Run the legacy migration, adopt/advance the immutable ledger, and reach migration head `0008_statistics_date_index`. | Restore the backup when the failure is caught by the importer. |
 | 6. Verify runtime | Check the migration ledger and the exact metadata of all 174 runtime tables for MySQL 8 or MariaDB 10.11. | Restore the backup. |
 | 7. Verify preservation | Require all source tables, reject unexplained row loss, validate known archives, and require extension-table row counts to remain equal. | Restore the backup. |
+| 8. Verify materialization | Resolve the active object/mobile sources and reject selectable character item topology, pet bounds, unknown prototypes, or pet/owner room mismatches that the runtime materializers would refuse. | Restore the backup before the database can be exposed to gameplay. |
 
 The implementation entrypoint is
 [`scripts/import_legacy_dump.py`](../../scripts/import_legacy_dump.py). The commands it runs,
@@ -53,6 +54,7 @@ in order, are:
 migrations/run_migration.sh
 scripts/migration_runner.py run
 migrations/verify_runtime_compatibility.sh
+scripts/character_materialization_readiness.py
 ```
 
 ## Safety gates
@@ -366,6 +368,66 @@ python3 scripts/import_legacy_dump.py \
 Use `--backup-dir /private/path` when the default ignored repository directory is not an
 appropriate backup destination. A successful final line reports source table/row counts,
 the dump checksum, and backup path.
+
+The final import gate is the same read-only check available to operators:
+
+```bash
+python3 scripts/character_materialization_readiness.py --env-file .env
+```
+
+It reports aggregate counts only. A nonzero finding count prevents import completion and
+causes the importer to restore its pre-import backup. The gate resolves prototypes from
+the active `areas/AREA` object and mobile sources, applies saved item-type overrides when
+checking parent topology, and enforces the runtime pet bounds and owner-room equality.
+
+### Existing-data materialization repair
+
+Do not use the repair mode as a general normalization step. First restore a fresh
+production backup into an isolated, loopback, non-production clone, configure `.env` for
+that clone, and keep the game and every writer stopped. Create the exact row manifest only
+inside an existing owner-only directory:
+
+```bash
+install -d -m 0700 /private/duris-materialization-repair
+python3 scripts/character_materialization_readiness.py \
+  --env-file .env \
+  --write-manifest /private/duris-materialization-repair/affected.tsv
+sha256sum /private/duris-materialization-repair/affected.tsv
+```
+
+The manifest is owner-only and is the only output containing player, item, or pet
+identifiers. Review it on the protected host. Take a new `scripts/backup_pfiles.sh` backup
+of the clone, record its SHA-256, then apply only when the current findings, manifest,
+database name, and backup all match exactly:
+
+```bash
+python3 scripts/character_materialization_readiness.py \
+  --env-file .env \
+  --apply \
+  --manifest /private/duris-materialization-repair/affected.tsv \
+  --manifest-sha256 <manifest-sha256> \
+  --backup /absolute/path/to/clone-backup.sql.gz \
+  --backup-sha256 <backup-sha256> \
+  --confirm-database <clone-database-name> \
+  --receipt /private/duris-materialization-repair/clone-receipt.txt
+```
+
+The transaction clears only manifested stale item-type overrides, copies each manifested
+owner room to its pet, and clamps only a manifested over-limit hit value. It fingerprints
+every unaffected `player_data`, `player_items`, `player_pets`, and `player_pet_items` row
+before and after the DML and rolls the transaction back if any fingerprint or expected
+row count changes. Re-run the readiness command, the real player-load repository harness,
+and the full server materialization path for every protected-manifest owner on the clone.
+Preserve aggregate success logs and the receipt; never copy identifiers into the ticket.
+
+For production, repeat classification against the still-quiesced live target, obtain the
+owner's explicit authorization, create and validate a fresh production backup, and use a
+new manifest and receipt. Add `--authorize-production-repair` to record that explicit
+authorization acknowledgment; the utility rejects that flag on a non-production target.
+A stale clone manifest is intentionally rejected. Afterward,
+run the runtime compatibility checks, start the service, verify health, inspect refusal
+logs, and retain the backup through the soak. Roll back by restoring that exact backup
+while writers remain stopped; do not attempt inverse DML.
 
 ### 5. Verify before exposing gameplay
 

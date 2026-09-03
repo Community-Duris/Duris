@@ -416,6 +416,15 @@ def run_migrations(config: dict[str, str], env_path: Path) -> None:
         raise LegacyImportError(f"migration command failed: {verifier.name}")
 
 
+def run_materialization_readiness(config: dict[str, str], env_path: Path) -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/character_materialization_readiness.py"),
+         "--env-file", str(env_path)],
+        cwd=ROOT, env=process_environment(config), check=False)
+    if result.returncode:
+        raise LegacyImportError("character materialization readiness failed")
+
+
 def restore_backup(config: dict[str, str], backup_path: Path) -> None:
     wipe_target(config)
     import_stream(config, backup_path, normalize=False)
@@ -436,6 +445,7 @@ def import_legacy_dump(config: dict[str, str], env_path: Path, dump_path: Path,
         run_migrations(config, env_path)
         final_counts = table_counts(config)
         verify_source_rows(source_counts, final_counts, runtime_tables())
+        run_materialization_readiness(config, env_path)
     except BaseException as error:
         if mutation_started:
             try:
