@@ -57,7 +57,10 @@ assert "begin_coin_give_credit(actor, recipient, context, true)" in completion
 assert "create_money(" in publish_drop
 assert "obj_to_room(" in publish_drop
 assert "create_money(" in publish_put
-assert "put(actor, money, container, FALSE)" in publish_put
+assert "coin_put_destination_custody(" in publish_put
+assert "item_movement_transaction_submit(" in publish_put
+assert "coin_put_custody_completion" in publish_put
+assert "extract_obj(old_money)" not in publish_put
 assert "currency_transaction_submit_wallet_value(" in give_credit
 assert "recipient, value, currency_reason_type::wallet_reward" in give_credit
 assert "uint8_t debit_committed;" in ACTOBJ
