@@ -1475,6 +1475,16 @@ void Guild::display(P_char member)
 		prestige, construction, get_max_members(), member_count, platinum, gold, silver,
 		copper);
 
+	/* The realm, immediately after the coin so the two treasuries read
+	 * together -- the material stores are deliberately NOT coin and cannot be
+	 * withdrawn. Nothing is guarded here on purpose: the seam writes nothing
+	 * and answers false when kingdoms are disabled or this guild holds no
+	 * realm, which is what keeps this display byte-identical on a server that
+	 * has never switched kingdoms on. It appends with checked_appendf() and
+	 * respects the capacity it is handed, so it truncates rather than
+	 * overflowing the buffer the rest of this function goes on to fill. */
+	kingdom_guild_society_lines(static_cast<int>(get_id()), buf, sizeof(buf));
+
 	APPENDF(buf, "Total Frags: &+W%.2f&N, Top Fragger: '&+W%s&N' with &+W%.2f&N frags.\n",
 		frags.frags / 100., frags.topfragger, frags.top_frags / 100.);
 

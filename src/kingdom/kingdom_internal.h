@@ -173,9 +173,14 @@ struct kingdom_config
 	/* Guards permitted per owned square, and the ratio's denominator. */
 	int guards_per_squares = 5;
 	/* Distance in map squares a realm must keep from a hometown or a zone
-	 * entrance. */
-	int min_hometown_distance = 30;
-	int min_entrance_distance = 30;
+	 * entrance. These are the values a server with no lib/kingdom.cfg gets,
+	 * so they must be values the map can actually satisfy: at 30, the pair
+	 * they started at, a survey of all 160,000 surface squares finds ZERO
+	 * legal seats -- 367 zone-crossing squares each exclude a 59x59 box and
+	 * together they cover the continent. Ten leaves about 500. The shipped
+	 * lib/kingdom.cfg carries the full survey. */
+	int min_hometown_distance = 10;
+	int min_entrance_distance = 10;
 };
 extern kingdom_config kingdom_cfg;
 void kingdom_config_load(void);
@@ -211,6 +216,15 @@ int kingdom_judge_square(int hall_rnum, int index, int racewar, int ignore_assoc
 /* Judge the whole 80-square footprint. Returns KSQ_OK when every square
  * passes; otherwise the first failing verdict, with *bad_index set. */
 int kingdom_judge_footprint(int hall_rnum, int racewar, int ignore_assoc, int *bad_index);
+
+/* Say where the trouble is, in words a player can act on: which way the
+ * refused square lies from the hall and, for the keep-away verdicts, which way
+ * the offending gateway lies, how far off it is and how far a realm needs.
+ * Writes a fragment with no leading capital and no trailing stop, so a caller
+ * can set it inside its own sentence, and writes nothing when it has nothing
+ * useful to add. Called only on the refusal path, so it re-derives what it
+ * needs rather than burdening kingdom_judge_square()'s seam with out-params. */
+void kingdom_explain_refusal(int hall_rnum, int index, int verdict, char *out, size_t out_len);
 
 /* ------------------------------------------------------------------ *
  * Cross-file surface within src/kingdom/

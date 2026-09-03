@@ -515,6 +515,112 @@ int kingdom_judge_square(int hall_rnum, int index, int racewar, int ignore_assoc
 	return KSQ_OK;
 }
 
+/* "north", "south-east", or "" for no offset at all. Eight points is the right
+ * resolution: a player reads a compass word and walks, where a bearing in
+ * degrees would tell them nothing they can act on. */
+static const char *kingdom_compass(int dx, int dy)
+{
+	/* dy is NEGATIVE to the north: (0,0) is a map zone's north-west corner
+	 * and +y runs south (kingdom_geometry.h). */
+	if (dy < 0)
+		return dx > 0 ? "north-east" : (dx < 0 ? "north-west" : "north");
+	if (dy > 0)
+		return dx > 0 ? "south-east" : (dx < 0 ? "south-west" : "south");
+	return dx > 0 ? "east" : (dx < 0 ? "west" : "");
+}
+
+/* The nearest gate in `gates` to (x,y), false when that zone has none. Uses the
+ * same Chebyshev box the keep-away rule uses, so the gate reported is the gate
+ * that actually refused the square rather than a different nearby one. */
+static bool kingdom_nearest_gate(const std::unordered_map<int, std::vector<kingdom_gate>> &gates,
+				 int zone_idx, int x, int y, int *out_dx, int *out_dy,
+				 int *out_distance)
+{
+	const std::unordered_map<int, std::vector<kingdom_gate>>::const_iterator bucket =
+		gates.find(zone_idx);
+
+	if (bucket == gates.end() || bucket->second.empty())
+		return false;
+
+	bool found = false;
+	int best = 0, best_dx = 0, best_dy = 0;
+
+	for (const kingdom_gate &gate : bucket->second)
+	{
+		const int distance = kingdom_square_distance(x, y, gate.x, gate.y);
+
+		if (!found || distance < best)
+		{
+			found = true;
+			best = distance;
+			best_dx = gate.x - x;
+			best_dy = gate.y - y;
+		}
+	}
+
+	if (out_dx)
+		*out_dx = best_dx;
+	if (out_dy)
+		*out_dy = best_dy;
+	if (out_distance)
+		*out_distance = best;
+	return found;
+}
+
+/* The contract is declared in kingdom_internal.h; the body keeps its shape
+ * deliberately lopsided: the direction half is always written when it can be,
+ * the gateway half only for the two keep-away verdicts, and each half ends the
+ * fragment the moment it would have nothing useful to say. */
+void kingdom_explain_refusal(int hall_rnum, int index, int verdict, char *out, size_t out_len)
+{
+	int dx = 0, dy = 0;
+	int zone_idx = -1, hall_x = -1, hall_y = -1;
+
+	if (!out || out_len == 0)
+		return;
+	out[0] = '\0';
+
+	if (!kingdom_offset_for_index(index, &dx, &dy))
+		return;
+	if (!kingdom_square_of_room(hall_rnum, &zone_idx, &hall_x, &hall_y))
+		return;
+
+	/* Where the refused square is. No claim index maps to the seat itself,
+	 * so the compass word is never empty on this path. */
+	const char *where = kingdom_compass(dx, dy);
+
+	checked_appendf(out, out_len, "that square is %d %s of the hall",
+			kingdom_square_distance(0, 0, dx, dy), *where ? where : "away");
+
+	/* For the keep-away verdicts the useful half is the gateway: which way it
+	 * lies, how close it is, and how far a realm needs it to be. The other
+	 * verdicts -- open water, the Underdark, a hole in the map -- are
+	 * explained well enough by the verdict text and the direction above. */
+	const bool hometown = (verdict == KSQ_NEAR_HOMETOWN);
+
+	if (!hometown && verdict != KSQ_NEAR_ENTRANCE)
+		return;
+
+	kingdom_build_gate_cache();
+
+	const std::unordered_map<int, std::vector<kingdom_gate>> &gates =
+		hometown ? kingdom_hometown_gates : kingdom_entrance_gates;
+	const int needed = hometown ? kingdom_cfg.min_hometown_distance :
+				      kingdom_cfg.min_entrance_distance;
+
+	int gate_dx = 0, gate_dy = 0, distance = 0;
+
+	if (!kingdom_nearest_gate(gates, zone_idx, hall_x + dx, hall_y + dy, &gate_dx, &gate_dy,
+				  &distance))
+		return;
+
+	const char *bearing = kingdom_compass(gate_dx, gate_dy);
+
+	checked_appendf(out, out_len, ", and %s lies %d %s of it -- a realm needs %d",
+			hometown ? "a hometown" : "a way into another region", distance,
+			*bearing ? bearing : "away", needed);
+}
+
 /*
  * Ruled 2026-08-28 (RULINGS.md, answer 1): ALL 80 squares must be eligible at
  * hall placement, so a hall may only be sited where a complete realm could

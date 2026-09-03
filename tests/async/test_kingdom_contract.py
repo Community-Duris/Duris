@@ -28,7 +28,11 @@ for a defect class with a body count, not a style preference:
   * dormancy was not sticky: "hall_vnum still names a map room" is not "a
     hall still stands there", so any verb that re-resolved an anchor quietly
     re-anchored a realm that should have been dormant, and with the anchor
-    came its billing, its garrison and its right to claim.
+    came its billing, its garrison and its right to claim;
+  * `help kingdom` found nothing in game: lib/information/help_index carried
+    no kingdom entry at all, and the flat catalog's private alias for the long
+    file masked the gap from the flat build -- so the two help paths disagreed
+    about a topic that existed on only one of them.
 
 Pure source checks: no server, no database. Pins are made against CODE:
 comments are stripped before any body is searched, so a pin can never be
@@ -434,19 +438,83 @@ def test_boot_shutdown_and_upkeep_are_wired() -> None:
     )
 
 
-def test_help_is_registered_for_both_keywords() -> None:
-    """helpkingdoms reaches both builds: the flat catalog under both keywords
-    and the MariaDB importer's HELP_FILES table."""
+def help_index_entries() -> list:
+    """(title, body) pairs read the way BOTH production parsers read them.
+
+    scripts/import_help_to_prod.sh (SECTION 2) and
+    src/flatfile/flatfile_help_catalog.c::parse_help_index agree on the
+    grammar: entries are separated by a line holding only '#', the first line
+    of an entry is its title line, a leading "quoted" run is the title, and
+    otherwise the title is everything before the first '('. NEITHER parser
+    splits that line into keywords, so a title line naming two keywords yields
+    ONE title containing both -- which is exactly why the parse is mirrored
+    here instead of pattern-matched loosely against the file.
+    """
+    entries = []
+    for block in read("lib/information/help_index").split("\n#\n"):
+        block = block.strip()
+        if not block or block.startswith("last update:"):
+            continue
+        lines = block.split("\n")
+        title_line = lines[0].strip()
+        quoted = re.match(r'^"([^"]+)"', title_line)
+        title = quoted.group(1).strip() if quoted else title_line.split("(")[0].strip()
+        body = re.sub(r"\n=+$", "", re.sub(r"^=+\n", "", "\n".join(lines[1:]).strip())).strip()
+        if title and body:
+            entries.append((title, body))
+    return entries
+
+
+def test_kingdom_help_is_two_entries_that_agree() -> None:
+    """The kingdom help is two texts with one job each, and the split has to
+    hold in BOTH builds:
+
+      * lib/information/helpkingdoms -- title KINGDOMS, the long rulebook,
+        authoritative, reached through the flat catalog's source table and
+        through the importer's HELP_FILES table;
+      * a lib/information/help_index entry -- title KINGDOM, the short summary,
+        reached through the index-parsing pass of the same two loaders, whose
+        body points the reader at the long one.
+
+    Three failure modes are pinned here, all of them silent:
+
+    1. NO INDEX ENTRY. That was the shipped bug: help_index mentioned kingdoms
+       nowhere, so `help kingdom` found nothing in game.
+    2. NO EXACT TITLE. Both engines answer a multi-title match by looking for a
+       title equal to the search string and, failing that, printing a bare list
+       of topics instead of any help (src/cmd/wikihelp.c, flat and MariaDB
+       branches alike). So 'kingdom' must be a whole title on its own, not one
+       keyword inside a longer one, or `help kingdom` still shows no help.
+    3. A CLOBBERING TITLE. The importer writes the rulebook as page 'kingdoms'
+       in SECTION 1 and then DELETE-then-INSERTs every index title in SECTION
+       2, and the pages title comparison is case-insensitive -- so an index
+       entry titled KINGDOMS would delete the rulebook page on the next
+       import, with no error line anywhere.
+    """
     cat = strip_comments(read("src/flatfile/flatfile_help_catalog.c"))
     check(
-        re.search(r'\{\s*"lib/information/helpkingdoms"\s*,\s*"kingdoms"\s*\}', cat) is not None
-        and re.search(r'\{\s*"lib/information/helpkingdoms"\s*,\s*"kingdom"\s*\}', cat)
-        is not None,
-        "helpkingdoms is registered for both `help kingdoms` and `help kingdom` (flat catalog)",
+        re.search(r'\{\s*"lib/information/helpkingdoms"\s*,\s*"kingdoms"\s*\}', cat) is not None,
+        "flat catalog registers lib/information/helpkingdoms as `kingdoms`",
+    )
+    # The singular belongs to the index entry. parse_help_index runs AFTER the
+    # source table and overwrites by key, so a second registration here is both
+    # dead and a lie -- and it would let the flat build answer `help kingdom`
+    # from the long file while MariaDB answered it from the index entry.
+    check(
+        re.search(r'\{\s*"lib/information/helpkingdoms"\s*,\s*"kingdom"\s*\}', cat) is None,
+        "flat catalog does NOT also claim the singular `kingdom` for the long file "
+        "(that key is the help_index entry's, and the index pass overwrites it anyway)",
     )
     check(
         (ROOT / "lib/information/helpkingdoms").exists(),
         "lib/information/helpkingdoms exists",
+    )
+    # A reader who lands on the long file must be told the short one exists.
+    opening = "\n".join(read("lib/information/helpkingdoms").splitlines()[:25]).lower()
+    check(
+        "help kingdom" in opening,
+        "helpkingdoms' opening names `help kingdom`, the short entry, so a reader who lands "
+        "on the rulebook knows the other text exists",
     )
     # The MariaDB path is fed by the importer's HELP_FILES table, not by the
     # flat catalog; a production `help kingdoms` needs this entry too.
@@ -463,6 +531,39 @@ def test_help_is_registered_for_both_keywords() -> None:
             '["helpkingdoms"]="kingdoms"' in entries,
             'scripts/import_help_to_prod.sh HELP_FILES carries ["helpkingdoms"]="kingdoms"',
             f"entries={entries}",
+        )
+    # SECTION 1.5's collision report is what makes a future clobber visible at
+    # import time; the pins below are what make it visible at review time.
+    check(
+        re.search(r"^\s*PAGE_TITLES_WRITTEN\+=\(", importer, re.M) is not None
+        and re.search(r'^\s*IMPORT_RESERVED_TITLES="[^"]*PAGE_TITLES_WRITTEN', importer, re.M)
+        is not None,
+        "the importer reports which later titles overwrite a page it just wrote from a "
+        "lib/information help file (SECTION 1.5)",
+    )
+
+    index = help_index_entries()
+    titles = [title for title, _ in index]
+    kingdomish = [t for t in titles if "kingdom" in t.lower()]
+    singular = [(t, b) for t, b in index if t.strip().lower() == "kingdom"]
+    check(
+        len(singular) == 1,
+        "exactly one help_index entry's parsed title is `KINGDOM`, so `help kingdom` renders "
+        "that entry instead of a bare list of near-misses",
+        f"parsed kingdom-ish titles={kingdomish!r} (the parsers do not split keyword lists: "
+        "a title line naming two keywords is one title naming both)",
+    )
+    check(
+        not [t for t in titles if t.strip().lower() == "kingdoms"],
+        "no help_index entry is titled `KINGDOMS`, which would DELETE the rulebook page "
+        "imported from lib/information/helpkingdoms",
+        f"parsed kingdom-ish titles={kingdomish!r}",
+    )
+    if singular:
+        check(
+            "help kingdoms" in singular[0][1].lower(),
+            "the short help_index entry points at `help kingdoms`, the long rulebook, so the "
+            "two texts cannot silently drift into disagreeing",
         )
 
 
@@ -783,6 +884,81 @@ def test_pending_write_rule_is_obeyed_by_every_call_site() -> None:
         "kingdom_persist_payment() tests payment_pending",
         f"unguarded: {unguarded}",
     )
+
+
+def test_node_population_is_one_random_mix_per_region() -> None:
+    """A region keeps ONE population of any resource, not a quota per
+    resource, and every replacement rolls its own kind.
+
+    The first live test found the world over-filled -- 225 nodes standing at
+    once -- and the mix deterministic, because each region kept a separate
+    target for each of the four resources. Two regions now carry a single
+    total each, and the refill picks the resource at random, so a worked-out
+    node comes back as a random kind in a random room rather than as the same
+    kind moved. The Tharnadia Rift is not a region at all -- and a node left
+    standing outside every region by an older table is reaped, since the
+    census never counts it and no sweep would otherwise ever refill its slot."""
+    harvest = read("src/kingdom/kingdom_harvest.c")
+    code = strip_comments(harvest)
+
+    table = re.search(
+        r"kingdom_node_regions\[\]\s*=\s*\{(.*?)\n\};", code, re.S
+    )
+    check(table is not None, "the node region table is found")
+    if table:
+        rows = re.findall(
+            r'\{\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(true|false)\s*,'
+            r'\s*"([^"]+)"\s*,\s*(\d+)\s*\}',
+            table.group(1),
+        )
+        check(
+            len(rows) == 2,
+            "exactly two node regions, each with ONE total (not a quota per resource)",
+            f"rows parsed: {rows}",
+        )
+        names = [r[0] for r in rows]
+        check(
+            not any("Tharn" in n for n in names),
+            "the Tharnadia Rift is not a node region",
+            f"regions: {names}",
+        )
+        totals = {r[0]: int(r[5]) for r in rows}
+        check(
+            totals.get("Surface Map") == 40 and totals.get("Underdark") == 30,
+            "the surface keeps 40 nodes and the Underdark 30, of all kinds together",
+            f"totals: {totals}",
+        )
+
+    refill = function_bodies(harvest, r"\bstatic\s+void\s+kingdom_nodes_reload\s*\(")
+    check(len(refill) == 1, "kingdom_nodes_reload is defined once")
+    if refill:
+        check(
+            re.search(r"kingdom_load_one_node\s*\(\s*region\s*,\s*number\s*\(", refill[0])
+            is not None,
+            "each replacement rolls its own resource, so the standing mix is random",
+            "the refill does not pass a rolled resource to kingdom_load_one_node()",
+        )
+
+    reap = function_bodies(harvest, r"\bstatic\s+bool\s+kingdom_node_should_reap\s*\(")
+    check(len(reap) == 1, "kingdom_node_should_reap is defined once")
+    if reap:
+        body = strip_comments(reap[0])
+        check(
+            re.search(r"kingdom_room_in_node_region\s*\(\s*rnum\s*\)", body) is not None,
+            "a node standing outside every configured region is reaped",
+            "kingdom_node_should_reap() never asks kingdom_room_in_node_region()",
+        )
+        helper = function_bodies(
+            harvest, r"\bstatic\s+bool\s+kingdom_room_in_node_region\s*\("
+        )
+        check(len(helper) == 1, "kingdom_room_in_node_region is defined once")
+        if helper:
+            check(
+                re.search(r"start_vnum\b", helper[0]) is not None
+                and re.search(r"end_vnum\b", helper[0]) is not None,
+                "region membership is asked of the vnum ranges, as the census asks it",
+                "kingdom_room_in_node_region() does not test a region's vnum range",
+            )
 
 
 def test_a_room_outside_the_grid_has_no_square() -> None:

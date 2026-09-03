@@ -90,6 +90,13 @@
  *  the invariant would otherwise only hold at the instant of spawning. The
  *  quota it was occupying is freed and the sweep re-scatters it elsewhere.
  *
+ *  It also removes any node standing OUTSIDE every configured region. Nodes
+ *  are placed only inside one, so such a node is left over from an older
+ *  shape of the region table -- the Tharnadia Rift carried ten until it was
+ *  dropped as a region -- and a server that ran that table would keep them
+ *  forever otherwise: unclaimed ground is not realm-controlled and a pristine
+ *  node never expires.
+ *
  *  WHAT WAS COPIED FROM mining.c, AND THE THREE THINGS DELIBERATELY NOT
  *  -------------------------------------------------------------------
  *  Copied: the region table's shape and its vnum ranges (mine_data[]), the
@@ -200,10 +207,10 @@ extern P_obj object_list;
 /* A week, in minutes -- the clamp on the above, so a fat-fingered properties
  * line cannot make decay effectively infinite by accident. */
 #define KINGDOM_NODE_DECAY_MINS_MAX 10080
-/* Ceiling on a per-region, per-resource population. A properties typo of six
- * digits would otherwise spend six digits' worth of 10000-try placement
- * budgets inside a single sweep. */
-#define KINGDOM_NODE_MAX_PER_QUOTA 500
+/* Ceiling on a region's whole population. A properties typo of six digits
+ * would otherwise spend six digits' worth of 10000-try placement budgets
+ * inside a single sweep. */
+#define KINGDOM_NODE_MAX_PER_REGION 500
 
 /* kingdom_resource_name() is declared in kingdom_internal.h and DEFINED in
  * kingdom_config.c, beside the static_assert that proves the name table covers
@@ -284,62 +291,51 @@ bool kingdom_node_is_underdark(int vnum)
  * ------------------------------------------------------------------ *
  * The vnum ranges are mine_data[]'s own (economy/mining.c), so that nodes and
  * mines cover the same ground and a god who has tuned one has already learned
- * the other's shape. Each region carries a target population PER RESOURCE,
- * each overridable from duris.properties by the key spelled out beside it --
- * the keys are written in full rather than composed at runtime so that a grep
- * of the properties file and a grep of the source find the same string.
+ * the other's shape.
  *
- * ON THE UNDERDARK: its counts used to be token -- 12/4/4/4 -- and the comment
- * that stood here justified them by saying an Underdark node could never be
- * banked, because no realm may be sited on an Underdark square. The re-ruling
- * killed that reasoning: harvesting is no longer tied to the ground you stand
- * on, so an Underdark node banks to the digger's realm exactly as a surface
- * one does. The counts below are raised to match, and the Underdark's own
- * thematic prototypes (481-484) are what actually spawn there.
+ * A REGION CARRIES ONE TOTAL, NOT A QUOTA PER RESOURCE (ruled 2026-09-03 after
+ * the first live test: "there are way too many nodes in game"). The earlier
+ * table kept a separate population of each resource in each region, which both
+ * over-filled the world -- 225 nodes standing at once -- and made the mix
+ * deterministic: a surface sweep always ended with exactly forty stone seams,
+ * wherever they landed. Now each region keeps a single population and every
+ * node placed into it rolls its OWN resource, so what is standing at any moment
+ * is a genuinely random mix that drifts as nodes are worked out and replaced.
  *
- * The Tharnadia Rift stays small because it IS small: ten thousand vnums
- * against the map's hundred and sixty thousand.
+ * The counts are deliberately small. Forty nodes across the whole surface map
+ * and thirty through the Underdark means finding one is worth something; a
+ * gatherer who works one out has removed a real share of the world's supply
+ * until the next sweep replaces it somewhere else entirely.
+ *
+ * Each total is overridable from duris.properties by the key spelled out beside
+ * it -- written in full rather than composed at runtime, so a grep of the
+ * properties file and a grep of the source find the same string.
+ *
+ * ON THE UNDERDARK: its counts used to be token, justified by the claim that an
+ * Underdark node could never be banked because no realm may be sited on an
+ * Underdark square. The re-ruling killed that reasoning -- harvesting is not
+ * tied to the ground you stand on, so an Underdark node banks to the digger's
+ * realm exactly as a surface one does -- and its own thematic prototypes
+ * (481-484) are what spawn there.
+ *
+ * THE THARNADIA RIFT IS NOT A REGION (ruled 2026-09-03). It carried a token ten
+ * nodes and was dropped outright: nodes belong in the open world, not seeded
+ * into a zone of that shape. Removing it is why no vnum window below 500000 is
+ * listed here.
  */
-struct kingdom_node_quota
-{
-	const char *prop; /* duris.properties key overriding `count` */
-	int count; /* nodes of this resource kept loaded in this region */
-};
-
 struct kingdom_node_region
 {
 	const char *name; /* for logs */
 	int start_vnum; /* first room vnum of the region, inclusive */
 	int end_vnum; /* last room vnum of the region, inclusive */
 	bool underdark; /* the whole region is below ground */
-	struct kingdom_node_quota quota[KRES_MAX]; /* indexed by kingdom_resource */
+	const char *prop; /* duris.properties key overriding `count` */
+	int count; /* nodes of ANY resource kept loaded in this region */
 };
 
 static const struct kingdom_node_region kingdom_node_regions[] = {
-	{ "Surface Map",
-	  500000,
-	  659999,
-	  false,
-	  { { "kingdom.nodes.map.mineral", 40 },
-	    { "kingdom.nodes.map.wood", 40 },
-	    { "kingdom.nodes.map.fibre", 30 },
-	    { "kingdom.nodes.map.water", 20 } } },
-	{ "Underdark",
-	  700000,
-	  859999,
-	  true,
-	  { { "kingdom.nodes.ud.mineral", 30 },
-	    { "kingdom.nodes.ud.wood", 20 },
-	    { "kingdom.nodes.ud.fibre", 20 },
-	    { "kingdom.nodes.ud.water", 15 } } },
-	{ "Tharnadia Rift",
-	  110000,
-	  119999,
-	  false,
-	  { { "kingdom.nodes.tharnrift.mineral", 4 },
-	    { "kingdom.nodes.tharnrift.wood", 2 },
-	    { "kingdom.nodes.tharnrift.fibre", 2 },
-	    { "kingdom.nodes.tharnrift.water", 2 } } }
+	{ "Surface Map", 500000, 659999, false, "kingdom.nodes.map.total", 40 },
+	{ "Underdark", 700000, 859999, true, "kingdom.nodes.ud.total", 30 }
 };
 
 constexpr int KINGDOM_NODE_REGION_COUNT =
@@ -688,20 +684,48 @@ static bool kingdom_node_invalid_room(int rnum)
  * Reaping
  * ------------------------------------------------------------------ */
 
+/* True when the room's vnum falls inside one of the node regions' vnum ranges
+ * -- the same membership test kingdom_node_census() applies, asked of the vnum
+ * rather than of the resolved rnum window so it needs no initialise to have
+ * run. */
+static bool kingdom_room_in_node_region(int rnum)
+{
+	const int room_vnum = world[rnum].number;
+
+	for (int region = 0; region < KINGDOM_NODE_REGION_COUNT; region++)
+	{
+		const struct kingdom_node_region *cfg = &kingdom_node_regions[region];
+
+		if (room_vnum >= cfg->start_vnum && room_vnum <= cfg->end_vnum)
+			return true;
+	}
+
+	return false;
+}
+
 /* True when this object is one of ours AND has no business existing any more:
- * it has outlived its decay window, or it now stands on land a realm controls.
- * `rnum` is the room it is standing in. */
+ * its room belongs to no configured node region, it has outlived its decay
+ * window, or it now stands on land a realm controls. `rnum` is the room it is
+ * standing in. */
 static bool kingdom_node_should_reap(P_obj obj, int rnum, int now_min, int decay_mins)
 {
 	if (!obj || obj->R_num < 0)
 		return false;
 	if (kingdom_resource_for_node_vnum(obj_index[obj->R_num].virtual_number) < 0)
 		return false;
+	if (!kingdom_harvest_valid_rnum(rnum))
+		return false;
+
+	/* A node outside every region was placed by an older region table (the
+	 * dropped Tharnadia Rift) and no sweep will ever refill its slot: the
+	 * census counts only rooms inside a region, so it must go. */
+	if (!kingdom_room_in_node_region(rnum))
+		return true;
 
 	if (kingdom_node_expired_at(obj, now_min, decay_mins))
 		return true;
 
-	return kingdom_harvest_valid_rnum(rnum) && kingdom_owner_of_room(rnum) != 0;
+	return kingdom_owner_of_room(rnum) != 0;
 }
 
 /*
@@ -1038,29 +1062,29 @@ static bool kingdom_load_one_node(int region, int res)
 	return true;
 }
 
-/* How many live nodes of each resource are standing in `region`.
+/* How many live nodes are standing in `region`, of ANY resource.
  *
- * ONE walk of object_list for all four resources and both prototype sets,
- * where the previous build walked it once per resource. Reads no object it has
- * not first proved is in a room, because loc.room is a union member that only
- * means a room when LOC_ROOM is set. Expired nodes have already been extracted
- * by kingdom_nodes_reap() before this runs, so nothing here has to second-guess
+ * A region keeps ONE population, so this counts every node prototype standing
+ * in a room inside the region's vnum window and adds them up -- there is no
+ * per-resource split to read, because the slot a worked-out node frees can
+ * come back as any kind. Reads no object it has not first proved is in a
+ * room, because loc.room is a union member that only means a room when
+ * LOC_ROOM is set. Expired nodes have already been extracted by
+ * kingdom_nodes_reap() before this runs, so nothing here has to second-guess
  * them. */
-static void kingdom_node_census(int region, int *counts)
+static int kingdom_node_census(int region)
 {
 	const struct kingdom_node_region *cfg = &kingdom_node_regions[region];
-
-	for (int res = 0; res < KRES_MAX; res++)
-		counts[res] = 0;
+	int standing = 0;
 
 	for (P_obj obj = object_list; obj; obj = obj->next)
 	{
 		if (obj->R_num < 0)
 			continue;
 
-		const int res =
-			kingdom_resource_for_node_vnum(obj_index[obj->R_num].virtual_number);
-		if (res < 0)
+		/* Any resource counts: a region keeps one population, not one per
+		 * resource, so a stone seam and a spring occupy the same slot. */
+		if (kingdom_resource_for_node_vnum(obj_index[obj->R_num].virtual_number) < 0)
 			continue;
 
 		if (!IS_SET(obj->loc_p, LOC_ROOM))
@@ -1071,20 +1095,24 @@ static void kingdom_node_census(int region, int *counts)
 		const int room_vnum = world[obj->loc.room].number;
 
 		if (room_vnum >= cfg->start_vnum && room_vnum <= cfg->end_vnum)
-			counts[res]++;
+			standing++;
 	}
+
+	return standing;
 }
 
-/* The target population of `res` in `region`, from duris.properties. */
-static int kingdom_node_target_count(int region, int res)
+/* How many nodes of ANY resource `region` should keep standing, from
+ * duris.properties. Clamped, so a fat-fingered property cannot ask for a
+ * hundred thousand nodes or a negative population. */
+static int kingdom_node_target_count(int region)
 {
-	const struct kingdom_node_quota *quota = &kingdom_node_regions[region].quota[res];
-	int wanted = get_property(quota->prop, quota->count);
+	const struct kingdom_node_region *cfg = &kingdom_node_regions[region];
+	int wanted = get_property(cfg->prop, cfg->count);
 
 	if (wanted < 0)
 		wanted = 0;
-	if (wanted > KINGDOM_NODE_MAX_PER_QUOTA)
-		wanted = KINGDOM_NODE_MAX_PER_QUOTA;
+	if (wanted > KINGDOM_NODE_MAX_PER_REGION)
+		wanted = KINGDOM_NODE_MAX_PER_REGION;
 
 	return wanted;
 }
@@ -1136,9 +1164,11 @@ static void kingdom_node_schedule_sweep(int region)
  * sweep.
  *
  * REPLENISHMENT IS DEFICIT-BASED: every sweep spawns up to the measured
- * shortfall of each resource, bounded by the region quota --
- * kingdom_node_target_count() clamps the target itself, and the census is
- * what is subtracted from it. The first build copied load_mines() and dripped
+ * shortfall of the region's ONE population, each replacement rolling its own
+ * resource -- kingdom_node_target_count() clamps the target itself, and the
+ * census of every node standing there is what is subtracted from it. That is
+ * what makes a worked-out node come back as a random kind in a random room
+ * rather than as the same kind moved. The first build copied load_mines() and dripped
  * ONE node per resource per sweep after boot; that pace suits mining, whose
  * mines only deplete where its narrowly-licensed verb works them, but ruling
  * 1 lets ANYONE work a node the moment it lands, so consumption can outrun a
@@ -1156,21 +1186,21 @@ static void kingdom_nodes_reload(int region)
 	 * slot. */
 	kingdom_nodes_reap();
 
-	int counts[KRES_MAX];
+	const int wanted = kingdom_node_target_count(region);
 
-	kingdom_node_census(region, counts);
-
-	for (int res = 0; res < KRES_MAX; res++)
+	/* Every replacement rolls its own resource, so the mix standing in a
+	 * region is never fixed: work out the last spring on the map and the slot
+	 * it freed is as likely to come back a stone seam. That randomness is the
+	 * point of a single population -- a per-resource quota would refill the
+	 * spring, in a new room but as the same world. */
+	for (int have = kingdom_node_census(region); have < wanted; have++)
 	{
-		const int wanted = kingdom_node_target_count(region, res);
-
-		/* A failed placement ends this resource's refill for the pass:
-		 * whatever refused it -- an exhausted 10000-try budget, a
-		 * missing prototype -- would only bill the same cost again for
-		 * every node still short. The next sweep starts fresh. */
-		for (int have = counts[res]; have < wanted; have++)
-			if (!kingdom_load_one_node(region, res))
-				break;
+		/* A failed placement ends the refill for this pass: whatever
+		 * refused it -- an exhausted 10000-try budget, a missing
+		 * prototype -- would only bill the same cost again for every
+		 * node still short. The next sweep starts fresh. */
+		if (!kingdom_load_one_node(region, number(0, KRES_MAX - 1)))
+			break;
 	}
 
 	kingdom_node_schedule_sweep(region);

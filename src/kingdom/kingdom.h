@@ -75,6 +75,21 @@ bool kingdom_guild_has_realm(int assoc_id);
 /* True when `ch` belongs to the guild that owns this room's square. */
 bool kingdom_char_owns_room(struct char_data *ch, int rnum);
 
+/* Append this guild's realm lines -- territory, dormancy, arrears and the four
+ * material stores -- to a display buffer the guild code is already building.
+ * `out` must be NUL-terminated and hold `out_len` bytes; the text is appended
+ * with checked_appendf(), so it truncates rather than overflowing.
+ *
+ * Returns false AND WRITES NOTHING when kingdoms are disabled or the guild
+ * holds no realm.
+ *
+ * That false case is the entire feature gate for the society display. The call
+ * site in Guild::display() guards nothing itself: wherever kingdoms are
+ * switched off in lib/kingdom.cfg, and for any guild that has not converted,
+ * this writes not one byte, so `soc` output is byte-identical to what it
+ * printed before this module existed. */
+bool kingdom_guild_society_lines(int assoc_id, char *out, size_t out_len);
+
 /* One line for the map legend / room description, or NULL when the square is
  * unowned. The returned pointer is owned by the module and must not be freed
  * or stored across a tick. */
