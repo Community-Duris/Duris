@@ -43,6 +43,33 @@ bool chaos_mud_enabled(void)
 	return enabled;
 }
 
+bool chaos_config_validate_environment(char *error, size_t error_size)
+{
+	const char *environment = getenv("ENVIRONMENT");
+	static const char *const production_switches[] = { "CHAOS_MUD", "CREATION_ALL_RACES",
+							   "CREATION_ALL_CLASSES", NULL };
+	static const char *const production_messages[] = {
+		"Production environment cannot enable CHAOS_MUD.",
+		"Production environment cannot enable CREATION_ALL_RACES.",
+		"Production environment cannot enable CREATION_ALL_CLASSES.", NULL
+	};
+
+	if (!environment || strcmp(environment, "production"))
+		return true;
+
+	for (size_t i = 0; production_switches[i]; i++)
+	{
+		const char *value = getenv(production_switches[i]);
+		if (value && !strcasecmp(value, "TRUE"))
+		{
+			if (error && error_size)
+				strlcpy(error, production_messages[i], error_size);
+			return false;
+		}
+	}
+	return true;
+}
+
 bool chaos_eq_use_enhanceable_profile(void)
 {
 	static int enhanceable = -1;

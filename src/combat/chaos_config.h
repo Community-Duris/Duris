@@ -2,9 +2,13 @@
 #define CHAOS_CONFIG_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 /* CHAOS_MUD is enabled only by the exact .env value TRUE. */
 bool chaos_mud_enabled(void);
+
+/* Production cannot enable local-only Chaos or creation overrides. */
+bool chaos_config_validate_environment(char *error, size_t error_size);
 
 /* CHAOS_EQ_PROFILE accepts standard (default) or enhanceable. */
 bool chaos_eq_use_enhanceable_profile(void);

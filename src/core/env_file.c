@@ -1,6 +1,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "combat/chaos_config.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -9,6 +10,18 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+static int validate_environment_overrides(void)
+{
+	char error[256];
+	if (!chaos_config_validate_environment(error, sizeof(error)))
+	{
+		fprintf(stderr, "%s\n", error);
+		logit(LOG_STATUS, "%s", error);
+		return -1;
+	}
+	return 0;
+}
 
 /* Load .env before selecting a persistence backend. */
 int load_env_file(void)
@@ -22,7 +35,7 @@ int load_env_file(void)
 			return -1;
 		}
 		logit(LOG_STATUS, "No .env file found; explicit process environment is required.");
-		return 0;
+		return validate_environment_overrides();
 	}
 
 	struct stat file_stat;
@@ -69,5 +82,7 @@ int load_env_file(void)
 	fclose(f);
 
 	logit(LOG_STATUS, "Loaded %d environment variables from .env file.", count);
+	if (validate_environment_overrides() < 0)
+		return -1;
 	return count;
 }
