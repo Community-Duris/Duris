@@ -59,14 +59,18 @@ writer supplies `NOW()` explicitly, so the default is only a safety net;
 `CURRENT_TIMESTAMP` expresses that portably. Rows written before strict mode was
 enabled may still hold the zero value and would fail the `ALTER`, so they are
 first normalized to the epoch, which carries the same absence of information in
-a form both engines accept. The guard reads the current default, so a converged
-database issues no `ALTER` and the step stays exactly re-runnable.
+a form both engines accept. The guard reads the whole contract its verification
+step asserts - `DATETIME`, `NOT NULL`, a current-timestamp default, and no
+surviving zero-date rows - so a converged database issues no `ALTER` and the step
+stays exactly re-runnable, while a partially converged one is still repaired.
 
 0008 adds `idx_statistics_date` to the `statistics` population time series,
 which carried only its primary key while every consumer filters an epoch range
 on `date` and sorts chronologically. MySQL 8 has no portable
 `CREATE INDEX IF NOT EXISTS`, so the guard reads `information_schema` first and
-issues no `ALTER` when the index is present. The index is a structural
+issues no `ALTER` when an index of exactly the verified shape - a single
+non-unique entry on `date` - is present; an index of that name with any other
+shape is dropped and rebuilt. The index is a structural
 correction; its latency benefit is not yet measured on a representative clone,
 which remains the open half of that backlog item.
 

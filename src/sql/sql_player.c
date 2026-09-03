@@ -5134,6 +5134,15 @@ static long sql_find_account_character_mapping(const char *escaped_char_name)
 	return mapping_id;
 }
 
+/*
+ * Project an account's character list into account_characters.
+ *
+ * Each character is resolved to its existing mapping row and updated in place,
+ * so a repeated save allocates no identity value; only a genuinely new mapping
+ * inserts. The caller owns the surrounding transaction, and any write failure
+ * is reported so that transaction can roll back rather than leave an account
+ * half projected.
+ */
 static bool sql_save_account_characters(struct acct_entry *acc)
 {
 	if (!DB || !acc || !acc->acct_name)

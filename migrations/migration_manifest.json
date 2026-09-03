@@ -244,9 +244,9 @@
       "sequence": 7,
       "description": "Replace the pkill_event stamp zero-date default with a portable contract",
       "apply": "immutable/0007_pkill_event_stamp_contract.sql",
-      "apply_checksum": "9afca6945d9d1524dea06a404d18a168b70f2b2c1840913f0561d45378ad0608",
+      "apply_checksum": "90b47fbc6fa39090ad542d87365b54650f2d62c8b0dc37deb84d1e1ebafae70b",
       "verify": "immutable/0007_pkill_event_stamp_contract.sh",
-      "verify_checksum": "8fe8e260c77d5dfa45a1efb4bff3c44030f344fec0d93e47fa046204f008ac43",
+      "verify_checksum": "a777ce57d3e9bd4135ef23a5f361fef24705f9953dc6235ef6de5fa1887c14f2",
       "compatibility": "mysql8-mariadb10"
     },
     {
@@ -254,9 +254,9 @@
       "sequence": 8,
       "description": "Index the statistics population time series on its epoch date column",
       "apply": "immutable/0008_statistics_date_index.sql",
-      "apply_checksum": "ca99318a723dc4c54d78d74027967299abb64f8b48426f2feff3a28b693f909d",
+      "apply_checksum": "19b11144dd55241d624de95eb5f1648049823ab5e40ab6029ce7ea5535b5cb60",
       "verify": "immutable/0008_statistics_date_index.sh",
-      "verify_checksum": "9d345e93f4528944c63d71d75082b8208f7222330c3b45c6f062de7c6c5255de",
+      "verify_checksum": "d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90",
       "compatibility": "mysql8-mariadb10"
     }
   ]

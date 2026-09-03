@@ -139,7 +139,8 @@ back to the seller in one transaction.
 ```
 
 `requestId` must be a non-empty string of at most 128 bytes and `auctionId` must
-be a number from 1 to 4294967295. The MUD acknowledges submission:
+be an integral unsigned 32-bit number from 1 to 4294967295; a fractional value is
+rejected rather than truncated. The MUD acknowledges submission:
 
 ```json
 {

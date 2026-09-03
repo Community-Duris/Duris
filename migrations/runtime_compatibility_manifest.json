@@ -12,9 +12,9 @@
   "migration_head": {
     "id": "0008_statistics_date_index",
     "sequence": 8,
-    "apply_checksum": "ca99318a723dc4c54d78d74027967299abb64f8b48426f2feff3a28b693f909d",
-    "verify_checksum": "9d345e93f4528944c63d71d75082b8208f7222330c3b45c6f062de7c6c5255de",
-    "history_checksum": "126d083076a280909c7614688e0213bb696eadade8e1a8bf61e2a6cd0b84a4f7"
+    "apply_checksum": "19b11144dd55241d624de95eb5f1648049823ab5e40ab6029ce7ea5535b5cb60",
+    "verify_checksum": "d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90",
+    "history_checksum": "0ea545de3ada35686b935dbb86b6f4cae64e01622b37baadddc76d6e9667929f"
   },
   "connection": {
     "character_set": "utf8mb4",

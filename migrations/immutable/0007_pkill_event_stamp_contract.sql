@@ -11,25 +11,39 @@
 -- they are first normalized to the epoch. That value carries the same absence
 -- of information the zero date did, in a form both engines accept.
 --
--- The guard reads the current default rather than the table name, so a database
--- that already carries the contract issues no ALTER at all and the step stays
--- exactly re-runnable. MySQL reports the converged default as CURRENT_TIMESTAMP
--- and MariaDB as current_timestamp(); the prefix match accepts both.
+-- The guard reads the whole contract the verification step asserts - DATETIME,
+-- NOT NULL, a current-timestamp default, and no surviving zero-date rows - so a
+-- database that already carries it issues no ALTER and the step stays exactly
+-- re-runnable, while a partially converged one (default already replaced but
+-- rows or nullability still legacy) is still repaired instead of silently
+-- skipped. MySQL reports the converged default as CURRENT_TIMESTAMP and MariaDB
+-- as current_timestamp(); the prefix match accepts both.
+--
+-- The procedure is dropped before it is created so a run that failed inside the
+-- body, leaving the definition behind, can simply be retried.
 
 DELIMITER //
+DROP PROCEDURE IF EXISTS migrate_0007_pkill_event_stamp//
 CREATE PROCEDURE migrate_0007_pkill_event_stamp()
 BEGIN
-    DECLARE legacy_default INT DEFAULT 0;
+    DECLARE contract_met INT DEFAULT 0;
+    DECLARE zero_rows INT DEFAULT 0;
 
-    SELECT COUNT(*) INTO legacy_default
+    SELECT COUNT(*) INTO contract_met
     FROM information_schema.columns
     WHERE table_schema = DATABASE()
       AND table_name = 'pkill_event'
       AND column_name = 'stamp'
-      AND (column_default IS NULL
-           OR UPPER(column_default) NOT LIKE 'CURRENT_TIMESTAMP%');
+      AND data_type = 'datetime'
+      AND is_nullable = 'NO'
+      AND column_default IS NOT NULL
+      AND UPPER(column_default) LIKE 'CURRENT_TIMESTAMP%';
 
-    IF legacy_default = 1 THEN
+    SELECT COUNT(*) INTO zero_rows
+    FROM pkill_event
+    WHERE YEAR(stamp) = 0;
+
+    IF contract_met = 0 OR zero_rows > 0 THEN
         UPDATE pkill_event
            SET stamp = '1970-01-01 00:00:00'
          WHERE YEAR(stamp) = 0;

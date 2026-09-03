@@ -12,6 +12,7 @@
 #include "core/utils.h"
 #include "net/ws_handlers.h"
 #include <ctype.h>
+#include <math.h>
 #include <openssl/hmac.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -383,6 +384,14 @@ static void ws_send_durisweb_hook_set_response(struct descriptor_data *d, const 
 	cJSON_Delete(result);
 }
 
+/*
+ * Send the correlated acknowledgement for a removal request.
+ *
+ * The reply always carries the caller's requestId so a website with several
+ * removals in flight can match them, and the auction id it acted on. A NULL
+ * request_id (the request never parsed) and a NULL error (acceptance) are both
+ * simply omitted from the object.
+ */
 static void ws_send_durisweb_auction_remove_response(struct descriptor_data *d,
 						     const char *request_id,
 						     unsigned int auction_id, bool accepted,
@@ -449,8 +458,12 @@ void ws_cmd_durisweb_auction_remove(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 	request_id = request_json->valuestring;
+	/* cJSON parses every number as a double, so a fractional id would silently
+	 * truncate onto a different auction; only an exact unsigned 32-bit value is
+	 * accepted. */
 	if (!auction_json || !cJSON_IsNumber(auction_json) || auction_json->valuedouble < 1.0 ||
-	    auction_json->valuedouble > (double)UINT32_MAX)
+	    auction_json->valuedouble > (double)UINT32_MAX ||
+	    auction_json->valuedouble != floor(auction_json->valuedouble))
 	{
 		ws_send_durisweb_auction_remove_response(d, request_id, 0, FALSE,
 							 "Invalid auction id");

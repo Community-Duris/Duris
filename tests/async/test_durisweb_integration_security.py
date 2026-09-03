@@ -112,9 +112,18 @@ assert auction_remove.index("durisweb_verified") < auction_remove.index(
 assert "request_json->valuestring[0] == '\\0'" in auction_remove
 assert "strlen(request_json->valuestring) > 128" in auction_remove
 assert "auction_action::remove" in auction_remove
+# cJSON numbers are doubles, so a fractional id must be rejected outright rather
+# than truncated onto a neighbouring auction.
+assert "floor(auction_json->valuedouble)" in auction_remove
 assert "auction_transaction_submit_background(payload, NULL)" in auction_remove
 assert "payload.actor_pid" not in auction_remove
 assert '{ "durisweb_auction_remove", ws_cmd_durisweb_auction_remove }' in HANDLERS
+
+# Removal stages items back to the seller and never touches an actor wallet, so
+# the shared validator must accept the actor-less payload the handler submits.
+auction_command = (SRC / "economy/auction_command.c").read_text()
+validator = auction_command[auction_command.index("bool valid_payload("):]
+assert "payload.action != auction_action::remove" in validator[:validator.index("\n}")]
 
 properties = (SRC / "properties.c").read_text()
 setter = properties[properties.index("bool set_durisweb_hook_enabled") :]

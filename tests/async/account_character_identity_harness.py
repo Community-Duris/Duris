@@ -20,6 +20,12 @@ PROBE = "account_character_identity_probe"
 
 
 def mysql(script: str) -> list[str]:
+    """Run a script against the configured database and return its output rows.
+
+    The credentials come from the guarded wrapper's environment and the password
+    is passed through MYSQL_PWD rather than the command line. Empty lines are
+    dropped so a caller can index the scalar results positionally.
+    """
     command = [
         "mysql",
         "-h", os.environ["DB_HOST"],
