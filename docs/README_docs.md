@@ -43,6 +43,7 @@ docs/
 | [PERSONAL_DATA_EXPORT.md](persistence/PERSONAL_DATA_EXPORT.md) | Authenticated package contract and pending activation. |
 | [ACCOUNT_ERASURE.md](persistence/ACCOUNT_ERASURE.md) | Erasure/tombstone contract and restore-time no-resurrection gate. |
 | [EXCEPTIONAL_TARGET_WINS_MERGE.md](persistence/EXCEPTIONAL_TARGET_WINS_MERGE.md) | Protected account-parent collision dispositions and aggregate preflight verification. |
+| [LEGACY_ITEM_QUARANTINE.md](persistence/LEGACY_ITEM_QUARANTINE.md) | Protected classification, disposition, and recovery planning for ambiguous legacy items. |
 
 ## guides/ - daily development
 
