@@ -168,7 +168,7 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 	if (!IS_PC(ch))
 		return;
 
-	if (!IS_TRUSTED(ch) && !chaos_test_commands_enabled())
+	if (!IS_TRUSTED(ch) || !chaos_mud_enabled())
 		return send_to_char("No, you can't have pony.  Not yours.\n", ch);
 
 	char buff[MAX_STRING_LENGTH];
