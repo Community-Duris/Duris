@@ -41,6 +41,7 @@
 #include "item/storage_lockers.h"
 
 #include <new>
+#include <algorithm>
 #include <array>
 #include <string>
 #include <unordered_map>
@@ -3896,16 +3897,35 @@ bool bulk_put_permitted(P_char actor, P_obj object, P_obj container, int64_t &we
 }
 
 /**
+ * Return whether the durable batch already published this object.
+ *
+ * An object without a UID is never a durable candidate, so it always belongs to the
+ * synchronous pass.
+ */
+bool bulk_put_batch_claimed(const bulk_put_state &state, P_obj object)
+{
+	return object->obj_uid != 0 &&
+	       std::find(state.durable_items.begin(), state.durable_items.end(), object->obj_uid) !=
+		       state.durable_items.end();
+}
+
+/**
  * Publish synchronous put candidates after the durable batch has committed.
  *
  * Coins, unowned transient objects, and PC corpse roots remain on this path.
+ *
+ * Skip only what the batch actually published. Generic ownership is not stable across the
+ * commit: a transient object whose runtime ownership row becomes active while the batch is
+ * in flight would be claimed by neither pass if this re-derived the split, leaving the item
+ * silently unmoved and missing from the reported total. put() re-checks each candidate and
+ * defers a durable one into its own ownership transaction.
  */
 void finish_bulk_put_after_commit(P_char actor, bulk_put_state &state, P_obj container)
 {
 	for (P_obj object = actor->carrying, next = NULL; object; object = next)
 	{
 		next = object->next_content;
-		if (object == container || uses_generic_item_ownership(object) ||
+		if (object == container || bulk_put_batch_claimed(state, object) ||
 		    (state.alldot && (!CAN_SEE_OBJ(actor, object) || !object->name ||
 				      !isname(state.filter.c_str(), object->name))))
 			continue;
