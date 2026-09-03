@@ -86,11 +86,9 @@ int main()
             return 1;
 
     setenv("ENVIRONMENT", "local", 1);
-    setenv("CHAOS_MUD", "TRUE", 1);
-    setenv("CREATION_ALL_RACES", "TRUE", 1);
-    setenv("CREATION_ALL_CLASSES", "TRUE", 1);
-    if (!validate(true, nullptr))
-        return 1;
+    for (const char *enabled_switch : switches)
+        if (!validate(true, enabled_switch))
+            return 1;
 
     std::cout << "compiled production override validator passed\n";
     return 0;
