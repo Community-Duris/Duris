@@ -40,8 +40,14 @@ assert "def index_titles" in report_block
 assert "def parsed_titles" in report_block
 assert "IMPORT_RESERVED_TITLES" in report_block
 
-for block in (import_block_2, import_block_3, *count_blocks):
-    assert r"split('\\n" not in block
+# No block that parses help_index may go back to the exact-string split the
+# helper replaced: a delimiter line written '# ' or '#  ' merged the entries
+# across it and the second entry's title was lost. Both quote spellings the
+# legacy code used are pinned; splitting on the parsed file's '#0' marker or
+# on a plain newline stays legal.
+for block in (report_block, import_block_2, import_block_3, *count_blocks):
+    assert "content.split('\\n#\\n')" not in block
+    assert 'content.split("\\n#\\n")' not in block
 for block in (import_block_2, import_block_3):
     assert "join(content_lines)" in block
     assert "if error_count:\n    raise SystemExit(1)" in block

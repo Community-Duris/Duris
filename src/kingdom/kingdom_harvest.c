@@ -90,6 +90,13 @@
  *  the invariant would otherwise only hold at the instant of spawning. The
  *  quota it was occupying is freed and the sweep re-scatters it elsewhere.
  *
+ *  It also removes any node standing OUTSIDE every configured region. Nodes
+ *  are placed only inside one, so such a node is left over from an older
+ *  shape of the region table -- the Tharnadia Rift carried ten until it was
+ *  dropped as a region -- and a server that ran that table would keep them
+ *  forever otherwise: unclaimed ground is not realm-controlled and a pristine
+ *  node never expires.
+ *
  *  WHAT WAS COPIED FROM mining.c, AND THE THREE THINGS DELIBERATELY NOT
  *  -------------------------------------------------------------------
  *  Copied: the region table's shape and its vnum ranges (mine_data[]), the
@@ -677,20 +684,48 @@ static bool kingdom_node_invalid_room(int rnum)
  * Reaping
  * ------------------------------------------------------------------ */
 
+/* True when the room's vnum falls inside one of the node regions' vnum ranges
+ * -- the same membership test kingdom_node_census() applies, asked of the vnum
+ * rather than of the resolved rnum window so it needs no initialise to have
+ * run. */
+static bool kingdom_room_in_node_region(int rnum)
+{
+	const int room_vnum = world[rnum].number;
+
+	for (int region = 0; region < KINGDOM_NODE_REGION_COUNT; region++)
+	{
+		const struct kingdom_node_region *cfg = &kingdom_node_regions[region];
+
+		if (room_vnum >= cfg->start_vnum && room_vnum <= cfg->end_vnum)
+			return true;
+	}
+
+	return false;
+}
+
 /* True when this object is one of ours AND has no business existing any more:
- * it has outlived its decay window, or it now stands on land a realm controls.
- * `rnum` is the room it is standing in. */
+ * its room belongs to no configured node region, it has outlived its decay
+ * window, or it now stands on land a realm controls. `rnum` is the room it is
+ * standing in. */
 static bool kingdom_node_should_reap(P_obj obj, int rnum, int now_min, int decay_mins)
 {
 	if (!obj || obj->R_num < 0)
 		return false;
 	if (kingdom_resource_for_node_vnum(obj_index[obj->R_num].virtual_number) < 0)
 		return false;
+	if (!kingdom_harvest_valid_rnum(rnum))
+		return false;
+
+	/* A node outside every region was placed by an older region table (the
+	 * dropped Tharnadia Rift) and no sweep will ever refill its slot: the
+	 * census counts only rooms inside a region, so it must go. */
+	if (!kingdom_room_in_node_region(rnum))
+		return true;
 
 	if (kingdom_node_expired_at(obj, now_min, decay_mins))
 		return true;
 
-	return kingdom_harvest_valid_rnum(rnum) && kingdom_owner_of_room(rnum) != 0;
+	return kingdom_owner_of_room(rnum) != 0;
 }
 
 /*

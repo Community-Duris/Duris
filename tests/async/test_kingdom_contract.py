@@ -895,7 +895,9 @@ def test_node_population_is_one_random_mix_per_region() -> None:
     target for each of the four resources. Two regions now carry a single
     total each, and the refill picks the resource at random, so a worked-out
     node comes back as a random kind in a random room rather than as the same
-    kind moved. The Tharnadia Rift is not a region at all."""
+    kind moved. The Tharnadia Rift is not a region at all -- and a node left
+    standing outside every region by an older table is reaped, since the
+    census never counts it and no sweep would otherwise ever refill its slot."""
     harvest = read("src/kingdom/kingdom_harvest.c")
     code = strip_comments(harvest)
 
@@ -936,6 +938,27 @@ def test_node_population_is_one_random_mix_per_region() -> None:
             "each replacement rolls its own resource, so the standing mix is random",
             "the refill does not pass a rolled resource to kingdom_load_one_node()",
         )
+
+    reap = function_bodies(harvest, r"\bstatic\s+bool\s+kingdom_node_should_reap\s*\(")
+    check(len(reap) == 1, "kingdom_node_should_reap is defined once")
+    if reap:
+        body = strip_comments(reap[0])
+        check(
+            re.search(r"kingdom_room_in_node_region\s*\(\s*rnum\s*\)", body) is not None,
+            "a node standing outside every configured region is reaped",
+            "kingdom_node_should_reap() never asks kingdom_room_in_node_region()",
+        )
+        helper = function_bodies(
+            harvest, r"\bstatic\s+bool\s+kingdom_room_in_node_region\s*\("
+        )
+        check(len(helper) == 1, "kingdom_room_in_node_region is defined once")
+        if helper:
+            check(
+                re.search(r"start_vnum\b", helper[0]) is not None
+                and re.search(r"end_vnum\b", helper[0]) is not None,
+                "region membership is asked of the vnum ranges, as the census asks it",
+                "kingdom_room_in_node_region() does not test a region's vnum range",
+            )
 
 
 def test_a_room_outside_the_grid_has_no_square() -> None:
