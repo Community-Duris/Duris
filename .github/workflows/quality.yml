@@ -59,7 +59,10 @@ jobs:
       - name: Verify flat-file nexus authority
         run: python3 tests/async/test_flatfile_nexus_repository.py
       - name: Verify flat-file kingdom authority
-        run: python3 tests/async/test_flatfile_kingdom_repository.py
+        run: |
+          python3 tests/async/test_flatfile_kingdom_repository.py
+          python3 tests/async/test_chaos_material_prefetch.py
+          python3 tests/async/test_chaos_pouch_help.py
       - name: Verify flat-file shopkeeper authority
         run: |
           python3 tests/async/test_flatfile_shopkeeper_repository.py

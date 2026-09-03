@@ -49,6 +49,10 @@ static inline bool chaos_material_pouch_is_active(P_obj object)
 }
 
 P_obj chaos_material_pouch_find(P_char ch);
+/* Eagerly materialize the configured Chaos material prototypes after the
+ * object index and prototype file are ready, so their shared descriptions are
+ * available to the pouch scoreboard even when a material has not been used. */
+void chaos_materials_initialize(void);
 bool chaos_material_pouch_available(P_char ch);
 bool chaos_material_pouch_vnum_supported(int vnum);
 bool chaos_material_pouch_can_record_generated(P_char ch, const chaos_material_pouch_usage *usage,

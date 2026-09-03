@@ -328,6 +328,7 @@ void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
 void boot_crafting_system(void)
 {
 	load_crafting_config();
+	chaos_materials_initialize();
 }
 
 int crafting_level_gate_multiplier(void)
