@@ -1869,7 +1869,7 @@ void update_crew(P_ship ship)
  * them.  Callers own validation; this helper owns state ordering and the
  * deferred save request.
  */
-void set_crew_skills(P_ship ship, int sail_skill, int guns_skill, int rpar_skill,
+void set_crew_skills(P_ship ship, float sail_skill, float guns_skill, float rpar_skill,
 		     const char *reason)
 {
 	if (!ship)

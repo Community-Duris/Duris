@@ -807,7 +807,7 @@ void change_crew(P_ship ship, int crew_index, bool skill_drop);
 void set_crew(P_ship ship, int crew_index, bool reset_skills = true);
 void set_chief(P_ship ship, int chief_index);
 void update_crew(P_ship ship);
-void set_crew_skills(P_ship ship, int sail_skill, int guns_skill, int rpar_skill,
+void set_crew_skills(P_ship ship, float sail_skill, float guns_skill, float rpar_skill,
 		     const char *reason);
 void reset_crew_stamina(P_ship ship);
 /* Returns either a literal or a static buffer reused on the next call;
