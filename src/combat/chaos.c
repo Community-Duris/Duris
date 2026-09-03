@@ -249,7 +249,9 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 			return send_to_char(
 				"Nobody that experienced would work for a wuss like you.\n", ch);
 
-		set_crew_skills(ship, s, g, r, "Chaos crewexperience");
+		ship->crew.sail_skill = s;
+		ship->crew.guns_skill = g;
+		ship->crew.rpar_skill = r;
 		return send_to_char("Ok.\n", ch);
 	}
 

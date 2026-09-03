@@ -1865,25 +1865,6 @@ void update_crew(P_ship ship)
 }
 
 /*
- * Set all trained crew skills and reconcile every derived ship state that reads
- * them.  Callers own validation; this helper owns state ordering and the
- * deferred save request.
- */
-void set_crew_skills(P_ship ship, float sail_skill, float guns_skill, float rpar_skill,
-		     const char *reason)
-{
-	if (!ship)
-		return;
-
-	ship->crew.sail_skill = sail_skill;
-	ship->crew.guns_skill = guns_skill;
-	ship->crew.rpar_skill = rpar_skill;
-	update_crew(ship);
-	update_ship_status(ship);
-	queue_ship_save(ship, reason);
-}
-
-/*
  * Restore `ship`'s crew to full stamina.  Free-function wrapper around
  * ShipCrew::reset_stamina().
  */
