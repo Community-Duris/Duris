@@ -243,6 +243,7 @@ void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data)
 	{
 		d->durisweb_verified = 1;
 		d->durisweb_backend = 1;
+		d->wait = 0;
 		ws_auth_reset(&d->durisweb_auth_window_start, &d->durisweb_auth_failures);
 		d->durisweb_auth_challenge[0] = '\0';
 		d->durisweb_auth_challenge_expires = 0;

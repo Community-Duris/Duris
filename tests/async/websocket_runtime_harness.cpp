@@ -211,6 +211,53 @@ int main()
 	if (!memmem(output, output_len, pong, sizeof(pong)))
 		return fail("missing pong for coalesced masked ping");
 
+	int newcomer_pair[2];
+	int service_pair[2];
+	int stale_pair[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, newcomer_pair) != 0 ||
+	    socketpair(AF_UNIX, SOCK_STREAM, 0, service_pair) != 0 ||
+	    socketpair(AF_UNIX, SOCK_STREAM, 0, stale_pair) != 0)
+		return fail("duplicate-cleanup socketpair");
+	descriptor_data service{};
+	service.descriptor = service_pair[0];
+	service.websocket = 1;
+	service.ws_handshake_done = 1;
+	service.ws_state = WS_STATE_OPEN;
+	service.connected = 60;
+	service.durisweb_verified = 1;
+	service.durisweb_backend = 1;
+	strcpy(service.host, "192.0.2.1");
+	descriptor_data stale{};
+	stale.descriptor = stale_pair[0];
+	stale.websocket = 1;
+	stale.ws_handshake_done = 1;
+	stale.ws_state = WS_STATE_OPEN;
+	stale.connected = 60;
+	strcpy(stale.host, service.host);
+	service.next = &stale;
+	descriptor_list = &service;
+	descriptor_data newcomer{};
+	newcomer.descriptor = newcomer_pair[0];
+	newcomer.websocket = 1;
+	newcomer.ws_state = WS_STATE_CONNECTING;
+	strcpy(newcomer.host, service.host);
+	if (websocket_complete_handshake(&newcomer, "dGhlIHNhbXBsZSBub25jZQ==") != 1)
+		return fail("same-host newcomer handshake");
+	if (!websocket_is_authenticated_service(&service) || service.ws_state != WS_STATE_OPEN)
+		return fail("same-host handshake evicted authenticated service");
+	if (stale.ws_state != WS_STATE_CLOSING)
+		return fail("same-host handshake retained stale ordinary client");
+	descriptor_list = nullptr;
+	websocket_free(&newcomer);
+	websocket_free(&service);
+	websocket_free(&stale);
+	close(newcomer_pair[0]);
+	close(newcomer_pair[1]);
+	close(service_pair[0]);
+	close(service_pair[1]);
+	close(stale_pair[0]);
+	close(stale_pair[1]);
+
 	unsetenv("DURIS_TRUSTED_PROXY_IP");
 	int untrusted_xff_pair[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, untrusted_xff_pair) != 0)

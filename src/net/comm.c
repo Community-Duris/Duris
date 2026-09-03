@@ -1437,7 +1437,7 @@ resume_game_loop:
 
 			/* new timeout for non-playing sockets */
 
-			if (point->connected)
+			if (point->connected && !websocket_is_authenticated_service(point))
 			{
 				point->wait++;
 
