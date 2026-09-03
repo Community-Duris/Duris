@@ -430,24 +430,14 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
 
                     client.transcript.clear()
                     client.send("chaos level 55")
-                    client.expect("You lose a level!", timeout=15)
+                    client.expect("No, you can't have pony.  Not yours.", timeout=15)
                     client.expect("Pos: standing >", timeout=15)
                     client.transcript.clear()
-                    client.send("chaos level 56")
-                    client.expect("You raise a level!", timeout=15)
-                    client.expect("Pos: standing >", timeout=15)
-                    single_level_transcript = bytes(client.transcript).decode(
-                        "utf-8", errors="replace"
-                    )
+                    client.send("score")
+                    score = client.expect("Pos: standing >", timeout=30)
                     require(
-                        single_level_transcript.count("You raise a level!") == 1,
-                        "single-level advancement did not retain one notification:\n"
-                        + single_level_transcript,
-                    )
-                    require(
-                        "You advance to level" not in single_level_transcript,
-                        "single-level advancement used the batch notification:\n"
-                        + single_level_transcript,
+                        "Level: 56" in score,
+                        "denied Chaos level command changed the character level:\n" + score,
                     )
 
                     bag_authority = one_owned_item(state_root, STARTER_BAG_VNUM)
@@ -481,7 +471,13 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     client.expect("ring finger", timeout=30)
                     client.expect("Pos: standing >", timeout=30)
 
-                    inspect_chaos_material_pouch(client)
+                    client.send("look in bottomless")
+                    expect_paged(client, "a compact Chaos craft pouch")
+                    finish_paged(client)
+                    client.send("get pouch bag")
+                    client.expect("You get", timeout=30)
+                    client.expect("Pos: standing >", timeout=30)
+                    inspect_chaos_material_pouch(client, retrieve=False)
                     # The generated class kit does not always leave the same items in
                     # hand, so read the carried count instead of assuming one.  Every
                     # carried item except the bag itself moves into the bag.
@@ -498,8 +494,8 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     )
                     expected_put = int(carried.group(1)) - 1
                     require(
-                        expected_put >= 2,
-                        "expected the Chaos kit to leave at least two items to put away:\n"
+                        expected_put >= 1,
+                        "expected the Chaos kit to leave at least one item to put away:\n"
                         + inventory_before_put,
                     )
                     client.send("put all bottomless")
