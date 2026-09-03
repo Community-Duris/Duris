@@ -506,6 +506,36 @@ bool submit_pouch_collection(P_char actor, P_obj pouch, P_obj const *roots, size
 }
 } // namespace
 
+void chaos_materials_initialize()
+{
+	if (!chaos_starter_materials_enabled())
+	{
+		logit(LOG_STATUS,
+		      "CHAOS material description prefetch skipped: starter materials disabled.");
+		return;
+	}
+
+	size_t requested = 0;
+	size_t prefetched = 0;
+	const auto prefetch_range = [&](int first, int last)
+	{
+		for (int vnum = first; vnum <= last; ++vnum)
+		{
+			++requested;
+			P_obj material = read_object(vnum, VIRTUAL);
+			if (!material)
+				continue;
+			++prefetched;
+			extract_obj(material, FALSE);
+		}
+	};
+
+	prefetch_range(LOWEST_MAT_VNUM, HIGHEST_MAT_VNUM);
+	prefetch_range(ENCRUST_VNUM_BEGIN, ENCRUST_VNUM_END);
+	logit(LOG_STATUS, "CHAOS material descriptions prefetched: %zu/%zu prototype(s).",
+	      prefetched, requested);
+}
+
 P_obj chaos_material_pouch_find(P_char ch)
 {
 	if (!ch || IS_NPC(ch) || !chaos_starter_materials_enabled())
