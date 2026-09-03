@@ -2378,6 +2378,30 @@ void sql_modify_frags(P_char ch, int gain)
  * The MUD continues to use flat files, but web can query the database
  */
 
+/*
+ * Resolve an existing account_characters row id for an escaped character name,
+ * or 0 when the mapping is absent.
+ *
+ * account_characters.id is a signed INT AUTO_INCREMENT, and MySQL consumes an
+ * identity value on every INSERT ... ON DUPLICATE KEY UPDATE attempt, including
+ * the ones that only update. Projecting an existing mapping on every save
+ * therefore advanced the counter far past the surviving row count. Resolving the
+ * row first keeps the steady-state path an UPDATE, which allocates nothing.
+ */
+static long sql_find_account_character_id(const char *escaped_char_name)
+{
+	MYSQL_RES *result =
+		db_query("SELECT id FROM account_characters WHERE char_name='%s' LIMIT 1",
+			 escaped_char_name);
+	if (!result)
+		return 0;
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	long mapping_id = (row && row[0]) ? atol(row[0]) : 0;
+	mysql_free_result(result);
+	return mapping_id;
+}
+
 /* Update account_characters mapping table */
 void sql_update_account_character(P_char ch)
 {
@@ -2418,17 +2442,30 @@ void sql_update_account_character(P_char ch)
 	mysql_str(account_name, account_name_sql);
 	mysql_str(ch->player.name, char_name_sql);
 
-	// Insert or update account_characters mapping
-	// Using INSERT...ON DUPLICATE KEY UPDATE to preserve created_at for existing records
-	if (!qry("INSERT INTO account_characters "
-		 "(account_name, pid, char_name, created_at, deleted_at) "
-		 "VALUES('%s', %ld, '%s', NOW(), NULL) "
-		 "ON DUPLICATE KEY UPDATE "
-		 "account_name = VALUES(account_name), "
-		 "pid = VALUES(pid), "
-		 "char_name = VALUES(char_name), "
-		 "deleted_at = NULL",
-		 account_name_sql, GET_PID(ch), char_name_sql))
+	// Update an existing mapping in place and insert only a genuinely new one,
+	// so a repeated projection of the same character allocates no identity value.
+	// created_at is preserved either way.
+	const long mapping_id = sql_find_account_character_id(char_name_sql);
+	const bool written =
+		mapping_id > 0 ? qry("UPDATE account_characters "
+				     "SET account_name = '%s', pid = %ld, char_name = '%s', "
+				     "deleted_at = NULL "
+				     "WHERE id = %ld",
+				     account_name_sql, GET_PID(ch), char_name_sql, mapping_id)
+				 // ON DUPLICATE KEY UPDATE still converges when another writer
+				 // inserted the same unique char_name between the lookup and here.
+				 :
+				 qry("INSERT INTO account_characters "
+				     "(account_name, pid, char_name, created_at, deleted_at) "
+				     "VALUES('%s', %ld, '%s', NOW(), NULL) "
+				     "ON DUPLICATE KEY UPDATE "
+				     "account_name = VALUES(account_name), "
+				     "pid = VALUES(pid), "
+				     "char_name = VALUES(char_name), "
+				     "deleted_at = NULL",
+				     account_name_sql, GET_PID(ch), char_name_sql);
+
+	if (!written)
 	{
 		logit(LOG_DEBUG, "sql_update_account_character: failed for %s",
 		      GET_NAME(ch) ? GET_NAME(ch) : "<null>");

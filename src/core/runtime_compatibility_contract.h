@@ -55,17 +55,17 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"4d9ad29ca061123766c5715b544e5933d87639434856aa721588c5871f85ee00";
+	"0ec0366920b78703c006c6d4f159026c659d071c38aad5e142c2573754aaa8f3";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"6b50c8a3c579fad427a93dfab18a2488d5cc10b99b814a8544bbdc68cd6cc930";
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0006_kingdom_realms";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 6;
+	"92dd682008ba94f8aecc63595dc46f9d6f1f865adecd174e58e2a2ce14220f2c";
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0008_statistics_date_index";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 8;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"f146b2236b7c982bc909ec981f2d2d06831f21fc224824f670607811506e5c93";
+	"ca99318a723dc4c54d78d74027967299abb64f8b48426f2feff3a28b693f909d";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697";
+	"9d345e93f4528944c63d71d75082b8208f7222330c3b45c6f062de7c6c5255de";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"f0ad406519cd02e048b91c247d9a40c28edd6f00b5a35ae54509871c63a543c5";
+	"126d083076a280909c7614688e0213bb696eadade8e1a8bf61e2a6cd0b84a4f7";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

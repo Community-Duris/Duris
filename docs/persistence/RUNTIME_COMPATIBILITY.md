@@ -16,11 +16,14 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0006_kingdom_realms`, and the contract describes 174 current
-tables: the 170-table baseline plus `lookup_dataset_state`, `season_reset_state`,
-`server_reboots` and `kingdom_realms`, each created by an immutable migration. A
-database left at head `0005_level_cap_singleton` therefore fails this gate on both
-the ledger identity and the table inventory. An existing database must first
+The current head is `0008_statistics_date_index`, and the contract describes 174
+current tables: the 170-table baseline plus `lookup_dataset_state`,
+`season_reset_state`, `server_reboots` and `kingdom_realms`, each created by an
+immutable migration. Migrations 0007 and 0008 change existing inventory tables,
+so their fingerprints were resealed against `mysql:8.0` and `mariadb:10.11` with
+`tests/async/run_runtime_compatibility_mysql.sh`. A database left at head
+`0007_pkill_event_stamp_contract` therefore fails this gate. An existing database
+must first
 complete the guarded legacy upgrade and verified baseline adoption described in
 [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md). Never run migration or
 destructive verification commands against production.

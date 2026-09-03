@@ -94,7 +94,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 6)
+        self.assertEqual(len(manifest.migrations), 8)
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -107,6 +107,10 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                          "0005_level_cap_singleton")
         self.assertEqual(manifest.migrations[5].migration_id,
                          "0006_kingdom_realms")
+        self.assertEqual(manifest.migrations[6].migration_id,
+                         "0007_pkill_event_stamp_contract")
+        self.assertEqual(manifest.migrations[7].migration_id,
+                         "0008_statistics_date_index")
         self.assertEqual(len(manifest.required_table_fingerprint), 64)
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()

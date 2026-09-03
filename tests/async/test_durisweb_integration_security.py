@@ -99,6 +99,23 @@ assert "set_durisweb_hook_enabled(hook_id, enabled)" in hook_set
 assert '"durisweb_hook_set"' in HANDLERS
 assert '{ "durisweb_hook_set", ws_cmd_durisweb_hook_set }' in HANDLERS
 
+auction_remove = HANDLERS[
+    HANDLERS.index("void ws_cmd_durisweb_auction_remove") :
+    HANDLERS.index("void ws_cmd_durisweb_hook_set")
+]
+# Authorization precedes parsing, the request is bounded, and the website never
+# reaches the auction tables: removal is submitted as the MUD's own actor-less
+# critical command.
+assert auction_remove.index("durisweb_verified") < auction_remove.index(
+    'cJSON_GetObjectItem(data, "auctionId")'
+)
+assert "request_json->valuestring[0] == '\\0'" in auction_remove
+assert "strlen(request_json->valuestring) > 128" in auction_remove
+assert "auction_action::remove" in auction_remove
+assert "auction_transaction_submit_background(payload, NULL)" in auction_remove
+assert "payload.actor_pid" not in auction_remove
+assert '{ "durisweb_auction_remove", ws_cmd_durisweb_auction_remove }' in HANDLERS
+
 properties = (SRC / "properties.c").read_text()
 setter = properties[properties.index("bool set_durisweb_hook_enabled") :]
 assert "persist_durisweb_hook_property" in setter
@@ -135,6 +152,9 @@ api_reference = (ROOT / "docs/reference/api/durisweb.md").read_text()
 for hook_id in EXPECTED_MUD_HOOKS:
     assert f"`{hook_id}`" in api_reference
 assert '`connection_log` is deliberately **not** gated here' in api_reference
+assert '"cmd": "durisweb_auction_remove"' in api_reference
+assert '"auctionId"' in api_reference
+assert "Bidding and buy-now are deliberately **not** exposed here" in api_reference
 assert '"cmd": "durisweb_hook_set"' in api_reference
 for field in ('"requestId"', '"hook"', '"enabled"'):
     assert field in api_reference

@@ -37,6 +37,7 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data);
 void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data);
 void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON *data);
 void ws_cmd_logout(struct descriptor_data *d, cJSON *data);
+void ws_cmd_durisweb_auction_remove(struct descriptor_data *d, cJSON *data);
 
 /* durisweb service authentication */
 void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data);

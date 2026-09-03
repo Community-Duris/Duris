@@ -33,7 +33,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         report = runtime.validate()
         self.assertEqual(report["current_table_count"], 174)
         self.assertEqual(report["migration_head"],
-                         "0006_kingdom_realms")
+                         "0008_statistics_date_index")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

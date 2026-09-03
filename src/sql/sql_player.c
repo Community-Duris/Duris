@@ -5112,6 +5112,28 @@ bool sql_save_account(struct acct_entry *acc)
 	return true;
 }
 
+/*
+ * Resolve an existing account_characters row id for an escaped character name,
+ * or 0 when the mapping is absent, so the steady-state projection can be an
+ * UPDATE that allocates no identity value.
+ */
+static long sql_find_account_character_mapping(const char *escaped_char_name)
+{
+	if (!DB || !escaped_char_name)
+		return 0;
+
+	MYSQL_RES *result =
+		db_query("SELECT id FROM account_characters WHERE char_name='%s' LIMIT 1",
+			 escaped_char_name);
+	if (!result)
+		return 0;
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	long mapping_id = (row && row[0]) ? atol(row[0]) : 0;
+	mysql_free_result(result);
+	return mapping_id;
+}
+
 static bool sql_save_account_characters(struct acct_entry *acc)
 {
 	if (!DB || !acc || !acc->acct_name)
@@ -5160,14 +5182,30 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 		snprintf(pid_buf, sizeof(pid_buf), "%d", pid);
 		const char *pid_sql = pid_buf;
 
+		/* Update an existing mapping in place. MySQL consumes an
+		   account_characters identity value on every INSERT ... ON DUPLICATE
+		   KEY UPDATE attempt, so projecting the same character on each account
+		   save advanced the signed INT counter without adding a row. */
+		const long mapping_id = sql_find_account_character_mapping(esc_char);
+
 		char query[512];
-		snprintf(
-			query, sizeof(query),
-			"insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
-			"values ('%s', '%s', %s, %lu, FROM_UNIXTIME(NULLIF(%ld,0)), %d, %d) "
-			"on duplicate key update login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d, deleted_at=NULL, pid=VALUES(pid), account_name=VALUES(account_name), char_name=VALUES(char_name)",
-			esc_name, esc_char, pid_sql, ch->count, ch->last, ch->blocked, ch->racewar,
-			ch->count, ch->last, ch->blocked, ch->racewar);
+		if (mapping_id > 0)
+			snprintf(
+				query, sizeof(query),
+				"update account_characters set login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d, deleted_at=NULL, pid=%s, account_name='%s', char_name='%s' where id=%ld",
+				ch->count, ch->last, ch->blocked, ch->racewar, pid_sql, esc_name,
+				esc_char, mapping_id);
+		else
+			/* A genuinely new mapping must allocate once; the duplicate-key
+			   branch still converges against a concurrent insert of the same
+			   unique char_name. */
+			snprintf(
+				query, sizeof(query),
+				"insert into account_characters (account_name, char_name, pid, login_count, last_login, blocked, racewar) "
+				"values ('%s', '%s', %s, %lu, FROM_UNIXTIME(NULLIF(%ld,0)), %d, %d) "
+				"on duplicate key update login_count=%lu, last_login=FROM_UNIXTIME(NULLIF(%ld,0)), blocked=%d, racewar=%d, deleted_at=NULL, pid=VALUES(pid), account_name=VALUES(account_name), char_name=VALUES(char_name)",
+				esc_name, esc_char, pid_sql, ch->count, ch->last, ch->blocked,
+				ch->racewar, ch->count, ch->last, ch->blocked, ch->racewar);
 
 		bool ok = sql_run_query(query);
 		free(esc_char);

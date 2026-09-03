@@ -24,6 +24,8 @@
 #include "core/files.h"
 #include "net/gmcp.h"
 #include "world/hardcore_config.h"
+#include "economy/auction_command.h"
+#include "economy/auction_transaction.h"
 #include "item/item_movement_transaction.h"
 #include "combat/justice.h"
 #include "core/json_utils.h"
@@ -379,6 +381,91 @@ static void ws_send_durisweb_hook_set_response(struct descriptor_data *d, const 
 		free(json);
 	}
 	cJSON_Delete(result);
+}
+
+static void ws_send_durisweb_auction_remove_response(struct descriptor_data *d,
+						     const char *request_id,
+						     unsigned int auction_id, bool accepted,
+						     const char *error)
+{
+	cJSON *result = cJSON_CreateObject();
+	char *json;
+	if (!result)
+		return;
+	cJSON_AddStringToObject(result, "type", "durisweb_auction_remove");
+	cJSON_AddBoolToObject(result, "success", accepted);
+	if (request_id)
+		cJSON_AddStringToObject(result, "requestId", request_id);
+	cJSON_AddNumberToObject(result, "auctionId", auction_id);
+	if (error)
+		cJSON_AddStringToObject(result, "error", error);
+	json = cJSON_PrintUnformatted(result);
+	if (json)
+	{
+		websocket_send_text(d, json);
+		free(json);
+	}
+	cJSON_Delete(result);
+}
+
+/*
+ * Administrative auction removal requested by DurisWeb.
+ *
+ * The web service must not delete auction rows itself: the authoritative
+ * removal locks the auction, advances its revision, and stages every item back
+ * to the seller inside one critical command. Removal carries no actor wallet, so
+ * it submits through the actor-less background path exactly as expiry does.
+ *
+ * The reply reports whether the command was accepted, not whether it committed.
+ * A removal that commits publishes the existing auction "removed" event, and a
+ * repeated request for an auction that is no longer open is rejected by the
+ * repository, so a retry is safe.
+ */
+void ws_cmd_durisweb_auction_remove(struct descriptor_data *d, cJSON *data)
+{
+	cJSON *request_json, *auction_json;
+	const char *request_id = NULL;
+	auction_command_payload payload = {};
+
+	/* Authorization precedes parsing so an untrusted socket cannot probe ids. */
+	if (!d || !d->durisweb_verified)
+	{
+		if (d)
+			websocket_close(d, WS_CLOSE_POLICY_VIOLATION, "Not authorized");
+		return;
+	}
+	if (!data || !cJSON_IsObject(data))
+	{
+		ws_send_durisweb_auction_remove_response(d, NULL, 0, FALSE, "Missing data");
+		return;
+	}
+
+	request_json = cJSON_GetObjectItem(data, "requestId");
+	auction_json = cJSON_GetObjectItem(data, "auctionId");
+	if (!request_json || !cJSON_IsString(request_json) ||
+	    request_json->valuestring[0] == '\0' || strlen(request_json->valuestring) > 128)
+	{
+		ws_send_durisweb_auction_remove_response(d, NULL, 0, FALSE, "Invalid request id");
+		return;
+	}
+	request_id = request_json->valuestring;
+	if (!auction_json || !cJSON_IsNumber(auction_json) || auction_json->valuedouble < 1.0 ||
+	    auction_json->valuedouble > (double)UINT32_MAX)
+	{
+		ws_send_durisweb_auction_remove_response(d, request_id, 0, FALSE,
+							 "Invalid auction id");
+		return;
+	}
+
+	payload.action = auction_action::remove;
+	payload.auction_id = (uint32_t)auction_json->valuedouble;
+	if (!auction_transaction_submit_background(payload, NULL))
+	{
+		ws_send_durisweb_auction_remove_response(d, request_id, payload.auction_id, FALSE,
+							 "Auction removal could not be submitted");
+		return;
+	}
+	ws_send_durisweb_auction_remove_response(d, request_id, payload.auction_id, TRUE, NULL);
 }
 
 void ws_cmd_durisweb_hook_set(struct descriptor_data *d, cJSON *data)
@@ -3596,6 +3683,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 		{ "request_wholist", ws_cmd_request_wholist },
 		{ "durisweb_hook_state", ws_cmd_durisweb_hook_state },
 		{ "durisweb_hook_set", ws_cmd_durisweb_hook_set },
+		{ "durisweb_auction_remove", ws_cmd_durisweb_auction_remove },
 	};
 
 	if (!cmd)

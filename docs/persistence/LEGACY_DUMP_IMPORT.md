@@ -41,7 +41,7 @@ non-production target whose exact `host/database` pair appears in `DB_ALLOWED_TA
 | 2. Quiesce check | Refuse the import if another connection is using the target database. | Stop before backup or replacement. |
 | 3. Backup | Write an owner-only `mysqldump` of the current target, including routines, events, and triggers. | Stop before replacement. |
 | 4. Replace | Drop target views/tables and stream the source dump into the same database. | Restore the backup when the failure is caught by the importer. |
-| 5. Converge | Run the legacy migration, adopt/advance the immutable ledger, and reach migration head `0006_kingdom_realms`. | Restore the backup when the failure is caught by the importer. |
+| 5. Converge | Run the legacy migration, adopt/advance the immutable ledger, and reach migration head `0008_statistics_date_index`. | Restore the backup when the failure is caught by the importer. |
 | 6. Verify runtime | Check the migration ledger and the exact metadata of all 174 runtime tables for MySQL 8 or MariaDB 10.11. | Restore the backup. |
 | 7. Verify preservation | Require all source tables, reject unexplained row loss, validate known archives, and require extension-table row counts to remain equal. | Restore the backup. |
 
@@ -154,9 +154,11 @@ The current schema contract has two layers:
 
 1. The Session 11 baseline requires a positive inventory of 170 canonical tables.
 2. Immutable migrations add `lookup_dataset_state`, `season_reset_state`,
-   `server_reboots`, and `kingdom_realms` at head `0006_kingdom_realms`,
-   yielding 174 runtime tables. Convergence must reach 0006: both the head's
-   ledger identity and the 174-table inventory are enforced at boot.
+   `server_reboots`, and `kingdom_realms`, yielding 174 runtime tables. The head
+   is `0008_statistics_date_index`; migrations 0007 and 0008 modify existing
+   runtime tables without changing that count. Convergence must reach 0008:
+   both the head's ledger identity and the 174-table inventory are enforced at
+   boot.
 
 The baseline and runtime checks ask whether every required table and its expected metadata
 is present. They do not require unrelated tables to be absent. This distinction lets a
@@ -191,7 +193,7 @@ lifecycle rows.
 | Source/runtime overlap | 112 tables |
 | Source extension inventory | 78 tables |
 | Immediate post-migration inventory | 254 base tables, 1,773,767 rows |
-| Runtime contract | 173 tables; migration count 5 at `0005_level_cap_singleton`, the head on the run date. The current head is `0006_kingdom_realms` at count 6 with 174 runtime tables; a repeat of this import today must converge to it. |
+| Runtime contract | 173 tables; migration count 5 at `0005_level_cap_singleton`, the head on the run date. The current head is `0008_statistics_date_index` at count 8 with 174 runtime tables; a repeat of this import today must converge to it. |
 | Added preservation archives | Three: two item-description archives and the reboot archive |
 | Missing source tables | None |
 | Unexpected source row reductions | None |
