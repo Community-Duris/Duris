@@ -46,10 +46,9 @@ bool chaos_mud_enabled(void)
 bool chaos_config_validate_environment(char *error, size_t error_size)
 {
 	const char *environment = getenv("ENVIRONMENT");
-	static const char *const production_switches[] = { "CHAOS_MUD", "CREATION_ALL_RACES",
+	static const char *const production_switches[] = { "CREATION_ALL_RACES",
 							   "CREATION_ALL_CLASSES", NULL };
 	static const char *const production_messages[] = {
-		"Production environment cannot enable CHAOS_MUD.",
 		"Production environment cannot enable CREATION_ALL_RACES.",
 		"Production environment cannot enable CREATION_ALL_CLASSES.", NULL
 	};

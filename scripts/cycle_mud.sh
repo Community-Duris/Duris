@@ -138,7 +138,7 @@ if (( DEV_MODE == 1 )) && [[ "$ENVIRONMENT" != "local" ]]; then
   exit 1
 fi
 if [[ "$ENVIRONMENT" == "production" ]]; then
-  for TEST_ONLY_SWITCH in CHAOS_MUD CREATION_ALL_RACES CREATION_ALL_CLASSES; do
+  for TEST_ONLY_SWITCH in CREATION_ALL_RACES CREATION_ALL_CLASSES; do
     TEST_ONLY_VALUE="${!TEST_ONLY_SWITCH:-}"
     if [[ "${TEST_ONLY_VALUE,,}" == "true" ]]; then
       echo "Production environment cannot enable $TEST_ONLY_SWITCH" >&2

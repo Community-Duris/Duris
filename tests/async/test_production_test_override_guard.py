@@ -19,7 +19,8 @@ ENV_FILE = SRC / "core/env_file.c"
 COMM = SRC / "net/comm.c"
 CYCLE = ROOT / "scripts/cycle_mud.sh"
 KINGDOM = ROOT / "lib/kingdom.cfg"
-SWITCHES = ("CHAOS_MUD", "CREATION_ALL_RACES", "CREATION_ALL_CLASSES")
+TEST_ONLY_SWITCHES = ("CREATION_ALL_RACES", "CREATION_ALL_CLASSES")
+ALL_SWITCHES = ("CHAOS_MUD", *TEST_ONLY_SWITCHES)
 
 
 def run_launcher(script: Path, env: dict[str, str], *args: str) -> subprocess.CompletedProcess[str]:
@@ -43,7 +44,7 @@ HARNESS = r'''
 namespace
 {
 const char *switches[] = {
-    "CHAOS_MUD", "CREATION_ALL_RACES", "CREATION_ALL_CLASSES"
+    "CREATION_ALL_RACES", "CREATION_ALL_CLASSES"
 };
 
 void clear_switches()
@@ -79,6 +80,8 @@ bool validate(bool expected, const char *enabled_switch)
 int main()
 {
     setenv("ENVIRONMENT", "production", 1);
+    if (!validate(true, "CHAOS_MUD"))
+        return 1;
     if (!validate(true, nullptr))
         return 1;
     for (const char *enabled_switch : switches)
@@ -89,6 +92,8 @@ int main()
     for (const char *enabled_switch : switches)
         if (!validate(true, enabled_switch))
             return 1;
+    if (!validate(true, "CHAOS_MUD"))
+        return 1;
 
     std::cout << "compiled production override validator passed\n";
     return 0;
@@ -136,7 +141,7 @@ with tempfile.TemporaryDirectory(prefix="duris-production-override-") as tempora
         "REDIS": "FALSE",
     }
     local = dict(base_env)
-    for switch in SWITCHES:
+    for switch in ALL_SWITCHES:
         local[switch] = "TRUE"
     accepted = run_launcher(script, local, "--dev", "--check-config")
     assert accepted.returncode == 0, accepted.stdout
@@ -144,7 +149,13 @@ with tempfile.TemporaryDirectory(prefix="duris-production-override-") as tempora
 
     production = dict(base_env)
     production["ENVIRONMENT"] = "production"
-    for switch in SWITCHES:
+    production_chaos = dict(production)
+    production_chaos["CHAOS_MUD"] = "TRUE"
+    accepted = run_launcher(script, production_chaos, "--production", "--check-config")
+    assert accepted.returncode == 0, accepted.stdout
+    assert "database-independent configuration" in accepted.stdout
+
+    for switch in TEST_ONLY_SWITCHES:
         rejected = dict(production)
         rejected[switch] = "TRUE"
         result = run_launcher(script, rejected, "--production", "--check-config")
@@ -171,7 +182,8 @@ assert "chaos_config_validate_environment" in env_file
 load_env = env_file[env_file.index("int load_env_file") :]
 assert load_env.index("fclose(f);") < load_env.rindex("validate_environment_overrides()")
 assert "chaos_config_validate_environment" not in comm
-assert "Production environment cannot enable" in cycle
+assert "for TEST_ONLY_SWITCH in CREATION_ALL_RACES CREATION_ALL_CLASSES" in cycle
+assert "CHAOS_MUD" not in cycle
 assert cycle.index("Production environment cannot enable") < cycle.index("if (( DATABASE_REQUIRED")
 assert cycle.index("Production environment cannot enable") < cycle.index("if (( CONFIG_CHECK_ONLY" )
 assert "kingdom.enabled = 1" in kingdom
