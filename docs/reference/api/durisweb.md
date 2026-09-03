@@ -121,6 +121,47 @@ correlate the acknowledgement by `requestId` and confirm the observed state.
 Unlike the in-game `properties set` command, this service command persists
 automatically and does not require `properties save`.
 
+## Authoritative auction removal
+
+Administrative removal of an auction listing is a MUD-owned operation. The
+website must not update `auctions` or insert pickup rows itself: the MUD's
+critical command locks the auction, advances its revision, and stages every item
+back to the seller in one transaction.
+
+```json
+{
+  "cmd": "durisweb_auction_remove",
+  "data": {
+    "requestId": "durisweb_auction_remove_7_1788264000000",
+    "auctionId": 1234
+  }
+}
+```
+
+`requestId` must be a non-empty string of at most 128 bytes and `auctionId` must
+be an integral unsigned 32-bit number from 1 to 4294967295; a fractional value is
+rejected rather than truncated. The MUD acknowledges submission:
+
+```json
+{
+  "type": "durisweb_auction_remove",
+  "success": true,
+  "requestId": "durisweb_auction_remove_7_1788264000000",
+  "auctionId": 1234
+}
+```
+
+`success` reports that the command was **accepted**, not that it committed. The
+committed outcome arrives on the existing auction event stream as a `removed`
+event. Removal carries no actor wallet, so it runs through the same actor-less
+background path as auction expiry, and repeating the request for an auction that
+is no longer open is rejected by the repository. A retry is therefore safe.
+
+Bidding and buy-now are deliberately **not** exposed here. Those commands lock
+the bidder's live wallet through `expected_wallet_revision`, which only an
+online character carries, so a website-originated bid would need an offline
+wallet custody contract that does not exist yet.
+
 ## Authorization and data
 
 An authenticated service receives auction, player-presence, shutdown, and

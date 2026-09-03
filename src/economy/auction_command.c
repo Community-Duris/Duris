@@ -70,7 +70,11 @@ bool valid_payload(const auction_command_payload &payload)
 	     payload.action == auction_action::claim_item) &&
 	    !payload.item_count)
 		return false;
-	if (payload.action != auction_action::finalize && !payload.actor_pid)
+	// finalize and remove are authoritative closures: they stage items back to the
+	// seller (or to the recorded winner) and never touch an actor wallet, so both
+	// run actor-less from expiry and from the DurisWeb removal path.
+	if (payload.action != auction_action::finalize &&
+	    payload.action != auction_action::remove && !payload.actor_pid)
 		return false;
 	if (payload.action != auction_action::list && !payload.auction_id &&
 	    payload.action != auction_action::claim_money)

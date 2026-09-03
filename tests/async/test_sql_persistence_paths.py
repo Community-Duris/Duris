@@ -14,7 +14,14 @@ account_c = (SRC / "account.c").read_text()
 
 checks.append(("non-default production names remain sandboxed", "production_name" in sql_c and "return \"duris_dev\"" in sql_c))
 checks.append(("explicit non-production database names are honored", "return DB_NAME;" in sql_c and "production_name" in sql_c))
-checks.append(("account-character upsert uses boolean query executor", "if (!qry(\"INSERT INTO account_characters \"" in sql_c))
+checks.append(("account-character upsert uses boolean query executor",
+               "qry(\"UPDATE account_characters \"" in sql_c and
+               "qry(\"INSERT INTO account_characters \"" in sql_c and
+               "if (!written)" in sql_c))
+checks.append(("account-character upsert reuses an existing mapping row",
+               "sql_find_account_character_id" in sql_c and
+               "SELECT id FROM account_characters WHERE char_name=" in sql_c and
+               "ON DUPLICATE KEY UPDATE" in sql_c))
 checks.append(("frag leaderboard upsert uses boolean query executor", "if (!qry(\"INSERT INTO frag_leaderboard \"" in sql_c))
 checks.append(("IP row creation is idempotent", "INSERT IGNORE INTO ip_info (pid) VALUES (%d)" in sql_c))
 checks.append(("sql_player.c uses the canonical validated connector", "sql_open_configured_connection(CLIENT_MULTI_STATEMENTS)" in sql_player_c and "mysql_real_connect" not in sql_player_c))

@@ -238,6 +238,26 @@
       "verify": "immutable/0006_kingdom_realms.sh",
       "verify_checksum": "c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0007_pkill_event_stamp_contract",
+      "sequence": 7,
+      "description": "Replace the pkill_event stamp zero-date default with a portable contract",
+      "apply": "immutable/0007_pkill_event_stamp_contract.sql",
+      "apply_checksum": "90b47fbc6fa39090ad542d87365b54650f2d62c8b0dc37deb84d1e1ebafae70b",
+      "verify": "immutable/0007_pkill_event_stamp_contract.sh",
+      "verify_checksum": "a777ce57d3e9bd4135ef23a5f361fef24705f9953dc6235ef6de5fa1887c14f2",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0008_statistics_date_index",
+      "sequence": 8,
+      "description": "Index the statistics population time series on its epoch date column",
+      "apply": "immutable/0008_statistics_date_index.sql",
+      "apply_checksum": "19b11144dd55241d624de95eb5f1648049823ab5e40ab6029ce7ea5535b5cb60",
+      "verify": "immutable/0008_statistics_date_index.sh",
+      "verify_checksum": "d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

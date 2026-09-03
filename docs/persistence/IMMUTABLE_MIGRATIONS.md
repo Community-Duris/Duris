@@ -35,10 +35,10 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-The current immutable head is `0006_kingdom_realms`. After it is applied, the
-database contains the 174-table runtime boot contract, and the history singleton
-records applied count 6 plus the exact history
-checksum. If a pre-b029 launcher already created the legacy `server_reboots`
+The current immutable head is `0008_statistics_date_index`. After it is applied,
+the database contains the 174-table runtime boot contract, and the history
+singleton records applied count 8 plus the exact history checksum. If a pre-b029
+launcher already created the legacy `server_reboots`
 shape, 0004 copies every lifecycle row into the canonical table and atomically
 swaps it into place; an interrupted conversion can be retried without making the
 legacy table unavailable or duplicating rows. 0006 creates the guild kingdom
@@ -51,21 +51,45 @@ utf8mb4_unicode_ci` brings it to the verified shape. Every column is an integer,
 so the conversion changes no stored value, and on an already-correct table the
 guard issues no `ALTER` at all, which is what keeps 0006 exactly re-runnable.
 
+0007 replaces the `pkill_event.stamp` default. The column was created as
+`DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00'`, which a server enabling
+`NO_ZERO_DATE` and `NO_ZERO_IN_DATE` refuses to load, and which pushed consumers
+into relaxing their session SQL mode to write the table at all. Every current
+writer supplies `NOW()` explicitly, so the default is only a safety net;
+`CURRENT_TIMESTAMP` expresses that portably. Rows written before strict mode was
+enabled may still hold the zero value and would fail the `ALTER`, so they are
+first normalized to the epoch, which carries the same absence of information in
+a form both engines accept. The guard reads the whole contract its verification
+step asserts - `DATETIME`, `NOT NULL`, a current-timestamp default, and no
+surviving zero-date rows - so a converged database issues no `ALTER` and the step
+stays exactly re-runnable, while a partially converged one is still repaired.
+
+0008 adds `idx_statistics_date` to the `statistics` population time series,
+which carried only its primary key while every consumer filters an epoch range
+on `date` and sorts chronologically. MySQL 8 has no portable
+`CREATE INDEX IF NOT EXISTS`, so the guard reads `information_schema` first and
+issues no `ALTER` when an index of exactly the verified shape - a single
+non-unique entry on `date` - is present; an index of that name with any other
+shape is dropped and rebuilt. The index is a structural
+correction; its latency benefit is not yet measured on a representative clone,
+which remains the open half of that backlog item.
+
 `kingdom_realms` is part of the boot contract's *table list*:
 `runtime_compatibility_manifest.json` counts 174 runtime tables and both
 normalized metadata fingerprints are sealed over an inventory that includes it,
-so on the database backend the gate proves the table's engine, collation, columns
-and indexes before gameplay publishes. `kingdom_initialize()` still disables
-kingdoms for the boot when it cannot read the table, which remains reachable on
-the flat-file build, where no boot gate stands in front of it. The *ledger* is
-fail-closed too, exactly as it is for every other immutable
+so on the database backend the gate proves the table's engine, collation,
+columns and indexes before gameplay publishes. `kingdom_initialize()` still
+disables kingdoms for the boot when it cannot read the table, which remains
+reachable on the flat-file build, where no boot gate stands in front of it. The
+*ledger* is fail-closed too, exactly as it is for every other immutable
 migration: `src/core/runtime_compatibility_contract.h` compiles
-`RUNTIME_MIGRATION_HEAD_ID = "0006_kingdom_realms"` with sequence 6, and
+`RUNTIME_MIGRATION_HEAD_ID = "0008_statistics_date_index"` with sequence 8, and
 `sql_verify_boot_database()` in `src/sql/sql.c` requires the matching
-`mud_schema_history` row, its two checksums, and `applied_count=6` in
+`mud_schema_history` row, its two checksums, and `applied_count=8` in
 `mud_schema_migration_state`. On the MariaDB/MySQL backend a database left at
-head `0005_level_cap_singleton` therefore refuses to boot, aborting with
-`COMPAT-E002`. An operator upgrading an existing database must apply 0006 with
+head `0007_pkill_event_stamp_contract` therefore refuses to boot, aborting with
+`COMPAT-E002`. An operator upgrading an existing database must apply the pending
+migrations with
 `python3 scripts/migration_runner.py run`, which applies the SQL, runs the
 verifier, and only then writes the history row and advances the head, before
 starting the server.
