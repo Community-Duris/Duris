@@ -453,6 +453,24 @@ import re
 reserved = {t.strip().lower() for t in os.environ["IMPORT_RESERVED_TITLES"].splitlines() if t.strip()}
 
 
+def help_index_entries(content):
+    """Entries of a help_index text, split on the flat build's rule: a line
+    whose only content is '#' ends an entry, whatever whitespace surrounds
+    it (src/flatfile/flatfile_help_catalog.c, parse_help_index). Splitting
+    on the exact string '\\n#\\n' would merge the entries across a '# '
+    line and lose the second entry's title from this report."""
+    entries = []
+    entry_lines = []
+    for line in content.split("\n"):
+        if line.strip() == "#":
+            entries.append("\n".join(entry_lines))
+            entry_lines = []
+        else:
+            entry_lines.append(line)
+    entries.append("\n".join(entry_lines))
+    return entries
+
+
 def index_titles(filename):
     """Titles exactly as SECTION 2 below parses them."""
     titles = []
@@ -461,7 +479,7 @@ def index_titles(filename):
             content = handle.read()
     except OSError:
         return titles
-    for entry in content.split("\n#\n"):
+    for entry in help_index_entries(content):
         entry = entry.strip()
         if not entry or entry.startswith("last update:"):
             continue
@@ -535,11 +553,29 @@ else
     python3 << PYTHON_SCRIPT > "$TEMP_DIR/help_index_entries.txt"
 import re
 
+def help_index_entries(content):
+    """Entries of a help_index text, split on the flat build's rule: a line
+    whose only content is '#' ends an entry, whatever whitespace surrounds
+    it (src/flatfile/flatfile_help_catalog.c, parse_help_index). Splitting
+    on the exact string '\\n#\\n' would merge the entries across a '# '
+    line and leave the second entry's title unimported."""
+    entries = []
+    entry_lines = []
+    for line in content.split('\n'):
+        if line.strip() == '#':
+            entries.append('\n'.join(entry_lines))
+            entry_lines = []
+        else:
+            entry_lines.append(line)
+    entries.append('\n'.join(entry_lines))
+    return entries
+
+
 def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
         content = f.read()
 
-    entries = content.split('\n#\n')
+    entries = help_index_entries(content)
     help_entries = []
 
     for entry in entries:
@@ -607,11 +643,28 @@ MYSQL_HOST = os.environ["IMPORT_MYSQL_HOST"]
 MYSQL_PORT = os.environ["IMPORT_MYSQL_PORT"]
 MYSQL_SOCKET = os.environ["IMPORT_MYSQL_SOCKET"]
 
+def help_index_entries(content):
+    """Entries of a help_index text, split on the flat build's rule: a line
+    whose only content is '#' ends an entry, whatever whitespace surrounds
+    it (src/flatfile/flatfile_help_catalog.c, parse_help_index). Splitting
+    on the exact string '\\n#\\n' would merge the entries across a '# '
+    line and leave the second entry's title unimported."""
+    entries = []
+    entry_lines = []
+    for line in content.split('\n'):
+        if line.strip() == '#':
+            entries.append('\n'.join(entry_lines))
+            entry_lines = []
+        else:
+            entry_lines.append(line)
+    entries.append('\n'.join(entry_lines))
+    return entries
+
 def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
         content = f.read()
 
-    entries = content.split('\n#\n')
+    entries = help_index_entries(content)
     help_entries = []
 
     for entry in entries:

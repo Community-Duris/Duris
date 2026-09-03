@@ -1027,13 +1027,15 @@ static bool kingdom_load_one_node(int region, int res)
 	return true;
 }
 
-/* How many live nodes of each resource are standing in `region`.
+/* How many live nodes are standing in `region`, of ANY resource.
  *
- * ONE walk of object_list for all four resources and both prototype sets,
- * where the previous build walked it once per resource. Reads no object it has
- * not first proved is in a room, because loc.room is a union member that only
- * means a room when LOC_ROOM is set. Expired nodes have already been extracted
- * by kingdom_nodes_reap() before this runs, so nothing here has to second-guess
+ * A region keeps ONE population, so this counts every node prototype standing
+ * in a room inside the region's vnum window and adds them up -- there is no
+ * per-resource split to read, because the slot a worked-out node frees can
+ * come back as any kind. Reads no object it has not first proved is in a
+ * room, because loc.room is a union member that only means a room when
+ * LOC_ROOM is set. Expired nodes have already been extracted by
+ * kingdom_nodes_reap() before this runs, so nothing here has to second-guess
  * them. */
 static int kingdom_node_census(int region)
 {

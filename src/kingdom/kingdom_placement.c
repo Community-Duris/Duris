@@ -567,6 +567,10 @@ static bool kingdom_nearest_gate(const std::unordered_map<int, std::vector<kingd
 	return found;
 }
 
+/* The contract is declared in kingdom_internal.h; the body keeps its shape
+ * deliberately lopsided: the direction half is always written when it can be,
+ * the gateway half only for the two keep-away verdicts, and each half ends the
+ * fragment the moment it would have nothing useful to say. */
 void kingdom_explain_refusal(int hall_rnum, int index, int verdict, char *out, size_t out_len)
 {
 	int dx = 0, dy = 0;

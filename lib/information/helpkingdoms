@@ -244,9 +244,10 @@ Some ground is richer than others, and a node holds only so many draws;
 take the last of them and it is worked out and gone. A node that has
 been broken into does not wait for ever either: once the first draw is
 taken it rots away after a time, whether or not anyone comes back to
-finish it. What is lost is replaced: every part of the world is
-restocked toward its accustomed count of each resource, however hard
-it is worked, so the supply moves about rather than running down.
+finish it. What is lost is replaced: each region of the world is
+restocked toward its accustomed TOTAL of nodes, all kinds counted
+together, however hard it is worked - and every replacement rolls its
+own kind, so the supply moves about rather than running down.
 
 Nodes are drawn on the overhead map as a coloured letter - s for a
 seam of stone, t for timber, f for fibre, w for water, and m for the
