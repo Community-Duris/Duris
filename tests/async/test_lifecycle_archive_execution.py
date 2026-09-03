@@ -71,12 +71,18 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         return snapshot, plan, authorization
 
     def rows(self):
+        """Two fixed archive rows, so copy, verify and restore compare exactly."""
         return [
             MODULE.ArchiveRow(b"001", b'{"value":1}'),
             MODULE.ArchiveRow(b"002", b'{"value":2}'),
         ]
 
     def test_schema_is_additive_bounded_and_reconciled_to_manifest(self) -> None:
+        """The archive schema only adds tables, stays bounded, and matches the manifest.
+
+        The migration must not alter existing tables, its budgets must be finite, and
+        every archive table it creates must have a lifecycle entry.
+        """
         migration = MIGRATION.read_text()
         bootstrap = BOOTSTRAP.read_text()
         manifest = json.loads(MANIFEST.read_text())

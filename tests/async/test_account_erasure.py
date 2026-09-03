@@ -39,9 +39,15 @@ class AccountErasureTest(unittest.TestCase):
 
     @staticmethod
     def verifier(account: str, password: bytes) -> bool:
+        """Stand in for the account password check; only one pair authenticates."""
         return account.casefold() == "tester" and password == b"correct-password"
 
     def create(self) -> tuple[erasure.ErasureRequest, bytes]:
+        """Create one authenticated erasure request and return it with its owner token.
+
+        Also asserts the caller's password buffer was zeroed, which every creation
+        path owes regardless of what the test goes on to check.
+        """
         gate = personal_export.ReauthenticationGate(b"a" * 32)
         password = bytearray(b"correct-password")
         request, owner = erasure.create_request(
@@ -79,6 +85,12 @@ class AccountErasureTest(unittest.TestCase):
             erasure.validate_ready(canonical)
 
     def test_authentication_stable_identity_ownership_and_cancel_boundary(self) -> None:
+        """Request identity is stable, ownership is proven, and cancel has a boundary.
+
+        Repeating a creation returns the same request rather than a second one, a
+        wrong owner token is refused, and cancellation stops being allowed once the
+        request has passed the point of no return.
+        """
         request, owner = self.create()
         replay, _ = self.create()
         self.assertEqual(replay.request_id, request.request_id)

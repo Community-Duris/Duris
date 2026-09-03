@@ -29,12 +29,15 @@ class FakeExecutor:
     def require_baseline(self, manifest): self.events.append("baseline")
     def applied(self): return list(self.rows)
     def apply(self, migration):
+        """Trace an apply, or raise when the test asked this stage to fail."""
         self.events.append(f"apply:{migration.migration_id}")
         if self.fail_apply: raise runner.MigrationContractError("synthetic apply failure")
     def verify(self, migration):
+        """Trace a verify, or raise when the test asked this stage to fail."""
         self.events.append(f"verify:{migration.migration_id}")
         if self.fail_verify: raise runner.MigrationContractError("synthetic verify failure")
     def record(self, migration, version):
+        """Record one applied migration, tracing the call for order assertions."""
         self.events.append(f"record:{migration.migration_id}")
         self.rows.append(runner.AppliedMigration(
             migration.migration_id, migration.sequence, migration.description,

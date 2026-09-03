@@ -59,11 +59,13 @@ class LifecycleManifestTest(unittest.TestCase):
                               check=False)
 
     def write_manifest(self, directory: Path, value: dict) -> Path:
+        """Write a mutated manifest to a temporary path for the validator to reject."""
         path = directory / "manifest.json"
         path.write_text(json.dumps(value))
         return path
 
     def entry(self, entry_id: str) -> dict:
+        """Return one manifest entry by id, for a test that mutates a single field."""
         return next(entry for entry in self.manifest["entries"] if entry["id"] == entry_id)
 
     def assert_rejected(self, result: subprocess.CompletedProcess[str], message: str) -> None:
@@ -90,6 +92,11 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertFalse(report["destructive_rules_enabled"])
 
     def test_missing_duplicate_unknown_and_stale_rules_fail_closed(self) -> None:
+        """Each way the manifest can misdescribe the schema is refused.
+
+        A dropped entry, a duplicated one, an entry for a table that does not exist,
+        and a stale rule must each fail rather than validate partially.
+        """
         mutations = []
 
         missing = json.loads(json.dumps(self.manifest))
@@ -174,6 +181,11 @@ class LifecycleManifestTest(unittest.TestCase):
             )
 
     def test_destructive_preflight_requires_global_approval(self) -> None:
+        """An entry-level approval alone never enables a destructive action.
+
+        The global controller approval must also enable destructive rules, so one
+        edited entry cannot unlock deletion on its own.
+        """
         approved_entry = json.loads(json.dumps(self.manifest))
         target = next(entry for entry in approved_entry["entries"]
                       if entry["id"] == "database:accounts")
@@ -190,6 +202,11 @@ class LifecycleManifestTest(unittest.TestCase):
             )
 
     def test_destructive_preflight_rejects_environment_host_and_role(self) -> None:
+        """Even an approved destructive rule is refused outside its target.
+
+        With global approval granted, the preflight must still reject a wrong
+        environment, a non-loopback host, and an unexpected database role.
+        """
         manifest = json.loads(json.dumps(self.manifest))
         manifest["controller_approval"] = {
             "status": "approved",

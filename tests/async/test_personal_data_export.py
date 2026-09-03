@@ -54,9 +54,15 @@ class PersonalDataExportTest(unittest.TestCase):
 
     @staticmethod
     def verifier(account: str, password: bytes) -> bool:
+        """Stand in for the account password check; only one pair authenticates."""
         return account.casefold() == "tester" and password == b"correct-password"
 
     def create(self, now: int = 1000) -> tuple[export.ExportRequest, bytes]:
+        """Create one authenticated export request and return it with its token.
+
+        Takes the clock so the rate-limit and cooldown cases can move time, and
+        asserts the caller's password buffer was zeroed.
+        """
         password = bytearray(b"correct-password")
         request, token = export.create_request(
             self.snapshot, self.gate, "Tester", password, "request-key-0001",

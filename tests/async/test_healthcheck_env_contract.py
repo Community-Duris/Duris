@@ -48,28 +48,38 @@ with tempfile.TemporaryDirectory() as temporary:
     fake_script = fake_root / "scripts/healthcheck.sh"
     fake_script.write_bytes(SCRIPT.read_bytes())
     fake_script.chmod(0o755)
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        env_port = probe.getsockname()[1]
-    env_file = fake_root / ".env"
-    env_file.write_text(f"DURIS_HEALTH_URL=http://127.0.0.1:{env_port}/health\n")
-    probe_env = {"PATH": "/usr/bin:/bin"}
 
-    env_file.chmod(0o600)
-    safe = subprocess.run([str(fake_script)], capture_output=True, text=True, env=probe_env)
-    assert str(env_port) in safe.stderr, (
+    # Report the URL the script chose instead of inferring it from a connection
+    # failure: a real server answering on the default port would otherwise make the
+    # rejected case look like the accepted one.
+    shim = fake_root / "bin"
+    shim.mkdir()
+    (shim / "curl").write_text('#!/bin/sh\nprintf "PROBED %s\\n" "${*##* }" >&2\nexit 7\n')
+    (shim / "curl").chmod(0o755)
+
+    env_file = fake_root / ".env"
+    env_file.write_text("DURIS_HEALTH_URL=http://127.0.0.1:59999/health\n")
+    probe_env = {"PATH": f"{shim}:/usr/bin:/bin"}
+
+    def probed(mode: int) -> subprocess.CompletedProcess[str]:
+        """Run the copied script against a .env at the given mode."""
+        env_file.chmod(mode)
+        return subprocess.run([str(fake_script)], capture_output=True, text=True,
+                              env=probe_env)
+
+    safe = probed(0o600)
+    assert "PROBED http://127.0.0.1:59999/health" in safe.stderr, (
         "healthcheck.sh ignored a correctly owned 0600 .env:\n" + safe.stderr
     )
 
-    env_file.chmod(0o644)
-    unsafe = subprocess.run([str(fake_script)], capture_output=True, text=True, env=probe_env)
-    assert str(env_port) not in unsafe.stderr, (
+    unsafe = probed(0o644)
+    assert "59999" not in unsafe.stderr, (
         "healthcheck.sh sourced a group/world-readable .env:\n" + unsafe.stderr
     )
     assert "chmod 600" in unsafe.stderr, (
         "healthcheck.sh must say why it ignored .env:\n" + unsafe.stderr
     )
-    assert "4050" in unsafe.stderr, (
+    assert "PROBED http://127.0.0.1:4050/health" in unsafe.stderr, (
         "healthcheck.sh must fall back to the documented default:\n" + unsafe.stderr
     )
 
