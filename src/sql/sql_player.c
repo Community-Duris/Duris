@@ -25,6 +25,8 @@
 #include "guild/assocs.h"
 #include "core/files.h"
 #include "flatfile/flatfile_identity_adapter.h"
+#include "flatfile/flatfile_identity_repository.h"
+#include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_recipe_repository.h"
 #include "flatfile/flatfile_spellbook_repository.h"
 #include "world/epic_bonus.h"
@@ -284,6 +286,29 @@ bool sql_locker_exists(int owner_pid, int owner_assoc_id)
 bool sql_locker_exists_by_name(const char *locker_name)
 {
 	return false;
+}
+bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int racewar)
+{
+	if (!locker_name || owner_pid <= 0)
+		return false;
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+		return false;
+	std::string error;
+	std::vector<flatfile_locker_record> lockers;
+	std::vector<flatfile_locker_access_record> access;
+	if (flatfile_locker_list(root, &lockers, &access, &error) != flatfile_locker_result::ok)
+		return false;
+	auto locker =
+		std::find_if(lockers.begin(), lockers.end(), [locker_name](const auto &entry)
+			     { return strcasecmp(entry.locker_name.c_str(), locker_name) == 0; });
+	if (locker == lockers.end() || locker->owner_pid != owner_pid || locker->owner_assoc_id ||
+	    locker->racewar != racewar)
+		return false;
+	flatfile_identity_record identity;
+	return flatfile_identity_lookup_pid(root, owner_pid, &identity, &error) ==
+		       flatfile_identity_result::ok &&
+	       identity.active && !identity.blocked && identity.racewar == racewar;
 }
 bool sql_delete_locker(int owner_pid, int owner_assoc_id)
 {
@@ -6730,6 +6755,27 @@ bool sql_locker_exists_by_name(const char *locker_name)
 	bool exists = (row != NULL);
 	mysql_free_result(result);
 	return exists;
+}
+
+bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int racewar)
+{
+	if (!DB || !locker_name || owner_pid <= 0)
+		return false;
+	char *escaped_name = sql_escape_string(locker_name);
+	if (!escaped_name)
+		return false;
+	MYSQL_RES *result =
+		db_query("SELECT 1 FROM lockers l JOIN account_characters ac ON ac.pid=l.owner_pid "
+			 "WHERE l.locker_name='%s' AND l.owner_pid=%d AND l.owner_assoc_id IS NULL "
+			 "AND l.racewar=%d AND ac.racewar=l.racewar AND ac.blocked=0 "
+			 "AND ac.deleted_at IS NULL LIMIT 1",
+			 escaped_name, owner_pid, racewar);
+	free(escaped_name);
+	if (!result)
+		return false;
+	const bool allowed = mysql_num_rows(result) == 1;
+	mysql_free_result(result);
+	return allowed;
 }
 
 bool sql_delete_locker(int owner_pid, int owner_assoc_id)

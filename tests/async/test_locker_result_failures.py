@@ -20,6 +20,23 @@ assert "if (!res)" in source
 assert source.count("mysql_store_result(DB)") >= 2
 assert "count = mysql_num_rows(res);" in source
 assert "if (mysql_num_rows(res) >= 1)" in source
+# Personal-locker ownership is a stable PID/racewar decision. It is checked
+# before visitor grants for both idle and actively occupied lockers.
+assert "static bool locker_access_canEnter(P_char locker, P_char visitor)" in source
+assert "sql_locker_owner_can_access(GET_NAME(locker), GET_PID(visitor)" in source
+assert source.count("!locker_access_canEnter(") == 2
+sql_player = (SRC / "sql_player.c").read_text()
+owner_access = sql_player[sql_player.index("bool sql_locker_owner_can_access") :]
+assert "locker->owner_pid != owner_pid" in owner_access
+assert "locker->owner_assoc_id" in owner_access
+assert "identity.active && !identity.blocked && identity.racewar == racewar" in owner_access
+mariadb_owner_access = owner_access[owner_access.index("bool sql_locker_owner_can_access", 1) :]
+assert "JOIN account_characters ac ON ac.pid=l.owner_pid" in mariadb_owner_access
+assert "l.owner_pid=%d" in mariadb_owner_access
+assert "l.owner_assoc_id IS NULL" in mariadb_owner_access
+assert "ac.racewar=l.racewar" in mariadb_owner_access
+assert "ac.blocked=0" in mariadb_owner_access
+assert "ac.deleted_at IS NULL" in mariadb_owner_access
 # addAccess and remAccess now return bool
 assert "static bool locker_access_remAccess" in source
 assert "static bool locker_access_addAccess" in source

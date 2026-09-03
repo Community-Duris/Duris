@@ -1724,6 +1724,7 @@ static int locker_logcmd(P_char ch, char *arg);
 static bool locker_access_addAccess(P_char locker, char *ch_name);
 static void locker_access_transferAccess(P_char locker, P_char ch);
 static bool locker_access_canAccess(P_char locker, char *ch_name);
+static bool locker_access_canEnter(P_char locker, P_char visitor);
 static int locker_access_count(P_char locker);
 static void locker_access_show(P_char ch, P_char locker);
 static int locker_access_CanAdd(P_char locker,
@@ -2819,6 +2820,15 @@ static bool locker_access_canAccess(P_char locker, char *ch_name)
 	return has_access;
 }
 
+static bool locker_access_canEnter(P_char locker, P_char visitor)
+{
+	if (!locker || !visitor || !GET_NAME(locker) || !GET_NAME(visitor))
+		return false;
+	if (sql_locker_owner_can_access(GET_NAME(locker), GET_PID(visitor), GET_RACEWAR(visitor)))
+		return true;
+	return locker_access_canAccess(locker, GET_NAME(visitor));
+}
+
 static bool locker_access_remAccess(P_char locker, char *ch_name)
 {
 	char *esc_owner = sql_escape_string(GET_NAME(locker));
@@ -3152,8 +3162,7 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 				if (active_locker_char)
 				{
 					if (bValidateAccess && !bPlayerIsGod &&
-					    !locker_access_canAccess(active_locker_char,
-								     GET_NAME(ch)))
+					    !locker_access_canEnter(active_locker_char, ch))
 					{
 						// No access - don't reveal anything about the
 						// locker's state or its occupant.
@@ -3206,8 +3215,7 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 		}
 
 		// validate access
-		if (bValidateAccess && !bPlayerIsGod &&
-		    !locker_access_canAccess(vict, GET_NAME(ch)))
+		if (bValidateAccess && !bPlayerIsGod && !locker_access_canEnter(vict, ch))
 		{
 			send_to_char("You don't have access to that locker!\r\n", ch);
 			free_char(vict);

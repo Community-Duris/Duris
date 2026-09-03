@@ -136,6 +136,9 @@ P_char sql_load_locker_by_name(const char *locker_name);
 bool sql_locker_exists(int owner_pid, int owner_assoc_id);
 bool sql_locker_exists_by_name(const char *locker_name);
 
+// Stable owner path for personal lockers; requires a current same-side mapping.
+bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int racewar);
+
 // delete locker
 bool sql_delete_locker(int owner_pid, int owner_assoc_id);
 bool sql_delete_locker_by_name(const char *locker_name);
