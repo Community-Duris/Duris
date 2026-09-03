@@ -23,6 +23,12 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.header = (SRC / "runtime_compatibility_contract.h").read_text()
 
     def test_manifests_and_compiled_contract_are_synchronized(self):
+        """The manifest, migration ledger, and compiled header agree.
+
+        Pins the current table count, the immutable head, and the presence of both
+        engine fingerprints, so a reseal that updates only one of the three surfaces
+        fails here instead of at a server's boot gate.
+        """
         report = runtime.validate()
         self.assertEqual(report["current_table_count"], 174)
         self.assertEqual(report["migration_head"],

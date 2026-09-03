@@ -71,6 +71,11 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertIn(message, result.stderr)
 
     def test_canonical_inventory_passes_and_reports_only_counts(self) -> None:
+        """The shipped manifest validates and reports counts, never contents.
+
+        The counts pin the inventory the rest of the lifecycle tooling consumes, and
+        destructive rules must still read as disabled.
+        """
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
@@ -223,6 +228,12 @@ class LifecycleManifestTest(unittest.TestCase):
             self.assert_rejected(self.run_validator(link), "regular non-symlink file")
 
     def test_schema_scan_ignores_prose_in_whole_line_comments(self) -> None:
+        """Schema discovery reads DDL, not the prose describing it.
+
+        Immutable migrations document themselves in whole-line comments, and 0006
+        spells out "CREATE TABLE IF NOT EXISTS" and "REFERENCES" there. Those files
+        are checksummed and cannot be reworded, so the scanner has to ignore them.
+        """
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             schema = directory / "commented.sql"

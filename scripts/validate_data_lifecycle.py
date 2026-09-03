@@ -212,6 +212,12 @@ def read_schema_source(path: Path) -> str:
 
 
 def schema_tables(paths: tuple[Path, ...]) -> set[str]:
+    """Return every table the authoritative schema sources create.
+
+    A later DROP removes a table an earlier file created, so the set reflects the
+    end state of applying the sources in order. This is the inventory the lifecycle
+    manifest must cover exactly, in both directions.
+    """
     tables: set[str] = set()
     statement = re.compile(
         r"(CREATE|DROP)\s+TABLE\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?[`\"]?(\w+)",

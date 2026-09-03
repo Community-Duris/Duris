@@ -77,6 +77,12 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         return path
 
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
+        """The shipped manifest still describes the sealed baseline and head.
+
+        The 170-table Session 11 baseline and its fingerprint must not move, and the
+        immutable migrations must stay in recorded order. Tables created by immutable
+        migrations are excluded before comparing against that baseline inventory.
+        """
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)

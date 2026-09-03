@@ -198,7 +198,7 @@ Rules of thumb (enforced by repo conventions):
 | persistence event tables | Remaining bounded compatibility events; not the player/critical authority |
 | frag leaderboard tables | Auto-populated as players log in and save |
 | `corpses`, `corpse_items` | Player corpses across restarts (see below) |
-| `kingdom_realms` | Guild kingdom realm territory (one claim integer per guild), harvested resource stores, and upkeep/arrears state; created by immutable migration 0006, read positionally by `src/kingdom/kingdom_db.c`, and outside the runtime boot contract until the maintainers reseal the metadata fingerprints |
+| `kingdom_realms` | Guild kingdom realm territory (one claim integer per guild), harvested resource stores, and upkeep/arrears state; created by immutable migration 0006, read positionally by `src/kingdom/kingdom_db.c`, and part of the 174-table runtime boot contract, whose metadata fingerprints are sealed over it |
 
 ### Player corpses
 

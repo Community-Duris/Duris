@@ -45,6 +45,13 @@ EXPECTED_CONNECTION = {
 
 
 def load() -> dict:
+    """Read the runtime compatibility manifest, rejecting any shape drift.
+
+    Every field is pinned: the exact key set, the pinned baseline and current table
+    counts, the table inventory grammar, hex-width fingerprints, and the whole
+    connection sub-contract. Raises MigrationContractError rather than returning a
+    partially trusted manifest.
+    """
     raw = lifecycle.read_regular_text(MANIFEST, 1024 * 1024,
                                       "runtime compatibility manifest")
     value = json.loads(raw, object_pairs_hook=migration_runner.strict_object)
@@ -83,6 +90,15 @@ def load() -> dict:
 
 
 def validate() -> dict:
+    """Prove the runtime, migration, lifecycle, and compiled contracts agree.
+
+    Cross-checks the manifest against the migration manifest's baseline and head,
+    against the lifecycle manifest's database-table inventory, and against the
+    constants compiled into runtime_compatibility_contract.h. The tables created by
+    immutable migrations are held out of the baseline fingerprint, which covers only
+    the sealed Session 11 inventory. Returns the report a caller prints; raises
+    MigrationContractError on any drift.
+    """
     value = load()
     migration = migration_runner.load_manifest()
     if value["baseline_id"] != migration.baseline_id or \

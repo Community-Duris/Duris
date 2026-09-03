@@ -120,6 +120,11 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         self.assertIn('memcpy(durable_state.magic, "DMSMNT3"', SCHEDULER)
 
     def test_canonical_policy_is_scheduler_blocked_and_dry_run_only(self) -> None:
+        """Inspect reports the whole inventory and the scheduler stays blocked.
+
+        The store count follows the lifecycle manifest, no destructive rule is
+        approved, and the scheduler must report itself blocked by policy.
+        """
         result = subprocess.run(
             ["python3", str(SCRIPT), "inspect"], cwd=ROOT,
             capture_output=True, text=True, check=False,

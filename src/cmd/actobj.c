@@ -3919,6 +3919,11 @@ bool bulk_put_batch_claimed(const bulk_put_state &state, P_obj object)
  * in flight would be claimed by neither pass if this re-derived the split, leaving the item
  * silently unmoved and missing from the reported total. put() re-checks each candidate and
  * defers a durable one into its own ownership transaction.
+ *
+ * Count only what landed. put() returns TRUE for a candidate defer_durable_put() claimed,
+ * whether it submitted an asynchronous transaction that has not committed yet or rejected
+ * the move outright, so the return value alone would report items that never moved.
+ * obj_to_obj() neither merges nor frees, so the object is still live to inspect here.
  */
 void finish_bulk_put_after_commit(P_char actor, bulk_put_state &state, P_obj container)
 {
@@ -3930,7 +3935,7 @@ void finish_bulk_put_after_commit(P_char actor, bulk_put_state &state, P_obj con
 				      !isname(state.filter.c_str(), object->name))))
 			continue;
 		state.attempted = true;
-		if (put(actor, object, container, FALSE))
+		if (put(actor, object, container, FALSE) && OBJ_INSIDE_OBJ(object, container))
 			++state.total;
 	}
 }

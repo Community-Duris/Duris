@@ -21,6 +21,11 @@ db_c = (SRC / "db.c").read_text(encoding="utf-8")
 
 
 def table_size(name: str) -> int:
+    """Return the declared length of one of db.c's weather lookup tables.
+
+    The world.weather files index these tables directly, so their bounds are the
+    limit the data must respect.
+    """
     match = re.search(
         r"const\s+signed\s+char\s+" + name + r"\s*\[\s*(\d+)\s*\]", db_c
     )

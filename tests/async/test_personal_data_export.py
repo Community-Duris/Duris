@@ -83,6 +83,12 @@ class PersonalDataExportTest(unittest.TestCase):
         return export.build_bundle(self.snapshot, request, token)
 
     def test_canonical_policy_is_blocked_and_exactly_covered(self) -> None:
+        """Export covers exactly the manifest's entries and stays unapproved.
+
+        Coverage is compared as a set in both directions, so an entry added to the
+        manifest without an export rule fails here rather than being omitted from a
+        subject's bundle.
+        """
         canonical = export.load_policy()
         self.assertEqual(len(canonical.entries), 195)
         with self.assertRaisesRegex(export.ExportContractError, "not approved"):
@@ -116,6 +122,11 @@ class PersonalDataExportTest(unittest.TestCase):
         self.assertTrue(request.owns(token))
 
     def test_bundle_is_deterministic_filtered_and_tamper_evident(self) -> None:
+        """A bundle carries one section per store, redacts secrets, and seals.
+
+        Section count follows the inventory, excluded fields such as credentials
+        never appear, and any edit to the payload must break verification.
+        """
         request, token = self.create()
         payload = self.complete(request, token)
         bundle = export.verify_bundle(payload)
