@@ -478,6 +478,94 @@ void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 }
 
 /* ------------------------------------------------------------------ *
+ * The realm's lines inside the society display
+ * ------------------------------------------------------------------ */
+
+/* The realm block appended to `soc` (Guild::display(), guild/assocs.c), which
+ * before this knew nothing about realms: a guild could hold eighty squares and
+ * a full materials store and its society sheet would show only coin.
+ *
+ * THE FALSE RETURN IS THE GATE. Nothing at the call site tests kingdom_enabled()
+ * or asks whether the guild has a realm -- this does, and writes nothing when
+ * either answer is no, so the society display is byte-identical on a server
+ * running the shipped kingdom.enabled = 0 and for every unconverted guild.
+ *
+ * The vocabulary is deliberately kingdom_show_status()'s: the same
+ * arrears_text() rungs, the same kingdom_resource_name() names, the same
+ * "never withdrawable" clause. Two wordings for one state is the defect here.
+ *
+ * The idiom is Guild::display()'s, not the status table's: labels padded to 21
+ * characters so values line up under its Cash line, &+W for values, a full stop
+ * at the end, and a bare \n -- that display uses \n throughout, not \r\n.
+ */
+bool kingdom_guild_society_lines(int assoc_id, char *out, size_t out_len)
+{
+	if (!kingdom_enabled() || !out || out_len == 0)
+		return false;
+
+	const kingdom_realm *realm = kingdom_find_realm(assoc_id);
+
+	if (!realm)
+		return false;
+
+	/* Territory is the single integer: claims 1..highest_claim, nothing
+	 * else. Ring 0 is what kingdom_ring_for_index() answers for an index
+	 * outside 1..KINGDOM_MAX_SQUARES, so a realm that has converted but not
+	 * yet claimed gets its own line rather than "out to ring 0". */
+	const int held = realm->highest_claim;
+
+	if (held > 0)
+		checked_appendf(out, out_len,
+				"Realm territory:     &+W%d&n of &+W%d&n squares, out to ring"
+				" &+W%d&n of &+W%d&n.\n",
+				held, KINGDOM_MAX_SQUARES, kingdom_ring_for_index(held),
+				KINGDOM_MAX_RING);
+	else
+		checked_appendf(out, out_len,
+				"Realm territory:     &+W%d&n of &+W%d&n squares -- none claimed"
+				" yet.\n",
+				held, KINGDOM_MAX_SQUARES);
+
+	/* Dormancy. Same test and same "lost" wording as the status table's seat
+	 * line, with what dormancy actually costs the guild spelled out, because
+	 * `soc` is where a member who never types `kingdom` will meet it. */
+	if (!valid_rnum(realm->hall_rnum))
+		checked_appendf(out, out_len,
+				"Realm seat:          &+Rlost -- the guildhall is gone or has"
+				" moved&n.\n"
+				"                     &+wThe realm is dormant: no upkeep is"
+				" charged, its guards have gone, and\n"
+				"                     it can neither claim nor abandon until a"
+				" main hall stands on its seat.&n\n");
+
+	/* Standing, only when it is worth saying. arrears_text() renders the rung
+	 * the upkeep code decided; this does not work out which rung applies. */
+	if (realm->arrears != KARR_CURRENT)
+		checked_appendf(out, out_len, "Realm standing:      %s.\n",
+				arrears_text(realm->arrears));
+
+	/* The materials store. "Realm resources:" is 16 characters and the loop
+	 * opens each entry with a space, so the first name lands in column 22
+	 * with Guild::display()'s values. */
+	checked_appendf(out, out_len, "Realm resources:    ");
+	for (int res = 0; res < KRES_MAX; res++)
+	{
+		/* Same NULL-into-%s caution as kingdom_show_status(): the names
+		 * come from another file in the module. */
+		const char *res_name = kingdom_resource_name(res);
+
+		checked_appendf(out, out_len, " %s &+W%ld&n", res_name ? res_name : "?",
+				realm->resources[res]);
+	}
+	checked_appendf(out, out_len, ".\n");
+	checked_appendf(out, out_len,
+			"                     &+wHeld by the realm, not coin: spendable on its"
+			" works, never withdrawable.&n\n");
+
+	return true;
+}
+
+/* ------------------------------------------------------------------ *
  * The room banner
  * ------------------------------------------------------------------ */
 

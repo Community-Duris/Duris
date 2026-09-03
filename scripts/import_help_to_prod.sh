@@ -376,6 +376,9 @@ done
 
 echo ""
 echo ">> Importing to pages table..."
+# Titles this section actually writes a page for. SECTION 1.5 reports which of
+# them a later section will overwrite; only files that exist can be overwritten.
+PAGE_TITLES_WRITTEN=()
 for filename in "${!HELP_FILES[@]}"; do
     title="${HELP_FILES[$filename]}"
     if [ "$filename" = "hints.txt" ]; then
@@ -388,6 +391,8 @@ for filename in "${!HELP_FILES[@]}"; do
         echo "  SKIP: $filename (file not found)"
         continue
     fi
+
+    PAGE_TITLES_WRITTEN+=("$title")
 
     tmpfile=$(mktemp)
     now=$(date '+%Y-%m-%d %H:%M:%S')
@@ -413,6 +418,106 @@ for filename in "${!HELP_FILES[@]}"; do
 
     rm "$tmpfile"
 done
+
+echo ""
+
+# ============================================================================
+# SECTION 1.5: TITLE COLLISION REPORT
+# ============================================================================
+# Sections 2 and 3 both DELETE-then-INSERT by title, and the `pages` title
+# comparison is case-INSENSITIVE, so a help_index or parsed-help entry whose
+# title matches a page written above REPLACES it -- last writer wins, silently.
+# That is how a whole help FILE can vanish from production without one error
+# line: nothing here fails, the page simply ends up holding the other text.
+#
+# This report does not change what is imported (several long-standing entries
+# -- HELP, CREDITS, WIZLIST, RULES -- have always collided and are meant to be
+# overwritten by the richer wiki text). It exists so a NEW collision is visible
+# the first time it happens.
+#
+# The kingdom pair is deliberately built not to collide: 'kingdoms' (plural) is
+# the long rulebook imported from lib/information/helpkingdoms above, and
+# 'KINGDOM' (singular) is the short help_index entry. Keep them distinct -- a
+# help_index entry titled KINGDOMS would delete the rulebook page.
+# tests/async/test_kingdom_contract.py pins that split so it cannot drift.
+echo "=== SECTION 1.5: Title Collision Report ==="
+echo ""
+
+IMPORT_RESERVED_TITLES="$(printf '%s\n' ${PAGE_TITLES_WRITTEN+"${PAGE_TITLES_WRITTEN[@]}"})" \
+IMPORT_HELP_INDEX_FILE="$HELP_INDEX_FILE" \
+IMPORT_PARSED_HELP_FILE="$PARSED_HELP_FILE" \
+python3 <<'PYTHON_SCRIPT'
+import os
+import re
+
+reserved = {t.strip().lower() for t in os.environ["IMPORT_RESERVED_TITLES"].splitlines() if t.strip()}
+
+
+def index_titles(filename):
+    """Titles exactly as SECTION 2 below parses them."""
+    titles = []
+    try:
+        with open(filename, "r", encoding="utf-8", errors="ignore") as handle:
+            content = handle.read()
+    except OSError:
+        return titles
+    for entry in content.split("\n#\n"):
+        entry = entry.strip()
+        if not entry or entry.startswith("last update:"):
+            continue
+        lines = entry.split("\n")
+        title_line = lines[0].strip()
+        match = re.match(r'^"([^"]+)"', title_line)
+        title = match.group(1).strip() if match else title_line.split("(")[0].strip()
+        body = "\n".join(lines[1:]).strip()
+        body = re.sub(r"^=+\n", "", body)
+        body = re.sub(r"\n=+$", "", body).strip()
+        if title and body:
+            titles.append(title)
+    return titles
+
+
+def parsed_titles(filename):
+    """Titles exactly as SECTION 3 below parses them."""
+    titles = []
+    try:
+        with open(filename, "r", encoding="utf-8", errors="ignore") as handle:
+            content = handle.read()
+    except OSError:
+        return titles
+    for entry in content.split("\n#0\n"):
+        lines = entry.split("\n")
+        if len(lines) < 2:
+            continue
+        title_line = lines[1].strip()
+        if not title_line or title_line.startswith("==") or title_line.startswith("*"):
+            continue
+        title = title_line.split(" - Last Edited:")[0].strip()
+        body = "\n".join(lines[1:]).strip()
+        if title and len(body) > 10:
+            titles.append(title)
+    return titles
+
+
+sources = (
+    ("help_index", index_titles(os.environ["IMPORT_HELP_INDEX_FILE"])),
+    ("parsed help", parsed_titles(os.environ["IMPORT_PARSED_HELP_FILE"])),
+)
+
+collisions = 0
+for label, titles in sources:
+    for title in titles:
+        if title.lower() in reserved:
+            collisions += 1
+            print(f"  OVERWRITES a help-file page: '{title}' (from {label})")
+
+if collisions:
+    print("")
+    print(f"  {collisions} later entr{'y' if collisions == 1 else 'ies'} will replace a page")
+    print("  imported from lib/information above. Last writer wins.")
+else:
+    print("  No help_index or parsed-help title overwrites a help-file page.")
+PYTHON_SCRIPT
 
 echo ""
 

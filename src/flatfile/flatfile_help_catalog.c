@@ -24,8 +24,13 @@ constexpr help_source individual_sources[] = {
 	{ "lib/information/help.1", "help commands" },
 	{ "lib/information/help.2", "help advanced" },
 	{ "lib/information/helpships", "ships" },
+	// helpkingdoms is the long rulebook and owns the PLURAL title only. The
+	// singular "kingdom" belongs to the help_index entry, which parse_help_index
+	// publishes after this table and which overwrites whatever key it collides
+	// with -- so a second registration here would be a claim the loader silently
+	// discards, and it would make `help kingdom` resolve differently under the
+	// flat build than under MariaDB, where the two are separate `pages` rows.
 	{ "lib/information/helpkingdoms", "kingdoms" },
-	{ "lib/information/helpkingdoms", "kingdom" },
 	{ "lib/information/helpchaospouch", "chaos craft pouch" },
 	{ "lib/information/helpchaospouch", "chaos pouch" },
 	{ "lib/information/faq", "faq" },

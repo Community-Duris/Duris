@@ -828,12 +828,27 @@ bool kingdom_footprint_check(int hall_rnum, int racewar, char *why, size_t why_l
 		int written;
 
 		if (bad_index >= 1)
+		{
+			/* Refusing without saying WHERE sends a player wandering:
+			 * "square 1 of 80" names ground they cannot see and have no
+			 * way to find. The explainer adds the direction, and for a
+			 * keep-away refusal the offending gateway and the distance
+			 * the rule wants, so the next attempt is an informed one. It
+			 * writes nothing when it has nothing to add, hence the test
+			 * on the first byte rather than an unconditional " -- ". */
+			char guidance[KINGDOM_WHY_LEN / 2] = "";
+
+			kingdom_explain_refusal(hall_rnum, bad_index, verdict, guidance,
+						sizeof(guidance));
+
 			written = snprintf(why, why_len,
 					   "A kingdom's %dx%d domain will not fit here "
-					   "(square %d of %d: %s).\r\n",
+					   "(square %d of %d: %s)%s%s.\r\n",
 					   KINGDOM_FOOTPRINT_SIDE, KINGDOM_FOOTPRINT_SIDE,
 					   bad_index, KINGDOM_MAX_SQUARES,
-					   kingdom_verdict_text(verdict));
+					   kingdom_verdict_text(verdict), guidance[0] ? " -- " : "",
+					   guidance);
+		}
 		else
 			written = snprintf(why, why_len,
 					   "A kingdom's %dx%d domain will not fit here (%s).\r\n",

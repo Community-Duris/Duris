@@ -1,8 +1,22 @@
 KINGDOMS
 --------
-Guild territory on the overhead map
+Guild territory on the overhead map - the full rules
 
 Syntax:   kingdom <subcommand>
+
+THIS IS THE LONG ONE. Two help entries cover kingdoms, and they are not
+the same text:
+
+  help kingdom    the short entry - what a kingdom is, the subcommand
+                  list, and the few rules that catch people out.
+  help kingdoms   this file - the whole rulebook: the ring order, where
+                  a hall may stand, the arrears ladder, dormancy,
+                  guards, and the resource economy in full.
+
+Read the short one to play. Read this one when you want to know exactly
+what the game will do. THIS FILE IS AUTHORITATIVE: the short entry is a
+summary of it and nothing else, so where the two ever differ, this text
+is right and the short entry is stale.
 
 A guild that has raised a guildhall may go further and become a KINGDOM:
 a guild that holds land. Territory is measured in map squares, it is
@@ -187,6 +201,15 @@ a realm already holds, so the work is always found out in the world.
 Claim the ground out from under one and it does not become yours: the
 node is swept away, to load again somewhere else.
 
+THEY ARE SCARCE ON PURPOSE. Only about forty stand across the whole
+surface map at any moment, and thirty through the Underdark - and that
+is forty of ALL kinds together, not forty of each. What kind any one of
+them is was rolled when it loaded, so the mix shifts constantly and no
+region is ever certain to be holding a spring or a seam of ore. Work
+one out and it is gone from the world; before long another loads
+somewhere else entirely, as likely as not a different kind in a room
+nowhere near it. Finding one is meant to be worth something.
+
 ANYONE MAY WORK A NODE. You need not belong to a kingdom, and you need
 not be standing on anyone's land - if you find one, you can work it.
 The work takes a few moments of steady effort and it tires you, and you
@@ -272,7 +295,8 @@ kingdom deposit    - pay coin into the guild treasury that upkeep draws
                      '500 gold 20 silver'. Any member may pay in.
 kingdom guards     - how large a garrison the realm may field.
 kingdom help       - a short built-in summary, with your server's own
-                     prices filled in; 'help kingdoms' is this text.
+                     prices filled in. 'help kingdom' is the short help
+                     entry; 'help kingdoms' is this text.
 
 'kingdom c', 'kingdom s' and 'kingdom h' are ambiguous - c is shared
 by claim and convert, s by status and survey, h by help and harvest -
@@ -295,4 +319,4 @@ character or one on parole has no realm to speak for, and nothing they
 gather is banked either. Converting, claiming and abandoning are the
 leader's alone, as above.
 
-See also: SOCIETY, GUILDHALL
+See also: KINGDOM, SOCIETY, GUILDHALL

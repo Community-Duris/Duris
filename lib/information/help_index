@@ -2723,6 +2723,18 @@ build it. Everything is saved through a crash, though, so fear not.
   This will construct your guildhall on the current worldmap location you
   are standing on.  Only Leaders have this ability.  The guildhall will
   be a down exit from your current location and will consist of two rooms.
+  &+YWhere the optional kingdom system has been enabled&n, a main hall is the
+  seat of a realm, so the whole 9x9 block of map squares that realm would
+  one day need must be legal ground at the moment the hall is built - not
+  later, when you get round to claiming it. Building is refused outright if
+  any one of those squares fails, and the refusal names the offending square
+  and the reason for it, so a site the hall itself would suit can still be
+  turned down because a square four out lies in open water, in the Underdark,
+  too near a hometown or a zone entrance, or off the map altogether. No
+  square of it may hold a guildhall either, your own outposts included.
+  Two realms may not even touch, so a hall may not be raised within 10 map
+  squares of the seat of an existing realm. Where kingdoms have not been
+  enabled none of this is checked and placement is unchanged. See KINGDOM.
 
 &+Yconstruct room <exit dir> <door|nodoor> [door keyword]&n
   Cost: 1k
@@ -7502,8 +7514,19 @@ The cost involved in building your guildhall are as follows:
 For further information on how to construct your guildhall and these items
 within your guildhalls, read the details in the construct section.
 
+Guildhalls and Kingdoms
+---------------------------------------------------------------------------
+Where the optional kingdom system has been enabled, a guild's MAIN hall is
+also the seat of its realm, and the two stand or fall together. If the main
+hall is destroyed, reduced to an outpost, or moved onto ground a whole realm
+will not fit on, the realm goes DORMANT: it keeps its claims on paper but
+holds no ground, is charged no upkeep, loses its guards, and can neither
+claim nor abandon until a main hall of its guild stands on its seat again.
+Building the hall is also stricter in that case - see CONSTRUCT and KINGDOM.
+None of this applies where kingdoms have not been enabled.
+
 ===========================================================================
-See also: CONSTRUCT, GUILD, SOCIETY, SACK
+See also: CONSTRUCT, GUILD, SOCIETY, SACK, KINGDOM
 
 #
 "HALF ELF" HALF-ELF (General Information)
@@ -8633,6 +8656,112 @@ Syntax:         kill | hit | murder <victim>
 
 One way to initiate a fight.  
 ===========================================================================
+
+#
+KINGDOM (General Information)
+===========================================================================
+Syntax:         kingdom <subcommand>
+
+Kingdoms are an OPTIONAL system that an implementor may switch off entirely.
+Where they have been turned off every 'kingdom' subcommand refuses politely,
+no upkeep is charged, no harvest nodes load, and guildhall building behaves
+exactly as it always did - so if the command below tells you kingdoms are not
+running here, nothing else in this entry applies.
+
+A guild that has raised a main guildhall may convert to a KINGDOM: a guild
+that holds land on the overhead map. The hall's own square becomes the seat
+of the realm, and land is bought outward from it in four concentric rings:
+
+        ring 1     3x3      8 squares
+        ring 2     5x5     16 squares
+        ring 3     7x7     24 squares
+        ring 4     9x9     32 squares
+
+That is 80 claimable squares around the seat, 81 counting the seat itself.
+The order never varies. Within a ring land is taken CLOCKWISE beginning due
+north of the hall, and a ring must be finished before the next one opens.
+Because of that a realm's territory is a single number: it holds claims 1
+to its highest and nothing else. 'kingdom claim' always takes the next
+square in the sequence, and 'kingdom map' shows you which one that is.
+
+Land and Upkeep
+---------------------------------------------------------------------------
+Claiming costs coin from the guild treasury, and each square costs more than
+the one before it, so the outermost ring is far dearer than the first.
+Holding land costs coin as well: upkeep is charged on every square you own,
+every cycle. A realm that cannot pay walks a ladder, one rung per missed
+cycle:
+
+  1. The guards disperse.
+  2. The realm stops banking what its people gather.
+  3. One OUTER ring reverts, and another every cycle after that.
+
+Payment stops the ladder wherever it has reached, but land already lost does
+not come back with it - a reverted ring must be claimed again at full price.
+A realm in arrears may not claim at all, so a guild cannot buy back the very
+ring it is losing. 'kingdom abandon confirm' gives up your highest claim
+voluntarily, and there is no refund for it either.
+
+Resources
+---------------------------------------------------------------------------
+Harvest nodes load at random all over the world, and never on ground a realm
+already holds, so the work is always found out in the open. ANYONE may work
+a node - you need no guild and no land to do it. A kingdom's advantage is
+the YIELD, not the node: the kind of ground a realm holds makes matching
+nodes give more, everywhere in the world.
+
+What is drawn goes into the harvester's own realm, so a gatherer with no
+realm behind him banks nothing. Realm stores are TYPED - mineral, wood,
+fibre and water - and they CANNOT BE WITHDRAWN by anyone, not even by the
+leader. They are not the guild treasury and they are not spending money;
+they exist to be spent on the realm's own works, and once given, given.
+
+The Hall and the Realm
+---------------------------------------------------------------------------
+Because a main hall is a realm's seat, the whole 9x9 footprint that realm
+would one day need must be legal ground when the HALL IS BUILT, not later
+when you get round to claiming it. Construction is refused outright if any
+square of it fails, and you are told which square and what was wrong with
+it. Two realms may not even touch, so main halls must stand well apart.
+
+If the main hall is destroyed, reduced to an outpost, or moved onto ground
+the footprint will not fit, the realm goes DORMANT. A dormant realm keeps
+its claims on paper but holds no ground at all: it is charged no upkeep, its
+guards go home, and it can neither claim nor abandon until a main hall of
+its guild stands on its seat once more. Delete the guild and the realm is
+deleted with it; there is nothing to inherit.
+
+Guards
+---------------------------------------------------------------------------
+A realm may post guards in proportion to the land it holds, one for every
+few squares owned. That count is a ceiling and not a promise: a realm in
+arrears may field none at all, and a dormant realm has no ground to post
+them on. They stand on your land. They are not a bodyguard and they do not
+follow you.
+
+List of subcommands
+---------------------------------------------------------------------------
+  &+Wkingdom help&n       a short summary, with your server's own prices in it
+  &+Wkingdom status&n     territory, treasury standing, guards and stores
+  &+Wkingdom map&n        the nine-by-nine grid: held, next, and blocked
+  &+Wkingdom survey&n     what the node on this square yields
+  &+Wkingdom harvest&n    work the node on this square
+  &+Wkingdom convert&n    raise your guild to a kingdom             (leader)
+  &+Wkingdom claim&n      buy the next square in order              (leader)
+  &+Wkingdom abandon&n    give up your highest claim, no refund     (leader)
+  &+Wkingdom deposit&n    pay coin into the guild treasury, at a bank
+  &+Wkingdom guards&n     how large a garrison the realm may field
+
+'Kingdom harvest' and 'kingdom survey' need no guild at all. Every other
+subcommand is for full members of a guild - an applicant, an enemy or a
+member on parole is refused - and converting, claiming and abandoning are
+the leader's alone. 'Kingdom c', 'kingdom s' and 'kingdom h' are ambiguous
+and will ask which you meant rather than guess.
+
+'&+Whelp kingdoms&n' is the long rulebook. '&+Wkingdom help&n' prints a shorter
+summary in game, with your own server's prices filled into it.
+===========================================================================
+See also: KINGDOMS, SOCIETY, GUILD, GUILDHALL, CONSTRUCT
 
 #
 KNIGHT (Innate)
@@ -14799,8 +14928,15 @@ or deputies and officers (to title themselves).
 
 &+Wsociety toggle_title_flag
 soc g -toggles your 'no title change' flag
+
+* Where the optional kingdom system has been enabled, an association with a
+* main guildhall can go further and hold land on the overhead map. That is
+* a separate command with its own rules - founding, buying and giving up
+* territory, upkeep and its arrears, harvesting, guards, and the realm's
+* own material stores, which are NOT the association account and cannot be
+* withdrawn from. Read &+Whelp kingdom&n, or type '&+Wkingdom help&n' in game.
 ===========================================================================
-See also: CONSTRUCT, GUILD, GUILDHALL, "SOCIETY EXAMPLES", TITLE
+See also: CONSTRUCT, GUILD, GUILDHALL, "SOCIETY EXAMPLES", TITLE, KINGDOM
 
 #
 "SOCIETY EXAMPLES"
