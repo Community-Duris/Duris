@@ -116,6 +116,8 @@ int main(int argc, char **argv)
 	const auto player = ship(2, 42, "Player");
 	auto other = ship(1, 77, "Other");
 	other.ship_name = "Other Ship";
+	other.slots = { { 0, 0, -1, -1, 0, { -1, -1, -1, -1, -1 } },
+			{ 1, 2, 4, 0, 9, { 10, 11, 12, 13, 14 } } };
 	require(flatfile_ship_establish(root.string(), { player, other }, &error) ==
 			flatfile_ship_result::ok,
 		"ship establishment failed: " + error);
@@ -124,6 +126,12 @@ int main(int argc, char **argv)
 		"canonical ship establishment retry was not idempotent");
 	require(flatfile_ship_list(root.string(), &records, &error) == flatfile_ship_result::ok &&
 			records.size() == 2 && records[0].ship_id == 1 &&
+			records[0].slots[0].slot_type == 0 &&
+			records[0].slots[0].item_index == -1 &&
+			records[0].slots[0].position == -1 && records[0].slots[0].timer == 0 &&
+			records[0].slots[0].values ==
+				std::array<int32_t, 5>{ -1, -1, -1, -1, -1 } &&
+			records[0].slots[1].slot_type == 2 && records[0].slots[1].item_index == 4 &&
 			records[1].owner_name == "player" && records[1].armor[3] == 13 &&
 			records[1].crew.repair_skill_milli == 1003 &&
 			records[1].slots.size() == 2 && records[1].slots[0].slot_index == 0 &&
@@ -149,7 +157,6 @@ int main(int argc, char **argv)
 	require(flatfile_ship_establish(invalid_root.string(), { duplicate_slot }, &error) ==
 			flatfile_ship_result::invalid,
 		"duplicate ship slot was accepted");
-
 	auto created = ship(0, 88, "Newowner");
 	created.revision = 0;
 	require(flatfile_ship_upsert(root.string(), &created, &error) == flatfile_ship_result::ok &&

@@ -1982,18 +1982,17 @@ void set_chief(P_ship ship, int chief_index)
 /*
  * Empty every cargo and contraband slot on `ship`.
  *
- * Marks the slots SLOT_EMPTY without producing crates or paying anyone --
- * the cargo simply ceases to exist.  For the player-visible version that
- * drops crates into the water, see jettison_cargo() / jettison_contraband().
+ * Applies the complete canonical empty-slot representation without producing
+ * crates or paying anyone -- the cargo simply ceases to exist.  For the
+ * player-visible version that drops crates into the water, see
+ * jettison_cargo() / jettison_contraband().
  */
 void clear_cargo(P_ship ship)
 {
 	for (int i = 0; i < MAXSLOTS; i++)
 	{
 		if (ship->slot[i].type == SLOT_CARGO || ship->slot[i].type == SLOT_CONTRABAND)
-		{
-			ship->slot[i].type = SLOT_EMPTY;
-		}
+			ship->slot[i].clear();
 	}
 }
 

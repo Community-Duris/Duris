@@ -50,6 +50,13 @@ summon_clear = find(text_shop, 'clear_cargo(ship);')
 summon_clear_queue = find(text_shop, 'queue_ship_save(ship, "cargo clear during summon");', summon_clear)
 checks.append(('summon clear queued save', summon_clear, summon_clear_queue, -1, -1))
 
+clear_cargo = find(text_utils, 'void clear_cargo(P_ship ship)')
+clear_cargo_end = find(text_utils, 'P_char captain_is_aboard', clear_cargo)
+clear_cargo_body = text_utils[clear_cargo:clear_cargo_end]
+if 'ship->slot[i].clear();' not in clear_cargo_body or 'ship->slot[i].type = SLOT_EMPTY;' in clear_cargo_body:
+    print('clear_cargo does not apply the canonical ShipSlot::clear representation')
+    sys.exit(1)
+
 sale = find(text_shop, 'update_crew(ship);')
 sale_queue = find(text_shop, 'queue_ship_save(ship, "cargo sale");', sale)
 checks.append(('cargo sale queued save', sale, sale_queue, -1, -1))
