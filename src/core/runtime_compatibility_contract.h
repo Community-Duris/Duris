@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 173;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 174;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -29,7 +29,7 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms',"
 	"'guildhalls','guilds','ip_info','item_current_owner',"
 	"'item_owner_revision','item_ownership_baseline','item_ownership_ledger','item_ownership_quarantine',"
-	"'item_uid_allocator','items','kingdom_land','level_cap',"
+	"'item_uid_allocator','items','kingdom_land','kingdom_realms','level_cap',"
 	"'lifecycle_archive_batches','lifecycle_archive_evidence','lifecycle_archive_jobs','lifecycle_archive_rows',"
 	"'locker_access','locker_activity_log','locker_chests','locker_item_affects',"
 	"'locker_item_extra_descr','locker_items','locker_kickouts','locker_session_state',"
@@ -55,9 +55,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"faa4bc0cfec07dd5cd960cce8306503fd774820e72ee344ec98398b15f4d78ed";
+	"4d9ad29ca061123766c5715b544e5933d87639434856aa721588c5871f85ee00";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"7ab4d5acca0f4125c5a95114dd375df859768c4c2ade97abe6fb68b73ecb19e1";
+	"6b50c8a3c579fad427a93dfab18a2488d5cc10b99b814a8544bbdc68cd6cc930";
 constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0006_kingdom_realms";
 constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 6;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =

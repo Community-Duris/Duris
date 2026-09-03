@@ -24,6 +24,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
     ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
+    ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -73,7 +74,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 173)
+        self.assertEqual(report["database_tables"], 174)
         self.assertEqual(report["non_database_stores"], 21)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
@@ -220,6 +221,23 @@ class LifecycleManifestTest(unittest.TestCase):
             link = directory / "manifest-link.json"
             link.symlink_to(MANIFEST)
             self.assert_rejected(self.run_validator(link), "regular non-symlink file")
+
+    def test_schema_scan_ignores_prose_in_whole_line_comments(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            schema = directory / "commented.sql"
+            schema.write_text(
+                "-- CREATE TABLE IF NOT EXISTS is a no-op on an existing table, and\n"
+                "-- DROP TABLE lifecycle_commented would remove it.\n"
+                "CREATE TABLE lifecycle_commented (\n"
+                "  id INT NOT NULL,\n"
+                "  -- REFERENCES lifecycle_ghost is only described here\n"
+                "  PRIMARY KEY (id)\n"
+                ") ENGINE=InnoDB;\n"
+            )
+            self.assertEqual(VALIDATOR_MODULE.schema_tables((schema,)),
+                             {"lifecycle_commented"})
+            self.assertEqual(VALIDATOR_MODULE.schema_dependencies((schema,)), {})
 
     def test_redis_registry_drives_manifest_coverage_and_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

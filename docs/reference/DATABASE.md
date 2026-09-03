@@ -127,8 +127,8 @@ transaction, replay, or idempotency identifiers.
   re-runnable by design.
 - `migrations/migration_manifest.json` and `scripts/migration_runner.py` -- the
   immutable manifest-driven path for every migration after the verified Session 11
-  baseline. The current immutable head adds the `kingdom_realms` table on top of the
-  173-table boot contract. See
+  baseline. The current immutable head adds the `kingdom_realms` table, completing
+  the 174-table boot contract. See
   [IMMUTABLE_MIGRATIONS.md](../persistence/IMMUTABLE_MIGRATIONS.md).
 - `migrations/runtime_compatibility_manifest.json` and
   `migrations/verify_runtime_compatibility.sh` -- the read-only pre-boot contract for

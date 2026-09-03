@@ -36,8 +36,8 @@ The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_H
 a non-production database name, and explicit credentials. Never point it at production.
 
 The current immutable head is `0006_kingdom_realms`. After it is applied, the
-database contains the 173-table runtime boot contract plus the `kingdom_realms`
-table, and the history singleton records applied count 6 plus the exact history
+database contains the 174-table runtime boot contract, and the history singleton
+records applied count 6 plus the exact history
 checksum. If a pre-b029 launcher already created the legacy `server_reboots`
 shape, 0004 copies every lifecycle row into the canonical table and atomically
 swaps it into place; an interrupted conversion can be retried without making the
@@ -51,11 +51,14 @@ utf8mb4_unicode_ci` brings it to the verified shape. Every column is an integer,
 so the conversion changes no stored value, and on an already-correct table the
 guard issues no `ALTER` at all, which is what keeps 0006 exactly re-runnable.
 
-`kingdom_realms` is deliberately outside the boot contract's *table list*:
-`runtime_compatibility_manifest.json` still counts 173 runtime tables, so a boot
-in which `kingdom_initialize()` cannot read the table disables kingdoms for that
-boot rather than running over it. That is not permission to skip 0006. The
-*ledger* is still fail-closed, exactly as it is for every other immutable
+`kingdom_realms` is part of the boot contract's *table list*:
+`runtime_compatibility_manifest.json` counts 174 runtime tables and both
+normalized metadata fingerprints are sealed over an inventory that includes it,
+so on the database backend the gate proves the table's engine, collation, columns
+and indexes before gameplay publishes. `kingdom_initialize()` still disables
+kingdoms for the boot when it cannot read the table, which remains reachable on
+the flat-file build, where no boot gate stands in front of it. The *ledger* is
+fail-closed too, exactly as it is for every other immutable
 migration: `src/core/runtime_compatibility_contract.h` compiles
 `RUNTIME_MIGRATION_HEAD_ID = "0006_kingdom_realms"` with sequence 6, and
 `sql_verify_boot_database()` in `src/sql/sql.c` requires the matching

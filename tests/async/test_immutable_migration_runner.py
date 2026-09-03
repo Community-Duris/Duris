@@ -100,7 +100,8 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         tables = [entry["locator"] for entry in lifecycle["entries"]
                   if entry["kind"] == "database_table"]
         baseline_tables = [table for table in tables if table not in {
-            "lookup_dataset_state", "season_reset_state", "server_reboots"
+            "lookup_dataset_state", "season_reset_state", "server_reboots",
+            "kingdom_realms"
         }]
         self.assertEqual(len(baseline_tables), manifest.required_table_count)
         self.assertEqual(runner.table_fingerprint(baseline_tables),
