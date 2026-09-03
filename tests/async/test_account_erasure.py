@@ -52,6 +52,11 @@ class AccountErasureTest(unittest.TestCase):
         return request, owner
 
     def complete_actions(self, coordinator: erasure.ErasureCoordinator) -> None:
+        """Drive one erasure request through every stage to verification.
+
+        Confirms, fences, drains, applies each store in the request, then verifies,
+        so a test can assert on the finished state rather than restating the order.
+        """
         coordinator.confirm(f"ERASE {coordinator.request.request_id[:8]}")
         coordinator.fence(77, descriptors_closed=True)
         coordinator.drain(0, 0, value_domains_reconciled=True)

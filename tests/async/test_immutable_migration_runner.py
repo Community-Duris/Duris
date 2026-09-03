@@ -45,6 +45,11 @@ class FakeExecutor:
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
     def make_manifest(self, directory: Path, count: int = 2) -> Path:
+        """Build a synthetic migration manifest with real files and checksums.
+
+        Lets the rejection tests mutate one field at a time against a manifest that
+        would otherwise load cleanly.
+        """
         immutable = directory / "immutable"
         immutable.mkdir(parents=True)
         items = []

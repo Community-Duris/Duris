@@ -110,6 +110,11 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         self.assertIn("information_schema.referential_constraints", SCHEMA_VERIFIER)
 
     def test_scheduler_slot_is_explicitly_disabled_by_pending_policy(self) -> None:
+        """The archive job has a scheduler slot that ships disabled.
+
+        The slot is declared with its budgets and a false enable flag, and the durable
+        scheduler state carries a versioned magic so an older record is not misread.
+        """
         self.assertIn("lifecycle_archive", SCHEDULER_HEADER)
         self.assertRegex(
             SCHEDULER,

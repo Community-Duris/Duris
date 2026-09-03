@@ -18,6 +18,7 @@ import validate_runtime_compatibility as runtime  # noqa: E402
 
 class RuntimeBootCompatibilityTest(unittest.TestCase):
     def setUp(self):
+        """Load the sources whose ordering and constants these tests assert on."""
         self.sql = (SRC / "sql.c").read_text()
         self.comm = (SRC / "comm.c").read_text()
         self.header = (SRC / "runtime_compatibility_contract.h").read_text()

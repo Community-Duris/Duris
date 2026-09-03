@@ -57,12 +57,22 @@ assert "object->obj_uid != 0" in claimed, (
 # both when it submits an asynchronous transaction and when it rejects the move, and put()
 # returns TRUE in either case.  Counting on put()'s return alone would report items that
 # never moved, so the total must test where the object actually ended up.
-assert "OBJ_INSIDE_OBJ(object, container)" in put_finish, (
+# Match the guard and the increment as one control-flow sequence.  Asserting the two
+# tokens independently would still pass if the function counted every candidate and
+# merely mentioned OBJ_INSIDE_OBJ somewhere else.
+guarded_total = re.search(
+    r"if \(put\(actor, object, container, FALSE\)\s*&&\s*"
+    r"OBJ_INSIDE_OBJ\(object, container\)\)\s*\n\s*\+\+state\.total;",
+    put_finish,
+)
+assert guarded_total, (
     "finish_bulk_put_after_commit() must count only objects that landed in the "
     "container; put() returns TRUE for a deferred or rejected durable candidate"
 )
-assert re.search(r"\+\+state\.total", put_finish), (
-    "finish_bulk_put_after_commit() must still report a synchronous put"
+# ...and it must be the only increment, so no other path can count an unmoved item.
+assert put_finish.count("++state.total") == 1, (
+    "finish_bulk_put_after_commit() must increment the total only under the "
+    "container-membership guard"
 )
 
 # defer_durable_put() is the reason the return value is not enough: both its submit

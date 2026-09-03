@@ -150,6 +150,11 @@ def read_regular_text(path: Path, maximum_bytes: int, label: str) -> str:
 def redis_registry_inventory(
     path: Path = DEFAULT_REDIS_REGISTRY,
 ) -> tuple[dict[str, tuple[str, str]], int]:
+    """Read the Redis key registry into its declared stores and surface count.
+
+    The registry is the authority for Redis coverage, so the manifest is checked
+    against what this returns rather than against a second hand-kept list.
+    """
     text = read_regular_text(path, MAX_REDIS_REGISTRY_BYTES, "Redis key registry")
     store_pattern = re.compile(
         r'^REDIS_STORE\([A-Z0-9_]+, "([^"]+)", "([^"]+)", "([^"]+)"\)$'

@@ -67,6 +67,11 @@ class LifecycleManifestTest(unittest.TestCase):
         return next(entry for entry in self.manifest["entries"] if entry["id"] == entry_id)
 
     def assert_rejected(self, result: subprocess.CompletedProcess[str], message: str) -> None:
+        """Assert the validator failed closed with the expected reason.
+
+        Exit status 2 is the contract's rejection code; the message keeps a test from
+        passing on some unrelated failure.
+        """
         self.assertEqual(result.returncode, 2, result.stdout)
         self.assertIn(message, result.stderr)
 
@@ -214,6 +219,11 @@ class LifecycleManifestTest(unittest.TestCase):
                     )
 
     def test_schema_drift_and_symlink_manifest_fail_closed(self) -> None:
+        """An uncovered table or a symlinked manifest is refused.
+
+        A table created in the schema but absent from the manifest must fail, and the
+        manifest itself must be a regular file so its contents cannot be swapped.
+        """
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             schema = directory / "schema.sql"
@@ -251,6 +261,11 @@ class LifecycleManifestTest(unittest.TestCase):
             self.assertEqual(VALIDATOR_MODULE.schema_dependencies((schema,)), {})
 
     def test_redis_registry_drives_manifest_coverage_and_fails_closed(self) -> None:
+        """Redis coverage follows the key registry, in both directions.
+
+        A store dropped from the registry and one absent from the manifest must each
+        fail, so the two lists cannot drift apart silently.
+        """
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             registry = REDIS_REGISTRY.read_text(encoding="ascii")
