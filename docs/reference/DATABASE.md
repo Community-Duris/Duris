@@ -85,6 +85,23 @@ inbox. Delivery is at least once with `(consumer_id,outbox_id)` dedupe, bounded 
 and retained dead letters. See
 [CRITICAL_COMMAND_PIPELINE.md](../persistence/CRITICAL_COMMAND_PIPELINE.md).
 
+## External consumers and writers
+
+The server owns gameplay state even when another service presents or
+administers it. A website may read documented projections and maintain its own
+application tables, but it must not issue direct SQL mutations against
+MUD-owned player, account, item-custody, balance, auction, or lifecycle state.
+Those mutations must enter through an authenticated, authorized, typed server
+command so the game thread, revisions, ledgers, fences, and outbox remain one
+coherent authority.
+
+The DurisWeb bridge follows this boundary. Its authenticated administrative
+character-deletion route is implemented by the MUD; auction bid and buy
+mutations are intentionally not exposed because they require the live player's
+expected wallet revision. Adding a web action means adding a typed server-side
+contract and authorization policy, not granting a web database account broader
+write access. See [api/durisweb.md](api/durisweb.md).
+
 ## Persistence observability
 
 All shared MySQL execution paths record bounded, metadata-only metrics. Wrapper
@@ -205,6 +222,7 @@ Rules of thumb (enforced by repo conventions):
 | frag leaderboard tables | Auto-populated as players log in and save |
 | `corpses`, `corpse_items` | Player corpses across restarts (see below) |
 | `kingdom_realms` | Guild kingdom realm territory (one claim integer per guild), harvested resource stores, and upkeep/arrears state; created by immutable migration 0006, read positionally by `src/kingdom/kingdom_db.c`, and part of the 174-table runtime boot contract, whose metadata fingerprints are sealed over it |
+| `towns`, `kingdom_land`, `siege_items`, `siege_item_affects`, `siege_item_extra_descr` | Retired siege-era schema tombstones retained in the lifecycle and compatibility manifests. Runtime SQL must not revive them; the current kingdom system owns `kingdom_realms` instead. |
 
 ### Player corpses
 

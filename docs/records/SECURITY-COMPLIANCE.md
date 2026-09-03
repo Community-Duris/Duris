@@ -35,8 +35,9 @@ archive behavior can be activated or a compliance claim can be made.
 - [P03] Archive, export, and erasure tooling is policy-bound, synthetic-only while
   approval is pending, permission-restricted, checksummed, resumable, and restore-aware.
 - [P03] MySQL 8.0 and MariaDB 10.11 compatibility and clean-build portability are tested.
-- [P03] The unauthenticated health response exposes only process and database-pool state,
-  performs no database round trip, is non-cacheable, and closes the probe connection.
+- [P03] The unauthenticated health response exposes only process and selected-persistence
+  readiness, performs no blocking backing-store round trip, is non-cacheable, and closes
+  the probe connection.
 
 ---
 

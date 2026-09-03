@@ -141,7 +141,7 @@ buffer rather than appending at `buf + strlen(buf)` with a
 
 When a change touches conditional code, compile-sweep the affected files under
 the non-default configurations as well - `REQUIRE_EMAIL_VERIFICATION`,
-`CTF_MUD=1`, `SIEGE_ENABLED`, and `MEMCHK` are the ones in use:
+`CTF_MUD=1`, and `MEMCHK` are the ones in use:
 
 ```bash
 g++ -fsyntax-only -std=c++20 -DTEST_MUD -D__NO_TESTS__ -DCTF_MUD=1 ... src/<file>.c

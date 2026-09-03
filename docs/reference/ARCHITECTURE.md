@@ -234,20 +234,36 @@ Details and schema management: [DATABASE.md](DATABASE.md).
 
 ## Networking
 
-- **Telnet** (`comm.c`): line-based, with MCCP compression support (`mccp.c`).
-- **TLS telnet** (`ssl.c`): same protocol over TLS; certificate/key expected as
+- **Telnet** (`src/net/comm.c`): line-based, with MCCP compression support
+  (`src/net/mccp.c`).
+- **TLS telnet** (`src/net/ssl.c`): same protocol over TLS; certificate/key expected as
   `duris.crt` / `duris.key` in the repository root (symlinks recommended).
-- **WebSocket** (`websocket.c`): RFC 6455 server on `DURIS_WEBSOCKET_PORT`
+- **WebSocket** (`src/net/websocket.c`): RFC 6455 server on `DURIS_WEBSOCKET_PORT`
   (default 4050) with HTTP upgrade for browser clients and a value-free
   `GET /health` readiness response. Production binds the WebSocket listener to
   loopback behind a TLS reverse proxy and applies an exact browser-origin
-  allow-list. Game messages use JSON (`json_utils.c`); the privileged DurisWeb
+  allow-list. Game messages use JSON (`src/core/json_utils.c`); the privileged DurisWeb
   peer uses the one-time challenge contract in
   [api/durisweb.md](api/durisweb.md).
-- **GMCP** (`gmcp.c`): outbound game data to capable clients over telnet or
-  WebSocket.
-- Hostname resolution and login/nanny flow are in `nanny.c`; interpreter and
-  command dispatch in `interp.c`.
+- **GMCP** (`src/net/gmcp.c`): outbound `Room.Info`, `Room.Map`,
+  `Char.Vitals`, `Char.Status`, `Char.Affects`, `Combat.Update`,
+  `Comm.Channel`, `Quest.Status`, `Quest.Map`, `Group.Status`,
+  `Ship.Contacts`, and `Ship.Info` packages to capable clients over telnet or
+  WebSocket. `Char.Skills` and `Char.Items` names are reserved but are not
+  emitted.
+- Hostname resolution and login/nanny flow are in `src/account/nanny.c`;
+  interpreter and command dispatch are in `src/cmd/interp.c`.
+
+Terminal height is a saved player preference, not a negotiated connection
+property. New characters and missing database values use 40 lines; the
+`toggle screensize` command accepts 12 through 48 (`0`, `default`, or `off`
+restores the default), and the pager reserves four lines for prompts and
+controls. The server defines
+the telnet NAWS option name but does not negotiate or consume NAWS dimensions,
+so clients must set the preference manually. Existing characters keep their
+saved value. The historical SQL column default of 24 is not the runtime
+default; changing saved preferences would require an explicit data migration,
+not an edit to sealed migration history.
 
 ## Studio procs (triggers)
 

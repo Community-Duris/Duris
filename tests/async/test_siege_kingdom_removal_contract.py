@@ -133,21 +133,30 @@ class SiegeKingdomRemovalContractTest(unittest.TestCase):
         quality = (ROOT / ".github/workflows/quality.yml").read_text()
         self.assertNotRegex(quality, r"test_flatfile_(?:towns|siege)\.py")
 
-    def test_retirement_report_local_links_resolve(self) -> None:
-        """Every relative link in the retirement research report resolves."""
-        report_path = (
-            ROOT
-            / "docs/ongoing-projects/future/siege-kingdom-removal-research-2026-08-29.md"
-        )
-        links = re.findall(r"\]\(([^)]+)\)", report_path.read_text())
-        broken = []
-        for link in links:
-            target = link.split("#", 1)[0]
-            if not target or "://" in target or target.startswith("mailto:"):
-                continue
-            if not (report_path.parent / target).resolve().exists():
-                broken.append(link)
-        self.assertEqual(broken, [])
+    def test_retirement_contract_is_in_maintained_documentation(self) -> None:
+        """Compatibility reservations remain visible after the research ledger is retired."""
+        codebase = (ROOT / "docs/reference/CODEBASE.md").read_text()
+        database = (ROOT / "docs/reference/DATABASE.md").read_text()
+        for token in (
+            "CMD_RETIRED_827",
+            "CMD_RETIRED_828",
+            "PLR2_RETIRED_KINGDOMVIEW",
+            "zone 4010",
+            "401000",
+            "160, 161, 178, 179, and 461 through 464",
+            "SIEGE_ENABLED",
+            "src/kingdom/",
+        ):
+            self.assertIn(token, codebase, token)
+        for table in (
+            "towns",
+            "kingdom_land",
+            "siege_items",
+            "siege_item_affects",
+            "siege_item_extra_descr",
+            "kingdom_realms",
+        ):
+            self.assertIn(f"`{table}`", database, table)
 
     def test_help_and_command_surfaces_are_retired_in_place(self) -> None:
         """The old siege help, `add`/`deploy` commands and Kingdom View toggle

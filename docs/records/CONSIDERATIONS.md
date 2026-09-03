@@ -37,8 +37,9 @@ Items that still constrain any future work or release claim.
   synthetic recovery contracts pass; only the deferred integrated run can prove the
   objective under representative 200-player load and injected faults.
 - [P03] **Health is a readiness signal, not full diagnostics**: `GET /health` checks the
-  live process and in-memory database-pool readiness without blocking the game thread or
-  exposing configuration, player, or database values.
+  live process and selected persistence authority without blocking the game thread or
+  backing store, or exposing configuration, player, or database values. MariaDB mode
+  reads its in-memory pool state.
 
 ### Architecture
 

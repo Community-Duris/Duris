@@ -188,7 +188,7 @@ script against a configured database to discover its command-line behavior.
 
 ### HTTP health probe
 
-After startup, verify process and database-pool readiness without logging in:
+After startup, verify process and selected-persistence readiness without logging in:
 
 ```bash
 scripts/healthcheck.sh
@@ -197,7 +197,37 @@ scripts/healthcheck.sh
 The probe targets `http://127.0.0.1:4050/health` by default. For an isolated local
 instance, set `DURIS_WEBSOCKET_PORT` on the server and the matching
 `DURIS_HEALTH_URL` for the probe. A healthy response is HTTP 200 with only
-`status=healthy` and `database=ready`; the handler performs no database round trip.
+`status=healthy` and `persistence=ready`; the handler performs no blocking
+database round trip.
+
+### Authenticated post-deployment smoke
+
+When a deployment has been explicitly authorized for live validation, record
+the current service PID/restart count, listener ownership, health result, and a
+timestamp or cursor for each active log before connecting. Load the configured
+`GAME_ACCOUNT_NAME`, `GAME_ACCOUNT_PASSWORD`, and
+`GAME_ACCOUNT_CHARACTER_NAME` without putting their values in command
+arguments, transcripts, or evidence files.
+
+The client must accept both account-selection paths: a normal selection can ask
+`Play as <character>?`, while reclaiming a link-dead character can enter the
+game immediately. TLS can also reach the account prompt without the same
+terminal preamble as plain telnet, and an SSL client must consume data already
+buffered by the handshake. Treat prompts as states instead of sending the next
+command after a fixed delay.
+
+Use read-only gameplay commands such as `look`, `time`, `weather`, `score`,
+`inventory`, `equipment`, `exits`, `who`, and permission-appropriate `users`.
+Confirm the HTTP health probe still passes during the session, leave gameplay
+with `quit`, select `0` at the account menu, and verify that no test session is
+left attached or link-dead.
+
+After logout, monitor the authoritative service journal and every current game
+log through a quiet interval. Recheck the exact service PID/restart count,
+listeners, health response, and absence of a new core file. Correlate expected
+EOF, refused-connection, and orderly TLS-close messages with the smoke probes;
+do not dismiss an uncorrelated persistence, crash, or integrity diagnostic as
+test noise.
 
 ## Logs
 

@@ -283,18 +283,36 @@ and signature format are in [the donation event reference](../reference/api/dona
 
 ## Character creation and gameplay modes
 
-These switches are intended for local testing and should remain disabled on a
-live server:
+The unrestricted creation switches are intended for local testing and should
+remain disabled on a live server:
 
 | Variable | Enabled when | Effect |
 | --- | --- | --- |
 | `CREATION_ALL_RACES` | value equals `TRUE` | Adds normally unavailable races to character creation. They are selected by typing the race name. |
 | `CREATION_ALL_CLASSES` | value equals `TRUE` | Adds every defined class to character creation, including restricted classes. |
-| `CHAOS_MUD` | value equals exactly `TRUE` | Enables chaos rules, including automatic level-56 characters. Any other value disables the mode and reports a warning for invalid input. |
 
 The character-creation settings affect the menus and validation paths; they do
 not change the underlying race/class data or make restricted choices suitable
 for production.
+
+Chaos is a separate, deliberately selected server-wide ruleset. Its values are
+read at process start and are case-sensitive:
+
+| Variable | Default | Accepted values / effect |
+| --- | --- | --- |
+| `CHAOS_MUD` | disabled | Exact `TRUE` enables Chaos rules, including rebuilding characters at mortal level 56. Unset or `FALSE` disables the mode; any other value warns and disables it. |
+| `CHAOS_EQ_PROFILE` | `standard` | `standard` selects the high-end starter equipment profile; `enhanceable` selects only equipment and class fundamentals admitted by the enhancement index. An invalid value warns and uses `standard`. |
+| `CHAOS_STARTER_BONUSES` | `TRUE` when Chaos is enabled | Master switch for all optional new-character starter bonuses. Exact `FALSE` disables them; an invalid value warns and fails closed. |
+| `CHAOS_STARTER_FRIGATE` | `TRUE` | Grants the existing dock reward as a free-frigate claim. Requires Chaos and the master starter switch. |
+| `CHAOS_STARTER_EPIC_SKILLS` | `TRUE` | Grants eligible no-specialization epic skills to a new Chaos character. Requires Chaos and the master starter switch. |
+| `CHAOS_STARTER_EPIC_POINTS` | `TRUE` | Grants 20,000 epic points through the critical epic ledger. Requires Chaos and the master starter switch. |
+| `CHAOS_STARTER_BANK_PLATINUM` | `TRUE` | Grants 1,000,000 bank platinum through the critical currency ledger. Requires Chaos and the master starter switch. |
+| `CHAOS_STARTER_MATERIALS` | `TRUE` | Adds the persistent Chaos craft pouch to the new-character equipment bag and enables its material-source behavior. Requires Chaos and the master starter switch. |
+| `CHAOS_TEST_COMMANDS` | disabled | Exact `TRUE` exposes bounded integration-test helpers, but only when `ENVIRONMENT=local`. It does not enable Chaos mode. |
+
+Every starter feature switch accepts only exact `TRUE` or `FALSE`; an invalid
+feature value disables that feature. The complete equipment, durability, and
+craft-pouch contract is in [CHAOS_MODE.md](../reference/CHAOS_MODE.md).
 
 ## WebSocket and proxy settings
 
@@ -344,8 +362,10 @@ In production, the WebSocket listener must use loopback, the trusted proxy and
 allowed origins must be configured, and the local reverse proxy must terminate
 TLS before forwarding to this plaintext listener. The server refuses to create
 the production listener when those controls are absent.
-The health response reports only process and in-memory database-pool readiness and
-performs no blocking database query. Plain telnet defaults to `7777` and TLS telnet to
+The health response reports only process and selected-persistence readiness.
+MariaDB mode reads in-memory pool state, and flat-file mode reports ready only
+after its private authority passes startup validation; neither path performs a
+blocking backing-store query. Plain telnet defaults to `7777` and TLS telnet to
 `7778`; a custom plain-telnet port uses the following port for TLS unless
 `DURIS_TLS_PORT` provides an independent port. Configure a real `duris.crt` and
 `duris.key` in the repository root for networked TLS. The operator key must be

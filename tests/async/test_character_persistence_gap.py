@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Source contracts for the persistence, load and death-recovery defects.
+"""Source contracts for character persistence, load, and death recovery.
 
-Covers docs/ongoing-projects/ongoing/character-creation-persistence-gap.md:
+Pins these previously repaired boundaries:
   1. new characters take the synchronous first save that INSERTs into player_data
-  2. a failed terminal death save schedules a recovery that completes the extraction
-  4. item extra descriptions and affects are deleted before being re-inserted
-  5. the SESSION03 load path reports why it refused a character
-  7. display_account_menu tolerates a NULL argument
-  8. enter_game converts fallback room vnums before indexing the mini world
+  2. a failed terminal death save schedules recovery that completes extraction
+  3. item extra descriptions and affects are deleted before being re-inserted
+  4. the typed load path reports why it refused a character
+  5. display_account_menu tolerates a NULL argument
+  6. enter_game converts fallback room vnums before indexing the mini world
 """
 
 from _paths import SRC

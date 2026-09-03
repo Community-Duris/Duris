@@ -11,7 +11,7 @@ docs/
   content/       builders and world content    gates/        release gates
   records/       standing records              adr/          decision records
   diagrams/      architecture diagrams         assets/       images
-  ongoing-projects/  in-flight notes           legacy/       inherited upstream text
+  legacy/        inherited upstream text
   lib/           runtime game data (not documentation)
 ```
 
@@ -20,6 +20,8 @@ docs/
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](reference/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery, and networking. |
+| [BATCH_ITEM_COMMANDS.md](reference/BATCH_ITEM_COMMANDS.md) | Batch get, put, drop, wear, and remove syntax plus atomic item-transfer behavior. |
+| [CHAOS_MODE.md](reference/CHAOS_MODE.md) | Chaos configuration, durable new-character grants, equipment catalogs, and craft-pouch behavior. |
 | [CODEBASE.md](reference/CODEBASE.md) | Module-by-module map of the server sources. |
 | [DATABASE.md](reference/DATABASE.md) | Database authority, typed reads/writes, schema, reconciliation, and migrations. |
 | [EVENTS.md](reference/EVENTS.md) | The `nevent` deferred-work scheduler: the timer wheel, scheduling, cancellation, the per-pulse budget, and catch-up. |
@@ -101,10 +103,8 @@ Kept when the `.spec_system/` tracking tree was retired.
 - [Server architecture diagram](diagrams/duris-server-architecture.html) and
   [database model](diagrams/duris-database-model.html)
 
-## Unmaintained and non-documentation trees
+## Legacy and runtime-data trees
 
-- [ongoing-projects/](ongoing-projects/) holds in-flight investigation notes. They are
-  not contract documentation and may be ahead of or behind the code.
 - `legacy/` is inherited upstream reference text (`legacy/areas/`, `legacy/src/`) and
   may be stale.
 - `lib/` is **not documentation**. `lib/information/` is read by the server at runtime

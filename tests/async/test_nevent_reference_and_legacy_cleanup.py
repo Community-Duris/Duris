@@ -19,7 +19,6 @@ structs = read(rel("structs.h"))
 reference = read("docs/reference/EVENTS.md")
 architecture = read("docs/reference/ARCHITECTURE.md")
 configuration = read("docs/operations/CONFIGURATION.md")
-completed_review = ROOT / "docs/ongoing-projects/ongoing/nevent-system-review.md"
 all_source = "\n".join(
     path.read_text(encoding="utf-8", errors="replace")
     for path in SRC.rglob("*")
@@ -94,10 +93,6 @@ for stale_contract in (
 
 assert "timer decremented" not in architecture
 assert "Player-event promotion" not in architecture
-
-# The completed review is retired; current behavior belongs in reference docs
-# and executable contracts instead of a second, drifting architecture source.
-assert not completed_review.exists()
 
 for setting in (
     "DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC",
