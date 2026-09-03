@@ -26,6 +26,8 @@ constexpr help_source individual_sources[] = {
 	{ "lib/information/helpships", "ships" },
 	{ "lib/information/helpkingdoms", "kingdoms" },
 	{ "lib/information/helpkingdoms", "kingdom" },
+	{ "lib/information/helpchaospouch", "chaos craft pouch" },
+	{ "lib/information/helpchaospouch", "chaos pouch" },
 	{ "lib/information/faq", "faq" },
 	{ "lib/information/rules", "rules" },
 	{ "lib/information/credits", "credits" },

@@ -1,0 +1,149 @@
+CHAOS CRAFT POUCH
+-----------------
+A compact, persistent source of crafting materials for Chaos characters.
+The pouch is a real item, but it does not contain a pile of individual
+material objects. It keeps a durable scoreboard of the materials you have
+collected and the materials you have supplied to Chaos crafting actions.
+
+This help page describes the pouch only. Ordinary characters and ordinary
+crafting keep their normal rules when no active Chaos craft pouch is present.
+
+
+GETTING THE POUCH
+-----------------
+A new Chaos character receives one pouch in the starter bag when the server's
+Chaos starter-material feature is enabled. The grant is made at character
+creation; existing characters are not retroactively given a pouch.
+
+The pouch can be:
+
+  - carried directly in your inventory;
+  - inside a container that you are carrying; or
+  - attached to one of your first three belt-attachment slots.
+
+Put it somewhere in that accessible path before using it as a material source.
+If it is in a room, in a locker, or outside the carried/belt path, it is not an
+active source for your commands.
+
+
+LOOKING AT THE SCOREBOARD
+-------------------------
+Use either command:
+
+    look in pouch
+    examine pouch
+
+The display lists only entries with a non-zero history. It shows generated and
+collected totals, sorts the most-used entries first, and prints the material
+VNUM in brackets so a particular tier can be identified without guessing.
+The catalog covers:
+
+  salvage materials     400000 through 400209
+  encrust jewels         400291 through 400299
+
+The name beside each VNUM is the actual material description. A reboot does
+not erase the scoreboard: the pouch and its ledger are persisted with your
+character's items.
+
+The pouch is a ledger, not a normal storage bag. You will not find one object
+for every line on the scoreboard, and there is no material object to retrieve
+from inside it after a count has been recorded.
+
+
+COLLECTING MATERIALS
+--------------------
+Place a supported physical material into the pouch with the normal put
+commands:
+
+    put <material> pouch
+    put all pouch
+    put all.<keyword> pouch
+
+Only supported salvage or encrust-material VNUMs are accepted. The physical
+material is recorded and removed as part of the collection operation; the
+pouch itself is not consumed. An aggregate collection reports how many
+materials were recorded after the durable ownership operation completes.
+
+The pouch does not accept coins, unrelated objects, another pouch, or an
+unsupported item. If nothing selected is a supported material, the command
+leaves your inventory and the scoreboard unchanged.
+
+Collection is durable. If an ownership operation cannot be committed, the
+runtime attempts to roll the scoreboard back and retain the material. If that
+rollback also fails, the pouch reports that state and asks you to contact
+staff; do not repeat a failed collection until its result is clear.
+
+
+CRAFTING AND FORGING
+--------------------
+When the active pouch is accessible, its material reserve supplies the raw
+material requirements for the normal crafting and forging commands:
+
+    craft ...
+    forge ...
+
+The pouch is a non-consuming source. It does not replace the normal tool,
+recipe, skill, level, magical-essence, fee, output, or ownership requirements.
+Those checks still apply, and a failed craft or forge does not make the pouch
+vanish.
+
+Material use is reflected in the scoreboard as generated history. The
+collected history remains visible separately, so the page can show both what
+was put into the pouch and what the pouch has supplied to crafting.
+
+
+ENHANCEMENT
+-----------
+The legacy two-argument enhancement form can use the pouch as its universal
+material donor:
+
+    enhance <item> pouch
+
+The pouch is not consumed. The normal enhancement replacement, cost, level,
+conflicting-affect, and item eligibility rules still apply. The pouch is a
+material source, not a valid enhancement target and not a general-purpose
+donor when it was not the material explicitly requested.
+
+Newer aggregate enhancement paths also use the pouch only where the command
+asks for its material supply. They do not turn the pouch into an item whose
+individual statistics can be inspected or altered.
+
+
+ENCRUSTING
+----------
+If you have the encrust skill and an eligible item, the pouch can provide a
+virtual encrust jewel by VNUM:
+
+    encrust <item> <jewel-vnum>
+
+The accepted jewel range is 400291 through 400299. The selected jewel is a
+temporary material for that operation; no physical jewel has to be carried,
+and the pouch remains in place. Normal encrust restrictions still apply,
+including the item's type, repairability, artifact status, prior encrusting,
+skill, and any other command-specific checks.
+
+The pouch itself cannot be encrusted. It is a source, not an encrust target.
+
+
+RESTRICTIONS AND TROUBLESHOOTING
+--------------------------------
+The Chaos craft pouch:
+
+  - cannot be salvaged;
+  - cannot receive coins or unsupported objects;
+  - cannot be used as the item being enhanced or encrusted;
+  - does not increase normal transfer limits or create a material satchel
+    chain; and
+  - supplies material only while Chaos mode and the starter-material feature
+    are active.
+
+If a command cannot find the pouch, check that it is carried directly, nested
+under a carried container, or attached to belt slot 1, 2, or 3. If a collection
+fails, verify that the object is one of the supported catalog VNUMs and wait
+for the command's durable-operation result before trying again.
+
+If the pouch is absent or the server has disabled the Chaos starter-material
+feature, legacy inventory-material behavior is unchanged. The pouch never
+changes the individual statistics of an item merely by being present; it only
+supplies eligible material requirements to commands that already pass their
+normal rules.

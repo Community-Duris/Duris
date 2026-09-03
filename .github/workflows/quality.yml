@@ -62,6 +62,7 @@ jobs:
         run: |
           python3 tests/async/test_flatfile_kingdom_repository.py
           python3 tests/async/test_chaos_material_prefetch.py
+          python3 tests/async/test_chaos_pouch_help.py
       - name: Verify flat-file shopkeeper authority
         run: |
           python3 tests/async/test_flatfile_shopkeeper_repository.py

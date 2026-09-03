@@ -332,6 +332,7 @@ declare -A HELP_FILES=(
     ["help.2"]="help advanced"
     ["helpships"]="ships"
     ["helpkingdoms"]="kingdoms"
+    ["helpchaospouch"]="chaos craft pouch"
     ["faq"]="faq"
     ["rules"]="rules"
     ["credits"]="credits"
