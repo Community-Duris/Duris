@@ -150,7 +150,11 @@ ok &= check(
 ok &= check(
     "transient put paths run only after the durable commit",
     "finish_bulk_put_after_commit(actor, state, container);" in put_completion
-    and "uses_generic_item_ownership(object)" in put_finish,
+    # The split is chosen once, in start_bulk_put(). Re-deriving it here from
+    # uses_generic_item_ownership() would strand an item whose runtime ownership
+    # row activates while the batch commits: neither pass would claim it.
+    and "bulk_put_batch_claimed(state, object)" in put_finish
+    and "uses_generic_item_ownership(object)" not in put_finish,
 )
 ok &= check(
     "the serialized durable chains are gone",

@@ -29,12 +29,15 @@ class FakeExecutor:
     def require_baseline(self, manifest): self.events.append("baseline")
     def applied(self): return list(self.rows)
     def apply(self, migration):
+        """Trace an apply, or raise when the test asked this stage to fail."""
         self.events.append(f"apply:{migration.migration_id}")
         if self.fail_apply: raise runner.MigrationContractError("synthetic apply failure")
     def verify(self, migration):
+        """Trace a verify, or raise when the test asked this stage to fail."""
         self.events.append(f"verify:{migration.migration_id}")
         if self.fail_verify: raise runner.MigrationContractError("synthetic verify failure")
     def record(self, migration, version):
+        """Record one applied migration, tracing the call for order assertions."""
         self.events.append(f"record:{migration.migration_id}")
         self.rows.append(runner.AppliedMigration(
             migration.migration_id, migration.sequence, migration.description,
@@ -45,6 +48,11 @@ class FakeExecutor:
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
     def make_manifest(self, directory: Path, count: int = 2) -> Path:
+        """Build a synthetic migration manifest with real files and checksums.
+
+        Lets the rejection tests mutate one field at a time against a manifest that
+        would otherwise load cleanly.
+        """
         immutable = directory / "immutable"
         immutable.mkdir(parents=True)
         items = []
@@ -77,6 +85,12 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         return path
 
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
+        """The shipped manifest still describes the sealed baseline and head.
+
+        The 170-table Session 11 baseline and its fingerprint must not move, and the
+        immutable migrations must stay in recorded order. Tables created by immutable
+        migrations are excluded before comparing against that baseline inventory.
+        """
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
@@ -100,7 +114,8 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         tables = [entry["locator"] for entry in lifecycle["entries"]
                   if entry["kind"] == "database_table"]
         baseline_tables = [table for table in tables if table not in {
-            "lookup_dataset_state", "season_reset_state", "server_reboots"
+            "lookup_dataset_state", "season_reset_state", "server_reboots",
+            "kingdom_realms"
         }]
         self.assertEqual(len(baseline_tables), manifest.required_table_count)
         self.assertEqual(runner.table_fingerprint(baseline_tables),

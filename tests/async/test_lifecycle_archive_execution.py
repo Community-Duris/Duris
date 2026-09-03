@@ -71,12 +71,18 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         return snapshot, plan, authorization
 
     def rows(self):
+        """Two fixed archive rows, so copy, verify and restore compare exactly."""
         return [
             MODULE.ArchiveRow(b"001", b'{"value":1}'),
             MODULE.ArchiveRow(b"002", b'{"value":2}'),
         ]
 
     def test_schema_is_additive_bounded_and_reconciled_to_manifest(self) -> None:
+        """The archive schema only adds tables, stays bounded, and matches the manifest.
+
+        The migration must not alter existing tables, its budgets must be finite, and
+        every archive table it creates must have a lifecycle entry.
+        """
         migration = MIGRATION.read_text()
         bootstrap = BOOTSTRAP.read_text()
         manifest = json.loads(MANIFEST.read_text())
@@ -110,6 +116,11 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         self.assertIn("information_schema.referential_constraints", SCHEMA_VERIFIER)
 
     def test_scheduler_slot_is_explicitly_disabled_by_pending_policy(self) -> None:
+        """The archive job has a scheduler slot that ships disabled.
+
+        The slot is declared with its budgets and a false enable flag, and the durable
+        scheduler state carries a versioned magic so an older record is not misread.
+        """
         self.assertIn("lifecycle_archive", SCHEDULER_HEADER)
         self.assertRegex(
             SCHEDULER,
@@ -120,13 +131,18 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         self.assertIn('memcpy(durable_state.magic, "DMSMNT3"', SCHEDULER)
 
     def test_canonical_policy_is_scheduler_blocked_and_dry_run_only(self) -> None:
+        """Inspect reports the whole inventory and the scheduler stays blocked.
+
+        The store count follows the lifecycle manifest, no destructive rule is
+        approved, and the scheduler must report itself blocked by policy.
+        """
         result = subprocess.run(
             ["python3", str(SCRIPT), "inspect"], cwd=ROOT,
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["stores"], 194)
+        self.assertEqual(report["stores"], 195)
         self.assertEqual(report["approved_destructive_rules"], 0)
         self.assertFalse(report["destructive_rules_enabled"])
         self.assertEqual(report["scheduler_state"], "blocked_by_policy")

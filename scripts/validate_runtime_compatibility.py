@@ -45,6 +45,13 @@ EXPECTED_CONNECTION = {
 
 
 def load() -> dict:
+    """Read the runtime compatibility manifest, rejecting any shape drift.
+
+    Every field is pinned: the exact key set, the pinned baseline and current table
+    counts, the table inventory grammar, hex-width fingerprints, and the whole
+    connection sub-contract. Raises MigrationContractError rather than returning a
+    partially trusted manifest.
+    """
     raw = lifecycle.read_regular_text(MANIFEST, 1024 * 1024,
                                       "runtime compatibility manifest")
     value = json.loads(raw, object_pairs_hook=migration_runner.strict_object)
@@ -53,7 +60,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 173:
+            value["current_table_count"] != 174:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -83,6 +90,15 @@ def load() -> dict:
 
 
 def validate() -> dict:
+    """Prove the runtime, migration, lifecycle, and compiled contracts agree.
+
+    Cross-checks the manifest against the migration manifest's baseline and head,
+    against the lifecycle manifest's database-table inventory, and against the
+    constants compiled into runtime_compatibility_contract.h. The tables created by
+    immutable migrations are held out of the baseline fingerprint, which covers only
+    the sealed Session 11 inventory. Returns the report a caller prints; raises
+    MigrationContractError on any drift.
+    """
     value = load()
     migration = migration_runner.load_manifest()
     if value["baseline_id"] != migration.baseline_id or \
@@ -112,12 +128,14 @@ def validate() -> dict:
             "server_reboots" not in tables or \
             migration_runner.table_fingerprint(
                 [table for table in tables if table not in {
-                    "lookup_dataset_state", "season_reset_state", "server_reboots"
+                    "lookup_dataset_state", "season_reset_state", "server_reboots",
+                    "kingdom_realms"
                 }]
             ) != value["baseline_table_fingerprint"]:
         raise migration_runner.MigrationContractError("runtime lifecycle table drift")
     baseline_tables = [table for table in tables if table not in {
-        "lookup_dataset_state", "season_reset_state", "server_reboots"
+        "lookup_dataset_state", "season_reset_state", "server_reboots",
+        "kingdom_realms"
     }]
     if set(baseline_tables) != set(migration.required_tables):
         raise migration_runner.MigrationContractError(

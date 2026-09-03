@@ -39,9 +39,15 @@ class AccountErasureTest(unittest.TestCase):
 
     @staticmethod
     def verifier(account: str, password: bytes) -> bool:
+        """Stand in for the account password check; only one pair authenticates."""
         return account.casefold() == "tester" and password == b"correct-password"
 
     def create(self) -> tuple[erasure.ErasureRequest, bytes]:
+        """Create one authenticated erasure request and return it with its owner token.
+
+        Also asserts the caller's password buffer was zeroed, which every creation
+        path owes regardless of what the test goes on to check.
+        """
         gate = personal_export.ReauthenticationGate(b"a" * 32)
         password = bytearray(b"correct-password")
         request, owner = erasure.create_request(
@@ -52,6 +58,11 @@ class AccountErasureTest(unittest.TestCase):
         return request, owner
 
     def complete_actions(self, coordinator: erasure.ErasureCoordinator) -> None:
+        """Drive one erasure request through every stage to verification.
+
+        Confirms, fences, drains, applies each store in the request, then verifies,
+        so a test can assert on the finished state rather than restating the order.
+        """
         coordinator.confirm(f"ERASE {coordinator.request.request_id[:8]}")
         coordinator.fence(77, descriptors_closed=True)
         coordinator.drain(0, 0, value_domains_reconciled=True)
@@ -61,13 +72,25 @@ class AccountErasureTest(unittest.TestCase):
         coordinator.verify()
 
     def test_canonical_policy_is_blocked_with_exact_ordered_coverage(self) -> None:
+        """Erasure covers every manifest entry, in order, and stays disabled.
+
+        The ordered action list must be as long as the inventory, so no store is
+        silently skipped, and validate_ready must still refuse while the controller
+        has not enabled destructive rules.
+        """
         canonical = erasure.load_policy()
-        self.assertEqual(len(canonical.entries), 194)
-        self.assertEqual(len(erasure.ordered_actions(canonical)), 194)
+        self.assertEqual(len(canonical.entries), 195)
+        self.assertEqual(len(erasure.ordered_actions(canonical)), 195)
         with self.assertRaisesRegex(erasure.ErasureContractError, "disabled"):
             erasure.validate_ready(canonical)
 
     def test_authentication_stable_identity_ownership_and_cancel_boundary(self) -> None:
+        """Request identity is stable, ownership is proven, and cancel has a boundary.
+
+        Repeating a creation returns the same request rather than a second one, a
+        wrong owner token is refused, and cancellation stops being allowed once the
+        request has passed the point of no return.
+        """
         request, owner = self.create()
         replay, _ = self.create()
         self.assertEqual(replay.request_id, request.request_id)

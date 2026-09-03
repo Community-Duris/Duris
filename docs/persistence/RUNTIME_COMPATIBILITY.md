@@ -16,17 +16,16 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0006_kingdom_realms`, and the contract still describes 173
-current tables. 0006 creates `kingdom_realms`, but that table is deliberately
-held out of the boot contract's table inventory until the maintainers reseal the
-normalized metadata fingerprints on live MySQL 8 and MariaDB 10.11; the ledger
-identity is enforced regardless, so a database left at head
-`0005_level_cap_singleton` fails this gate. An existing database must first
+The current head is `0006_kingdom_realms`, and the contract describes 174 current
+tables: the 170-table baseline plus `lookup_dataset_state`, `season_reset_state`,
+`server_reboots` and `kingdom_realms`, each created by an immutable migration. A
+database left at head `0005_level_cap_singleton` therefore fails this gate on both
+the ledger identity and the table inventory. An existing database must first
 complete the guarded legacy upgrade and verified baseline adoption described in
 [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md). Never run migration or
 destructive verification commands against production.
 
-Compatibility fingerprints and table counts use the positive 173-table runtime
+Compatibility fingerprints and table counts use the positive 174-table runtime
 inventory. Additional tables restored from a combined game/website dump are ignored
 by the game contract, while every runtime table still has to match exactly.
 
@@ -39,7 +38,7 @@ recovery replay, listener acceptance, or gameplay publication, it verifies:
 - the sealed baseline ID and table-name fingerprint;
 - immutable migration ID, sequence, apply/verifier hashes, applied count, and history
   checksum;
-- all 173 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
+- all 174 tables, InnoDB engine, and `utf8mb4_unicode_ci` collation;
 - normalized table, column, default, index, and foreign-key metadata against the
   checked-in MySQL 8.0 or MariaDB 10.11 fingerprint;
 - `utf8mb4`, UTC, READ COMMITTED, strict SQL modes, ten-second connection/read/write

@@ -54,9 +54,15 @@ class PersonalDataExportTest(unittest.TestCase):
 
     @staticmethod
     def verifier(account: str, password: bytes) -> bool:
+        """Stand in for the account password check; only one pair authenticates."""
         return account.casefold() == "tester" and password == b"correct-password"
 
     def create(self, now: int = 1000) -> tuple[export.ExportRequest, bytes]:
+        """Create one authenticated export request and return it with its token.
+
+        Takes the clock so the rate-limit and cooldown cases can move time, and
+        asserts the caller's password buffer was zeroed.
+        """
         password = bytearray(b"correct-password")
         request, token = export.create_request(
             self.snapshot, self.gate, "Tester", password, "request-key-0001",
@@ -66,6 +72,11 @@ class PersonalDataExportTest(unittest.TestCase):
         return request, token
 
     def complete(self, request: export.ExportRequest, token: bytes) -> bytes:
+        """Fill every section of one export request and seal the bundle.
+
+        Two stores get representative records -- including credential fields that must
+        be redacted -- and the rest are empty, so section coverage is still exact.
+        """
         for store_id in sorted(self.snapshot.entries):
             if store_id == "database:accounts":
                 records = [{"account_name": "Tester", "email": "t@example.test",
@@ -83,8 +94,14 @@ class PersonalDataExportTest(unittest.TestCase):
         return export.build_bundle(self.snapshot, request, token)
 
     def test_canonical_policy_is_blocked_and_exactly_covered(self) -> None:
+        """Export covers exactly the manifest's entries and stays unapproved.
+
+        Coverage is compared as a set in both directions, so an entry added to the
+        manifest without an export rule fails here rather than being omitted from a
+        subject's bundle.
+        """
         canonical = export.load_policy()
-        self.assertEqual(len(canonical.entries), 194)
+        self.assertEqual(len(canonical.entries), 195)
         with self.assertRaisesRegex(export.ExportContractError, "not approved"):
             export.validate_export_ready(canonical)
         self.assertEqual(
@@ -92,6 +109,11 @@ class PersonalDataExportTest(unittest.TestCase):
         )
 
     def test_reauthentication_ownership_rate_and_cooldown(self) -> None:
+        """Creating a request needs the right password, owner, and timing.
+
+        A wrong password, another account's request, too many attempts, and a request
+        inside the cooldown window must each be refused.
+        """
         password = bytearray(b"wrong")
         with self.assertRaisesRegex(export.ExportContractError, "failed"):
             export.create_request(
@@ -116,10 +138,15 @@ class PersonalDataExportTest(unittest.TestCase):
         self.assertTrue(request.owns(token))
 
     def test_bundle_is_deterministic_filtered_and_tamper_evident(self) -> None:
+        """A bundle carries one section per store, redacts secrets, and seals.
+
+        Section count follows the inventory, excluded fields such as credentials
+        never appear, and any edit to the payload must break verification.
+        """
         request, token = self.create()
         payload = self.complete(request, token)
         bundle = export.verify_bundle(payload)
-        self.assertEqual(bundle["section_count"], 194)
+        self.assertEqual(bundle["section_count"], 195)
         self.assertEqual(bundle["record_count"], 2)
         accounts = next(section for section in bundle["sections"]
                         if section["store_id"] == "database:accounts")

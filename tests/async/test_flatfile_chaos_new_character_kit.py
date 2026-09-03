@@ -482,8 +482,28 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     client.expect("Pos: standing >", timeout=30)
 
                     inspect_chaos_material_pouch(client)
+                    # The generated class kit does not always leave the same items in
+                    # hand, so read the carried count instead of assuming one.  Every
+                    # carried item except the bag itself moves into the bag.
+                    client.transcript.clear()
+                    client.send("inventory")
+                    inventory_before_put = client.expect("Pos: standing >", timeout=30)
+                    carried = re.search(
+                        r"You are carrying: \((\d+)/", inventory_before_put
+                    )
+                    require(
+                        carried is not None,
+                        "inventory did not report a carried count:\n"
+                        + inventory_before_put,
+                    )
+                    expected_put = int(carried.group(1)) - 1
+                    require(
+                        expected_put >= 2,
+                        "expected the Chaos kit to leave at least two items to put away:\n"
+                        + inventory_before_put,
+                    )
                     client.send("put all bottomless")
-                    client.expect("You put 3 items", timeout=30)
+                    client.expect(f"You put {expected_put} items", timeout=30)
                     client.expect("Pos: standing >", timeout=30)
                     client.transcript.clear()
                     client.send("equipment")

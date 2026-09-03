@@ -21,6 +21,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
     ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
+    ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
 )
 
 ROOT_FIELDS = {
@@ -149,6 +150,11 @@ def read_regular_text(path: Path, maximum_bytes: int, label: str) -> str:
 def redis_registry_inventory(
     path: Path = DEFAULT_REDIS_REGISTRY,
 ) -> tuple[dict[str, tuple[str, str]], int]:
+    """Read the Redis key registry into its declared stores and surface count.
+
+    The registry is the authority for Redis coverage, so the manifest is checked
+    against what this returns rather than against a second hand-kept list.
+    """
     text = read_regular_text(path, MAX_REDIS_REGISTRY_BYTES, "Redis key registry")
     store_pattern = re.compile(
         r'^REDIS_STORE\([A-Z0-9_]+, "([^"]+)", "([^"]+)", "([^"]+)"\)$'
@@ -196,14 +202,34 @@ def redis_registry_inventory(
     return stores, len(surfaces)
 
 
+def read_schema_source(path: Path) -> str:
+    """Read schema SQL with whole-line ``--`` comments removed.
+
+    Migration files describe their own DDL in prose, so a comment can contain a
+    phrase like "CREATE TABLE IF NOT EXISTS is a no-op" that the table and
+    foreign-key patterns below would otherwise read as a real statement. Only
+    comments that own their whole line are dropped, which leaves string literals
+    (and any ``--`` inside one) untouched.
+    """
+    source = read_regular_text(path, MAX_SCHEMA_BYTES, "schema source")
+    return "\n".join("" if line.lstrip().startswith("--") else line
+                     for line in source.splitlines())
+
+
 def schema_tables(paths: tuple[Path, ...]) -> set[str]:
+    """Return every table the authoritative schema sources create.
+
+    A later DROP removes a table an earlier file created, so the set reflects the
+    end state of applying the sources in order. This is the inventory the lifecycle
+    manifest must cover exactly, in both directions.
+    """
     tables: set[str] = set()
     statement = re.compile(
         r"(CREATE|DROP)\s+TABLE\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?[`\"]?(\w+)",
         re.IGNORECASE,
     )
     for path in paths:
-        source = read_regular_text(path, MAX_SCHEMA_BYTES, "schema source")
+        source = read_schema_source(path)
         for operation, table in statement.findall(source):
             if operation.upper() == "CREATE":
                 tables.add(table.lower())
@@ -224,7 +250,7 @@ def schema_dependencies(paths: tuple[Path, ...]) -> dict[str, set[str]]:
     )
     reference = re.compile(r"REFERENCES\s+[`\"]?(\w+)", re.IGNORECASE)
     for path in paths:
-        source = read_regular_text(path, MAX_SCHEMA_BYTES, "schema source")
+        source = read_schema_source(path)
         for match in create_table.finditer(source):
             table = match.group(1).lower()
             parents = {parent.lower() for parent in reference.findall(match.group(2))}

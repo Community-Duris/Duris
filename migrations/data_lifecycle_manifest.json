@@ -2225,6 +2225,35 @@
       "dependencies": []
     },
     {
+      "id": "database:kingdom_realms",
+      "kind": "database_table",
+      "locator": "kingdom_realms",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "guild kingdom realm territory, resource stores and upkeep state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
       "id": "database:level_cap",
       "kind": "database_table",
       "locator": "level_cap",

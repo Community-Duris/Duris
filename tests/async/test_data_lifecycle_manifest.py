@@ -24,6 +24,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
     ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
+    ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -58,27 +59,44 @@ class LifecycleManifestTest(unittest.TestCase):
                               check=False)
 
     def write_manifest(self, directory: Path, value: dict) -> Path:
+        """Write a mutated manifest to a temporary path for the validator to reject."""
         path = directory / "manifest.json"
         path.write_text(json.dumps(value))
         return path
 
     def entry(self, entry_id: str) -> dict:
+        """Return one manifest entry by id, for a test that mutates a single field."""
         return next(entry for entry in self.manifest["entries"] if entry["id"] == entry_id)
 
     def assert_rejected(self, result: subprocess.CompletedProcess[str], message: str) -> None:
+        """Assert the validator failed closed with the expected reason.
+
+        Exit status 2 is the contract's rejection code; the message keeps a test from
+        passing on some unrelated failure.
+        """
         self.assertEqual(result.returncode, 2, result.stdout)
         self.assertIn(message, result.stderr)
 
     def test_canonical_inventory_passes_and_reports_only_counts(self) -> None:
+        """The shipped manifest validates and reports counts, never contents.
+
+        The counts pin the inventory the rest of the lifecycle tooling consumes, and
+        destructive rules must still read as disabled.
+        """
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 173)
+        self.assertEqual(report["database_tables"], 174)
         self.assertEqual(report["non_database_stores"], 21)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
     def test_missing_duplicate_unknown_and_stale_rules_fail_closed(self) -> None:
+        """Each way the manifest can misdescribe the schema is refused.
+
+        A dropped entry, a duplicated one, an entry for a table that does not exist,
+        and a stale rule must each fail rather than validate partially.
+        """
         mutations = []
 
         missing = json.loads(json.dumps(self.manifest))
@@ -163,6 +181,11 @@ class LifecycleManifestTest(unittest.TestCase):
             )
 
     def test_destructive_preflight_requires_global_approval(self) -> None:
+        """An entry-level approval alone never enables a destructive action.
+
+        The global controller approval must also enable destructive rules, so one
+        edited entry cannot unlock deletion on its own.
+        """
         approved_entry = json.loads(json.dumps(self.manifest))
         target = next(entry for entry in approved_entry["entries"]
                       if entry["id"] == "database:accounts")
@@ -179,6 +202,11 @@ class LifecycleManifestTest(unittest.TestCase):
             )
 
     def test_destructive_preflight_rejects_environment_host_and_role(self) -> None:
+        """Even an approved destructive rule is refused outside its target.
+
+        With global approval granted, the preflight must still reject a wrong
+        environment, a non-loopback host, and an unexpected database role.
+        """
         manifest = json.loads(json.dumps(self.manifest))
         manifest["controller_approval"] = {
             "status": "approved",
@@ -208,6 +236,11 @@ class LifecycleManifestTest(unittest.TestCase):
                     )
 
     def test_schema_drift_and_symlink_manifest_fail_closed(self) -> None:
+        """An uncovered table or a symlinked manifest is refused.
+
+        A table created in the schema but absent from the manifest must fail, and the
+        manifest itself must be a regular file so its contents cannot be swapped.
+        """
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             schema = directory / "schema.sql"
@@ -221,7 +254,35 @@ class LifecycleManifestTest(unittest.TestCase):
             link.symlink_to(MANIFEST)
             self.assert_rejected(self.run_validator(link), "regular non-symlink file")
 
+    def test_schema_scan_ignores_prose_in_whole_line_comments(self) -> None:
+        """Schema discovery reads DDL, not the prose describing it.
+
+        Immutable migrations document themselves in whole-line comments, and 0006
+        spells out "CREATE TABLE IF NOT EXISTS" and "REFERENCES" there. Those files
+        are checksummed and cannot be reworded, so the scanner has to ignore them.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            schema = directory / "commented.sql"
+            schema.write_text(
+                "-- CREATE TABLE IF NOT EXISTS is a no-op on an existing table, and\n"
+                "-- DROP TABLE lifecycle_commented would remove it.\n"
+                "CREATE TABLE lifecycle_commented (\n"
+                "  id INT NOT NULL,\n"
+                "  -- REFERENCES lifecycle_ghost is only described here\n"
+                "  PRIMARY KEY (id)\n"
+                ") ENGINE=InnoDB;\n"
+            )
+            self.assertEqual(VALIDATOR_MODULE.schema_tables((schema,)),
+                             {"lifecycle_commented"})
+            self.assertEqual(VALIDATOR_MODULE.schema_dependencies((schema,)), {})
+
     def test_redis_registry_drives_manifest_coverage_and_fails_closed(self) -> None:
+        """Redis coverage follows the key registry, in both directions.
+
+        A store dropped from the registry and one absent from the manifest must each
+        fail, so the two lists cannot drift apart silently.
+        """
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             registry = REDIS_REGISTRY.read_text(encoding="ascii")
