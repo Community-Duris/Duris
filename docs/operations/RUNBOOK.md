@@ -525,6 +525,47 @@ Stop the affected domain, preserve its journal, inbox, outbox, ledger, and repor
 then trace the stable operation identity. Use only the domain's guarded retry or
 repair interface after the cause is known.
 
+For character-baseline readiness, `migrations/check_character_baseline_readiness.sh`
+is production-safe and aggregate-only. It requires every active, unblocked,
+account-mapped character to have wallet, epic, and combat-frag opening rows. The same
+gate runs during MariaDB boot, runtime compatibility verification, and guarded legacy
+dump import; a missing row makes the character generation unready.
+
+Classify missing combat baselines only at an approved quiesced save boundary. Create a
+private operator directory, then write the row-level result there; routine output stays
+aggregate-only:
+
+```bash
+install -d -m 700 /absolute/private/combat-baseline-review
+./migrations/repair_missing_combat_baselines.sh \
+  --classify /absolute/private/combat-baseline-review/classification.tsv
+```
+
+`safe_no_history` has revision zero and no ledger row, so its opening value is the
+locked current value at revision zero. `ledger_history_requires_review` includes only a
+proposed arithmetic candidate and is never applied by the tool; prove the complete,
+contiguous history and review separate targeted DML. `revision_without_ledger` has no
+defensible automated opening value. Keep all PIDs and row details in the owner-only
+artifact.
+
+Rehearse safe rows only on a fresh production clone after a verified backup and with
+all writers stopped. Supply the reviewed artifact digest and backup identity:
+
+```bash
+WRITERS_QUIESCED=TRUE COMBAT_BASELINE_BACKUP_ID='<backup-generation>' \
+  ./migrations/repair_missing_combat_baselines.sh --apply \
+  /absolute/private/combat-baseline-review/classification.tsv '<sha256>'
+```
+
+The insert-only transaction preserves existing baselines, verifies locked player and
+ledger state, fails on a conflicting baseline, and writes an owner-only receipt. A
+repeat is idempotent only when the existing row exactly matches the reviewed opening.
+Before any separately authorized production repair, retain the backup, reviewed DML,
+artifact digest, and receipt; the rollback is limited to the exact inserted PIDs and is
+permitted only before subsequent combat revision/ledger activity. Afterwards run the
+combat, currency, epic, item-ownership, and FK/schema verifiers. Never delete or rewrite
+ledger history to make readiness pass.
+
 ### Maintenance, lifecycle, export, and erasure
 
 The maintenance scheduler is bounded and persistent. Use `world persistence` to

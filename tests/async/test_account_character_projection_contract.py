@@ -98,6 +98,26 @@ checks.append(
         and contains(repair, "ON DUPLICATE KEY UPDATE"),
     )
 )
+checks.append(
+    (
+        "account projection establishes safe baselines before making a character selectable",
+        all(
+            contains(repair, token)
+            for token in (
+                "INSERT INTO currency_wallet_baseline",
+                "INSERT INTO epic_balance_baseline",
+                "INSERT INTO combat_frag_baseline",
+                "pd.frag_revision=0",
+                "FROM combat_frag_ledger",
+                "JOIN currency_wallet_baseline wallet",
+                "JOIN epic_balance_baseline epic",
+                "JOIN combat_frag_baseline combat",
+            )
+        )
+        and repair.index("INSERT INTO combat_frag_baseline")
+        < repair.index("INSERT INTO account_characters "),
+    )
+)
 
 pending = body(mysql_sql_player, "struct pending_account_character_cache_update")
 checks.append(

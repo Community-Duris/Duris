@@ -135,6 +135,12 @@ class CombatOutcomeCutoverTests(unittest.TestCase):
         self.assertIn("row.field == player_status_field::frags", snapshot)
         legacy = (SRC / "sql_player.c").read_text()
         self.assertIn('"frags=frags, oldfrags=oldfrags', legacy)
+        new_player = legacy[legacy.rindex("bool sql_save_player_status"):]
+        self.assertIn("INSERT INTO combat_frag_baseline", new_player)
+        self.assertLess(
+            new_player.index("INSERT INTO combat_frag_baseline"),
+            new_player.index("UPDATE player_data SET account_name"),
+        )
 
 
 if __name__ == "__main__":

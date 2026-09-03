@@ -1598,6 +1598,20 @@ bool sql_save_player_status(P_char ch, int type, int room)
 				sql_rollback();
 			return false;
 		}
+		const int combat_baseline_written = snprintf(
+			query, sizeof(query),
+			"INSERT INTO combat_frag_baseline(pid,opening_frags,opening_revision) "
+			"VALUES(%d,%ld,0)",
+			pid, ch->only.pc->frags);
+		if (combat_baseline_written < 0 || combat_baseline_written >= (int)sizeof(query) ||
+		    !sql_run_query(query))
+		{
+			logit(LOG_PLAYER, "sql_save_player_status: component=combat_baseline "
+					  "outcome=initialize_failure");
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
 		if (!player_revision_hydrate(pid, 0))
 		{
 			logit(LOG_PLAYER,
@@ -5276,7 +5290,62 @@ int sql_repair_account_character_projection(const char *account_name)
 		return -1;
 
 	char query[4096];
-	const int written =
+	char eligibility[1024];
+	const int eligibility_written = snprintf(
+		eligibility, sizeof(eligibility),
+		"pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') AND NOT EXISTS ("
+		"SELECT 1 FROM account_characters tombstone WHERE tombstone.deleted_at IS NOT NULL "
+		"AND (tombstone.pid=pd.pid OR LOWER(tombstone.char_name)=LOWER(pd.name)))",
+		escaped_account);
+	if (eligibility_written < 0 ||
+	    static_cast<size_t>(eligibility_written) >= sizeof(eligibility))
+	{
+		free(escaped_account);
+		return -1;
+	}
+	int written = snprintf(
+		query, sizeof(query),
+		"INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,"
+		"opening_gold,opening_platinum,opening_revision) "
+		"SELECT pd.pid,pd.copper,pd.silver,pd.gold,pd.platinum,pd.wallet_revision "
+		"FROM player_data pd WHERE %s AND pd.wallet_revision=0 "
+		"AND NOT EXISTS (SELECT 1 FROM currency_ledger ledger WHERE ledger.pid=pd.pid) "
+		"AND NOT EXISTS (SELECT 1 FROM currency_wallet_baseline baseline "
+		"WHERE baseline.pid=pd.pid)",
+		eligibility);
+	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
+	{
+		free(escaped_account);
+		return -1;
+	}
+	written = snprintf(
+		query, sizeof(query),
+		"INSERT INTO epic_balance_baseline(pid,opening_balance,opening_revision) "
+		"SELECT pd.pid,pd.epics,pd.epic_revision FROM player_data pd WHERE %s "
+		"AND pd.epic_revision=0 AND NOT EXISTS (SELECT 1 FROM epic_ledger ledger "
+		"WHERE ledger.pid=pd.pid) AND NOT EXISTS (SELECT 1 FROM epic_balance_baseline "
+		"baseline WHERE baseline.pid=pd.pid)",
+		eligibility);
+	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
+	{
+		free(escaped_account);
+		return -1;
+	}
+	written = snprintf(
+		query, sizeof(query),
+		"INSERT INTO combat_frag_baseline(pid,opening_frags,opening_revision) "
+		"SELECT pd.pid,pd.frags,pd.frag_revision FROM player_data pd WHERE %s "
+		"AND pd.frag_revision=0 AND NOT EXISTS (SELECT 1 FROM combat_frag_ledger ledger "
+		"WHERE ledger.pid=pd.pid) AND NOT EXISTS (SELECT 1 FROM combat_frag_baseline "
+		"baseline WHERE baseline.pid=pd.pid)",
+		eligibility);
+	if (written < 0 || static_cast<size_t>(written) >= sizeof(query) || !sql_run_query(query))
+	{
+		free(escaped_account);
+		return -1;
+	}
+
+	written =
 		snprintf(query, sizeof(query),
 			 "INSERT INTO account_characters "
 			 "(id, account_name, pid, char_name, created_at, deleted_at) "
@@ -5284,6 +5353,9 @@ int sql_repair_account_character_projection(const char *account_name)
 			 "FROM player_data pd "
 			 "LEFT JOIN account_characters active_mapping "
 			 "ON active_mapping.pid=pd.pid AND active_mapping.deleted_at IS NULL "
+			 "JOIN currency_wallet_baseline wallet ON wallet.pid=pd.pid "
+			 "JOIN epic_balance_baseline epic ON epic.pid=pd.pid "
+			 "JOIN combat_frag_baseline combat ON combat.pid=pd.pid "
 			 "WHERE pd.active=1 AND LOWER(pd.account_name)=LOWER('%s') "
 			 "AND NOT EXISTS ("
 			 "SELECT 1 FROM account_characters tombstone "

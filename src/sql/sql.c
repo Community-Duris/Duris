@@ -1867,6 +1867,41 @@ static bool sql_verify_boot_database(void)
 		      "FATAL: currency bank baseline does not cover every account bank at boot.");
 		return false;
 	}
+	const char *character_baseline_readiness_probe =
+		"SELECT COUNT(*),"
+		"COALESCE(SUM(wallet.pid IS NULL),0),"
+		"COALESCE(SUM(epic.pid IS NULL),0),"
+		"COALESCE(SUM(combat.pid IS NULL),0) FROM ("
+		"SELECT DISTINCT player.pid FROM player_data player "
+		"JOIN account_characters mapping ON mapping.pid=player.pid "
+		"WHERE player.active=1 AND mapping.deleted_at IS NULL AND mapping.blocked=0"
+		") eligible "
+		"LEFT JOIN currency_wallet_baseline wallet ON wallet.pid=eligible.pid "
+		"LEFT JOIN epic_balance_baseline epic ON epic.pid=eligible.pid "
+		"LEFT JOIN combat_frag_baseline combat ON combat.pid=eligible.pid";
+	result = db_query("%s", character_baseline_readiness_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: character baseline readiness query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool character_baselines_ready = row && lengths && row[0] && row[1] && row[2] &&
+					       row[3] && atoll(row[1]) == 0 && atoll(row[2]) == 0 &&
+					       atoll(row[3]) == 0;
+	if (!character_baselines_ready)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: active mapped character baseline readiness failed "
+		      "(eligible=%lld wallet_missing=%lld epic_missing=%lld "
+		      "combat_missing=%lld).",
+		      row && row[0] ? atoll(row[0]) : -1, row && row[1] ? atoll(row[1]) : -1,
+		      row && row[2] ? atoll(row[2]) : -1, row && row[3] ? atoll(row[3]) : -1);
+		mysql_free_result(result);
+		return false;
+	}
+	mysql_free_result(result);
 	const char *item_ownership_schema_probe =
 		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
 		"AND ((table_name='item_uid_allocator' AND column_name IN "

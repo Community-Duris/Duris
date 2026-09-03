@@ -45,6 +45,8 @@ baseline=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_baselines WHERE bas
 head=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='${expected[5]}' AND sequence_number=${expected[6]} AND LOWER(HEX(apply_checksum))='${expected[7]}' AND LOWER(HEX(verify_checksum))='${expected[8]}' AND runner_version=1;")
 state=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND applied_count=${expected[6]} AND LOWER(HEX(history_checksum))='${expected[9]}';")
 level_cap=$("${MYSQL[@]}" -e "SELECT COUNT(*) FROM level_cap WHERE id=1 AND most_frags>=0 AND racewar_leader BETWEEN 0 AND 4 AND level BETWEEN 1 AND 56 AND next_update IS NOT NULL AND (SELECT COUNT(*) FROM level_cap)=1;")
+character_baselines=$("${MYSQL[@]}" -e "SELECT COUNT(*),COALESCE(SUM(wallet.pid IS NULL),0),COALESCE(SUM(epic.pid IS NULL),0),COALESCE(SUM(combat.pid IS NULL),0) FROM (SELECT DISTINCT player.pid FROM player_data player JOIN account_characters mapping ON mapping.pid=player.pid WHERE player.active=1 AND mapping.deleted_at IS NULL AND mapping.blocked=0) eligible LEFT JOIN currency_wallet_baseline wallet ON wallet.pid=eligible.pid LEFT JOIN epic_balance_baseline epic ON epic.pid=eligible.pid LEFT JOIN combat_frag_baseline combat ON combat.pid=eligible.pid;")
+IFS=$'\t' read -r eligible_characters wallet_missing epic_missing combat_missing <<<"$character_baselines"
 failed=0
 [[ "$fingerprint" == "$metadata_fingerprint" ]] || {
     echo "FAILED: normalized metadata fingerprint mismatch: expected=$metadata_fingerprint actual=$fingerprint" >&2
@@ -62,5 +64,14 @@ failed=0
 [[ "$head" == 1 ]] || { echo "FAILED: immutable migration head is absent or stale" >&2; failed=1; }
 [[ "$state" == 1 ]] || { echo "FAILED: immutable migration state is absent or stale" >&2; failed=1; }
 [[ "$level_cap" == 1 ]] || { echo "FAILED: required level-cap singleton is absent or invalid" >&2; failed=1; }
+if ! [[ "$eligible_characters" =~ ^[0-9]+$ && "$wallet_missing" =~ ^[0-9]+$ &&
+        "$epic_missing" =~ ^[0-9]+$ && "$combat_missing" =~ ^[0-9]+$ ]]; then
+    echo "FAILED: character baseline readiness returned malformed aggregate output" >&2
+    failed=1
+elif [[ "$wallet_missing" != 0 || "$epic_missing" != 0 || "$combat_missing" != 0 ]]; then
+    printf 'FAILED: character baseline readiness eligible=%s wallet_missing=%s epic_missing=%s combat_missing=%s\n' \
+        "$eligible_characters" "$wallet_missing" "$epic_missing" "$combat_missing" >&2
+    failed=1
+fi
 [[ "$failed" == 0 ]] || exit 1
-echo "runtime migration, schema metadata, engine, collation, index, and FK compatibility verified"
+echo "runtime migration, schema metadata, baseline readiness, engine, collation, index, and FK compatibility verified"

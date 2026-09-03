@@ -222,6 +222,33 @@ class LegacyDumpImportTest(unittest.TestCase):
         self.assertNotIn("INSERT IGNORE INTO account_banks", section)
         self.assertIn("ON DUPLICATE KEY UPDATE account_name = account_name", section)
 
+    def test_import_establishes_all_character_baselines_before_readiness(self):
+        statements = []
+
+        def mysql_result(_config, statement):
+            statements.append(statement)
+            return "" if len(statements) == 1 else "0\t0\t0"
+
+        with mock.patch.object(legacy, "run_mysql", side_effect=mysql_result):
+            legacy.establish_character_baselines(self.valid_config())
+        transaction, readiness = statements
+        self.assertIn("START TRANSACTION", transaction)
+        self.assertIn("INSERT INTO currency_wallet_baseline", transaction)
+        self.assertIn("INSERT INTO epic_balance_baseline", transaction)
+        self.assertIn("INSERT INTO combat_frag_baseline", transaction)
+        self.assertIn("p.frag_revision=0", transaction)
+        self.assertIn("FROM combat_frag_ledger", transaction)
+        self.assertNotIn("INSERT IGNORE", transaction)
+        self.assertIn("account_characters", readiness)
+        self.assertIn("combat_frag_baseline", readiness)
+
+    def test_import_refuses_to_infer_a_missing_baseline_after_history(self):
+        with mock.patch.object(
+                legacy, "run_mysql", side_effect=["", "0\t0\t1"]):
+            with self.assertRaisesRegex(
+                    legacy.LegacyImportError, "ledger history requires review"):
+                legacy.establish_character_baselines(self.valid_config())
+
 
 if __name__ == "__main__":
     unittest.main()

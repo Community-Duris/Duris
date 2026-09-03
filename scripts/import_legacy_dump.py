@@ -355,18 +355,64 @@ def verify_source_rows(source: dict[str, int], final: dict[str, int],
             ", ".join(changed_extensions[:8]))
 
 
+def establish_character_baselines(config: dict[str, str]) -> None:
+    """Create only unambiguous opening state before imported characters can load."""
+    run_mysql(
+        config,
+        "START TRANSACTION;"
+        "INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,"
+        "opening_gold,opening_platinum,opening_revision) "
+        "SELECT p.pid,p.copper,p.silver,p.gold,p.platinum,p.wallet_revision "
+        "FROM player_data p LEFT JOIN currency_wallet_baseline b ON b.pid=p.pid "
+        "WHERE b.pid IS NULL AND p.wallet_revision=0 AND NOT EXISTS "
+        "(SELECT 1 FROM currency_ledger l WHERE l.pid=p.pid);"
+        "INSERT INTO epic_balance_baseline(pid,opening_balance,opening_revision) "
+        "SELECT p.pid,p.epics,p.epic_revision FROM player_data p "
+        "LEFT JOIN epic_balance_baseline b ON b.pid=p.pid "
+        "WHERE b.pid IS NULL AND p.epic_revision=0 AND NOT EXISTS "
+        "(SELECT 1 FROM epic_ledger l WHERE l.pid=p.pid);"
+        "INSERT INTO combat_frag_baseline(pid,opening_frags,opening_revision) "
+        "SELECT p.pid,p.frags,p.frag_revision FROM player_data p "
+        "LEFT JOIN combat_frag_baseline b ON b.pid=p.pid "
+        "WHERE b.pid IS NULL AND p.frag_revision=0 AND NOT EXISTS "
+        "(SELECT 1 FROM combat_frag_ledger l WHERE l.pid=p.pid);"
+        "COMMIT;",
+    )
+    readiness = run_mysql(
+        config,
+        "SELECT COALESCE(SUM(wallet.pid IS NULL),0),"
+        "COALESCE(SUM(epic.pid IS NULL),0),"
+        "COALESCE(SUM(combat.pid IS NULL),0) FROM ("
+        "SELECT DISTINCT p.pid FROM player_data p JOIN account_characters ac ON ac.pid=p.pid "
+        "WHERE p.active=1 AND ac.deleted_at IS NULL AND ac.blocked=0) eligible "
+        "LEFT JOIN currency_wallet_baseline wallet ON wallet.pid=eligible.pid "
+        "LEFT JOIN epic_balance_baseline epic ON epic.pid=eligible.pid "
+        "LEFT JOIN combat_frag_baseline combat ON combat.pid=eligible.pid;",
+    )
+    fields = readiness.split("\t")
+    if len(fields) != 3 or any(not field.isdigit() for field in fields):
+        raise LegacyImportError("character baseline readiness returned invalid data")
+    if any(int(field) for field in fields):
+        raise LegacyImportError(
+            "imported character baseline readiness failed; ledger history requires review")
+
+
 def run_migrations(config: dict[str, str], env_path: Path) -> None:
     environment = process_environment(config)
     environment["MIGRATION_ENV_FILE"] = str(env_path)
     commands = (
         [str(ROOT / "migrations/run_migration.sh")],
         [sys.executable, str(ROOT / "scripts/migration_runner.py"), "run"],
-        [str(ROOT / "migrations/verify_runtime_compatibility.sh")],
     )
     for command in commands:
         result = subprocess.run(command, cwd=ROOT, env=environment, check=False)
         if result.returncode:
             raise LegacyImportError(f"migration command failed: {Path(command[0]).name}")
+    establish_character_baselines(config)
+    verifier = ROOT / "migrations/verify_runtime_compatibility.sh"
+    result = subprocess.run([str(verifier)], cwd=ROOT, env=environment, check=False)
+    if result.returncode:
+        raise LegacyImportError(f"migration command failed: {verifier.name}")
 
 
 def restore_backup(config: dict[str, str], backup_path: Path) -> None:
