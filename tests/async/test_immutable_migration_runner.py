@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import sys
@@ -47,6 +48,19 @@ class FakeExecutor:
 
 
 class ImmutableMigrationRunnerTest(unittest.TestCase):
+    def make_production_backup(self, directory: Path, database: str = "duris") -> Path:
+        path = directory / "production.sql.gz"
+        payload = (
+            f"CREATE DATABASE `{database}`;\nUSE `{database}`;\n"
+            "CREATE TABLE `accounts` (id INT);\n"
+            "CREATE TABLE `player_data` (id INT);\n"
+            "CREATE TABLE `ships` (id INT);\n"
+        ).encode()
+        with gzip.open(path, "wb") as backup:
+            backup.write(payload)
+        path.chmod(0o600)
+        return path
+
     def make_manifest(self, directory: Path, count: int = 2) -> Path:
         """Build a synthetic migration manifest with real files and checksums.
 
@@ -211,9 +225,13 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
 
     def test_target_safety_rejects_production_before_mysql(self):
         manifest = runner.load_manifest()
+        production = {"ENVIRONMENT": "production", "DB_HOST": "127.0.0.1",
+                      "DB_NAME": "duris", "DB_USER": "x", "DB_PASSWD": "x"}
+        with mock.patch.dict(os.environ, production, clear=True):
+            with self.assertRaisesRegex(runner.MigrationContractError, "not confirmed"):
+                runner.MysqlExecutor(manifest)
+
         cases = (
-            {"ENVIRONMENT": "production", "DB_HOST": "127.0.0.1",
-             "DB_NAME": "duris", "DB_USER": "x", "DB_PASSWD": "x"},
             {"ENVIRONMENT": "test", "DB_HOST": "database.internal",
              "DB_NAME": "duris", "DB_USER": "x", "DB_PASSWD": "x"},
             {"ENVIRONMENT": "test", "DB_HOST": "127.0.0.1",
@@ -224,6 +242,50 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                 with self.assertRaisesRegex(runner.MigrationContractError,
                                             "non-production"):
                     runner.MysqlExecutor(manifest)
+
+    def test_production_run_requires_exact_target_backup_allowlist_and_quiescence(self):
+        manifest = runner.load_manifest()
+        with tempfile.TemporaryDirectory() as temporary:
+            backup = self.make_production_backup(Path(temporary))
+            environment = {
+                "ENVIRONMENT": "production", "DB_HOST": "127.0.0.1",
+                "DB_NAME": "duris", "DB_USER": "x", "DB_PASSWD": "x",
+                "DB_ALLOWED_TARGETS": "127.0.0.1/duris",
+            }
+            with mock.patch.dict(os.environ, environment, clear=True):
+                executor = runner.MysqlExecutor(
+                    manifest, "127.0.0.1/duris", backup)
+                self.assertTrue(executor.production)
+                with mock.patch.object(executor, "sql", return_value="0"):
+                    executor.require_quiescent()
+                with mock.patch.object(executor, "sql", return_value="1"), \
+                        self.assertRaisesRegex(runner.MigrationContractError,
+                                              "every other database connection"):
+                    executor.require_quiescent()
+
+                with self.assertRaisesRegex(runner.MigrationContractError, "not confirmed"):
+                    runner.MysqlExecutor(manifest, "127.0.0.1/other", backup)
+                with self.assertRaisesRegex(runner.MigrationContractError,
+                                            "validated backup"):
+                    runner.MysqlExecutor(manifest, "127.0.0.1/duris")
+
+                environment["DB_ALLOWED_TARGETS"] = "127.0.0.1/other"
+                with mock.patch.dict(os.environ, environment, clear=True), \
+                        self.assertRaisesRegex(runner.MigrationContractError,
+                                              "not allow-listed"):
+                    runner.MysqlExecutor(manifest, "127.0.0.1/duris", backup)
+
+    def test_production_backup_rejects_unsafe_mode_and_wrong_database(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            backup = self.make_production_backup(directory)
+            backup.chmod(0o644)
+            with self.assertRaisesRegex(runner.MigrationContractError, "owner-only"):
+                runner.validate_production_backup(backup, "duris")
+            backup.chmod(0o600)
+            with self.assertRaisesRegex(runner.MigrationContractError,
+                                        "does not identify"):
+                runner.validate_production_backup(backup, "other")
 
     def test_local_unix_socket_is_explicit_and_reaches_sealed_verifiers(self):
         manifest = runner.load_manifest()

@@ -21,7 +21,7 @@
 
 ## Safety
 
-- Never run migrations, wipes, or operational scripts against production.
+- Never run migrations, wipes, or operational scripts against production without owner/user permission.
 - For DB work keep migrations additive, guarded, and re-runnable where practical.
 - Do not edit or commit credentials, private keys, logs, player/account data, archives, generated area outputs, or local environment files unless the task explicitly requires it.
 - Preserve unrelated worktree changes and avoid destructive Git commands.

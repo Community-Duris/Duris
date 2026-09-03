@@ -19,6 +19,10 @@ merely because one phase passes.
 - Read only the required `.env` fields without printing their values. Unless the user authorizes
   otherwise, proceed only when `ENVIRONMENT=local`. User authorization overrides this local-only
   rule. Preserve unrelated changes and all player/runtime data.
+- Treat migration authority separately from burn-in authority. Before mutating any configured
+  runtime database, confirm that the exact target and migration operation are explicitly allowed
+  by the user and repository policy. Never relabel, redirect, or weaken a guard to make a live
+  production target acceptable to a local-only migration tool.
 - Stop the instance under test. Prefer the matching user service or the in-game immortal
   `shutdown`; otherwise identify the supervisor and child by working directory, command line, and
   listener before a graceful signal. Never use broad `kill`/`pkill`. Wait for both processes and
@@ -35,7 +39,26 @@ merely because one phase passes.
 
 ## Repair loop
 
-1. With the MUD stopped, run every canonical gate and inspect output even when it exits zero:
+1. With the MUD stopped, complete the migration and compatibility gate before any build.
+   `make test-db` does not satisfy this step; it only qualifies isolated fixtures.
+
+   For an allowed local/development runtime target, inspect and apply the checked-in immutable
+   migration prefix, then prove that the configured runtime schema matches the source contract:
+
+   ```bash
+   python3 scripts/migration_runner.py inspect
+   python3 scripts/migration_runner.py run
+   ./migrations/verify_runtime_compatibility.sh
+   ```
+
+   For production, follow `AGENTS.md` and the migration procedure in
+   `docs/operations/RUNBOOK.md`. Qualify migrations on the required disposable clone and require
+   the approved production schema rollout or cutover to be complete; then run the read-only
+   compatibility verifier against production. Do not start a build while the configured runtime
+   target is stale, and do not substitute migration qualification on a clone for advancing the
+   runtime target.
+
+2. Run every canonical gate and inspect output even when it exits zero:
 
    ```bash
    ./scripts/format.sh --check
@@ -45,12 +68,12 @@ merely because one phase passes.
 
    `make test-db` must use its isolated Docker/MySQL fixtures, never the configured game database.
 
-2. Fix every error, warning, crash, hang, flaky result, sanitizer-like symptom, or credible defect
+3. Fix every error, warning, crash, hang, flaky result, sanitizer-like symptom, or credible defect
    encountered. Find the root cause, keep fixes narrow, add or update a focused regression for
    changed behavior, and do not weaken checks or hide diagnostics. Run the focused check after each
    repair, then repeat the full affected gate.
 
-3. From a stopped state, prove a completely fresh build:
+4. From a stopped state, prove a completely fresh build:
 
    ```bash
    make clean-all
@@ -58,8 +81,9 @@ merely because one phase passes.
    ```
 
    The root build covers all maintained binaries. Review the entire build output for diagnostics,
-   not just its status. After any repair, repeat the clean build and all canonical gates. Continue
-   until the complete test, database-test, and clean-build sequence passes without findings.
+   not just its status. After any repair, repeat the migration/compatibility gate first, followed by
+   the clean build and all canonical gates. Continue until the complete migration, compatibility,
+   test, database-test, and clean-build sequence passes without findings.
 
 ## Live burn-in
 

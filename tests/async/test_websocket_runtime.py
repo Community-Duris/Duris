@@ -23,7 +23,6 @@ with tempfile.TemporaryDirectory(prefix="duris-websocket-runtime-") as directory
             "-D__NO_MYSQL__",
             f"-I{SRC}",
             f"-I{SRC / 'no_mysql'}",
-            "-I/usr/include/cjson",
             str(HARNESS),
             str(SRC / "websocket.c"),
             "-lcjson",

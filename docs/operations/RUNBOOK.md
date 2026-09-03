@@ -423,17 +423,38 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
+After that exact backup has passed on the clone, an explicitly authorized production rollout may
+apply only the immutable pending prefix. Keep every production writer stopped, create a fresh
+backup with `scripts/backup_pfiles.sh`, and pass both the resolved target and backup explicitly:
+
+```bash
+set -a
+source .env
+set +a
+python3 scripts/migration_runner.py run \
+  --confirm-production-target "$DB_HOST/$DB_NAME" \
+  --production-backup /absolute/path/to/fresh-production.sql.gz
+./migrations/verify_runtime_compatibility.sh
+```
+
+The production path refuses baseline adoption and legacy migration. It requires
+`ENVIRONMENT=production`, an exact `DB_ALLOWED_TARGETS` match, a backup no more than two hours old
+that is an owner-only regular gzip containing the configured Duris schema, CA-verified TLS for a
+remote database, and zero other connections to the target before it applies each step. Never stop
+or bypass one of these checks. Preserve the backup through deployment and the final soak.
+
 Keep the clone configuration separate from the server's `.env`; the legacy runner
 loads the file named by `MIGRATION_ENV_FILE` and rejects symlinks, non-regular files,
 and files readable by group or others. That file must describe the allow-listed
 loopback clone and must not contain production credentials.
 
 For a fresh disposable bootstrap, import `migrations/bootstrap_multithread_safe.sql`
-and use `adopt --kind fresh_bootstrap` instead. The immutable runner rejects
-production roles, non-loopback hosts, production-like names, unapproved targets,
-manifest drift, incomplete baselines, or broken history. The compatibility verifier
-is read-only but database-connected and must receive the same qualified clone target.
-Never use production for migration qualification, compatibility probing, or replay.
+and use `adopt --kind fresh_bootstrap` instead. Without the two explicit production arguments, the
+immutable runner rejects production roles, non-loopback hosts, production-like names, manifest
+drift, incomplete baselines, or broken history. The compatibility verifier is read-only but
+database-connected and must receive the intended target. Never use production for migration
+discovery, qualification, or exploratory replay. The guarded immutable application and its final
+read-only compatibility verification are the only production steps in this procedure.
 
 If any step fails, keep writers stopped and preserve the database, command output,
 manifest, and backup. Do not edit ledger rows, skip a verifier, rerun a partial legacy

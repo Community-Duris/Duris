@@ -138,10 +138,11 @@ transaction, replay, or idempotency identifiers.
 
 ### Applying schema changes
 
-The commands below mutate schema or migration history unless marked read-only. Run
-them only against an empty disposable database or a backed-up development clone whose
-resolved `host/database` is explicitly allow-listed. Stop the game and every other
-writer first. Never use production for migration discovery, replay, or validation.
+The commands below mutate schema or migration history unless marked read-only. Qualify them only
+against an empty disposable database or a backed-up development clone whose resolved
+`host/database` is explicitly allow-listed. Stop the game and every other writer first.
+Never use production for migration discovery, replay, or validation; after clone qualification,
+the runbook defines the separately authorized, backup-bound immutable production application.
 
 ```bash
 # Empty disposable database only. Load with the explicit .env target shown in README.
@@ -161,6 +162,11 @@ MIGRATION_ENV_FILE=/path/to/owner-readable-clone.env ./migrations/run_migration.
 
 # After an adopted baseline, apply immutable post-baseline migrations:
 python3 scripts/migration_runner.py run
+
+# After exact clone qualification, owner authorization, writer shutdown, and a fresh backup only:
+python3 scripts/migration_runner.py run \
+  --confirm-production-target "$DB_HOST/$DB_NAME" \
+  --production-backup /absolute/path/to/fresh-production.sql.gz
 
 # Read-only verification before starting the server or promoting a tested schema:
 ./migrations/verify_runtime_compatibility.sh

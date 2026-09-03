@@ -4,14 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import hmac
 import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -21,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "migrations" / "migration_manifest.json"
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_MIGRATION_BYTES = 8 * 1024 * 1024
+MAX_PRODUCTION_BACKUP_AGE_SECONDS = 2 * 60 * 60
 MANIFEST_FIELDS = {"manifest_version", "runner_version", "baseline", "migrations"}
 BASELINE_FIELDS = {
     "id", "required_table_count", "required_table_fingerprint", "required_tables",
@@ -59,6 +63,47 @@ def read_regular(path: Path, maximum: int, label: str) -> bytes:
 
 def checksum(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def validate_production_backup(path: Path, database: str) -> None:
+    if not path.is_absolute() or not re.fullmatch(r"[A-Za-z0-9_.-]+", database):
+        raise MigrationContractError("production backup path or database name is invalid")
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+        metadata = os.fstat(descriptor)
+    except OSError as error:
+        raise MigrationContractError(f"cannot open production backup: {error}") from error
+    try:
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
+                metadata.st_mode & 0o077:
+            raise MigrationContractError(
+                "production backup must be an owner-only regular file")
+        age = time.time() - metadata.st_mtime
+        if age < -300 or age > MAX_PRODUCTION_BACKUP_AGE_SECONDS:
+            raise MigrationContractError("production backup is not recent")
+        markers = {
+            f"USE `{database}`;".encode(),
+            b"CREATE TABLE `accounts`",
+            b"CREATE TABLE `player_data`",
+            b"CREATE TABLE `ships`",
+        }
+        tail = b""
+        with os.fdopen(descriptor, "rb") as raw:
+            descriptor = -1
+            with gzip.GzipFile(fileobj=raw) as source:
+                while payload := source.read(1024 * 1024):
+                    window = tail + payload
+                    markers = {marker for marker in markers if marker not in window}
+                    tail = window[-512:]
+        if markers:
+            raise MigrationContractError(
+                "production backup does not identify the configured Duris database")
+    except (OSError, EOFError) as error:
+        raise MigrationContractError(f"production backup validation failed: {error}") from error
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
 
 
 @dataclass(frozen=True)
@@ -242,24 +287,62 @@ def run_pending(manifest: Manifest, executor: Executor) -> list[str]:
 
 
 class MysqlExecutor:
-    def __init__(self, manifest: Manifest):
+    def __init__(self, manifest: Manifest, confirmed_production_target: str | None = None,
+                 production_backup: Path | None = None):
         environment = os.environ.get("ENVIRONMENT", "").casefold()
         host = os.environ.get("DB_HOST", "")
         database = os.environ.get("DB_NAME", "")
         socket_path = os.environ.get("DB_SOCKET", "")
-        if environment not in {"local", "development", "dev", "test"} or \
-                host not in {"127.0.0.1", "localhost", "::1"} or \
-                re.search(r"(^|[_-])prod(uction)?($|[_-])", database, re.I):
-            raise MigrationContractError("migration target must be loopback non-production")
+        self.production = environment == "production"
+        if self.production:
+            expected_target = f"{host}/{database}"
+            if confirmed_production_target is None or not hmac.compare_digest(
+                    confirmed_production_target, expected_target):
+                raise MigrationContractError("production migration target is not confirmed")
+            if f",{expected_target}," not in \
+                    f",{os.environ.get('DB_ALLOWED_TARGETS', '')},":
+                raise MigrationContractError("production migration target is not allow-listed")
+            if production_backup is None:
+                raise MigrationContractError("production migration requires a validated backup")
+            validate_production_backup(production_backup, database)
+        else:
+            if confirmed_production_target is not None or production_backup is not None:
+                raise MigrationContractError(
+                    "production migration options require ENVIRONMENT=production")
+            if environment not in {"local", "development", "dev", "test"} or \
+                    host not in {"127.0.0.1", "localhost", "::1"} or \
+                    re.search(r"(^|[_-])prod(uction)?($|[_-])", database, re.I):
+                raise MigrationContractError("migration target must be loopback non-production")
         if socket_path and not os.path.isabs(socket_path):
             raise MigrationContractError("DB_SOCKET must be an absolute path")
+        if self.production and socket_path:
+            raise MigrationContractError("production migration does not allow a database socket")
         for name in ("DB_USER", "DB_PASSWD", "DB_NAME"):
             if not os.environ.get(name):
                 raise MigrationContractError(f"missing migration credential: {name}")
         self.manifest = manifest
         self.socket_path = socket_path
-        connection = (["--protocol=socket", f"--socket={socket_path}"] if socket_path else
-                      ["-h", host, "-P", os.environ.get("DB_PORT", "3306")])
+        if socket_path:
+            connection = ["--protocol=socket", f"--socket={socket_path}"]
+        elif host in {"127.0.0.1", "localhost", "::1"}:
+            connection = ["--protocol=tcp", "-h", host, "-P",
+                          os.environ.get("DB_PORT", "3306")]
+        else:
+            certificate = os.environ.get("DB_SSL_CA", "")
+            if os.environ.get("DB_TLS") != "TRUE" or not Path(certificate).is_file():
+                raise MigrationContractError(
+                    "remote production migration requires TLS and a CA file")
+            mysql_help = subprocess.run(["mysql", "--help"], capture_output=True,
+                                        check=False).stdout
+            if b"--ssl-mode" in mysql_help:
+                tls = ["--ssl-mode=VERIFY_IDENTITY", f"--ssl-ca={certificate}"]
+            elif b"--ssl-verify-server-cert" in mysql_help:
+                tls = [f"--ssl-ca={certificate}", "--ssl-verify-server-cert"]
+            else:
+                raise MigrationContractError(
+                    "database client cannot verify the remote server identity")
+            connection = ["--protocol=tcp", "-h", host, "-P",
+                          os.environ.get("DB_PORT", "3306"), *tls]
         self.command = ["mysql", *connection, "-u", os.environ["DB_USER"],
                         "-N", "-B", database]
 
@@ -282,6 +365,14 @@ class MysqlExecutor:
             self.sql("SELECT RELEASE_LOCK('duris_immutable_migration');")
         except MigrationContractError:
             pass
+
+    def require_quiescent(self) -> None:
+        connections = self.sql(
+            "SELECT COUNT(*) FROM information_schema.PROCESSLIST "
+            "WHERE DB=DATABASE() AND ID<>CONNECTION_ID();")
+        if connections != "0":
+            raise MigrationContractError(
+                "production migration requires every other database connection to stop")
 
     def live_tables(self) -> list[str]:
         output = self.sql("SELECT table_name FROM information_schema.tables WHERE "
@@ -320,6 +411,8 @@ class MysqlExecutor:
         return rows
 
     def apply(self, migration: Migration) -> None:
+        if self.production:
+            self.require_quiescent()
         self.sql("", read_regular(migration.apply_path, MAX_MIGRATION_BYTES,
                                   "migration apply"))
 
@@ -384,6 +477,8 @@ class MysqlExecutor:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--confirm-production-target")
+    parser.add_argument("--production-backup", type=Path)
     parser.add_argument("command", choices=("inspect", "adopt", "run"))
     parser.add_argument("--kind", choices=("fresh_bootstrap", "verified_legacy_adoption"))
     arguments = parser.parse_args()
@@ -398,7 +493,12 @@ def main() -> int:
                               "manifest_version": manifest.version,
                               "runner_version": manifest.runner_version}, sort_keys=True))
             return 0
-        executor = MysqlExecutor(manifest)
+        if arguments.command != "run" and (arguments.confirm_production_target is not None or
+                                           arguments.production_backup is not None):
+            raise MigrationContractError(
+                "production migration options are valid only with the run command")
+        executor = MysqlExecutor(manifest, arguments.confirm_production_target,
+                                 arguments.production_backup)
         if arguments.command == "adopt":
             if arguments.kind is None:
                 raise MigrationContractError("adopt requires --kind")
@@ -408,6 +508,8 @@ def main() -> int:
             finally:
                 executor.release_lock()
         else:
+            if executor.production:
+                executor.require_quiescent()
             run_pending(manifest, executor)
         return 0
     except MigrationContractError as error:

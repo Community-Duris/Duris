@@ -387,6 +387,8 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                 "CHAOS_STARTER_BONUSES": "TRUE",
                 "CHAOS_STARTER_MATERIALS": "TRUE",
             }
+            if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
+                environment["LD_LIBRARY_PATH"] = runtime_library_path
 
             with output_path.open("w", encoding="utf-8") as output:
                 process = subprocess.Popen(

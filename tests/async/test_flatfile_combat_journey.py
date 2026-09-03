@@ -450,6 +450,8 @@ def run_journey(binary: pathlib.Path) -> None:
                 "REDIS": "FALSE",
                 "CHAOS_MUD": "FALSE",
             }
+            if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
+                environment["LD_LIBRARY_PATH"] = runtime_library_path
 
             with output_path.open("w", encoding="utf-8") as output:
                 process = subprocess.Popen(

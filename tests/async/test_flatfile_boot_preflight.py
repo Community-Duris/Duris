@@ -120,6 +120,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                 "DURIS_WEBSOCKET_PORT": str(websocket_port),
                 "REDIS": "FALSE",
             }
+            if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
+                environment["LD_LIBRARY_PATH"] = runtime_library_path
             with output_path.open("w", encoding="utf-8") as output:
                 process = subprocess.Popen(
                     [str(binary), "--minimal", "-d", str(run_root), str(port)],

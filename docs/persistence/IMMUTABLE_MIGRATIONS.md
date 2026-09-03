@@ -32,8 +32,12 @@ python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 python3 scripts/migration_runner.py run
 ```
 
-The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
-a non-production database name, and explicit credentials. Never point it at production.
+By default, the runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
+a non-production database name, and explicit credentials. After the exact production backup has
+passed on a disposable clone, an owner-authorized production `run` additionally requires the exact
+`--confirm-production-target HOST/DB` and a fresh owner-only
+`--production-backup /absolute/path.sql.gz`. Production baseline adoption remains prohibited, and
+the runner refuses to apply while another connection is using the configured database.
 
 The current immutable head is `0008_statistics_date_index`. After it is applied,
 the database contains the 174-table runtime boot contract, and the history
