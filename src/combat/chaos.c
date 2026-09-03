@@ -40,6 +40,11 @@ static struct
 		 { 36544, "arach arachdrathos drow" },
 		 {} };
 
+/**
+ * Move a tracked, live character through a resolved Chaos portal. Validate
+ * actor and destination state before removal, and emit arrival effects only
+ * after the checked move succeeds.
+ */
 static void chaos_port(P_char ch, const char *arg)
 {
 	if (!*arg)
