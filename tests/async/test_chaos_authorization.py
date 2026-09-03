@@ -91,11 +91,11 @@ def assert_gate(source: str, variant: str, trusted_expression: str | None = None
         assert chaos_gate_lines, f"Chaos-mode gate missing in {variant} build"
         normalized_gate = re.sub(r"\s+", "", chaos_gate_lines[0])
         normalized_trusted = re.sub(r"\s+", "", trusted_expression or "")
-        assert normalized_trusted in normalized_gate, (
-            f"expanded trusted predicate missing in {variant} build"
+        expected_gate_fragment = (
+            f"!{normalized_trusted}||!chaos_mud_enabled()"
         )
-        assert "||" in chaos_gate_lines[0] and "!chaos_mud_enabled()" in normalized_gate, (
-            f"trusted check is not unconditional in {variant} build"
+        assert expected_gate_fragment in normalized_gate, (
+            f"complete trusted/Chaos-off guard missing in {variant} build"
         )
         gate_index = body.index(chaos_gate_lines[0])
     assert gate_index < body.index("one_argument"), (
