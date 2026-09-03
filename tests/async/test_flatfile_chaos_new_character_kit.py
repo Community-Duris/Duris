@@ -432,6 +432,13 @@ def run_chaos_kit_journey(binary: pathlib.Path) -> None:
                     client.send("chaos level 55")
                     client.expect("No, you can't have pony.  Not yours.", timeout=15)
                     client.expect("Pos: standing >", timeout=15)
+                    client.transcript.clear()
+                    client.send("score")
+                    score = client.expect("Pos: standing >", timeout=30)
+                    require(
+                        "Level: 56" in score,
+                        "denied Chaos level command changed the character level:\n" + score,
+                    )
 
                     bag_authority = one_owned_item(state_root, STARTER_BAG_VNUM)
                     ring_before_get = one_owned_item(state_root, TRANSIENT_RING_VNUM)
