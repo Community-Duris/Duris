@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 extern long new_exp_table[];
+extern const int top_of_world;
 
 static struct
 {
@@ -46,11 +47,43 @@ static void chaos_port(P_char ch, const char *arg)
 	for (int i = 0; portdata[i].vnum; i++)
 		if (isname(arg, portdata[i].name))
 		{
+			if (!ch || !char_in_list(ch))
+				return;
+			if (!IS_ALIVE(ch) || ch->in_room < 0 || ch->in_room > top_of_world)
+				return send_to_char(
+					"You must be alive and in a valid room to use a chaos portal.\n",
+					ch);
+
+			const int destination = real_room(portdata[i].vnum);
+			if (destination == NOWHERE)
+				return send_to_char("That chaos portal is unavailable right now.\n",
+						    ch);
+
+			const int original_room = ch->in_room;
 			act("$n creates and enters a chaos portal, which then dissipates.", 0, ch,
 			    0, 0, TO_ROOM);
 			char_from_room(ch);
+			if (!char_in_list(ch))
+				return;
+			if (ch->in_room != NOWHERE)
+				return send_to_char(
+					"The chaos portal cannot move you from this room right now.\n",
+					ch);
+
 			act("You create a step through a chaos portal.", 0, ch, 0, 0, TO_CHAR);
-			char_to_room(ch, real_room(portdata[i].vnum), -1);
+			if (!char_to_room(ch, destination, -1))
+			{
+				if (char_in_list(ch) && IS_ALIVE(ch) && ch->in_room == NOWHERE &&
+				    !char_to_room(ch, original_room, -1))
+					logit(LOG_DEBUG,
+					      "chaos_port: failed to restore %s to room %d.",
+					      GET_NAME(ch), original_room);
+				if (char_in_list(ch))
+					send_to_char(
+						"The chaos portal fails; you remain where you were.\n",
+						ch);
+				return;
+			}
 			act("A chaos portal briefly appears to spew out $n.", 0, ch, 0, 0, TO_ROOM);
 			return;
 		}
