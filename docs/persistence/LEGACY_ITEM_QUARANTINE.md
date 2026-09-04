@@ -42,14 +42,19 @@ The strict evidence JSON has top-level fields `version` (1), `allocator_next_uid
   "metadata_fingerprint": "<64 lowercase hex>",
   "metadata_candidates": 1,
   "uid_candidates": 1,
-  "live_uid_conflict": false
+  "live_uid_conflict": false,
+  "evidence_ref": "<64 lowercase hex>"
 }
 ```
 
 `source_table` is `player_items` or `locker_items`. `prototype_state` is `current`,
 `missing`, or `artifact`. `parent_ref` points to the exact row, never just a colliding
 numeric UID. `owner_proven` is true only when the active player or locker/chest identity
-is unique and accepted.
+is unique and accepted. The evidence builder computes `evidence_ref` as
+`HMAC-SHA-256(run_secret, b"legacy-item-disposition-v1\0" + canonical_row_json)`,
+where `canonical_row_json` is UTF-8 compact sorted-key JSON for every field in this
+row except `evidence_ref`. This binds a later operator disposition to the exact
+current source row, owner, prototype, metadata, UID, and ancestry evidence.
 
 ## Mutually exclusive classification
 
@@ -89,7 +94,9 @@ owner evidence.
 
 Artifact, conflicted-owner, cross-owner, cyclic, insufficient-evidence, and every other
 unsafe row needs an operator disposition. The owner-only disposition record has version 1
-and rows containing `row_ref`, `decision`, and an HMAC `evidence_ref`. Decisions are:
+and rows containing `row_ref`, `decision`, and the exact `evidence_ref` copied from the
+reviewed evidence row. The planner rejects a stale or mismatched reference before honoring
+any decision. Decisions are:
 
 - `hold`: retain the quarantine without activation;
 - `discard`: record the approved final disposition without deleting anything in this

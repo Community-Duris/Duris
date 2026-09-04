@@ -33,7 +33,8 @@ def row(index: int, parent: int | None = None, **changes) -> quarantine.Evidence
     base = quarantine.EvidenceRow(
         digest(index), "player_items", index, 100 + index,
         digest(parent) if parent is not None else None, digest(900), True,
-        1000 + index, "current", digest(500 + index), 1, 1, False)
+        1000 + index, "current", digest(500 + index), 1, 1, False,
+        digest(800 + index))
     return replace(base, **changes)
 
 
@@ -192,6 +193,14 @@ class LegacyItemQuarantineTest(unittest.TestCase):
         with self.assertRaisesRegex(quarantine.QuarantineError, "exactly match"):
             quarantine.plan_recovery(
                 evidence(row(3, owner_proven=False)), forged, {})
+
+    def test_planner_rejects_stale_or_mismatched_disposition_evidence(self):
+        """Reject an operator decision not bound to the current evidence row."""
+        source = evidence(row(1, uid_candidates=2))
+        classified = quarantine.classify(source)
+        stale = replace(decision(1, "recover_new_uid"), evidence_ref=digest(999))
+        with self.assertRaisesRegex(quarantine.QuarantineError, "stale or mismatched"):
+            quarantine.plan_recovery(source, classified, {digest(1): stale})
 
     def test_cli_rejects_incomplete_evidence_before_disposition_or_planning(self):
         """Require the complete 38,257-row retained set at the CLI boundary."""

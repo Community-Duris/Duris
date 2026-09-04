@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -51,6 +52,7 @@ class EvidenceRow:
     metadata_candidates: int
     uid_candidates: int
     live_uid_conflict: bool
+    evidence_ref: str
 
 
 @dataclass(frozen=True)
@@ -157,12 +159,13 @@ def read_evidence(path: Path) -> tuple[Evidence, str]:
         raise QuarantineError("quarantine evidence contract is invalid")
     rows: list[EvidenceRow] = []
     references: set[str] = set()
+    evidence_references: set[str] = set()
     source_keys: set[tuple[str, int]] = set()
     fields = {
         "row_ref", "source_table", "source_row_id", "item_uid", "parent_ref",
         "owner_ref", "owner_proven", "vnum", "prototype_state",
         "metadata_fingerprint", "metadata_candidates", "uid_candidates",
-        "live_uid_conflict",
+        "live_uid_conflict", "evidence_ref",
     }
     for raw in value["rows"]:
         if not isinstance(raw, dict):
@@ -186,12 +189,15 @@ def read_evidence(path: Path) -> tuple[Evidence, str]:
             _digest(raw["metadata_fingerprint"], "metadata_fingerprint"),
             _positive(raw["metadata_candidates"], "metadata_candidates", zero=True),
             _positive(raw["uid_candidates"], "uid_candidates", zero=True),
-            raw["live_uid_conflict"],
+            raw["live_uid_conflict"], _digest(raw["evidence_ref"], "evidence_ref"),
         )
         source_key = (row.source_table, row.source_row_id)
-        if row.row_ref in references or source_key in source_keys:
-            raise QuarantineError("quarantine evidence contains a duplicate row")
+        if row.row_ref in references or source_key in source_keys or \
+                row.evidence_ref in evidence_references:
+            raise QuarantineError(
+                "quarantine evidence contains a duplicate row or evidence reference")
         references.add(row.row_ref)
+        evidence_references.add(row.evidence_ref)
         source_keys.add(source_key)
         rows.append(row)
     if not rows:
@@ -323,6 +329,10 @@ def plan_recovery(evidence: Evidence, classifications: list[Classification],
         raise QuarantineError("classifications do not exactly match the evidence")
     if set(dispositions) - set(by_ref):
         raise QuarantineError("disposition references a row outside the evidence")
+    for reference, disposition in dispositions.items():
+        if not hmac.compare_digest(
+                disposition.evidence_ref, rows[reference].evidence_ref):
+            raise QuarantineError("disposition is stale or mismatched to the evidence")
     approved: set[str] = set()
     descendant_candidates: set[str] = set()
     undispositioned = 0
