@@ -8,6 +8,7 @@
 #include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 
+#include <algorithm>
 #include <new>
 #include <utility>
 #include <vector>
@@ -166,6 +167,10 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 			{
 				if (!locker_removal.custody.empty())
 				{
+					const bool expected_items = std::any_of(
+						locker_removal.custody.begin(),
+						locker_removal.custody.end(), [](const auto &owner)
+						{ return !owner.items.empty(); });
 					flatfile_authority_operation item_operation;
 					const auto item =
 						flatfile_item_repository_prepare_locker_remove(
@@ -174,7 +179,9 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 							error);
 					if (item == flatfile_item_repository_result::ok)
 						operations.push_back(std::move(item_operation));
-					else if (item != flatfile_item_repository_result::unchanged)
+					else if (item != flatfile_item_repository_result::unchanged &&
+						 !(item == flatfile_item_repository_result::not_found &&
+						   !expected_items))
 						return map_item(item);
 				}
 				operations.push_back(std::move(locker_removal.operation));

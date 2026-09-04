@@ -332,8 +332,8 @@ static void add_second_character(const fs::path &root)
 		"second player baseline failed: " + error);
 }
 
-/* Build a fenced account that only visits an unrelated locker. */
-static void establish_visitor_only_account(const fs::path &root)
+/* Build a fenced account that visits an unrelated locker and may own an empty one. */
+static void establish_minimal_account(const fs::path &root, bool owns_empty_locker)
 {
 	fs::create_directories(root / "players");
 	fs::create_directories(root / "identities/accounts");
@@ -362,7 +362,21 @@ static void establish_visitor_only_account(const fs::path &root)
 	locker.owner_pid = 999;
 	locker.revision = 1;
 	locker.chests = { chest };
-	require(flatfile_locker_establish(root.string(), { locker },
+	std::vector<flatfile_locker_record> lockers = { locker };
+	if (owns_empty_locker)
+	{
+		flatfile_locker_chest_record account_chest = chest;
+		account_chest.chest_id = 61;
+		flatfile_locker_record account_locker = {};
+		account_locker.locker_id = 60;
+		account_locker.locker_name = "account.account.1.locker";
+		account_locker.account_owner = flatfile_account_locker_identity{ "account", 1 };
+		account_locker.racewar = 1;
+		account_locker.revision = 1;
+		account_locker.chests = { account_chest };
+		lockers.push_back(std::move(account_locker));
+	}
+	require(flatfile_locker_establish(root.string(), lockers,
 					  { { "external.locker", "account", 1 } },
 					  &error) == flatfile_locker_result::ok,
 		"visitor-only locker catalog baseline failed: " + error);
@@ -585,7 +599,7 @@ int main(int argc, char **argv)
 		"completed account deletion was not idempotent: " + error);
 
 	const fs::path account_recovery = fs::path(argv[1]) / "account-recovery";
-	establish_visitor_only_account(account_recovery);
+	establish_minimal_account(account_recovery, false);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	error.clear();
 	require(flatfile_account_delete(account_recovery.string(), "Account", &error) ==
@@ -611,6 +625,20 @@ int main(int argc, char **argv)
 			lockers.size() == 1 && lockers[0].locker_name == "external.locker" &&
 			locker_access.empty(),
 		"visitor-only account deletion removed the locker or retained its grant");
+
+	const fs::path empty_account_locker = fs::path(argv[1]) / "empty-account-locker";
+	establish_minimal_account(empty_account_locker, true);
+	error.clear();
+	require(flatfile_account_delete(empty_account_locker.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"empty account locker blocked account deletion: " + error);
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(empty_account_locker.string(), &lockers, &locker_access,
+				     &error) == flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].locker_name == "external.locker" &&
+			locker_access.empty(),
+		"empty account locker deletion removed unrelated state or retained account state");
 
 	std::cout << "flat-file character and account deletion passed\n";
 	return 0;
