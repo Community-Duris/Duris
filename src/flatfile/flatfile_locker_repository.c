@@ -189,6 +189,7 @@ bool access_less(const flatfile_locker_access_record &left,
 	return left.visitor_name < right.visitor_name;
 }
 
+/* Validate canonical locker identities, nested chests, items, and access policy. */
 bool valid_catalog(const locker_catalog &catalog)
 {
 	if (!catalog.revision || catalog.lockers.size() > locker_maximum ||
@@ -307,6 +308,7 @@ bool valid_catalog(const locker_catalog &catalog)
 	return true;
 }
 
+/* Encode the canonical catalog using the current version-two owner format. */
 bool encode_catalog(const locker_catalog &catalog, std::vector<uint8_t> *bytes)
 {
 	if (!bytes || !valid_catalog(catalog))
@@ -369,6 +371,7 @@ bool encode_catalog(const locker_catalog &catalog, std::vector<uint8_t> *bytes)
 	return true;
 }
 
+/* Decode current catalogs while retaining version-one player and guild compatibility. */
 bool decode_catalog(const std::vector<uint8_t> &bytes, locker_catalog *catalog)
 {
 	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
@@ -521,6 +524,7 @@ bool payload_items_match(const item_transfer_payload &payload,
 			   [&](const auto &item) { return expected.contains(item.object_uid); });
 }
 
+/* Collect sorted item-custody evidence for every chest in a locker. */
 bool collect_locker_custody(const flatfile_locker_record &locker,
 			    std::vector<flatfile_locker_custody_owner> *custody)
 {
@@ -626,6 +630,7 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 	return flatfile_locker_result::ok;
 }
 
+/* Prepare player-owned locker and visitor-grant removal with exact custody evidence. */
 flatfile_locker_result
 flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
 				      uint32_t pid, const std::string &player_name,
@@ -688,6 +693,7 @@ flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_au
 	return flatfile_locker_result::ok;
 }
 
+/* Prepare removal of every locker owned by an account and every grant it visits. */
 flatfile_locker_result
 flatfile_locker_prepare_account_remove(const std::string &root, const flatfile_authority_lock &lock,
 				       const std::string &account_name,

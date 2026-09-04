@@ -71,6 +71,7 @@ static player_snapshot make_snapshot(int32_t pid, const char *name = "Player")
 	return snapshot;
 }
 
+/* Build the maximal character/account deletion authority fixture. */
 static void establish(const fs::path &root, bool establish_boons)
 {
 	fs::create_directories(root / "players");
@@ -331,7 +332,8 @@ static void add_second_character(const fs::path &root)
 		"second player baseline failed: " + error);
 }
 
-static void establish_empty_account(const fs::path &root)
+/* Build a fenced account that only visits an unrelated locker. */
+static void establish_visitor_only_account(const fs::path &root)
 {
 	fs::create_directories(root / "players");
 	fs::create_directories(root / "identities/accounts");
@@ -349,12 +351,25 @@ static void establish_empty_account(const fs::path &root)
 	require(flatfile_identity_allocate_pid(root.string(), &unused_pid, &error) ==
 			flatfile_identity_result::ok,
 		"empty account identity catalog failed: " + error);
-	require(flatfile_locker_establish(root.string(), {}, {}, &error) ==
-			flatfile_locker_result::ok,
-		"empty locker catalog baseline failed: " + error);
+	flatfile_locker_chest_record chest = {};
+	chest.chest_id = 51;
+	chest.chest_name = "public";
+	chest.is_public = true;
+	chest.revision = 1;
+	flatfile_locker_record locker = {};
+	locker.locker_id = 50;
+	locker.locker_name = "external.locker";
+	locker.owner_pid = 999;
+	locker.revision = 1;
+	locker.chests = { chest };
+	require(flatfile_locker_establish(root.string(), { locker },
+					  { { "external.locker", "account", 1 } },
+					  &error) == flatfile_locker_result::ok,
+		"visitor-only locker catalog baseline failed: " + error);
 	save_account(root, 2);
 }
 
+/* Exercise interruption recovery and atomic character/account erasure. */
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -570,7 +585,7 @@ int main(int argc, char **argv)
 		"completed account deletion was not idempotent: " + error);
 
 	const fs::path account_recovery = fs::path(argv[1]) / "account-recovery";
-	establish_empty_account(account_recovery);
+	establish_visitor_only_account(account_recovery);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	error.clear();
 	require(flatfile_account_delete(account_recovery.string(), "Account", &error) ==
@@ -589,6 +604,13 @@ int main(int argc, char **argv)
 					&error) == flatfile_account_result::ok &&
 			!account_exists,
 		"recovered account deletion retained the credential record");
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(account_recovery.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].locker_name == "external.locker" &&
+			locker_access.empty(),
+		"visitor-only account deletion removed the locker or retained its grant");
 
 	std::cout << "flat-file character and account deletion passed\n";
 	return 0;

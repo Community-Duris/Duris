@@ -62,6 +62,7 @@ flatfile_account_delete_result map_domain(flatfile_player_domain_result result)
 	return flatfile_account_delete_result::invalid;
 }
 
+/* Translate locker preparation failures into the account deletion contract. */
 flatfile_account_delete_result map_locker(flatfile_locker_result result)
 {
 	if (result == flatfile_locker_result::not_found)
@@ -73,6 +74,7 @@ flatfile_account_delete_result map_locker(flatfile_locker_result result)
 	return flatfile_account_delete_result::invalid;
 }
 
+/* Translate locker-custody cleanup failures into the account deletion contract. */
 flatfile_account_delete_result map_item(flatfile_item_repository_result result)
 {
 	if (result == flatfile_item_repository_result::not_found)
@@ -83,6 +85,7 @@ flatfile_account_delete_result map_item(flatfile_item_repository_result result)
 }
 } // namespace
 
+/* Atomically erase a fenced account and every authority record it owns or visits. */
 flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 						       const std::string &account_name,
 						       std::string *error)
@@ -161,14 +164,19 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 				root, authority_lock, account_name, &locker_removal, error);
 			if (locker == flatfile_locker_result::ok)
 			{
-				flatfile_authority_operation item_operation;
-				const auto item = flatfile_item_repository_prepare_locker_remove(
-					root, authority_lock, locker_removal.custody,
-					&item_operation, error);
-				if (item == flatfile_item_repository_result::ok)
-					operations.push_back(std::move(item_operation));
-				else if (item != flatfile_item_repository_result::unchanged)
-					return map_item(item);
+				if (!locker_removal.custody.empty())
+				{
+					flatfile_authority_operation item_operation;
+					const auto item =
+						flatfile_item_repository_prepare_locker_remove(
+							root, authority_lock,
+							locker_removal.custody, &item_operation,
+							error);
+					if (item == flatfile_item_repository_result::ok)
+						operations.push_back(std::move(item_operation));
+					else if (item != flatfile_item_repository_result::unchanged)
+						return map_item(item);
+				}
 				operations.push_back(std::move(locker_removal.operation));
 			}
 			else if (locker != flatfile_locker_result::unchanged)

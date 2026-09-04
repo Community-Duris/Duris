@@ -91,10 +91,12 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 					    std::vector<flatfile_locker_record> *lockers,
 					    std::vector<flatfile_locker_access_record> *access,
 					    std::string *error);
+/* Prepare player-owned locker and visitor-grant removal under the authority lock. */
 flatfile_locker_result
 flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
 				      uint32_t pid, const std::string &player_name,
 				      flatfile_locker_player_removal *removal, std::string *error);
+/* Prepare account-owned locker and visitor-grant removal under the authority lock. */
 flatfile_locker_result
 flatfile_locker_prepare_account_remove(const std::string &root, const flatfile_authority_lock &lock,
 				       const std::string &account_name,

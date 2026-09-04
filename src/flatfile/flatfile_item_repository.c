@@ -1378,6 +1378,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	return flatfile_item_repository_result::ok;
 }
 
+/* Prepare one authority image that destroys an exact set of player and custody owners. */
 static flatfile_item_repository_result
 prepare_custody_remove(const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 		       const std::vector<flatfile_locker_custody_owner> &locker_custody,
@@ -1526,6 +1527,7 @@ prepare_custody_remove(const std::string &root, const flatfile_authority_lock &l
 	return flatfile_item_repository_result::ok;
 }
 
+/* Prepare removal of one player plus verified locker and corpse custody. */
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
@@ -1538,6 +1540,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_cust
 				      error);
 }
 
+/* Prepare removal of one player plus verified locker custody. */
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
@@ -1547,6 +1550,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_lock
 		root, lock, pid, locker_custody, {}, operation, error);
 }
 
+/* Prepare removal of verified locker custody without requiring a player owner. */
 flatfile_item_repository_result flatfile_item_repository_prepare_locker_remove(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,

@@ -93,6 +93,7 @@ static flatfile_locker_record guild_locker()
 	return locker;
 }
 
+/* Construct a canonical typed account/side locker. */
 static flatfile_locker_record account_locker()
 {
 	flatfile_locker_chest_record public_chest = {};
@@ -111,6 +112,7 @@ static flatfile_locker_record account_locker()
 	return locker;
 }
 
+/* Append one little-endian integer to a synthetic catalog. */
 template <typename T> static void append_number(std::vector<uint8_t> *bytes, T value)
 {
 	using U = std::make_unsigned_t<T>;
@@ -122,12 +124,14 @@ template <typename T> static void append_number(std::vector<uint8_t> *bytes, T v
 	}
 }
 
+/* Append one length-prefixed string to a synthetic catalog. */
 static void append_string(std::vector<uint8_t> *bytes, const std::string &value)
 {
 	append_number<uint32_t>(bytes, value.size());
 	bytes->insert(bytes->end(), value.begin(), value.end());
 }
 
+/* Encode one locker using the version-one player/guild record layout. */
 static void append_legacy_locker(std::vector<uint8_t> *payload,
 				 const flatfile_locker_record &locker)
 {
@@ -156,6 +160,7 @@ static void append_legacy_locker(std::vector<uint8_t> *payload,
 	}
 }
 
+/* Write a checksummed version-one catalog for backward-compatibility coverage. */
 static void write_legacy_catalog(const fs::path &root,
 				 const std::vector<flatfile_locker_record> &lockers)
 {
@@ -197,6 +202,7 @@ static void write_legacy_catalog(const fs::path &root,
 			fs::perm_options::replace);
 }
 
+/* Exercise typed account owners, legacy decoding, mutation, and validation. */
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");

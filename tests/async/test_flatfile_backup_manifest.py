@@ -21,6 +21,7 @@ def require(condition: bool, message: str) -> None:
 
 
 def provision(state_root: pathlib.Path) -> None:
+    """Create a flatfile authority generation that includes account lockers."""
     for directory in (
         "metadata",
         "identities",

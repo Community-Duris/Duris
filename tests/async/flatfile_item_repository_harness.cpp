@@ -158,6 +158,7 @@ static std::vector<player_item_snapshot> movement_items()
 	return { root, child };
 }
 
+/* Construct an account-owned locker for custody-transfer coverage. */
 static flatfile_locker_record transfer_locker()
 {
 	player_item_snapshot stored_root = {};
