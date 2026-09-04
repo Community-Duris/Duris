@@ -29,12 +29,14 @@
 
 namespace fs = std::filesystem;
 
+/* Provide the player-load contract required by the isolated deletion harness. */
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {
 	return request.schema_version == PLAYER_LOAD_SCHEMA_VERSION && request.request_id &&
 	       request.pid > 0 && !request.account_name.empty() && request.deadline_usec > now;
 }
 
+/* Terminate the harness with one focused assertion message. */
 static void require(bool condition, const std::string &message)
 {
 	if (!condition)
@@ -44,6 +46,7 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
+/* Construct the smallest complete player snapshot accepted by deletion flows. */
 static player_snapshot make_snapshot(int32_t pid, const char *name = "Player")
 {
 	player_snapshot snapshot = {};
@@ -299,6 +302,7 @@ static void establish(const fs::path &root, bool establish_boons)
 		"shop materialization baseline commit failed: " + error);
 }
 
+/* Save the account fixture with the requested deletion-fence state. */
 static uint64_t save_account(const fs::path &root, int8_t blocked, uint64_t expected_revision = 0)
 {
 	flatfile_account_record account;
@@ -315,6 +319,7 @@ static uint64_t save_account(const fs::path &root, int8_t blocked, uint64_t expe
 	return revision;
 }
 
+/* Add a second active identity and snapshot to the account fixture. */
 static void add_second_character(const fs::path &root)
 {
 	std::string error;
@@ -333,7 +338,8 @@ static void add_second_character(const fs::path &root)
 }
 
 /* Build a fenced account that visits an unrelated locker and may own an empty one. */
-static void establish_minimal_account(const fs::path &root, bool owns_empty_locker)
+static void establish_minimal_account(const fs::path &root, bool owns_empty_locker,
+				      bool establish_locker_catalog = true)
 {
 	fs::create_directories(root / "players");
 	fs::create_directories(root / "identities/accounts");
@@ -351,35 +357,39 @@ static void establish_minimal_account(const fs::path &root, bool owns_empty_lock
 	require(flatfile_identity_allocate_pid(root.string(), &unused_pid, &error) ==
 			flatfile_identity_result::ok,
 		"empty account identity catalog failed: " + error);
-	flatfile_locker_chest_record chest = {};
-	chest.chest_id = 51;
-	chest.chest_name = "public";
-	chest.is_public = true;
-	chest.revision = 1;
-	flatfile_locker_record locker = {};
-	locker.locker_id = 50;
-	locker.locker_name = "external.locker";
-	locker.owner_pid = 999;
-	locker.revision = 1;
-	locker.chests = { chest };
-	std::vector<flatfile_locker_record> lockers = { locker };
-	if (owns_empty_locker)
+	if (establish_locker_catalog)
 	{
-		flatfile_locker_chest_record account_chest = chest;
-		account_chest.chest_id = 61;
-		flatfile_locker_record account_locker = {};
-		account_locker.locker_id = 60;
-		account_locker.locker_name = "account.account.1.locker";
-		account_locker.account_owner = flatfile_account_locker_identity{ "account", 1 };
-		account_locker.racewar = 1;
-		account_locker.revision = 1;
-		account_locker.chests = { account_chest };
-		lockers.push_back(std::move(account_locker));
+		flatfile_locker_chest_record chest = {};
+		chest.chest_id = 51;
+		chest.chest_name = "public";
+		chest.is_public = true;
+		chest.revision = 1;
+		flatfile_locker_record locker = {};
+		locker.locker_id = 50;
+		locker.locker_name = "external.locker";
+		locker.owner_pid = 999;
+		locker.revision = 1;
+		locker.chests = { chest };
+		std::vector<flatfile_locker_record> lockers = { locker };
+		if (owns_empty_locker)
+		{
+			flatfile_locker_chest_record account_chest = chest;
+			account_chest.chest_id = 61;
+			flatfile_locker_record account_locker = {};
+			account_locker.locker_id = 60;
+			account_locker.locker_name = "account.account.1.locker";
+			account_locker.account_owner =
+				flatfile_account_locker_identity{ "account", 1 };
+			account_locker.racewar = 1;
+			account_locker.revision = 1;
+			account_locker.chests = { account_chest };
+			lockers.push_back(std::move(account_locker));
+		}
+		require(flatfile_locker_establish(root.string(), lockers,
+						  { { "external.locker", "account", 1 } },
+						  &error) == flatfile_locker_result::ok,
+			"minimal locker catalog baseline failed: " + error);
 	}
-	require(flatfile_locker_establish(root.string(), lockers,
-					  { { "external.locker", "account", 1 } },
-					  &error) == flatfile_locker_result::ok,
-		"visitor-only locker catalog baseline failed: " + error);
 	save_account(root, 2);
 }
 
@@ -639,6 +649,17 @@ int main(int argc, char **argv)
 			lockers.size() == 1 && lockers[0].locker_name == "external.locker" &&
 			locker_access.empty(),
 		"empty account locker deletion removed unrelated state or retained account state");
+
+	const fs::path lockerless_account = fs::path(argv[1]) / "lockerless-account";
+	establish_minimal_account(lockerless_account, false, false);
+	error.clear();
+	require(flatfile_account_delete(lockerless_account.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"missing locker catalog blocked final account deletion: " + error);
+	require(flatfile_account_exists(lockerless_account.string(), "Account", &account_exists,
+					&error) == flatfile_account_result::ok &&
+			!account_exists,
+		"missing locker catalog left the fenced account behind");
 
 	std::cout << "flat-file character and account deletion passed\n";
 	return 0;

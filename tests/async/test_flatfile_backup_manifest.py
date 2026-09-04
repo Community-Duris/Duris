@@ -16,6 +16,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 def require(condition: bool, message: str) -> None:
+    """Raise one focused backup-drill assertion failure."""
     if not condition:
         raise AssertionError(message)
 
@@ -47,6 +48,7 @@ def provision(state_root: pathlib.Path) -> None:
 
 
 def run_backup(state_root: pathlib.Path, backup_root: pathlib.Path, env_extra=None):
+    """Run the flatfile backup command with isolated test configuration."""
     environment = dict(os.environ)
     environment.update(
         {
@@ -77,6 +79,7 @@ EXCLUDED = {
 
 
 def digest_tree(root: pathlib.Path) -> dict:
+    """Return stable content digests for every file below a test root."""
     digests = {}
     for path in sorted(root.rglob("*")):
         if path.is_file() and path.name not in EXCLUDED:

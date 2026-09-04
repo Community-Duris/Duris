@@ -15,6 +15,7 @@
 
 namespace fs = std::filesystem;
 
+/* Terminate the harness with one focused assertion message. */
 static void require(bool condition, const std::string &message)
 {
 	if (!condition)
@@ -24,6 +25,7 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
+/* Create one private flatfile authority root for a test scenario. */
 static void prepare_root(const fs::path &root)
 {
 	fs::create_directories(root / "domains");
@@ -36,6 +38,7 @@ static void prepare_root(const fs::path &root)
 	fs::permissions(root / "identities/names", fs::perms::owner_all, fs::perm_options::replace);
 }
 
+/* Construct a retained locker item with stable identity and nested metadata. */
 static player_item_snapshot item(uint64_t uid, int32_t parent, int32_t vnum)
 {
 	player_item_snapshot value = {};
@@ -51,6 +54,7 @@ static player_item_snapshot item(uint64_t uid, int32_t parent, int32_t vnum)
 	return value;
 }
 
+/* Construct a player-owned locker with public and private chests. */
 static flatfile_locker_record player_locker()
 {
 	flatfile_locker_chest_record private_chest = {};
@@ -77,6 +81,7 @@ static flatfile_locker_record player_locker()
 	return locker;
 }
 
+/* Construct a minimal association-owned locker. */
 static flatfile_locker_record guild_locker()
 {
 	flatfile_locker_chest_record public_chest = {};

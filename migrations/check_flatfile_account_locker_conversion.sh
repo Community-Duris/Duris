@@ -63,16 +63,29 @@ SELECT
                                 OCTET_LENGTH(pc.sort_config) > 4096 OR
                                 (pc.is_public=1 AND COALESCE(pc.password_hash, '') <> '')))), 0)
         AS invalid_chest_shape,
-    COALESCE(SUM(EXISTS (
-        SELECT 1 FROM item_current_owner current_item
-        WHERE current_item.owner_type=5 AND current_item.owner_id=l.id AND
-              current_item.state=1 AND
-              (current_item.item_uid=0 OR
-               (SELECT COUNT(*) FROM locker_items li
-                JOIN private_chests pc
-                  ON pc.id=li.chest_id AND pc.locker_id=l.id
-                WHERE li.locker_id=l.id AND li.chest_id=current_item.owner_context_id AND
-                      li.obj_uid=current_item.item_uid AND li.vnum > 0) <> 1))), 0)
+    COALESCE(SUM(
+        EXISTS (
+            SELECT 1 FROM item_current_owner current_item
+            WHERE current_item.owner_type=5 AND current_item.owner_id=l.id AND
+                  current_item.state=1 AND
+                  (current_item.item_uid=0 OR
+                   (SELECT COUNT(*) FROM locker_items li
+                    JOIN private_chests pc
+                      ON pc.id=li.chest_id AND pc.locker_id=l.id
+                    WHERE li.locker_id=l.id AND
+                          li.chest_id=current_item.owner_context_id AND
+                          li.obj_uid=current_item.item_uid AND
+                          li.vnum=current_item.vnum AND li.vnum > 0) <> 1)) OR
+        EXISTS (
+            SELECT 1 FROM locker_items li
+            JOIN private_chests pc ON pc.id=li.chest_id AND pc.locker_id=l.id
+            WHERE li.locker_id=l.id AND li.vnum > 0 AND
+                  NOT EXISTS (
+                      SELECT 1 FROM item_current_owner current_item
+                      WHERE current_item.item_uid=li.obj_uid AND
+                            current_item.owner_type=5 AND current_item.owner_id=l.id AND
+                            current_item.owner_context_id=pc.id AND
+                            current_item.vnum=li.vnum AND current_item.state=1))), 0)
         AS invalid_item_shape,
     COALESCE(SUM(EXISTS (
         SELECT 1 FROM item_current_owner current_item

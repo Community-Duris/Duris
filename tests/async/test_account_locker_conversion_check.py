@@ -75,9 +75,9 @@ assert passing.returncode == 0, passing.stdout
 assert "account_lockers=114" in passing.stdout
 assert "unmatched_typed_owner=0" in passing.stdout
 
-bad_shape = run_check("114\t0\t0\t0\t1\t0\t0")
-assert bad_shape.returncode == 1, bad_shape.stdout
-assert "invalid_item_shape=1" in bad_shape.stdout
+missing_active_custody = run_check("114\t0\t0\t0\t1\t0\t0")
+assert missing_active_custody.returncode == 1, missing_active_custody.stdout
+assert "invalid_item_shape=1" in missing_active_custody.stdout
 
 bad_count = run_check("113\t0\t0\t0\t0\t0\t0")
 assert bad_count.returncode == 1, bad_count.stdout
@@ -123,6 +123,11 @@ source = CHECK.read_text()
 assert "FROM accounts a" in source
 assert "owner_map.locker_name" in source
 assert "duplicate.state=1" in source
+assert "SELECT 1 FROM locker_items li" in source
+assert "current_item.item_uid=li.obj_uid" in source
+assert "current_item.owner_context_id=pc.id" in source
+assert "current_item.vnum=li.vnum" in source
+assert "current_item.state=1" in source
 assert "--ssl-mode=VERIFY_IDENTITY" in source
 assert "--ssl-verify-server-cert" in source
 assert "--ssl-mode=PREFERRED" not in source

@@ -17,6 +17,7 @@ namespace
 {
 constexpr int8_t account_deletion_fence = 2;
 
+/* Translate account repository failures into the deletion contract. */
 flatfile_account_delete_result map_account(flatfile_account_result result)
 {
 	switch (result)
@@ -32,6 +33,7 @@ flatfile_account_delete_result map_account(flatfile_account_result result)
 	}
 }
 
+/* Translate identity repository failures into the deletion contract. */
 flatfile_account_delete_result map_identity(flatfile_identity_result result)
 {
 	if (result == flatfile_identity_result::conflict)
@@ -41,6 +43,7 @@ flatfile_account_delete_result map_identity(flatfile_identity_result result)
 	return flatfile_account_delete_result::invalid;
 }
 
+/* Translate character deletion failures into the account deletion contract. */
 flatfile_account_delete_result map_character(flatfile_character_delete_result result)
 {
 	if (result == flatfile_character_delete_result::not_found)
@@ -52,6 +55,7 @@ flatfile_account_delete_result map_character(flatfile_character_delete_result re
 	return flatfile_account_delete_result::invalid;
 }
 
+/* Translate shared-domain cleanup failures into the account deletion contract. */
 flatfile_account_delete_result map_domain(flatfile_player_domain_result result)
 {
 	if (result == flatfile_player_domain_result::not_found)
@@ -186,7 +190,8 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 				}
 				operations.push_back(std::move(locker_removal.operation));
 			}
-			else if (locker != flatfile_locker_result::unchanged)
+			else if (locker != flatfile_locker_result::unchanged &&
+				 locker != flatfile_locker_result::not_found)
 			{
 				return map_locker(locker);
 			}
