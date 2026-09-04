@@ -256,8 +256,18 @@ struct coin_give_credit_context
 	std::array<uint8_t, 6> reserved;
 };
 
+struct coin_put_custody_context
+{
+	coin_debit_context debit;
+	uint64_t money_uid;
+	uint32_t actor_pid;
+	uint8_t created;
+	std::array<uint8_t, 3> reserved;
+};
+
 static_assert(sizeof(coin_debit_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
 static_assert(sizeof(coin_give_credit_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
+static_assert(sizeof(coin_put_custody_context) <= ITEM_MOVEMENT_CONTEXT_MAX_BYTES);
 
 struct bulk_put_state
 {
@@ -3181,53 +3191,9 @@ bool begin_coin_give_credit(P_char sender, P_char recipient, const coin_debit_co
 	return true;
 }
 
-void restore_container_money(P_obj container,
-			     const std::array<int32_t, CURRENCY_DENOMINATION_COUNT> &amount)
+/** Publish player feedback and dirty-state bookkeeping after a coin put lands live. */
+void finish_coin_put_publication(P_char actor, P_obj container, const coin_debit_context &context)
 {
-	if (!container)
-		return;
-	P_obj restored = create_money(amount[0], amount[1], amount[2], amount[3]);
-	if (restored)
-		obj_to_obj(restored, container);
-}
-
-bool publish_coin_put(P_char actor, const coin_debit_context &context)
-{
-	P_obj container = find_live_item_uid(context.container_uid);
-	if (!coin_put_destination_available(actor, container))
-		return false;
-
-	P_obj old_money = NULL;
-	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> old_amount = {};
-	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> combined = context.amount;
-	for (P_obj object = container->contains; object; object = object->next_content)
-		if (object->type == ITEM_MONEY)
-		{
-			old_money = object;
-			for (size_t index = 0; index < combined.size(); ++index)
-			{
-				old_amount[index] = object->value[index];
-				if (old_amount[index] > INT_MAX - combined[index])
-					return false;
-				combined[index] += old_amount[index];
-			}
-			break;
-		}
-
-	P_obj money = create_money(combined[0], combined[1], combined[2], combined[3]);
-	if (!money)
-		return false;
-	obj_to_char(money, actor);
-	if (old_money)
-		extract_obj(old_money);
-	if (!put(actor, money, container, FALSE))
-	{
-		extract_obj(money);
-		if (old_money)
-			restore_container_money(container, old_amount);
-		return false;
-	}
-
 	char line[MAX_STRING_LENGTH];
 	snprintf(
 		line, sizeof(line),
@@ -3243,6 +3209,194 @@ bool publish_coin_put(P_char actor, const coin_debit_context &context)
 								     PLAYER_COMPONENT_INVENTORY);
 	if (GET_ITEM_TYPE(container) == ITEM_STORAGE)
 		writeSavedItem(container);
+}
+
+/** Resolve the generic or locker custody destination for a durable coin put. */
+bool coin_put_destination_custody(P_char actor, P_obj container, item_owner_identity *owner,
+				  P_obj *ownership_parent, bool *locker)
+{
+	if (!actor || !container || !owner || !ownership_parent || !locker)
+		return false;
+	*locker = locker_owner_for_container(actor, container, owner);
+	if (*locker)
+	{
+		/* A locker chest is an owner boundary, not an ownership parent. */
+		*ownership_parent = NULL;
+		return true;
+	}
+	item_ownership_runtime_entry runtime = {};
+	if (!item_ownership_runtime_lookup(container->obj_uid, &runtime) ||
+	    runtime.state != item_custody_state::active)
+		return false;
+	*owner = runtime.owner;
+	*ownership_parent = container;
+	return true;
+}
+
+/** Publish or compensate a coin put after its generic custody command completes. */
+void coin_put_custody_completion(P_char actor, bool committed, const item_transfer_result &,
+				 unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	coin_put_custody_context context = {};
+	if (!encoded || encoded_size != sizeof(context))
+	{
+		persistence_alert(AVATAR, "currency", "coin_put_custody", "none", "none",
+				  "invalid_context", "encoded_size=%zu", encoded_size);
+		return;
+	}
+	memcpy(&context, encoded, sizeof(context));
+	if (!actor || IS_NPC(actor) || GET_PID(actor) != static_cast<int>(context.actor_pid))
+		return;
+
+	P_obj money = find_live_item_uid(context.money_uid);
+	P_obj container = find_live_item_uid(context.debit.container_uid);
+	if (!committed)
+	{
+		if (money)
+		{
+			if (context.created && OBJ_NOWHERE(money))
+				extract_obj(money, FALSE);
+		}
+		refund_committed_coin_debit(actor, coin_debit_value(context.debit),
+					    context.debit.container_uid);
+		send_to_char(
+			"The coin custody update did not commit; your wallet is being restored.\r\n",
+			actor);
+		return;
+	}
+
+	const bool live_ready =
+		money && container && coin_put_destination_available(actor, container) &&
+		(context.created ? OBJ_NOWHERE(money) :
+				   (OBJ_INSIDE(money) && money->loc.inside == container));
+	if (!live_ready)
+	{
+		persistence_alert(AVATAR, "currency", "coin_put_custody", "none", "none",
+				  "stale_live_topology", "pid=%u money_uid=%llu container_uid=%llu",
+				  context.actor_pid, (unsigned long long)context.money_uid,
+				  (unsigned long long)context.debit.container_uid);
+		send_to_char(
+			"The coins are durable, but their live container changed; reconnect to refresh them.\r\n",
+			actor);
+		return;
+	}
+	if (context.created)
+		obj_to_obj(money, container);
+	else
+		add_coins(money, context.debit.amount[0], context.debit.amount[1],
+			  context.debit.amount[2], context.debit.amount[3]);
+	finish_coin_put_publication(actor, container, context.debit);
+}
+
+/** Place coins synchronously in a destination outside generic item ownership. */
+bool publish_transient_coin_put(P_char actor, P_obj container, P_obj old_money,
+				const coin_debit_context &context)
+{
+	if (old_money)
+	{
+		add_coins(old_money, context.amount[0], context.amount[1], context.amount[2],
+			  context.amount[3]);
+		finish_coin_put_publication(actor, container, context);
+		return true;
+	}
+	P_obj money = create_money(context.amount[0], context.amount[1], context.amount[2],
+				   context.amount[3]);
+	if (!money)
+		return false;
+	obj_to_char(money, actor);
+	if (!put(actor, money, container, FALSE))
+	{
+		extract_obj(money);
+		return false;
+	}
+	finish_coin_put_publication(actor, container, context);
+	return true;
+}
+
+/** Place coins in a player corpse and persist its dedicated aggregate snapshot. */
+bool publish_pc_corpse_coin_put(P_char actor, P_obj container, P_obj old_money,
+				const coin_debit_context &context)
+{
+	if (corpse_lifecycle_transaction_busy(
+		    static_cast<uint32_t>(container->value[CORPSE_PID]),
+		    static_cast<uint32_t>(container->value[CORPSE_SAVEID])) ||
+	    !publish_transient_coin_put(actor, container, old_money, context))
+		return false;
+	writeCorpse(container);
+	return true;
+}
+
+/** Route a committed wallet debit to the destination's authoritative coin lifecycle. */
+bool publish_coin_put(P_char actor, const coin_debit_context &context)
+{
+	P_obj container = find_live_item_uid(context.container_uid);
+	if (!coin_put_destination_available(actor, container))
+		return false;
+
+	P_obj old_money = NULL;
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> prior_amount = {};
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> combined = context.amount;
+	for (P_obj object = container->contains; object; object = object->next_content)
+		if (object->type == ITEM_MONEY)
+		{
+			old_money = object;
+			for (size_t index = 0; index < combined.size(); ++index)
+			{
+				prior_amount[index] = object->value[index];
+				if (prior_amount[index] > INT_MAX - combined[index])
+					return false;
+				combined[index] += prior_amount[index];
+			}
+			break;
+		}
+
+	if (GET_ITEM_TYPE(container) == ITEM_CORPSE &&
+	    IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE))
+		return publish_pc_corpse_coin_put(actor, container, old_money, context);
+
+	if (!IS_PC(actor) || GET_PID(actor) <= 0)
+		return publish_transient_coin_put(actor, container, old_money, context);
+
+	item_owner_identity destination = {};
+	P_obj ownership_parent = NULL;
+	bool locker = false;
+	if (!coin_put_destination_custody(actor, container, &destination, &ownership_parent,
+					  &locker))
+	{
+		/* Explicitly unowned transient containers retain their synchronous lifecycle. */
+		item_ownership_runtime_entry money_runtime = {};
+		if (IS_SET(container->extra_flags, ITEM_TRANSIENT) &&
+		    (!old_money ||
+		     !item_ownership_runtime_lookup(old_money->obj_uid, &money_runtime)))
+			return publish_transient_coin_put(actor, container, old_money, context);
+		return false;
+	}
+
+	P_obj money = old_money;
+	if (!money)
+		money = create_money(combined[0], combined[1], combined[2], combined[3]);
+	if (!money)
+		return false;
+
+	const coin_put_custody_context custody = { context,
+						   money->obj_uid,
+						   static_cast<uint32_t>(GET_PID(actor)),
+						   static_cast<uint8_t>(old_money == NULL),
+						   {} };
+	item_movement_reject reject = item_movement_reject::none;
+	if (!item_movement_transaction_submit(
+		    actor, money, ownership_parent, destination, destination,
+		    locker ? item_transfer_reason::locker_deposit :
+			     item_transfer_reason::player_put,
+		    static_cast<int64_t>(context.container_uid), coin_put_custody_completion,
+		    &custody, sizeof(custody), NULL, &reject))
+	{
+		if (!old_money)
+			extract_obj(money, FALSE);
+		persistence_alert(AVATAR, "currency", "coin_put_custody", "none", "none",
+				  item_movement_reject_name(reject), "pid=%d", GET_PID(actor));
+		return false;
+	}
 	return true;
 }
 

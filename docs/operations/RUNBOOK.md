@@ -577,10 +577,46 @@ backup, protected per-PID decisions, reviewed forward and rollback DML, all dige
 the rehearsal receipt. Afterwards rerun the same full reconciliation set. Never delete
 or rewrite ledger history to make readiness pass.
 
-Loopback clone targets are permitted directly. A remote clone additionally requires
-verified TLS and an exact port-aware `DB_ALLOWED_TARGETS` entry in the form
-`host:port/database`; a non-default port cannot reuse authority granted to another
-endpoint.
+Loopback combat-baseline clone targets are permitted directly. A remote clone additionally
+requires verified TLS and an exact port-aware `DB_ALLOWED_TARGETS` entry in the form
+`host:port/database`; a non-default port cannot reuse authority granted to another endpoint.
+
+For the physical-coin replacement signature, first stop all writers at a clean save
+boundary and create a private operator directory. Classification writes the exact
+row-level old-custody/new-payload pair only to that directory; routine output contains
+only a count and digest:
+
+```bash
+install -d -m 700 /absolute/private/coin-custody-review
+./migrations/reconcile_coin_custody_pair.sh --classify \
+  /absolute/private/coin-custody-review/pair.tsv
+```
+
+Review the protected artifact against the backup and frozen reference. It is eligible
+only when there is exactly one canonical money payload without custody and one matching
+active, baselined player-custody row without any payload, with the same player, vnum, and
+container parent. Never infer a second pile from currency totals and never delete the old
+custody history.
+
+Rehearse only on a fresh non-production clone. The guarded transaction restores the
+payload's UID to the still-authoritative custody identity; it does not alter denominations,
+wallets, baselines, owner revisions, or ledger rows. Apply first proves that the database
+rejects an invalid temporary-table `CHECK`; it aborts without DML or a receipt when that
+guard is disabled or cannot be verified. Name the clone exactly `duris_dev`, `duris_local`,
+or `duris_test`. Every coin-custody apply, including loopback, also requires an exact
+port-aware `DB_ALLOWED_TARGETS` entry in the form `host:port/database`:
+
+```bash
+WRITERS_QUIESCED=TRUE COIN_CUSTODY_BACKUP_ID='<backup-generation>' \
+  ./migrations/reconcile_coin_custody_pair.sh --apply \
+  /absolute/private/coin-custody-review/pair.tsv '<sha256>'
+```
+
+Preserve the owner-only receipt and rollback evidence. Before any separately authorized
+production repair, prove the same preconditions under row locks, retain reviewed DML and
+the exact backup, and run the player materializer plus item-ownership, currency, schema,
+and FK reconciliation on the clone. Rollback is the inverse UID update to the exact payload
+row and is safe only before the repaired player is loaded or saved again.
 
 ### Maintenance, lifecycle, export, and erasure
 
