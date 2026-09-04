@@ -50,6 +50,67 @@ summon_clear = find(text_shop, 'clear_cargo(ship);')
 summon_clear_queue = find(text_shop, 'queue_ship_save(ship, "cargo clear during summon");', summon_clear)
 checks.append(('summon clear queued save', summon_clear, summon_clear_queue, -1, -1))
 
+clear_cargo = find(text_utils, 'void clear_cargo(P_ship ship)')
+clear_cargo_end = find(text_utils, 'P_char captain_is_aboard', clear_cargo)
+clear_cargo_body = text_utils[clear_cargo:clear_cargo_end]
+if 'ship->slot[i].clear();' not in clear_cargo_body or 'ship->slot[i].type = SLOT_EMPTY;' in clear_cargo_body:
+    print('clear_cargo does not apply the canonical ShipSlot::clear representation')
+    sys.exit(1)
+
+# Both persistence backends must carry every field that ShipSlot::clear()
+# canonicalizes. This pins the MariaDB and flat-file save/load mappings to the
+# same runtime representation while the behavioral repository test exercises
+# the production mutation and flat-file round trip.
+slot_fields = {
+    "type": "slot_type",
+    "index": "item_index",
+    "position": "position",
+    "timer": "timer",
+    "val0": "values[0]",
+    "val1": "values[1]",
+    "val2": "values[2]",
+    "val3": "values[3]",
+    "val4": "values[4]",
+}
+flat_capture_start = find(text_base, "static bool flat_ship_capture")
+flat_capture_end = find(text_base, "static bool flat_ship_record_is_loadable", flat_capture_start)
+flat_capture = text_base[flat_capture_start:flat_capture_end]
+flat_load_start = find(text_base, "static bool flat_ship_materialize")
+flat_load_end = find(text_base, "void initialize_ships()", flat_load_start)
+flat_load = text_base[flat_load_start:flat_load_end]
+sql_save_start = find(text_player, "static bool sql_save_ship_slots")
+sql_save_end = find(text_player, "bool sql_save_ship(P_ship ship)", sql_save_start)
+sql_save = text_player[sql_save_start:sql_save_end]
+sql_load_start = find(text_player, "static bool sql_load_ship_slots")
+sql_load_end = find(text_player, "P_ship sql_load_ship", sql_load_start)
+sql_load = text_player[sql_load_start:sql_load_end]
+for row_index, (runtime_field, record_field) in enumerate(slot_fields.items(), start=1):
+    if f"ship->slot[index].{runtime_field}" not in flat_capture:
+        print(f"flat-file ship capture omits {runtime_field}")
+        sys.exit(1)
+    if not runtime_field.startswith("val") and (
+        f"slot.{record_field} = ship->slot[index].{runtime_field};" not in flat_capture
+    ):
+        print(f"flat-file ship capture does not map {runtime_field} to {record_field}")
+        sys.exit(1)
+    if f"slot.{runtime_field} = stored_slot.{record_field};" not in flat_load:
+        print(f"flat-file ship load omits {runtime_field}")
+        sys.exit(1)
+    if f"ship->slot[i].{runtime_field}" not in sql_save:
+        print(f"MariaDB ship save omits {runtime_field}")
+        sys.exit(1)
+    if f"ship->slot[idx].{runtime_field} = atoi(row[{row_index}]);" not in sql_load:
+        print(f"MariaDB ship load omits {runtime_field}")
+        sys.exit(1)
+compact_flat_capture = "".join(flat_capture.split())
+expected_flat_values = (
+    "slot.values={ship->slot[index].val0,ship->slot[index].val1,"
+    "ship->slot[index].val2,ship->slot[index].val3,ship->slot[index].val4};"
+)
+if expected_flat_values not in compact_flat_capture:
+    print("flat-file ship capture does not map every slot value")
+    sys.exit(1)
+
 sale = find(text_shop, 'update_crew(ship);')
 sale_queue = find(text_shop, 'queue_ship_save(ship, "cargo sale");', sale)
 checks.append(('cargo sale queued save', sale, sale_queue, -1, -1))
