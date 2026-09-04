@@ -150,6 +150,20 @@ static bool uses_generic_item_ownership(P_obj object)
 	       ownership.state == item_custody_state::active;
 }
 
+static bool can_equip_soulbound_item(P_char actor, P_obj object, bool show_rejection)
+{
+	if (!IS_OBJ_STAT2(object, ITEM2_SOULBIND))
+		return true;
+	const bool owns_item = IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND) ?
+				       account_bound_reward_owner(actor, object) :
+				       isname(GET_NAME(actor), object->name);
+	if (!owns_item && show_rejection)
+		send_to_char(
+			"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
+			actor);
+	return owns_item;
+}
+
 #define GETDBG_LOG(...)                                \
 	do                                             \
 	{                                              \
@@ -776,7 +790,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		return;
 	}
 	if (uses_generic_item_ownership(o_obj) && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
-	    !IS_TRUSTED(ch))
+	    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 	{
 		send_to_char("&+LYou cannot take that.&n\n\r", ch);
 		return;
@@ -1036,7 +1050,7 @@ publish_after_ack:
 	if (s_obj)
 	{
 		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
-		    !IS_TRUSTED(ch))
+		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
 			return;
@@ -1065,7 +1079,7 @@ publish_after_ack:
 	else
 	{
 		if (!item_get_ack_publication && IS_OBJ_STAT2(o_obj, ITEM2_NOLOOT) &&
-		    !IS_TRUSTED(ch))
+		    !IS_TRUSTED(ch) && !account_bound_reward_owner(ch, o_obj))
 		{
 			send_to_char("&+LYou cannot take that.&n\n\r", ch);
 			return;
@@ -1899,7 +1913,7 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 		return false;
 	}
 	if (!scrap && GET_ITEM_TYPE(object) != ITEM_MONEY && IS_OBJ_STAT2(object, ITEM2_NOLOOT) &&
-	    !IS_TRUSTED(actor))
+	    !IS_TRUSTED(actor) && !account_bound_reward_owner(actor, object))
 	{
 		send_to_char("&+LYou cannot take that.&n\n\r", actor);
 		state.failed = true;
@@ -6682,6 +6696,8 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	{
 		return FALSE;
 	}
+	if (!can_equip_soulbound_item(ch, obj_object, showit))
+		return FALSE;
 
 	// Scrap it. Might cause crash. Dec08 -Lucrot
 	if (obj_object->condition <= 0)
@@ -7923,14 +7939,8 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 						ch);
 					return;
 				}
-				if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) &&
-				    !isname(GET_NAME(ch), obj_object->name))
-				{
-					send_to_char(
-						"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
-						ch);
+				if (!can_equip_soulbound_item(ch, obj_object, true))
 					return;
-				}
 				wear(ch, obj_object, keyword, TRUE);
 			}
 		}
@@ -7978,14 +7988,8 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 							ch);
 						continue;
 					}
-					if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) &&
-					    !isname(GET_NAME(ch), obj_object->name))
-					{
-						send_to_char(
-							"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
-							ch);
+					if (!can_equip_soulbound_item(ch, obj_object, true))
 						continue;
-					}
 					if (obj_object->type != ITEM_SPELLBOOK)
 					{
 						if (CAN_WEAR(obj_object,
@@ -8079,14 +8083,8 @@ void do_grab(P_char ch, char *argument, int /*cmd*/)
 					ch);
 				return;
 			}
-			if (IS_OBJ_STAT2(obj_object, ITEM2_SOULBIND) &&
-			    !isname(GET_NAME(ch), obj_object->name))
-			{
-				send_to_char(
-					"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
-					ch);
+			if (!can_equip_soulbound_item(ch, obj_object, true))
 				return;
-			}
 			wear(ch, obj_object, 13, 1);
 		}
 		else

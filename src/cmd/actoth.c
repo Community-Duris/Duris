@@ -4443,6 +4443,13 @@ void do_use(P_char ch, char *argument, int /*cmd*/)
 			ch);
 		return;
 	}
+	if (IS_OBJ_STAT2(stick, ITEM2_ACCOUNT_BOUND) && !account_bound_reward_owner(ch, stick))
+	{
+		send_to_char(
+			"You may not use that account-bound reward; it belongs to another account.\r\n",
+			ch);
+		return;
+	}
 	if (stick->type == ITEM_STAFF)
 	{
 		act("$n taps $p three times on the ground.", TRUE, ch, stick, 0, TO_ROOM);
