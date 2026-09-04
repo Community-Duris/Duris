@@ -1140,12 +1140,18 @@ flatfile_association_list(const std::string &root,
 	return flatfile_association_result::ok;
 }
 
+/* Build the association catalogue after-image while the shared authority lock
+ * remains with the caller. This is the seam used when a guild change and a
+ * second authority (such as a paid kingdom roster) must share one recoverable
+ * commit. Nothing is published here. */
 flatfile_association_result
-flatfile_association_save(const std::string &root, const flatfile_association_record &association,
-			  std::string *error)
+flatfile_association_prepare_save(const std::string &root, const flatfile_authority_lock &lock,
+				  const flatfile_association_record &association,
+				  flatfile_authority_operation *operation, std::string *error)
 {
-	if (root.empty())
+	if (root.empty() || !lock.matches(root) || !operation)
 		return flatfile_association_result::invalid;
+	*operation = {};
 	flatfile_association_record desired;
 	try
 	{
@@ -1172,9 +1178,6 @@ flatfile_association_save(const std::string &root, const flatfile_association_re
 	if (!valid_catalog(validation))
 		return flatfile_association_result::invalid;
 
-	flatfile_authority_lock lock;
-	if (!lock.acquire(root, error))
-		return flatfile_association_result::io_error;
 	const auto recovered = recover(root, lock, error);
 	if (recovered != flatfile_association_result::ok)
 		return recovered;
@@ -1236,9 +1239,34 @@ flatfile_association_save(const std::string &root, const flatfile_association_re
 	std::vector<uint8_t> encoded;
 	if (!encode_catalog(catalog, &encoded))
 		return flatfile_association_result::invalid;
-	return flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error) ?
-		       flatfile_association_result::ok :
-		       flatfile_association_result::io_error;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = catalog_filename;
+	operation->bytes = std::move(encoded);
+	return flatfile_association_result::ok;
+}
+
+flatfile_association_result
+flatfile_association_save(const std::string &root, const flatfile_association_record &association,
+			  std::string *error)
+{
+	if (root.empty())
+		return flatfile_association_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_association_result::io_error;
+	flatfile_authority_operation operation;
+	const auto prepared =
+		flatfile_association_prepare_save(root, lock, association, &operation, error);
+	if (prepared != flatfile_association_result::ok)
+		return prepared;
+	const auto committed =
+		flatfile_authority_transaction_commit_operations(root, lock, { operation }, error);
+	if (committed == flatfile_authority_transaction_result::ok)
+		return flatfile_association_result::ok;
+	return committed == flatfile_authority_transaction_result::io_error ?
+		       flatfile_association_result::io_error :
+		       flatfile_association_result::invalid;
 }
 
 flatfile_association_result flatfile_association_erase(const std::string &root,

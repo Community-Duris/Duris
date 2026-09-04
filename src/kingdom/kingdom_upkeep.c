@@ -102,15 +102,11 @@
  *                 the realm is billed again for the same period -- the safe
  *                 direction.
  *
- *      flat-file  there is no transaction. The guild is written first and
- *                 alone; the realm is left DIRTY for the end-of-sweep
- *                 kingdom_db_flush_dirty(), which writes every dirty realm in
- *                 one catalogue rewrite. The window is the rest of the sweep:
- *                 a crash after the guild write and before that flush keeps
- *                 the debit and loses the paid mark, so the realm is billed
- *                 again at the next boot -- again the safe direction. A
- *                 failed guild write marks the realm payment_pending exactly
- *                 as above, and no realm write is attempted.
+ *      flat-file  the guild and realm catalogues are after-images in one
+ *                 recovery journal. The journal lands before either image;
+ *                 an interruption after one is installed is completed at the
+ *                 next authority access. A failed commit marks the realm
+ *                 payment_pending for retry.
  *
  *    THE PENDING RULE. A paid mark must never reach disk without its debit,
  *    and kingdom_db_save_realm() is a primitive that cannot enforce that for
@@ -449,13 +445,10 @@ static void hold_payment(kingdom_realm &realm, const char *why)
  *              written -- never an unpaired write -- and the realm is held.
  *              On success the record is clean; no flush is needed.
  *
- *   flat-file  Guild::save() first and alone. On success the realm is left
- *              DIRTY, not pending, for the batched end-of-sweep flush: one
- *              catalogue rewrite for every realm of the sweep rather than one
- *              per realm. The window that leaves -- guild written, realm
- *              flush lost to a crash -- re-bills the realm, the safe
- *              direction. A failed guild write holds the realm and attempts
- *              no realm write.
+ *   flat-file  The guild and realm catalogue after-images share one recovery
+ *              journal. The journal is durable before either image, so an
+ *              interrupted commit completes on recovery. Success means both
+ *              are durable; failure holds the realm for a retry.
  *
  * False in either mode means hold_payment() ran: payment_pending is set, the
  * id is listed for retry, and the debit stands in memory. */
@@ -502,16 +495,13 @@ bool kingdom_persist_payment(Guild *guild, kingdom_realm &realm)
 	realm.payment_pending = false;
 	return true;
 #else
-	if (!guild->save())
+	if (!guild->save_with_kingdom(realm))
 	{
-		hold_payment(realm, "guild write failed; realm record withheld");
+		hold_payment(realm, "recoverable guild/realm commit failed");
 		return false;
 	}
 
-	/* Guild is on disk. The realm waits for the batched flush -- one
-	 * catalogue rewrite per sweep, not one per realm -- and is dirty, not
-	 * pending, because the debit it records is already durable. */
-	realm.dirty = true;
+	realm.dirty = false;
 	realm.payment_pending = false;
 	return true;
 #endif

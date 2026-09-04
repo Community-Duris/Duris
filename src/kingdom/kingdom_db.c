@@ -50,6 +50,8 @@
 #include <vector>
 
 #ifdef __NO_MYSQL__
+#include "flatfile/flatfile_association_repository.h"
+#include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_store.h"
 #include "persistence/persistence_mode.h"
 
@@ -61,6 +63,9 @@
 #include <type_traits>
 #else
 #include "sql/sql.h"
+#include "sql/sql_player.h"
+
+#include <mysqld_error.h>
 #endif
 
 /* ------------------------------------------------------------------ *
@@ -375,10 +380,10 @@ bool kingdom_db_save_realm(const kingdom_realm &realm)
  *
  * DELETE-THEN-INSERT rather than a row-by-row diff. The roster is at most
  * seventeen tiny rows, it changes only on a hire, a promotion or a death, and
- * the two statements run inside the same transaction the realm's own upsert
- * joins -- so the whole roster is replaced atomically and no bookkeeping is
- * needed to notice a slot that emptied. A diff would be more code for less
- * certainty.
+ * the replacement is transactional. It joins the caller's paid-change
+ * transaction when there is one; otherwise it owns a transaction around the
+ * DELETE and INSERTs. No bookkeeping is needed to notice a slot that emptied.
+ * A diff would be more code for less certainty.
  *
  * A MISSING TABLE IS NOT AN ERROR HERE, and that is deliberate:
  * kingdom_garrison is outside the runtime contract's table list (see the
@@ -392,14 +397,52 @@ bool kingdom_db_save_roster(const kingdom_realm &realm)
 	if (realm.assoc_id <= 0)
 		return false;
 
-	if (!qry("DELETE FROM kingdom_garrison WHERE assoc_id=%d", realm.assoc_id))
+	const bool own_transaction = !sql_in_transaction();
+	if (own_transaction && !sql_begin_transaction())
 	{
 		logit(LOG_KINGDOM,
-		      "kingdom_db_save_roster: could not clear the roster for association %d; "
-		      "the garrison will not persist",
+		      "kingdom_db_save_roster: could not open a transaction for association %d",
 		      realm.assoc_id);
 		return false;
 	}
+
+	/* A database at migration 0008 intentionally has no roster table. Only
+	 * those exact server errors degrade to success; every other statement error
+	 * remains a failed save. A caller-owned transaction is never finalized here. */
+	const auto statement_failure = [&](const char *operation, int slot) -> bool
+	{
+		const unsigned int error_code = DB ? mysql_errno(DB) : 0;
+		const bool missing = error_code == ER_NO_SUCH_TABLE ||
+				     error_code == ER_NO_SUCH_TABLE_IN_ENGINE;
+
+		if (own_transaction && !sql_rollback())
+		{
+			logit(LOG_KINGDOM,
+			      "kingdom_db_save_roster: rollback failed after %s for association %d",
+			      operation, realm.assoc_id);
+			return false;
+		}
+		if (missing)
+		{
+			logit(LOG_KINGDOM,
+			      "kingdom_db_save_roster: kingdom_garrison is unavailable for "
+			      "association %d; realm saved without a durable roster",
+			      realm.assoc_id);
+			return true;
+		}
+
+		if (slot >= 0)
+			logit(LOG_KINGDOM,
+			      "kingdom_db_save_roster: %s failed for association %d slot %d",
+			      operation, realm.assoc_id, slot);
+		else
+			logit(LOG_KINGDOM, "kingdom_db_save_roster: %s failed for association %d",
+			      operation, realm.assoc_id);
+		return false;
+	};
+
+	if (!qry("DELETE FROM kingdom_garrison WHERE assoc_id=%d", realm.assoc_id))
+		return statement_failure("DELETE", -1);
 
 	for (int slot = 0; slot < KINGDOM_GUARD_SLOTS; slot++)
 	{
@@ -410,12 +453,7 @@ bool kingdom_db_save_roster(const kingdom_realm &realm)
 			 "VALUES (%d,%d,%d,%d)",
 			 realm.assoc_id, slot, realm.guards[slot].guard_class,
 			 realm.guards[slot].level))
-		{
-			logit(LOG_KINGDOM,
-			      "kingdom_db_save_roster: INSERT failed for association %d slot %d",
-			      realm.assoc_id, slot);
-			return false;
-		}
+			return statement_failure("INSERT", slot);
 	}
 
 	if (realm.champion_class)
@@ -424,12 +462,15 @@ bool kingdom_db_save_roster(const kingdom_realm &realm)
 			 "VALUES (%d,%d,%d,%d)",
 			 realm.assoc_id, KINGDOM_CHAMPION_SLOT, realm.champion_class,
 			 KINGDOM_CHAMPION_LEVEL))
-		{
-			logit(LOG_KINGDOM,
-			      "kingdom_db_save_roster: INSERT failed for association %d champion",
-			      realm.assoc_id);
-			return false;
-		}
+			return statement_failure("champion INSERT", KINGDOM_CHAMPION_SLOT);
+	}
+
+	if (own_transaction && !sql_commit())
+	{
+		sql_rollback(); /* a failed commit retains transaction ownership */
+		logit(LOG_KINGDOM, "kingdom_db_save_roster: commit failed for association %d",
+		      realm.assoc_id);
+		return false;
 	}
 
 	return true;
@@ -983,21 +1024,31 @@ flat_result load_catalog(const std::string &root, kingdom_catalog *catalog)
 	return flat_result::ok;
 }
 
+/* Bump and encode a catalogue without publishing it. Separating preparation
+ * from publication lets a paid realm mutation travel in the same recoverable
+ * authority transaction as the guild treasury debit. */
+bool prepare_catalog_image(kingdom_catalog *catalog, std::vector<uint8_t> *bytes)
+{
+	if (!catalog || !bytes || catalog->revision == std::numeric_limits<uint64_t>::max())
+		return false;
+	++catalog->revision;
+
+	if (!encode_catalog(*catalog, bytes))
+	{
+		logit(LOG_KINGDOM, "kingdom_db: refusing to write an unencodable realm catalogue");
+		return false;
+	}
+	return true;
+}
+
 /* Bump the catalogue's revision, encode it and write it atomically as the
  * realm authority. False, logged, when the revision would wrap, the catalogue
  * will not encode, or the write fails; the caller must hold the lock. */
 bool publish_catalog(const std::string &root, kingdom_catalog *catalog)
 {
-	if (!catalog || catalog->revision == std::numeric_limits<uint64_t>::max())
-		return false;
-	++catalog->revision;
-
 	std::vector<uint8_t> bytes;
-	if (!encode_catalog(*catalog, &bytes))
-	{
-		logit(LOG_KINGDOM, "kingdom_db: refusing to write an unencodable realm catalogue");
+	if (!prepare_catalog_image(catalog, &bytes))
 		return false;
-	}
 
 	std::string error;
 	if (!flatfile_atomic_write(metadata_directory(root), kingdom_filename, bytes, &error))
@@ -1109,15 +1160,14 @@ bool kingdom_db_load_all(void)
  * record into it and publish the whole file again. A missing file is created;
  * a corrupt or unreadable one is never overwritten. False when the record
  * fails record_is_sane(), there is no state root, the lock, the load, the
- * merge or the publish fails. One full catalogue rewrite per call, which is
- * why a paid realm waits for the sweep's batched kingdom_db_flush_dirty()
- * instead of coming through here.
+ * merge or the publish fails. One full catalogue rewrite per call. Paid
+ * mutations use kingdom_db_save_payment_pair() instead so the realm and guild
+ * after-images share a recovery journal.
  *
  * THIS PRIMITIVE DOES NOT TEST payment_pending, deliberately: it is what
- * kingdom_persist_payment() calls to publish a pending record once the guild
- * debit that justifies it has been written, so a guard here would deadlock
- * that pairing. The obligation is therefore the CALLER's -- every call to this
- * function from outside kingdom_db.c and kingdom_persist_payment() must be
+ * kingdom_persist_payment() uses through its paired writer, so a guard here
+ * would deadlock that pairing. The obligation is therefore the CALLER's --
+ * every call to this function from outside kingdom_db.c must be
  * guarded by !payment_pending and leave a pending record dirty for
  * kingdom_upkeep_retry_pending() to carry. */
 bool kingdom_db_save_realm(const kingdom_realm &realm)
@@ -1168,6 +1218,82 @@ bool kingdom_db_save_realm(const kingdom_realm &realm)
 		logit(LOG_KINGDOM, "kingdom_db_save_realm: publish failed for association %d",
 		      realm.assoc_id);
 	return published;
+}
+
+/* Publish a debited flat-file guild and its paid realm mutation through one
+ * journaled authority commit. The journal is durable before either after-image
+ * is installed, so an interruption after the guild image is recoverable and
+ * cannot permanently lose a bought guard, promotion, champion, or claim.
+ *
+ * Lock order is the shared authority first and the kingdom catalogue second;
+ * no other path takes both. The association preparer recovers any older journal
+ * while the shared lock is held before this function reads the realm file. */
+bool kingdom_db_save_payment_pair(const std::string &root,
+				  const flatfile_association_record &association,
+				  const kingdom_realm &realm, std::string *error)
+{
+	if (root.empty() || !record_is_sane(realm) ||
+	    association.association_id != static_cast<uint32_t>(realm.assoc_id))
+		return false;
+
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return false;
+
+	flatfile_authority_operation association_operation;
+	const auto association_prepared = flatfile_association_prepare_save(
+		root, authority, association, &association_operation, error);
+	if (association_prepared != flatfile_association_result::ok &&
+	    association_prepared != flatfile_association_result::unchanged)
+		return false;
+
+	int lock_fd = -1;
+	if (!acquire_lock(root, &lock_fd))
+		return false;
+
+	kingdom_catalog catalog;
+	const flat_result loaded = load_catalog(root, &catalog);
+	if ((loaded != flat_result::ok && loaded != flat_result::not_found) ||
+	    !upsert_record(&catalog.records, realm))
+	{
+		flatfile_lock_release(lock_fd);
+		return false;
+	}
+
+	std::vector<uint8_t> realm_bytes;
+	if (!prepare_catalog_image(&catalog, &realm_bytes))
+	{
+		flatfile_lock_release(lock_fd);
+		return false;
+	}
+
+	std::vector<flatfile_authority_operation> operations;
+	try
+	{
+		operations.reserve(2);
+		if (association_prepared == flatfile_association_result::ok)
+			operations.push_back(std::move(association_operation));
+		operations.push_back({ flatfile_authority_store::metadata,
+				       flatfile_authority_operation_kind::write, kingdom_filename,
+				       std::move(realm_bytes) });
+	}
+	catch (const std::bad_alloc &)
+	{
+		flatfile_lock_release(lock_fd);
+		return false;
+	}
+
+	const auto committed = flatfile_authority_transaction_commit_operations(root, authority,
+										operations, error);
+	flatfile_lock_release(lock_fd);
+	if (committed != flatfile_authority_transaction_result::ok)
+	{
+		logit(LOG_KINGDOM,
+		      "kingdom_db_save_payment_pair: recoverable commit failed for association %d: %s",
+		      realm.assoc_id, error && !error->empty() ? error->c_str() : "io error");
+		return false;
+	}
+	return true;
 }
 
 /* NOTHING TO DO, and that is the honest answer rather than a stub.

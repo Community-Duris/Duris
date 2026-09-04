@@ -104,6 +104,7 @@
 #include "world/db.h"
 
 #include <cstddef>
+#include <string>
 #include <vector>
 
 /* Not declared in any header the engine exports; kingdom_geometry.c and
@@ -387,11 +388,11 @@ int kingdom_roster_count(const kingdom_realm &realm)
 /*
  * The highest level this realm's land entitles a guard to.
  *
- * Completed rings, two levels apiece above the prototype's own. A realm part
- * way into a ring gets the tier of the last ring it FINISHED -- half a ring is
- * not half a promotion, and tying the tier to the ring boundary is what makes
- * "complete ring 3 and your garrison reaches 54" a sentence a player can act
- * on.
+ * The first completed ring raises the prototype's level-45 ceiling to 50;
+ * later rings add two levels apiece. A realm part way into a ring gets the
+ * tier of the last ring it FINISHED -- half a ring is not half a promotion,
+ * and tying the tier to the ring boundary is what makes "complete ring 3 and
+ * your garrison reaches 54" a sentence a player can act on.
  *
  * Note what this does NOT do: it never lowers a guard. A realm that loses ring
  * 4 to arrears gets a lower cap for its NEXT promotion and keeps every level
@@ -409,11 +410,29 @@ int kingdom_guard_level_cap(const kingdom_realm &realm)
 	if (rings <= 0)
 		return KINGDOM_GUARD_BASE_LEVEL;
 
-	const int level = KINGDOM_GUARD_BASE_LEVEL + rings * KINGDOM_GUARD_TIER_STEP;
+	const int level = KINGDOM_GUARD_FIRST_TIER_LEVEL + (rings - 1) * KINGDOM_GUARD_TIER_STEP;
 
 	/* Ring 4 lands exactly on the top level; the clamp is here so a widened
 	 * ring count later cannot quietly raise the ceiling. */
 	return level > KINGDOM_GUARD_TOP_LEVEL ? KINGDOM_GUARD_TOP_LEVEL : level;
+}
+
+/* The next rung a bought guard can reach. The first promotion bridges the
+ * prototype's level 45 to ring one's level 50; later rings add two levels.
+ * Returning 0 at the top lets callers reject another promotion explicitly. */
+int kingdom_guard_next_level(int level)
+{
+	if (level < KINGDOM_GUARD_BASE_LEVEL || level >= KINGDOM_GUARD_TOP_LEVEL)
+		return 0;
+	if (level < KINGDOM_GUARD_FIRST_TIER_LEVEL)
+		return KINGDOM_GUARD_FIRST_TIER_LEVEL;
+
+	for (int tier = KINGDOM_GUARD_FIRST_TIER_LEVEL + KINGDOM_GUARD_TIER_STEP;
+	     tier <= KINGDOM_GUARD_TOP_LEVEL; tier += KINGDOM_GUARD_TIER_STEP)
+		if (level < tier)
+			return tier;
+
+	return 0;
 }
 
 /*
@@ -436,9 +455,20 @@ long kingdom_guard_promotion_cost(int from, int to)
 	if (span < 0)
 		span = 0;
 
-	const int tiers = (to - from + KINGDOM_GUARD_TIER_STEP - 1) / KINGDOM_GUARD_TIER_STEP;
+	const int from_tier =
+		from < KINGDOM_GUARD_FIRST_TIER_LEVEL ?
+			0 :
+			(from - KINGDOM_GUARD_FIRST_TIER_LEVEL) / KINGDOM_GUARD_TIER_STEP + 1;
+	int to_tier = to < KINGDOM_GUARD_FIRST_TIER_LEVEL ?
+			      0 :
+			      (to - KINGDOM_GUARD_FIRST_TIER_LEVEL) / KINGDOM_GUARD_TIER_STEP + 1;
 
-	return span / KINGDOM_GUARD_TIERS * tiers;
+	if (to_tier > KINGDOM_GUARD_TIERS)
+		to_tier = KINGDOM_GUARD_TIERS;
+
+	/* Difference between cumulative prices preserves any division remainder,
+	 * so four promotions plus the hire price reach guard.cost.max exactly. */
+	return span * to_tier / KINGDOM_GUARD_TIERS - span * from_tier / KINGDOM_GUARD_TIERS;
 }
 
 /*
@@ -1241,6 +1271,16 @@ static int kingdom_champion_rnum(void)
 	return real_mobile(VMOB_KINGDOM_CHAMPION);
 }
 
+/* True for either kind of live garrison body belonging to `assoc_id`. Both the
+ * banner tick and its cleanup use this exact predicate, so every body granted
+ * combat fury is also one from which the falling banner removes it. */
+static bool kingdom_char_is_garrison_of(P_char mob, int guard_rnum, int champion_rnum, int assoc_id)
+{
+	return (guard_rnum >= 0 && kingdom_char_is_guard_of(mob, guard_rnum, assoc_id)) ||
+	       (champion_rnum >= 0 && mob && mob->only.npc &&
+		mob->only.npc->R_num == champion_rnum && KINGDOM_GUARD_ASSOC(mob) == assoc_id);
+}
+
 /* True when `obj` is either kingdom banner. Compared on the prototype vnum
  * rather than on a name, because a name is world data an area edit can change
  * and a vnum is the contract between this file and heavens.obj. */
@@ -1249,7 +1289,7 @@ static bool kingdom_obj_is_banner(P_obj obj)
 	if (!obj || obj->R_num < 0)
 		return false;
 
-	const int vnum = obj_index[obj->R_num].number;
+	const int vnum = obj_index[obj->R_num].virtual_number;
 
 	return vnum == VOBJ_KINGDOM_BANNER_COMBAT || vnum == VOBJ_KINGDOM_BANNER_SANCTITY;
 }
@@ -1326,7 +1366,7 @@ static void kingdom_banner_plant(P_char champion, int assoc_id, bool sanctity)
 	KINGDOM_BANNER_HP(banner) = KINGDOM_BANNER_HITPOINTS;
 
 	P_Guild guild = get_guild_from_id(assoc_id);
-	const char *realm = guild ? guild->get_name().c_str() : "the realm";
+	const std::string realm = guild ? guild->get_name() : "the realm";
 
 	char named[MAX_INPUT_LENGTH];
 
@@ -1341,12 +1381,12 @@ static void kingdom_banner_plant(P_char champion, int assoc_id, bool sanctity)
 	 * first banner destroyed frees the prototype's strings out from under
 	 * every other object of that vnum. */
 	snprintf(named, sizeof(named), "%sthe banner of %s %s&n", sanctity ? "&+W" : "&+R",
-		 sanctity ? "sanctity" : "combat", realm);
+		 sanctity ? "sanctity" : "combat", realm.c_str());
 	banner->short_description = str_dup(named);
 	banner->str_mask |= STRUNG_DESC2;
 
 	snprintf(named, sizeof(named), "%sThe banner of %s %s&%s stands planted here.&n",
-		 sanctity ? "&+W" : "&+R", sanctity ? "sanctity" : "combat", realm,
+		 sanctity ? "&+W" : "&+R", sanctity ? "sanctity" : "combat", realm.c_str(),
 		 sanctity ? "+W" : "+R");
 	banner->description = str_dup(named);
 	banner->str_mask |= STRUNG_DESC1;
@@ -1385,15 +1425,13 @@ int kingdom_banner_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		const int guard_rnum = kingdom_guard_rnum();
 		const int champion_rnum = kingdom_champion_rnum();
-		const bool sanctity = obj_index[obj->R_num].number == VOBJ_KINGDOM_BANNER_SANCTITY;
+		const bool sanctity = obj_index[obj->R_num].virtual_number ==
+				      VOBJ_KINGDOM_BANNER_SANCTITY;
 
 		for (P_char mob = character_list; mob; mob = mob->next)
 		{
-			const bool ours = (guard_rnum >= 0 &&
-					   kingdom_char_is_guard_of(mob, guard_rnum, assoc_id)) ||
-					  (champion_rnum >= 0 && mob->only.npc &&
-					   mob->only.npc->R_num == champion_rnum &&
-					   KINGDOM_GUARD_ASSOC(mob) == assoc_id);
+			const bool ours = kingdom_char_is_garrison_of(mob, guard_rnum,
+								      champion_rnum, assoc_id);
 
 			if (!ours || !IS_ALIVE(mob))
 				continue;
@@ -1455,11 +1493,11 @@ int kingdom_banner_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		 * banner that could not really be broken. The heal needs no
 		 * undoing -- what was mended stays mended. */
 		const int guard_rnum = kingdom_guard_rnum();
+		const int champion_rnum = kingdom_champion_rnum();
 
-		if (guard_rnum >= 0)
-			for (P_char mob = character_list; mob; mob = mob->next)
-				if (kingdom_char_is_guard_of(mob, guard_rnum, assoc_id))
-					REMOVE_BIT(mob->specials.affected_by, AFF_INFERNAL_FURY);
+		for (P_char mob = character_list; mob; mob = mob->next)
+			if (kingdom_char_is_garrison_of(mob, guard_rnum, champion_rnum, assoc_id))
+				REMOVE_BIT(mob->specials.affected_by, AFF_INFERNAL_FURY);
 
 		P_Guild guild = get_guild_from_id(assoc_id);
 

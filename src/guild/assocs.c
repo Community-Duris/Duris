@@ -45,6 +45,9 @@ string trim(string const &str, char const *sep_chars);
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 #ifdef __NO_MYSQL__
 extern std::vector<Building *> buildings;
+bool kingdom_db_save_payment_pair(const std::string &root,
+				  const flatfile_association_record &association,
+				  const kingdom_realm &realm, std::string *error);
 #endif
 
 // Internal variables
@@ -791,32 +794,23 @@ void Guild::initialize()
 #endif
 }
 
-/* Contract in assocs.h. Returns true when the guild record is durable, false
- * when the write failed -- every failure path alerts before returning, so a
- * caller that only needs to abort its own work can test the result and stay
- * silent. Under MariaDB the write joins an enclosing transaction when the
- * caller opened one (sql_save_guild()), which is what lets the kingdom upkeep
- * sweep land a treasury debit and the realm record that explains it as one
- * unit; under the flat-file build there is no transaction to join. */
-bool Guild::save()
-{
 #ifdef __NO_MYSQL__
-	const char *root = persistence_mode_flatfile_root();
-	if (!root)
-	{
-		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
-				  "flat guild save has no state root");
+/* Materialize this live guild as the flat association record both save paths
+ * publish. Keeping one builder is important: the paid-kingdom transaction must
+ * not omit a field that an ordinary Guild::save() would preserve. */
+bool Guild::build_flatfile_record(const std::string &root, flatfile_association_record *record,
+				  std::string *error)
+{
+	if (root.empty() || !record || !error)
 		return false;
-	}
 	update_online_members();
-	std::string error;
 	std::vector<flatfile_association_record> records;
-	const auto listed = flatfile_association_list(root, &records, &error);
+	const auto listed = flatfile_association_list(root, &records, error);
 	if (listed != flatfile_association_result::ok &&
 	    listed != flatfile_association_result::not_found)
 	{
 		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
-				  "flat guild read failed: %s", error.c_str());
+				  "flat guild read failed: %s", error->c_str());
 		return false;
 	}
 	const flatfile_association_record *existing = NULL;
@@ -829,22 +823,22 @@ bool Guild::save()
 			existing = &*found;
 	}
 
-	flatfile_association_record record = {};
-	record.association_id = id_number;
-	record.name = name;
-	record.racewar = racewar;
-	record.bits = bits;
-	record.prestige = prestige;
-	record.construction = construction;
-	record.platinum = platinum;
-	record.gold = gold;
-	record.silver = silver;
-	record.copper = copper;
-	record.frags = frags.frags;
-	record.top_frags = frags.top_frags;
-	record.top_fragger = frags.topfragger;
-	for (size_t rank = 0; rank < record.ranks.size(); ++rank)
-		record.ranks[rank] = titles[rank];
+	*record = {};
+	record->association_id = id_number;
+	record->name = name;
+	record->racewar = racewar;
+	record->bits = bits;
+	record->prestige = prestige;
+	record->construction = construction;
+	record->platinum = platinum;
+	record->gold = gold;
+	record->silver = silver;
+	record->copper = copper;
+	record->frags = frags.frags;
+	record->top_frags = frags.top_frags;
+	record->top_fragger = frags.topfragger;
+	for (size_t rank = 0; rank < record->ranks.size(); ++rank)
+		record->ranks[rank] = titles[rank];
 
 	for (P_member current = members; current; current = current->next)
 	{
@@ -877,8 +871,62 @@ bool Guild::save()
 				member.contributed_frags = GET_FRAGS(live);
 				break;
 			}
-		record.members.push_back(std::move(member));
+		record->members.push_back(std::move(member));
 	}
+	return true;
+}
+
+/* Commit a paid kingdom mutation with this guild through the shared authority
+ * journal. Defined here so the private guild fields still travel through the
+ * same record builder as every ordinary save. */
+bool Guild::save_with_kingdom(const kingdom_realm &realm)
+{
+	const char *configured_root = persistence_mode_flatfile_root();
+	if (!configured_root)
+	{
+		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+				  "flat guild save has no state root");
+		return false;
+	}
+
+	const std::string root = configured_root;
+	std::string error;
+	flatfile_association_record record;
+	if (!build_flatfile_record(root, &record, &error))
+		return false;
+	if (!kingdom_db_save_payment_pair(root, record, realm, &error))
+	{
+		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+				  "flat paid kingdom save failed: %s", error.c_str());
+		return false;
+	}
+	return true;
+}
+#endif
+
+/* Contract in assocs.h. Returns true when the guild record is durable, false
+ * when the write failed -- every failure path alerts before returning, so a
+ * caller that only needs to abort its own work can test the result and stay
+ * silent. Under MariaDB the write joins an enclosing transaction when the
+ * caller opened one (sql_save_guild()), which is what lets the kingdom upkeep
+ * sweep land a treasury debit and the realm record that explains it as one
+ * unit. */
+bool Guild::save()
+{
+#ifdef __NO_MYSQL__
+	const char *configured_root = persistence_mode_flatfile_root();
+	if (!configured_root)
+	{
+		persistence_alert(AVATAR, "associations", name, "none", "none", "save",
+				  "flat guild save has no state root");
+		return false;
+	}
+
+	const std::string root = configured_root;
+	std::string error;
+	flatfile_association_record record;
+	if (!build_flatfile_record(root, &record, &error))
+		return false;
 
 	error.clear();
 	const auto saved = flatfile_association_save(root, record, &error);

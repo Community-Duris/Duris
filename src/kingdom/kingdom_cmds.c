@@ -92,7 +92,7 @@ static const char *KINGDOM_SYNTAX =
 	"  kingdom guards           how large a garrison the realm may field\r\n"
 	"  kingdom roster           every guard: class, level, cost to promote\r\n"
 	"  kingdom hire <class>     raise a new guard                    (leader)\r\n"
-	"  kingdom promote <#> [class]  raise one two levels             (leader)\r\n"
+	"  kingdom promote <#> [class]  raise one to the next tier       (leader)\r\n"
 	"  kingdom champion <class> <class>  raise the realm's one champion (leader)\r\n"
 	"  kingdom help             the long explanation\r\n";
 
@@ -468,13 +468,12 @@ static void kingdom_cmd_help(P_char ch)
 	out += "  on one kind of ground alone.\r\n";
 
 	out += "\r\n&+WThe garrison&n\r\n";
-	snprintf(
-		line, sizeof(line),
-		"  Guards are BOUGHT, one at a time: %s each, at level %d. The land sets how\r\n"
-		"  many ('&+Wkingdom guards&n') and how high they may rise -- two levels per\r\n"
-		"  completed ring, to %d with all %d squares. '&+Wkingdom roster&n' lists them.\r\n",
-		kingdom_coin_string(kingdom_cfg.guard_cost_base), KINGDOM_GUARD_BASE_LEVEL,
-		KINGDOM_GUARD_TOP_LEVEL, KINGDOM_MAX_SQUARES);
+	snprintf(line, sizeof(line),
+		 "  Guards are BOUGHT, one at a time: %s each, at level %d. The land sets how\r\n"
+		 "  many ('&+Wkingdom guards&n') and how high they may rise -- level 50 after\r\n"
+		 "  ring one, then two per ring to %d. '&+Wkingdom roster&n' lists them.\r\n",
+		 kingdom_coin_string(kingdom_cfg.guard_cost_base), KINGDOM_GUARD_BASE_LEVEL,
+		 KINGDOM_GUARD_TOP_LEVEL);
 	out += line;
 	snprintf(line, sizeof(line),
 		 "  A realm holding every square may raise ONE champion for %s: level %d,\r\n"
@@ -571,11 +570,11 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 			     ch);
 		return;
 	}
-	/* `p` is shared by prospect and promote, and the two sit on opposite
+	/* `p`, `pr` and `pro` are shared by prospect and promote, and the two sit on opposite
 	 * sides of the guild gate -- prospect ahead of it, promote behind --
-	 * so an unresolved `p` would silently become the one that dispatches
+	 * so an unresolved prefix would silently become the one that dispatches
 	 * first. Refuse it here, ahead of both. */
-	if (str_cmp(token, "p") == 0)
+	if (str_cmp(token, "p") == 0 || str_cmp(token, "pr") == 0 || str_cmp(token, "pro") == 0)
 	{
 		send_to_char("Do you mean '&+Wkingdom prospect&n' or '&+Wkingdom promote&n'?\r\n",
 			     ch);

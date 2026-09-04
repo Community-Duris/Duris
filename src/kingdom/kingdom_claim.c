@@ -26,22 +26,17 @@
  *  Nothing is charged for a claim that is going to be refused, and no square
  *  is granted that has not been paid for. The persist step of any path that
  *  touched the treasury is kingdom_persist_payment() (kingdom_upkeep.c), and
- *  WHAT THAT BUYS IS NOT THE SAME IN BOTH BUILD MODES. Stated honestly:
+ *  Both build modes make the pair crash-safe, by different mechanisms:
  *
  *      MariaDB    the debited guild and the realm record go out in ONE
  *                 transaction, so a crash between them can keep neither
  *                 without the other. This is the guarantee the design asks
  *                 for, and this is the mode that delivers it.
  *
- *      flat-file  there is no transaction to be had. The guild is written
- *                 first and alone; the realm record is left DIRTY for the
- *                 next batched flush -- one catalogue rewrite per tick
- *                 rather than one per claim. A crash inside that window
- *                 keeps the COIN and loses the SQUARE, and the land has to
- *                 be claimed and paid for a second time. That is the safe
- *                 direction -- the other one would hand out land nobody
- *                 paid for -- but it is not atomicity, and this file does
- *                 not pretend that it is.
+ *      flat-file  the debited guild and realm catalogue after-images share
+ *                 one recovery journal. The journal is durable before either
+ *                 image, so a crash after one write is completed on the next
+ *                 authority access rather than losing the paid change.
  *
  *  A write that fails outright leaves the claim standing in memory, flags the
  *  realm payment_pending, and the pair is retried by the upkeep sweep. While
@@ -66,7 +61,9 @@
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
 
+#include <cerrno>
 #include <climits>
+#include <cstdlib>
 
 /* Not declared in any header the engine exports; kingdom_geometry.c takes the
  * same extern for the same reason. */
@@ -394,10 +391,9 @@ static bool kingdom_persist_realm(kingdom_realm &realm)
 /* Make a realm change durable TOGETHER WITH the guild whose treasury it
  * belongs to, by way of kingdom_persist_payment().
  *
- * True means as much as the build mode can give, and no more: under MariaDB
- * both rows are committed in one transaction; under the flat-file build the
- * guild is on disk and the realm record is merely DIRTY, waiting on the next
- * batched flush. The file header spells out what a crash costs in each mode.
+ * True means both records are durable: under MariaDB they share one database
+ * transaction; under the flat-file build their after-images share one recovery
+ * journal. The file header spells out the retry behavior in each mode.
  *
  * False means the change stands in memory (any debit is kept -- there is no
  * refund path), kingdom_persist_payment() has flagged the realm
@@ -1010,8 +1006,8 @@ void kingdom_roster_show(P_char ch)
 		}
 
 		const int level = realm->guards[slot].level;
-		const long step =
-			kingdom_guard_promotion_cost(level, level + KINGDOM_GUARD_TIER_STEP);
+		const int next = kingdom_guard_next_level(level);
+		const long step = kingdom_guard_promotion_cost(level, next);
 
 		if (level >= cap)
 		{
@@ -1026,7 +1022,7 @@ void kingdom_roster_show(P_char ch)
 			snprintf(line, sizeof(line), "  %2d  %-12s  %5d  %s to level %d\r\n",
 				 slot + 1,
 				 kingdom_guard_class_name(realm->guards[slot].guard_class), level,
-				 kingdom_price_string(step), level + KINGDOM_GUARD_TIER_STEP);
+				 kingdom_price_string(step), next);
 		}
 		send_to_char(line, ch);
 	}
@@ -1080,8 +1076,8 @@ void kingdom_roster_show(P_char ch)
 		send_to_char("  More land is needed before another guard may be raised.\r\n", ch);
 	}
 
-	send_to_char("  '&+Wkingdom promote <#> [class]&n' raises one two levels. A guard's "
-		     "rank never falls.\r\n",
+	send_to_char("  '&+Wkingdom promote <#> [class]&n' raises one to the next realm tier. "
+		     "A guard's rank never falls.\r\n",
 		     ch);
 }
 
@@ -1235,7 +1231,13 @@ void kingdom_roster_upgrade(P_char ch, char *rest)
 	rest = one_argument(rest, which);
 	one_argument(rest, wanted);
 
-	const int slot = atoi(which) - 1;
+	char *end = NULL;
+	errno = 0;
+	const long typed = strtol(which, &end, 10);
+	const int slot = errno || end == which || *end != '\0' || typed < 1 ||
+					 typed > KINGDOM_GUARD_SLOTS ?
+				 -1 :
+				 static_cast<int>(typed) - 1;
 
 	if (slot < 0 || slot >= KINGDOM_GUARD_SLOTS || realm->guards[slot].level <= 0)
 	{
@@ -1268,9 +1270,9 @@ void kingdom_roster_upgrade(P_char ch, char *rest)
 
 	const int level = realm->guards[slot].level;
 	const int cap = kingdom_guard_level_cap(*realm);
-	const int to = level + KINGDOM_GUARD_TIER_STEP;
+	const int to = kingdom_guard_next_level(level);
 
-	if (level >= KINGDOM_GUARD_TOP_LEVEL)
+	if (to <= level)
 	{
 		send_to_char("That guard stands at the highest rank a realm can raise.\r\n", ch);
 		return;

@@ -25,7 +25,8 @@ enum class flatfile_authority_store : uint8_t
 	domains = 1,
 	players = 2,
 	identities = 3,
-	accounts = 4
+	accounts = 4,
+	metadata = 5
 };
 
 enum class flatfile_authority_operation_kind : uint8_t

@@ -20,6 +20,9 @@
 
 class Guild;
 class Guildhall;
+#ifdef __NO_MYSQL__
+struct flatfile_association_record;
+#endif
 
 #define LOG_KINGDOM "logs/log/kingdom"
 
@@ -109,6 +112,7 @@ int kingdom_node_vnum_for(int res, bool underdark);
  */
 #define KINGDOM_GUARD_SLOTS 16
 #define KINGDOM_GUARD_BASE_LEVEL 45
+#define KINGDOM_GUARD_FIRST_TIER_LEVEL 50
 #define KINGDOM_GUARD_TIER_STEP 2
 #define KINGDOM_GUARD_TOP_LEVEL 56
 #define KINGDOM_CHAMPION_LEVEL 60
@@ -354,7 +358,7 @@ void kingdom_apply_arrears(kingdom_realm &realm);
 void kingdom_clear_arrears(kingdom_realm &realm);
 /* Make a money-bearing change durable as ONE unit: the guild whose treasury
  * moved and the realm record that explains why. One SQL transaction under
- * MariaDB; paired guild-first writes under the flat-file build. False marks
+ * MariaDB; one recovery-journal transaction under the flat-file build. False marks
  * the realm payment_pending for kingdom_upkeep_retry_pending() and never
  * lets the generic flush publish the record alone. Used by upkeep, claim
  * and convert -- any path that debits a treasury and records the result. */
@@ -389,6 +393,8 @@ void kingdom_guards_bind_proc(void);
 int kingdom_roster_count(const kingdom_realm &realm);
 /* The highest level this realm's completed rings entitle a guard to. */
 int kingdom_guard_level_cap(const kingdom_realm &realm);
+/* The next promotion rung after `level`, or 0 at/outside the ladder. */
+int kingdom_guard_next_level(int level);
 /* Copper to promote one guard from `from` to `to`; 0 for a non-promotion. */
 long kingdom_guard_promotion_cost(int from, int to);
 /* The CLASS_* bit for a class name a player typed, or 0 for one no guard may
@@ -460,6 +466,12 @@ bool kingdom_db_save_realm(const kingdom_realm &realm);
  * outside kingdom_db.c needs it; declared because the flat-file backend
  * defines its own and the two must agree. */
 bool kingdom_db_save_roster(const kingdom_realm &realm);
+#ifdef __NO_MYSQL__
+/* Recoverably commit a flat guild debit and its paid realm after-image. */
+bool kingdom_db_save_payment_pair(const std::string &root,
+				  const flatfile_association_record &association,
+				  const kingdom_realm &realm, std::string *error);
+#endif
 bool kingdom_db_delete_realm(int assoc_id);
 void kingdom_db_flush_dirty(void);
 

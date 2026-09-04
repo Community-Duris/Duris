@@ -570,9 +570,9 @@ def test_kingdom_help_is_two_entries_that_agree() -> None:
 def test_payment_durability_is_one_write() -> None:
     """A treasury debit and the realm record that explains it must land
     together. Under MariaDB that is one transaction which Guild::save() joins;
-    under the flat-file build the two writes are paired guild-first and a
-    failure is remembered as payment_pending so the generic flush cannot
-    publish the realm's 'paid' mark ahead of the guild's debit."""
+    under the flat-file build both catalogue after-images share one recovery
+    journal. A failure is remembered as payment_pending so the generic flush
+    cannot publish the realm's 'paid' mark ahead of the guild's debit."""
     sql_player = read("src/sql/sql_player.c")
     # Two definitions exist: the __NO_MYSQL__ stub and the real one. The real
     # one is the body that runs queries; pin the join pattern there.
@@ -695,6 +695,12 @@ def test_payment_durability_is_one_write() -> None:
             "kingdom_persist_payment splits the MariaDB and flat-file branches on __NO_MYSQL__",
         )
         mariadb = split.group(1) if split else ""
+        flatfile = body[split.end() :] if split else ""
+        check(
+            "save_with_kingdom(" in flatfile,
+            "the flat-file payment path journals the guild and realm through "
+            "Guild::save_with_kingdom",
+        )
         refuse = re.search(r"!\s*sql_begin_transaction\s*\(\s*\)", mariadb)
         check(
             refuse is not None,
@@ -741,6 +747,55 @@ def test_payment_durability_is_one_write() -> None:
             "sql_commit(" in mariadb and "sql_rollback(" in mariadb,
             "kingdom_persist_payment commits its own transaction and rolls back on failure",
         )
+    db = read("src/kingdom/kingdom_db.c")
+    paired = function_bodies(db, r"\bbool\s+kingdom_db_save_payment_pair\s*\(")
+    check(len(paired) == 1, "the flat-file paid-pair writer is defined", f"{len(paired)}")
+    if paired:
+        code = strip_comments(paired[0])
+        check(
+            "flatfile_association_prepare_save(" in code
+            and "flatfile_authority_store::metadata" in code
+            and "flatfile_authority_transaction_commit_operations(" in code,
+            "the guild and realm catalogue after-images share one authority transaction",
+        )
+    roster_bodies = function_bodies(db, r"\bbool\s+kingdom_db_save_roster\s*\(")
+    mariadb_roster = next(
+        (body for body in roster_bodies if "DELETE FROM kingdom_garrison" in body), ""
+    )
+    check(
+        bool(mariadb_roster),
+        "the MariaDB garrison roster writer is defined",
+        f"save_roster definitions={len(roster_bodies)}",
+    )
+    if mariadb_roster:
+        roster_code = strip_comments(mariadb_roster)
+        check(
+            "sql_in_transaction(" in roster_code
+            and "sql_begin_transaction(" in roster_code
+            and "sql_commit(" in roster_code
+            and "sql_rollback(" in roster_code,
+            "a direct MariaDB roster replacement owns a transaction while an enclosing "
+            "payment transaction remains caller-owned",
+        )
+        check(
+            "mysql_errno(" in roster_code
+            and "ER_NO_SUCH_TABLE" in roster_code
+            and "ER_NO_SUCH_TABLE_IN_ENGINE" in roster_code,
+            "only the two missing-table server errors trigger rosterless degradation",
+        )
+        failure_helper = re.search(
+            r"statement_failure\s*=\s*\[.*?\]\s*\([^)]*\)\s*->\s*bool\s*(\{.*?\n\s*\});",
+            mariadb_roster,
+            re.S,
+        )
+        failure_code = strip_comments(failure_helper.group(1)) if failure_helper else ""
+        check(
+            bool(failure_code)
+            and re.search(r"if\s*\(\s*missing\s*\).*?return\s+true\s*;", failure_code, re.S)
+            is not None
+            and re.search(r"return\s+false\s*;\s*\}", failure_code, re.S) is not None,
+            "a missing garrison table is accepted but every other roster statement error fails",
+        )
     retry = function_bodies(upkeep, r"\bvoid\s+kingdom_upkeep_retry_pending\s*\(\s*void\s*\)")
     check(
         len(retry) == 1 and "kingdom_persist_payment(" in retry[0],
@@ -772,7 +827,6 @@ def test_payment_durability_is_one_write() -> None:
         "the sweep tests payment_pending so a realm is not billed while its pair is pending",
     )
 
-    db = read("src/kingdom/kingdom_db.c")
     flushes = function_bodies(db, r"\bvoid\s+kingdom_db_flush_dirty\s*\(\s*void\s*\)")
     check(len(flushes) == 2, "kingdom_db_flush_dirty is defined once per backend", f"{len(flushes)}")
     # ORDER, not presence. "payment_pending appears somewhere in the body" was
@@ -1286,6 +1340,73 @@ def test_material_is_scaled_off_the_coin_not_compounded_separately() -> None:
           "a mud with free land (coin base 0) cannot divide by zero here")
 
 
+def test_documented_claim_curve_matches_integer_compounding() -> None:
+    """Every player-facing curve corner must match the shipped integer helper."""
+    value = 1_000_000
+    total = 0
+    corners: dict[int, tuple[int, int]] = {}
+    for square in range(1, 81):
+        if square > 1:
+            value = value * 1050 // 1000
+        total += value
+        if square in (1, 8, 24, 48, 80):
+            corners[square] = (value // 1000, total // 1000)
+    check(
+        corners == {
+            1: (1000, 1000),
+            8: (1407, 9549),
+            24: (3071, 44501),
+            48: (9905, 188024),
+            80: (47201, 971221),
+        },
+        "the expected claim-curve corners reproduce kingdom_compound's integer arithmetic",
+        repr(corners),
+    )
+    for path in ("lib/kingdom.cfg", "lib/information/helpkingdoms"):
+        compact = read(path).replace(",", "")
+        for square, (price, running) in corners.items():
+            check(
+                re.search(rf"^\s*#?\s*{square}\s+{price}\s+p\s+{running}\s+p", compact, re.M)
+                is not None,
+                f"{path} documents exact integer curve corner {square}: {price}/{running}",
+            )
+
+
+def test_guard_promotion_ladder_reaches_every_documented_ring_cap() -> None:
+    """The paid ladder is 45→50→52→54→56, one purchase per completed ring."""
+    internal = strip_comments(read("src/kingdom/kingdom_internal.h"))
+    for name, value in (
+        ("KINGDOM_GUARD_BASE_LEVEL", 45),
+        ("KINGDOM_GUARD_FIRST_TIER_LEVEL", 50),
+        ("KINGDOM_GUARD_TIER_STEP", 2),
+        ("KINGDOM_GUARD_TOP_LEVEL", 56),
+        ("KINGDOM_GUARD_TIERS", 4),
+    ):
+        check(
+            re.search(rf"#define\s+{name}\s+{value}\b", internal) is not None,
+            f"{name} pins the documented ladder value {value}",
+        )
+    guards = read("src/kingdom/kingdom_guards.c")
+    cap = function_bodies(guards, r"\bint\s+kingdom_guard_level_cap\s*\(")
+    next_level = function_bodies(guards, r"\bint\s+kingdom_guard_next_level\s*\(")
+    cost = function_bodies(guards, r"\blong\s+kingdom_guard_promotion_cost\s*\(")
+    check(len(cap) == len(next_level) == len(cost) == 1,
+          "guard cap, next-rung, and promotion-cost helpers are each defined once")
+    if cap:
+        check("KINGDOM_GUARD_FIRST_TIER_LEVEL" in cap[0] and "rings - 1" in cap[0],
+              "ring one caps at 50 and later rings add two levels")
+    if next_level:
+        check("level < KINGDOM_GUARD_FIRST_TIER_LEVEL" in next_level[0],
+              "the first promotion bridges level 45 directly to level 50")
+    if cost:
+        check("span * to_tier" in cost[0] and "span * from_tier" in cost[0],
+              "promotion prices use cumulative tier shares so rounding remainders reach max")
+    upgrade = function_bodies(read("src/kingdom/kingdom_claim.c"),
+                              r"\bvoid\s+kingdom_roster_upgrade\s*\(")
+    check(len(upgrade) == 1 and "kingdom_guard_next_level(level)" in upgrade[0],
+          "promotion advances to the next documented realm tier")
+
+
 def test_the_store_has_exactly_one_way_out() -> None:
     """Resources are spendable on kingdom benefits and on nothing else.
 
@@ -1407,6 +1528,16 @@ def test_the_banner_ticks_and_can_be_broken() -> None:
         check("REMOVE_BIT" in code and "AFF_INFERNAL_FURY" in code,
               "breaking the banner takes its buff away at once, so a banner "
               "that fell cannot go on helping")
+        check(code.count("kingdom_char_is_garrison_of(") >= 2,
+              "the banner grants and removes fury with the same guard-and-champion predicate")
+        check(".virtual_number" in code and ".number" not in code,
+              "banner identity uses the prototype virtual_number, not the live instance count")
+    plant = function_bodies(guards, r"\bstatic\s+void\s+kingdom_banner_plant\s*\(")
+    check(len(plant) == 1, "kingdom_banner_plant is defined", f"{len(plant)}")
+    if plant:
+        code = strip_comments(plant[0])
+        check("const std::string realm" in code and "realm.c_str()" in code,
+              "the realm name string outlives every c_str() use while a banner is named")
     bind = function_bodies(guards, r"\bvoid\s+kingdom_guards_bind_proc\s*\(")
     check(len(bind) == 1, "kingdom_guards_bind_proc is defined", f"{len(bind)}")
     if bind:
@@ -1512,10 +1643,24 @@ def test_prospect_is_open_to_everyone() -> None:
     check(-1 < prospect < gate,
           "prospect dispatches before the guild gate, so it needs no guild",
           f"prospect at {prospect}, gate at {gate}")
-    check('str_cmp(token, "p")' in code,
-          "a bare 'p' is refused as ambiguous rather than silently becoming "
-          "prospect, since promote shares the letter and sits on the far side "
-          "of the gate")
+    for prefix in ("p", "pr", "pro"):
+        check(f'str_cmp(token, "{prefix}")' in code,
+              f"shared prefix '{prefix}' is refused as ambiguous rather than silently "
+              "becoming prospect")
+    placement = function_bodies(read("src/kingdom/kingdom_placement.c"),
+                                r"\bvoid\s+kingdom_prospect\s*\(")
+    check(len(placement) == 1, "kingdom_prospect is defined", f"{len(placement)}")
+    if placement:
+        prospect_code = strip_comments(placement[0])
+        check("guildhall_valid_map_seat(ch->in_room)" in prospect_code
+              and "guildhall_valid_map_seat(rnum)" in prospect_code,
+              "both the current and suggested seats use the guildhall terrain rule")
+        check("here_x + dx" in prospect_code and "here_y + dy" in prospect_code,
+              "each suggested seat reports exact map coordinates as well as its bearing")
+    hall_check = function_bodies(read("src/guild/guildhall_cmds.c"),
+                                 r"\bbool\s+guildhall_map_check\s*\(")
+    check(len(hall_check) == 1 and "guildhall_valid_map_seat(rroom)" in hall_check[0],
+          "guildhall placement and prospecting share one terrain predicate")
 
 
 for _name, _fn in sorted(globals().items()):
@@ -1526,4 +1671,3 @@ if failures:
     print(f"\n{len(failures)} kingdom source-contract check(s) failed.")
     sys.exit(1)
 print("\nkingdom source contracts: OK")
-

@@ -92,6 +92,9 @@ using namespace std;
 */
 #define GH_ROOM_NUM_VALUES 8
 
+/* True when `rnum` has the same map terrain accepted for a main guildhall. */
+bool guildhall_valid_map_seat(int rnum);
+
 // entrance rooms
 #define GH_VALUE_ENTRANCE_DIR 0
 #define GH_GOLEM_SLOT 1

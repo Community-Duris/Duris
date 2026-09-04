@@ -715,7 +715,9 @@ void kingdom_prospect(struct char_data *ch)
 	send_to_char_f(ch, "&+WProspecting from %s.&n\r\n\r\n", world[ch->in_room].name);
 
 	int bad_index = 0;
-	const int here = kingdom_judge_footprint(ch->in_room, racewar, 0, &bad_index);
+	const bool valid_seat = guildhall_valid_map_seat(ch->in_room);
+	const int here = valid_seat ? kingdom_judge_footprint(ch->in_room, racewar, 0, &bad_index) :
+				      KSQ_BAD_SECTOR;
 
 	if (here == KSQ_OK)
 	{
@@ -727,17 +729,27 @@ void kingdom_prospect(struct char_data *ch)
 		return;
 	}
 
-	char why[MAX_INPUT_LENGTH];
-
-	why[0] = '\0';
-	kingdom_explain_refusal(ch->in_room, bad_index, here, why, sizeof(why));
-
-	if (why[0])
-		send_to_char_f(ch, "&+rNot here.&n Square %d of %d is refused: %s -- %s.\r\n\r\n",
-			       bad_index, KINGDOM_MAX_SQUARES, kingdom_verdict_text(here), why);
+	if (!valid_seat)
+	{
+		send_to_char("&+rNot here.&n The guildhall seat itself must be field, forest, or "
+			     "hills terrain.\r\n\r\n",
+			     ch);
+	}
 	else
-		send_to_char_f(ch, "&+rNot here.&n Square %d of %d is refused: %s.\r\n\r\n",
-			       bad_index, KINGDOM_MAX_SQUARES, kingdom_verdict_text(here));
+	{
+		char why[MAX_INPUT_LENGTH];
+
+		why[0] = '\0';
+		kingdom_explain_refusal(ch->in_room, bad_index, here, why, sizeof(why));
+
+		if (why[0])
+			send_to_char_f(
+				ch, "&+rNot here.&n Square %d of %d is refused: %s -- %s.\r\n\r\n",
+				bad_index, KINGDOM_MAX_SQUARES, kingdom_verdict_text(here), why);
+		else
+			send_to_char_f(ch, "&+rNot here.&n Square %d of %d is refused: %s.\r\n\r\n",
+				       bad_index, KINGDOM_MAX_SQUARES, kingdom_verdict_text(here));
+	}
 
 	/* The spiral. Ring by ring outward, so the first seats found are the
 	 * nearest ones and the search can stop the moment it has enough. Within
@@ -770,7 +782,7 @@ void kingdom_prospect(struct char_data *ch)
 				 * centre itself is settleable ground is one array
 				 * read, and it rejects the water and mountain that
 				 * make up most of the map. */
-				if (!kingdom_sector_is_settleable(world[rnum].sector_type))
+				if (!guildhall_valid_map_seat(rnum))
 					continue;
 
 				if (kingdom_judge_footprint(rnum, racewar, 0, NULL) != KSQ_OK)
@@ -783,8 +795,10 @@ void kingdom_prospect(struct char_data *ch)
 				/* The ring's radius IS the Chebyshev distance to
 				 * every square on it, which is the distance the
 				 * rest of the module measures in. */
-				send_to_char_f(ch, "   %2d squares %s\r\n", radius,
-					       kingdom_compass(dx, dy));
+				send_to_char_f(
+					ch, "   %2d squares %-10s (map %d,%d; offset %+d,%+d)\r\n",
+					radius, kingdom_compass(dx, dy), here_x + dx, here_y + dy,
+					dx, dy);
 				found++;
 			}
 		}

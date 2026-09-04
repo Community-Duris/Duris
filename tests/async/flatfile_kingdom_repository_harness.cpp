@@ -1,4 +1,6 @@
 #include "kingdom/kingdom_internal.h"
+#include "flatfile/flatfile_association_repository.h"
+#include "flatfile/flatfile_authority_transaction.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -81,8 +83,10 @@ void passed(const char *section)
 /* Create root/metadata owner-only, as the flat-file preflight provisions it. */
 void prepare_root(const fs::path &root)
 {
+	fs::create_directories(root / "domains");
 	fs::create_directories(root / "metadata");
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "metadata", fs::perms::owner_all, fs::perm_options::replace);
 }
 
@@ -622,9 +626,55 @@ int main(int argc, char **argv)
 		"the restored authority did not load");
 	passed("corrupt checksum and truncated payload are rejected without overwrite");
 
+	/* --- paid guild + roster: the shared recovery journal completes both
+	 * after-images after an interruption between them. --- */
+	const fs::path paid = base / "paid";
+	prepare_root(paid);
+	persistence_root = paid.string();
+	flatfile_association_record paid_guild = {};
+	paid_guild.association_id = 50;
+	paid_guild.name = "Paid Guild";
+	paid_guild.platinum = 7;
+	kingdom_realm paid_realm = make_realm(50, 8, 574424, 8, 0, 0, 0, 0, 1700025200, 0, 0);
+	paid_realm.guards[0].guard_class = 1;
+	paid_realm.guards[0].level = KINGDOM_GUARD_BASE_LEVEL;
+	std::string transaction_error;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(!kingdom_db_save_payment_pair(paid.string(), paid_guild, paid_realm,
+					      &transaction_error),
+		"fault injection did not interrupt the paid kingdom commit");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(fs::exists(paid / "domains/association_catalog") &&
+			!fs::exists(authority_of(paid)) &&
+			fs::exists(paid / "domains/.critical-authority-transaction"),
+		"interruption did not stop between the guild and realm after-images");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(paid.string(), &transaction_error),
+			"could not acquire the paid kingdom recovery lock");
+		require(flatfile_authority_transaction_recover(paid.string(), lock,
+							       &transaction_error) ==
+				flatfile_authority_transaction_result::ok,
+			("paid kingdom recovery failed: " + transaction_error).c_str());
+	}
+	std::vector<flatfile_association_record> paid_guilds;
+	require(flatfile_association_list(paid.string(), &paid_guilds, &transaction_error) ==
+				flatfile_association_result::ok &&
+			paid_guilds.size() == 1 && paid_guilds[0].association_id == 50 &&
+			paid_guilds[0].platinum == 7,
+		"recovery did not preserve the paid guild after-image");
+	kingdom_realms.clear();
+	require(kingdom_db_load_all() && kingdom_realms.size() == 1 &&
+			kingdom_realms[50].guards[0].guard_class == 1 &&
+			kingdom_realms[50].guards[0].level == KINGDOM_GUARD_BASE_LEVEL &&
+			!fs::exists(paid / "domains/.critical-authority-transaction"),
+		"recovery did not preserve the bought roster after-image");
+	passed("paid guild and roster recover as one authority transaction");
+
 	/* --- payment_pending gates the generic flush (lane A's durability rule):
 	 * a record whose paired guild write has not landed must stay off disk and
 	 * stay dirty until kingdom_upkeep_retry_pending() clears the pair. --- */
+	persistence_root = state.string();
 	kingdom_realms.clear();
 	kingdom_realm realm40 = make_realm(40, 7, 574024, 3, 0, 0, 0, 0, 1700021600, 0, 0);
 	kingdom_realms[40] = realm40;

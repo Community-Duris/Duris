@@ -41,6 +41,8 @@ std::string operation_directory(const std::string &root, flatfile_authority_stor
 		return root + "/identities/names";
 	case flatfile_authority_store::accounts:
 		return root + "/identities/accounts";
+	case flatfile_authority_store::metadata:
+		return root + "/metadata";
 	}
 	return {};
 }
