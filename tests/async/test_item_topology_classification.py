@@ -73,6 +73,23 @@ class ItemTopologyClassificationTest(unittest.TestCase):
         disagreement = row(2, current_owner_id=8)
         self.assertEqual(self.categories([disagreement]), ["owner_disagreement"])
 
+    def test_orphaned_corpse_owner_remains_in_candidate_population(self):
+        """Retain and classify a corpse item whose player owner is absent."""
+        output = "\t".join((
+            "corpse_items", "1", "1", "NULL", "4", "NULL", "0", "101",
+            "0", "0", "1", "NULL", "4", "99", "0", "2", "101", "1",
+            "2", "NULL", "NULL", "NULL", "NULL",
+        ))
+
+        def query(statement):
+            """Return one orphaned corpse row from the expected left join."""
+            self.assertIn("LEFT JOIN player_data", statement)
+            return output
+
+        rows = topology.load_rows(query)
+        self.assertIsNone(rows[0].payload_owner_id)
+        self.assertEqual(self.categories(rows), ["missing_payload_owner"])
+
     def test_quarantine_and_inactive_state_are_expected_transitions(self):
         """Treat only otherwise-consistent lifecycle states as expected."""
         findings = topology.classify([

@@ -45,7 +45,7 @@ class Row:
     item_uid: int
     payload_parent_uid: int | None
     payload_owner_type: int
-    payload_owner_id: int
+    payload_owner_id: int | None
     payload_owner_context_id: int
     vnum: int
     broken_parent: bool = False
@@ -160,7 +160,7 @@ WITH candidate AS (
          ((CAST(pd.pid AS UNSIGNED)<<32)|(CAST(c.save_id AS UNSIGNED)&4294967295)),0,
          i.vnum,IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
   FROM corpse_items i JOIN corpses c ON c.id=i.corpse_id
-  JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name)
+  LEFT JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name)
   LEFT JOIN corpse_items p ON p.id=i.container_id WHERE i.obj_uid>0
   UNION ALL
   SELECT 'locker_items',i.id,i.obj_uid,p.obj_uid,5,CAST(i.locker_id AS UNSIGNED),
@@ -231,7 +231,7 @@ def load_rows(query: Callable[[str], str]) -> list[Row]:
             raise TopologyError("topology query returned malformed data")
         result.append(Row(
             fields[0], _integer(fields[1]), _integer(fields[2]), _optional(fields[3]),
-            _integer(fields[4]), _integer(fields[5]), _integer(fields[6]),
+            _integer(fields[4]), _optional(fields[5]), _integer(fields[6]),
             _integer(fields[7]), bool(_integer(fields[8])), bool(_integer(fields[9])),
             *(_optional(value) for value in fields[10:]),
         ))
@@ -308,7 +308,9 @@ def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
     findings: list[Finding] = []
     for item_uid, row in canonical.items():
         root = roots.get(item_uid)
-        if item_uid in graph_failures:
+        if row.payload_owner_id is None:
+            category = "missing_payload_owner"
+        elif item_uid in graph_failures:
             category = graph_failures[item_uid]
         elif row.current_owner_type is None:
             category = "missing_current_owner"
