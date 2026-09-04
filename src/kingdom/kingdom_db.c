@@ -317,9 +317,10 @@ bool kingdom_db_load_all(void)
 		logit(LOG_KINGDOM, "kingdom_db_load_all: loaded %zu realms", loaded);
 
 	/* Rosters AFTER the realms, because each row is filed against a realm
-	 * this pass has already put in the map. */
-	if (complete)
-		kingdom_db_load_rosters();
+	 * this pass has already put in the map. kingdom_find_realm() skips rows
+	 * for realms beyond the cap, so a truncated pass still restores every
+	 * roster belonging to a realm it did load. */
+	kingdom_db_load_rosters();
 
 	/* A truncated load is a failed load: the caller must not treat the
 	 * squares of the realms it never saw as unowned. */
@@ -476,6 +477,26 @@ bool kingdom_db_save_roster(const kingdom_realm &realm)
 	return true;
 }
 
+/* Validate persisted class bits against the same curated table commands use.
+ * Round-tripping a single value through name -> bit avoids a second whitelist
+ * in the persistence layer. A champion is exactly two distinct allowed bits. */
+static bool kingdom_db_valid_guard_class(int candidate)
+{
+	return candidate != 0 &&
+	       kingdom_guard_class_by_name(kingdom_guard_class_name(candidate)) == candidate;
+}
+
+static bool kingdom_db_valid_champion_class(int candidate)
+{
+	const unsigned int bits = static_cast<unsigned int>(candidate);
+	const unsigned int lower = bits & (~bits + 1u);
+	const unsigned int higher = bits & ~lower;
+
+	return lower != 0 && higher != 0 && (higher & (higher - 1u)) == 0 &&
+	       kingdom_db_valid_guard_class(static_cast<int>(lower)) &&
+	       kingdom_db_valid_guard_class(static_cast<int>(higher));
+}
+
 /*
  * Fill in every loaded realm's roster in ONE query rather than one per realm:
  * the table is keyed by association and the whole of it is wanted, so a single
@@ -532,20 +553,22 @@ static void kingdom_db_load_rosters(void)
 
 		if (slot == KINGDOM_CHAMPION_SLOT)
 		{
-			if (level == KINGDOM_CHAMPION_LEVEL && guard_class)
+			if (level == KINGDOM_CHAMPION_LEVEL &&
+			    kingdom_db_valid_champion_class(guard_class))
 				realm->champion_class = guard_class;
 			else
 				rejected++;
 			continue;
 		}
 
-		if (slot < 0 || slot >= KINGDOM_GUARD_SLOTS || level < KINGDOM_GUARD_BASE_LEVEL ||
-		    level > KINGDOM_GUARD_TOP_LEVEL)
+		if (slot < 0 || slot >= KINGDOM_GUARD_SLOTS ||
+		    !kingdom_db_valid_guard_class(guard_class) ||
+		    level < KINGDOM_GUARD_BASE_LEVEL || level > KINGDOM_GUARD_TOP_LEVEL)
 		{
 			logit(LOG_KINGDOM,
-			      "kingdom_db_load_rosters: dropping association %d slot %d level %d "
-			      "as out of range",
-			      assoc_id, slot, level);
+			      "kingdom_db_load_rosters: dropping association %d slot %d class %d "
+			      "level %d as out of range",
+			      assoc_id, slot, guard_class, level);
 			rejected++;
 			continue;
 		}

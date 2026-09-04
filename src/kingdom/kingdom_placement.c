@@ -681,14 +681,13 @@ int kingdom_judge_footprint(int hall_rnum, int racewar, int ignore_assoc, int *b
  * "6 north-west" is an instruction a player can walk.
  */
 
-/* How far out to look, in map squares, and how many seats to name. The radius
- * is a COST bound, not a rule: each candidate costs up to 80 judge_square
- * calls, so a 12-square box is 625 candidates and the worst case is real work.
- * The saving grace is that kingdom_judge_footprint() stops at the first
- * refusal and most candidates fail in ring 1, but the bound is what keeps the
- * worst case bounded rather than the average. */
+/* How far out to look, how many seats to name, and how many expensive full
+ * footprints one command may judge. The radius bounds cheap map-seat probes;
+ * the separate budget bounds the worst case even when every candidate reaches
+ * all eighty square judgements. */
 #define KINGDOM_PROSPECT_RADIUS 12
 #define KINGDOM_PROSPECT_RESULTS 5
+#define KINGDOM_PROSPECT_FOOTPRINT_BUDGET 64
 
 void kingdom_prospect(struct char_data *ch)
 {
@@ -715,9 +714,15 @@ void kingdom_prospect(struct char_data *ch)
 	send_to_char_f(ch, "&+WProspecting from %s.&n\r\n\r\n", world[ch->in_room].name);
 
 	int bad_index = 0;
+	int footprints_left = KINGDOM_PROSPECT_FOOTPRINT_BUDGET;
 	const bool valid_seat = guildhall_valid_map_seat(ch->in_room);
-	const int here = valid_seat ? kingdom_judge_footprint(ch->in_room, racewar, 0, &bad_index) :
-				      KSQ_BAD_SECTOR;
+	int here = KSQ_BAD_SECTOR;
+
+	if (valid_seat)
+	{
+		footprints_left--;
+		here = kingdom_judge_footprint(ch->in_room, racewar, 0, &bad_index);
+	}
 
 	if (here == KSQ_OK)
 	{
@@ -758,12 +763,15 @@ void kingdom_prospect(struct char_data *ch)
 	 * get the same answer. */
 	int found = 0;
 
-	for (int radius = 1; radius <= KINGDOM_PROSPECT_RADIUS && found < KINGDOM_PROSPECT_RESULTS;
+	for (int radius = 1; radius <= KINGDOM_PROSPECT_RADIUS &&
+			     found < KINGDOM_PROSPECT_RESULTS && footprints_left > 0;
 	     radius++)
 	{
-		for (int dy = -radius; dy <= radius && found < KINGDOM_PROSPECT_RESULTS; dy++)
+		for (int dy = -radius;
+		     dy <= radius && found < KINGDOM_PROSPECT_RESULTS && footprints_left > 0; dy++)
 		{
-			for (int dx = -radius; dx <= radius && found < KINGDOM_PROSPECT_RESULTS;
+			for (int dx = -radius; dx <= radius && found < KINGDOM_PROSPECT_RESULTS &&
+					       footprints_left > 0;
 			     dx++)
 			{
 				/* Only the ring's edge: the interior was covered
@@ -785,6 +793,7 @@ void kingdom_prospect(struct char_data *ch)
 				if (!guildhall_valid_map_seat(rnum))
 					continue;
 
+				footprints_left--;
 				if (kingdom_judge_footprint(rnum, racewar, 0, NULL) != KSQ_OK)
 					continue;
 
@@ -804,7 +813,14 @@ void kingdom_prospect(struct char_data *ch)
 		}
 	}
 
-	if (found == 0)
+	const bool budget_exhausted = footprints_left == 0 && found < KINGDOM_PROSPECT_RESULTS;
+
+	if (found == 0 && budget_exhausted)
+		send_to_char_f(ch,
+			       "This survey reached its %d-seat work limit before finding a match. "
+			       "Try\r\nagain nearby to continue the search.\r\n",
+			       KINGDOM_PROSPECT_FOOTPRINT_BUDGET);
+	else if (found == 0)
 		send_to_char_f(
 			ch,
 			"Nothing within %d squares would take one either. The nearest seat "
@@ -812,8 +828,16 @@ void kingdom_prospect(struct char_data *ch)
 			"somewhere well clear of\r\ntowns and the mouths of other zones.\r\n",
 			KINGDOM_PROSPECT_RADIUS);
 	else
+	{
+		if (budget_exhausted)
+			send_to_char_f(
+				ch,
+				"\r\nThe survey stopped at its %d-seat work limit; there may be "
+				"more\r\nchoices nearby.\r\n",
+				KINGDOM_PROSPECT_FOOTPRINT_BUDGET);
 		send_to_char(
 			"\r\nA realm is seated on a guildhall, so the hall must be built on "
 			"the square\r\nfirst, and then converted with '&+Wkingdom convert&n'.\r\n",
 			ch);
+	}
 }

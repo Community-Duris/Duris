@@ -194,8 +194,6 @@ extern P_index obj_index;
 #define KINGDOM_BANNER_HITPOINTS 2500
 #define KINGDOM_BANNER_REPLANT_ROUNDS 5
 
-/* Prototype rnum, resolved on demand the way kingdom_guard_rnum() is. */
-static int kingdom_champion_rnum(void);
 /* Take every banner of one realm out of the world, or every banner there is
  * when assoc_id is 0. Defined with the banner code, called by the despawn
  * paths above it. */
@@ -257,6 +255,17 @@ static int kingdom_guard_rnum(void)
 	return real_mobile(VMOB_KINGDOM_GUARD);
 }
 
+/* Champion prototype rnum, with the same pre-boot guard as the ordinary guard
+ * lookup. Shutdown and a disabled feature can reach this before mob_index has
+ * been built. */
+static int kingdom_champion_rnum(void)
+{
+	if (mob_index == NULL)
+		return -1;
+
+	return real_mobile(VMOB_KINGDOM_CHAMPION);
+}
+
 /* True when this character is a kingdom guard of any realm. Tested in this
  * order on purpose: IS_NPC() first, because only.npc and only.pc share a union
  * (core/structs.h:1535-1539) and reading npc fields off a PC is a type
@@ -309,6 +318,26 @@ static bool kingdom_char_is_guard_of(P_char ch, int guard_rnum, int assoc_id)
 		return false;
 
 	return KINGDOM_GUARD_ASSOC(ch) == assoc_id;
+}
+
+/* The champion half of kingdom_char_is_guard(). It carries the same type and
+ * name checks because every extraction path uses these predicates, and
+ * extract_char() dereferences player.name. */
+static bool kingdom_char_is_champion(P_char ch, int champion_rnum)
+{
+	if (ch == NULL || champion_rnum < 0)
+		return false;
+	if (!IS_NPC(ch) || ch->only.npc == NULL)
+		return false;
+	if (ch->player.name == NULL || *ch->player.name == '\0')
+		return false;
+
+	return ch->only.npc->R_num == champion_rnum;
+}
+
+static bool kingdom_char_is_champion_of(P_char ch, int champion_rnum, int assoc_id)
+{
+	return kingdom_char_is_champion(ch, champion_rnum) && KINGDOM_GUARD_ASSOC(ch) == assoc_id;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1026,6 +1055,10 @@ static void kingdom_guard_call_the_garrison(P_char caller, P_char attacker)
 
 	do_shout(caller, cry, CMD_SHOUT);
 
+	/* MobHuntCheck may move and extract its caller through a destination room
+	 * proc. Snapshot candidates before issuing any hunt order, then verify each
+	 * pointer is still on character_list before dereferencing it. */
+	std::vector<P_char> responders;
 	for (P_char mob = character_list; mob; mob = mob->next)
 	{
 		if (mob == caller || !kingdom_char_is_guard_of(mob, guard_rnum, assoc_id))
@@ -1033,6 +1066,14 @@ static void kingdom_guard_call_the_garrison(P_char caller, P_char attacker)
 		if (!IS_ALIVE(mob) || IS_FIGHTING(mob) || mob->in_room == NOWHERE)
 			continue;
 		if (mob->in_room == where)
+			continue;
+
+		responders.push_back(mob);
+	}
+
+	for (P_char mob : responders)
+	{
+		if (!char_in_list(mob) || !IS_ALIVE(mob))
 			continue;
 
 		/* Hunting is how a mob crosses rooms toward something it cannot
@@ -1049,7 +1090,7 @@ static void kingdom_guard_call_the_garrison(P_char caller, P_char attacker)
 		 * -- kingdom_guards_refresh() runs every upkeep tick and replaces
 		 * any guard not standing on its post -- so a guard kited away is
 		 * a guard replaced within the minute, not one lost. */
-		if (attacker && IS_ALIVE(attacker))
+		if (attacker && char_in_list(attacker) && IS_ALIVE(attacker))
 		{
 			SET_BIT(mob->specials.act, ACT_HUNTER);
 			MobHuntCheck(mob, attacker);
@@ -1184,9 +1225,7 @@ int kingdom_champion_refresh(const kingdom_realm &realm)
 
 	for (P_char tch = character_list; tch; tch = tch->next)
 	{
-		if (!tch->only.npc || tch->only.npc->R_num != champion_rnum)
-			continue;
-		if (KINGDOM_GUARD_ASSOC(tch) != realm.assoc_id)
+		if (!kingdom_char_is_champion_of(tch, champion_rnum, realm.assoc_id))
 			continue;
 
 		if (wanted && standing == 0)
@@ -1266,19 +1305,13 @@ int kingdom_champion_refresh(const kingdom_realm &realm)
 /* Defined below the proc that calls it. */
 static bool kingdom_garrison_is_hurt(int assoc_id);
 
-static int kingdom_champion_rnum(void)
-{
-	return real_mobile(VMOB_KINGDOM_CHAMPION);
-}
-
 /* True for either kind of live garrison body belonging to `assoc_id`. Both the
  * banner tick and its cleanup use this exact predicate, so every body granted
  * combat fury is also one from which the falling banner removes it. */
 static bool kingdom_char_is_garrison_of(P_char mob, int guard_rnum, int champion_rnum, int assoc_id)
 {
 	return (guard_rnum >= 0 && kingdom_char_is_guard_of(mob, guard_rnum, assoc_id)) ||
-	       (champion_rnum >= 0 && mob && mob->only.npc &&
-		mob->only.npc->R_num == champion_rnum && KINGDOM_GUARD_ASSOC(mob) == assoc_id);
+	       kingdom_char_is_champion_of(mob, champion_rnum, assoc_id);
 }
 
 /* True when `obj` is either kingdom banner. Compared on the prototype vnum
@@ -1573,13 +1606,15 @@ int kingdom_champion_proc(P_char ch, P_char pl, int cmd, char *arg)
 static bool kingdom_garrison_is_hurt(int assoc_id)
 {
 	const int guard_rnum = kingdom_guard_rnum();
+	const int champion_rnum = kingdom_champion_rnum();
 
-	if (guard_rnum < 0)
+	if (guard_rnum < 0 && champion_rnum < 0)
 		return false;
 
 	for (P_char mob = character_list; mob; mob = mob->next)
 	{
-		if (!kingdom_char_is_guard_of(mob, guard_rnum, assoc_id) || !IS_ALIVE(mob))
+		if (!kingdom_char_is_garrison_of(mob, guard_rnum, champion_rnum, assoc_id) ||
+		    !IS_ALIVE(mob))
 			continue;
 		if (GET_HIT(mob) * 4 < GET_MAX_HIT(mob) * 3)
 			return true;
@@ -1656,9 +1691,7 @@ int kingdom_guards_despawn(int assoc_id)
 		 * banners for a realm that never bought it. */
 		if (guard_rnum >= 0 && kingdom_char_is_guard_of(tch, guard_rnum, assoc_id))
 			doomed.push_back(tch);
-		else if (champion_rnum >= 0 && tch->only.npc &&
-			 tch->only.npc->R_num == champion_rnum &&
-			 KINGDOM_GUARD_ASSOC(tch) == assoc_id)
+		else if (kingdom_char_is_champion_of(tch, champion_rnum, assoc_id))
 			doomed.push_back(tch);
 	}
 
@@ -1679,8 +1712,7 @@ int kingdom_guards_despawn_all(void)
 	{
 		if (guard_rnum >= 0 && kingdom_char_is_guard(tch, guard_rnum))
 			doomed.push_back(tch);
-		else if (champion_rnum >= 0 && tch->only.npc &&
-			 tch->only.npc->R_num == champion_rnum)
+		else if (kingdom_char_is_champion(tch, champion_rnum))
 			doomed.push_back(tch);
 	}
 
@@ -1898,8 +1930,7 @@ void kingdom_guards_refresh_all(void)
 			 * while the next refresh musters a fresh one beside it. */
 			const bool ours =
 				(guard_rnum >= 0 && kingdom_char_is_guard(tch, guard_rnum)) ||
-				(champion_rnum >= 0 && tch->only.npc &&
-				 tch->only.npc->R_num == champion_rnum);
+				kingdom_char_is_champion(tch, champion_rnum);
 
 			if (!ours)
 				continue;

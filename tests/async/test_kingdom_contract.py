@@ -1407,6 +1407,44 @@ def test_guard_promotion_ladder_reaches_every_documented_ring_cap() -> None:
           "promotion advances to the next documented realm tier")
 
 
+def test_roster_load_is_complete_for_every_loaded_realm_and_rejects_bad_classes() -> None:
+    """A capped realm scan must not turn durable guards into an empty roster.
+
+    The realm cap makes load_all report failure, but the realms already admitted
+    to memory still need their rows before shutdown or any later save can publish
+    them. Persisted class values are untrusted too: guards take one curated class,
+    while a champion takes exactly two distinct curated class bits.
+    """
+    db = read("src/kingdom/kingdom_db.c")
+    loads = function_bodies(db, r"\bbool\s+kingdom_db_load_all\s*\(\s*void\s*\)")
+    mariadb_load = next((body for body in loads if "kingdom_realm_columns" in body), "")
+    check(bool(mariadb_load), "the MariaDB realm loader is defined", f"loaders={len(loads)}")
+    if mariadb_load:
+        code = strip_comments(mariadb_load)
+        check("kingdom_db_load_rosters();" in code,
+              "the MariaDB realm loader always attempts to restore loaded realms' rosters")
+        check(re.search(r"if\s*\(\s*complete\s*\)\s*kingdom_db_load_rosters", code) is None,
+              "a capped realm scan does not skip every loaded realm's roster")
+
+    rosters = function_bodies(db, r"\bstatic\s+void\s+kingdom_db_load_rosters\s*\(")
+    check(len(rosters) == 1, "the MariaDB roster loader is defined once", f"{len(rosters)}")
+    if rosters:
+        code = strip_comments(rosters[0])
+        check("kingdom_db_valid_guard_class(guard_class)" in code,
+              "persisted guard rows accept only one curated guard class")
+        check("kingdom_db_valid_champion_class(guard_class)" in code,
+              "persisted champion rows accept exactly the champion class shape")
+
+    champion = function_bodies(db, r"\bstatic\s+bool\s+kingdom_db_valid_champion_class\s*\(")
+    check(len(champion) == 1, "the persisted champion class validator is defined once",
+          f"{len(champion)}")
+    if champion:
+        code = strip_comments(champion[0])
+        check("higher & (higher - 1u)" in code
+              and code.count("kingdom_db_valid_guard_class(") == 2,
+              "a champion has exactly two allowed single-class bits")
+
+
 def test_the_store_has_exactly_one_way_out() -> None:
     """Resources are spendable on kingdom benefits and on nothing else.
 
@@ -1507,6 +1545,66 @@ def test_the_champion_needs_the_whole_map_and_two_callings() -> None:
           "raising a champion puts it in the world through the reconciler")
 
 
+def test_garrison_identity_and_hunts_survive_extraction() -> None:
+    """Garrison scans never dereference a PC, a malformed NPC, or an extracted hunter."""
+    guards = read("src/kingdom/kingdom_guards.c")
+    champion = function_bodies(guards, r"\bstatic\s+bool\s+kingdom_char_is_champion\s*\(")
+    check(len(champion) == 1, "the shared champion identity predicate is defined once",
+          f"{len(champion)}")
+    if champion:
+        code = strip_comments(champion[0])
+        check("IS_NPC(ch)" in code and "ch->only.npc == NULL" in code
+              and "ch->player.name == NULL" in code and "*ch->player.name == '\\0'" in code,
+              "champion identity rejects PCs and malformed NPC records before R_num")
+    check(strip_comments(guards).count("->R_num == champion_rnum") == 1,
+          "all champion refresh and despawn scans use the shared safe identity predicate")
+
+    champion_rnum = function_bodies(guards, r"\bstatic\s+int\s+kingdom_champion_rnum\s*\(")
+    check(len(champion_rnum) == 1, "kingdom_champion_rnum is defined once",
+          f"{len(champion_rnum)}")
+    if champion_rnum:
+        code = strip_comments(champion_rnum[0])
+        check(-1 < code.find("mob_index == NULL") < code.find("real_mobile("),
+              "champion prototype lookup waits until mob_index exists")
+
+    hurt = function_bodies(guards, r"\bstatic\s+bool\s+kingdom_garrison_is_hurt\s*\(")
+    check(len(hurt) == 1, "kingdom_garrison_is_hurt is defined once", f"{len(hurt)}")
+    if hurt:
+        check("kingdom_char_is_garrison_of(" in strip_comments(hurt[0]),
+              "sanctity can be selected for a hurt champion even with no bought guards")
+
+    muster = function_bodies(guards, r"\bstatic\s+void\s+kingdom_guard_call_the_garrison\s*\(")
+    check(len(muster) == 1, "kingdom_guard_call_the_garrison is defined once",
+          f"{len(muster)}")
+    if muster:
+        code = strip_comments(muster[0])
+        snapshot = code.find("std::vector<P_char> responders")
+        validate = code.find("char_in_list(mob)", snapshot)
+        hunt = code.find("MobHuntCheck(mob, attacker)", validate)
+        check(-1 < snapshot < validate < hunt and "IS_ALIVE(mob)" in code[validate:hunt],
+              "the muster snapshots responders and revalidates each live one before movement")
+
+    move = function_bodies(read("src/cmd/actmove.c"), r"\bvoid\s+do_move\s*\(")
+    check(len(move) == 1, "do_move is defined once", f"{len(move)}")
+    if move:
+        code = strip_comments(move[0])
+        moved = code.find("do_simple_move(ch")
+        live = code.find("char_in_list(ch)", moved)
+        after = code.find("affected_by_spell(ch, SPELL_PATH_OF_FROST)", moved)
+        check(-1 < moved < live < after,
+              "do_move revalidates a character after a destination proc before dereferencing it")
+
+    hunt_check = function_bodies(read("src/mob/mobact.c"), r"\bvoid\s+MobHuntCheck\s*\(")
+    check(len(hunt_check) == 1, "MobHuntCheck is defined once", f"{len(hunt_check)}")
+    if hunt_check:
+        code = strip_comments(hunt_check[0])
+        moved = code.find("do_move(ch, NULL, a)")
+        live = code.find("char_in_list(ch)", moved)
+        wait = code.find("CharWait(ch", moved)
+        check(-1 < moved < live < wait,
+              "MobHuntCheck revalidates an extracted hunter before waiting or inspecting it")
+
+
 def test_the_banner_ticks_and_can_be_broken() -> None:
     """A banner is a thing in a room, not an aura.
 
@@ -1583,8 +1681,8 @@ def test_the_spec_heartbeat_is_armed_at_both_ends() -> None:
         check("CMD_PERIODIC" in code.replace("CMD_SET_PERIODIC", ""),
               f"{name} acts on CMD_PERIODIC, the live heartbeat -- not on "
               "CMD_MOB_MUNDANE, whose dispatch to spec procs is commented out")
-    check("CMD_KILL" not in strip_comments(
-              function_bodies(guards, r"\bint\s+kingdom_guard_proc\s*\(")[0]),
+    guard_proc = function_bodies(guards, r"\bint\s+kingdom_guard_proc\s*\(")
+    check(bool(guard_proc) and "CMD_KILL" not in strip_comments(guard_proc[0]),
           "a guard reacts to CMD_GOTHIT alone: special() offers every command "
           "typed in a room to every mob in it, so reacting to CMD_KILL would "
           "muster the garrison at someone killing a rat nearby")
@@ -1657,6 +1755,16 @@ def test_prospect_is_open_to_everyone() -> None:
               "both the current and suggested seats use the guildhall terrain rule")
         check("here_x + dx" in prospect_code and "here_y + dy" in prospect_code,
               "each suggested seat reports exact map coordinates as well as its bearing")
+        check("KINGDOM_PROSPECT_FOOTPRINT_BUDGET" in prospect_code
+              and prospect_code.count("footprints_left > 0") >= 3,
+              "every prospect spiral level stops when its per-command footprint budget is spent")
+        cheap = prospect_code.find("guildhall_valid_map_seat(rnum)")
+        candidate = prospect_code.find("kingdom_judge_footprint(rnum")
+        decrement = prospect_code.find("footprints_left--", cheap, candidate)
+        check(-1 < cheap < decrement < candidate,
+              "a candidate consumes budget before its expensive footprint is judged")
+        check("budget_exhausted" in prospect_code,
+              "a truncated prospect reports its work limit instead of claiming the radius is empty")
     hall_check = function_bodies(read("src/guild/guildhall_cmds.c"),
                                  r"\bbool\s+guildhall_map_check\s*\(")
     check(len(hall_check) == 1 and "guildhall_valid_map_seat(rroom)" in hall_check[0],
