@@ -577,10 +577,9 @@ backup, protected per-PID decisions, reviewed forward and rollback DML, all dige
 the rehearsal receipt. Afterwards rerun the same full reconciliation set. Never delete
 or rewrite ledger history to make readiness pass.
 
-Loopback clone targets are permitted directly. A remote clone additionally requires
-verified TLS and an exact port-aware `DB_ALLOWED_TARGETS` entry in the form
-`host:port/database`; a non-default port cannot reuse authority granted to another
-endpoint.
+Loopback combat-baseline clone targets are permitted directly. A remote clone additionally
+requires verified TLS and an exact port-aware `DB_ALLOWED_TARGETS` entry in the form
+`host:port/database`; a non-default port cannot reuse authority granted to another endpoint.
 
 For the physical-coin replacement signature, first stop all writers at a clean save
 boundary and create a private operator directory. Classification writes the exact
@@ -603,7 +602,9 @@ Rehearse only on a fresh non-production clone. The guarded transaction restores 
 payload's UID to the still-authoritative custody identity; it does not alter denominations,
 wallets, baselines, owner revisions, or ledger rows. Apply first proves that the database
 rejects an invalid temporary-table `CHECK`; it aborts without DML or a receipt when that
-guard is disabled or cannot be verified:
+guard is disabled or cannot be verified. Name the clone exactly `duris_dev`, `duris_local`,
+or `duris_test`. Every coin-custody apply, including loopback, also requires an exact
+port-aware `DB_ALLOWED_TARGETS` entry in the form `host:port/database`:
 
 ```bash
 WRITERS_QUIESCED=TRUE COIN_CUSTODY_BACKUP_ID='<backup-generation>' \

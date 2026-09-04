@@ -23,8 +23,10 @@ def environment(tool_dir: pathlib.Path, row: str) -> dict[str, str]:
             "DB_USER": "test",
             "DB_PASSWD": "test",
             "DB_NAME": "duris_test",
+            "DB_ALLOWED_TARGETS": "127.0.0.1:3306/duris_test",
             "ENVIRONMENT": "test",
             "PAIR_ROW": row,
+            "MYSQL_CALL_LOG": str(tool_dir / "mysql.calls"),
         }
     )
     return values
@@ -38,6 +40,7 @@ with tempfile.TemporaryDirectory(prefix="duris-coin-custody-") as temporary:
         "#!/usr/bin/env bash\n"
         "if [[ \"$1\" == '--help' ]]; then echo '--ssl-mode'; exit 0; fi\n"
         "query=${!#}\n"
+        "printf '%s\\n' \"$query\" >>\"$MYSQL_CALL_LOG\"\n"
         "if [[ \"$query\" == *'coin_custody_check_probe_ready'* ]]; then\n"
         "  printf '%s\\n' 'coin_custody_check_probe_ready'\n"
         "  if [[ \"${CHECK_CONSTRAINTS_ENFORCED:-TRUE}\" == TRUE ]]; then\n"
@@ -72,6 +75,32 @@ with tempfile.TemporaryDirectory(prefix="duris-coin-custody-") as temporary:
             "COIN_CUSTODY_BACKUP_ID": "test-backup-generation",
         }
     )
+    calls_before_rejection = (private / "mysql.calls").read_bytes()
+    production_like_environment = env.copy()
+    production_like_environment["ENVIRONMENT"] = "production-test"
+    rejected_environment = subprocess.run(
+        [str(RECONCILE), "--apply", str(artifact), digest], cwd=ROOT,
+        env=production_like_environment, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert rejected_environment.returncode == 1, rejected_environment.stdout
+    assert "outside development/local/test" in rejected_environment.stdout
+    assert (private / "mysql.calls").read_bytes() == calls_before_rejection
+
+    production_like_database = env.copy()
+    production_like_database["DB_NAME"] = "duris-production-test"
+    production_like_database["DB_ALLOWED_TARGETS"] = (
+        "127.0.0.1:3306/duris-production-test"
+    )
+    rejected_database = subprocess.run(
+        [str(RECONCILE), "--apply", str(artifact), digest], cwd=ROOT,
+        env=production_like_database, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert rejected_database.returncode == 1, rejected_database.stdout
+    assert "approved clone database name" in rejected_database.stdout
+    assert (private / "mysql.calls").read_bytes() == calls_before_rejection
+
     unenforced_env = env.copy()
     unenforced_env["CHECK_CONSTRAINTS_ENFORCED"] = "FALSE"
     unenforced = subprocess.run(
@@ -110,6 +139,8 @@ assert "coin_custody_check_probe_ready" in source
 assert "ERROR (3819|4025)" in source
 assert "exactly one reviewed owner/payload pair" in source
 assert "refusing coin custody reconciliation outside" in source
+assert 'approved_target="$DB_HOST:$db_port/$DB_NAME"' in source
+assert '"$allowed_target" == "$approved_target"' in source
 assert "--ssl-mode=VERIFY_IDENTITY" in source
 assert "--skip-ssl" not in source
 

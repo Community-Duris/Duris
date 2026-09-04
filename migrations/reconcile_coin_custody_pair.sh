@@ -42,7 +42,13 @@ if [[ "$DB_HOST" != localhost && "$DB_HOST" != 127.0.0.1 && "$DB_HOST" != ::1 ]]
         exit 1
     fi
 fi
-MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B "$DB_NAME")
+db_port="${DB_PORT:-3306}"
+if ! [[ "$db_port" =~ ^[0-9]+$ ]] ||
+    (( 10#$db_port < 1 || 10#$db_port > 65535 )); then
+    echo 'database port must be between 1 and 65535' >&2
+    exit 2
+fi
+MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "$db_port" -u "$DB_USER" -N -B "$DB_NAME")
 
 artifact_parent="$(dirname "$artifact")"
 [[ -d "$artifact_parent" && ! -L "$artifact_parent" ]] || {
@@ -136,8 +142,31 @@ if [[ "$mode" == --classify ]]; then
 fi
 
 environment_name="${ENVIRONMENT:-${APP_ENV:-}}"
-[[ "${environment_name,,}" =~ (dev|local|test) && "${DB_NAME,,}" =~ (dev|local|test) ]] || {
+case "${environment_name,,}" in
+dev|development|local|test) ;;
+*)
     echo 'refusing coin custody reconciliation outside development/local/test' >&2
+    exit 1
+    ;;
+esac
+case "${DB_NAME,,}" in
+duris_dev|duris_local|duris_test) ;;
+*)
+    echo 'coin custody reconciliation requires an approved clone database name' >&2
+    exit 1
+    ;;
+esac
+approved_target="$DB_HOST:$db_port/$DB_NAME"
+target_allowed=0
+IFS=',' read -r -a allowed_targets <<<"${DB_ALLOWED_TARGETS:-}"
+for allowed_target in "${allowed_targets[@]}"; do
+    if [[ "$allowed_target" == "$approved_target" ]]; then
+        target_allowed=1
+        break
+    fi
+done
+[[ "$target_allowed" == 1 ]] || {
+    echo 'coin custody reconciliation target is not allow-listed' >&2
     exit 1
 }
 [[ "${WRITERS_QUIESCED:-}" == TRUE && -n "${COIN_CUSTODY_BACKUP_ID:-}" ]] || {
