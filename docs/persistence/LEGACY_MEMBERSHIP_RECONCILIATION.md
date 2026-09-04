@@ -47,8 +47,12 @@ prestige, locker access, profile/guild display, forum ACLs, and administrative
 permissions. A `conflict` in any effect makes the row conflicted. Before the
 plan can be ready, every non-restorable row needs a permanent protected
 disposition of `leave_unrestored` or `player_support`, with an evidence
-reference. This is the durable support route for a returning player; operators
-must not improvise a numeric reassignment.
+reference. A disposition attached to a `uniquely_mappable` row is invalid and
+aborts the entire run. To withhold that restoration, correct or extend the
+semantic evidence so the classifier reaches a supported non-restorable class;
+do not add a disposition to an otherwise mappable row. This is the durable
+support route for a returning player; operators must not improvise a numeric
+reassignment.
 
 ## Protected evidence
 
