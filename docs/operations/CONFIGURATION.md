@@ -422,6 +422,20 @@ warning. Budget and callback values are limited to `0..1000000`, and boolean
 switches to `0..1`; invalid values fall back to their defaults. See
 [ARCHITECTURE.md](../reference/ARCHITECTURE.md#event-wheel).
 
+## Kingdom harvest node populations
+
+`lib/duris.properties` sets the target population for each harvest region:
+
+| Property | Shipped default |
+| --- | --- |
+| `kingdom.nodes.map.total` | `80.000` |
+| `kingdom.nodes.ud.total` | `60.000` |
+
+Each target counts all resource kinds together. The server clamps each target
+between 0 and 500 nodes per region. These properties override the matching
+compiled defaults; the population figures in `help kingdoms` describe the
+shipped configuration.
+
 ## Precedence and verification
 
 1. The launching process environment has precedence over `.env`.

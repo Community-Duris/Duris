@@ -989,6 +989,27 @@ def test_node_population_is_one_random_mix_per_region() -> None:
             f"totals: {totals}",
         )
 
+
+        properties = read("lib/duris.properties")
+        for row in rows:
+            values = re.findall(
+                rf"^{re.escape(row[4])}\s*=\s*(\d+(?:\.\d+)?)\s*$",
+                properties,
+                re.M,
+            )
+            check(
+                len(values) == 1 and float(values[0]) == int(row[5]),
+                f"{row[4]} ships the same total as the C region table",
+                f"property values: {values}; C default: {row[5]}",
+            )
+        help_text = " ".join(read("lib/information/helpkingdoms").split())
+        check(
+            f"The shipped defaults are {totals.get('Surface Map')} nodes across "
+            f"the surface map and {totals.get('Underdark')} through the Underdark; "
+            "staff may adjust these totals." in help_text,
+            "kingdom help matches both region totals and labels them adjustable defaults",
+        )
+
     refill = function_bodies(harvest, r"\bstatic\s+void\s+kingdom_nodes_reload\s*\(")
     check(len(refill) == 1, "kingdom_nodes_reload is defined once")
     if refill:
