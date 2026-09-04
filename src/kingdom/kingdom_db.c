@@ -164,6 +164,18 @@ bool record_is_sane(const kingdom_realm &realm)
  * guild's name lives in the association record.
  */
 
+/* ER_NO_SUCH_TABLE_IN_ENGINE is MySQL 5.7+; MariaDB's client headers do not
+ * define it at all, so referring to it unguarded fails to COMPILE against the
+ * default backend rather than failing at runtime. Defined here when absent
+ * instead of dropping the test, because the roster's missing-table degradation
+ * genuinely wants both codes: 1146 is "no such table" and 1932 is "the table is
+ * in the dictionary but its engine has lost it", and a server in the second
+ * state should degrade exactly as one in the first. The number is a wire error
+ * code and is stable. */
+#ifndef ER_NO_SUCH_TABLE_IN_ENGINE
+#define ER_NO_SUCH_TABLE_IN_ENGINE 1932
+#endif
+
 /* Defined below kingdom_db_load_all(), which calls it: the roster loader reads
  * realms that pass has already filed, so it belongs after them in the file and
  * needs a forward declaration to be reached from before. */
