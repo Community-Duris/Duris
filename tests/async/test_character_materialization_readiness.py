@@ -116,7 +116,7 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
             existing.write_bytes(b"existing")
             open_parent = root / "open"
             open_parent.mkdir(mode=0o755)
-            os.chmod(open_parent, 0o755)
+            os.chmod(open_parent, 0o755)  # noqa: S103 - exercise unsafe-parent rejection
             linked_parent = root / "linked"
             linked_parent.symlink_to(protected, target_is_directory=True)
             cases = (
