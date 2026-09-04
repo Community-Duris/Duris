@@ -28,6 +28,8 @@ class MergeVerificationError(Exception):
 
 @dataclass(frozen=True)
 class Parent:
+    """One opaque source or target account and its authentication fingerprints."""
+
     account_ref: str
     password_fingerprint: str
     email_fingerprint: str
@@ -35,6 +37,7 @@ class Parent:
 
     @property
     def auth_metadata(self) -> tuple[str, str, str]:
+        """Return the exact metadata tuple used for byte-identical matching."""
         return (
             self.password_fingerprint, self.email_fingerprint,
             self.created_fingerprint,
@@ -43,6 +46,8 @@ class Parent:
 
 @dataclass(frozen=True)
 class Child:
+    """One opaque source child and its proposed merge disposition."""
+
     child_ref: str
     account_ref: str
     action: str
@@ -51,6 +56,8 @@ class Child:
 
 @dataclass(frozen=True)
 class Decision:
+    """An owner-approved disposition bound to protected evidence."""
+
     account_ref: str
     decision: str
     evidence_ref: str
@@ -59,6 +66,8 @@ class Decision:
 
 @dataclass(frozen=True)
 class Plan:
+    """The complete protected parent and child merge plan."""
+
     source: dict[str, Parent]
     target: dict[str, Parent]
     children: tuple[Child, ...]
@@ -66,16 +75,20 @@ class Plan:
 
 @dataclass(frozen=True)
 class Verification:
+    """Aggregate verification state that does not expose protected identity."""
+
     status_by_account: dict[str, str]
     child_count: int
     blocked_children: int
 
     @property
     def valid(self) -> bool:
+        """Return whether every source account and child has a safe disposition."""
         return "unverified" not in self.status_by_account.values() and \
             self.blocked_children == 0
 
     def summary(self) -> dict[str, int | str]:
+        """Render identifier-free disposition counts for logs and receipts."""
         counts = Counter(self.status_by_account.values())
         return {
             "status": "ready" if self.valid else "blocked",
@@ -92,17 +105,18 @@ class Verification:
 
 
 def _read_protected_json(path: Path, label: str) -> tuple[dict, str]:
+    """Read one bounded owner-only JSON artifact and return its digest."""
     if not path.is_absolute():
         raise MergeVerificationError(f"{label} path must be absolute")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
         descriptor = os.open(path, flags)
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
-                stat.S_IMODE(metadata.st_mode) & 0o077:
-            raise MergeVerificationError(
-                f"{label} must be an owner-only regular file")
         with os.fdopen(descriptor, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
+                    stat.S_IMODE(metadata.st_mode) & 0o077:
+                raise MergeVerificationError(
+                    f"{label} must be an owner-only regular file")
             payload = source.read(MAX_ARTIFACT_BYTES + 1)
     except OSError as error:
         raise MergeVerificationError(f"cannot read {label}: {error}") from error
@@ -118,6 +132,7 @@ def _read_protected_json(path: Path, label: str) -> tuple[dict, str]:
 
 
 def _strict_object(pairs: list[tuple[str, object]]) -> dict:
+    """Build a JSON object while rejecting duplicate keys."""
     result: dict = {}
     for key, value in pairs:
         if key in result:
@@ -127,23 +142,27 @@ def _strict_object(pairs: list[tuple[str, object]]) -> dict:
 
 
 def _exact_keys(value: dict, expected: set[str], label: str) -> None:
+    """Require an artifact object to match its schema exactly."""
     if set(value) != expected:
         raise MergeVerificationError(f"{label} fields do not match the contract")
 
 
 def _digest(value: object, label: str) -> str:
+    """Validate one lowercase SHA-256 opaque reference."""
     if not isinstance(value, str) or DIGEST.fullmatch(value) is None:
         raise MergeVerificationError(f"{label} must be a lowercase SHA-256 reference")
     return value
 
 
 def _optional_digest(value: object, label: str) -> str | None:
+    """Validate a nullable lowercase SHA-256 opaque reference."""
     if value is None:
         return None
     return _digest(value, label)
 
 
 def _parents(values: object, label: str) -> dict[str, Parent]:
+    """Parse a unique list of protected parent records."""
     if not isinstance(values, list):
         raise MergeVerificationError(f"{label} must be a list")
     result: dict[str, Parent] = {}
@@ -165,6 +184,7 @@ def _parents(values: object, label: str) -> dict[str, Parent]:
 
 
 def read_plan(path: Path) -> tuple[Plan, str]:
+    """Read and validate the complete protected merge plan."""
     value, digest = _read_protected_json(path, "merge plan")
     _exact_keys(value, {"version", "source_accounts", "target_accounts", "children"},
                 "merge plan")
@@ -200,6 +220,7 @@ def read_plan(path: Path) -> tuple[Plan, str]:
 
 
 def read_decisions(path: Path | None) -> tuple[dict[str, Decision], str | None]:
+    """Read optional protected owner dispositions and their artifact digest."""
     if path is None:
         return {}, None
     value, digest = _read_protected_json(path, "disposition record")
@@ -207,16 +228,20 @@ def read_decisions(path: Path | None) -> tuple[dict[str, Decision], str | None]:
     if value["version"] != 1 or not isinstance(value["decisions"], list):
         raise MergeVerificationError("disposition record contract is invalid")
     result: dict[str, Decision] = {}
-    for value in value["decisions"]:
-        if not isinstance(value, dict):
+    for decision_value in value["decisions"]:
+        if not isinstance(decision_value, dict):
             raise MergeVerificationError("decision row must be an object")
-        _exact_keys(value, {"account_ref", "decision", "evidence_ref", "target_ref"},
-                    "decision row")
+        _exact_keys(
+            decision_value,
+            {"account_ref", "decision", "evidence_ref", "target_ref"},
+            "decision row",
+        )
         decision = Decision(
-            _digest(value["account_ref"], "account_ref"),
-            value["decision"] if isinstance(value["decision"], str) else "",
-            _digest(value["evidence_ref"], "evidence_ref"),
-            _optional_digest(value["target_ref"], "target_ref"),
+            _digest(decision_value["account_ref"], "account_ref"),
+            decision_value["decision"]
+            if isinstance(decision_value["decision"], str) else "",
+            _digest(decision_value["evidence_ref"], "evidence_ref"),
+            _optional_digest(decision_value["target_ref"], "target_ref"),
         )
         if decision.decision not in DECISIONS or decision.account_ref in result:
             raise MergeVerificationError("disposition record has an invalid decision")
@@ -229,6 +254,7 @@ def read_decisions(path: Path | None) -> tuple[dict[str, Decision], str | None]:
 
 
 def verify(plan: Plan, decisions: dict[str, Decision]) -> Verification:
+    """Verify that every collision and child follows one exact disposition."""
     unknown_decisions = set(decisions) - set(plan.source)
     if unknown_decisions:
         raise MergeVerificationError("disposition record references an unknown source parent")
@@ -266,7 +292,8 @@ def verify(plan: Plan, decisions: dict[str, Decision]) -> Verification:
         else:
             expected_status = "remap"
             valid_target = decision.target_ref in plan.target and \
-                decision.target_ref != reference
+                decision.target_ref != reference and \
+                decision.target_ref not in plan.source
             valid_children = valid_target and all(
                 child.action == "remap" and child.target_ref == decision.target_ref
                 for child in children[reference])
@@ -277,6 +304,7 @@ def verify(plan: Plan, decisions: dict[str, Decision]) -> Verification:
 
 
 def _secure_write(path: Path, payload: bytes) -> None:
+    """Create a new owner-only receipt without following symbolic links."""
     if not path.is_absolute():
         raise MergeVerificationError("receipt path must be absolute")
     try:
@@ -298,6 +326,7 @@ def _secure_write(path: Path, payload: bytes) -> None:
 
 def write_receipt(path: Path, plan_digest: str, decision_digest: str | None,
                   verification: Verification) -> str:
+    """Write an aggregate receipt bound to the verified protected artifacts."""
     payload = json.dumps({
         "version": 1,
         "verified_at": datetime.now(timezone.utc).isoformat(),
@@ -310,6 +339,7 @@ def write_receipt(path: Path, plan_digest: str, decision_digest: str | None,
 
 
 def parse_arguments() -> argparse.Namespace:
+    """Parse protected plan, disposition, and receipt paths."""
     parser = argparse.ArgumentParser(
         description="Verify an exceptional target-wins account merge plan.")
     parser.add_argument("--plan", type=Path, required=True)
@@ -319,6 +349,7 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Verify an exceptional merge plan and emit only aggregate evidence."""
     arguments = parse_arguments()
     try:
         plan, plan_digest = read_plan(arguments.plan)

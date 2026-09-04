@@ -99,8 +99,8 @@ plan, source snapshot, target snapshot, or retry.
 For an already attached collision, owner adjudication still comes first. If common
 ownership is not established, prefer quarantine until a remap owner is proven. Rehearse
 on a fresh production clone and generate a separate protected manifest containing the
-exact account row, the nine mapping rows, their player rows, and aggregate dependent-row
-counts. Do not expose that manifest in a ticket or log.
+exact account row and every affected mapping, with each mapping's player rows and
+aggregate dependent-row counts. Do not expose that manifest in a ticket or log.
 
 The quarantine transaction must:
 
