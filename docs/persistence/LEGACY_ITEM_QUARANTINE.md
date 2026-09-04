@@ -77,8 +77,8 @@ class in this precedence order:
 
 The classifier retains overlapping reasons internally but counts only the primary reason.
 `dependent_children` therefore measures rows whose own evidence is sound but whose full
-container chain reaches a rejected row. The aggregate `rows` total must equal 38,257 for
-the retained import candidate before disposition begins.
+container chain reaches a rejected row. The command rejects the evidence before reading
+dispositions or planning unless its aggregate `rows` total is exactly 38,257.
 
 A row is `recoverable` only when owner, prototype, non-artifact status, exact metadata,
 numeric identity, and every same-owner ancestor are unique and the complete graph is
@@ -95,10 +95,15 @@ and rows containing `row_ref`, `decision`, and an HMAC `evidence_ref`. Decisions
 - `discard`: record the approved final disposition without deleting anything in this
   planning step; or
 - `recover_new_uid`: allowed only when `uid_collision` is the row's sole rejection and
-  independent owner/prototype/metadata/ancestry evidence is otherwise complete.
+  the evidence proves either multiple UID candidates or a live UID conflict, while
+  independent owner/prototype/metadata/ancestry evidence is otherwise complete; or
+- `recover_descendant`: allowed only when `dependent_ancestry` is the row's sole rejection,
+  the row's own evidence is sound, and every ancestor is explicitly or automatically
+  approved for recovery.
 
 No default means discard. A held parent also requires explicit hold/discard decisions for
-every dependent child. Generate an owner-only plan only after all unsafe rows are decided:
+every dependent child; a descendant cannot be recovered through a held ancestor. Generate
+an owner-only plan only after all unsafe rows are decided:
 
 ```bash
 python3 scripts/classify_legacy_item_quarantine.py \
@@ -109,8 +114,12 @@ python3 scripts/classify_legacy_item_quarantine.py \
 
 The plan binds the evidence and disposition SHA-256 values. Collision replacements are
 allocated monotonically from the maximum of the live allocator, live UID floor, and every
-retained evidence UID plus one. Child parent/root identities are rewritten through the
-same mapping. The plan file is mode `0600`; stdout remains aggregate-only.
+retained evidence UID plus one. `live_uid_floor` is the first unused value strictly above
+every live or retained UID, and `allocator_next_uid` is the next available allocator value;
+planning blocks if no representable replacement and subsequent allocator value remain.
+Replacement allocation is deterministic by source table and source row ID. Recovered
+descendant parent/root identities are rewritten through the same mapping. The plan file is
+mode `0600`; stdout remains aggregate-only.
 
 ## Clone rehearsal and transaction contract
 

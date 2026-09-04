@@ -18,10 +18,11 @@ from pathlib import Path
 MAX_ARTIFACT_BYTES = 64 * 1024 * 1024
 MAX_DEPTH = 32
 MAX_UID = (1 << 64) - 1
+EXPECTED_QUARANTINE_ROWS = 38_257
 DIGEST = re.compile(r"[0-9a-f]{64}")
 SOURCE_TABLES = {"player_items", "locker_items"}
 PROTOTYPE_STATES = {"current", "missing", "artifact"}
-DECISIONS = {"hold", "discard", "recover_new_uid"}
+DECISIONS = {"hold", "discard", "recover_new_uid", "recover_descendant"}
 PRIMARY_ORDER = (
     "artifact", "conflicted_owner", "unknown_prototype", "uid_collision",
     "insufficient_metadata", "missing_ancestor", "cross_owner", "cycle",
@@ -35,6 +36,8 @@ class QuarantineError(Exception):
 
 @dataclass(frozen=True)
 class EvidenceRow:
+    """One protected frozen-stage row and its independent recovery evidence."""
+
     row_ref: str
     source_table: str
     source_row_id: int
@@ -52,6 +55,8 @@ class EvidenceRow:
 
 @dataclass(frozen=True)
 class Disposition:
+    """One explicit operator decision bound to protected evidence."""
+
     row_ref: str
     decision: str
     evidence_ref: str
@@ -59,6 +64,8 @@ class Disposition:
 
 @dataclass(frozen=True)
 class Classification:
+    """One mutually exclusive primary classification with overlapping reasons."""
+
     row: EvidenceRow
     primary: str
     reasons: frozenset[str]
@@ -66,6 +73,8 @@ class Classification:
 
 @dataclass(frozen=True)
 class RecoveryRow:
+    """One approved row with its planned UID and rewritten ancestry."""
+
     row: EvidenceRow
     new_uid: int
     new_parent_uid: int | None
@@ -74,12 +83,15 @@ class RecoveryRow:
 
 @dataclass(frozen=True)
 class Evidence:
+    """The complete protected quarantine evidence and UID allocation floors."""
+
     allocator_next_uid: int
     live_uid_floor: int
     rows: tuple[EvidenceRow, ...]
 
 
 def _strict_object(pairs: list[tuple[str, object]]) -> dict:
+    """Build a JSON object while rejecting duplicate keys."""
     result: dict = {}
     for key, value in pairs:
         if key in result:
@@ -89,16 +101,17 @@ def _strict_object(pairs: list[tuple[str, object]]) -> dict:
 
 
 def _read_json(path: Path, label: str) -> tuple[dict, str]:
+    """Read one bounded owner-only JSON artifact and return its digest."""
     if not path.is_absolute():
         raise QuarantineError(f"{label} path must be absolute")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
         descriptor = os.open(path, flags)
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
-                stat.S_IMODE(metadata.st_mode) & 0o077:
-            raise QuarantineError(f"{label} must be an owner-only regular file")
         with os.fdopen(descriptor, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
+                    stat.S_IMODE(metadata.st_mode) & 0o077:
+                raise QuarantineError(f"{label} must be an owner-only regular file")
             payload = source.read(MAX_ARTIFACT_BYTES + 1)
     except OSError as error:
         raise QuarantineError(f"cannot read {label}: {error}") from error
@@ -114,17 +127,20 @@ def _read_json(path: Path, label: str) -> tuple[dict, str]:
 
 
 def _keys(value: dict, expected: set[str], label: str) -> None:
+    """Require an artifact object to match its schema exactly."""
     if set(value) != expected:
         raise QuarantineError(f"{label} fields do not match the contract")
 
 
 def _digest(value: object, label: str) -> str:
+    """Validate one lowercase SHA-256 opaque reference."""
     if not isinstance(value, str) or DIGEST.fullmatch(value) is None:
         raise QuarantineError(f"{label} must be a lowercase SHA-256 reference")
     return value
 
 
 def _positive(value: object, label: str, *, zero: bool = False) -> int:
+    """Validate one bounded unsigned integer field."""
     minimum = 0 if zero else 1
     if not isinstance(value, int) or isinstance(value, bool) or \
             not minimum <= value <= MAX_UID:
@@ -133,6 +149,7 @@ def _positive(value: object, label: str, *, zero: bool = False) -> int:
 
 
 def read_evidence(path: Path) -> tuple[Evidence, str]:
+    """Read and validate a protected frozen-stage evidence artifact."""
     value, digest = _read_json(path, "quarantine evidence")
     _keys(value, {"version", "allocator_next_uid", "live_uid_floor", "rows"},
           "quarantine evidence")
@@ -186,6 +203,7 @@ def read_evidence(path: Path) -> tuple[Evidence, str]:
 
 
 def read_dispositions(path: Path | None) -> tuple[dict[str, Disposition], str | None]:
+    """Read optional protected operator dispositions and their digest."""
     if path is None:
         return {}, None
     value, digest = _read_json(path, "quarantine dispositions")
@@ -209,6 +227,7 @@ def read_dispositions(path: Path | None) -> tuple[dict[str, Disposition], str | 
 
 def _graph_reasons(rows: dict[str, EvidenceRow], maximum_depth: int) \
         -> dict[str, set[str]]:
+    """Classify missing, cross-owner, cyclic, and over-depth ancestry."""
     reasons: dict[str, set[str]] = {reference: set() for reference in rows}
     for reference, row in rows.items():
         if row.parent_ref is not None and row.parent_ref not in rows:
@@ -234,6 +253,7 @@ def _graph_reasons(rows: dict[str, EvidenceRow], maximum_depth: int) \
 
 def classify(evidence: Evidence, maximum_depth: int = MAX_DEPTH) \
         -> list[Classification]:
+    """Assign one primary rejection reason while retaining overlapping evidence."""
     rows = {row.row_ref: row for row in evidence.rows}
     graph = _graph_reasons(rows, maximum_depth)
     direct: dict[str, set[str]] = {}
@@ -274,6 +294,7 @@ def classify(evidence: Evidence, maximum_depth: int = MAX_DEPTH) \
 
 
 def classification_summary(classifications: list[Classification]) -> dict[str, int]:
+    """Return aggregate-only mutually exclusive classification counts."""
     counts = Counter(item.primary for item in classifications)
     return {
         "rows": len(classifications),
@@ -294,10 +315,16 @@ def classification_summary(classifications: list[Classification]) -> dict[str, i
 def plan_recovery(evidence: Evidence, classifications: list[Classification],
                   dispositions: dict[str, Disposition]) \
         -> tuple[list[RecoveryRow], int, int]:
+    """Plan only complete approved graphs with deterministic replacement UIDs."""
+    rows = {row.row_ref: row for row in evidence.rows}
     by_ref = {item.row.row_ref: item for item in classifications}
+    expected = {item.row.row_ref: item for item in classify(evidence)}
+    if len(by_ref) != len(classifications) or by_ref != expected:
+        raise QuarantineError("classifications do not exactly match the evidence")
     if set(dispositions) - set(by_ref):
         raise QuarantineError("disposition references a row outside the evidence")
     approved: set[str] = set()
+    descendant_candidates: set[str] = set()
     undispositioned = 0
     for reference, item in by_ref.items():
         disposition = dispositions.get(reference)
@@ -306,16 +333,37 @@ def plan_recovery(evidence: Evidence, classifications: list[Classification],
                 approved.add(reference)
             elif disposition.decision not in {"hold", "discard"}:
                 raise QuarantineError("recoverable row has an invalid override disposition")
-        elif item.reasons == {"uid_collision"} and disposition is not None and \
+        elif item.reasons == {"uid_collision"} and \
+                (item.row.uid_candidates > 1 or item.row.live_uid_conflict) and \
+                disposition is not None and \
                 disposition.decision == "recover_new_uid":
             approved.add(reference)
+        elif item.reasons == {"dependent_ancestry"} and disposition is not None and \
+                disposition.decision == "recover_descendant":
+            descendant_candidates.add(reference)
         elif disposition is None:
             undispositioned += 1
         elif disposition.decision not in {"hold", "discard"}:
             raise QuarantineError("unsafe row has an invalid recovery disposition")
     if undispositioned:
         return [], evidence.allocator_next_uid, undispositioned
-    rows = {row.row_ref: row for row in evidence.rows}
+    while descendant_candidates:
+        progressed = False
+        for reference in sorted(
+                descendant_candidates,
+                key=lambda candidate: (
+                    rows[candidate].source_table,
+                    rows[candidate].source_row_id,
+                    candidate,
+                )):
+            parent = rows[reference].parent_ref
+            if parent in approved:
+                approved.add(reference)
+                descendant_candidates.remove(reference)
+                progressed = True
+        if not progressed:
+            raise QuarantineError(
+                "descendant recovery requires every ancestor to be approved")
     changed = True
     while changed:
         changed = False
@@ -323,25 +371,38 @@ def plan_recovery(evidence: Evidence, classifications: list[Classification],
             parent = rows[reference].parent_ref
             if parent is not None and parent not in approved:
                 approved.remove(reference)
-                if dispositions.get(reference) is None:
+                disposition = dispositions.get(reference)
+                if disposition is not None and disposition.decision in {
+                        "recover_new_uid", "recover_descendant"}:
+                    raise QuarantineError(
+                        "recovery disposition requires every ancestor to be approved")
+                if disposition is None:
                     undispositioned += 1
                 changed = True
     if undispositioned:
         return [], evidence.allocator_next_uid, undispositioned
+    maximum_evidence_uid = max(row.item_uid for row in evidence.rows)
+    evidence_uid_floor = MAX_UID if maximum_evidence_uid == MAX_UID \
+        else maximum_evidence_uid + 1
     next_uid = max(
-        evidence.allocator_next_uid, evidence.live_uid_floor,
-        max(row.item_uid for row in evidence.rows) + 1)
+        evidence.allocator_next_uid, evidence.live_uid_floor, evidence_uid_floor)
     assigned: dict[str, int] = {}
     pending = set(approved)
     while pending:
         progressed = False
-        for reference in tuple(pending):
+        for reference in sorted(
+                pending,
+                key=lambda candidate: (
+                    rows[candidate].source_table,
+                    rows[candidate].source_row_id,
+                    candidate,
+                )):
             row = rows[reference]
             if row.parent_ref is not None and row.parent_ref not in assigned:
                 continue
             collision = by_ref[reference].reasons == {"uid_collision"}
             if collision:
-                if next_uid > MAX_UID:
+                if next_uid >= MAX_UID:
                     raise QuarantineError("recovery UID allocation overflowed")
                 assigned[reference] = next_uid
                 next_uid += 1
@@ -364,6 +425,7 @@ def plan_recovery(evidence: Evidence, classifications: list[Classification],
 
 
 def _write_private(path: Path, payload: bytes) -> str:
+    """Create a new owner-only recovery plan without following symbolic links."""
     if not path.is_absolute():
         raise QuarantineError("recovery plan path must be absolute")
     try:
@@ -386,6 +448,7 @@ def _write_private(path: Path, payload: bytes) -> str:
 
 def write_plan(path: Path, evidence_digest: str, disposition_digest: str | None,
                recovery: list[RecoveryRow], next_uid: int) -> str:
+    """Write a deterministic recovery plan bound to both protected artifacts."""
     payload = json.dumps({
         "version": 1,
         "evidence_sha256": evidence_digest,
@@ -408,6 +471,7 @@ def write_plan(path: Path, evidence_digest: str, disposition_digest: str | None,
 
 
 def parse_arguments() -> argparse.Namespace:
+    """Parse protected evidence, disposition, and recovery-plan paths."""
     parser = argparse.ArgumentParser(
         description="Classify protected frozen-stage legacy item quarantine evidence.")
     parser.add_argument("--evidence", type=Path, required=True)
@@ -417,9 +481,13 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Classify the complete retained quarantine and optionally write a plan."""
     arguments = parse_arguments()
     try:
         evidence, evidence_digest = read_evidence(arguments.evidence)
+        if len(evidence.rows) != EXPECTED_QUARANTINE_ROWS:
+            raise QuarantineError(
+                f"quarantine evidence must contain exactly {EXPECTED_QUARANTINE_ROWS} rows")
         dispositions, disposition_digest = read_dispositions(arguments.dispositions)
         classifications = classify(evidence)
         recovery, next_uid, undispositioned = plan_recovery(
