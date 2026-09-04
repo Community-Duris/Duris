@@ -976,10 +976,16 @@ def test_node_population_is_one_random_mix_per_region() -> None:
             "the Tharnadia Rift is not a node region",
             f"regions: {names}",
         )
+        # 80/60 since 2026-09-05, raised from 40/30 once land cost material:
+        # a full realm needs ~475 node-lifetimes of EVERY resource, and the old
+        # counts left about seventeen nodes of any given kind in the whole
+        # world at once. The exact numbers are pinned rather than a floor,
+        # because they are quoted in lib/duris.properties and in the
+        # `help kingdoms` scarcity paragraph, and all three must move together.
         totals = {r[0]: int(r[5]) for r in rows}
         check(
-            totals.get("Surface Map") == 40 and totals.get("Underdark") == 30,
-            "the surface keeps 40 nodes and the Underdark 30, of all kinds together",
+            totals.get("Surface Map") == 80 and totals.get("Underdark") == 60,
+            "the surface keeps 80 nodes and the Underdark 60, of all kinds together",
             f"totals: {totals}",
         )
 

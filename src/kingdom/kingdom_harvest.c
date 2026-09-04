@@ -302,10 +302,20 @@ bool kingdom_node_is_underdark(int vnum)
  * node placed into it rolls its OWN resource, so what is standing at any moment
  * is a genuinely random mix that drifts as nodes are worked out and replaced.
  *
- * The counts are deliberately small. Forty nodes across the whole surface map
- * and thirty through the Underdark means finding one is worth something; a
+ * The counts are deliberately small: eighty nodes across the whole surface map
+ * and sixty through the Underdark, so finding one is worth something and a
  * gatherer who works one out has removed a real share of the world's supply
  * until the next sweep replaces it somewhere else entirely.
+ *
+ * RAISED FROM 40/30 ON 2026-09-05, because the material cost of land arrived
+ * after these numbers were set and changed what they have to support. A full
+ * realm needs about 24,000 units of EVERY resource, which is roughly 475
+ * node-lifetimes apiece; 40 and 30 put about seventeen nodes of any given
+ * resource in the entire world at once, shared by every guild, and made the
+ * outer rings a queue rather than a project. The scarcity is still real --
+ * doubling seventeen is thirty-five, not abundance -- and the sweep still
+ * replaces a worked-out node somewhere else entirely rather than where it
+ * stood.
  *
  * Each total is overridable from duris.properties by the key spelled out beside
  * it -- written in full rather than composed at runtime, so a grep of the
@@ -334,8 +344,8 @@ struct kingdom_node_region
 };
 
 static const struct kingdom_node_region kingdom_node_regions[] = {
-	{ "Surface Map", 500000, 659999, false, "kingdom.nodes.map.total", 40 },
-	{ "Underdark", 700000, 859999, true, "kingdom.nodes.ud.total", 30 }
+	{ "Surface Map", 500000, 659999, false, "kingdom.nodes.map.total", 80 },
+	{ "Underdark", 700000, 859999, true, "kingdom.nodes.ud.total", 60 }
 };
 
 constexpr int KINGDOM_NODE_REGION_COUNT =
