@@ -510,8 +510,19 @@ int main()
 	assert(item_transfer_command_encode_result(result, &encoded));
 	completion.result_size = encoded.size();
 	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	/* Offline completions retain the operation without invoking a null-actor
+	   callback. Re-entry publishes once and releases the dependent queue. */
+	character_list = NULL;
 	item_movement_transaction_handle_completions(&completion, 1);
+	assert(publication_count == 0);
+	assert(item_movement_transaction_health_copy().retained_offline == 1);
+	assert(item_movement_transaction_player_busy(&actor));
+	character_list = &actor;
+	item_movement_transaction_player_ready(&actor);
 	assert(publication_count == 1);
+	item_movement_transaction_player_ready(&actor);
+	assert(publication_count == 1);
+	assert(item_movement_transaction_health_copy().retained_offline == 0);
 	assert(!item_movement_transaction_player_busy(&actor));
 	assert(carried_count(&actor) == 3);
 

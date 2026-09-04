@@ -9,8 +9,9 @@ MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
 )
 
 
-def function_body(source, signature):
-    start = source.index(signature)
+def function_body(source, signature, *, last=False):
+    """Extract a balanced function body, optionally skipping earlier declarations."""
+    start = source.rindex(signature) if last else source.index(signature)
     brace = source.index("{", start)
     depth = 0
     for pos in range(brace, len(source)):
@@ -24,12 +25,17 @@ def function_body(source, signature):
 
 
 def check(name, condition):
+    """Report one source contract and return its success for the aggregate result."""
     print(("PASS: " if condition else "FAIL: ") + name)
     return bool(condition)
 
 
 do_get = function_body(ACTOBJ, "void do_get(")
 start_bulk = function_body(ACTOBJ, "static void start_bulk_get(")
+continue_bulk = function_body(ACTOBJ, "static void continue_bulk_get(", last=True)
+adoption_completion = function_body(
+    ACTOBJ, "static void bulk_get_adoption_completion("
+)
 start_floor = function_body(ACTOBJ, "static void start_floor_bulk_get(")
 start_container = function_body(ACTOBJ, "static void start_container_bulk_get(")
 select_item = function_body(ACTOBJ, "static bool select_bulk_get_item(")
@@ -82,11 +88,22 @@ ok &= check(
     < start_bulk.index("bulk_get_state state"),
 )
 ok &= check(
-    "all durable roots submit in one multi-root movement",
-    start_bulk.count("item_movement_transaction_submit_batch(") == 1
-    and "roots.data(), roots.size()" in start_bulk
-    and "item_movement_transaction_submit(" not in start_bulk
-    and "continue_bulk_get" not in ACTOBJ,
+    "missing stock roots adopt in place before one multi-root movement",
+    "get_item_source_owner(actor, roots.front(), container, &source)" in start_bulk
+    and "continue_bulk_get(actor, actor_pid);" in start_bulk
+    and "item_ownership_runtime_lookup(root->obj_uid, &runtime)" in continue_bulk
+    and "state.source, state.source" in continue_bulk
+    and "bulk_get_adoption_completion" in continue_bulk
+    and continue_bulk.count("item_movement_transaction_submit_batch(") == 1
+    and "roots.data(), roots.size()" in continue_bulk,
+)
+ok &= check(
+    "failed adoption leaves the complete live batch at its source",
+    "if (!committed)" in adoption_completion
+    and "Nothing was taken" in adoption_completion
+    and "bulk_gets.erase(found)" in adoption_completion
+    and "finish_bulk_get_after_commit" not in adoption_completion
+    and "do_get_finalize" not in adoption_completion,
 )
 ok &= check(
     "the movement adapter captures and encodes one forest",
