@@ -97,6 +97,13 @@ env "${common_env[@]}" "${repair[@]}" --apply "$safe_artifact" "$safe_sha" \
 	>/dev/null
 [[ $(MYSQL_PWD="$password" "${MYSQL[@]}" -e \
 	'SELECT COUNT(*) FROM combat_frag_baseline WHERE pid=101;') == 1 ]]
+MYSQL_PWD="$password" "${MYSQL[@]}" <"$rollback"
+[[ $(MYSQL_PWD="$password" "${MYSQL[@]}" -e \
+	'SELECT COUNT(*) FROM combat_frag_baseline WHERE pid=101;') == 0 ]]
+env "${common_env[@]}" "${repair[@]}" --apply "$safe_artifact" "$safe_sha" \
+	>/dev/null
+[[ $(MYSQL_PWD="$password" "${MYSQL[@]}" -e \
+	'SELECT COUNT(*) FROM combat_frag_baseline WHERE pid=101;') == 1 ]]
 
 MYSQL_PWD="$password" "${MYSQL[@]}" <<'SQL'
 INSERT INTO player_data

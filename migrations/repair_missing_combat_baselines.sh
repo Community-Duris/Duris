@@ -33,9 +33,10 @@ if [[ "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != ":
         echo 'remote combat baseline repair requires TLS and a CA file' >&2
         exit 2
     }
-    if mysql --help 2>&1 | grep -q -- '--ssl-mode'; then
+    mysql_help=$(mysql --help 2>&1)
+    if grep -q -- '--ssl-mode' <<<"$mysql_help"; then
         MYSQL_SSL=(--ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA")
-    elif mysql --help 2>&1 | grep -q -- '--ssl-verify-server-cert'; then
+    elif grep -q -- '--ssl-verify-server-cert' <<<"$mysql_help"; then
         MYSQL_SSL=(--ssl-ca="$DB_SSL_CA" --ssl-verify-server-cert)
     else
         echo 'database client cannot verify the remote server identity' >&2
