@@ -13,6 +13,7 @@
 
 namespace fs = std::filesystem;
 
+/* Fail the standalone harness with a useful regression message. */
 static void require(bool condition, const std::string &message)
 {
 	if (!condition)
@@ -22,6 +23,7 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
+/* Create the owner-only state layout required by the repository. */
 static void prepare_root(const fs::path &root)
 {
 	fs::create_directories(root / "domains");
@@ -103,6 +105,7 @@ static flatfile_ship_slot_record persisted_slot(uint8_t index, const ShipSlot &s
 		 slot.timer, { slot.val0, slot.val1, slot.val2, slot.val3, slot.val4 } };
 }
 
+/* Resolve the one legacy owner accepted by this isolated fixture. */
 static bool resolve_legacy_owner(const char *owner, uint32_t *pid, std::string *error)
 {
 	if (!owner || !pid)
@@ -120,6 +123,7 @@ static bool resolve_legacy_owner(const char *owner, uint32_t *pid, std::string *
 	return false;
 }
 
+/* Write a version-3 ship used to verify legacy import normalization. */
 static void write_legacy_ship(const fs::path &path, const std::string &owner)
 {
 	std::ofstream file(path);
