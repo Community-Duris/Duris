@@ -24,14 +24,17 @@ SPEC.loader.exec_module(readiness)
 
 
 class CharacterMaterializationReadinessTest(unittest.TestCase):
+    """Exercise audit parity and protected repair guarantees."""
+
     object_types = {100: 15, 101: 9}
     mobiles = {200}
     allowed = {15, 24, 30, 35}
 
     def snapshot(self, *, override: int | None = 9, pet_room: int = 50,
-                 pet_hit: int = 10) -> readiness.Snapshot:
+                 pet_hit: int = 10, owner_room: int = 50) -> readiness.Snapshot:
+        """Build a minimal selectable-character snapshot."""
         return readiness.Snapshot(
-            (readiness.Character(1, 50), readiness.Character(2, 60)),
+            (readiness.Character(1, owner_room), readiness.Character(2, 60)),
             (
                 readiness.Item(10, 1, 100, None, override),
                 readiness.Item(11, 1, 101, 10, None),
@@ -43,10 +46,12 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
         )
 
     def evaluate(self, snapshot: readiness.Snapshot) -> list[readiness.Finding]:
+        """Evaluate a fixture against the active-type test catalog."""
         return readiness.evaluate(
             snapshot, self.object_types, self.mobiles, self.allowed)
 
     def test_container_override_uses_effective_type_and_clearing_repairs_it(self):
+        """Clear only a stale override that turns a container into armor."""
         findings = self.evaluate(self.snapshot())
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0].kind, "player_item_type")
@@ -55,6 +60,7 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
         self.assertEqual(self.evaluate(self.snapshot(override=None)), [])
 
     def test_pet_room_and_hit_repairs_match_runtime_bounds(self):
+        """Repair pet placement and hit bounds to match runtime acceptance."""
         findings = self.evaluate(self.snapshot(
             override=None, pet_room=49, pet_hit=21))
         self.assertEqual(len(findings), 1)
@@ -65,7 +71,15 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
             (49, 50, 21, 20))
         self.assertEqual(self.evaluate(self.snapshot(override=None)), [])
 
+    def test_non_positive_owner_room_is_an_unrepairable_finding(self):
+        """Reject a pet whose owner has no positive room to copy."""
+        findings = self.evaluate(self.snapshot(override=None, owner_room=0))
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].kind, "pet_invalid_bounds")
+        self.assertFalse(findings[0].repairable)
+
     def test_unrepairable_unknown_prototype_blocks_manifest(self):
+        """Block manifests when an unknown object prototype has no safe repair."""
         snapshot = self.snapshot(override=None)
         broken = readiness.Snapshot(
             snapshot.characters,
@@ -80,6 +94,7 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
                     Path(temporary) / "manifest.tsv", "duris_test", findings)
 
     def test_manifest_is_owner_only_hashed_and_exact(self):
+        """Authenticate manifests and keep their identifying rows private."""
         findings = self.evaluate(self.snapshot())
         with tempfile.TemporaryDirectory() as temporary:
             os.chmod(temporary, 0o700)
@@ -92,12 +107,14 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
                 readiness.read_manifest(path, "0" * 64, "duris_test")
 
     def test_targeted_transaction_guards_unaffected_row_fingerprints(self):
+        """Guard every unaffected materialization row inside the repair transaction."""
         findings = self.evaluate(self.snapshot(pet_room=49, pet_hit=21))
         columns = iter(("pid\nlast_room", "id\npid\nvnum\nitem_type",
                         "id\nowner_pid\nroom_vnum\nhit", "id\npet_id\nvnum"))
         statements: list[str] = []
 
         def fake_mysql(_config, statement):
+            """Capture generated DML while returning deterministic metadata."""
             if "information_schema.columns" in statement:
                 return next(columns)
             statements.append(statement)
@@ -117,9 +134,28 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
         self.assertLess(sql.index("_materialization_guard"), sql.rindex("COMMIT"))
 
     def test_remote_database_cannot_disable_transport_verification(self):
+        """Require verifiable TLS for every remote readiness target."""
         config = {"DB_HOST": "database.internal", "DB_PORT": "3306"}
         with self.assertRaisesRegex(readiness.ReadinessError, "require TLS"):
             readiness.connection_arguments(config)
+
+    def test_area_file_names_supports_strict_mobile_manifests(self):
+        """Share manifest parsing while making missing mobile files fatal."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            area_root = root / "mob"
+            area_root.mkdir()
+            area_list = root / "AREA"
+            area_list.write_text("alpha\nbeta\n", encoding="utf-8")
+            (area_root / "alpha.mob").write_text("#200\n", encoding="utf-8")
+            with self.assertRaises(FileNotFoundError):
+                readiness.area_file_names(
+                    area_root, area_list, extension=".mob", require_all=True)
+            self.assertEqual(
+                readiness.area_file_names(
+                    area_root, area_list, extension=".mob", require_all=False),
+                [area_root / "alpha.mob"],
+            )
 
 
 if __name__ == "__main__":

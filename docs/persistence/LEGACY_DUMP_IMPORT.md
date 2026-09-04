@@ -419,6 +419,29 @@ before and after the DML and rolls the transaction back if any fingerprint or ex
 row count changes. Re-run the readiness command, the real player-load repository harness,
 and the full server materialization path for every protected-manifest owner on the clone.
 Preserve aggregate success logs and the receipt; never copy identifiers into the ticket.
+The repository harness accepts the protected manifest without printing its rows:
+
+```bash
+PLAYER_LOAD_ENV_FILE=.env \
+PLAYER_LOAD_MANIFEST_PATH=/private/duris-materialization-repair/affected.tsv \
+tests/async/run_player_load_repository_mysql.sh
+```
+
+The 2026-09-04 rehearsal used a fresh disposable MariaDB 10.11 clone of the
+preserved production-derived reference import. The protected manifest contained
+19 repair rows affecting 17 selectable characters. The guarded transaction
+cleared 16 stale item-type overrides and repaired three pet rows, after which
+the readiness audit reported zero findings and the real repository harness
+loaded all 17 snapshots. Every unaffected row in `player_data`, `player_items`,
+`player_pets`, and `player_pet_items` was byte-identical before and after the
+transaction. The current C++ item/pet materializer harness also accepted the
+repaired topology, room, and hit-bound cases. Restoring the exact fresh backup
+returned the clone to 19 findings across the same 17-character aggregate.
+
+The reference import also retains 38 pet-item payload rows that predate durable
+object UIDs. Because they have neither a UID nor custody authority, the loader
+keeps them stored for explicit recovery but counts and skips them during
+materialization. This repair does not fabricate ownership for those rows.
 
 For production, repeat classification against the still-quiesced live target, obtain the
 owner's explicit authorization, create and validate a fresh production backup, and use a

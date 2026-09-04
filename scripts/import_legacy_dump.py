@@ -417,6 +417,7 @@ def run_migrations(config: dict[str, str], env_path: Path) -> None:
 
 
 def run_materialization_readiness(config: dict[str, str], env_path: Path) -> None:
+    """Reject imported snapshots that current runtime materializers cannot load."""
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts/character_materialization_readiness.py"),
          "--env-file", str(env_path)],
@@ -432,6 +433,7 @@ def restore_backup(config: dict[str, str], backup_path: Path) -> None:
 
 def import_legacy_dump(config: dict[str, str], env_path: Path, dump_path: Path,
                        backup_path: Path) -> tuple[str, int, int]:
+    """Replace a guarded local target and restore its backup on any failure."""
     dump_checksum = validate_dump(dump_path)
     if active_connections(config):
         raise LegacyImportError("target database has active connections; stop Duris before import")

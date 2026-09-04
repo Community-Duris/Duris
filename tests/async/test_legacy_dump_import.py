@@ -215,6 +215,7 @@ class LegacyDumpImportTest(unittest.TestCase):
         self.assertEqual(events, ["backup", "wipe", "restore"])
 
     def test_materialization_readiness_failure_restores_backup(self):
+        """Restore the pre-import target when readiness rejects imported rows."""
         events: list[str] = []
         with mock.patch.object(legacy, "validate_dump", return_value="0" * 64), \
                 mock.patch.object(legacy, "active_connections", return_value=0), \

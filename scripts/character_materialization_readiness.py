@@ -44,6 +44,7 @@ class ReadinessError(Exception):
 
 
 def connection_arguments(config: dict[str, str]) -> list[str]:
+    """Build transport arguments that verify every remote database identity."""
     socket_path = config.get("DB_SOCKET", "")
     if socket_path:
         return ["--protocol=socket", f"--socket={socket_path}"]
@@ -64,6 +65,7 @@ def connection_arguments(config: dict[str, str]) -> list[str]:
 
 
 def mysql_command(config: dict[str, str]) -> list[str]:
+    """Build the noninteractive MySQL client command for readiness queries."""
     return [
         "mysql", *connection_arguments(config), "--user", config["DB_USER"],
         "--batch", "--skip-column-names", "--raw", "--max-allowed-packet=1G",
@@ -72,6 +74,7 @@ def mysql_command(config: dict[str, str]) -> list[str]:
 
 
 def run_mysql(config: dict[str, str], statement: str) -> str:
+    """Run one database statement and expose only a bounded diagnostic on failure."""
     result = subprocess.run(
         [*mysql_command(config), "--execute", statement], capture_output=True,
         text=True, env=process_environment(config), check=False)
@@ -83,6 +86,7 @@ def run_mysql(config: dict[str, str], statement: str) -> str:
 
 
 def active_connections(config: dict[str, str]) -> int:
+    """Count other sessions using the selected database."""
     output = run_mysql(
         config, "SELECT COUNT(*) FROM information_schema.processlist "
         "WHERE db=DATABASE() AND id<>CONNECTION_ID();")
@@ -94,12 +98,16 @@ def active_connections(config: dict[str, str]) -> int:
 
 @dataclass(frozen=True)
 class Character:
+    """Selectable character state needed by the materialization audit."""
+
     pid: int
     room_vnum: int
 
 
 @dataclass(frozen=True)
 class Item:
+    """Persisted player or pet item topology needed by the audit."""
+
     row_id: int
     owner_pid: int
     vnum: int
@@ -111,6 +119,8 @@ class Item:
 
 @dataclass(frozen=True)
 class Pet:
+    """Persisted pet bounds and placement needed by the audit."""
+
     row_id: int
     owner_pid: int
     mob_vnum: int
@@ -127,6 +137,8 @@ class Pet:
 
 @dataclass(frozen=True, order=True)
 class Finding:
+    """One exact materialization failure and its optional safe repair."""
+
     kind: str
     owner_pid: int
     row_id: int
@@ -139,6 +151,7 @@ class Finding:
     repairable: bool = False
 
     def manifest_row(self) -> str:
+        """Serialize this finding into the protected manifest format."""
         values = (
             self.kind, self.owner_pid, self.row_id, self.vnum, self.current_a,
             self.expected_a, self.current_b, self.expected_b, self.child_count,
@@ -148,6 +161,8 @@ class Finding:
 
 @dataclass(frozen=True)
 class Snapshot:
+    """Database rows required to predict selectable-character materialization."""
+
     characters: tuple[Character, ...]
     items: tuple[Item, ...]
     pets: tuple[Pet, ...]
@@ -155,27 +170,28 @@ class Snapshot:
 
 
 def active_mobile_vnums() -> set[int]:
+    """Load every active mobile vnum and fail when the area manifest is incomplete."""
     result: set[int] = set()
-    missing: list[str] = []
-    for line in (ROOT / "areas/AREA").read_text(errors="replace").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("*"):
-            continue
-        name = stripped.split()[0]
-        path = ROOT / "areas/mob" / f"{name}.mob"
-        if not path.exists():
-            missing.append(path.name)
-            continue
-        for source_line in path.read_text(errors="replace").splitlines():
+    try:
+        paths = area_file_names(
+            ROOT / "areas/mob",
+            ROOT / "areas/AREA",
+            extension=".mob",
+            require_all=True,
+        )
+    except FileNotFoundError as error:
+        raise ReadinessError("active mobile prototype files are missing") from error
+    for path in paths:
+        for source_line in path.read_text(
+                encoding="utf-8", errors="replace").splitlines():
             match = re.fullmatch(r"#(\d+)", source_line.strip())
             if match and int(match.group(1)) != 9999999:
                 result.add(int(match.group(1)))
-    if missing:
-        raise ReadinessError("active mobile prototype files are missing")
     return result
 
 
 def active_object_types() -> dict[int, int]:
+    """Resolve unambiguous object types from the active area manifest."""
     constants = parse_defines(ROOT / "src/core/defines.h")
     paths = area_file_names(ROOT / "areas/obj", ROOT / "areas/AREA")
     objects, diagnostics = reconcile_area_objects(paths, {}, constants)
@@ -187,6 +203,7 @@ def active_object_types() -> dict[int, int]:
 
 
 def _integer(value: str) -> int:
+    """Parse a database integer or raise a readiness-safe error."""
     try:
         return int(value)
     except ValueError as error:
@@ -194,10 +211,12 @@ def _integer(value: str) -> int:
 
 
 def _nullable_integer(value: str) -> int | None:
+    """Parse a nullable database integer in raw MySQL output form."""
     return None if value == "NULL" else _integer(value)
 
 
 def _rows(output: str, width: int) -> list[list[str]]:
+    """Split tabular MySQL output while enforcing its exact column count."""
     rows = [line.split("\t") for line in output.splitlines()] if output else []
     if any(len(row) != width for row in rows):
         raise ReadinessError("database readiness query returned malformed data")
@@ -205,6 +224,7 @@ def _rows(output: str, width: int) -> list[list[str]]:
 
 
 def database_snapshot(query: Callable[[str], str]) -> Snapshot:
+    """Read all selectable character, item, and pet materialization inputs."""
     eligibility = (
         "pd.active=1 AND ac.deleted_at IS NULL AND ac.blocked=0 AND "
         "COALESCE(a.blocked,0)=0"
@@ -267,6 +287,7 @@ def database_snapshot(query: Callable[[str], str]) -> Snapshot:
 
 def _item_findings(items: tuple[Item, ...], object_types: dict[int, int],
                    allowed_parent_types: set[int]) -> list[Finding]:
+    """Find unknown prototypes and item trees the runtime would reject."""
     findings: list[Finding] = []
     by_id = {item.row_id: item for item in items}
     children: dict[int, int] = {}
@@ -307,6 +328,7 @@ def _item_findings(items: tuple[Item, ...], object_types: dict[int, int],
 
 def evaluate(snapshot: Snapshot, object_types: dict[int, int], mobile_vnums: set[int],
              allowed_parent_types: set[int]) -> list[Finding]:
+    """Predict materializer refusals and identify only exact safe repairs."""
     findings = _item_findings(snapshot.items, object_types, allowed_parent_types)
     findings.extend(_item_findings(snapshot.pet_items, object_types, allowed_parent_types))
     rooms = {character.pid: character.room_vnum for character in snapshot.characters}
@@ -333,7 +355,8 @@ def evaluate(snapshot: Snapshot, object_types: dict[int, int], mobile_vnums: set
                 "pet_state", pet.owner_pid, pet.row_id, pet.mob_vnum,
                 pet.room_vnum, owner_room if owner_room is not None else pet.room_vnum,
                 pet.hit, min(pet.hit, pet.max_hit), repairable=True))
-        elif not valid_other_bounds or pet.hit > pet.max_hit or owner_room is None:
+        elif not valid_other_bounds or pet.hit > pet.max_hit or owner_room is None or \
+                owner_room <= 0:
             findings.append(Finding(
                 "pet_invalid_bounds", pet.owner_pid, pet.row_id, pet.mob_vnum,
                 pet.room_vnum, owner_room if owner_room is not None else -1,
@@ -342,6 +365,7 @@ def evaluate(snapshot: Snapshot, object_types: dict[int, int], mobile_vnums: set
 
 
 def summarize(snapshot: Snapshot, findings: list[Finding]) -> str:
+    """Return an identifier-free aggregate audit summary."""
     affected = len({finding.owner_pid for finding in findings})
     repairable = sum(finding.repairable for finding in findings)
     return (
@@ -353,6 +377,7 @@ def summarize(snapshot: Snapshot, findings: list[Finding]) -> str:
 
 
 def _secure_create(path: Path, payload: bytes, label: str) -> None:
+    """Create a new owner-only artifact without following symbolic links."""
     if not path.is_absolute():
         raise ReadinessError(f"{label} path must be absolute")
     try:
@@ -375,6 +400,7 @@ def _secure_create(path: Path, payload: bytes, label: str) -> None:
 
 
 def write_manifest(path: Path, database: str, findings: list[Finding]) -> str:
+    """Write an exact protected manifest for fully repairable findings."""
     if not findings:
         raise ReadinessError("no materialization findings require a repair manifest")
     if any(not finding.repairable for finding in findings):
@@ -387,6 +413,7 @@ def write_manifest(path: Path, database: str, findings: list[Finding]) -> str:
 
 
 def read_manifest(path: Path, expected_digest: str, database: str) -> list[Finding]:
+    """Read and authenticate a protected manifest for the selected database."""
     if not path.is_absolute() or not re.fullmatch(r"[0-9a-f]{64}", expected_digest):
         raise ReadinessError("repair manifest path or digest is invalid")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
@@ -423,6 +450,7 @@ def read_manifest(path: Path, expected_digest: str, database: str) -> list[Findi
 
 
 def validate_backup(path: Path, expected_digest: str, database: str) -> str:
+    """Authenticate a fresh owner-only dump containing required database markers."""
     if not path.is_absolute() or not re.fullmatch(r"[0-9a-f]{64}", expected_digest):
         raise ReadinessError("backup path or digest is invalid")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
@@ -460,11 +488,13 @@ def validate_backup(path: Path, expected_digest: str, database: str) -> str:
 
 
 def _fingerprint_expression(columns: list[str]) -> str:
+    """Build the stable SQL expression used for unaffected-row fingerprints."""
     encoded = ",".join(f"IFNULL(HEX(`{column}`),'NULL')" for column in columns)
     return f"COALESCE(BIT_XOR(CRC32(CONCAT_WS(CHAR(31),{encoded}))),0)"
 
 
 def apply_repair(config: dict[str, str], findings: list[Finding]) -> str:
+    """Apply exact manifested repairs in one guarded transaction."""
     item_findings = [finding for finding in findings if finding.kind.endswith("item_type")]
     pet_findings = [finding for finding in findings if finding.kind == "pet_state"]
     columns: dict[str, list[str]] = {}
@@ -577,6 +607,7 @@ def apply_repair(config: dict[str, str], findings: list[Finding]) -> str:
 
 
 def parse_arguments() -> argparse.Namespace:
+    """Parse audit, manifest, and guarded-repair command-line options."""
     parser = argparse.ArgumentParser(
         description="Check selectable character snapshots against current prototypes.")
     parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
@@ -593,6 +624,7 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Audit the configured database or apply one authenticated repair manifest."""
     arguments = parse_arguments()
     try:
         config = read_env_file(arguments.env_file.resolve())
@@ -601,7 +633,9 @@ def main() -> int:
         constants = parse_defines(ROOT / "src/core/defines.h")
         allowed = {constants[name] for name in (
             "ITEM_CONTAINER", "ITEM_QUIVER", "ITEM_STORAGE", "ITEM_CORPSE")}
+
         def query(sql: str) -> str:
+            """Run a snapshot query against the validated configuration."""
             return run_mysql(config, sql)
 
         snapshot = database_snapshot(query)

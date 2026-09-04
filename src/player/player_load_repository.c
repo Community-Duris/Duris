@@ -512,6 +512,7 @@ enum class item_row_outcome
 	invalid,
 };
 
+/** Parse one saved payload, distinguishing authoritative, stale, and invalid rows. */
 item_row_outcome parse_item_payload(MYSQL_ROW row, player_load_result *result,
 				    player_item_snapshot *item, player_load_item_identity *identity)
 {
@@ -522,6 +523,11 @@ item_row_outcome parse_item_payload(MYSQL_ROW row, player_load_result *result,
 	if (!parse_unsigned(row[0], UINT64_MAX, &identity->database_id) || !identity->database_id ||
 	    !parse_signed(row[1], INT32_MIN, INT32_MAX, &signed_field))
 		return item_row_outcome::invalid;
+	// A legacy payload with neither a UID nor a custody row has no authoritative item
+	// identity to materialize. Retain it for explicit recovery, but skip it before
+	// validating fields that can only be trusted under custody authority.
+	if (!row[29] && !row[31])
+		return item_row_outcome::skipped;
 	item->vnum = static_cast<int32_t>(signed_field);
 	if (!parse_signed(row[2], INT16_MIN, INT16_MAX, &signed_field))
 		return item_row_outcome::invalid;
