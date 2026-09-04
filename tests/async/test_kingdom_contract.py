@@ -976,11 +976,38 @@ def test_node_population_is_one_random_mix_per_region() -> None:
             "the Tharnadia Rift is not a node region",
             f"regions: {names}",
         )
+        # 80/60, raised from 40/30 once land cost material:
+        # a full realm needs ~475 node-lifetimes of EVERY resource, and the old
+        # counts left about seventeen nodes of any given kind in the whole
+        # world at once. The exact numbers are pinned rather than a floor,
+        # because they are quoted in lib/duris.properties and in the
+        # `help kingdoms` scarcity paragraph, and all three must move together.
         totals = {r[0]: int(r[5]) for r in rows}
         check(
-            totals.get("Surface Map") == 40 and totals.get("Underdark") == 30,
-            "the surface keeps 40 nodes and the Underdark 30, of all kinds together",
+            totals.get("Surface Map") == 80 and totals.get("Underdark") == 60,
+            "the surface keeps 80 nodes and the Underdark 60, of all kinds together",
             f"totals: {totals}",
+        )
+
+
+        properties = read("lib/duris.properties")
+        for row in rows:
+            values = re.findall(
+                rf"^{re.escape(row[4])}\s*=\s*(\d+(?:\.\d+)?)\s*$",
+                properties,
+                re.M,
+            )
+            check(
+                len(values) == 1 and float(values[0]) == int(row[5]),
+                f"{row[4]} ships the same total as the C region table",
+                f"property values: {values}; C default: {row[5]}",
+            )
+        help_text = " ".join(read("lib/information/helpkingdoms").split())
+        check(
+            f"The shipped defaults are {totals.get('Surface Map')} nodes across "
+            f"the surface map and {totals.get('Underdark')} through the Underdark; "
+            "staff may adjust these totals." in help_text,
+            "kingdom help matches both region totals and labels them adjustable defaults",
         )
 
     refill = function_bodies(harvest, r"\bstatic\s+void\s+kingdom_nodes_reload\s*\(")
