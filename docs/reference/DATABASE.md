@@ -307,6 +307,49 @@ container linkage (`--check` reports without writing). The repair rewrites only
 `parent_item_uid` and `root_item_uid`, never ownership or `item_revision`, which stay
 ledger-derived.
 
+For production-safe read-only classification, use:
+
+```bash
+python3 scripts/classify_item_topology.py --env-file /absolute/private/production.env
+```
+
+This runs one aggregate-safe snapshot query and reports separate counts for expected
+quarantined/inactive lifecycle rows, acyclic projection drift repairable by the existing
+tool, and corruption. Categories cover duplicate or ambiguous payloads, missing
+payload owners, missing payload/current parents, cycles, excessive depth,
+owner/context disagreement, vnum/state differences, and item-revision evidence.
+It never enables the development-only mutation script.
+
+At an approved quiesced save boundary, stop the MUD, web process, workers, and every SQL
+writer, then write exact identifiers only to an existing owner-only directory:
+
+```bash
+install -d -m 0700 /private/item-topology
+python3 scripts/classify_item_topology.py \
+  --env-file /absolute/private/production.env \
+  --artifact /private/item-topology/classification.tsv
+```
+
+Artifact mode refuses while another target-database connection exists. The file is mode
+`0600` and contains payload parent/root, current parent/root, owner/context, vnum, state,
+and revision evidence; stdout remains aggregate-only. Record its SHA-256 without copying
+rows into tickets or logs.
+
+Rehearse `migrations/repair_item_nesting.sh` only against a fresh, isolated production
+clone configured as development. Its existing guards repair only
+`repairable_projection_lag`; owner disagreement, missing/foreign ancestors, cycles,
+depth failures, revision mismatches, and ambiguous evidence require a separately reviewed
+narrow correction. Compare byte-level fingerprints for every unaffected payload,
+`item_current_owner`, baseline, quarantine, and ledger row before and after rehearsal.
+
+Any production correction requires explicit owner authorization, a fresh validated
+backup, the same protected artifact digest, writer quiescence, exact transactional row
+guards, and captured rollback evidence. Never relax the mutation script's production
+refusal. Before restart, require zero foreign-key violations and run the UID allocator,
+item ownership, nesting, runtime compatibility, health, and log checks. Restore the exact
+backup on any discrepancy; do not regenerate UIDs, delete rows, reassign owners, or
+disable foreign keys to force a clean report.
+
 ## Maintenance and data lifecycle
 
 The maintenance scheduler gives each registered job a stable offset, row/time budget,
