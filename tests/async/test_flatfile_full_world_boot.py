@@ -187,7 +187,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
                     client.send("look")
                     client.expect("A gnoby piece of wood, perhaps a small mace, lies here.")
                     client.send("save")
-                    client.expect(f"Save complete for {CHARACTER}.", timeout=15)
+                    # Full-world startup can defer the save event; then the server
+                    # allows 30 seconds for its revision acknowledgement.
+                    client.expect(f"Save complete for {CHARACTER}.", timeout=45)
                     client.send("quit")
                     client.expect("ACCOUNT MENU", timeout=30)
                     client.send("0")
@@ -235,7 +237,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-world-build-") as build_
                     client.send("inventory")
                     client.expect("a small wooden mace", timeout=10)
                     client.send("save")
-                    client.expect(f"Save complete for {CHARACTER}.", timeout=15)
+                    # Full-world startup can defer the save event; then the server
+                    # allows 30 seconds for its revision acknowledgement.
+                    client.expect(f"Save complete for {CHARACTER}.", timeout=45)
                     client.send("quit")
                     client.expect("ACCOUNT MENU", timeout=30)
                     client.send("0")

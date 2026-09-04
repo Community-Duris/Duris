@@ -57,6 +57,9 @@ GET_FILTERED = extract(
 GET_MOVEMENT = extract(
     COMM_PATH, "int get_item_movement_cmd_from_q(struct txt_q *queue, char *dest)"
 )
+GET_PENDING = extract(
+    COMM_PATH, "int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest,"
+)
 GET_PLAYING = extract(
     COMM_PATH, "static int get_playing_cmd_from_q(P_char character, struct txt_q *queue,"
 )
@@ -172,10 +175,16 @@ critical_submit_result critical_command_coordinator_submit(critical_command queu
 
 void command_interpreter(P_char character, char *input);
 void process_with_paging(P_char character, char *input);
+bool currency_transaction_player_busy(P_char) { return false; }
+bool input_allowed_while_item_moving(const char *input);
+bool input_allowed_while_currency_pending(const char *) { return true; }
+bool input_allowed_while_item_and_currency_pending(const char *input)
+{
+	return input_allowed_while_item_moving(input);
+}
 
 int old_search_block(const char *argument, const uint begin, uint length, const char **list,
 		     const int mode);
-bool input_allowed_while_item_moving(const char *input);
 '''
 
 DRIVER = r'''
@@ -707,6 +716,7 @@ def main() -> int:
         GET_FROM_Q,
         GET_FILTERED,
         GET_MOVEMENT,
+        GET_PENDING,
         GET_PLAYING,
         DISPATCH_PLAYING,
         DRIVER,

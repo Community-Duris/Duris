@@ -9,6 +9,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import urllib.error
 import urllib.request
 
 
@@ -146,10 +147,20 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                         "Entering game loop." in boot_output,
                         "client-free server did not reach the game loop:\n" + boot_output,
                     )
-                    with urllib.request.urlopen(
-                        f"http://127.0.0.1:{websocket_port}/health", timeout=3
-                    ) as response:
-                        health = json.load(response)
+                    # The game-loop marker precedes listener initialization.
+                    # Wait for HTTP readiness instead of racing the socket bind.
+                    deadline = time.monotonic() + 30
+                    while True:
+                        try:
+                            with urllib.request.urlopen(
+                                f"http://127.0.0.1:{websocket_port}/health", timeout=3
+                            ) as response:
+                                health = json.load(response)
+                            break
+                        except urllib.error.URLError:
+                            if process.poll() is not None or time.monotonic() >= deadline:
+                                raise
+                            time.sleep(0.1)
                     require(
                         response.status == 200
                         and health == {"status": "healthy", "persistence": "ready"},

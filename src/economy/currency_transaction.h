@@ -28,6 +28,7 @@ struct currency_transaction_health
 };
 
 bool currency_transaction_can_submit(P_char character);
+bool currency_transaction_player_busy(P_char character);
 bool currency_transaction_publish_wallet(P_char character, const currency_vector &wallet,
 					 uint64_t wallet_revision);
 bool currency_transaction_publish_balances(P_char character, const char *account_name,
