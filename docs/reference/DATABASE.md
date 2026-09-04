@@ -315,9 +315,10 @@ python3 scripts/classify_item_topology.py --env-file /absolute/private/productio
 
 This runs one aggregate-safe snapshot query and reports separate counts for expected
 quarantined/inactive lifecycle rows, acyclic projection drift repairable by the existing
-tool, and corruption. Categories cover ambiguous payloads, missing payload/current
-parents, cycles, excessive depth, owner/context disagreement, vnum/state differences,
-and item-revision evidence. It never enables the development-only mutation script.
+tool, and corruption. Categories cover duplicate or ambiguous payloads, missing
+payload/current parents, cycles, excessive depth, owner/context disagreement,
+vnum/state differences, and item-revision evidence. It never enables the
+development-only mutation script.
 
 At an approved quiesced save boundary, stop the MUD, web process, workers, and every SQL
 writer, then write exact identifiers only to an existing owner-only directory:

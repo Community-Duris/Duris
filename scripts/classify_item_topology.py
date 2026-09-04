@@ -38,6 +38,8 @@ class TopologyError(Exception):
 
 @dataclass(frozen=True)
 class Row:
+    """One saved payload row joined to its authoritative custody evidence."""
+
     source_table: str
     source_row_id: int
     item_uid: int
@@ -65,19 +67,24 @@ class Row:
 
 @dataclass(frozen=True)
 class Finding:
+    """One classified topology state for an opaque protected item row."""
+
     category: str
     row: Row
     expected_root_uid: int | None = None
 
     @property
     def expected(self) -> bool:
+        """Return whether this is a valid runtime lifecycle transition."""
         return self.category in EXPECTED_CATEGORIES
 
     @property
     def repairable(self) -> bool:
+        """Return whether the guarded nesting repair can correct this state."""
         return self.category in REPAIRABLE_CATEGORIES
 
     def artifact_row(self) -> str:
+        """Serialize the full protected evidence row for operator review."""
         row = self.row
         values = (
             self.category, row.source_table, row.source_row_id, row.item_uid,
@@ -91,6 +98,7 @@ class Finding:
 
 
 def connection_arguments(config: dict[str, str]) -> list[str]:
+    """Build database transport arguments with remote identity verification."""
     socket_path = config.get("DB_SOCKET", "")
     if socket_path:
         return ["--protocol=socket", f"--socket={socket_path}"]
@@ -111,6 +119,7 @@ def connection_arguments(config: dict[str, str]) -> list[str]:
 
 
 def run_mysql(config: dict[str, str], statement: str) -> str:
+    """Execute one read-only classifier statement with bounded diagnostics."""
     command = [
         "mysql", *connection_arguments(config), "--user", config["DB_USER"],
         "--batch", "--skip-column-names", "--raw", config["DB_NAME"],
@@ -127,6 +136,7 @@ def run_mysql(config: dict[str, str], statement: str) -> str:
 
 
 def active_connections(config: dict[str, str]) -> int:
+    """Count other sessions using the selected artifact source database."""
     output = run_mysql(
         config, "SELECT COUNT(*) FROM information_schema.processlist "
         "WHERE db=DATABASE() AND id<>CONNECTION_ID();")
@@ -137,6 +147,7 @@ def active_connections(config: dict[str, str]) -> int:
 
 
 def classification_sql() -> str:
+    """Return the single-snapshot query joining payload and custody topology."""
     return """
 WITH candidate AS (
   SELECT 'player_items' source_table,i.id source_row_id,i.obj_uid item_uid,
@@ -198,6 +209,7 @@ ORDER BY candidate.item_uid,candidate.source_table,candidate.source_row_id;
 
 
 def _integer(value: str) -> int:
+    """Parse one required database integer."""
     try:
         return int(value)
     except ValueError as error:
@@ -205,10 +217,12 @@ def _integer(value: str) -> int:
 
 
 def _optional(value: str) -> int | None:
+    """Parse one nullable integer from raw MySQL output."""
     return None if value == "NULL" else _integer(value)
 
 
 def load_rows(query: Callable[[str], str]) -> list[Row]:
+    """Load and strictly parse every saved-payload topology row."""
     output = query(classification_sql())
     result: list[Row] = []
     for line in output.splitlines() if output else []:
@@ -225,6 +239,7 @@ def load_rows(query: Callable[[str], str]) -> list[Row]:
 
 
 def _canonical_rows(rows: list[Row]) -> tuple[dict[int, Row], dict[int, str]]:
+    """Select one row per UID while retaining duplicate/ambiguous failures."""
     grouped: dict[int, list[Row]] = defaultdict(list)
     for row in rows:
         grouped[row.item_uid].append(row)
@@ -240,12 +255,15 @@ def _canonical_rows(rows: list[Row]) -> tuple[dict[int, Row], dict[int, str]]:
             invalid[item_uid] = "missing_payload_parent"
         elif len(payloads) != 1:
             invalid[item_uid] = "ambiguous_payload"
+        elif len(candidates) != 1:
+            invalid[item_uid] = "duplicate_custody_rows"
         canonical[item_uid] = first
     return canonical, invalid
 
 
 def _roots(rows: dict[int, Row], invalid: dict[int, str], maximum_depth: int = 32) \
         -> tuple[dict[int, int], dict[int, str]]:
+    """Resolve payload roots and classify missing, cyclic, or deep ancestry."""
     roots: dict[int, int] = {}
     failures = dict(invalid)
     for item_uid in rows:
@@ -284,19 +302,16 @@ def _roots(rows: dict[int, Row], invalid: dict[int, str], maximum_depth: int = 3
 
 
 def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
+    """Classify corruption before otherwise expected lifecycle transitions."""
     canonical, initial = _canonical_rows(rows)
     roots, graph_failures = _roots(canonical, initial, maximum_depth)
     findings: list[Finding] = []
     for item_uid, row in canonical.items():
         root = roots.get(item_uid)
-        if row.quarantined:
-            category = "expected_quarantine"
-        elif item_uid in graph_failures:
+        if item_uid in graph_failures:
             category = graph_failures[item_uid]
         elif row.current_owner_type is None:
             category = "missing_current_owner"
-        elif row.state != 1:
-            category = "expected_inactive_state"
         elif row.current_vnum != row.vnum:
             category = "vnum_mismatch"
         elif row.expected_item_revision is None and row.item_revision == 0:
@@ -318,6 +333,10 @@ def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
                      row.payload_owner_type, row.payload_owner_id,
                      row.payload_owner_context_id)):
             category = "foreign_or_inactive_parent"
+        elif row.quarantined:
+            category = "expected_quarantine"
+        elif row.state != 1:
+            category = "expected_inactive_state"
         elif row.current_parent_uid != row.payload_parent_uid or \
                 row.current_root_uid != root:
             category = "repairable_projection_lag"
@@ -329,6 +348,7 @@ def classify(rows: list[Row], maximum_depth: int = 32) -> list[Finding]:
 
 
 def summary(rows: list[Row], findings: list[Finding]) -> str:
+    """Render identifier-free aggregate category counts."""
     counts = Counter(finding.category for finding in findings)
     expected = sum(counts[category] for category in EXPECTED_CATEGORIES)
     repairable = sum(counts[category] for category in REPAIRABLE_CATEGORIES)
@@ -342,8 +362,9 @@ def summary(rows: list[Row], findings: list[Finding]) -> str:
 
 
 def write_artifact(path: Path, database: str, findings: list[Finding]) -> str:
-    if not path.is_absolute() or not findings:
-        raise TopologyError("artifact requires an absolute path and at least one finding")
+    """Write a new owner-only evidence artifact, including clean results."""
+    if not path.is_absolute():
+        raise TopologyError("artifact requires an absolute path")
     try:
         parent = path.parent.resolve(strict=True)
         metadata = parent.stat()
@@ -367,6 +388,7 @@ def write_artifact(path: Path, database: str, findings: list[Finding]) -> str:
 
 
 def parse_arguments() -> argparse.Namespace:
+    """Parse the database environment and optional protected artifact path."""
     parser = argparse.ArgumentParser(
         description="Classify saved item topology against authoritative custody.")
     parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
@@ -375,6 +397,7 @@ def parse_arguments() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Classify the configured database and report aggregate safety state."""
     arguments = parse_arguments()
     try:
         config = read_env_file(arguments.env_file.resolve())
