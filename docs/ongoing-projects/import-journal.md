@@ -707,6 +707,9 @@ migration, alter a database row, or restart a service.
   `locker_access`; a normal non-staff owner therefore cannot reach this legacy
   locker. It needs a verified access grant or deliberate conversion. MUD-owned
   tracking: [DurisMUD #122](https://github.com/LuminariMUD/DurisMUD/issues/122).
+  The anonymized rehearsal and guarded backup-first grant procedure are in
+  `docs/operations/legacy-personal-locker-access-repair.md`; they do not apply
+  any production change by themselves.
 - Two of the 71 imported access grants are unusable because their visitors are
   deleted or on the wrong racewar side. Four account/side lockers containing 37
   items currently have no selectable character on that side; those can become
