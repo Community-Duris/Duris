@@ -12,9 +12,11 @@ REDIS = (SRC / "redis.c").read_text(encoding="ascii")
 WORLD_RUNTIME = (SRC / "redis_world_runtime.c").read_text(encoding="ascii")
 SQL = (SRC / "sql.c").read_text(encoding="ascii")
 COMM = (SRC / "comm.c").read_text(encoding="ascii")
+DB = (SRC / "db.c").read_text(encoding="ascii")
 
 
 def section(text: str, start: str, end: str) -> str:
+    """Extract a bounded source section for recovery-order assertions."""
     first = text.index(start)
     return text[first : text.index(end, first)]
 
@@ -101,5 +103,15 @@ assert "read_object(" not in reader and "obj_to_room(" not in reader
 recovery = section(COMM, "// redis crash recovery", "PROFILES(RESET)")
 assert "applying full normal zone boot" in recovery
 assert "reset_zone(zone, 2)" in recovery
+failure = recovery[recovery.index("else\n\t\t{") :]
+assert "addOnGroundArtis_sql();" in failure
+assert failure.index("reset_zone(zone, 2)") < failure.index("addOnGroundArtis_sql();")
+
+boot = section(DB, "void boot_db(int mini_mode)", "void update_stat_data()")
+artifact_boot = boot[boot.index("setupMortArtiList_sql();") : boot.index("-- Continents")]
+assert "if (!redis_world_recovery_boot_active())\n\t\t\t\taddOnGroundArtis_sql();" in artifact_boot
+assert artifact_boot.index("if (!redis_world_recovery_boot_active())") < artifact_boot.index(
+    "addOnGroundArtis_sql();"
+)
 
 print("authority-first transactional world recovery contracts passed")
