@@ -94,6 +94,7 @@ static bool reward_marker_matches(P_obj obj, const char *account, unsigned long 
 	return grant_id == 0 ? marker.legacy : (!marker.legacy && marker.grant_id == grant_id);
 }
 
+/** Match a grant ID, or the legacy account marker and reward prototype. */
 static bool grant_marker_matches(P_obj obj, const RewardGrant &grant)
 {
 	if (reward_marker_matches(obj, grant.account.c_str(), grant.id))

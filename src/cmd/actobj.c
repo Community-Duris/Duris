@@ -265,8 +265,17 @@ static bool get_item_source_owner(P_char actor, P_obj object, P_obj container,
 		else
 		{
 			P_obj outer = container;
+			int safety = top_of_objt + 1;
 			while (OBJ_INSIDE(outer) && outer->loc.inside)
+			{
+				if (safety-- <= 0)
+				{
+					send_to_char("That container has a malformed item.\r\n",
+						     actor);
+					return false;
+				}
 				outer = outer->loc.inside;
+			}
 			if (OBJ_ROOM(outer) && outer->loc.room == actor->in_room)
 				*source = { item_owner_type::room,
 					    static_cast<uint64_t>(world[actor->in_room].number),
@@ -6666,7 +6675,7 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, bool
 	return FALSE;
 }
 
-/*
+/**
  * The Controller to the Do_Wear() function.  I have refactored it down
  * in size, squished some needless repetitive code, and moved most of the
  * messages into the View [Perform_Wear()].  There are still areas that
@@ -8018,6 +8027,7 @@ void do_wear(P_char ch, char *argument, int /*cmd*/)
 	room_light(ch->in_room, REAL);
 }
 
+/** Wield a selected inventory item through the shared equipment checks. */
 void do_wield(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object;

@@ -4285,6 +4285,7 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 	extract_obj(bottle);
 }
 
+/** Recite a carried scroll and apply its spells to the selected target. */
 void do_recite(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj scroll, obj;
