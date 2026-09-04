@@ -63,7 +63,7 @@ require(async_branch, "async pipeline branch disappeared")
 
 status_save = section(
     SQL_PLAYER,
-    "// status save (main player data)\n\nbool sql_save_player_status(P_char ch, int type, int room)",
+    "// status save (main player data)",
     "\n// skills save",
 )
 require(
