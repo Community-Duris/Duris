@@ -10,10 +10,20 @@ fi
 : "${DB_HOST:?DB_HOST is required}" "${DB_USER:?DB_USER is required}"
 : "${DB_PASSWD:?DB_PASSWD is required}" "${DB_NAME:?DB_NAME is required}"
 export MYSQL_PWD="$DB_PASSWD"
-if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then
-    MYSQL_SSL=(--ssl-mode=PREFERRED)
-else
-    MYSQL_SSL=(--skip-ssl)
+MYSQL_SSL=()
+if [[ "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != "::1" ]]; then
+    [[ "${DB_TLS:-}" == "TRUE" && -f "${DB_SSL_CA:-}" ]] || {
+        echo 'remote character baseline readiness requires TLS and a CA file' >&2
+        exit 2
+    }
+    if mysql --help 2>&1 | grep -q -- '--ssl-mode'; then
+        MYSQL_SSL=(--ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA")
+    elif mysql --help 2>&1 | grep -q -- '--ssl-verify-server-cert'; then
+        MYSQL_SSL=(--ssl-ca="$DB_SSL_CA" --ssl-verify-server-cert)
+    else
+        echo 'database client cannot verify the remote server identity' >&2
+        exit 2
+    fi
 fi
 MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B "$DB_NAME")
 

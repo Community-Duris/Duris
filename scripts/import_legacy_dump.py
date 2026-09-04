@@ -398,6 +398,7 @@ def establish_character_baselines(config: dict[str, str]) -> None:
 
 
 def run_migrations(config: dict[str, str], env_path: Path) -> None:
+    """Run schema convergence, establish safe baselines, and verify readiness."""
     environment = process_environment(config)
     environment["MIGRATION_ENV_FILE"] = str(env_path)
     commands = (

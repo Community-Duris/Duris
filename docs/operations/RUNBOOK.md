@@ -546,25 +546,36 @@ locked current value at revision zero. `ledger_history_requires_review` includes
 proposed arithmetic candidate and is never applied by the tool; prove the complete,
 contiguous history and review separate targeted DML. `revision_without_ledger` has no
 defensible automated opening value. Keep all PIDs and row details in the owner-only
-artifact.
+artifact. Classification is not a resolution: every non-safe row requires a separate,
+owner-only per-PID decision record containing the frozen source evidence, authoritative
+opening value and revision, reviewed DML checksum, reviewer identity, and either an
+explicit approval or `blocked_no_authoritative_opening`. The repair tool deliberately
+does not consume those records. Do not mark the production incident resolved until every
+affected row has an approved disposition and the aggregate readiness gate is zero.
 
 Rehearse safe rows only on a fresh production clone after a verified backup and with
 all writers stopped. Supply the reviewed artifact digest and backup identity:
 
 ```bash
 WRITERS_QUIESCED=TRUE COMBAT_BASELINE_BACKUP_ID='<backup-generation>' \
+  COMBAT_BASELINE_ROLLBACK_EVIDENCE=/absolute/private/combat-baseline-review/rollback.sql \
+  COMBAT_BASELINE_ROLLBACK_SHA256='<reviewed-sha256>' \
   ./migrations/repair_missing_combat_baselines.sh --apply \
   /absolute/private/combat-baseline-review/classification.tsv '<sha256>'
 ```
 
 The insert-only transaction preserves existing baselines, verifies locked player and
-ledger state, fails on a conflicting baseline, and writes an owner-only receipt. A
+ledger state, fails on a conflicting baseline, and rolls back unless character readiness
+plus combat, currency, epic, item-ownership, and required-FK reconciliation all pass.
+It writes those aggregate results to an owner-only receipt. The required rollback file
+must contain reviewed inverse DML limited to the artifact's exact PIDs, values, and
+revisions, with guards rejecting any subsequent combat revision or ledger activity. A
 repeat is idempotent only when the existing row exactly matches the reviewed opening.
-Before any separately authorized production repair, retain the backup, reviewed DML,
-artifact digest, and receipt; the rollback is limited to the exact inserted PIDs and is
-permitted only before subsequent combat revision/ledger activity. Afterwards run the
-combat, currency, epic, item-ownership, and FK/schema verifiers. Never delete or rewrite
-ledger history to make readiness pass.
+This command refuses production targets; it is rehearsal evidence, not permission to
+repair production. Before any separately authorized production repair, retain the
+backup, protected per-PID decisions, reviewed forward and rollback DML, all digests, and
+the rehearsal receipt. Afterwards rerun the same full reconciliation set. Never delete
+or rewrite ledger history to make readiness pass.
 
 ### Maintenance, lifecycle, export, and erasure
 

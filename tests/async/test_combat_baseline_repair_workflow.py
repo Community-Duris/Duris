@@ -12,6 +12,7 @@ REPAIR = ROOT / "migrations/repair_missing_combat_baselines.sh"
 
 
 def environment(tool_dir: pathlib.Path, classification: str) -> dict[str, str]:
+    """Build isolated non-production settings for a repair workflow run."""
     values = os.environ.copy()
     values.update(
         {
@@ -24,6 +25,8 @@ def environment(tool_dir: pathlib.Path, classification: str) -> dict[str, str]:
             "ENVIRONMENT": "test",
             "CLASSIFICATION_ROWS": classification,
             "CHECK_ROW": "1\t0\t0\t0",
+            "RECONCILIATION_ROW": "0\t0\t0\t0\t0\t0\t0\t0\t0\t0",
+            "MYSQL_HELP": "--ssl-mode",
         }
     )
     return values
@@ -35,11 +38,14 @@ with tempfile.TemporaryDirectory(prefix="duris-combat-baseline-") as temporary:
     mysql = private / "mysql"
     mysql.write_text(
         "#!/usr/bin/env bash\n"
-        "if [[ \"$1\" == '--help' ]]; then echo '--ssl-mode'; exit 0; fi\n"
+        "if [[ \"${1:-}\" == '--help' ]]; then printf '%s\\n' \"$MYSQL_HELP\"; exit 0; fi\n"
         "query=${!#}\n"
         "if [[ \"$query\" == *'INSERT INTO combat_frag_baseline'* ]]; then exit 0; fi\n"
         "if [[ \"$query\" == *'COALESCE(SUM(wallet.pid IS NULL)'* ]]; then\n"
         "  printf '%s\\n' \"$CHECK_ROW\"; exit 0\n"
+        "fi\n"
+        "if [[ \"$query\" == *'information_schema.referential_constraints'* ]]; then\n"
+        "  printf '%s\\n' \"$RECONCILIATION_ROW\"; exit 0\n"
         "fi\n"
         "printf '%s\\n' \"$CLASSIFICATION_ROWS\"\n"
     )
@@ -63,6 +69,24 @@ with tempfile.TemporaryDirectory(prefix="duris-combat-baseline-") as temporary:
             "COMBAT_BASELINE_BACKUP_ID": "test-backup-generation",
         }
     )
+    missing_rollback = subprocess.run(
+        [str(REPAIR), "--apply", str(safe_artifact), digest],
+        cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert missing_rollback.returncode == 1, missing_rollback.stdout
+    assert "rollback-evidence" in missing_rollback.stdout
+    rollback_evidence = private / "rollback.sql"
+    rollback_evidence.write_text("reviewed exact-row rollback plan\n")
+    rollback_evidence.chmod(0o600)
+    env.update(
+        {
+            "COMBAT_BASELINE_ROLLBACK_EVIDENCE": str(rollback_evidence),
+            "COMBAT_BASELINE_ROLLBACK_SHA256": hashlib.sha256(
+                rollback_evidence.read_bytes()
+            ).hexdigest(),
+        }
+    )
     applied = subprocess.run(
         [str(REPAIR), "--apply", str(safe_artifact), digest],
         cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE,
@@ -71,6 +95,10 @@ with tempfile.TemporaryDirectory(prefix="duris-combat-baseline-") as temporary:
     assert applied.returncode == 0, applied.stdout
     assert "approved_rows=1" in applied.stdout
     assert (private / "safe.tsv.applied").stat().st_mode & 0o077 == 0
+    receipt = (private / "safe.tsv.applied").read_text()
+    assert "rollback_evidence_sha256=" in receipt
+    assert "combat_mismatch=0" in receipt
+    assert "fk_invalid=0" in receipt
 
     repeated = subprocess.run(
         [str(REPAIR), "--apply", str(safe_artifact), digest],
@@ -93,6 +121,10 @@ with tempfile.TemporaryDirectory(prefix="duris-combat-baseline-") as temporary:
         {
             "WRITERS_QUIESCED": "TRUE",
             "COMBAT_BASELINE_BACKUP_ID": "test-backup-generation",
+            "COMBAT_BASELINE_ROLLBACK_EVIDENCE": str(rollback_evidence),
+            "COMBAT_BASELINE_ROLLBACK_SHA256": hashlib.sha256(
+                rollback_evidence.read_bytes()
+            ).hexdigest(),
         }
     )
     refused = subprocess.run(
@@ -109,6 +141,13 @@ assert "baseline.opening_frags=approved.opening_frags" in source
 assert "refusing combat baseline repair outside" in source
 assert "WRITERS_QUIESCED" in source
 assert "COMBAT_BASELINE_BACKUP_ID" in source
+assert "COMBAT_BASELINE_ROLLBACK_EVIDENCE" in source
+assert "reconciliation_predicate" in source
+assert "information_schema.referential_constraints" in source
+assert "--ssl-mode=VERIFY_IDENTITY" in source
+assert "--ssl-verify-server-cert" in source
+assert "--ssl-mode=PREFERRED" not in source
+assert "--skip-ssl" not in source
 assert "INSERT IGNORE" not in source
 
 print("combat frag baseline classification and repair workflow passed")

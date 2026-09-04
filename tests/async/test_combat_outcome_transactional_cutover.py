@@ -123,6 +123,7 @@ class CombatOutcomeCutoverTests(unittest.TestCase):
         self.assertLess(branch.index("finish_inbox"), branch.index('execute(connection, "COMMIT")'))
 
     def test_schema_and_checkpoint_protection(self):
+        """Require combat schema and fresh-player baseline initialization."""
         migration = (ROOT / "migrations/combat_outcome.sql").read_text()
         bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
         runner = (ROOT / "migrations/run_migration.sh").read_text()

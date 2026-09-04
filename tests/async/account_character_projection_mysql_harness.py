@@ -18,6 +18,7 @@ mysql_source_text = source_text[source_text.index("\n#else\n\n// globals") :]
 
 
 def body(text, signature):
+    """Extract one production function definition for the isolated harness."""
     start = index(text, signature)
     while ";" in text[start + len(signature) : text.index("{", start)]:
         start = index(text, signature, start + len(signature))
@@ -51,6 +52,7 @@ harness = f'''\
 
 MYSQL *DB = nullptr;
 
+/* Escape one account value through the live client connection. */
 char *sql_escape_string(const char *value)
 {{
     if (!DB || !value)
@@ -63,6 +65,7 @@ char *sql_escape_string(const char *value)
     return escaped;
 }}
 
+/* Execute one extracted production repair statement. */
 bool sql_run_query(const char *query)
 {{
     if (mysql_query(DB, query) == 0)
@@ -73,6 +76,7 @@ bool sql_run_query(const char *query)
 
 {repair}
 
+/* Return one required database setting for the isolated fixture. */
 static const char *required_env(const char *name)
 {{
     const char *value = std::getenv(name);
@@ -80,6 +84,7 @@ static const char *required_env(const char *name)
     return value;
 }}
 
+/* Execute fixture SQL or terminate with the client error. */
 static void execute(const char *query)
 {{
     if (mysql_query(DB, query) != 0)
@@ -89,6 +94,7 @@ static void execute(const char *query)
     }}
 }}
 
+/* Read one integral scalar from the fixture database. */
 static long scalar(const char *query)
 {{
     execute(query);
@@ -101,6 +107,7 @@ static long scalar(const char *query)
     return value;
 }}
 
+/* Exercise safe baseline establishment and projection repair behavior. */
 int main()
 {{
     DB = mysql_init(nullptr);

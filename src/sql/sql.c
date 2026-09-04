@@ -1486,6 +1486,7 @@ MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, .
 	return res;
 }
 
+/* Fail boot unless the database schema and required authority baselines are ready. */
 static bool sql_verify_boot_database(void)
 {
 	if (!DB)

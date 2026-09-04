@@ -223,9 +223,11 @@ class LegacyDumpImportTest(unittest.TestCase):
         self.assertIn("ON DUPLICATE KEY UPDATE account_name = account_name", section)
 
     def test_import_establishes_all_character_baselines_before_readiness(self):
+        """Establish every safe opening baseline before import verification."""
         statements = []
 
         def mysql_result(_config, statement):
+            """Capture ordered SQL and return one aggregate readiness row."""
             statements.append(statement)
             return "" if len(statements) == 1 else "0\t0\t0"
 
@@ -243,6 +245,7 @@ class LegacyDumpImportTest(unittest.TestCase):
         self.assertIn("combat_frag_baseline", readiness)
 
     def test_import_refuses_to_infer_a_missing_baseline_after_history(self):
+        """Reject imported baseline inference when ledger history already exists."""
         with mock.patch.object(
                 legacy, "run_mysql", side_effect=["", "0\t0\t1"]):
             with self.assertRaisesRegex(

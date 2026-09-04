@@ -1307,6 +1307,7 @@ bool sql_save_player(P_char ch, int type, int room)
 
 // status save (main player data)
 
+/* Persist player status and establish opening ledgers for a new character. */
 bool sql_save_player_status(P_char ch, int type, int room)
 {
 	if (!ch || !IS_PC(ch) || !DB)
@@ -5280,6 +5281,7 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 	return true;
 }
 
+/* Repair selectable account mappings only after safe opening baselines exist. */
 int sql_repair_account_character_projection(const char *account_name)
 {
 	if (!DB || !account_name || !account_name[0])
