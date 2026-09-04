@@ -117,6 +117,10 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 /* utility */
 void websocket_generate_accept_key(const char *client_key, char *accept_key);
 #define IS_WEBSOCKET(d) ((d) && (d)->websocket)
+static inline bool websocket_is_authenticated_service(const struct descriptor_data *d)
+{
+	return d && d->websocket && d->durisweb_verified && d->durisweb_backend;
+}
 void websocket_close(struct descriptor_data *d, int code, const char *reason);
 void websocket_free(struct descriptor_data *d);
 

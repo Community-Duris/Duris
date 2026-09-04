@@ -901,7 +901,8 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 
 		/* only kick unauthenticated websocket connections from same ip */
 		if (k->websocket && k->ws_handshake_done && !k->account && /* not logged in yet */
-		    k->connected != CON_PLAYING && strcmp(k->host, d->host) == 0)
+		    !websocket_is_authenticated_service(k) && k->connected != CON_PLAYING &&
+		    strcmp(k->host, d->host) == 0)
 		{
 			statuslog(
 				56,

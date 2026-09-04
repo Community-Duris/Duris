@@ -147,6 +147,7 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 					{
 						d->durisweb_verified = 1;
 						d->durisweb_backend = 1;
+						d->wait = 0;
 						ws_auth_reset(&d->durisweb_auth_window_start,
 							      &d->durisweb_auth_failures);
 						d->durisweb_auth_challenge[0] = '\0';

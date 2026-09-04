@@ -13,6 +13,7 @@ AUTH = (SRC / "ws_auth.h").read_text()
 GMCP = (SRC / "gmcp.c").read_text()
 HEADER = (SRC / "websocket.h").read_text()
 STRUCTS = (SRC / "structs.h").read_text()
+COMM = (SRC / "comm.c").read_text()
 EXPECTED_MUD_HOOKS = (
     "auction_new",
     "auction_bid",
@@ -67,6 +68,29 @@ assert 'getenv("DURISWEB_SECRET_PREVIOUS")' in AUTH
 assert "durisweb_auth_challenge_expires" in STRUCTS
 assert '"durisweb_challenge"' in HANDLERS
 assert '"Core.AuthChallenge"' in GMCP
+
+# An authenticated service descriptor has its own lifecycle: authentication
+# clears login-idle history, generic login-idle accounting excludes it, and a
+# same-host browser handshake cannot classify it as a stale login socket.
+service_auth = HANDLERS[
+    HANDLERS.index("void ws_cmd_durisweb_auth") : HANDLERS.index("static void ws_broadcast_service_json")
+]
+assert service_auth.index("d->durisweb_backend = 1") < service_auth.index("d->wait = 0")
+gmcp_service_auth = GMCP[GMCP.index("ws_verify_durisweb_signature") :]
+assert gmcp_service_auth.index("d->durisweb_backend = 1") < gmcp_service_auth.index("d->wait = 0")
+assert re.search(
+    r"const bool authenticated_service\s*=\s*websocket_is_authenticated_service\(point\)", COMM
+)
+assert "point->connected && !authenticated_service" in COMM
+assert re.search(r"else if\s*\(!authenticated_service && t_ch &&\s*IS_AFFECTED2", COMM)
+assert re.search(r"else if\s*\(!authenticated_service && t_ch &&\s*affected_by_spell", COMM)
+duplicate_cleanup = WS[
+    WS.index("duplicate connection check") : WS.index("WebSocket handshake complete")
+]
+assert "!websocket_is_authenticated_service(k)" in duplicate_cleanup
+assert COMM.index("WebSocket ping/pong dead connection detection") < COMM.index(
+    "point->connected && !authenticated_service"
+)
 
 # Hook mutation stays on the authenticated command plane. Authorization is
 # checked before request parsing, ids are exact-whitelisted, and success is
