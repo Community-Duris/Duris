@@ -1089,6 +1089,10 @@ void game_loop(int port, int sslport)
 				reset_zone(zone, 2);
 			if (!load_moonstone_fragments())
 				logit(LOG_FILE, "Error initializing automatons quest!\r\n");
+			/* boot_db() deferred legacy ground artifacts to Redis. Restore the SQL
+			 * fallback now that the recovery generation could not be materialized. */
+			if (!mini_mode)
+				addOnGroundArtis_sql();
 		}
 		redis_world_recovery_boot_clear();
 		// Enable the registry-owned world-state job now that recovery is done.

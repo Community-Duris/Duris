@@ -463,6 +463,12 @@ int main()
            !materializing);
 
     hydrate_succeeds = true;
+    assert(world_recovery_restore(valid_objects.data(), valid_objects.size(), 300, 77,
+                                  nullptr));
+    assert(object_list && object_list->obj_uid == 500 && object_list->next == nullptr);
+    assert(object_list->loc_p == LOC_ROOM && world[object_list->loc.room].number == 100);
+    extract_obj(object_list, FALSE);
+
     const auto duplicates = object_generation(
         {{item(600, 600, 0)}, {item(600, 600, 0)}});
     assert(!world_recovery_restore(duplicates.data(), duplicates.size(), 300, 77, nullptr));

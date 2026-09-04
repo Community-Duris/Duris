@@ -31,6 +31,7 @@
 #include "core/mm.h"
 #include "item/objmisc.h"
 #include "persistence/persistence_mode.h"
+#include "redis/redis_world_runtime.h"
 #include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -728,7 +729,11 @@ void boot_db(int mini_mode)
 		// skip loading artifacts from db during copyover - they're restored from copyover.dat
 		if (!is_copyover_boot())
 		{
-			addOnGroundArtis_sql();
+			/* Redis recovery owns floor materialization when its validated generation
+			 * is active. Loading the legacy vnum-only artifact row first would create
+			 * a fresh-UID duplicate of the authoritative recovered object. */
+			if (!redis_world_recovery_boot_active())
+				addOnGroundArtis_sql();
 			addOnMobArtis_sql();
 		}
 	}
