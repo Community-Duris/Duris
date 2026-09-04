@@ -20,6 +20,9 @@
 
 class Guild;
 class Guildhall;
+#ifdef __NO_MYSQL__
+struct flatfile_association_record;
+#endif
 
 #define LOG_KINGDOM "logs/log/kingdom"
 
@@ -73,6 +76,57 @@ int kingdom_node_vnum_for(int res, bool underdark);
 /* The garrison mob. heavens.mob 108; 109-113 are reserved beside it should
  * racewar-specific guards be wanted later. */
 #define VMOB_KINGDOM_GUARD 108
+/* The champion, heavens.mob 109. A SEPARATE prototype rather than a guard with
+ * its level raised, because it carries its own proc, its own description and
+ * its own loadout, and binding two different procs to one prototype is not
+ * possible. */
+#define VMOB_KINGDOM_CHAMPION 109
+
+/* The champion's two banners, heavens.obj 485 and 486, in the same block as
+ * the harvest nodes. A banner is a real object standing in a real room: it can
+ * be looked at, it can be attacked, and it can be destroyed, which is the
+ * whole point of it -- an aura nobody could break would just be a passive. */
+#define VOBJ_KINGDOM_BANNER_COMBAT 485
+#define VOBJ_KINGDOM_BANNER_SANCTITY 486
+
+/* ------------------------------------------------------------------ *
+ * The garrison roster
+ * ------------------------------------------------------------------ *
+ * Ruled 2026-09-04. A guard is bought, not conjured by owning land: the land
+ * sets the CEILING on how many a realm may field and how high they may rise,
+ * and the guild pays for each one and names its class.
+ *
+ * The ladder of levels is tied to completed rings, so the garrison improves
+ * with the realm rather than with the treasury alone:
+ *
+ *     ring 1 complete  (8 squares)   level 50
+ *     ring 2 complete  (24 squares)  level 52
+ *     ring 3 complete  (48 squares)  level 54
+ *     ring 4 complete  (80 squares)  level 56, and the champion at 60
+ *
+ * A newly hired guard stands at the prototype's own level and costs
+ * kingdom.guard.cost.base; each promotion costs an equal share of the span up
+ * to kingdom.guard.cost.max, so a guard taken all the way to 56 has cost
+ * exactly the configured maximum. PROMOTION IS ONE-WAY: a guard's level never
+ * falls, not on arrears, not on land lost, not on a guild's request.
+ */
+#define KINGDOM_GUARD_SLOTS 16
+#define KINGDOM_GUARD_BASE_LEVEL 45
+#define KINGDOM_GUARD_FIRST_TIER_LEVEL 50
+#define KINGDOM_GUARD_TIER_STEP 2
+#define KINGDOM_GUARD_TOP_LEVEL 56
+#define KINGDOM_CHAMPION_LEVEL 60
+/* Promotions between base and top: 50, 52, 54, 56. */
+#define KINGDOM_GUARD_TIERS 4
+/* The champion's slot, one past the guards, so both live in one roster table
+ * keyed by (association, slot) and one loader reads them. */
+#define KINGDOM_CHAMPION_SLOT KINGDOM_GUARD_SLOTS
+
+struct kingdom_guard_slot
+{
+	int guard_class = 0; /* a CLASS_* bit, or 0 for an empty slot */
+	int level = 0; /* 0 for an empty slot */
+};
 
 /* Resource a node prototype yields, or -1 if the vnum is not a kingdom node. */
 int kingdom_resource_for_node_vnum(int vnum);
@@ -121,6 +175,24 @@ struct kingdom_realm
 
 	long resources[KRES_MAX] = { 0, 0, 0, 0 };
 
+	/* THE ROSTER. Ruled 2026-09-04: guards stopped being a number derived
+	 * from land and became individuals a guild BUYS, names a class for and
+	 * promotes. The land still says how many a realm may field
+	 * (kingdom_guard_allowance()) and how high they may rise
+	 * (kingdom_guard_level_cap()), but nothing stands up that was not paid
+	 * for, so this is the one part of the garrison that must be persisted.
+	 *
+	 * Slot order is hire order and never changes, because `kingdom roster`
+	 * numbers guards by it and a player who reads "upgrade 3" must get the
+	 * same guard the listing showed. A slot with level 0 is empty. */
+	kingdom_guard_slot guards[KINGDOM_GUARD_SLOTS] = {};
+
+	/* The champion, bought only by a realm holding all eighty squares. Its
+	 * class is the two-class multiclass the guild chose; level is fixed at
+	 * KINGDOM_CHAMPION_LEVEL, so a non-zero class IS the champion's
+	 * existence and there is no second flag to keep in step. */
+	int champion_class = 0;
+
 	time_t upkeep_paid_through = 0;
 	int arrears = KARR_CURRENT;
 	int missed_cycles = 0;
@@ -163,24 +235,42 @@ bool kingdom_resolve_anchor(kingdom_realm &realm);
 struct kingdom_config
 {
 	bool enabled = false;
-	/* Coin cost of claim n, before any multiplier: base + per_square * n. */
-	long claim_cost_base = 25000;
-	long claim_cost_per_square = 5000;
+	/* Coin cost of claim n: base * growth^(n-1), COMPOUNDING, in copper.
+	 * Ruled 2026-09-03: land must be a project for a guild of ten or more,
+	 * so the first square is 1,000 platinum and each one after costs 5%
+	 * more than the last -- square 80 lands at ~47,200 platinum and the
+	 * whole map at ~971,000. Growth is per MILLE so the curve is integer
+	 * arithmetic end to end: 1050 is x1.05. */
+	long claim_cost_base = 1000000;
+	int claim_cost_growth_permille = 1050;
+	/* Material cost of claim 1, per resource, on the same curve. Every
+	 * square wants all four, so expansion cannot run on one kind of ground. */
+	long claim_material_base = 25;
 	/* Coin upkeep per owned square per cycle. */
 	long upkeep_per_square = 250;
-	/* Real seconds between upkeep charges. */
-	int upkeep_period_seconds = 3600;
+	/* Real seconds between upkeep charges. Ruled 2026-09-03: one real week,
+	 * not the hour it started at -- upkeep is a standing obligation on a
+	 * guild, not a tax on being logged in. */
+	int upkeep_period_seconds = 604800;
 	/* Guards permitted per owned square, and the ratio's denominator. */
 	int guards_per_squares = 5;
+	/* What a guard costs, in copper. A newly raised guard is the base; the
+	 * fully upgraded level-56 guard is the cap, and the tiers in between are
+	 * spaced evenly across the ring the realm has completed. Ruled
+	 * 2026-09-03: 5,000 platinum to raise one, 20,000 for a level 56. */
+	long guard_cost_base = 5000000;
+	long guard_cost_max = 20000000;
 	/* Distance in map squares a realm must keep from a hometown or a zone
 	 * entrance. These are the values a server with no lib/kingdom.cfg gets,
 	 * so they must be values the map can actually satisfy: at 30, the pair
 	 * they started at, a survey of all 160,000 surface squares finds ZERO
 	 * legal seats -- 367 zone-crossing squares each exclude a 59x59 box and
 	 * together they cover the continent. Ten leaves about 500. The shipped
-	 * lib/kingdom.cfg carries the full survey. */
-	int min_hometown_distance = 10;
-	int min_entrance_distance = 10;
+	 * lib/kingdom.cfg carries the full survey. Ruled 2026-09-03 down to 5,
+	 * which leaves about 5,000: ten was survivable but still meant a long
+	 * hunt for a legal seat. */
+	int min_hometown_distance = 5;
+	int min_entrance_distance = 5;
 };
 extern kingdom_config kingdom_cfg;
 void kingdom_config_load(void);
@@ -226,6 +316,12 @@ int kingdom_judge_footprint(int hall_rnum, int racewar, int ignore_assoc, int *b
  * needs rather than burdening kingdom_judge_square()'s seam with out-params. */
 void kingdom_explain_refusal(int hall_rnum, int index, int verdict, char *out, size_t out_len);
 
+/* `kingdom prospect`. Judge the actor's own square as a realm seat and, when
+ * it will not serve, name the nearest squares that would. Open to anyone --
+ * no guild, no realm, no rank -- because it is the verb someone uses to decide
+ * whether founding one is worth it. */
+void kingdom_prospect(struct char_data *ch);
+
 /* ------------------------------------------------------------------ *
  * Cross-file surface within src/kingdom/
  * ------------------------------------------------------------------ *
@@ -248,6 +344,9 @@ Guildhall *kingdom_main_hall(int assoc_id);
 
 /* --- kingdom_claim.c : conversion and the claim/abandon state machine --- */
 long kingdom_claim_cost(int index);
+/* Units of EVERY resource claim `index` costs on top of the coin, on the same
+ * compounding curve. Every square wants all four kinds. */
+long kingdom_claim_material_cost(int index);
 long kingdom_ring_cost(int ring);
 bool kingdom_convert_guild(struct char_data *ch);
 bool kingdom_claim_next(struct char_data *ch);
@@ -259,7 +358,7 @@ void kingdom_apply_arrears(kingdom_realm &realm);
 void kingdom_clear_arrears(kingdom_realm &realm);
 /* Make a money-bearing change durable as ONE unit: the guild whose treasury
  * moved and the realm record that explains why. One SQL transaction under
- * MariaDB; paired guild-first writes under the flat-file build. False marks
+ * MariaDB; one recovery-journal transaction under the flat-file build. False marks
  * the realm payment_pending for kingdom_upkeep_retry_pending() and never
  * lets the generic flush publish the record alone. Used by upkeep, claim
  * and convert -- any path that debits a treasury and records the result. */
@@ -280,11 +379,57 @@ int kingdom_guards_count(int assoc_id);
 int kingdom_guards_despawn(int assoc_id);
 int kingdom_guards_despawn_all(void);
 int kingdom_guards_refresh(const kingdom_realm &realm);
+/* Guards AND champion. The entry point every caller outside kingdom_guards.c
+ * uses, so that nothing has to remember there are two things to reconcile. */
+int kingdom_garrison_refresh(const kingdom_realm &realm);
 void kingdom_guards_refresh_all(void);
+/* Bind the patrol proc to the guard prototype. Without it guards stand where
+ * they were posted, which is the state the pre-2026-09-04 module shipped.
+ * Self-gates on the prototype being present. */
+void kingdom_guards_bind_proc(void);
+
+/* --- the roster (kingdom_guards.c) --- */
+/* Guards on the books, empty slots skipped. */
+int kingdom_roster_count(const kingdom_realm &realm);
+/* The highest level this realm's completed rings entitle a guard to. */
+int kingdom_guard_level_cap(const kingdom_realm &realm);
+/* The next promotion rung after `level`, or 0 at/outside the ladder. */
+int kingdom_guard_next_level(int level);
+/* Copper to promote one guard from `from` to `to`; 0 for a non-promotion. */
+long kingdom_guard_promotion_cost(int from, int to);
+/* The CLASS_* bit for a class name a player typed, or 0 for one no guard may
+ * take. The list is deliberately short -- see kingdom_guard_classes. */
+int kingdom_guard_class_by_name(const char *name);
+/* Display name of a guard class bit, or "unschooled" for 0. */
+const char *kingdom_guard_class_name(int guard_class);
+/* Every offerable class, comma-separated, into the caller's buffer. */
+void kingdom_guard_class_list(char *out, size_t out_len);
+/* Stand the realm's champion up, or take it away. Idempotent, like the guards'
+ * refresh; returns 1 when a champion is standing afterwards. */
+int kingdom_champion_refresh(const kingdom_realm &realm);
+/* What a champion costs, in copper. Ruled 2026-09-04: 25,000 platinum, and a
+ * fixed price rather than a config knob -- there is exactly one per realm and
+ * only a complete realm may have it. */
+#define KINGDOM_CHAMPION_COST 25000000L
+
+/* --- the roster verbs (kingdom_claim.c) --- *
+ * They live beside claim and convert rather than beside the spawner because
+ * they are the same KIND of thing: leader-only acts that spend the treasury
+ * and must persist the realm and the guild as one paired write. The spawner
+ * knows how to stand a guard up; it has no business knowing how one is paid
+ * for. */
+void kingdom_roster_show(struct char_data *ch);
+void kingdom_roster_hire(struct char_data *ch, char *rest);
+void kingdom_roster_upgrade(struct char_data *ch, char *rest);
+void kingdom_roster_champion(struct char_data *ch, char *rest);
 
 /* --- kingdom_harvest.c : world harvest nodes and the realm resource store --- */
 bool kingdom_nodes_dormant(const kingdom_realm &realm);
 long kingdom_resource_deposit(kingdom_realm &realm, int res, long amount);
+/* Take costs[res] of every resource, all or nothing. False -- and nothing
+ * moved -- when the realm is short of any one of them, or when the bill is
+ * empty. The store's only outward path. */
+bool kingdom_resource_spend(kingdom_realm &realm, const long costs[KRES_MAX]);
 void kingdom_harvest_command(struct char_data *ch, char *argument);
 void kingdom_harvest_survey(struct char_data *ch);
 void kingdom_harvest_prune(const kingdom_realm &realm);
@@ -317,6 +462,16 @@ void kingdom_show_grid(struct char_data *ch, int hall_rnum, int racewar, int ign
  */
 bool kingdom_db_load_all(void);
 bool kingdom_db_save_realm(const kingdom_realm &realm);
+/* Publish the garrison roster. Called by kingdom_db_save_realm(), so no caller
+ * outside kingdom_db.c needs it; declared because the flat-file backend
+ * defines its own and the two must agree. */
+bool kingdom_db_save_roster(const kingdom_realm &realm);
+#ifdef __NO_MYSQL__
+/* Recoverably commit a flat guild debit and its paid realm after-image. */
+bool kingdom_db_save_payment_pair(const std::string &root,
+				  const flatfile_association_record &association,
+				  const kingdom_realm &realm, std::string *error);
+#endif
 bool kingdom_db_delete_realm(int assoc_id);
 void kingdom_db_flush_dirty(void);
 

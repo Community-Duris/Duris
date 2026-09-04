@@ -8556,6 +8556,9 @@ void MobHuntCheck(P_char ch, P_char vict)
 				else
 					ora = -1;
 				do_move(ch, NULL, a);
+				/* A destination room proc may have extracted the hunter. */
+				if (!char_in_list(ch) || !IS_ALIVE(ch))
+					return;
 				CharWait(ch, PULSE_VIOLENCE);
 				if (!ora && ch->player.birthplace == ch->in_room)
 					ch->player.birthplace = 0;

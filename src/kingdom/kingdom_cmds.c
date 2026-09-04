@@ -86,9 +86,14 @@ static const char *KINGDOM_SYNTAX =
 	"  kingdom claim            buy the next square in order        (leader)\r\n"
 	"  kingdom abandon confirm  give up your highest claim, no refund (leader)\r\n"
 	"  kingdom deposit <coins>  pay coin into the treasury upkeep draws on\r\n"
+	"  kingdom prospect         would a realm stand here? -- no guild needed\r\n"
 	"  kingdom harvest          work the node here -- no guild needed\r\n"
 	"  kingdom survey           the node here: yield, richness, draws left\r\n"
 	"  kingdom guards           how large a garrison the realm may field\r\n"
+	"  kingdom roster           every guard: class, level, cost to promote\r\n"
+	"  kingdom hire <class>     raise a new guard                    (leader)\r\n"
+	"  kingdom promote <#> [class]  raise one to the next tier       (leader)\r\n"
+	"  kingdom champion <class> <class>  raise the realm's one champion (leader)\r\n"
 	"  kingdom help             the long explanation\r\n";
 
 static const char *KINGDOM_DISABLED = "Kingdoms are not enabled on this world.\r\n";
@@ -443,10 +448,45 @@ static void kingdom_cmd_help(P_char ch)
 		 kingdom_min_hall_separation());
 	out += line;
 
+	out += "  '&+Wkingdom prospect&n' judges the square you stand on and, when it will not\r\n";
+	out += "  serve, points at the nearest ground that would. It needs no guild.\r\n";
+
+	out += "\r\n&+WWhat land costs&n\r\n";
+	out += "  Coin AND worked material, on the same compounding curve.\r\n";
+	/* ONE kingdom_coin_string() PER FORMAT CALL. It ends in coins_to_string(),
+	 * which returns a STATIC buffer (core/utility.c), so two of them in one
+	 * snprintf would both render whichever value was formatted last -- the
+	 * first square and the eightieth would print the same price. */
+	snprintf(line, sizeof(line), "  Square 1 costs %s and %ld of EVERY resource.\r\n",
+		 kingdom_coin_string(kingdom_claim_cost(1)), kingdom_claim_material_cost(1));
+	out += line;
+	snprintf(line, sizeof(line), "  Square %d costs %s and %ld of each.\r\n",
+		 KINGDOM_MAX_SQUARES, kingdom_coin_string(kingdom_claim_cost(KINGDOM_MAX_SQUARES)),
+		 kingdom_claim_material_cost(KINGDOM_MAX_SQUARES));
+	out += line;
+	out += "  A realm short of even one resource claims nothing, so expansion cannot run\r\n";
+	out += "  on one kind of ground alone.\r\n";
+
+	out += "\r\n&+WThe garrison&n\r\n";
+	snprintf(line, sizeof(line),
+		 "  Guards are BOUGHT, one at a time: %s each, at level %d. The land sets how\r\n"
+		 "  many ('&+Wkingdom guards&n') and how high they may rise -- level 50 after\r\n"
+		 "  ring one, then two per ring to %d. '&+Wkingdom roster&n' lists them.\r\n",
+		 kingdom_coin_string(kingdom_cfg.guard_cost_base), KINGDOM_GUARD_BASE_LEVEL,
+		 KINGDOM_GUARD_TOP_LEVEL);
+	out += line;
+	snprintf(line, sizeof(line),
+		 "  A realm holding every square may raise ONE champion for %s: level %d,\r\n"
+		 "  multiclass, and it plants a banner that buffs or heals the whole garrison\r\n"
+		 "  until someone tears it down.\r\n",
+		 kingdom_coin_string(KINGDOM_CHAMPION_COST), KINGDOM_CHAMPION_LEVEL);
+	out += line;
+
 	out += "\r\n&+WUpkeep&n\r\n";
 	snprintf(line, sizeof(line),
-		 "  Every %d seconds the realm is charged coin for the land it holds. The coin\r\n"
-		 "  comes from the guild treasury; '&+Wkingdom deposit&n' pays into it.\r\n",
+		 "  Every %d seconds -- one real week as shipped -- the realm is charged coin\r\n"
+		 "  for the land it holds. The coin comes from the guild treasury;\r\n"
+		 "  '&+Wkingdom deposit&n' pays into it.\r\n",
 		 kingdom_cfg.upkeep_period_seconds);
 	out += line;
 	out += "  Unpaid upkeep walks a ladder, one rung per missed cycle, and stops wherever\r\n";
@@ -525,7 +565,19 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 	 * neither word. */
 	if (str_cmp(token, "h") == 0)
 	{
-		send_to_char("Do you mean '&+Wkingdom help&n' or '&+Wkingdom harvest&n'?\r\n", ch);
+		send_to_char("Do you mean '&+Wkingdom help&n', '&+Wkingdom harvest&n' or "
+			     "'&+Wkingdom hire&n'?\r\n",
+			     ch);
+		return;
+	}
+	/* `p`, `pr` and `pro` are shared by prospect and promote, and the two sit on opposite
+	 * sides of the guild gate -- prospect ahead of it, promote behind --
+	 * so an unresolved prefix would silently become the one that dispatches
+	 * first. Refuse it here, ahead of both. */
+	if (str_cmp(token, "p") == 0 || str_cmp(token, "pr") == 0 || str_cmp(token, "pro") == 0)
+	{
+		send_to_char("Do you mean '&+Wkingdom prospect&n' or '&+Wkingdom promote&n'?\r\n",
+			     ch);
 		return;
 	}
 
@@ -569,6 +621,15 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 	if (*token && is_abbrev(token, "harvest"))
 	{
 		kingdom_harvest_command(ch, rest);
+		return;
+	}
+	/* prospect joins them ahead of the gate, for the same reason and a
+	 * stronger one: it is the verb someone uses to decide whether founding a
+	 * guild is worth it at all, so demanding the guild would make it useless
+	 * exactly when it is wanted. */
+	if (*token && is_abbrev(token, "prospect"))
+	{
+		kingdom_prospect(ch);
 		return;
 	}
 
@@ -629,6 +690,22 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 	else if (is_abbrev(token, "guards"))
 	{
 		kingdom_cmd_guards(ch, guild);
+	}
+	else if (is_abbrev(token, "roster"))
+	{
+		kingdom_roster_show(ch);
+	}
+	else if (is_abbrev(token, "hire"))
+	{
+		kingdom_roster_hire(ch, rest);
+	}
+	else if (is_abbrev(token, "promote"))
+	{
+		kingdom_roster_upgrade(ch, rest);
+	}
+	else if (is_abbrev(token, "champion"))
+	{
+		kingdom_roster_champion(ch, rest);
 	}
 	else
 	{

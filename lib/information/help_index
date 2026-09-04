@@ -8686,10 +8686,17 @@ square in the sequence, and 'kingdom map' shows you which one that is.
 
 Land and Upkeep
 ---------------------------------------------------------------------------
-Claiming costs coin from the guild treasury, and each square costs more than
-the one before it, so the outermost ring is far dearer than the first.
+Claiming costs COIN AND WORKED MATERIAL both - the coin from the guild
+treasury, the material from the realm's own stores, and all four kinds of it,
+so no realm expands on one sort of ground alone. Each square costs more than
+the one before, COMPOUNDING: on the shipped settings the first is 1,000
+platinum and 25 of each resource, the eightieth about 47,200 platinum, and
+the whole map some 971,000. The inner rings suit a guild of ten; the fourth
+is meant to be the work of a guild that means it.
+
 Holding land costs coin as well: upkeep is charged on every square you own,
-every cycle. A realm that cannot pay walks a ladder, one rung per missed
+once per REAL WEEK - a standing obligation on the guild, not a tax on being
+logged in. A realm that cannot pay walks a ladder, one rung per missed
 cycle:
 
   1. The guards disperse.
@@ -8731,13 +8738,28 @@ guards go home, and it can neither claim nor abandon until a main hall of
 its guild stands on its seat once more. Delete the guild and the realm is
 deleted with it; there is nothing to inherit.
 
-Guards
+Guards and the Champion
 ---------------------------------------------------------------------------
-A realm may post guards in proportion to the land it holds, one for every
-few squares owned. That count is a ceiling and not a promise: a realm in
-arrears may field none at all, and a dormant realm has no ground to post
-them on. They stand on your land. They are not a bodyguard and they do not
-follow you.
+GUARDS ARE BOUGHT, not conjured by owning land. The land sets the ceiling -
+one guard for every few squares owned - and the guild pays 5,000 platinum to
+raise each one, names its calling, and promotes it as the realm grows. HOW
+HIGH IT MAY RISE IS SET BY COMPLETED RINGS, two levels a ring: 50 at ring 1,
+52 at ring 2, 54 at ring 3, 56 with all eighty squares. Promotion is one-way
+and a guard taken to 56 has cost 20,000 platinum in all. See 'kingdom
+roster', 'kingdom hire' and 'kingdom promote'.
+
+Guards PATROL the realm's own squares and will not step off them. They see
+invisible, sense life, fly, swim, cannot be summoned, charmed, paralysed or
+frightened, and call the whole garrison down on anyone who strikes one. They
+stand on your land: they are not a bodyguard and they do not follow you. The
+count is a ceiling, not a promise - a realm in arrears may field none at
+all, and a dormant realm has no ground to post them on.
+
+A realm holding ALL EIGHTY SQUARES may raise one CHAMPION for 25,000
+platinum: a level-60 multiclass captain that plants a banner of combat or of
+sanctity, buffing or healing every guard of the realm every tick. The banner
+is an object standing in a room, it has hit points, and it can be torn down
+- after which the champion raises another five rounds later.
 
 List of subcommands
 ---------------------------------------------------------------------------
@@ -8751,12 +8773,19 @@ List of subcommands
   &+Wkingdom abandon&n    give up your highest claim, no refund     (leader)
   &+Wkingdom deposit&n    pay coin into the guild treasury, at a bank
   &+Wkingdom guards&n     how large a garrison the realm may field
+  &+Wkingdom roster&n     every guard: class, level, cost to promote
+  &+Wkingdom hire&n       raise a new guard, naming its class        (leader)
+  &+Wkingdom promote&n    raise one guard two levels                 (leader)
+  &+Wkingdom champion&n   raise the realm's one champion             (leader)
+  &+Wkingdom prospect&n   would a realm stand here? and if not, where
 
-'Kingdom harvest' and 'kingdom survey' need no guild at all. Every other
-subcommand is for full members of a guild - an applicant, an enemy or a
-member on parole is refused - and converting, claiming and abandoning are
-the leader's alone. 'Kingdom c', 'kingdom s' and 'kingdom h' are ambiguous
-and will ask which you meant rather than guess.
+'Kingdom harvest', 'kingdom survey' and 'kingdom prospect' need no guild at
+all - prospect least of all, since it is the verb for deciding whether to
+found one. Every other subcommand is for full members of a guild - an
+applicant, an enemy or a member on parole is refused - and converting,
+claiming, abandoning, hiring and promoting are the leader's alone. 'Kingdom
+c', 'kingdom s', 'kingdom h' and 'kingdom p' are ambiguous and will ask which
+you meant rather than guess.
 
 '&+Whelp kingdoms&n' is the long rulebook. '&+Wkingdom help&n' prints a shorter
 summary in game, with your own server's prices filled into it.

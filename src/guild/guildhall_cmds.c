@@ -1463,6 +1463,15 @@ bool move_guildhall(Guildhall *gh, int vnum)
 
 // Making guildhalls only avail in towns - 8/22/13 Drannak
 // Reversing this to make guildhalls map only again. 11/17/2016 Lohrr
+/* The terrain half of guildhall placement, shared with kingdom prospecting so
+ * it never advertises a realm seat on which the required hall cannot stand. */
+bool guildhall_valid_map_seat(int rnum)
+{
+	return rnum >= 0 && IS_MAP_ROOM(rnum) &&
+	       (world[rnum].sector_type == SECT_FOREST || world[rnum].sector_type == SECT_HILLS ||
+		world[rnum].sector_type == SECT_FIELD || IS_UD_MAP(rnum));
+}
+
 bool guildhall_map_check(P_char ch)
 {
 	int rroom = ch->in_room;
@@ -1580,9 +1589,7 @@ bool guildhall_map_check(P_char ch)
 	}
 
 	// Must be a map room and either proper sector type or UD map room (any is ok).
-	if (IS_MAP_ROOM(rroom) && ((world[rroom].sector_type == SECT_FOREST) ||
-				   (world[rroom].sector_type == SECT_HILLS) ||
-				   (world[rroom].sector_type == SECT_FIELD) || IS_UD_MAP(rroom)))
+	if (guildhall_valid_map_seat(rroom))
 	/*  This is for guildhalls in hometowns.
 	  if( ((IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number)-1].flags, JUSTICE_EVILHOME))
 	    || (IS_SET(hometowns[VNUM2TOWN(world[ch->in_room].number)-1].flags, JUSTICE_GOODHOME)))

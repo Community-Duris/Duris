@@ -109,6 +109,10 @@ flatfile_association_list(const std::string &root,
 flatfile_association_result
 flatfile_association_save(const std::string &root, const flatfile_association_record &association,
 			  std::string *error);
+flatfile_association_result
+flatfile_association_prepare_save(const std::string &root, const flatfile_authority_lock &lock,
+				  const flatfile_association_record &association,
+				  flatfile_authority_operation *operation, std::string *error);
 flatfile_association_result flatfile_association_erase(const std::string &root,
 						       uint32_t association_id, std::string *error);
 flatfile_association_result flatfile_association_ledger_append(const std::string &root,

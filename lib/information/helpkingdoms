@@ -84,19 +84,54 @@ The rules, each checked against every square:
     your own outposts either. A hall has its own square; a realm
     cannot take it.
 
+FIND GROUND BEFORE YOU BUILD ON IT. 'kingdom prospect' judges the
+square you are standing on as a seat, and when it will not serve it
+says which square of the eighty is refused, why, which way the trouble
+lies and how far off it is - then names the nearest squares that WOULD
+take a realm, by distance and compass point. It needs no guild and no
+realm, because it is the verb for deciding whether founding one is
+worth it at all.
+
 'kingdom map' judges the ground square by square and lists exactly what
 would refuse you. A guild with no realm yet is shown the ground its own
 guildhall stands on, so a site can be read before it is committed to.
 
+Seats are scarce but not rare: a realm must keep five squares clear of
+any hometown and five of any way into another zone, which leaves a few
+thousand legal seats on the surface map. Walk, prospect, walk again.
+
 
 TAKING AND LOSING LAND
 ----------------------
-Claiming costs coin from the guild treasury, and each square costs more
-than the one before it, so the outer ring is far dearer than the first.
-The prices are set by your server.
+Claiming costs COIN AND WORKED MATERIAL both. The coin comes from the
+guild treasury; the material comes from the realm's own stores - what
+your people have banked with 'kingdom harvest'.
+
+Each square costs more than the one before it, COMPOUNDING, so the
+outer ring is a different order of undertaking from the first. On the
+shipped settings the first square is 1,000 platinum, and the corners
+of the curve run:
+
+    square      coin        running total
+         1     1,000 p          1,000 p
+         8     1,407 p          9,549 p   (ring 1 complete)
+        24     3,071 p         44,501 p   (ring 2 complete)
+        48     9,905 p        188,024 p   (ring 3 complete)
+        80    47,201 p        971,221 p   (the whole map)
+
+ALL FOUR RESOURCES, EVERY SQUARE. Mineral, wood, fibre and water are
+each wanted, and a realm short of even one of them pays nothing and
+claims nothing - so no realm expands on one sort of ground alone. The
+material rides the same curve as the coin: 25 of each for the first
+square, about 1,180 of each for the eightieth.
+
+The inner rings are within reach of a guild of ten. The fourth is
+meant to be the work of a guild that means it.
 
 Holding land costs coin as well. Upkeep is charged on every square you
-own, every cycle. If the treasury cannot pay, the realm decays in this
+own, once per REAL WEEK - it is a standing obligation on the guild
+rather than a tax on being logged in. If the treasury cannot pay, the
+realm decays in this
 order:
 
   1. The guards go home.
@@ -183,13 +218,83 @@ is nothing to inherit; a guild founded afterwards starts from nothing.
 
 GUARDS
 ------
-A realm may keep guards in proportion to its size - one for every few
-squares held - so a full realm supports a real garrison and a young one
-supports very little. That count is a ceiling, not a promise: a realm
-with upkeep unpaid may field none at all, the guards being the first
-rung of the ladder, and a dormant realm may field none either, having
-no ground to post them on. They stand on your land. They do not follow
-you and they are not a bodyguard.
+GUARDS ARE BOUGHT, NOT CONJURED BY OWNING LAND. Land sets the ceiling -
+one guard for every few squares held - and the guild pays for each one
+it raises, names its calling, and promotes it as the realm grows. A
+realm that claims its way to eighty squares and buys nothing fields
+nothing.
+
+  kingdom roster              every guard: number, class, level, and
+                              what the next promotion costs.
+  kingdom hire <class>        raise a new one. (leader)
+  kingdom promote <#> [class] raise one to the next realm tier, and
+                              re-school it if you name a class. (leader)
+
+A new guard costs 5,000 platinum and stands at level 45. HOW HIGH IT
+MAY RISE IS SET BY YOUR COMPLETED RINGS. The first ring unlocks level
+50; each later ring adds two levels:
+
+    ring 1 complete   (8 squares)    level 50
+    ring 2 complete   (24 squares)   level 52
+    ring 3 complete   (48 squares)   level 54
+    ring 4 complete   (80 squares)   level 56
+
+Each promotion costs a quarter of the span up to 20,000 platinum, so a
+guard taken all the way to 56 has cost exactly that in total. PROMOTION
+IS ONE-WAY. A guard's level never falls - not on arrears, not on land
+lost, not on request - and there is no refund and no demote verb.
+
+Losing land lowers the ceiling for the NEXT promotion and takes no
+level already paid for. It can put a guard on the bench: the roster
+keeps everyone bought, and only as many as the land permits take the
+field, the rest returning when the ground does.
+
+THE GARRISON PATROLS. Guards walk the realm's own squares and will not
+step off them, so they cannot be lured across a border by someone
+standing outside it. They see invisible, sense life, see in the dark
+and by ultravision, fly and swim, cannot be summoned, charmed,
+paralysed or frightened, and stand under a globe of invulnerability and
+stoneskin. They are aggressive to the opposing racewar side. Strike one
+and it calls the garrison: it shouts, and every other guard of that
+realm that is free converges on the noise.
+
+They stand on your land. They do not follow you and they are not a
+bodyguard. The count is a ceiling, not a promise: a realm with upkeep
+unpaid may field none at all, the guards being the first rung of the
+ladder, and a dormant realm may field none either, having no ground to
+post them on.
+
+
+THE CHAMPION
+------------
+A realm holding ALL EIGHTY SQUARES - and only such a realm - may raise
+one champion, for 25,000 platinum:
+
+  kingdom champion <class> <class>     (leader)
+
+It is the module's only multiclass mob: name two callings and they must
+differ. It stands at level 60, keeps everything a guard keeps, and adds
+inertial barrier, blur, flurry, deflection and Stornog's greater
+spheres. There is exactly one, it is never promoted, and losing a
+square sends it home rather than unmaking it - it takes the field again
+when the eightieth square is retaken, at no further cost.
+
+THE BANNER IS WHAT THE CHAMPION IS FOR. It plants one where it stands:
+
+  the banner of combat <realm>     a damage buff on every guard of the
+                                   realm, wherever they are standing.
+  the banner of sanctity <realm>   a heal on all of them, every tick.
+
+It plants sanctity when the garrison is hurt and combat otherwise, and
+will not raise a second while the first still stands.
+
+A BANNER CAN BE DESTROYED, and that is the point of making it a thing
+in a room rather than an aura. It is an object standing in the dirt,
+it has hit points, and 'kill banner' tears at it. Break it and the
+buff goes with it at once; the champion raises another five rounds
+later. Whoever is attacking a realm therefore has a real choice: spend
+those rounds on the banner, or fight a garrison that is being mended
+every tick.
 
 
 RESOURCES
@@ -295,14 +400,27 @@ kingdom deposit    - pay coin into the guild treasury that upkeep draws
                      on. Wants a bank and a coin string, like
                      '500 gold 20 silver'. Any member may pay in.
 kingdom guards     - how large a garrison the realm may field.
+kingdom roster     - every guard bought: number, class, level, and what
+                     the next promotion would cost.
+kingdom hire       - raise a new guard. Takes a class. (leader)
+kingdom promote    - raise one guard to the next realm tier, naming it
+                     by its number on the roster; add a class to
+                     re-school it at the same time. (leader)
+kingdom champion   - raise the realm's one champion. Takes TWO differing
+                     classes, and wants all eighty squares. (leader)
+kingdom prospect   - would a realm stand where you are? If not, why not,
+                     and which way the nearest ground that would take
+                     one lies. NEEDS NO GUILD - it is the verb for
+                     deciding whether to found one at all.
 kingdom help       - a short built-in summary, with your server's own
                      prices filled in. 'help kingdom' is the short help
                      entry; 'help kingdoms' is this text.
 
-'kingdom c', 'kingdom s' and 'kingdom h' are ambiguous - c is shared
-by claim and convert, s by status and survey, h by help and harvest -
-and will ask which you meant rather than guess; claim and convert in
-particular both spend the treasury's money.
+'kingdom c', 'kingdom s', 'kingdom h' and 'kingdom p' are ambiguous - c
+is shared by claim and convert, s by status and survey, h by help,
+harvest and hire, p by prospect and promote - and each will ask which
+you meant rather than guess; claim and convert in particular both spend
+the treasury's money.
 
 
 WHO MAY USE IT, AND WHEN

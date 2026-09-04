@@ -1,4 +1,6 @@
 #include "kingdom/kingdom_internal.h"
+#include "flatfile/flatfile_association_repository.h"
+#include "flatfile/flatfile_authority_transaction.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -36,10 +38,19 @@ namespace
 {
 /* On-disk layout, mirrored from kingdom_db.c's flat-file half: magic 8,
  * version u32, payload length u32, revision u64, SHA-256 32; then a u32 record
- * count and 64 bytes per realm (4 x i32, 4 x i64, i64, 2 x i32), assoc_id
- * first. Reading it back independently is what pins the layout. */
+ * count and, per realm, assoc_id first:
+ *
+ *     version 1    4 x i32, 4 x i64, i64, 2 x i32                = 64 bytes
+ *     version 2    all of that, then 16 guard slots of
+ *                  (i32 class, i32 level) and the champion's i32  = 196 bytes
+ *
+ * Reading the image back independently is what pins the layout, so the roster
+ * is spelled out here in the same terms rather than deferred to a constant
+ * from the code under test; the slot count is copied for the same reason the
+ * record maximum below is. */
 constexpr size_t header_size = 8 + 4 + 4 + 8 + 32;
-constexpr size_t record_size = 4 * 4 + 4 * 8 + 8 + 2 * 4;
+constexpr size_t guard_slots = 16;
+constexpr size_t record_size = 4 * 4 + 4 * 8 + 8 + 2 * 4 + guard_slots * (4 + 4) + 4;
 /* Header field offsets, for the hand-edited images below. */
 constexpr size_t version_offset = 8;
 constexpr size_t payload_length_offset = 12;
@@ -72,8 +83,10 @@ void passed(const char *section)
 /* Create root/metadata owner-only, as the flat-file preflight provisions it. */
 void prepare_root(const fs::path &root)
 {
+	fs::create_directories(root / "domains");
 	fs::create_directories(root / "metadata");
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "metadata", fs::perms::owner_all, fs::perm_options::replace);
 }
 
@@ -178,19 +191,22 @@ std::vector<int> stored_ids(const fs::path &root)
  * round trip evidence. Used to put the decoder's record-count cap on its
  * boundary: at the cap this is a valid catalogue, one past it nothing but
  * the cap can be what rejects it. */
-std::vector<uint8_t> catalog_image(int32_t count)
+std::vector<uint8_t> catalog_image(int32_t count, int32_t version = 2)
 {
-	const size_t payload_size = 4 + static_cast<size_t>(count) * record_size;
+	/* A version 1 record stops before the roster; a version 2 one carries
+	 * it. Both are valid images, which is the point of taking the version:
+	 * the decoder must still read the older layout. */
+	const size_t width = version >= 2 ? record_size : record_size - (guard_slots * 8 + 4);
+	const size_t payload_size = 4 + static_cast<size_t>(count) * width;
 	std::vector<uint8_t> image(header_size + payload_size, 0);
 	const uint8_t magic[8] = { 'D', 'U', 'R', 'K', 'I', 'N', 'G', 0 };
 	memcpy(image.data(), magic, sizeof(magic));
-	put_le32(image, version_offset, 1);
+	put_le32(image, version_offset, version);
 	put_le32(image, payload_length_offset, static_cast<int32_t>(payload_size));
 	image[revision_offset] = 1; /* revision 1: little-endian, the rest zero */
 	put_le32(image, header_size, count);
 	for (int32_t index = 0; index < count; ++index)
-		put_le32(image, header_size + 4 + static_cast<size_t>(index) * record_size,
-			 index + 1);
+		put_le32(image, header_size + 4 + static_cast<size_t>(index) * width, index + 1);
 	reseal(image);
 	return image;
 }
@@ -502,9 +518,18 @@ int main(int argc, char **argv)
 	broken[0] = static_cast<uint8_t>(broken[0] ^ 0xff);
 	require_rejected(heal, broken, realm3, "a file with the wrong magic was accepted");
 
+	/* 3 is one past the version this build writes. 2 is NOT tested here any
+	 * more and must not be: the roster change made 2 the current version,
+	 * and 1 is still read on purpose so a server upgraded across that change
+	 * does not present every realm as never having existed. Both of those
+	 * are checked as ACCEPTANCES below. */
 	broken = sound;
-	put_le32(broken, version_offset, 2);
+	put_le32(broken, version_offset, 3);
 	require_rejected(heal, broken, realm3, "a file of an unknown version was accepted");
+
+	broken = sound;
+	put_le32(broken, version_offset, 0);
+	require_rejected(heal, broken, realm3, "a file of version 0 was accepted");
 
 	broken = sound;
 	std::fill(broken.begin() + static_cast<std::ptrdiff_t>(revision_offset),
@@ -534,6 +559,26 @@ int main(int argc, char **argv)
 	require_rejected(cap, catalog_image(kingdom_realm_cap + 1), realm3,
 			 "a catalogue one record past the cap was accepted");
 	passed("the record-count cap admits the cap itself and rejects one past it");
+
+	/* --- a VERSION 1 file still loads, with empty rosters ---
+	 * The roster change of 2026-09-04 moved the file to version 2. A server
+	 * upgraded across it has a version 1 authority on disk, and refusing that
+	 * file would present every realm on the server as never having existed --
+	 * the single worst reading of "the format changed". So version 1 must
+	 * still decode, and a version 1 record means exactly what it says: no
+	 * guard was ever bought, because guards were derived from land then. */
+	const fs::path older = base / "v1";
+	prepare_root(older);
+	persistence_root = older.string();
+	write_file(authority_of(older), catalog_image(3, 1));
+	kingdom_realms.clear();
+	require(kingdom_db_load_all() && kingdom_realms.size() == 3,
+		"a version 1 authority file was rejected");
+	for (const auto &entry : kingdom_realms)
+		for (int slot = 0; slot < 16; ++slot)
+			require(entry.second.guards[slot].level == 0,
+				"a version 1 record decoded with a guard on its roster");
+	passed("a version 1 authority still loads, with every roster empty");
 
 	/* Back to the catalogue the remaining sections measure. */
 	persistence_root = state.string();
@@ -581,9 +626,55 @@ int main(int argc, char **argv)
 		"the restored authority did not load");
 	passed("corrupt checksum and truncated payload are rejected without overwrite");
 
+	/* --- paid guild + roster: the shared recovery journal completes both
+	 * after-images after an interruption between them. --- */
+	const fs::path paid = base / "paid";
+	prepare_root(paid);
+	persistence_root = paid.string();
+	flatfile_association_record paid_guild = {};
+	paid_guild.association_id = 50;
+	paid_guild.name = "Paid Guild";
+	paid_guild.platinum = 7;
+	kingdom_realm paid_realm = make_realm(50, 8, 574424, 8, 0, 0, 0, 0, 1700025200, 0, 0);
+	paid_realm.guards[0].guard_class = 1;
+	paid_realm.guards[0].level = KINGDOM_GUARD_BASE_LEVEL;
+	std::string transaction_error;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(!kingdom_db_save_payment_pair(paid.string(), paid_guild, paid_realm,
+					      &transaction_error),
+		"fault injection did not interrupt the paid kingdom commit");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(fs::exists(paid / "domains/association_catalog") &&
+			!fs::exists(authority_of(paid)) &&
+			fs::exists(paid / "domains/.critical-authority-transaction"),
+		"interruption did not stop between the guild and realm after-images");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(paid.string(), &transaction_error),
+			"could not acquire the paid kingdom recovery lock");
+		require(flatfile_authority_transaction_recover(paid.string(), lock,
+							       &transaction_error) ==
+				flatfile_authority_transaction_result::ok,
+			("paid kingdom recovery failed: " + transaction_error).c_str());
+	}
+	std::vector<flatfile_association_record> paid_guilds;
+	require(flatfile_association_list(paid.string(), &paid_guilds, &transaction_error) ==
+				flatfile_association_result::ok &&
+			paid_guilds.size() == 1 && paid_guilds[0].association_id == 50 &&
+			paid_guilds[0].platinum == 7,
+		"recovery did not preserve the paid guild after-image");
+	kingdom_realms.clear();
+	require(kingdom_db_load_all() && kingdom_realms.size() == 1 &&
+			kingdom_realms[50].guards[0].guard_class == 1 &&
+			kingdom_realms[50].guards[0].level == KINGDOM_GUARD_BASE_LEVEL &&
+			!fs::exists(paid / "domains/.critical-authority-transaction"),
+		"recovery did not preserve the bought roster after-image");
+	passed("paid guild and roster recover as one authority transaction");
+
 	/* --- payment_pending gates the generic flush (lane A's durability rule):
 	 * a record whose paired guild write has not landed must stay off disk and
 	 * stay dirty until kingdom_upkeep_retry_pending() clears the pair. --- */
+	persistence_root = state.string();
 	kingdom_realms.clear();
 	kingdom_realm realm40 = make_realm(40, 7, 574024, 3, 0, 0, 0, 0, 1700021600, 0, 0);
 	kingdom_realms[40] = realm40;

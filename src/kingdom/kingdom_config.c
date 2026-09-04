@@ -21,14 +21,17 @@
  *
  *  The keys, all of which are optional:
  *
- *      kingdom.enabled                  true|false   (default false)
- *      kingdom.claim.cost.base          coin         (default 25000)
- *      kingdom.claim.cost.per.square    coin         (default 5000)
- *      kingdom.upkeep.per.square        coin         (default 250)
- *      kingdom.upkeep.period.seconds    seconds      (default 3600)
- *      kingdom.guards.per.squares       squares      (default 5)
- *      kingdom.min.hometown.distance    squares      (default 30)
- *      kingdom.min.entrance.distance    squares      (default 30)
+ *      kingdom.enabled                     true|false (default false)
+ *      kingdom.claim.cost.base             coin       (default 1000000)
+ *      kingdom.claim.cost.growth.permille  per mille  (default 1050)
+ *      kingdom.claim.material.base         units      (default 25)
+ *      kingdom.upkeep.per.square           coin       (default 250)
+ *      kingdom.upkeep.period.seconds       seconds    (default 604800)
+ *      kingdom.guards.per.squares          squares    (default 5)
+ *      kingdom.guard.cost.base             coin       (default 5000000)
+ *      kingdom.guard.cost.max              coin       (default 20000000)
+ *      kingdom.min.hometown.distance       squares    (default 5)
+ *      kingdom.min.entrance.distance       squares    (default 5)
  *
  *  Values are range-checked but NOT judged against the live world: whether a
  *  cost or a distance is sensible for this map is an operator decision. The
@@ -61,7 +64,23 @@
  * about 1.35e9, comfortably under 2^31; at the compiled defaults it is 1.1e7.
  */
 #define KINGDOM_CLAIM_BASE_MAX 10000000L
-#define KINGDOM_CLAIM_PER_SQUARE_MAX 500000L
+
+/* Growth per mille: 1000 is flat and 2000 doubles every square. The floor is
+ * structural -- below 1000 land would get cheaper the more of it a realm held,
+ * inverting the curve -- and the ceiling keeps a typo from pricing ring 4 in
+ * numbers no treasury can hold. kingdom_compound() clamps to the ceiling
+ * anyway, so this bound is about telling the operator, not about safety. */
+#define KINGDOM_CLAIM_GROWTH_MIN 1000
+#define KINGDOM_CLAIM_GROWTH_MAX 2000
+
+/* Units of each resource for the first square. The ceiling is far above what
+ * the harvest economy can supply, so it bounds the arithmetic rather than the
+ * design. */
+#define KINGDOM_CLAIM_MATERIAL_MAX 100000L
+
+/* What a guard may cost in copper, either to raise or fully upgraded. The
+ * ceiling matches the claim base's, so no guard can cost more than land. */
+#define KINGDOM_GUARD_COST_MAX 100000000L
 
 /* A full 80-square realm at the ceiling owes 8e8 per cycle, still inside 32
  * bits, so kingdom_upkeep_due() cannot overflow a caller that narrows it. */
@@ -210,8 +229,12 @@ static bool kingdom_apply_value(const char *key, const char *value)
 
 	KCFG_BOOL("kingdom.enabled", enabled)
 	KCFG_LONG("kingdom.claim.cost.base", claim_cost_base, 0L, KINGDOM_CLAIM_BASE_MAX)
-	KCFG_LONG("kingdom.claim.cost.per.square", claim_cost_per_square, 0L,
-		  KINGDOM_CLAIM_PER_SQUARE_MAX)
+	KCFG_INT("kingdom.claim.cost.growth.permille", claim_cost_growth_permille,
+		 KINGDOM_CLAIM_GROWTH_MIN, KINGDOM_CLAIM_GROWTH_MAX)
+	KCFG_LONG("kingdom.claim.material.base", claim_material_base, 0L,
+		  KINGDOM_CLAIM_MATERIAL_MAX)
+	KCFG_LONG("kingdom.guard.cost.base", guard_cost_base, 0L, KINGDOM_GUARD_COST_MAX)
+	KCFG_LONG("kingdom.guard.cost.max", guard_cost_max, 0L, KINGDOM_GUARD_COST_MAX)
 	KCFG_LONG("kingdom.upkeep.per.square", upkeep_per_square, 0L, KINGDOM_UPKEEP_MAX)
 	KCFG_INT("kingdom.upkeep.period.seconds", upkeep_period_seconds, KINGDOM_UPKEEP_PERIOD_MIN,
 		 KINGDOM_UPKEEP_PERIOD_MAX)
@@ -317,12 +340,15 @@ void kingdom_config_load(void)
 		kingdom_cfg.guards_per_squares = kingdom_defaults.guards_per_squares;
 
 	logit(LOG_KINGDOM,
-	      "Loaded %s: %d setting(s). claim %ld + %ld/square, upkeep %ld/square every %d s, "
-	      "1 guard per %d squares, hometown >= %d, entrance >= %d.",
+	      "Loaded %s: %d setting(s). claim %ld copper x%d/1000 compounding plus %ld of each "
+	      "material, upkeep %ld/square every %d s, 1 guard per %d squares costing %ld to %ld, "
+	      "hometown >= %d, entrance >= %d.",
 	      KINGDOM_CONFIG_FILE, recognised, kingdom_cfg.claim_cost_base,
-	      kingdom_cfg.claim_cost_per_square, kingdom_cfg.upkeep_per_square,
-	      kingdom_cfg.upkeep_period_seconds, kingdom_cfg.guards_per_squares,
-	      kingdom_cfg.min_hometown_distance, kingdom_cfg.min_entrance_distance);
+	      kingdom_cfg.claim_cost_growth_permille, kingdom_cfg.claim_material_base,
+	      kingdom_cfg.upkeep_per_square, kingdom_cfg.upkeep_period_seconds,
+	      kingdom_cfg.guards_per_squares, kingdom_cfg.guard_cost_base,
+	      kingdom_cfg.guard_cost_max, kingdom_cfg.min_hometown_distance,
+	      kingdom_cfg.min_entrance_distance);
 	logit(LOG_STATUS, "Kingdom config loaded from %s; kingdoms %s.", KINGDOM_CONFIG_FILE,
 	      kingdom_cfg.enabled ? "ENABLED" : "disabled");
 }

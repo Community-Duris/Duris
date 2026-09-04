@@ -50,6 +50,8 @@
 #include <vector>
 
 #ifdef __NO_MYSQL__
+#include "flatfile/flatfile_association_repository.h"
+#include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_store.h"
 #include "persistence/persistence_mode.h"
 
@@ -61,6 +63,9 @@
 #include <type_traits>
 #else
 #include "sql/sql.h"
+#include "sql/sql_player.h"
+
+#include <mysqld_error.h>
 #endif
 
 /* ------------------------------------------------------------------ *
@@ -158,6 +163,11 @@ bool record_is_sane(const kingdom_realm &realm)
  * escape_str() (src/sql/sql.c:1107) to do. The realm carries no name -- the
  * guild's name lives in the association record.
  */
+
+/* Defined below kingdom_db_load_all(), which calls it: the roster loader reads
+ * realms that pass has already filed, so it belongs after them in the file and
+ * needs a forward declaration to be reached from before. */
+static void kingdom_db_load_rosters(void);
 
 namespace
 {
@@ -306,6 +316,12 @@ bool kingdom_db_load_all(void)
 	else
 		logit(LOG_KINGDOM, "kingdom_db_load_all: loaded %zu realms", loaded);
 
+	/* Rosters AFTER the realms, because each row is filed against a realm
+	 * this pass has already put in the map. kingdom_find_realm() skips rows
+	 * for realms beyond the cap, so a truncated pass still restores every
+	 * roster belonging to a realm it did load. */
+	kingdom_db_load_rosters();
+
 	/* A truncated load is a failed load: the caller must not treat the
 	 * squares of the realms it never saw as unowned. */
 	return complete;
@@ -356,7 +372,219 @@ bool kingdom_db_save_realm(const kingdom_realm &realm)
 		      realm.assoc_id);
 		return false;
 	}
+
+	return kingdom_db_save_roster(realm);
+}
+
+/*
+ * Publish a realm's garrison roster: the bought guards and the champion.
+ *
+ * DELETE-THEN-INSERT rather than a row-by-row diff. The roster is at most
+ * seventeen tiny rows, it changes only on a hire, a promotion or a death, and
+ * the replacement is transactional. It joins the caller's paid-change
+ * transaction when there is one; otherwise it owns a transaction around the
+ * DELETE and INSERTs. No bookkeeping is needed to notice a slot that emptied.
+ * A diff would be more code for less certainty.
+ *
+ * A MISSING TABLE IS NOT AN ERROR HERE, and that is deliberate:
+ * kingdom_garrison is outside the runtime contract's table list (see the
+ * migration and runtime_compatibility_contract.h), so a database at head 0008
+ * still boots and still runs kingdoms -- it simply cannot keep a roster. The
+ * failure is logged once per attempt and the realm's own row still lands,
+ * which is the same graceful degradation kingdom_realms itself was given.
+ */
+bool kingdom_db_save_roster(const kingdom_realm &realm)
+{
+	if (realm.assoc_id <= 0)
+		return false;
+
+	const bool own_transaction = !sql_in_transaction();
+	if (own_transaction && !sql_begin_transaction())
+	{
+		logit(LOG_KINGDOM,
+		      "kingdom_db_save_roster: could not open a transaction for association %d",
+		      realm.assoc_id);
+		return false;
+	}
+
+	/* A database at migration 0008 intentionally has no roster table. Only
+	 * those exact server errors degrade to success; every other statement error
+	 * remains a failed save. A caller-owned transaction is never finalized here. */
+	const auto statement_failure = [&](const char *operation, int slot) -> bool
+	{
+		const unsigned int error_code = DB ? mysql_errno(DB) : 0;
+		const bool missing = error_code == ER_NO_SUCH_TABLE ||
+				     error_code == ER_NO_SUCH_TABLE_IN_ENGINE;
+
+		if (own_transaction && !sql_rollback())
+		{
+			logit(LOG_KINGDOM,
+			      "kingdom_db_save_roster: rollback failed after %s for association %d",
+			      operation, realm.assoc_id);
+			return false;
+		}
+		if (missing)
+		{
+			logit(LOG_KINGDOM,
+			      "kingdom_db_save_roster: kingdom_garrison is unavailable for "
+			      "association %d; realm saved without a durable roster",
+			      realm.assoc_id);
+			return true;
+		}
+
+		if (slot >= 0)
+			logit(LOG_KINGDOM,
+			      "kingdom_db_save_roster: %s failed for association %d slot %d",
+			      operation, realm.assoc_id, slot);
+		else
+			logit(LOG_KINGDOM, "kingdom_db_save_roster: %s failed for association %d",
+			      operation, realm.assoc_id);
+		return false;
+	};
+
+	if (!qry("DELETE FROM kingdom_garrison WHERE assoc_id=%d", realm.assoc_id))
+		return statement_failure("DELETE", -1);
+
+	for (int slot = 0; slot < KINGDOM_GUARD_SLOTS; slot++)
+	{
+		if (realm.guards[slot].level <= 0)
+			continue;
+
+		if (!qry("INSERT INTO kingdom_garrison (assoc_id,slot,guard_class,level) "
+			 "VALUES (%d,%d,%d,%d)",
+			 realm.assoc_id, slot, realm.guards[slot].guard_class,
+			 realm.guards[slot].level))
+			return statement_failure("INSERT", slot);
+	}
+
+	if (realm.champion_class)
+	{
+		if (!qry("INSERT INTO kingdom_garrison (assoc_id,slot,guard_class,level) "
+			 "VALUES (%d,%d,%d,%d)",
+			 realm.assoc_id, KINGDOM_CHAMPION_SLOT, realm.champion_class,
+			 KINGDOM_CHAMPION_LEVEL))
+			return statement_failure("champion INSERT", KINGDOM_CHAMPION_SLOT);
+	}
+
+	if (own_transaction && !sql_commit())
+	{
+		sql_rollback(); /* a failed commit retains transaction ownership */
+		logit(LOG_KINGDOM, "kingdom_db_save_roster: commit failed for association %d",
+		      realm.assoc_id);
+		return false;
+	}
+
 	return true;
+}
+
+/* Validate persisted class bits against the same curated table commands use.
+ * Round-tripping a single value through name -> bit avoids a second whitelist
+ * in the persistence layer. A champion is exactly two distinct allowed bits. */
+static bool kingdom_db_valid_guard_class(int candidate)
+{
+	return candidate != 0 &&
+	       kingdom_guard_class_by_name(kingdom_guard_class_name(candidate)) == candidate;
+}
+
+static bool kingdom_db_valid_champion_class(int candidate)
+{
+	const unsigned int bits = static_cast<unsigned int>(candidate);
+	const unsigned int lower = bits & (~bits + 1u);
+	const unsigned int higher = bits & ~lower;
+
+	return lower != 0 && higher != 0 && (higher & (higher - 1u)) == 0 &&
+	       kingdom_db_valid_guard_class(static_cast<int>(lower)) &&
+	       kingdom_db_valid_guard_class(static_cast<int>(higher));
+}
+
+/*
+ * Fill in every loaded realm's roster in ONE query rather than one per realm:
+ * the table is keyed by association and the whole of it is wanted, so a single
+ * ordered scan costs one round trip whatever the number of realms.
+ *
+ * Rows for a realm that is not loaded are skipped in silence -- they are the
+ * normal residue of a guild deleted while the server was down, and
+ * kingdom_on_guild_deleted() clears them the next time that id is used. A row
+ * with a slot or level outside its range is dropped with a line naming it,
+ * because a guard at level 900 would otherwise walk out of the gate.
+ */
+static void kingdom_db_load_rosters(void)
+{
+	MYSQL_RES *result = db_query("SELECT assoc_id,slot,guard_class,level FROM "
+				     "kingdom_garrison ORDER BY assoc_id,slot");
+
+	if (!result)
+	{
+		/* Head 0006 has no such table. Kingdoms still run; no realm can
+		 * keep a garrison until the database is migrated. */
+		logit(LOG_KINGDOM, "kingdom_db_load_rosters: kingdom_garrison could not be read; "
+				   "no realm will field guards this boot");
+		return;
+	}
+
+	if (mysql_num_fields(result) != 4)
+	{
+		logit(LOG_KINGDOM, "kingdom_db_load_rosters: kingdom_garrison has the wrong shape; "
+				   "no rosters loaded");
+		mysql_free_result(result);
+		return;
+	}
+
+	size_t loaded = 0, rejected = 0;
+	MYSQL_ROW row;
+
+	while ((row = mysql_fetch_row(result)) != NULL)
+	{
+		if (!row[0] || !row[1] || !row[2] || !row[3])
+		{
+			rejected++;
+			continue;
+		}
+
+		const int assoc_id = atoi(row[0]);
+		const int slot = atoi(row[1]);
+		const int guard_class = atoi(row[2]);
+		const int level = atoi(row[3]);
+
+		kingdom_realm *realm = kingdom_find_realm(assoc_id);
+
+		if (!realm)
+			continue;
+
+		if (slot == KINGDOM_CHAMPION_SLOT)
+		{
+			if (level == KINGDOM_CHAMPION_LEVEL &&
+			    kingdom_db_valid_champion_class(guard_class))
+				realm->champion_class = guard_class;
+			else
+				rejected++;
+			continue;
+		}
+
+		if (slot < 0 || slot >= KINGDOM_GUARD_SLOTS ||
+		    !kingdom_db_valid_guard_class(guard_class) ||
+		    level < KINGDOM_GUARD_BASE_LEVEL || level > KINGDOM_GUARD_TOP_LEVEL)
+		{
+			logit(LOG_KINGDOM,
+			      "kingdom_db_load_rosters: dropping association %d slot %d class %d "
+			      "level %d as out of range",
+			      assoc_id, slot, guard_class, level);
+			rejected++;
+			continue;
+		}
+
+		realm->guards[slot].guard_class = guard_class;
+		realm->guards[slot].level = level;
+		loaded++;
+	}
+
+	mysql_free_result(result);
+
+	if (rejected)
+		logit(LOG_KINGDOM, "kingdom_db_load_rosters: loaded %zu guard(s), rejected %zu",
+		      loaded, rejected);
+	else
+		logit(LOG_KINGDOM, "kingdom_db_load_rosters: loaded %zu guard(s)", loaded);
 }
 
 /* Delete the row for assoc_id. True when the statement ran, whether or not a
@@ -377,6 +605,17 @@ bool kingdom_db_delete_realm(int assoc_id)
 		      assoc_id);
 		return false;
 	}
+
+	/* The roster goes with the realm, and for the same reason the realm's own
+	 * row does: association ids are reused, so a garrison left behind would
+	 * be inherited by whoever founds the next guild on that id. Its failure
+	 * does NOT fail the delete -- the realm is gone either way, and a
+	 * database at head 0008 has no such table to clear. */
+	if (!qry("DELETE FROM kingdom_garrison WHERE assoc_id=%d", assoc_id))
+		logit(LOG_KINGDOM,
+		      "kingdom_db_delete_realm: could not clear the roster for association %d",
+		      assoc_id);
+
 	return true;
 }
 
@@ -442,10 +681,18 @@ void kingdom_db_flush_dirty(void)
 namespace
 {
 constexpr std::array<uint8_t, 8> kingdom_magic = { 'D', 'U', 'R', 'K', 'I', 'N', 'G', 0 };
-constexpr uint32_t kingdom_file_version = 1;
-/* 64 payload bytes per realm at the cap is 4 MiB; 8 MiB leaves headroom and
- * bounds what a corrupt length field can ask us to read. */
-constexpr size_t kingdom_file_maximum_bytes = 8 * 1024 * 1024;
+/* 2 since 2026-09-04: the record gained the garrison roster. decode_catalog()
+ * still reads version 1 files and gives their realms an empty roster, which is
+ * what a version 1 file means -- guards were derived from land then and none
+ * had been bought. Every write is version 2. */
+constexpr uint32_t kingdom_file_version = 2;
+/* RAISED WITH THE RECORD, 2026-09-04. A version 1 record was 64 payload bytes,
+ * so the 65536-realm cap came to 4 MiB and 8 MiB was ample headroom. Version 2
+ * carries the roster and is 196, which puts the same cap at 12.25 MiB -- past
+ * the old ceiling, so a server at the cap would have failed to publish at all.
+ * 32 MiB restores the same generous margin over the cap and still bounds what
+ * a corrupt length field can ask this code to read. */
+constexpr size_t kingdom_file_maximum_bytes = 32 * 1024 * 1024;
 constexpr const char *kingdom_filename = "kingdom_realms";
 constexpr const char *kingdom_lock_filename = "kingdom_realms.lock";
 
@@ -617,6 +864,20 @@ bool encode_catalog(const kingdom_catalog &catalog, std::vector<uint8_t> *bytes)
 		payload.number<int64_t>(static_cast<int64_t>(record.upkeep_paid_through));
 		payload.number<int32_t>(record.arrears);
 		payload.number<int32_t>(record.missed_cycles);
+
+		/* VERSION 2 ADDS THE ROSTER, appended after the fields version 1
+		 * wrote so the record's existing layout is untouched. Written as a
+		 * fixed KINGDOM_GUARD_SLOTS pairs plus the champion's class rather
+		 * than as a count and a list: the array is seventeen small
+		 * integers, a fixed span needs no length field to be trusted, and
+		 * a decoder reading a fixed span cannot be walked off the end by a
+		 * corrupt count. */
+		for (int slot = 0; slot < KINGDOM_GUARD_SLOTS; slot++)
+		{
+			payload.number<int32_t>(record.guards[slot].guard_class);
+			payload.number<int32_t>(record.guards[slot].level);
+		}
+		payload.number<int32_t>(record.champion_class);
 	}
 	if (!payload.valid || payload.bytes.size() > kingdom_file_maximum_bytes)
 		return false;
@@ -658,10 +919,18 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 	uint32_t version = 0;
 	uint32_t payload_size = 0;
 	uint64_t revision = 0;
+	/* VERSION 1 IS STILL READ. A server upgraded across the 2026-09-04
+	 * roster change has a version 1 file on disk, and refusing it would
+	 * present every realm as never having existed -- the worst possible
+	 * reading of "the format changed". A version 1 record decodes with an
+	 * empty roster, which is exactly what it means: guards were derived from
+	 * land then, and nothing had been bought. The next write is version 2. */
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != kingdom_file_version || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    !header.number(&revision) || version < 1 || version > kingdom_file_version ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return false;
+
+	const bool has_roster = version >= 2;
 
 	const uint8_t *expected_digest = bytes.data() + 24;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
@@ -704,6 +973,18 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 		    !payload.number(&record.missed_cycles))
 			return false;
 		record.upkeep_paid_through = static_cast<time_t>(upkeep);
+
+		if (has_roster)
+		{
+			for (int slot = 0; slot < KINGDOM_GUARD_SLOTS; slot++)
+			{
+				if (!payload.number(&record.guards[slot].guard_class) ||
+				    !payload.number(&record.guards[slot].level))
+					return false;
+			}
+			if (!payload.number(&record.champion_class))
+				return false;
+		}
 		/* Anchor stays unresolved and the record is clean: see the banner. */
 	}
 	if (payload.offset != payload.size || !records_are_ordered(decoded.records))
@@ -766,21 +1047,31 @@ flat_result load_catalog(const std::string &root, kingdom_catalog *catalog)
 	return flat_result::ok;
 }
 
+/* Bump and encode a catalogue without publishing it. Separating preparation
+ * from publication lets a paid realm mutation travel in the same recoverable
+ * authority transaction as the guild treasury debit. */
+bool prepare_catalog_image(kingdom_catalog *catalog, std::vector<uint8_t> *bytes)
+{
+	if (!catalog || !bytes || catalog->revision == std::numeric_limits<uint64_t>::max())
+		return false;
+	++catalog->revision;
+
+	if (!encode_catalog(*catalog, bytes))
+	{
+		logit(LOG_KINGDOM, "kingdom_db: refusing to write an unencodable realm catalogue");
+		return false;
+	}
+	return true;
+}
+
 /* Bump the catalogue's revision, encode it and write it atomically as the
  * realm authority. False, logged, when the revision would wrap, the catalogue
  * will not encode, or the write fails; the caller must hold the lock. */
 bool publish_catalog(const std::string &root, kingdom_catalog *catalog)
 {
-	if (!catalog || catalog->revision == std::numeric_limits<uint64_t>::max())
-		return false;
-	++catalog->revision;
-
 	std::vector<uint8_t> bytes;
-	if (!encode_catalog(*catalog, &bytes))
-	{
-		logit(LOG_KINGDOM, "kingdom_db: refusing to write an unencodable realm catalogue");
+	if (!prepare_catalog_image(catalog, &bytes))
 		return false;
-	}
 
 	std::string error;
 	if (!flatfile_atomic_write(metadata_directory(root), kingdom_filename, bytes, &error))
@@ -892,15 +1183,14 @@ bool kingdom_db_load_all(void)
  * record into it and publish the whole file again. A missing file is created;
  * a corrupt or unreadable one is never overwritten. False when the record
  * fails record_is_sane(), there is no state root, the lock, the load, the
- * merge or the publish fails. One full catalogue rewrite per call, which is
- * why a paid realm waits for the sweep's batched kingdom_db_flush_dirty()
- * instead of coming through here.
+ * merge or the publish fails. One full catalogue rewrite per call. Paid
+ * mutations use kingdom_db_save_payment_pair() instead so the realm and guild
+ * after-images share a recovery journal.
  *
  * THIS PRIMITIVE DOES NOT TEST payment_pending, deliberately: it is what
- * kingdom_persist_payment() calls to publish a pending record once the guild
- * debit that justifies it has been written, so a guard here would deadlock
- * that pairing. The obligation is therefore the CALLER's -- every call to this
- * function from outside kingdom_db.c and kingdom_persist_payment() must be
+ * kingdom_persist_payment() uses through its paired writer, so a guard here
+ * would deadlock that pairing. The obligation is therefore the CALLER's --
+ * every call to this function from outside kingdom_db.c must be
  * guarded by !payment_pending and leave a pending record dirty for
  * kingdom_upkeep_retry_pending() to carry. */
 bool kingdom_db_save_realm(const kingdom_realm &realm)
@@ -951,6 +1241,95 @@ bool kingdom_db_save_realm(const kingdom_realm &realm)
 		logit(LOG_KINGDOM, "kingdom_db_save_realm: publish failed for association %d",
 		      realm.assoc_id);
 	return published;
+}
+
+/* Publish a debited flat-file guild and its paid realm mutation through one
+ * journaled authority commit. The journal is durable before either after-image
+ * is installed, so an interruption after the guild image is recoverable and
+ * cannot permanently lose a bought guard, promotion, champion, or claim.
+ *
+ * Lock order is the shared authority first and the kingdom catalogue second;
+ * no other path takes both. The association preparer recovers any older journal
+ * while the shared lock is held before this function reads the realm file. */
+bool kingdom_db_save_payment_pair(const std::string &root,
+				  const flatfile_association_record &association,
+				  const kingdom_realm &realm, std::string *error)
+{
+	if (root.empty() || !record_is_sane(realm) ||
+	    association.association_id != static_cast<uint32_t>(realm.assoc_id))
+		return false;
+
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return false;
+
+	flatfile_authority_operation association_operation;
+	const auto association_prepared = flatfile_association_prepare_save(
+		root, authority, association, &association_operation, error);
+	if (association_prepared != flatfile_association_result::ok &&
+	    association_prepared != flatfile_association_result::unchanged)
+		return false;
+
+	int lock_fd = -1;
+	if (!acquire_lock(root, &lock_fd))
+		return false;
+
+	kingdom_catalog catalog;
+	const flat_result loaded = load_catalog(root, &catalog);
+	if ((loaded != flat_result::ok && loaded != flat_result::not_found) ||
+	    !upsert_record(&catalog.records, realm))
+	{
+		flatfile_lock_release(lock_fd);
+		return false;
+	}
+
+	std::vector<uint8_t> realm_bytes;
+	if (!prepare_catalog_image(&catalog, &realm_bytes))
+	{
+		flatfile_lock_release(lock_fd);
+		return false;
+	}
+
+	std::vector<flatfile_authority_operation> operations;
+	try
+	{
+		operations.reserve(2);
+		if (association_prepared == flatfile_association_result::ok)
+			operations.push_back(std::move(association_operation));
+		operations.push_back({ flatfile_authority_store::metadata,
+				       flatfile_authority_operation_kind::write, kingdom_filename,
+				       std::move(realm_bytes) });
+	}
+	catch (const std::bad_alloc &)
+	{
+		flatfile_lock_release(lock_fd);
+		return false;
+	}
+
+	const auto committed = flatfile_authority_transaction_commit_operations(root, authority,
+										operations, error);
+	flatfile_lock_release(lock_fd);
+	if (committed != flatfile_authority_transaction_result::ok)
+	{
+		logit(LOG_KINGDOM,
+		      "kingdom_db_save_payment_pair: recoverable commit failed for association %d: %s",
+		      realm.assoc_id, error && !error->empty() ? error->c_str() : "io error");
+		return false;
+	}
+	return true;
+}
+
+/* NOTHING TO DO, and that is the honest answer rather than a stub.
+ *
+ * The flat-file record IS the whole realm: encode_catalog() writes the roster
+ * inline with the rest of the fields, so kingdom_db_save_realm() above has
+ * already published it by the time anything could call this. It exists only
+ * because the SQL half genuinely needs a separate statement against a separate
+ * table, and one declaration must serve both builds. Answering true is
+ * therefore correct, not optimistic: the roster is on disk. */
+bool kingdom_db_save_roster(const kingdom_realm & /*realm*/)
+{
+	return true;
 }
 
 /* Remove one realm's record from the authority file under the lock and

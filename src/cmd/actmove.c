@@ -2224,7 +2224,14 @@ void do_move(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	if (do_simple_move(ch, cmd, MVFLG_DRAG_FOLLOWERS))
+	const bool moved = do_simple_move(ch, cmd, MVFLG_DRAG_FOLLOWERS);
+
+	/* A destination room proc may extract (or kill) the mover. Do not inspect
+	 * the character after do_simple_move() unless it is still live. */
+	if (!char_in_list(ch) || !IS_ALIVE(ch))
+		return;
+
+	if (moved)
 	{
 		if (affected_by_spell(ch, SPELL_PATH_OF_FROST))
 		{

@@ -58,14 +58,25 @@ constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
 	"0ec0366920b78703c006c6d4f159026c659d071c38aad5e142c2573754aaa8f3";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
 	"92dd682008ba94f8aecc63595dc46f9d6f1f865adecd174e58e2a2ce14220f2c";
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0008_statistics_date_index";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 8;
+/* Head 0009 adds kingdom_garrison, the roster of purchased guards. The three
+ * checksums below are SHA-256 over the migration FILES and over the rolling
+ * ledger, all computable offline; the two normalised metadata fingerprints
+ * above are NOT, because they hash information_schema on a live server. That is
+ * why kingdom_garrison is deliberately absent from RUNTIME_TABLE_SQL_LIST: the
+ * fingerprint, the table count and the engine/collation checks all scope
+ * themselves to that list, so a table outside it needs no live regeneration --
+ * and RUNTIME_CURRENT_TABLE_COUNT above is therefore unchanged at 174.
+ * Adding it to the list is a follow-up for whoever next has both a MySQL 8 and
+ * a MariaDB 10.11 to hand; until then the module degrades exactly the way
+ * kingdom_realms already does when its own table cannot be read. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0009_kingdom_garrison";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 9;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"19b11144dd55241d624de95eb5f1648049823ab5e40ab6029ce7ea5535b5cb60";
+	"e295446be0ae22bb48989db87166641b8f8f599fa711133a3fd3f8370db9d8b3";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90";
+	"79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"0ea545de3ada35686b935dbb86b6f4cae64e01622b37baadddc76d6e9667929f";
+	"37fabde7d3c00518b92b35519442106b74dcb92fd18eebc6251c3470da56f561";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

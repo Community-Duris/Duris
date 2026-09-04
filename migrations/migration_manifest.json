@@ -258,6 +258,16 @@
       "verify": "immutable/0008_statistics_date_index.sh",
       "verify_checksum": "d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0009_kingdom_garrison",
+      "sequence": 9,
+      "description": "Add the kingdom garrison roster of purchased guards",
+      "apply": "immutable/0009_kingdom_garrison.sql",
+      "apply_checksum": "e295446be0ae22bb48989db87166641b8f8f599fa711133a3fd3f8370db9d8b3",
+      "verify": "immutable/0009_kingdom_garrison.sh",
+      "verify_checksum": "79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

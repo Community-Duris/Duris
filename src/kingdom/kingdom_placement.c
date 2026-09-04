@@ -653,3 +653,191 @@ int kingdom_judge_footprint(int hall_rnum, int racewar, int ignore_assoc, int *b
 
 	return KSQ_OK;
 }
+
+/* ------------------------------------------------------------------ *
+ * kingdom prospect
+ * ------------------------------------------------------------------ */
+
+/*
+ * `kingdom prospect` -- WOULD A REALM STAND HERE, AND IF NOT, WHERE?
+ *
+ * Ruled 2026-09-04, and the reason is a play report rather than a design
+ * preference: with the keep-away distances at their old values a player
+ * crossed a whole continent without finding ground that would take a realm,
+ * because nothing in the game would tell them whether a square was legal until
+ * they had already paid for a guildhall on it. Easing the distances made seats
+ * common; this makes them FINDABLE. The two go together and neither is
+ * sufficient alone.
+ *
+ * DELIBERATELY OPEN TO EVERYONE. No guild, no realm, no rank: someone deciding
+ * whether founding a guild is worth it has to be able to survey first, and a
+ * verb that demanded the guild they are trying to decide about would be
+ * useless exactly when it is wanted. It reveals nothing private -- every
+ * input is public map geography plus the footprints of realms that are already
+ * drawn on the overhead map.
+ *
+ * The search is a Chebyshev spiral outward from the player's own square,
+ * because that is the distance the rest of the module measures in and because
+ * "6 north-west" is an instruction a player can walk.
+ */
+
+/* How far out to look, how many seats to name, and how many expensive full
+ * footprints one command may judge. The radius bounds cheap map-seat probes;
+ * the separate budget bounds the worst case even when every candidate reaches
+ * all eighty square judgements. */
+#define KINGDOM_PROSPECT_RADIUS 12
+#define KINGDOM_PROSPECT_RESULTS 5
+#define KINGDOM_PROSPECT_FOOTPRINT_BUDGET 64
+
+void kingdom_prospect(struct char_data *ch)
+{
+	if (!ch)
+		return;
+
+	int zone_idx = 0, here_x = 0, here_y = 0;
+
+	if (ch->in_room == NOWHERE ||
+	    !kingdom_square_of_room(ch->in_room, &zone_idx, &here_x, &here_y))
+	{
+		send_to_char("Realms are founded on the overhead map, and this is not it. "
+			     "Prospect from open country.\r\n",
+			     ch);
+		return;
+	}
+
+	/* The prospector's OWN racewar side, because that is the side the realm
+	 * they are imagining would belong to. A neutral character is judged as
+	 * neutral, which is the same answer kingdom_judge_square() gives a
+	 * neutral guild. */
+	const int racewar = static_cast<int>(GET_RACEWAR(ch));
+
+	send_to_char_f(ch, "&+WProspecting from %s.&n\r\n\r\n", world[ch->in_room].name);
+
+	int bad_index = 0;
+	int footprints_left = KINGDOM_PROSPECT_FOOTPRINT_BUDGET;
+	const bool valid_seat = guildhall_valid_map_seat(ch->in_room);
+	int here = KSQ_BAD_SECTOR;
+
+	if (valid_seat)
+	{
+		footprints_left--;
+		here = kingdom_judge_footprint(ch->in_room, racewar, 0, &bad_index);
+	}
+
+	if (here == KSQ_OK)
+	{
+		send_to_char("&+GThis square would take a realm.&n A guildhall built here could be "
+			     "converted\r\nwith '&+Wkingdom convert&n', and its eighty squares "
+			     "would all be legal ground.\r\n",
+			     ch);
+		kingdom_show_grid(ch, ch->in_room, racewar, 0, 0, "The realm this seat would hold");
+		return;
+	}
+
+	if (!valid_seat)
+	{
+		send_to_char("&+rNot here.&n The guildhall seat itself must be field, forest, or "
+			     "hills terrain.\r\n\r\n",
+			     ch);
+	}
+	else
+	{
+		char why[MAX_INPUT_LENGTH];
+
+		why[0] = '\0';
+		kingdom_explain_refusal(ch->in_room, bad_index, here, why, sizeof(why));
+
+		if (why[0])
+			send_to_char_f(
+				ch, "&+rNot here.&n Square %d of %d is refused: %s -- %s.\r\n\r\n",
+				bad_index, KINGDOM_MAX_SQUARES, kingdom_verdict_text(here), why);
+		else
+			send_to_char_f(ch, "&+rNot here.&n Square %d of %d is refused: %s.\r\n\r\n",
+				       bad_index, KINGDOM_MAX_SQUARES, kingdom_verdict_text(here));
+	}
+
+	/* The spiral. Ring by ring outward, so the first seats found are the
+	 * nearest ones and the search can stop the moment it has enough. Within
+	 * a ring the order is whatever the box walk produces, which is
+	 * arbitrary but stable -- two prospectors standing on the same square
+	 * get the same answer. */
+	int found = 0;
+
+	for (int radius = 1; radius <= KINGDOM_PROSPECT_RADIUS &&
+			     found < KINGDOM_PROSPECT_RESULTS && footprints_left > 0;
+	     radius++)
+	{
+		for (int dy = -radius;
+		     dy <= radius && found < KINGDOM_PROSPECT_RESULTS && footprints_left > 0; dy++)
+		{
+			for (int dx = -radius; dx <= radius && found < KINGDOM_PROSPECT_RESULTS &&
+					       footprints_left > 0;
+			     dx++)
+			{
+				/* Only the ring's edge: the interior was covered
+				 * by a smaller radius already. */
+				if (dx != -radius && dx != radius && dy != -radius && dy != radius)
+					continue;
+
+				const int rnum =
+					kingdom_room_at(zone_idx, here_x + dx, here_y + dy);
+
+				if (rnum <= 0)
+					continue;
+
+				/* CHEAP TEST FIRST. Judging a footprint is up to
+				 * eighty square judgements; asking whether the
+				 * centre itself is settleable ground is one array
+				 * read, and it rejects the water and mountain that
+				 * make up most of the map. */
+				if (!guildhall_valid_map_seat(rnum))
+					continue;
+
+				footprints_left--;
+				if (kingdom_judge_footprint(rnum, racewar, 0, NULL) != KSQ_OK)
+					continue;
+
+				if (found == 0)
+					send_to_char("&+WGround that would take a realm:&n\r\n",
+						     ch);
+
+				/* The ring's radius IS the Chebyshev distance to
+				 * every square on it, which is the distance the
+				 * rest of the module measures in. */
+				send_to_char_f(
+					ch, "   %2d squares %-10s (map %d,%d; offset %+d,%+d)\r\n",
+					radius, kingdom_compass(dx, dy), here_x + dx, here_y + dy,
+					dx, dy);
+				found++;
+			}
+		}
+	}
+
+	const bool budget_exhausted = footprints_left == 0 && found < KINGDOM_PROSPECT_RESULTS;
+
+	if (found == 0 && budget_exhausted)
+		send_to_char_f(ch,
+			       "This survey reached its %d-seat work limit before finding a match. "
+			       "Try\r\nagain nearby to continue the search.\r\n",
+			       KINGDOM_PROSPECT_FOOTPRINT_BUDGET);
+	else if (found == 0)
+		send_to_char_f(
+			ch,
+			"Nothing within %d squares would take one either. The nearest seat "
+			"is\r\nfurther off than this survey reaches -- try again from "
+			"somewhere well clear of\r\ntowns and the mouths of other zones.\r\n",
+			KINGDOM_PROSPECT_RADIUS);
+	else
+	{
+		if (budget_exhausted)
+			send_to_char_f(
+				ch,
+				"\r\nThe survey stopped at its %d-seat work limit; there may be "
+				"more\r\nchoices nearby.\r\n",
+				KINGDOM_PROSPECT_FOOTPRINT_BUDGET);
+		send_to_char(
+			"\r\nA realm is seated on a guildhall, so the hall must be built on "
+			"the square\r\nfirst, and then converted with '&+Wkingdom convert&n'.\r\n",
+			ch);
+	}
+}

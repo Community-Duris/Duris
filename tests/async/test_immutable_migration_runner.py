@@ -108,7 +108,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 8)
+        self.assertEqual(len(manifest.migrations), 9)
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -125,12 +125,22 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                          "0007_pkill_event_stamp_contract")
         self.assertEqual(manifest.migrations[7].migration_id,
                          "0008_statistics_date_index")
+        self.assertEqual(manifest.migrations[8].migration_id,
+                         "0009_kingdom_garrison")
         self.assertEqual(len(manifest.required_table_fingerprint), 64)
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()
         )
         tables = [entry["locator"] for entry in lifecycle["entries"]
                   if entry["kind"] == "database_table"]
+        # kingdom_garrison, created by head 0007, is deliberately absent from
+        # the lifecycle manifest and so needs no exclusion here. The lifecycle
+        # inventory must MIRROR runtime_table_sql_list exactly -- the runtime
+        # validator's drift check compares their lengths and fingerprints -- and
+        # 0007's table stays out of that list because joining it means
+        # regenerating both normalised metadata fingerprints against a live
+        # MySQL 8 and a live MariaDB 10.11. Registering it in one manifest but
+        # not the other is the one state that fails; out of both is consistent.
         baseline_tables = [table for table in tables if table not in {
             "lookup_dataset_state", "season_reset_state", "server_reboots",
             "kingdom_realms"

@@ -431,8 +431,9 @@ void kingdom_show_status(struct char_data *ch, const kingdom_realm &realm)
 		if (verdict == KSQ_OK)
 			APPENDF(out,
 				" &+wNext claim &n: &+Y#%d&n (ring %d), %s"
-				" -- &+Y%ld&n coin\r\n",
-				next, ring, where, kingdom_claim_cost(next));
+				" -- &+Y%ld&n coin and &+Y%ld&n of each resource\r\n",
+				next, ring, where, kingdom_claim_cost(next),
+				kingdom_claim_material_cost(next));
 		else
 			APPENDF(out,
 				" &+wNext claim &n: &+R#%d&n (ring %d), %s"
