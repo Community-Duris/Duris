@@ -9,6 +9,7 @@ ACTOBJ = (SRC / "actobj.c").read_text(encoding="utf-8", errors="replace")
 
 
 def body(signature: str) -> str:
+    """Return one C++ function body selected by its signature."""
     start = ACTOBJ.index(signature)
     opening = ACTOBJ.index("{", start)
     depth = 0

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Print the accepted command forms and reject invalid invocation.
 usage() {
     echo 'usage: reconcile_coin_custody_pair.sh --classify /absolute/private/pair.tsv' >&2
     echo '   or: reconcile_coin_custody_pair.sh --apply /absolute/private/pair.tsv SHA256' >&2
@@ -184,12 +185,58 @@ while IFS=$'\t' read -r pid payload_id new_uid old_uid vnum container_id parent_
         echo 'pair artifact is not an exact physical-coin replacement pair' >&2
         exit 2
     }
+    reviewed_pid=$pid
+    reviewed_payload_id=$payload_id
+    reviewed_new_uid=$new_uid
+    reviewed_old_uid=$old_uid
+    reviewed_vnum=$vnum
+    reviewed_container_id=$container_id
+    reviewed_parent_uid=$parent_uid
+    reviewed_root_uid=$root_uid
+    reviewed_old_parent_uid=$old_parent_uid
+    reviewed_item_revision=$item_revision
+    reviewed_opening_revision=$opening_revision
+    reviewed_value0=$value0
+    reviewed_value1=$value1
+    reviewed_value2=$value2
+    reviewed_value3=$value3
     pair_count=$((pair_count + 1))
 done <"$artifact"
 [[ "$pair_count" == 1 ]] || {
     echo 'reconciliation requires exactly one reviewed owner/payload pair' >&2
     exit 1
 }
+pid=$reviewed_pid
+payload_id=$reviewed_payload_id
+new_uid=$reviewed_new_uid
+old_uid=$reviewed_old_uid
+vnum=$reviewed_vnum
+container_id=$reviewed_container_id
+parent_uid=$reviewed_parent_uid
+root_uid=$reviewed_root_uid
+old_parent_uid=$reviewed_old_parent_uid
+item_revision=$reviewed_item_revision
+opening_revision=$reviewed_opening_revision
+value0=$reviewed_value0
+value1=$reviewed_value1
+value2=$reviewed_value2
+value3=$reviewed_value3
+
+check_probe_marker='coin_custody_check_probe_ready'
+check_probe_sql="CREATE TEMPORARY TABLE coin_custody_check_probe(
+    ok TINYINT CHECK(ok=1));
+INSERT INTO coin_custody_check_probe(ok) VALUES(1);
+SELECT '$check_probe_marker';
+INSERT INTO coin_custody_check_probe(ok) VALUES(0);"
+if check_probe_output=$("${MYSQL[@]}" -e "$check_probe_sql" 2>&1); then
+    echo 'refusing reconciliation because CHECK constraints are not enforced' >&2
+    exit 1
+fi
+if ! grep -qx "$check_probe_marker" <<<"$check_probe_output" ||
+   ! grep -Eq 'ERROR (3819|4025)' <<<"$check_probe_output"; then
+    echo 'could not verify CHECK constraint enforcement' >&2
+    exit 1
+fi
 
 apply_sql="CREATE TEMPORARY TABLE coin_custody_repair_guard(ok TINYINT CHECK(ok=1));
 START TRANSACTION;

@@ -601,7 +601,9 @@ custody history.
 
 Rehearse only on a fresh non-production clone. The guarded transaction restores the
 payload's UID to the still-authoritative custody identity; it does not alter denominations,
-wallets, baselines, owner revisions, or ledger rows:
+wallets, baselines, owner revisions, or ledger rows. Apply first proves that the database
+rejects an invalid temporary-table `CHECK`; it aborts without DML or a receipt when that
+guard is disabled or cannot be verified:
 
 ```bash
 WRITERS_QUIESCED=TRUE COIN_CUSTODY_BACKUP_ID='<backup-generation>' \

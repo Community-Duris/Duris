@@ -3191,6 +3191,7 @@ bool begin_coin_give_credit(P_char sender, P_char recipient, const coin_debit_co
 	return true;
 }
 
+/** Publish player feedback and dirty-state bookkeeping after a coin put lands live. */
 void finish_coin_put_publication(P_char actor, P_obj container, const coin_debit_context &context)
 {
 	char line[MAX_STRING_LENGTH];
@@ -3210,6 +3211,7 @@ void finish_coin_put_publication(P_char actor, P_obj container, const coin_debit
 		writeSavedItem(container);
 }
 
+/** Resolve the generic or locker custody destination for a durable coin put. */
 bool coin_put_destination_custody(P_char actor, P_obj container, item_owner_identity *owner,
 				  P_obj *ownership_parent, bool *locker)
 {
@@ -3231,6 +3233,7 @@ bool coin_put_destination_custody(P_char actor, P_obj container, item_owner_iden
 	return true;
 }
 
+/** Publish or compensate a coin put after its generic custody command completes. */
 void coin_put_custody_completion(P_char actor, bool committed, const item_transfer_result &,
 				 unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
@@ -3285,6 +3288,7 @@ void coin_put_custody_completion(P_char actor, bool committed, const item_transf
 	finish_coin_put_publication(actor, container, context.debit);
 }
 
+/** Place coins synchronously in a destination outside generic item ownership. */
 bool publish_transient_coin_put(P_char actor, P_obj container, P_obj old_money,
 				const coin_debit_context &context)
 {
@@ -3309,6 +3313,20 @@ bool publish_transient_coin_put(P_char actor, P_obj container, P_obj old_money,
 	return true;
 }
 
+/** Place coins in a player corpse and persist its dedicated aggregate snapshot. */
+bool publish_pc_corpse_coin_put(P_char actor, P_obj container, P_obj old_money,
+				const coin_debit_context &context)
+{
+	if (corpse_lifecycle_transaction_busy(
+		    static_cast<uint32_t>(container->value[CORPSE_PID]),
+		    static_cast<uint32_t>(container->value[CORPSE_SAVEID])) ||
+	    !publish_transient_coin_put(actor, container, old_money, context))
+		return false;
+	writeCorpse(container);
+	return true;
+}
+
+/** Route a committed wallet debit to the destination's authoritative coin lifecycle. */
 bool publish_coin_put(P_char actor, const coin_debit_context &context)
 {
 	P_obj container = find_live_item_uid(context.container_uid);
@@ -3331,6 +3349,10 @@ bool publish_coin_put(P_char actor, const coin_debit_context &context)
 			}
 			break;
 		}
+
+	if (GET_ITEM_TYPE(container) == ITEM_CORPSE &&
+	    IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE))
+		return publish_pc_corpse_coin_put(actor, container, old_money, context);
 
 	if (!IS_PC(actor) || GET_PID(actor) <= 0)
 		return publish_transient_coin_put(actor, container, old_money, context);

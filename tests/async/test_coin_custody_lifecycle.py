@@ -5,19 +5,21 @@ from _paths import ROOT, SRC
 
 
 def body(source: str, signature: str, terminator: str) -> str:
+    """Return source text from a function signature to the next declaration."""
     start = source.index(signature)
     return source[start:source.index(terminator, start)]
 
 
-actobj = (SRC / "actobj.c").read_text()
-movement = (SRC / "item_movement_transaction.c").read_text()
-mysql = (ROOT / "tests/async/item_transfer_mysql_harness.cpp").read_text()
-flatfile = (ROOT / "tests/async/flatfile_item_repository_harness.cpp").read_text()
+actobj = (SRC / "actobj.c").read_text(encoding="utf-8")
+movement = (SRC / "item_movement_transaction.c").read_text(encoding="utf-8")
+mysql = (ROOT / "tests/async/item_transfer_mysql_harness.cpp").read_text(encoding="utf-8")
+flatfile = (ROOT / "tests/async/flatfile_item_repository_harness.cpp").read_text(encoding="utf-8")
 
 publish = body(actobj, "bool publish_coin_put(", "\nvoid publish_coin_drop(")
 completion = body(
     actobj, "void coin_put_custody_completion(", "\nbool publish_transient_coin_put(")
 transient = body(actobj, "bool publish_transient_coin_put(", "\nbool publish_coin_put(")
+corpse = body(actobj, "bool publish_pc_corpse_coin_put(", "\n/** Route a committed")
 
 # Combining uses the existing pile and UID. An empty durable container creates a
 # nowhere object and submits its serialized payload before attaching it live.
@@ -50,6 +52,16 @@ assert "ITEM_TRANSIENT" in publish
 assert "return false;" in publish[publish.index("coin_put_destination_custody"):]
 assert "put(actor, money, container, FALSE)" in transient
 
+# PC corpses bypass generic ownership, retain the synchronous placement path,
+# and publish their dedicated aggregate only when its lifecycle is not busy.
+corpse_route = publish.index("CORPSE_FLAGS")
+generic_route = publish.index("coin_put_destination_custody")
+assert corpse_route < generic_route
+assert "publish_pc_corpse_coin_put" in publish[corpse_route:generic_route]
+assert "corpse_lifecycle_transaction_busy" in corpse
+assert "publish_transient_coin_put" in corpse
+assert corpse.index("publish_transient_coin_put") < corpse.index("writeCorpse(container)")
+
 # The shared item command serializes the pile before submission. Existing backend
 # harnesses exercise direct custody creation under a container, which is the
 # backend-neutral boundary used here; MariaDB snapshots may publish only after it.
@@ -57,8 +69,8 @@ assert "player_item_snapshot_list_encode" in movement
 assert "nested_creation.target_parent_item_uid" in mysql
 assert "nested_single_creation" in flatfile and "target_parent_item_uid" in flatfile
 assert "item_transfer_repository_execute" in (
-    SRC / "item_transfer_repository.c").read_text()
+    SRC / "item_transfer_repository.c").read_text(encoding="utf-8")
 assert "flatfile_item_transfer_materialization_prepare" in (
-    SRC / "flatfile_item_repository.c").read_text()
+    SRC / "flatfile_item_repository.c").read_text(encoding="utf-8")
 
 print("physical coin puts preserve or establish authoritative custody")

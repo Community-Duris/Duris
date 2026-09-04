@@ -13,6 +13,7 @@ RECONCILE = ROOT / "migrations/reconcile_coin_custody_pair.sh"
 
 
 def environment(tool_dir: pathlib.Path, row: str) -> dict[str, str]:
+    """Build an isolated local-database environment for the fake client."""
     values = os.environ.copy()
     values.update(
         {
@@ -37,7 +38,18 @@ with tempfile.TemporaryDirectory(prefix="duris-coin-custody-") as temporary:
         "#!/usr/bin/env bash\n"
         "if [[ \"$1\" == '--help' ]]; then echo '--ssl-mode'; exit 0; fi\n"
         "query=${!#}\n"
-        "if [[ \"$query\" == *'UPDATE player_items SET obj_uid'* ]]; then exit 0; fi\n"
+        "if [[ \"$query\" == *'coin_custody_check_probe_ready'* ]]; then\n"
+        "  printf '%s\\n' 'coin_custody_check_probe_ready'\n"
+        "  if [[ \"${CHECK_CONSTRAINTS_ENFORCED:-TRUE}\" == TRUE ]]; then\n"
+        "    printf '%s\\n' 'ERROR 4025 (23000): CONSTRAINT failed' >&2\n"
+        "    exit 1\n"
+        "  fi\n"
+        "  exit 0\n"
+        "fi\n"
+        "if [[ \"$query\" == *'UPDATE player_items SET obj_uid'* ]]; then\n"
+        "  [[ \"$query\" == *'SET obj_uid=9001'* && \"$query\" == *'WHERE id=700'* ]]\n"
+        "  exit\n"
+        "fi\n"
         "printf '%s\\n' \"$PAIR_ROW\"\n"
     )
     mysql.chmod(0o700)
@@ -60,6 +72,17 @@ with tempfile.TemporaryDirectory(prefix="duris-coin-custody-") as temporary:
             "COIN_CUSTODY_BACKUP_ID": "test-backup-generation",
         }
     )
+    unenforced_env = env.copy()
+    unenforced_env["CHECK_CONSTRAINTS_ENFORCED"] = "FALSE"
+    unenforced = subprocess.run(
+        [str(RECONCILE), "--apply", str(artifact), digest], cwd=ROOT,
+        env=unenforced_env, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert unenforced.returncode == 1, unenforced.stdout
+    assert "CHECK constraints are not enforced" in unenforced.stdout
+    assert not (private / "pair.tsv.applied").exists()
+
     applied = subprocess.run(
         [str(RECONCILE), "--apply", str(artifact), digest], cwd=ROOT, env=env,
         text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -75,7 +98,7 @@ with tempfile.TemporaryDirectory(prefix="duris-coin-custody-") as temporary:
     assert wrong_digest.returncode == 1, wrong_digest.stdout
     assert "checksum" in wrong_digest.stdout
 
-source = RECONCILE.read_text()
+source = RECONCILE.read_text(encoding="utf-8")
 assert "UPDATE player_items SET obj_uid=$old_uid" in source
 assert "SET value" not in source
 assert "DELETE FROM" not in source
@@ -83,6 +106,8 @@ assert "item_ownership_baseline" in source
 for verb in ("INSERT INTO", "UPDATE", "DELETE FROM"):
     assert f"{verb} item_ownership_ledger" not in source
 assert "CHECK(ok=1)" in source
+assert "coin_custody_check_probe_ready" in source
+assert "ERROR (3819|4025)" in source
 assert "exactly one reviewed owner/payload pair" in source
 assert "refusing coin custody reconciliation outside" in source
 assert "--ssl-mode=VERIFY_IDENTITY" in source
