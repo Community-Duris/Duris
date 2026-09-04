@@ -4,6 +4,7 @@
 
 #include <cassert>
 
+/** Supply the fixture account identity to the production reward-ownership check. */
 const char *get_account_name_safe(P_char ch)
 {
 	if (ch && ch->desc && ch->desc->account)
@@ -11,6 +12,7 @@ const char *get_account_name_safe(P_char ch)
 	return "Unknown";
 }
 
+/** Verify account ownership, legacy markers, flags, and invalid inputs. */
 int main()
 {
 	acct_entry account = {};

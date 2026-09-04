@@ -4412,6 +4412,7 @@ void do_recite(P_char ch, char *argument, int /*cmd*/)
 	extract_obj(scroll);
 }
 
+/** Activate a held wand or staff after authorizing account-bound rewards. */
 void do_use(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char tmp_char = 0;

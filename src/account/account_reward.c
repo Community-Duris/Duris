@@ -46,6 +46,7 @@ struct RewardMarker
 	bool legacy;
 };
 
+/** Return the authenticated account name, rejecting missing or unknown identities. */
 static const char *reward_account(P_char ch)
 {
 	if (!ch)
@@ -102,6 +103,7 @@ static bool grant_marker_matches(P_obj obj, const RewardGrant &grant)
 }
 #endif
 
+/** Match a flagged reward marker to the owning account, including legacy markers. */
 bool account_bound_reward_owner(P_char ch, P_obj obj)
 {
 	RewardMarker marker;

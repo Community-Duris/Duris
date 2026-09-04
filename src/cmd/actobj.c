@@ -150,6 +150,7 @@ static bool uses_generic_item_ownership(P_obj object)
 	       ownership.state == item_custody_state::active;
 }
 
+/** Authorize soulbound equipment by account marker or legacy character-name binding. */
 static bool can_equip_soulbound_item(P_char actor, P_obj object, bool show_rejection)
 {
 	if (!IS_OBJ_STAT2(object, ITEM2_SOULBIND))
@@ -7858,6 +7859,7 @@ int equipment_pos_table[CUR_MAX_WEAR][3] = {
  * is trying to do, then passes the correct information onto the Controller
  * class: Wear().  -Sniktiorg (Nov.15.12)
  */
+/** Wear selected inventory items after checking binding and equipment restrictions. */
 void do_wear(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
@@ -8061,6 +8063,7 @@ void do_wield(P_char ch, char *argument, int /*cmd*/)
 	room_light(ch->in_room, REAL);
 }
 
+/** Hold an inventory item only when its binding permits this character. */
 void do_grab(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object;
