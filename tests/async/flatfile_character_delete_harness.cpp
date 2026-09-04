@@ -468,9 +468,19 @@ int main(int argc, char **argv)
 			lockers.size() == 2 && lockers[0].owner_assoc_id == 7 &&
 			lockers[1].account_owner &&
 			lockers[1].account_owner->account_name == "account" &&
+			lockers[1].chests.size() == 1 && lockers[1].chests[0].items.size() == 1 &&
+			lockers[1].chests[0].items[0].object_uid == 903 &&
 			locker_access.size() == 1 &&
-			locker_access[0].owner_name == "account.account.1.locker",
+			locker_access[0].owner_name == "account.account.1.locker" &&
+			locker_access[0].visitor_name == "visitor",
 		"recovered deletion retained player locker or access state");
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::locker, 30, 31 }, &owner_revision, &items,
+			&error) == flatfile_item_repository_result::ok &&
+			items.size() == 1 && items[0].item_uid == 903 &&
+			items[0].state == item_custody_state::active,
+		"recovered deletion changed account locker item custody");
 	std::vector<flatfile_association_record> associations;
 	require(flatfile_association_list(root.string(), &associations, &error) ==
 				flatfile_association_result::ok &&
