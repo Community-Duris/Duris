@@ -78,13 +78,18 @@ service_auth = HANDLERS[
 assert service_auth.index("d->durisweb_backend = 1") < service_auth.index("d->wait = 0")
 gmcp_service_auth = GMCP[GMCP.index("ws_verify_durisweb_signature") :]
 assert gmcp_service_auth.index("d->durisweb_backend = 1") < gmcp_service_auth.index("d->wait = 0")
-assert "point->connected && !websocket_is_authenticated_service(point)" in COMM
+assert re.search(
+    r"const bool authenticated_service\s*=\s*websocket_is_authenticated_service\(point\)", COMM
+)
+assert "point->connected && !authenticated_service" in COMM
+assert re.search(r"else if\s*\(!authenticated_service && t_ch &&\s*IS_AFFECTED2", COMM)
+assert re.search(r"else if\s*\(!authenticated_service && t_ch &&\s*affected_by_spell", COMM)
 duplicate_cleanup = WS[
     WS.index("duplicate connection check") : WS.index("WebSocket handshake complete")
 ]
 assert "!websocket_is_authenticated_service(k)" in duplicate_cleanup
 assert COMM.index("WebSocket ping/pong dead connection detection") < COMM.index(
-    "!websocket_is_authenticated_service(point)"
+    "point->connected && !authenticated_service"
 )
 
 # Hook mutation stays on the authenticated command plane. Authorization is

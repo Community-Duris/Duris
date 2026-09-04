@@ -1355,6 +1355,8 @@ resume_game_loop:
 		{
 			next_to_process = point->next;
 			t_ch = point->character;
+			const bool authenticated_service =
+				websocket_is_authenticated_service(point);
 
 			if (point->connected == CON_SSLNEGO)
 			{
@@ -1437,7 +1439,7 @@ resume_game_loop:
 
 			/* new timeout for non-playing sockets */
 
-			if (point->connected && !websocket_is_authenticated_service(point))
+			if (point->connected && !authenticated_service)
 			{
 				point->wait++;
 
@@ -1496,10 +1498,11 @@ resume_game_loop:
 					break;
 				}
 			}
-			else if (IS_AFFECTED2(t_ch, AFF2_SLOW) && !IS_TRUSTED(t_ch) &&
+			else if (!authenticated_service && t_ch && IS_AFFECTED2(t_ch, AFF2_SLOW) &&
 				 (pulse % 2) && !GET_CLASS(t_ch, CLASS_MONK))
 				continue;
-			else if (affected_by_spell(t_ch, TAG_CTF) && !IS_TRUSTED(t_ch) &&
+			else if (!authenticated_service && t_ch &&
+				 affected_by_spell(t_ch, TAG_CTF) &&
 				 (pulse % (int)get_property("ctf.slowness", 3)))
 				continue;
 
