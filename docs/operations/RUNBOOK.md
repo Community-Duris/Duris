@@ -525,6 +525,63 @@ Stop the affected domain, preserve its journal, inbox, outbox, ledger, and repor
 then trace the stable operation identity. Use only the domain's guarded retry or
 repair interface after the cause is known.
 
+For character-baseline readiness, `migrations/check_character_baseline_readiness.sh`
+is production-safe and aggregate-only. It requires every active, unblocked,
+account-mapped character to have wallet, epic, and combat-frag opening rows. The same
+gate runs during MariaDB boot, runtime compatibility verification, and guarded legacy
+dump import; a missing row makes the character generation unready.
+
+Classify missing combat baselines only at an approved quiesced save boundary. Create a
+private operator directory, then write the row-level result there; routine output stays
+aggregate-only:
+
+```bash
+install -d -m 700 /absolute/private/combat-baseline-review
+./migrations/repair_missing_combat_baselines.sh \
+  --classify /absolute/private/combat-baseline-review/classification.tsv
+```
+
+`safe_no_history` has revision zero and no ledger row, so its opening value is the
+locked current value at revision zero. `ledger_history_requires_review` includes only a
+proposed arithmetic candidate and is never applied by the tool; prove the complete,
+contiguous history and review separate targeted DML. `revision_without_ledger` has no
+defensible automated opening value. Keep all PIDs and row details in the owner-only
+artifact. Classification is not a resolution: every non-safe row requires a separate,
+owner-only per-PID decision record containing the frozen source evidence, authoritative
+opening value and revision, reviewed DML checksum, reviewer identity, and either an
+explicit approval or `blocked_no_authoritative_opening`. The repair tool deliberately
+does not consume those records. Do not mark the production incident resolved until every
+affected row has an approved disposition and the aggregate readiness gate is zero.
+
+Rehearse safe rows only on a fresh production clone after a verified backup and with
+all writers stopped. Supply the reviewed artifact digest and backup identity:
+
+```bash
+WRITERS_QUIESCED=TRUE COMBAT_BASELINE_BACKUP_ID='<backup-generation>' \
+  COMBAT_BASELINE_ROLLBACK_EVIDENCE=/absolute/private/combat-baseline-review/rollback.sql \
+  COMBAT_BASELINE_ROLLBACK_SHA256='<reviewed-sha256>' \
+  ./migrations/repair_missing_combat_baselines.sh --apply \
+  /absolute/private/combat-baseline-review/classification.tsv '<sha256>'
+```
+
+The insert-only transaction preserves existing baselines, verifies locked player and
+ledger state, fails on a conflicting baseline, and rolls back unless character readiness
+plus combat, currency, epic, item-ownership, and required-FK reconciliation all pass.
+It writes those aggregate results to an owner-only receipt. The required rollback file
+must contain reviewed inverse DML limited to the artifact's exact PIDs, values, and
+revisions, with guards rejecting any subsequent combat revision or ledger activity. A
+repeat is idempotent only when the existing row exactly matches the reviewed opening.
+This command refuses production targets; it is rehearsal evidence, not permission to
+repair production. Before any separately authorized production repair, retain the
+backup, protected per-PID decisions, reviewed forward and rollback DML, all digests, and
+the rehearsal receipt. Afterwards rerun the same full reconciliation set. Never delete
+or rewrite ledger history to make readiness pass.
+
+Loopback clone targets are permitted directly. A remote clone additionally requires
+verified TLS and an exact port-aware `DB_ALLOWED_TARGETS` entry in the form
+`host:port/database`; a non-default port cannot reuse authority granted to another
+endpoint.
+
 ### Maintenance, lifecycle, export, and erasure
 
 The maintenance scheduler is bounded and persistent. Use `world persistence` to

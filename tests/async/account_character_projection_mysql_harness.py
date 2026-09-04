@@ -18,6 +18,7 @@ mysql_source_text = source_text[source_text.index("\n#else\n\n// globals") :]
 
 
 def body(text, signature):
+    """Extract one production function definition for the isolated harness."""
     start = index(text, signature)
     while ";" in text[start + len(signature) : text.index("{", start)]:
         start = index(text, signature, start + len(signature))
@@ -51,6 +52,7 @@ harness = f'''\
 
 MYSQL *DB = nullptr;
 
+/* Escape one account value through the live client connection. */
 char *sql_escape_string(const char *value)
 {{
     if (!DB || !value)
@@ -63,6 +65,7 @@ char *sql_escape_string(const char *value)
     return escaped;
 }}
 
+/* Execute one extracted production repair statement. */
 bool sql_run_query(const char *query)
 {{
     if (mysql_query(DB, query) == 0)
@@ -73,6 +76,7 @@ bool sql_run_query(const char *query)
 
 {repair}
 
+/* Return one required database setting for the isolated fixture. */
 static const char *required_env(const char *name)
 {{
     const char *value = std::getenv(name);
@@ -80,6 +84,7 @@ static const char *required_env(const char *name)
     return value;
 }}
 
+/* Execute fixture SQL or terminate with the client error. */
 static void execute(const char *query)
 {{
     if (mysql_query(DB, query) != 0)
@@ -89,6 +94,7 @@ static void execute(const char *query)
     }}
 }}
 
+/* Read one integral scalar from the fixture database. */
 static long scalar(const char *query)
 {{
     execute(query);
@@ -101,6 +107,7 @@ static long scalar(const char *query)
     return value;
 }}
 
+/* Exercise safe baseline establishment and projection repair behavior. */
 int main()
 {{
     DB = mysql_init(nullptr);
@@ -113,22 +120,45 @@ int main()
 
     execute("CREATE TEMPORARY TABLE player_data ("
             "pid INT NOT NULL PRIMARY KEY, name VARCHAR(80) NOT NULL, "
-            "account_name VARCHAR(255) NOT NULL, active TINYINT NOT NULL)");
+            "account_name VARCHAR(255) NOT NULL, active TINYINT NOT NULL, "
+            "copper INT NOT NULL DEFAULT 0, silver INT NOT NULL DEFAULT 0, "
+            "gold INT NOT NULL DEFAULT 0, platinum INT NOT NULL DEFAULT 0, "
+            "wallet_revision BIGINT UNSIGNED NOT NULL DEFAULT 0, "
+            "epics BIGINT NOT NULL DEFAULT 0, "
+            "epic_revision BIGINT UNSIGNED NOT NULL DEFAULT 0, "
+            "frags BIGINT NOT NULL DEFAULT 0, "
+            "frag_revision BIGINT UNSIGNED NOT NULL DEFAULT 0)");
     execute("CREATE TEMPORARY TABLE account_characters ("
             "id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, "
             "account_name VARCHAR(255) NOT NULL, pid INT NOT NULL, "
             "char_name VARCHAR(80) NOT NULL, created_at DATETIME NOT NULL, "
             "deleted_at DATETIME NULL, UNIQUE KEY account_character_pid (pid), "
             "UNIQUE KEY account_character_name (char_name))");
-    execute("INSERT INTO player_data VALUES "
+    execute("CREATE TEMPORARY TABLE currency_wallet_baseline ("
+            "pid INT NOT NULL PRIMARY KEY, opening_copper INT, opening_silver INT, "
+            "opening_gold INT, opening_platinum INT, opening_revision BIGINT UNSIGNED)");
+    execute("CREATE TEMPORARY TABLE epic_balance_baseline ("
+            "pid INT NOT NULL PRIMARY KEY, opening_balance BIGINT, "
+            "opening_revision BIGINT UNSIGNED)");
+    execute("CREATE TEMPORARY TABLE combat_frag_baseline ("
+            "pid INT NOT NULL PRIMARY KEY, opening_frags BIGINT, "
+            "opening_revision BIGINT UNSIGNED)");
+    execute("CREATE TEMPORARY TABLE currency_ledger (pid INT)");
+    execute("CREATE TEMPORARY TABLE epic_ledger (pid INT)");
+    execute("CREATE TEMPORARY TABLE combat_frag_ledger (pid INT)");
+    execute("INSERT INTO player_data(pid,name,account_name,active) VALUES "
             "(101,'RepairHero','RepairAcct',1),"
             "(102,'MovedHero','RepairAcct',1),"
             "(103,'DeletedHero','RepairAcct',1),"
             "(104,'InactiveHero','RepairAcct',0)");
+    execute("INSERT INTO player_data(pid,name,account_name,active,frags,frag_revision) "
+            "VALUES(105,'HistoryHero','RepairAcct',1,9,1)");
     execute("INSERT INTO account_characters "
             "(account_name,pid,char_name,created_at,deleted_at) VALUES "
             "('WrongAcct',102,'MovedHero',NOW(),NULL),"
             "('RepairAcct',103,'DeletedHero',NOW(),NOW())");
+    execute("INSERT INTO combat_frag_baseline VALUES(102,77,0)");
+    execute("INSERT INTO combat_frag_ledger VALUES(105)");
 
     assert(sql_repair_account_character_projection("repairacct") > 0);
     assert(mysql_commit(DB) == 0);
@@ -146,7 +176,17 @@ int main()
     assert(scalar("SELECT COUNT(*) FROM account_characters "
                   "WHERE pid=103 AND deleted_at IS NOT NULL") == 1);
     assert(scalar("SELECT COUNT(*) FROM account_characters WHERE pid=104") == 0);
+    assert(scalar("SELECT COUNT(*) FROM account_characters WHERE pid=105") == 0);
+    assert(scalar("SELECT COUNT(*) FROM currency_wallet_baseline "
+                  "WHERE pid IN (101,102)") == 2);
+    assert(scalar("SELECT COUNT(*) FROM epic_balance_baseline "
+                  "WHERE pid IN (101,102)") == 2);
+    assert(scalar("SELECT COUNT(*) FROM combat_frag_baseline "
+                  "WHERE pid=101 AND opening_frags=0 AND opening_revision=0") == 1);
+    assert(scalar("SELECT opening_frags FROM combat_frag_baseline WHERE pid=102") == 77);
+    assert(scalar("SELECT COUNT(*) FROM combat_frag_baseline WHERE pid=105") == 0);
     assert(sql_repair_account_character_projection("RepairAcct") == 0);
+    assert(scalar("SELECT opening_frags FROM combat_frag_baseline WHERE pid=102") == 77);
     assert(sql_repair_account_character_projection("EmptyAcct") == 0);
 
     mysql_close(DB);

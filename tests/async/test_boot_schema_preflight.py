@@ -47,5 +47,11 @@ assert "currency_wallet_baseline_coverage_probe" in source
 assert "currency_bank_baseline_coverage_probe" in source
 assert "currency wallet baseline does not cover every player at boot" in source
 assert "currency bank baseline does not cover every account bank at boot" in source
+assert "character_baseline_readiness_probe" in source
+assert "SELECT DISTINCT player.pid" in source
+assert "mapping.deleted_at IS NULL" in source
+assert "mapping.blocked=0" in source
+assert "combat_frag_baseline combat" in source
+assert "active mapped character baseline readiness failed" in source
 
 print("boot persistence schema preflight checks passed")
