@@ -80,14 +80,21 @@ requested_rank_ref
 effects {membership, rank, association_prestige, locker_access,
          profile_display, forum_acl, administrative_permissions}
 current_authority [{definition_ref, rank_ref}, ...]
+evidence_ref
 ```
 
 References must use a run-specific keyed HMAC prepared and stored with the
-backup evidence. Do not use a bare hash of a player or guild name. Every file
+backup evidence. Do not use a bare hash of a player or guild name. The evidence
+builder computes each row's `evidence_ref` as
+`HMAC-SHA-256(run_secret, b"legacy-membership-disposition-v1\0" + canonical_row_json)`,
+where `canonical_row_json` is UTF-8 compact sorted-key JSON for every row field
+except `evidence_ref`. The disposition copies that exact reference, and the
+planner rejects stale or mismatched decisions before planning. Every input file
 must be an absolute-path, owner-owned regular file with mode `0600`; symlinks,
 duplicate JSON keys, unknown fields, invalid cross-domain references, and
-oversized files fail closed. The output plan is created as a new `0600` file
-and binds every snapshot and input digest.
+oversized files fail closed. The output plan is created as a new `0600` file in
+an existing owner-only directory with no symlink traversal and binds every
+snapshot and input digest.
 
 Disposition JSON uses this shape:
 
@@ -113,8 +120,12 @@ python3 scripts/reconcile_legacy_membership.py \
 The command reports only aggregate association and guild totals in the four
 classes, required-disposition count, and status. It exits nonzero and refuses
 the plan unless there are exactly 176 association rows, exactly 190 guild rows,
-and no missing permanent disposition. Archive the inputs, output, stdout, and
-SHA-256 values with the change record. Do not add them to Git or an issue.
+and no missing permanent disposition. `--require-association-count` defaults to
+176 and `--require-guild-count` defaults to 190. The flags allow separately
+approved reuse with different retained sets; do not override them for this
+issue. Record the exact invocation and both effective count values so any
+override is visible. Archive those values with the inputs, output, stdout, and
+SHA-256 values in the change record. Do not add them to Git or an issue.
 
 ## Clone rehearsal and approval gate
 

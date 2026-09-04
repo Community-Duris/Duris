@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -35,6 +36,8 @@ class ReconciliationError(Exception):
 
 @dataclass(frozen=True)
 class Rank:
+    """One current semantic guild-rank definition."""
+
     rank_ref: str
     rank_index: int
     administrative: bool
@@ -42,6 +45,8 @@ class Rank:
 
 @dataclass(frozen=True)
 class Definition:
+    """One current association or guild definition."""
+
     definition_ref: str
     domain: str
     numeric_id: int
@@ -51,12 +56,16 @@ class Definition:
 
 @dataclass(frozen=True)
 class Membership:
+    """One current authoritative membership and optional guild rank."""
+
     definition_ref: str
     rank_ref: str | None
 
 
 @dataclass(frozen=True)
 class EvidenceRow:
+    """One protected legacy reset and its independent semantic evidence."""
+
     row_ref: str
     player_ref: str
     domain: str
@@ -69,10 +78,13 @@ class EvidenceRow:
     requested_rank_ref: str | None
     effects: dict[str, str]
     current_authority: tuple[Membership, ...]
+    evidence_ref: str
 
 
 @dataclass(frozen=True)
 class Evidence:
+    """The protected snapshots, definitions, and complete reset evidence."""
+
     source_stage_fingerprint: str
     definitions_fingerprint: str
     authority_snapshot_fingerprint: str
@@ -84,6 +96,8 @@ class Evidence:
 
 @dataclass(frozen=True)
 class Disposition:
+    """One permanent non-restoration decision bound to current evidence."""
+
     row_ref: str
     decision: str
     evidence_ref: str
@@ -91,6 +105,8 @@ class Disposition:
 
 @dataclass(frozen=True)
 class Classification:
+    """One mutually exclusive semantic reconciliation result."""
+
     row: EvidenceRow
     category: str
     target_ref: str | None
@@ -98,6 +114,7 @@ class Classification:
 
 
 def _strict_object(pairs: list[tuple[str, object]]) -> dict:
+    """Build a JSON object while rejecting duplicate keys."""
     result: dict = {}
     for key, value in pairs:
         if key in result:
@@ -107,16 +124,18 @@ def _strict_object(pairs: list[tuple[str, object]]) -> dict:
 
 
 def _read_protected_json(path: Path, label: str) -> tuple[dict, str]:
+    """Read one bounded owner-only JSON artifact and return its digest."""
     if not path.is_absolute():
         raise ReconciliationError(f"{label} path must be absolute")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
         descriptor = os.open(path, flags)
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
-                stat.S_IMODE(metadata.st_mode) & 0o077:
-            raise ReconciliationError(f"{label} must be an owner-only regular file")
         with os.fdopen(descriptor, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid() or \
+                    stat.S_IMODE(metadata.st_mode) & 0o077:
+                raise ReconciliationError(
+                    f"{label} must be an owner-only regular file")
             payload = source.read(MAX_ARTIFACT_BYTES + 1)
     except OSError as error:
         raise ReconciliationError(f"cannot read {label}: {error}") from error
@@ -132,23 +151,27 @@ def _read_protected_json(path: Path, label: str) -> tuple[dict, str]:
 
 
 def _keys(value: dict, expected: set[str], label: str) -> None:
+    """Require an artifact object to match its schema exactly."""
     if set(value) != expected:
         raise ReconciliationError(f"{label} fields do not match the contract")
 
 
 def _digest(value: object, label: str) -> str:
+    """Validate one lowercase SHA-256 or HMAC reference."""
     if not isinstance(value, str) or DIGEST.fullmatch(value) is None:
         raise ReconciliationError(f"{label} must be a lowercase SHA-256 reference")
     return value
 
 
 def _optional_digest(value: object, label: str) -> str | None:
+    """Validate an optional lowercase SHA-256 or HMAC reference."""
     if value is None:
         return None
     return _digest(value, label)
 
 
 def _identifier(value: object, label: str, *, zero: bool = False) -> int:
+    """Validate one bounded unsigned numeric identifier."""
     minimum = 0 if zero else 1
     if not isinstance(value, int) or isinstance(value, bool) or \
             not minimum <= value <= MAX_ID:
@@ -157,6 +180,7 @@ def _identifier(value: object, label: str, *, zero: bool = False) -> int:
 
 
 def _digest_set(value: object, label: str) -> frozenset[str]:
+    """Validate a duplicate-free list of protected references."""
     if not isinstance(value, list):
         raise ReconciliationError(f"{label} must be a list")
     result = frozenset(_digest(item, label) for item in value)
@@ -166,6 +190,7 @@ def _digest_set(value: object, label: str) -> frozenset[str]:
 
 
 def _read_definitions(values: object) -> dict[str, Definition]:
+    """Validate the current association, guild, and rank definitions."""
     if not isinstance(values, list) or not values:
         raise ReconciliationError("current_definitions must be a non-empty list")
     result: dict[str, Definition] = {}
@@ -213,6 +238,7 @@ def _read_definitions(values: object) -> dict[str, Definition]:
 
 
 def read_evidence(path: Path) -> tuple[Evidence, str]:
+    """Read and validate the complete protected reconciliation evidence."""
     value, digest = _read_protected_json(path, "reconciliation evidence")
     _keys(value, {
         "version", "source_stage_fingerprint", "definitions_fingerprint",
@@ -224,12 +250,14 @@ def read_evidence(path: Path) -> tuple[Evidence, str]:
     definitions = _read_definitions(value["current_definitions"])
     rows: list[EvidenceRow] = []
     row_refs: set[str] = set()
+    evidence_refs: set[str] = set()
     player_domains: set[tuple[str, str]] = set()
     fields = {
         "row_ref", "player_ref", "domain", "legacy_numeric_id",
         "numeric_definition_ref", "legacy_definition_state", "legacy_name_ref",
         "canonical_name_matches", "membership_history_matches",
         "requested_rank_ref", "effects", "current_authority",
+        "evidence_ref",
     }
     for raw in value["rows"]:
         if not isinstance(raw, dict):
@@ -267,11 +295,15 @@ def read_evidence(path: Path) -> tuple[Evidence, str]:
                         "membership_history_matches"),
             _optional_digest(raw["requested_rank_ref"], "requested_rank_ref"),
             dict(effects), tuple(memberships),
+            _digest(raw["evidence_ref"], "evidence_ref"),
         )
         player_domain = (row.player_ref, row.domain)
-        if row.row_ref in row_refs or player_domain in player_domains:
-            raise ReconciliationError("reconciliation evidence contains a duplicate row")
+        if row.row_ref in row_refs or row.evidence_ref in evidence_refs or \
+                player_domain in player_domains:
+            raise ReconciliationError(
+                "reconciliation evidence contains a duplicate row or evidence reference")
         row_refs.add(row.row_ref)
+        evidence_refs.add(row.evidence_ref)
         player_domains.add(player_domain)
         rows.append(row)
     if not rows:
@@ -290,6 +322,7 @@ def read_evidence(path: Path) -> tuple[Evidence, str]:
 
 
 def _validate_references(evidence: Evidence) -> None:
+    """Reject unknown, cross-domain, or structurally invalid references."""
     for row in evidence.rows:
         refs = set(row.canonical_name_matches) | set(row.membership_history_matches)
         refs.update(reference for reference in (
@@ -320,6 +353,7 @@ def _validate_references(evidence: Evidence) -> None:
 
 
 def read_dispositions(path: Path | None) -> tuple[dict[str, Disposition], str | None]:
+    """Read optional protected permanent dispositions and their digest."""
     if path is None:
         return {}, None
     value, digest = _read_protected_json(path, "reconciliation dispositions")
@@ -342,6 +376,7 @@ def read_dispositions(path: Path | None) -> tuple[dict[str, Disposition], str | 
 
 
 def classify(evidence: Evidence) -> list[Classification]:
+    """Classify every reset from semantic and current-authority evidence."""
     result: list[Classification] = []
     for row in evidence.rows:
         name_matches = row.canonical_name_matches
@@ -433,6 +468,7 @@ def classify(evidence: Evidence) -> list[Classification]:
 
 
 def summary(classifications: list[Classification]) -> dict[str, object]:
+    """Return aggregate-only mutually exclusive counts for both domains."""
     domains: dict[str, dict[str, int]] = {}
     for domain in sorted(DOMAINS):
         rows = [item for item in classifications if item.row.domain == domain]
@@ -449,9 +485,18 @@ def summary(classifications: list[Classification]) -> dict[str, object]:
 
 def build_plan(evidence: Evidence, classifications: list[Classification],
                dispositions: dict[str, Disposition]) -> tuple[list[dict], int]:
-    known = {item.row.row_ref for item in classifications}
-    if set(dispositions) - known:
+    """Build deterministic actions from exact evidence-bound classifications."""
+    rows = {row.row_ref: row for row in evidence.rows}
+    by_ref = {item.row.row_ref: item for item in classifications}
+    expected = {item.row.row_ref: item for item in classify(evidence)}
+    if len(by_ref) != len(classifications) or by_ref != expected:
+        raise ReconciliationError("classifications do not exactly match the evidence")
+    if set(dispositions) - set(rows):
         raise ReconciliationError("disposition references a row outside the evidence")
+    for reference, disposition in dispositions.items():
+        if reference != disposition.row_ref or not hmac.compare_digest(
+                disposition.evidence_ref, rows[reference].evidence_ref):
+            raise ReconciliationError("disposition is stale or mismatched to the evidence")
     actions: list[dict] = []
     missing = 0
     for item in classifications:
@@ -489,11 +534,38 @@ def build_plan(evidence: Evidence, classifications: list[Classification],
     return sorted(actions, key=lambda value: (value["domain"], value["row_ref"])), missing
 
 
+def _write_private(path: Path, payload: bytes) -> str:
+    """Create a new owner-only plan beneath an owner-only real directory."""
+    if not path.is_absolute():
+        raise ReconciliationError("plan output path must be absolute")
+    try:
+        parent = path.parent.resolve(strict=True)
+        metadata = parent.stat()
+    except OSError as error:
+        raise ReconciliationError(
+            f"cannot inspect protected plan directory: {error}") from error
+    if parent != path.parent or metadata.st_uid != os.getuid() or \
+            not stat.S_ISDIR(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) & 0o077:
+        raise ReconciliationError(
+            "plan directory must be owner-only without symlinks")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(payload)
+    except OSError as error:
+        raise ReconciliationError(f"cannot create protected plan: {error}") from error
+    return hashlib.sha256(payload).hexdigest()
+
+
 def write_plan(path: Path, evidence: Evidence, evidence_digest: str,
                disposition_digest: str | None, classifications: list[Classification],
                dispositions: dict[str, Disposition], actions: list[dict]) -> str:
-    if not path.is_absolute():
-        raise ReconciliationError("plan output path must be absolute")
+    """Serialize a deterministic recovery plan bound to protected inputs."""
+    expected_actions, missing = build_plan(evidence, classifications, dispositions)
+    if missing or actions != expected_actions:
+        raise ReconciliationError(
+            "plan actions do not exactly match the approved evidence")
     by_ref = {item.row.row_ref: item.category for item in classifications}
     payload = {
         "version": 1,
@@ -513,18 +585,11 @@ def write_plan(path: Path, evidence: Evidence, evidence_digest: str,
         ],
     }
     encoded = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-    try:
-        descriptor = os.open(path, flags, 0o600)
-        with os.fdopen(descriptor, "wb") as output:
-            output.write(encoded)
-    except OSError as error:
-        raise ReconciliationError(f"cannot create protected plan: {error}") from error
-    return hashlib.sha256(encoded).hexdigest()
+    return _write_private(path, encoded)
 
 
 def main() -> int:
+    """Classify the retained reset set and optionally write a protected plan."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", required=True, type=Path)
     parser.add_argument("--dispositions", type=Path)
