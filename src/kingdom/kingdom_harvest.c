@@ -477,6 +477,43 @@ static P_obj kingdom_node_in_room(int rnum)
 	return NULL;
 }
 
+/*
+ * A MINING mine standing in this room, if there is one.
+ *
+ * TWO GATHERING SYSTEMS SCATTER OVER THE SAME GROUND. mining.c seeds VOBJ_MINE
+ * and VOBJ_GEMMINE across the surface map, the Underdark and the Rift; this
+ * module seeds its own eight node prototypes across the first two of those.
+ * They look alike in a room description, they are worked by different verbs --
+ * `mine` with a pick against `kingdom harvest` -- and nothing in the game said
+ * so, so a player who found a mine and typed `kingdom harvest` was told "there
+ * is no resource node here", which is true and useless. Reported from play,
+ * 2026-09-04.
+ *
+ * This exists only to make the refusals say which system the thing in front of
+ * the player belongs to. It is deliberately NOT a step toward working mines
+ * through this module: they carry their own charges, their own richness scale
+ * and their own spec proc, and a second way to work one would be a second set
+ * of rules for the same object.
+ */
+static P_obj kingdom_mine_in_room(int rnum)
+{
+	if (!kingdom_harvest_valid_rnum(rnum))
+		return NULL;
+
+	for (P_obj obj = world[rnum].contents; obj; obj = obj->next_content)
+	{
+		if (obj->R_num < 0)
+			continue;
+
+		const int vnum = obj_index[obj->R_num].virtual_number;
+
+		if (vnum == VOBJ_MINE || vnum == VOBJ_GEMMINE)
+			return obj;
+	}
+
+	return NULL;
+}
+
 /* The room an exit leads to, or -1 when there is no usable exit that way.
  *
  * mine_friendly() dereferences world[dir_option->to_room] without checking the
@@ -1892,7 +1929,14 @@ void kingdom_harvest_command(struct char_data *ch, char * /*argument*/)
 	P_obj node = kingdom_node_in_room(rnum);
 	if (!node || node->R_num < 0)
 	{
-		send_to_char("There is no resource node here to work.\r\n", ch);
+		/* Name the OTHER system when that is what the player is standing
+		 * on, rather than denying there is anything here at all. */
+		if (kingdom_mine_in_room(rnum))
+			send_to_char("That is a mine, not a resource node -- it is worked with "
+				     "a pick and the '&+Wmine&n' command, not by hand.\r\n",
+				     ch);
+		else
+			send_to_char("There is no resource node here to work.\r\n", ch);
 		return;
 	}
 
@@ -1988,7 +2032,14 @@ void kingdom_harvest_survey(struct char_data *ch)
 	P_obj node = kingdom_node_in_room(rnum);
 	if (!node || node->R_num < 0)
 	{
-		send_to_char("You find no resource node on this square.\r\n", ch);
+		/* Same courtesy the harvest refusal pays: say which system the
+		 * thing standing here belongs to. */
+		if (kingdom_mine_in_room(rnum))
+			send_to_char("There is a mine on this square, not a resource node. "
+				     "Wield a pick and '&+Wmine&n' it.\r\n",
+				     ch);
+		else
+			send_to_char("You find no resource node on this square.\r\n", ch);
 		return;
 	}
 

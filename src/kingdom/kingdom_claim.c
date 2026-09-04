@@ -157,7 +157,21 @@ long kingdom_claim_cost(int index)
  * with all four kinds, so a realm cannot expand on one sort of ground alone --
  * it must send people out across the whole map. The amount rides the same
  * curve as the coin, so the last square is as much harder in labour as it is
- * in treasure. */
+ * in treasure.
+ *
+ * SCALED OFF THE COIN, NOT COMPOUNDED SEPARATELY -- and that is a bug fix, not
+ * a preference. kingdom_compound() truncates to a whole unit after every step,
+ * which costs nothing on a base of a million copper but is a ~1% loss per step
+ * on a base of 25: compounding the material directly gave 723 at square 80
+ * where the curve calls for 1,180, THIRTY-NINE PER CENT short, and the drift
+ * grew with the index so the late rings -- the ones the material cost exists
+ * to make hard -- were the ones it let off. The help text and the config file
+ * both quote the true curve, so the code was the thing that was wrong.
+ *
+ * Multiplying first and dividing once keeps a single rounding at the end.
+ * kingdom_claim_cost() is clamped to INT_MAX, so the product is at most
+ * material_base * 2^31, which is why this arithmetic is done in long and why
+ * the base is bounded (KINGDOM_CLAIM_MATERIAL_MAX) rather than trusted. */
 long kingdom_claim_material_cost(int index)
 {
 	if (index < 1 || index > KINGDOM_MAX_SQUARES)
@@ -165,7 +179,25 @@ long kingdom_claim_material_cost(int index)
 		return 0;
 	}
 
-	return kingdom_compound(kingdom_cfg.claim_material_base, index);
+	const long base = kingdom_cfg.claim_material_base;
+
+	if (base <= 0)
+	{
+		return 0; /* land costs coin alone on this mud */
+	}
+
+	const long first = kingdom_claim_cost(1);
+
+	/* Land is free on this mud, so the coin curve carries no shape to scale
+	 * against. Fall back to the flat base rather than dividing by zero: an
+	 * operator who zeroed the coin and left the material set meant the
+	 * material to still cost something. */
+	if (first <= 0)
+	{
+		return base;
+	}
+
+	return base * kingdom_claim_cost(index) / first;
 }
 
 /* Copper price of every square in `ring` (1..KINGDOM_MAX_RING) taken

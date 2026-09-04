@@ -1249,6 +1249,43 @@ def test_land_is_paid_for_in_material_before_any_coin_moves() -> None:
           f"debit at {pay}, spend at {spend}")
 
 
+def test_material_is_scaled_off_the_coin_not_compounded_separately() -> None:
+    """The material curve must TRACK the coin curve, not merely resemble it.
+
+    kingdom_compound() truncates to a whole unit after every step. On a base of
+    a million copper that is invisible; on a base of 25 it is a ~1% loss per
+    step, and compounding the material directly gave 723 at square 80 where the
+    curve calls for 1,180 -- 39% short, with the drift GROWING with the index,
+    so the late rings the material cost exists to make hard were the ones it
+    let off. The config file and both help entries quote the true curve, so the
+    code was the thing that was wrong.
+
+    Pinned structurally: the function must scale off kingdom_claim_cost() and
+    must NOT call kingdom_compound() on the material base. A reviewer reading
+    only the arithmetic cannot see the truncation, which is why this is a test
+    and not a comment.
+    """
+    body = function_bodies(read("src/kingdom/kingdom_claim.c"),
+                           r"\blong\s+kingdom_claim_material_cost\s*\(")
+    check(len(body) == 1, "kingdom_claim_material_cost is defined", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    check("kingdom_claim_cost(" in code,
+          "the material cost is derived from the coin cost, so the two curves "
+          "cannot drift apart")
+    check("kingdom_compound(" not in code,
+          "the material cost does NOT compound from its own small base, which "
+          "truncates ~1% per step and ends 39% short at square 80")
+    # Multiply-then-divide: one rounding at the end rather than one per step.
+    mul = code.find("base * kingdom_claim_cost(")
+    check(mul >= 0,
+          "the scale multiplies before it divides, so there is a single "
+          "rounding rather than a compounding one")
+    check("first <= 0" in code or "first == 0" in code,
+          "a mud with free land (coin base 0) cannot divide by zero here")
+
+
 def test_the_store_has_exactly_one_way_out() -> None:
     """Resources are spendable on kingdom benefits and on nothing else.
 
