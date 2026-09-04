@@ -9,8 +9,8 @@ MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
 )
 
 
-def function_body(source, signature):
-    start = source.index(signature)
+def function_body(source, signature, *, last=False):
+    start = source.rindex(signature) if last else source.index(signature)
     brace = source.index("{", start)
     depth = 0
     for pos in range(brace, len(source)):
@@ -30,7 +30,7 @@ def check(name, condition):
 
 do_get = function_body(ACTOBJ, "void do_get(")
 start_bulk = function_body(ACTOBJ, "static void start_bulk_get(")
-continue_bulk = function_body(ACTOBJ, "/** Adopt missing stock roots")
+continue_bulk = function_body(ACTOBJ, "static void continue_bulk_get(", last=True)
 adoption_completion = function_body(
     ACTOBJ, "static void bulk_get_adoption_completion("
 )
