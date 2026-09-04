@@ -983,12 +983,14 @@ static double loop_monotonic_seconds(void)
 	return (double)now.tv_sec + (double)now.tv_nsec / 1E9;
 }
 
-/** Select normal or item-gated dequeue from the transaction's live busy state. */
+/** Select normal or transaction-gated dequeue from the live busy state. */
 static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *dest)
 {
-	return character && item_movement_transaction_player_busy(character) ?
-		       get_item_movement_cmd_from_q(queue, dest) :
-		       get_from_q(queue, dest);
+	if (!character)
+		return get_from_q(queue, dest);
+	return get_pending_transaction_cmd_from_q(queue, dest,
+						  item_movement_transaction_player_busy(character),
+						  currency_transaction_player_busy(character));
 }
 
 /** Send a dequeued playing-state command through the normal command dispatcher. */
@@ -2148,6 +2150,20 @@ int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
 int get_item_movement_cmd_from_q(struct txt_q *queue, char *dest)
 {
 	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_item_moving);
+}
+
+/** Dequeue against every unpublished state domain currently affecting play. */
+int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool item_pending,
+				       bool currency_pending)
+{
+	if (item_pending && currency_pending)
+		return get_filtered_cmd_from_q(queue, dest,
+					       input_allowed_while_item_and_currency_pending);
+	if (item_pending)
+		return get_item_movement_cmd_from_q(queue, dest);
+	if (currency_pending)
+		return get_filtered_cmd_from_q(queue, dest, input_allowed_while_currency_pending);
+	return get_from_q(queue, dest);
 }
 
 /*

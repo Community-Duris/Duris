@@ -1278,6 +1278,24 @@ bool cmd_depends_on_item_movement(int cmd)
 	}
 }
 
+/** Commands that may submit a non-rebasable wallet or bank debit.  Preserve
+ * typed input until an earlier currency operation publishes the authoritative
+ * balance instead of consuming it on the transient player/account fence. */
+bool cmd_depends_on_currency_transaction(int cmd)
+{
+	switch (cmd)
+	{
+	case CMD_DROP:
+	case CMD_PUT:
+	case CMD_GIVE:
+	case CMD_DEPOSIT:
+	case CMD_WITHDRAW:
+		return true;
+	default:
+		return false;
+	}
+}
+
 /** Resolve the command token at the start of a queued input line. */
 static int input_command_number(const char *input)
 {
@@ -1322,6 +1340,22 @@ bool input_allowed_while_item_moving(const char *input)
 		return FALSE;
 
 	return !cmd_depends_on_item_movement(input_command_number(input));
+}
+
+/** Allow only commands independent of an unpublished currency balance. */
+bool input_allowed_while_currency_pending(const char *input)
+{
+	if (!input)
+		return FALSE;
+
+	return !cmd_depends_on_currency_transaction(input_command_number(input));
+}
+
+/** Apply both selective gates when item and currency publication overlap. */
+bool input_allowed_while_item_and_currency_pending(const char *input)
+{
+	return input_allowed_while_item_moving(input) &&
+	       input_allowed_while_currency_pending(input);
 }
 
 /*

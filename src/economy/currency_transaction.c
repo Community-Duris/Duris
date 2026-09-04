@@ -175,6 +175,24 @@ bool currency_transaction_can_submit(P_char character)
 	       !critical_command_coordinator_is_fenced(account_key, nullptr);
 }
 
+bool currency_transaction_player_busy(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return false;
+	const char *account_name = get_account_name_safe(character);
+	const bool account_known = account_name && strcmp(account_name, "Unknown");
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
+	const uint8_t racewar = static_cast<uint8_t>(GET_RACEWAR(character));
+	return std::any_of(pending.begin(), pending.end(),
+			   [pid, racewar, account_known, account_name](const auto &item)
+			   {
+				   const pending_currency &entry = item.second;
+				   return entry.pid == pid ||
+					  (account_known && entry.racewar == racewar &&
+					   !strcasecmp(entry.account_name.data(), account_name));
+			   });
+}
+
 bool currency_transaction_submit(P_char character, const currency_vector &wallet_delta,
 				 const currency_vector &bank_delta, currency_reason_type reason,
 				 int64_t reason_id, critical_source_site source_site,
