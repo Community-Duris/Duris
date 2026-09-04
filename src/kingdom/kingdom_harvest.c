@@ -307,7 +307,7 @@ bool kingdom_node_is_underdark(int vnum)
  * gatherer who works one out has removed a real share of the world's supply
  * until the next sweep replaces it somewhere else entirely.
  *
- * RAISED FROM 40/30 ON 2026-09-05, because the material cost of land arrived
+ * RAISED FROM 40/30 because the material cost of land arrived
  * after these numbers were set and changed what they have to support. A full
  * realm needs about 24,000 units of EVERY resource, which is roughly 475
  * node-lifetimes apiece; 40 and 30 put about seventeen nodes of any given

@@ -976,7 +976,7 @@ def test_node_population_is_one_random_mix_per_region() -> None:
             "the Tharnadia Rift is not a node region",
             f"regions: {names}",
         )
-        # 80/60 since 2026-09-05, raised from 40/30 once land cost material:
+        # 80/60, raised from 40/30 once land cost material:
         # a full realm needs ~475 node-lifetimes of EVERY resource, and the old
         # counts left about seventeen nodes of any given kind in the whole
         # world at once. The exact numbers are pinned rather than a floor,
