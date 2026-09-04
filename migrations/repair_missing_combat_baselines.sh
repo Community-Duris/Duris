@@ -43,7 +43,28 @@ if [[ "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != ":
         exit 2
     fi
 fi
-MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B "$DB_NAME")
+db_port="${DB_PORT:-3306}"
+if ! [[ "$db_port" =~ ^[0-9]+$ ]] ||
+    (( 10#$db_port < 1 || 10#$db_port > 65535 )); then
+    echo 'database port must be between 1 and 65535' >&2
+    exit 2
+fi
+if [[ "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != "::1" ]]; then
+    approved_target="$DB_HOST:$db_port/$DB_NAME"
+    target_allowed=0
+    IFS=',' read -r -a allowed_targets <<<"${DB_ALLOWED_TARGETS:-}"
+    for allowed_target in "${allowed_targets[@]}"; do
+        if [[ "$allowed_target" == "$approved_target" ]]; then
+            target_allowed=1
+            break
+        fi
+    done
+    [[ "$target_allowed" == 1 ]] || {
+        echo 'remote combat baseline repair target is not allow-listed' >&2
+        exit 2
+    }
+fi
+MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "$db_port" -u "$DB_USER" -N -B "$DB_NAME")
 
 artifact_parent="$(dirname "$artifact")"
 [[ -d "$artifact_parent" && ! -L "$artifact_parent" ]] || {

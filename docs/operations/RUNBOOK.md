@@ -577,6 +577,11 @@ backup, protected per-PID decisions, reviewed forward and rollback DML, all dige
 the rehearsal receipt. Afterwards rerun the same full reconciliation set. Never delete
 or rewrite ledger history to make readiness pass.
 
+Loopback clone targets are permitted directly. A remote clone additionally requires
+verified TLS and an exact port-aware `DB_ALLOWED_TARGETS` entry in the form
+`host:port/database`; a non-default port cannot reuse authority granted to another
+endpoint.
+
 ### Maintenance, lifecycle, export, and erasure
 
 The maintenance scheduler is bounded and persistent. Use `world persistence` to

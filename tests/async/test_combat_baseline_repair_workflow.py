@@ -39,6 +39,10 @@ with tempfile.TemporaryDirectory(prefix="duris-combat-baseline-") as temporary:
     mysql.write_text(
         "#!/usr/bin/env bash\n"
         "if [[ \"${1:-}\" == '--help' ]]; then printf '%s\\n' \"$MYSQL_HELP\"; exit 0; fi\n"
+        "if [[ \"${MYSQL_EXPECT_TRANSPORT:-}\" == modern ]]; then\n"
+        "  [[ \" $* \" == *' --ssl-mode=VERIFY_IDENTITY '* ]] || exit 90\n"
+        "  [[ \" $* \" == *\" --ssl-ca=$DB_SSL_CA \"* ]] || exit 91\n"
+        "fi\n"
         "query=${!#}\n"
         "if [[ \"$query\" == *'INSERT INTO combat_frag_baseline'* ]]; then exit 0; fi\n"
         "if [[ \"$query\" == *'COALESCE(SUM(wallet.pid IS NULL)'* ]]; then\n"
@@ -50,6 +54,35 @@ with tempfile.TemporaryDirectory(prefix="duris-combat-baseline-") as temporary:
         "printf '%s\\n' \"$CLASSIFICATION_ROWS\"\n"
     )
     mysql.chmod(0o700)
+
+    ca_path = private / "database-ca.pem"
+    ca_path.write_text("test CA placeholder\n")
+    remote_env = environment(private, "")
+    remote_env.update(
+        {
+            "DB_HOST": "db.example.test",
+            "DB_TLS": "TRUE",
+            "DB_SSL_CA": str(ca_path),
+            "DB_ALLOWED_TARGETS": "db.example.test:3306/duris_test",
+            "MYSQL_EXPECT_TRANSPORT": "modern",
+        }
+    )
+    remote_artifact = private / "remote.tsv"
+    remote_classified = subprocess.run(
+        [str(REPAIR), "--classify", str(remote_artifact)],
+        cwd=ROOT, env=remote_env, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert remote_classified.returncode == 0, remote_classified.stdout
+    blocked_env = dict(remote_env)
+    blocked_env["DB_ALLOWED_TARGETS"] = "db.example.test:3307/duris_test"
+    blocked = subprocess.run(
+        [str(REPAIR), "--classify", str(private / "blocked.tsv")],
+        cwd=ROOT, env=blocked_env, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    assert blocked.returncode == 2, blocked.stdout
+    assert "not allow-listed" in blocked.stdout
 
     safe_artifact = private / "safe.tsv"
     safe_row = "101\t7\t0\t0\t0\tsafe_no_history\t7\t0"
@@ -142,6 +175,8 @@ assert "refusing combat baseline repair outside" in source
 assert "WRITERS_QUIESCED" in source
 assert "COMBAT_BASELINE_BACKUP_ID" in source
 assert "COMBAT_BASELINE_ROLLBACK_EVIDENCE" in source
+assert "DB_ALLOWED_TARGETS" in source
+assert 'approved_target="$DB_HOST:$db_port/$DB_NAME"' in source
 assert "reconciliation_predicate" in source
 assert "information_schema.referential_constraints" in source
 assert "--ssl-mode=VERIFY_IDENTITY" in source
