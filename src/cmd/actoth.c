@@ -4285,6 +4285,7 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 	extract_obj(bottle);
 }
 
+/** Recite a carried scroll and apply its spells to the selected target. */
 void do_recite(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj scroll, obj;
@@ -4412,6 +4413,7 @@ void do_recite(P_char ch, char *argument, int /*cmd*/)
 	extract_obj(scroll);
 }
 
+/** Activate a held wand or staff after authorizing account-bound rewards. */
 void do_use(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char tmp_char = 0;
@@ -4440,6 +4442,13 @@ void do_use(P_char ch, char *argument, int /*cmd*/)
 	{
 		send_to_char(
 			"Use applies only to objects in your equipment list (usually held).\r\n",
+			ch);
+		return;
+	}
+	if (IS_OBJ_STAT2(stick, ITEM2_ACCOUNT_BOUND) && !account_bound_reward_owner(ch, stick))
+	{
+		send_to_char(
+			"You may not use that account-bound reward; it belongs to another account.\r\n",
 			ch);
 		return;
 	}

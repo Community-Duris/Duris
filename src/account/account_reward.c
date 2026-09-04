@@ -46,8 +46,11 @@ struct RewardMarker
 	bool legacy;
 };
 
+/** Return the authenticated account name, rejecting missing or unknown identities. */
 static const char *reward_account(P_char ch)
 {
+	if (!ch)
+		return NULL;
 	const char *account = get_account_name_safe(ch);
 	if (!account || !*account || !strcasecmp(account, "Unknown"))
 		return NULL;
@@ -91,6 +94,7 @@ static bool reward_marker_matches(P_obj obj, const char *account, unsigned long 
 	return grant_id == 0 ? marker.legacy : (!marker.legacy && marker.grant_id == grant_id);
 }
 
+/** Match a grant ID, or the legacy account marker and reward prototype. */
 static bool grant_marker_matches(P_obj obj, const RewardGrant &grant)
 {
 	if (reward_marker_matches(obj, grant.account.c_str(), grant.id))
@@ -100,11 +104,13 @@ static bool grant_marker_matches(P_obj obj, const RewardGrant &grant)
 }
 #endif
 
+/** Match a flagged reward marker to the owning account, including legacy markers. */
 bool account_bound_reward_owner(P_char ch, P_obj obj)
 {
 	RewardMarker marker;
 	const char *account = reward_account(ch);
-	return account && parse_reward_marker(obj, &marker) && !strcasecmp(marker.account, account);
+	return obj && IS_OBJ_STAT2(obj, ITEM2_ACCOUNT_BOUND) && account &&
+	       parse_reward_marker(obj, &marker) && !strcasecmp(marker.account, account);
 }
 
 #ifndef __NO_MYSQL__
