@@ -327,6 +327,8 @@ def _secure_write(path: Path, payload: bytes) -> None:
 def write_receipt(path: Path, plan_digest: str, decision_digest: str | None,
                   verification: Verification) -> str:
     """Write an aggregate receipt bound to the verified protected artifacts."""
+    if not verification.valid:
+        raise MergeVerificationError("cannot write a receipt for a blocked plan")
     payload = json.dumps({
         "version": 1,
         "verified_at": datetime.now(timezone.utc).isoformat(),

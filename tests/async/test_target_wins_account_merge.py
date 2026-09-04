@@ -143,6 +143,18 @@ class TargetWinsAccountMergeTest(unittest.TestCase):
             with self.assertRaises(OSError):
                 os.fstat(descriptor)
 
+    def test_blocked_verification_cannot_create_receipt(self):
+        """Refuse to certify a blocked plan through the library API."""
+        blocked = merge.Verification({digest(1): "unverified"}, 1, 1)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            os.chmod(directory, 0o700)
+            receipt = directory / "receipt.json"
+            with self.assertRaisesRegex(
+                    merge.MergeVerificationError, "blocked plan"):
+                merge.write_receipt(receipt, digest(2), None, blocked)
+            self.assertFalse(receipt.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
