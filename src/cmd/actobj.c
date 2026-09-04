@@ -1670,6 +1670,7 @@ static void finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 	}
 }
 
+/** Publish the selected items and deferred pickups after the atomic transfer commits. */
 static void bulk_get_completion(P_char actor, bool committed, const item_transfer_result &result,
 				unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
@@ -1844,6 +1845,7 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 	}
 }
 
+/** Add an eligible pickup to its batch while accounting for cumulative carry limits. */
 static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, const char *filter,
 				 bool container_local, int &carried_count, int64_t &carried_weight,
 				 bulk_get_state &state, bool &stop)
