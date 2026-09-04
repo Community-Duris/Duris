@@ -376,8 +376,8 @@ def summarize(snapshot: Snapshot, findings: list[Finding]) -> str:
     )
 
 
-def _secure_create(path: Path, payload: bytes, label: str) -> None:
-    """Create a new owner-only artifact without following symbolic links."""
+def _validate_secure_create_destination(path: Path, label: str) -> None:
+    """Validate that a protected artifact can be created at an unused path."""
     if not path.is_absolute():
         raise ReadinessError(f"{label} path must be absolute")
     try:
@@ -390,6 +390,18 @@ def _secure_create(path: Path, payload: bytes, label: str) -> None:
         raise ReadinessError(f"{label} directory must be owner-only")
     if path.parent != parent:
         raise ReadinessError(f"{label} directory must not traverse symbolic links")
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise ReadinessError(f"cannot inspect {label} destination: {error}") from error
+    raise ReadinessError(f"{label} destination already exists")
+
+
+def _secure_create(path: Path, payload: bytes, label: str) -> None:
+    """Create a new owner-only artifact without following symbolic links."""
+    _validate_secure_create_destination(path, label)
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
     try:
         descriptor = os.open(path, flags, 0o600)
@@ -668,6 +680,7 @@ def main() -> int:
                 arguments.backup, arguments.backup_sha256, config["DB_NAME"])
             if active_connections(config):
                 raise ReadinessError("database writers are not quiesced")
+            _validate_secure_create_destination(arguments.receipt, "repair receipt")
             apply_repair(config, manifest)
             repaired_snapshot = database_snapshot(query)
             repaired = evaluate(repaired_snapshot, object_types, mobile_vnums, allowed)

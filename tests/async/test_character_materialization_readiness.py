@@ -106,6 +106,79 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
             with self.assertRaisesRegex(readiness.ReadinessError, "digest"):
                 readiness.read_manifest(path, "0" * 64, "duris_test")
 
+    def test_secure_destination_rejects_unsafe_or_existing_paths(self):
+        """Reject every unsafe receipt destination before artifact creation."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            protected = root / "protected"
+            protected.mkdir(mode=0o700)
+            existing = protected / "existing.receipt"
+            existing.write_bytes(b"existing")
+            open_parent = root / "open"
+            open_parent.mkdir(mode=0o755)
+            os.chmod(open_parent, 0o755)
+            linked_parent = root / "linked"
+            linked_parent.symlink_to(protected, target_is_directory=True)
+            cases = (
+                (Path("relative.receipt"), "absolute"),
+                (open_parent / "receipt", "owner-only"),
+                (linked_parent / "receipt", "symbolic links"),
+                (existing, "already exists"),
+            )
+            for path, message in cases:
+                with self.subTest(path=path), self.assertRaisesRegex(
+                        readiness.ReadinessError, message):
+                    readiness._validate_secure_create_destination(
+                        path, "repair receipt")
+
+    def test_invalid_receipt_blocks_repair_transaction(self):
+        """Leave the database untouched when the receipt cannot be created."""
+        findings = self.evaluate(self.snapshot())
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            os.chmod(root, 0o700)
+            receipt = root / "receipt.txt"
+            receipt.write_bytes(b"existing")
+            arguments = readiness.argparse.Namespace(
+                env_file=root / "env",
+                write_manifest=None,
+                apply=True,
+                manifest=root / "manifest",
+                manifest_sha256="1" * 64,
+                backup=root / "backup.sql.gz",
+                backup_sha256="2" * 64,
+                confirm_database="duris_test",
+                authorize_production_repair=False,
+                receipt=receipt,
+            )
+            config = {
+                "DB_NAME": "duris_test",
+                "ENVIRONMENT": "development",
+            }
+            constants = {
+                "ITEM_CONTAINER": 15,
+                "ITEM_QUIVER": 24,
+                "ITEM_STORAGE": 30,
+                "ITEM_CORPSE": 35,
+            }
+            with mock.patch.object(readiness, "parse_arguments", return_value=arguments), \
+                    mock.patch.object(readiness, "read_env_file", return_value=config), \
+                    mock.patch.object(readiness, "active_object_types",
+                                      return_value=self.object_types), \
+                    mock.patch.object(readiness, "active_mobile_vnums",
+                                      return_value=self.mobiles), \
+                    mock.patch.object(readiness, "parse_defines", return_value=constants), \
+                    mock.patch.object(readiness, "database_snapshot",
+                                      return_value=self.snapshot()), \
+                    mock.patch.object(readiness, "read_manifest",
+                                      return_value=findings), \
+                    mock.patch.object(readiness, "validate_backup", return_value="2" * 64), \
+                    mock.patch.object(readiness, "active_connections", return_value=0), \
+                    mock.patch.object(readiness, "apply_repair") as apply_repair, \
+                    mock.patch("builtins.print"):
+                self.assertEqual(readiness.main(), 2)
+                apply_repair.assert_not_called()
+
     def test_targeted_transaction_guards_unaffected_row_fingerprints(self):
         """Guard every unaffected materialization row inside the repair transaction."""
         findings = self.evaluate(self.snapshot(pet_room=49, pet_hit=21))
