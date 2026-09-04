@@ -2741,6 +2741,7 @@ static int locker_access_CanAdd(P_char locker, char *ch_name)
 	return result;
 }
 
+/* Count the explicit visitor grants attached to one locker. */
 static int locker_access_count(P_char locker)
 {
 	MYSQL_RES *res;
@@ -3066,6 +3067,7 @@ static int create_new_locker(P_char ch, P_char locker)
 	return realNum;
 }
 
+/* Release the transient room and chest state allocated for a loaded locker. */
 static void free_locker(int roomNum)
 {
 	/* perform cleanup - basically just frees a couple pointers and marks the room as

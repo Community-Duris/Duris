@@ -279,6 +279,7 @@ P_char sql_load_locker_by_name(const char *locker_name)
 {
 	return NULL;
 }
+/* Flatfile mode does not use the legacy SQL owner-existence probe. */
 bool sql_locker_exists(int owner_pid, int owner_assoc_id)
 {
 	return false;
@@ -301,6 +302,7 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 	std::vector<flatfile_locker_access_record> access;
 	if (flatfile_locker_list(root, &lockers, &access, &error) != flatfile_locker_result::ok)
 		return false;
+	/* Locate the one case-insensitive locker name supplied by the caller. */
 	auto locker =
 		std::find_if(lockers.begin(), lockers.end(), [locker_name](const auto &entry)
 			     { return strcasecmp(entry.locker_name.c_str(), locker_name) == 0; });
@@ -6711,6 +6713,7 @@ P_char sql_load_locker_by_name(const char *locker_name)
 	return ch;
 }
 
+/* Report whether MariaDB contains the locker selected by a stable owner key. */
 bool sql_locker_exists(int owner_pid, int owner_assoc_id)
 {
 	if (!DB)

@@ -16,6 +16,7 @@
 # Usage: repair_legacy_personal_locker_access.sh --check|--apply
 set -euo pipefail
 
+# Print the accepted read-only and mutation modes.
 usage() {
 	echo 'usage: repair_legacy_personal_locker_access.sh --check|--apply' >&2
 }

@@ -132,8 +132,9 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id);
 // load locker by name (e.g. "playername.locker" or "guild.123.locker")
 P_char sql_load_locker_by_name(const char *locker_name);
 
-// check if locker exists
+/* Report whether a locker exists for the supplied stable owner key. */
 bool sql_locker_exists(int owner_pid, int owner_assoc_id);
+/* Report whether a locker exists for the supplied display name. */
 bool sql_locker_exists_by_name(const char *locker_name);
 
 /* Validate personal-locker ownership through a current same-side identity mapping. */

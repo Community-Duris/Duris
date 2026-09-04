@@ -10,6 +10,7 @@ image="${LOCKER_REPAIR_DB_IMAGE:-mysql:8.0}"
 temporary_root="$(mktemp -d)"
 config="$temporary_root/test.env"
 
+# Remove only the uniquely named disposable container and temporary directory.
 cleanup() {
 	docker rm -f "$container_name" >/dev/null 2>&1 || true
 	rm -rf "$temporary_root"
