@@ -1706,6 +1706,7 @@ static int create_new_locker(P_char ch, P_char locker);
 /* free memory associated with creating a new locker */
 static void free_locker(int roomNum);
 
+/* Load a locker character and optionally enforce entry authorization. */
 static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess);
 static P_char create_locker_char(P_char chOwner, P_char newCh, char *esc_locker_name);
 static int save_locker_char(P_char chInLocker, int bTerminal);
@@ -1723,7 +1724,10 @@ static int locker_logcmd(P_char ch, char *arg);
 /* cmds for access lists... */
 static bool locker_access_addAccess(P_char locker, char *ch_name);
 static void locker_access_transferAccess(P_char locker, P_char ch);
+/* Check the legacy direct-character and account visitor grants. */
 static bool locker_access_canAccess(P_char locker, char *ch_name);
+/* Check stable personal ownership before falling back to visitor grants. */
+static bool locker_access_canEnter(P_char locker, P_char visitor);
 static int locker_access_count(P_char locker);
 static void locker_access_show(P_char ch, P_char locker);
 static int locker_access_CanAdd(P_char locker,
@@ -2737,6 +2741,7 @@ static int locker_access_CanAdd(P_char locker, char *ch_name)
 	return result;
 }
 
+/* Count the explicit visitor grants attached to one locker. */
 static int locker_access_count(P_char locker)
 {
 	MYSQL_RES *res;
@@ -2765,6 +2770,7 @@ static int locker_access_count(P_char locker)
 	return count;
 }
 
+/* Check the legacy direct-character and account visitor grants. */
 static bool locker_access_canAccess(P_char locker, char *ch_name)
 {
 	// first check direct character name match
@@ -2817,6 +2823,16 @@ static bool locker_access_canAccess(P_char locker, char *ch_name)
 	bool has_access = mysql_num_rows(res) >= 1;
 	mysql_free_result(res);
 	return has_access;
+}
+
+/* Authorize stable personal ownership first, then legacy visitor grants. */
+static bool locker_access_canEnter(P_char locker, P_char visitor)
+{
+	if (!locker || !visitor || !GET_NAME(locker) || !GET_NAME(visitor))
+		return false;
+	if (sql_locker_owner_can_access(GET_NAME(locker), GET_PID(visitor), GET_RACEWAR(visitor)))
+		return true;
+	return locker_access_canAccess(locker, GET_NAME(visitor));
 }
 
 static bool locker_access_remAccess(P_char locker, char *ch_name)
@@ -3051,6 +3067,7 @@ static int create_new_locker(P_char ch, P_char locker)
 	return realNum;
 }
 
+/* Release the transient room and chest state allocated for a loaded locker. */
 static void free_locker(int roomNum)
 {
 	/* perform cleanup - basically just frees a couple pointers and marks the room as
@@ -3075,6 +3092,7 @@ static void free_locker(int roomNum)
 	}
 }
 
+/* Load a locker character while preserving occupancy privacy and access rules. */
 static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess)
 {
 	P_char vict = NULL;
@@ -3152,8 +3170,7 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 				if (active_locker_char)
 				{
 					if (bValidateAccess && !bPlayerIsGod &&
-					    !locker_access_canAccess(active_locker_char,
-								     GET_NAME(ch)))
+					    !locker_access_canEnter(active_locker_char, ch))
 					{
 						// No access - don't reveal anything about the
 						// locker's state or its occupant.
@@ -3206,8 +3223,7 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 		}
 
 		// validate access
-		if (bValidateAccess && !bPlayerIsGod &&
-		    !locker_access_canAccess(vict, GET_NAME(ch)))
+		if (bValidateAccess && !bPlayerIsGod && !locker_access_canEnter(vict, ch))
 		{
 			send_to_char("You don't have access to that locker!\r\n", ch);
 			free_char(vict);

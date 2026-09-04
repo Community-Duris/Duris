@@ -702,11 +702,15 @@ migration, alter a database row, or restart a service.
 - The 115 imported lockers comprise 114 canonical account/side lockers and one
   legacy personal locker. Locker/chest structure, passwords, container graphs,
   31,253 item payloads, and custody all validate. The personal locker has no
-  `locker_access` row and contains 21 items. Blank locker entry now resolves an
-  account locker, while explicit named entry validates solely through
-  `locker_access`; a normal non-staff owner therefore cannot reach this legacy
-  locker. It needs a verified access grant or deliberate conversion. MUD-owned
+  `locker_access` row and contains 21 items. At audit time, blank locker entry
+  resolved an account locker and explicit named entry validated solely through
+  `locker_access`, so a normal non-staff owner could not reach this legacy
+  locker. Explicit entry now has a stable owner-identity path; a rehearsed
+  visitor grant remains available as a rollout fallback. MUD-owned
   tracking: [DurisMUD #122](https://github.com/LuminariMUD/DurisMUD/issues/122).
+  The anonymized rehearsal and guarded backup-first grant procedure are in
+  `docs/operations/legacy-personal-locker-access-repair.md`; they do not apply
+  any production change by themselves.
 - Two of the 71 imported access grants are unusable because their visitors are
   deleted or on the wrong racewar side. Four account/side lockers containing 37
   items currently have no selectable character on that side; those can become
