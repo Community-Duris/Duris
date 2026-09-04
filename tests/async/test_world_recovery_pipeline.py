@@ -521,7 +521,30 @@ int main()
     ground_artifact.locType = ARTIFACT_ONGROUND;
     ground_artifact.location = 100;
     top_of_zone_table = 0;
+    hydrate_succeeds = true;
+    for (bool clean : {false, true})
+    {
+        clean_restart = clean;
+        recovery_active = true;
+        run_artifact_boot();
+        assert(!object_list && fallback_loads == 0);
+        run_recovery_boot();
+        assert(!recovery_active && fallback_resets == 0 && fallback_loads == 0);
+        assert(object_list && !object_list->next && object_list->obj_uid == 500);
+        assert(IS_ARTIFACT(object_list) && object_list->loc_p == LOC_ROOM);
+        assert(world[object_list->loc.room].number == 100);
+        extract_obj(object_list, FALSE);
+    }
+    // Without any recovery generation, legacy boot loads the owned row once.
+    run_artifact_boot();
+    assert(fallback_loads == 1 && object_list && !object_list->next);
+    extract_obj(object_list, FALSE);
+    fallback_loads = 0;
+    redis_loads = 0;
+    recovery_active = true;
     hydrate_succeeds = false;
+    run_artifact_boot();
+    assert(!object_list && fallback_loads == 0);
     const int reads_before_fallback = objects_read;
     const int extracts_before_fallback = objects_extracted;
     run_recovery_boot();
@@ -549,6 +572,7 @@ static int fallback_loads = 0;
 static int fallback_resets = 0;
 static int redis_loads = 0;
 static bool recovery_active = true;
+static bool clean_restart = false;
 static bool mini_mode = false;
 static int DB = 0;
 static constexpr int ARTIFACT_ONGROUND = 4;
@@ -608,8 +632,11 @@ void reset_zone(int zone, int force_item_repop)
     (void)last_cmd;
 }
 @GROUND_LOADER@
+int is_copyover_boot() { return 0; }
+void addOnMobArtis_sql() {}
+void run_artifact_boot();
 bool redis_world_recovery_boot_active() { return recovery_active; }
-bool redis_world_clean_restart_boot() { return false; }
+bool redis_world_clean_restart_boot() { return clean_restart; }
 bool redis_load_world_state()
 {
     ++redis_loads;
@@ -625,6 +652,10 @@ nevent_periodic_result nevent_periodic_set_enabled(const char *, bool, int)
 {
     return nevent_periodic_result::enabled;
 }
+void run_artifact_boot()
+{
+@ARTIFACT_BOOT@
+}
 void run_recovery_boot()
 {
 @RECOVERY_BOOT@
@@ -636,6 +667,8 @@ FALLBACK_SUPPORT = FALLBACK_SUPPORT.replace(
     "@GROUND_LOADER@", section(ARTIFACT, "void addOnGroundArtis_sql()", "// This function either finds")
 ).replace(
     "@RECOVERY_BOOT@", section(COMM, "\t// redis crash recovery", "\tPROFILES(RESET);")
+).replace(
+    "@ARTIFACT_BOOT@", section(DB, "\t\t// skip loading artifacts from db during copyover", "\n\t}\n\telse")
 )
 HARNESS = HARNESS.replace("int main()", FALLBACK_SUPPORT + "\nint main()", 1)
 
