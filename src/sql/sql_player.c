@@ -283,10 +283,12 @@ bool sql_locker_exists(int owner_pid, int owner_assoc_id)
 {
 	return false;
 }
+/* Flatfile mode does not use the legacy SQL name-existence probe. */
 bool sql_locker_exists_by_name(const char *locker_name)
 {
 	return false;
 }
+/* Validate a flatfile personal locker owner against the current identity authority. */
 bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int racewar)
 {
 	if (!locker_name || owner_pid <= 0)
@@ -310,6 +312,7 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 		       flatfile_identity_result::ok &&
 	       identity.active && !identity.blocked && identity.racewar == racewar;
 }
+/* Flatfile locker deletion is implemented by its repository-backed callers. */
 bool sql_delete_locker(int owner_pid, int owner_assoc_id)
 {
 	return false;
@@ -6733,6 +6736,7 @@ bool sql_locker_exists(int owner_pid, int owner_assoc_id)
 	return exists;
 }
 
+/* Report whether MariaDB contains the named locker. */
 bool sql_locker_exists_by_name(const char *locker_name)
 {
 	if (!DB || !locker_name)
@@ -6757,6 +6761,7 @@ bool sql_locker_exists_by_name(const char *locker_name)
 	return exists;
 }
 
+/* Validate a MariaDB personal locker owner against its current identity mapping. */
 bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int racewar)
 {
 	if (!DB || !locker_name || owner_pid <= 0)
@@ -6778,6 +6783,7 @@ bool sql_locker_owner_can_access(const char *locker_name, int owner_pid, int rac
 	return allowed;
 }
 
+/* Delete the personal or association locker selected by its stable owner key. */
 bool sql_delete_locker(int owner_pid, int owner_assoc_id)
 {
 	if (!DB)

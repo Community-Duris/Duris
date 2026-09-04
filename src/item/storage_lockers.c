@@ -1706,6 +1706,7 @@ static int create_new_locker(P_char ch, P_char locker);
 /* free memory associated with creating a new locker */
 static void free_locker(int roomNum);
 
+/* Load a locker character and optionally enforce entry authorization. */
 static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess);
 static P_char create_locker_char(P_char chOwner, P_char newCh, char *esc_locker_name);
 static int save_locker_char(P_char chInLocker, int bTerminal);
@@ -1723,7 +1724,9 @@ static int locker_logcmd(P_char ch, char *arg);
 /* cmds for access lists... */
 static bool locker_access_addAccess(P_char locker, char *ch_name);
 static void locker_access_transferAccess(P_char locker, P_char ch);
+/* Check the legacy direct-character and account visitor grants. */
 static bool locker_access_canAccess(P_char locker, char *ch_name);
+/* Check stable personal ownership before falling back to visitor grants. */
 static bool locker_access_canEnter(P_char locker, P_char visitor);
 static int locker_access_count(P_char locker);
 static void locker_access_show(P_char ch, P_char locker);
@@ -2766,6 +2769,7 @@ static int locker_access_count(P_char locker)
 	return count;
 }
 
+/* Check the legacy direct-character and account visitor grants. */
 static bool locker_access_canAccess(P_char locker, char *ch_name)
 {
 	// first check direct character name match
@@ -2820,6 +2824,7 @@ static bool locker_access_canAccess(P_char locker, char *ch_name)
 	return has_access;
 }
 
+/* Authorize stable personal ownership first, then legacy visitor grants. */
 static bool locker_access_canEnter(P_char locker, P_char visitor)
 {
 	if (!locker || !visitor || !GET_NAME(locker) || !GET_NAME(visitor))
@@ -3085,6 +3090,7 @@ static void free_locker(int roomNum)
 	}
 }
 
+/* Load a locker character while preserving occupancy privacy and access rules. */
 static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAccess)
 {
 	P_char vict = NULL;
