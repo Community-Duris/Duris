@@ -34,6 +34,7 @@ static void prepare_root(const fs::path &root)
 	fs::permissions(root / "identities/names", fs::perms::owner_all, fs::perm_options::replace);
 }
 
+/* Build a complete record fixture for repository round-trip checks. */
 static flatfile_ship_record ship(uint32_t id, uint32_t pid, const std::string &owner)
 {
 	flatfile_ship_record value = {};
@@ -58,6 +59,7 @@ static flatfile_ship_record ship(uint32_t id, uint32_t pid, const std::string &o
 	return value;
 }
 
+/* Populate every mutable slot field so partial clearing cannot pass unnoticed. */
 static ShipSlot populated_slot(int type, int item_index, int position, int seed)
 {
 	ShipSlot slot = {};
@@ -75,6 +77,7 @@ static ShipSlot populated_slot(int type, int item_index, int position, int seed)
 	return slot;
 }
 
+/* Check the complete canonical state established by ShipSlot::clear(). */
 static bool canonical_empty(const ShipSlot &slot)
 {
 	return !slot.desc[0] && !slot.status[0] && slot.type == SLOT_EMPTY && slot.index == -1 &&
@@ -82,6 +85,7 @@ static bool canonical_empty(const ShipSlot &slot)
 	       slot.val2 == -1 && slot.val3 == -1 && slot.val4 == -1;
 }
 
+/* Compare all runtime fields, including the non-persisted display buffers. */
 static bool same_slot(const ShipSlot &left, const ShipSlot &right)
 {
 	return !strcmp(left.desc, right.desc) && !strcmp(left.status, right.status) &&
@@ -91,6 +95,7 @@ static bool same_slot(const ShipSlot &left, const ShipSlot &right)
 	       left.val3 == right.val3 && left.val4 == right.val4;
 }
 
+/* Mirror the production runtime-to-flatfile slot mapping for the fixture. */
 static flatfile_ship_slot_record persisted_slot(uint8_t index, const ShipSlot &slot)
 {
 	return { index,	     slot.type,
@@ -142,6 +147,7 @@ static void write_legacy_ship(const fs::path &path, const std::string &owner)
 	require(file.good(), "could not finish legacy ship fixture");
 }
 
+/* Exercise cargo clearing before the normal repository behavior suite. */
 int main(int argc, char **argv)
 {
 	/* Security-sensitive fixture metadata must not depend on the invoking
