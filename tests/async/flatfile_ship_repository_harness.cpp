@@ -1,6 +1,8 @@
 #include "flatfile/flatfile_ship_repository.h"
+#include "ships/ships.h"
 
 #include <cctype>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -54,6 +56,46 @@ static flatfile_ship_record ship(uint32_t id, uint32_t pid, const std::string &o
 			{ 0, 40, 41, 42, 43, { 44, 45, 46, 47, 48 } } };
 	value.revision = 4;
 	return value;
+}
+
+static ShipSlot populated_slot(int type, int item_index, int position, int seed)
+{
+	ShipSlot slot = {};
+	strcpy(slot.desc, "fixture description");
+	strcpy(slot.status, "fixture status");
+	slot.type = type;
+	slot.index = item_index;
+	slot.position = position;
+	slot.timer = seed;
+	slot.val0 = seed + 1;
+	slot.val1 = seed + 2;
+	slot.val2 = seed + 3;
+	slot.val3 = seed + 4;
+	slot.val4 = seed + 5;
+	return slot;
+}
+
+static bool canonical_empty(const ShipSlot &slot)
+{
+	return !slot.desc[0] && !slot.status[0] && slot.type == SLOT_EMPTY && slot.index == -1 &&
+	       slot.position == -1 && slot.timer == 0 && slot.val0 == -1 && slot.val1 == -1 &&
+	       slot.val2 == -1 && slot.val3 == -1 && slot.val4 == -1;
+}
+
+static bool same_slot(const ShipSlot &left, const ShipSlot &right)
+{
+	return !strcmp(left.desc, right.desc) && !strcmp(left.status, right.status) &&
+	       left.type == right.type && left.index == right.index &&
+	       left.position == right.position && left.timer == right.timer &&
+	       left.val0 == right.val0 && left.val1 == right.val1 && left.val2 == right.val2 &&
+	       left.val3 == right.val3 && left.val4 == right.val4;
+}
+
+static flatfile_ship_slot_record persisted_slot(uint8_t index, const ShipSlot &slot)
+{
+	return { index,	     slot.type,
+		 slot.index, slot.position,
+		 slot.timer, { slot.val0, slot.val1, slot.val2, slot.val3, slot.val4 } };
 }
 
 static bool resolve_legacy_owner(const char *owner, uint32_t *pid, std::string *error)
@@ -113,11 +155,26 @@ int main(int argc, char **argv)
 	require(flatfile_ship_list(root.string(), &records, &error) ==
 			flatfile_ship_result::not_found,
 		"missing ship authority did not fail closed");
+	ShipData runtime_ship = {};
+	runtime_ship.slot[0] = populated_slot(SLOT_CARGO, 3, SLOT_HOLD, 10);
+	runtime_ship.slot[1] = populated_slot(SLOT_CONTRABAND, 4, SLOT_HOLD, 20);
+	runtime_ship.slot[2] = populated_slot(SLOT_WEAPON, 4, SLOT_FORE, 30);
+	runtime_ship.slot[3] = populated_slot(SLOT_EQUIPMENT, 1, SLOT_EQUI, 40);
+	const ShipSlot weapon_before = runtime_ship.slot[2];
+	const ShipSlot equipment_before = runtime_ship.slot[3];
+	clear_cargo(&runtime_ship);
+	require(canonical_empty(runtime_ship.slot[0]) && canonical_empty(runtime_ship.slot[1]),
+		"clear_cargo did not apply the canonical empty representation");
+	require(same_slot(runtime_ship.slot[2], weapon_before) &&
+			same_slot(runtime_ship.slot[3], equipment_before),
+		"clear_cargo changed weapon or equipment state");
 	const auto player = ship(2, 42, "Player");
 	auto other = ship(1, 77, "Other");
 	other.ship_name = "Other Ship";
-	other.slots = { { 0, 0, -1, -1, 0, { -1, -1, -1, -1, -1 } },
-			{ 1, 2, 4, 0, 9, { 10, 11, 12, 13, 14 } } };
+	other.slots = { persisted_slot(0, runtime_ship.slot[0]),
+			persisted_slot(1, runtime_ship.slot[1]),
+			persisted_slot(2, runtime_ship.slot[2]),
+			persisted_slot(3, runtime_ship.slot[3]) };
 	require(flatfile_ship_establish(root.string(), { player, other }, &error) ==
 			flatfile_ship_result::ok,
 		"ship establishment failed: " + error);
@@ -131,7 +188,28 @@ int main(int argc, char **argv)
 			records[0].slots[0].position == -1 && records[0].slots[0].timer == 0 &&
 			records[0].slots[0].values ==
 				std::array<int32_t, 5>{ -1, -1, -1, -1, -1 } &&
-			records[0].slots[1].slot_type == 2 && records[0].slots[1].item_index == 4 &&
+			records[0].slots[1].slot_type == SLOT_EMPTY &&
+			records[0].slots[1].item_index == -1 &&
+			records[0].slots[1].position == -1 && records[0].slots[1].timer == 0 &&
+			records[0].slots[1].values ==
+				std::array<int32_t, 5>{ -1, -1, -1, -1, -1 } &&
+			records[0].slots[2].slot_type == weapon_before.type &&
+			records[0].slots[2].item_index == weapon_before.index &&
+			records[0].slots[2].position == weapon_before.position &&
+			records[0].slots[2].timer == weapon_before.timer &&
+			records[0].slots[2].values ==
+				std::array<int32_t, 5>{ weapon_before.val0, weapon_before.val1,
+							weapon_before.val2, weapon_before.val3,
+							weapon_before.val4 } &&
+			records[0].slots[3].slot_type == equipment_before.type &&
+			records[0].slots[3].item_index == equipment_before.index &&
+			records[0].slots[3].position == equipment_before.position &&
+			records[0].slots[3].timer == equipment_before.timer &&
+			records[0].slots[3].values ==
+				std::array<int32_t, 5>{
+					equipment_before.val0, equipment_before.val1,
+					equipment_before.val2, equipment_before.val3,
+					equipment_before.val4 } &&
 			records[1].owner_name == "player" && records[1].armor[3] == 13 &&
 			records[1].crew.repair_skill_milli == 1003 &&
 			records[1].slots.size() == 2 && records[1].slots[0].slot_index == 0 &&
