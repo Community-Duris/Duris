@@ -659,6 +659,7 @@ bool submit_player_drop(P_char ch, P_obj object, item_movement_reject *reject)
 }
 }
 
+/** Pick up one object, publishing durable item movement only after its commit. */
 void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
@@ -1915,6 +1916,7 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 	return true;
 }
 
+/** Select the full pickup batch and establish source custody before moving it. */
 static void start_bulk_get(P_char actor, P_obj container, const char *filter, bool corpse)
 {
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));

@@ -10,6 +10,7 @@ MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
 
 
 def function_body(source, signature, *, last=False):
+    """Extract a balanced function body, optionally skipping earlier declarations."""
     start = source.rindex(signature) if last else source.index(signature)
     brace = source.index("{", start)
     depth = 0
@@ -24,6 +25,7 @@ def function_body(source, signature, *, last=False):
 
 
 def check(name, condition):
+    """Report one source contract and return its success for the aggregate result."""
     print(("PASS: " if condition else "FAIL: ") + name)
     return bool(condition)
 
