@@ -414,9 +414,7 @@ void boot_material_rarity_objects(int mini_mode)
 	ne_init_event_pool();
 }
 
-/*
- * body of the booting system
- */
+/** Load world data and persistent authorities before entering the game loop. */
 
 void boot_db(int mini_mode)
 {

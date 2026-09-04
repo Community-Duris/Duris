@@ -16,6 +16,7 @@ DB = (SRC / "db.c").read_text(encoding="ascii")
 
 
 def section(text: str, start: str, end: str) -> str:
+    """Extract a bounded source section for recovery-order assertions."""
     first = text.index(start)
     return text[first : text.index(end, first)]
 

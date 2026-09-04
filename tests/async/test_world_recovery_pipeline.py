@@ -17,15 +17,19 @@ REGISTRY = (SRC / "redis_key_registry.def").read_text()
 COMM = (SRC / "comm.c").read_text()
 COPYOVER = (SRC / "copyover.c").read_text()
 HANDLER = (SRC / "handler.c").read_text()
+DB = (SRC / "db.c").read_text()
+ARTIFACT = (SRC / "artifact.c").read_text()
 
 
 def section(text: str, start: str, end: str) -> str:
+    """Extract a bounded production source section for the compiled fixture."""
     first = text.index(start)
     return text[first:text.index(end, first)]
 
 
 HARNESS = r'''
 #include "world/world_recovery_pipeline.h"
+#include "core/utils.h"
 #include "world/world_recovery_codec.h"
 #include "persistence/copyover.h"
 #include "item/item_ownership_runtime.h"
@@ -60,6 +64,7 @@ bool materializing = false;
 int objects_read = 0;
 int objects_extracted = 0;
 bool lookup_succeeds = false;
+bool fallback_fixture = false;
 item_ownership_runtime_entry lookup_entry = {};
 
 void logit(const char *, const char *, ...)
@@ -91,12 +96,14 @@ int real_object(int vnum)
     return vnum == 1000 ? 0 : -1;
 }
 
-P_obj read_object(int vnum, int)
+P_obj read_object(int vnum, int mode)
 {
-    if (real_object(vnum) < 0)
+    if (mode == REAL ? vnum != 0 : real_object(vnum) < 0)
         return nullptr;
     P_obj object = new obj_data{};
     object->R_num = 0;
+    if (fallback_fixture)
+        object->extra_flags |= ITEM_ARTIFACT;
     object->loc_p = LOC_NOWHERE;
     object->next = object_list;
     object_list = object;
@@ -118,7 +125,7 @@ void obj_to_room(P_obj object, int room)
     object->loc.room = room;
 }
 
-void extract_obj(P_obj object, int)
+void extract_obj(P_obj object, int = FALSE)
 {
     while (object->contains)
         extract_obj(object->contains, FALSE);
@@ -505,9 +512,132 @@ int main()
     assert(!world_recovery_restore(moved_descendant.data(), moved_descendant.size(), 300, 77,
                                    nullptr));
     object_list = nullptr;
+
+    // Failed Redis materialization rolls back before the forced O reset and
+    // SQL fallback. The reset's owned guard must leave only the SQL instance.
+    fallback_fixture = true;
+    ground_artifact.vnum = 1000;
+    ground_artifact.owned = true;
+    ground_artifact.locType = ARTIFACT_ONGROUND;
+    ground_artifact.location = 100;
+    top_of_zone_table = 0;
+    hydrate_succeeds = false;
+    const int reads_before_fallback = objects_read;
+    const int extracts_before_fallback = objects_extracted;
+    run_recovery_boot();
+    assert(redis_loads == 1 && fallback_resets == 1 && fallback_loads == 1);
+    assert(!recovery_active && objects_read == reads_before_fallback + 3);
+    assert(objects_extracted == extracts_before_fallback + 2);
+    assert(object_list && !object_list->next && IS_ARTIFACT(object_list));
+    assert(object_list->loc_p == LOC_ROOM && world[object_list->loc.room].number == 100);
+    extract_obj(object_list, FALSE);
+
+    // Unowned stock artifacts still load through a forced reset.
+    ground_artifact.owned = false;
+    reset_zone(0, 2);
+    assert(object_list && !object_list->next && IS_ARTIFACT(object_list));
+    extract_obj(object_list, FALSE);
     return 0;
 }
 '''
+
+
+FALLBACK_SUPPORT = r'''
+// The SQL fixture seeds one owned ground row shared by resets and the loader.
+static arti_data ground_artifact = {};
+static int fallback_loads = 0;
+static int fallback_resets = 0;
+static int redis_loads = 0;
+static bool recovery_active = true;
+static bool mini_mode = false;
+static int DB = 0;
+static constexpr int ARTIFACT_ONGROUND = 4;
+struct MYSQL_RES { bool read = false; };
+using MYSQL_ROW = char **;
+static MYSQL_RES sql_result;
+void qry(const char *, int location_type)
+{
+    assert(location_type == ARTIFACT_ONGROUND);
+    ++fallback_loads;
+    sql_result.read = false;
+}
+MYSQL_RES *mysql_store_result(int) { return &sql_result; }
+int mysql_num_rows(MYSQL_RES *) { return ground_artifact.owned ? 1 : 0; }
+MYSQL_ROW mysql_fetch_row(MYSQL_RES *result)
+{
+    static char vnum[] = "1000";
+    static char room[] = "100";
+    static char *row[] = {vnum, room};
+    if (result->read || !ground_artifact.owned)
+        return nullptr;
+    result->read = true;
+    return row;
+}
+void mysql_free_result(MYSQL_RES *) {}
+bool get_artifact_data_sql(int vnum, P_arti out)
+{
+    assert(vnum == ground_artifact.vnum);
+    *out = ground_artifact;
+    return true;
+}
+P_obj get_obj_in_list_num(int rnum, P_obj)
+{
+    for (P_obj object = object_list; object; object = object->next)
+        if (object->R_num == rnum && object->loc_p == LOC_ROOM)
+            return object;
+    return nullptr;
+}
+int itemvalue(P_obj) { return 0; }
+bool item_load_check(P_obj, int, int) { return true; }
+void reset_zone(int zone, int force_item_repop)
+{
+    assert(zone == 0 && force_item_repop == 2);
+    ++fallback_resets;
+    struct { char command; int arg1, arg2, arg3, arg4; } command = {'O', 0, 1, 0, 100};
+    P_obj obj = nullptr;
+    arti_data artidata = {};
+    const int respawn = 1;
+    int ival = 0;
+    int last_cmd = 0;
+#define ZCMD command
+    switch (command.command)
+    {
+@RESET_OBJECT@
+    }
+#undef ZCMD
+    (void)last_cmd;
+}
+@GROUND_LOADER@
+bool redis_world_recovery_boot_active() { return recovery_active; }
+bool redis_world_clean_restart_boot() { return false; }
+bool redis_load_world_state()
+{
+    ++redis_loads;
+    const auto generation = object_generation({{item(500, 500, 0)}});
+    return world_recovery_restore(generation.data(), generation.size(), 300, 77, nullptr);
+}
+void copyover_restore_combat() {}
+void calc_zone_mob_level() {}
+bool redis_consume_world_state() { return true; }
+bool load_moonstone_fragments() { return true; }
+void redis_world_recovery_boot_clear() { recovery_active = false; }
+nevent_periodic_result nevent_periodic_set_enabled(const char *, bool, int)
+{
+    return nevent_periodic_result::enabled;
+}
+void run_recovery_boot()
+{
+@RECOVERY_BOOT@
+}
+'''
+FALLBACK_SUPPORT = FALLBACK_SUPPORT.replace(
+    "@RESET_OBJECT@", section(DB, "\t\t\tcase 'O': /* load an object to room */", "\t\t\tcase 'P':")
+).replace(
+    "@GROUND_LOADER@", section(ARTIFACT, "void addOnGroundArtis_sql()", "// This function either finds")
+).replace(
+    "@RECOVERY_BOOT@", section(COMM, "\t// redis crash recovery", "\tPROFILES(RESET);")
+)
+HARNESS = HARNESS.replace("int main()", FALLBACK_SUPPORT + "\nint main()", 1)
 
 with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
     source = Path(temp_dir) / "world_recovery_test.cpp"
@@ -530,6 +660,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
 print("[PASS] schema, sequence, completeness, age, length, and checksum framing validates")
 print("[PASS] in-flight publication joins before pwipe deletion can continue")
 print("[PASS] duplicate/moved items and custody failures fail closed with rollback")
+print("[PASS] failed recovery and forced zone reset restore exactly one owned ground artifact")
 
 for token in (
     "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
