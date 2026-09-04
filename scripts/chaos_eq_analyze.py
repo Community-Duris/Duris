@@ -18,7 +18,7 @@ import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -404,20 +404,29 @@ class AreaObject:
         )
 
 
-def area_file_names(area_root: Path, area_list: Path | None) -> list[Path]:
+def area_file_names(
+    area_root: Path,
+    area_list: Path | None,
+    *,
+    extension: str = ".obj",
+    require_all: bool = False,
+) -> list[Path]:
+    """Resolve active area files with a caller-selected missing-file policy."""
     if area_list is None:
-        return sorted(area_root.glob("*.obj"))
+        return sorted(area_root.glob(f"*{extension}"))
     result: list[Path] = []
-    for line in area_list.read_text(errors="replace").splitlines():
+    for line in area_list.read_text(encoding="utf-8", errors="replace").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("*"):
             continue
         name = stripped.split()[0]
         if name.startswith("*"):
             continue
-        candidate = area_root / f"{name}.obj"
+        candidate = area_root / f"{name}{extension}"
         if candidate.exists():
             result.append(candidate)
+        elif require_all:
+            raise FileNotFoundError(candidate)
     return result
 
 
@@ -1265,7 +1274,6 @@ def analyze(args: argparse.Namespace) -> dict[str, Any]:
 
     cohort_size = len(characters)
     quantity_by_vnum_pid: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))
-    profile_counts: dict[int, Counter[str]] = defaultdict(Counter)
     for observation in worn_observations + carried_observations:
         vnum = observation["vnum"]
         obj = area_objects.get(vnum)

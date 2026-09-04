@@ -4,10 +4,16 @@
 #include <mysql/mysql.h>
 
 #include <cassert>
+#include <climits>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <map>
+#include <set>
 #include <string>
 #include <strings.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace
 {
@@ -33,6 +39,87 @@ player_load_result execute_load(MYSQL *connection, player_load_request request, 
 	request.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 	return player_load_repository_execute(connection, request);
 }
+
+/** Read unique owner PIDs from a protected repair manifest without logging them. */
+std::set<int> protected_manifest_pids(const char *path)
+{
+	assert(path && *path == '/');
+	struct stat metadata = {};
+	assert(lstat(path, &metadata) == 0 && S_ISREG(metadata.st_mode) &&
+	       !S_ISLNK(metadata.st_mode) && metadata.st_uid == geteuid() &&
+	       (metadata.st_mode & 0077) == 0);
+	std::ifstream source(path);
+	assert(source);
+	std::set<int> pids;
+	std::string line;
+	while (std::getline(source, line))
+	{
+		if (line.empty() || line[0] == '#' || line.starts_with("kind\t"))
+			continue;
+		const size_t first = line.find('\t');
+		const size_t second = first == std::string::npos ? first :
+								   line.find('\t', first + 1);
+		assert(first != std::string::npos && second != std::string::npos);
+		const std::string encoded = line.substr(first + 1, second - first - 1);
+		char *end = nullptr;
+		const long value = std::strtol(encoded.c_str(), &end, 10);
+		assert(end && *end == '\0' && value > 0 && value <= INT_MAX);
+		pids.insert(static_cast<int>(value));
+	}
+	assert(!pids.empty());
+	return pids;
+}
+
+/** Resolve the one active account mapping needed by a PID-scoped repository request. */
+std::string account_for_pid(MYSQL *connection, int pid)
+{
+	const std::string sql = "SELECT ac.account_name FROM account_characters ac "
+				"JOIN player_data pd ON pd.pid=ac.pid JOIN accounts a "
+				"ON a.account_name=ac.account_name WHERE ac.pid=" +
+				std::to_string(pid) +
+				" AND pd.active=1 AND ac.deleted_at IS NULL AND ac.blocked=0 "
+				"AND COALESCE(a.blocked,0)=0";
+	assert(mysql_real_query(connection, sql.data(), sql.size()) == 0);
+	MYSQL_RES *rows = mysql_store_result(connection);
+	assert(rows && mysql_num_rows(rows) == 1);
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	assert(row && row[0]);
+	std::string account = row[0];
+	mysql_free_result(rows);
+	return account;
+}
+
+/** Exercise repository extraction for every protected-manifest owner. */
+void verify_manifest_repository_loads(MYSQL *connection, const char *path)
+{
+	const std::set<int> pids = protected_manifest_pids(path);
+	uint64_t request_id = 1000;
+	std::map<std::string, size_t> failures;
+	for (const int pid : pids)
+	{
+		player_load_request request = {};
+		request.pid = pid;
+		request.account_name = account_for_pid(connection, pid);
+		const player_load_result result = execute_load(connection, request, request_id++);
+		if (result.outcome != player_load_outcome::applied || result.pid != pid ||
+		    result.snapshot.pid != pid || result.metrics.query_count != 22 ||
+		    result.read_components != PLAYER_LOAD_SESSION04_READS)
+		{
+			const std::string category =
+				std::to_string(static_cast<int>(result.outcome)) + "/" +
+				(result.failed_component ? result.failed_component : "none") + "/" +
+				std::to_string(result.metrics.query_count) + "/" +
+				std::to_string(result.pid == pid && result.snapshot.pid == pid);
+			++failures[category];
+		}
+	}
+	for (const auto &[category, count] : failures)
+		std::cerr << "protected player-load failure category=" << category
+			  << " characters=" << count << '\n';
+	assert(failures.empty());
+	std::cout << "protected player-load repository snapshots passed: characters=" << pids.size()
+		  << '\n';
+}
 }
 
 int main()
@@ -44,6 +131,12 @@ int main()
 		required_env("DB_PASSWD"), required_env("DB_NAME"),
 		static_cast<unsigned int>(std::strtoul(required_env("DB_PORT"), nullptr, 10)),
 		nullptr, CLIENT_MULTI_STATEMENTS));
+	if (const char *manifest = std::getenv("PLAYER_LOAD_MANIFEST_PATH"))
+	{
+		verify_manifest_repository_loads(connection, manifest);
+		mysql_close(connection);
+		return 0;
+	}
 	std::string character = required_env("GAME_ACCOUNT_CHARACTER_NAME");
 	std::string escaped(character.size() * 2 + 1, '\0');
 	escaped.resize(mysql_real_escape_string(connection, escaped.data(), character.data(),
@@ -348,6 +441,16 @@ int main()
 	       pet_orphan.snapshot.pets[0].items.size() == 1);
 	assert(pet_orphan.stale_item_rows == 1 && pet_orphan.missing_payload_rows == 0);
 	assert(pet_orphan.authoritative_item_count == 4);
+	// A retained legacy pet-item row may predate durable UIDs entirely. With no UID
+	// and no custody authority, it is the same skippable payload rather than a login
+	// refusal; the row remains available for a separate recovery disposition.
+	execute_sql(connection, "UPDATE player_pet_items SET obj_uid=NULL WHERE id=3102");
+	player_load_result legacy_pet_item = execute_load(connection, request, 95);
+	assert(legacy_pet_item.outcome == player_load_outcome::applied);
+	assert(legacy_pet_item.snapshot.pets.size() == 1 &&
+	       legacy_pet_item.snapshot.pets[0].items.size() == 1);
+	assert(legacy_pet_item.stale_item_rows == 1 && legacy_pet_item.missing_payload_rows == 0);
+	assert(legacy_pet_item.authoritative_item_count == 4);
 	execute_sql(connection, "DELETE FROM player_pet_item_affects");
 	execute_sql(connection, "DELETE FROM player_pet_item_extra_descr");
 	execute_sql(connection, "DELETE FROM player_pet_items");

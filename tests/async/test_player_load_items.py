@@ -580,6 +580,20 @@ int main()
         player_load_result result = base_result();
         add_item(result, 1, 10, 100, PLAYER_SNAPSHOT_NO_PARENT, 0);
         add_item(result, 2, 11, 101, 0, 0);
+        result.item_identities[0].override_mask = PLAYER_LOAD_ITEM_OVERRIDE_TYPE;
+        result.snapshot.items[0].type = ITEM_ARMOR;
+        invalid(result);
+        result.item_identities[0].override_mask = 0;
+        reset_test_state();
+        test_character owner(42);
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_items_materialize(&owner.character, result, &metrics));
+        release_tree(owner.character.carrying);
+    }
+    {
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 100, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        add_item(result, 2, 11, 101, 0, 0);
         result.item_identities[1].serialized_parent_id = 999;
         invalid(result);
     }
@@ -682,6 +696,34 @@ int main()
         std::free(owner.character.followers);
         owner.character.followers = nullptr;
         extract_char(pet);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200);
+        result.snapshot.pets[0].room_vnum = 122;
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        result.snapshot.pets[0].room_vnum = result.snapshot.room_vnum;
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        player_load_pets_discard(&pets);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200);
+        result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit + 1;
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        result.snapshot.pets[0].hit = result.snapshot.pets[0].max_hit;
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        player_load_pets_discard(&pets);
     }
     {
         reset_test_state();
