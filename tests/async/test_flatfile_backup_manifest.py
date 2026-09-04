@@ -16,11 +16,13 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 def require(condition: bool, message: str) -> None:
+    """Raise one focused backup-drill assertion failure."""
     if not condition:
         raise AssertionError(message)
 
 
 def provision(state_root: pathlib.Path) -> None:
+    """Create a flatfile authority generation that includes account lockers."""
     for directory in (
         "metadata",
         "identities",
@@ -37,12 +39,16 @@ def provision(state_root: pathlib.Path) -> None:
     (state_root / "identities/accounts/6163636f756e74.acct").write_bytes(b"account-generation-1")
     (state_root / "players/1.player").write_bytes(b"player-generation-1")
     (state_root / "domains/boons.domain").write_bytes(b"boons-generation-1")
+    (state_root / "domains/locker_catalog").write_bytes(
+        b"version-2-account-locker-generation-1"
+    )
     for path in state_root.rglob("*"):
         path.chmod(0o700 if path.is_dir() else 0o600)
     state_root.chmod(0o700)
 
 
 def run_backup(state_root: pathlib.Path, backup_root: pathlib.Path, env_extra=None):
+    """Run the flatfile backup command with isolated test configuration."""
     environment = dict(os.environ)
     environment.update(
         {
@@ -73,6 +79,7 @@ EXCLUDED = {
 
 
 def digest_tree(root: pathlib.Path) -> dict:
+    """Return stable content digests for every file below a test root."""
     digests = {}
     for path in sorted(root.rglob("*")):
         if path.is_file() and path.name not in EXCLUDED:
@@ -148,6 +155,11 @@ with tempfile.TemporaryDirectory(prefix="duris-backup-drill-") as temporary:
     require(
         digest_tree(restore_root) == digest_tree(state_root),
         "restored root does not match the captured generation",
+    )
+    require(
+        (restore_root / "domains/locker_catalog").read_bytes()
+        == b"version-2-account-locker-generation-1",
+        "restore did not preserve the account locker catalog generation",
     )
     require(
         not (restore_root / "MANIFEST.sha256").exists(),

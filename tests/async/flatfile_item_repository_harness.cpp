@@ -158,6 +158,7 @@ static std::vector<player_item_snapshot> movement_items()
 	return { root, child };
 }
 
+/* Construct an account-owned locker for custody-transfer coverage. */
 static flatfile_locker_record transfer_locker()
 {
 	player_item_snapshot stored_root = {};
@@ -180,8 +181,9 @@ static flatfile_locker_record transfer_locker()
 	chest.items = { stored_root, stored_child };
 	flatfile_locker_record locker = {};
 	locker.locker_id = 2;
-	locker.locker_name = "transfer.locker";
-	locker.owner_pid = 77;
+	locker.locker_name = "account.transfer.1.locker";
+	locker.account_owner = flatfile_account_locker_identity{ "transfer", 1 };
+	locker.racewar = 1;
 	locker.revision = 1;
 	locker.chests = { chest };
 	return locker;

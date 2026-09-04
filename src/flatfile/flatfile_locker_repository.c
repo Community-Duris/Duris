@@ -17,12 +17,14 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'L', 'O', 'C', 'K', 0 };
-constexpr uint32_t catalog_version = 1;
+constexpr uint32_t catalog_version = 2;
+constexpr uint32_t catalog_legacy_version = 1;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t locker_maximum = 65536;
 constexpr size_t chest_maximum = 262144;
 constexpr size_t access_maximum = 1048576;
 constexpr size_t locker_name_maximum = 100;
+constexpr size_t account_name_maximum = 50;
 constexpr size_t chest_name_maximum = 32;
 constexpr size_t password_hash_maximum = 64;
 constexpr size_t access_name_maximum = 255;
@@ -187,6 +189,7 @@ bool access_less(const flatfile_locker_access_record &left,
 	return left.visitor_name < right.visitor_name;
 }
 
+/* Validate canonical locker identities, nested chests, items, and access policy. */
 bool valid_catalog(const locker_catalog &catalog)
 {
 	if (!catalog.revision || catalog.lockers.size() > locker_maximum ||
@@ -197,6 +200,7 @@ bool valid_catalog(const locker_catalog &catalog)
 	std::unordered_set<std::string> locker_names;
 	std::unordered_set<int32_t> player_owners;
 	std::unordered_set<int32_t> association_owners;
+	std::unordered_set<std::string> account_owners;
 	std::unordered_set<uint32_t> chest_ids;
 	std::unordered_set<uint64_t> item_uids;
 	size_t chest_count = 0;
@@ -205,16 +209,19 @@ bool valid_catalog(const locker_catalog &catalog)
 		locker_names.reserve(catalog.lockers.size());
 		player_owners.reserve(catalog.lockers.size());
 		association_owners.reserve(catalog.lockers.size());
+		account_owners.reserve(catalog.lockers.size());
 		chest_ids.reserve(std::min(chest_maximum, catalog.lockers.size() * 2));
 		for (size_t locker_index = 0; locker_index < catalog.lockers.size(); ++locker_index)
 		{
 			const auto &locker = catalog.lockers[locker_index];
+			const bool has_account_owner = locker.account_owner.has_value();
+			const unsigned int owner_count = (locker.owner_pid > 0 ? 1U : 0U) +
+							 (locker.owner_assoc_id > 0 ? 1U : 0U) +
+							 (has_account_owner ? 1U : 0U);
 			if (!locker.locker_id || !locker.revision ||
 			    !valid_name(locker.locker_name, locker_name_maximum) ||
 			    locker.locker_name != canonical_name(locker.locker_name) ||
-			    locker.locker_name.rfind("account.", 0) == 0 ||
-			    (locker.owner_pid > 0) == (locker.owner_assoc_id > 0) ||
-			    locker.owner_pid < 0 || locker.owner_assoc_id < 0 ||
+			    owner_count != 1 || locker.owner_pid < 0 || locker.owner_assoc_id < 0 ||
 			    (locker.owner_pid > 0 &&
 			     !player_owners.insert(locker.owner_pid).second) ||
 			    (locker.owner_assoc_id > 0 &&
@@ -224,6 +231,27 @@ bool valid_catalog(const locker_catalog &catalog)
 			    !locker_names.insert(locker.locker_name).second ||
 			    !std::is_sorted(locker.chests.begin(), locker.chests.end(), chest_less))
 				return false;
+			if (has_account_owner)
+			{
+				const auto &owner = *locker.account_owner;
+				const std::string expected_name =
+					"account." + owner.account_name + "." +
+					std::to_string(owner.racewar_side) + ".locker";
+				std::string owner_key = owner.account_name;
+				owner_key.push_back('\0');
+				owner_key.push_back(static_cast<char>(owner.racewar_side));
+				if (!valid_name(owner.account_name, account_name_maximum) ||
+				    owner.account_name != canonical_name(owner.account_name) ||
+				    owner.racewar_side < 0 || owner.racewar_side > 4 ||
+				    locker.racewar != owner.racewar_side ||
+				    locker.locker_name != expected_name ||
+				    !account_owners.insert(std::move(owner_key)).second)
+					return false;
+			}
+			else if (locker.locker_name.rfind("account.", 0) == 0)
+			{
+				return false;
+			}
 			if (locker.chests.empty() ||
 			    locker.chests.size() > chest_maximum - chest_count)
 				return false;
@@ -280,6 +308,7 @@ bool valid_catalog(const locker_catalog &catalog)
 	return true;
 }
 
+/* Encode the canonical catalog using the current version-two owner format. */
 bool encode_catalog(const locker_catalog &catalog, std::vector<uint8_t> *bytes)
 {
 	if (!bytes || !valid_catalog(catalog))
@@ -293,6 +322,12 @@ bool encode_catalog(const locker_catalog &catalog, std::vector<uint8_t> *bytes)
 		payload.string(locker.locker_name, locker_name_maximum);
 		payload.number(locker.owner_pid);
 		payload.number(locker.owner_assoc_id);
+		payload.number<uint8_t>(locker.account_owner.has_value() ? 1 : 0);
+		if (locker.account_owner)
+		{
+			payload.string(locker.account_owner->account_name, account_name_maximum);
+			payload.number(locker.account_owner->racewar_side);
+		}
 		payload.number(locker.racewar);
 		payload.number(locker.race);
 		payload.number(locker.revision);
@@ -336,6 +371,7 @@ bool encode_catalog(const locker_catalog &catalog, std::vector<uint8_t> *bytes)
 	return true;
 }
 
+/* Decode current catalogs while retaining version-one player and guild compatibility. */
 bool decode_catalog(const std::vector<uint8_t> &bytes, locker_catalog *catalog)
 {
 	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
@@ -346,7 +382,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, locker_catalog *catalog)
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != catalog_version || !revision ||
+	    !header.number(&revision) ||
+	    (version != catalog_version && version != catalog_legacy_version) || !revision ||
 	    payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
@@ -372,8 +409,21 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, locker_catalog *catalog)
 			if (!payload.number(&locker.locker_id) ||
 			    !payload.string(&locker.locker_name, locker_name_maximum) ||
 			    !payload.number(&locker.owner_pid) ||
-			    !payload.number(&locker.owner_assoc_id) ||
-			    !payload.number(&locker.racewar) || !payload.number(&locker.race) ||
+			    !payload.number(&locker.owner_assoc_id))
+				return false;
+			if (version == catalog_version)
+			{
+				uint8_t has_account_owner = 0;
+				flatfile_account_locker_identity owner;
+				if (!payload.number(&has_account_owner) || has_account_owner > 1 ||
+				    (has_account_owner &&
+				     (!payload.string(&owner.account_name, account_name_maximum) ||
+				      !payload.number(&owner.racewar_side))))
+					return false;
+				if (has_account_owner)
+					locker.account_owner = std::move(owner);
+			}
+			if (!payload.number(&locker.racewar) || !payload.number(&locker.race) ||
 			    !payload.number(&locker.revision) || !payload.number(&count) ||
 			    count > chest_maximum - chest_count)
 				return false;
@@ -474,6 +524,35 @@ bool payload_items_match(const item_transfer_payload &payload,
 			   [&](const auto &item) { return expected.contains(item.object_uid); });
 }
 
+/* Collect sorted item-custody evidence for every chest in a locker. */
+bool collect_locker_custody(const flatfile_locker_record &locker,
+			    std::vector<flatfile_locker_custody_owner> *custody)
+{
+	if (!custody)
+		return false;
+	try
+	{
+		for (const auto &chest : locker.chests)
+		{
+			flatfile_locker_custody_owner owner;
+			owner.owner = { item_owner_type::locker, locker.locker_id,
+					static_cast<uint64_t>(chest.chest_id) };
+			owner.items.reserve(chest.items.size());
+			for (const auto &item : chest.items)
+				owner.items.push_back({ item.object_uid, item.vnum });
+			std::sort(owner.items.begin(), owner.items.end(),
+				  [](const auto &left, const auto &right)
+				  { return left.item_uid < right.item_uid; });
+			custody->push_back(std::move(owner));
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
 } // namespace
 
 flatfile_locker_result flatfile_locker_establish(
@@ -551,6 +630,7 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 	return flatfile_locker_result::ok;
 }
 
+/* Prepare player-owned locker and visitor-grant removal with exact custody evidence. */
 flatfile_locker_result
 flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
 				      uint32_t pid, const std::string &player_name,
@@ -579,19 +659,8 @@ flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_au
 		if (has_locker)
 		{
 			removal->custody.reserve(locker->chests.size());
-			for (const auto &chest : locker->chests)
-			{
-				flatfile_locker_custody_owner owner;
-				owner.owner = { item_owner_type::locker, locker->locker_id,
-						static_cast<uint64_t>(chest.chest_id) };
-				owner.items.reserve(chest.items.size());
-				for (const auto &item : chest.items)
-					owner.items.push_back({ item.object_uid, item.vnum });
-				std::sort(owner.items.begin(), owner.items.end(),
-					  [](const auto &left, const auto &right)
-					  { return left.item_uid < right.item_uid; });
-				removal->custody.push_back(std::move(owner));
-			}
+			if (!collect_locker_custody(*locker, &removal->custody))
+				return flatfile_locker_result::io_error;
 			catalog.lockers.erase(locker);
 		}
 		const size_t old_access_size = catalog.access.size();
@@ -605,6 +674,72 @@ flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_au
 				       }),
 			catalog.access.end());
 		if (!has_locker && old_access_size == catalog.access.size())
+			return flatfile_locker_result::unchanged;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_locker_result::io_error;
+	}
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_locker_result::conflict;
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_locker_result::invalid;
+	removal->operation.store = flatfile_authority_store::domains;
+	removal->operation.kind = flatfile_authority_operation_kind::write;
+	removal->operation.filename = catalog_filename;
+	removal->operation.bytes = std::move(encoded);
+	return flatfile_locker_result::ok;
+}
+
+/* Prepare removal of every locker owned by an account and every grant it visits. */
+flatfile_locker_result
+flatfile_locker_prepare_account_remove(const std::string &root, const flatfile_authority_lock &lock,
+				       const std::string &account_name,
+				       flatfile_locker_player_removal *removal, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !removal ||
+	    !valid_name(account_name, account_name_maximum))
+		return flatfile_locker_result::invalid;
+	*removal = {};
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_locker_result::ok)
+		return recovered;
+	locker_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_locker_result::ok)
+		return loaded;
+	const std::string canonical_account = canonical_name(account_name);
+	std::unordered_set<std::string> removed_names;
+	try
+	{
+		for (const auto &locker : catalog.lockers)
+		{
+			if (!locker.account_owner ||
+			    locker.account_owner->account_name != canonical_account)
+				continue;
+			removed_names.insert(locker.locker_name);
+			if (!collect_locker_custody(locker, &removal->custody))
+				return flatfile_locker_result::io_error;
+		}
+		catalog.lockers.erase(
+			std::remove_if(catalog.lockers.begin(), catalog.lockers.end(),
+				       [&](const auto &locker) {
+					       return locker.account_owner &&
+						      locker.account_owner->account_name ==
+							      canonical_account;
+				       }),
+			catalog.lockers.end());
+		const size_t old_access_size = catalog.access.size();
+		catalog.access.erase(
+			std::remove_if(catalog.access.begin(), catalog.access.end(),
+				       [&](const auto &entry) {
+					       return entry.visitor_name == canonical_account ||
+						      removed_names.contains(entry.owner_name);
+				       }),
+			catalog.access.end());
+		if (removed_names.empty() && old_access_size == catalog.access.size())
 			return flatfile_locker_result::unchanged;
 	}
 	catch (const std::bad_alloc &)

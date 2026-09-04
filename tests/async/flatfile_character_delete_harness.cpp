@@ -29,12 +29,14 @@
 
 namespace fs = std::filesystem;
 
+/* Provide the player-load contract required by the isolated deletion harness. */
 bool player_load_request_valid(const player_load_request &request, uint64_t now)
 {
 	return request.schema_version == PLAYER_LOAD_SCHEMA_VERSION && request.request_id &&
 	       request.pid > 0 && !request.account_name.empty() && request.deadline_usec > now;
 }
 
+/* Terminate the harness with one focused assertion message. */
 static void require(bool condition, const std::string &message)
 {
 	if (!condition)
@@ -44,6 +46,7 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
+/* Construct the smallest complete player snapshot accepted by deletion flows. */
 static player_snapshot make_snapshot(int32_t pid, const char *name = "Player")
 {
 	player_snapshot snapshot = {};
@@ -71,7 +74,8 @@ static player_snapshot make_snapshot(int32_t pid, const char *name = "Player")
 	return snapshot;
 }
 
-static void establish(const fs::path &root, bool establish_boons)
+/* Build the maximal character/account deletion authority fixture. */
+static void establish(const fs::path &root, bool establish_boons, bool player_locker_only = false)
 {
 	fs::create_directories(root / "players");
 	fs::create_directories(root / "identities/accounts");
@@ -150,10 +154,38 @@ static void establish(const fs::path &root, bool establish_boons)
 	guild_locker.owner_assoc_id = 7;
 	guild_locker.revision = 1;
 	guild_locker.chests = { guild_chest };
-	require(flatfile_locker_establish(root.string(), { guild_locker, player_locker },
-					  { { "player.locker", "guest", 1 },
-					    { "guild.7.locker", "player", 1 } },
-					  &error) == flatfile_locker_result::ok,
+	player_item_snapshot account_item = locker_item;
+	account_item.object_uid = 903;
+	account_item.vnum = 3903;
+	account_item.name = "account stored item";
+	flatfile_locker_chest_record account_chest = {};
+	account_chest.chest_id = 31;
+	account_chest.chest_name = "public";
+	account_chest.is_public = true;
+	account_chest.revision = 1;
+	account_chest.items = { account_item };
+	flatfile_locker_record account_locker = {};
+	account_locker.locker_id = 30;
+	account_locker.locker_name = "account.account.1.locker";
+	account_locker.account_owner = flatfile_account_locker_identity{ "account", 1 };
+	account_locker.racewar = 1;
+	account_locker.revision = 1;
+	account_locker.chests = { account_chest };
+	const std::vector<flatfile_locker_record> lockers =
+		player_locker_only ?
+			std::vector<flatfile_locker_record>{ player_locker } :
+			std::vector<flatfile_locker_record>{ guild_locker, player_locker,
+							     account_locker };
+	const std::vector<flatfile_locker_access_record> locker_access =
+		player_locker_only ? std::vector<flatfile_locker_access_record>{ { "player.locker",
+										   "guest", 1 } } :
+				     std::vector<flatfile_locker_access_record>{
+					     { "player.locker", "guest", 1 },
+					     { "guild.7.locker", "player", 1 },
+					     { "account.account.1.locker", "visitor", 1 }
+				     };
+	require(flatfile_locker_establish(root.string(), lockers, locker_access, &error) ==
+			flatfile_locker_result::ok,
 		"locker baseline failed: " + error);
 	flatfile_association_record association = {};
 	association.association_id = 7;
@@ -205,6 +237,17 @@ static void establish(const fs::path &root, bool establish_boons)
 			{ { 900, 900, 0, locker_owner, 1, 3900, item_custody_state::active } },
 			&error) == flatfile_item_baseline_result::applied,
 		"locker custody baseline failed: " + error);
+	if (!player_locker_only)
+	{
+		const item_owner_identity account_locker_owner = { item_owner_type::locker, 30,
+								   31 };
+		require(flatfile_item_repository_establish_owner(
+				root.string(), account_locker_owner,
+				{ { 903, 903, 0, account_locker_owner, 1, 3903,
+				    item_custody_state::active } },
+				&error) == flatfile_item_baseline_result::applied,
+			"account locker custody baseline failed: " + error);
+	}
 	const item_owner_identity corpse_owner = { item_owner_type::corpse,
 						   item_corpse_owner_id(1, 40), 0 };
 	require(flatfile_item_repository_establish_owner(
@@ -272,6 +315,7 @@ static void establish(const fs::path &root, bool establish_boons)
 		"shop materialization baseline commit failed: " + error);
 }
 
+/* Save the account fixture with the requested deletion-fence state. */
 static uint64_t save_account(const fs::path &root, int8_t blocked, uint64_t expected_revision = 0)
 {
 	flatfile_account_record account;
@@ -288,6 +332,7 @@ static uint64_t save_account(const fs::path &root, int8_t blocked, uint64_t expe
 	return revision;
 }
 
+/* Add a second active identity and snapshot to the account fixture. */
 static void add_second_character(const fs::path &root)
 {
 	std::string error;
@@ -305,7 +350,8 @@ static void add_second_character(const fs::path &root)
 		"second player baseline failed: " + error);
 }
 
-static void establish_empty_account(const fs::path &root)
+/* Build a fenced account that visits an unrelated locker and may own an empty one. */
+static void establish_minimal_account(const fs::path &root, bool owns_empty_locker)
 {
 	fs::create_directories(root / "players");
 	fs::create_directories(root / "identities/accounts");
@@ -323,9 +369,39 @@ static void establish_empty_account(const fs::path &root)
 	require(flatfile_identity_allocate_pid(root.string(), &unused_pid, &error) ==
 			flatfile_identity_result::ok,
 		"empty account identity catalog failed: " + error);
+	flatfile_locker_chest_record chest = {};
+	chest.chest_id = 51;
+	chest.chest_name = "public";
+	chest.is_public = true;
+	chest.revision = 1;
+	flatfile_locker_record locker = {};
+	locker.locker_id = 50;
+	locker.locker_name = "external.locker";
+	locker.owner_pid = 999;
+	locker.revision = 1;
+	locker.chests = { chest };
+	std::vector<flatfile_locker_record> lockers = { locker };
+	if (owns_empty_locker)
+	{
+		flatfile_locker_chest_record account_chest = chest;
+		account_chest.chest_id = 61;
+		flatfile_locker_record account_locker = {};
+		account_locker.locker_id = 60;
+		account_locker.locker_name = "account.account.1.locker";
+		account_locker.account_owner = flatfile_account_locker_identity{ "account", 1 };
+		account_locker.racewar = 1;
+		account_locker.revision = 1;
+		account_locker.chests = { account_chest };
+		lockers.push_back(std::move(account_locker));
+	}
+	require(flatfile_locker_establish(root.string(), lockers,
+					  { { "external.locker", "account", 1 } },
+					  &error) == flatfile_locker_result::ok,
+		"minimal locker catalog baseline failed: " + error);
 	save_account(root, 2);
 }
 
+/* Exercise interruption recovery and atomic character/account erasure. */
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -389,9 +465,22 @@ int main(int argc, char **argv)
 	std::vector<flatfile_locker_access_record> locker_access;
 	require(flatfile_locker_list(root.string(), &lockers, &locker_access, &error) ==
 				flatfile_locker_result::ok &&
-			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 &&
-			locker_access.empty(),
+			lockers.size() == 2 && lockers[0].owner_assoc_id == 7 &&
+			lockers[1].account_owner &&
+			lockers[1].account_owner->account_name == "account" &&
+			lockers[1].chests.size() == 1 && lockers[1].chests[0].items.size() == 1 &&
+			lockers[1].chests[0].items[0].object_uid == 903 &&
+			locker_access.size() == 1 &&
+			locker_access[0].owner_name == "account.account.1.locker" &&
+			locker_access[0].visitor_name == "visitor",
 		"recovered deletion retained player locker or access state");
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::locker, 30, 31 }, &owner_revision, &items,
+			&error) == flatfile_item_repository_result::ok &&
+			items.size() == 1 && items[0].item_uid == 903 &&
+			items[0].state == item_custody_state::active,
+		"recovered deletion changed account locker item custody");
 	std::vector<flatfile_association_record> associations;
 	require(flatfile_association_list(root.string(), &associations, &error) ==
 				flatfile_association_result::ok &&
@@ -522,12 +611,23 @@ int main(int argc, char **argv)
 	}
 	require(!fs::exists(account / "domains/bank-account-0.domain"),
 		"account deletion retained the shared account bank");
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(account.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 &&
+			locker_access.empty(),
+		"account deletion retained its typed locker or access policy");
+	require(flatfile_item_repository_load_owner(
+			account.string(), { item_owner_type::locker, 30, 31 }, &owner_revision,
+			&items, &error) == flatfile_item_repository_result::not_found,
+		"account deletion retained account locker item custody");
 	require(flatfile_account_delete(account.string(), "Account", &error) ==
 			flatfile_account_delete_result::already_deleted,
 		"completed account deletion was not idempotent: " + error);
 
 	const fs::path account_recovery = fs::path(argv[1]) / "account-recovery";
-	establish_empty_account(account_recovery);
+	establish_minimal_account(account_recovery, false);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	error.clear();
 	require(flatfile_account_delete(account_recovery.string(), "Account", &error) ==
@@ -546,6 +646,56 @@ int main(int argc, char **argv)
 					&error) == flatfile_account_result::ok &&
 			!account_exists,
 		"recovered account deletion retained the credential record");
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(account_recovery.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].locker_name == "external.locker" &&
+			locker_access.empty(),
+		"visitor-only account deletion removed the locker or retained its grant");
+
+	const fs::path empty_account_locker = fs::path(argv[1]) / "empty-account-locker";
+	establish_minimal_account(empty_account_locker, true);
+	error.clear();
+	require(flatfile_account_delete(empty_account_locker.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"empty account locker blocked account deletion: " + error);
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(empty_account_locker.string(), &lockers, &locker_access,
+				     &error) == flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].locker_name == "external.locker" &&
+			locker_access.empty(),
+		"empty account locker deletion removed unrelated state or retained account state");
+
+	const fs::path lockerless_account = fs::path(argv[1]) / "lockerless-account";
+	establish(lockerless_account, true, true);
+	require(save_account(lockerless_account, 2) == 1,
+		"lockerless account fence did not publish revision 1");
+	error.clear();
+	require(flatfile_character_delete(lockerless_account.string(), 1, "Player", &error) ==
+			flatfile_character_delete_result::ok,
+		"lockerless account character deletion failed: " + error);
+	require(flatfile_account_exists(lockerless_account.string(), "Account", &account_exists,
+					&error) == flatfile_account_result::ok &&
+			account_exists,
+		"character deletion did not leave the fenced account for finalization");
+	lockers.clear();
+	locker_access.clear();
+	require(flatfile_locker_list(lockerless_account.string(), &lockers, &locker_access,
+				     &error) == flatfile_locker_result::ok &&
+			lockers.empty() && locker_access.empty(),
+		"character deletion did not leave an empty locker catalog");
+	require(fs::remove(lockerless_account / "domains/locker_catalog"),
+		"failed to remove the locker catalog from the finalization fixture");
+	error.clear();
+	require(flatfile_account_delete(lockerless_account.string(), "Account", &error) ==
+			flatfile_account_delete_result::ok,
+		"missing locker catalog blocked final account deletion: " + error);
+	require(flatfile_account_exists(lockerless_account.string(), "Account", &account_exists,
+					&error) == flatfile_account_result::ok &&
+			!account_exists,
+		"missing locker catalog left the fenced account behind");
 
 	std::cout << "flat-file character and account deletion passed\n";
 	return 0;

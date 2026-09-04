@@ -413,6 +413,15 @@ backup identity, restore it under an explicitly non-production name on a loopbac
 host, and set `ENVIRONMENT`, `DB_HOST`, `DB_NAME`, and `DB_ALLOWED_TARGETS` so the
 clone is the only permitted target. Keep the original backup untouched.
 
+Before converting locker authority to flat files, run the read-only, aggregate-only
+`migrations/check_flatfile_account_locker_conversion.sh --expect-count <known-count>`
+against that clone. It proves each `account.<account>.<side>.locker` row maps to an
+authoritative account and valid racewar side, and checks owner fields, chests, item
+custody identifiers, duplicate active UIDs, and access references. Quarantined or
+otherwise inactive legacy payload rows are outside this authority conversion and remain
+subject to their separate recovery workflow. Any nonzero mismatch or unexpected total
+blocks the cutover; the checker never emits account or locker names.
+
 The legacy runner is mutation-capable and has no dry-run mode. `--help` is safe, and an
 unknown argument is rejected before configuration is loaded. A normal no-argument run
 begins work immediately. When `REDIS=TRUE`, its final step requires `ENVIRONMENT=local`,

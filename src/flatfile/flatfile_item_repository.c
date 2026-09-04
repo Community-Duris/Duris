@@ -1378,13 +1378,14 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	return flatfile_item_repository_result::ok;
 }
 
-flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
-	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
-	const std::vector<flatfile_locker_custody_owner> &locker_custody,
-	const std::vector<flatfile_corpse_custody_owner> &corpse_custody,
-	flatfile_authority_operation *operation, std::string *error)
+/* Prepare one authority image that destroys an exact set of player and custody owners. */
+static flatfile_item_repository_result
+prepare_custody_remove(const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+		       const std::vector<flatfile_locker_custody_owner> &locker_custody,
+		       const std::vector<flatfile_corpse_custody_owner> &corpse_custody,
+		       flatfile_authority_operation *operation, std::string *error)
 {
-	if (!operation || !pid || !lock.matches(root) ||
+	if (!operation || (!pid && locker_custody.empty()) || !lock.matches(root) ||
 	    locker_custody.size() > ownership_maximum_entries ||
 	    corpse_custody.size() > ownership_maximum_entries - locker_custody.size())
 		return flatfile_item_repository_result::invalid;
@@ -1401,8 +1402,9 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_cust
 	std::vector<item_owner_identity> owners;
 	try
 	{
-		owners.reserve(locker_custody.size() + corpse_custody.size() + 1);
-		owners.push_back({ item_owner_type::player, pid, 0 });
+		owners.reserve(locker_custody.size() + corpse_custody.size() + (pid ? 1 : 0));
+		if (pid)
+			owners.push_back({ item_owner_type::player, pid, 0 });
 		for (const auto &expected : locker_custody)
 		{
 			if (expected.owner.type != item_owner_type::locker ||
@@ -1419,7 +1421,11 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_cust
 				return flatfile_item_repository_result::invalid;
 			const owner_state *stored_owner = find_owner(&catalog, expected.owner);
 			if (!stored_owner)
+			{
+				if (expected.items.empty())
+					continue;
 				return flatfile_item_repository_result::invalid;
+			}
 			size_t item_index = 0;
 			for (const auto &item : catalog.items)
 			{
@@ -1521,6 +1527,20 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_cust
 	return flatfile_item_repository_result::ok;
 }
 
+/* Prepare removal of one player plus verified locker and corpse custody. */
+flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	const std::vector<flatfile_corpse_custody_owner> &corpse_custody,
+	flatfile_authority_operation *operation, std::string *error)
+{
+	if (!pid)
+		return flatfile_item_repository_result::invalid;
+	return prepare_custody_remove(root, lock, pid, locker_custody, corpse_custody, operation,
+				      error);
+}
+
+/* Prepare removal of one player plus verified locker custody. */
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
@@ -1528,6 +1548,15 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_lock
 {
 	return flatfile_item_repository_prepare_player_and_custody_remove(
 		root, lock, pid, locker_custody, {}, operation, error);
+}
+
+/* Prepare removal of verified locker custody without requiring a player owner. */
+flatfile_item_repository_result flatfile_item_repository_prepare_locker_remove(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	flatfile_authority_operation *operation, std::string *error)
+{
+	return prepare_custody_remove(root, lock, 0, locker_custody, {}, operation, error);
 }
 
 critical_apply_result flatfile_item_repository_apply(const std::string &root,

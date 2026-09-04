@@ -104,10 +104,17 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error);
+/* Prepare player and verified locker-custody removal as one authority image. */
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
 	flatfile_authority_operation *operation, std::string *error);
+/* Prepare removal of verified locker custody without a player owner. */
+flatfile_item_repository_result flatfile_item_repository_prepare_locker_remove(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	flatfile_authority_operation *operation, std::string *error);
+/* Prepare player, locker, and corpse custody removal as one authority image. */
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,

@@ -4,8 +4,11 @@
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_character_delete.h"
 #include "flatfile/flatfile_identity_repository.h"
+#include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 
+#include <algorithm>
 #include <new>
 #include <utility>
 #include <vector>
@@ -14,6 +17,7 @@ namespace
 {
 constexpr int8_t account_deletion_fence = 2;
 
+/* Translate account repository failures into the deletion contract. */
 flatfile_account_delete_result map_account(flatfile_account_result result)
 {
 	switch (result)
@@ -29,6 +33,7 @@ flatfile_account_delete_result map_account(flatfile_account_result result)
 	}
 }
 
+/* Translate identity repository failures into the deletion contract. */
 flatfile_account_delete_result map_identity(flatfile_identity_result result)
 {
 	if (result == flatfile_identity_result::conflict)
@@ -38,6 +43,7 @@ flatfile_account_delete_result map_identity(flatfile_identity_result result)
 	return flatfile_account_delete_result::invalid;
 }
 
+/* Translate character deletion failures into the account deletion contract. */
 flatfile_account_delete_result map_character(flatfile_character_delete_result result)
 {
 	if (result == flatfile_character_delete_result::not_found)
@@ -49,6 +55,7 @@ flatfile_account_delete_result map_character(flatfile_character_delete_result re
 	return flatfile_account_delete_result::invalid;
 }
 
+/* Translate shared-domain cleanup failures into the account deletion contract. */
 flatfile_account_delete_result map_domain(flatfile_player_domain_result result)
 {
 	if (result == flatfile_player_domain_result::not_found)
@@ -59,8 +66,31 @@ flatfile_account_delete_result map_domain(flatfile_player_domain_result result)
 		return flatfile_account_delete_result::io_error;
 	return flatfile_account_delete_result::invalid;
 }
+
+/* Translate locker preparation failures into the account deletion contract. */
+flatfile_account_delete_result map_locker(flatfile_locker_result result)
+{
+	if (result == flatfile_locker_result::not_found)
+		return flatfile_account_delete_result::not_found;
+	if (result == flatfile_locker_result::conflict)
+		return flatfile_account_delete_result::conflict;
+	if (result == flatfile_locker_result::io_error)
+		return flatfile_account_delete_result::io_error;
+	return flatfile_account_delete_result::invalid;
+}
+
+/* Translate locker-custody cleanup failures into the account deletion contract. */
+flatfile_account_delete_result map_item(flatfile_item_repository_result result)
+{
+	if (result == flatfile_item_repository_result::not_found)
+		return flatfile_account_delete_result::not_found;
+	if (result == flatfile_item_repository_result::io_error)
+		return flatfile_account_delete_result::io_error;
+	return flatfile_account_delete_result::invalid;
+}
 } // namespace
 
+/* Atomically erase a fenced account and every authority record it owns or visits. */
 flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 						       const std::string &account_name,
 						       std::string *error)
@@ -134,6 +164,38 @@ flatfile_account_delete_result flatfile_account_delete(const std::string &root,
 			return map_domain(banks);
 		try
 		{
+			flatfile_locker_player_removal locker_removal;
+			const auto locker = flatfile_locker_prepare_account_remove(
+				root, authority_lock, account_name, &locker_removal, error);
+			if (locker == flatfile_locker_result::ok)
+			{
+				if (!locker_removal.custody.empty())
+				{
+					const bool expected_items = std::any_of(
+						locker_removal.custody.begin(),
+						locker_removal.custody.end(), [](const auto &owner)
+						{ return !owner.items.empty(); });
+					flatfile_authority_operation item_operation;
+					const auto item =
+						flatfile_item_repository_prepare_locker_remove(
+							root, authority_lock,
+							locker_removal.custody, &item_operation,
+							error);
+					if (item == flatfile_item_repository_result::ok)
+						operations.push_back(std::move(item_operation));
+					else if (item != flatfile_item_repository_result::unchanged &&
+						 !(item == flatfile_item_repository_result::not_found &&
+						   !expected_items))
+						return map_item(item);
+				}
+				operations.push_back(std::move(locker_removal.operation));
+			}
+			else if (locker != flatfile_locker_result::unchanged &&
+				 locker != flatfile_locker_result::not_found)
+			{
+				return map_locker(locker);
+			}
+
 			flatfile_authority_operation identity_operation;
 			const auto identities = flatfile_identity_prepare_sync_account(
 				root, identity_lock, authority_lock, account_name, {},
