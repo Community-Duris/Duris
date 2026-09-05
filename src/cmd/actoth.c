@@ -1866,7 +1866,7 @@ static struct deferred_save_slot *find_empty_deferred_save_slot(void)
 
 static void schedule_deferred_save(struct deferred_save_slot *slot, P_char ch, int delay)
 {
-	if (!slot || !slot->pid || slot->due_usec || !ch || IS_NPC(ch) || !GET_NAME(ch))
+	if (!slot || !slot->pid || !ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
 
 	slot->runtime_id = ch->runtime_id;
@@ -1964,6 +1964,7 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 		slot->level_dirty = slot->level_dirty || level_dirty;
 		slot->latest_pending_usec = persistence_observability_now_usec();
 		snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
+		slot->runtime_id = ch->runtime_id;
 		if (!slot->due_usec)
 			schedule_deferred_save(slot, ch,
 					       slot->retry_delay ? slot->retry_delay : delay);

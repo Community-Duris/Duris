@@ -231,7 +231,7 @@ player_revision_t captured_revision = 0;
 bool database_ready = true, journal_ready = false;
 terminal_fence *find_terminal_fence_locked(int pid) { return fence.pid == pid ? &fence : nullptr; }
 terminal_fence *allocate_terminal_fence_locked(int pid) { fence.pid = pid; return &fence; }
-bool trace_player_saves() { return false; }
+bool trace_player_saves() { return true; }
 bool snapshot_is_journaled_locked(const player_revision_snapshot &) { return true; }
 uint64_t persistence_observability_now_usec() { return 0; }
 void logit(int, const char *, ...) {}

@@ -4628,7 +4628,9 @@ void displayShutdownMsg(P_char ch)
 		return;
 
 	char buf[200];
-	time_t secs = shutdownData.reboot_time - time(0);
+	time_t secs = shutdownData.reboot_time ? shutdownData.reboot_time - time(0) : 0;
+	if (secs < 0)
+		secs = 0;
 	const char *type = "REBOOT";
 	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
 	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)
