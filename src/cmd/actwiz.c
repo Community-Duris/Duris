@@ -4390,6 +4390,7 @@ void do_wizmsg(P_char ch, char *arg, int /*cmd*/)
 
 TimedShutdownData shutdownData = { 0, -1, TimedShutdownData::NONE, "", "" };
 
+/** Execute an immediate shutdown or schedule the next countdown warning for an active request. */
 void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 {
 	// timed shutdown event.  ch is the god who initiated the shutdown.
@@ -4621,6 +4622,7 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 	}
 }
 
+/** Display an active shutdown countdown, treating immediate and expired deadlines as zero. */
 void displayShutdownMsg(P_char ch)
 {
 	// send_to_char() ch any pending reboot/shutdown message...
@@ -4628,7 +4630,9 @@ void displayShutdownMsg(P_char ch)
 		return;
 
 	char buf[200];
-	time_t secs = shutdownData.reboot_time - time(0);
+	time_t secs = shutdownData.reboot_time ? shutdownData.reboot_time - time(0) : 0;
+	if (secs < 0)
+		secs = 0;
 	const char *type = "REBOOT";
 	if (shutdownData.eShutdownType == TimedShutdownData::OK ||
 	    shutdownData.eShutdownType == TimedShutdownData::PWIPE)

@@ -267,9 +267,12 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 }
 #endif
 
+/** Request an immediate game-thread shutdown transition through the existing persistence gates. */
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
-	shutdownData.reboot_time = time(0);
+	// Launcher signals request an immediate transition from the game thread.
+	// A wall-clock "now" schedules another world event, which can be starved.
+	shutdownData.reboot_time = 0;
 	shutdownData.next_warning = -1;
 	snprintf(shutdownData.IssuedBy, sizeof(shutdownData.IssuedBy), "%s",
 		 issuer ? issuer : "Launcher");
@@ -1003,6 +1006,7 @@ static void dispatch_playing_command(P_char character, char *input)
 }
 
 /** Run the server pulse loop, including selective input-queue dispatch. */
+/** Run network and simulation pulses, including persistence deadlines independent of world-event debt. */
 void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;
@@ -1670,6 +1674,7 @@ resume_game_loop:
 							  "none", "none", "integrity_failure",
 							  "operation metadata redacted");
 			player_save_pipeline_pulse();
+			persistence_pulse_character_saves();
 			player_load_result load_completions[32] = {};
 			const size_t load_completion_count =
 				player_load_pipeline_pulse(load_completions, 32);

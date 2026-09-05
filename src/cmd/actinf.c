@@ -6699,6 +6699,7 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 	send_to_char("\n", ch);
 }
 
+/** Display game time and uptime, scheduling autoreboot only when no earlier shutdown is active. */
 void do_time(P_char ch, char *argument, int /*cmd*/)
 {
 	char *tmstr;
@@ -6776,8 +6777,9 @@ void do_time(P_char ch, char *argument, int /*cmd*/)
 	if ((uptime.day * 24 + uptime.hour) > autoreboot_threshold_hours)
 	{
 		// If no shutdown in progress, or shutdown is > delay minutes out.
-		if (shutdownData.reboot_time == 0 ||
-		    shutdownData.reboot_time - time(NULL) > autoreboot_delay_minutes * 60)
+		if (shutdownData.eShutdownType == TimedShutdownData::NONE ||
+		    (shutdownData.reboot_time != 0 &&
+		     shutdownData.reboot_time - time(NULL) > autoreboot_delay_minutes * 60))
 		{
 			char shutdown_cmd[100];
 			snprintf(shutdown_cmd, 100, "autoreboot %d", autoreboot_delay_minutes);

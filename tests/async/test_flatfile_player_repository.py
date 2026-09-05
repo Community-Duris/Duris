@@ -2,13 +2,16 @@
 
 from _paths import SRC, rel
 import pathlib
+import shutil
+import sys
 import subprocess
 import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
+(ROOT / "bin/tests").mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tests") as temporary:
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_player_test"
     compile_result = subprocess.run(
@@ -65,6 +68,14 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
     )
     if compile_result.returncode:
         raise SystemExit(compile_result.stdout)
+
+    if len(sys.argv) == 3 and sys.argv[1] == "--build-inspector":
+        destination = pathlib.Path(sys.argv[2]).resolve()
+        if not destination.is_relative_to((ROOT / "bin").resolve()):
+            raise SystemExit("inspector must be placed below bin/")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(binary, destination)
+        raise SystemExit(0)
 
     state_root = temporary_path / "state"
     run_result = subprocess.run(

@@ -3,6 +3,8 @@
 
 from _paths import SRC
 from pathlib import Path
+import subprocess
+import tempfile
 
 root = Path(__file__).resolve().parents[2]
 actcomm = (SRC / "actcomm.c").read_text()
@@ -14,6 +16,7 @@ sql = (SRC / "sql.c").read_text()
 
 
 def body(source, start, end):
+    """Extract a marked source region for ownership checks or the shutdown harness."""
     section = source[source.index(start):]
     return section[:section.index(end)]
 
@@ -74,3 +77,72 @@ assert "mysql_close(persistenceDB);" in mysql_shutdown
 assert "mysql_close(DB);" in mysql_shutdown
 
 print("Valgrind clean-shutdown ownership contracts passed")
+
+# Launcher signals are consumed on the game thread. Do not put an immediate
+# shutdown back behind the world-event backlog before entering the save gates.
+request = body(comm, "void request_shutdown(", "extern void ne_events();")
+assert "shutdownData.reboot_time = 0;" in request
+assert request.index("shutdownData.reboot_time = 0;") < request.index("timedShutdown(NULL")
+actwiz = (SRC / "actwiz.c").read_text()
+immediate = body(actwiz, "if (shutdownData.reboot_time == 0)", "case TimedShutdownData::REBOOT:")
+assert "shutdownflag = 1;" in immediate and "add_event" not in immediate
+print("Immediate launcher shutdown reaches the existing save gates without world callbacks")
+
+# Exercise the actual status formatter and autoreboot condition for zero,
+# expired and future deadlines, including cancellation with a stale deadline.
+
+actinf = (SRC / "actinf.c").read_text()
+autoreboot = body(actinf, "// If no shutdown in progress", "\n\t\t{")
+harness = r'''
+#include <cassert>
+#include <cstdio>
+#include <ctime>
+#include <string>
+using P_char = void *;
+struct TimedShutdownData {
+    time_t reboot_time;
+    enum { NONE, OK, PWIPE, REBOOT } eShutdownType;
+} shutdownData;
+std::string message;
+void send_to_char(const char *text, P_char) { message = text; }
+''' + body(actwiz, "void displayShutdownMsg(", "void do_shutdown(") + r'''
+bool would_autoreboot() {
+    int autoreboot_delay_minutes = 60;
+''' + autoreboot + r'''
+        return true;
+    return false;
+}
+int main() {
+    shutdownData = {0, TimedShutdownData::OK};
+    displayShutdownMsg(nullptr);
+    assert(message.find("in 0 seconds") != std::string::npos);
+    assert(!would_autoreboot());
+    shutdownData.reboot_time = time(nullptr) - 60;
+    displayShutdownMsg(nullptr);
+    assert(message.find("in 0 seconds") != std::string::npos);
+    assert(!would_autoreboot());
+    shutdownData.reboot_time = time(nullptr) + 7200;
+    displayShutdownMsg(nullptr);
+    assert(message.find("minute") != std::string::npos);
+    assert(would_autoreboot());
+    shutdownData.reboot_time = time(nullptr) + 60;
+    assert(!would_autoreboot());
+    shutdownData.eShutdownType = TimedShutdownData::NONE;
+    message.clear();
+    displayShutdownMsg(nullptr);
+    assert(message.empty());
+    assert(would_autoreboot());
+    shutdownData.reboot_time = 0;
+    assert(would_autoreboot());
+}
+'''
+build = root / "bin/tests/shutdown-status"
+build.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(dir=build) as temp_dir:
+    source = Path(temp_dir) / "regression.cpp"
+    binary = Path(temp_dir) / "regression"
+    source.write_text(harness)
+    # Compile only the checked-in harness and execute its freshly built binary.
+    subprocess.run(["g++", "-std=c++20", str(source), "-o", str(binary)], check=True)  # noqa: S603, S607
+    subprocess.run([str(binary)], check=True)  # noqa: S603
+print("Immediate shutdown status and autoreboot guards passed")

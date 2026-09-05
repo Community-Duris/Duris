@@ -21,6 +21,7 @@ SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
 def section(text: str, start: str, end: str) -> str:
+    """Extract a production function region for contract checks and compiled harnesses."""
     first = text.index(start)
     return text[first : text.index(end, first)]
 
@@ -191,9 +192,8 @@ assert "fence->revision == durable_ready.back().revision" in dispatcher
 assert "fence->revision == completions[index].revision" in pulse
 assert "completions[index].durable_revision >= fence->revision" in pulse
 assert "std::chrono::steady_clock::now()" in terminal
-assert "current.unacknowledged_components == PLAYER_CHECKPOINT_COMPONENT_ALL" in terminal
-assert "revision = current.current_revision" in terminal
-assert "snapshot_is_journaled_locked(current)" in terminal
+assert "player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, &revision)" in terminal
+assert "promote_existing" not in terminal
 assert terminal.index("if (fence->acknowledged)") < terminal.index("if (allow_journal_handoff")
 assert "*fence = {};" in terminal
 assert "++health.terminal_timeouts" in terminal
@@ -210,3 +210,110 @@ assert "++health.drain_failures" in drain
 print("[PASS] terminal fences, exact durability outcomes, retry tracking, and bounded drain are wired")
 
 print("nonterminal player save pipeline contracts passed")
+
+# Run the actual terminal coordinator against controlled worker ACKs. In
+# particular, an ACKed nonterminal retry must not authorize a later camp.
+terminal_preamble = r'''
+#include "player/player_save_pipeline.h"
+#include <cassert>
+#include <chrono>
+#include <mutex>
+#include <thread>
+struct char_data { int pid; };
+#define IS_NPC(ch) false
+#define GET_PID(ch) ((ch)->pid)
+#define LOG_STATUS 0
+struct terminal_fence { int pid; player_revision_t revision; bool journaled; bool acknowledged; };
+terminal_fence fence = {};
+std::mutex pipeline_mutex;
+player_save_pipeline_health health = {};
+int captured_intent = 1, captured_room = 0;
+player_revision_t captured_revision = 0;
+bool database_ready = true, journal_ready = false;
+terminal_fence *find_terminal_fence_locked(int pid) { return fence.pid == pid ? &fence : nullptr; }
+terminal_fence *allocate_terminal_fence_locked(int pid) { fence.pid = pid; return &fence; }
+bool trace_player_saves() { return true; }
+bool snapshot_is_journaled_locked(const player_revision_snapshot &) { return true; }
+uint64_t persistence_observability_now_usec() { return 0; }
+void logit(int, const char *, ...) {}
+player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int intent, int room) {
+    player_revision_snapshot current = {};
+    assert(player_revision_snapshot_copy(ch->pid, &current));
+    if (!current.dirty_components) return player_save_pipeline_result::unchanged;
+    captured_intent = intent;
+    captured_room = room;
+    captured_revision = current.current_revision;
+    player_revision_t queued;
+    player_component_mask_t components;
+    assert(player_revision_queue(ch->pid, &queued, &components));
+    if (journal_ready && fence.revision == captured_revision) fence.journaled = true;
+    return player_save_pipeline_result::queued;
+}
+void player_save_pipeline_pulse() {
+    if (!database_ready) return;
+    player_revision_snapshot current = {};
+    assert(player_revision_snapshot_copy(1, &current));
+    if (current.queued_components) {
+        assert(player_revision_begin_inflight(1, current.queued_revision, current.queued_components));
+        assert(player_revision_acknowledge(1, current.queued_revision, current.queued_components));
+        if (fence.revision == current.queued_revision) fence.acknowledged = true;
+    }
+}
+'''
+terminal_main = r'''
+int main() {
+    char_data player{1};
+    health.initialized = true;
+    for (int trial = 0; trial < 10; ++trial) {
+        player_revision_reset_for_tests();
+        const player_revision_t old_revision = 50 + trial * 10;
+        assert(player_revision_hydrate(1, old_revision));
+        fence = {1, old_revision, true, true};
+        captured_intent = 1; captured_room = 999;
+        database_ready = true; journal_ready = false;
+        assert(player_save_pipeline_terminal(&player, 6, 22800, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
+        assert(captured_intent == 6 && captured_room == 22800);
+        assert(captured_revision > old_revision);
+
+        // A full pending snapshot also belongs to its original save intent.
+        player_revision_t pending;
+        assert(player_revision_mark(1, PLAYER_CHECKPOINT_COMPONENT_ALL, &pending));
+        player_save_pipeline_checkpoint_dirty(&player, 1, 777);
+        assert(player_save_pipeline_terminal(&player, 6, 22801, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
+        assert(captured_intent == 6 && captured_room == 22801 && captured_revision > pending);
+
+        database_ready = false;
+        assert(player_save_pipeline_terminal(&player, 6, 22802, 1, false) ==
+               player_save_terminal_result::timed_out);
+        database_ready = true;
+        player_save_pipeline_pulse();
+        assert(player_revision_mark(1, PLAYER_CHECKPOINT_COMPONENT_ALL, &pending));
+        fence = {1, pending, false, false};
+        player_save_pipeline_checkpoint_dirty(&player, 1, 777);
+        player_save_pipeline_pulse();
+        assert(fence.acknowledged);
+        assert(player_save_pipeline_terminal(&player, 6, 22803, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
+        assert(captured_intent == 6 && captured_room == 22803 && captured_revision > pending);
+
+        // MariaDB's permitted journal handoff still requires this terminal intent.
+        database_ready = false; journal_ready = true;
+        assert(player_save_pipeline_terminal(&player, 4, 22804, 20, true) ==
+               player_save_terminal_result::journal_durable);
+        assert(captured_intent == 4 && captured_room == 22804);
+    }
+}
+'''
+terminal_build = ROOT / "bin/tests/terminal-save-intent"
+terminal_build.mkdir(parents=True, exist_ok=True)
+terminal_source = terminal_build / "regression.cpp"
+terminal_binary = terminal_build / "regression"
+terminal_source.write_text(terminal_preamble + terminal + terminal_main)
+subprocess.run([
+    "g++", "-std=c++20", "-Isrc", str(terminal_source),
+    "src/player/player_revision_state.c", "-pthread", "-o", str(terminal_binary),
+], cwd=ROOT, check=True)
+subprocess.run([str(terminal_binary)], check=True, timeout=10)
+print("[PASS] ten terminal-intent trials cover prior ACK, pending save, timed-out camp retry, and journal handoff")

@@ -1498,6 +1498,7 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 	return static_cast<long>(batch.size());
 }
 
+/** Warn once when both scheduler budgets explicitly allow unlimited callback work. */
 static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callbacks)
 {
 	static bool warned = FALSE;
@@ -1512,6 +1513,7 @@ static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callba
 }
 
 // Execute events!
+/** Dispatch due world callbacks within pulse budgets and optionally trace long-running callbacks. */
 void ne_events(void)
 {
 	static long count = 0;
@@ -1635,17 +1637,22 @@ void ne_events(void)
 			nevent_analytics_record_callback(callback_func, callback_name, callback_us);
 		}
 
-		if (nevent_is_player_timed(current_nevent->func, current_nevent->ch) &&
-		    nevent_trace_player())
+		if (current_nevent->func && nevent_trace_player() &&
+		    (nevent_is_player_timed(current_nevent->func, current_nevent->ch) ||
+		     (current_nevent->ch && IS_PC(current_nevent->ch))))
 		{
 			long long late_pulses = static_cast<long long>(
 				MIN(current_lateness, static_cast<unsigned long long>(LLONG_MAX)));
 			logit(LOG_STATUS,
-			      "PLAYER EVENT TIMING: func=%s sequence=%llu ch_pid=%ld due_tick=%llu actual_tick=%llu late_pulses=%lld scheduled=%ld",
+			      "PLAYER EVENT TIMING: func=%s sequence=%llu ch_pid=%ld due_tick=%llu actual_tick=%llu late_pulses=%lld scheduled=%ld mono_us=%llu callback_us=%ld address=%p",
 			      nevent_callback_label(current_nevent->func), current_nevent->sequence,
 			      current_nevent->ch ? (long)GET_ID(current_nevent->ch) : -1L,
 			      current_nevent->due_tick, ne_event_tick, late_pulses,
-			      ne_event_counter);
+			      ne_event_counter,
+			      (unsigned long long)callback_started.tv_sec * 1000000ULL +
+				      callback_started.tv_nsec / 1000,
+			      nevent_elapsed_us(&callback_started, &callback_finished),
+			      (void *)current_nevent->func);
 		}
 
 		if (current_nevent->deferral_count > 0)
