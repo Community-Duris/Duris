@@ -132,9 +132,10 @@ int main() {
 '''
 build = root / "bin/tests/deferred-save-scheduling"
 build.mkdir(parents=True, exist_ok=True)
-source = build / "regression.cpp"
-binary = build / "regression"
-source.write_text(scheduling_harness)
-subprocess.run(["g++", "-std=c++20", str(source), "-o", str(binary)], check=True)
-subprocess.run([str(binary)], check=True)
+with tempfile.TemporaryDirectory(dir=build) as temp_dir:
+    source = Path(temp_dir) / "regression.cpp"
+    binary = Path(temp_dir) / "regression"
+    source.write_text(scheduling_harness)
+    subprocess.run(["g++", "-std=c++20", str(source), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
 print("[PASS] reconnect refreshes identity, coalescing preserves deadlines, and retries replace deadlines")

@@ -4,6 +4,7 @@
 from _paths import SRC
 from pathlib import Path
 import subprocess
+import tempfile
 
 root = Path(__file__).resolve().parents[2]
 actcomm = (SRC / "actcomm.c").read_text()
@@ -136,9 +137,11 @@ int main() {
 '''
 build = root / "bin/tests/shutdown-status"
 build.mkdir(parents=True, exist_ok=True)
-source = build / "regression.cpp"
-binary = build / "regression"
-source.write_text(harness)
-subprocess.run(["g++", "-std=c++20", str(source), "-o", str(binary)], check=True)
-subprocess.run([str(binary)], check=True)
+with tempfile.TemporaryDirectory(dir=build) as temp_dir:
+    source = Path(temp_dir) / "regression.cpp"
+    binary = Path(temp_dir) / "regression"
+    source.write_text(harness)
+    # Compile only the checked-in harness and execute its freshly built binary.
+    subprocess.run(["g++", "-std=c++20", str(source), "-o", str(binary)], check=True)  # noqa: S603, S607
+    subprocess.run([str(binary)], check=True)  # noqa: S603
 print("Immediate shutdown status and autoreboot guards passed")
