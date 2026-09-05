@@ -34,6 +34,7 @@ import test_flatfile_combat_journey as journey
 import pathlib
 import shutil
 import signal
+import socket
 import stat
 import subprocess
 import tempfile
@@ -90,6 +91,20 @@ class RecordedClient(MudClient):
             record("receive", text=self.transcript[offset:].decode(
                 "utf-8", errors="replace").replace(journey.PASSWORD, "[REDACTED]"))
         return received
+
+    def expect_disconnect(self, timeout=5):
+        """Require the goodbye message and server EOF without sending more input."""
+        self.expect("Thank you for playing!", timeout=timeout)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                chunk = self.socket.recv(65536)
+            except socket.timeout:
+                continue
+            if not chunk:
+                record("account_disconnected")
+                return
+        raise AssertionError("account logout did not close the connection after output drained")
 
     def expect_any(self, needles, timeout=15):
         """Wait for expected output and classify rejection versus observation failures."""
@@ -466,6 +481,7 @@ with tempfile.TemporaryDirectory(prefix="full-world-build-", dir=ROOT / "bin") a
                             client.send("quit")
                             client.expect("ACCOUNT MENU", timeout=30)
                             client.send("0")
+                            client.expect_disconnect()
                             client.close()
                             client = None
                             phase = output_path.stem + ":shutdown"
@@ -527,6 +543,7 @@ with tempfile.TemporaryDirectory(prefix="full-world-build-", dir=ROOT / "bin") a
                         client.send("quit")
                         client.expect("ACCOUNT MENU", timeout=30)
                         client.send("0")
+                        client.expect_disconnect()
                         client.close()
                         client = None
                         phase = output_path.stem + ":shutdown"

@@ -3,29 +3,34 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
-set -a
-# shellcheck disable=SC1091
-source "$ROOT/.env"
-set +a
-: "${DB_HOST:?}"
-: "${DB_USER:?}"
-: "${DB_PASSWD:?}"
-: "${DB_PORT:=3306}"
-
-environment_value="${ENVIRONMENT:-${APP_ENV:-${DURIS_ENV:-${NODE_ENV:-}}}}"
-[[ "${environment_value,,}" =~ (dev|local|test) ]] || {
-    echo 'refusing critical schema test: environment is not explicitly development/local/test' >&2
-    exit 1
-}
-[[ "${DB_NAME,,}" =~ (dev|local|test) ]] || {
-    echo 'refusing critical schema test: configured database name is not development/local/test' >&2
-    exit 1
-}
-CRITICAL_TEST_DB_NAME="$DB_NAME"
-export CRITICAL_TEST_DB_NAME
-export MYSQL_PWD="$DB_PASSWD"
-if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
-MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
+# The production outbox query references each table more than once, which
+# MySQL forbids for TEMPORARY tables. Use real tables in our own container so
+# retry/reconciliation checks run without touching the configured database.
+NAME="duris-critical-command-$$-$RANDOM"
+PASSWORD="critical-command-$$-$RANDOM"
+IMAGE="${CRITICAL_DB_IMAGE:-mysql:8.0}"
+cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+trap cleanup EXIT HUP INT TERM
+if [[ "$IMAGE" == mariadb:* ]]; then
+    PASSWORD_ENV=MARIADB_ROOT_PASSWORD
+else
+    PASSWORD_ENV=MYSQL_ROOT_PASSWORD
+fi
+docker run --rm -d --name "$NAME" -p 127.0.0.1::3306 \
+    -e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
+mapping="$(docker port "$NAME" 3306/tcp)"
+export ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="${mapping##*:}"
+export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
+export DB_NAME=critical_command_test CRITICAL_TEST_DB_NAME=critical_command_test
+export DB_ALLOWED_TARGETS=127.0.0.1/critical_command_test
+MYSQL=(mysql --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B)
+ready=0
+for _ in $(seq 1 90); do
+    if "${MYSQL[@]}" -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
+    sleep 1
+done
+[[ "$ready" == 1 ]]
+"${MYSQL[@]}" -e "CREATE DATABASE $CRITICAL_TEST_DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 "${MYSQL[@]}" "$CRITICAL_TEST_DB_NAME" < "$ROOT/migrations/critical_command_inbox_outbox.sql"
 "${MYSQL[@]}" "$CRITICAL_TEST_DB_NAME" < "$ROOT/migrations/critical_command_inbox_outbox.sql"

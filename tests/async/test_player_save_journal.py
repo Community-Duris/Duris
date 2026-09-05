@@ -208,6 +208,8 @@ int main(int argc, char **argv)
 
     const std::string unsafe_directory = directory + "-unsafe";
     assert(mkdir(unsafe_directory.c_str(), 0755) == 0);
+    // A restrictive caller umask must not turn this rejection fixture safe.
+    assert(chmod(unsafe_directory.c_str(), 0755) == 0);
     assert(!player_save_journal_init(unsafe_directory.c_str()));
     const std::string quota_directory = directory + "-quota";
     assert(mkdir(quota_directory.c_str(), 0700) == 0);

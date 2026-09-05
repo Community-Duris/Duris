@@ -6514,11 +6514,11 @@ void nanny(P_desc d, char *arg)
 		/* waiting for ttype negotiation, ignore user input */
 		break;
 
-		/* Flush output messages, then kill the descriptor */
+		/* The output loop closes this descriptor after all transport bytes drain. */
 	case CON_FLUSH:
+		return;
 	default:
-		if (STATE(d) != CON_FLUSH)
-			logit(LOG_EXIT, "Nanny: illegal state of con'ness #1 (%d)", STATE(d));
+		logit(LOG_EXIT, "Nanny: illegal state of con'ness #1 (%d)", STATE(d));
 		if (d->output.head == 0)
 			close_socket(d);
 		return;

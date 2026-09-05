@@ -1717,6 +1717,10 @@ struct descriptor_data
 	int gmcp_enabled;
 	int sga_disabled;
 	int write_failed;
+	unsigned char *telnet_output_buffer;
+	size_t telnet_output_len;
+	size_t telnet_output_offset;
+	int telnet_tls_retry;
 	int gmcp_quest_map_sent;
 	char client_name[64];
 	char client_version[32];

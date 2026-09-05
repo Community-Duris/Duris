@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <gnutls/gnutls.h>
 #include <stdlib.h>
+#include <string>
 #include <string.h>
 #include <unistd.h>
 #include <zlib.h>
@@ -19,6 +20,8 @@
 /* external variables used by this module */
 extern P_desc descriptor_list;
 extern long sentbytes;
+
+static constexpr size_t telnet_output_limit = 1024 * 1024;
 
 /* global variables provided by this module */
 int mccp_alloc = 0;
@@ -258,9 +261,6 @@ int compress_end(P_desc player, int flush)
  screw up compression */
 int write_to_descriptor(P_desc player, const char *txt)
 {
-	int total, i, j;
-	char conv_buf[MAX_STRING_LENGTH * 2];
-
 	if (!player || !txt)
 		return -1;
 	if (player->write_failed)
@@ -303,93 +303,129 @@ int write_to_descriptor(P_desc player, const char *txt)
 		return result;
 	}
 
-	for (i = 0, j = 0; txt[i]; i++)
+	size_t input_len = strnlen(txt, telnet_output_limit + 1);
+	if (input_len > telnet_output_limit)
+	{
+		logit(LOG_COMM, "Telnet text exceeded %zu bytes", telnet_output_limit);
+		player->write_failed = 1;
+		return -1;
+	}
+	std::string converted;
+	converted.reserve(input_len * 2);
+	for (size_t i = 0; i < input_len; ++i)
 	{
 		if (txt[i] == '\n')
-		{
-			conv_buf[j++] = '\r';
-			conv_buf[j++] = '\n';
-		}
+			converted += "\r\n";
 		else if (txt[i] != '\r')
-			conv_buf[j++] = txt[i];
+			converted += txt[i];
 	}
-
-	conv_buf[j] = '\0';
-	txt = conv_buf;
-	total = j;
-	char down[MAX_STRING_LENGTH * 2];
-
 	if (player->cp437)
 	{
-		downgrade_string(down, txt, u_cp437);
-		txt = down;
-		total = strlen(txt);
+		/* Downgrading emits at most one byte per input byte, plus its terminator. */
+		std::string downgraded(converted.size() + 1, '\0');
+		downgrade_string(downgraded.data(), converted.c_str(), u_cp437);
+		return write_to_descriptor_binary(player, (const unsigned char *)downgraded.data(),
+						  strlen(downgraded.c_str()));
 	}
-
-	int ret = write_to_descriptor_binary(player, (const unsigned char *)txt, total);
-	return ret;
+	return write_to_descriptor_binary(player, (const unsigned char *)converted.data(),
+					  converted.size());
 }
 
-/* never ever call this function, unless you are write_to_descriptor */
-int raw_write_to_descriptor(P_desc d, const char *txt, const int total)
+/* Retain wire bytes, including compressed output, until the transport accepts them. */
+void telnet_free_output(P_desc d)
 {
-	int sofar, thisround;
+	free(d->telnet_output_buffer);
+	d->telnet_output_buffer = NULL;
+	d->telnet_output_len = 0;
+	d->telnet_output_offset = 0;
+	d->telnet_tls_retry = 0;
+}
 
-	sofar = 0;
-
-	sentbytes += total;
-
-	if (d->character && !IS_NPC(d->character))
-		d->character->only.pc->send_data = d->character->only.pc->send_data + total;
-
-	if (d->sslses)
+int telnet_flush_output(P_desc d)
+{
+	if (d->write_failed)
+		return -1;
+	while (d->telnet_output_offset < d->telnet_output_len)
 	{
-		int ret = gnutls_record_send(d->sslses, txt, total);
-		// retry on interrupt, but not on buffer full
-		while (ret == GNUTLS_E_INTERRUPTED)
-			ret = gnutls_record_send(d->sslses, NULL, 0);
-		if (ret == GNUTLS_E_AGAIN)
+		const unsigned char *data = d->telnet_output_buffer + d->telnet_output_offset;
+		size_t remaining = d->telnet_output_len - d->telnet_output_offset;
+		ssize_t written;
+		if (d->sslses)
 		{
-			// ssl buffer full, skip this write and try next tick
-			return 0;
+			/* GnuTLS owns the interrupted record; resume it before sending new bytes. */
+			written = gnutls_record_send(d->sslses, d->telnet_tls_retry ? NULL : data,
+						     d->telnet_tls_retry ? 0 : remaining);
+			if (written == GNUTLS_E_AGAIN || written == GNUTLS_E_INTERRUPTED)
+			{
+				d->telnet_tls_retry = 1;
+				return 0;
+			}
+			d->telnet_tls_retry = 0;
+			if (written < 0)
+				logit(LOG_COMM, "Write to SSL socket error: %s (ret=%zd)",
+				      gnutls_strerror(written), written);
 		}
-		if (ret < 0)
+		else
 		{
-			logit(LOG_COMM, "Write to SSL socket error: %s (ret=%d)",
-			      gnutls_strerror(ret), ret);
+			written = write(d->descriptor, data, remaining);
+			if (written < 0 && (errno == EAGAIN || errno == EINTR
+#if EWOULDBLOCK != EAGAIN
+					    || errno == EWOULDBLOCK
+#endif
+					    ))
+				return 0;
+			if (written < 0)
+				logit(LOG_COMM, "Write to socket error: %s (errno=%d)",
+				      strerror(errno), errno);
+		}
+		if (written < 0 || (size_t)written > remaining)
+		{
 			d->write_failed = 1;
 			return -1;
 		}
+		if (written == 0)
+			return 0;
+		d->telnet_output_offset += written;
+		sentbytes += written;
+		if (d->character && !IS_NPC(d->character))
+			d->character->only.pc->send_data += written;
 	}
-	else
-		do
-		{
-			thisround = write(d->descriptor, txt + sofar, (unsigned)(total - sofar));
-			if (thisround < 0)
-			{
-				if (errno == EAGAIN
-#if EWOULDBLOCK != EAGAIN
-				    || errno == EWOULDBLOCK
-#endif
-				)
-				{
-					// socket buffer full, skip this write and try next tick
-					return (0);
-				}
-				logit(LOG_COMM, "Write to socket error: %s (errno=%d)",
-				      strerror(errno), errno);
-				d->write_failed = 1;
-				return (-1);
-			}
-			if (thisround == 0)
-			{
-				// wrote nothing - treat like eagain, try again next tick
-				return (0);
-			}
-			sofar += thisround;
-		} while (sofar < total);
+	telnet_free_output(d);
+	return 0;
+}
 
-	return (0);
+/* Only the binary/compression layer may enqueue transport bytes here. */
+int raw_write_to_descriptor(P_desc d, const char *txt, const int total)
+{
+	if (d->write_failed || total < 0)
+		return -1;
+	size_t pending = d->telnet_output_len - d->telnet_output_offset;
+	/* Bound memory for clients that stop reading, without silently dropping output. */
+	if ((size_t)total > telnet_output_limit - pending)
+	{
+		logit(LOG_COMM, "Telnet output queue exceeded %zu bytes", telnet_output_limit);
+		d->write_failed = 1;
+		return -1;
+	}
+	if (total)
+	{
+		if (d->telnet_output_offset)
+			memmove(d->telnet_output_buffer,
+				d->telnet_output_buffer + d->telnet_output_offset, pending);
+		d->telnet_output_offset = 0;
+		d->telnet_output_len = pending;
+		unsigned char *buffer =
+			(unsigned char *)realloc(d->telnet_output_buffer, pending + total);
+		if (!buffer)
+		{
+			d->write_failed = 1;
+			return -1;
+		}
+		d->telnet_output_buffer = buffer;
+		memcpy(buffer + pending, txt, total);
+		d->telnet_output_len += total;
+	}
+	return telnet_flush_output(d);
 }
 
 /* Write binary data (like telnet subnegotiations) with compression support

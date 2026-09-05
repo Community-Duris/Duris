@@ -60,18 +60,6 @@ static void clear_rows()
 	execute("DELETE FROM critical_test_state");
 }
 
-static void create_temporary_tables()
-{
-	static const char *tables[] = { "critical_operation_inbox", "critical_test_state",
-					"critical_outbox", "critical_outbox_delivery_dedupe" };
-	for (const char *table : tables)
-	{
-		const std::string temporary = std::string(table) + "_isolated";
-		execute(("CREATE TEMPORARY TABLE " + temporary + " LIKE " + table).c_str());
-		execute(("ALTER TABLE " + temporary + " RENAME TO " + table).c_str());
-	}
-}
-
 static void insert_record(unsigned int suffix)
 {
 	const char digit = static_cast<char>('0' + suffix);
@@ -134,7 +122,7 @@ int main()
 		database,
 		static_cast<unsigned int>(strtoul(port_text ? port_text : "3306", nullptr, 10)),
 		nullptr, 0));
-	create_temporary_tables();
+	// The wrapper owns an isolated database with ordinary production-shaped tables.
 	clear_rows();
 
 	insert_record(1);

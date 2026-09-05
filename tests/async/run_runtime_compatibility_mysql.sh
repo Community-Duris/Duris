@@ -126,6 +126,29 @@ SELECT CONCAT_WS(':',assoc_id,realm_id,hall_vnum,highest_claim,res_mineral,
 FROM kingdom_realms;")
 [[ "$legacy_realm_row" == "3:1:7801:24:5:6:7:8:1700000000:1:2" ]]
 
+# The garrison migration must preserve purchased guards while converging a
+# pre-existing table's collation, including on a second application.
+"${LEGACY_MYSQL[@]}" -e "
+CREATE TABLE kingdom_garrison (
+  assoc_id INT NOT NULL,
+  slot INT NOT NULL,
+  guard_class INT NOT NULL DEFAULT 0,
+  level INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (assoc_id,slot)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO kingdom_garrison VALUES (3,0,1,12),(3,16,2,20);"
+for _ in 1 2; do
+    docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0009_kingdom_garrison.sql"
+    docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+        -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
+        "$NAME" /tmp/0009_kingdom_garrison.sh >/dev/null
+done
+legacy_garrison_rows=$("${LEGACY_MYSQL[@]}" -e "
+SELECT GROUP_CONCAT(CONCAT_WS(':',assoc_id,slot,guard_class,level)
+                    ORDER BY assoc_id,slot SEPARATOR '|') FROM kingdom_garrison;")
+[[ "$legacy_garrison_rows" == "3:0:1:12|3:16:2:20" ]]
+
 docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/bootstrap_multithread_safe.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0001_lookup_dataset_state.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0002_player_item_metadata_uniqueness.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0003_season_reset_state.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0004_server_reboots.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0005_level_cap_singleton.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0006_kingdom_realms.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0007_pkill_event_stamp_contract.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0008_statistics_date_index.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0009_kingdom_garrison.sql"
 docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0001_lookup_dataset_state.sh >/dev/null
 docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0002_player_item_metadata_uniqueness.sh >/dev/null

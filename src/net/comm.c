@@ -1597,6 +1597,17 @@ resume_game_loop:
 			if (point->connected == CON_SSLNEGO)
 				continue;
 
+			if (!point->websocket && point->telnet_output_len)
+			{
+				if (telnet_flush_output(point) < 0)
+				{
+					close_socket(point);
+					continue;
+				}
+				if (point->telnet_output_len)
+					continue;
+			}
+
 			/* Drain WebSocket bytes retained after a partial write/EAGAIN before
 			 * framing additional application output for this descriptor. */
 			if (point->websocket && point->ws_output_offset < point->ws_output_len)
@@ -1617,6 +1628,14 @@ resume_game_loop:
 				continue;
 			}
 			if (point->websocket && websocket_flush_output(point) < 0)
+			{
+				close_socket(point);
+				continue;
+			}
+			/* Logout must finish without requiring another command from the client. */
+			if (point->connected == CON_FLUSH && !point->output.head &&
+			    point->telnet_output_len == 0 && point->ws_output_len == 0 &&
+			    point->ws_control_output_len == 0)
 			{
 				close_socket(point);
 				continue;
@@ -2767,6 +2786,7 @@ void close_socket(struct descriptor_data *d)
 
 	/* Free WebSocket fragment buffer if any */
 	websocket_free(d);
+	telnet_free_output(d);
 
 	if (d)
 	{

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Execute the production account-projection repair against temporary tables."""
+"""Execute the account-projection repair against isolated fixture tables."""
 
 from _paths import SRC
 from pathlib import Path
 import os
+import re
 import shlex
 import subprocess
 import tempfile
+import uuid
 
 from contract_text import index
 
@@ -191,12 +193,28 @@ int main()
 
     mysql_close(DB);
     DB = nullptr;
-    std::cout << "account character projection MariaDB behavior passed\\n";
+    std::cout << "account character projection MySQL/MariaDB behavior passed\\n";
     return 0;
 }}
 '''
 
-with tempfile.TemporaryDirectory(prefix="duris-account-projection-mysql-") as directory:
+# MySQL cannot reopen a TEMPORARY table within the INSERT/SELECT used by the
+# production repair. Give ordinary fixture tables unique names instead, and
+# rewrite only their SQL identifiers in both the extracted function and fixture.
+# Cleanup runs even when the native harness aborts; configured game tables are
+# never created, shadowed, or dropped by this harness.
+fixture_tables = re.findall(r"CREATE TEMPORARY TABLE (\w+)", harness)
+prefix = "projection_" + uuid.uuid4().hex[:12] + "_"
+table_names = {name: prefix + name for name in fixture_tables}
+harness = re.sub(
+    r"\b(" + "|".join(map(re.escape, fixture_tables)) + r")\b",
+    lambda match: table_names[match.group()],
+    harness,
+).replace("CREATE TEMPORARY TABLE", "CREATE TABLE")
+
+build_root = ROOT / "bin" / "tests"
+build_root.mkdir(parents=True, exist_ok=True)
+with tempfile.TemporaryDirectory(prefix="account-projection-", dir=build_root) as directory:
     temp = Path(directory)
     source = temp / "projection_repair.cpp"
     binary = temp / "projection_repair"
@@ -224,4 +242,15 @@ with tempfile.TemporaryDirectory(prefix="duris-account-projection-mysql-") as di
         check=False,
     )
     assert compile_result.returncode == 0, compile_result.stderr
-    subprocess.run([str(binary)], check=True, env=os.environ.copy())
+    try:
+        subprocess.run([str(binary)], check=True, env=os.environ.copy())
+    finally:
+        subprocess.run(
+            ["mysql", "-h", os.environ["DB_HOST"],
+             "-P", os.environ.get("DB_PORT", "3306"),
+             "-u", os.environ["DB_USER"], os.environ["DB_NAME"]],
+            input="DROP TABLE IF EXISTS " + ",".join(table_names.values()) + ";",
+            text=True,
+            env={**os.environ, "MYSQL_PWD": os.environ["DB_PASSWD"]},
+            check=True,
+        )
