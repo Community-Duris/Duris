@@ -1771,6 +1771,7 @@ struct manual_save_status_slot
 
 static struct manual_save_status_slot manual_save_statuses[PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS];
 
+/** Find the pending manual-save feedback slot for a player ID, or return null. */
 static struct manual_save_status_slot *find_manual_save_status(int pid)
 {
 	for (int i = 0; i < PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS; ++i)
@@ -1779,6 +1780,7 @@ static struct manual_save_status_slot *find_manual_save_status(int pid)
 	return NULL;
 }
 
+/** Find a free slot in the bounded manual-save feedback table. */
 static struct manual_save_status_slot *find_empty_manual_save_status(void)
 {
 	for (int i = 0; i < PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS; ++i)
@@ -1845,6 +1847,7 @@ static void check_manual_character_save_status(struct manual_save_status_slot *s
 	}
 }
 
+/** Find a deferred checkpoint by persistent player ID, or return null. */
 static struct deferred_save_slot *find_deferred_save_slot(int pid)
 {
 	int i;
@@ -1856,6 +1859,7 @@ static struct deferred_save_slot *find_deferred_save_slot(int pid)
 	return NULL;
 }
 
+/** Find a free slot in the bounded deferred-checkpoint table. */
 static struct deferred_save_slot *find_empty_deferred_save_slot(void)
 {
 	int i;
@@ -2001,6 +2005,7 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 	schedule_deferred_save(slot, ch, delay);
 }
 
+/** Schedule or coalesce a character checkpoint without requesting a level update. */
 void persistence_schedule_character_save(P_char ch, int type, int delay, const char *reason)
 {
 	persistence_schedule_checkpoint(ch, type, delay, reason, 0);
@@ -2146,6 +2151,7 @@ bool persistence_save_character_terminal(P_char ch, int type)
 	return saved;
 }
 
+/** Attempt terminal durability for every live player and report whether all succeeded. */
 bool persistence_save_all_characters_terminal(int type)
 {
 	P_char ch;
@@ -2190,6 +2196,7 @@ struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_cop
 	return snapshot;
 }
 
+/** Request an ordinary checkpoint or compatibility save and report admission or save failure. */
 bool do_save_silent(P_char ch, int type)
 {
 	FILE *f;

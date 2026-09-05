@@ -108,6 +108,7 @@ static player_snapshot make_full(player_revision_t revision)
 	return snapshot;
 }
 
+/** Create a minimal status-only snapshot with the revision, level, and room under test. */
 static player_snapshot make_status(player_revision_t revision, int level, int room)
 {
 	player_snapshot snapshot = {};

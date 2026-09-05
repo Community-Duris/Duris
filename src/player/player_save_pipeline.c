@@ -74,6 +74,7 @@ struct terminal_fence
 
 std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> terminal_fences = {};
 
+/** Find a player durability fence; the caller must hold pipeline_mutex. */
 terminal_fence *find_terminal_fence_locked(int pid)
 {
 	for (terminal_fence &fence : terminal_fences)
@@ -96,6 +97,7 @@ terminal_fence *allocate_terminal_fence_locked(int pid)
 	return nullptr;
 }
 
+/** Refresh queue depth and high-water counters while pipeline_mutex is held. */
 void update_depth_locked()
 {
 	health.pending_append = pending_append.size();
@@ -193,6 +195,7 @@ void dispatcher_main()
 #endif
 }
 
+/** Check retained queues for an exact player revision while pipeline_mutex is held. */
 bool snapshot_is_retained_locked(int pid, player_revision_t revision)
 {
 	for (const player_snapshot &snapshot : pending_append)
@@ -204,6 +207,7 @@ bool snapshot_is_retained_locked(int pid, player_revision_t revision)
 	return false;
 }
 
+/** Admit or coalesce a snapshot within queue and byte limits before notifying the dispatcher. */
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
 {
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
@@ -322,6 +326,7 @@ void player_save_pipeline_shutdown(void)
 	update_depth_locked();
 }
 
+/** Mark player components dirty and advance any outstanding terminal fence to the new revision. */
 bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 {
 #ifdef __NO_MYSQL__
@@ -393,6 +398,7 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 	return enqueue_snapshot(std::move(snapshot));
 }
 
+/** Mark requested components and capture a checkpoint with the supplied intent and room. */
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum)
@@ -628,6 +634,7 @@ size_t player_save_pipeline_dirty_count(void)
 	return player_revision_dirty_count();
 }
 
+/** Classify save intents that do not require a terminal durability fence. */
 bool player_save_pipeline_is_nonterminal_type(int save_intent)
 {
 	return save_intent != RENT_INN && save_intent != RENT_LINKDEAD &&

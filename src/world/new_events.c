@@ -1498,6 +1498,7 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 	return static_cast<long>(batch.size());
 }
 
+/** Warn once when both scheduler budgets explicitly allow unlimited callback work. */
 static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callbacks)
 {
 	static bool warned = FALSE;

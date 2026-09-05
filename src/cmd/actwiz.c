@@ -4390,6 +4390,7 @@ void do_wizmsg(P_char ch, char *arg, int /*cmd*/)
 
 TimedShutdownData shutdownData = { 0, -1, TimedShutdownData::NONE, "", "" };
 
+/** Execute an immediate shutdown or schedule the next countdown warning for an active request. */
 void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 {
 	// timed shutdown event.  ch is the god who initiated the shutdown.
