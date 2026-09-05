@@ -21,6 +21,7 @@ SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 
 def section(text: str, start: str, end: str) -> str:
+    """Extract a production function region for contract checks and compiled harnesses."""
     first = text.index(start)
     return text[first : text.index(end, first)]
 

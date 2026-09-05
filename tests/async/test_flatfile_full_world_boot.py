@@ -68,6 +68,7 @@ artifact_destination = None
 
 
 def record(event, **fields):
+    """Append a monotonic journey event and print non-receive events immediately."""
     entry = dict(monotonic=time.monotonic(), attempt=attempt, phase=phase,
                  event=event, **fields)
     records.append(entry)
@@ -77,10 +78,12 @@ def record(event, **fields):
 
 class RecordedClient(MudClient):
     def send(self, line):
+        """Record a password-redacted command before sending it to the test server."""
         record("send", command=line.replace(journey.PASSWORD, "[REDACTED]"))
         super().send(line)
 
     def _receive(self):
+        """Record newly received transcript bytes with the fixture password redacted."""
         offset = len(self.transcript)
         received = super()._receive()
         if received:
@@ -89,6 +92,7 @@ class RecordedClient(MudClient):
         return received
 
     def expect_any(self, needles, timeout=15):
+        """Wait for expected output and classify rejection versus observation failures."""
         started = time.monotonic()
         transcript_offset = len(self.transcript)
         try:
@@ -111,6 +115,7 @@ MudClient = journey.MudClient = RecordedClient
 
 @contextmanager
 def fixture_directory(kind):
+    """Yield isolated fixture storage and preserve configured diagnostics only on failure."""
     global artifact_destination
     with tempfile.TemporaryDirectory(prefix=f"duris-flatfile-world-{kind}-") as tmp:
         try:
@@ -139,11 +144,13 @@ def fixture_directory(kind):
 
 
 def require(condition: bool, message: str) -> None:
+    """Raise an assertion with the supplied diagnostic when a journey invariant fails."""
     if not condition:
         raise AssertionError(message)
 
 
 def inspect_authority(state_root):
+    """Read synthetic durable state and reject missing or multiply owned item identities."""
     snapshot = json.loads(subprocess.check_output(
         [str(inspector), str(state_root), "inspect", "1"], text=True, timeout=15))
     player = [item["uid"] for item in snapshot["player_items"]]
@@ -155,6 +162,7 @@ def inspect_authority(state_root):
 
 
 def assert_mace_owner(state_root, uid, owner):
+    """Require the tracked mace UID to belong exclusively to the expected owner."""
     snapshot = inspect_authority(state_root)
     locations = [name for name in ("player_items", "room_items")
                  for item in snapshot[name] if item["uid"] == uid]
@@ -163,6 +171,7 @@ def assert_mace_owner(state_root, uid, owner):
 
 
 def exercise_cancelled_camp(client, state_root, mace_uid):
+    """Block storage through camp timeout, then verify usability and automatic durable retry."""
     baseline = inspect_authority(state_root)
     lock_path = state_root / "players/.player-1.lock"
     with lock_path.open("r+b") as lock:
@@ -188,11 +197,13 @@ def exercise_cancelled_camp(client, state_root, mace_uid):
 
 
 def change_saved_setting(client):
+    """Change a persistent player setting to identify the snapshot under test."""
     client.send("toggle wimpy 5")
     client.expect("You now flee at 5 hit points or less!")
 
 
 def crash_server(process):
+    """Kill the isolated server and verify the intended crash termination boundary."""
     process.kill()
     process.wait(timeout=10)
     require(process.returncode == -signal.SIGKILL, "intentional crash did not terminate the server")
@@ -200,6 +211,7 @@ def crash_server(process):
 
 
 def crash_before_ack(client, process, state_root, run_root):
+    """Hold player storage until a newer save is journaled, then crash before materialization."""
     baseline = inspect_authority(state_root)
     with (state_root / "players/.player-1.lock").open("r+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -227,6 +239,7 @@ def crash_before_ack(client, process, state_root, run_root):
 
 
 def wait_for_boot(process: subprocess.Popen[str], output, output_path: pathlib.Path) -> str:
+    """Wait for the full-world game loop and verify required world restore stages ran."""
     deadline = time.monotonic() + 600
     boot_output = ""
     while time.monotonic() < deadline:
@@ -248,6 +261,7 @@ def wait_for_boot(process: subprocess.Popen[str], output, output_path: pathlib.P
 
 
 def stop_server(process: subprocess.Popen[str], output, output_path: pathlib.Path) -> str:
+    """Request graceful shutdown and require successful normal termination."""
     process.send_signal(signal.SIGTERM)
     process.wait(timeout=30)
     record("server_exit", pid=process.pid, returncode=process.returncode)
@@ -286,6 +300,7 @@ world = subprocess.run(
 require(world.returncode == 0, "full-world data generation failed:\n" + world.stdout[-8000:])
 
 def build_server(build_root):
+    """Reuse a verified cached binary or build an isolated flatfile server."""
     cache_value = os.environ.get("DURIS_FULL_WORLD_BINARY_CACHE")
     cache = pathlib.Path(cache_value).resolve() if cache_value else None
     if cache:

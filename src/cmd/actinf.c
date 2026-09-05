@@ -6699,6 +6699,7 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 	send_to_char("\n", ch);
 }
 
+/** Display game time and uptime, scheduling autoreboot only when no earlier shutdown is active. */
 void do_time(P_char ch, char *argument, int /*cmd*/)
 {
 	char *tmstr;

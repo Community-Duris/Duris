@@ -4621,6 +4621,7 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 	}
 }
 
+/** Display an active shutdown countdown, treating immediate and expired deadlines as zero. */
 void displayShutdownMsg(P_char ch)
 {
 	// send_to_char() ch any pending reboot/shutdown message...

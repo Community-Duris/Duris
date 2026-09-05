@@ -267,6 +267,7 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 }
 #endif
 
+/** Request an immediate game-thread shutdown transition through the existing persistence gates. */
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
 	// Launcher signals request an immediate transition from the game thread.
@@ -1005,6 +1006,7 @@ static void dispatch_playing_command(P_char character, char *input)
 }
 
 /** Run the server pulse loop, including selective input-queue dispatch. */
+/** Run network and simulation pulses, including persistence deadlines independent of world-event debt. */
 void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;

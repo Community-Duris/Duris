@@ -82,6 +82,7 @@ print("deferred save retry checks passed")
 
 # Exercise the production scheduler with a controlled monotonic clock.
 def section(start, end):
+    """Extract production source between two unique markers for the scheduler harness."""
     return actoth[actoth.index(start):actoth.index(end, actoth.index(start))]
 
 slot_definition = section("struct deferred_save_slot\n", "static struct deferred_save_slot deferred_saves")

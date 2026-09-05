@@ -16,6 +16,7 @@ sql = (SRC / "sql.c").read_text()
 
 
 def body(source, start, end):
+    """Extract a marked source region for ownership checks or the shutdown harness."""
     section = source[source.index(start):]
     return section[:section.index(end)]
 

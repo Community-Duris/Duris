@@ -33,6 +33,7 @@ extern P_char character_list;
 
 namespace
 {
+/** Cache the explicit diagnostic switch for player-save capture and durability tracing. */
 bool trace_player_saves()
 {
 	static const bool enabled = []
@@ -108,6 +109,7 @@ void update_depth_locked()
 		std::max(health.high_water_bytes, static_cast<uint64_t>(retained_bytes));
 }
 
+/** Replay the journal, then append queued snapshots before making them eligible for persistence workers. */
 void dispatcher_main()
 {
 	{
@@ -297,6 +299,7 @@ bool player_save_pipeline_init(const char *journal_directory)
 	return true;
 }
 
+/** Join the dispatcher and workers, then release retained pipeline state. */
 void player_save_pipeline_shutdown(void)
 {
 	{
@@ -350,6 +353,7 @@ bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 	return true;
 }
 
+/** Capture and enqueue pending player components with the supplied save intent and room. */
 player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int save_intent,
 								  int room_vnum)
 {
@@ -398,6 +402,7 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 }
 
+/** Capture fresh terminal intent and wait for its durability fence within the caller timeout. */
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff)
@@ -482,6 +487,7 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 	return player_save_terminal_result::timed_out;
 }
 
+/** Apply bounded worker completions and submit journaled snapshots from the game thread. */
 void player_save_pipeline_pulse(void)
 {
 	player_save_completion completions[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
@@ -630,6 +636,7 @@ bool player_save_pipeline_is_nonterminal_type(int save_intent)
 	       save_intent != RENT_FIGHTARTI;
 }
 
+/** Stop the pipeline and clear worker, revision, and health state for an isolated test. */
 void player_save_pipeline_reset_for_tests(void)
 {
 	player_save_pipeline_shutdown();

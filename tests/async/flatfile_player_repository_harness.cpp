@@ -170,6 +170,7 @@ static void inspect_authority(const std::string &root, int32_t pid)
 	std::cout << "}\n";
 }
 
+/** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
 int main(int argc, char **argv)
 {
 	if (argc == 4 && std::string(argv[2]) == "inspect")

@@ -1787,6 +1787,7 @@ static struct manual_save_status_slot *find_empty_manual_save_status(void)
 	return NULL;
 }
 
+/** Discard pending manual-save feedback for a player without touching its save queue. */
 static void clear_manual_save_status(int pid)
 {
 	struct manual_save_status_slot *status = find_manual_save_status(pid);
@@ -1794,6 +1795,7 @@ static void clear_manual_save_status(int pid)
 		memset(status, 0, sizeof(*status));
 }
 
+/** Bind manual feedback to the captured revision after a deferred save is accepted. */
 static void begin_manual_save_status_wait(P_char ch)
 {
 	struct manual_save_status_slot *status;
@@ -1815,6 +1817,7 @@ static void begin_manual_save_status_wait(P_char ch)
 	status->revision = revision.current_revision;
 }
 
+/** Report durability or timeout to the original live character, then retire its status. */
 static void check_manual_character_save_status(struct manual_save_status_slot *status)
 {
 	const int pid = status->pid;
@@ -1864,6 +1867,7 @@ static struct deferred_save_slot *find_empty_deferred_save_slot(void)
 	return NULL;
 }
 
+/** Refresh the character identity and replace the monotonic deadline for an explicit retry. */
 static void schedule_deferred_save(struct deferred_save_slot *slot, P_char ch, int delay)
 {
 	if (!slot || !slot->pid || !ch || IS_NPC(ch) || !GET_NAME(ch))
@@ -1874,6 +1878,7 @@ static void schedule_deferred_save(struct deferred_save_slot *slot, P_char ch, i
 			 (uint64_t)(delay > 0 ? delay : 1) * (1000000ULL / WAIT_SEC);
 }
 
+/** Attempt one due checkpoint, retaining failed saves with bounded exponential backoff. */
 static void process_deferred_character_save(struct deferred_save_slot *slot)
 {
 	const int pid = slot->pid;
@@ -1949,6 +1954,7 @@ void persistence_pulse_character_saves(void)
 			check_manual_character_save_status(&status);
 }
 
+/** Coalesce save intent and refresh character identity without postponing an existing deadline. */
 static void persistence_schedule_checkpoint(P_char ch, int type, int delay, const char *reason,
 					    int level_dirty)
 {
@@ -2106,6 +2112,7 @@ bool persistence_flush_all_character_saves(void)
 	return all_saved;
 }
 
+/** Wait for terminal durability; retain a safe crash-save retry when logout cannot proceed. */
 bool persistence_save_character_terminal(P_char ch, int type)
 {
 	struct deferred_save_slot *slot;
@@ -2156,6 +2163,7 @@ bool persistence_save_all_characters_terminal(int type)
 	return all_saved;
 }
 
+/** Summarize deferred-save queue counts and oldest pending age on the game thread. */
 struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_copy(void)
 {
 	struct persistence_deferred_save_snapshot snapshot = {};
@@ -2270,6 +2278,7 @@ bool do_save_silent(P_char ch, int type)
 	return true;
 }
 
+/** Queue a manual checkpoint and track feedback until its captured revision is durable. */
 void do_save(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];

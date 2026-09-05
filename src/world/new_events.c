@@ -1512,6 +1512,7 @@ static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callba
 }
 
 // Execute events!
+/** Dispatch due world callbacks within pulse budgets and optionally trace long-running callbacks. */
 void ne_events(void)
 {
 	static long count = 0;
