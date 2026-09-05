@@ -16,8 +16,6 @@
 
 ![DurisMUD - a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
 
-## FORK OF: [https://github.com/Community-Duris/DurisMUD](https://github.com/Community-Duris/DurisMUD)
-
 DurisMUD is a long-running dark-fantasy MUD built around a global race war
 between good and evil. Its text world combines full player-versus-player
 conflict with exploration, quests, ships, crafting, guilds, and powerful
