@@ -124,8 +124,59 @@ static player_snapshot make_status(player_revision_t revision, int level, int ro
 	return snapshot;
 }
 
+// Read existing synthetic authority without recovery or mutation. Used by the
+// full-world journey to compare item identities across real server restarts.
+static void inspect_authority(const std::string &root, int32_t pid)
+{
+	std::string error;
+	player_snapshot snapshot;
+	require(flatfile_player_snapshot_load(root, pid, &snapshot, &error) ==
+			flatfile_player_load_result::ok,
+		"inspect player snapshot: " + error);
+	flatfile_authority_lock lock;
+	require(lock.acquire(root, &error), "inspect authority lock: " + error);
+	std::cout << "{\"revision\":" << snapshot.revision << ",\"intent\":" << snapshot.save_intent
+		  << ",\"room\":" << snapshot.room_vnum;
+	for (const auto &field : snapshot.status_integers)
+		if (field.field == player_status_field::wimpy)
+			std::cout
+				<< ",\"wimpy\":"
+				<< (field.is_unsigned ? field.unsigned_value : field.signed_value);
+	for (const auto &owner :
+	     { item_owner_identity{ item_owner_type::player, static_cast<uint64_t>(pid), 0 },
+	       item_owner_identity{ item_owner_type::room,
+				    static_cast<uint64_t>(snapshot.room_vnum), 0 } })
+	{
+		uint64_t revision = 0;
+		std::vector<flatfile_item_ownership_record> items;
+		const auto result = flatfile_item_repository_load_owner_locked(
+			root, lock, owner, &revision, &items, &error);
+		require(result == flatfile_item_repository_result::ok ||
+				result == flatfile_item_repository_result::not_found,
+			"inspect item owner: " + error);
+		std::cout << (owner.type == item_owner_type::player ? ",\"player_items\":[" :
+								      ",\"room_items\":[");
+		bool first = true;
+		for (const auto &item : items)
+		{
+			if (!first)
+				std::cout << ',';
+			first = false;
+			std::cout << "{\"uid\":" << item.item_uid << ",\"vnum\":" << item.vnum
+				  << '}';
+		}
+		std::cout << ']';
+	}
+	std::cout << "}\n";
+}
+
 int main(int argc, char **argv)
 {
+	if (argc == 4 && std::string(argv[2]) == "inspect")
+	{
+		inspect_authority(argv[1], std::stoi(argv[3]));
+		return 0;
+	}
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	const fs::path players = root / "players";

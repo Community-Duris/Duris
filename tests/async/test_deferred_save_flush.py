@@ -19,7 +19,7 @@ checks = {
     "save helper reports ship failure": "if (!write_ship(ship))" in save,
     "direct flush captures result": "bool saved = do_save_silent" in flush,
     "direct flush clears only success": flush.index("if (saved)") < flush.index("memset(slot, 0"),
-    "direct flush retains and rearms failure": "schedule_deferred_save_event" in flush,
+    "direct flush retains and rearms failure": "schedule_deferred_save" in flush,
     "direct flush reports outcome": "deferred_save_flush_failed" in flush,
     "global flush aggregates failure": "bool all_saved = true;" in flush_all and
                                        "all_saved = false;" in flush_all,

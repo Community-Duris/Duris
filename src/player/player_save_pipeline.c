@@ -1,5 +1,8 @@
 #include "player/player_save_pipeline.h"
 #include "sql/sql_thread_init.h"
+#include "persistence/persistence_observability.h"
+#include <cstdlib>
+#include <cstring>
 
 #include "core/prototypes.h"
 #include "core/files.h"
@@ -30,6 +33,16 @@ extern P_char character_list;
 
 namespace
 {
+bool trace_player_saves()
+{
+	static const bool enabled = []
+	{
+		const char *value = std::getenv("DURIS_NEVENT_TRACE_PLAYER");
+		return value && std::strcmp(value, "1") == 0;
+	}();
+	return enabled;
+}
+
 std::mutex pipeline_mutex;
 std::condition_variable append_available;
 std::deque<player_snapshot> pending_append;
@@ -59,34 +72,6 @@ struct terminal_fence
 };
 
 std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> terminal_fences = {};
-
-struct journaled_revision
-{
-	int pid = 0;
-	player_revision_t revision = 0;
-};
-
-std::array<journaled_revision, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS> journaled_revisions = {};
-
-void remember_journaled_revision_locked(int pid, player_revision_t revision)
-{
-	for (journaled_revision &entry : journaled_revisions)
-		if (entry.pid == pid && entry.revision == revision)
-			return;
-	for (journaled_revision &entry : journaled_revisions)
-		if (!entry.pid)
-		{
-			entry = { pid, revision };
-			return;
-		}
-}
-
-void forget_journaled_revisions_locked(int pid, player_revision_t durable_revision)
-{
-	for (journaled_revision &entry : journaled_revisions)
-		if (entry.pid == pid && entry.revision <= durable_revision)
-			entry = {};
-}
 
 terminal_fence *find_terminal_fence_locked(int pid)
 {
@@ -163,7 +148,6 @@ void dispatcher_main()
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
 			if (appended == player_save_journal_result::ok)
 			{
-				remember_journaled_revision_locked(snapshot.pid, snapshot.revision);
 				try
 				{
 					durable_ready.push_back(std::move(snapshot));
@@ -214,14 +198,6 @@ bool snapshot_is_retained_locked(int pid, player_revision_t revision)
 			return true;
 	for (const player_snapshot &snapshot : durable_ready)
 		if (snapshot.pid == pid && snapshot.revision == revision)
-			return true;
-	return false;
-}
-
-bool snapshot_is_journaled_locked(const player_revision_snapshot &revision)
-{
-	for (const journaled_revision &entry : journaled_revisions)
-		if (entry.pid == revision.pid && entry.revision == revision.current_revision)
 			return true;
 	return false;
 }
@@ -336,7 +312,6 @@ void player_save_pipeline_shutdown(void)
 	pending_append.clear();
 	durable_ready.clear();
 	terminal_fences.fill({});
-	journaled_revisions.fill({});
 	retained_bytes = 0;
 	accepting = false;
 	append_inflight = false;
@@ -405,6 +380,12 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 		++health.capture_failures;
 		return player_save_pipeline_result::capture_failed;
 	}
+	if (trace_player_saves())
+		logit(LOG_STATUS,
+		      "PLAYER SAVE TRACE: stage=capture mono_us=%llu pid=%d revision=%llu components=%llu intent=%d room=%d",
+		      (unsigned long long)persistence_observability_now_usec(), GET_PID(ch),
+		      (unsigned long long)queued_revision, (unsigned long long)components,
+		      save_intent, room_vnum);
 	return enqueue_snapshot(std::move(snapshot));
 }
 
@@ -432,29 +413,26 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 		terminal_fence *fence = allocate_terminal_fence_locked(pid);
 		if (!fence)
 			return player_save_terminal_result::unavailable;
-		revision = fence->revision;
 	}
-	if (!revision)
+	// Every terminal call captures the caller's current intent and room. A
+	// previous timeout may have been ACKed by a nonterminal retry; its fence
+	// cannot authorize removal using the old snapshot or logout intent.
+	if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, &revision))
+		return player_save_terminal_result::unavailable;
 	{
-		player_revision_snapshot current = {};
-		if (!player_revision_snapshot_copy(pid, &current))
-			return player_save_terminal_result::unavailable;
-		const bool promote_existing =
-			current.current_revision > current.acknowledged_revision &&
-			current.unacknowledged_components == PLAYER_CHECKPOINT_COMPONENT_ALL;
-		if (promote_existing)
-			revision = current.current_revision;
-		else if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, &revision))
-			return player_save_terminal_result::unavailable;
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		terminal_fence *fence = find_terminal_fence_locked(pid);
 		if (!fence)
 			return player_save_terminal_result::unavailable;
-		fence->revision = revision;
-		if (promote_existing)
-			fence->journaled = snapshot_is_journaled_locked(current);
+		*fence = { pid, revision, false, false };
 	}
-	player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
+	const auto checkpoint = player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
+	if (trace_player_saves())
+		logit(LOG_STATUS,
+		      "PLAYER SAVE TRACE: stage=terminal_begin mono_us=%llu pid=%d revision=%llu checkpoint=%u intent=%d timeout_ms=%llu journal_allowed=%d",
+		      (unsigned long long)persistence_observability_now_usec(), pid,
+		      (unsigned long long)revision, (unsigned)checkpoint, save_intent,
+		      (unsigned long long)timeout_msec, allow_journal_handoff);
 	const auto deadline =
 		std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_msec);
 	while (std::chrono::steady_clock::now() < deadline)
@@ -481,6 +459,25 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	if (trace_player_saves())
+	{
+		const terminal_fence *fence = find_terminal_fence_locked(pid);
+		player_revision_snapshot current = {};
+		player_revision_snapshot_copy(pid, &current);
+		logit(LOG_STATUS,
+		      "PLAYER SAVE TRACE: stage=terminal_timeout mono_us=%llu pid=%d target=%llu fence=%llu journaled=%d acknowledged=%d current=%llu ack=%llu dirty=%llu queued=%llu inflight=%llu append=%llu ready=%llu append_failures=%llu",
+		      (unsigned long long)persistence_observability_now_usec(), pid,
+		      (unsigned long long)revision,
+		      (unsigned long long)(fence ? fence->revision : 0), fence && fence->journaled,
+		      fence && fence->acknowledged, (unsigned long long)current.current_revision,
+		      (unsigned long long)current.acknowledged_revision,
+		      (unsigned long long)current.dirty_components,
+		      (unsigned long long)current.queued_revision,
+		      (unsigned long long)current.inflight_revision,
+		      (unsigned long long)health.pending_append,
+		      (unsigned long long)health.durable_ready,
+		      (unsigned long long)health.append_failures);
+	}
 	++health.terminal_timeouts;
 	return player_save_terminal_result::timed_out;
 }
@@ -497,15 +494,21 @@ void player_save_pipeline_pulse(void)
 		health.completions += completed;
 		for (size_t index = 0; index < completed; ++index)
 		{
-			if ((completions[index].outcome == player_save_apply_outcome::applied ||
-			     completions[index].outcome ==
-				     player_save_apply_outcome::already_applied ||
-			     completions[index].outcome ==
-				     player_save_apply_outcome::stale_revision) &&
-			    completions[index].durable_revision >= completions[index].revision)
-				forget_journaled_revisions_locked(
-					completions[index].pid,
-					completions[index].durable_revision);
+			if (trace_player_saves())
+			{
+				const auto &completion = completions[index];
+				logit(LOG_STATUS,
+				      "PLAYER SAVE TRACE: stage=completion mono_us=%llu pid=%d revision=%llu components=%llu outcome=%u durable=%llu error=%u retries=%u queued_us=%llu started_us=%llu completed_us=%llu",
+				      (unsigned long long)persistence_observability_now_usec(),
+				      completion.pid, (unsigned long long)completion.revision,
+				      (unsigned long long)completion.components,
+				      (unsigned)completion.outcome,
+				      (unsigned long long)completion.durable_revision,
+				      completion.error_code, completion.retry_count,
+				      (unsigned long long)completion.queued_at_usec,
+				      (unsigned long long)completion.started_at_usec,
+				      (unsigned long long)completion.completed_at_usec);
+			}
 			if (terminal_fence *fence =
 				    find_terminal_fence_locked(completions[index].pid);
 			    fence && fence->revision == completions[index].revision &&
@@ -547,8 +550,17 @@ void player_save_pipeline_pulse(void)
 		if (durable_ready.empty())
 			break;
 		const size_t snapshot_bytes = durable_ready.front().encoded_size_bound;
+		const int trace_pid = durable_ready.front().pid;
+		const player_revision_t trace_revision = durable_ready.front().revision;
 		const player_save_submit_result submitted =
 			player_save_worker_submit_retained(&durable_ready.front());
+		if (trace_player_saves())
+			logit(LOG_STATUS,
+			      "PLAYER SAVE TRACE: stage=submit mono_us=%llu pid=%d revision=%llu outcome=%u append=%llu ready=%llu",
+			      (unsigned long long)persistence_observability_now_usec(), trace_pid,
+			      (unsigned long long)trace_revision, (unsigned)submitted,
+			      (unsigned long long)health.pending_append,
+			      (unsigned long long)health.durable_ready);
 		if (submitted == player_save_submit_result::worker_unavailable ||
 		    submitted == player_save_submit_result::capacity_exceeded)
 			break;
@@ -625,7 +637,6 @@ void player_save_pipeline_reset_for_tests(void)
 	player_revision_reset_for_tests();
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	health = {};
-	journaled_revisions.fill({});
 	stop_requested = false;
 	accepting = false;
 	append_inflight = false;

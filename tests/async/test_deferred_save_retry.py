@@ -52,13 +52,13 @@ with tempfile.TemporaryDirectory() as tmp:
 
 checks = {
     "fixed slot capacity": "#define PERSISTENCE_DEFERRED_SAVE_SLOTS 512" in actoth,
-    "one scheduling owner": "static void schedule_deferred_save_event" in actoth,
-    "fresh slot delegates scheduling": "slot->scheduled = 1;" not in fresh_slot and
-                                       "schedule_deferred_save_event(slot, ch, delay);" in fresh_slot,
-    "callback clears event marker": "slot->scheduled = 0;" in actoth,
+    "one scheduling owner": "static void schedule_deferred_save" in actoth,
+    "fresh slot delegates scheduling": "slot->due_usec = 1;" not in fresh_slot and
+                                       "schedule_deferred_save(slot, ch, delay);" in fresh_slot,
+    "pulse clears due time": "slot->due_usec = 0;" in actoth,
     "failure advances delay": "slot->retry_delay = deferred_save_next_retry_delay" in actoth,
-    "failure rearms event": actoth.count("schedule_deferred_save_event(slot, ch, slot->retry_delay);") >= 3,
-    "coalesced request repairs scheduling": "if (!slot->scheduled)" in actoth,
+    "failure rearms deadline": actoth.count("schedule_deferred_save(slot, ch, slot->retry_delay);") >= 3,
+    "coalesced request repairs scheduling": "if (!slot->due_usec)" in actoth,
     "latest type retained": "slot->type = type ? type : slot->type;" in actoth,
     "level intent coalesced": "slot->level_dirty = slot->level_dirty || level_dirty;" in actoth,
     "direct flush is truthful": "bool persistence_flush_character_saves(P_char ch)" in actoth,

@@ -269,7 +269,9 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
-	shutdownData.reboot_time = time(0);
+	// Launcher signals request an immediate transition from the game thread.
+	// A wall-clock "now" schedules another world event, which can be starved.
+	shutdownData.reboot_time = 0;
 	shutdownData.next_warning = -1;
 	snprintf(shutdownData.IssuedBy, sizeof(shutdownData.IssuedBy), "%s",
 		 issuer ? issuer : "Launcher");
@@ -1670,6 +1672,7 @@ resume_game_loop:
 							  "none", "none", "integrity_failure",
 							  "operation metadata redacted");
 			player_save_pipeline_pulse();
+			persistence_pulse_character_saves();
 			player_load_result load_completions[32] = {};
 			const size_t load_completion_count =
 				player_load_pipeline_pulse(load_completions, 32);

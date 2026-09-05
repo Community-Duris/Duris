@@ -74,3 +74,13 @@ assert "mysql_close(persistenceDB);" in mysql_shutdown
 assert "mysql_close(DB);" in mysql_shutdown
 
 print("Valgrind clean-shutdown ownership contracts passed")
+
+# Launcher signals are consumed on the game thread. Do not put an immediate
+# shutdown back behind the world-event backlog before entering the save gates.
+request = body(comm, "void request_shutdown(", "extern void ne_events();")
+assert "shutdownData.reboot_time = 0;" in request
+assert request.index("shutdownData.reboot_time = 0;") < request.index("timedShutdown(NULL")
+actwiz = (SRC / "actwiz.c").read_text()
+immediate = body(actwiz, "if (shutdownData.reboot_time == 0)", "case TimedShutdownData::REBOOT:")
+assert "shutdownflag = 1;" in immediate and "add_event" not in immediate
+print("Immediate launcher shutdown reaches the existing save gates without world callbacks")

@@ -1749,7 +1749,8 @@ struct deferred_save_slot
 	int pid;
 	int type;
 	int level_dirty;
-	int scheduled;
+	uint64_t runtime_id;
+	uint64_t due_usec;
 	uint64_t first_pending_usec;
 	uint64_t latest_pending_usec;
 	uint64_t attempts;
@@ -1765,13 +1766,10 @@ struct manual_save_status_slot
 	int pid;
 	player_revision_t revision;
 	uint64_t started_usec;
-	int scheduled;
+	uint64_t runtime_id;
 };
 
 static struct manual_save_status_slot manual_save_statuses[PERSISTENCE_MANUAL_SAVE_STATUS_SLOTS];
-
-static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data);
-static void event_manual_character_save_status(P_char ch, P_char victim, P_obj obj, void *data);
 
 static struct manual_save_status_slot *find_manual_save_status(int pid)
 {
@@ -1796,15 +1794,6 @@ static void clear_manual_save_status(int pid)
 		memset(status, 0, sizeof(*status));
 }
 
-static void schedule_manual_save_status_event(struct manual_save_status_slot *status, P_char ch)
-{
-	if (!status || !status->pid || status->scheduled || !ch || IS_NPC(ch))
-		return;
-	status->scheduled = 1;
-	add_event(event_manual_character_save_status, 1, ch, 0, 0, 0, &status->pid,
-		  sizeof(status->pid));
-}
-
 static void begin_manual_save_status_wait(P_char ch)
 {
 	struct manual_save_status_slot *status;
@@ -1824,20 +1813,14 @@ static void begin_manual_save_status_wait(P_char ch)
 		return;
 	}
 	status->revision = revision.current_revision;
-	schedule_manual_save_status_event(status, ch);
 }
 
-static void event_manual_character_save_status(P_char ch, P_char victim, P_obj obj, void *data)
+static void check_manual_character_save_status(struct manual_save_status_slot *status)
 {
-	const int pid = data ? *((int *)data) : 0;
-	struct manual_save_status_slot *status = find_manual_save_status(pid);
+	const int pid = status->pid;
+	P_char ch = find_character_by_runtime_id(status->runtime_id);
 	struct player_revision_snapshot revision = {};
 
-	(void)victim;
-	(void)obj;
-	if (!status)
-		return;
-	status->scheduled = 0;
 	if (!ch || IS_NPC(ch) || GET_PID(ch) != pid || !GET_NAME(ch))
 	{
 		clear_manual_save_status(pid);
@@ -1857,7 +1840,6 @@ static void event_manual_character_save_status(P_char ch, P_char victim, P_obj o
 		clear_manual_save_status(pid);
 		return;
 	}
-	schedule_manual_save_status_event(status, ch);
 }
 
 static struct deferred_save_slot *find_deferred_save_slot(int pid)
@@ -1882,37 +1864,24 @@ static struct deferred_save_slot *find_empty_deferred_save_slot(void)
 	return NULL;
 }
 
-static void schedule_deferred_save_event(struct deferred_save_slot *slot, P_char ch, int delay)
+static void schedule_deferred_save(struct deferred_save_slot *slot, P_char ch, int delay)
 {
-	if (!slot || !slot->pid || slot->scheduled || !ch || IS_NPC(ch) || !GET_NAME(ch))
+	if (!slot || !slot->pid || slot->due_usec || !ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
 
-	slot->scheduled = 1;
-	add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0, &slot->pid,
-		  sizeof(slot->pid));
+	slot->runtime_id = ch->runtime_id;
+	slot->due_usec = persistence_observability_now_usec() +
+			 (uint64_t)(delay > 0 ? delay : 1) * (1000000ULL / WAIT_SEC);
 }
 
-static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data)
+static void process_deferred_character_save(struct deferred_save_slot *slot)
 {
+	const int pid = slot->pid;
+	P_char ch = find_character_by_runtime_id(slot->runtime_id);
 	struct deferred_save_slot pending;
-	struct deferred_save_slot *slot;
-	int pid = data ? *((int *)data) : 0;
-
-	(void)victim;
-	(void)obj;
-
-	if (!pid && ch && !IS_NPC(ch))
-		pid = GET_PID(ch);
-
-	if (!pid)
-		return;
-
-	slot = find_deferred_save_slot(pid);
-	if (!slot)
-		return;
 
 	pending = *slot;
-	slot->scheduled = 0;
+	slot->due_usec = 0;
 	persistence_counter_saturating_add(&slot->attempts, 1);
 
 	if (!ch || IS_NPC(ch))
@@ -1953,8 +1922,31 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 				  "delay=%d attempts=%llu failures=%llu", slot->retry_delay,
 				  (unsigned long long)slot->attempts,
 				  (unsigned long long)slot->failures);
-		schedule_deferred_save_event(slot, ch, slot->retry_delay);
+		schedule_deferred_save(slot, ch, slot->retry_delay);
 	}
+}
+
+/* Persistence deadlines must not wait behind world callback debt. The fixed
+ * slot scan is bounded; round-robin admission limits snapshot work per pulse. */
+void persistence_pulse_character_saves(void)
+{
+	static size_t cursor = 0;
+	const uint64_t now = persistence_observability_now_usec();
+	size_t attempted = 0;
+	for (size_t scanned = 0; scanned < PERSISTENCE_DEFERRED_SAVE_SLOTS && attempted < 32;
+	     ++scanned)
+	{
+		struct deferred_save_slot *slot = &deferred_saves[cursor];
+		cursor = (cursor + 1) % PERSISTENCE_DEFERRED_SAVE_SLOTS;
+		if (slot->pid && slot->due_usec && slot->due_usec <= now)
+		{
+			++attempted;
+			process_deferred_character_save(slot);
+		}
+	}
+	for (struct manual_save_status_slot &status : manual_save_statuses)
+		if (status.pid)
+			check_manual_character_save_status(&status);
 }
 
 static void persistence_schedule_checkpoint(P_char ch, int type, int delay, const char *reason,
@@ -1972,9 +1964,9 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 		slot->level_dirty = slot->level_dirty || level_dirty;
 		slot->latest_pending_usec = persistence_observability_now_usec();
 		snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
-		if (!slot->scheduled)
-			schedule_deferred_save_event(slot, ch,
-						     slot->retry_delay ? slot->retry_delay : delay);
+		if (!slot->due_usec)
+			schedule_deferred_save(slot, ch,
+					       slot->retry_delay ? slot->retry_delay : delay);
 		return;
 	}
 
@@ -1999,7 +1991,7 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 	slot->retry_delay = 0;
 	snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
 
-	schedule_deferred_save_event(slot, ch, delay);
+	schedule_deferred_save(slot, ch, delay);
 }
 
 void persistence_schedule_character_save(P_char ch, int type, int delay, const char *reason)
@@ -2019,10 +2011,9 @@ void persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const
  * applied before the character is saved with the disconnect-time RENT_* type
  * or before the character is extracted.
  *
- * Mechanism: find the slot for ch's PID, copy its pending state, and run the
- * synchronous save. Clear the slot only on success; on failure it remains
- * visible and retryable. A still-queued event becomes a no-op after a
- * successful clear because it rechecks find_deferred_save_slot(pid).
+ * Find the slot for ch's PID, copy its pending state, and request its save.
+ * Clear the slot only on success; on failure it remains visible and retryable
+ * through the persistence pulse.
  */
 bool persistence_flush_character_saves(P_char ch)
 {
@@ -2050,7 +2041,7 @@ bool persistence_flush_character_saves(P_char ch)
 	{
 		persistence_counter_saturating_add(&slot->failures, 1);
 		slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
-		schedule_deferred_save_event(slot, ch, slot->retry_delay);
+		schedule_deferred_save(slot, ch, slot->retry_delay);
 		logit(LOG_DEBUG, "Deferred player save flush failed");
 	}
 
@@ -2107,7 +2098,7 @@ bool persistence_flush_all_character_saves(void)
 		{
 			persistence_counter_saturating_add(&slot->failures, 1);
 			slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
-			schedule_deferred_save_event(slot, ch, slot->retry_delay);
+			schedule_deferred_save(slot, ch, slot->retry_delay);
 			all_saved = false;
 		}
 	}
@@ -2136,8 +2127,14 @@ bool persistence_save_character_terminal(P_char ch, int type)
 	if (saved)
 		clear_manual_save_status(GET_PID(ch));
 	if (!saved)
+	{
+		logit(LOG_PLAYER,
+		      "terminal_save_failed: mono_us=%llu pid=%d intent=%d outcome=%u retry_requested=1",
+		      (unsigned long long)persistence_observability_now_usec(), GET_PID(ch), type,
+		      (unsigned)terminal);
 		persistence_schedule_character_save(
 			ch, RENT_CRASH, PERSISTENCE_DEFERRED_RETRY_INITIAL, "terminal-save-retry");
+	}
 	return saved;
 }
 
@@ -2170,7 +2167,7 @@ struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_cop
 		if (!slot->pid)
 			continue;
 		persistence_counter_saturating_add(&snapshot.pending, 1);
-		if (slot->scheduled)
+		if (slot->due_usec)
 			persistence_counter_saturating_add(&snapshot.scheduled, 1);
 		else if (slot->failures > 0)
 			persistence_counter_saturating_add(&snapshot.failed_unscheduled, 1);
@@ -2333,6 +2330,7 @@ void do_save(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 	status->pid = GET_PID(ch);
+	status->runtime_id = ch->runtime_id;
 	status->started_usec = persistence_observability_now_usec();
 	update_pos(ch);
 	persistence_schedule_character_save(ch, 1, 2, "manual_save");
