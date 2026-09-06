@@ -6141,6 +6141,26 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
 }
 
 /*
+ * How deep we are inside an area spell's victim loop.
+ *
+ * spell_damage() and its modifier predicates are handed a caster, a victim and
+ * a damage type, but never the spell, so nothing downstream can ask whether the
+ * damage it is scaling came from an area spell. This is the one chokepoint every
+ * area damage spell passes through -- thirty-odd in magic.c and the two dragon
+ * breaths in mobact.c -- so the loop below records the fact for them.
+ *
+ * A counter rather than a flag because an area spell can land damage that casts
+ * again: a deflected bolt re-enters with a different caster, and the reflected
+ * damage is not itself an area cast at its own level.
+ */
+static int area_cast_depth = 0;
+
+bool area_cast_in_progress(void)
+{
+	return area_cast_depth > 0;
+}
+
+/*
  * Used by damage area spells
  */
 int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),
@@ -6243,7 +6263,9 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 				continue;
 			}
 		}
+		area_cast_depth++;
 		spell_func(level, ch, (char *)&hit, 0, area_target, NULL);
+		area_cast_depth--;
 		hit++;
 	}
 
