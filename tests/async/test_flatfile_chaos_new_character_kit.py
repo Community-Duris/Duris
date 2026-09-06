@@ -203,10 +203,7 @@ def create_chaos_character(client: MudClient) -> None:
     client.send("n")
     client.expect("keep this character")
     client.send("y")
-    client.expect("PRESS RETURN to read Duris rules")
-    client.send("")
-    client.expect("official and legal response")
-    client.send("y")
+    # No rules-agreement gate: keeping the character goes straight to the motd.
     client.expect("PRESS RETURN")
     client.send("")
     client.expect("Your Chaos Equipment has been prepared!!", timeout=300)

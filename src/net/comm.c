@@ -1482,7 +1482,6 @@ resume_game_loop:
 				case CON_PWD_NORM:
 				case CON_GET_CLASS:
 				case CON_GET_RACE:
-				case CON_GET_RETURN:
 				case CON_REROLL:
 				case CON_APPROPRIATE_NAME:
 				case CON_NAME_CONF:
