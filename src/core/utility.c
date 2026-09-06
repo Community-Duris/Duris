@@ -6181,6 +6181,7 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 
 	count = 0;
 	int pc_count = 0;
+	P_char melee_victim = IS_NPC(ch) ? GET_OPPONENT(ch) : NULL;
 	for (tch = world[ch_room].people; tch; tch = tch->next_in_room)
 	{
 		if (IS_ALIVE(tch) && select_func(ch, tch))
@@ -6209,7 +6210,8 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 					continue;
 				if (!IS_PC(vict_array[i]))
 					continue;
-				if (vict_array[i] == victim)
+				// NPCs may aim at a weaker opponent while still fighting their tank.
+				if (vict_array[i] == victim || vict_array[i] == melee_victim)
 					continue;
 				if (!number(0, 1))
 					continue;

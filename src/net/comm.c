@@ -3549,8 +3549,12 @@ int process_output(P_desc t)
 	if (realChar && GET_STAT(realChar) == STAT_DEAD)
 		t->prompt_mode = FALSE;
 
-	bool had_prompt = t->prompt_mode; // track if prompt will be sent
-	make_prompt(t);
+	// Keep the command's prompt pending until ownership and its messages publish.
+	// Other queued output must still flow while an item movement is in flight.
+	bool had_prompt = t->prompt_mode &&
+			  !(realChar && item_movement_transaction_player_busy(realChar));
+	if (had_prompt)
+		make_prompt(t);
 
 	/* Cycle thru output queue */
 	while (get_from_q(&t->output, buf))
