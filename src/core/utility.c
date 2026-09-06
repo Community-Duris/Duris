@@ -6181,13 +6181,22 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 
 	count = 0;
 	int pc_count = 0;
+	int protected_pc_count = 0;
+	P_char melee_victim =
+		(IS_NPC(ch) && !IS_AFFECTED(ch, AFF_CHARM) && !(ch->desc && ch->desc->original)) ?
+			GET_OPPONENT(ch) :
+			NULL;
 	for (tch = world[ch_room].people; tch; tch = tch->next_in_room)
 	{
 		if (IS_ALIVE(tch) && select_func(ch, tch))
 		{
 			vict_array[count++] = tch;
 			if (IS_PC(tch))
+			{
+				if (tch == victim || tch == melee_victim)
+					protected_pc_count++;
 				pc_count++;
+			}
 		}
 	}
 
@@ -6201,6 +6210,7 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 		pc_hit = MAX((int)(pc_count * min_chance / 100), pc_hit);
 		pc_hit = MIN(pc_hit, pc_count);
 		int pc_skip = pc_count - pc_hit;
+		pc_skip = MIN(pc_skip, pc_count - protected_pc_count);
 		if (pc_skip > 0)
 		{
 			for (int i = number(0, count - 1); pc_skip; i = (i + 1) % count)
@@ -6209,7 +6219,8 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 					continue;
 				if (!IS_PC(vict_array[i]))
 					continue;
-				if (vict_array[i] == victim)
+				// NPCs may aim at a weaker opponent while still fighting their tank.
+				if (vict_array[i] == victim || vict_array[i] == melee_victim)
 					continue;
 				if (!number(0, 1))
 					continue;
