@@ -1027,6 +1027,9 @@ int damage_hull(P_ship attacker, P_ship target, int dam, int arc, int armor_pier
 	return TRUE;
 }
 
+static void damage_weapon_with_attacker(P_ship attacker, P_char character_attacker, P_ship target,
+					int arc, int dam);
+
 /*
  * As damage_hull(), but for damage dealt by a CHARACTER rather than a ship --
  * spells and the like fired at a hull from outside.
@@ -1034,10 +1037,8 @@ int damage_hull(P_ship attacker, P_ship target, int dam, int arc, int armor_pier
  * Same armour, critical-hit and internal-deflection rules.  Returns FALSE for
  * a NULL attacker, otherwise TRUE.
  *
- * KNOWN QUIRK, deliberately left alone: the damage_weapon() call below passes
- * `target` as the attacker, so the target's own crew sees the attacker-side
- * "You damage a ..." message as well as their own.  Changing it would change
- * player-visible output, so it is recorded here rather than silently altered.
+ * Internal weapon damage tells the victim crew what was damaged or destroyed
+ * and sends the attacker-side feedback directly to the attacking character.
  */
 int ch_damage_hull(P_char attacker, P_ship target, int dam, int arc, int armor_pierce)
 {
@@ -1100,7 +1101,7 @@ int ch_damage_hull(P_char attacker, P_ship target, int dam, int arc, int armor_p
 
 	if (number(0, 99) < weapon_hit_chance)
 	{
-		damage_weapon(target, target, arc, dam * 5);
+		damage_weapon_with_attacker(NULL, attacker, target, arc, dam * 5);
 	}
 	if (number(1, 9) == 9)
 	{
@@ -1120,6 +1121,12 @@ int ch_damage_hull(P_char attacker, P_ship target, int dam, int arc, int armor_p
  * in which case only the target's crew is told.
  */
 void damage_weapon(P_ship attacker, P_ship target, int arc, int dam)
+{
+	damage_weapon_with_attacker(attacker, NULL, target, arc, dam);
+}
+
+static void damage_weapon_with_attacker(P_ship attacker, P_char character_attacker, P_ship target,
+					int arc, int dam)
 {
 	int arc_weapons[MAXSLOTS];
 	int j, i = 0;
@@ -1142,6 +1149,12 @@ void damage_weapon(P_ship attacker, P_ship target, int arc, int dam)
 				act_to_all_in_ship_f(attacker, " &+GYou destroy a &+W%s&+G!&N",
 						     target->slot[w_index].get_description());
 			}
+			else if (character_attacker)
+			{
+				send_to_char_f(character_attacker,
+					       " &+GYou destroy a &+W%s&+G!&N\r\n",
+					       target->slot[w_index].get_description());
+			}
 		}
 		else
 		{
@@ -1151,6 +1164,12 @@ void damage_weapon(P_ship attacker, P_ship target, int arc, int dam)
 			{
 				act_to_all_in_ship_f(attacker, " &+GYou damage a &+W%s&+G!&N",
 						     target->slot[w_index].get_description());
+			}
+			else if (character_attacker)
+			{
+				send_to_char_f(character_attacker,
+					       " &+GYou damage a &+W%s&+G!&N\r\n",
+					       target->slot[w_index].get_description());
 			}
 		}
 	}
