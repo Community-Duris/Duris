@@ -2,15 +2,17 @@
 
 Updated: 2026-09-06.
 
-Status: **implementation and validation complete; ready-for-review handoff in
-progress**. The previously interrupted standalone retry passed, resolving the
-only inconclusive validation result from the full regression gate.
+Status: **implementation and validation complete; ready for review in PR
+[#159](https://github.com/Community-Duris/Duris/pull/159)**. The previously
+interrupted standalone retry passed, resolving the only inconclusive validation
+result from the full regression gate.
 
 - Issue: [#154 — extra pickup prompt and Death Field missing an engaged player](https://github.com/Community-Duris/Duris/issues/154).
 - Branch: [`fix/154-pickup-prompts-death-field`](https://github.com/Community-Duris/Duris/tree/fix/154-pickup-prompts-death-field).
+- Pull request: [#159 — Fix pickup prompt ordering and NPC area target pruning](https://github.com/Community-Duris/Duris/pull/159).
 - Created from fetched `origin/master` at
   `bf095cf5c57996cbe7732bf1f61a29a61b7700f3`.
-- The issue remains open while the ready-for-review PR is prepared.
+- The issue remains open pending review and merge; the PR closes it on merge.
 
 ## Completed work
 
@@ -105,17 +107,12 @@ combat fumble path, which returns before starting combat. The standalone retry
 subsequently passed its complete death, corpse recovery, save and reconnect
 journey. No combat-journey test or unrelated combat code was changed.
 
-## Work left to finish
+## Review follow-up
 
 1. Have the reviewer assess the shared NPC-area policy. If the original encounter
    needs confirmation, obtain the mob name/vnum and zone, solo/group context,
    melee and explicit targets, altitude, defenses, prompt/terse settings, and a
    transcript with HP before and after Death Field.
-2. Complete the originally requested ready-for-review PR against `master`, with
-   the validation outcome and fixture limitations in its description. Link the
-   published branch and PR from #154. This publication step remains pending at
-   this checkpoint.
-
 No deployment, production migration, or restart of the configured game server
 was performed. Existing integration tests used disposable servers and isolated
 state. The unrelated untracked `.agents/skills/plan-ablation/` directory is not
