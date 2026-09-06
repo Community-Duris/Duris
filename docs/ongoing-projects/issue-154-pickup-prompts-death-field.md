@@ -127,5 +127,5 @@ a shared extraction helper while covering pager/editor and switched paths.
 
 No deployment, production migration, or restart of the configured game server
 was performed. Existing integration tests used disposable servers and isolated
-state. The unrelated untracked `.agents/skills/plan-ablation/` directory is not
-part of this branch's changes.
+state. The repository-local `.agents/skills/plan-ablation/` workflow is included
+in this branch at the owner's request.
