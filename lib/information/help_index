@@ -8701,7 +8701,8 @@ cycle:
 
   1. The guards disperse.
   2. The realm stops banking what its people gather.
-  3. One OUTER ring reverts, and another every cycle after that.
+  3. The OUTERMOST square reverts, and another every cycle after that;
+     losing a square also unmakes the champion.
 
 Payment stops the ladder wherever it has reached, but land already lost does
 not come back with it - a reverted ring must be claimed again at full price.
@@ -8776,6 +8777,7 @@ List of subcommands
   &+Wkingdom roster&n     every guard: class, level, cost to promote
   &+Wkingdom hire&n       raise a new guard, naming its class        (leader)
   &+Wkingdom promote&n    raise one guard two levels                 (leader)
+  &+Wkingdom respec&n     re-school a guard, same rank, for prestige (leader)
   &+Wkingdom champion&n   raise the realm's one champion             (leader)
   &+Wkingdom prospect&n   would a realm stand here? and if not, where
 

@@ -32,6 +32,10 @@ G 1 108 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 109 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 111 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 29500 999 0 100 0 0 0          *    An obsidian circlet encrusted with a blood ruby
+G 1 491 999 0 100 0 0 0
+G 1 492 999 0 100 0 0 0
+G 1 493 999 0 100 0 0 0
+G 1 494 999 0 100 0 0 0
 M 0 29500 10 29510 100 0 0 0       * A Bone Golem
 M 0 29500 10 29510 100 0 0 0       * A Bone Golem
 M 0 29500 10 29510 100 0 0 0       * A Bone Golem

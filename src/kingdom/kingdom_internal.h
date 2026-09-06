@@ -118,6 +118,18 @@ int kingdom_node_vnum_for(int res, bool underdark);
 #define KINGDOM_CHAMPION_LEVEL 60
 /* Promotions between base and top: 50, 52, 54, 56. */
 #define KINGDOM_GUARD_TIERS 4
+/* What the garrison is WORTH, stated by the module rather than scaled from the
+ * .mob prototype (ruled 2026-09-05). convertMob() discards a mob file's hp dice
+ * and recomputes from race and class, so the prototype's figure never reaches
+ * the world; scaling it multiplied a number nobody here chose. A guard is
+ * 4,500 at the base level and rises with rank (5,600 at the level-56 cap); the
+ * champion, at twenty-five thousand platinum, is 6,000. */
+#define KINGDOM_GUARD_BASE_HITPOINTS 4500
+#define KINGDOM_CHAMPION_HITPOINTS 6000
+/* Owned squares FAVOURING A RESOURCE per step of that resource's yield bonus;
+ * see kingdom_harvest_yield(). Declared here rather than inside kingdom_harvest.c
+ * because the society display quotes the rule and must not restate the number. */
+#define KINGDOM_HARVEST_SQUARES_PER_STEP 20
 /* The champion's slot, one past the guards, so both live in one roster table
  * keyed by (association, slot) and one loader reads them. */
 #define KINGDOM_CHAMPION_SLOT KINGDOM_GUARD_SLOTS
@@ -138,15 +150,17 @@ int kingdom_resource_for_node_vnum(int vnum);
  *   0  current
  *   1  guards despawn
  *   2  harvest nodes go dormant
- *   3+ one OUTER ring reverts per missed cycle
- * Reclaiming a reverted ring costs the full original price again.
+ *   3+ one OUTERMOST SQUARE reverts per missed cycle (ruled 2026-09-05; it was
+ *      a whole ring, which stripped a realm far faster than a debt warrants)
+ * Reclaiming a reverted square costs the full original price again, and the
+ * loss unmakes the champion, which answers only to a realm holding all eighty.
  */
 enum kingdom_arrears
 {
 	KARR_CURRENT = 0,
 	KARR_GUARDS_GONE,
 	KARR_NODES_DORMANT,
-	KARR_RINGS_REVERTING
+	KARR_LAND_REVERTING
 };
 
 /* ------------------------------------------------------------------ *
@@ -402,15 +416,32 @@ long kingdom_guard_promotion_cost(int from, int to);
 int kingdom_guard_class_by_name(const char *name);
 /* Display name of a guard class bit, or "unschooled" for 0. */
 const char *kingdom_guard_class_name(int guard_class);
-/* Every offerable class, comma-separated, into the caller's buffer. */
+/* Every class a GUARD may take, comma-separated, into the caller's buffer. */
 void kingdom_guard_class_list(char *out, size_t out_len);
+/* The same, plus the specialised callings only the champion may take. */
+void kingdom_champion_class_list(char *out, size_t out_len);
+/* True for a calling reserved to the champion (ruled 2026-09-05). */
+bool kingdom_guard_class_is_specialised(int guard_class);
 /* Stand the realm's champion up, or take it away. Idempotent, like the guards'
  * refresh; returns 1 when a champion is standing afterwards. */
 int kingdom_champion_refresh(const kingdom_realm &realm);
+/* Unmake the champion because the realm has dropped below every square (ruled
+ * 2026-09-05: a lost square destroys it rather than benching it). Clears
+ * champion_class -- which IS the champion's existence -- takes down the
+ * realm's banners, and dirties the record so the caller's own write carries
+ * it. The body is left to kingdom_champion_refresh(), which extracts it once
+ * the class is zero. Idempotent; returns true only when a champion was
+ * actually unmade. */
+bool kingdom_champion_destroy(kingdom_realm &realm);
 /* What a champion costs, in copper. Ruled 2026-09-04: 25,000 platinum, and a
  * fixed price rather than a config knob -- there is exactly one per realm and
  * only a complete realm may have it. */
 #define KINGDOM_CHAMPION_COST 25000000L
+/* What a re-schooling costs, in PRESTIGE (ruled 2026-09-05). Not coin: the
+ * treasury already buys guards, land and the champion, and standing is the
+ * thing a guild spends when it changes its mind about what it is. */
+#define KINGDOM_GUARD_RESPEC_PRESTIGE 1000UL
+#define KINGDOM_CHAMPION_RESPEC_PRESTIGE 5000UL
 
 /* --- the roster verbs (kingdom_claim.c) --- *
  * They live beside claim and convert rather than beside the spawner because
@@ -422,6 +453,10 @@ void kingdom_roster_show(struct char_data *ch);
 void kingdom_roster_hire(struct char_data *ch, char *rest);
 void kingdom_roster_upgrade(struct char_data *ch, char *rest);
 void kingdom_roster_champion(struct char_data *ch, char *rest);
+/* Re-school at the SAME rank, paid in prestige rather than coin (ruled
+ * 2026-09-05). Levels never move: promotion stays one-way. */
+void kingdom_roster_respec(struct char_data *ch, char *rest);
+void kingdom_roster_champion_respec(struct char_data *ch, char *rest);
 
 /* --- kingdom_harvest.c : world harvest nodes and the realm resource store --- */
 bool kingdom_nodes_dormant(const kingdom_realm &realm);

@@ -184,9 +184,6 @@ extern P_obj object_list;
  * Mining spends 2-3 per tick and refuses below 10. */
 #define KINGDOM_HARVEST_VITALITY_COST 2
 #define KINGDOM_HARVEST_MIN_VITALITY 10
-/* Owned squares FAVOURING A RESOURCE per step of that resource's yield bonus;
- * see kingdom_harvest_yield(). */
-#define KINGDOM_HARVEST_SQUARES_PER_STEP 20
 /* Ceiling on a stored resource. Deposits clamp rather than wrap: the counters
  * are persisted as signed values, and a wrapped negative store would read as a
  * debt the realm could never work off. */
@@ -247,6 +244,28 @@ static_assert((int)(sizeof(kingdom_node_prototypes[0]) / sizeof(kingdom_node_pro
 static_assert((int)(sizeof(kingdom_node_prototypes) / sizeof(kingdom_node_prototypes[0])) ==
 		      KINGDOM_NODE_HALVES,
 	      "the prototype table has exactly two halves: surface and Underdark");
+
+/*
+ * THE ITEMS A GATHERER CARRIES AWAY (ruled 2026-09-05).
+ *
+ * `kingdom harvest` banks abstract units to a realm; nobody could gather a
+ * material for their own use or to sell. These are that material, one carryable
+ * item per resource, and they come out of the SAME node and spend the SAME
+ * charge, so the two verbs share one finite thing rather than each having their
+ * own depletion model.
+ */
+static const int kingdom_material_prototypes[KRES_MAX] = { VOBJ_KINGDOM_MAT_MINERAL,
+							   VOBJ_KINGDOM_MAT_WOOD,
+							   VOBJ_KINGDOM_MAT_FIBRE,
+							   VOBJ_KINGDOM_MAT_WATER };
+
+static_assert((int)(sizeof(kingdom_material_prototypes) / sizeof(kingdom_material_prototypes[0])) ==
+		      KRES_MAX,
+	      "every kingdom_resource needs a carryable material prototype");
+
+/* The gather path needs to be reachable from the node's spec proc, which is
+ * defined well above it. */
+static void kingdom_gather_command(P_char ch, P_obj node);
 
 /* The prototype vnum that spawns for `res` in the given half of the world,
  * read from the table above; 0 for a resource outside 0..KRES_MAX-1. */
@@ -1298,10 +1317,22 @@ static void kingdom_node_reload_event(P_char /*ch*/, P_char /*victim*/, P_obj, v
  * would read i->next out of freed memory; it is dead code with no callers
  * anywhere in the tree.
  */
-static int kingdom_node_proc(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
+static int kingdom_node_proc(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
+
+	/* `harvest` -- the PERSONAL path (ruled 2026-09-05): a gatherer with a
+	 * bag works the same node for material items of their own, where
+	 * `kingdom harvest` banks abstract units to a realm. It is dispatched
+	 * here rather than as a command because `harvest` is already a reserved
+	 * trigger word (cmd/interp.c) bound to do_not_here, and special() offers
+	 * every room command to the objects in the room first. */
+	if (cmd == CMD_HARVEST && obj && ch)
+	{
+		kingdom_gather_command(ch, obj);
+		return TRUE;
+	}
 
 	if (cmd == CMD_PERIODIC && obj && obj->value[0] <= 0)
 	{
@@ -1875,6 +1906,327 @@ static void kingdom_harvest_tick(P_char ch, P_char /*victim*/, P_obj, void *data
 
 	/* Partially worked, so it is now on the clock: ruling 3. */
 	kingdom_node_mark_worked(node);
+}
+
+/* ------------------------------------------------------------------ *
+ * Personal gathering
+ * ------------------------------------------------------------------ *
+ * Ruled 2026-09-05. Until now only `kingdom harvest` worked a node, and its
+ * yield went to a realm's stores as an abstract number, so a player in no guild
+ * -- or one who simply wanted to sell what they dug -- had no way to gather at
+ * all. `harvest` is that way: it needs a GATHERING BAG, and it yields real
+ * items into the bag.
+ *
+ * ONE NODE, ONE CHARGE POOL. The gatherer spends the same node->value[0] the
+ * realm verb does, so neither path can be farmed against the other and a node
+ * is still the finite thing the placement budget assumes.
+ *
+ * Ore and gem MINES are untouched: they stay on `mine` with a pick, and the
+ * refusals in this file already say so.
+ */
+
+/*
+ * The best gathering bag this character is carrying or wearing, or NULL.
+ *
+ * Matched on a VNUM RANGE, not on a keyword. get_pick() in mining.c matches
+ * isname("pick", ...), which anyone can satisfy by naming an object they
+ * already own; a bag is bought, so a bag is a specific object.
+ */
+static P_obj kingdom_gathering_bag(P_char ch)
+{
+	if (!ch)
+		return NULL;
+
+	P_obj best = NULL;
+
+	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+	{
+		if (obj->R_num < 0)
+			continue;
+
+		const int vnum = obj_index[obj->R_num].virtual_number;
+
+		if (vnum < VOBJ_GATHERING_BAG_FIRST || vnum > VOBJ_GATHERING_BAG_LAST)
+			continue;
+		/* Higher vnum is the better bag: the block ascends in tier. */
+		if (!best || vnum > obj_index[best->R_num].virtual_number)
+			best = obj;
+	}
+
+	for (int slot = 0; slot < MAX_WEAR; slot++)
+	{
+		P_obj worn = ch->equipment[slot];
+
+		if (!worn || worn->R_num < 0)
+			continue;
+
+		const int vnum = obj_index[worn->R_num].virtual_number;
+
+		if (vnum < VOBJ_GATHERING_BAG_FIRST || vnum > VOBJ_GATHERING_BAG_LAST)
+			continue;
+		if (!best || vnum > obj_index[best->R_num].virtual_number)
+			best = worn;
+	}
+
+	return best;
+}
+
+/*
+ * How many material items one completed draw yields.
+ *
+ * The realm formula without the territory bonus: a gatherer is not a realm and
+ * holds no land, so richness alone decides. A poor node gives 1-2, a mother
+ * lode 4-8 -- the same shape kingdom_harvest_yield() documents at bonus zero.
+ */
+static int kingdom_gather_yield(int richness)
+{
+	if (richness < 0)
+		richness = 0;
+	if (richness > 3)
+		richness = 3;
+
+	const int step = 1 + richness;
+
+	return step + number(0, step);
+}
+
+struct kingdom_gather_work
+{
+	int room_vnum;
+	int ticks;
+};
+
+static void kingdom_gather_tick(P_char ch, P_char victim, P_obj obj, void *data);
+
+/*
+ * One tick of gathering. Shaped exactly like kingdom_harvest_tick(): nothing is
+ * carried in the payload but the room and the count, and the node and the bag
+ * are re-found every tick, because either can be gone by the next one.
+ */
+static void kingdom_gather_tick(P_char ch, P_char /*victim*/, P_obj, void *data)
+{
+	if (!ch || !data)
+		return;
+
+	struct kingdom_gather_work work;
+
+	memcpy(&work, data, sizeof(work));
+
+	if (!IS_ALIVE(ch) || IS_FIGHTING(ch) || GET_POS(ch) < POS_STANDING ||
+	    GET_STAT(ch) < STAT_NORMAL)
+	{
+		send_to_char("You stop gathering.\r\n", ch);
+		return;
+	}
+
+	const int rnum = ch->in_room;
+
+	if (!kingdom_harvest_valid_rnum(rnum) || world[rnum].number != work.room_vnum)
+	{
+		send_to_char("You have wandered off the ground you were working.\r\n", ch);
+		return;
+	}
+
+	P_obj node = kingdom_node_in_room(rnum);
+
+	if (!node || node->R_num < 0 || node->value[0] <= 0)
+	{
+		send_to_char("There is nothing left here to gather.\r\n", ch);
+		return;
+	}
+
+	P_obj bag = kingdom_gathering_bag(ch);
+
+	if (!bag)
+	{
+		send_to_char("Without a gathering bag you have nowhere to put it.\r\n", ch);
+		return;
+	}
+
+	if (GET_VITALITY(ch) < KINGDOM_HARVEST_MIN_VITALITY)
+	{
+		send_to_char("You are far too exhausted to keep gathering.\r\n", ch);
+		return;
+	}
+
+	GET_VITALITY(ch) -= KINGDOM_HARVEST_VITALITY_COST;
+
+	struct kingdom_gather_work next = work;
+
+	if (--next.ticks > 0)
+	{
+		if (!add_event(kingdom_gather_tick, PULSE_VIOLENCE, ch, NULL, NULL, 0, &next,
+			       (int)sizeof(next)))
+		{
+			send_to_char("Your concentration breaks and the work stops.\r\n", ch);
+			return;
+		}
+
+		send_to_char("You keep gathering...\r\n", ch);
+		return;
+	}
+
+	const int res = kingdom_resource_for_node_vnum(obj_index[node->R_num].virtual_number);
+
+	if (res < 0 || res >= KRES_MAX)
+	{
+		send_to_char("There is nothing here you know how to gather.\r\n", ch);
+		return;
+	}
+
+	const int mat_rnum = real_object(kingdom_material_prototypes[res]);
+
+	if (mat_rnum < 0)
+	{
+		send_to_char("You work the ground, but nothing usable comes free.\r\n", ch);
+		return;
+	}
+
+	/* THE CHARGE IS SPENT WHATEVER THE OUTCOME, for the same reason the realm
+	 * path spends it: the ground does not care who is digging, or whether
+	 * their bag turned out to be full. */
+	node->value[0]--;
+
+	const int wanted = kingdom_gather_yield(node->value[1]);
+	int taken = 0;
+	bool full = false;
+
+	for (int i = 0; i < wanted; i++)
+	{
+		P_obj mat = read_object(mat_rnum, REAL);
+
+		if (!mat)
+			break;
+
+		/* The bag's own limit, tested the way `put` tests it. */
+		if (container_total_weight(bag) + GET_OBJ_WEIGHT(mat) > bag->value[0])
+		{
+			extract_obj(mat);
+			full = true;
+			break;
+		}
+
+		obj_to_obj(mat, bag);
+		taken++;
+	}
+
+	if (taken > 0)
+		send_to_char_f(ch, "&+yYou gather &+Y%d&+y %s into your bag.&n\r\n", taken,
+			       kingdom_resource_name(res));
+
+	if (full)
+		send_to_char("Your gathering bag will hold no more.\r\n", ch);
+	else if (taken == 0)
+		send_to_char("You come away with nothing usable.\r\n", ch);
+
+	act("$n gathers from the land.", TRUE, ch, NULL, NULL, TO_ROOM);
+
+	/* The message goes FIRST because extract_obj() frees the object, and
+	 * `node` is cleared so a later edit cannot read it. */
+	if (node->value[0] <= 0)
+	{
+		send_to_char("&+LThat was the last of it; the node is exhausted.&n\r\n", ch);
+		extract_obj(node);
+		node = NULL;
+		return;
+	}
+
+	kingdom_node_mark_worked(node);
+}
+
+/*
+ * `harvest`, reached from the node's own spec proc.
+ *
+ * The command word is a reserved trigger (cmd/interp.c) whose command_pointer
+ * is do_not_here, and CMD_TRIG registers it at STAT_DEAD + POS_PRONE with
+ * in_battle TRUE -- so the interpreter's own position gate lets everything
+ * through and every check has to be made here.
+ */
+static void kingdom_gather_command(P_char ch, P_obj node)
+{
+	if (!ch || !node)
+		return;
+	if (!SanityCheck(ch, "kingdom_gather_command"))
+		return;
+
+	if (!kingdom_enabled())
+	{
+		send_to_char("Kingdoms are not enabled.\r\n", ch);
+		return;
+	}
+
+	if (IS_NPC(ch))
+	{
+		send_to_char("You have no interest in honest work.\r\n", ch);
+		return;
+	}
+
+	if (get_scheduled(ch, kingdom_gather_tick) || get_scheduled(ch, kingdom_harvest_tick))
+	{
+		send_to_char("You are already working the land!\r\n", ch);
+		return;
+	}
+
+	if (IS_FIGHTING(ch))
+	{
+		send_to_char("You are rather busy for honest work.\r\n", ch);
+		return;
+	}
+
+	if (GET_STAT(ch) < STAT_NORMAL)
+	{
+		send_to_char("You are far too relaxed to work.\r\n", ch);
+		return;
+	}
+
+	if (GET_POS(ch) < POS_STANDING)
+	{
+		send_to_char("You must be standing to work the land.\r\n", ch);
+		return;
+	}
+
+	if (node->value[0] <= 0)
+	{
+		send_to_char("&+LThis node is worked out.&n\r\n", ch);
+		return;
+	}
+
+	if (GET_VITALITY(ch) < KINGDOM_HARVEST_MIN_VITALITY)
+	{
+		send_to_char("You are far too exhausted to work.\r\n", ch);
+		return;
+	}
+
+	if (!kingdom_gathering_bag(ch))
+	{
+		send_to_char("You need a &+Wgathering bag&n to gather for yourself; the guild "
+			     "shops sell them.\r\nWithout one, '&+Wkingdom harvest&n' still "
+			     "banks what you dig to your realm.\r\n",
+			     ch);
+		return;
+	}
+
+	int ticks = (int)get_property("kingdom.harvest.ticks", KINGDOM_HARVEST_TICKS_DEFAULT);
+
+	if (ticks < 1)
+		ticks = 1;
+	if (IS_TRUSTED(ch))
+		ticks = 1;
+
+	struct kingdom_gather_work work;
+
+	work.room_vnum = world[ch->in_room].number;
+	work.ticks = ticks;
+
+	if (!add_event(kingdom_gather_tick, PULSE_VIOLENCE, ch, NULL, NULL, 0, &work,
+		       (int)sizeof(work)))
+	{
+		send_to_char("You cannot start work just now.\r\n", ch);
+		return;
+	}
+
+	send_to_char("You set to gathering...\r\n", ch);
+	act("$n sets to gathering from the land.", TRUE, ch, NULL, NULL, TO_ROOM);
 }
 
 /* `kingdom harvest`. Takes no argument.

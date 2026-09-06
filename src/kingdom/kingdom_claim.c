@@ -902,6 +902,14 @@ bool kingdom_abandon_last(P_char ch)
 
 	realm->highest_claim = index - 1;
 
+	/* The realm no longer holds every square, so its champion is unmade
+	 * (ruled 2026-09-05). Done BEFORE the write so the zeroed class travels
+	 * in the same record -- including when the write is held for a pending
+	 * payment, since the record stays dirty and the retry carries it -- and
+	 * before the refresh so the reconciler sees the final state and takes the
+	 * body away. */
+	const bool champion_lost = kingdom_champion_destroy(*realm);
+
 	kingdom_refresh_index(*realm);
 
 	/* No coin moved, so the realm record travels alone: kingdom_persist_realm
@@ -926,6 +934,13 @@ bool kingdom_abandon_last(P_char ch)
 		 "refunded.\r\n",
 		 index, realm->highest_claim, KINGDOM_MAX_SQUARES);
 	send_to_char(told, ch);
+
+	if (champion_lost)
+	{
+		send_to_char("Your realm no longer holds every square, and its champion is "
+			     "unmade. Retake the eightieth square to raise a new one.\r\n",
+			     ch);
+	}
 
 	if (!durable)
 	{
@@ -1109,6 +1124,18 @@ void kingdom_roster_hire(P_char ch, char *rest)
 
 	const int guard_class = kingdom_guard_class_by_name(wanted);
 
+	if (guard_class && kingdom_guard_class_is_specialised(guard_class))
+	{
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "A %s is no border guard; that calling answers only to a realm's "
+			 "champion.\r\nA guard may be: %s.\r\n",
+			 kingdom_guard_class_name(guard_class), classes);
+		send_to_char(say, ch);
+		return;
+	}
+
 	if (!guard_class)
 	{
 		char say[MAX_STRING_LENGTH];
@@ -1255,7 +1282,7 @@ void kingdom_roster_upgrade(P_char ch, char *rest)
 	{
 		guard_class = kingdom_guard_class_by_name(wanted);
 
-		if (!guard_class)
+		if (!guard_class || kingdom_guard_class_is_specialised(guard_class))
 		{
 			char classes[256];
 			char say[MAX_STRING_LENGTH];
@@ -1353,9 +1380,10 @@ void kingdom_roster_upgrade(P_char ch, char *rest)
  * multiclass of one thing is just that thing at a higher price.
  *
  * There is no upgrade path and no refund: the champion is level 60 the moment
- * it is raised and stays there. Losing a square sends it home rather than
- * unmaking it, and it takes the field again when the eightieth square is
- * retaken -- the guild does not pay twice for land it already bought once.
+ * it is raised and stays there. Losing a square UNMAKES it (ruled 2026-09-05,
+ * replacing the earlier "sends it home"): the champion answers only to a whole
+ * realm, so retaking the eightieth square reopens this verb and the guild buys
+ * a new champion at the full price.
  */
 void kingdom_roster_champion(P_char ch, char *rest)
 {
@@ -1403,10 +1431,12 @@ void kingdom_roster_champion(P_char ch, char *rest)
 
 	if (!class_one || !class_two || class_one == class_two)
 	{
-		char classes[256];
+		char classes[512];
 		char say[MAX_STRING_LENGTH];
 
-		kingdom_guard_class_list(classes, sizeof(classes));
+		/* The champion's list, not a guard's: the specialised callings are
+		 * exactly what this verb exists to offer (ruled 2026-09-05). */
+		kingdom_champion_class_list(classes, sizeof(classes));
 		snprintf(say, sizeof(say),
 			 "A champion is sworn to TWO callings, and they must differ. Choose from: "
 			 "%s.\r\nFor example '&+Wkingdom champion warrior cleric&n'.\r\n",
@@ -1451,6 +1481,239 @@ void kingdom_roster_champion(P_char ch, char *rest)
 	logit(LOG_KINGDOM, "CHAMPION: %s (assoc %d) raised a %s/%s champion for %ld copper%s.",
 	      guild->get_name().c_str(), realm->assoc_id, kingdom_guard_class_name(class_one),
 	      kingdom_guard_class_name(class_two), price, durable ? "" : " (record pending)");
+
+	kingdom_champion_refresh(*realm);
+}
+
+/* ------------------------------------------------------------------ *
+ * Respec
+ * ------------------------------------------------------------------ *
+ * Ruled 2026-09-05. A garrison bought years ago should not be stuck with the
+ * callings that made sense then, so both a guard and the champion can be
+ * re-schooled at the SAME rank for PRESTIGE rather than coin.
+ *
+ * Prestige and not gold on purpose: the treasury already buys guards, land and
+ * the champion, and a second coin sink would just be a slower version of the
+ * first. Prestige is what a guild earns by being a guild, so spending it is
+ * spending standing, and a realm that has done nothing has nothing to respend.
+ *
+ * A respec never changes a level. That keeps the promotion ladder one-way, and
+ * it is why the reconcilers had to learn to compare a body's CLASS: until this
+ * verb existed a re-schooling always moved the level too, so the level test
+ * caught it by accident.
+ */
+static bool kingdom_pay_prestige(P_Guild guild, unsigned long price)
+{
+	if (!guild)
+	{
+		return false;
+	}
+
+	return guild->sub_prestige(price);
+}
+
+/* Tell the actor what a prestige refusal cost them, in the voice the coin
+ * refusals use. */
+static void kingdom_tell_prestige_short(P_char ch, P_Guild guild, unsigned long price,
+					const char *what)
+{
+	char say[MAX_STRING_LENGTH];
+
+	snprintf(say, sizeof(say),
+		 "Re-schooling %s costs &+W%lu&n prestige; your guild has &+W%lu&n.\r\n", what,
+		 price, guild ? guild->get_prestige() : 0UL);
+	send_to_char(say, ch);
+}
+
+/* `kingdom respec <#> <class>` -- a guard, at its present rank. */
+void kingdom_roster_respec(P_char ch, char *rest)
+{
+	P_Guild guild = kingdom_actor_guild(ch);
+
+	if (!guild)
+	{
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_actor_realm(ch, guild);
+
+	if (!realm)
+	{
+		return;
+	}
+
+	char which[MAX_INPUT_LENGTH];
+	char wanted[MAX_INPUT_LENGTH];
+
+	rest = one_argument(rest, which);
+	one_argument(rest, wanted);
+
+	char *end = NULL;
+	errno = 0;
+	const long typed = strtol(which, &end, 10);
+	const int slot = errno || end == which || *end != '\0' || typed < 1 ||
+					 typed > KINGDOM_GUARD_SLOTS ?
+				 -1 :
+				 static_cast<int>(typed) - 1;
+
+	if (slot < 0 || slot >= KINGDOM_GUARD_SLOTS || realm->guards[slot].level <= 0)
+	{
+		send_to_char("Name the guard by its number on '&+Wkingdom roster&n', as "
+			     "'&+Wkingdom respec 3 cleric&n'.\r\n",
+			     ch);
+		return;
+	}
+
+	const int guard_class = kingdom_guard_class_by_name(wanted);
+
+	if (!guard_class || kingdom_guard_class_is_specialised(guard_class))
+	{
+		char classes[256];
+		char say[MAX_STRING_LENGTH];
+
+		kingdom_guard_class_list(classes, sizeof(classes));
+		snprintf(say, sizeof(say), "No guard takes that calling. Choose from: %s.\r\n",
+			 classes);
+		send_to_char(say, ch);
+		return;
+	}
+
+	if (guard_class == realm->guards[slot].guard_class)
+	{
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say), "Guard %d is already a %s.\r\n", slot + 1,
+			 kingdom_guard_class_name(guard_class));
+		send_to_char(say, ch);
+		return;
+	}
+
+	if (!kingdom_pay_prestige(guild, KINGDOM_GUARD_RESPEC_PRESTIGE))
+	{
+		kingdom_tell_prestige_short(ch, guild, KINGDOM_GUARD_RESPEC_PRESTIGE, "a guard");
+		return;
+	}
+
+	const int was = realm->guards[slot].guard_class;
+
+	realm->guards[slot].guard_class = guard_class;
+	realm->dirty = true;
+
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "RESPEC");
+
+	char told[MAX_INPUT_LENGTH];
+
+	snprintf(told, sizeof(told),
+		 "Guard %d puts down the ways of a %s and takes up those of a %s, still at "
+		 "level %d.\r\n",
+		 slot + 1, kingdom_guard_class_name(was), kingdom_guard_class_name(guard_class),
+		 realm->guards[slot].level);
+	send_to_char(told, ch);
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
+
+	logit(LOG_KINGDOM,
+	      "RESPEC: %s (assoc %d) re-schooled guard %d from %s to %s for %lu prestige%s.",
+	      guild->get_name().c_str(), realm->assoc_id, slot + 1, kingdom_guard_class_name(was),
+	      kingdom_guard_class_name(guard_class), (unsigned long)KINGDOM_GUARD_RESPEC_PRESTIGE,
+	      durable ? "" : " (record pending)");
+
+	/* The body carries the old calling, and the reconciler now compares
+	 * class, so this is what replaces it. */
+	kingdom_garrison_refresh(*realm);
+}
+
+/* `kingdom champion respec <class> <class>` -- the champion, at level 60. */
+void kingdom_roster_champion_respec(P_char ch, char *rest)
+{
+	P_Guild guild = kingdom_actor_guild(ch);
+
+	if (!guild)
+	{
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_actor_realm(ch, guild);
+
+	if (!realm)
+	{
+		return;
+	}
+
+	if (!realm->champion_class)
+	{
+		send_to_char("Your realm has no champion to re-school. Raise one with "
+			     "'&+Wkingdom champion <class> <class>&n'.\r\n",
+			     ch);
+		return;
+	}
+
+	char first[MAX_INPUT_LENGTH];
+	char second[MAX_INPUT_LENGTH];
+
+	rest = one_argument(rest, first);
+	one_argument(rest, second);
+
+	const int class_one = kingdom_guard_class_by_name(first);
+	const int class_two = kingdom_guard_class_by_name(second);
+
+	if (!class_one || !class_two || class_one == class_two)
+	{
+		char classes[512];
+		char say[MAX_STRING_LENGTH];
+
+		kingdom_champion_class_list(classes, sizeof(classes));
+		snprintf(say, sizeof(say),
+			 "A champion is sworn to TWO callings, and they must differ. Choose from: "
+			 "%s.\r\nFor example '&+Wkingdom champion respec dreadlord "
+			 "sorcerer&n'.\r\n",
+			 classes);
+		send_to_char(say, ch);
+		return;
+	}
+
+	if ((class_one | class_two) == realm->champion_class)
+	{
+		send_to_char("Your champion already answers to those two callings.\r\n", ch);
+		return;
+	}
+
+	if (!kingdom_pay_prestige(guild, KINGDOM_CHAMPION_RESPEC_PRESTIGE))
+	{
+		kingdom_tell_prestige_short(ch, guild, KINGDOM_CHAMPION_RESPEC_PRESTIGE,
+					    "the champion");
+		return;
+	}
+
+	realm->champion_class = class_one | class_two;
+	realm->dirty = true;
+
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "CHAMPION RESPEC");
+
+	char told[MAX_INPUT_LENGTH];
+
+	snprintf(told, sizeof(told),
+		 "The champion is re-sworn: a %s and %s both, still at level %d.\r\n",
+		 kingdom_guard_class_name(class_one), kingdom_guard_class_name(class_two),
+		 KINGDOM_CHAMPION_LEVEL);
+	send_to_char(told, ch);
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
+
+	send_to_guild(guild, "The Kingdom Marshal", "The realm's champion is re-sworn.");
+
+	logit(LOG_KINGDOM,
+	      "CHAMPION RESPEC: %s (assoc %d) re-swore its champion as %s/%s for "
+	      "%lu prestige%s.",
+	      guild->get_name().c_str(), realm->assoc_id, kingdom_guard_class_name(class_one),
+	      kingdom_guard_class_name(class_two), (unsigned long)KINGDOM_CHAMPION_RESPEC_PRESTIGE,
+	      durable ? "" : " (record pending)");
 
 	kingdom_champion_refresh(*realm);
 }
