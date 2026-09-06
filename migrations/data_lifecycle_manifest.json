@@ -2225,6 +2225,35 @@
       "dependencies": []
     },
     {
+      "id": "database:kingdom_garrison",
+      "kind": "database_table",
+      "locator": "kingdom_garrison",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "purchased guild kingdom guard roster",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
       "id": "database:kingdom_realms",
       "kind": "database_table",
       "locator": "kingdom_realms",
@@ -3003,8 +3032,8 @@
         "shared_fields": []
       },
       "season_action": "retain",
-      "active_retention": "pending_controller_decision",
-      "archive_retention": "pending_controller_decision",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
@@ -3034,8 +3063,8 @@
         "shared_fields": []
       },
       "season_action": "retain",
-      "active_retention": "pending_controller_decision",
-      "archive_retention": "pending_controller_decision",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
@@ -5362,6 +5391,35 @@
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:player-deaths",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/player-deaths/*.death",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id",
+      "technical_purpose": "immutable flat-file refused-death evidence; retained until operator recovery and an approved purge horizon exist",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,

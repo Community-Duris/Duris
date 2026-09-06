@@ -3,8 +3,10 @@
 **Implemented and verified locally on 2026-09-06; not deployed.** All four
 completion steps pass. NPC wallet and reset-created coins are lootable; rejected
 deaths preserve durable evidence and quarantine disputed custody before release.
-The final isolated flat-file journey measured **0.992s** from real `EMSGSIZE`
-refusal to the account menu and passed process restart/re-entry checks.
+The earlier journey measured **0.992s (n=1, isolated flat-file)** from real
+`EMSGSIZE` refusal to the account menu and passed process restart/re-entry checks.
+See the [PR review resolution](pr-158-review-resolution.md) for subsequent
+corrections, acceptance scope, crash boundaries, and current validation.
 
 ## Implementation
 
@@ -230,8 +232,7 @@ The room gap is now fixed through an internal helper in
 both legs against one room catalog and includes the resulting image in the
 existing authority transaction. It preserves revision checks, removes retired
 piles, updates remaining amounts and parent weights, and retains the existing
-loading path for imported piles without a room-transfer projection. No external
-API or persisted format changed.
+loading path for imported piles without a room-transfer projection.
 
 `python3 tests/async/test_flatfile_item_repository.py` now passes with partial
 pickup, a two-pile merge in one room, replay, pickup in a new process, and an
@@ -294,10 +295,9 @@ death schema; terminal death capture did not queue its revision before dispatch;
 and active custody let login restore disputed inventory. The worker and terminal
 entry point now use their existing schema/revision paths. Death apply quarantines
 remaining player custody using the existing state, preserving UID, parent, owner
-and payload, including durable-only children. Flat-file apply publishes evidence
-before committing custody and the empty player file together through the existing
-authority transaction. SQL performs quarantine inside the existing death transaction.
-No external API or persisted format changed.
+and payload, including durable-only children. The PR review correction places
+flat-file evidence, custody quarantine and the empty player file in one authority
+transaction. SQL performs quarantine inside the death transaction.
 
 The focused pipeline, worker, journal, custody/corpse and both repository checks
 also pass. The flat-file repository uses existing fault hooks to cover failure
@@ -383,7 +383,8 @@ The pre-existing fresh-character bank-revision issue and the fixture's explicit
 boon opt-out are described in step 2. Production deployment, automatic restitution,
 and fresh-character currency without reconnect remain outside this change.
 The final diff contains the implementation, focused tests, required manifest
-registration, this document, and the separately requested scopeguard clarification.
+registration and documentation. The scopeguard clarification was removed during
+PR review remediation.
 No temporary debugging remains in source. Compiled test artifacts stay under `bin/`;
 isolated gameplay data and certificates are temporary. The unrelated pre-existing
 `.agents/skills/plan-ablation/` work remains untouched.

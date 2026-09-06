@@ -46,9 +46,8 @@ bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, siz
 				return false;
 			captured.push_back(entry);
 		}
-		std::sort(captured.begin(), captured.end(), [](const auto &left, const auto &right) {
-			return left.item_uid < right.item_uid;
-		});
+		std::sort(captured.begin(), captured.end(), [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
 		*snapshot = std::move(captured);
 		return true;
 	}

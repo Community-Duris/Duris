@@ -154,7 +154,7 @@ assert "row.string_mask=object->str_mask&(STRUNG_KEYS|STRUNG_DESC1|STRUNG_DESC2|
 assert "STRUNG_DESC3|STRUNG_EDESC" in LOAD_ITEMS_COMPACT
 ordinary_capture, death_capture = CAPTURE[CAPTURE.index(
     "player_snapshot_capture_result player_snapshot_capture("
-):].split("player_snapshot_capture_result player_death_snapshot_capture(", 1)
+):].split("player_death_snapshot_capture(", 1)
 for capture in (ordinary_capture, death_capture):
     assert capture.count("*snapshot_out = std::move(snapshot);") == 1
     assert capture.index("player_snapshot snapshot") < capture.index(

@@ -56,7 +56,11 @@ int eth2_forest_animal(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 		act("\n&+LThe echoes from $n&+L's death cry reverberate, coalescing into something from your nightmares!",
 		    FALSE, ch, 0, 0, TO_ROOM);
 
-		(void)money_to_inventory(ch);
+		if (!money_to_inventory(ch))
+		{
+			extract_char(mob);
+			return FALSE;
+		}
 		unequip_all(ch);
 		transfer_inventory(ch, mob);
 
@@ -98,7 +102,11 @@ int eth2_little_girl(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 		act("\n&+LThe echoes from $n&+L's death cry reverberate, coalescing into something from your nightmares!",
 		    FALSE, ch, 0, 0, TO_ROOM);
 
-		(void)money_to_inventory(ch);
+		if (!money_to_inventory(ch))
+		{
+			extract_char(mob);
+			return FALSE;
+		}
 		unequip_all(ch);
 		transfer_inventory(ch, mob);
 

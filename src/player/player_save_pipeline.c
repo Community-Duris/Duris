@@ -424,7 +424,12 @@ bool begin_terminal_fence(int pid, player_revision_t *revision)
 	// previous timeout may have been ACKed by a nonterminal retry; its fence
 	// cannot authorize removal using the old snapshot or logout intent.
 	if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, revision))
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (terminal_fence *fence = find_terminal_fence_locked(pid))
+			*fence = {};
 		return false;
+	}
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	terminal_fence *fence = find_terminal_fence_locked(pid);
 	if (!fence)
@@ -470,6 +475,22 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 	player_revision_t revision = 0;
 	if (!begin_terminal_fence(pid, &revision))
 		return player_save_terminal_result::unavailable;
+	// Only an enqueued snapshot may retain a fence for an asynchronous ACK.
+	// Capture/queue refusal must release capacity for other terminal saves.
+	struct unqueued_fence_guard
+	{
+		int pid;
+		bool queued = false;
+		~unqueued_fence_guard()
+		{
+			if (!queued)
+			{
+				std::lock_guard<std::mutex> lock(pipeline_mutex);
+				if (terminal_fence *fence = find_terminal_fence_locked(pid))
+					*fence = {};
+			}
+		}
+	} guard{ pid };
 	player_snapshot snapshot;
 	if (player_death_snapshot_capture(ch, corpse, wallet_pile, operation_id, revision,
 					  room_vnum, {},
@@ -488,6 +509,7 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 	if (queued != player_save_pipeline_result::queued &&
 	    queued != player_save_pipeline_result::coalesced)
 		return player_save_terminal_result::unavailable;
+	guard.queued = true;
 	if (trace_player_saves())
 		logit(LOG_STATUS,
 		      "PLAYER SAVE TRACE: stage=terminal_death_begin mono_us=%llu pid=%d revision=%llu room=%d timeout_ms=%llu journal_allowed=%d",

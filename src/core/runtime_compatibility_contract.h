@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 176;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 177;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -29,16 +29,17 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms',"
 	"'guildhalls','guilds','ip_info','item_current_owner',"
 	"'item_owner_revision','item_ownership_baseline','item_ownership_ledger','item_ownership_quarantine',"
-	"'item_uid_allocator','items','kingdom_land','kingdom_realms','level_cap',"
-	"'lifecycle_archive_batches','lifecycle_archive_evidence','lifecycle_archive_jobs','lifecycle_archive_rows',"
-	"'locker_access','locker_activity_log','locker_chests','locker_item_affects',"
-	"'locker_item_extra_descr','locker_items','locker_kickouts','locker_session_state',"
-	"'lockers','log_entries','lookup_dataset_state','mud_info',"
-	"'mud_schema_baselines','mud_schema_history','mud_schema_migration_state','mud_schema_migrations',"
-	"'multiplay_whitelist','nexus_stones','offline_messages','outposts',"
-	"'pages','persistence_item_events','persistence_scalar_events','personal_data_export_audit',"
-	"'personal_data_export_requests','personal_data_export_sections','ping','pkill_event',"
-	"'pkill_info','player_affects','player_data','player_death_custody','player_death_disposition','player_forged_items',"
+	"'item_uid_allocator','items','kingdom_garrison','kingdom_land',"
+	"'kingdom_realms','level_cap','lifecycle_archive_batches','lifecycle_archive_evidence',"
+	"'lifecycle_archive_jobs','lifecycle_archive_rows','locker_access','locker_activity_log',"
+	"'locker_chests','locker_item_affects','locker_item_extra_descr','locker_items',"
+	"'locker_kickouts','locker_session_state','lockers','log_entries',"
+	"'lookup_dataset_state','mud_info','mud_schema_baselines','mud_schema_history',"
+	"'mud_schema_migration_state','mud_schema_migrations','multiplay_whitelist','nexus_stones',"
+	"'offline_messages','outposts','pages','persistence_item_events',"
+	"'persistence_scalar_events','personal_data_export_audit','personal_data_export_requests','personal_data_export_sections',"
+	"'ping','pkill_event','pkill_info','player_affects',"
+	"'player_data','player_death_custody','player_death_disposition','player_forged_items',"
 	"'player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr',"
 	"'player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges',"
@@ -55,9 +56,9 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"e2d802053dfdf981d3f72841bce675e467845ae347ae62bf3f89c9e4b065c1d2";
+	"b5d52cca2efb9fc8f1192249c25d4affdf1b6cc005fb9ab982f0309f859c6287";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"edfe38e99686d863083ba936279ce4e2cb370e5a9d2a7c5395e6ba79208c5d62";
+	"6068b13bb215df55c01fd42521ca2a6ff73cdab281a7f214b247eeb841be9eab";
 /* Includes the death disposition and custody tables introduced by migration 0011.
  * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
 constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0011_player_death_disposition";
@@ -65,9 +66,9 @@ constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 11;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
 	"209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"f9fcb0d7dcfec03b87d6f3caa1d64f1301c93c55362320b7bfe78dace90c98e8";
+	"cfeba2cc7cd8f07b1b24e490d2d05167231e76cbdcb96ced21b98671612f12e3";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"daf69aa4a6b640a506c03274d427c3d414d24d5a3f8ec369a4594e101ebcf177";
+	"c308bec958dac85b44ad4b0fd26c9cef8a174b8d34094de502a5a7881d9abce6";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

@@ -40,7 +40,7 @@ def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, in
     header_size = 8 + 4 + 4 + 8 + 32
     require(data[:8] == b"DUROWN\0\0", "flatfile item ownership magic changed")
     version, payload_size, revision = struct.unpack_from("<IIQ", data, 8)
-    require(version == 2 and revision > 0, "flatfile item ownership header is invalid")
+    require(version == 3 and revision > 0, "flatfile item ownership header is invalid")
     require(payload_size == len(data) - header_size, "flatfile item ownership size is invalid")
     payload = data[header_size:]
     owner_count, item_count, _ = struct.unpack_from("<III", payload)
@@ -62,6 +62,11 @@ def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, in
             state,
         ) = struct.unpack_from(item_format, payload, offset)
         offset += item_size
+        require(offset + 4 <= len(payload), "flatfile coin payload length is truncated")
+        coin_size, = struct.unpack_from("<I", payload, offset)
+        offset += 4
+        require(offset + coin_size <= len(payload), "flatfile coin payload is truncated")
+        offset += coin_size
         by_vnum.setdefault(vnum, []).append(
             {
                 "item_uid": item_uid,

@@ -1930,11 +1930,13 @@ void obj_from_char(P_obj object)
 namespace
 {
 bool money_inventory_completion(P_char ch, bool committed, const coin_transfer_payload &payload,
-				const coin_transfer_result &result, unsigned int,
+				const coin_transfer_result &result, unsigned int error_code,
 				const uint8_t *context, size_t context_size)
 {
 	if (!context || context_size != sizeof(uint64_t))
 		return false;
+	if (committed && error_code == EOWNERDEAD)
+		return true;
 	uint64_t uid = 0;
 	memcpy(&uid, context, sizeof(uid));
 	P_obj money = nullptr;
@@ -5787,6 +5789,9 @@ P_obj create_money(int copper, int silver, int gold, int platinum)
 		return NULL;
 	}
 
+	// Wallet conversion specifies the complete pile. Reset-created money may use
+	// a nonempty coin prototype; those prototype amounts are not another credit.
+	std::fill_n(obj->value, 4, 0);
 	add_coins(obj, copper, silver, gold, platinum);
 
 	return (obj);

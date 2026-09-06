@@ -44,6 +44,55 @@ EXPECTED_CONNECTION = {
 }
 
 
+# Explicit offline contract for the post-baseline death schema. This supplements
+# engine-measured fingerprints; changing a migration checksum cannot bless a
+# dropped column, wrong wallet type, or missing index.
+DEATH_SCHEMA_DEFINITIONS = {'player_death_custody': ('pid int not null',
+                          'save_revision bigint unsigned not null',
+                          'item_uid bigint unsigned not null',
+                          'root_item_uid bigint unsigned not null',
+                          'parent_item_uid bigint unsigned not null default 0',
+                          'item_revision bigint unsigned not null default 0',
+                          'vnum int not null default 0',
+                          'state tinyint unsigned not null default 0',
+                          'owner_type tinyint unsigned not null default 0',
+                          'owner_id bigint unsigned not null default 0',
+                          'owner_context_id bigint unsigned not null default 0',
+                          'owner_revision bigint unsigned not null default 0',
+                          'primary key (pid,save_revision,item_uid)',
+                          'key idx_player_death_custody_item (item_uid)'),
+ 'player_death_disposition': ('pid int not null',
+                              'save_revision bigint unsigned not null',
+                              'operation_id binary(16) not null',
+                              'corpse_item_uid bigint unsigned not null',
+                              'corpse_room_vnum int not null',
+                              'wallet_revision bigint unsigned not null',
+                              'wallet_copper int not null default 0',
+                              'wallet_silver int not null default 0',
+                              'wallet_gold int not null default 0',
+                              'wallet_platinum int not null default 0',
+                              'wallet_pile_uid bigint unsigned not null default 0',
+                              'payload mediumblob not null',
+                              'recorded_at timestamp(6) not null default current_timestamp(6)',
+                              'primary key (pid,save_revision)',
+                              'key idx_player_death_disposition_operation (operation_id)',
+                              'key idx_player_death_disposition_corpse (corpse_item_uid)')}
+
+
+def validate_death_schema(path: Path | None = None) -> None:
+    source = lifecycle.read_schema_source(path or (
+        ROOT / "migrations/immutable/0011_player_death_disposition.sql"))
+    tables = re.findall(
+        r"CREATE TABLE IF NOT EXISTS (\w+) \((.*?)\)\s*"
+        r"ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+        source, re.DOTALL | re.IGNORECASE)
+    definitions = {table.lower(): tuple(
+        re.sub(r"\s+", " ", line.strip()).rstrip(",").lower()
+        for line in body.strip().splitlines()) for table, body in tables}
+    if len(tables) != 2 or definitions != DEATH_SCHEMA_DEFINITIONS:
+        raise migration_runner.MigrationContractError("offline death schema shape drift")
+
+
 def load() -> dict:
     """Read the runtime compatibility manifest, rejecting any shape drift.
 
@@ -60,7 +109,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 176:
+            value["current_table_count"] != 177:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -99,6 +148,7 @@ def validate() -> dict:
     the sealed Session 11 inventory. Returns the report a caller prints; raises
     MigrationContractError on any drift.
     """
+    validate_death_schema()
     value = load()
     migration = migration_runner.load_manifest()
     if value["baseline_id"] != migration.baseline_id or \
@@ -123,20 +173,15 @@ def validate() -> dict:
     )
     tables = [entry["locator"] for entry in lifecycle_manifest["entries"]
               if entry["kind"] == "database_table"]
-    if len(tables) != value["current_table_count"] or \
-            "lookup_dataset_state" not in tables or "season_reset_state" not in tables or \
-            "server_reboots" not in tables or \
-            migration_runner.table_fingerprint(
-                [table for table in tables if table not in {
-                    "lookup_dataset_state", "season_reset_state", "server_reboots",
-                    "kingdom_realms", "player_death_disposition", "player_death_custody"
-                }]
-            ) != value["baseline_table_fingerprint"]:
+    # Discover post-baseline tables from the immutable schema sources instead of
+    # maintaining an exclusion list that can hide an unregistered migration.
+    immutable_tables = lifecycle.schema_tables(tuple(
+        item.apply_path for item in migration.migrations))
+    post_baseline_tables = immutable_tables - set(migration.required_tables)
+    if set(tables) != set(migration.required_tables) | post_baseline_tables or \
+            len(tables) != value["current_table_count"]:
         raise migration_runner.MigrationContractError("runtime lifecycle table drift")
-    baseline_tables = [table for table in tables if table not in {
-        "lookup_dataset_state", "season_reset_state", "server_reboots",
-        "kingdom_realms", "player_death_disposition", "player_death_custody"
-    }]
+    baseline_tables = [table for table in tables if table not in post_baseline_tables]
     if set(baseline_tables) != set(migration.required_tables):
         raise migration_runner.MigrationContractError(
             "migration baseline table inventory drift")

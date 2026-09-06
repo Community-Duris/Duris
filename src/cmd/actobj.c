@@ -3683,13 +3683,17 @@ static bool publish_coin_pile(const coin_transfer_endpoint &endpoint,
 }
 
 bool coin_put_custody_completion(P_char actor, bool committed, const coin_transfer_payload &payload,
-				 const coin_transfer_result &result, unsigned int,
+				 const coin_transfer_result &result, unsigned int error_code,
 				 const uint8_t *encoded, size_t encoded_size)
 {
 	coin_put_custody_context context = {};
 	if (!encoded || encoded_size != sizeof(context))
 		return false;
 	memcpy(&context, encoded, sizeof(context));
+	if (committed && error_code == EOWNERDEAD)
+	{
+		return true;
+	}
 	if (!committed)
 	{
 		P_obj money = find_live_item_uid(context.money_uid);
@@ -3774,13 +3778,19 @@ struct coin_pickup_context
 };
 
 static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,
-				const coin_transfer_result &result, unsigned int,
+				const coin_transfer_result &result, unsigned int error_code,
 				const uint8_t *encoded, size_t encoded_size)
 {
 	coin_pickup_context context = {};
 	if (!encoded || encoded_size != sizeof(context))
 		return false;
 	memcpy(&context, encoded, sizeof(context));
+	if (committed && error_code == EOWNERDEAD)
+	{
+		if (context.bulk)
+			bulk_gets.erase(context.actor_pid);
+		return true;
+	}
 	if (committed && !publish_coin_pile(payload.source, result.piles[0], context.container_uid))
 		return false;
 	P_obj container = find_live_item_uid(context.container_uid);
@@ -3843,7 +3853,22 @@ struct coin_admission_context
 	uint64_t item_uid;
 	coin_pickup_context pickup;
 	int room;
+	item_owner_identity source;
+	uint64_t outer_uid;
+	int outer_location;
 };
+
+static P_obj coin_admission_outer(P_obj object)
+{
+	int remaining = top_of_objt + 1;
+	while (object && OBJ_INSIDE(object))
+	{
+		if (remaining-- <= 0)
+			return NULL;
+		object = object->loc.inside;
+	}
+	return object;
+}
 
 static void coin_admission_completion(P_char actor, bool committed, const item_transfer_result &,
 				      unsigned int, const uint8_t *encoded, size_t encoded_size)
@@ -3858,8 +3883,23 @@ static void coin_admission_completion(P_char actor, bool committed, const item_t
 				      (context.pickup.container_uid ?
 					       container && OBJ_INSIDE_OBJ(money, container) :
 					       OBJ_IN_ROOM(money, context.room));
+	P_obj outer = coin_admission_outer(money);
+	item_owner_identity source = {};
+	item_ownership_runtime_entry container_custody = {};
+	const bool container_matches =
+		!container ||
+		!item_ownership_runtime_lookup(container->obj_uid, &container_custody) ||
+		(container_custody.state == item_custody_state::active &&
+		 item_owner_identity_equal(container_custody.owner, context.source));
+	const bool source_matches = actor && outer && outer->obj_uid == context.outer_uid &&
+				    outer->loc_p == context.outer_location &&
+				    (OBJ_IN_ROOM(outer, context.room) ||
+				     OBJ_CARRIED_BY(outer, actor) || OBJ_WORN_BY(outer, actor)) &&
+				    container_matches &&
+				    get_item_source_owner(actor, money, container, &source) &&
+				    item_owner_identity_equal(source, context.source);
 	if (committed && actor && actor->in_room == context.room && location_matches &&
-	    submit_coin_get(actor, money, container, context.pickup.showit))
+	    source_matches && submit_coin_get(actor, money, container, context.pickup.showit))
 		return;
 	// Admission never credits the wallet. A failed or stale continuation leaves
 	// the durable pile available to a later pickup, and terminates a bulk get.
@@ -3892,11 +3932,17 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 				return false;
 			parent = container;
 		}
+		P_obj outer = coin_admission_outer(money);
+		if (!outer)
+			return false;
 		const coin_admission_context context = {
 			money->obj_uid,
 			{ container ? container->obj_uid : 0, static_cast<uint32_t>(GET_PID(actor)),
 			  showit, bulk_gets.find(GET_PID(actor)) != bulk_gets.end() },
-			actor->in_room
+			actor->in_room,
+			source,
+			outer->obj_uid,
+			outer->loc_p
 		};
 		return item_movement_transaction_submit(actor, money, parent, source, source,
 							item_transfer_reason::player_get,

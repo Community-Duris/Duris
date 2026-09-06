@@ -239,8 +239,22 @@ int main()
 	       "epic_gain", "epic_ledger" })
 	{
 		const std::string temporary = std::string("fixture_") + table;
-		execute_sql(connection, "CREATE TEMPORARY TABLE " + temporary + " LIKE " + table);
-		execute_sql(connection, "ALTER TABLE " + temporary + " RENAME TO " + table);
+		if (std::getenv("PLAYER_LOAD_DISPOSABLE_SCHEMA"))
+		{
+			// Only the wrapper's disposable schema may use real fixtures. MySQL 8
+			// cannot reopen a temporary table in the loader's batched UNION query.
+			assert(std::string(std::getenv("DB_NAME")) == "currency_coin_test");
+			execute_sql(connection,
+				    "RENAME TABLE " + std::string(table) + " TO " + temporary);
+			execute_sql(connection,
+				    "CREATE TABLE " + std::string(table) + " LIKE " + temporary);
+		}
+		else
+		{
+			execute_sql(connection,
+				    "CREATE TEMPORARY TABLE " + temporary + " LIKE " + table);
+			execute_sql(connection, "ALTER TABLE " + temporary + " RENAME TO " + table);
+		}
 	}
 	for (int index = 0; index < 25; ++index)
 	{

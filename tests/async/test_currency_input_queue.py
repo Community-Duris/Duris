@@ -197,6 +197,7 @@ int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool ite
 
 COIN_PILES = r'''
 static std::vector<P_obj> live_items;
+int top_of_objt = 10000;
 P_obj object_list = nullptr;
 void obj_to_char(P_obj, P_char);
 static uint64_t next_coin_uid = 1000, hidden_container = 0;
@@ -790,6 +791,26 @@ int main()
 	currency_transaction_handle_completions(nullptr, 0);
 	assert(currency_transaction_health_copy().pending == 0 && put_announcements == 3);
 	assert(bag.contains->value[0] == 350);
+	const std::array<int, 4> before_abandon = { GET_COPPER(&actor), GET_SILVER(&actor), GET_GOLD(&actor), GET_PLATINUM(&actor) };
+	// A permanently missing container retires the bounded retry without refunding
+	// the committed wallet or reporting a rejected transfer.
+	assert(submit_coin_put(&actor, put));
+	hidden_container = 900;
+	pile_ack(true);
+	const int committed_gold = GET_GOLD(&actor);
+	for (unsigned int attempt = 1; attempt < CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS; ++attempt)
+		currency_transaction_handle_completions(nullptr, 0);
+	assert(currency_transaction_health_copy().pending == 0);
+	assert(currency_transaction_health_copy().publication_abandoned == 1);
+	assert(!currency_transaction_player_busy(&actor));
+	assert(!currency_transaction_coin_item_busy(pile_uid));
+	assert(GET_GOLD(&actor) == committed_gold && put_announcements == 3);
+	for (int pulse = 0; pulse < 100; ++pulse)
+		currency_transaction_handle_completions(nullptr, 0);
+	assert(currency_transaction_health_copy().publication_abandoned == 1);
+	// Restore the previous synthetic baseline for the remaining independent cases.
+	hidden_container = 0;
+	std::copy(before_abandon.begin(), before_abandon.end(), actor.points.cash);
 	assert(submit_coin_put(&actor, put));
 	const int gold_before = GET_GOLD(&actor);
 	pile_ack(false);
@@ -981,6 +1002,28 @@ int main()
 			extract_obj(untracked, false);
 		}
 	}
+	// Admission cannot chain a pickup after the enclosing container changes hands
+	// or moves from room to inventory, even if the pile and ledger stay unchanged.
+	for (int movement = 0; movement < 3; ++movement) {
+		P_obj untracked = create_money(50, 0, 0, 0);
+		obj_to_obj(untracked, &bag);
+		bag.loc_p = LOC_ROOM; bag.loc.room = actor.in_room;
+		assert(submit_coin_get(&actor, untracked, &bag, 1));
+		const int before_continuation = submission_count;
+		assert(item_ownership_runtime_owner_revision(owner, &owner_revision));
+		assert(item_ownership_runtime_hydrate({untracked->obj_uid, bag.obj_uid, bag.obj_uid,
+			owner, 1, owner_revision, VOBJ_COINS, item_custody_state::active}));
+		if (movement < 2) {
+			bag.loc_p = LOC_CARRIED;
+			bag.loc.carrying = movement ? &recipient : &actor;
+		} else bag.loc.room = actor.in_room + 1;
+		item_pending = false;
+		admission_callback(&actor, true, {}, 0,
+			reinterpret_cast<const uint8_t *>(&admission_context), sizeof(admission_context));
+		assert(submission_count == before_continuation && untracked->value[0] == 50);
+		extract_obj(untracked, false);
+	}
+	bag.loc_p = LOC_ROOM; bag.loc.room = actor.in_room;
 	// Retired custody is never treated as absence and re-admitted.
 	P_obj retired_pile = create_money(1, 0, 0, 0);
 	obj_to_obj(retired_pile, &bag);

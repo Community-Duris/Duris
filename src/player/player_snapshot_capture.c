@@ -244,7 +244,6 @@ player_snapshot_capture_result capture_replacement_rows(P_char ch,
 	return player_snapshot_capture_result::ok;
 }
 
-
 bool capture_skills(P_char ch, player_snapshot &snapshot, capture_budget &budget)
 {
 	for (int index = 0; index < MAX_SKILLS; ++index)
@@ -661,21 +660,25 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 	return player_snapshot_capture_result::ok;
 }
 
-player_snapshot_capture_result player_death_snapshot_capture(
-	P_char ch, P_obj corpse, P_obj wallet_pile, const critical_operation_id &operation_id,
-	player_revision_t revision, int entry_room_vnum,
-	const std::vector<critical_operation_id> &unresolved_operations, player_snapshot *snapshot_out)
+player_snapshot_capture_result
+player_death_snapshot_capture(P_char ch, P_obj corpse, P_obj wallet_pile,
+			      const critical_operation_id &operation_id, player_revision_t revision,
+			      int entry_room_vnum,
+			      const std::vector<critical_operation_id> &unresolved_operations,
+			      player_snapshot *snapshot_out)
 {
-	if (!ch || IS_NPC(ch) || !ch->only.pc || !corpse || !snapshot_out ||
-	    !OBJ_ROOM(corpse) || corpse->loc.room < 0 || corpse->loc.room > top_of_world ||
+	if (!ch || IS_NPC(ch) || !ch->only.pc || !corpse || !snapshot_out || !OBJ_ROOM(corpse) ||
+	    corpse->loc.room < 0 || corpse->loc.room > top_of_world ||
 	    (wallet_pile && !OBJ_NOWHERE(wallet_pile)))
 		return player_snapshot_capture_result::invalid_identity;
 	try
 	{
 		player_snapshot snapshot;
 		const auto status = player_snapshot_capture(ch, revision,
-			PLAYER_CHECKPOINT_COMPONENT_ALL & ~(PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_EQUIPMENT),
-			RENT_DEATH, entry_room_vnum, &snapshot);
+							    PLAYER_CHECKPOINT_COMPONENT_ALL &
+								    ~(PLAYER_COMPONENT_INVENTORY |
+								      PLAYER_COMPONENT_EQUIPMENT),
+							    RENT_DEATH, entry_room_vnum, &snapshot);
 		if (status != player_snapshot_capture_result::ok)
 			return status;
 		snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
@@ -685,48 +688,56 @@ player_snapshot_capture_result player_death_snapshot_capture(
 		death.operation_id = operation_id;
 		death.corpse_room_vnum = world[corpse->loc.room].number;
 		death.wallet_revision = ch->only.pc->wallet_revision;
-		death.wallet_before = {GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch)};
+		death.wallet_before = { GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),
+					GET_PLATINUM(ch) };
 		death.wallet_pile_uid = wallet_pile ? wallet_pile->obj_uid : 0;
 		death.unresolved_operations = unresolved_operations;
 		capture_budget budget;
 		budget.bytes = snapshot.encoded_size_bound;
 		if (!budget.add(sizeof(player_death_snapshot)) ||
 		    unresolved_operations.size() > PLAYER_SNAPSHOT_MAX_ROWS ||
-		    !budget.add(unresolved_operations.size() * sizeof(critical_operation_id), unresolved_operations.size()))
+		    !budget.add(unresolved_operations.size() * sizeof(critical_operation_id),
+				unresolved_operations.size()))
 			return player_snapshot_capture_result::limit_exceeded;
 		std::unordered_set<const obj_data *> seen;
-		auto result = capture_item_tree(corpse, PLAYER_SNAPSHOT_NO_PARENT, 0,
-			death.corpse, budget, seen, 1, false, false);
+		auto result = capture_item_tree(corpse, PLAYER_SNAPSHOT_NO_PARENT, 0, death.corpse,
+						budget, seen, 1, false, false);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 		// These roots have not reached the corpse yet. Their recorded destination
 		// is the corpse, but the original custody observations are retained below.
 		for (P_obj object : ch->equipment)
 		{
-			result = capture_item_tree(object, 0, 0, death.corpse, budget, seen, 2, false, false);
+			result = capture_item_tree(object, 0, 0, death.corpse, budget, seen, 2,
+						   false, false);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
 		for (P_obj object = ch->carrying; object; object = object->next_content)
 		{
-			result = capture_item_tree(object, 0, 0, death.corpse, budget, seen, 2, false, false);
+			result = capture_item_tree(object, 0, 0, death.corpse, budget, seen, 2,
+						   false, false);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
-		result = capture_item_tree(wallet_pile, 0, 0, death.corpse, budget, seen, 2, false, false);
+		result = capture_item_tree(wallet_pile, 0, 0, death.corpse, budget, seen, 2, false,
+					   false);
 		if (result != player_snapshot_capture_result::ok)
 			return result;
 		std::unordered_map<uint64_t, item_ownership_runtime_entry> observations;
 		const item_owner_identity owners[] = {
-			{item_owner_type::player, static_cast<uint64_t>(GET_PID(ch)), 0},
-			{item_owner_type::corpse, item_corpse_owner_id(GET_PID(ch), corpse->value[CORPSE_SAVEID]), 0}
+			{ item_owner_type::player, static_cast<uint64_t>(GET_PID(ch)), 0 },
+			{ item_owner_type::corpse,
+			  item_corpse_owner_id(GET_PID(ch), corpse->value[CORPSE_SAVEID]), 0 }
 		};
 		for (const auto &owner : owners)
 		{
 			std::vector<item_ownership_runtime_entry> rows;
-			if (!item_ownership_runtime_snapshot_owner(owner, PLAYER_SNAPSHOT_MAX_OBJECTS, &rows))
+			if (!item_ownership_runtime_snapshot_owner(
+				    owner, PLAYER_SNAPSHOT_MAX_OBJECTS, &rows))
 				return player_snapshot_capture_result::limit_exceeded;
-			for (const auto &row : rows) observations.emplace(row.item_uid, row);
+			for (const auto &row : rows)
+				observations.emplace(row.item_uid, row);
 		}
 		for (size_t index = 1; index < death.corpse.size(); ++index)
 		{
@@ -738,24 +749,32 @@ player_snapshot_capture_result player_death_snapshot_capture(
 			{
 				if (!budget.add(sizeof(player_death_custody_snapshot), 1))
 					return player_snapshot_capture_result::limit_exceeded;
-				death.custody.push_back({{item.object_uid, item.object_uid, 0,
-					ITEM_TRANSFER_ABSENT_REVISION, item.vnum, item_custody_state::absent}, {}, 0});
+				death.custody.push_back({ { item.object_uid, item.object_uid, 0,
+							    ITEM_TRANSFER_ABSENT_REVISION,
+							    item.vnum, item_custody_state::absent },
+							  {},
+							  0 });
 			}
 		}
 		for (const auto &[uid, row] : observations)
 		{
-			if (uid == corpse->obj_uid) continue;
+			if (uid == corpse->obj_uid)
+				continue;
 			if (!budget.add(sizeof(player_death_custody_snapshot), 1))
 				return player_snapshot_capture_result::limit_exceeded;
-			death.custody.push_back({{uid, row.root_item_uid, row.parent_item_uid,
-				row.item_revision, row.vnum, row.state}, row.owner, row.owner_revision});
+			death.custody.push_back({ { uid, row.root_item_uid, row.parent_item_uid,
+						    row.item_revision, row.vnum, row.state },
+						  row.owner,
+						  row.owner_revision });
 		}
-		std::sort(death.custody.begin(), death.custody.end(), [](const auto &left, const auto &right) {
-			return left.item.item_uid < right.item.item_uid;
-		});
+		std::sort(death.custody.begin(), death.custody.end(),
+			  [](const auto &left, const auto &right)
+			  { return left.item.item_uid < right.item.item_uid; });
 		for (auto &row : snapshot.status_integers)
-			if (row.field == player_status_field::copper || row.field == player_status_field::silver ||
-			    row.field == player_status_field::gold || row.field == player_status_field::platinum)
+			if (row.field == player_status_field::copper ||
+			    row.field == player_status_field::silver ||
+			    row.field == player_status_field::gold ||
+			    row.field == player_status_field::platinum)
 			{
 				row.signed_value = 0;
 				row.unsigned_value = 0;
@@ -765,7 +784,8 @@ player_snapshot_capture_result player_death_snapshot_capture(
 		const auto valid = player_snapshot_encode(snapshot, &encoded);
 		if (valid != player_snapshot_codec_result::ok)
 			return valid == player_snapshot_codec_result::limit_exceeded ?
-				player_snapshot_capture_result::limit_exceeded : player_snapshot_capture_result::malformed_source;
+				       player_snapshot_capture_result::limit_exceeded :
+				       player_snapshot_capture_result::malformed_source;
 		*snapshot_out = std::move(snapshot);
 		return player_snapshot_capture_result::ok;
 	}

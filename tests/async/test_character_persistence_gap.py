@@ -237,13 +237,14 @@ require(
     "all three ownership hydration failures must be logged",
 )
 
-# Full loads include one batched query for authoritative coin payloads.
-require(
-    "PLAYER_LOAD_QUERY_MAX = 23" in LOAD_REPOSITORY_H,
-    "load query budget changed; re-check the 23-query ceiling",
-)
+# Full loads reconstruct coin payloads with one owner-scoped query, outside the
+# per-item loop; adding inventory items must not add per-item SQL requests.
+coin_load = section(LOAD_REPOSITORY, "const std::string coin_sql =", "while (MYSQL_ROW row = mysql_fetch_row(coin_rows.get()))")
+require(coin_load.count("query(connection, coin_sql, result)") == 1,
+        "coin payloads must use one batched query")
+require("own.owner_id=" in coin_load and "own.coin_payload IS NOT NULL" in coin_load,
+        "coin payload fetch must be scoped to the player's authoritative piles")
 
-# --- 7. account menu NULL guard ---------------------------------------------------
 menu = section(ACCOUNT, "void display_account_menu(P_desc d, char *arg)", "\n}\n")
 require(
     menu.lstrip().startswith("void display_account_menu(P_desc d, char *arg)\n{\n\tif (!arg)")

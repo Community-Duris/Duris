@@ -25,6 +25,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
     ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
     ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
+    ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
     ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
@@ -87,8 +88,8 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 176)
-        self.assertEqual(report["non_database_stores"], 21)
+        self.assertEqual(report["database_tables"], 177)
+        self.assertEqual(report["non_database_stores"], 22)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 

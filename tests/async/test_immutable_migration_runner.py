@@ -135,18 +135,11 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         )
         tables = [entry["locator"] for entry in lifecycle["entries"]
                   if entry["kind"] == "database_table"]
-        # kingdom_garrison, created by head 0007, is deliberately absent from
-        # the lifecycle manifest and so needs no exclusion here. The lifecycle
-        # inventory must MIRROR runtime_table_sql_list exactly -- the runtime
-        # validator's drift check compares their lengths and fingerprints -- and
-        # 0007's table stays out of that list because joining it means
-        # regenerating both normalised metadata fingerprints against a live
-        # MySQL 8 and a live MariaDB 10.11. Registering it in one manifest but
-        # not the other is the one state that fails; out of both is consistent.
-        baseline_tables = [table for table in tables if table not in {
-            "lookup_dataset_state", "season_reset_state", "server_reboots",
-            "kingdom_realms"
-        }]
+        import validate_data_lifecycle as inventory
+        post_baseline = inventory.schema_tables(tuple(
+            item.apply_path for item in manifest.migrations)) - set(manifest.required_tables)
+        self.assertEqual(set(tables), set(manifest.required_tables) | post_baseline)
+        baseline_tables = [table for table in tables if table not in post_baseline]
         self.assertEqual(len(baseline_tables), manifest.required_table_count)
         self.assertEqual(runner.table_fingerprint(baseline_tables),
                          manifest.required_table_fingerprint)

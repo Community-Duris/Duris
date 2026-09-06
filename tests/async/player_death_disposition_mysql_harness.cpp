@@ -156,7 +156,7 @@ int main()
 		"INSERT INTO item_owner_revision (owner_type,owner_id,revision) VALUES (1,1,5),(1,2,7)");
 	execute(connection,
 		"INSERT INTO item_current_owner (item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES "
-		"(201,201,NULL,1,1,3,501,1),(203,201,201,1,1,1,501,1),(204,204,NULL,1,2,9,501,1)");
+		"(201,201,NULL,1,1,3,501,1),(203,201,201,1,1,1,501,1),(204,204,NULL,1,2,9,501,1),(205,205,NULL,2,9001,6,501,1)");
 
 	const player_snapshot death = make_death(5);
 	player_save_apply_result applied = player_snapshot_repository_apply(connection, death);
@@ -172,7 +172,7 @@ int main()
 		"the death did not advance the durable player revision");
 	require(scalar(connection,
 		       "SELECT GROUP_CONCAT(CONCAT_WS(':',item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_id,item_revision,state) ORDER BY item_uid) FROM item_current_owner") ==
-			"201:201:0:1:4:3,203:201:201:1:2:3,204:204:0:2:9:1",
+			"201:201:0:1:4:3,203:201:201:1:2:3,204:204:0:2:9:1,205:205:0:9001:6:1",
 		"death quarantine lost custody identity, missed a durable child, or changed another owner");
 	require(scalar(connection,
 		       "SELECT revision FROM item_owner_revision WHERE owner_type=1 AND owner_id=1") ==

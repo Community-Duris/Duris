@@ -22,6 +22,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
     ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
     ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
+    ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
     ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
 )
 
@@ -69,6 +70,7 @@ REQUIRED_NON_DATABASE_STORES = {
     "file:persistence_fallback_quarantine": (
         "quarantine", "legacy persistence fallback quarantine",
     ),
+    "file:player-deaths": ("recovery_state", "FLATFILE_ROOT/player-deaths/*.death"),
     "file:runtime_pfiles": ("runtime_file", "lib/players"),
     "file:runtime_accounts": ("runtime_file", "lib/accounts"),
     "file:player_logs": ("log", "logs/player-log"),

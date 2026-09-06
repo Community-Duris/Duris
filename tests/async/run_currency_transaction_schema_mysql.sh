@@ -36,6 +36,19 @@ done
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0010_coin_custody_payload.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0010_coin_custody_payload.sql"
 "$ROOT/migrations/immutable/0010_coin_custody_payload.sh"
+for definition in 'BLOB NOT NULL' 'TEXT NULL' 'MEDIUMBLOB NULL AFTER item_uid'; do
+    "${MYSQL[@]}" "$DB_NAME" -e "ALTER TABLE item_current_owner MODIFY coin_payload $definition"
+    if "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0010_coin_custody_payload.sql" >/dev/null 2>&1; then
+        echo "Damaged coin column passed migration: $definition" >&2
+        exit 1
+    fi
+    if "$ROOT/migrations/immutable/0010_coin_custody_payload.sh" >/dev/null 2>&1; then
+        echo "Damaged coin column passed verification: $definition" >&2
+        exit 1
+    fi
+    "${MYSQL[@]}" "$DB_NAME" -e 'ALTER TABLE item_current_owner MODIFY coin_payload MEDIUMBLOB NULL AFTER state'
+done
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0010_coin_custody_payload.sql"
 "$ROOT/migrations/verify_item_ownership_schema.sh"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/currency_ledger.sql"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_currency_ledger_schema.sh"
@@ -64,13 +77,5 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/player/player_load_repository.c src/player/player_load_topology.c \
     src/player/player_snapshot_codec.c src/persistence/persistence_observability.c \
     "${MYSQL_LIBS[@]}" -o "$ROOT/bin/tests/player_load_repository_mysql_harness"
-if [[ "$IMAGE" == mariadb:* ]]; then
-    GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOUNT_CHARACTER_NAME=CoinMatrix \
-        "$ROOT/bin/tests/player_load_repository_mysql_harness"
-else
-    # MySQL cannot reopen the harness's temporary metadata tables in its UNIONs
-    # (error 1137). Real-table coin loads above exercise the changed repository.
-    GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOUNT_CHARACTER_NAME=CoinMatrix \
-        PLAYER_LOAD_REAL_ONLY=1 "$ROOT/bin/tests/player_load_repository_mysql_harness"
-fi
-printf 'currency deposit-all, withdrawal, rejection, reward rebase, overflow, duplicate, ledger, and baseline checks passed\n'
+PLAYER_LOAD_DISPOSABLE_SCHEMA=1 GAME_ACCOUNT_NAME=coin_matrix_account GAME_ACCOUNT_CHARACTER_NAME=CoinMatrix \
+    "$ROOT/bin/tests/player_load_repository_mysql_harness"

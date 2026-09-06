@@ -23,6 +23,23 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.comm = (SRC / "comm.c").read_text()
         self.header = (SRC / "runtime_compatibility_contract.h").read_text()
 
+    def test_offline_death_schema_rejects_column_and_index_damage(self):
+        import tempfile
+        import validate_runtime_compatibility as validator
+        original = (ROOT / "migrations/immutable/0011_player_death_disposition.sql").read_text()
+        validator.validate_death_schema()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "death.sql"
+            for damaged in (
+                original.replace("wallet_copper INT", "wallet_copper BIGINT"),
+                original.replace("    payload MEDIUMBLOB NOT NULL,\n", ""),
+                original.replace("    KEY idx_player_death_custody_item (item_uid)\n", ""),
+                original.replace("ENGINE=InnoDB", "ENGINE=MyISAM"),
+            ):
+                path.write_text(damaged)
+                with self.assertRaises(validator.migration_runner.MigrationContractError):
+                    validator.validate_death_schema(path)
+
     def test_manifests_and_compiled_contract_are_synchronized(self):
         """The manifest, migration ledger, and compiled header agree.
 
@@ -32,7 +49,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes both death recovery tables, verified on both supported engines.
-        self.assertEqual(report["current_table_count"], 176)
+        self.assertEqual(report["current_table_count"], 177)
         for table in ("player_death_disposition", "player_death_custody"):
             self.assertIn("'" + table + "'", self.header)
         self.assertEqual(report["migration_head"],

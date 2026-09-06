@@ -34,6 +34,25 @@ done
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0011_player_death_disposition.sql"
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0011_player_death_disposition.sql"
 "$ROOT/migrations/immutable/0011_player_death_disposition.sh"
+# CREATE IF NOT EXISTS must not bless damaged existing tables.
+for damage in \
+    'ALTER TABLE player_death_disposition MODIFY wallet_copper BIGINT NOT NULL DEFAULT 0' \
+    'ALTER TABLE player_death_disposition MODIFY wallet_copper INT NULL DEFAULT 0' \
+    'ALTER TABLE player_death_disposition ADD unexpected INT' \
+    'ALTER TABLE player_death_disposition DROP INDEX idx_player_death_disposition_operation' \
+    'ALTER TABLE player_death_disposition DROP PRIMARY KEY' \
+    'ALTER TABLE player_death_custody DROP INDEX idx_player_death_custody_item' \
+    'ALTER TABLE player_death_custody ENGINE=MyISAM'; do
+    "${MYSQL[@]}" "$DB_NAME" -e "$damage"
+    "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0011_player_death_disposition.sql"
+    if "$ROOT/migrations/immutable/0011_player_death_disposition.sh" >/dev/null 2>&1; then
+        echo "Damaged death schema passed verification: $damage" >&2
+        exit 1
+    fi
+    "${MYSQL[@]}" "$DB_NAME" -e 'DROP TABLE player_death_custody, player_death_disposition'
+    "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/immutable/0011_player_death_disposition.sql"
+done
+"$ROOT/migrations/immutable/0011_player_death_disposition.sh"
 "${MYSQL[@]}" "$DB_NAME" -e "INSERT INTO accounts(account_name) VALUES ('death_probe'); INSERT INTO player_data(pid,name,account_name) VALUES (1,'Probe','death_probe');"
 
 mkdir -p "$ROOT/bin/tests"

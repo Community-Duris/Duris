@@ -1061,6 +1061,7 @@ void check_killer(P_char, P_char);
 void death_cry(P_char);
 void death_rattle(P_char);
 void die(P_char, P_char);
+void death_extract_retry_pulse(void);
 void do_trophy(P_char, char *, int);
 void group_gain(P_char, P_char);
 float group_exp_modifier(P_char ch);

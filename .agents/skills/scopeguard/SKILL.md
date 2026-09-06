@@ -12,8 +12,6 @@ Reuse existing code, helpers, patterns, and tests. Fix root causes; preserve unr
 
 Read-only discovery is allowed. Get approval before expanding scope or touching unrelated files; adding dependencies, frameworks, services, or test infrastructure; changing public APIs, schemas, storage, or wire formats; deleting/overwriting data, discarding uncommitted work, rewriting history, or dropping data; or keeping duplicate implementations.
 
-Public APIs means contracts exposed to external consumers, not internal helpers or interfaces shared between modules. Necessary internal changes within the authorized task do not require renewed approval when they preserve external contracts and persisted formats.
-
 Run the narrowest relevant existing tests and extend existing tests before creating new files. Add tests only for requested or uncovered changed user-observable behavior, with each test protecting a clear acceptance criterion or regression risk. Do not add unrelated coverage or use passing tests to justify extra scope.
 
 If the work grows into future-use layers, workaround stacks, unrelated cleanup, or unstated tests, stop, shrink the plan, and confirm scope.

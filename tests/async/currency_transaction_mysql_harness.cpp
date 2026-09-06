@@ -12,6 +12,8 @@
 #include <cassert>
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
+#include <thread>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -296,6 +298,14 @@ void coin_failure_matrix()
 	assert(coin_transfer_command_decode_result(decoded, applied.result_payload.data(),
 						   applied.result_size, &result));
 	assert(result.wallets[0].wallet.amount[0] == 900 && result.piles[1].max_item_revision == 1);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +
+		      operation_hex(put.operation_id) +
+		      "') AND destination=10 AND OCTET_LENGTH(payload)=32") == 1);
+	assert(critical_command_repository_apply(connection, put).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox i WHERE status=1 "
+		      "AND NOT EXISTS (SELECT 1 FROM critical_outbox o WHERE o.operation_id=i.operation_id)") ==
+	       0);
 	// A crash before the inventory snapshot leaves no player_items coin row.
 	verify_reload(900, 100);
 	// A later stale projection must not replace the committed amount or metadata.
@@ -338,6 +348,43 @@ void coin_failure_matrix()
 	       ledger_count);
 	assert((pile_amount(pile) == coins{ 300, 0, 0, 0 }));
 	execute("DROP TRIGGER coin_injected_failure");
+	// Disconnect the real transaction after its wallet debit, while the pile
+	// UPDATE is paused inside the engine. Uncommitted endpoints must both roll
+	// back, and retrying the same operation must commit exactly once.
+	execute("CREATE TRIGGER coin_crash_pause BEFORE UPDATE ON item_current_owner "
+		"FOR EACH ROW SET @coin_pause=SLEEP(10)");
+	MYSQL *interrupted = mysql_init(nullptr);
+	assert(interrupted &&
+	       mysql_real_connect(
+		       interrupted, std::getenv("DB_HOST"), std::getenv("DB_USER"),
+		       std::getenv("DB_PASSWD"), std::getenv("DB_NAME"),
+		       static_cast<unsigned int>(std::strtoul(std::getenv("DB_PORT"), nullptr, 10)),
+		       nullptr, 0));
+	const auto interrupted_id = mysql_thread_id(interrupted);
+	critical_apply_result interrupted_result = {};
+	std::thread transaction(
+		[&]
+		{
+			assert(mysql_thread_init() == 0);
+			interrupted_result = critical_command_repository_apply(interrupted, fault);
+			mysql_close(interrupted);
+			mysql_thread_end();
+		});
+	const auto pause_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(8);
+	bool paused = false;
+	while (!(paused = scalar("SELECT COUNT(*) FROM information_schema.processlist WHERE ID=" +
+				 std::to_string(interrupted_id) +
+				 " AND LOWER(STATE)='user sleep'") == 1) &&
+	       std::chrono::steady_clock::now() < pause_deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	execute("KILL CONNECTION " + std::to_string(interrupted_id));
+	transaction.join();
+	assert(paused && interrupted_result.outcome == critical_apply_outcome::retryable_failure);
+	execute("DROP TRIGGER coin_crash_pause");
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 700);
+	assert((pile_amount(pile) == coins{ 300, 0, 0, 0 }));
+	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + pid_text) ==
+	       ledger_count);
 	assert(critical_command_repository_apply(connection, fault).outcome ==
 	       critical_apply_outcome::applied);
 	assert((pile_amount(pile) == coins{ 350, 0, 0, 0 }));

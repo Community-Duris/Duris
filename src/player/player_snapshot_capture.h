@@ -22,9 +22,11 @@ player_item_snapshot_tree_capture(P_obj root, std::vector<player_item_snapshot> 
 
 // Capture an immutable death disposition without clearing cash or moving objects.
 // wallet_pile is an unattached pile representing the complete current wallet.
-player_snapshot_capture_result player_death_snapshot_capture(
-	P_char ch, P_obj corpse, P_obj wallet_pile, const critical_operation_id &operation_id,
-	player_revision_t revision, int entry_room_vnum,
-	const std::vector<critical_operation_id> &unresolved_operations, player_snapshot *snapshot_out);
+player_snapshot_capture_result
+player_death_snapshot_capture(P_char ch, P_obj corpse, P_obj wallet_pile,
+			      const critical_operation_id &operation_id, player_revision_t revision,
+			      int entry_room_vnum,
+			      const std::vector<critical_operation_id> &unresolved_operations,
+			      player_snapshot *snapshot_out);
 
 #endif

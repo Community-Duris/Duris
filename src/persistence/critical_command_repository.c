@@ -3,6 +3,7 @@
 
 #include "economy/currency_command.h"
 #include "economy/coin_transfer_command.h"
+#include "persistence/critical_outbox.h"
 #include "world/epic_command.h"
 #include "economy/auction_command.h"
 #include "economy/auction_repository.h"
@@ -394,7 +395,12 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 		return false;
 	uint16_t destination = OUTBOX_DESTINATION_TEST;
 	uint16_t event_type = OUTBOX_EVENT_TEST_MUTATED;
-	if (command.type == critical_command_type::epic)
+	if (command.type == critical_command_type::coin_transfer)
+	{
+		destination = CRITICAL_OUTBOX_COIN_RECEIPT_DESTINATION;
+		event_type = CRITICAL_OUTBOX_COIN_RECEIPT_EVENT;
+	}
+	else if (command.type == critical_command_type::epic)
 	{
 		destination = OUTBOX_DESTINATION_EPIC;
 		event_type = OUTBOX_EVENT_EPIC_BALANCE;
@@ -1104,6 +1110,19 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			return failure(EBADMSG);
 		}
 		const size_t result_size = result_code ? 0 : bytes.size();
+		std::array<uint8_t, CRITICAL_OUTBOX_COIN_RECEIPT_BYTES> receipt;
+		std::copy(coin_payload.source.change.operation_id.bytes.begin(),
+			  coin_payload.source.change.operation_id.bytes.end(), receipt.begin());
+		std::copy(coin_payload.destination.change.operation_id.bytes.begin(),
+			  coin_payload.destination.change.operation_id.bytes.end(),
+			  receipt.begin() + 16);
+		if (!result_code &&
+		    !insert_outbox(connection, command, receipt.data(), receipt.size()))
+		{
+			const auto error = database_error(connection);
+			rollback(connection);
+			return failure(error);
+		}
 		if (!finish_inbox(connection, command, durable_revision, result_code, bytes.data(),
 				  result_size))
 		{

@@ -132,8 +132,8 @@ def make_fixture(run_root: pathlib.Path, reset_coins: bool = False) -> None:
 
     mobile_path = mini / "mini.mob"
     mobiles = mobile_path.read_text()
-    # Use separate boots for wallet and reset coins so VOBJ_COINS stays empty
-    # when create_money converts a wallet. Both sources start without custody.
+    # Exercise both wallet-created and reset-created piles without prior custody.
+    # A nonempty reset prototype must not add coins to later wallet conversions.
     start = mobiles.index("#11\n")
     end = mobiles.index("#12\n", start)
     raoul = mobiles[start:end]
@@ -263,6 +263,8 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         refused_at = time.monotonic()
         client.expect("ACCOUNT MENU", timeout=30)
         elapsed = time.monotonic() - refused_at
+        require(not (state_root / "domains/.critical-authority-transaction").exists(),
+                "character released before death after-images completed")
         after = inspect_authority(state_root)
         require(len(after["deaths"]) == 1, "death disposition missing at release")
         death = after["deaths"][0]
@@ -270,13 +272,19 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
         require(any(item["uid"] == banana and item["owner_type"] == 1 and item["owner_id"] == 1
                     for item in death["custody"]), "refused custody observation lost")
         require(after["wallet"] == [0, 0, 0, 0], "death wallet was not cleared")
+        before_value = sum(amount * 10 ** denomination
+                           for denomination, amount in enumerate(before["wallet"]))
+        evidence_value = sum(amount * 10 ** denomination for item in death["items"]
+                             for denomination, amount in enumerate(item["coins"]))
+        require(before_value == evidence_value,
+                "refused-death wallet value was not conserved in recovery evidence")
         require(not after["player_items"], "disputed custody remained active at release")
         require(after["death_count"] == before["death_count"] + 1,
                 "refused death was counted more or less than once")
         logs = runtime_logs(run_root)
         require(logs.index("death_disposition_recorded") < logs.index("death_disposition_completed"),
                 "character released before disposition durability")
-        print(f"flatfile-primary EMSGSIZE refusal-to-account-menu: {elapsed:.3f}s", flush=True)
+        print(f"flatfile-primary EMSGSIZE refusal-to-account-menu (n=1, isolated): {elapsed:.3f}s", flush=True)
         client.send("0")
         return after
     finally:
@@ -496,7 +504,7 @@ def verify_npc_loot_and_die(port: int) -> None:
         client.close()
 
 
-def recover_player_corpse(port: int) -> None:
+def recover_player_corpse(port: int, reset_coins: bool = False) -> None:
     client = reconnect_character(port, "You rejoin the land of the living")
     try:
         client.send("look")
@@ -508,7 +516,8 @@ def recover_player_corpse(port: int) -> None:
         client.send(f"get banana {CHARACTER}")
         client.expect("get a banana", timeout=15)
         client.send(f"get coins {CHARACTER}")
-        client.expect("You get 0 platinum, 0 gold, 0 silver, and 1 copper coins.", timeout=15)
+        client.expect("You get 0 platinum, 0 gold, 3 silver, and 0 copper coins." if reset_coins else
+                      "You get 0 platinum, 0 gold, 0 silver, and 1 copper coins.", timeout=15)
         client.send("save")
         client.expect(f"Save complete for {CHARACTER}.", timeout=15)
         client.send("quit")
@@ -634,14 +643,12 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
                     coin_balance = [0, 3, 0, 0] if reset_coins else [1, 0, 0, 0]
                     require(inspect_authority(state_root)["wallet"] == coin_balance,
                             "NPC pickup/save did not conserve coins")
-                    if not reset_coins:
-                        verify_npc_loot_and_die(plain_port)
-                        recover_player_corpse(plain_port)
+                    verify_npc_loot_and_die(plain_port)
+                    recover_player_corpse(plain_port, reset_coins)
                     verify_recovered_loot(plain_port)
                     require(inspect_authority(state_root)["wallet"] == coin_balance,
                             "reconnect or corpse recovery changed the coin total")
-                    if not reset_coins:
-                        disputed_death(plain_port, state_root, run_root)
+                    disputed_death(plain_port, state_root, run_root)
 
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=30)
@@ -674,8 +681,7 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
                         require(process.poll() is None and time.monotonic() < deadline,
                                 "combat server did not restart")
                         time.sleep(0.1)
-                    client = reconnect_character(plain_port,
-                        None if reset_coins else "You rejoin the land of the living")
+                    client = reconnect_character(plain_port, "You rejoin the land of the living")
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.")
                     client.send("quit")
@@ -691,9 +697,8 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
                     require(death_files == {path.name: path.read_bytes()
                             for path in (state_root / "player-deaths").glob("*.death")},
                             "restart/re-entry rewrote death evidence")
-                    if not reset_coins:
-                        require(not after_restart["snapshot_uids"],
-                                "re-entry restored disputed inventory without recovery")
+                    require(not after_restart["snapshot_uids"],
+                            "re-entry restored disputed inventory without recovery")
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=30)
                     require(process.returncode == 0, "restarted server shutdown failed")

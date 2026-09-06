@@ -250,6 +250,8 @@ struct char_data { int pid; };
 struct obj_data { int uid; };
 player_snapshot_capture_result death_capture_result = player_snapshot_capture_result::ok;
 int death_enqueued = 0;
+bool enqueue_refused = false;
+bool queue_mismatch = false;
 player_snapshot_capture_result player_death_snapshot_capture(
     P_char ch, P_obj, P_obj, const critical_operation_id &, player_revision_t revision, int,
     const std::vector<critical_operation_id> &, player_snapshot *snapshot)
@@ -257,6 +259,7 @@ player_snapshot_capture_result player_death_snapshot_capture(
     snapshot->pid = ch->pid;
     snapshot->revision = revision;
     snapshot->components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+    if (queue_mismatch) snapshot->components = PLAYER_COMPONENT_STATUS;
     return death_capture_result;
 }
 player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
@@ -266,7 +269,7 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
     assert(current.queued_revision == snapshot.revision);
     assert(current.queued_components == snapshot.components);
     ++death_enqueued;
-    return player_save_pipeline_result::queued;
+    return enqueue_refused ? player_save_pipeline_result::unavailable : player_save_pipeline_result::queued;
 }
 #define IS_NPC(ch) false
 #define GET_PID(ch) ((ch)->pid)
@@ -279,7 +282,7 @@ int captured_intent = 1, captured_room = 0;
 player_revision_t captured_revision = 0;
 bool database_ready = true, journal_ready = false;
 terminal_fence *find_terminal_fence_locked(int pid) { return fence.pid == pid ? &fence : nullptr; }
-terminal_fence *allocate_terminal_fence_locked(int pid) { fence.pid = pid; return &fence; }
+terminal_fence *allocate_terminal_fence_locked(int pid) { if (fence.pid && fence.pid != pid) return nullptr; fence.pid = pid; return &fence; }
 bool trace_player_saves() { return true; }
 bool snapshot_is_journaled_locked(const player_revision_snapshot &) { return true; }
 uint64_t persistence_observability_now_usec() { return 0; }
@@ -379,9 +382,29 @@ int main() {
                player_save_terminal_result::invalid);
         assert(death_enqueued == enqueued_before);
         assert(health.capture_failures == failures_before + 1);
-        assert(!fence.acknowledged && !fence.journaled);
+        assert(fence.pid == 0);
+        // Repeated failures on distinct players must not consume fence capacity.
+        for (int pid = 2; pid <= 300; ++pid) {
+            char_data other{pid};
+            assert(player_revision_hydrate(pid, 1));
+            assert(player_save_pipeline_terminal_death(&other, &corpse, nullptr, operation,
+                                                       22806, 20, false) ==
+                   player_save_terminal_result::invalid);
+            assert(fence.pid == 0);
+        }
         death_capture_result = player_snapshot_capture_result::ok;
+        for (int refusal = 0; refusal < 2; ++refusal) {
+            queue_mismatch = refusal == 0;
+            enqueue_refused = refusal == 1;
+            assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                       22806, 20, false) ==
+                   player_save_terminal_result::unavailable);
+            assert(fence.pid == 0);
+        }
+        queue_mismatch = false; enqueue_refused = false;
         database_ready = true;
+        assert(player_save_pipeline_terminal(&player, 6, 22806, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
         assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
                                                    22806, 20, false) ==
                player_save_terminal_result::database_acknowledged);

@@ -834,19 +834,15 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				 EINVAL };
 	}
 	std::vector<uint8_t> bytes;
-	// The refused assets exist nowhere else once the character is released. Publish
-	// the disposition before the player file, and keep it out of that file so a
-	// later ordinary save cannot overwrite the record.
+	// Keep the immutable evidence, quarantine and empty player projection in the
+	// same recoverable authority transaction. A failed commit leaves no evidence
+	// claiming a disposition that never took effect.
+	std::vector<uint8_t> death_bytes;
 	if (snapshot.death)
 	{
 		player_snapshot disposition = snapshot;
-		std::vector<uint8_t> death_bytes;
 		if (!encode_file(&disposition, &death_bytes))
 			return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
-		if (!flatfile_atomic_write(death_directory(root),
-					   death_filename(snapshot.pid, snapshot.revision),
-					   death_bytes, error))
-			return { player_save_apply_outcome::retryable_failure, 0, EIO };
 		materialized.death.reset();
 		materialized.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
 	}
@@ -855,6 +851,10 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 	if (snapshot.death)
 	{
 		std::vector<flatfile_authority_operation> operations;
+		operations.push_back({ flatfile_authority_store::player_deaths,
+				       flatfile_authority_operation_kind::write,
+				       death_filename(snapshot.pid, snapshot.revision),
+				       std::move(death_bytes) });
 		flatfile_authority_operation quarantine;
 		const auto prepared = flatfile_item_repository_prepare_death_quarantine(
 			root, authority, snapshot.pid, &quarantine, error);

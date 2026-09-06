@@ -23,6 +23,10 @@ using coin_completion_fn = bool (*)(P_char actor, bool committed,
 				    const coin_transfer_result &result, unsigned int error_code,
 				    const uint8_t *context, size_t context_size);
 
+// A committed callback receives EOWNERDEAD on its final cleanup notification if
+// bounded live publication fails. It must not refund or reapply committed money.
+constexpr unsigned int CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS = 8;
+
 struct currency_transaction_health
 {
 	uint64_t pending;
@@ -32,6 +36,7 @@ struct currency_transaction_health
 	uint64_t rejected;
 	uint64_t submission_failures;
 	uint64_t malformed_completions;
+	uint64_t publication_abandoned;
 };
 
 bool currency_transaction_can_submit(P_char character);

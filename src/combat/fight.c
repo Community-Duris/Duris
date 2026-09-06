@@ -60,6 +60,7 @@
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
 #include "player/player_save_pipeline.h"
+#include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "combat/combat_outcome_transaction.h"
@@ -1478,42 +1479,21 @@ P_obj corpse_live_item(uint64_t uid)
 
 // A refused corpse handoff resubmits into the same refusal forever. The owner is
 // recorded here so the death finalizes through the durable disposition instead.
-// The table is fixed so noting a dispute cannot itself fail and resume looping.
-constexpr size_t CORPSE_DISPUTE_SLOTS = 64;
-int corpse_dispute_pids[CORPSE_DISPUTE_SLOTS] = {};
-
 bool corpse_transfer_disputed(P_char character)
 {
-	if (!character || !IS_PC(character) || GET_PID(character) <= 0)
-		return false;
-	for (int pid : corpse_dispute_pids)
-		if (pid == GET_PID(character))
-			return true;
-	return false;
+	return character && IS_PC(character) && character->only.pc->death_custody_disputed;
 }
 
 void note_corpse_transfer_dispute(P_char character)
 {
-	if (!character || !IS_PC(character) || GET_PID(character) <= 0 ||
-	    corpse_transfer_disputed(character))
-		return;
-	for (int &pid : corpse_dispute_pids)
-		if (!pid)
-		{
-			pid = GET_PID(character);
-			return;
-		}
-	persistence_alert(AVATAR, "corpse", "ownership_transfer", "none", "none",
-			  "dispute_table_full", "pid=%d", GET_PID(character));
+	if (character && IS_PC(character))
+		character->only.pc->death_custody_disputed = true;
 }
 
 void clear_corpse_transfer_dispute(P_char character)
 {
-	if (!character || !IS_PC(character))
-		return;
-	for (int &pid : corpse_dispute_pids)
-		if (pid == GET_PID(character))
-			pid = 0;
+	if (character && IS_PC(character))
+		character->only.pc->death_custody_disputed = false;
 }
 
 bool submit_next_corpse_item(P_char character, P_obj corpse);
@@ -2534,6 +2514,7 @@ struct death_extract_retry_context
 
 static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data);
 static void hold_for_death_extract_retry(P_char ch);
+static bool death_retry_fallback_pending = false;
 
 static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)
 {
@@ -2554,9 +2535,44 @@ static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int del
 	const nevent_schedule_result scheduled = add_event(
 		event_death_extract_retry, delay, ch, NULL, NULL, 0, &context, sizeof(context));
 	hold_for_death_extract_retry(ch);
+	ch->only.pc->death_retry_due_usec = 0;
 	if (!scheduled)
+	{
+		// Retain the retry on the character without another allocation. The game
+		// pulse can retry a refused event without releasing unsaved live assets.
+		ch->only.pc->death_retry_corpse_uid = corpse_uid;
+		ch->only.pc->death_retry_delay = delay;
+		ch->only.pc->death_retry_due_usec =
+			persistence_observability_now_usec() +
+			static_cast<uint64_t>(delay) * 1000000 / WAIT_SEC;
+		death_retry_fallback_pending = true;
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_schedule_failed", "delay=%d", delay);
+	}
+}
+
+/** Retry failed event admission from the game thread without extracting unsaved state. */
+void death_extract_retry_pulse(void)
+{
+	if (!death_retry_fallback_pending)
+		return;
+	death_retry_fallback_pending = false;
+	const uint64_t now = persistence_observability_now_usec();
+	for (P_char ch = character_list, next; ch; ch = next)
+	{
+		next = ch->next;
+		if (!IS_PC(ch) || !ch->only.pc->death_retry_due_usec)
+			continue;
+		if (ch->only.pc->death_retry_due_usec > now)
+		{
+			death_retry_fallback_pending = true;
+			continue;
+		}
+		death_extract_retry_context context = { ch->only.pc->death_retry_delay,
+							ch->only.pc->death_retry_corpse_uid };
+		ch->only.pc->death_retry_due_usec = 0;
+		event_death_extract_retry(ch, NULL, NULL, &context);
+	}
 }
 
 static void hold_for_death_extract_retry(P_char ch)

@@ -101,7 +101,7 @@ class PersonalDataExportTest(unittest.TestCase):
         subject's bundle.
         """
         canonical = export.load_policy()
-        self.assertEqual(len(canonical.entries), 195)
+        self.assertEqual(len(canonical.entries), 199)
         with self.assertRaisesRegex(export.ExportContractError, "not approved"):
             export.validate_export_ready(canonical)
         self.assertEqual(
@@ -146,7 +146,7 @@ class PersonalDataExportTest(unittest.TestCase):
         request, token = self.create()
         payload = self.complete(request, token)
         bundle = export.verify_bundle(payload)
-        self.assertEqual(bundle["section_count"], 195)
+        self.assertEqual(bundle["section_count"], 199)
         self.assertEqual(bundle["record_count"], 2)
         accounts = next(section for section in bundle["sections"]
                         if section["store_id"] == "database:accounts")

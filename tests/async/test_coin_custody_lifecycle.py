@@ -79,6 +79,13 @@ void str_free(char *s) { free(s); }
 char *str_dup(const char *s) { return strdup(s); }
 #define APPENDF(buf, ...) snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), __VA_ARGS__)
 ''' + add_coins + r'''
+constexpr int VOBJ_COINS = 3, VIRTUAL = 0;
+P_obj read_object(int, int) {
+    auto *item = new Object;
+    item->value[1] = 3; // An intentionally nonempty reset-coin prototype.
+    return item;
+}
+''' + body(handler, "P_obj create_money(", "\n/*") + r'''
 int main() {
     Object pile;
     extra_descr_data detail;
@@ -96,6 +103,14 @@ int main() {
     assert(pile.value[0] == INT_MAX && pile.description == before);
     free(detail.description);
 
+    P_obj converted = create_money(0, 3, 0, 0);
+    assert(converted->value[0] == 0 && converted->value[1] == 3 &&
+           converted->value[2] == 0 && converted->value[3] == 0);
+    delete converted;
+    converted = create_money(INT_MAX, INT_MAX, INT_MAX, INT_MAX);
+    for (int amount : {converted->value[0], converted->value[1], converted->value[2], converted->value[3]})
+        assert(amount == INT_MAX);
+    delete converted;
     Object ordinary;
     add_coins(&ordinary, 1, 2, 3, 4);
     add_coins(&ordinary, 2, 3, 4, 5);
@@ -254,3 +269,54 @@ with tempfile.TemporaryDirectory(prefix="coin-command-", dir=build) as directory
         "src/persistence/critical_command.c", "-lcrypto", "-o", str(binary),
     ], check=True, cwd=ROOT, timeout=60)
     subprocess.run([str(binary)], check=True, cwd=ROOT, timeout=30)
+
+# Execute both real NPC replacement-death functions with a refused conversion.
+# They must destroy only the speculative replacement and leave the original
+# inventory alone; a successful conversion must still transfer it normally.
+eth2 = (SRC / "specs.eth2.c").read_text()
+npc_harness = r'''
+#include <cassert>
+#include <cstddef>
+struct character { struct { int act = 0; } specials; int in_room = 1; };
+using P_char = character *;
+constexpr int CMD_SET_PERIODIC = 1, CMD_PERIODIC = 2, CMD_DEATH = 3;
+constexpr int FALSE = 0, TRUE = 1, ACT_SPEC_DIE = 1, ACT_BREATHES_SHADOW = 2;
+constexpr int VIRTUAL = 0, TO_ROOM = 0, LOG_DEBUG = 0;
+#define SET_BIT(field, flag) ((field) |= (flag))
+#define GET_VNUM(ch) 1
+character replacement;
+bool converted = false;
+int removed = 0, transferred = 0;
+int number(int low, int) { return low; }
+P_char read_mobile(int, int) { return &replacement; }
+void logit(int, const char *, ...) {}
+void debug(const char *, ...) {}
+void act(const char *, int, P_char, int, int, int) {}
+bool money_to_inventory(P_char) { return converted; }
+void extract_char(P_char ch) { assert(ch == &replacement); ++removed; }
+void unequip_all(P_char) { assert(converted); }
+void transfer_inventory(P_char, P_char target) { assert(converted && target == &replacement); ++transferred; }
+void char_to_room(P_char, int, int) {}
+void BreathWeapon(P_char, int) {}
+''' + body(eth2, "int eth2_forest_animal(", "\nint eth2_little_girl(") + body(
+    eth2, "int eth2_little_girl(", "\nint ") + r'''
+int main() {
+    character original;
+    for (auto function : {eth2_forest_animal, eth2_little_girl}) {
+        converted = false;
+        const int prior_transfers = transferred, prior_removals = removed;
+        assert(function(&original, nullptr, CMD_DEATH, nullptr) == FALSE);
+        assert(transferred == prior_transfers && removed == prior_removals + 1);
+        converted = true;
+        assert(function(&original, nullptr, CMD_DEATH, nullptr) == TRUE);
+        assert(transferred == prior_transfers + 1 && removed == prior_removals + 1);
+    }
+}
+'''
+with tempfile.TemporaryDirectory(prefix="npc-conversion-", dir=build) as directory:
+    source = Path(directory) / "npc_conversion.cpp"
+    binary = Path(directory) / "npc_conversion"
+    source.write_text("#include <initializer_list>\n" + npc_harness)
+    subprocess.run(["g++", "-std=c++20", str(source), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
+print("NPC replacement deaths preserve the original inventory on conversion refusal")

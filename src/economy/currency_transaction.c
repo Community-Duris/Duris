@@ -31,6 +31,7 @@ struct pending_currency
 	std::optional<coin_transfer_payload> coin = std::nullopt;
 	coin_completion_fn coin_completion = nullptr;
 	bool coin_wallets_published = false;
+	unsigned int publication_attempts = 0;
 };
 
 std::unordered_map<std::string, pending_currency> pending;
@@ -100,8 +101,37 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	}
 	if (!published)
 	{
-		pending.insert(std::move(node));
-		return false;
+		if (++finished.publication_attempts < CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS)
+		{
+			pending.insert(std::move(node));
+			return false;
+		}
+		// The authority already owns this result. Never report a rejected debit or
+		// refund it merely because a live container vanished. Retire the hot retry;
+		// the durable command and custody payload remain available for recovery.
+		++health.publication_abandoned;
+		char operation[33];
+		critical_operation_id_to_hex(finished.completed.operation_id, operation,
+					     sizeof(operation));
+		persistence_alert(AVATAR, "currency", "coin_publication", operation, "none",
+				  "publication_abandoned", "pid=%u committed=%d attempts=%u",
+				  finished.pid, committed, finished.publication_attempts);
+		if (committed && finished.coin_completion)
+		{
+			try
+			{
+				(void)finished.coin_completion(actor, true, *finished.coin, result,
+							       EOWNERDEAD, finished.context.data(),
+							       finished.context_size);
+			}
+			catch (const std::bad_alloc &)
+			{
+			}
+		}
+		if (actor)
+			send_to_char(
+				"Your coin transfer was saved, but its items could not be updated here. Please contact staff for recovery.\r\n",
+				actor);
 	}
 	if (committed)
 		++health.committed;

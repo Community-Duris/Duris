@@ -32,6 +32,7 @@ from _paths import SRC
 from pathlib import Path
 import re
 import sys
+import subprocess
 
 from contract_text import contains, index
 
@@ -173,11 +174,6 @@ checks.append((
     retry.index('"death_recovery_abandoned"')
 ))
 checks.append((
-    "the dispute is recorded without an allocation that could fail back into the loop",
-    contains(fight, "constexpr size_t CORPSE_DISPUTE_SLOTS = 64;") and
-    contains(fight, "int corpse_dispute_pids[CORPSE_DISPUTE_SLOTS] = {};")
-))
-checks.append((
     "a disputed death finalizes durably instead of resubmitting the same refusal",
     contains(retry, "if (corpse_transfer_disputed(ch))") and
     retry.index("if (corpse_transfer_disputed(ch))") <
@@ -260,3 +256,104 @@ if failed:
     sys.exit(1)
 
 print("\nAll death item custody checks passed successfully.")
+
+# Compile the production dispute tracker and exceed the old fixed capacity.
+tracker = fight[fight.index("bool corpse_transfer_disputed(P_char character)"):
+                fight.index("bool submit_next_corpse_item(P_char character, P_obj corpse);")]
+build = ROOT / "bin/tests/corpse-disputes"
+build.mkdir(parents=True, exist_ok=True)
+source = build / "regression.cpp"
+source.write_text(r"""
+#include <set>
+#include <cassert>
+struct pc_only_data { bool death_custody_disputed = false; };
+struct char_data { int pid; bool pc = true; struct { pc_only_data *pc; } only; };
+using P_char = char_data *;
+#define IS_PC(ch) ((ch)->pc)
+#define GET_PID(ch) ((ch)->pid)
+""" + tracker + r"""
+int main() {
+    pc_only_data data[1024];
+    char_data players[1024];
+    for (int index = 0; index < 1024; ++index) {
+        players[index] = {index + 1, true, {&data[index]}};
+        note_corpse_transfer_dispute(&players[index]);
+        note_corpse_transfer_dispute(&players[index]);
+    }
+    for (auto &ch : players) {
+        assert(corpse_transfer_disputed(&ch));
+        clear_corpse_transfer_dispute(&ch);
+        assert(!corpse_transfer_disputed(&ch));
+    }
+}
+""")
+subprocess.run(["g++", "-std=c++20", str(source), "-o", str(build / "regression")], check=True)
+subprocess.run([str(build / "regression")], check=True)
+print("[PASS] 1024 simultaneous disputes remain tracked until individually cleared")
+
+# Exercise event admission failure against the production fallback scheduler.
+fallback_source = build / "fallback.cpp"
+fallback_source.write_text(r"""
+#include <cassert>
+#include <cstdint>
+#include <cstddef>
+struct pc_only_data { uint64_t death_retry_corpse_uid = 0, death_retry_due_usec = 0; int death_retry_delay = 0; };
+struct char_data { struct { pc_only_data *pc; } only; char_data *next = nullptr; int hit = 0, stat = 0; };
+using P_char = char_data *;
+using P_obj = void *;
+using nevent_schedule_result = bool;
+#define IS_NPC(ch) (!(ch)->only.pc)
+#define IS_PC(ch) ((ch)->only.pc != nullptr)
+#define GET_NAME(ch) "fixture"
+#define GET_HIT(ch) ((ch)->hit)
+#define GET_POS(ch) 0
+#define SET_POS(ch, value) ((ch)->stat = (value))
+#define STAT_NORMAL 0
+#define STAT_DEAD 1
+#define AVATAR 0
+#define WAIT_SEC 4
+#define DEATH_EXTRACT_RETRY_INITIAL 4
+#define DEATH_EXTRACT_RETRY_MAX 60
+uint64_t now_usec = 10;
+uint64_t persistence_observability_now_usec() { return now_usec; }
+bool accept_event = false;
+bool add_event(void (*)(P_char,P_char,P_obj,void*), int, P_char, P_char, P_obj, int, const void*, size_t) { return accept_event; }
+void persistence_alert(int, const char*, const char*, const char*, const char*, const char*, const char*, ...) {}
+P_char character_list = nullptr;
+struct death_extract_retry_context { int delay; uint64_t corpse_uid; };
+static bool death_retry_fallback_pending = false;
+static void event_death_extract_retry(P_char, P_char, P_obj, void*);
+static void hold_for_death_extract_retry(P_char);
+""" + body(fight, "static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)")
+    + body(fight, "void death_extract_retry_pulse(void)")
+    + body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{") + r"""
+int attempts = 0;
+static void event_death_extract_retry(P_char ch, P_char, P_obj, void *data) {
+    const auto context = *static_cast<death_extract_retry_context *>(data);
+    assert(context.corpse_uid == 999 && ch->stat == STAT_DEAD);
+    ++attempts;
+    schedule_death_extract_retry(ch, context.corpse_uid, context.delay);
+}
+int main() {
+    pc_only_data pc;
+    char_data ch{{&pc}};
+    character_list = &ch;
+    schedule_death_extract_retry(&ch, 999, 4);
+    assert(ch.stat == STAT_DEAD && death_retry_fallback_pending);
+    death_extract_retry_pulse();
+    assert(attempts == 0);
+    now_usec += 1000000;
+    death_extract_retry_pulse();
+    assert(attempts == 1 && death_retry_fallback_pending);
+    accept_event = true;
+    now_usec += 1000000;
+    death_extract_retry_pulse();
+    assert(attempts == 2 && !pc.death_retry_due_usec && !death_retry_fallback_pending);
+    assert(ch.stat == STAT_DEAD);
+    death_extract_retry_pulse();
+    assert(attempts == 2);
+}
+""")
+subprocess.run(["g++", "-std=c++20", str(fallback_source), "-o", str(build / "fallback")], check=True)
+subprocess.run([str(build / "fallback")], check=True)
+print("[PASS] refused event admission retains the dead character and retries from the game pulse")

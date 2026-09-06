@@ -719,6 +719,7 @@ int main(int argc, char **argv)
 			player_save_apply_outcome::retryable_failure,
 		"death acknowledged a failed authority commit");
 	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	require(fs::is_empty(deaths), "failed death commit left phantom disposition evidence");
 	uint64_t retained_revision = 0;
 	std::vector<flatfile_item_ownership_record> retained_items;
 	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
