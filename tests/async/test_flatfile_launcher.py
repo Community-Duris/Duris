@@ -11,6 +11,14 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "scripts/cycle_mud.sh"
 
 
+# A --minimal launch waits on a hardcoded `sleep 10` in scripts/cycle_mud.sh, so
+# a 20-second budget left the whole rest of the script barely ten seconds. That
+# is enough on an idle machine and not enough on a loaded CI runner, where this
+# suite runs eight tests at a time and several of them build a server. Sixty
+# gives the fixed sleep a real margin; no assertion changes.
+LAUNCH_TIMEOUT_SECONDS = 60
+
+
 def run(script: pathlib.Path, env: dict[str, str], *arguments: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["bash", str(script), *arguments],
@@ -18,7 +26,7 @@ def run(script: pathlib.Path, env: dict[str, str], *arguments: str) -> subproces
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=20,
+        timeout=LAUNCH_TIMEOUT_SECONDS,
     )
 
 
