@@ -67,6 +67,7 @@
 #include "magic/spells.h"
 #include "item/enhance.h"
 #include "economy/crafting.h"
+#include "account/account_recovery.h"
 #include "account/account_reward_config.h"
 #include "combat/frag_cap_config.h"
 #include "world/hardcore_config.h"
@@ -800,6 +801,10 @@ void run_the_game(int port, int sslport)
 	if (!player_load_pipeline_init())
 		logit(LOG_STATUS,
 		      "Player load pipeline unavailable; existing-character login fails closed.");
+	/* Same rule for the mail worker: joinable thread only after the fatal loads. */
+	if (!account_recovery_init())
+		logit(LOG_STATUS,
+		      "Account recovery unavailable; password reset by email disabled.");
 
 	game_booted = TRUE;
 
@@ -883,6 +888,7 @@ void run_the_game(int port, int sslport)
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
+	account_recovery_shutdown();
 	critical_command_coordinator_shutdown();
 	critical_outbox_shutdown();
 	if (!_pwipe)
@@ -1720,6 +1726,7 @@ resume_game_loop:
 				if (!delivered)
 					player_load_pipeline_note_stale();
 			}
+			account_recovery_pulse();
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
 					     (long)((loop_monotonic_seconds() - _gmcp) * 1000000.0),
@@ -2585,6 +2592,7 @@ void close_socket(struct descriptor_data *d)
 	time_t ct;
 	if (d && d->player_load_request_id)
 		player_load_pipeline_cancel(d->player_load_request_id);
+	account_recovery_descriptor_closed(d);
 
 	compress_end(d, TRUE); /* does flushing out all output break anything ? */
 

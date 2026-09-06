@@ -26,7 +26,8 @@ jobs:
             libcjson-dev \
             libssl-dev \
             libhiredis-dev \
-            libbsd-dev
+            libbsd-dev \
+            libcurl4-gnutls-dev
       - name: Build without MySQL and verify game-loop boot
         run: python3 tests/async/test_flatfile_boot_preflight.py
       - name: Verify flat-file account authority

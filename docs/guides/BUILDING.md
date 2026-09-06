@@ -83,7 +83,9 @@ and exist so a wrapper (notably `scripts/build-san.sh`) can add instrumentation
 without discarding the warning profile or the feature defines.
 
 Link libraries: `mysqlclient`, `gnutls`, `ssl`, `crypto`, `cjson`, `hiredis`,
-`bsd`, `xml2`, `z`, `crypt`, `pthread`.
+`bsd`, `curl`, `xml2`, `z`, `crypt`, `pthread`. Both backends link `curl`
+(libcurl, the `libcurl4-gnutls-dev` package): it carries the SMTP path for account
+password recovery, which stays disabled at runtime unless `MAIL_ENABLED=TRUE`.
 
 Chaos gameplay mode is selected at runtime with `CHAOS_MUD=TRUE` or
 `CHAOS_MUD=FALSE` in `.env`. The default example disables it. The value must

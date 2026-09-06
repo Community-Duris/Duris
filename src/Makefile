@@ -54,7 +54,7 @@ endif
 
 INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 $(MYSQL_INCLUDES)
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt $(MYSQL_LIBS) -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt $(MYSQL_LIBS) -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -lcurl -pthread
 
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
@@ -98,6 +98,8 @@ OBJS =  $(SHIP_OBJS) \
 				 world/achievements.o \
 				 account/account.o \
 				 account/password_hash.o \
+				 account/account_recovery.o \
+				 account/account_recovery_nanny.o \
 				 account/account_reward.o \
 				 account/account_reward_snapshot.o \
 				 account/account_reward_config.o \
@@ -203,6 +205,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/mail.o \
 				 world/map.o \
 				 net/mccp.o \
+				 net/mail_sender.o \
 				 classes/memorize.o \
 				 core/memory.o \
 				 core/mm.o \

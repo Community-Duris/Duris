@@ -115,9 +115,11 @@ sudo apt install ./bin/packages/duris-build-deps_1.0_all.deb
 `equivs` is only the bootstrap tool used to build the metapackage. The manifest
 then installs Git, Python, dos2unix, the compiler, GNU Make, GDB, Valgrind,
 clang-format, MariaDB-compatible client and server packages, and the XML,
-compression, TLS, JSON, Redis, BSD, and MySQL/MariaDB development libraries
-required by the repository. The compiler supplies the ASan/UBSan runtimes used
-by the sanitizer build. Redis itself is optional.
+compression, TLS, JSON, Redis, BSD, libcurl (SMTP), and MySQL/MariaDB
+development libraries required by the repository. The compiler supplies the
+ASan/UBSan runtimes used by the sanitizer build. Redis itself is optional, and so
+is the SMTP relay: account password recovery by email stays off unless
+`MAIL_ENABLED=TRUE` is set in `.env`.
 
 On another Linux distribution, use
 [`packaging/duris-build-deps.equivs`](packaging/duris-build-deps.equivs) as the
