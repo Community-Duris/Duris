@@ -135,6 +135,13 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_transfer_payload &payload, flatfile_room_transfer_mutation *mutation,
 	std::string *error);
+struct coin_transfer_payload;
+struct coin_transfer_result;
+flatfile_world_item_result
+flatfile_world_item_prepare_coin_rooms(const std::string &root, const flatfile_authority_lock &lock,
+				       const coin_transfer_payload &payload,
+				       const coin_transfer_result &result,
+				       flatfile_authority_after_image *image, std::string *error);
 flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload, flatfile_corpse_lifecycle_mutation *mutation,

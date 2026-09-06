@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 174;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 176;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -38,7 +38,7 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'multiplay_whitelist','nexus_stones','offline_messages','outposts',"
 	"'pages','persistence_item_events','persistence_scalar_events','personal_data_export_audit',"
 	"'personal_data_export_requests','personal_data_export_sections','ping','pkill_event',"
-	"'pkill_info','player_affects','player_data','player_forged_items',"
+	"'pkill_info','player_affects','player_data','player_death_custody','player_death_disposition','player_forged_items',"
 	"'player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr',"
 	"'player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges',"
@@ -55,21 +55,11 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"4f662dcbddd047e5843d4c7d4a3f4a0b63695058e22695db599ce74a5cd6a5f5";
+	"e2d802053dfdf981d3f72841bce675e467845ae347ae62bf3f89c9e4b065c1d2";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"afeb08122578efb0a62b045e87d7f57f06412db85a65163f64d34e9804cee598";
-/* Coin payloads are part of the fingerprinted item_current_owner table, so the
- * fingerprints above were regenerated against MySQL 8 and MariaDB 10.11 after
- * 0010. Head 0011 adds player_death_disposition and player_death_custody, the
- * durable record of a death whose corpse handoff was refused. Like
- * kingdom_garrison they are created only by their migration, never by the
- * bootstrap schema, and are deliberately absent from RUNTIME_TABLE_SQL_LIST: the
- * fingerprint, the table count and the engine/collation checks all scope
- * themselves to that list, so a table outside it needs no live regeneration --
- * and RUNTIME_CURRENT_TABLE_COUNT above is therefore unchanged at 174. The three
- * checksums below are SHA-256 over the migration FILES and over the rolling
- * ledger, all computable offline. Adding the new tables to the list is a
- * follow-up for whoever next has both a MySQL 8 and a MariaDB 10.11 to hand. */
+	"edfe38e99686d863083ba936279ce4e2cb370e5a9d2a7c5395e6ba79208c5d62";
+/* Includes the death disposition and custody tables introduced by migration 0011.
+ * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
 constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0011_player_death_disposition";
 constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 11;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =

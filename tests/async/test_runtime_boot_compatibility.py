@@ -31,14 +31,10 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         fails here instead of at a server's boot gate.
         """
         report = runtime.validate()
-        # 174, and UNCHANGED by head 0007. kingdom_garrison is deliberately
-        # outside runtime_table_sql_list: the metadata fingerprint, the table
-        # count and the engine/collation checks all scope themselves to that
-        # list, and adding a name to it means regenerating both normalised
-        # fingerprints against a live MySQL 8 and a live MariaDB 10.11. A count
-        # that moved without those two fingerprints moving with it would fail a
-        # real server's boot gate, which is what this test exists to catch.
-        self.assertEqual(report["current_table_count"], 174)
+        # Includes both death recovery tables, verified on both supported engines.
+        self.assertEqual(report["current_table_count"], 176)
+        for table in ("player_death_disposition", "player_death_custody"):
+            self.assertIn("'" + table + "'", self.header)
         self.assertEqual(report["migration_head"],
                          "0011_player_death_disposition")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),

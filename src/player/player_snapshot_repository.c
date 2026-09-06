@@ -579,6 +579,26 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 			<< row.owner.context_id << ',' << row.owner_revision << ')';
 		result = execute(connection, custody.str());
 	}
+	if (!result.ok)
+		return result;
+	// A rejected handoff leaves custody with the player. Preserve those rows
+	// for recovery, but prevent a subsequent load from restoring disputed items.
+	const std::string owner =
+		"owner_type=" + std::to_string(static_cast<unsigned>(item_owner_type::player)) +
+		" AND owner_id=" + pid + " AND owner_context_id=0";
+	const std::string active =
+		std::to_string(static_cast<unsigned>(item_custody_state::active));
+	result = execute(connection,
+			 "UPDATE item_owner_revision SET revision=revision+1 WHERE " + owner +
+				 " AND EXISTS (SELECT 1 FROM item_current_owner WHERE " + owner +
+				 " AND state=" + active + ")");
+	if (result.ok)
+		result = execute(
+			connection,
+			"UPDATE item_current_owner SET item_revision=item_revision+1,state=" +
+				std::to_string(
+					static_cast<unsigned>(item_custody_state::quarantined)) +
+				" WHERE " + owner + " AND state=" + active);
 	return result;
 }
 

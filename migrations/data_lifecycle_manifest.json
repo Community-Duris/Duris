@@ -2982,6 +2982,66 @@
       "dependencies": []
     },
     {
+      "id": "database:player_death_custody",
+      "kind": "database_table",
+      "locator": "player_death_custody",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id",
+      "technical_purpose": "durable refused-death recovery evidence and custody reconciliation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:player_death_disposition"
+      ]
+    },
+    {
+      "id": "database:player_death_disposition",
+      "kind": "database_table",
+      "locator": "player_death_disposition",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "player_id",
+      "technical_purpose": "durable refused-death recovery evidence and custody reconciliation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:player_forged_items",
       "kind": "database_table",
       "locator": "player_forged_items",

@@ -511,6 +511,40 @@ void coin_failure_matrix()
 	assert(critical_command_repository_apply(connection, combined_pickup).outcome ==
 	       critical_apply_outcome::applied);
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 1110);
+	// Admit a pre-existing NPC pile with the ordinary item command. Its wallet
+	// remains untouched until the following atomic coin command commits.
+	const item_owner_identity npc_room = { item_owner_type::room, 101, 0 };
+	constexpr uint64_t npc_uid = 900000300;
+	auto admission = coin_pile(npc_room, npc_uid, 0, {}, { 50, 0, 0, 0 }).change;
+	admission.accepted_at_usec = 1;
+	assert(critical_command_repository_apply(connection, admission).outcome ==
+	       critical_apply_outcome::applied);
+	assert(critical_command_repository_apply(connection, admission).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 1110);
+	assert(scalar("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=900000300 "
+		      "AND owner_type=3 AND owner_id=101 AND root_item_uid=900000300 AND parent_item_uid IS NULL") ==
+	       1);
+	assert((pile_amount(npc_uid) == coins{ 50, 0, 0, 0 }));
+	auto reject_admission = [&]
+	{
+		auto conflict = coin_pile(npc_room, npc_uid, 0, {}, { 50, 0, 0, 0 }).change;
+		conflict.accepted_at_usec = 1;
+		assert(critical_command_repository_apply(connection, conflict).error_code ==
+		       EEXIST);
+		assert(critical_command_repository_apply(connection, conflict).error_code ==
+		       EEXIST);
+	};
+	reject_admission();
+	auto npc_pickup =
+		coin_command(coin_pile(npc_room, npc_uid, 0, { 50, 0, 0, 0 }, {}),
+			     coin_wallet(pid, account, { 1110, 0, 0, 0 }, { 1160, 0, 0, 0 }));
+	assert(critical_command_repository_apply(connection, npc_pickup).outcome ==
+	       critical_apply_outcome::applied);
+	assert(critical_command_repository_apply(connection, npc_pickup).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 1160);
+	reject_admission(); // A missing runtime entry cannot revive retired durable custody.
 	puts("coin SQL: atomic conversion, rollback/replay, reload, retired custody and legacy player/room/corpse/locker piles passed");
 }
 } // namespace

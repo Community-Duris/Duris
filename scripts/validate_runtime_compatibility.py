@@ -60,7 +60,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 174:
+            value["current_table_count"] != 176:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -129,13 +129,13 @@ def validate() -> dict:
             migration_runner.table_fingerprint(
                 [table for table in tables if table not in {
                     "lookup_dataset_state", "season_reset_state", "server_reboots",
-                    "kingdom_realms"
+                    "kingdom_realms", "player_death_disposition", "player_death_custody"
                 }]
             ) != value["baseline_table_fingerprint"]:
         raise migration_runner.MigrationContractError("runtime lifecycle table drift")
     baseline_tables = [table for table in tables if table not in {
         "lookup_dataset_state", "season_reset_state", "server_reboots",
-        "kingdom_realms"
+        "kingdom_realms", "player_death_disposition", "player_death_custody"
     }]
     if set(baseline_tables) != set(migration.required_tables):
         raise migration_runner.MigrationContractError(

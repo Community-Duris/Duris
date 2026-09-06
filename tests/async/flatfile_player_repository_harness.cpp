@@ -1,4 +1,5 @@
 #include "flatfile/flatfile_player_repository.h"
+#include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
@@ -205,15 +206,49 @@ static void inspect_authority(const std::string &root, int32_t pid)
 	require(flatfile_player_snapshot_load(root, pid, &snapshot, &error) ==
 			flatfile_player_load_result::ok,
 		"inspect player snapshot: " + error);
+	flatfile_identity_record identity;
+	require(flatfile_identity_lookup_pid(root, pid, &identity, &error) ==
+			flatfile_identity_result::ok,
+		"inspect identity: " + error);
+	flatfile_player_domain_record domains;
+	require(flatfile_player_domain_load(root, pid, identity.account, identity.racewar, &domains,
+					    &error) == flatfile_player_domain_result::ok,
+		"inspect wallet: " + error);
 	flatfile_authority_lock lock;
 	require(lock.acquire(root, &error), "inspect authority lock: " + error);
 	std::cout << "{\"revision\":" << snapshot.revision << ",\"intent\":" << snapshot.save_intent
 		  << ",\"room\":" << snapshot.room_vnum;
+	std::cout << ",\"snapshot_uids\":[";
+	for (size_t i = 0; i < snapshot.items.size(); ++i)
+	{
+		if (i)
+			std::cout << ',';
+		std::cout << snapshot.items[i].object_uid;
+	}
+	std::cout << "],\"wallet\":[";
+	for (size_t i = 0; i < 4; ++i)
+	{
+		if (i)
+			std::cout << ',';
+		std::cout << domains.domains.wallet[i];
+	}
+	std::cout << "],\"wallet_revision\":" << domains.domains.wallet_revision;
 	for (const auto &field : snapshot.status_integers)
 		if (field.field == player_status_field::wimpy)
 			std::cout
 				<< ",\"wimpy\":"
 				<< (field.is_unsigned ? field.unsigned_value : field.signed_value);
+	for (const auto &field : snapshot.status_integers)
+	{
+		const char *name = field.field == player_status_field::deaths	  ? "death_count" :
+				   field.field == player_status_field::experience ? "experience" :
+				   field.field == player_status_field::level	  ? "level" :
+										    nullptr;
+		if (name)
+			std::cout
+				<< ",\"" << name << "\":"
+				<< (field.is_unsigned ? field.unsigned_value : field.signed_value);
+	}
 	for (const auto &owner :
 	     { item_owner_identity{ item_owner_type::player, static_cast<uint64_t>(pid), 0 },
 	       item_owner_identity{ item_owner_type::room,
@@ -235,11 +270,65 @@ static void inspect_authority(const std::string &root, int32_t pid)
 				std::cout << ',';
 			first = false;
 			std::cout << "{\"uid\":" << item.item_uid << ",\"vnum\":" << item.vnum
-				  << '}';
+				  << ",\"root\":" << item.root_item_uid
+				  << ",\"parent\":" << item.parent_item_uid << '}';
 		}
 		std::cout << ']';
 	}
-	std::cout << "}\n";
+	std::cout << ",\"deaths\":[";
+	bool first_death = true;
+	const fs::path deaths = flatfile_player_snapshot_file::death_directory(root);
+	if (fs::exists(deaths))
+		for (const auto &file : fs::directory_iterator(deaths))
+		{
+			if (!file.path().filename().string().starts_with(std::to_string(pid) +
+									 "-") ||
+			    file.path().extension() != ".death")
+				continue;
+			player_snapshot disposition;
+			require(flatfile_player_snapshot_read_file(
+					deaths.string(), file.path().filename().string(), pid,
+					&disposition, &error) == flatfile_player_load_result::ok &&
+					disposition.death,
+				"inspect death: " + error);
+			if (!first_death)
+				std::cout << ',';
+			first_death = false;
+			std::cout << "{\"revision\":" << disposition.revision << ",\"items\":[";
+			bool first_item = true;
+			for (const auto &item : disposition.death->corpse)
+			{
+				if (!first_item)
+					std::cout << ',';
+				first_item = false;
+				std::cout << "{\"uid\":" << item.object_uid
+					  << ",\"vnum\":" << item.vnum
+					  << ",\"parent\":" << item.parent_index << ",\"coins\":[";
+				for (size_t i = 0; i < 4; ++i)
+				{
+					if (i)
+						std::cout << ',';
+					std::cout << (item.type == ITEM_MONEY ? item.values[i] : 0);
+				}
+				std::cout << "]}";
+			}
+			std::cout << "],\"custody\":[";
+			first_item = true;
+			for (const auto &item : disposition.death->custody)
+			{
+				if (!first_item)
+					std::cout << ',';
+				first_item = false;
+				std::cout << "{\"uid\":" << item.item.item_uid
+					  << ",\"root\":" << item.item.root_item_uid
+					  << ",\"parent\":" << item.item.parent_item_uid
+					  << ",\"owner_type\":"
+					  << static_cast<unsigned>(item.owner.type)
+					  << ",\"owner_id\":" << item.owner.id << '}';
+			}
+			std::cout << "]}";
+		}
+	std::cout << "]}\n";
 }
 
 static void coin_player_matrix(const fs::path &path)
@@ -384,6 +473,13 @@ static void coin_player_matrix(const fs::path &path)
 /** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[2]) == "seed-combat")
+	{
+		std::string error;
+		require(flatfile_boon_establish(argv[1], {}, &error) == flatfile_boon_result::ok,
+			"seed empty combat boon catalog: " + error);
+		return 0;
+	}
 	if (argc == 4 && std::string(argv[2]) == "inspect")
 	{
 		inspect_authority(argv[1], std::stoi(argv[3]));
@@ -618,14 +714,49 @@ int main(int argc, char **argv)
 	const fs::path deaths = root / "player-deaths";
 	fs::create_directories(deaths);
 	fs::permissions(deaths, fs::perms::owner_all, fs::perm_options::replace);
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
 	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
-			player_save_apply_outcome::applied,
-		"the death disposition was refused by the flat-file backend: " + error);
+			player_save_apply_outcome::retryable_failure,
+		"death acknowledged a failed authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	uint64_t retained_revision = 0;
+	std::vector<flatfile_item_ownership_record> retained_items;
+	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
+				flatfile_player_load_result::ok &&
+			loaded.revision == 10 && !loaded.items.empty() &&
+			flatfile_item_repository_load_owner(
+				root.string(), { item_owner_type::player, 42, 0 },
+				&retained_revision, &retained_items,
+				&error) == flatfile_item_repository_result::ok &&
+			!retained_items.empty(),
+		"failed death commit changed active inventory or custody");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"death acknowledged an interrupted authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"death retry did not recover its custody and player after-images: " + error);
 	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
 				flatfile_player_load_result::ok &&
 			!loaded.death && loaded.items.empty() && loaded.pets.empty() &&
 			loaded.revision == 13,
 		"the death left assets in the player file: " + error);
+	uint64_t quarantine_revision = 0;
+	std::vector<flatfile_item_ownership_record> active_after_death;
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 42, 0 }, &quarantine_revision,
+			&active_after_death, &error) == flatfile_item_repository_result::ok &&
+			active_after_death.empty(),
+		"death custody remained eligible for inventory loading");
+	load_request.deadline_usec =
+		persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
+	require(load_result.outcome == player_load_outcome::applied &&
+			load_result.snapshot.items.empty() && load_result.snapshot.pets.empty() &&
+			!load_result.missing_payload_rows,
+		"normal player loading restored disputed assets");
 	player_snapshot disposition = {};
 	require(flatfile_player_snapshot_read_file(
 			flatfile_player_snapshot_file::death_directory(root.string()),
@@ -651,6 +782,12 @@ int main(int argc, char **argv)
 	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
 			player_save_apply_outcome::already_applied,
 		"replaying the death repeated its consequences: " + error);
+	uint64_t replay_owner_revision = 0;
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 42, 0 }, &replay_owner_revision,
+			&active_after_death, &error) == flatfile_item_repository_result::ok &&
+			replay_owner_revision == quarantine_revision && active_after_death.empty(),
+		"death replay repeated quarantine or changed active custody");
 	require(flatfile_player_snapshot_apply(root.string(), make_full(14), &error).outcome ==
 				player_save_apply_outcome::applied &&
 			flatfile_player_snapshot_read_file(

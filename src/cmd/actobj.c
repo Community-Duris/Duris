@@ -3838,6 +3838,36 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 	return true;
 }
 
+struct coin_admission_context
+{
+	uint64_t item_uid;
+	coin_pickup_context pickup;
+	int room;
+};
+
+static void coin_admission_completion(P_char actor, bool committed, const item_transfer_result &,
+				      unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!encoded || encoded_size != sizeof(coin_admission_context))
+		return;
+	coin_admission_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	P_obj money = find_live_item_uid(context.item_uid);
+	P_obj container = find_live_item_uid(context.pickup.container_uid);
+	const bool location_matches = money &&
+				      (context.pickup.container_uid ?
+					       container && OBJ_INSIDE_OBJ(money, container) :
+					       OBJ_IN_ROOM(money, context.room));
+	if (committed && actor && actor->in_room == context.room && location_matches &&
+	    submit_coin_get(actor, money, container, context.pickup.showit))
+		return;
+	// Admission never credits the wallet. A failed or stale continuation leaves
+	// the durable pile available to a later pickup, and terminates a bulk get.
+	(void)coin_get_completion(actor, false, {}, {}, 0,
+				  reinterpret_cast<const uint8_t *>(&context.pickup),
+				  sizeof(context.pickup));
+}
+
 static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit)
 {
 	if (!actor || !IS_PC(actor) || !money || money->type != ITEM_MONEY ||
@@ -3848,7 +3878,31 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 		return false;
 	item_ownership_runtime_entry current;
 	if (!item_ownership_runtime_lookup(money->obj_uid, &current))
-		return false;
+	{
+		// Admit the existing pile through the ordinary absent-item transaction.
+		// A transient NPC corpse has room custody and no durable parent, just
+		// like its other loot. Tracked containers retain their recorded parent.
+		P_obj parent = NULL;
+		item_ownership_runtime_entry container_custody = {};
+		if (container &&
+		    item_ownership_runtime_lookup(container->obj_uid, &container_custody))
+		{
+			if (container_custody.state != item_custody_state::active ||
+			    !item_owner_identity_equal(container_custody.owner, source))
+				return false;
+			parent = container;
+		}
+		const coin_admission_context context = {
+			money->obj_uid,
+			{ container ? container->obj_uid : 0, static_cast<uint32_t>(GET_PID(actor)),
+			  showit, bulk_gets.find(GET_PID(actor)) != bulk_gets.end() },
+			actor->in_room
+		};
+		return item_movement_transaction_submit(actor, money, parent, source, source,
+							item_transfer_reason::player_get,
+							money->obj_uid, coin_admission_completion,
+							&context, sizeof(context));
+	}
 	P_obj parent = current.parent_item_uid ? find_live_item_uid(current.parent_item_uid) : NULL;
 	if (current.parent_item_uid && !parent)
 		return false;

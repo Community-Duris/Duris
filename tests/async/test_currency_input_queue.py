@@ -82,6 +82,7 @@ PRELUDE = r'''
 #include "economy/currency_transaction.h"
 #include "sql/sql_player.h"
 #include "item/item_ownership_runtime.h"
+#include "item/item_movement_transaction.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
@@ -289,10 +290,12 @@ static bool submit_coin_get(P_char, P_obj, P_obj, int);
 void act(const char *, int, P_char, P_obj, void *, int) {}
 void writeCorpse(P_obj) {}
 void mark_player_dirty_components(int, player_component_mask_t) {}
-bool get_item_source_owner(P_char, P_obj money, P_obj, item_owner_identity *owner)
+bool get_item_source_owner(P_char, P_obj money, P_obj container, item_owner_identity *owner)
 {
     item_ownership_runtime_entry row;
-    if (!item_ownership_runtime_lookup(money->obj_uid, &row)) return false;
+    if (!item_ownership_runtime_lookup(money->obj_uid, &row)) {
+        if (!container || !item_ownership_runtime_lookup(container->obj_uid, &row)) return false;
+    }
     *owner = row.owner;
     return true;
 }
@@ -317,6 +320,29 @@ void finish_bulk_get(P_char, uint32_t pid)
             + extract(SRC / "actobj.c", "static bool bulk_get_source_available(")
             + extract(SRC / "actobj.c", "static bool finish_bulk_get_after_commit(")
             + extract(SRC / "actobj.c", "static bool coin_get_completion(")
+            + ACTOBJ[ACTOBJ.index("struct coin_admission_context"):
+                     ACTOBJ.index("static void coin_admission_completion(")]
+            + r'''
+static coin_admission_context admission_context;
+static item_movement_completion_fn admission_callback = nullptr;
+static uint64_t admitted_parent = 0;
+static item_owner_identity admitted_owner;
+bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
+    const item_owner_identity &from, const item_owner_identity &to,
+    item_transfer_reason reason, int64_t, item_movement_completion_fn callback,
+    const void *context, size_t size, P_obj, item_movement_reject *)
+{
+    assert(item_owner_identity_equal(from, to));
+    assert(reason == item_transfer_reason::player_get && size == sizeof(admission_context));
+    memcpy(&admission_context, context, size);
+    admission_callback = callback;
+    admitted_parent = parent ? parent->obj_uid : 0;
+    admitted_owner = from;
+    item_pending = true;
+    return true;
+}
+'''
+            + extract(SRC / "actobj.c", "static void coin_admission_completion(")
             + extract(SRC / "actobj.c", "static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit)\n{"))
 
 DRIVER = r'''
@@ -927,6 +953,42 @@ int main()
     actor.carrying = nullptr;
     converted->loc_p = LOC_NOWHERE;
     extract_obj(converted, false);
+	// Held item admission neither credits coins nor starts a coin transaction.
+	actor.in_room = bag.loc.room = 0;
+	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
+	for (bool committed : {false, true}) {
+		P_obj untracked = create_money(50, 0, 0, 0);
+		obj_to_obj(untracked, &bag);
+		const int coin_submissions = submission_count;
+		assert(submit_coin_get(&actor, untracked, &bag, 1));
+		assert(item_pending && submission_count == coin_submissions && GET_COPPER(&actor) == 0);
+		assert(admitted_parent == bag.obj_uid && item_owner_identity_equal(admitted_owner, owner));
+		if (committed) {
+			assert(item_ownership_runtime_owner_revision(owner, &owner_revision));
+			assert(item_ownership_runtime_hydrate({untracked->obj_uid, bag.obj_uid, bag.obj_uid,
+				owner, 1, owner_revision, VOBJ_COINS, item_custody_state::active}));
+		}
+		item_pending = false;
+		admission_callback(&actor, committed, {}, committed ? 0 : EEXIST,
+			reinterpret_cast<const uint8_t *>(&admission_context), sizeof(admission_context));
+		assert(GET_COPPER(&actor) == 0);
+		if (committed) {
+			assert(submission_count == coin_submissions + 1);
+			pile_ack(true);
+			assert(GET_SILVER(&actor) == 5 && bag.contains == nullptr);
+		} else {
+			assert(submission_count == coin_submissions && untracked->value[0] == 50);
+			extract_obj(untracked, false);
+		}
+	}
+	// Retired custody is never treated as absence and re-admitted.
+	P_obj retired_pile = create_money(1, 0, 0, 0);
+	obj_to_obj(retired_pile, &bag);
+	assert(item_ownership_runtime_owner_revision(owner, &owner_revision));
+	assert(item_ownership_runtime_hydrate({retired_pile->obj_uid, retired_pile->obj_uid, 0,
+		owner, 1, owner_revision, VOBJ_COINS, item_custody_state::destroyed}));
+	assert(!submit_coin_get(&actor, retired_pile, &bag, 1) && !item_pending);
+	extract_obj(retired_pile, false);
 	live_items.clear();
 	item_ownership_runtime_reset();
 	actor.next = nullptr;

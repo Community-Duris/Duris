@@ -248,12 +248,26 @@ terminal_preamble = r'''
 #include <thread>
 struct char_data { int pid; };
 struct obj_data { int uid; };
+player_snapshot_capture_result death_capture_result = player_snapshot_capture_result::ok;
+int death_enqueued = 0;
 player_snapshot_capture_result player_death_snapshot_capture(
-    P_char, P_obj, P_obj, const critical_operation_id &, player_revision_t, int,
-    const std::vector<critical_operation_id> &, player_snapshot *)
-{ return player_snapshot_capture_result::ok; }
-player_save_pipeline_result enqueue_snapshot(player_snapshot)
-{ return player_save_pipeline_result::queued; }
+    P_char ch, P_obj, P_obj, const critical_operation_id &, player_revision_t revision, int,
+    const std::vector<critical_operation_id> &, player_snapshot *snapshot)
+{
+    snapshot->pid = ch->pid;
+    snapshot->revision = revision;
+    snapshot->components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+    return death_capture_result;
+}
+player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
+{
+    player_revision_snapshot current = {};
+    assert(player_revision_snapshot_copy(snapshot.pid, &current));
+    assert(current.queued_revision == snapshot.revision);
+    assert(current.queued_components == snapshot.components);
+    ++death_enqueued;
+    return player_save_pipeline_result::queued;
+}
 #define IS_NPC(ch) false
 #define GET_PID(ch) ((ch)->pid)
 #define LOG_STATUS 0
@@ -354,7 +368,23 @@ int main() {
         assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
                                                    22806, 1, false) ==
                player_save_terminal_result::timed_out);
+        // Capacity refusal cannot enqueue a partial record or authorize release,
+        // even if an older terminal fence had already been acknowledged.
+        const int enqueued_before = death_enqueued;
+        const auto failures_before = health.capture_failures;
+        fence.acknowledged = true;
+        death_capture_result = player_snapshot_capture_result::limit_exceeded;
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22806, 20, true) ==
+               player_save_terminal_result::invalid);
+        assert(death_enqueued == enqueued_before);
+        assert(health.capture_failures == failures_before + 1);
+        assert(!fence.acknowledged && !fence.journaled);
+        death_capture_result = player_snapshot_capture_result::ok;
         database_ready = true;
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22806, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
     }
 }
 '''

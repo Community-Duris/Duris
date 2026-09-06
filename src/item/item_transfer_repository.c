@@ -557,6 +557,42 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
 					       mysql_stmt_execute(statement) == 0);
 }
+
+bool update_coin_payload(MYSQL *connection, const item_transfer_payload &payload, uint64_t revision)
+{
+	const uint64_t uid = payload.selected_item_uid;
+	std::vector<player_item_snapshot> items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &items) != player_snapshot_codec_result::ok ||
+	    items.size() != 1 || items[0].object_uid != uid || items[0].vnum != VOBJ_COINS ||
+	    std::any_of(items[0].values.begin(), items[0].values.begin() + 4,
+			[](int32_t value) { return value < 0; }))
+	{
+		errno = EBADMSG;
+		return false;
+	}
+	static const char UPDATE_SQL[] =
+		"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?";
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, UPDATE_SQL))
+		return false;
+	MYSQL_BIND bindings[3] = {};
+	unsigned long length = payload.item_blob_size;
+	mysql_null_indicator removed = payload.to_owner.type == item_owner_type::destruction;
+	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[0].buffer = const_cast<uint8_t *>(payload.item_blob.data());
+	bindings[0].buffer_length = length;
+	bindings[0].length = &length;
+	bindings[0].is_null = &removed;
+	bindings[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[1].buffer = const_cast<uint64_t *>(&uid);
+	bindings[1].is_unsigned = true;
+	bindings[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[2].buffer = &revision;
+	bindings[2].is_unsigned = true;
+	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
+					       mysql_stmt_execute(statement) == 0);
+}
 } // namespace
 
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
@@ -777,6 +813,10 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		return false;
 	result->from_owner_revision = from_revision + 1;
 	result->to_owner_revision = same_owner ? from_revision + 1 : to_revision + 1;
+	if (creation && payload.item_count == 1 && payload.items[0].vnum == VOBJ_COINS &&
+	    payload.item_blob_size &&
+	    !update_coin_payload(connection, payload, result->max_item_revision))
+		return false;
 	*mutation_applied = true;
 	return true;
 }
@@ -906,27 +946,8 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 	if (!*mutation_applied)
 		return true;
 
-	static const char UPDATE_SQL[] =
-		"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?";
-	MYSQL_STMT *statement = nullptr;
-	if (!prepare(&statement, connection, UPDATE_SQL))
-		return false;
-	MYSQL_BIND bindings[3] = {};
-	unsigned long length = payload.item_blob_size;
-	mysql_null_indicator removed = payload.to_owner.type == item_owner_type::destruction;
-	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
-	bindings[0].buffer = payload.item_blob.data();
-	bindings[0].buffer_length = length;
-	bindings[0].length = &length;
-	bindings[0].is_null = &removed;
-	bindings[1].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[1].buffer = const_cast<uint64_t *>(&uid);
-	bindings[1].is_unsigned = true;
-	bindings[2].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[2].buffer = &result->max_item_revision;
-	bindings[2].is_unsigned = true;
-	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
-					       mysql_stmt_execute(statement) == 0);
+	return payload.from_owner.type == item_owner_type::system ||
+	       update_coin_payload(connection, payload, result->max_item_revision);
 }
 
 bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner_identity *owners,

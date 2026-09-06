@@ -634,6 +634,134 @@ static void coin_matrix(const fs::path &path)
 			remaining[0].coin_payload.empty(),
 		"missing legacy payload was guessed or deleted");
 
+	// NPC money enters custody through an ordinary absent-item admission before
+	// atomic pickup. No wallet change is part of that admission or its replay.
+	const item_owner_identity npc_room = { item_owner_type::room, 602, 0 };
+	const uint64_t npc_uid = 81000;
+	auto admitted_endpoint = pile(npc_uid, 0, 50, npc_room, 0);
+	item_transfer_payload admission_payload;
+	require(item_transfer_command_decode_payload(admitted_endpoint.change, &admission_payload),
+		"decode NPC admission");
+	critical_operation_id admission_id;
+	require(critical_operation_id_generate(&admission_id), "NPC admission ID");
+	critical_command admission;
+	require(item_transfer_command_build(&admission, admission_id, admission_payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"NPC admission build");
+	admission.accepted_at_usec = 1;
+	const auto admitted = flatfile_item_repository_apply(root, admission);
+	require(admitted.outcome == critical_apply_outcome::applied,
+		"NPC admission failed: " + std::to_string(admitted.error_code));
+	require(flatfile_item_repository_apply(root, admission).outcome ==
+				critical_apply_outcome::already_applied &&
+			domain(42).domains.wallet[0] == cash,
+		"NPC admission replay changed wallet");
+	ownership(npc_room, &remaining);
+	require(remaining.size() == 1 && remaining[0].item_uid == npc_uid &&
+			remaining[0].root_item_uid == npc_uid && remaining[0].parent_item_uid == 0,
+		"NPC admission owner/parent");
+	auto conflicting_admission = [&]
+	{
+		std::vector<flatfile_item_ownership_record> rows;
+		admission_payload.expected_from_revision =
+			ownership(admission_payload.from_owner, &rows);
+		admission_payload.expected_to_revision =
+			ownership(admission_payload.to_owner, &rows);
+		critical_operation_id id;
+		critical_command request;
+		require(critical_operation_id_generate(&id) &&
+				item_transfer_command_build(&request, id, admission_payload,
+							    critical_source_site::command,
+							    critical_deadline_class::interactive),
+			"conflicting admission build");
+		request.accepted_at_usec = 1;
+		const auto rejected = flatfile_item_repository_apply(root, request);
+		require(rejected.error_code == EEXIST &&
+				flatfile_item_repository_apply(root, request).error_code == EEXIST,
+			"missing runtime custody could overwrite a durable UID");
+	};
+	conflicting_admission();
+	auto check_room_coins = [&](int32_t expected)
+	{
+		std::vector<flatfile_room_item_record> rooms;
+		require(flatfile_world_item_list_rooms(root, &rooms, &error) ==
+				flatfile_world_item_result::ok,
+			"read admitted NPC room");
+		const auto room = std::find_if(
+			rooms.begin(), rooms.end(), [&](const auto &entry)
+			{ return entry.room_vnum == static_cast<int32_t>(npc_room.id); });
+		require(room != rooms.end() && room->revision == ownership(npc_room, &remaining),
+			"coin commit left room revision stale");
+		require(room->items.size() == (expected ? 1U : 0U) &&
+				(!expected || (room->items[0].object_uid == npc_uid &&
+					       room->items[0].values[0] == expected)),
+			"coin commit left stale room pile payload");
+	};
+	auto npc_partial = command(pile(npc_uid, 50, 40, npc_room, 0), wallet(42, cash, cash + 10));
+	require(apply(npc_partial).outcome == critical_apply_outcome::applied &&
+			apply(npc_partial).outcome == critical_apply_outcome::already_applied,
+		"admitted NPC partial pickup/replay");
+	check_room_coins(40);
+	auto npc_second =
+		command(wallet(42, cash + 10, cash - 10), pile(npc_uid + 2, 0, 20, npc_room, 0));
+	require(apply(npc_second).outcome == critical_apply_outcome::applied,
+		"second room pile creation");
+	auto npc_merge =
+		command(pile(npc_uid + 2, 20, 0, npc_room, 0), pile(npc_uid, 40, 60, npc_room, 0));
+	require(apply(npc_merge).outcome == critical_apply_outcome::applied &&
+			apply(npc_merge).outcome == critical_apply_outcome::already_applied &&
+			domain(42).domains.wallet[0] == cash - 10,
+		"NPC pile merge/replay changed wallet");
+	check_room_coins(60);
+	auto npc_pickup =
+		command(pile(npc_uid, 60, 0, npc_room, 0), wallet(42, cash - 10, cash + 50));
+	const pid_t pickup_process = fork();
+	require(pickup_process >= 0, "NPC pickup restart fork");
+	if (pickup_process == 0)
+		_exit(apply(npc_pickup).outcome == critical_apply_outcome::applied ? 0 : 1);
+	int pickup_status = 0;
+	require(waitpid(pickup_process, &pickup_status, 0) == pickup_process &&
+			WIFEXITED(pickup_status) && WEXITSTATUS(pickup_status) == 0,
+		"NPC pickup in a new process failed");
+	require(apply(npc_pickup).outcome == critical_apply_outcome::already_applied &&
+			domain(42).domains.wallet[0] == cash + 50,
+		"NPC pickup replay changed wallet");
+	check_room_coins(0);
+	conflicting_admission(); // Retired UIDs cannot be minted again either.
+	// The next ordinary NPC loot admission must still be possible after pickup.
+	// This exercises the room projection as well as the ownership catalog.
+	item_transfer_payload next_loot = admission_payload;
+	next_loot.selected_item_uid = npc_uid + 1;
+	next_loot.target_root_item_uid = npc_uid + 1;
+	next_loot.items[0] = { npc_uid + 1, npc_uid + 1,
+			       0,	    ITEM_TRANSFER_ABSENT_REVISION,
+			       15,	    item_custody_state::absent };
+	player_item_snapshot banana = {};
+	banana.object_uid = npc_uid + 1;
+	banana.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	banana.equipment_slot = -1;
+	banana.vnum = 15;
+	banana.type = ITEM_FOOD;
+	banana.name = "banana";
+	std::vector<uint8_t> banana_blob;
+	require(player_item_snapshot_list_encode({ banana }, &banana_blob) ==
+			player_snapshot_codec_result::ok,
+		"NPC ordinary loot encode");
+	next_loot.item_blob_size = banana_blob.size();
+	std::copy(banana_blob.begin(), banana_blob.end(), next_loot.item_blob.begin());
+	critical_operation_id next_id;
+	critical_command next_command;
+	require(critical_operation_id_generate(&next_id) &&
+			item_transfer_command_build(&next_command, next_id, next_loot,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+		"NPC ordinary loot build");
+	next_command.accepted_at_usec = 1;
+	const auto next_result = flatfile_item_repository_apply(root, next_command);
+	require(next_result.outcome == critical_apply_outcome::applied,
+		"ordinary NPC loot after coin pickup failed: " +
+			std::to_string(next_result.error_code));
 	// A real container handoff must see no phantom descendants after coin pickup.
 	item_transfer_payload move = {};
 	move.from_owner = player;

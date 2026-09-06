@@ -40,6 +40,7 @@ struct apply_state
     unsigned int max_active = 0;
     bool first_started = false;
     bool release_first = false;
+    unsigned int deaths = 0;
 };
 
 struct capacity_state
@@ -73,6 +74,7 @@ player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *r
     auto &state = *static_cast<apply_state *>(raw);
     std::unique_lock<std::mutex> lock(state.mutex);
     ++state.active;
+    if (snapshot.death) { assert(snapshot.death->corpse[0].object_uid == 90000); ++state.deaths; }
     state.max_active = std::max(state.max_active, state.active);
     ++state.attempts[snapshot.pid];
     if (snapshot.pid == 1 && snapshot.revision == 1)
@@ -196,13 +198,21 @@ int main()
     assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &journal_hooks));
     assert(player_save_worker_init(apply_snapshot, &durable_apply, 1));
     assert(player_revision_hydrate(4, 0));
-    assert(player_save_worker_submit(next_snapshot(4, PLAYER_COMPONENT_STATUS)) ==
-           player_save_submit_result::accepted);
+    auto death = next_snapshot(4, PLAYER_CHECKPOINT_COMPONENT_ALL);
+    death.death.emplace();
+    death.death->operation_id.bytes[0] = 1;
+    death.death->corpse.emplace_back();
+    death.death->corpse[0].object_uid = 90000;
+    assert(player_save_worker_submit_retained(&death) == player_save_submit_result::invalid);
+    assert(journal_hooks.appends == 0);
+    death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+    assert(player_save_worker_submit(std::move(death)) == player_save_submit_result::accepted);
     wait_until([&] {
         player_save_worker_pulse(completions, 8);
         return player_save_worker_health_copy().applied == 1;
     });
     assert(journal_hooks.appends == 1 && journal_hooks.acknowledgements == 1);
+    assert(durable_apply.deaths == 1);
     player_save_worker_shutdown();
     assert(player_revision_hydrate(5, 0));
     assert(player_save_worker_submit(next_snapshot(5, PLAYER_COMPONENT_STATUS)) ==

@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
+            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_player_repository_harness.cpp",

@@ -771,6 +771,19 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 	flatfile_player_snapshot_lock snapshot_lock;
 	if (!snapshot_lock.acquire(root, snapshot.pid, error))
 		return { player_save_apply_outcome::retryable_failure, 0, EIO };
+	flatfile_authority_lock authority;
+	if (snapshot.death)
+	{
+		if (!authority.acquire(root, error))
+			return { player_save_apply_outcome::retryable_failure, 0, EIO };
+		const auto recovered =
+			flatfile_authority_transaction_recover(root, authority, error);
+		if (recovered != flatfile_authority_transaction_result::ok)
+			return { recovered == flatfile_authority_transaction_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EIO };
+	}
 	player_snapshot materialized = {};
 	const flatfile_player_load_result loaded =
 		flatfile_player_snapshot_read(root, snapshot.pid, &materialized, error);
@@ -780,7 +793,7 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 		return { player_save_apply_outcome::retryable_failure, 0, EIO };
 	if (loaded == flatfile_player_load_result::not_found)
 	{
-		if (snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL)
+		if (snapshot.death || snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL)
 			return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
 		const flatfile_item_baseline_result item_baseline =
 			establish_item_baseline(root, snapshot, error);
@@ -839,6 +852,31 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 	}
 	if (!encode_file(&materialized, &bytes))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	if (snapshot.death)
+	{
+		std::vector<flatfile_authority_operation> operations;
+		flatfile_authority_operation quarantine;
+		const auto prepared = flatfile_item_repository_prepare_death_quarantine(
+			root, authority, snapshot.pid, &quarantine, error);
+		if (prepared == flatfile_item_repository_result::ok)
+			operations.push_back(std::move(quarantine));
+		else if (prepared != flatfile_item_repository_result::unchanged)
+			return { prepared == flatfile_item_repository_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EIO };
+		operations.push_back({ flatfile_authority_store::players,
+				       flatfile_authority_operation_kind::write,
+				       player_filename(snapshot.pid), std::move(bytes) });
+		const auto committed = flatfile_authority_transaction_commit_operations(
+			root, authority, operations, error);
+		if (committed != flatfile_authority_transaction_result::ok)
+			return { committed == flatfile_authority_transaction_result::io_error ?
+					 player_save_apply_outcome::retryable_failure :
+					 player_save_apply_outcome::terminal_failure,
+				 0, EIO };
+		return { player_save_apply_outcome::applied, snapshot.revision, 0 };
+	}
 	if (!flatfile_atomic_write(player_directory(root), player_filename(snapshot.pid), bytes,
 				   error))
 		return { player_save_apply_outcome::retryable_failure, 0, EIO };

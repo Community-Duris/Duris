@@ -22,9 +22,7 @@ MYSQL *sql_pool_acquire(void)
 {
 	return nullptr;
 }
-void sql_pool_release(MYSQL *)
-{
-}
+void sql_pool_release(MYSQL *) {}
 MYSQL *sql_pool_replace_connection(MYSQL *)
 {
 	return nullptr;
@@ -105,11 +103,11 @@ player_snapshot make_death(player_revision_t revision)
 	death.custody.push_back({ { 201, 201, 0, 3, 501, item_custody_state::active },
 				  { item_owner_type::player, PROBE_PID, 0 },
 				  5 });
-	death.custody.push_back({ { death.wallet_pile_uid, death.wallet_pile_uid, 0,
-				    ITEM_TRANSFER_ABSENT_REVISION, VOBJ_COINS,
-				    item_custody_state::absent },
-				  {},
-				  0 });
+	death.custody.push_back(
+		{ { death.wallet_pile_uid, death.wallet_pile_uid, 0, ITEM_TRANSFER_ABSENT_REVISION,
+		    VOBJ_COINS, item_custody_state::absent },
+		  {},
+		  0 });
 	return snapshot;
 }
 
@@ -141,9 +139,8 @@ int main()
 	const std::string user = environment("DB_USER", "root");
 	const std::string password = environment("DB_PASSWD", "");
 	const std::string database = environment("DB_NAME", "death_disposition_test");
-	const unsigned int port =
-		static_cast<unsigned int>(std::strtoul(environment("DB_PORT", "3306").c_str(),
-						       nullptr, 10));
+	const unsigned int port = static_cast<unsigned int>(
+		std::strtoul(environment("DB_PORT", "3306").c_str(), nullptr, 10));
 	require(mysql_real_connect(connection, host.c_str(), user.c_str(), password.c_str(),
 				   database.c_str(), port, nullptr, 0) != nullptr,
 		std::string("could not connect: ") + mysql_error(connection));
@@ -155,19 +152,32 @@ int main()
 	execute(connection,
 		"INSERT INTO player_items (pid,vnum,equip_slot,container_id,quantity,item_type,"
 		"obj_uid) VALUES (1,501,0,NULL,1,0,201)");
+	execute(connection,
+		"INSERT INTO item_owner_revision (owner_type,owner_id,revision) VALUES (1,1,5),(1,2,7)");
+	execute(connection,
+		"INSERT INTO item_current_owner (item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES "
+		"(201,201,NULL,1,1,3,501,1),(203,201,201,1,1,1,501,1),(204,204,NULL,1,2,9,501,1)");
 
 	const player_snapshot death = make_death(5);
 	player_save_apply_result applied = player_snapshot_repository_apply(connection, death);
 	require(applied.outcome == player_save_apply_outcome::applied &&
 			applied.durable_revision == 5,
 		"the death disposition was refused by the MariaDB backend: error=" +
-			std::to_string(applied.error_code) + " outcome=" +
-			std::to_string(static_cast<unsigned>(applied.outcome)));
+			std::to_string(applied.error_code) +
+			" outcome=" + std::to_string(static_cast<unsigned>(applied.outcome)));
 
 	require(scalar(connection, "SELECT COUNT(*) FROM player_items WHERE pid=1") == "0",
 		"the death left assets in the player's active inventory");
 	require(scalar(connection, "SELECT save_revision FROM player_data WHERE pid=1") == "5",
 		"the death did not advance the durable player revision");
+	require(scalar(connection,
+		       "SELECT GROUP_CONCAT(CONCAT_WS(':',item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_id,item_revision,state) ORDER BY item_uid) FROM item_current_owner") ==
+			"201:201:0:1:4:3,203:201:201:1:2:3,204:204:0:2:9:1",
+		"death quarantine lost custody identity, missed a durable child, or changed another owner");
+	require(scalar(connection,
+		       "SELECT revision FROM item_owner_revision WHERE owner_type=1 AND owner_id=1") ==
+			"6",
+		"death quarantine did not advance the owner fence");
 	require(scalar(connection,
 		       "SELECT CONCAT_WS(':',LOWER(HEX(operation_id)),corpse_item_uid,"
 		       "corpse_room_vnum,wallet_revision,wallet_copper,wallet_silver,wallet_gold,"
@@ -193,8 +203,7 @@ int main()
 	require(payload_row && payload_row[0] && lengths, "the stored death payload was empty");
 	player_snapshot decoded = {};
 	require(player_snapshot_decode(reinterpret_cast<const uint8_t *>(payload_row[0]),
-				       lengths[0],
-				       &decoded) == player_snapshot_codec_result::ok &&
+				       lengths[0], &decoded) == player_snapshot_codec_result::ok &&
 			decoded.death.has_value(),
 		"the stored death payload did not decode");
 	mysql_free_result(payload_rows);
@@ -214,6 +223,10 @@ int main()
 	require(scalar(connection, "SELECT COUNT(*) FROM player_death_disposition WHERE pid=1") ==
 			"1",
 		"replaying the death duplicated its disposition");
+	require(scalar(connection,
+		       "SELECT revision FROM item_owner_revision WHERE owner_type=1 AND owner_id=1") ==
+			"6",
+		"death replay repeated quarantine");
 
 	// An ordinary save on a later revision leaves the record standing.
 	player_snapshot ordinary = make_death(6);

@@ -10,6 +10,11 @@ death, both corpse types, item movement, terminal saves, and player reload.
 from __future__ import annotations
 
 import os
+import errno
+import fcntl
+import hashlib
+import json
+import struct
 import pathlib
 import re
 import shutil
@@ -25,6 +30,7 @@ ACCOUNT = "Journeyacct"
 PASSWORD = "Qz7!mN4@"
 CHARACTER = "Taverek"
 EMAIL = "journey@example.invalid"
+INSPECTOR = ROOT / "bin/tests/coin-death-inspector"
 ANSI = re.compile(rb"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
@@ -110,7 +116,7 @@ class MudClient:
         readable = bytes(self.pending).decode("utf-8", errors="replace")
         raise AssertionError(f"timed out waiting for {needles!r}; received:\n{readable[-6000:]}")
 
-def make_fixture(run_root: pathlib.Path) -> None:
+def make_fixture(run_root: pathlib.Path, reset_coins: bool = False) -> None:
     for directory in ("areas", "docs"):
         (run_root / directory).symlink_to(ROOT / directory, target_is_directory=True)
 
@@ -126,6 +132,23 @@ def make_fixture(run_root: pathlib.Path) -> None:
 
     mobile_path = mini / "mini.mob"
     mobiles = mobile_path.read_text()
+    # Use separate boots for wallet and reset coins so VOBJ_COINS stays empty
+    # when create_money converts a wallet. Both sources start without custody.
+    start = mobiles.index("#11\n")
+    end = mobiles.index("#12\n", start)
+    raoul = mobiles[start:end]
+    if reset_coins:
+        raoul = raoul.replace("raoul~", "raoul _nomoney_~", 1)
+    require("0.0.0.0 0" in raoul, "Raoul wallet fixture changed")
+    mobiles = mobiles[:start] + raoul + mobiles[end:]
+    objects_path = mini / "mini.obj"
+    objects = objects_path.read_text()
+    start = objects.index("#3\n")
+    end = objects.index("#4\n", start)
+    coins = objects[start:end]
+    require("0 0 0 0 0 0 0 0" in coins, "money object fixture changed")
+    objects_path.write_text(objects[:start] + coins.replace(
+        "0 0 0 0 0 0 0 0", "0 3 0 0 0 0 0 0" if reset_coins else "0 0 0 0 0 0 0 0") + objects[end:])
     executioner = """#22800
 regression executioner~
 the regression executioner~
@@ -160,9 +183,104 @@ S
     reset = (
         "M 0 11 1 22800 100 0 0 0 * deterministic combat target\n"
         "G 1 15 1 0 100 0 0 0 * corpse-loot marker\n"
-        "M 0 22800 1 22800 100 0 0 0 * deterministic player-death target\n"
+        + ("G 1 3 1 0 100 0 0 0 * reset-created coins\n" if reset_coins else "")
+        +         "M 0 22800 1 22800 100 0 0 0 * deterministic player-death target\n"
     )
     zone_path.write_text(zone.replace("\nS\n", "\n" + reset + "S\n"))
+
+
+def inspect_authority(state_root: pathlib.Path) -> dict:
+    return json.loads(subprocess.check_output(
+        [str(INSPECTOR), str(state_root), "inspect", "1"], text=True, timeout=15))
+
+
+def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
+    """Add one durable-only descendant to the synthetic player's live root.
+
+    Ordinary admission would advance the owner revision, producing ESTALE.
+    This fixture preserves revisions while introducing the exact subtree-count
+    disagreement that production rejects with EMSGSIZE. Never used on .env data.
+    """
+    path = state_root / "domains/item_ownership"
+    with (state_root / "domains/.critical-authority.lock").open("r+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        data = bytearray(path.read_bytes())
+        require(data[:8] == b"DUROWN\0\0", "custody fixture magic changed")
+        version, size, _ = struct.unpack_from("<IIQ", data, 8)
+        require(version == 3 and size == len(data) - 56, "custody fixture format changed")
+        require(hashlib.sha256(data[56:]).digest() == data[24:56], "invalid custody fixture")
+        owners, items, _ = struct.unpack_from("<III", data, 56)
+        at = 68 + owners * 25
+        last_uid = 0
+        parent = None
+        for _ in range(items):
+            row = struct.unpack_from("<QQQBQQQiBI", data, at)
+            last_uid = row[0]
+            if row[0] == parent_uid:
+                parent = row
+            at += 58 + row[-1]
+        require(parent is not None and parent[3:6] == (1, 1, 0), "fixture root is not player-owned")
+        ghost_uid = last_uid + 10000
+        ghost = struct.pack("<QQQBQQQiBI", ghost_uid, parent_uid, parent_uid,
+                            1, 1, 0, 1, 15, 1, 0)
+        data[at:at] = ghost
+        struct.pack_into("<I", data, 12, size + len(ghost))
+        struct.pack_into("<I", data, 60, items + 1)
+        data[24:56] = hashlib.sha256(data[56:]).digest()
+        temporary = path.with_name("item_ownership.fixture")
+        with temporary.open("wb") as output:
+            os.fchmod(output.fileno(), 0o600)
+            output.write(data)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, path)
+        directory = os.open(path.parent, os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    return ghost_uid
+
+
+def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) -> dict:
+    client = reconnect_character(port)
+    try:
+        client.send("save")
+        client.expect(f"Save complete for {CHARACTER}.")
+        before = inspect_authority(state_root)
+        banana = next(item["uid"] for item in before["player_items"] if item["vnum"] == 15)
+        ghost = add_death_conflict(state_root, banana)
+        require(any(item["uid"] == ghost and item["parent"] == banana
+                    for item in inspect_authority(state_root)["player_items"]),
+                "conflicting durable custody was not installed")
+        # Wait for the real repository refusal while the character remains live.
+        client.send("hit executioner")
+        client.expect("Your wounds claim you at last", timeout=30)
+        deadline = time.monotonic() + 15
+        while f"error={errno.EMSGSIZE} disputed=1" not in runtime_logs(run_root):
+            require(time.monotonic() < deadline, "death did not reach EMSGSIZE refusal")
+            time.sleep(0.01)
+        refused_at = time.monotonic()
+        client.expect("ACCOUNT MENU", timeout=30)
+        elapsed = time.monotonic() - refused_at
+        after = inspect_authority(state_root)
+        require(len(after["deaths"]) == 1, "death disposition missing at release")
+        death = after["deaths"][0]
+        require(any(item["uid"] == banana for item in death["items"]), "refused item payload lost")
+        require(any(item["uid"] == banana and item["owner_type"] == 1 and item["owner_id"] == 1
+                    for item in death["custody"]), "refused custody observation lost")
+        require(after["wallet"] == [0, 0, 0, 0], "death wallet was not cleared")
+        require(not after["player_items"], "disputed custody remained active at release")
+        require(after["death_count"] == before["death_count"] + 1,
+                "refused death was counted more or less than once")
+        logs = runtime_logs(run_root)
+        require(logs.index("death_disposition_recorded") < logs.index("death_disposition_completed"),
+                "character released before disposition durability")
+        print(f"flatfile-primary EMSGSIZE refusal-to-account-menu: {elapsed:.3f}s", flush=True)
+        client.send("0")
+        return after
+    finally:
+        client.close()
 
 
 def generate_certificate(run_root: pathlib.Path) -> None:
@@ -265,7 +383,7 @@ def create_character(client: MudClient, expected_room: str | None = "The Regress
     client.expect("Your starter kit is ready", timeout=30)
 
 
-def complete_npc_combat_journey(client: MudClient) -> None:
+def complete_npc_combat_journey(client: MudClient, reset_coins: bool = False) -> None:
     client.send("wield mace")
     client.expect("You wield", timeout=10)
     client.send("drop all")
@@ -305,6 +423,21 @@ def complete_npc_combat_journey(client: MudClient) -> None:
     client.send("look in corpse")
     corpse = client.expect("banana", timeout=10)
     require("corpse" in corpse.lower(), "loot marker was not inside the corpse")
+
+    expected_coins = ("You get 0 platinum, 0 gold, 3 silver, and 0 copper coins." if reset_coins else
+                      "You get 0 platinum, 0 gold, 0 silver, and 1 copper coins.")
+    deadline = time.monotonic() + 15
+    while True:
+        client.send("get coins corpse")
+        result, _ = client.expect_any((expected_coins,
+            "The coin transfer did not commit; nothing changed.",
+            "The coin transfer could not start; nothing changed."), timeout=15)
+        if result == expected_coins:
+            break
+        require(time.monotonic() < deadline, "NPC coin retry never committed")
+        # Other reward commands can hold the player's currency fence while the
+        # room-only admission commits. Retry must use that admission, not mint.
+        time.sleep(0.1)
 
     client.send("get banana corpse")
     client.expect("get a banana", timeout=10)
@@ -374,6 +507,8 @@ def recover_player_corpse(port: int) -> None:
 
         client.send(f"get banana {CHARACTER}")
         client.expect("get a banana", timeout=15)
+        client.send(f"get coins {CHARACTER}")
+        client.expect("You get 0 platinum, 0 gold, 0 silver, and 1 copper coins.", timeout=15)
         client.send("save")
         client.expect(f"Save complete for {CHARACTER}.", timeout=15)
         client.send("quit")
@@ -420,15 +555,17 @@ def build_flatfile_server(build_root: pathlib.Path) -> pathlib.Path:
     return binary
 
 
-def run_journey(binary: pathlib.Path) -> None:
+def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="duris-combat-state-") as state_tmp:
         with tempfile.TemporaryDirectory(prefix="duris-combat-run-") as run_tmp:
             state_root = pathlib.Path(state_tmp)
             run_root = pathlib.Path(run_tmp)
             state_root.chmod(0o700)
+            (state_root / "domains").mkdir(mode=0o700)
+            subprocess.run([str(INSPECTOR), str(state_root), "seed-combat"], check=True)
             (run_root / "logs/log").mkdir(parents=True)
             (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
-            make_fixture(run_root)
+            make_fixture(run_root, reset_coins)
             generate_certificate(run_root)
 
             journal_root = run_root / "journals"
@@ -448,6 +585,7 @@ def run_journey(binary: pathlib.Path) -> None:
                 "DURIS_WEBSOCKET_LISTEN_ADDRESS": "127.0.0.1",
                 "DURIS_WEBSOCKET_PORT": str(websocket_port),
                 "REDIS": "FALSE",
+                "DURIS_NEVENT_TRACE_PLAYER": "1",
                 "CHAOS_MUD": "FALSE",
             }
             if runtime_library_path := os.environ.get("LD_LIBRARY_PATH"):
@@ -481,12 +619,29 @@ def run_journey(binary: pathlib.Path) -> None:
 
                     client = MudClient(plain_port)
                     create_character(client)
-                    complete_npc_combat_journey(client)
+                    client.send("toggle boon")
+                    client.expect("You will no longer be affected by boons.")
+                    # Enter with the durable account-bank revision. Fresh character
+                    # creation currently leaves its live bank revision at zero.
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=30)
+                    client.send("0")
+                    client.close()
+                    client = reconnect_character(plain_port)
+                    complete_npc_combat_journey(client, reset_coins)
                     client.close()
                     client = None
-                    verify_npc_loot_and_die(plain_port)
-                    recover_player_corpse(plain_port)
+                    coin_balance = [0, 3, 0, 0] if reset_coins else [1, 0, 0, 0]
+                    require(inspect_authority(state_root)["wallet"] == coin_balance,
+                            "NPC pickup/save did not conserve coins")
+                    if not reset_coins:
+                        verify_npc_loot_and_die(plain_port)
+                        recover_player_corpse(plain_port)
                     verify_recovered_loot(plain_port)
+                    require(inspect_authority(state_root)["wallet"] == coin_balance,
+                            "reconnect or corpse recovery changed the coin total")
+                    if not reset_coins:
+                        disputed_death(plain_port, state_root, run_root)
 
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=30)
@@ -504,6 +659,44 @@ def run_journey(binary: pathlib.Path) -> None:
                         "FATAL:" not in server_output and "assert:" not in server_output,
                         "combat journey logged a fatal/assertion failure:\n" + server_output[-8000:],
                     )
+                    # Boot again with the same authority and journals. Compare the
+                    # immutable evidence and wallet after re-entry and another save.
+                    before_restart = inspect_authority(state_root)
+                    death_files = {path.name: path.read_bytes()
+                                   for path in (state_root / "player-deaths").glob("*.death")}
+                    offset = output_path.stat().st_size
+                    process = subprocess.Popen(
+                        [str(binary), "--minimal", "-s", "-d", str(run_root), str(plain_port)],
+                        cwd=run_root, env=environment, text=True,
+                        stdout=output, stderr=subprocess.STDOUT)
+                    deadline = time.monotonic() + 120
+                    while b"Entering game loop." not in output_path.read_bytes()[offset:]:
+                        require(process.poll() is None and time.monotonic() < deadline,
+                                "combat server did not restart")
+                        time.sleep(0.1)
+                    client = reconnect_character(plain_port,
+                        None if reset_coins else "You rejoin the land of the living")
+                    client.send("save")
+                    client.expect(f"Save complete for {CHARACTER}.")
+                    client.send("quit")
+                    client.expect("ACCOUNT MENU", timeout=30)
+                    client.send("0")
+                    client.close()
+                    client = None
+                    after_restart = inspect_authority(state_root)
+                    for field in ("wallet", "wallet_revision", "deaths", "player_items",
+                                  "death_count", "experience", "level"):
+                        require(after_restart[field] == before_restart[field],
+                                f"restart/re-entry changed {field}")
+                    require(death_files == {path.name: path.read_bytes()
+                            for path in (state_root / "player-deaths").glob("*.death")},
+                            "restart/re-entry rewrote death evidence")
+                    if not reset_coins:
+                        require(not after_restart["snapshot_uids"],
+                                "re-entry restored disputed inventory without recovery")
+                    process.send_signal(signal.SIGTERM)
+                    process.wait(timeout=30)
+                    require(process.returncode == 0, "restarted server shutdown failed")
                 except Exception as error:
                     output.flush()
                     server_output = output_path.read_text(errors="replace")
@@ -525,9 +718,14 @@ def run_journey(binary: pathlib.Path) -> None:
 
 
 if __name__ == "__main__":
+    subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
+                    "--build-inspector", str(INSPECTOR)], cwd=ROOT, check=True, timeout=180)
     # The root regression runner executes this and the Chaos kit journey
     # concurrently. Distinct temporary build roots prevent linker/runtime races
     # and are removed after each journey, including on failure.
-    with tempfile.TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-") as build_tmp:
-        run_journey(build_flatfile_server(pathlib.Path(build_tmp)))
+    with tempfile.TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-",
+                                     dir=ROOT / "bin/tests") as build_tmp:
+        binary = build_flatfile_server(pathlib.Path(build_tmp))
+        run_journey(binary)
+        run_journey(binary, reset_coins=True)
     print("flat-file combat, player death, corpse recovery, save, and reconnect journey passed")

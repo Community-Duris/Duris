@@ -479,6 +479,11 @@ player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
 		++health.capture_failures;
 		return player_save_terminal_result::invalid;
 	}
+	player_revision_t queued_revision = 0;
+	player_component_mask_t components = 0;
+	if (!player_revision_queue(pid, &queued_revision, &components) ||
+	    queued_revision != revision || components != snapshot.components)
+		return player_save_terminal_result::unavailable;
 	const auto queued = enqueue_snapshot(std::move(snapshot));
 	if (queued != player_save_pipeline_result::queued &&
 	    queued != player_save_pipeline_result::coalesced)

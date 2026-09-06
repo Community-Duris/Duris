@@ -1404,6 +1404,46 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	flatfile_authority_operation *operation, std::string *error)
+{
+	if (!operation || !pid || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+	*operation = {};
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	const item_owner_identity player = { item_owner_type::player, pid, 0 };
+	owner_state *owner = find_owner(&catalog, player);
+	if (!owner)
+		return flatfile_item_repository_result::not_found;
+	bool changed = false;
+	for (auto &item : catalog.items)
+	{
+		if (item.state != item_custody_state::active ||
+		    !item_owner_identity_equal(item.owner, player))
+			continue;
+		if (item.item_revision == UINT64_MAX)
+			return flatfile_item_repository_result::invalid;
+		// Keep identity, parentage and payload, including durable-only children
+		// which caused a refused subtree count. Ownership is not reassigned.
+		item.state = item_custody_state::quarantined;
+		++item.item_revision;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_item_repository_result::unchanged;
+	if (owner->revision == UINT64_MAX || catalog.revision == UINT64_MAX)
+		return flatfile_item_repository_result::invalid;
+	++owner->revision;
+	operation->filename = ownership_filename;
+	return encode_catalog(catalog, catalog.revision + 1, &operation->bytes) ?
+		       flatfile_item_repository_result::ok :
+		       flatfile_item_repository_result::invalid;
+}
+
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error)
@@ -2083,6 +2123,7 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 					 wallets == flatfile_player_domain_result::not_found ?
 						 ENOENT :
 						 EILSEQ) };
+		bool changes_room = false;
 		const coin_transfer_endpoint *endpoints[] = { &payload.source,
 							      &payload.destination };
 		for (size_t index = 0; !result_code && index < 2; ++index)
@@ -2100,6 +2141,9 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 			item_transfer_payload transfer;
 			if (!item_transfer_command_decode_payload(change, &transfer))
 				return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+			changes_room = changes_room ||
+				       transfer.from_owner.type == item_owner_type::room ||
+				       transfer.to_owner.type == item_owner_type::room;
 			const uint64_t uid = transfer.items[0].item_uid;
 			if (transfer.from_owner.type != item_owner_type::system)
 			{
@@ -2152,6 +2196,18 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 				stored->coin_payload.assign(transfer.item_blob.begin(),
 							    transfer.item_blob.begin() +
 								    transfer.item_blob_size);
+		}
+		if (!result_code && changes_room)
+		{
+			flatfile_authority_after_image room_image;
+			const auto rooms = flatfile_world_item_prepare_coin_rooms(
+				root, lock, payload, result, &room_image, &error);
+			if (rooms == flatfile_world_item_result::ok)
+				images.push_back(std::move(room_image));
+			else if (rooms != flatfile_world_item_result::unchanged)
+				result_code = rooms == flatfile_world_item_result::io_error ?
+						      EIO :
+						      EILSEQ;
 		}
 		if (result_code == ENOMEM || result_code == EIO)
 			return { critical_apply_outcome::retryable_failure, 0, result_code };
