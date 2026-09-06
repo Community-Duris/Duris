@@ -126,6 +126,11 @@ static bool item_pending = false;
 static int submission_count = 0;
 
 void logit(const char *, const char *, ...) {}
+// money_to_inventory() reports a wallet conversion it could not even submit.
+void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
+		       const char *, ...)
+{
+}
 void __free(void *memory, const char *, int) { free(memory); }
 void gmcp_char_vitals(P_char) {}
 
@@ -942,7 +947,7 @@ def main() -> int:
         COIN_PILES,
         COIN_GET,
         extract(SRC / "handler.c", "bool money_inventory_completion("),
-        extract(SRC / "handler.c", "void money_to_inventory("),
+        extract(SRC / "handler.c", "bool money_to_inventory("),
         SEARCH,
         COMMAND_NUMBER,
         DEPENDS,

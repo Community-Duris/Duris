@@ -278,6 +278,16 @@
       "verify": "immutable/0010_coin_custody_payload.sh",
       "verify_checksum": "60db9d6168db7cf027b2c3233d9fb5c19e82562e15c10dd16742049b61834c32",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0011_player_death_disposition",
+      "sequence": 11,
+      "description": "Add the durable player death disposition and its custody evidence",
+      "apply": "immutable/0011_player_death_disposition.sql",
+      "apply_checksum": "209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057",
+      "verify": "immutable/0011_player_death_disposition.sh",
+      "verify_checksum": "f9fcb0d7dcfec03b87d6f3caa1d64f1301c93c55362320b7bfe78dace90c98e8",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

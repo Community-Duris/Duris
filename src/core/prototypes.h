@@ -1258,7 +1258,7 @@ P_char get_char_room_vis(P_char, const char *);
 P_char get_char_vis(P_char, const char *);
 P_char get_pcchar(P_char, char *, int);
 P_obj create_money(int, int, int, int);
-void money_to_inventory(P_char ch);
+bool money_to_inventory(P_char ch);
 P_obj get_obj(char *);
 P_obj get_obj_in_list(char *, P_obj);
 P_obj get_obj_in_list_num(int num, P_obj);

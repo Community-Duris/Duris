@@ -18,6 +18,14 @@ The fix reuses the death-extract retry that already exists for failed terminal
 saves: while item_movement_transaction_player_busy() is true, the death is
 deferred instead of being saved and extracted, so the chain drains against a
 live character and the two sides stay in agreement.
+
+A handoff the ledger refuses outright (EMSGSIZE from a conflicting custody row)
+cannot be drained that way: resubmitting reproduces the refusal, so the death
+never completed and the character was never released. corpse_item_completion()
+now records the dispute and the retry finalizes the death through
+player_save_pipeline_terminal_death(), whose immutable record keeps the corpse
+identity and location, the wallet a refused conversion never took, the complete
+refused item payload and the disputed custody rows outside active inventory.
 """
 
 from _paths import SRC
@@ -125,8 +133,11 @@ checks.append((
     contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid,") and
     contains(retry, "GET_STAT(ch) != STAT_DEAD")
 ))
-busy_retry = retry.split("if (item_movement_transaction_player_busy(ch))", 1)[1]
-busy_retry = busy_retry.split("if (!persistence_save_character_terminal", 1)[0]
+busy_retry = retry.split(
+    "if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))",
+    1)[1]
+# only the in-flight branch: a refused handoff below it does back off.
+busy_retry = busy_retry.split("P_obj corpse = context.corpse_uid", 1)[0]
 checks.append((
     "normal corpse handoffs do not exponentially delay the account menu",
     not contains(busy_retry, "previous_delay * 2") and
@@ -137,12 +148,83 @@ checks.append((
     contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);")
 ))
 checks.append((
-    "a rejected handoff is resubmitted before death can be saved or extracted",
+    "a stalled handoff is resubmitted before death can be saved or extracted",
     contains(retry, "P_obj corpse = context.corpse_uid ? corpse_live_item") and
     contains(retry, "if (corpse && ch->carrying)") and
     contains(retry, "submit_next_corpse_item(ch, corpse)") and
     retry.index("if (corpse && ch->carrying)") <
     retry.index("persistence_save_character_terminal(ch, RENT_DEATH)")
+))
+
+# EMSGSIZE: the ledger refuses the row outright, so resubmitting only repeats it.
+completion = body(fight, "void corpse_item_completion(")
+checks.append((
+    "a refused handoff is recorded as disputed instead of being resubmitted",
+    contains(completion, "note_corpse_transfer_dispute(character);") and
+    completion.index("note_corpse_transfer_dispute(character);") <
+    completion.index('"rejected_preserved"')
+))
+checks.append((
+    "a new death starts undisputed and an abandoned recovery retires its entry",
+    contains(die, "clear_corpse_transfer_dispute(ch);") and
+    die.index("clear_corpse_transfer_dispute(ch);") < die.index("make_corpse(ch, loss)") and
+    contains(retry, "clear_corpse_transfer_dispute(ch);") and
+    retry.index("clear_corpse_transfer_dispute(ch);") <
+    retry.index('"death_recovery_abandoned"')
+))
+checks.append((
+    "the dispute is recorded without an allocation that could fail back into the loop",
+    contains(fight, "constexpr size_t CORPSE_DISPUTE_SLOTS = 64;") and
+    contains(fight, "int corpse_dispute_pids[CORPSE_DISPUTE_SLOTS] = {};")
+))
+checks.append((
+    "a disputed death finalizes durably instead of resubmitting the same refusal",
+    contains(retry, "if (corpse_transfer_disputed(ch))") and
+    retry.index("if (corpse_transfer_disputed(ch))") <
+    retry.index("if (corpse && ch->carrying)") <
+    retry.index("persistence_save_character_terminal(ch, RENT_DEATH)")
+))
+checks.append((
+    "a missing corpse cannot let an ordinary empty save discard the refused assets",
+    contains(retry, "if (!corpse || !save_disputed_death_disposition(ch, context.corpse_uid))")
+    and contains(retry, '"death_recovery_corpse_missing"')
+    and contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);")
+))
+checks.append((
+    "the durable record is only released once, and only after it is durable",
+    contains(retry, "clear_corpse_transfer_dispute(ch);") and
+    contains(retry, 'release_after_terminal_death(ch, "death_disposition_completed");') and
+    retry.index("clear_corpse_transfer_dispute(ch);") <
+    retry.index('release_after_terminal_death(ch, "death_disposition_completed");')
+))
+
+disposition = body(fight,
+                   "static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)")
+checks.append((
+    "the disposition preserves a wallet whose conversion never committed",
+    contains(disposition, "if (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || "
+                          "GET_PLATINUM(ch))") and
+    contains(disposition, "wallet_pile = create_money(GET_COPPER(ch), GET_SILVER(ch), "
+                          "GET_GOLD(ch),") and
+    disposition.index("create_money(") <
+    disposition.index("player_save_pipeline_terminal_death(")
+))
+checks.append((
+    "the account menu follows the durable record inside the death recovery budget",
+    contains(fight, "#define DEATH_DISPOSITION_TIMEOUT_MSEC 2000") and
+    contains(disposition, "DEATH_DISPOSITION_TIMEOUT_MSEC")
+))
+checks.append((
+    "a disposition neither backend accepted keeps the live character and its assets",
+    contains(disposition, "return durable;") and
+    contains(disposition, "player_save_terminal_result::database_acknowledged") and
+    contains(disposition, "player_save_terminal_result::journal_durable")
+))
+checks.append((
+    "die() defers to the recovery event while a dispute is outstanding",
+    contains(die, "corpse_transfer_disputed(ch)))") and
+    die.index("corpse_transfer_disputed(ch)))") <
+    die.index("persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 checks.append((
     "automatic raising cannot consume a PC corpse while its item handoff is pending",
@@ -152,7 +234,9 @@ checks.append((
 ))
 checks.append((
     "the retry still finishes the death once nothing is pending",
-    contains(retry, "extract_char_after_terminal_save(ch);") and
+    contains(retry, 'release_after_terminal_death(ch, "death_recovery_completed");') and
+    contains(body(fight, "static void release_after_terminal_death(P_char ch, const char *outcome)"),
+             "extract_char_after_terminal_save(ch);") and
     contains(retry, "persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 

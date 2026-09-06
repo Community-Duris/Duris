@@ -75,8 +75,12 @@ death_retry = body(
     fight,
     "static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data)\n{",
 )
+# The retry now releases through release_after_terminal_death(), which owns the
+# extraction; both of its callers still save first.
 assert death_retry.index("persistence_save_character_terminal(ch, RENT_DEATH)") < death_retry.index(
-    "extract_char_after_terminal_save(ch)"
+    'release_after_terminal_death(ch, "death_recovery_completed")'
 )
+release = body(fight, "static void release_after_terminal_death(P_char ch, const char *outcome)")
+assert "extract_char_after_terminal_save(ch);" in release
 
 print("terminal saved-item extraction contracts passed")

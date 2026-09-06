@@ -1981,30 +1981,32 @@ bool money_inventory_completion(P_char ch, bool committed, const coin_transfer_p
 }
 }
 
-void money_to_inventory(P_char ch)
+bool money_to_inventory(P_char ch)
 {
 	if (!ch)
-		return;
+		return false;
 	const std::array<int32_t, 4> cash = { GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),
 					      GET_PLATINUM(ch) };
 	int64_t value = 0, multiplier = 1;
 	for (int32_t amount : cash)
 	{
 		if (amount < 0)
-			return;
+			return false;
 		value += static_cast<int64_t>(amount) * multiplier;
 		multiplier *= 10;
 	}
-	if (!value || (IS_PC(ch) && !currency_transaction_can_submit(ch)))
-		return;
+	if (!value)
+		return true;
+	if (IS_PC(ch) && !currency_transaction_can_submit(ch))
+		return false;
 	P_obj money = create_money(cash[0], cash[1], cash[2], cash[3]);
 	if (!money)
-		return;
+		return false;
 	if (IS_NPC(ch))
 	{
 		std::fill(std::begin(ch->points.cash), std::end(ch->points.cash), 0);
 		obj_to_char(money, ch);
-		return;
+		return true;
 	}
 
 	// Wallet and pile custody share one commit. Neither is published on admission.
@@ -2047,7 +2049,13 @@ void money_to_inventory(P_char ch)
 							 &money->obj_uid, sizeof(money->obj_uid));
 	}
 	if (!prepared)
+	{
 		extract_obj(money, FALSE);
+		persistence_alert(AVATAR, "currency", "wallet_conversion", "none", "none",
+				  "submit_rejected", "pid=%d value=%lld", GET_PID(ch),
+				  (long long)value);
+	}
+	return prepared;
 }
 
 void equip_char(P_char ch, P_obj obj, int pos, int nodrop)

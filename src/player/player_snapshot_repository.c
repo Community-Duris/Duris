@@ -1,6 +1,7 @@
 #include "player/player_snapshot_repository.h"
 
 #include "persistence/persistence_observability.h"
+#include "player/player_snapshot_codec.h"
 #include "sql/sql_pool.h"
 
 #include <mysql/mysql.h>
@@ -520,6 +521,67 @@ query_result apply_components(MYSQL *connection, const player_snapshot &snapshot
 	return result;
 }
 
+std::string hex_operation(const critical_operation_id &operation_id)
+{
+	static const char digits[] = "0123456789abcdef";
+	std::string hex;
+	hex.reserve(operation_id.bytes.size() * 2);
+	for (uint8_t byte : operation_id.bytes)
+	{
+		hex.push_back(digits[byte >> 4]);
+		hex.push_back(digits[byte & 0x0f]);
+	}
+	return hex;
+}
+
+// The refused assets exist nowhere else once the character is released, so the
+// disposition and its custody evidence commit inside the same transaction as
+// the death itself. Rewriting the same revision is how a retry stays idempotent.
+query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
+{
+	if (!snapshot.death)
+		return { true, 0 };
+	const player_death_snapshot &death = *snapshot.death;
+	std::vector<uint8_t> payload;
+	if (player_snapshot_encode(snapshot, &payload) != player_snapshot_codec_result::ok)
+		return { false, EINVAL };
+	const std::string pid = std::to_string(snapshot.pid);
+	const std::string revision = std::to_string(snapshot.revision);
+	std::ostringstream sql;
+	sql << "REPLACE INTO player_death_disposition (pid,save_revision,operation_id,"
+	       "corpse_item_uid,corpse_room_vnum,wallet_revision,wallet_copper,wallet_silver,"
+	       "wallet_gold,wallet_platinum,wallet_pile_uid,payload) VALUES ("
+	    << pid << ',' << revision << ",UNHEX('" << hex_operation(death.operation_id) << "'),"
+	    << death.corpse.front().object_uid << ',' << death.corpse_room_vnum << ','
+	    << death.wallet_revision;
+	for (int32_t amount : death.wallet_before)
+		sql << ',' << amount;
+	sql << ',' << death.wallet_pile_uid << ','
+	    << quote(connection, std::string(payload.begin(), payload.end())) << ')';
+	query_result result = execute(connection, sql.str());
+	if (!result.ok)
+		return result;
+	result = execute(connection, "DELETE FROM player_death_custody WHERE pid=" + pid +
+					     " AND save_revision=" + revision);
+	for (const player_death_custody_snapshot &row : death.custody)
+	{
+		if (!result.ok)
+			return result;
+		std::ostringstream custody;
+		custody << "INSERT INTO player_death_custody (pid,save_revision,item_uid,"
+			   "root_item_uid,parent_item_uid,item_revision,vnum,state,owner_type,"
+			   "owner_id,owner_context_id,owner_revision) VALUES ("
+			<< pid << ',' << revision << ',' << row.item.item_uid << ','
+			<< row.item.root_item_uid << ',' << row.item.parent_item_uid << ','
+			<< row.item.expected_item_revision << ',' << row.item.vnum << ','
+			<< static_cast<unsigned>(row.item.expected_state) << ','
+			<< static_cast<unsigned>(row.owner.type) << ',' << row.owner.id << ','
+			<< row.owner.context_id << ',' << row.owner_revision << ')';
+		result = execute(connection, custody.str());
+	}
+	return result;
+}
+
 player_save_apply_result read_durable_revision(MYSQL *connection, int pid)
 {
 	const query_result query =
@@ -555,7 +617,9 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 	// Death records require their custody disposition to commit with this save.
 	// Never acknowledge one through the ordinary component-only writer.
-	if (snapshot.death || snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
+	if (snapshot.death ? snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION ||
+				     snapshot.death->corpse.empty() :
+			     snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
 		return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 
 	query_result query = execute(connection, "START TRANSACTION");
@@ -601,6 +665,8 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	}
 
 	query = apply_components(connection, snapshot);
+	if (query.ok)
+		query = apply_death(connection, snapshot);
 	if (!query.ok)
 	{
 		execute(connection, "ROLLBACK");

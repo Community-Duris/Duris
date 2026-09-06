@@ -54,11 +54,13 @@ std::string player_lock_filename(int32_t pid)
 
 bool valid_snapshot(const player_snapshot &snapshot)
 {
-	return !snapshot.death && snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION &&
-	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
-	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
+	const uint32_t required = snapshot.death ? PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION :
+						   PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	return snapshot.schema_version == required && snapshot.pid > 0 && snapshot.revision &&
+	       snapshot.components && !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
-	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
+	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES &&
+	       (!snapshot.death || !snapshot.death->corpse.empty());
 }
 
 bool same_authority_key(const std::string &left, const std::string &right)
@@ -819,6 +821,22 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				 EINVAL };
 	}
 	std::vector<uint8_t> bytes;
+	// The refused assets exist nowhere else once the character is released. Publish
+	// the disposition before the player file, and keep it out of that file so a
+	// later ordinary save cannot overwrite the record.
+	if (snapshot.death)
+	{
+		player_snapshot disposition = snapshot;
+		std::vector<uint8_t> death_bytes;
+		if (!encode_file(&disposition, &death_bytes))
+			return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+		if (!flatfile_atomic_write(death_directory(root),
+					   death_filename(snapshot.pid, snapshot.revision),
+					   death_bytes, error))
+			return { player_save_apply_outcome::retryable_failure, 0, EIO };
+		materialized.death.reset();
+		materialized.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	}
 	if (!encode_file(&materialized, &bytes))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
 	if (!flatfile_atomic_write(player_directory(root), player_filename(snapshot.pid), bytes,

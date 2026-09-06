@@ -2,12 +2,15 @@
 #define PLAYER_SAVE_PIPELINE_H
 
 #include "player/player_revision_state.h"
+#include "persistence/critical_command.h"
 
 #include <cstddef>
 #include <cstdint>
 
 struct char_data;
 typedef struct char_data *P_char;
+struct obj_data;
+typedef struct obj_data *P_obj;
 
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256;
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_BYTES = 32 * 1024 * 1024;
@@ -74,6 +77,13 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
 							  bool allow_journal_handoff);
+// Capture the immutable death disposition for ch and wait for it to become
+// durable. wallet_pile may be null; when the wallet still holds coins it must be
+// an unattached pile carrying the complete remaining wallet.
+player_save_terminal_result
+player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
+				    const critical_operation_id &operation_id, int room_vnum,
+				    uint64_t timeout_msec, bool allow_journal_handoff);
 void player_save_pipeline_pulse(void);
 void player_save_pipeline_quiesce(void);
 void player_save_pipeline_resume(void);

@@ -116,8 +116,14 @@ require(
     "persistence_save_character_terminal(ch, RENT_DEATH)" in retry,
     "the recovery event must re-attempt the terminal save",
 )
+release = section(
+    FIGHT,
+    "static void release_after_terminal_death(P_char ch, const char *outcome)",
+    "\n/** Record the refused death disposition",
+)
 require(
-    "extract_char_after_terminal_save(ch)" in retry,
+    "release_after_terminal_death(ch," in retry
+    and "extract_char_after_terminal_save(ch)" in release,
     "the recovery event must complete saved-item extraction",
 )
 require(

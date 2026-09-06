@@ -10,11 +10,11 @@
     "mariadb10_11": "afeb08122578efb0a62b045e87d7f57f06412db85a65163f64d34e9804cee598"
   },
   "migration_head": {
-    "id": "0010_coin_custody_payload",
-    "sequence": 10,
-    "apply_checksum": "5eac7e338916c08478c933382424743c75f8eb01174e960ec39704c1101d00a7",
-    "verify_checksum": "60db9d6168db7cf027b2c3233d9fb5c19e82562e15c10dd16742049b61834c32",
-    "history_checksum": "bb647c86a0e52a128360969bde7756ec596f3ec9649639b961bbc53247fbd6f9"
+    "id": "0011_player_death_disposition",
+    "sequence": 11,
+    "apply_checksum": "209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057",
+    "verify_checksum": "f9fcb0d7dcfec03b87d6f3caa1d64f1301c93c55362320b7bfe78dace90c98e8",
+    "history_checksum": "daf69aa4a6b640a506c03274d427c3d414d24d5a3f8ec369a4594e101ebcf177"
   },
   "connection": {
     "character_set": "utf8mb4",

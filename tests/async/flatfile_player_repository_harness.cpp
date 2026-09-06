@@ -5,6 +5,7 @@
 #include "persistence/persistence_observability.h"
 #include "economy/coin_transfer_command.h"
 #include "player/player_snapshot_codec.h"
+#include "classes/necromancy.h"
 #include "core/defines.h"
 #include "world/vnum.obj.h"
 #include <algorithm>
@@ -111,6 +112,70 @@ static player_snapshot make_full(player_revision_t revision)
 	snapshot.shapes.push_back({ 800, 2, 100, 200 });
 	snapshot.trophies.push_back({ 12, 300 });
 	snapshot.recipes_are_external = true;
+	return snapshot;
+}
+
+// The immutable record of a death whose corpse handoff the ledger refused: the
+// corpse identity and room, the wallet a rejected conversion never took, the
+// refused item payload and the disputed custody rows, none of them in inventory.
+static player_snapshot make_death(player_revision_t revision)
+{
+	player_snapshot snapshot = make_full(revision);
+	snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+	snapshot.save_intent = 4; // RENT_DEATH
+	snapshot.items.clear();
+	snapshot.pets.clear();
+	for (player_snapshot_integer &row : snapshot.status_integers)
+		if (row.field == player_status_field::copper ||
+		    row.field == player_status_field::silver ||
+		    row.field == player_status_field::gold ||
+		    row.field == player_status_field::platinum)
+			row.signed_value = 0;
+	snapshot.death.emplace();
+	player_death_snapshot &death = *snapshot.death;
+	death.operation_id.bytes.fill(0);
+	death.operation_id.bytes[0] = 0x11;
+	death.corpse_room_vnum = 1201;
+	death.wallet_revision = 7;
+	death.wallet_before = { 11, 12, 13, 14 };
+	death.wallet_pile_uid = 202;
+
+	player_item_snapshot corpse = {};
+	corpse.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	corpse.object_uid = 200;
+	corpse.vnum = VOBJ_CORPSE;
+	corpse.type = ITEM_CORPSE;
+	corpse.values[CORPSE_FLAGS] = PC_CORPSE;
+	corpse.values[CORPSE_PID] = snapshot.pid;
+	corpse.values[CORPSE_SAVEID] = 9001;
+	death.corpse.push_back(corpse);
+
+	player_item_snapshot refused = {};
+	refused.parent_index = 0;
+	refused.object_uid = 201;
+	refused.vnum = 501;
+	death.corpse.push_back(refused);
+
+	player_item_snapshot wallet = {};
+	wallet.parent_index = 0;
+	wallet.object_uid = death.wallet_pile_uid;
+	wallet.vnum = VOBJ_COINS;
+	wallet.type = ITEM_MONEY;
+	for (size_t denomination = 0; denomination < death.wallet_before.size(); ++denomination)
+		wallet.values[denomination] = death.wallet_before[denomination];
+	death.corpse.push_back(wallet);
+
+	// The refused row is still attributed to the player; the wallet pile the
+	// conversion never committed has no ledger row at all.
+	death.custody.push_back({ { 201, 201, 0, 3, 501, item_custody_state::active },
+				  { item_owner_type::player, 42, 0 },
+				  5 });
+	death.custody.push_back(
+		{ { death.wallet_pile_uid, death.wallet_pile_uid, 0, ITEM_TRANSFER_ABSENT_REVISION,
+		    VOBJ_COINS, item_custody_state::absent },
+		  {},
+		  0 });
+	snapshot.encoded_size_bound = 8192;
 	return snapshot;
 }
 
@@ -545,6 +610,54 @@ int main(int argc, char **argv)
 	require(flatfile_player_snapshot_apply(root.string(), make_full(10), &error).outcome ==
 			player_save_apply_outcome::applied,
 		"could not restore the consistent item fixture: " + error);
+
+	// A refused corpse handoff is finalized through the durable disposition. It has
+	// to leave the player empty-handed for normal re-entry while every refused
+	// payload, UID and custody observation survives outside that player file.
+	const player_snapshot death_record = make_death(13);
+	const fs::path deaths = root / "player-deaths";
+	fs::create_directories(deaths);
+	fs::permissions(deaths, fs::perms::owner_all, fs::perm_options::replace);
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"the death disposition was refused by the flat-file backend: " + error);
+	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
+				flatfile_player_load_result::ok &&
+			!loaded.death && loaded.items.empty() && loaded.pets.empty() &&
+			loaded.revision == 13,
+		"the death left assets in the player file: " + error);
+	player_snapshot disposition = {};
+	require(flatfile_player_snapshot_read_file(
+			flatfile_player_snapshot_file::death_directory(root.string()),
+			flatfile_player_snapshot_file::death_filename(42, 13), 42, &disposition,
+			&error) == flatfile_player_load_result::ok &&
+			disposition.death.has_value(),
+		"the death disposition was not published durably: " + error);
+	require(disposition.death->corpse_room_vnum == 1201 &&
+			disposition.death->corpse.size() == 3 &&
+			disposition.death->corpse[0].object_uid == 200 &&
+			disposition.death->corpse[0].values[CORPSE_SAVEID] == 9001 &&
+			disposition.death->corpse[1].object_uid == 201 &&
+			disposition.death->corpse[2].object_uid == 202 &&
+			disposition.death->wallet_before ==
+				std::array<int32_t, 4>{ 11, 12, 13, 14 } &&
+			disposition.death->wallet_pile_uid == 202 &&
+			disposition.death->custody.size() == 2 &&
+			disposition.death->custody[0].item.item_uid == 201 &&
+			disposition.death->custody[0].owner.type == item_owner_type::player &&
+			disposition.death->custody[1].item.expected_state ==
+				item_custody_state::absent,
+		"the death disposition lost corpse identity, wallet or custody evidence");
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"replaying the death repeated its consequences: " + error);
+	require(flatfile_player_snapshot_apply(root.string(), make_full(14), &error).outcome ==
+				player_save_apply_outcome::applied &&
+			flatfile_player_snapshot_read_file(
+				flatfile_player_snapshot_file::death_directory(root.string()),
+				flatfile_player_snapshot_file::death_filename(42, 13), 42,
+				&disposition, &error) == flatfile_player_load_result::ok,
+		"a later ordinary save discarded the death disposition: " + error);
 	{
 		flatfile_player_snapshot_lock snapshot_lock;
 		flatfile_authority_lock authority_lock;

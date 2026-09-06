@@ -44,6 +44,15 @@ std::string player_filename(int32_t pid)
 	return std::to_string(pid) + ".snapshot";
 }
 
+std::string death_directory(const std::string &root)
+{
+	return root + "/player-deaths";
+}
+
+std::string death_filename(int32_t pid, uint64_t revision)
+{
+	return std::to_string(pid) + "-" + std::to_string(revision) + ".death";
+}
 }
 
 using namespace flatfile_player_snapshot_file;
@@ -52,11 +61,19 @@ flatfile_player_load_result flatfile_player_snapshot_read(const std::string &roo
 							  player_snapshot *snapshot,
 							  std::string *error)
 {
+	return flatfile_player_snapshot_read_file(player_directory(root), player_filename(pid), pid,
+						  snapshot, error);
+}
+
+flatfile_player_load_result
+flatfile_player_snapshot_read_file(const std::string &directory, const std::string &filename,
+				   int32_t pid, player_snapshot *snapshot, std::string *error)
+{
 	if (pid <= 0 || !snapshot)
 		return flatfile_player_load_result::invalid;
 	std::vector<uint8_t> bytes;
-	const flatfile_read_result read = flatfile_read(
-		player_directory(root), player_filename(pid), player_file_maximum, &bytes, error);
+	const flatfile_read_result read =
+		flatfile_read(directory, filename, player_file_maximum, &bytes, error);
 	if (read == flatfile_read_result::not_found)
 		return flatfile_player_load_result::not_found;
 	if (read == flatfile_read_result::invalid)
