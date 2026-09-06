@@ -25,6 +25,8 @@
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "combat/ctf.h"
 #include "redis/redis_floor_runtime.h"
 #include "combat/damage.h"
@@ -47,6 +49,7 @@
 #include "core/safe_format.h"
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <new>
 #include <unordered_map>
@@ -1924,21 +1927,137 @@ void obj_from_char(P_obj object)
 	object->next_content = NULL;
 }
 
-void money_to_inventory(P_char ch)
+namespace
 {
-	if (GET_MONEY(ch) <= 0)
-		return;
+bool money_inventory_completion(P_char ch, bool committed, const coin_transfer_payload &payload,
+				const coin_transfer_result &result, unsigned int error_code,
+				const uint8_t *context, size_t context_size)
+{
+	if (!context || context_size != sizeof(uint64_t))
+		return false;
+	if (committed && error_code == EOWNERDEAD)
+		return true;
+	uint64_t uid = 0;
+	memcpy(&uid, context, sizeof(uid));
+	P_obj money = nullptr;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+		{
+			money = object;
+			break;
+		}
+	if (!committed)
+	{
+		if (money && OBJ_NOWHERE(money))
+			extract_obj(money, FALSE);
+		return true;
+	}
+	item_transfer_payload pile;
+	if (!item_transfer_command_decode_payload(payload.destination.change, &pile) ||
+	    result.piles[1].item_count != 1 || result.piles[1].max_item_revision != 1)
+		return false;
+	item_ownership_runtime_entry current = {};
+	if (item_ownership_runtime_lookup(uid, &current))
+	{
+		if (current.item_revision > 1)
+			return true;
+		if (!item_owner_identity_equal(current.owner, pile.to_owner) ||
+		    current.root_item_uid != uid || current.parent_item_uid ||
+		    current.state != item_custody_state::active)
+			return false;
+	}
+	else if (!item_ownership_runtime_apply(pile, result.piles[1]))
+		return false;
+	// An offline owner loads the committed pile from its custody payload.
+	if (!ch)
+	{
+		if (money && OBJ_NOWHERE(money))
+			extract_obj(money, FALSE);
+		return true;
+	}
+	if (!money)
+		return false;
+	if (OBJ_NOWHERE(money))
+		obj_to_char(money, ch);
+	return OBJ_CARRIED_BY(money, ch);
+}
+}
 
-	/* make a 'pile of coins' object to hold ch's cash */
-	const int copper = BOUNDED(0, GET_COPPER(ch), 32000);
-	const int silver = BOUNDED(0, GET_SILVER(ch), 32000);
-	const int gold = BOUNDED(0, GET_GOLD(ch), 32000);
-	const int platinum = BOUNDED(0, GET_PLATINUM(ch), 32000);
-	P_obj money = create_money(copper, silver, gold, platinum);
+bool money_to_inventory(P_char ch)
+{
+	if (!ch)
+		return false;
+	const std::array<int32_t, 4> cash = { GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),
+					      GET_PLATINUM(ch) };
+	int64_t value = 0, multiplier = 1;
+	for (int32_t amount : cash)
+	{
+		if (amount < 0)
+			return false;
+		value += static_cast<int64_t>(amount) * multiplier;
+		multiplier *= 10;
+	}
+	if (!value)
+		return true;
+	if (IS_PC(ch) && !currency_transaction_can_submit(ch))
+		return false;
+	P_obj money = create_money(cash[0], cash[1], cash[2], cash[3]);
+	if (!money)
+		return false;
+	if (IS_NPC(ch))
+	{
+		std::fill(std::begin(ch->points.cash), std::end(ch->points.cash), 0);
+		obj_to_char(money, ch);
+		return true;
+	}
 
-	SUB_MONEY(ch, GET_MONEY(ch), 0);
-
-	obj_to_char(money, ch);
+	// Wallet and pile custody share one commit. Neither is published on admission.
+	coin_transfer_payload transfer;
+	item_transfer_payload pile = {};
+	pile.from_owner = { item_owner_type::system, 0, 0 };
+	pile.to_owner = { item_owner_type::player, static_cast<uint64_t>(GET_PID(ch)), 0 };
+	pile.reason = item_transfer_reason::creation;
+	pile.selected_item_uid = pile.target_root_item_uid = money->obj_uid;
+	pile.item_count = 1;
+	pile.items[0] = { money->obj_uid,
+			  money->obj_uid,
+			  0,
+			  ITEM_TRANSFER_ABSENT_REVISION,
+			  VOBJ_COINS,
+			  item_custody_state::absent };
+	std::vector<player_item_snapshot> snapshots;
+	std::vector<uint8_t> bytes;
+	critical_operation_id operation;
+	bool prepared =
+		currency_transaction_coin_wallet(ch, -value, &transfer.source) &&
+		item_ownership_runtime_owner_revision(pile.from_owner,
+						      &pile.expected_from_revision) &&
+		item_ownership_runtime_owner_revision(pile.to_owner, &pile.expected_to_revision) &&
+		player_item_snapshot_tree_capture(money, &snapshots, nullptr) ==
+			player_snapshot_capture_result::ok &&
+		player_item_snapshot_list_encode(snapshots, &bytes) ==
+			player_snapshot_codec_result::ok &&
+		bytes.size() <= pile.item_blob.size() && critical_operation_id_generate(&operation);
+	if (prepared)
+	{
+		pile.item_blob_size = bytes.size();
+		std::copy(bytes.begin(), bytes.end(), pile.item_blob.begin());
+		transfer.destination.after = cash;
+		prepared =
+			item_transfer_command_build(&transfer.destination.change, operation, pile,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive) &&
+			currency_transaction_submit_coin(ch, transfer, money_inventory_completion,
+							 &money->obj_uid, sizeof(money->obj_uid));
+	}
+	if (!prepared)
+	{
+		extract_obj(money, FALSE);
+		persistence_alert(AVATAR, "currency", "wallet_conversion", "none", "none",
+				  "submit_rejected", "pid=%d value=%lld", GET_PID(ch),
+				  (long long)value);
+	}
+	return prepared;
 }
 
 void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
@@ -5515,7 +5634,8 @@ P_obj get_obj_equipped(P_char ch, char *arg)
 
 void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 {
-	int num, i, j, p;
+	int64_t num;
+	int i, j = 0, p;
 	const char *desc, *desc2;
 	char buf[200], buf2[200];
 	struct extra_descr_data *nd;
@@ -5529,26 +5649,22 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 		return;
 	}
 
-	pile->value[0] += copper;
-	pile->value[1] += silver;
-	pile->value[2] += gold;
-	pile->value[3] += platinum;
-
-	if ((pile->value[0] < 0) || (pile->value[1] < 0) || (pile->value[2] < 0) ||
-	    (pile->value[3] < 0))
+	const int added[4] = { copper, silver, gold, platinum };
+	for (i = 0; i < 4; ++i)
 	{
-		logit(LOG_EXIT, "add_coins: pile has negative coins");
-		return;
+		if (pile->value[i] < 0 || pile->value[i] > INT_MAX - added[i])
+		{
+			logit(LOG_EXIT, "add_coins: invalid or overflowing coin pile");
+			return;
+		}
 	}
+	for (i = 0; i < 4; ++i)
+		pile->value[i] += added[i];
 
-	num = (pile->value[0] + pile->value[1] + pile->value[2] + pile->value[3]);
+	num = static_cast<int64_t>(pile->value[0]) + pile->value[1] + pile->value[2] +
+	      pile->value[3];
 
-	if (num < 0)
-	{
-		logit(LOG_EXIT, "add_coins: total number of coins in pile is negative");
-		return;
-	}
-	else if (num == 0)
+	if (num == 0)
 		return;
 
 	// Making money weightless per Kitsero due to money inflation causing
@@ -5593,8 +5709,8 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	}
 	else if (num > 1)
 	{
-		snprintf(buf, 200, "%d coins are scattered about here.", num);
-		snprintf(buf2, 200, "%d coins", num);
+		snprintf(buf, 200, "%d coins are scattered about here.", static_cast<int>(num));
+		snprintf(buf2, 200, "%d coins", static_cast<int>(num));
 		desc = buf;
 		desc2 = buf2;
 	}
@@ -5638,7 +5754,8 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 			strcpy(buf, "The pile appears to consist of: ");
 			for (i = 0; i < 4; i++)
 			{
-				p = (pile->value[i] * 100) / num;
+				p = static_cast<int>((static_cast<int64_t>(pile->value[i]) * 100) /
+						     num);
 				if (p > 99)
 					APPENDF(buf, "%s coins, ", coin_names[i]);
 				else if (p >= 85)
@@ -5672,6 +5789,9 @@ P_obj create_money(int copper, int silver, int gold, int platinum)
 		return NULL;
 	}
 
+	// Wallet conversion specifies the complete pile. Reset-created money may use
+	// a nonempty coin prototype; those prototype amounts are not another credit.
+	std::fill_n(obj->value, 4, 0);
 	add_coins(obj, copper, silver, gold, platinum);
 
 	return (obj);

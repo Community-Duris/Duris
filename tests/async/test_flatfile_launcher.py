@@ -18,7 +18,9 @@ def run(script: pathlib.Path, env: dict[str, str], *arguments: str) -> subproces
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=20,
+        # A successful cycle includes a 10-second shutdown delay and a real
+        # backup filesystem sync. Allow headroom for concurrent CI builds.
+        timeout=60,
     )
 
 

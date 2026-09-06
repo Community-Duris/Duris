@@ -1,8 +1,16 @@
 #include "flatfile/flatfile_player_repository.h"
+#include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "persistence/persistence_observability.h"
+#include "economy/coin_transfer_command.h"
+#include "player/player_snapshot_codec.h"
+#include "classes/necromancy.h"
+#include "core/defines.h"
+#include "world/vnum.obj.h"
+#include <algorithm>
+#include <cstring>
 
 #include <cstdlib>
 #include <filesystem>
@@ -108,6 +116,70 @@ static player_snapshot make_full(player_revision_t revision)
 	return snapshot;
 }
 
+// The immutable record of a death whose corpse handoff the ledger refused: the
+// corpse identity and room, the wallet a rejected conversion never took, the
+// refused item payload and the disputed custody rows, none of them in inventory.
+static player_snapshot make_death(player_revision_t revision)
+{
+	player_snapshot snapshot = make_full(revision);
+	snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+	snapshot.save_intent = 4; // RENT_DEATH
+	snapshot.items.clear();
+	snapshot.pets.clear();
+	for (player_snapshot_integer &row : snapshot.status_integers)
+		if (row.field == player_status_field::copper ||
+		    row.field == player_status_field::silver ||
+		    row.field == player_status_field::gold ||
+		    row.field == player_status_field::platinum)
+			row.signed_value = 0;
+	snapshot.death.emplace();
+	player_death_snapshot &death = *snapshot.death;
+	death.operation_id.bytes.fill(0);
+	death.operation_id.bytes[0] = 0x11;
+	death.corpse_room_vnum = 1201;
+	death.wallet_revision = 7;
+	death.wallet_before = { 11, 12, 13, 14 };
+	death.wallet_pile_uid = 202;
+
+	player_item_snapshot corpse = {};
+	corpse.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	corpse.object_uid = 200;
+	corpse.vnum = VOBJ_CORPSE;
+	corpse.type = ITEM_CORPSE;
+	corpse.values[CORPSE_FLAGS] = PC_CORPSE;
+	corpse.values[CORPSE_PID] = snapshot.pid;
+	corpse.values[CORPSE_SAVEID] = 9001;
+	death.corpse.push_back(corpse);
+
+	player_item_snapshot refused = {};
+	refused.parent_index = 0;
+	refused.object_uid = 201;
+	refused.vnum = 501;
+	death.corpse.push_back(refused);
+
+	player_item_snapshot wallet = {};
+	wallet.parent_index = 0;
+	wallet.object_uid = death.wallet_pile_uid;
+	wallet.vnum = VOBJ_COINS;
+	wallet.type = ITEM_MONEY;
+	for (size_t denomination = 0; denomination < death.wallet_before.size(); ++denomination)
+		wallet.values[denomination] = death.wallet_before[denomination];
+	death.corpse.push_back(wallet);
+
+	// The refused row is still attributed to the player; the wallet pile the
+	// conversion never committed has no ledger row at all.
+	death.custody.push_back({ { 201, 201, 0, 3, 501, item_custody_state::active },
+				  { item_owner_type::player, 42, 0 },
+				  5 });
+	death.custody.push_back(
+		{ { death.wallet_pile_uid, death.wallet_pile_uid, 0, ITEM_TRANSFER_ABSENT_REVISION,
+		    VOBJ_COINS, item_custody_state::absent },
+		  {},
+		  0 });
+	snapshot.encoded_size_bound = 8192;
+	return snapshot;
+}
+
 /** Create a minimal status-only snapshot with the revision, level, and room under test. */
 static player_snapshot make_status(player_revision_t revision, int level, int room)
 {
@@ -134,15 +206,49 @@ static void inspect_authority(const std::string &root, int32_t pid)
 	require(flatfile_player_snapshot_load(root, pid, &snapshot, &error) ==
 			flatfile_player_load_result::ok,
 		"inspect player snapshot: " + error);
+	flatfile_identity_record identity;
+	require(flatfile_identity_lookup_pid(root, pid, &identity, &error) ==
+			flatfile_identity_result::ok,
+		"inspect identity: " + error);
+	flatfile_player_domain_record domains;
+	require(flatfile_player_domain_load(root, pid, identity.account, identity.racewar, &domains,
+					    &error) == flatfile_player_domain_result::ok,
+		"inspect wallet: " + error);
 	flatfile_authority_lock lock;
 	require(lock.acquire(root, &error), "inspect authority lock: " + error);
 	std::cout << "{\"revision\":" << snapshot.revision << ",\"intent\":" << snapshot.save_intent
 		  << ",\"room\":" << snapshot.room_vnum;
+	std::cout << ",\"snapshot_uids\":[";
+	for (size_t i = 0; i < snapshot.items.size(); ++i)
+	{
+		if (i)
+			std::cout << ',';
+		std::cout << snapshot.items[i].object_uid;
+	}
+	std::cout << "],\"wallet\":[";
+	for (size_t i = 0; i < 4; ++i)
+	{
+		if (i)
+			std::cout << ',';
+		std::cout << domains.domains.wallet[i];
+	}
+	std::cout << "],\"wallet_revision\":" << domains.domains.wallet_revision;
 	for (const auto &field : snapshot.status_integers)
 		if (field.field == player_status_field::wimpy)
 			std::cout
 				<< ",\"wimpy\":"
 				<< (field.is_unsigned ? field.unsigned_value : field.signed_value);
+	for (const auto &field : snapshot.status_integers)
+	{
+		const char *name = field.field == player_status_field::deaths	  ? "death_count" :
+				   field.field == player_status_field::experience ? "experience" :
+				   field.field == player_status_field::level	  ? "level" :
+										    nullptr;
+		if (name)
+			std::cout
+				<< ",\"" << name << "\":"
+				<< (field.is_unsigned ? field.unsigned_value : field.signed_value);
+	}
 	for (const auto &owner :
 	     { item_owner_identity{ item_owner_type::player, static_cast<uint64_t>(pid), 0 },
 	       item_owner_identity{ item_owner_type::room,
@@ -164,16 +270,216 @@ static void inspect_authority(const std::string &root, int32_t pid)
 				std::cout << ',';
 			first = false;
 			std::cout << "{\"uid\":" << item.item_uid << ",\"vnum\":" << item.vnum
-				  << '}';
+				  << ",\"root\":" << item.root_item_uid
+				  << ",\"parent\":" << item.parent_item_uid << '}';
 		}
 		std::cout << ']';
 	}
-	std::cout << "}\n";
+	std::cout << ",\"deaths\":[";
+	bool first_death = true;
+	const fs::path deaths = flatfile_player_snapshot_file::death_directory(root);
+	if (fs::exists(deaths))
+		for (const auto &file : fs::directory_iterator(deaths))
+		{
+			if (!file.path().filename().string().starts_with(std::to_string(pid) +
+									 "-") ||
+			    file.path().extension() != ".death")
+				continue;
+			player_snapshot disposition;
+			require(flatfile_player_snapshot_read_file(
+					deaths.string(), file.path().filename().string(), pid,
+					&disposition, &error) == flatfile_player_load_result::ok &&
+					disposition.death,
+				"inspect death: " + error);
+			if (!first_death)
+				std::cout << ',';
+			first_death = false;
+			std::cout << "{\"revision\":" << disposition.revision << ",\"items\":[";
+			bool first_item = true;
+			for (const auto &item : disposition.death->corpse)
+			{
+				if (!first_item)
+					std::cout << ',';
+				first_item = false;
+				std::cout << "{\"uid\":" << item.object_uid
+					  << ",\"vnum\":" << item.vnum
+					  << ",\"parent\":" << item.parent_index << ",\"coins\":[";
+				for (size_t i = 0; i < 4; ++i)
+				{
+					if (i)
+						std::cout << ',';
+					std::cout << (item.type == ITEM_MONEY ? item.values[i] : 0);
+				}
+				std::cout << "]}";
+			}
+			std::cout << "],\"custody\":[";
+			first_item = true;
+			for (const auto &item : disposition.death->custody)
+			{
+				if (!first_item)
+					std::cout << ',';
+				first_item = false;
+				std::cout << "{\"uid\":" << item.item.item_uid
+					  << ",\"root\":" << item.item.root_item_uid
+					  << ",\"parent\":" << item.item.parent_item_uid
+					  << ",\"owner_type\":"
+					  << static_cast<unsigned>(item.owner.type)
+					  << ",\"owner_id\":" << item.owner.id << '}';
+			}
+			std::cout << "]}";
+		}
+	std::cout << "]}\n";
+}
+
+static void coin_player_matrix(const fs::path &path)
+{
+	const std::string root = path.string();
+	for (const auto &directory : { path, path / "players", path / "domains",
+				       path / "identities", path / "identities/names" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	std::string error;
+	int32_t pid = 0;
+	for (int32_t i = 1; i <= 42; ++i)
+		require(flatfile_identity_allocate_pid(root, &pid, &error) ==
+				flatfile_identity_result::ok,
+			"coin player identity allocation");
+	require(flatfile_identity_claim(root, 42, "Player", "Account-One", &error) ==
+			flatfile_identity_result::ok,
+		"coin player identity claim");
+	auto snapshot = make_full(1);
+	snapshot.items[1].vnum = VOBJ_COINS;
+	snapshot.items[1].type = ITEM_MONEY;
+	snapshot.items[1].values[0] = 50;
+	snapshot.items[1].name = "legacy coins";
+	snapshot.items[1].string_mask = 1;
+	require(flatfile_player_snapshot_apply(root, snapshot, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"coin player snapshot baseline: " + error);
+	const item_owner_identity owner = { item_owner_type::player, 42, 0 };
+	for (int32_t before : { 50, 20 })
+	{
+		const int32_t after = before == 50 ? 20 : 0;
+		flatfile_player_domain_record domain;
+		require(flatfile_player_domain_load(root, 42, "Account-One", 0, &domain, &error) ==
+				flatfile_player_domain_result::ok,
+			"coin player domain load");
+		uint64_t owner_revision = 0, destroyed_revision = 0;
+		std::vector<flatfile_item_ownership_record> owned, destroyed;
+		require(flatfile_item_repository_load_owner(root, owner, &owner_revision, &owned,
+							    &error) ==
+				flatfile_item_repository_result::ok,
+			"coin player custody load");
+		flatfile_item_repository_load_owner(root, { item_owner_type::destruction, 0, 0 },
+						    &destroyed_revision, &destroyed, &error);
+		const auto found = std::find_if(owned.begin(), owned.end(), [](const auto &item)
+						{ return item.item_uid == 101; });
+		require(found != owned.end(), "coin player pile custody missing");
+		coin_transfer_payload payload;
+		payload.source.before[0] = before;
+		payload.source.after[0] = after;
+		item_transfer_payload pile = {};
+		pile.from_owner = owner;
+		pile.to_owner = after ? owner :
+					item_owner_identity{ item_owner_type::destruction, 0, 0 };
+		pile.expected_from_revision = owner_revision;
+		pile.expected_to_revision = after ? owner_revision : destroyed_revision;
+		pile.reason = after ? item_transfer_reason::player_put :
+				      item_transfer_reason::destruction;
+		pile.selected_item_uid = 101;
+		pile.target_root_item_uid = after ? 100 : 101;
+		pile.target_parent_item_uid = after ? 100 : 0;
+		pile.expected_target_parent_revision = after ? 1 : 0;
+		pile.item_count = 1;
+		pile.items[0] = { 101,	      100,
+				  100,	      found->item_revision,
+				  VOBJ_COINS, item_custody_state::active };
+		auto item = snapshot.items[1];
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		item.equipment_slot = -1;
+		item.values[0] = after ? after : before;
+		std::vector<uint8_t> blob;
+		require(player_item_snapshot_list_encode({ item }, &blob) ==
+				player_snapshot_codec_result::ok,
+			"coin player encode");
+		pile.item_blob_size = blob.size();
+		std::copy(blob.begin(), blob.end(), pile.item_blob.begin());
+		critical_operation_id id;
+		require(critical_operation_id_generate(&id), "coin player operation id");
+		require(item_transfer_command_build(&payload.source.change, id, pile,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"coin player pile command");
+		currency_command_payload currency = {};
+		currency.pid = 42;
+		currency.reason = currency_reason_type::coin_transfer;
+		strcpy(currency.account_name.data(), "Account-One");
+		currency.wallet_delta.amount[0] = before - after;
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			payload.destination.before[denomination] =
+				payload.destination.after[denomination] =
+					domain.domains.wallet[denomination];
+		payload.destination.after[0] += before - after;
+		require(currency_command_build(&payload.destination.change, id, currency,
+					       domain.domains.wallet_revision,
+					       domain.domains.bank_revision,
+					       critical_source_site::command,
+					       critical_deadline_class::interactive),
+			"coin player wallet command");
+		critical_command command;
+		require(coin_transfer_command_build(&command, id, payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"coin player command");
+		command.accepted_at_usec = 1;
+		auto apply = [&]()
+		{
+			return flatfile_critical_command_repository_apply_selected(
+				command, const_cast<char *>(root.c_str()));
+		};
+		const auto applied = apply();
+		require(applied.outcome == critical_apply_outcome::applied &&
+				apply().outcome == critical_apply_outcome::already_applied,
+			"coin player pickup failed: " + std::to_string(applied.error_code));
+		// Saving an old projection cannot undo either the durable remainder or retirement.
+		++snapshot.revision;
+		require(flatfile_player_snapshot_apply(root, snapshot, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"coin stale snapshot write");
+		player_load_request request = {};
+		request.request_id = 1;
+		request.pid = 42;
+		request.account_name = "Account-One";
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		const auto loaded = flatfile_player_load_repository_execute(root, request);
+		require(loaded.outcome == player_load_outcome::applied && !loaded.stale_item_rows &&
+				loaded.domains.wallet[0] == static_cast<uint64_t>(61 - after) &&
+				loaded.snapshot.items.size() == (after ? 2u : 1u) &&
+				loaded.snapshot.pets[0].items.size() == 1,
+			"coin player re-entry failed or restored old money: " +
+				std::to_string(loaded.error_code));
+		if (after)
+			require(loaded.snapshot.items[1].object_uid == 101 &&
+					loaded.snapshot.items[1].values[0] == after &&
+					loaded.snapshot.items[1].parent_index == 0,
+				"coin player re-entry lost authoritative remainder/topology");
+	}
+	std::cout << "flatfile legacy player coin pickup, replay and re-entry passed\n";
 }
 
 /** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[2]) == "seed-combat")
+	{
+		std::string error;
+		require(flatfile_boon_establish(argv[1], {}, &error) == flatfile_boon_result::ok,
+			"seed empty combat boon catalog: " + error);
+		return 0;
+	}
 	if (argc == 4 && std::string(argv[2]) == "inspect")
 	{
 		inspect_authority(argv[1], std::stoi(argv[3]));
@@ -181,6 +487,7 @@ int main(int argc, char **argv)
 	}
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
+	coin_player_matrix(root / "coin-player");
 	const fs::path players = root / "players";
 	const fs::path identities = root / "identities/names";
 	const fs::path domains = root / "domains";
@@ -399,6 +706,96 @@ int main(int argc, char **argv)
 	require(flatfile_player_snapshot_apply(root.string(), make_full(10), &error).outcome ==
 			player_save_apply_outcome::applied,
 		"could not restore the consistent item fixture: " + error);
+
+	// A refused corpse handoff is finalized through the durable disposition. It has
+	// to leave the player empty-handed for normal re-entry while every refused
+	// payload, UID and custody observation survives outside that player file.
+	const player_snapshot death_record = make_death(13);
+	const fs::path deaths = root / "player-deaths";
+	fs::create_directories(deaths);
+	fs::permissions(deaths, fs::perms::owner_all, fs::perm_options::replace);
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"death acknowledged a failed authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	require(fs::is_empty(deaths), "failed death commit left phantom disposition evidence");
+	uint64_t retained_revision = 0;
+	std::vector<flatfile_item_ownership_record> retained_items;
+	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
+				flatfile_player_load_result::ok &&
+			loaded.revision == 10 && !loaded.items.empty() &&
+			flatfile_item_repository_load_owner(
+				root.string(), { item_owner_type::player, 42, 0 },
+				&retained_revision, &retained_items,
+				&error) == flatfile_item_repository_result::ok &&
+			!retained_items.empty(),
+		"failed death commit changed active inventory or custody");
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::retryable_failure,
+		"death acknowledged an interrupted authority commit");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"death retry did not recover its custody and player after-images: " + error);
+	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
+				flatfile_player_load_result::ok &&
+			!loaded.death && loaded.items.empty() && loaded.pets.empty() &&
+			loaded.revision == 13,
+		"the death left assets in the player file: " + error);
+	uint64_t quarantine_revision = 0;
+	std::vector<flatfile_item_ownership_record> active_after_death;
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 42, 0 }, &quarantine_revision,
+			&active_after_death, &error) == flatfile_item_repository_result::ok &&
+			active_after_death.empty(),
+		"death custody remained eligible for inventory loading");
+	load_request.deadline_usec =
+		persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
+	require(load_result.outcome == player_load_outcome::applied &&
+			load_result.snapshot.items.empty() && load_result.snapshot.pets.empty() &&
+			!load_result.missing_payload_rows,
+		"normal player loading restored disputed assets");
+	player_snapshot disposition = {};
+	require(flatfile_player_snapshot_read_file(
+			flatfile_player_snapshot_file::death_directory(root.string()),
+			flatfile_player_snapshot_file::death_filename(42, 13), 42, &disposition,
+			&error) == flatfile_player_load_result::ok &&
+			disposition.death.has_value(),
+		"the death disposition was not published durably: " + error);
+	require(disposition.death->corpse_room_vnum == 1201 &&
+			disposition.death->corpse.size() == 3 &&
+			disposition.death->corpse[0].object_uid == 200 &&
+			disposition.death->corpse[0].values[CORPSE_SAVEID] == 9001 &&
+			disposition.death->corpse[1].object_uid == 201 &&
+			disposition.death->corpse[2].object_uid == 202 &&
+			disposition.death->wallet_before ==
+				std::array<int32_t, 4>{ 11, 12, 13, 14 } &&
+			disposition.death->wallet_pile_uid == 202 &&
+			disposition.death->custody.size() == 2 &&
+			disposition.death->custody[0].item.item_uid == 201 &&
+			disposition.death->custody[0].owner.type == item_owner_type::player &&
+			disposition.death->custody[1].item.expected_state ==
+				item_custody_state::absent,
+		"the death disposition lost corpse identity, wallet or custody evidence");
+	require(flatfile_player_snapshot_apply(root.string(), death_record, &error).outcome ==
+			player_save_apply_outcome::already_applied,
+		"replaying the death repeated its consequences: " + error);
+	uint64_t replay_owner_revision = 0;
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 42, 0 }, &replay_owner_revision,
+			&active_after_death, &error) == flatfile_item_repository_result::ok &&
+			replay_owner_revision == quarantine_revision && active_after_death.empty(),
+		"death replay repeated quarantine or changed active custody");
+	require(flatfile_player_snapshot_apply(root.string(), make_full(14), &error).outcome ==
+				player_save_apply_outcome::applied &&
+			flatfile_player_snapshot_read_file(
+				flatfile_player_snapshot_file::death_directory(root.string()),
+				flatfile_player_snapshot_file::death_filename(42, 13), 42,
+				&disposition, &error) == flatfile_player_load_result::ok,
+		"a later ordinary save discarded the death disposition: " + error);
 	{
 		flatfile_player_snapshot_lock snapshot_lock;
 		flatfile_authority_lock authority_lock;

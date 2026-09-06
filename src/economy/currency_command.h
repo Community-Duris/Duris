@@ -30,6 +30,7 @@ enum class currency_reason_type : uint16_t
 	boon_reward,
 	operator_adjustment,
 	chaos_starter_reward,
+	coin_transfer,
 };
 
 struct currency_vector

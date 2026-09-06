@@ -571,6 +571,7 @@ with tempfile.TemporaryDirectory(prefix="full-world-build-", dir=ROOT / "bin") a
                     "operations/wal",
                     "domains",
                     "manifests",
+                    "player-deaths",
                 }
                 actual_dirs = {
                     str(path.relative_to(state_root))

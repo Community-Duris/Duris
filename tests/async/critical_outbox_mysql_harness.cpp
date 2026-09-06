@@ -113,6 +113,17 @@ template <typename Predicate> static void wait_until(Predicate predicate)
 
 int main()
 {
+	critical_outbox_record receipt = {};
+	receipt.destination = CRITICAL_OUTBOX_COIN_RECEIPT_DESTINATION;
+	receipt.event_type = CRITICAL_OUTBOX_COIN_RECEIPT_EVENT;
+	receipt.payload_version = 1;
+	receipt.payload.resize(CRITICAL_OUTBOX_COIN_RECEIPT_BYTES);
+	assert(critical_outbox_test_destination(receipt, nullptr) ==
+	       critical_outbox_delivery_result::delivered);
+	receipt.payload.pop_back();
+	assert(critical_outbox_test_destination(receipt, nullptr) ==
+	       critical_outbox_delivery_result::terminal_failure);
+
 	database_connection = mysql_init(nullptr);
 	assert(database_connection);
 	const char *port_text = getenv("DB_PORT");

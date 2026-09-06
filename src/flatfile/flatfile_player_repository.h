@@ -2,19 +2,12 @@
 #define DURIS_FLATFILE_PLAYER_REPOSITORY_H
 
 #include "flatfile/flatfile_authority_transaction.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
 #include "player/player_load_repository.h"
 #include "player/player_save_worker.h"
 
 #include <memory>
 #include <string>
-
-enum class flatfile_player_load_result
-{
-	ok,
-	not_found,
-	invalid,
-	io_error
-};
 
 class flatfile_player_snapshot_lock
 {

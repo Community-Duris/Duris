@@ -232,6 +232,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                 "operations/wal",
                 "domains",
                 "manifests",
+                "player-deaths",
             }
             actual_dirs = {
                 str(path.relative_to(state_root))

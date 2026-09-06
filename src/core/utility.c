@@ -3032,7 +3032,8 @@ void publish_account_bank_balances_revision(const char *account_name, int racewa
 		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
 		    !desc->account->acct_name ||
 		    strcasecmp(desc->account->acct_name, account_name) ||
-		    GET_RACEWAR(target) != racewar)
+		    GET_RACEWAR(target) != racewar ||
+		    (bank_revision != UINT64_MAX && bank_revision < target->only.pc->bank_revision))
 			continue;
 
 		GET_BALANCE_COPPER(target) = balances->copper;

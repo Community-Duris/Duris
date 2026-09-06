@@ -58,6 +58,7 @@ enum class critical_command_type : uint16_t
 	boon_shop,
 	shop_trade,
 	corpse_lifecycle,
+	coin_transfer,
 };
 
 enum class critical_source_site : uint16_t

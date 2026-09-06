@@ -1251,6 +1251,10 @@ struct pc_only_data
 	int spare4;
 	uint64_t bank_revision; /* Transactional shared account-bank domain revision. */
 	uint64_t wallet_revision; /* Transactional carried-wallet domain revision. */
+	bool death_custody_disputed; /* Runtime-only refused corpse handoff. */
+	uint64_t death_retry_corpse_uid; /* Runtime-only event admission fallback. */
+	uint64_t death_retry_due_usec;
+	int death_retry_delay;
 
 	long frags; /* Pkill counter                           */
 	long oldfrags; /* Pkill counter                           */

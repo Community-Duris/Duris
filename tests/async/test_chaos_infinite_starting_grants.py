@@ -98,7 +98,7 @@ assert "if (chaos_mode && !chaos_starter_epic_skills_enabled())" in GUILD
 assert "chaos_starter_reward" in EPIC_COMMAND
 assert "reason <= epic_reason_type::chaos_starter_reward" in EPIC_CODEC
 assert "chaos_starter_reward" in CURRENCY_COMMAND
-assert "reason <= currency_reason_type::chaos_starter_reward" in CURRENCY_CODEC
+assert "reason <= currency_reason_type::coin_transfer" in CURRENCY_CODEC
 
 assert "chaos_starter_frigate_enabled" in SHIP_SHOP
 assert "const int tattoo_reward_hull = chaos_frigate_reward ? SH_FRIGATE : SH_SLOOP;" in SHIP_SHOP

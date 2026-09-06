@@ -1,11 +1,15 @@
 #include "item/item_transfer_repository.h"
+#include "player/player_snapshot_codec.h"
+#include "world/vnum.obj.h"
 
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <cstdlib>
 #include <limits>
 #include <mysql.h>
 #include <new>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -553,6 +557,42 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
 					       mysql_stmt_execute(statement) == 0);
 }
+
+bool update_coin_payload(MYSQL *connection, const item_transfer_payload &payload, uint64_t revision)
+{
+	const uint64_t uid = payload.selected_item_uid;
+	std::vector<player_item_snapshot> items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &items) != player_snapshot_codec_result::ok ||
+	    items.size() != 1 || items[0].object_uid != uid || items[0].vnum != VOBJ_COINS ||
+	    std::any_of(items[0].values.begin(), items[0].values.begin() + 4,
+			[](int32_t value) { return value < 0; }))
+	{
+		errno = EBADMSG;
+		return false;
+	}
+	static const char UPDATE_SQL[] =
+		"UPDATE item_current_owner SET coin_payload=? WHERE item_uid=? AND item_revision=?";
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, UPDATE_SQL))
+		return false;
+	MYSQL_BIND bindings[3] = {};
+	unsigned long length = payload.item_blob_size;
+	mysql_null_indicator removed = payload.to_owner.type == item_owner_type::destruction;
+	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[0].buffer = const_cast<uint8_t *>(payload.item_blob.data());
+	bindings[0].buffer_length = length;
+	bindings[0].length = &length;
+	bindings[0].is_null = &removed;
+	bindings[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[1].buffer = const_cast<uint64_t *>(&uid);
+	bindings[1].is_unsigned = true;
+	bindings[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[2].buffer = &revision;
+	bindings[2].is_unsigned = true;
+	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
+					       mysql_stmt_execute(statement) == 0);
+}
 } // namespace
 
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
@@ -773,8 +813,141 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		return false;
 	result->from_owner_revision = from_revision + 1;
 	result->to_owner_revision = same_owner ? from_revision + 1 : to_revision + 1;
+	if (creation && payload.item_count == 1 && payload.items[0].vnum == VOBJ_COINS &&
+	    payload.item_blob_size &&
+	    !update_coin_payload(connection, payload, result->max_item_revision))
+		return false;
 	*mutation_applied = true;
 	return true;
+}
+
+bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_command &command,
+					   const std::array<int32_t, 4> &before,
+					   item_transfer_result *result, unsigned int *result_code,
+					   bool *mutation_applied)
+{
+	item_transfer_payload payload = {};
+	if (!connection || !result || !result_code || !mutation_applied ||
+	    !item_transfer_command_decode_payload(command, &payload) || payload.item_count != 1 ||
+	    payload.items[0].vnum != VOBJ_COINS || !payload.item_blob_size)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*mutation_applied = false;
+	*result_code = 0;
+	const uint64_t uid = payload.selected_item_uid;
+	if (payload.from_owner.type != item_owner_type::system)
+	{
+		const std::string query =
+			"SELECT coin_payload FROM item_current_owner WHERE item_uid=" +
+			std::to_string(uid) + " FOR UPDATE";
+		if (mysql_real_query(connection, query.data(), query.size()) != 0)
+		{
+			errno = mysql_errno(connection);
+			return false;
+		}
+		MYSQL_RES *rows = mysql_store_result(connection);
+		if (!rows)
+		{
+			errno = mysql_errno(connection);
+			return false;
+		}
+		MYSQL_ROW row = mysql_fetch_row(rows);
+		const bool found = row != nullptr;
+		const bool has_payload = row && row[0];
+		if (has_payload)
+		{
+			const unsigned long *lengths = mysql_fetch_lengths(rows);
+			std::vector<player_item_snapshot> snapshots;
+			if (!lengths ||
+			    player_item_snapshot_list_decode(
+				    reinterpret_cast<const uint8_t *>(row[0]), lengths[0],
+				    &snapshots) != player_snapshot_codec_result::ok ||
+			    snapshots.size() != 1 || snapshots[0].object_uid != uid ||
+			    snapshots[0].vnum != VOBJ_COINS)
+				*result_code = EBADMSG;
+			else if (!std::equal(before.begin(), before.end(),
+					     snapshots[0].values.begin()))
+				*result_code = ESTALE;
+		}
+		mysql_free_result(rows);
+		if (!found)
+			*result_code = ENOENT;
+		if (*result_code)
+			return true;
+		if (!has_payload)
+		{
+			// Existing piles get a baseline only from a unique payload belonging
+			// to their recorded owner. A missing row is not evidence of consumption.
+			std::string source;
+			const auto &owner = payload.from_owner;
+			switch (owner.type)
+			{
+			case item_owner_type::player:
+				source = "player_items p WHERE p.pid=" + std::to_string(owner.id);
+				break;
+			case item_owner_type::room:
+				source = "saved_items p WHERE p.room_vnum=" +
+					 std::to_string(owner.id);
+				break;
+			case item_owner_type::corpse:
+				source =
+					"corpse_items p JOIN corpses c ON c.id=p.corpse_id "
+					"JOIN player_data player ON player.name=c.player_name WHERE player.pid=" +
+					std::to_string(owner.id >> 32) + " AND c.save_id=" +
+					std::to_string(static_cast<uint32_t>(owner.id));
+				break;
+			case item_owner_type::locker:
+				source = "locker_items p WHERE p.locker_id=" +
+					 std::to_string(owner.id) +
+					 " AND p.chest_id=" + std::to_string(owner.context_id);
+				break;
+			default:
+				*result_code = EOPNOTSUPP;
+				return true;
+			}
+			const std::string baseline =
+				"SELECT p.value0,p.value1,p.value2,p.value3 FROM " + source +
+				" AND p.vnum=" + std::to_string(VOBJ_COINS) +
+				" AND p.obj_uid=" + std::to_string(uid) + " FOR UPDATE";
+			if (mysql_real_query(connection, baseline.data(), baseline.size()) != 0)
+			{
+				errno = mysql_errno(connection);
+				return false;
+			}
+			rows = mysql_store_result(connection);
+			if (!rows)
+			{
+				errno = mysql_errno(connection);
+				return false;
+			}
+			row = mysql_fetch_row(rows);
+			if (!row || mysql_num_rows(rows) != 1)
+				*result_code = row ? EMSGSIZE : ENOENT;
+			for (size_t index = 0; !*result_code && index < before.size(); ++index)
+			{
+				char *end = nullptr;
+				errno = 0;
+				const int64_t amount = row[index] ? strtoll(row[index], &end, 10) :
+								    -1;
+				if (!end || end == row[index] || *end || errno ||
+				    amount != before[index])
+					*result_code = ESTALE;
+			}
+			mysql_free_result(rows);
+			if (*result_code)
+				return true;
+		}
+	}
+	if (!item_transfer_repository_execute(connection, command, result, result_code,
+					      mutation_applied))
+		return false;
+	if (!*mutation_applied)
+		return true;
+
+	return payload.from_owner.type == item_owner_type::system ||
+	       update_coin_payload(connection, payload, result->max_item_revision);
 }
 
 bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner_identity *owners,
