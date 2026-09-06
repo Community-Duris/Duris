@@ -125,6 +125,28 @@ static int obj_prototype_weight(P_obj obj)
 	return w;
 }
 
+/*
+ * value[4] on an ITEM_CONTAINER is a WEIGHT REDUCTION PERCENTAGE (0..90).
+ *
+ * Added for the gathering bags (ruled 2026-09-05: a costlier bag carries more
+ * and weighs its carrier down less). It is zero on every container prototype
+ * that shipped before them -- all 1,251 of them use value[0..3] only -- so this
+ * is a no-op for the whole existing world, and the clamp is here because an
+ * immortal can edit an instance's values by hand.
+ */
+static int container_weight_reduction_pct(P_obj cont)
+{
+	if (!cont || cont->type != ITEM_CONTAINER)
+		return 0;
+
+	const int pct = cont->value[4];
+
+	if (pct <= 0)
+		return 0;
+
+	return pct > 90 ? 90 : pct;
+}
+
 static int sum_direct_contents_weight(P_obj cont)
 {
 	P_obj o;
@@ -134,6 +156,14 @@ static int sum_direct_contents_weight(P_obj cont)
 	{
 		w += GET_OBJ_WEIGHT(o);
 	}
+
+	/* Applied once to the total rather than per item, so the reduction does
+	 * not drift with how the same load happens to be split up. */
+	const int pct = container_weight_reduction_pct(cont);
+
+	if (pct > 0 && w > 0)
+		w -= (int)((long)w * pct / 100);
+
 	return w;
 }
 

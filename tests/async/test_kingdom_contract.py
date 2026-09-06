@@ -1143,15 +1143,67 @@ def test_arrears_ladder_and_boot_grace() -> None:
         flat = re.sub(r"\s+", " ", apply_bodies[0])
         check(
             re.search(
-                r"arrears == KARR_RINGS_REVERTING\s*\)\s*\(?\s*void\s*\)?\s*revert_outer_ring\s*\(",
+                r"arrears == KARR_LAND_REVERTING && revert_outer_square\s*\(",
                 flat,
             )
             is not None,
-            "the bottom rung (KARR_RINGS_REVERTING) is what reverts the outer ring",
+            "the bottom rung (KARR_LAND_REVERTING) is what reverts the outermost square",
+        )
+        check(
+            "kingdom_champion_destroy(" in flat,
+            "losing land to arrears unmakes the champion, which needs every square",
         )
         check(
             re.search(r"highest_claim <= 0\s*\)\s*kingdom_clear_arrears\s*\(", flat) is not None,
-            "arrears clear once the last ring has reverted (nothing held, nothing owed)",
+            "arrears clear once the last square has reverted (nothing held, nothing owed)",
+        )
+
+    # One square per missed cycle, not a whole ring: the reversion is a
+    # decrement, and it must still rebuild the square index (ruled 2026-09-05).
+    revert = function_bodies(upkeep, r"\bstatic\s+bool\s+revert_outer_square\s*\(")
+    check(len(revert) == 1, "revert_outer_square is defined", f"{len(revert)}")
+    if revert:
+        code = strip_comments(revert[0])
+        check(
+            "realm.highest_claim--" in code and "kingdom_ring_first_index" not in code,
+            "a missed cycle costs exactly one square, not the whole outer ring",
+        )
+        check(
+            "kingdom_unindex_realm(" in code and "kingdom_reindex_realm(" in code,
+            "the square index is rebuilt the moment highest_claim moves",
+        )
+
+    # Both paths that shrink a realm must unmake the champion, and neither may
+    # reach for the champion body itself: kingdom_champion_refresh() owns that.
+    destroy = function_bodies(
+        (ROOT / "src/kingdom/kingdom_guards.c").read_text(encoding="utf-8", errors="replace"),
+        r"\bbool\s+kingdom_champion_destroy\s*\(",
+    )
+    check(len(destroy) == 1, "kingdom_champion_destroy is defined", f"{len(destroy)}")
+    if destroy:
+        code = strip_comments(destroy[0])
+        check(
+            "realm.champion_class = 0" in code,
+            "unmaking the champion clears the class that IS its existence",
+        )
+        check(
+            "kingdom_banners_of_realm_destroy(" in code,
+            "the champion's banner comes down with it",
+        )
+        check(
+            "extract_char(" not in code,
+            "the body is left to the reconciler, keeping one champion scan in the file",
+        )
+    abandon = function_bodies(
+        (ROOT / "src/kingdom/kingdom_claim.c").read_text(encoding="utf-8", errors="replace"),
+        r"\bbool\s+kingdom_abandon_last\s*\(",
+    )
+    if abandon:
+        code = strip_comments(abandon[0])
+        check(
+            "kingdom_champion_destroy(" in code
+            and code.index("kingdom_champion_destroy(") < code.index("kingdom_persist_realm("),
+            "giving up a square unmakes the champion before the record is written",
         )
 
     event = function_bodies(upkeep, r"\bvoid\s+kingdom_upkeep_event\s*\(\s*void\s*\)")

@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 	const kingdom_realm realm7 = make_realm(7, 2, 570824, 24, 0, 5000000000L, 7, 0, 1700003600,
 						KARR_NODES_DORMANT, 2);
 	const kingdom_realm realm12 =
-		make_realm(12, 3, 571224, 80, 1, 2, 3, 4, 1700007200, KARR_RINGS_REVERTING, 5);
+		make_realm(12, 3, 571224, 80, 1, 2, 3, 4, 1700007200, KARR_LAND_REVERTING, 5);
 
 	/* --- no root configured: every entry point refuses --- */
 	persistence_root.clear();
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 	require(!kingdom_db_save_realm(insane), "assoc_id 0 was persisted");
 	insane = realm3;
 	insane.assoc_id = 4;
-	insane.arrears = KARR_RINGS_REVERTING + 1;
+	insane.arrears = KARR_LAND_REVERTING + 1;
 	require(!kingdom_db_save_realm(insane), "an out-of-range arrears rung was persisted");
 	require(revision_of(state) == revisions.back(), "a refused save still republished");
 	require(stored_ids(state) == std::vector<int>({ 3, 7, 12 }),

@@ -220,6 +220,22 @@ class Guild
 		prestige += prest;
 		save();
 	}
+	/* Spend prestige. Checks before it mutates, so a refusal changes nothing,
+	 * and -- unlike add_prestige()/set_prestige() -- it does NOT save: the
+	 * caller pairs the guild write with whatever the spend bought, the way
+	 * sub_copper() lets kingdom_persist_payment() pair a treasury debit with
+	 * its realm record. `prestige` is unsigned, so the balance test below is
+	 * also what stops a debit wrapping it to nineteen quintillion. */
+	bool sub_prestige(unsigned long amount)
+	{
+		if (amount == 0)
+			return true;
+		if (prestige < amount)
+			return false;
+
+		prestige -= amount;
+		return true;
+	}
 	void set_prestige(int prest)
 	{
 		prestige = prest;

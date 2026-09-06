@@ -158,8 +158,8 @@ static const char *arrears_text(int arrears)
 		return "&+Yin arrears -- the guards have gone home&n";
 	case KARR_NODES_DORMANT:
 		return "&+Yin arrears -- guards gone, harvest nodes dormant&n";
-	case KARR_RINGS_REVERTING:
-		return "&+Rin arrears -- an outer ring reverts every missed cycle&n";
+	case KARR_LAND_REVERTING:
+		return "&+Rin arrears -- a square reverts every missed cycle&n";
 	default:
 		return "&+Runknown&n";
 	}
@@ -526,6 +526,68 @@ bool kingdom_guild_society_lines(int assoc_id, char *out, size_t out_len)
 				"Realm territory:     &+W%d&n of &+W%d&n squares -- none claimed"
 				" yet.\n",
 				held, KINGDOM_MAX_SQUARES);
+
+	/*
+	 * WHAT THE LAND IS FOR (ruled 2026-09-05: show the benefits under `soc`).
+	 *
+	 * Every figure is asked of the module that owns it -- the guard allowance,
+	 * the level cap, the upkeep -- rather than restated here, so this can never
+	 * quietly disagree with what the game actually does. That is the same rule
+	 * `kingdom help` follows.
+	 *
+	 * The ring marks read `held >= kingdom_ring_last_index(ring)`, which is
+	 * precisely the predicate kingdom_guard_level_cap() uses: a part-built ring
+	 * has not paid for its tier yet, and saying otherwise would over-promise.
+	 */
+	checked_appendf(out, out_len, "Realm rings:        ");
+	for (int ring = 1; ring <= KINGDOM_MAX_RING; ring++)
+	{
+		const int last = kingdom_ring_last_index(ring);
+		const int size = kingdom_ring_size(ring);
+		int in_ring = held - kingdom_ring_first_index(ring) + 1;
+
+		if (in_ring < 0)
+			in_ring = 0;
+		if (in_ring > size)
+			in_ring = size;
+
+		checked_appendf(out, out_len, " %s%d:%d/%d&n",
+				held >= last ? "&+G" :
+				in_ring > 0  ? "&+Y" :
+					       "&+w",
+				ring, in_ring, size);
+	}
+	checked_appendf(out, out_len, ".\n");
+
+	checked_appendf(out, out_len,
+			"Realm garrison:      &+W%d&n guard%s permitted &+w(one per %d squares"
+			" held)&n, to level &+W%d&n\n"
+			"                     &+w(level %d at the base, %d once ring 1 is whole,"
+			" then %d more per ring to %d).&n\n",
+			kingdom_guard_allowance(*realm),
+			kingdom_guard_allowance(*realm) == 1 ? "" : "s",
+			kingdom_cfg.guards_per_squares, kingdom_guard_level_cap(*realm),
+			KINGDOM_GUARD_BASE_LEVEL, KINGDOM_GUARD_FIRST_TIER_LEVEL,
+			KINGDOM_GUARD_TIER_STEP, KINGDOM_GUARD_TOP_LEVEL);
+
+	checked_appendf(out, out_len,
+			"Realm champion:      %s &+w(one only, and only while all %d squares are"
+			" held).&n\n",
+			realm->champion_class	    ? "&+Wraised&n" :
+			held >= KINGDOM_MAX_SQUARES ? "&+Ynone yet -- the land allows one&n" :
+						      "&+wnot while the realm is short of land&n",
+			KINGDOM_MAX_SQUARES);
+
+	checked_appendf(out, out_len,
+			"Realm harvest:       &+wevery %d owned squares that suit a resource add"
+			" a step to what its nodes give.&n\n",
+			KINGDOM_HARVEST_SQUARES_PER_STEP);
+
+	checked_appendf(out, out_len,
+			"Realm upkeep:        &+W%ld&n coin per cycle &+w(%ld per square; a cycle"
+			" is %d minutes).&n\n",
+			kingdom_upkeep_due(*realm), kingdom_cfg.upkeep_per_square,
+			kingdom_cfg.upkeep_period_seconds / 60);
 
 	/* Dormancy. Same test and same "lost" wording as the status table's seat
 	 * line, with what dormancy actually costs the guild spelled out, because

@@ -390,8 +390,8 @@ static void kingdom_index_realm_squares(const kingdom_realm &realm)
  *
  * highest_claim SHRINKS as well as grows -- `kingdom abandon` releases the
  * single last-claimed square (kingdom_abandon_last, kingdom_claim.c) and the
- * arrears ladder reverts one outer ring per missed cycle (revert_outer_ring,
- * kingdom_upkeep.c) -- and an add-only rebuild would leave every released
+ * arrears ladder reverts one outer square per missed cycle
+ * (revert_outer_square, kingdom_upkeep.c) -- and an add-only rebuild would leave every released
  * square still resolving to this realm in kingdom_owner_of_room(). Callers
  * that already unindex first are unharmed: erasing rows that are gone is free.
  */

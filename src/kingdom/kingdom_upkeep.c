@@ -15,17 +15,24 @@
  *
  *      KARR_CURRENT        -> KARR_GUARDS_GONE     guards despawn
  *                          -> KARR_NODES_DORMANT   harvest nodes go dormant
- *                          -> KARR_RINGS_REVERTING one OUTER ring reverts,
- *                                                  and one more per further
- *                                                  missed cycle
+ *                          -> KARR_LAND_REVERTING  the OUTERMOST SQUARE
+ *                                                  reverts, and one more per
+ *                                                  further missed cycle
+ *
+ *  One square, not one ring (ruled 2026-09-05). A ring took eight to
+ *  thirty-two squares for a single missed payment, which stripped a realm
+ *  faster than any debt warrants; a square makes the ladder a slope the guild
+ *  can feel and still climb back.
  *
  *  Paying halts the ladder wherever it has reached and restores the guards
- *  and the nodes -- but a ring already reverted is GONE, and buying it back
+ *  and the nodes -- but a square already reverted is GONE, and buying it back
  *  costs the full original price. That asymmetry is the whole point of the
- *  ruling, so kingdom_clear_arrears() never touches highest_claim.
+ *  ruling, so kingdom_clear_arrears() never touches highest_claim. Losing a
+ *  square also UNMAKES the champion, which answers only to a realm holding
+ *  every square; retaking the eightieth lets the guild buy a new one.
  *
  *  The one place the rung clears WITHOUT a payment is the bottom of the
- *  ladder: when the last ring reverts and highest_claim reaches 0 the realm
+ *  ladder: when the last square reverts and highest_claim reaches 0 the realm
  *  owes nothing -- upkeep scales with squares held -- and no payment could
  *  ever clear the rung, so kingdom_apply_arrears() clears it itself. Leaving
  *  it set would have `kingdom claim` refuse with "settle the debt" over a debt
@@ -269,21 +276,20 @@ long kingdom_upkeep_due(const kingdom_realm &realm)
  * The ladder
  * ------------------------------------------------------------------ */
 
-/* Take the outermost ring back: highest_claim drops to the last index of the
- * ring below, which is what "one ring reverts" means when territory is a
- * single integer. A part-built ring counts as that realm's outer ring, since
- * kingdom_claim.c claims one square at a time (highest_claim + 1), so a realm
- * caught mid-ring loses the squares it had bought of it. Returns false when
- * there is nothing left to take. */
-static bool revert_outer_ring(kingdom_realm &realm)
+/* Take the outermost SQUARE back: highest_claim drops by one, which is what
+ * "one square reverts" means when territory is a single integer. Claims are
+ * bought one at a time in a fixed order (highest_claim + 1), so the square
+ * lost is always the last one bought. Returns false when there is nothing left
+ * to take.
+ *
+ * Ruled 2026-09-05: this used to revert a whole ring, costing between eight
+ * and thirty-two squares for one missed payment. */
+static bool revert_outer_square(kingdom_realm &realm)
 {
-	const int ring = kingdom_ring_for_index(realm.highest_claim);
-	if (ring <= 0)
+	if (realm.highest_claim <= 0)
 		return false; /* already stripped to the guildhall square */
 
-	/* kingdom_ring_first_index(r) - 1 == kingdom_ring_last_index(r - 1), and
-	 * is 0 for ring 1, so the realm can be stripped to nothing. */
-	realm.highest_claim = kingdom_ring_first_index(ring) - 1;
+	realm.highest_claim--;
 
 	/* kingdom_square_index maps owned room vnums to the association, so it
 	 * MUST be rebuilt the moment highest_claim moves (kingdom_internal.h) --
@@ -301,15 +307,15 @@ static bool revert_outer_ring(kingdom_realm &realm)
 }
 
 /* Record one missed cycle: normalise a corrupt rung, count the miss, advance
- * one rung (stopping at KARR_RINGS_REVERTING), and on the bottom rung revert
- * the outer ring. When that reversion leaves highest_claim at 0 the rung is
- * cleared again, because a realm holding nothing owes nothing and could never
- * pay its way off the ladder. Always dirties the record. */
+ * one rung (stopping at KARR_LAND_REVERTING), and on the bottom rung revert
+ * the outermost square. When that reversion leaves highest_claim at 0 the rung
+ * is cleared again, because a realm holding nothing owes nothing and could
+ * never pay its way off the ladder. Always dirties the record. */
 void kingdom_apply_arrears(kingdom_realm &realm)
 {
 	/* A persisted rung outside the enum would otherwise skip the reversion
 	 * test below and leave the realm permanently un-punishable. */
-	if (realm.arrears < KARR_CURRENT || realm.arrears > KARR_RINGS_REVERTING)
+	if (realm.arrears < KARR_CURRENT || realm.arrears > KARR_LAND_REVERTING)
 		realm.arrears = KARR_CURRENT;
 	if (realm.missed_cycles < 0)
 		realm.missed_cycles = 0;
@@ -317,14 +323,17 @@ void kingdom_apply_arrears(kingdom_realm &realm)
 	if (realm.missed_cycles < INT_MAX)
 		realm.missed_cycles++;
 
-	if (realm.arrears < KARR_RINGS_REVERTING)
+	if (realm.arrears < KARR_LAND_REVERTING)
 		realm.arrears++;
 
-	/* Reaching the bottom rung reverts a ring, and so does every miss after
-	 * it -- "one outer ring reverts per missed cycle". Rungs 1 and 2 cost the
-	 * realm its guards and its nodes but no land. */
-	if (realm.arrears == KARR_RINGS_REVERTING)
-		(void)revert_outer_ring(realm);
+	/* Reaching the bottom rung reverts a square, and so does every miss after
+	 * it -- "one square reverts per missed cycle". Rungs 1 and 2 cost the
+	 * realm its guards and its nodes but no land.
+	 *
+	 * A realm below eighty squares has no champion, so the loss unmakes it:
+	 * the guild must buy a new one once the eightieth square is retaken. */
+	if (realm.arrears == KARR_LAND_REVERTING && revert_outer_square(realm))
+		(void)kingdom_champion_destroy(realm);
 
 	realm.dirty = true;
 
@@ -346,7 +355,7 @@ void kingdom_clear_arrears(kingdom_realm &realm)
 	realm.dirty = true;
 
 	/* highest_claim is NOT restored, and that is deliberate: RULINGS.md 6
-	 * says a reverted ring must be re-claimed at the full original price.
+	 * says a reverted square must be re-claimed at the full original price.
 	 * Guards and nodes come back for free because they are keyed off the
 	 * rung we just cleared, not off any record of what was despawned. */
 }
@@ -581,7 +590,7 @@ static const char *arrears_text(int arrears)
 		return "The garrison goes unpaid and melts away into the countryside.";
 	case KARR_NODES_DORMANT:
 		return "Work stops across the realm; the harvest nodes lie dormant.";
-	case KARR_RINGS_REVERTING:
+	case KARR_LAND_REVERTING:
 		return "The realm's grip fails at its edge.";
 	default:
 		return "The treasury is in arrears.";
@@ -889,6 +898,8 @@ void kingdom_upkeep_event(void)
 		}
 
 		const int claim_before = realm->highest_claim;
+		const bool had_champion = realm->champion_class != 0;
+
 		kingdom_apply_arrears(*realm);
 		defaulted++;
 		touched++;
@@ -898,12 +909,18 @@ void kingdom_upkeep_event(void)
 			/* Land was lost, so the rung reached was the bottom one --
 			 * even if kingdom_apply_arrears() has already cleared it
 			 * because nothing is left to owe. */
-			send_to_guild(guild, KINGDOM_STEWARD, arrears_text(KARR_RINGS_REVERTING));
+			send_to_guild(guild, KINGDOM_STEWARD, arrears_text(KARR_LAND_REVERTING));
 			snprintf(msg, sizeof(msg),
-				 "The outermost ring slips from your grasp; %d of the realm's "
-				 "%d squares remain. Reclaiming it will cost the full price.",
+				 "The outermost square slips from your grasp; %d of the realm's "
+				 "%d remain. Reclaiming it will cost the full price.",
 				 realm->highest_claim, KINGDOM_MAX_SQUARES);
 			send_to_guild(guild, KINGDOM_STEWARD, msg);
+
+			if (had_champion && realm->champion_class == 0)
+				send_to_guild(guild, KINGDOM_STEWARD,
+					      "The realm no longer holds every square, and its "
+					      "champion is unmade. A new one may be raised once "
+					      "the eightieth square is taken again.");
 
 			if (realm->highest_claim <= 0)
 				send_to_guild(guild, KINGDOM_STEWARD,
@@ -923,7 +940,7 @@ void kingdom_upkeep_event(void)
 		      realm->arrears, realm->missed_cycles, claim_before, realm->highest_claim);
 
 		/* A default moves no coin, so it needs no pairing. Make the rung
-		 * -- and any reverted ring -- durable NOW rather than at the
+		 * -- and any reverted square -- durable NOW rather than at the
 		 * sweep's end: a crash before the batched flush would otherwise
 		 * forgive the missed cycle. Failure leaves the record dirty for
 		 * the flush below to retry.
@@ -958,7 +975,7 @@ void kingdom_upkeep_event(void)
 
 	/* Reconcile every garrison against what the realms now hold. This tick is
 	 * where arrears rungs move -- guards go at KARR_GUARDS_GONE and come back
-	 * when the debt clears -- and where territory lost to a reverted ring
+	 * when the debt clears -- and where territory lost to a reverted square
 	 * changes the allowance, so it is the right place to settle up. Cheap
 	 * when nothing changed: refresh is idempotent. */
 	kingdom_guards_refresh_all();

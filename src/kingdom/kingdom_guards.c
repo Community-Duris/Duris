@@ -99,6 +99,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "guild/assocs.h"
+#include "item/objmisc.h"
 #include "kingdom/kingdom_geometry.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -513,24 +514,45 @@ long kingdom_guard_promotion_cost(int from, int to)
  *
  * Order is the order `kingdom roster` lists them in, so it runs martial first,
  * then divine, then arcane, then the skirmishers.
+ *
+ * THE CHAMPION MAY GO FURTHER (ruled 2026-09-05). The specialised callings
+ * below the line are the ones a garrison has no business fielding sixteen of,
+ * but which are exactly right for the single captain a complete realm raises.
+ * They are marked `specialised` and refused to `kingdom hire` and
+ * `kingdom promote`; only `kingdom champion` and `kingdom champion respec`
+ * accept them. They are ordinary class bits, so nothing about how they are
+ * stored or loaded changes.
  */
 static const struct
 {
 	const char *name;
 	int bit;
+	bool specialised; /* champion only */
 } kingdom_guard_classes[] = {
-	{ "warrior", CLASS_WARRIOR },
-	{ "paladin", CLASS_PALADIN },
-	{ "antipaladin", CLASS_ANTIPALADIN },
-	{ "berserker", CLASS_BERSERKER },
-	{ "mercenary", CLASS_MERCENARY },
-	{ "ranger", CLASS_RANGER },
-	{ "cleric", CLASS_CLERIC },
-	{ "shaman", CLASS_SHAMAN },
-	{ "druid", CLASS_DRUID },
-	{ "sorcerer", CLASS_SORCERER },
-	{ "necromancer", CLASS_NECROMANCER },
-	{ "rogue", CLASS_ROGUE },
+	{ "warrior", CLASS_WARRIOR, false },
+	{ "paladin", CLASS_PALADIN, false },
+	{ "antipaladin", CLASS_ANTIPALADIN, false },
+	{ "berserker", CLASS_BERSERKER, false },
+	{ "mercenary", CLASS_MERCENARY, false },
+	{ "ranger", CLASS_RANGER, false },
+	{ "cleric", CLASS_CLERIC, false },
+	{ "shaman", CLASS_SHAMAN, false },
+	{ "druid", CLASS_DRUID, false },
+	{ "sorcerer", CLASS_SORCERER, false },
+	{ "necromancer", CLASS_NECROMANCER, false },
+	{ "rogue", CLASS_ROGUE, false },
+	/* --- specialised: the champion's alone --- */
+	{ "dreadlord", CLASS_DREADLORD, true },
+	{ "reaver", CLASS_REAVER, true },
+	{ "avenger", CLASS_AVENGER, true },
+	{ "dragoon", CLASS_DRAGOON, true },
+	{ "blighter", CLASS_BLIGHTER, true },
+	{ "ethermancer", CLASS_ETHERMANCER, true },
+	{ "illusionist", CLASS_ILLUSIONIST, true },
+	{ "theurgist", CLASS_THEURGIST, true },
+	{ "summoner", CLASS_SUMMONER, true },
+	{ "conjurer", CLASS_CONJURER, true },
+	{ "psionicist", CLASS_PSIONICIST, true },
 };
 
 constexpr int kingdom_guard_class_count =
@@ -548,6 +570,18 @@ int kingdom_guard_class_by_name(const char *name)
 	return 0;
 }
 
+/* True for a calling only the champion may take. The persistence validators
+ * deliberately do NOT ask: a bit in the table above is a real class either way,
+ * and the rule belongs at the verb, where it can explain itself. */
+bool kingdom_guard_class_is_specialised(int guard_class)
+{
+	for (int i = 0; i < kingdom_guard_class_count; i++)
+		if (kingdom_guard_classes[i].bit == guard_class)
+			return kingdom_guard_classes[i].specialised;
+
+	return false;
+}
+
 const char *kingdom_guard_class_name(int guard_class)
 {
 	for (int i = 0; i < kingdom_guard_class_count; i++)
@@ -559,8 +593,12 @@ const char *kingdom_guard_class_name(int guard_class)
 
 /* The offerable list, comma-separated, for a refusal that has to say what the
  * caller could have typed. Written into the caller's buffer rather than
- * returned as a static, so two refusals can be built at once. */
-void kingdom_guard_class_list(char *out, size_t out_len)
+ * returned as a static, so two refusals can be built at once.
+ *
+ * `specialised` picks which half is listed: a guard refusal must not offer the
+ * champion's callings, and the champion's refusal lists everything it may take.
+ */
+static void kingdom_class_list_of(char *out, size_t out_len, bool include_specialised)
 {
 	if (!out || out_len == 0)
 		return;
@@ -569,14 +607,27 @@ void kingdom_guard_class_list(char *out, size_t out_len)
 
 	for (int i = 0; i < kingdom_guard_class_count; i++)
 	{
+		if (kingdom_guard_classes[i].specialised && !include_specialised)
+			continue;
+
 		const size_t used = strlen(out);
 
 		if (used + 2 >= out_len)
 			return;
 
-		snprintf(out + used, out_len - used, "%s%s", i ? ", " : "",
+		snprintf(out + used, out_len - used, "%s%s", used ? ", " : "",
 			 kingdom_guard_classes[i].name);
 	}
+}
+
+void kingdom_guard_class_list(char *out, size_t out_len)
+{
+	kingdom_class_list_of(out, out_len, false);
+}
+
+void kingdom_champion_class_list(char *out, size_t out_len)
+{
+	kingdom_class_list_of(out, out_len, true);
 }
 
 /*
@@ -752,22 +803,161 @@ static void kingdom_guard_outfit(P_char mob, P_Guild guild)
 }
 
 /*
+ * ARM THE GARRISON (ruled 2026-09-05).
+ *
+ * A guard stood its post bare-handed: kingdom_guard_outfit() set flags and
+ * nothing else, so an assassin could not backstab and a mercenary had nothing
+ * to pierce with. Every calling now draws a weapon that suits it, scaled to the
+ * guard's rank.
+ *
+ * ONE PROTOTYPE, WRITTEN ON PER GUARD, the way randomeq.c makes every random
+ * weapon from VOBJ_RANDOM_WEAPON: the type, the dice and the name are per
+ * instance, so a new calling costs a table row rather than an area-file edit.
+ *
+ * The weapon is TRANSIENT, NORENT, NODROP, NOSELL and NOLOOT in the prototype,
+ * which is what stops the garrison becoming a supply of free equipment: it
+ * dissolves when the body is extracted, and a player standing over a dead guard
+ * cannot take it out of the corpse.
+ *
+ * A NOTE ON THE DICE. For an NPC a wielded weapon's dice are ADDED to the mob's
+ * own damage (combat/fight.c), not substituted for it, so these are deliberately
+ * small: the guard's own 5d6+20 is still the bulk of what it hits for.
+ */
+static const struct
+{
+	int bit;
+	int weapon_type;
+	bool two_handed;
+	const char *noun;
+} kingdom_guard_weapons[] = {
+	/* Martial. */
+	{ CLASS_WARRIOR, WEAPON_LONGSWORD, false, "longsword" },
+	{ CLASS_PALADIN, WEAPON_LONGSWORD, false, "blessed longsword" },
+	{ CLASS_ANTIPALADIN, WEAPON_2HANDSWORD, true, "unholy greatsword" },
+	{ CLASS_BERSERKER, WEAPON_AXE, true, "great axe" },
+	{ CLASS_DREADLORD, WEAPON_2HANDSWORD, true, "dread greatsword" },
+	{ CLASS_REAVER, WEAPON_AXE, false, "reaving axe" },
+	{ CLASS_AVENGER, WEAPON_LONGSWORD, false, "avenging sword" },
+	{ CLASS_DRAGOON, WEAPON_SPEAR, true, "dragoon's lance" },
+	/* Piercing skirmishers. A mercenary gets a spear; a rogue gets a dagger,
+	 * which IS_BACKSTABBER() accepts, so a rogue guard can actually
+	 * backstab -- the thing the ruling asked for by name. */
+	{ CLASS_MERCENARY, WEAPON_SPEAR, false, "war spear" },
+	{ CLASS_ROGUE, WEAPON_DAGGER, false, "wicked dagger" },
+	{ CLASS_RANGER, WEAPON_SHORTSWORD, false, "ranger's shortsword" },
+	/* Divine and primal. */
+	{ CLASS_CLERIC, WEAPON_MACE, false, "iron mace" },
+	{ CLASS_SHAMAN, WEAPON_CLUB, false, "spirit club" },
+	{ CLASS_DRUID, WEAPON_SICKLE, false, "briar sickle" },
+	{ CLASS_THEURGIST, WEAPON_MACE, false, "theurgist's mace" },
+	{ CLASS_BLIGHTER, WEAPON_SICKLE, false, "blighted sickle" },
+	/* Arcane. */
+	{ CLASS_SORCERER, WEAPON_STAFF, true, "sorcerer's staff" },
+	{ CLASS_NECROMANCER, WEAPON_DAGGER, false, "bone-handled dagger" },
+	{ CLASS_CONJURER, WEAPON_STAFF, true, "conjurer's staff" },
+	{ CLASS_ILLUSIONIST, WEAPON_STAFF, true, "illusionist's staff" },
+	{ CLASS_ETHERMANCER, WEAPON_STAFF, true, "ethereal staff" },
+	{ CLASS_SUMMONER, WEAPON_STAFF, true, "summoner's staff" },
+	{ CLASS_PSIONICIST, WEAPON_CLUB, false, "psionicist's rod" },
+};
+
+constexpr int kingdom_guard_weapon_count =
+	(int)(sizeof(kingdom_guard_weapons) / sizeof(kingdom_guard_weapons[0]));
+
+/*
+ * Draw the weapon a body's calling wants, at its rank, and put it in its hand.
+ *
+ * The multiclass champion carries the first of its two callings that names a
+ * weapon, which is the same order kingdom_guard_weapons[] is written in.
+ * Nothing is issued to a calling with no entry -- it simply fights unarmed, as
+ * the whole garrison did before this.
+ */
+static void kingdom_guard_arm(P_char mob, int level)
+{
+	if (!mob)
+		return;
+	/* An occupied hand means this body already drew one: the reconcilers can
+	 * call the outfit path more than once for the same mob. */
+	if (mob->equipment[WIELD])
+		return;
+
+	const int rnum = real_object(VOBJ_KINGDOM_GUARD_WEAPON);
+
+	if (rnum < 0)
+		return; /* the prototype is not in this world's data */
+
+	int entry = -1;
+
+	for (int i = 0; i < kingdom_guard_weapon_count && entry < 0; i++)
+		if (mob->player.m_class & (unsigned int)kingdom_guard_weapons[i].bit)
+			entry = i;
+
+	if (entry < 0)
+		return;
+
+	P_obj weapon = read_object(rnum, REAL);
+
+	if (!weapon)
+		return;
+
+	weapon->value[0] = kingdom_guard_weapons[entry].weapon_type;
+
+	/* Rank buys dice, not a second weapon: two at the base level, one more
+	 * every four levels, so the level-56 cap carries four. */
+	int dice_count = 2 + (level - KINGDOM_GUARD_BASE_LEVEL) / 4;
+
+	if (dice_count < 2)
+		dice_count = 2;
+	weapon->value[1] = dice_count;
+	weapon->value[2] = 6;
+
+	if (kingdom_guard_weapons[entry].two_handed)
+		SET_BIT(weapon->extra_flags, ITEM_TWOHANDS);
+
+	/*
+	 * RESTRINGING, THE ENGINE'S WAY -- the same rule kingdom_banner_plant()
+	 * spells out. read_object() copies the prototype's string POINTERS, so a
+	 * per-guard name must be a fresh allocation AND must declare itself in
+	 * str_mask, or free_obj() either leaks it or frees the prototype's copy
+	 * out from under every other instance.
+	 */
+	char named[MAX_INPUT_LENGTH];
+
+	snprintf(named, sizeof(named), "&+La %s&n", kingdom_guard_weapons[entry].noun);
+	weapon->short_description = str_dup(named);
+	weapon->str_mask |= STRUNG_DESC2;
+
+	equip_char(mob, weapon, WIELD, 0);
+
+	/* equip_char() is void and refuses silently when the slot is taken or the
+	 * object is not in NOWHERE, so the hand is what says whether it landed. */
+	if (mob->equipment[WIELD] != weapon)
+		extract_obj(weapon);
+}
+
+/*
  * Put a roster line onto a body: its class, its level, and the stats that
  * follow from the level.
  *
- * HP SCALES PROPORTIONALLY rather than by a table of numbers written here.
- * The prototype in heavens.mob is the balance point an area builder tuned, and
- * a level-56 guard should be that same mob eleven levels stronger -- not a
- * figure this file invented and would then own forever. So the prototype's own
- * hit points are multiplied by level/45, and hitroll and damroll gain one
- * point per level above the base. Change the .mob record and every rank moves
- * with it, which is the property worth having.
+ * THE GARRISON OWNS ITS OWN HITPOINTS (ruled 2026-09-05). This used to scale
+ * "the prototype's own hit points" by level/45, on the belief that heavens.mob
+ * #108's 45d60+1500 was the balance point a builder tuned. It is not reachable:
+ * convertMob() (mob/mobconv.c) DISCARDS a .mob file's hp dice and recomputes
+ * every mob's hitpoints from race, level and class, so by the time a guard
+ * stands here the prototype's ~3,900 has already become a few hundred, and on
+ * a chaos server a tenth of that again. Scaling it multiplied a number the
+ * module never chose.
  *
- * The formula, for a designer reading only this comment:
+ * A guard is bought with the realm's treasury and is meant to hold a border
+ * against players, so the module states what it is buying and scales that:
  *
- *     hp      = prototype hp * level / 45
+ *     hp      = 4500 * level / 45      (4500 at 45, 5600 at the level-56 cap)
  *     hitroll = prototype hitroll + (level - 45)
  *     damroll = prototype damroll + (level - 45)
+ *
+ * Being set here rather than floored means it is the same number on a chaos
+ * server and an ordinary one -- a garrison bought at a fixed price should not
+ * be worth a tenth as much because of a server-wide toggle.
  */
 static void kingdom_guard_apply_rank(P_char mob, const kingdom_guard_slot &rank)
 {
@@ -783,7 +973,11 @@ static void kingdom_guard_apply_rank(P_char mob, const kingdom_guard_slot &rank)
 
 	mob->player.level = static_cast<::byte>(level);
 
-	const long scaled = (long)GET_MAX_HIT(mob) * level / KINGDOM_GUARD_BASE_LEVEL;
+	/* The level moved, so the castable circles must move with it: they were
+	 * stamped from the .mob file's level when the body was read. */
+	refresh_npc_spell_slots(mob);
+
+	const long scaled = (long)KINGDOM_GUARD_BASE_HITPOINTS * level / KINGDOM_GUARD_BASE_LEVEL;
 
 	GET_MAX_HIT(mob) = static_cast<int>(scaled);
 	GET_HIT(mob) = GET_MAX_HIT(mob);
@@ -791,6 +985,10 @@ static void kingdom_guard_apply_rank(P_char mob, const kingdom_guard_slot &rank)
 
 	GET_HITROLL(mob) = static_cast<sh_int>(GET_HITROLL(mob) + over);
 	GET_DAMROLL(mob) = static_cast<sh_int>(GET_DAMROLL(mob) + over);
+
+	/* Armed after the class and level are settled, because both decide which
+	 * weapon is drawn and how heavy its dice are. */
+	kingdom_guard_arm(mob, level);
 }
 
 /*
@@ -818,6 +1016,22 @@ static void kingdom_champion_outfit(P_char mob, const kingdom_realm &realm)
 		mob->player.m_class = static_cast<unsigned int>(realm.champion_class);
 
 	mob->player.level = static_cast<::byte>(KINGDOM_CHAMPION_LEVEL);
+
+	/* Level and class both just changed, so the spell budget read from the
+	 * .mob file's level-60 warrior line is no longer the right one. */
+	refresh_npc_spell_slots(mob);
+
+	/* Stated here for the reason kingdom_guard_apply_rank() gives: the
+	 * prototype's dice never survive convertMob(), so the module says what a
+	 * 25,000-platinum champion is worth instead of scaling an invented
+	 * number. */
+	GET_MAX_HIT(mob) = KINGDOM_CHAMPION_HITPOINTS;
+	GET_HIT(mob) = GET_MAX_HIT(mob);
+	mob->points.base_hit = GET_MAX_HIT(mob);
+
+	/* The champion draws for the first of its two callings that names a
+	 * weapon, at its own level. */
+	kingdom_guard_arm(mob, KINGDOM_CHAMPION_LEVEL);
 }
 
 /* ------------------------------------------------------------------ *
@@ -1205,8 +1419,9 @@ void kingdom_guards_bind_proc(void)
  * arrears cycle -- but kept separate from kingdom_guards_refresh() because the
  * champion answers to different rules: one only, at the hall rather than on a
  * border post, and only while the realm holds every square. Losing a square
- * sends it home; the realm keeps what it paid for and the champion returns
- * when the land does.
+ * UNMAKES the champion (kingdom_champion_destroy() zeroes champion_class, and
+ * `wanted` below is false the moment it does), so this only ever takes the
+ * body away; the guild raises a new one when the land is whole again.
  */
 int kingdom_champion_refresh(const kingdom_realm &realm)
 {
@@ -1228,7 +1443,14 @@ int kingdom_champion_refresh(const kingdom_realm &realm)
 		if (!kingdom_char_is_champion_of(tch, champion_rnum, realm.assoc_id))
 			continue;
 
-		if (wanted && standing == 0)
+		/* The standing champion must also be the champion the realm now
+		 * has. A respec changes the two callings without changing the
+		 * level, and the callings are baked into the body at spawn, so a
+		 * body carrying the old pair is replaced rather than kept (ruled
+		 * 2026-09-05). */
+		const bool matches = (int)tch->player.m_class == realm.champion_class;
+
+		if (wanted && matches && standing == 0)
 			standing++;
 		else
 			doomed.push_back(tch);
@@ -1275,6 +1497,44 @@ int kingdom_champion_refresh(const kingdom_realm &realm)
 			      "The realm's champion takes the field, banner braced.");
 
 	return 1;
+}
+
+/*
+ * Unmake the champion: the realm has dropped below eighty squares.
+ *
+ * Ruled 2026-09-05, replacing the earlier "sends it home" rule. champion_class
+ * IS the champion's existence, so zeroing it both retires this one and reopens
+ * kingdom_roster_champion(), which charges the full price again -- a new
+ * champion, not a bench return.
+ *
+ * The banner goes with it. A banner is an independent world object with its own
+ * event, so a champion removed while its banner still stood would leave the
+ * garrison buffed by a captain that no longer exists.
+ *
+ * The body is deliberately NOT extracted here: kingdom_champion_refresh() is
+ * the one reconciler that owns champion mobs, and with the class zeroed its
+ * `wanted` test is already false, so the caller's own refresh removes it. That
+ * keeps the champion-identity scan in this file down to the single shared
+ * predicate the contract test pins.
+ */
+bool kingdom_champion_destroy(kingdom_realm &realm)
+{
+	if (realm.champion_class == 0)
+		return false;
+
+	realm.champion_class = 0;
+	realm.dirty = true;
+
+	kingdom_banners_of_realm_destroy(realm.assoc_id);
+
+	P_Guild guild = get_guild_from_id(realm.assoc_id);
+
+	if (guild)
+		send_to_guild(guild, KINGDOM_MARSHAL,
+			      "The realm is no longer whole. Its champion lays down the "
+			      "banner and is unmade.");
+
+	return true;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1816,6 +2076,13 @@ int kingdom_guards_refresh(const kingdom_realm &realm)
 			if (KINGDOM_GUARD_ROSTER(tch) != line + 1)
 				continue;
 			if (GET_LEVEL(tch) != realm.guards[line].level)
+				continue;
+			/* The class test the comment above always promised. Until
+			 * respec existed, a re-schooling always moved the level too,
+			 * so the level test caught it by accident; a respec changes
+			 * the calling at the SAME rank and would otherwise leave the
+			 * old body standing (ruled 2026-09-05). */
+			if ((int)tch->player.m_class != realm.guards[line].guard_class)
 				continue;
 
 			slot = post;
