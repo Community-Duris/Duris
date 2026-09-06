@@ -7,8 +7,7 @@ MobCastSpell, event_spellcast, Death Field, spell_damage and wards are real code
 from pathlib import Path
 import subprocess
 import tempfile
-from _paths import ROOT, SRC
-from test_item_movement_prompt_runtime import extract
+from _paths import ROOT, SRC, extract_function
 
 PRELUDE = r'''
 #include "core/prototypes.h"
@@ -272,7 +271,36 @@ int main()
         if (!damaged[targets]) ++melee_misses;
     }
     assert(melee_misses > 0);
-    puts("Death Field cast completion: solo/group damage, NPC target protection, eligibility, wards/resistance, PC pruning passed");
+    // Charmed pets and switched immortal bodies use player-caster pruning policy.
+    caster.only.npc = &npc;
+    caster.specials.act = ACT_ISNPC;
+    SET_BIT(caster.specials.affected_by, AFF_CHARM);
+    melee_misses = 0;
+    for (int i = 0; i < 1000; ++i)
+    {
+        damaged.clear();
+        spell_death_field(50, &caster, nullptr, SPELL_TYPE_SPELL, &targets[7], nullptr);
+        assert(damaged[&targets[7]] == 1);
+        if (!damaged[targets]) ++melee_misses;
+    }
+    assert(melee_misses > 0);
+    REMOVE_BIT(caster.specials.affected_by, AFF_CHARM);
+    descriptor_data descriptor{};
+    char_data immortal{};
+    pc_only_data immortal_pc{};
+    immortal.only.pc = &immortal_pc;
+    descriptor.original = &immortal;
+    caster.desc = &descriptor;
+    melee_misses = 0;
+    for (int i = 0; i < 1000; ++i)
+    {
+        damaged.clear();
+        spell_death_field(50, &caster, nullptr, SPELL_TYPE_SPELL, &targets[7], nullptr);
+        assert(damaged[&targets[7]] == 1);
+        if (!damaged[targets]) ++melee_misses;
+    }
+    assert(melee_misses > 0);
+    puts("Death Field cast completion: autonomous NPC targeting, eligibility, defenses, and player-controlled pruning passed");
 }
 '''
 
@@ -282,7 +310,7 @@ def main():
     build.mkdir(parents=True, exist_ok=True)
     functions = [
         ('utility.c', 'bool should_area_hit(P_char ch, P_char victim)'),
-        ('utility.c', 'int cast_as_damage_area(P_char ch,'),
+        ('utility.c', 'int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),\n\t\t\tint level, P_char victim, float min_chance, float /*chance_step*/,\n\t\t\tbool (*select_func)(P_char, P_char))'),
         ('utility.c', 'int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),\n\t\t\tint level, P_char victim, float min_chance, float chance_step)'),
         ('fight.c', 'int check_damage_ward(P_char attacker,'),
         ('fight.c', 'int spell_damage(P_char ch,'),
@@ -293,7 +321,7 @@ def main():
     ]
     with tempfile.TemporaryDirectory(prefix='death-field-', dir=build) as directory:
         source, binary = Path(directory) / 'harness.cpp', Path(directory) / 'harness'
-        source.write_text('\n'.join([PRELUDE, *[extract(*f) for f in functions], DRIVER]))
+        source.write_text('\n'.join([PRELUDE, *[extract_function(*f) for f in functions], DRIVER]))
         subprocess.run(['g++', '-std=c++20', '-g', '-O1', '-fsanitize=address,undefined',
                         '-Isrc', '-D__NO_MYSQL__', '-Isrc/no_mysql', str(source), '-o', str(binary)], cwd=ROOT, check=True, timeout=120)
         subprocess.run([str(binary)], check=True, timeout=30)

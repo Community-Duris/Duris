@@ -2,10 +2,8 @@
 
 Updated: 2026-09-06.
 
-Status: **implementation and validation complete; ready for review in PR
-[#159](https://github.com/Community-Duris/Duris/pull/159)**. The previously
-interrupted standalone retry passed, resolving the only inconclusive validation
-result from the full regression gate.
+Status: **implementation and review follow-up complete; ready to merge in PR
+[#159](https://github.com/Community-Duris/Duris/pull/159)**.
 
 - Issue: [#154 — extra pickup prompt and Death Field missing an engaged player](https://github.com/Community-Duris/Duris/issues/154).
 - Branch: [`fix/154-pickup-prompts-death-field`](https://github.com/Community-Duris/Duris/tree/fix/154-pickup-prompts-death-field).
@@ -18,18 +16,28 @@ result from the full regression gate.
 
 ### Deferred pickup prompts
 
-In [`src/net/comm.c`](../../src/net/comm.c), `process_output()` now keeps the
-command prompt pending while `item_movement_transaction_player_busy()` reports
-an outstanding movement. It continues flushing queued text, including unrelated
-asynchronous messages. Once ownership completion publishes its messages, normal
-prompt generation resumes. Ownership submission and commit ordering are unchanged.
+In [`src/net/comm.c`](../../src/net/comm.c), `process_output()` now keeps an
+ordinary command prompt pending while either the item-movement or currency
+coordinator reports the player busy. It continues flushing queued text, including
+unrelated asynchronous messages. Pager and string-editor prompts are not deferred,
+and the leading-newline decision uses the state that would exist after the pending
+command prompt. Once completion publishes its messages, normal prompt generation
+resumes. Submission and commit ordering are unchanged.
+
+The existing busy predicates intentionally retain their established conflict
+scope, including inbound transactions involving the player. That matches the
+input gate, which already withholds dependent commands for either side of a
+pending transfer. The busy checks remain short-circuited to descriptors with a
+pending ordinary prompt, so pager/editor and prompt-free output passes incur no
+coordinator scan.
 
 [`test_item_movement_prompt_runtime.py`](../../tests/async/test_item_movement_prompt_runtime.py)
 holds real single-item and bulk movement transactions at the coordinator boundary
-for six output passes. It checks successful and failed completion, immediate
-rejection, container and floor source fixtures, and unrelated output while pending.
-Delayed output is compared byte for byte with synchronous output, with prompt
-count and ordering assertions across:
+for six output passes. It checks successful and failed item completion, immediate
+rejection, currency completion, container and floor source fixtures, pager/editor
+prompts, switched descriptors, and unrelated output while pending. Delayed output
+is compared byte for byte with synchronous output, with prompt count and ordering
+assertions across:
 
 - Compact and noncompact output.
 - Smart, old-smart, both flags, and neither flag.
@@ -46,15 +54,17 @@ outside this test's coverage.
 ### NPC area targeting
 
 In [`src/core/utility.c`](../../src/core/utility.c), shared area pruning now
-protects an NPC caster's eligible melee opponent as well as its explicit spell
-target. This addresses the demonstrated group-combat path where a mob aiming at
-a different player could randomly skip its melee opponent.
+protects an autonomous NPC caster's eligible melee opponent as well as its explicit
+spell target. This addresses the demonstrated group-combat path where a mob aiming
+at a different player could randomly skip its melee opponent. Charmed pets and
+mob bodies controlled by switched immortals retain the player-controlled pruning
+policy. The skip count is capped by the number of unprotected PCs, making loop
+termination explicit if additional protected-target rules are added later.
 
-This is a policy choice for **shared NPC area spells**, not a Death Field-only
-damage change. Other eligible players still undergo pruning. Player-caster
-pruning, altitude/safe-room/death eligibility, and damage defenses are unchanged.
-The issue left this policy open; protecting both targets was the implementation
-assumption stated during the work and has not received a separate owner response.
+This is a policy choice for **shared autonomous-NPC area spells**, not a Death
+Field-only damage change. Other eligible players still undergo pruning.
+Player-controlled caster pruning, altitude/safe-room/death eligibility, and damage
+defenses are unchanged.
 
 [`test_death_field_runtime.py`](../../tests/async/test_death_field_runtime.py)
 executes production `MobCastSpell()`, `event_spellcast()`, Death Field, area
@@ -65,7 +75,8 @@ selection, `spell_damage()` and ward handling. Checks cover:
   still pruning other targets.
 - Low configured hit chance and altitude, safe-room and dead-target exclusions.
 - Ward absorption, resistance, deflection and area evasion controls.
-- 1,000 player-caster casts retaining the existing pruning behavior.
+- 1,000 casts each for player, charmed, and switched casters retaining the
+  player-controlled pruning behavior.
 
 World/event services, damage modifiers, resistance decisions and final raw HP
 application are fixtures. The original mob/zone, player defenses and client
@@ -77,26 +88,21 @@ damage/defense behavior.
 
 | Command or check | Result |
 | --- | --- |
-| `make -C src` | Passed. The full gate also rebuilt the maintained targets. |
-| `python3 -B tests/async/test_item_movement_prompt_runtime.py` | Passed, including the final expanded container/failure/rejection cases. |
-| `python3 -B tests/async/test_death_field_runtime.py` | Passed under ASan/UBSan. |
-| `python3 -B tests/async/test_get_all_durable_chain.py` | Passed. |
-| `python3 -B tests/async/test_live_item_movement_contract.py` | Passed, 13 checks. |
-| `python3 -B tests/async/test_get_item_source_owner.py` | Passed. |
-| `python3 -B tests/async/test_item_movement_input_queue.py` | Passed. |
-| `python3 -B tests/async/test_telnet_output_runtime.py` | Passed. |
+| `make -C src` | Passed with the strict warning profile. |
+| `python3 -B tests/async/test_item_movement_prompt_runtime.py` | Passed under ASan/UBSan, including item/currency deferral, ambient bytes, pager/editor prompts, and switched descriptors. |
+| `python3 -B tests/async/test_death_field_runtime.py` | Passed under ASan/UBSan, including autonomous, charmed, switched, and player-caster policy. |
+| Prompt/currency/custody adjacent focused regressions | Passed. |
 | `make test-db` | Passed using isolated Docker databases, including migration replay, bootstrap equivalence and runtime compatibility. |
-| `make test-native` | Passed separately after the full gate stopped. |
+| `make security-check` and workflow shell/Python syntax checks | Passed. |
 | `./scripts/format.sh --check` and `git diff --check` | Passed. |
-| New regressions supplied with master's original changed functions | Both failed at the expected assertions: premature output and missing melee-target damage. |
-| `make test-all` | **413 passed, 1 failed** in 520.27 seconds; command exited 2. Both new tests passed in this run. |
+| `make test-all -j"$(nproc)" TEST_JOBS="$(nproc)"` | **412 passed, 2 failed** in 417.85 seconds; both changed regressions and the native signal suite passed. |
 | `python3 -B tests/async/test_flatfile_combat_journey.py` | Passed on standalone retry, including player death, corpse recovery, save and reconnect. |
+| `python3 -B tests/async/test_flatfile_chaos_new_character_kit.py` | Failed on a pre-existing creation-grant integrity retry; the same failure reproduced at untouched PR head `55a2afe`. |
 
 ### Full-suite retry result
 
-`test_flatfile_combat_journey.py` timed out in `disputed_death()` during the
-`reset_coins=True` journey. It sent `hit executioner` and expected
-`Your wounds claim you at last`, but received:
+`test_flatfile_combat_journey.py` timed out in `disputed_death()` after the
+initiating `hit executioner` randomly returned:
 
 ```text
 You stumble, but recover in time!
@@ -105,14 +111,20 @@ You stumble, but recover in time!
 The transcript continued to show 35/35 HP. That message comes from the unchanged
 combat fumble path, which returns before starting combat. The standalone retry
 subsequently passed its complete death, corpse recovery, save and reconnect
-journey. No combat-journey test or unrelated combat code was changed.
+journey. `test_flatfile_chaos_new_character_kit.py` separately encountered a
+starter-item critical-command integrity retry loop. That result reproduced in a
+detached worktree at `55a2afe`, before these review changes, and the prompt is
+canceled by the existing creation-grant command block before the reviewed
+transaction prompt condition is evaluated. No unrelated Chaos, coordinator, or
+journey code was changed.
 
 ## Review follow-up
 
-1. Have the reviewer assess the shared NPC-area policy. If the original encounter
-   needs confirmation, obtain the mob name/vnum and zone, solo/group context,
-   melee and explicit targets, altitude, defenses, prompt/terse settings, and a
-   transcript with HP before and after Death Field.
+All review details were addressed: the prompt gate was narrowed and extended to
+currency, ambient newline behavior was preserved, autonomous-NPC policy was made
+explicit and loop-safe, and the regressions now use exact overload signatures and
+a shared extraction helper while covering pager/editor and switched paths.
+
 No deployment, production migration, or restart of the configured game server
 was performed. Existing integration tests used disposable servers and isolated
 state. The unrelated untracked `.agents/skills/plan-ablation/` directory is not

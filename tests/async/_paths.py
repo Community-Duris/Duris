@@ -59,6 +59,21 @@ def source(name: str | os.PathLike[str]) -> Path:
     return found if found is not None else SRC_ROOT / text
 
 
+def extract_function(name: str | os.PathLike[str], signature: str) -> str:
+    """Extract one C/C++ function body selected by its exact signature prefix."""
+    text = source(name).read_text(encoding="utf-8")
+    start = text.index(signature)
+    depth = 0
+    for end in range(text.index("{", start), len(text)):
+        if text[end] == "{":
+            depth += 1
+        elif text[end] == "}":
+            depth -= 1
+            if not depth:
+                return text[start : end + 1]
+    raise AssertionError(signature)
+
+
 def invalidate_cache() -> None:
     """Drop the cached index; for tests that create files under src/."""
     global _index

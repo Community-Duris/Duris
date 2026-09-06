@@ -8,21 +8,7 @@ serialization run against an in-memory transport.
 from pathlib import Path
 import subprocess
 import tempfile
-from _paths import ROOT, SRC
-
-
-def extract(name, signature):
-    text = (SRC / name).read_text()
-    start = text.index(signature)
-    depth = 0
-    for end in range(text.index('{', start), len(text)):
-        if text[end] == '{':
-            depth += 1
-        elif text[end] == '}':
-            depth -= 1
-            if not depth:
-                return text[start:end + 1]
-    raise AssertionError(signature)
+from _paths import ROOT, SRC, extract_function
 
 
 PRELUDE = r'''
@@ -53,7 +39,9 @@ P_room world = rooms;
 int top_of_objt = 0;
 extern const int top_of_world = 0;
 static uint64_t busy_coin_uid;
+static bool currency_busy;
 bool currency_transaction_coin_item_busy(uint64_t uid) { return uid && uid == busy_coin_uid; }
+bool currency_transaction_player_busy(P_char) { return currency_busy; }
 void extract_obj(P_obj, int) {}
 void obj_from_char(P_obj) {}
 void obj_to_char(P_obj, P_char) {}
@@ -76,6 +64,7 @@ static void publish(P_char actor, bool committed, const item_transfer_result &, 
 }
 static std::string delivered;
 static std::vector<std::string> frames;
+static std::string ambient_bytes;
 static int ga_count;
 P_index mob_index = nullptr;
 long sentbytes = 0;
@@ -121,11 +110,14 @@ static std::string output_bytes(bool websocket)
     return bytes;
 }
 static std::string run(bool delayed, bool websocket, int flags, bool two_line,
-                       bool fighting, const char *message, bool ambient = false)
+                       bool fighting, const char *message, bool ambient = false,
+                       bool currency = false, bool switched = false, int auxiliary = 0)
 {
     descriptor_data d{};
-    char_data actor{}, enemy{};
+    char_data actor{}, body{}, enemy{};
+    npc_only_data body_npc{};
     pc_only_data pc{};
+    char *edit = nullptr;
     actor.only.pc = &pc;
     actor.desc = &d;
     actor.specials.act = flags;
@@ -135,10 +127,23 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
     pc.screen_length = 24;
     pc.prompt = PROMPT_HIT | (two_line ? PROMPT_TWOLINE : 0);
     if (fighting) actor.specials.fighting = &enemy;
-    d.character = &actor;
+    if (switched)
+    {
+        body.only.npc = &body_npc;
+        body.desc = &d;
+        body.specials.act = ACT_ISNPC;
+        body.specials.position = POS_STANDING | STAT_NORMAL;
+        body.points.hit = body.points.max_hit = 100;
+        body.points.vitality = body.points.max_vitality = 100;
+        d.character = &body;
+        d.original = &actor;
+    }
+    else
+        d.character = &actor;
     d.prompt_mode = TRUE;
     d.websocket = websocket;
-    delivered.clear(); frames.clear(); ga_count = 0;
+    delivered.clear(); frames.clear(); ambient_bytes.clear(); ga_count = 0;
+    currency_busy = false;
     item_movement_transaction_reset_for_tests();
     item_ownership_runtime_reset();
     pc.pid = 42;
@@ -179,7 +184,9 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
     {
         publication_message = message;
         publication_success = message[0] == 'Y';
-        if (count == 2)
+        if (currency)
+            currency_busy = true;
+        else if (count == 2)
             assert(item_movement_transaction_submit_batch(&actor, roots, count, nullptr,
                 source_owner, target_owner, item_transfer_reason::player_get, 100,
                 publish, nullptr, 0));
@@ -187,7 +194,26 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
             assert(item_movement_transaction_submit(&actor, items, nullptr,
                 source_owner, target_owner, item_transfer_reason::player_get, 100,
                 publish, nullptr, 0));
-        assert(item_movement_transaction_player_busy(&actor));
+        assert(currency_busy || item_movement_transaction_player_busy(&actor));
+        if (auxiliary)
+        {
+            if (auxiliary == 1)
+            {
+                d.showstr_count = 2;
+                d.showstr_page = 1;
+            }
+            else
+                d.str = &edit;
+            assert(process_output(&d) == 1);
+            const auto bytes = output_bytes(websocket);
+            assert(bytes.find(auxiliary == 1 ? "[Return to continue" : "] ") !=
+                   std::string::npos);
+            assert((websocket || ga_count == 1) && !d.prompt_mode);
+            d.showstr_count = 0;
+            d.str = nullptr;
+            d.prompt_mode = TRUE;
+            delivered.clear(); frames.clear(); ga_count = 0;
+        }
         for (int pulse = 0; pulse < 6; ++pulse)
         {
             assert(process_output(&d) == 1);
@@ -199,19 +225,28 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
             assert(process_output(&d) == 1);
             assert(output_bytes(websocket).find("Someone says hello.") != std::string::npos);
             assert(ga_count == 0 && !d.output.head);
+            ambient_bytes = output_bytes(websocket);
             delivered.clear(); frames.clear();
         }
-        critical_completion completion{};
-        completion.operation_id = submitted.operation_id;
-        completion.outcome = publication_success ? critical_apply_outcome::applied :
-                                                  critical_apply_outcome::terminal_failure;
-        item_transfer_result result{100, (uint16_t)count, 4, 8, 2, 0};
-        std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded{};
-        assert(item_transfer_command_encode_result(result, &encoded));
-        completion.result_size = encoded.size();
-        std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
-        item_movement_transaction_handle_completions(&completion, 1);
-        assert(!item_movement_transaction_player_busy(&actor));
+        if (currency)
+        {
+            currency_busy = false;
+            write_to_q(message, &d.output, 1);
+        }
+        else
+        {
+            critical_completion completion{};
+            completion.operation_id = submitted.operation_id;
+            completion.outcome = publication_success ? critical_apply_outcome::applied :
+                                                      critical_apply_outcome::terminal_failure;
+            item_transfer_result result{100, (uint16_t)count, 4, 8, 2, 0};
+            std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded{};
+            assert(item_transfer_command_encode_result(result, &encoded));
+            completion.result_size = encoded.size();
+            std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+            item_movement_transaction_handle_completions(&completion, 1);
+            assert(!item_movement_transaction_player_busy(&actor));
+        }
     }
     else
     {
@@ -241,6 +276,25 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
     assert(output_bytes(websocket) == bytes); // no duplicate completion prompt
     return bytes;
 }
+static std::string ambient_reference(bool websocket, int flags)
+{
+    descriptor_data d{};
+    char_data actor{};
+    pc_only_data pc{};
+    actor.only.pc = &pc;
+    actor.desc = &d;
+    actor.specials.act = flags;
+    actor.specials.position = POS_STANDING | STAT_NORMAL;
+    pc.pid = 42;
+    d.character = &actor;
+    d.websocket = websocket;
+    delivered.clear(); frames.clear(); ga_count = 0;
+    d.prompt_mode = FALSE;
+    write_to_q("Someone says hello.\r\n", &d.output, 1);
+    assert(process_output(&d) == 1);
+    assert(ga_count == 0 && !d.output.head);
+    return output_bytes(websocket);
+}
 int main()
 {
     for (bool ws : {false, true})
@@ -258,8 +312,17 @@ int main()
         const auto synchronous = run(false, ws, flags, two, fighting, message);
         assert(run(true, ws, flags, two, fighting, message) == synchronous);
         run(true, ws, flags, two, fighting, message, true);
+        if (smart == PLR_SMARTPROMPT)
+            assert(ambient_bytes == ambient_reference(ws, flags));
     }
-    puts("Deferred bag/corpse/floor success and failure match synchronous bytes across prompt modes and transports");
+    const auto synchronous = run(false, false, 0, false, false, "You get coins.\r\n");
+    assert(run(true, false, 0, false, false, "You get coins.\r\n", false, true) ==
+           synchronous);
+    assert(run(true, false, 0, false, false, "You get item.\r\n", false, false, true) ==
+           run(false, false, 0, false, false, "You get item.\r\n", false, false, true));
+    run(true, false, 0, false, false, "You get item.\r\n", false, false, false, 1);
+    run(true, false, 0, false, false, "You get item.\r\n", false, false, true, 2);
+    puts("Deferred item/currency output, ambient bytes, auxiliary prompts, and switched descriptors passed");
 }
 '''
 
@@ -271,8 +334,8 @@ def main():
         source = Path(directory) / 'harness.cpp'
         binary = Path(directory) / 'harness'
         source.write_text('\n'.join([PRELUDE,
-            extract('comm.c', 'int get_from_q(struct txt_q *queue, char *dest)'),
-            extract('comm.c', 'int process_output(P_desc t)'), DRIVER]))
+            extract_function('comm.c', 'int get_from_q(struct txt_q *queue, char *dest)'),
+            extract_function('comm.c', 'int process_output(P_desc t)'), DRIVER]))
         subprocess.run(['g++', '-std=c++20', '-g', '-O1', '-ffunction-sections', '-fdata-sections',
                         '-fsanitize=address,undefined', '-Isrc', str(source),
                         *[str(SRC / name) for name in ['prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',

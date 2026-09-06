@@ -3513,15 +3513,7 @@ int process_output(P_desc t)
 	string descbuf;
 
 	bool text = t->output.head;
-
-	if (text && STATE(t) == CON_PLAYING && IS_PC(realChar) &&
-	    ((t->prompt_mode == (PLR_FLAGGED(realChar, PLR_SMARTPROMPT)) ||
-	      (t->prompt_mode != PLR_FLAGGED(realChar, PLR_OLDSMARTP)))))
-	{
-		if (!t->snoop.snooping || !t->snoop.snooping->desc ||
-		    !t->snoop.snooping->desc->prompt_mode)
-			descbuf += "\r\n";
-	}
+	bool output_prompt_mode = t->prompt_mode;
 
 	if (text && !t->connected && t->character &&
 	    (IS_PC(t->character) || IS_MORPH(t->character)) &&
@@ -3549,10 +3541,24 @@ int process_output(P_desc t)
 	if (realChar && GET_STAT(realChar) == STAT_DEAD)
 		t->prompt_mode = FALSE;
 
-	// Keep the command's prompt pending until ownership and its messages publish.
-	// Other queued output must still flow while an item movement is in flight.
-	bool had_prompt = t->prompt_mode &&
-			  !(realChar && item_movement_transaction_player_busy(realChar));
+	// Keep ordinary command prompts pending until a transaction and its messages publish.
+	// Pager and string-editor prompts remain available while unrelated work is in flight.
+	bool defer_prompt = t->prompt_mode && realChar && !t->showstr_count && !t->str &&
+			    (item_movement_transaction_player_busy(realChar) ||
+			     currency_transaction_player_busy(realChar));
+	if (defer_prompt)
+		output_prompt_mode = FALSE;
+
+	if (text && STATE(t) == CON_PLAYING && IS_PC(realChar) &&
+	    ((output_prompt_mode == (PLR_FLAGGED(realChar, PLR_SMARTPROMPT)) ||
+	      (output_prompt_mode != PLR_FLAGGED(realChar, PLR_OLDSMARTP)))))
+	{
+		if (!t->snoop.snooping || !t->snoop.snooping->desc ||
+		    !t->snoop.snooping->desc->prompt_mode)
+			descbuf += "\r\n";
+	}
+
+	bool had_prompt = t->prompt_mode && !defer_prompt;
 	if (had_prompt)
 		make_prompt(t);
 
