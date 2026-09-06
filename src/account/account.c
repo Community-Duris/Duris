@@ -241,7 +241,7 @@ void remove_deleted_account_runtime(P_desc deleting_session,
 
 void display_account_login_pages(P_desc d)
 {
-	SEND_TO_Q(news.c_str(), d);
+	SEND_TO_Q("\r\n&+YNews:&n Type 'news' in game to read the latest updates.\r\n", d);
 	SEND_TO_Q(motd.c_str(), d);
 	SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
 }
@@ -518,7 +518,7 @@ void get_account_password(P_desc d, char *arg)
 #ifdef REQUIRE_EMAIL_VERIFICATION
 	if (is_account_confirmed(d))
 	{
-		// Display news and MOTD before showing account menu
+		// Display the news notice and MOTD before showing the account menu
 		display_account_login_pages(d);
 		update_account_iplist(d);
 		STATE(d) = CON_ACCT_RMOTD;

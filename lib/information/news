@@ -1,3 +1,430 @@
+&+W======================================================================&n
+&+Y                           DURIS PLAYER NEWS&n
+&+W======================================================================&n
+&+WUpdated: September 6, 2026&n
+
+Welcome back! This catch-up covers December 14, 2025 to September 6, 2026.
+The newest changes come first. Each month has short sections so you can
+find what matters to your character. Later updates replace older rules.
+
+&+R09/06/26 - Latest fixes&n
+&+W----------------------------------------------------------------------&n
+
+&+CCoins, bags and looting&n
+- Fixed cases where picking up or dropping coins could leave the wrong
+  amount in your purse, on the ground, or inside a bag.
+- Fixed coin handling when a character dies, including deaths that happen
+  while a money command is still finishing.
+- Fixed cases where a death could get stuck while moving your belongings
+  to a corpse. The game now keeps the recovery information needed to
+  finish the death without quietly throwing away your belongings.
+- Pickup and money messages now finish before the next command prompt.
+  This removes the confusing extra prompt in the middle of a pickup.
+
+&+CCombat and ships&n
+- Fixed a monster's area spells sometimes skipping the person fighting
+  it when the monster aimed at someone else. This includes Death Field.
+- Corrected who sees ship weapon damage messages during sea battles.
+
+
+&+R09/01/26 - 09/05/26 - Kingdoms, event gear and everyday fixes&n
+&+W----------------------------------------------------------------------&n
+
+&+CKingdoms and gathering&n
+- Guilds can build a kingdom around their main guildhall and expand their
+  land on the world map. Start with 'kingdom help' or 'help kingdoms'.
+- Use 'kingdom prospect' to check whether a location can hold a kingdom,
+  and 'kingdom map' to see your land and the next square you can claim.
+- Find gathering spots around the world and use 'kingdom survey' and
+  'kingdom harvest'. You do not need to belong to a guild to gather.
+- Claiming land costs platinum and all four kingdom resources. The cost
+  grows as your kingdom expands, so larger realms take a group effort.
+- Kingdom upkeep is weekly. Keep the guild treasury funded: unpaid
+  upkeep blocks expansion and can eventually cost your kingdom land.
+- Leaders can hire guards, promote them and raise a kingdom champion.
+  'Kingdom roster' shows your guards and their promotion costs.
+- Added more gathering spots on the Surface and in the Underdark.
+- Fixed land placement, resource costs, guard rosters and gathering spots
+  that could appear where nobody could use them.
+
+&+CChaos events and new characters&n
+- When Chaos starter gifts are enabled, new characters receive equipment
+  chosen for their class, including the tools and books they need.
+- Chaos events can provide starting coins, epic skills and other bonuses
+  so new characters can join the action sooner.
+- New Chaos characters can receive a craft pouch with a reusable supply
+  of materials. Normal skill, tool and recipe requirements still apply.
+  Read 'help chaos craft pouch' for the pouch's uses and limits.
+- Fixed missing material names in craft pouches after a restart.
+- Summoner character creation is available again.
+- Gaining several levels at once produces a shorter set of messages.
+
+&+CItems, accounts and controls&n
+- Commands entered after moving items or money now wait their turn
+  instead of getting lost or using an out-of-date inventory or balance.
+- Fixed 'get all' failing on ordinary items dropped by monsters.
+- Fixed bulk bag storage counts and saving items placed inside bags.
+- Account-bound divine rewards now recognize the owning account when
+  picking up or using its reward items.
+- Fixed personal locker access for the rightful owner.
+- Fixed the 'No Locate' toggle and its help text.
+- Added permanent account deletion with confirmation and checks for
+  belongings or other ties that must be dealt with first.
+- Fixed several logout and connection problems, including unexpected
+  disconnections for players using the website.
+
+&+CShips and the world&n
+- Fixed several problems with ship movement, automatic sailing, cargo,
+  purchases and combat. Empty cargo spaces now stay correctly cleared.
+- Fixed monsters that could stop following their hunting trail.
+- Corrected the central terrain in Planar Prisons and broken text in
+  Newhaven.
+
+
+&+R08/01/26 - 08/31/26 - Smoother play and safer belongings&n
+&+W----------------------------------------------------------------------&n
+
+&+CCasting, combat and character choices&n
+- Type 'abort' to stop a spell or mental power you are preparing.
+  Canceling leaves a brief recovery delay. Read 'help abort' for details.
+- Fixed commands being lost when canceling a spell.
+- Fixed Dragoon communion order and checks for needing a mount when
+  learning spells through assimilation.
+- Fixed Taint doing almost no damage to many targets.
+- Reduced Doombringer's special attack frequency and the number of hits
+  in each burst.
+- Fixed Moonwell Moonstone targeting and repeated spell fade messages.
+- Druids resume their communion correctly after logging back in.
+- Added help for every player race, improved the race selection screen,
+  and gave new characters more time to finish character creation.
+- Starting towns were corrected so their guards do not attack a new
+  character simply for being a race allowed to start there.
+- Stat rolling is much more consistent, with all stats in the very good
+  range instead of requiring long stretches of bad rolls.
+
+&+CSaving, deaths and valuables&n
+- Improved saving of characters, equipment, pets, ships and ground items
+  to reduce lost progress and duplicate belongings after interruptions.
+- Fixed several problems with corpse contents, resurrection and deaths
+  while disconnected. Death no longer removes a character from its
+  account's character list.
+- Fixed cases where one damaged saved item could stop a character from
+  entering the game.
+- Improved protection for bank balances, auction payments and refunds,
+  epic points, guild funds and earned rewards when a save is delayed.
+- Fixed bulk 'get all', 'drop all' and 'put all' commands getting stuck.
+- Fixed crashes involving 'wear all', relic pickups and monsters picking
+  up coins.
+- Fixed ground artifacts and other items appearing twice after recovery,
+  and restored equipment missing from recovered monsters.
+- Corpses are no longer accepted as salvage materials.
+- The 'save' command now reports when your save has finished.
+
+&+CCrafting and equipment&n
+- Encrust stones are easier to tell apart, and several less useful stones
+  were improved. Encrusted items receive more distinctive names.
+- Items that are both encrusted and enhanced have clearer descriptions.
+- Crafted equipment no longer gets an extra random change to its stats.
+- Learning encrust no longer requires craft, but its learning cost rose.
+- Reciting a scroll now correctly passes along the target you named.
+- Fixed travel and tracking costs for several terrain types.
+
+&+CMaps, displays and convenience&n
+- Use 'mapglyphs' to customize the symbols and colors on your world map.
+  Roads connect more clearly, and distorted maps were corrected.
+- Improved color display and support for different game clients.
+- Login greetings appear sooner, and news is shown at account login.
+- New characters start with a 40-line screen length for easier reading.
+- Fixed prompts and pages appearing in the wrong order, empty-container
+  feedback, and quest messages for characters already at maximum level.
+- Tracking no longer lists your own tracks.
+- Typing 'shipyard list' without more words shows the available hulls.
+- Corrected ship naming checks and reduced delays in viewing contacts.
+- The old 'who' toggle was replaced by a login-announcement preference;
+  the terminal toggle works again.
+- Fixed the eastern entrance of Marigot and door keywords in Cora's
+  library. Winterhaven's drakenhorse was strengthened and can see
+  invisible travelers.
+- Fixed pets bypassing restrictions on Vecna's pillar portals.
+- The old siege system was retired. The new kingdom system is described
+  in the September news above.
+- Reduced several causes of game pauses, delayed actions and crashes.
+
+
+&+R07/01/26 - 07/31/26 - Crafting, rewards and storage&n
+&+W----------------------------------------------------------------------&n
+
+&+CCrafting, enhancement and salvage&n
+- Recipe books are easier to browse and explain the materials and other
+  requirements for a recipe. Unavailable recipes are filtered out.
+- Crafting and forging give clearer success, failure and reward messages.
+- Enhancement explains its requirements and results more clearly.
+- Superior stat enhancement can improve all eligible stats together,
+  with limits based on the item's original stats.
+- Improved the colored marker for superior equipment.
+- Examining salvageable items gives more helpful guidance. Salvage tools
+  and magical essence requirements are explained more clearly.
+- Fixed recipes and enhancement choices that could never produce a
+  valid result, along with several crafting and forging failures.
+
+&+CRewards and level limits&n
+- Added 'divineclaim' for rewards granted to your account. Rewards can
+  allow more than one claim when staff have set them up that way.
+- Level-cap progress now checks an already-earned milestone when its
+  waiting period ends, without needing another player kill to notice it.
+- Hardcore characters can have an allowance above the normal level cap,
+  while still respecting the game's maximum level.
+
+&+CBags, lockers and auctions&n
+- Fixed taking everything from corpses and bags, including bags with
+  other bags inside them. Carrying and container limits are checked.
+- Fixed locker contents, private chest bag order, and lockers incorrectly
+  staying marked as in use after their user had left.
+- Fixed auction offer times and auctions showing the wrong time left.
+- The account character list updates your saved location more reliably.
+
+&+CCombat and travel&n
+- Equipment that grants sneaking works again after a successful flee.
+- Typing commands while waiting now clears idle status properly.
+- Fixed special attacks on shadow monsters and missing individual hit
+  messages from Death Field.
+- Fixed town raid timers and ordinary blocked passages failing to open
+  the way back.
+- Drinking a potion in a no-magic room still wastes it, but no longer
+  starts the potion waiting timer.
+- Identify gives correct information for scrolls, potions, wands and
+  staves instead of displaying meaningless spell values.
+- The Ashrumite inn accepts rent, and trying to fully repair a ship
+  without enough epic points no longer crashes the game.
+
+
+&+R06/01/26 - 06/30/26 - Groups, spells and fewer interruptions&n
+&+W----------------------------------------------------------------------&n
+
+&+CGroups and companions&n
+- Pets join their owner's group automatically.
+- Groups can be combined by grouping a willing group leader.
+- Group recall no longer depends on grouping the cleric last.
+- Group area spells no longer hit mounts ridden by you or your group.
+- Paladin auras stay in place when a group leader is removed.
+- Friendly guild golems on the same side count as grouped.
+
+&+CSpells, skills and settings&n
+- Mages can memorize the spells they have books for even if other books
+  are missing.
+- 'Improved invisibility' is now called 'invisibility'. The old name
+  still works.
+- Bards gain legend lore in the base class, and Scoundrels gain dual
+  wield. Singing and group teleport correctly reveal a hidden singer.
+- The innate list shows abilities you have not unlocked yet and the
+  level needed to use them.
+- Toggles can be set explicitly on or off instead of only being flipped.
+- New-character equipment avoids weapons and items the character cannot
+  use.
+- Boon kill progress and Diamond Soul ending messages are clearer.
+
+&+CItems, travel and reliability&n
+- Fixed encrusting stripping weapon stats or accepting unsuitable items
+  such as containers.
+- Fixed bag weights and space checks, including bags inside other bags.
+- Fixed the Deramuth ferry having both ends of its route in one room.
+- Fixed guildhall construction and visibility mistakes on the who list.
+- Improved recovery of pets, corpses, item descriptions and spell effects.
+- Fixed several auction pickup, refund, locker exit and mail problems.
+- Many crash and freeze fixes cover fighting, spells, pets, movement,
+  quests, deaths and reconnecting. Saving is less likely to pause play.
+
+
+&+R05/01/26 - 05/31/26 - Learning and clearer equipment&n
+&+W----------------------------------------------------------------------&n
+- Added a potion of learning, available from the shop in Mugnork in the
+  Mountain of Peril Peaks. It gives chances for faster skill improvement
+  for an hour.
+- Epic skills stand out from regular skills in the 'skills' display.
+- Ordinary zone equipment no longer receives random poor or superior
+  quality changes.
+- Language handling was simplified around speaking with your own side
+  or the other side of the racewar.
+- Tharnadia's rogue shop sells the vials needed for mixing poison.
+- Fixed the Mugnork shop and cleaned up Peril Peaks descriptions.
+
+
+&+R04/01/26 - 04/30/26 - Poisons, ferries and adventures&n
+&+W----------------------------------------------------------------------&n
+
+&+CAssassins, rogues and combat&n
+- Assassins gain ambush and poison mixing at level 30. Use 'mixpoison'
+  to prepare mixed poisons, then apply them to a suitable weapon.
+- Apply poison can work with a wielded weapon and a vial on your belt,
+  and can be used while waiting in ambush.
+- Added poison effects that slow enemies, drain movement or cause
+  madness. Fixed poison application and a crash when poison killed.
+- Dirt toss has less delay. Blindness effects were made more reliable,
+  with most lasting only a few combat rounds.
+- Thieves gained higher limits for several fighting skills. Thieves and
+  Assassins gained a higher disguise limit; Scoundrel trip was reduced.
+- Anti-Paladins received stronger life-draining benefits, including
+  Hellfire Absorb and Battle Ecstasy. Avernus's special attack improved.
+- Fixed Monk critical hits so life-draining benefits, damage shields and
+  the shorter combat display account for them properly.
+- Race balance changed for Driders, Ogres, Firbolgs, Goblins, Githyanki,
+  Tieflings and others. Check race help when choosing a new character.
+- Githzerai can choose Paladin and Githyanki can choose Anti-Paladin.
+  Driders wearing a spider body can be ridden.
+
+&+CTravel, quests and rewards&n
+- Expanded the ferry service to six ferries, with more stops and revised
+  routes, speeds and waiting times. Bays were expanded at Myrabolus,
+  Tharnadia and Sarmiz.
+- Added wandering zone ambassadors to many areas. Their zone-completion
+  reward increased from 250 to 1,000 platinum.
+- Added scroll and ring quest content tied to the Mystic Ward and
+  Winterhaven, plus a tradeskills teacher in Alatorin's miner guild.
+- Fort Marigot gained a bartender. Grumbar and CRL2 gained epic stones.
+- Improved rewards in Mount Banishment, Trakkia Mountains, Faerie Realm,
+  Forgotten Mansion and other zones, with new rare treasures and enemies.
+- Updated Arcium, Lava Springs, Fisherman's Wharf, Drifting Realm and
+  Olyxs. Corrected Surface connections and several quest shops.
+- IC3 was removed from the active world after its earlier balance pass.
+- Identify and lore now show food effects. Alatorin food was updated.
+- Fixed cargo displays, ferry shop purchases and Captain's flag rewards.
+
+&+CRacewar and saving&n
+- Revised racewar level-cap progression and the experience reward for
+  the side that earns an increase. Later tuning is reflected in the
+  game's current cap and reward displays.
+- Frag lists show totals for both sides. Epic zones no longer change
+  alignment as quickly.
+- Fixed containers growing heavier incorrectly and improved saving of
+  corpses, ships, character changes and account bank balances.
+
+
+&+R02/01/26 - 02/28/26 - Connections and guild warnings&n
+&+W----------------------------------------------------------------------&n
+- Fixed disconnections when entering the game over a secure connection,
+  and made slow connections less likely to fail during login.
+- Fixed reconnecting to the wrong body and several website login,
+  logout and auction problems.
+- Guildhall magic mouths send their warnings to guild chat and handle
+  same-side visitors correctly.
+- Battle alerts start enabled by default.
+- Added the Jestros chat channel and side choices for newbie assistance.
+
+
+&+R01/01/26 - 01/31/26 - Shared storage and class updates&n
+&+W----------------------------------------------------------------------&n
+
+&+CAccounts, lockers and valuables&n
+- Added account banks and account lockers, with racewar restrictions on
+  locker use. Added private chests for protected storage.
+- Fixed locker access grants for accounts and individual characters.
+- Fixed equipment losing stats, gaining duplicate bonuses, changing
+  type, or losing enhanced and encrusted effects after being stored.
+- Fixed missing items inside stored bags and incorrect container weight.
+- Inventory and bag contents keep their order when you log back in.
+- Fixed items duplicating after resurrection or recovery from a crash.
+- Improved recovery of pets and ships, including duplicate pets and
+  ships appearing after a live restart.
+- Fixed lost ship money and improved saving of experience, quest
+  progress, guild membership and spellbooks.
+- Picking up too many artifacts of the same class drops the extra
+  artifact instead of making it disappear.
+
+&+CHealers and holy magic&n
+- Healers gained Warding Faith, a protective reserve that absorbs damage
+  and recovers over time.
+- Holymen gained Vital Intercession and Holy Intercession, which heal
+  after damage is taken. The two protections can work together.
+- Zealots gained Warring Zeal for accuracy and extra holy damage after
+  melee hits, plus double attack at 41 and dual wield at 51.
+- Zealot Flamestrike can leave a brand that reduces healing and
+  life-draining recovery. Restore can remove it.
+- Accelerated Healing was strengthened, and Group Heal casts faster.
+- 'Tog heal' controls detailed healing messages. The shorter combat
+  display combines more damage into a readable total.
+- Prompts and target descriptions show ward protection.
+
+&+CEthermancers, Dragoons and other combat&n
+- Ethermancers gained Frost Beam. Ice Spikes and Lightning Ring were
+  improved, while Blur was removed from their spell list.
+- Tempest Magus Cyclone gained stronger level-based damage and the
+  ability to stun elite monsters. Arcane Whirlwind scales with level.
+- Anti-Magic Ray's dispelling and shrug behavior were adjusted.
+  Disintegrate can bypass shrug some of the time; Acid Immolate does so.
+- Evil Tieflings can be Ethermancers.
+- Dragon Lancers gained shield block, and Dragoon spells received more
+  fixes and balance work, including Edictum Cineris.
+- Fixed two-handed extra attacks, thrown weapon damage and hit messages.
+- Reduced equipment damage and corrected several damage calculations.
+- Disguise kits no longer blind their users.
+
+&+CPlaying and exploring&n
+- Added in-game polls and a Hardcore leaderboard.
+- Improved game-client displays for rooms, ships, combat and character
+  changes. Hidden enemies and secret exits are better protected.
+- Fixed several registration, login, inn rent and connection crashes.
+- IC3 received a large monster and equipment balance pass during this
+  period; it was later removed from the active world in April.
+
+
+&+R12/14/25 - 12/31/25 - Guardians, Dragoons and healing&n
+&+W----------------------------------------------------------------------&n
+
+&+CGuardians and taunt&n
+- Guardians can use two-handed weapons again.
+- Dreadnaught's spell protection was strengthened, and crashes involving
+  that protection and extra attacks were fixed.
+- Taunt was added to more classes and specializations. It can target a
+  different enemy while you are already fighting.
+- Fixed monsters switching away from the person who successfully
+  taunted them.
+
+&+CDragoons and spell changes&n
+- Added and refined Dragoon conjured weapons and spells, including
+  Judicium, Sanguinis Ignis, Sanctum Draconis, Vivernae Concordia,
+  Sigillum Negati and Draconic Apotheosis.
+- Improved Dragoon communion timing, casting during combat, mount
+  health and dragon breath. Corrected several spell and dodge messages.
+- Healers became more focused on support: damage spells were removed,
+  healing improved, and healing salve grew stronger with character level.
+- Added Divine Font, which creates a short-lived source of healing,
+  vitality and renewed movement that people can drink from.
+- Group Heal moved to the tenth spell circle, and Accelerated Healing
+  was improved. Further healing changes followed in January.
+- Dispel magic can remove permanent protections from ordinary monsters
+  and temporarily suppress them on elite monsters.
+- Fixed spell protection using the attacker's resistance instead of the
+  target's. Necromancer pets had excessive protection against players
+  corrected, and Monk special hits received critical and life-drain fixes.
+
+&+CArtifacts and world fixes&n
+- The oaken staff gained Freedom of Movement with its intended waiting
+  time. Axe of Dragonkind and other artifacts received improvements.
+- Fixed Reflection disengaging its target and improved the dagger of
+  Wind's chance to turn aside attacks.
+- Corrected Sword of Fire and Flame and Mace of the Efreeti handling
+  after the Brass area changes.
+- Fixed an artifact timer that could make an artifact vanish far too
+  soon. Dreamfoil now floats.
+- Corrected zone resets that could restore equipment or clear a zone's
+  epic completion before they should.
+
+&+CAccounts and easier reading&n
+- Switching racewar sides gained an account-wide waiting period, so
+  changing characters does not skip the wait.
+- Wizards gained spellbook summoning on login.
+- Added support for playing through the website and richer displays in
+  compatible game clients, including maps, groups and ship information.
+- Fixed auction bids and item descriptions, duplicate sailing maps,
+  paging prompts, account menu mistakes and several reconnect crashes.
+- Tracking failure messages no longer reveal whether a hidden target
+  exists just by giving a different error.
+
+
+&+W======================================================================&n
+&+Y                 EARLIER NEWS - DECEMBER 13, 2025 AND BEFORE&n
+&+W======================================================================&n
+
 &+R12/13/25
 - Added 'taunt' skill to Guardians at level 30.  This is very similar to an MMO
   style taunt skill.  Forces a target to stay focused on you, while they are
