@@ -25,6 +25,8 @@ bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_ent
 						size_t count);
 bool item_ownership_runtime_hydrate_owner(const item_owner_identity &owner, uint64_t revision);
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry);
+bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, size_t limit,
+					   std::vector<item_ownership_runtime_entry> *snapshot);
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision);
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result);

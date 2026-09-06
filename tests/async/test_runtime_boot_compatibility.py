@@ -23,6 +23,23 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.comm = (SRC / "comm.c").read_text()
         self.header = (SRC / "runtime_compatibility_contract.h").read_text()
 
+    def test_offline_death_schema_rejects_column_and_index_damage(self):
+        import tempfile
+        import validate_runtime_compatibility as validator
+        original = (ROOT / "migrations/immutable/0011_player_death_disposition.sql").read_text()
+        validator.validate_death_schema()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "death.sql"
+            for damaged in (
+                original.replace("wallet_copper INT", "wallet_copper BIGINT"),
+                original.replace("    payload MEDIUMBLOB NOT NULL,\n", ""),
+                original.replace("    KEY idx_player_death_custody_item (item_uid)\n", ""),
+                original.replace("ENGINE=InnoDB", "ENGINE=MyISAM"),
+            ):
+                path.write_text(damaged)
+                with self.assertRaises(validator.migration_runner.MigrationContractError):
+                    validator.validate_death_schema(path)
+
     def test_manifests_and_compiled_contract_are_synchronized(self):
         """The manifest, migration ledger, and compiled header agree.
 
@@ -31,16 +48,12 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         fails here instead of at a server's boot gate.
         """
         report = runtime.validate()
-        # 174, and UNCHANGED by head 0007. kingdom_garrison is deliberately
-        # outside runtime_table_sql_list: the metadata fingerprint, the table
-        # count and the engine/collation checks all scope themselves to that
-        # list, and adding a name to it means regenerating both normalised
-        # fingerprints against a live MySQL 8 and a live MariaDB 10.11. A count
-        # that moved without those two fingerprints moving with it would fail a
-        # real server's boot gate, which is what this test exists to catch.
-        self.assertEqual(report["current_table_count"], 174)
+        # Includes both death recovery tables, verified on both supported engines.
+        self.assertEqual(report["current_table_count"], 177)
+        for table in ("player_death_disposition", "player_death_custody"):
+            self.assertIn("'" + table + "'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0009_kingdom_garrison")
+                         "0011_player_death_disposition")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

@@ -268,6 +268,26 @@
       "verify": "immutable/0009_kingdom_garrison.sh",
       "verify_checksum": "79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0010_coin_custody_payload",
+      "sequence": 10,
+      "description": "Preserve committed coin pile payloads with item custody",
+      "apply": "immutable/0010_coin_custody_payload.sql",
+      "apply_checksum": "45f27f593f60041d6591654ec9f48ff3ebe74fe4f0402041cd48114353913057",
+      "verify": "immutable/0010_coin_custody_payload.sh",
+      "verify_checksum": "4e5b3c5f04da93345c08a1d9cc4a145ea747a73d4d5a8e8a4407a47f5a506c07",
+      "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0011_player_death_disposition",
+      "sequence": 11,
+      "description": "Add the durable player death disposition and its custody evidence",
+      "apply": "immutable/0011_player_death_disposition.sql",
+      "apply_checksum": "209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057",
+      "verify": "immutable/0011_player_death_disposition.sh",
+      "verify_checksum": "cfeba2cc7cd8f07b1b24e490d2d05167231e76cbdcb96ced21b98671612f12e3",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

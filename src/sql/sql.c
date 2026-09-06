@@ -1910,7 +1910,7 @@ static bool sql_verify_boot_database(void)
 		"AND column_name IN ('owner_type','owner_id','owner_context_id','revision','updated_at')) "
 		"OR (table_name='item_current_owner' AND column_name IN "
 		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
-		"'owner_context_id','item_revision','vnum','state','updated_at')) OR "
+		"'owner_context_id','item_revision','vnum','state','coin_payload','updated_at')) OR "
 		"(table_name='item_ownership_baseline' AND column_name IN "
 		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
 		"'owner_context_id','opening_item_revision','vnum','source_table','source_row_id',"
@@ -1930,12 +1930,12 @@ static bool sql_verify_boot_database(void)
 	}
 	row = mysql_fetch_row(result);
 	lengths = row ? mysql_fetch_lengths(result) : NULL;
-	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 55;
+	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 56;
 	mysql_free_result(result);
 	if (!item_ownership_columns_ok)
 	{
 		logit(LOG_STATUS,
-		      "FATAL: item ownership schema is incomplete at boot (expected 55 columns).");
+		      "FATAL: item ownership schema is incomplete at boot (expected 56 columns).");
 		return false;
 	}
 	const char *item_ownership_index_probe =

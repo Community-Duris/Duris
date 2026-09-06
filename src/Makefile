@@ -238,6 +238,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_identity_adapter.o \
 				 flatfile/flatfile_character_delete.o \
 				 flatfile/flatfile_player_repository.o \
+				 flatfile/flatfile_player_snapshot_file.o \
 				 flatfile/flatfile_item_uid_allocator.o \
 				 flatfile/flatfile_item_repository.o \
 				 flatfile/flatfile_artifact_repository.o \
@@ -286,6 +287,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/epic_command.o \
 				 world/epic_transaction.o \
 				 economy/currency_command.o \
+				 economy/coin_transfer_command.o \
 				 economy/auction_command.o \
 				 economy/auction_repository.o \
 				 economy/auction_transaction.o \

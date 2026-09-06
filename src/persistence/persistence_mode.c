@@ -21,9 +21,9 @@ static const char *active_flatfile_root;
 
 #ifdef __NO_MYSQL__
 static const char *const flatfile_directories[] = {
-	"metadata",	    "identities", "identities/accounts",
-	"identities/names", "players",	  "operations",
-	"operations/wal",   "domains",	  "manifests",
+	"metadata",  "identities",    "identities/accounts", "identities/names",
+	"players",   "operations",    "operations/wal",	     "domains",
+	"manifests", "player-deaths",
 };
 #endif
 

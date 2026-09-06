@@ -73,15 +73,22 @@ checks.append((
 corpse = body(fight, "P_obj make_corpse(P_char ch, int loss)")
 checks.append((
     "make_corpse defers the first handoff instead of logging failed_preserved",
-    contains(corpse, "if (!item_movement_transaction_player_busy(ch))")
-    and corpse.index("if (!item_movement_transaction_player_busy(ch))")
+    contains(corpse, "if (!item_movement_transaction_player_busy(ch) &&")
+    and contains(corpse, "!currency_transaction_player_busy(ch))")
+    and corpse.index("if (!item_movement_transaction_player_busy(ch) &&")
     < corpse.index("(void)submit_next_corpse_item(ch, corpse);")
 ))
 checks.append((
     "the deferred corpse is still written and the owner still marked dirty",
     contains(corpse, "writeCorpse(corpse);")
     and corpse.index("writeCorpse(corpse);")
-    < corpse.index("if (!item_movement_transaction_player_busy(ch))")
+    < corpse.index("if (!item_movement_transaction_player_busy(ch) &&")
+))
+checks.append((
+    "a wallet conversion that cannot be submitted disputes the death instead of "
+    "silently dropping the coins",
+    contains(corpse, "if (!IS_TRUSTED(ch) && !money_to_inventory(ch))")
+    and contains(corpse, "note_corpse_transfer_dispute(ch);")
 ))
 
 blade = body(specs, "int holy_weapon(P_obj obj, P_char ch, int cmd, char *arg)")

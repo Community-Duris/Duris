@@ -2,6 +2,8 @@
 #include "sql/sql_thread_init.h"
 
 #include "economy/currency_command.h"
+#include "economy/coin_transfer_command.h"
+#include "persistence/critical_outbox.h"
 #include "world/epic_command.h"
 #include "economy/auction_command.h"
 #include "economy/auction_repository.h"
@@ -393,7 +395,12 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 		return false;
 	uint16_t destination = OUTBOX_DESTINATION_TEST;
 	uint16_t event_type = OUTBOX_EVENT_TEST_MUTATED;
-	if (command.type == critical_command_type::epic)
+	if (command.type == critical_command_type::coin_transfer)
+	{
+		destination = CRITICAL_OUTBOX_COIN_RECEIPT_DESTINATION;
+		event_type = CRITICAL_OUTBOX_COIN_RECEIPT_EVENT;
+	}
+	else if (command.type == critical_command_type::epic)
 	{
 		destination = OUTBOX_DESTINATION_EPIC;
 		event_type = OUTBOX_EVENT_EPIC_BALANCE;
@@ -937,10 +944,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	boon_reward_payload boon_payload = {};
 	zone_touch_payload zone_payload = {};
 	session_audit_payload audit_payload = {};
+	coin_transfer_payload coin_payload = {};
 	const bool test_command = command.type == critical_command_type::test &&
 				  command.payload.size() == 8;
 	const bool epic_command = epic_command_decode_payload(command, &epic_payload);
 	const bool currency_command = currency_command_decode_payload(command, &currency_payload);
+	const bool coin_command = coin_transfer_command_decode_payload(command, &coin_payload);
 	const bool item_command = item_transfer_command_decode_payload(command, &item_payload);
 	const bool auction_command = auction_command_decode_payload(command, &auction_payload);
 	const bool combat_command = combat_outcome_command_decode_payload(command, &combat_payload);
@@ -950,9 +959,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool zone_command = zone_touch_command_decode_payload(command, &zone_payload);
 	const bool audit_command = session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
-	    (!test_command && !epic_command && !currency_command && !item_command &&
-	     !auction_command && !combat_command && !artifact_guild_command && !boon_command &&
-	     !zone_command && !audit_command) ||
+	    (!test_command && !epic_command && !currency_command && !coin_command &&
+	     !item_command && !auction_command && !combat_command && !artifact_guild_command &&
+	     !boon_command && !zone_command && !audit_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -986,6 +995,158 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		}
 		rollback(connection);
 		return failure(error);
+	}
+	if (coin_command)
+	{
+		// Keep the parent inbox row on a rejected conversion, but roll back every
+		// endpoint, ledger row and outbox event together. Child identities exist
+		// only to reuse the existing ledgers; they are never separate commits.
+		if (!execute(connection, "SAVEPOINT coin_endpoints"))
+		{
+			const auto error = mysql_errno(connection);
+			rollback(connection);
+			return failure(error);
+		}
+		coin_transfer_result result;
+		unsigned int result_code = 0;
+		uint64_t durable_revision = 0;
+		const coin_transfer_endpoint *endpoints[2] = { &coin_payload.source,
+							       &coin_payload.destination };
+		for (size_t index = 0; index < 2 && !result_code; ++index)
+		{
+			critical_command change = endpoints[index]->change;
+			if (index && !coin_transfer_command_destination_after_source(
+					     coin_payload, result, &change))
+			{
+				result_code = ESTALE;
+				break;
+			}
+			std::array<uint8_t, SHA256_DIGEST_LENGTH> child_hash = {},
+								  child_keys_hash = {};
+			if (!command_hashes(change, &child_hash, &child_keys_hash) ||
+			    !insert_inbox(connection, change, child_hash, child_keys_hash))
+			{
+				const auto error = database_error(connection);
+				rollback(connection);
+				return failure(error ? error : ENOMEM);
+			}
+			bool mutated = false;
+			bool ok = false;
+			std::vector<uint8_t> child_result;
+			uint64_t revision = 0;
+			if (change.type == critical_command_type::account_bank)
+			{
+				ok = execute_currency_state(connection, change,
+							    &result.wallets[index], &result_code,
+							    &mutated);
+				if (ok && !result_code &&
+				    !std::equal(endpoints[index]->after.begin(),
+						endpoints[index]->after.end(),
+						result.wallets[index].wallet.amount.begin()))
+					result_code = ESTALE;
+				std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> bytes = {};
+				if (ok && !result_code)
+				{
+					ok = currency_command_encode_result(result.wallets[index],
+									    &bytes);
+					child_result.assign(bytes.begin(), bytes.end());
+					revision = std::max(result.wallets[index].wallet_revision,
+							    result.wallets[index].bank_revision);
+				}
+			}
+			else
+			{
+				ok = item_transfer_repository_execute_coin(connection, change,
+									   endpoints[index]->before,
+									   &result.piles[index],
+									   &result_code, &mutated);
+				std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> bytes = {};
+				if (ok && !result_code)
+				{
+					ok = item_transfer_command_encode_result(
+						result.piles[index], &bytes);
+					child_result.assign(bytes.begin(), bytes.end());
+					revision =
+						std::max({ result.piles[index].max_item_revision,
+							   result.piles[index].from_owner_revision,
+							   result.piles[index].to_owner_revision });
+				}
+			}
+			if (!ok)
+			{
+				const auto db_error = database_error(connection);
+				const unsigned int error = db_error ? db_error : errno;
+				rollback(connection);
+				return failure(error ? error : EIO);
+			}
+			if (result_code)
+				break;
+			if (!mutated ||
+			    !insert_outbox(connection, change, child_result.data(),
+					   child_result.size()) ||
+			    !finish_inbox(connection, change, revision, 0, child_result.data(),
+					  child_result.size()))
+			{
+				const auto error = database_error(connection);
+				rollback(connection);
+				return failure(error ? error : EIO);
+			}
+			durable_revision = std::max(durable_revision, revision);
+		}
+		std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> bytes = {};
+		if (result_code)
+		{
+			if (!execute(connection, "ROLLBACK TO SAVEPOINT coin_endpoints"))
+			{
+				const auto error = mysql_errno(connection);
+				rollback(connection);
+				return failure(error);
+			}
+			durable_revision = 0;
+		}
+		else if (!coin_transfer_command_encode_result(coin_payload, result, &bytes))
+		{
+			rollback(connection);
+			return failure(EBADMSG);
+		}
+		const size_t result_size = result_code ? 0 : bytes.size();
+		std::array<uint8_t, CRITICAL_OUTBOX_COIN_RECEIPT_BYTES> receipt;
+		std::copy(coin_payload.source.change.operation_id.bytes.begin(),
+			  coin_payload.source.change.operation_id.bytes.end(), receipt.begin());
+		std::copy(coin_payload.destination.change.operation_id.bytes.begin(),
+			  coin_payload.destination.change.operation_id.bytes.end(),
+			  receipt.begin() + 16);
+		if (!result_code &&
+		    !insert_outbox(connection, command, receipt.data(), receipt.size()))
+		{
+			const auto error = database_error(connection);
+			rollback(connection);
+			return failure(error);
+		}
+		if (!finish_inbox(connection, command, durable_revision, result_code, bytes.data(),
+				  result_size))
+		{
+			const auto error = database_error(connection);
+			rollback(connection);
+			return failure(error);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 durable_revision, error };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  durable_revision, result_code };
+		applied.result_size = result_size;
+		std::copy_n(bytes.begin(), result_size, applied.result_payload.begin());
+		return applied;
 	}
 	if (epic_command)
 	{

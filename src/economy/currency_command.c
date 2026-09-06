@@ -64,7 +64,7 @@ uint64_t get_u64(const uint8_t *input)
 bool valid_reason(currency_reason_type reason)
 {
 	return reason > currency_reason_type::unknown &&
-	       reason <= currency_reason_type::chaos_starter_reward;
+	       reason <= currency_reason_type::coin_transfer;
 }
 
 bool valid_name(const char *name, size_t *length)

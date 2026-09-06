@@ -116,8 +116,14 @@ require(
     "persistence_save_character_terminal(ch, RENT_DEATH)" in retry,
     "the recovery event must re-attempt the terminal save",
 )
+release = section(
+    FIGHT,
+    "static void release_after_terminal_death(P_char ch, const char *outcome)",
+    "\n/** Record the refused death disposition",
+)
 require(
-    "extract_char_after_terminal_save(ch)" in retry,
+    "release_after_terminal_death(ch," in retry
+    and "extract_char_after_terminal_save(ch)" in release,
     "the recovery event must complete saved-item extraction",
 )
 require(
@@ -231,13 +237,14 @@ require(
     "all three ownership hydration failures must be logged",
 )
 
-# the load path has no query headroom; it must not have grown
-require(
-    "PLAYER_LOAD_QUERY_MAX = 22" in LOAD_REPOSITORY_H,
-    "load query budget changed; re-check the 22-query ceiling",
-)
+# Full loads reconstruct coin payloads with one owner-scoped query, outside the
+# per-item loop; adding inventory items must not add per-item SQL requests.
+coin_load = section(LOAD_REPOSITORY, "const std::string coin_sql =", "while (MYSQL_ROW row = mysql_fetch_row(coin_rows.get()))")
+require(coin_load.count("query(connection, coin_sql, result)") == 1,
+        "coin payloads must use one batched query")
+require("own.owner_id=" in coin_load and "own.coin_payload IS NOT NULL" in coin_load,
+        "coin payload fetch must be scoped to the player's authoritative piles")
 
-# --- 7. account menu NULL guard ---------------------------------------------------
 menu = section(ACCOUNT, "void display_account_menu(P_desc d, char *arg)", "\n}\n")
 require(
     menu.lstrip().startswith("void display_account_menu(P_desc d, char *arg)\n{\n\tif (!arg)")

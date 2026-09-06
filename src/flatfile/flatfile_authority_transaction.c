@@ -43,6 +43,8 @@ std::string operation_directory(const std::string &root, flatfile_authority_stor
 		return root + "/identities/accounts";
 	case flatfile_authority_store::metadata:
 		return root + "/metadata";
+	case flatfile_authority_store::player_deaths:
+		return root + "/player-deaths";
 	}
 	return {};
 }
@@ -390,6 +392,10 @@ flatfile_authority_transaction_result flatfile_authority_transaction_commit_oper
 	std::vector<uint8_t> bytes;
 	if (!lock.owns(root) || !encode_transaction(operations, &bytes))
 		return flatfile_authority_transaction_result::invalid;
+#ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
+	if (getenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT"))
+		return flatfile_authority_transaction_result::io_error;
+#endif
 	if (!flatfile_atomic_write(domains_directory(root), transaction_filename, bytes, error))
 		return flatfile_authority_transaction_result::io_error;
 	for (size_t index = 0; index < operations.size(); ++index)

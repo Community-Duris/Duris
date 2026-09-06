@@ -73,9 +73,10 @@ void update_max(uint64_t &target, uint64_t candidate)
 
 bool valid_snapshot(const player_snapshot &snapshot)
 {
-	return snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION && snapshot.pid > 0 &&
-	       snapshot.revision && snapshot.components &&
-	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
+	const uint32_t required = snapshot.death ? PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION :
+						   PLAYER_SNAPSHOT_SCHEMA_VERSION;
+	return snapshot.schema_version == required && snapshot.pid > 0 && snapshot.revision &&
+	       snapshot.components && !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
 }

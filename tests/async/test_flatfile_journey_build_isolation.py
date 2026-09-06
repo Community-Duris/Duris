@@ -10,9 +10,12 @@ SOURCES = (
     ("tests/async/test_account_recovery_journey.py", "flatfile-recovery"),
 )
 
+# The prefix is matched WITHOUT its closing bracket: a journey may pass further
+# arguments to TemporaryDirectory and wrap the call, which the combat journey
+# now does, and the contract is about the prefix rather than the call's shape.
 for relative, prefix in SOURCES:
     source = (ROOT / relative).read_text()
-    assert f'TemporaryDirectory(prefix=f"{prefix}-{{os.getpid()}}-")' in source, relative
+    assert f'TemporaryDirectory(prefix=f"{prefix}-{{os.getpid()}}-"' in source, relative
     assert "build_flatfile_server(pathlib.Path(build_tmp))" in source, relative
     assert 'ROOT / "bin/tests/flatfile-combat"' not in source, relative
 

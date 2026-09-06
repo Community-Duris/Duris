@@ -1700,6 +1700,7 @@ resume_game_loop:
 							  "operation metadata redacted");
 			player_save_pipeline_pulse();
 			persistence_pulse_character_saves();
+			death_extract_retry_pulse();
 			player_load_result load_completions[32] = {};
 			const size_t load_completion_count =
 				player_load_pipeline_pulse(load_completions, 32);

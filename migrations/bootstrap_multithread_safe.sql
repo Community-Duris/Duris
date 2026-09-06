@@ -1905,6 +1905,7 @@ CREATE TABLE `item_current_owner` (
   `owner_id` bigint unsigned NOT NULL, `owner_context_id` bigint unsigned NOT NULL DEFAULT '0',
   `item_revision` bigint unsigned NOT NULL DEFAULT '0', `vnum` int NOT NULL DEFAULT '0',
   `state` tinyint unsigned NOT NULL DEFAULT '1',
+  `coin_payload` mediumblob DEFAULT NULL,
   `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`item_uid`), KEY `idx_item_current_root_uid` (`root_item_uid`,`item_uid`),
   KEY `idx_item_current_owner` (`owner_type`,`owner_id`,`owner_context_id`,`item_uid`),
