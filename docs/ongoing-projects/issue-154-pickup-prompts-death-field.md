@@ -2,16 +2,15 @@
 
 Updated: 2026-09-06.
 
-Status: **implementation and focused validation complete; final validation and
-review handoff remain unfinished**. Work was paused at the owner's request.
-This document accompanies publication of the current branch so work can resume
-without treating the partial validation as a clean full-suite result.
+Status: **implementation and validation complete; ready-for-review handoff in
+progress**. The previously interrupted standalone retry passed, resolving the
+only inconclusive validation result from the full regression gate.
 
 - Issue: [#154 — extra pickup prompt and Death Field missing an engaged player](https://github.com/Community-Duris/Duris/issues/154).
 - Branch: [`fix/154-pickup-prompts-death-field`](https://github.com/Community-Duris/Duris/tree/fix/154-pickup-prompts-death-field).
 - Created from fetched `origin/master` at
   `bf095cf5c57996cbe7732bf1f61a29a61b7700f3`.
-- At this checkpoint, the issue remains open and no PR has been created.
+- The issue remains open while the ready-for-review PR is prepared.
 
 ## Completed work
 
@@ -89,9 +88,9 @@ damage/defense behavior.
 | `./scripts/format.sh --check` and `git diff --check` | Passed. |
 | New regressions supplied with master's original changed functions | Both failed at the expected assertions: premature output and missing melee-target damage. |
 | `make test-all` | **413 passed, 1 failed** in 520.27 seconds; command exited 2. Both new tests passed in this run. |
-| Standalone combat-journey retry | **Interrupted at the owner's pause request**, not a passing result. Its process group was stopped and verified absent. |
+| `python3 -B tests/async/test_flatfile_combat_journey.py` | Passed on standalone retry, including player death, corpse recovery, save and reconnect. |
 
-### Outstanding full-suite failure
+### Full-suite retry result
 
 `test_flatfile_combat_journey.py` timed out in `disputed_death()` during the
 `reset_coins=True` journey. It sent `hit executioner` and expected
@@ -101,29 +100,21 @@ damage/defense behavior.
 You stumble, but recover in time!
 ```
 
-The transcript continued to show 35/35 HP. That message can come from the
-unchanged combat fumble path, which returns before starting combat. This is
-evidence of a likely random fixture failure, **not proof that the test is clean**.
-The standalone retry was interrupted during an isolated server run, so its result
-remains unknown. No combat-journey test or unrelated combat code was changed.
+The transcript continued to show 35/35 HP. That message comes from the unchanged
+combat fumble path, which returns before starting combat. The standalone retry
+subsequently passed its complete death, corpse recovery, save and reconnect
+journey. No combat-journey test or unrelated combat code was changed.
 
 ## Work left to finish
 
-1. Rerun `python3 -B tests/async/test_flatfile_combat_journey.py` and inspect its
-   outcome. If it fails again, determine whether the initiating attack fumbled
-   or another defect prevented death. Keep any unrelated fixture repair separate
-   from the issue fixes unless its scope is explicitly accepted.
-2. Record the final validation outcome here. Do not describe the existing
-   `make test-all` run as passing. If code changes are needed, rerun the affected
-   focused checks, formatting, server build and applicable gates.
-3. Have the reviewer assess the shared NPC-area policy. If the original encounter
+1. Have the reviewer assess the shared NPC-area policy. If the original encounter
    needs confirmation, obtain the mob name/vnum and zone, solo/group context,
    melee and explicit targets, altitude, defenses, prompt/terse settings, and a
    transcript with HP before and after Death Field.
-4. Complete the originally requested ready-for-review PR against `master`, with
+2. Complete the originally requested ready-for-review PR against `master`, with
    the validation outcome and fixture limitations in its description. Link the
-   published branch and PR from #154, then close the issue as addressed on the
-   branch. These review/issue steps remain pending at this publication checkpoint.
+   published branch and PR from #154. This publication step remains pending at
+   this checkpoint.
 
 No deployment, production migration, or restart of the configured game server
 was performed. Existing integration tests used disposable servers and isolated
