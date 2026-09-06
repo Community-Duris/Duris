@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include "account/account.h"
+#include "account/account_recovery.h"
 #include "world/achievements.h"
 #include "guild/assocs.h"
 #include "world/epic.h"
@@ -6111,6 +6112,18 @@ void nanny(P_desc d, char *arg)
 		// User pressed RETURN after reading MOTD, show account menu
 		display_account_menu(d, NULL);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
+		break;
+
+	case CON_ACCT_RESET_CODE:
+		account_recovery_enter_code(d, arg);
+		break;
+
+	case CON_ACCT_RESET_NEWPW:
+		account_recovery_new_password(d, arg);
+		break;
+
+	case CON_ACCT_RESET_NEWPW2:
+		account_recovery_verify_new_password(d, arg);
 		break;
 
 #else

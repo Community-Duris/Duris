@@ -248,6 +248,26 @@ use `logs/player-log/player`. Each entry retains its kind, player ID and name, I
 room, and message. Control characters are flattened so one event cannot forge another
 log line.
 
+Account password recovery by email writes to two of those files. At boot `logs/log/status`
+carries the disposition: `Account recovery enabled (smtp port=<port> tls=<0|1>).` when
+`MAIL_ENABLED=TRUE` and every `MAIL_*` setting validated, otherwise lines ending in
+`password reset by email disabled.` that name the reason (`MAIL_ENABLED is not TRUE`,
+`configuration rejected: <category>` where the category names the offending key, never its
+value, or `mail sender failed to start`), followed by the boot sequence's own `Account
+recovery unavailable; password reset by email disabled.` While the feature runs,
+`logs/player-log/player` records one line per request, per completion, per mail result, and
+when wrong guesses exhaust a code, carrying only the request id, the outcome category, and
+the integer libcurl and SMTP codes (for example
+`account recovery mail request=<id> outcome=<sent|retryable|terminal> curl=<n> smtp=<n>`);
+`(account=redacted)` is literal. No line anywhere contains the reset code, the email
+address, the account name, the client address, or libcurl error prose. Completions,
+exhausted codes, save failures, and (rate-limited to one line per 60 s) terminal mail
+failures or live-token evictions and host-window slot recycling also raise a `*** STATUS:`
+notice to immortals watching status, which is mirrored into `logs/log/status`. A run of
+terminal mail failures means the relay, its credentials, or its certificate chain is wrong:
+fix the relay or `MAIL_*` settings and restart; never work around it by weakening TLS
+verification, which the source contracts forbid.
+
 Useful checks:
 
 ```bash
@@ -359,6 +379,18 @@ For queue or dependency incidents, use `world persistence` and the detailed `red
 status command. Do not clear a player save queue: player state is owned by the local
 revision coordinator and journal, not a Redis dirty set. A world generation publish
 failure preserves the prior current generation and retains floor deltas for retry.
+
+Account password recovery keeps no durable state. Reset codes, their per-account cooldown
+records, and any queued or in-flight recovery mail live only in process memory, so a
+copyover or restart discards them; the player-facing text already says to request a new
+code after a restart, and no operator action or cleanup is needed. The mail worker is not
+part of the shutdown drain chain, so a dead or slow relay can never delay or cancel a
+copyover or shutdown. The worker thread is joined at shutdown, though: when a send is in
+flight at the moment `SIGTERM` arrives, process exit may take up to 20 s longer (libcurl is
+bounded to 10 s connect / 20 s total per send, with no retry). The production unit's
+`TimeoutStopSec` must stay above that tail; the checked-in
+`deploy/systemd/duris-mud-production.service.in` uses 90 s. `scripts/change_password.sh`
+remains the operator fallback for an account with no usable email address on file.
 
 ### Known-benign log lines
 

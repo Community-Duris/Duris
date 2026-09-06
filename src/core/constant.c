@@ -787,6 +787,9 @@ const char *connected_types[TOTAL_CON + 2] = { "PLAYING",
 					       "SSLNEGO",
 					       "TTYPE_NEGO",
 					       "PLAYER_LOAD",
+					       "ACCT_RESET_CODE",
+					       "ACCT_RESET_NEWPW",
+					       "ACCT_RESET_NEWPW2",
 					       "\n" };
 
 /*

@@ -213,6 +213,13 @@ class DocumentationContractTest(unittest.TestCase):
             "REDIS_WORLD_STATE_SECRET",
             "REDIS_DONATION_SUBSCRIBER",
             "REDIS_DONATION_SECRET",
+            "MAIL_ENABLED",
+            "MAIL_HOST",
+            "MAIL_PORT",
+            "MAIL_TLS",
+            "MAIL_USERNAME",
+            "MAIL_PASSWORD",
+            "MAIL_FROM",
         )
         for name in required:
             self.assertIn(name, configuration, name)

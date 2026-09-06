@@ -1625,12 +1625,15 @@ struct txt_q
 #define CON_SSLNEGO 87 // connected but not yet ready for sends
 #define CON_TTYPE_NEGO 88 // waiting for ttype response
 #define CON_PLAYER_LOAD 89 // waiting for exact async player-load completion
+#define CON_ACCT_RESET_CODE 90 // account recovery: waiting for the emailed code (or CANCEL)
+#define CON_ACCT_RESET_NEWPW 91 // account recovery: waiting for the new password
+#define CON_ACCT_RESET_NEWPW2 92 // account recovery: waiting for the confirmation
 
 #define PLAYER_LOAD_MODE_NONE 0
 #define PLAYER_LOAD_MODE_ACCOUNT 1
 #define PLAYER_LOAD_MODE_LEGACY 2
 
-#define TOTAL_CON 89
+#define TOTAL_CON 92
 
 /* modes of confirmation- SAM 7-94 */
 #define CONFIRM_NONE 0
@@ -1688,6 +1691,11 @@ struct descriptor_data
 	uint64_t player_load_request_id;
 	int player_load_pid;
 	unsigned char player_load_mode;
+	/* Account recovery by email (account/account_recovery_nanny.c). Zeroed with the
+	 * descriptor by new_descriptor / copyover_recover; cleansed on every exit path. */
+	unsigned char account_recovery_attempts; /* code attempts on this connection */
+	char account_recovery_code[33]; /* normalised accepted code, 32 hex + NUL */
+	char *account_recovery_pending_hash; /* bcrypt of the first new-password entry */
 	/* SAM 7-94, used to allow confirming commands */
 	char old_pwd[40]; /* old password held here when
 	                                       changing SAM 7-94 */

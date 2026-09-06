@@ -10,6 +10,10 @@
 #include "core/structs.h"
 #endif
 
+/* Forward-declares struct descriptor_data.  Prototypes below spell the struct out
+ * because core/structs.h includes this header before its descriptor typedef exists. */
+#include "account/account_recovery.h"
+
 #define USE_ACCOUNT
 
 #define ACCT_IMMORTAL 0
@@ -86,5 +90,16 @@ void cleanup_temp_char(struct char_data *ch);
 bool account_exists(const char *dir, char *name);
 int is_valid_email(const char *email);
 bool is_email_taken(const char *email);
+
+/* Login password prompt (enabled/disabled recovery variant); sets CON_GET_ACCT_PASSWD. */
+void send_account_password_prompt(struct descriptor_data *d);
+/* Close every session on acct_name except one, sending notice (may be NULL) first. */
+void close_account_sessions_named(const char *acct_name, struct descriptor_data *except,
+				  const char *notice);
+/* Account recovery: fresh read, fence + fingerprint checks, hash swap, write, kick others. */
+account_recovery_apply_outcome account_apply_recovered_password(
+	const char *acct_name, const char *bcrypt_hash,
+	const unsigned char expected_fingerprint[ACCOUNT_RECOVERY_FINGERPRINT_LEN],
+	struct descriptor_data *keep_session);
 
 #endif // DURIS_ACCOUNT_H

@@ -11,9 +11,11 @@
 #include "item/item_ownership_runtime.h"
 #include "core/utils.h"
 #include "account/account.h"
+#include "account/account_recovery.h"
 #include "account/password_hash.h"
 #include <ctype.h>
 #include <math.h>
+#include <openssl/crypto.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -160,16 +162,8 @@ void close_other_account_sessions(P_desc d)
 {
 	if (!d || !d->account || !d->account->acct_name)
 		return;
-	for (P_desc other = descriptor_list, next = NULL; other; other = next)
-	{
-		next = other->next;
-		if (other != d && other->account && other->account->acct_name &&
-		    !strcasecmp(other->account->acct_name, d->account->acct_name))
-		{
-			SEND_TO_Q("\r\nYour account is being permanently deleted.\r\n", other);
-			close_socket(other);
-		}
-	}
+	close_account_sessions_named(d->account->acct_name, d,
+				     "\r\nYour account is being permanently deleted.\r\n");
 }
 
 class account_deletion_drain_guard
@@ -365,6 +359,104 @@ bool is_email_taken([[maybe_unused]] const char *email)
 	return FALSE;
 }
 
+void close_account_sessions_named(const char *acct_name, P_desc except, const char *notice)
+{
+	if (!acct_name || !*acct_name)
+		return;
+	/* Own the name for the walk, and write the notice synchronously the way the
+	 * idle-timeout kick does: close_socket discards whatever is still queued. */
+	const std::string name(acct_name);
+	for (P_desc other = descriptor_list, next = NULL; other; other = next)
+	{
+		next = other->next;
+		if (other != except && other->account && other->account->acct_name &&
+		    !strcasecmp(other->account->acct_name, name.c_str()))
+		{
+			if (notice)
+				write_to_descriptor(other, notice);
+			close_socket(other);
+		}
+	}
+}
+
+void send_account_password_prompt(P_desc d)
+{
+	SEND_TO_Q(account_recovery_enabled() ?
+			  "Please enter your password (or ? to reset it by email): " :
+			  "Please enter your password: ",
+		  d);
+	echo_off(d);
+	STATE(d) = CON_GET_ACCT_PASSWD;
+}
+
+/*
+ * Applies a password chosen through account recovery.  Works on a scratch account
+ * read fresh from the store so a fence or credential change made after the code
+ * was issued is honoured.  write_account re-reads every same-name descriptor's
+ * account (including the requester's, whose acct_name may be the acct_name
+ * argument), so after that call only scratch's own strings are dereferenced.
+ */
+account_recovery_apply_outcome account_apply_recovered_password(
+	const char *acct_name, const char *bcrypt_hash,
+	const unsigned char expected_fingerprint[ACCOUNT_RECOVERY_FINGERPRINT_LEN],
+	P_desc keep_session)
+{
+	if (!acct_name || !*acct_name || !bcrypt_hash || !*bcrypt_hash || !expected_fingerprint)
+		return account_recovery_apply_outcome::load_failed;
+
+	P_acct scratch = allocate_account();
+	if (!scratch)
+		return account_recovery_apply_outcome::load_failed;
+	scratch->acct_name = str_dup(acct_name);
+
+	if (read_account(scratch) == -1)
+	{
+		free_account(scratch);
+		return account_recovery_apply_outcome::load_failed;
+	}
+
+	if (scratch->acct_blocked != 0)
+	{
+		free_account(scratch);
+		return account_recovery_apply_outcome::fenced;
+	}
+
+	unsigned char fingerprint[ACCOUNT_RECOVERY_FINGERPRINT_LEN];
+	account_recovery_credential_fingerprint(scratch->acct_password, scratch->acct_email,
+						fingerprint);
+	const int fingerprint_differs =
+		CRYPTO_memcmp(fingerprint, expected_fingerprint, ACCOUNT_RECOVERY_FINGERPRINT_LEN);
+	OPENSSL_cleanse(fingerprint, sizeof(fingerprint));
+	if (fingerprint_differs != 0)
+	{
+		free_account(scratch);
+		return account_recovery_apply_outcome::superseded;
+	}
+
+	FREE(scratch->acct_password);
+	scratch->acct_password = str_dup(bcrypt_hash);
+
+	/* scratch is attached to no descriptor, so write_account's re-read loop never
+	 * touches it: this string stays valid until free_account(scratch) below. */
+	const char *const owner_name = scratch->acct_name;
+
+	if (write_account(scratch) != 1)
+	{
+		statuslog(56, "&+RALERT&n: account recovery save failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  NULL);
+		free_account(scratch);
+		return account_recovery_apply_outcome::write_failed;
+	}
+
+	close_account_sessions_named(
+		owner_name, keep_session,
+		"\r\nThe password for this account was just reset from another connection. "
+		"Disconnecting.\r\n");
+	free_account(scratch);
+	return account_recovery_apply_outcome::ok;
+}
+
 void select_accountname(P_desc d, char *arg)
 {
 	char tmp_name[MAX_INPUT_LENGTH];
@@ -415,9 +507,7 @@ void select_accountname(P_desc d, char *arg)
 			return;
 		}
 
-		SEND_TO_Q("Please enter your password: ", d);
-		echo_off(d);
-		STATE(d) = CON_GET_ACCT_PASSWD;
+		send_account_password_prompt(d);
 		return;
 	}
 
@@ -455,6 +545,14 @@ void get_account_password(P_desc d, char *arg)
 		else
 			d->account = free_account(d->account);
 		close_socket(d);
+		return;
+	}
+
+	/* A lone '?' (trailing whitespace tolerated) asks for a reset by email; it is not
+	 * a password guess.  Every other input reaches the password check untrimmed. */
+	if (arg[0] == '?' && arg[1 + strspn(arg + 1, " \t\r\n")] == '\0')
+	{
+		account_recovery_begin_from_password_prompt(d);
 		return;
 	}
 
@@ -800,6 +898,8 @@ void verify_new_account_email(P_desc d, char *arg)
 				persistence_alert(AVATAR, "account", "redacted", "none", "none",
 						  "write_failed", "post-login menu save failed");
 			}
+			else
+				account_recovery_invalidate(d->account->acct_name);
 		}
 		return;
 	}
@@ -898,6 +998,8 @@ void verify_new_account_password(P_desc d, char *arg)
 			persistence_alert(AVATAR, "account", "redacted", "none", "none",
 					  "write_failed", "auto-confirm save failed");
 		}
+		else
+			account_recovery_invalidate(d->account->acct_name);
 	}
 	return;
 }
@@ -2659,7 +2761,10 @@ void verify_delete_account(P_desc d, char *arg)
 						      error.c_str());
 #endif
 			if (deleted)
+			{
 				remove_deleted_account_runtime(d, identities);
+				account_recovery_forget(account_name.c_str());
+			}
 		}
 	}
 
