@@ -40,7 +40,7 @@ start_floor = function_body(ACTOBJ, "static void start_floor_bulk_get(")
 start_container = function_body(ACTOBJ, "static void start_container_bulk_get(")
 select_item = function_body(ACTOBJ, "static bool select_bulk_get_item(")
 completion = function_body(ACTOBJ, "static void bulk_get_completion(")
-after_commit = function_body(ACTOBJ, "static void finish_bulk_get_after_commit(")
+after_commit = function_body(ACTOBJ, "static bool finish_bulk_get_after_commit(")
 finish = function_body(ACTOBJ, "static void report_bulk_get(")
 single_get = function_body(ACTOBJ, "void get(P_char ch")
 submit_batch = function_body(
@@ -129,11 +129,19 @@ ok &= check(
 ok &= check(
     "currency and lifecycle-owned roots wait until durable commit succeeds",
     "std::vector<synchronous_get_item> synchronous_items" in ACTOBJ
-    and "finish_bulk_get_after_commit(actor, state, container);" in completion
+    and "finish_bulk_get_after_commit(actor, state, container)" in completion
     and "do_get_finalize_room_item" in after_commit
     and "do_get_finalize_container_success" in after_commit
     and completion.index("if (!committed)")
-    < completion.index("finish_bulk_get_after_commit(actor, state, container);"),
+    < completion.index("finish_bulk_get_after_commit(actor, state, container)"),
+)
+ok &= check(
+    "coin completions resume the existing selected-item list",
+    "if (item_get_deferred)" in after_commit
+    and "return false;" in after_commit
+    and "state.synchronous_items.erase" in after_commit
+    and "bulk_gets.emplace(actor_pid, std::move(state))" in start_bulk
+    and "submit_coin_get(ch, o_obj, s_obj, showit)" in single_get,
 )
 ok &= check(
     "single durable get rejects no-loot before ownership submission",

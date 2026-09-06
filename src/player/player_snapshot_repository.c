@@ -553,6 +553,10 @@ player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 	if (!connection || snapshot.pid <= 0 || !snapshot.revision || !snapshot.components ||
 	    (snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	// Death records require their custody disposition to commit with this save.
+	// Never acknowledge one through the ordinary component-only writer.
+	if (snapshot.death || snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
+		return { player_save_apply_outcome::terminal_failure, 0, ENOTSUP };
 
 	query_result query = execute(connection, "START TRANSACTION");
 	if (!query.ok)

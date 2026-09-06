@@ -47,6 +47,7 @@
 #include "core/safe_format.h"
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <new>
 #include <unordered_map>
@@ -5515,7 +5516,8 @@ P_obj get_obj_equipped(P_char ch, char *arg)
 
 void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 {
-	int num, i, j, p;
+	int64_t num;
+	int i, j = 0, p;
 	const char *desc, *desc2;
 	char buf[200], buf2[200];
 	struct extra_descr_data *nd;
@@ -5529,26 +5531,22 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 		return;
 	}
 
-	pile->value[0] += copper;
-	pile->value[1] += silver;
-	pile->value[2] += gold;
-	pile->value[3] += platinum;
-
-	if ((pile->value[0] < 0) || (pile->value[1] < 0) || (pile->value[2] < 0) ||
-	    (pile->value[3] < 0))
+	const int added[4] = { copper, silver, gold, platinum };
+	for (i = 0; i < 4; ++i)
 	{
-		logit(LOG_EXIT, "add_coins: pile has negative coins");
-		return;
+		if (pile->value[i] < 0 || pile->value[i] > INT_MAX - added[i])
+		{
+			logit(LOG_EXIT, "add_coins: invalid or overflowing coin pile");
+			return;
+		}
 	}
+	for (i = 0; i < 4; ++i)
+		pile->value[i] += added[i];
 
-	num = (pile->value[0] + pile->value[1] + pile->value[2] + pile->value[3]);
+	num = static_cast<int64_t>(pile->value[0]) + pile->value[1] + pile->value[2] +
+	      pile->value[3];
 
-	if (num < 0)
-	{
-		logit(LOG_EXIT, "add_coins: total number of coins in pile is negative");
-		return;
-	}
-	else if (num == 0)
+	if (num == 0)
 		return;
 
 	// Making money weightless per Kitsero due to money inflation causing
@@ -5593,8 +5591,8 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 	}
 	else if (num > 1)
 	{
-		snprintf(buf, 200, "%d coins are scattered about here.", num);
-		snprintf(buf2, 200, "%d coins", num);
+		snprintf(buf, 200, "%d coins are scattered about here.", static_cast<int>(num));
+		snprintf(buf2, 200, "%d coins", static_cast<int>(num));
 		desc = buf;
 		desc2 = buf2;
 	}
@@ -5638,7 +5636,8 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 			strcpy(buf, "The pile appears to consist of: ");
 			for (i = 0; i < 4; i++)
 			{
-				p = (pile->value[i] * 100) / num;
+				p = static_cast<int>((static_cast<int64_t>(pile->value[i]) * 100) /
+						     num);
 				if (p > 99)
 					APPENDF(buf, "%s coins, ", coin_names[i]);
 				else if (p >= 85)

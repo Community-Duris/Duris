@@ -55,28 +55,20 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"0ec0366920b78703c006c6d4f159026c659d071c38aad5e142c2573754aaa8f3";
+	"4f662dcbddd047e5843d4c7d4a3f4a0b63695058e22695db599ce74a5cd6a5f5";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"92dd682008ba94f8aecc63595dc46f9d6f1f865adecd174e58e2a2ce14220f2c";
-/* Head 0009 adds kingdom_garrison, the roster of purchased guards. The three
- * checksums below are SHA-256 over the migration FILES and over the rolling
- * ledger, all computable offline; the two normalised metadata fingerprints
- * above are NOT, because they hash information_schema on a live server. That is
- * why kingdom_garrison is deliberately absent from RUNTIME_TABLE_SQL_LIST: the
- * fingerprint, the table count and the engine/collation checks all scope
- * themselves to that list, so a table outside it needs no live regeneration --
- * and RUNTIME_CURRENT_TABLE_COUNT above is therefore unchanged at 174.
- * Adding it to the list is a follow-up for whoever next has both a MySQL 8 and
- * a MariaDB 10.11 to hand; until then the module degrades exactly the way
- * kingdom_realms already does when its own table cannot be read. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0009_kingdom_garrison";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 9;
+	"afeb08122578efb0a62b045e87d7f57f06412db85a65163f64d34e9804cee598";
+/* Coin payloads are part of the fingerprinted item_current_owner table. These
+ * fingerprints were regenerated against MySQL 8 and MariaDB 10.11 after 0010.
+ * kingdom_garrison retains its existing exclusion from the runtime table list. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0010_coin_custody_payload";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 10;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"e295446be0ae22bb48989db87166641b8f8f599fa711133a3fd3f8370db9d8b3";
+	"5eac7e338916c08478c933382424743c75f8eb01174e960ec39704c1101d00a7";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9";
+	"60db9d6168db7cf027b2c3233d9fb5c19e82562e15c10dd16742049b61834c32";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"37fabde7d3c00518b92b35519442106b74dcb92fd18eebc6251c3470da56f561";
+	"bb647c86a0e52a128360969bde7756ec596f3ec9649639b961bbc53247fbd6f9";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

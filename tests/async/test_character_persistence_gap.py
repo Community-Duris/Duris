@@ -231,10 +231,10 @@ require(
     "all three ownership hydration failures must be logged",
 )
 
-# the load path has no query headroom; it must not have grown
+# Full loads include one batched query for authoritative coin payloads.
 require(
-    "PLAYER_LOAD_QUERY_MAX = 22" in LOAD_REPOSITORY_H,
-    "load query budget changed; re-check the 22-query ceiling",
+    "PLAYER_LOAD_QUERY_MAX = 23" in LOAD_REPOSITORY_H,
+    "load query budget changed; re-check the 23-query ceiling",
 )
 
 # --- 7. account menu NULL guard ---------------------------------------------------

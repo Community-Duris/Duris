@@ -40,7 +40,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         # real server's boot gate, which is what this test exists to catch.
         self.assertEqual(report["current_table_count"], 174)
         self.assertEqual(report["migration_head"],
-                         "0009_kingdom_garrison")
+                         "0010_coin_custody_payload")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

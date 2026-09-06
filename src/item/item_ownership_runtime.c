@@ -29,6 +29,35 @@ struct owner_equal
 std::unordered_map<item_owner_identity, uint64_t, owner_hash, owner_equal> owner_revisions;
 }
 
+bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, size_t limit,
+					   std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	if (!snapshot || !item_owner_identity_valid(owner))
+		return false;
+	try
+	{
+		std::vector<item_ownership_runtime_entry> captured;
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (!item_owner_identity_equal(entry.owner, owner))
+				continue;
+			if (captured.size() >= limit)
+				return false;
+			captured.push_back(entry);
+		}
+		std::sort(captured.begin(), captured.end(), [](const auto &left, const auto &right) {
+			return left.item_uid < right.item_uid;
+		});
+		*snapshot = std::move(captured);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
 bool item_ownership_runtime_hydrate(const item_ownership_runtime_entry &entry)
 {
 	if (!entry.item_uid || !entry.root_item_uid || !item_owner_identity_valid(entry.owner) ||

@@ -3,6 +3,12 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "persistence/persistence_observability.h"
+#include "economy/coin_transfer_command.h"
+#include "player/player_snapshot_codec.h"
+#include "core/defines.h"
+#include "world/vnum.obj.h"
+#include <algorithm>
+#include <cstring>
 
 #include <cstdlib>
 #include <filesystem>
@@ -171,6 +177,145 @@ static void inspect_authority(const std::string &root, int32_t pid)
 	std::cout << "}\n";
 }
 
+static void coin_player_matrix(const fs::path &path)
+{
+	const std::string root = path.string();
+	for (const auto &directory : { path, path / "players", path / "domains",
+				       path / "identities", path / "identities/names" })
+	{
+		fs::create_directories(directory);
+		fs::permissions(directory, fs::perms::owner_all, fs::perm_options::replace);
+	}
+	std::string error;
+	int32_t pid = 0;
+	for (int32_t i = 1; i <= 42; ++i)
+		require(flatfile_identity_allocate_pid(root, &pid, &error) ==
+				flatfile_identity_result::ok,
+			"coin player identity allocation");
+	require(flatfile_identity_claim(root, 42, "Player", "Account-One", &error) ==
+			flatfile_identity_result::ok,
+		"coin player identity claim");
+	auto snapshot = make_full(1);
+	snapshot.items[1].vnum = VOBJ_COINS;
+	snapshot.items[1].type = ITEM_MONEY;
+	snapshot.items[1].values[0] = 50;
+	snapshot.items[1].name = "legacy coins";
+	snapshot.items[1].string_mask = 1;
+	require(flatfile_player_snapshot_apply(root, snapshot, &error).outcome ==
+			player_save_apply_outcome::applied,
+		"coin player snapshot baseline: " + error);
+	const item_owner_identity owner = { item_owner_type::player, 42, 0 };
+	for (int32_t before : { 50, 20 })
+	{
+		const int32_t after = before == 50 ? 20 : 0;
+		flatfile_player_domain_record domain;
+		require(flatfile_player_domain_load(root, 42, "Account-One", 0, &domain, &error) ==
+				flatfile_player_domain_result::ok,
+			"coin player domain load");
+		uint64_t owner_revision = 0, destroyed_revision = 0;
+		std::vector<flatfile_item_ownership_record> owned, destroyed;
+		require(flatfile_item_repository_load_owner(root, owner, &owner_revision, &owned,
+							    &error) ==
+				flatfile_item_repository_result::ok,
+			"coin player custody load");
+		flatfile_item_repository_load_owner(root, { item_owner_type::destruction, 0, 0 },
+						    &destroyed_revision, &destroyed, &error);
+		const auto found = std::find_if(owned.begin(), owned.end(), [](const auto &item)
+						{ return item.item_uid == 101; });
+		require(found != owned.end(), "coin player pile custody missing");
+		coin_transfer_payload payload;
+		payload.source.before[0] = before;
+		payload.source.after[0] = after;
+		item_transfer_payload pile = {};
+		pile.from_owner = owner;
+		pile.to_owner = after ? owner :
+					item_owner_identity{ item_owner_type::destruction, 0, 0 };
+		pile.expected_from_revision = owner_revision;
+		pile.expected_to_revision = after ? owner_revision : destroyed_revision;
+		pile.reason = after ? item_transfer_reason::player_put :
+				      item_transfer_reason::destruction;
+		pile.selected_item_uid = 101;
+		pile.target_root_item_uid = after ? 100 : 101;
+		pile.target_parent_item_uid = after ? 100 : 0;
+		pile.expected_target_parent_revision = after ? 1 : 0;
+		pile.item_count = 1;
+		pile.items[0] = { 101,	      100,
+				  100,	      found->item_revision,
+				  VOBJ_COINS, item_custody_state::active };
+		auto item = snapshot.items[1];
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		item.equipment_slot = -1;
+		item.values[0] = after ? after : before;
+		std::vector<uint8_t> blob;
+		require(player_item_snapshot_list_encode({ item }, &blob) ==
+				player_snapshot_codec_result::ok,
+			"coin player encode");
+		pile.item_blob_size = blob.size();
+		std::copy(blob.begin(), blob.end(), pile.item_blob.begin());
+		critical_operation_id id;
+		require(critical_operation_id_generate(&id), "coin player operation id");
+		require(item_transfer_command_build(&payload.source.change, id, pile,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"coin player pile command");
+		currency_command_payload currency = {};
+		currency.pid = 42;
+		currency.reason = currency_reason_type::coin_transfer;
+		strcpy(currency.account_name.data(), "Account-One");
+		currency.wallet_delta.amount[0] = before - after;
+		for (size_t denomination = 0; denomination < 4; ++denomination)
+			payload.destination.before[denomination] =
+				payload.destination.after[denomination] =
+					domain.domains.wallet[denomination];
+		payload.destination.after[0] += before - after;
+		require(currency_command_build(&payload.destination.change, id, currency,
+					       domain.domains.wallet_revision,
+					       domain.domains.bank_revision,
+					       critical_source_site::command,
+					       critical_deadline_class::interactive),
+			"coin player wallet command");
+		critical_command command;
+		require(coin_transfer_command_build(&command, id, payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"coin player command");
+		command.accepted_at_usec = 1;
+		auto apply = [&]()
+		{
+			return flatfile_critical_command_repository_apply_selected(
+				command, const_cast<char *>(root.c_str()));
+		};
+		const auto applied = apply();
+		require(applied.outcome == critical_apply_outcome::applied &&
+				apply().outcome == critical_apply_outcome::already_applied,
+			"coin player pickup failed: " + std::to_string(applied.error_code));
+		// Saving an old projection cannot undo either the durable remainder or retirement.
+		++snapshot.revision;
+		require(flatfile_player_snapshot_apply(root, snapshot, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"coin stale snapshot write");
+		player_load_request request = {};
+		request.request_id = 1;
+		request.pid = 42;
+		request.account_name = "Account-One";
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		const auto loaded = flatfile_player_load_repository_execute(root, request);
+		require(loaded.outcome == player_load_outcome::applied && !loaded.stale_item_rows &&
+				loaded.domains.wallet[0] == static_cast<uint64_t>(61 - after) &&
+				loaded.snapshot.items.size() == (after ? 2u : 1u) &&
+				loaded.snapshot.pets[0].items.size() == 1,
+			"coin player re-entry failed or restored old money: " +
+				std::to_string(loaded.error_code));
+		if (after)
+			require(loaded.snapshot.items[1].object_uid == 101 &&
+					loaded.snapshot.items[1].values[0] == after &&
+					loaded.snapshot.items[1].parent_index == 0,
+				"coin player re-entry lost authoritative remainder/topology");
+	}
+	std::cout << "flatfile legacy player coin pickup, replay and re-entry passed\n";
+}
+
 /** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
 int main(int argc, char **argv)
 {
@@ -181,6 +326,7 @@ int main(int argc, char **argv)
 	}
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
+	coin_player_matrix(root / "coin-player");
 	const fs::path players = root / "players";
 	const fs::path identities = root / "identities/names";
 	const fs::path domains = root / "domains";

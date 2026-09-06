@@ -22,6 +22,8 @@ secondary_indexes=$(read_scalar "SELECT COUNT(*) FROM (SELECT table_name,index_n
 foreign_keys=$(read_scalar "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('item_current_parent_fk','item_ownership_operation_fk') AND update_rule='RESTRICT' AND delete_rule='RESTRICT';")
 
 [[ "$tables" == 6 ]] || { echo "FAILED: expected 6 item ownership tables; found $tables" >&2; exit 1; }
+coin_payload=$(read_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='item_current_owner' AND column_name='coin_payload' AND data_type='mediumblob' AND is_nullable='YES';")
+[[ "$coin_payload" == 1 ]] || { echo 'FAILED: authoritative coin payload column missing' >&2; exit 1; }
 [[ "$columns" == 55 ]] || { echo "FAILED: expected 55 item ownership columns; found $columns" >&2; exit 1; }
 [[ "$singleton" == 1 ]] || { echo 'FAILED: item UID allocator singleton missing' >&2; exit 1; }
 [[ "$primary_keys" == 6 ]] || { echo "FAILED: expected 6 exact primary keys; found $primary_keys" >&2; exit 1; }

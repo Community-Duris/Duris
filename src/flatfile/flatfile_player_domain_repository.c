@@ -982,6 +982,123 @@ flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
 	return flatfile_player_domain_result::ok;
 }
 
+// Prepare both wallets together so a shared account bank advances once per leg.
+// The caller commits these images with pile custody and the parent replay result.
+flatfile_player_domain_result flatfile_player_domain_prepare_coin_wallets(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const coin_transfer_payload &payload, coin_transfer_result *result,
+	std::vector<flatfile_authority_after_image> *images, unsigned int *result_code,
+	std::string *error)
+{
+	if (!result || !images || !result_code || !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	*result_code = 0;
+	images->clear();
+	const auto recovered = recover_authority(root, lock, error);
+	if (recovered != flatfile_player_domain_result::ok)
+		return recovered;
+	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
+	std::array<player_authority, 2> players;
+	std::array<bank_record, 2> banks;
+	std::array<uint64_t, 2> opening_bank_revisions = {};
+	size_t bank_count = 0;
+	try
+	{
+		for (size_t index = 0; index < 2; ++index)
+		{
+			const auto &endpoint = *endpoints[index];
+			if (endpoint.change.type != critical_command_type::account_bank)
+				continue;
+			currency_command_payload currency;
+			std::string account;
+			if (!currency_command_decode_payload(endpoint.change, &currency) ||
+			    currency.reason != currency_reason_type::coin_transfer ||
+			    currency.racewar > INT8_MAX ||
+			    !canonical_account(currency.account_name.data(), &account))
+				return flatfile_player_domain_result::invalid;
+			auto &player = players[index];
+			const auto loaded =
+				load_player_authority(root, currency.pid, &player, error);
+			if (loaded != flatfile_player_domain_result::ok)
+				return loaded;
+			if (player.record.account_name != account ||
+			    player.record.racewar != currency.racewar)
+				return flatfile_player_domain_result::not_found;
+			size_t bank_index = 0;
+			while (bank_index < bank_count &&
+			       (banks[bank_index].account_name != account ||
+				banks[bank_index].racewar != currency.racewar))
+				++bank_index;
+			if (bank_index == bank_count)
+			{
+				const auto bank_loaded = load_bank(root, account, currency.racewar,
+								   &banks[bank_count], error);
+				if (bank_loaded != flatfile_player_domain_result::ok)
+					return bank_loaded;
+				opening_bank_revisions[bank_count] = banks[bank_count].revision;
+				++bank_count;
+			}
+			auto &bank = banks[bank_index];
+			if (endpoint.change.expected_revisions[0].revision !=
+				    player.record.domains.wallet_revision ||
+			    endpoint.change.expected_revisions[1].revision !=
+				    opening_bank_revisions[bank_index])
+			{
+				*result_code = ESTALE;
+				return flatfile_player_domain_result::ok;
+			}
+			if (player.record.domains.wallet_revision == UINT64_MAX ||
+			    bank.revision == UINT64_MAX)
+			{
+				*result_code = ERANGE;
+				return flatfile_player_domain_result::ok;
+			}
+			for (size_t coin = 0; coin < 4; ++coin)
+			{
+				if (endpoint.before[coin] < 0 || endpoint.after[coin] < 0 ||
+				    currency.bank_delta.amount[coin] ||
+				    currency.wallet_delta.amount[coin] !=
+					    int64_t(endpoint.after[coin]) - endpoint.before[coin] ||
+				    bank.balances[coin] > INT32_MAX)
+					return flatfile_player_domain_result::invalid;
+				if (player.record.domains.wallet[coin] !=
+				    static_cast<uint64_t>(endpoint.before[coin]))
+				{
+					*result_code = ESTALE;
+					return flatfile_player_domain_result::ok;
+				}
+				player.record.domains.wallet[coin] = endpoint.after[coin];
+				result->wallets[index].wallet.amount[coin] = endpoint.after[coin];
+				result->wallets[index].bank.amount[coin] = bank.balances[coin];
+			}
+			result->wallets[index].wallet_revision =
+				++player.record.domains.wallet_revision;
+			result->wallets[index].bank_revision = ++bank.revision;
+		}
+		for (size_t index = 0; index < 2; ++index)
+			if (players[index].record.pid)
+			{
+				images->push_back(
+					{ player_filename(players[index].record.pid), {} });
+				if (!encode_player_authority(players[index], &images->back().bytes))
+					return flatfile_player_domain_result::invalid;
+			}
+		for (size_t index = 0; index < bank_count; ++index)
+		{
+			images->push_back(
+				{ bank_filename(banks[index].account_name, banks[index].racewar),
+				  {} });
+			if (!encode_bank_record(banks[index], &images->back().bytes))
+				return flatfile_player_domain_result::invalid;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	return flatfile_player_domain_result::ok;
+}
+
 flatfile_player_domain_result flatfile_player_domain_prepare_resurrection_wallet(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	uint64_t expected_wallet_revision, const std::array<int32_t, 4> &expected_wallet,

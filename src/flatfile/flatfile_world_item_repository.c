@@ -782,6 +782,49 @@ flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_re
 	return flatfile_world_item_result::ok;
 }
 
+flatfile_world_item_result flatfile_world_item_read_coin(const std::string &root,
+							 const flatfile_authority_lock &lock,
+							 const item_owner_identity &owner,
+							 uint64_t uid, player_item_snapshot *item,
+							 std::string *error)
+{
+	if (!lock.matches(root) || !uid || !item ||
+	    (owner.type != item_owner_type::room && owner.type != item_owner_type::corpse))
+		return flatfile_world_item_result::invalid;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	size_t matches = 0;
+	auto inspect = [&](const std::vector<player_item_snapshot> &items)
+	{
+		for (const auto &candidate : items)
+			if (candidate.object_uid == uid)
+			{
+				*item = candidate;
+				++matches;
+			}
+	};
+	if (owner.type == item_owner_type::corpse)
+	{
+		for (const auto &corpse : catalog.corpses)
+			if (item_corpse_owner_id(corpse.owner_pid, corpse.save_id) == owner.id)
+				inspect(corpse.items);
+	}
+	else
+	{
+		for (const auto &room : catalog.rooms)
+			if (static_cast<uint64_t>(room.room_vnum) == owner.id)
+				inspect(room.items);
+		for (const auto &saved : catalog.saved_items)
+			if (static_cast<uint64_t>(saved.room_vnum) == owner.id)
+				inspect(saved.items);
+	}
+	return matches == 1 ? flatfile_world_item_result::ok :
+	       matches	    ? flatfile_world_item_result::conflict :
+			      flatfile_world_item_result::not_found;
+}
+
 flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_world_item_player_removal *removal,

@@ -87,6 +87,10 @@ enum class flatfile_locker_result
 flatfile_locker_result flatfile_locker_establish(
 	const std::string &root, const std::vector<flatfile_locker_record> &lockers,
 	const std::vector<flatfile_locker_access_record> &access, std::string *error);
+flatfile_locker_result flatfile_locker_read_coin(const std::string &root,
+						 const flatfile_authority_lock &lock,
+						 const item_owner_identity &owner, uint64_t uid,
+						 player_item_snapshot *item, std::string *error);
 flatfile_locker_result flatfile_locker_list(const std::string &root,
 					    std::vector<flatfile_locker_record> *lockers,
 					    std::vector<flatfile_locker_access_record> *access,

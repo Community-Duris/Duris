@@ -118,6 +118,11 @@ flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_re
 flatfile_world_item_result
 flatfile_world_item_list_rooms(const std::string &root,
 			       std::vector<flatfile_room_item_record> *rooms, std::string *error);
+flatfile_world_item_result flatfile_world_item_read_coin(const std::string &root,
+							 const flatfile_authority_lock &lock,
+							 const item_owner_identity &owner,
+							 uint64_t uid, player_item_snapshot *item,
+							 std::string *error);
 flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_world_item_player_removal *removal,

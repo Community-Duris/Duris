@@ -565,7 +565,9 @@ player_save_journal_result player_save_journal_checkpoint(int pid,
 	try
 	{
 		for (journal_frame &frame : scanned.frames)
-			if (frame.snapshot.pid != pid || frame.snapshot.revision > durable_revision)
+			if (frame.snapshot.pid != pid ||
+			    frame.snapshot.revision > durable_revision ||
+			    (frame.snapshot.death && frame.snapshot.revision != durable_revision))
 				retained.push_back(std::move(frame));
 	}
 	catch (const std::bad_alloc &)
@@ -638,6 +640,18 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 				std::lock_guard<std::mutex> lock(journal_mutex);
 				++health.backpressure;
 				return player_save_journal_result::replay_blocked;
+			}
+			// A newer character save does not prove that this death's assets were
+			// disposed of. Only its own successful application can release it.
+			if (frame.snapshot.death)
+			{
+				if (applied.outcome == player_save_apply_outcome::stale_revision ||
+				    applied.durable_revision < frame.snapshot.revision)
+					return player_save_journal_result::replay_blocked;
+				if (player_save_journal_checkpoint(frame.snapshot.pid,
+								   frame.snapshot.revision) !=
+				    player_save_journal_result::ok)
+					return player_save_journal_result::io_failure;
 			}
 			acknowledged[frame.snapshot.pid] = std::max(
 				acknowledged[frame.snapshot.pid], applied.durable_revision);

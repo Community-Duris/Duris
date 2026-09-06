@@ -141,6 +141,11 @@ extern const int top_of_world = 0;
 
 static bool command_submitted = false;
 static critical_command submitted_command = {};
+static uint64_t pending_coin_uid = 0;
+bool currency_transaction_coin_item_busy(uint64_t uid)
+{
+	return uid && uid == pending_coin_uid;
+}
 
 void logit(const char *, const char *, ...) {}
 void __free(void *memory, const char *, int) { free(memory); }
@@ -464,6 +469,43 @@ int main()
 	assert(item_ownership_runtime_hydrate_batch(room_items, 2));
 	assert(item_ownership_runtime_hydrate_owner(player_owner, 7));
 	P_obj roots[] = { &first_roast, &second_roast };
+	// A committed coin change may still await live placement. Guard just its
+	// affected tree before capturing either a single move or a bulk move.
+	item_movement_reject reject = item_movement_reject::none;
+	pending_coin_uid = first_roast.obj_uid;
+	assert(!item_movement_transaction_submit(
+		&actor, &first_roast, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	assert(!item_movement_transaction_submit_batch(
+		&actor, roots, 2, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	pending_coin_uid = backpack.obj_uid;
+	assert(!item_movement_transaction_submit(
+		&actor, &first_roast, &backpack, room_owner, player_owner,
+		item_transfer_reason::player_put, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	assert(!item_movement_transaction_submit_batch(
+		&actor, roots, 2, &backpack, room_owner, player_owner,
+		item_transfer_reason::player_put, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	// A nested container inherits the pending check from its authoritative root.
+	obj_data nested = {};
+	nested.obj_uid = 201;
+	assert(item_ownership_runtime_hydrate({201, 200, 200, player_owner, 1, 7,
+		100, item_custody_state::active}));
+	assert(!item_movement_transaction_submit(
+		&actor, &nested, NULL, player_owner, room_owner,
+		item_transfer_reason::player_drop, nested.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	assert(!item_movement_transaction_player_busy(&actor));
+	pending_coin_uid = 999; // An unrelated pending coin does not block this move.
 	assert(item_movement_transaction_submit_batch(
 		&actor, roots, 2, NULL, room_owner, player_owner,
 		item_transfer_reason::player_get, first_roast.obj_uid,

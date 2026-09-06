@@ -630,6 +630,33 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 	return flatfile_locker_result::ok;
 }
 
+flatfile_locker_result flatfile_locker_read_coin(const std::string &root,
+						 const flatfile_authority_lock &lock,
+						 const item_owner_identity &owner, uint64_t uid,
+						 player_item_snapshot *item, std::string *error)
+{
+	if (!lock.matches(root) || !uid || !item || owner.type != item_owner_type::locker)
+		return flatfile_locker_result::invalid;
+	locker_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_locker_result::ok)
+		return loaded;
+	size_t matches = 0;
+	for (const auto &locker : catalog.lockers)
+		if (locker.locker_id == owner.id)
+			for (const auto &chest : locker.chests)
+				if (chest.chest_id == owner.context_id)
+					for (const auto &candidate : chest.items)
+						if (candidate.object_uid == uid)
+						{
+							*item = candidate;
+							++matches;
+						}
+	return matches == 1 ? flatfile_locker_result::ok :
+	       matches	    ? flatfile_locker_result::conflict :
+			      flatfile_locker_result::not_found;
+}
+
 /* Prepare player-owned locker and visitor-grant removal with exact custody evidence. */
 flatfile_locker_result
 flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,

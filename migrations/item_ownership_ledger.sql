@@ -48,6 +48,18 @@ CREATE TABLE IF NOT EXISTS item_current_owner (
         REFERENCES item_current_owner(item_uid) ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Coin conversions commit their complete pile payload with custody. Player,
+-- corpse, locker and floor snapshots are projections and can lag that commit.
+SET @coin_payload_missing = (SELECT COUNT(*) = 0 FROM information_schema.columns
+    WHERE table_schema=DATABASE() AND table_name='item_current_owner'
+      AND column_name='coin_payload');
+SET @coin_payload_sql = IF(@coin_payload_missing,
+    'ALTER TABLE item_current_owner ADD COLUMN coin_payload MEDIUMBLOB NULL AFTER state',
+    'SELECT 1 INTO @coin_payload_unchanged');
+PREPARE coin_payload_stmt FROM @coin_payload_sql;
+EXECUTE coin_payload_stmt;
+DEALLOCATE PREPARE coin_payload_stmt;
+
 CREATE TABLE IF NOT EXISTS item_ownership_baseline (
     item_uid BIGINT UNSIGNED NOT NULL,
     root_item_uid BIGINT UNSIGNED NOT NULL,

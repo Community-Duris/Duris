@@ -268,6 +268,16 @@
       "verify": "immutable/0009_kingdom_garrison.sh",
       "verify_checksum": "79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0010_coin_custody_payload",
+      "sequence": 10,
+      "description": "Preserve committed coin pile payloads with item custody",
+      "apply": "immutable/0010_coin_custody_payload.sql",
+      "apply_checksum": "5eac7e338916c08478c933382424743c75f8eb01174e960ec39704c1101d00a7",
+      "verify": "immutable/0010_coin_custody_payload.sh",
+      "verify_checksum": "60db9d6168db7cf027b2c3233d9fb5c19e82562e15c10dd16742049b61834c32",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

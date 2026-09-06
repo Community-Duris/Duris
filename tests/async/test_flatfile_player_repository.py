@@ -30,6 +30,8 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
             rel("player_load_topology.c"),
             rel("flatfile_identity_repository.c"),
             rel("flatfile_item_repository.c"),
+            rel("coin_transfer_command.c"),
+            rel("flatfile_player_snapshot_file.c"),
             rel("flatfile_corpse_repository.c"),
             rel("flatfile_locker_repository.c"),
             rel("flatfile_world_item_repository.c"),

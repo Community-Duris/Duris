@@ -1,9 +1,13 @@
 #include "player/player_snapshot_codec.h"
+#include "core/files.h"
+#include "classes/necromancy.h"
+#include "world/vnum.obj.h"
 
 #include <algorithm>
 #include <limits>
 #include <new>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 
 namespace
@@ -262,8 +266,9 @@ bool decode_items(decoder &in, std::vector<player_item_snapshot> &items)
 
 bool valid_metadata(const player_snapshot &snapshot)
 {
-	return snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION && snapshot.pid > 0 &&
-	       snapshot.revision && snapshot.components &&
+	return (snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION ||
+		snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION) &&
+	       snapshot.pid > 0 && snapshot.revision && snapshot.components &&
 	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
@@ -285,6 +290,165 @@ bool valid_item_relationships(const std::vector<player_item_snapshot> &items)
 		}
 	}
 	return true;
+}
+
+bool nonzero_operation(const critical_operation_id &id)
+{
+	return std::any_of(id.bytes.begin(), id.bytes.end(),
+			   [](uint8_t byte) { return byte != 0; });
+}
+
+bool valid_death(const player_snapshot &snapshot)
+{
+	if (snapshot.schema_version == PLAYER_SNAPSHOT_SCHEMA_VERSION)
+		return !snapshot.death;
+	if (!snapshot.death || snapshot.save_intent != RENT_DEATH ||
+	    snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL || !snapshot.items.empty() ||
+	    !snapshot.pets.empty())
+		return false;
+	const auto &death = *snapshot.death;
+	if (!nonzero_operation(death.operation_id) || death.corpse_room_vnum <= 0 ||
+	    !death.wallet_revision || death.corpse.empty() ||
+	    !valid_item_relationships(death.corpse))
+		return false;
+	const auto &corpse = death.corpse.front();
+	if (corpse.vnum != VOBJ_CORPSE || corpse.type != ITEM_CORPSE ||
+	    corpse.values[CORPSE_PID] != snapshot.pid || corpse.values[CORPSE_SAVEID] <= 0 ||
+	    !(corpse.values[CORPSE_FLAGS] & PC_CORPSE))
+		return false;
+	bool has_wallet = false;
+	for (int32_t amount : death.wallet_before)
+	{
+		if (amount < 0)
+			return false;
+		has_wallet = has_wallet || amount != 0;
+	}
+	if (has_wallet != (death.wallet_pile_uid != 0))
+		return false;
+	std::unordered_set<uint64_t> captured;
+	for (size_t index = 0; index < death.corpse.size(); ++index)
+	{
+		const auto &item = death.corpse[index];
+		if (!item.object_uid || !captured.insert(item.object_uid).second ||
+		    (index && item.parent_index == PLAYER_SNAPSHOT_NO_PARENT))
+			return false;
+		if (item.object_uid == death.wallet_pile_uid)
+		{
+			if (item.vnum != VOBJ_COINS || item.type != ITEM_MONEY ||
+			    item.parent_index != 0)
+				return false;
+			for (size_t denomination = 0; denomination < death.wallet_before.size();
+			     ++denomination)
+				if (item.values[denomination] != death.wallet_before[denomination])
+					return false;
+		}
+	}
+	if (has_wallet && (death.wallet_pile_uid == death.corpse.front().object_uid ||
+			   !captured.count(death.wallet_pile_uid)))
+		return false;
+	captured.erase(death.corpse.front().object_uid); // Lifecycle owns the corpse itself.
+	std::unordered_set<uint64_t> observed;
+	for (const auto &row : death.custody)
+	{
+		if (!row.item.item_uid || !observed.insert(row.item.item_uid).second ||
+		    row.item.vnum <= 0 ||
+		    row.item.expected_state > item_custody_state::quarantined ||
+		    row.owner.type > item_owner_type::shopkeeper)
+			return false;
+		if (row.item.expected_state == item_custody_state::absent)
+		{
+			if (row.item.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION ||
+			    row.owner.type != item_owner_type::unknown || row.owner.id ||
+			    row.owner.context_id || row.owner_revision)
+				return false;
+		}
+		else if (!row.item.expected_item_revision ||
+			 row.item.expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+			 !row.item.root_item_uid || row.owner.type == item_owner_type::unknown)
+			return false;
+		captured.erase(row.item.item_uid);
+	}
+	if (!captured.empty())
+		return false;
+	std::unordered_set<std::string> operations;
+	for (const auto &id : death.unresolved_operations)
+		if (!nonzero_operation(id) || id.bytes == death.operation_id.bytes ||
+		    !operations
+			     .insert(std::string(reinterpret_cast<const char *>(id.bytes.data()),
+						 id.bytes.size()))
+			     .second)
+			return false;
+	return true;
+}
+
+void encode_death(encoder &out, const player_death_snapshot &death)
+{
+	for (uint8_t byte : death.operation_id.bytes)
+		out.number<uint8_t>(byte);
+	out.number<int32_t>(death.corpse_room_vnum);
+	out.number<uint64_t>(death.wallet_revision);
+	for (int32_t amount : death.wallet_before)
+		out.number<int32_t>(amount);
+	out.number<uint64_t>(death.wallet_pile_uid);
+	encode_items(out, death.corpse);
+	out.vector(death.custody,
+		   [&](const auto &row)
+		   {
+			   out.number<uint64_t>(row.item.item_uid);
+			   out.number<uint64_t>(row.item.root_item_uid);
+			   out.number<uint64_t>(row.item.parent_item_uid);
+			   out.number<uint64_t>(row.item.expected_item_revision);
+			   out.number<int32_t>(row.item.vnum);
+			   out.number<uint8_t>(static_cast<uint8_t>(row.item.expected_state));
+			   out.number<uint8_t>(static_cast<uint8_t>(row.owner.type));
+			   out.number<uint64_t>(row.owner.id);
+			   out.number<uint64_t>(row.owner.context_id);
+			   out.number<uint64_t>(row.owner_revision);
+		   });
+	out.vector(death.unresolved_operations,
+		   [&](const auto &id)
+		   {
+			   for (uint8_t byte : id.bytes)
+				   out.number<uint8_t>(byte);
+		   });
+}
+
+bool decode_death(decoder &in, player_death_snapshot &death)
+{
+	for (uint8_t &byte : death.operation_id.bytes)
+		if (!in.number(byte))
+			return false;
+	if (!in.number(death.corpse_room_vnum) || !in.number(death.wallet_revision))
+		return false;
+	for (int32_t &amount : death.wallet_before)
+		if (!in.number(amount))
+			return false;
+	return in.number(death.wallet_pile_uid) && decode_items(in, death.corpse) &&
+	       in.vector(death.custody,
+			 [&](auto &row)
+			 {
+				 uint8_t state = 0, owner = 0;
+				 if (!in.number(row.item.item_uid) ||
+				     !in.number(row.item.root_item_uid) ||
+				     !in.number(row.item.parent_item_uid) ||
+				     !in.number(row.item.expected_item_revision) ||
+				     !in.number(row.item.vnum) || !in.number(state) ||
+				     !in.number(owner) || !in.number(row.owner.id) ||
+				     !in.number(row.owner.context_id) ||
+				     !in.number(row.owner_revision))
+					 return false;
+				 row.item.expected_state = static_cast<item_custody_state>(state);
+				 row.owner.type = static_cast<item_owner_type>(owner);
+				 return true;
+			 }) &&
+	       in.vector(death.unresolved_operations,
+			 [&](auto &id)
+			 {
+				 for (uint8_t &byte : id.bytes)
+					 if (!in.number(byte))
+						 return false;
+				 return true;
+			 });
 }
 } // namespace
 
@@ -464,6 +628,8 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 	try
 	{
 		encoder out;
+		if (!valid_death(snapshot))
+			return player_snapshot_codec_result::invalid_value;
 		out.bytes.reserve(snapshot.encoded_size_bound);
 		out.number<uint32_t>(snapshot.schema_version);
 		out.number<int32_t>(snapshot.pid);
@@ -549,6 +715,8 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				   out.number<int32_t>(row.experience);
 			   });
 		out.boolean(snapshot.recipes_are_external);
+		if (snapshot.death)
+			encode_death(out, *snapshot.death);
 		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
 			return player_snapshot_codec_result::limit_exceeded;
 		player_snapshot validated = {};
@@ -579,7 +747,8 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		uint64_t encoded_bound = 0;
 		if (!in.number(snapshot.schema_version))
 			return in.result;
-		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION)
+		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
+		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
 			return player_snapshot_codec_result::unsupported_version;
 		if (!in.number(snapshot.pid) || !in.number(snapshot.revision) ||
 		    !in.number(snapshot.components) || !in.number(snapshot.save_intent) ||
@@ -672,6 +841,14 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			    { return in.number(row.zone_number) && in.number(row.experience); }) ||
 		    !in.boolean(snapshot.recipes_are_external))
 			return in.result;
+		if (snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
+		{
+			snapshot.death.emplace();
+			if (!decode_death(in, *snapshot.death))
+				return in.result;
+		}
+		if (!valid_death(snapshot))
+			return player_snapshot_codec_result::invalid_value;
 		if (in.offset != in.size)
 			return player_snapshot_codec_result::invalid_value;
 		if (!valid_item_relationships(snapshot.items))

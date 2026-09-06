@@ -1,6 +1,7 @@
 #include "item/item_movement_transaction.h"
 
 #include "item/item_ownership_runtime.h"
+#include "economy/currency_transaction.h"
 #include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
@@ -93,6 +94,16 @@ bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
+}
+
+bool coin_movement_pending(P_obj object)
+{
+	if (!object)
+		return false;
+	item_ownership_runtime_entry runtime = {};
+	return currency_transaction_coin_item_busy(object->obj_uid) ||
+	       (item_ownership_runtime_lookup(object->obj_uid, &runtime) &&
+		currency_transaction_coin_item_busy(runtime.root_item_uid));
 }
 
 bool capture(P_obj object, uint64_t root_uid, uint64_t parent_uid,
@@ -653,7 +664,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
-	if (movement_conflicts(from_owner, to_owner))
+	if (movement_conflicts(from_owner, to_owner) || coin_movement_pending(root) ||
+	    coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry runtime = {};
 	item_ownership_runtime_entry target_runtime = {};
@@ -792,7 +804,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
-	if (movement_conflicts(from_owner, to_owner))
+	if (movement_conflicts(from_owner, to_owner) || coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
@@ -828,6 +840,8 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 			    !item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
 			    !item_owner_identity_equal(runtime.owner, from_owner))
 				return reject_with(reject, item_movement_reject::owner_mismatch);
+			if (coin_movement_pending(root))
+				return reject_with(reject, item_movement_reject::pending_conflict);
 			if (!capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
 				return reject_with(reject, item_movement_reject::topology_mismatch);
 
