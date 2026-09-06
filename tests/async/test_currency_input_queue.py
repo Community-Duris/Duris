@@ -191,6 +191,8 @@ int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool ite
 
 COIN_PILES = r'''
 static std::vector<P_obj> live_items;
+P_obj object_list = nullptr;
+void obj_to_char(P_obj, P_char);
 static uint64_t next_coin_uid = 1000, hidden_container = 0;
 static int put_announcements = 0;
 const char *coin_names[] = {"copper", "silver", "gold", "platinum"};
@@ -218,6 +220,9 @@ void extract_obj(P_obj item, bool)
         assert(*at == item);
         *at = item->next_content;
     }
+    P_obj *link = &object_list;
+    while (*link && *link != item) link = &(*link)->next;
+    if (*link) *link = item->next;
     live_items.erase(std::remove(live_items.begin(), live_items.end(), item), live_items.end());
     free(item->description);
     free(item->short_description);
@@ -248,6 +253,8 @@ P_obj create_money(int copper, int silver, int gold, int platinum)
     item->type = ITEM_MONEY;
     item->loc_p = LOC_NOWHERE;
     add_coins(item, copper, silver, gold, platinum);
+    item->next = object_list;
+    object_list = item;
     live_items.push_back(item);
     return item;
 }
@@ -341,6 +348,13 @@ static void expect_text(const char *got, const char *want)
 	}
 }
 
+void obj_to_char(P_obj item, P_char ch)
+{
+    item->loc_p = LOC_CARRIED;
+    item->loc.carrying = ch;
+    item->next_content = ch->carrying;
+    ch->carrying = item;
+}
 static int completion_count = 0;
 static int score_dispatches = 0;
 static int put_dispatches = 0;
@@ -874,6 +888,40 @@ int main()
 	assert(submission_count == before_leaving && bulk_gets.empty() && bulk_total == 1);
 	assert(bag.contains && bag.contains->value[0] == 35);
 	extract_obj(bag.contains, false);
+    // Death conversion preserves every denomination and creates custody only on commit.
+    // The submit/completion adapter is real; the acknowledgement is an explicit fixture.
+    GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = INT32_MAX;
+    const auto wallet_revision_before = actor.only.pc->wallet_revision;
+    money_to_inventory(&actor);
+    assert(currency_transaction_player_busy(&actor));
+    assert(actor.carrying == nullptr && GET_COPPER(&actor) == INT32_MAX);
+    coin_transfer_payload death_money;
+    assert(coin_transfer_command_decode_payload(submitted_command, &death_money));
+    item_transfer_payload death_pile;
+    assert(item_transfer_command_decode_payload(death_money.destination.change, &death_pile));
+    const uint64_t rejected_uid = death_pile.selected_item_uid;
+    for (int i = 0; i < 4; ++i) {
+        assert(death_money.source.before[i] == INT32_MAX && death_money.source.after[i] == 0);
+        assert(death_money.destination.after[i] == INT32_MAX);
+    }
+    pile_ack(false);
+    assert(actor.carrying == nullptr && !find_live_item_uid(rejected_uid));
+    assert(GET_PLATINUM(&actor) == INT32_MAX && actor.only.pc->wallet_revision == wallet_revision_before);
+    money_to_inventory(&actor);
+    assert(coin_transfer_command_decode_payload(submitted_command, &death_money));
+    assert(item_transfer_command_decode_payload(death_money.destination.change, &death_pile));
+    pile_ack(true);
+    assert(!currency_transaction_player_busy(&actor));
+    assert(actor.carrying && actor.carrying->obj_uid == death_pile.selected_item_uid);
+    item_ownership_runtime_entry death_custody;
+    assert(item_ownership_runtime_lookup(actor.carrying->obj_uid, &death_custody));
+    assert(death_custody.owner.id == 42 && death_custody.root_item_uid == actor.carrying->obj_uid);
+    for (int i = 0; i < 4; ++i)
+        assert(actor.points.cash[i] == 0 && actor.carrying->value[i] == INT32_MAX);
+    P_obj converted = actor.carrying;
+    actor.carrying = nullptr;
+    converted->loc_p = LOC_NOWHERE;
+    extract_obj(converted, false);
 	live_items.clear();
 	item_ownership_runtime_reset();
 	actor.next = nullptr;
@@ -893,6 +941,8 @@ def main() -> int:
         COIN_GIVE,
         COIN_PILES,
         COIN_GET,
+        extract(SRC / "handler.c", "bool money_inventory_completion("),
+        extract(SRC / "handler.c", "void money_to_inventory("),
         SEARCH,
         COMMAND_NUMBER,
         DEPENDS,

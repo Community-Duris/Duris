@@ -1520,14 +1520,6 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 		return false;
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(character)), 0 };
-	for (P_obj candidate = character->carrying, next = NULL; candidate; candidate = next)
-	{
-		next = candidate->next_content;
-		if (GET_ITEM_TYPE(candidate) != ITEM_MONEY)
-			continue;
-		obj_from_char(candidate);
-		obj_to_obj(candidate, corpse);
-	}
 	P_obj item = NULL;
 	item_ownership_runtime_entry runtime = {};
 	for (P_obj candidate = character->carrying; candidate; candidate = candidate->next_content)
@@ -1819,7 +1811,8 @@ P_obj make_corpse(P_char ch, int loss)
 		// transfer conflict, and a refusal here reads as failed_preserved even
 		// though nothing was lost. die() defers the death while the pipeline is
 		// busy and the recovery event restarts the chain once it drains.
-		if (!item_movement_transaction_player_busy(ch))
+		if (!item_movement_transaction_player_busy(ch) &&
+		    !currency_transaction_player_busy(ch))
 			(void)submit_next_corpse_item(ch, corpse);
 	}
 
@@ -2494,7 +2487,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
-	if (item_movement_transaction_player_busy(ch))
+	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_awaiting_corpse_items", "delay=%d",
@@ -3110,7 +3103,8 @@ void die(P_char ch, P_char killer)
 	if (IS_PC(ch))
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
-		if (!CHAR_IN_ARENA(ch) && item_movement_transaction_player_busy(ch))
+		if (!CHAR_IN_ARENA(ch) && (item_movement_transaction_player_busy(ch) ||
+					   currency_transaction_player_busy(ch)))
 		{
 			persistence_alert(AVATAR, "player_save", "death", "none", "none",
 					  "corpse_items_in_flight",
