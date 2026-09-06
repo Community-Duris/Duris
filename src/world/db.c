@@ -41,6 +41,9 @@
 #include "world/weather.h"
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
+#include "world/object_template.h"
+#include "account/newbie_kit_plan.h"
 
 /*
  * external variables
@@ -633,6 +636,11 @@ void boot_db(int mini_mode)
 	fprintf(stderr, "-- Spells.\n");
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
+
+	// Parse starter prototypes before any descriptors can request a kit.
+	for (int vnum : newbie_kit_template_vnums())
+		if (!cache_object_template(vnum))
+			logit(LOG_STATUS, "Starter template VNUM %d is unavailable", vnum);
 
 	/* Load areas/world.trg and bind the generic zone procs.  Must run
 	   after assign_spell_pointers() -- the .trg parser resolves spell
@@ -2741,111 +2749,39 @@ void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*dat
 	}
 }
 
-/* read an object from OBJ_FILE */
-P_obj read_object(int nr, int type)
+namespace
 {
-	P_obj obj;
-	int tmp, i, j;
-	unsigned long int utmp;
+std::unordered_map<int, object_template> starter_object_templates;
+
+std::string read_template_string(FILE *file, const char *shared = nullptr)
+{
+	if (shared)
+	{
+		skip_fread(file);
+		return shared;
+	}
+	char *text = fread_string(file);
+	std::string result = text ? text : "";
+	if (text)
+		FREE(text);
+	return result;
+}
+
+object_template parse_object_template(int nr)
+{
+	object_template result;
+	auto *obj = &result;
+	int tmp, i;
+	unsigned long utmp;
 	char chk[MAX_STRING_LENGTH];
-	struct extra_descr_data *new_descr;
-
-	i = nr;
-	if (type == VIRTUAL)
-		if ((nr = real_object(nr)) < 0)
-		{
-#if defined(DB_NOTIFY) && DB_NOTIFY
-			logit(LOG_DEBUG, "read_object: Obj %d not in database", i);
-#endif
-			return (0);
-		}
-	if (nr < 0)
-	{
-		logit(LOG_DEBUG, "read_object: negative rnum (%d) args %d, %s", nr, i,
-		      type ? "VIRTUAL" : "REAL");
-		return 0;
-	}
-	fseek(obj_f, obj_index[nr].pos, 0);
-
-#if 0
-#ifdef MEM_DEBUG
-  mem_use[MEM_OBJ] += sizeof(struct obj_data);
-#endif
-  CREATE(obj, struct obj_data, 1);
-#endif
-	obj = (P_obj)mm_get(dead_obj_pool);
-
-	memset(obj, 0, sizeof(struct obj_data));
-
-	obj->obj_uid = static_cast<unsigned long>(persistence_next_item_uid());
-	obj->R_num = -1;
-	obj->loc_p = LOC_NOWHERE;
-	obj->loc.room = NOWHERE;
-
 	obj->R_num = nr;
-	obj_index[nr].number++;
-
-	if (object_list)
-		object_list->prev = obj;
-	obj->next = object_list;
-	obj->prev = NULL;
-	object_list = obj;
-
-	/* *** string data *** */
-
-	/*
-	 * added pointers to the index struct, so that all objs of the same
-	 * type will now share all text.  This should save us a huge amount of
-	 * RAM. -JAB
-	 */
-
-	if (!obj_index[nr].keys)
-	{
-		obj->name = fread_string(obj_f);
-		for (j = 0; *(obj->name + j); j++) /* make sure all keywords are lowercased */
-			*(obj->name + j) = LOWER(*(obj->name + j));
-		obj_index[nr].keys = obj->name;
-	}
-	else
-	{
-		skip_fread(obj_f);
-		obj->name = obj_index[nr].keys;
-	}
-
-	if (!obj_index[nr].desc2)
-	{
-		obj->short_description = fread_string(obj_f);
-		obj_index[nr].desc2 = obj->short_description;
-	}
-	else
-	{
-		skip_fread(obj_f);
-		obj->short_description = obj_index[nr].desc2;
-	}
-
-	if (!obj_index[nr].desc1)
-	{
-		obj->description = fread_string(obj_f);
-		obj_index[nr].desc1 = obj->description;
-	}
-	else
-	{
-		skip_fread(obj_f);
-		obj->description = obj_index[nr].desc1;
-	}
-
-	if (!obj_index[nr].desc3)
-	{
-		obj->action_description = fread_string(obj_f);
-		obj_index[nr].desc3 = obj->action_description;
-	}
-	else
-	{
-		skip_fread(obj_f);
-		obj->action_description = obj_index[nr].desc3;
-	}
-	obj->str_mask = 0;
-
+	fseek(obj_f, obj_index[nr].pos, 0);
+	obj->name = read_template_string(obj_f, obj_index[nr].keys);
+	for (char &letter : obj->name)
+		letter = LOWER(letter);
+	obj->short_description = read_template_string(obj_f, obj_index[nr].desc2);
+	obj->description = read_template_string(obj_f, obj_index[nr].desc1);
+	obj->action_description = read_template_string(obj_f, obj_index[nr].desc3);
 	/* *** numeric data *** */
 
 	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
@@ -2936,37 +2872,18 @@ P_obj read_object(int nr, int type)
 
 	// nuke the proclib flag - it'll be put back if needed
 	REMOVE_BIT(obj->extra_flags, ITEM_PROCLIB);
-	/* *** extra descriptions *** */
 
+	/* *** extra descriptions *** */
+	// Proc-library descriptions stay inert until main-thread publication.
 	while (*chk == 'E')
 	{
-		CREATE(new_descr, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-		new_descr->keyword = fread_string(obj_f);
-		new_descr->description = fread_string(obj_f);
-
-		// hack for proc libs..
-		if (!strn_cmp("_proclib_", new_descr->keyword, 9))
-		{
-			// send it to the proc lib stuff..
-			if (!proclibObj_add(obj, new_descr->keyword + 9, new_descr->description))
-			{
-				// free what we just read - its useless now GLD
-				FREE(new_descr->keyword);
-				FREE(new_descr->description);
-				FREE(new_descr);
-				new_descr = NULL;
-			}
-		}
-		if (new_descr)
-		{
-			new_descr->next = obj->ex_description;
-			obj->ex_description = new_descr;
-		}
+		object_template_description description;
+		description.keyword = read_template_string(obj_f);
+		description.description = read_template_string(obj_f);
+		obj->descriptions.push_back(std::move(description));
 		if (fscanf(obj_f, " %s \n", chk) != 1)
 			*chk = '\0';
 	}
-
 	for (i = 0; (i < MAX_OBJ_AFFECT) && (*chk == 'A'); i++)
 	{
 		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
@@ -2975,8 +2892,6 @@ P_obj read_object(int nr, int type)
 		obj->affected[i].modifier = tmp;
 		REQUIRED_FSCANF(obj_f, " %s \n", chk);
 	}
-
-	obj->z_cord = 0;
 
 	/* Trapped item data */
 	obj->trap_eff = obj->trap_dam = obj->trap_charge = 0;
@@ -2996,8 +2911,6 @@ P_obj read_object(int nr, int type)
 		SET_BIT(obj->wear_flags, ITEM_HOLD);
 	if (IS_SET(obj->wear_flags, ITEM_HOLD) && !IS_SET(obj->wear_flags, ITEM_TAKE))
 		SET_BIT(obj->wear_flags, ITEM_TAKE);
-	if (obj->type == ITEM_SWITCH && !obj_index[obj->R_num].func.obj)
-		obj_index[obj->R_num].func.obj = item_switch;
 	if (obj->type == ITEM_ARMOR && !obj->value[0])
 		obj->type = ITEM_WORN;
 #if 0
@@ -3016,33 +2929,33 @@ P_obj read_object(int nr, int type)
   }
 #endif
 	/* set up a few items that are belt attachable */
-	if (((GET_ITEM_TYPE(obj) == ITEM_DRINKCON) /*&& !isname("barrel", obj->name) */
-	     && (isname("canteen", obj->name) || isname("skin", obj->name) ||
-		 isname("horn", obj->name))) ||
+	if (((GET_ITEM_TYPE(obj) == ITEM_DRINKCON) /*&& !isname("barrel", obj->name.c_str()) */
+	     && (isname("canteen", obj->name.c_str()) || isname("skin", obj->name.c_str()) ||
+		 isname("horn", obj->name.c_str()))) ||
 	    ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER) &&
-	     (isname("bag", obj->name) || isname("sack", obj->name) || isname("tube", obj->name) ||
-	      isname("case", obj->name) || isname("scabbard", obj->name) ||
-	      isname("pouch", obj->name)) &&
+	     (isname("bag", obj->name.c_str()) || isname("sack", obj->name.c_str()) ||
+	      isname("tube", obj->name.c_str()) || isname("case", obj->name.c_str()) ||
+	      isname("scabbard", obj->name.c_str()) || isname("pouch", obj->name.c_str())) &&
 	     (obj->value[0] < 25)) ||
 	    (GET_ITEM_TYPE(obj) == ITEM_QUIVER))
 		SET_BIT(obj->wear_flags, ITEM_ATTACH_BELT);
 
 	/* and some that are back */
-	if ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER && isname("backpack", obj->name)) ||
+	if ((GET_ITEM_TYPE(obj) == ITEM_CONTAINER && isname("backpack", obj->name.c_str())) ||
 	    GET_ITEM_TYPE(obj) == ITEM_QUIVER)
 		SET_BIT(obj->wear_flags, ITEM_WEAR_BACK);
 
 	/* set throw flag to obj */
 	if (obj->type == ITEM_WEAPON)
 	{
-		if (strstr(obj->name, "axe") || strstr(obj->name, "hammer") ||
-		    strstr(obj->name, "trident") || strstr(obj->name, "club") ||
-		    strstr(obj->name, "dart"))
+		if (strstr(obj->name.c_str(), "axe") || strstr(obj->name.c_str(), "hammer") ||
+		    strstr(obj->name.c_str(), "trident") || strstr(obj->name.c_str(), "club") ||
+		    strstr(obj->name.c_str(), "dart"))
 			SET_BIT(obj->extra_flags, ITEM_CAN_THROW1);
-		else if (strstr(obj->name, "dagger") || strstr(obj->name, "spear") ||
-			 strstr(obj->name, "javelin"))
+		else if (strstr(obj->name.c_str(), "dagger") ||
+			 strstr(obj->name.c_str(), "spear") || strstr(obj->name.c_str(), "javelin"))
 			SET_BIT(obj->extra_flags, ITEM_CAN_THROW2);
-		else if (strstr(obj->name, "boomerang"))
+		else if (strstr(obj->name.c_str(), "boomerang"))
 		{
 			SET_BIT(obj->extra_flags, ITEM_CAN_THROW1);
 			SET_BIT(obj->extra_flags, ITEM_CAN_THROW2);
@@ -3054,6 +2967,106 @@ P_obj read_object(int nr, int type)
 		}
 	}
 
+	return result;
+}
+} // namespace
+
+bool cache_object_template(int vnum)
+{
+	if (starter_object_templates.count(vnum))
+		return true;
+	const int nr = real_object(vnum);
+	if (nr < 0)
+		return false;
+	starter_object_templates.emplace(vnum, parse_object_template(nr));
+	return true;
+}
+
+const object_template *find_object_template(int vnum)
+{
+	const auto found = starter_object_templates.find(vnum);
+	return found == starter_object_templates.end() ? nullptr : &found->second;
+}
+
+P_obj instantiate_object_template(const object_template &prototype)
+{
+	// Only this main-thread adapter touches the pool, index, list or events.
+	const int nr = prototype.R_num;
+	P_obj obj = (P_obj)mm_get(dead_obj_pool);
+	memset(obj, 0, sizeof(*obj));
+	obj->R_num = prototype.R_num;
+	obj->type = prototype.type;
+	obj->material = prototype.material;
+	obj->craftsmanship = prototype.craftsmanship;
+	obj->extra_flags = prototype.extra_flags;
+	obj->wear_flags = prototype.wear_flags;
+	obj->extra2_flags = prototype.extra2_flags;
+	obj->anti_flags = prototype.anti_flags;
+	obj->anti2_flags = prototype.anti2_flags;
+	memcpy(&obj->value, &prototype.value, sizeof(obj->value));
+	obj->weight = prototype.weight;
+	obj->cost = prototype.cost;
+	obj->condition = prototype.condition;
+	obj->bitvector = prototype.bitvector;
+	obj->bitvector2 = prototype.bitvector2;
+	obj->bitvector3 = prototype.bitvector3;
+	obj->bitvector4 = prototype.bitvector4;
+	obj->bitvector5 = prototype.bitvector5;
+	memcpy(&obj->affected, &prototype.affected, sizeof(obj->affected));
+	obj->trap_eff = prototype.trap_eff;
+	obj->trap_dam = prototype.trap_dam;
+	obj->trap_charge = prototype.trap_charge;
+	obj->trap_level = prototype.trap_level;
+	obj->obj_uid = static_cast<unsigned long>(persistence_next_item_uid());
+	obj->loc_p = LOC_NOWHERE;
+	obj->loc.room = NOWHERE;
+	obj_index[nr].number++;
+	if (object_list)
+		object_list->prev = obj;
+	obj->next = object_list;
+	object_list = obj;
+	if (!obj_index[nr].keys)
+		obj_index[nr].keys = prototype.name.empty() ? nullptr :
+							      str_dup(prototype.name.c_str());
+	obj->name = obj_index[nr].keys;
+	if (!obj_index[nr].desc2)
+		obj_index[nr].desc2 = prototype.short_description.empty() ?
+					      nullptr :
+					      str_dup(prototype.short_description.c_str());
+	obj->short_description = obj_index[nr].desc2;
+	if (!obj_index[nr].desc1)
+		obj_index[nr].desc1 = prototype.description.empty() ?
+					      nullptr :
+					      str_dup(prototype.description.c_str());
+	obj->description = obj_index[nr].desc1;
+	if (!obj_index[nr].desc3)
+		obj_index[nr].desc3 = prototype.action_description.empty() ?
+					      nullptr :
+					      str_dup(prototype.action_description.c_str());
+	obj->action_description = obj_index[nr].desc3;
+	for (const auto &description : prototype.descriptions)
+	{
+		extra_descr_data *new_descr;
+		CREATE(new_descr, extra_descr_data, 1, MEM_TAG_EXDESCD);
+		new_descr->keyword = description.keyword.empty() ?
+					     nullptr :
+					     str_dup(description.keyword.c_str());
+		new_descr->description = description.description.empty() ?
+						 nullptr :
+						 str_dup(description.description.c_str());
+		if (!strn_cmp("_proclib_", new_descr->keyword, 9) &&
+		    !proclibObj_add(obj, new_descr->keyword + 9, new_descr->description))
+		{
+			FREE(new_descr->keyword);
+			FREE(new_descr->description);
+			FREE(new_descr);
+			continue;
+		}
+		new_descr->next = obj->ex_description;
+		obj->ex_description = new_descr;
+	}
+	if (obj->type == ITEM_SWITCH && !obj_index[nr].func.obj)
+		obj_index[nr].func.obj = item_switch;
 	obj->nevents = NULL;
 	obj->nevents_tail = NULL;
 
@@ -3085,6 +3098,16 @@ P_obj read_object(int nr, int type)
 	convertObj(obj);
 
 	return (obj);
+}
+
+/* Non-starter callers retain cold loading; both paths share one parser. */
+P_obj read_object(int nr, int type)
+{
+	if (type == VIRTUAL)
+		nr = real_object(nr);
+	if (nr < 0 || nr > top_of_objt)
+		return nullptr;
+	return instantiate_object_template(parse_object_template(nr));
 }
 
 /*  Function to reset no_reset zones...
