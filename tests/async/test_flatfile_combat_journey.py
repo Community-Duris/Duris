@@ -147,8 +147,17 @@ def make_fixture(run_root: pathlib.Path, reset_coins: bool = False) -> None:
     end = objects.index("#4\n", start)
     coins = objects[start:end]
     require("0 0 0 0 0 0 0 0" in coins, "money object fixture changed")
-    objects_path.write_text(objects[:start] + coins.replace(
-        "0 0 0 0 0 0 0 0", "0 3 0 0 0 0 0 0" if reset_coins else "0 0 0 0 0 0 0 0") + objects[end:])
+    objects = objects[:start] + coins.replace(
+        "0 0 0 0 0 0 0 0", "0 3 0 0 0 0 0 0" if reset_coins else "0 0 0 0 0 0 0 0") + objects[end:]
+    # End the low-HP NPC fight on a landed hit instead of depending on many
+    # random attack/dodge rolls while Raoul is wounded. Keep real combat and
+    # death handling; the executioner's 51,000 HP still safely exceeds this.
+    start = objects.index("#677\n")
+    end = objects.index("#678\n", start)
+    mace = objects[start:end]
+    require("6 1 6 7 0 0 0 0" in mace, "starter mace fixture changed")
+    objects_path.write_text(objects[:start] + mace.replace(
+        "6 1 6 7 0 0 0 0", "6 100 1 7 0 0 0 0") + objects[end:])
     executioner = """#22800
 regression executioner~
 the regression executioner~
