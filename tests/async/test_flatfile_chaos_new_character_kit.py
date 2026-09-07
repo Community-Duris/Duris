@@ -138,14 +138,14 @@ def assert_kit_ownership(state_root: pathlib.Path, class_name: str) -> dict[int,
     """Assert direct wearables and support-only bag contents at grant completion."""
     ownership = read_item_ownership(state_root)
     bag = one_owned_item(state_root, STARTER_BAG_VNUM)
-    # Human Sorcerer has no dual-wield skill; its secondary slot is unavailable.
-    # Monk profiles omit weapon slots entirely. Other chosen humans dual wield.
+    # Human Sorcerer and standalone Thief have no dual-wield skill.
+    # Monk profiles omit weapon slots entirely; Warrior has dual wield at level 1.
     equipment = {vnum for slot, vnum in kit_entries(class_name)
-                 if slot >= 0 and not (class_name == "Sorcerer" and slot == 17)}
-    if class_name == "Sorcerer":
+                 if slot >= 0 and not (class_name in ("Sorcerer", "Thief") and slot == 17)}
+    if class_name in ("Sorcerer", "Thief"):
         unavailable = {vnum for slot, vnum in kit_entries(class_name) if slot == 17} - equipment
         require(not any(ownership.get(vnum) for vnum in unavailable),
-                "Sorcerer received secondary gear without dual-wield capability")
+                f"{class_name} received secondary gear without dual-wield capability")
     for vnum in equipment:
         rows = ownership.get(vnum, [])
         require(bool(rows), f"{class_name}: missing wearable {vnum}")
@@ -194,6 +194,54 @@ def assert_utility_durability(state_root: pathlib.Path, class_name: str,
                     and row["owner_type"] == 1 and row["owner_id"] == 1
                     and row["state"] == 1 for row in after),
                 f"{class_name}: utility {vnum} ownership changed on restart")
+
+
+def build_snapshot_inspector(run_root: pathlib.Path) -> pathlib.Path:
+    """Compile a read-only inspector using the production snapshot file decoder."""
+    source, binary = run_root / "kit_snapshot.cpp", run_root / "kit_snapshot"
+    source.write_text(r'''
+#include "flatfile/flatfile_player_snapshot_file.h"
+#include "core/defines.h"
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
+int main(int argc, char **argv) {
+    assert(argc == 3);
+    player_snapshot snapshot;
+    std::string error;
+    if (flatfile_player_snapshot_read(argv[1], 1, &snapshot, &error) != flatfile_player_load_result::ok) {
+        std::cerr << "synthetic kit snapshot decode failed: " << error << '\n';
+        return 1;
+    }
+    const int globe_vnum = std::atoi(argv[2]);
+    bool globe = globe_vnum == 0;
+    assert(!snapshot.items.empty());
+    for (const auto &item : snapshot.items) {
+        if (item.extra_flags & (ITEM_TRANSIENT | ITEM_NODROP | ITEM_INVISIBLE | ITEM_SECRET |
+                               ITEM_NOSHOW | ITEM_BURIED | ITEM_NORENT)) {
+            std::cerr << "unsafe persisted starter flags vnum=" << item.vnum << '\n';
+            return 1;
+        }
+        assert(!(item.extra2_flags & ITEM2_CRUMBLELOOT));
+        for (const auto &affect : item.affects) assert(affect[0] != APPLY_CURSE);
+        if (item.vnum == globe_vnum && (item.bitvectors[1] & AFF2_GLOBE)) globe = true;
+    }
+    assert(globe);
+    std::cout << "persisted kit flags, curse removal and globe passed\n";
+}
+''')
+    subprocess.run(["g++", "-std=c++20", "-Isrc", str(source),
+                    "src/flatfile/flatfile_player_snapshot_file.c", "src/flatfile/flatfile_store.c",
+                    "src/player/player_snapshot_codec.c", "-lcrypto", "-o", str(binary)],
+                   cwd=ROOT, check=True)
+    return binary
+
+
+def assert_saved_kit(inspector: pathlib.Path, state_root: pathlib.Path, class_name: str) -> None:
+    """Read freshly saved instances, never prototype flags or reconstructed values."""
+    globe_vnum = next(vnum for slot, vnum in kit_entries(class_name) if slot == 3)
+    subprocess.run([str(inspector), str(state_root),
+                    str(globe_vnum if class_name != "Sorcerer" else 0)], check=True)
 
 
 def class_kit_vnums(class_name: str) -> set[int]:
@@ -328,7 +376,13 @@ def create_chaos_character(client: MudClient, class_name: str = "Warrior") -> No
     client.send("y")
     client.expect("PRESS RETURN")
     client.send("")
-    client.expect("Your Chaos Equipment has been prepared!!", timeout=300)
+    prepared = "Your Chaos Equipment has been prepared!!"
+    result, output = client.expect_any(
+        (prepared, "Your CHAOS equipment kit could not", "Your CHAOS equipment bag could not",
+         "The ownership authority could not", "The ownership authority did not commit"),
+        timeout=300,
+    )
+    require(result == prepared, f"{class_name}: starter grant failed immediately: {output}")
     transcript = client.transcript.decode("utf-8", errors="replace")
     require("A free frigate!" in transcript, "Chaos tattoo reward did not advertise a Frigate")
     require(
@@ -482,6 +536,7 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
             (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
             make_fixture(run_root)
             install_chaos_objects(run_root, class_name)
+            inspector = build_snapshot_inspector(run_root)
             generate_certificate(run_root)
 
             journal_root = run_root / "journals"
@@ -611,6 +666,7 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                     )
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.", timeout=120)
+                    assert_saved_kit(inspector, state_root, class_name)
 
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=120)
@@ -715,6 +771,9 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                                 and wearable_after_reload["state"] == 1,
                                 "reloaded starter wearable authority was not a player root",
                             )
+                            reload_client.send("save")
+                            reload_client.expect(f"Save complete for {CHARACTER}.", timeout=120)
+                            assert_saved_kit(inspector, state_root, class_name)
                             reload_client.send("quit")
                             reload_client.expect("ACCOUNT MENU", timeout=60)
                             reload_client.send("0")

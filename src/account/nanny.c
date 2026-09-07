@@ -609,7 +609,7 @@ static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *it
 {
 	if (!item || !item->vnum)
 		return true;
-	if (item->slot < WEAR_NONE || item->slot >= CUR_MAX_WEAR)
+	if (item->slot < WEAR_NONE || item->slot > CUR_MAX_WEAR)
 		return false;
 	if (GET_CLASS(ch, CLASS_MONK) && chaos_kit_weapon_slot(item->slot))
 		return true;

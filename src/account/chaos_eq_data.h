@@ -573,8 +573,8 @@ static const chaos_kit_item chaos_eq_enhanceable_optional_slots[] = {
 };
 
 static const chaos_kit_item chaos_eq_support_consumables[] = {
-	{ WEAR_NONE, 93915 },  { WEAR_NONE, 93915 },  { WEAR_NONE, 93915 },  { WEAR_NONE, 1716 },
-	{ WEAR_NONE, 1716 },   { WEAR_NONE, 1716 },   { WEAR_NONE, 15119 },  { WEAR_NONE, 15119 },
+	{ WEAR_NONE, 93915 },  { WEAR_NONE, 93915 },  { WEAR_NONE, 93915 },  { WEAR_NONE, 80186 },
+	{ WEAR_NONE, 80186 },  { WEAR_NONE, 80186 },  { WEAR_NONE, 15119 },  { WEAR_NONE, 15119 },
 	{ WEAR_NONE, 15119 },  { WEAR_NONE, 2012 },   { WEAR_NONE, 2012 },   { WEAR_NONE, 2012 },
 	{ WEAR_NONE, 74021 },  { WEAR_NONE, 74021 },  { WEAR_NONE, 138280 }, { WEAR_NONE, 138280 },
 	{ WEAR_NONE, 31314 },  { WEAR_NONE, 31314 },  { WEAR_NONE, 132508 }, { WEAR_NONE, 132508 },

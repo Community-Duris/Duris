@@ -202,6 +202,9 @@ Implementation details are in `src/combat/chaos_materials.c` and
 ```text
 python3 tests/async/test_chaos_env_toggle.py
 python3 tests/async/test_chaos_eq_profile.py
+python3 tests/async/test_chaos_kit_policy.py
+python3 tests/async/test_chaos_kit_runtime.py
+python3 tests/async/test_item_movement_input_queue.py
 python3 tests/async/test_chaos_new_character_kit.py
 python3 tests/async/test_chaos_preentry_grant.py
 python3 tests/async/test_chaos_infinite_starting_grants.py

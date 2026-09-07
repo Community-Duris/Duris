@@ -46,6 +46,12 @@ parchment path is enabled. Trap arming may subsequently set secret/decay flags a
 part of ordinary skill use. Utility/support items may be stored in the bag; wearable
 equipment arrives directly in inventory.
 
+Shared consumables must also be usable by every class and playable race.
+Historical seed potion 1716 excludes Warrior. The explicit replacement is 80186
+(three clear potions), preserving Hawkvision, Lionrage and Elephantstrength at
+cast level 20 rather than 40. Both source restrictions and replacement category
+are revalidated; no other restricted shared support is silently accepted.
+
 ## Selected profiles
 
 | Profile | Class | Core slots | Globe item VNUM | Slot:VNUM equipment |

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from chaos_eq_catalog import (
     CORE_SLOTS, PHYSICAL_CLASSES, PERMANENT_POLICY, UTILITY_POLICY, WEAPON_SLOTS,
-    build_catalog, emit_header, emit_policy_report, role_item_valid, static_analysis,
+    build_catalog, emit_header, emit_policy_report, prepare_shared_consumables, role_item_valid, static_analysis,
 )
 from chaos_eq_validate import validate
 
@@ -55,6 +55,29 @@ for profile, matrix in catalog["profiles"].items():
     for item in catalog["optional_race_slot_variations"][profile]:
         if item["status"] == "available":
             assert role_item_valid(metrics[item["vnum"]], "Warrior", item["slot"])
+
+# Every unconditional support family is genuinely shared, not merely permitted
+# by the prototype's race flags. 1716 specifically excludes Warrior.
+assert not metrics[1716]["class_eligible"]["1"]
+assert any(item["vnum"] == 1716 for item in seed["consumables"])
+assert not any(item["vnum"] == 1716 for item in catalog["consumables"])
+replacement = next(item for item in catalog["consumables"] if item["vnum"] == 80186)
+assert replacement["count"] == 3 and replacement["replacement_for"] == 1716
+assert sorted(metrics[80186]["static"]["values"][1:4]) == sorted(metrics[1716]["static"]["values"][1:4])
+assert metrics[80186]["static"]["values"][0] == 20
+assert len(catalog["consumables"]) == len(analysis["seed_consumables"])
+assert [item["category"] for item in catalog["consumables"]] == [item["category"] for item in analysis["seed_consumables"]]
+for item in catalog["consumables"]:
+    assert metrics[item["vnum"]]["race_portable"]
+    assert all(metrics[item["vnum"]]["class_eligible"].values())
+for field, value in (("race_portable", False), ("class_eligible", {"1": False})):
+    rejected_metrics = {**metrics, 80186: {**metrics[80186], field: value}}
+    try:
+        prepare_shared_consumables(analysis, rejected_metrics)
+    except ValueError as error:
+        assert "not usable by every class and playable race" in str(error)
+    else:
+        raise AssertionError(f"generator accepted restricted shared support: {field}")
 
 assert [(item["vnum"], item["skill"], item["count"]) for item in UTILITY_POLICY] == [
     (336, "SKILL_FISHING", 1), (412, "SKILL_PICK_LOCK", 1),
@@ -97,9 +120,10 @@ warrior[1]["effect_summary"] = {"affects": {}}
 optional = next(item for item in bad["optional_race_slot_variations"]["standard"] if item["status"] == "available")
 optional["vnum"] = wis["vnum"]
 bad["utility_items"] = deepcopy(UTILITY_POLICY) + [deepcopy(UTILITY_POLICY[0])]
+bad["consumables"][1]["vnum"] = 1716
 issues = validate(bad, ROOT)
 for expected in ("incorrect permanent globe", "missing permanent policy", "incomplete physical role",
-                 "weapon-bearing item", "max-WIS item", "role-inappropriate fallback", "duplicate object policy", "skill, count, or object policy mismatch"):
+                 "weapon-bearing item", "max-WIS item", "role-inappropriate fallback", "duplicate object policy", "skill, count, or object policy mismatch", "consumables: class-restricted shared item 1716"):
     assert any(expected in issue for issue in issues), (expected, issues)
 
 # The generated instance effect must remain enhanceable, not just its prototype.

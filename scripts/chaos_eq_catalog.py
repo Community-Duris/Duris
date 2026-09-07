@@ -121,6 +121,10 @@ PERMANENT_STRIP_FLAGS = ("ITEM_TRANSIENT", "ITEM_NODROP", "ITEM_INVISIBLE",
 PERMANENT_POLICY = {"strip_extra_flags": list(PERMANENT_STRIP_FLAGS),
                     "strip_extra2_flags": ["ITEM2_CRUMBLELOOT"],
                     "strip_affects": ["APPLY_CURSE"]}
+# Historical shared potion 1716 excludes Warrior. 80186 preserves its three
+# spells (Hawkvision, Lionrage, Elephantstrength) for all classes at level 20
+# rather than 40. Keep the seed unchanged as a record of the prior header.
+SHARED_SUPPORT_OVERRIDES = {1716: 80186}
 UTILITY_POLICY = [
     {"vnum": 336, "skill": "SKILL_FISHING", "count": 1, "role": "fishing pole"},
     {"vnum": 412, "skill": "SKILL_PICK_LOCK", "count": 1, "role": "lockpicks"},
@@ -360,6 +364,32 @@ def choose_support_consumables(analysis: dict[str, Any]) -> list[dict[str, Any]]
     return support
 
 
+def prepare_shared_consumables(analysis: dict[str, Any], metrics: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = analysis.get("seed_consumables") or choose_support_consumables(analysis)
+    result = []
+    seen: set[int] = set()
+    for row in rows:
+        source_vnum = int(row["vnum"])
+        vnum = SHARED_SUPPORT_OVERRIDES.get(source_vnum, source_vnum)
+        metric = metrics.get(vnum)
+        if (not metric or fundamental_exceptions(metric) or not metric.get("race_portable") or
+                not all(metric.get("class_eligible", {}).get(str(cid), False)
+                        for cid in analysis["class_ids"].values())):
+            raise ValueError(f"shared consumable {vnum}: not usable by every class and playable race")
+        if metric["type_name"] != row["category"]:
+            raise ValueError(f"shared consumable {vnum}: replacement changes support category")
+        if vnum in seen:
+            raise ValueError(f"shared consumable {vnum}: duplicate support family")
+        seen.add(vnum)
+        result.append({**row, "vnum": vnum, "name": metric["name"]})
+        if source_vnum != vnum:
+            result[-1]["replacement_for"] = source_vnum
+            result[-1]["reason"] = f"all-class shared-support replacement for {source_vnum}"
+            for key in ("observed_players", "median_quantity", "upper_quartile_quantity"):
+                result[-1][key] = metric.get(key, 0)
+    return result
+
+
 def choose_optional_variations(analysis: dict[str, Any], profile: str, metrics: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
     class_ids = analysis.get("class_ids", {})
     requirements = [
@@ -591,7 +621,7 @@ def build_catalog(analysis: dict[str, Any]) -> dict[str, Any]:
     profiles: dict[str, dict[str, dict[str, Any]]] = {}
     for profile in ("standard", "enhanceable"):
         profiles[profile] = class_matrix(analysis, metrics, profile, fundamentals[profile])
-    consumables = analysis.get("seed_consumables") or choose_support_consumables(analysis)
+    consumables = prepare_shared_consumables(analysis, metrics)
     optional = {
         "standard": choose_optional_variations(analysis, "standard", metrics),
         "enhanceable": choose_optional_variations(analysis, "enhanceable", metrics),
@@ -664,7 +694,11 @@ def emit_policy_report(path: Path, catalog: dict[str, Any]) -> None:
                   "material-pouch grants provide recipe materials; no disabled legacy forge hammer/",
                   "parchment path is enabled. Trap arming may subsequently set secret/decay flags as",
                   "part of ordinary skill use. Utility/support items may be stored in the bag; wearable",
-                  "equipment arrives directly in inventory.", "", "## Selected profiles", "",
+                  "equipment arrives directly in inventory.", "", "Shared consumables must also be usable by every class and playable race.",
+                  "Historical seed potion 1716 excludes Warrior. The explicit replacement is 80186",
+                  "(three clear potions), preserving Hawkvision, Lionrage and Elephantstrength at",
+                  "cast level 20 rather than 40. Both source restrictions and replacement category",
+                  "are revalidated; no other restricted shared support is silently accepted.", "", "## Selected profiles", "",
                   "| Profile | Class | Core slots | Globe item VNUM | Slot:VNUM equipment |",
                   "| --- | --- | --- | --- | --- |"])
     for profile, matrix in catalog["profiles"].items():

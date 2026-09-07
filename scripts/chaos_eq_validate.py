@@ -237,6 +237,8 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
                 continue
             item = {"vnum": variation["vnum"], "slot": variation["slot"]}
             obj = objects.get(int(item["vnum"]))
+            if obj and not all(object_class_allowed(obj, cid, constants) for cid in class_ids.values()):
+                issues.append(f"{profile}/optional: class-restricted shared item {item['vnum']}")
             if obj and not object_role_valid(obj, "Warrior", int(item["slot"]), constants):
                 issues.append(f"{profile}/optional: role-inappropriate fallback item {item['vnum']}")
             issues.extend(
@@ -249,8 +251,11 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
         obj = objects.get(int(item.get("vnum", 0)))
         if not obj:
             issues.append(f"consumables: missing VNUM {item.get('vnum')}")
-        elif metric_basic_reasons(obj, constants, allow_fundamental=True):
-            issues.append(f"consumables: excluded VNUM {item.get('vnum')}")
+        else:
+            if metric_basic_reasons(obj, constants, allow_fundamental=True):
+                issues.append(f"consumables: excluded VNUM {item.get('vnum')}")
+            if not all(object_class_allowed(obj, cid, constants) for cid in class_ids.values()):
+                issues.append(f"consumables: class-restricted shared item {item['vnum']}")
     utilities = catalog.get("utility_items", [])
     if utilities != UTILITY_POLICY:
         issues.append("utilities: skill, count, or object policy mismatch")

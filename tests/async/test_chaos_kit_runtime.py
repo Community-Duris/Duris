@@ -133,7 +133,17 @@ int main()
     loaded.wear_flags = ITEM_WEAR_NECK;
     slot_available = false;
     { chaos_kit_objects kit; assert(append_chaos_kit_item(&actor, &bag, &wearable, kit)); assert(!kit.count); }
+    // CUR_MAX_WEAR is the highest valid equipment index, not the array size.
+    const chaos_kit_item last_slot = {CUR_MAX_WEAR, 999};
+    const chaos_kit_item invalid_slot = {MAX_WEAR, 999};
+    { chaos_kit_objects kit; assert(append_chaos_kit_item(&actor, &bag, &last_slot, kit)); assert(!kit.count); }
     slot_available = true;
+    equipment_pos_table[1][0] = ITEM_SPIDER_BODY;
+    equipment_pos_table[1][2] = WEAR_SPIDER_BODY;
+    loaded.wear_flags = ITEM_SPIDER_BODY;
+    { chaos_kit_objects kit; assert(append_chaos_kit_item(&actor, &bag, &last_slot, kit)); assert(kit.count == 1); kit.count = 0; }
+    { chaos_kit_objects kit; assert(!append_chaos_kit_item(&actor, &bag, &invalid_slot, kit)); assert(!kit.count); }
+    loaded.wear_flags = ITEM_WEAR_NECK;
     nesting = false;
     { chaos_kit_objects kit; assert(!append_chaos_kit_item(&actor, &bag, &support, kit)); assert(!kit.count); }
     nesting = true;
