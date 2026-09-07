@@ -218,6 +218,7 @@ OBJS =  $(SHIP_OBJS) \
 				 classes/mount.o \
 				 mob/name_gen.o \
 				 account/nanny.o \
+				 account/newbie_kit_plan.o \
 				 classes/necromancy.o \
 				 classes/new_skills.o \
 				 cmd/nq.o \

@@ -66,9 +66,17 @@ bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char rec
 					  P_obj target_container = NULL);
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object,
 						       P_char recipient);
+// Admit all detached roots before starting any ownership operation. A refused
+// batch leaves every object with the caller; an accepted batch owns every root.
+bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
+							     size_t count, P_char recipient);
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room);
 bool item_creation_grant_mark_blocking(P_char actor);
 bool item_creation_grant_blocks_commands(P_char actor);
+// Orderly maintenance must not quiesce between the roots of an accepted kit.
+bool item_creation_grant_batches_pending(void);
+// A disconnected pre-entry character cannot finish unsubmitted kit roots.
+void item_creation_grant_cancel_batch_before_entry(P_char actor);
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
 void item_movement_transaction_player_ready(P_char actor);
