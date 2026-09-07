@@ -28,7 +28,8 @@ static const unsigned int chaos_eq_permanent_strip_extra2_flags = ITEM2_CRUMBLEL
 static const int chaos_eq_globe_slot = WEAR_NECK_1;
 
 static const bool chaos_eq_physical_classes[CLASS_COUNT + 1] = {
-	false, true, /* Warrior */
+	false, /* CLASS_NONE */
+	true, /* Warrior */
 	true, /* Ranger */
 	false, /* Psionicist */
 	true, /* Paladin */

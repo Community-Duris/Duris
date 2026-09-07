@@ -24,7 +24,15 @@ from chaos_eq_analyze import (  # noqa: E402
     reconcile_area_objects,
 )
 
-from chaos_eq_catalog import PHYSICAL_CLASSES, PERMANENT_POLICY, UTILITY_POLICY, WEAPON_SLOTS, role_item_valid
+from chaos_eq_catalog import (
+    ITEM_TYPE_WEAPONS,
+    ITEM_WIELD_FLAG,
+    PHYSICAL_CLASSES,
+    PERMANENT_POLICY,
+    UTILITY_POLICY,
+    WEAPON_SLOTS,
+    role_item_valid,
+)
 
 # Keep the actual slot boundary local so this validator stays independent of
 # analyzer implementation details.
@@ -192,8 +200,8 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
             for item in row.get("support_items", []):
                 role = item.get("role", "support")
                 obj = objects.get(int(item["vnum"]))
-                if class_name == "Monk" and obj and (obj.wear_flags & constants["ITEM_WIELD"] or
-                        obj.object_type in {5, 6, 7} or int(item.get("slot", -1)) in WEAPON_SLOTS):
+                if class_name == "Monk" and obj and (obj.wear_flags & ITEM_WIELD_FLAG or
+                        obj.object_type in ITEM_TYPE_WEAPONS or int(item.get("slot", -1)) in WEAPON_SLOTS):
                     issues.append(f"{profile}/{class_name}: weapon-bearing support item")
                 issues.extend(
                     f"{profile}/{class_name}/{role}: {issue}"

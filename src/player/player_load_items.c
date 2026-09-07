@@ -130,6 +130,9 @@ bool parse_spellbook(const std::string &json, char *spell_bits = nullptr)
 
 // Captured/flatfile snapshots store typed spell IDs; SQL rows store JSON.
 // Both representations feed the same validation and materialization path.
+// When spell_bits is non-null, callers must provide a zero-initialized buffer
+// of (MAX_SKILLS + 1) / 8 + 1 bytes because this helper ORs the selected bits
+// into it rather than clearing it first.
 bool decode_saved_spellbook(const player_item_extra_description_snapshot &description,
 			    char *spell_bits = nullptr)
 {

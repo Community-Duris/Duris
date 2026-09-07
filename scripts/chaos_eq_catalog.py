@@ -116,6 +116,8 @@ PHYSICAL_CLASSES = frozenset({
     "Mercenary", "Bard", "Thief", "Berserker", "Reaver", "Dreadlord", "Avenger", "Dragoon",
 })
 WEAPON_SLOTS = frozenset({16, 17, 25, 26})
+ITEM_TYPE_WEAPONS = frozenset({5, 6, 7})
+ITEM_WIELD_FLAG = 1 << 13
 PERMANENT_STRIP_FLAGS = ("ITEM_TRANSIENT", "ITEM_NODROP", "ITEM_INVISIBLE",
                          "ITEM_SECRET", "ITEM_NOSHOW", "ITEM_BURIED", "ITEM_NORENT")
 PERMANENT_POLICY = {"strip_extra_flags": list(PERMANENT_STRIP_FLAGS),
@@ -137,8 +139,8 @@ UTILITY_POLICY = [
 def role_item_valid(metric: dict[str, Any], class_name: str, slot: int) -> bool:
     static = metric.get("static") or {}
     if class_name == "Monk" and (slot in WEAPON_SLOTS or
-            int(metric.get("item_type", 0)) in {5, 6, 7} or
-            int(static.get("wear_flags", 0)) & (1 << 13)):
+            int(metric.get("item_type", 0)) in ITEM_TYPE_WEAPONS or
+            int(static.get("wear_flags", 0)) & ITEM_WIELD_FLAG):
         return False
     if class_name in PHYSICAL_CLASSES:
         affects = metric.get("effect_summary", {}).get("affects", {})
@@ -562,7 +564,7 @@ def emit_header(path: Path, analysis: dict[str, Any], catalog: dict[str, Any], r
         "",
     ]
     lines.append("static const bool chaos_eq_physical_classes[CLASS_COUNT + 1] = {")
-    lines.append("    false,")
+    lines.append("    false, /* CLASS_NONE */")
     for class_name, _ in sorted(class_ids.items(), key=lambda item: int(item[1])):
         lines.append(f"    {'true' if class_name in PHYSICAL_CLASSES else 'false'}, /* {class_name} */")
     lines.extend(["};", "", "static const chaos_utility_item chaos_eq_utility_items[] = {"])

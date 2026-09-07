@@ -412,8 +412,8 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		P_char recipient = request.allow_pre_entry &&
 						   request.recipient_pid ==
 							   static_cast<uint32_t>(GET_PID(actor)) ?
-							       actor :
-							       find_live_player(request.recipient_pid);
+					   actor :
+					   find_live_player(request.recipient_pid);
 		if (!recipient)
 			logit(LOG_FILE,
 			      "item creation grant committed to an unavailable player (uid=%llu pid=%u)",
@@ -1108,13 +1108,21 @@ void item_creation_grant_cancel_batch_before_entry(P_char actor)
 		return;
 	creation_grant_queue &queue = found->second;
 	const size_t retained = queue.active ? 1 : 0;
+	size_t extracted = 0;
 	while (queue.requests.size() > retained)
 	{
 		P_obj object = find_item(queue.requests.back().item_uid);
 		if (object && OBJ_NOWHERE(object))
+		{
 			extract_obj(object, FALSE);
+			++extracted;
+		}
 		queue.requests.pop_back();
 	}
+	logit(LOG_COMM,
+	      "item creation grant batch cancelled before entry (pid=%d retained_active=%d "
+	      "extracted_tail=%zu)",
+	      GET_PID(actor), retained ? 1 : 0, extracted);
 	// An active head is already journaled. Keep its deferred completion so
 	// durable ownership/revision publication is never silently abandoned.
 	queue.stop_on_failure = false;
