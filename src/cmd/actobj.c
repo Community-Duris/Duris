@@ -6988,13 +6988,24 @@ static int free_hand_slot(P_char ch, bool holding, int cost)
 {
 	if (holding && !ch->equipment[HOLD])
 		return HOLD;
-	// Keep the traditional primary/third preference for two-handed weapons.
-	if (cost == 2 && HAS_FOUR_HANDS(ch))
+	// Combat distinguishes primary/third from secondary/fourth, so prefer
+	// the established paired placement using character-aware costs. The shared
+	// budget still permits mixed gear in otherwise unoccupied storage slots.
+	if (HAS_FOUR_HANDS(ch))
 	{
-		for (int slot : { PRIMARY_WEAPON, THIRD_WEAPON })
-			if (!ch->equipment[slot])
-				return slot;
+		for (int primary : { PRIMARY_WEAPON, THIRD_WEAPON })
+		{
+			int secondary = primary == PRIMARY_WEAPON ? SECONDARY_WEAPON :
+								    FOURTH_WEAPON;
+			if (!ch->equipment[primary] && (cost == 1 || !ch->equipment[secondary]))
+				return primary;
+			if (cost == 1 && !ch->equipment[secondary] &&
+			    (!ch->equipment[primary] ||
+			     wield_item_size(ch, ch->equipment[primary]) == 1))
+				return secondary;
+		}
 	}
+
 	for (int slot : { PRIMARY_WEAPON, SECONDARY_WEAPON, THIRD_WEAPON, FOURTH_WEAPON })
 	{
 		if (!HAS_FOUR_HANDS(ch) && (slot == THIRD_WEAPON || slot == FOURTH_WEAPON))

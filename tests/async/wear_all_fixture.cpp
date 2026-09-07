@@ -402,6 +402,19 @@ int main()
 	auto another_shield = item(ITEM_ARMOR, ITEM_WEAR_SHIELD);
 	assert(!wear(&actor, &another_shield, 14, false));
 	weapon.loc_p = book.loc_p = LOC_CARRIED;
+	// Preserve combat-sensitive placement for traditional four-hand weapons.
+	reset(RACE_THRIKREEN);
+	auto paired_great = great;
+	paired_great.loc_p = LOC_CARRIED;
+	auto paired_first = item(ITEM_WEAPON, ITEM_WIELD);
+	auto paired_second = item(ITEM_WEAPON, ITEM_WIELD);
+	assert(wear(&actor, &paired_great, 12, false));
+	assert(wear(&actor, &paired_first, 12, false));
+	assert(wear(&actor, &paired_second, 12, false));
+	assert(actor.equipment[PRIMARY_WEAPON] == &paired_great);
+	assert(actor.equipment[THIRD_WEAPON] == &paired_first);
+	assert(actor.equipment[FOURTH_WEAPON] == &paired_second);
+	assert(!actor.equipment[SECONDARY_WEAPON]);
 	// Training and weight remain enforced, including occupied secondary slots.
 	reset();
 	pc.skills[SKILL_DUAL_WIELD].learned = 0;
