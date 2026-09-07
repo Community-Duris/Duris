@@ -48,6 +48,13 @@ bool publish(pending_touch &entry)
 		P_char ch = find_player_by_pid(entry.result.participant_pids[i]);
 		if (!ch || IS_NPC(ch))
 			continue;
+		// Dispatch for each recipient when ready, retaining the child ledger as proof.
+		critical_command award = {};
+		if (zone_touch_award_command(entry.command, i, &award) &&
+		    !artifact_guild_transaction_submit(ch, award.operation_id,
+						       entry.result.awards[i].amount, EPIC_ZONE))
+			logit(LOG_FILE,
+			      "epic_stone: component=artifact_effect outcome=unavailable actor=redacted");
 		entry.published[i] = true;
 		// A reconnect can already have loaded a newer authoritative balance.
 		if (entry.result.revisions[i] >= ch->only.pc->epic_revision)
@@ -77,7 +84,11 @@ bool zone_touch_transaction_busy(uint64_t stone_uid, uint32_t zone_number)
 bool zone_touch_transaction_submit(const zone_touch_payload &payload)
 {
 	// Flatfile has no atomic world/zone repository; never queue partial rewards there.
-	if (!persistence_mode_requires_mysql() || pending.size() >= ZONE_TOUCH_PENDING_MAX ||
+	// Completed receipts await reconnect; they no longer occupy transaction slots.
+	const auto in_flight = std::count_if(pending.begin(), pending.end(), [](const auto &item)
+					     { return !item.second.committed; });
+	if (!persistence_mode_requires_mysql() ||
+	    static_cast<size_t>(in_flight) >= ZONE_TOUCH_PENDING_MAX ||
 	    (payload.stone_uid &&
 	     zone_touch_transaction_busy(payload.stone_uid, payload.zone_number)))
 		return false;
@@ -150,20 +161,6 @@ void zone_touch_transaction_handle_completions(const critical_completion *comple
 			pending.erase(found);
 			continue;
 		}
-		// Artifact/guild effects retain the actual child ledger as their parent proof.
-		if (!entry.result.recovered_claim)
-			for (size_t i = 0; i < entry.payload.group_size; ++i)
-				if (P_char ch =
-					    find_player_by_pid(entry.payload.participant_pids[i]))
-				{
-					critical_command award = {};
-					if (zone_touch_award_command(entry.command, i, &award) &&
-					    !artifact_guild_transaction_submit(
-						    ch, award.operation_id,
-						    entry.payload.awards[i].amount, EPIC_ZONE))
-						logit(LOG_FILE,
-						      "epic_stone: component=artifact_effect outcome=unavailable actor=redacted");
-				}
 		epic_finish_stone_touch(entry.result);
 		// Recovered claims consume the surviving stone but never repeat player side effects.
 		if (entry.result.recovered_claim || publish(entry))

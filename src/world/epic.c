@@ -951,26 +951,13 @@ __attribute__((deprecated)) void epic_free_level(P_char ch)
 	}
 }
 
-void epic_stone_level_char(P_obj obj, P_char ch)
+static void epic_stone_level_char_from_level(int stone_level, P_char ch)
 {
 	char buf[256];
 	int epics_for_level, anystone_epics_for_level;
-	int levelcap = sql_level_cap(GET_RACEWAR(ch));
-
-	if (!IS_ALIVE(ch) || IS_NPC(ch) || !obj)
-	{
-		debug("epic_stone_level_char: Bad argument(s).");
-		logit(LOG_DEBUG,
-		      "epic_stone_level_char: Bad argument(s): Char '%s' : %s, obj: %s (%d).",
-		      (ch == NULL) ? "NULL" : J_NAME(ch), IS_ALIVE(ch) ? "ALIVE" : "NOT ALIVE",
-		      (obj == NULL) ? "NULL" : obj->short_description,
-		      (obj == NULL) ? -1 : OBJ_VNUM(obj));
-		epiclog(56, "epic_stone_level_char: Bad argument(s): Char '%s' : %s, obj: %s (%d).",
-			(ch == NULL) ? "NULL" : J_NAME(ch), IS_ALIVE(ch) ? "ALIVE" : "NOT ALIVE",
-			(obj == NULL) ? "NULL" : obj->short_description,
-			(obj == NULL) ? -1 : OBJ_VNUM(obj));
+	if (!ch || !IS_ALIVE(ch) || IS_NPC(ch))
 		return;
-	}
+	int levelcap = sql_level_cap(GET_RACEWAR(ch));
 
 	// Already attained max level or doesn't want to spend epics to level.
 	if (GET_LEVEL(ch) >= MAXLVLMORTAL || PLR3_FLAGGED(ch, PLR3_NOLEVEL) ||
@@ -1020,7 +1007,7 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 
 	// If they have the exp, and epics and touch right stone, or double epics..
 	if (GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1] &&
-	    ((ch->only.pc->epics >= epics_for_level && GET_LEVEL(ch) == obj->value[3] - 1) ||
+	    ((ch->only.pc->epics >= epics_for_level && GET_LEVEL(ch) == stone_level - 1) ||
 	     ch->only.pc->epics >= anystone_epics_for_level))
 	{
 		const epic_level_context context = { GET_LEVEL(ch),
@@ -1033,6 +1020,12 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 					     epic_level_committed, &context, sizeof(context)))
 			send_to_char("The epic level service is busy. Please try again.\n", ch);
 	}
+}
+
+void epic_stone_level_char(P_obj obj, P_char ch)
+{
+	if (obj)
+		epic_stone_level_char_from_level(obj->value[3], ch);
 }
 
 static P_obj find_epic_stone(uint64_t uid)
@@ -1065,8 +1058,7 @@ void epic_publish_stone_award(P_char ch, const zone_touch_result &result, size_t
 			     sizeof(context));
 	// Spending for stone levels and boon completion follows the secured award.
 	if (!uses_free_level)
-		if (P_obj obj = find_epic_stone(result.stone_uid))
-			epic_stone_level_char(obj, ch);
+		epic_stone_level_char_from_level(result.stone_level, ch);
 	check_boon_completion(ch, nullptr, result.zone_number, BOPT_ZONE);
 }
 
@@ -1199,7 +1191,6 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
 		act("$n touches $p.", FALSE, ch, obj, ch, TO_NOTVICT);
 		act("You touch $p.", FALSE, ch, obj, 0, TO_CHAR);
-
 
 		if (zone_number)
 		{

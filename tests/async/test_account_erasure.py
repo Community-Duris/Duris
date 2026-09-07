@@ -79,7 +79,7 @@ class AccountErasureTest(unittest.TestCase):
         has not enabled destructive rules.
         """
         canonical = erasure.load_policy()
-        self.assertEqual(len(canonical.entries), 199)
+        self.assertEqual(len(canonical.entries), 200)
         self.assertEqual(len(erasure.ordered_actions(canonical)), len(canonical.entries))
         with self.assertRaisesRegex(erasure.ErasureContractError, "disabled"):
             erasure.validate_ready(canonical)

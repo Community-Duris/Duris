@@ -10,6 +10,11 @@ leaves the stone and tasks unchanged; uncertain outcomes retain that reservation
 for coordinator recovery. Success publishes the balances before applying touch,
 errand, boon and level effects. Disconnected participants receive pending effects
 when they reconnect during the same process; newer hydrated balances are retained.
+The 64-operation admission limit counts only uncommitted transactions. Completed
+receipts remain in memory until their offline recipients return; they do not block
+new touches. This retained backlog can grow during the process lifetime. Artifact
+and guild dispatch also occurs on reconnect, and level eligibility uses the
+captured stone level even after the object is removed.
 Humming and touch feedback both honor zone eligibility and pending work.
 
 `epic_stone_claim` uses the globally allocated object UID, rather than a zone/boot
