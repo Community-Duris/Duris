@@ -202,6 +202,7 @@ def build_snapshot_inspector(run_root: pathlib.Path) -> pathlib.Path:
     source.write_text(r'''
 #include "flatfile/flatfile_player_snapshot_file.h"
 #include "core/defines.h"
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -225,6 +226,16 @@ int main(int argc, char **argv) {
         assert(!(item.extra2_flags & ITEM2_CRUMBLELOOT));
         for (const auto &affect : item.affects) assert(affect[0] != APPLY_CURSE);
         if (item.vnum == globe_vnum && (item.bitvectors[1] & AFF2_GLOBE)) globe = true;
+        for (const auto &description : item.extra_descriptions) {
+            if (!description.spellbook) continue;
+            assert(description.keyword == "SPELLBOOK" && description.description.empty());
+            auto spell_ids = description.spell_ids;
+            std::sort(spell_ids.begin(), spell_ids.end());
+            assert(std::adjacent_find(spell_ids.begin(), spell_ids.end()) == spell_ids.end());
+            std::cout << "SPELLBOOK " << item.object_uid << ':';
+            for (int spell : spell_ids) std::cout << ' ' << spell;
+            std::cout << '\n';
+        }
     }
     assert(globe);
     std::cout << "persisted kit flags, curse removal and globe passed\n";
@@ -237,11 +248,18 @@ int main(int argc, char **argv) {
     return binary
 
 
-def assert_saved_kit(inspector: pathlib.Path, state_root: pathlib.Path, class_name: str) -> None:
+def assert_saved_kit(inspector: pathlib.Path, state_root: pathlib.Path, class_name: str) -> tuple[str, ...]:
     """Read freshly saved instances, never prototype flags or reconstructed values."""
     globe_vnum = next(vnum for slot, vnum in kit_entries(class_name) if slot == 3)
-    subprocess.run([str(inspector), str(state_root),
-                    str(globe_vnum if class_name != "Sorcerer" else 0)], check=True)
+    result = subprocess.run([str(inspector), str(state_root),
+                             str(globe_vnum if class_name != "Sorcerer" else 0)],
+                            check=True, capture_output=True, text=True)
+    books = tuple(sorted(line for line in result.stdout.splitlines() if line.startswith("SPELLBOOK ")))
+    if class_name == "Sorcerer":
+        require(len(books) == 1 and len(books[0].split(":", 1)[1].split()) > 0,
+                "Sorcerer snapshot lost its populated native spellbook")
+    print("persisted kit flags, curse removal, globe and native spellbooks passed", flush=True)
+    return books
 
 
 def class_kit_vnums(class_name: str) -> set[int]:
@@ -629,6 +647,17 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                     require(wearable_description in equipment,
                             "direct starter wearable could not be worn immediately:\n" + equipment)
 
+                    # Direct inventory intentionally starts with the whole kit.
+                    # Wear it before unpacking support so carried-count limits do
+                    # not prevent retrieving the pouch. Keep the individually
+                    # tested body item worn through the later save/restart checks.
+                    client.send("wear all")
+                    client.expect("Pos: standing >", timeout=30)
+                    client.send("equipment")
+                    equipment = client.expect("Pos: standing >", timeout=30).lower()
+                    require(wearable_description in equipment,
+                            "wear all displaced the directly worn starter body item:\n" + equipment)
+
                     client.send("look in bottomless")
                     expect_paged(client, "a compact Chaos craft pouch")
                     finish_paged(client)
@@ -668,7 +697,7 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                     )
                     client.send("save")
                     client.expect(f"Save complete for {CHARACTER}.", timeout=120)
-                    assert_saved_kit(inspector, state_root, class_name)
+                    saved_spellbooks = assert_saved_kit(inspector, state_root, class_name)
 
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=120)
@@ -679,7 +708,10 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                         r"CHAOS starter granted ([0-9]+) no-specialization epic skills to pid 1", logs
                     )
                     require(
-                        epic_grant is not None and int(epic_grant.group(1)) > 0,
+                        # The legacy standalone Thief has no entries in the
+                        # epic reward table; its currency grants are still required.
+                        epic_grant is not None
+                        and (class_name == "Thief" or int(epic_grant.group(1)) > 0),
                         "Chaos starter granted no eligible epic skills:\\n" + logs,
                     )
                     require(process.returncode == 0, "CHAOS server shutdown failed")
@@ -775,7 +807,9 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                             )
                             reload_client.send("save")
                             reload_client.expect(f"Save complete for {CHARACTER}.", timeout=120)
-                            assert_saved_kit(inspector, state_root, class_name)
+                            reloaded_spellbooks = assert_saved_kit(inspector, state_root, class_name)
+                            require(reloaded_spellbooks == saved_spellbooks,
+                                    f"{class_name}: spellbook UIDs or spell IDs changed across reload")
                             reload_client.send("quit")
                             reload_client.expect("ACCOUNT MENU", timeout=60)
                             reload_client.send("0")

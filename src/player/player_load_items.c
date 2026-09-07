@@ -128,6 +128,26 @@ bool parse_spellbook(const std::string &json, char *spell_bits = nullptr)
 	return position == json.size();
 }
 
+// Captured/flatfile snapshots store typed spell IDs; SQL rows store JSON.
+// Both representations feed the same validation and materialization path.
+bool decode_saved_spellbook(const player_item_extra_description_snapshot &description,
+			    char *spell_bits = nullptr)
+{
+	if (!description.description.empty())
+		return description.spell_ids.empty() &&
+		       parse_spellbook(description.description, spell_bits);
+	std::array<bool, MAX_SKILLS> seen = {};
+	for (int32_t spell : description.spell_ids)
+	{
+		if (spell < 0 || spell >= MAX_SKILLS || seen[spell])
+			return false;
+		seen[spell] = true;
+		if (spell_bits)
+			spell_bits[spell / 8] |= static_cast<char>(1U << (spell % 8));
+	}
+	return true;
+}
+
 enum class metadata_validation_outcome
 {
 	valid,
@@ -178,11 +198,18 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 			std::string key = description.keyword;
 			key.push_back('\0');
 			key += description.description;
+			if (description.spellbook)
+			{
+				std::array<char, (MAX_SKILLS + 1) / 8 + 1> spell_bits = {};
+				if (!decode_saved_spellbook(description, spell_bits.data()))
+					return metadata_validation_outcome::invalid;
+				if (description.description.empty())
+					key.append(spell_bits.data(), spell_bits.size());
+			}
+			else if (!description.spell_ids.empty())
+				return metadata_validation_outcome::invalid;
 			if (!descriptions.insert(std::move(key)).second)
 				return metadata_validation_outcome::invalid;
-			if (description.spellbook)
-				if (!parse_spellbook(description.description))
-					return metadata_validation_outcome::invalid;
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -221,8 +248,7 @@ void apply_extra_descriptions(P_obj object, const player_item_snapshot &item)
 	auto already_present = [object](const player_item_extra_description_snapshot &candidate)
 	{
 		std::array<char, (MAX_SKILLS + 1) / 8 + 1> spell_bits = {};
-		if (candidate.spellbook &&
-		    !parse_spellbook(candidate.description, spell_bits.data()))
+		if (candidate.spellbook && !decode_saved_spellbook(candidate, spell_bits.data()))
 			return false;
 		for (const extra_descr_data *existing = object->ex_description; existing;
 		     existing = existing->next)
@@ -263,7 +289,7 @@ void apply_extra_descriptions(P_obj object, const player_item_snapshot &item)
 			const size_t byte_count = (MAX_SKILLS + 1) / 8 + 1;
 			CREATE(entry->description, char, byte_count, MEM_TAG_STRING);
 			memset(entry->description, 0, byte_count);
-			parse_spellbook(description->description, entry->description);
+			decode_saved_spellbook(*description, entry->description);
 		}
 		else
 		{
