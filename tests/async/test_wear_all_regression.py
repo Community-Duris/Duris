@@ -130,15 +130,32 @@ import tempfile
 from _paths import extract_function
 
 wear_source = extract_function('actobj.c', 'int wear(P_char ch, P_obj obj_object, int keyword, bool showit)')
-wear_prefix = wear_source[:wear_source.index('\tswitch (keyword)')]
-hand_cases = wear_source[wear_source.index('\tcase 12: /* Wield */'):wear_source.index('\tcase 15: /* Eyes */')]
+def hand_wear_source(text):
+    switch = re.search(r'\bswitch\s*\(\s*keyword\s*\)', text)
+    wield = re.search(r'^\s*case\s+12\s*:', text, re.M)
+    eyes = re.search(r'^\s*case\s+15\s*:', text, re.M)
+    assert switch and wield and eyes, 'wear hand-case boundaries are missing'
+    assert switch.start() < wield.start() < eyes.start(), 'wear hand cases are out of order'
+    return (text[:switch.start()] + 'switch (keyword) {\n' +
+            text[wield.start():eyes.start()] + '\n}\nreturn FALSE;\n}')
+
+
+# Indentation, switch spacing, and case comments must not change extraction.
+variant = wear_source.expandtabs(4).replace('switch (keyword)', 'switch \n ( keyword )')
+variant = variant.replace('/* Wield */', '/* weapon role */').replace('/* Eyes */', '/* next role */')
+def tokens(text):
+    return re.sub(r'\s+', '', re.sub(r'/\*.*?\*/|//[^\n]*', '', text, flags=re.S))
+assert tokens(hand_wear_source(wear_source)) == tokens(hand_wear_source(variant))
+
 production = '\n'.join([
     extract_function('actobj.c', 'int wield_item_size('),
     extract_function('actobj.c', 'int get_numb_free_hands('),
     extract_function('actobj.c', 'static int free_hand_slot('),
-    wear_prefix + '\tswitch (keyword) {\n' + hand_cases + '\t}\n\treturn FALSE;\n}',
+    hand_wear_source(wear_source),
     extract_function('memorize.c', 'static P_obj scribing_implement('),
     extract_function('memorize.c', 'int ScriberSillyChecks('),
+    extract_function('memorize.c', 'P_obj SpellBookAtHand('),
+    extract_function('memorize.c', 'P_obj FindSpellBookWithSpell('),
     extract_function('memorize.c', 'void do_scribe(P_char ch, char *arg, int /*cmd*/)'),
     extract_function('memorize.c', 'void event_scribe(P_char ch, P_char /*victim*/'),
 ])

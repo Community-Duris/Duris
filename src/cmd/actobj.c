@@ -7900,11 +7900,16 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				break;
 			}
 
-			if ((wield_to_where == SECONDARY_WEAPON) &&
-			    (IS_REACH_WEAPON(obj_object) ||
+			// A sole weapon can occupy secondary storage beside a held implement.
+			// Once dual-wielding, validate the actual secondary weapon, including
+			// when the new weapon fills a primary slot vacated by held gear.
+			P_obj offhand = wield_to_where == SECONDARY_WEAPON ?
+						obj_object :
+						ch->equipment[SECONDARY_WEAPON];
+			if (armed && offhand && offhand->type == ITEM_WEAPON &&
+			    (IS_REACH_WEAPON(offhand) ||
 			     (!GET_CLASS(ch, CLASS_RANGER) &&
-			      (GET_OBJ_WEIGHT(obj_object) *
-				       ((IS_OGRE(ch) || IS_SNOWOGRE(ch)) ? 2 : 3) >
+			      (GET_OBJ_WEIGHT(offhand) * ((IS_OGRE(ch) || IS_SNOWOGRE(ch)) ? 2 : 3) >
 			       (str_app[STAT_INDEX(GET_C_STR(ch))].wield_w)))))
 			{
 				if (showit)

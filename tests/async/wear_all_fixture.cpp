@@ -73,9 +73,25 @@ int GetSpellPages(P_char, int)
 {
 	return 2;
 }
-P_obj FindSpellBookWithSpell(P_char, int, int)
+bool ac_can_see_obj(P_char, P_obj obj, int)
+{
+	return !IS_SET(obj->extra_flags, ITEM_INVISIBLE);
+}
+P_obj find_gh_library_book_obj(P_char)
 {
 	return &source_book;
+}
+P_obj Find_process_entry(P_char, P_obj obj, int)
+{
+	return obj;
+}
+int real_object(int number)
+{
+	return number;
+}
+bool isname(const char *, const char *)
+{
+	return false;
 }
 P_char FindTeacher(P_char)
 {
@@ -451,6 +467,79 @@ int main()
 	book.loc_p = LOC_CARRIED;
 	assert(!wear(&actor, &book, 12, false));
 	assert(!wear(&actor, &book, 14, false));
+	// At-hand lookup used by guild scribing and memorization accepts every hand
+	// slot, while retaining visibility and the legacy WIELD-before-HOLD order.
+	for (int slot : { WIELD, HOLD, WIELD2, WIELD3, WIELD4 })
+	{
+		reset(RACE_THRIKREEN);
+		auto destination = item(ITEM_SPELLBOOK, ITEM_HOLD);
+		auto quill = item(ITEM_PEN, ITEM_HOLD);
+		actor.equipment[slot] = &destination;
+		actor.equipment[slot == HOLD ? WIELD : HOLD] = &quill;
+		assert(ScriberSillyChecks(&actor, 1));
+		assert(SpellBookAtHand(&actor) == &destination);
+		assert(FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND) == &destination);
+		assert(!FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND | SBOOK_MODE_NO_BOOK));
+		add_scribing(&actor, 1, SpellBookAtHand(&actor), 0, nullptr, nullptr);
+		event_scribe(&actor, nullptr, nullptr, &pending);
+		assert(pending.book == &destination && pending.page == 1 && !cancelled);
+		SET_BIT(destination.extra_flags, ITEM_INVISIBLE);
+		assert(!SpellBookAtHand(&actor));
+		assert(!FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND));
+	}
+	reset(RACE_THRIKREEN);
+	auto unseen = item(ITEM_SPELLBOOK, ITEM_HOLD);
+	auto seen = item(ITEM_SPELLBOOK, ITEM_HOLD);
+	SET_BIT(unseen.extra_flags, ITEM_INVISIBLE);
+	actor.equipment[WIELD] = &unseen;
+	actor.equipment[WIELD4] = &seen;
+	assert(SpellBookAtHand(&actor) == &seen);
+	assert(FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND) == &seen);
+	REMOVE_BIT(unseen.extra_flags, ITEM_INVISIBLE);
+	assert(SpellBookAtHand(&actor) == &unseen);
+	actor.equipment[WIELD] = nullptr;
+	actor.equipment[HOLD] = &unseen;
+	assert(SpellBookAtHand(&actor) == &unseen);
+	// Reproduce two holds followed by removal of HOLD: the sole weapon lands
+	// in SECONDARY but must get normal weight/reach eligibility without training.
+	for (bool reach : { false, true })
+	{
+		reset(reach ? RACE_MINOTAUR : RACE_HUMAN);
+		pc.skills[SKILL_DUAL_WIELD].learned = 0;
+		auto held = item(ITEM_ARMOR, ITEM_HOLD);
+		auto implement = item(ITEM_PEN, ITEM_HOLD);
+		auto sole = item(ITEM_WEAPON, ITEM_WIELD, reach, reach ? 1 : 34);
+		if (reach)
+			sole.value[0] = WEAPON_SPEAR;
+		assert(wear(&actor, &held, 13, false));
+		assert(wear(&actor, &implement, 13, false));
+		remove(&held);
+		assert(wear(&actor, &sole, 12, false));
+		assert(actor.equipment[SECONDARY_WEAPON] == &sole);
+		remove(&implement);
+		auto another = item(ITEM_WEAPON, ITEM_WIELD);
+		assert(!wear(&actor, &another, 12, false)); // still needs dual training
+		pc.skills[SKILL_DUAL_WIELD].learned = 100;
+		assert(!wear(&actor, &another, 12, false)); // existing offhand is still restricted
+		remove(&sole);
+		assert(wear(&actor, &another, 12, false));
+		assert(!wear(&actor, &sole, 12, false)); // same restrictions in the normal order
+	}
+	// The existing zero-hands guard already distinguishes shield messages.
+	reset();
+	auto full_hands = item(ITEM_ARMOR, ITEM_HOLD, true);
+	assert(wear(&actor, &full_hands, 13, false));
+	auto standard_shield = item(ITEM_ARMOR, ITEM_WEAR_SHIELD);
+	message.clear();
+	assert(!wear(&actor, &standard_shield, 14, true));
+	assert(message == "Your hands are full.\r\n");
+	remove(&full_hands);
+	auto one_hand = item(ITEM_ARMOR, ITEM_HOLD);
+	assert(wear(&actor, &one_hand, 13, false));
+	auto large_shield = item(ITEM_ARMOR, ITEM_WEAR_SHIELD, true);
+	message.clear();
+	assert(!wear(&actor, &large_shield, 14, true));
+	assert(message == "You need two free hands to use that shield.\r\n");
 	// Slot exhaustion is independent of the clamped hand count; never overwrite.
 	reset(RACE_THRIKREEN);
 	for (int slot : { HOLD, WIELD, WIELD2, WIELD3, WIELD4 })

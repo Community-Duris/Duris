@@ -2364,12 +2364,14 @@ void add_scribing(P_char ch, int spl, P_obj book, int flag, P_obj obj, P_char te
 
 // Hand slots are storage roles: four-handed scribers may also carry other gear.
 // During an event, require the original destination book, not a replacement.
-static P_obj scribing_implement(P_char ch, int type, P_obj required = nullptr)
+static P_obj scribing_implement(P_char ch, int type, P_obj required = nullptr,
+				bool visible_only = false)
 {
 	for (int slot : { WIELD, HOLD, WIELD2, WIELD3, WIELD4 })
 	{
 		P_obj obj = ch->equipment[slot];
-		if (obj && obj->type == type && (!required || obj == required))
+		if (obj && obj->type == type && (!required || obj == required) &&
+		    (!visible_only || CAN_SEE_OBJ(ch, obj)))
 			return obj;
 	}
 	return nullptr;
@@ -2439,15 +2441,9 @@ int ScriberSillyChecks(P_char ch, int spl)
 
 P_obj SpellBookAtHand(P_char ch)
 {
-	P_obj o1, o2;
-
-	o1 = ch->equipment[WIELD];
-	o2 = ch->equipment[HOLD];
-	if (o1 && (o1->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, o1))
-		return o1;
-	if (o2 && (o2->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, o2))
-		return o2;
-	return NULL;
+	// Guild scribing and memorization share hand storage, but still require
+	// visibility. Continue past an unseen book to a visible one in a later slot.
+	return scribing_implement(ch, ITEM_SPELLBOOK, nullptr, true);
 }
 
 void do_teach(P_char ch, char *arg, int cmd)
