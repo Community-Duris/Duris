@@ -28,6 +28,8 @@
 #include "world/epic.h"
 #include "world/epic_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/crafting.h"
+#include <array>
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_transaction.h"
@@ -103,6 +105,7 @@ extern struct mm_ds *dead_mob_pool;
 extern char *greetings;
 extern char *greetinga1;
 extern bool has_eq_slot(P_char ch, int wear_slot);
+extern int equipment_pos_table[CUR_MAX_WEAR][3];
 extern char *greetinga2;
 extern char *greetinga3;
 extern char *greetinga4;
@@ -400,10 +403,13 @@ static void LoadNewbyShit(P_char ch, int *items)
 static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 {
 	obj->cost = 1;
-	REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
-	if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON && obj->type != ITEM_SPELLBOOK &&
-	    obj->type != ITEM_LIGHT && obj->type != ITEM_TOTEM && IS_PC(ch))
-		SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
+	// Starter instances are permanent and visible. Consumables still use their
+	// normal type/procedure consumption, and wearer buffs remain intentional.
+	REMOVE_BIT(obj->extra_flags, chaos_eq_permanent_strip_flags);
+	REMOVE_BIT(obj->extra2_flags, chaos_eq_permanent_strip_extra2_flags);
+	for (auto &affect : obj->affected)
+		if (affect.location == APPLY_CURSE)
+			affect = {};
 	if (obj->type == ITEM_SPELLBOOK && OBJ_VNUM(obj) != MASTER_SPELLBOOK_VNUM)
 	{
 		for (int j = FIRST_SPELL; j <= LAST_SPELL; j++)
@@ -537,50 +543,136 @@ static void schedule_chaos_starting_bank(P_char ch)
 	}
 }
 
-static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *item)
+// The builder owns only unpublished roots. The ownership coordinator assumes
+// responsibility for all of them only after successful batch admission.
+struct chaos_kit_objects
+{
+	std::array<P_obj, ITEM_MOVEMENT_PENDING_MAX> roots = {};
+	size_t count = 0;
+
+	~chaos_kit_objects()
+	{
+		for (size_t i = 0; i < count; ++i)
+			extract_obj(roots[i], FALSE);
+	}
+
+	bool append_root(P_obj obj)
+	{
+		if (count == roots.size())
+			return false;
+		roots[count++] = obj;
+		return true;
+	}
+
+	bool contains_vnum(int vnum) const
+	{
+		for (size_t i = 0; i < count; ++i)
+		{
+			if (OBJ_VNUM(roots[i]) == vnum)
+				return true;
+			for (P_obj child = roots[i]->contains; child; child = child->next_content)
+				if (OBJ_VNUM(child) == vnum)
+					return true;
+		}
+		return false;
+	}
+};
+
+static bool chaos_kit_skill_available(P_char ch, int skill)
+{
+	// Creation precedes enter_game's level-56 skill initialization. Use the
+	// character's class/race/spec eligibility, not its still-empty skill value.
+	const int required_level = GET_LVL_FOR_SKILL(ch, skill);
+	return required_level > 0 && required_level <= 56;
+}
+
+static bool chaos_kit_weapon_slot(int slot)
+{
+	return slot == PRIMARY_WEAPON || slot == SECONDARY_WEAPON || slot == THIRD_WEAPON ||
+	       slot == FOURTH_WEAPON;
+}
+
+static bool chaos_kit_fits_slot(P_obj obj, int slot)
+{
+	if (slot == WEAR_NONE)
+		return true;
+	if (slot == WEAR_LIGHT)
+		return obj->type == ITEM_LIGHT;
+	for (const auto &position : equipment_pos_table)
+		if (position[2] == slot && CAN_WEAR(obj, position[0]))
+			return true;
+	return false;
+}
+
+static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *item,
+				  chaos_kit_objects &kit)
 {
 	if (!item || !item->vnum)
 		return true;
+	if (item->slot < WEAR_NONE || item->slot >= CUR_MAX_WEAR)
+		return false;
+	if (GET_CLASS(ch, CLASS_MONK) && chaos_kit_weapon_slot(item->slot))
+		return true;
+	if (item->slot >= 0 &&
+	    (item->slot == SECONDARY_WEAPON ? !chaos_kit_skill_available(ch, SKILL_DUAL_WIELD) :
+					      !has_eq_slot(ch, item->slot)))
+		return true;
+
 	P_obj obj = read_object(item->vnum, VIRTUAL);
 	if (!obj)
 	{
-		logit(LOG_DEBUG, "Cannot load CHAOS kit item with virtual number: %d for %s",
-		      item->vnum, GET_NAME(ch));
+		logit(LOG_FILE, "Cannot load CHAOS kit item vnum %d for pid %d", item->vnum,
+		      GET_PID(ch));
 		return false;
 	}
-	if (item->slot >= 0 && item->slot != SECONDARY_WEAPON && !has_eq_slot(ch, item->slot))
+	if (GET_CLASS(ch, CLASS_MONK) &&
+	    (obj->type == ITEM_WEAPON || obj->type == ITEM_FIREWEAPON ||
+	     obj->type == ITEM_MISSILE || CAN_WEAR(obj, ITEM_WIELD)))
 	{
-		logit(LOG_DEBUG,
-		      "Skipping CHAOS kit item vnum %d in unavailable slot %d for pid %d",
-		      item->vnum, item->slot, GET_PID(ch));
 		extract_obj(obj, FALSE);
 		return true;
 	}
-	if (item->slot >= 0 && !can_char_use_item(ch, obj))
+	if (!can_char_use_item(ch, obj) || !chaos_kit_fits_slot(obj, item->slot))
 	{
-		logit(LOG_FILE, "Skipping unusable CHAOS kit item vnum %d for pid %d", item->vnum,
-		      GET_PID(ch));
+		logit(LOG_FILE, "Invalid CHAOS kit item vnum %d in slot %d for pid %d", item->vnum,
+		      item->slot, GET_PID(ch));
 		extract_obj(obj, FALSE);
-		return true;
+		return false;
 	}
 	prepare_chaos_kit_item(ch, obj);
-	if (OBJ_VNUM(obj) == VOBJ_CHAOS_CRAFT_POUCH)
-		REMOVE_BIT(obj->extra_flags, ITEM_TRANSIENT);
+	const int class_id = flag2idx(ch->player.m_class);
+	if (class_id > 0 && class_id <= CLASS_COUNT && chaos_eq_physical_classes[class_id] &&
+	    item->slot == chaos_eq_globe_slot)
+		SET_BIT(obj->bitvector2, AFF2_GLOBE);
+
+	if (item->slot >= 0)
+	{
+		if (kit.append_root(obj))
+			return true;
+		extract_obj(obj, FALSE);
+		return false;
+	}
 	if (!obj_can_nest(obj, bag))
 	{
-		logit(LOG_FILE, "Cannot place CHAOS kit item vnum %d in starter bag for pid %d",
+		logit(LOG_FILE, "Cannot place CHAOS support item vnum %d in bag for pid %d",
 		      item->vnum, GET_PID(ch));
 		extract_obj(obj, FALSE);
 		return false;
 	}
 	obj_to_obj(obj, bag);
-	return obj->loc.inside == bag;
+	if (obj->loc.inside == bag)
+		return true;
+	extract_obj(obj, FALSE);
+	return false;
 }
 
 static void load_chaos_new_character_kit(P_char ch)
 {
 	static const int bag_vnum = 96443;
-	if (!ch || IS_NPC(ch) || ch->carrying)
+	if (!ch || IS_NPC(ch) || ch->carrying || item_movement_transaction_player_busy(ch))
+		return;
+	const int class_id = flag2idx(ch->player.m_class);
+	if (class_id < 1 || class_id > CLASS_COUNT)
 		return;
 
 	P_obj bag = read_object(bag_vnum, VIRTUAL);
@@ -595,35 +687,47 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 	prepare_chaos_kit_item(ch, bag);
+	chaos_kit_objects kit;
+	kit.append_root(bag);
 
-	int class_id = flag2idx(ch->player.m_class);
-	if (class_id < 1 || class_id > CLASS_COUNT)
-		class_id = flag2idx(CLASS_WARRIOR);
 	const int profile_id = chaos_eq_use_enhanceable_profile() ? 1 : 0;
 	const chaos_eq_profile &profile = chaos_eq_profiles[class_id][profile_id];
 	bool item_failure = false;
 	for (const chaos_kit_item *item = profile.items; item && item->vnum; ++item)
-		if (!append_chaos_kit_item(ch, bag, item))
+		if (!append_chaos_kit_item(ch, bag, item, kit))
 			item_failure = true;
 	const chaos_kit_item *optional_items = profile_id ? chaos_eq_enhanceable_optional_slots :
 							    chaos_eq_standard_optional_slots;
 	for (const chaos_kit_item *item = optional_items; item && item->vnum; ++item)
-		if (!append_chaos_kit_item(ch, bag, item))
+		if (!append_chaos_kit_item(ch, bag, item, kit))
 			item_failure = true;
 	for (const chaos_kit_item *item = chaos_eq_support_consumables; item && item->vnum; ++item)
-		if (!append_chaos_kit_item(ch, bag, item))
+		if (!append_chaos_kit_item(ch, bag, item, kit))
 			item_failure = true;
+	for (const auto &utility : chaos_eq_utility_items)
+	{
+		if (!utility.vnum || !chaos_kit_skill_available(ch, utility.skill))
+			continue;
+		const int vnum = utility.skill == SKILL_SALVAGE ? crafting_scientific_tools_vnum() :
+								  utility.vnum;
+		if (vnum <= 0)
+			continue; // An explicitly disabled configurable tool is not a missing prototype.
+		if (kit.contains_vnum(vnum))
+			continue;
+		const chaos_kit_item item = { WEAR_NONE, vnum };
+		for (int i = 0; i < utility.count; ++i)
+			if (!append_chaos_kit_item(ch, bag, &item, kit))
+				item_failure = true;
+	}
 	if (chaos_starter_materials_enabled())
 	{
 		const chaos_kit_item pouch = { WEAR_NONE, VOBJ_CHAOS_CRAFT_POUCH };
-		if (!append_chaos_kit_item(ch, bag, &pouch))
+		if (!append_chaos_kit_item(ch, bag, &pouch, kit))
 			item_failure = true;
 	}
 	if (item_failure)
 	{
-		extract_obj(bag, FALSE);
-		statuslog(56,
-			  "&+RALERT&n: CHAOS starter kit contains an unavailable item for pid %d",
+		statuslog(56, "&+RALERT&n: CHAOS starter kit has an invalid item for pid %d",
 			  GET_PID(ch));
 		send_to_char(
 			"Your CHAOS equipment kit could not be prepared; please contact staff.\r\n",
@@ -631,15 +735,16 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 
-	if (!item_creation_grant_submit_to_player_before_entry(ch, bag, ch))
+	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
+								     kit.count, ch))
 	{
-		extract_obj(bag, FALSE);
-		statuslog(56, "&+RALERT&n: CHAOS starter bag grant could not be queued");
+		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
-			"Your CHAOS equipment bag could not be granted; please contact staff.\r\n",
+			"Your CHAOS equipment kit could not be granted; please contact staff.\r\n",
 			ch);
 		return;
 	}
+	kit.count = 0; // The coordinator now owns every root, including bag contents.
 }
 
 void schedule_chaos_new_character_kit_before_entry(P_char ch)

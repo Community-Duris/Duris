@@ -13,6 +13,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from chaos_eq_analyze import (  # noqa: E402
+    STAT_APPLY_NAMES,
     area_file_names,
     enhance_rejection_reasons,
     item_exclusion_reasons,
@@ -22,6 +23,8 @@ from chaos_eq_analyze import (  # noqa: E402
     parse_enhance_config,
     reconcile_area_objects,
 )
+
+from chaos_eq_catalog import PHYSICAL_CLASSES, PERMANENT_POLICY, UTILITY_POLICY, WEAPON_SLOTS, role_item_valid
 
 # Keep the actual slot boundary local so this validator stays independent of
 # analyzer implementation details.
@@ -40,6 +43,13 @@ SLOT_WEAR_BITS = {
     34: 1 << 12, 35: 1 << 24, 36: 1 << 5, 37: 1 << 25,
     38: 1 << 6, 39: 1 << 26, 40: 1 << 27, 41: 1 << 28, 42: 1 << 29,
 }
+
+
+def object_role_valid(obj: Any, class_name: str, slot: int, constants: dict[str, int]) -> bool:
+    affects = {display: sum(value for loc, value in obj.affects if loc == constants[name])
+               for name, display in STAT_APPLY_NAMES.items()}
+    return role_item_valid({"effect_summary": {"affects": affects}, "item_type": obj.object_type,
+                            "static": {"wear_flags": obj.wear_flags}}, class_name, slot)
 
 
 def metric_basic_reasons(obj: Any, constants: dict[str, int], allow_fundamental: bool = False) -> list[str]:
@@ -100,7 +110,7 @@ def catalog_referenced_vnums(catalog: dict[str, Any]) -> set[int]:
         for item in variations:
             if item.get("status") == "available" and item.get("vnum") is not None:
                 vnums.add(int(item["vnum"]))
-    for item in catalog.get("consumables", []):
+    for item in catalog.get("consumables", []) + catalog.get("utility_items", []):
         if item.get("vnum") is not None:
             vnums.add(int(item["vnum"]))
     return vnums
@@ -124,6 +134,8 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
     if area_diag["parse_errors"]:
         issues.extend(f"area parser: {error}" for error in area_diag["parse_errors"])
     enhance_config = parse_enhance_config(repo_root / "lib/enhance.cfg", constants)
+    if not (enhance_config["allow_masks"][1] & constants["AFF2_GLOBE"]):
+        issues.append("enhanceable: permanent starter globe is excluded by the current enhancement mask")
     class_ids = {name: int(value) for name, value in catalog.get("source", {}).get("class_ids", {}).items()}
     if not class_ids:
         # catalog files made by the current generator carry class IDs at the
@@ -131,6 +143,15 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
         class_ids = {name: index + 1 for index, name in enumerate(catalog.get("profiles", {}).get("standard", {}))}
     if set(catalog.get("profiles", {})) != {"standard", "enhanceable"}:
         issues.append("catalog: expected standard and enhanceable profiles")
+    policy = catalog.get("source", {}).get("selection_policy", {})
+    if set(policy.get("physical_classes", [])) != PHYSICAL_CLASSES:
+        issues.append("catalog: physical role membership does not match policy")
+    if policy.get("permanent_policy") != PERMANENT_POLICY:
+        issues.append("catalog: missing or incorrect permanent item normalization")
+    if policy.get("physical_globe_slot") != 3 or policy.get("physical_globe_affect") != "AFF2_GLOBE":
+        issues.append("catalog: physical globe must use permanent neck item AFF2_GLOBE")
+    if set(policy.get("monk_excluded_slots", [])) != WEAPON_SLOTS:
+        issues.append("catalog: Monk weapon slot exclusions do not match policy")
     for profile in ("standard", "enhanceable"):
         matrix = catalog.get("profiles", {}).get(profile, {})
         if len(matrix) != 30:
@@ -145,12 +166,35 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
                 if slot in seen_slots:
                     issues.append(f"{profile}/{class_name}: duplicate core slot {slot}")
                 seen_slots.add(slot)
+                obj = objects.get(int(item["vnum"]))
+                if item.get("permanent_policy") != PERMANENT_POLICY:
+                    issues.append(f"{profile}/{class_name}: vnum {item['vnum']} missing permanent policy")
+                if obj and class_name == "Monk" and (slot in WEAPON_SLOTS or
+                        obj.object_type in {constants["ITEM_WEAPON"], constants["ITEM_FIREWEAPON"], constants["ITEM_MISSILE"]} or
+                        obj.wear_flags & constants["ITEM_WIELD"]):
+                    issues.append(f"{profile}/{class_name}: weapon-bearing item {item['vnum']}")
+                if obj and class_name in PHYSICAL_CLASSES and any(
+                        loc == constants["APPLY_WIS_MAX"] and value > 0 for loc, value in obj.affects):
+                    issues.append(f"{profile}/{class_name}: max-WIS item {item['vnum']}")
+                if obj and class_name in PHYSICAL_CLASSES and not object_role_valid(obj, class_name, slot, constants):
+                    issues.append(f"{profile}/{class_name}: mental-only role item {item['vnum']}")
+                expected_globe = class_name in PHYSICAL_CLASSES and slot == 3
+                if (item.get("granted_bitvector2") == "AFF2_GLOBE") != expected_globe:
+                    issues.append(f"{profile}/{class_name}: incorrect permanent globe grant in slot {slot}")
                 issues.extend(
                     f"{profile}/{class_name}: {issue}"
                     for issue in validate_item(item, profile, class_id, objects, constants, enhance_config)
                 )
+            if class_name in PHYSICAL_CLASSES:
+                expected_slots = RUNTIME_CORE_SLOTS - (WEAPON_SLOTS if class_name == "Monk" else set())
+                if seen_slots != expected_slots:
+                    issues.append(f"{profile}/{class_name}: incomplete physical role equipment")
             for item in row.get("support_items", []):
                 role = item.get("role", "support")
+                obj = objects.get(int(item["vnum"]))
+                if class_name == "Monk" and obj and (obj.wear_flags & constants["ITEM_WIELD"] or
+                        obj.object_type in {5, 6, 7} or int(item.get("slot", -1)) in WEAPON_SLOTS):
+                    issues.append(f"{profile}/{class_name}: weapon-bearing support item")
                 issues.extend(
                     f"{profile}/{class_name}/{role}: {issue}"
                     for issue in validate_item(
@@ -192,6 +236,9 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
                     issues.append(f"{profile}/optional/{variation.get('variation')}: unavailable variation lacks reason")
                 continue
             item = {"vnum": variation["vnum"], "slot": variation["slot"]}
+            obj = objects.get(int(item["vnum"]))
+            if obj and not object_role_valid(obj, "Warrior", int(item["slot"]), constants):
+                issues.append(f"{profile}/optional: role-inappropriate fallback item {item['vnum']}")
             issues.extend(
                 f"{profile}/optional/{variation.get('variation')}: {issue}"
                 for issue in validate_item(item, profile, None, objects, constants, enhance_config)
@@ -204,6 +251,21 @@ def validate(catalog: dict[str, Any], repo_root: Path) -> list[str]:
             issues.append(f"consumables: missing VNUM {item.get('vnum')}")
         elif metric_basic_reasons(obj, constants, allow_fundamental=True):
             issues.append(f"consumables: excluded VNUM {item.get('vnum')}")
+    utilities = catalog.get("utility_items", [])
+    if utilities != UTILITY_POLICY:
+        issues.append("utilities: skill, count, or object policy mismatch")
+    utility_vnums = [int(item["vnum"]) for item in utilities]
+    if len(utility_vnums) != len(set(utility_vnums)):
+        issues.append("utilities: duplicate object policy")
+    for item in utilities:
+        # Supplies are deliberately shared between profiles, like consumables;
+        # their functional tool type need not be enhanceable equipment.
+        issues.extend(f"utilities/{item.get('role')}: {issue}" for issue in
+                      validate_item(item, "standard", None, objects, constants, enhance_config,
+                                    allow_fundamental=True))
+        obj = objects.get(int(item["vnum"]))
+        if obj and not all(object_class_allowed(obj, cid, constants) for cid in class_ids.values()):
+            issues.append(f"utilities: class-restricted tool {item['vnum']}")
     return sorted(set(issues))
 
 

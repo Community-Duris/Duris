@@ -1547,7 +1547,10 @@ resume_game_loop:
 				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
 				 point->connected == CON_PLAYING && !point->showstr_count &&
 				 !point->str);
-			creation_grant_input = t_ch && item_creation_grant_blocks_commands(t_ch);
+			// Pre-entry input must still advance through RMOTD/enter_game;
+			// only playing commands wait for the complete durable kit.
+			creation_grant_input = point->connected == CON_PLAYING && t_ch &&
+					       item_creation_grant_blocks_commands(t_ch);
 
 			if ((!t_ch ||
 			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
@@ -1950,6 +1953,17 @@ resume_game_loop:
 			goto resume_game_loop;
 		}
 		return;
+	}
+
+	if (!_pwipe && item_creation_grant_batches_pending())
+	{
+		persistence_alert(AVATAR, "starter_grant", "shutdown", "none", "none",
+				  "kit_pending",
+				  "shutdown_cancelled=1 retry_after_kit_completion=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
 	}
 
 	critical_command_coordinator_quiesce();
@@ -2722,6 +2736,7 @@ void close_socket(struct descriptor_data *d)
 		else
 		{
 			logit(LOG_COMM, "Losing player: %s [%s].", GET_NAME(d->character), d->host);
+			item_creation_grant_cancel_batch_before_entry(d->character);
 			free_char(d->character);
 			d->character = NULL;
 		}
