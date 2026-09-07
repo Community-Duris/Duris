@@ -113,7 +113,7 @@ with tempfile.TemporaryDirectory(prefix="duris-gameplay-reads-") as temp_dir:
     )
     subprocess.run([str(binary)], check=True, timeout=10)
 
-assert "PLAYER_LOAD_QUERY_MAX = 22" in (SRC / "player_load_repository.h").read_text()
+assert "PLAYER_LOAD_QUERY_MAX = 23" in (SRC / "player_load_repository.h").read_text()
 assert "FROM pkill_info pi JOIN pkill_event pe" in REPOSITORY
 assert "ORDER BY pe.stamp DESC, pi.id DESC LIMIT 20" in REPOSITORY
 assert "FROM epic_gain" in REPOSITORY and "UNION" in REPOSITORY

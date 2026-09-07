@@ -17,6 +17,8 @@ DIAGNOSTICS = (SRC / "actinf.c").read_text()
 HARNESS = r'''
 #include "player/player_save_journal.h"
 #include "player/player_snapshot_codec.h"
+#include "classes/necromancy.h"
+#include "world/vnum.obj.h"
 
 #include <cassert>
 #include <cstdint>
@@ -30,11 +32,20 @@ struct replay_state
 {
     std::vector<std::pair<int, player_revision_t>> applied;
     bool blocked = false;
+    bool stale_death = false;
+    std::vector<uint8_t> expected_death;
 };
 
 player_save_apply_result replay_apply(const player_snapshot &snapshot, void *raw)
 {
     auto &state = *static_cast<replay_state *>(raw);
+    if (snapshot.death) {
+        std::vector<uint8_t> bytes;
+        assert(player_snapshot_encode(snapshot, &bytes) == player_snapshot_codec_result::ok);
+        assert(bytes == state.expected_death);
+        if (state.stale_death)
+            return {player_save_apply_outcome::stale_revision, snapshot.revision + 1, 0};
+    }
     if (state.blocked)
         return {player_save_apply_outcome::retryable_failure, snapshot.revision - 1, 1205};
     state.applied.push_back({snapshot.pid, snapshot.revision});
@@ -137,10 +148,87 @@ int main(int argc, char **argv)
     assert(decoded.items[1].parent_index == 0);
     assert(decoded.items[0].extra_descriptions[0].spell_ids[1] == 12);
     assert(decoded.pets[0].items[0].vnum == 501);
+    assert(encoded[0] == 1 && !decoded.death); // Existing records keep their format.
     auto truncated = encoded;
     truncated.pop_back();
     assert(player_snapshot_decode(truncated.data(), truncated.size(), &decoded) ==
            player_snapshot_codec_result::truncated);
+
+    player_snapshot death = make_snapshot(80, 4);
+    death.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
+    death.items.clear();
+    death.pets.clear();
+    death.status_integers.push_back({player_status_field::deaths, 7, 0, false});
+    death.death.emplace();
+    auto &recovery = *death.death;
+    recovery.operation_id.bytes[0] = 1;
+    recovery.corpse_room_vnum = 500;
+    recovery.wallet_revision = 12;
+    recovery.wallet_before = {INT32_MAX, INT32_MAX, INT32_MAX, INT32_MAX};
+    recovery.wallet_pile_uid = 1003;
+    player_item_snapshot corpse = {};
+    corpse.object_uid = 1000;
+    corpse.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+    corpse.vnum = VOBJ_CORPSE;
+    corpse.type = ITEM_CORPSE;
+    corpse.name = "corpse journal-player";
+    corpse.description = "The corpse of journal-player is lying here.";
+    corpse.values[0] = 50;
+    corpse.values[CORPSE_PID] = death.pid;
+    corpse.values[CORPSE_SAVEID] = 100;
+    corpse.values[CORPSE_FLAGS] = PC_CORPSE;
+    recovery.corpse.push_back(corpse);
+    player_item_snapshot bag = original.items[0];
+    bag.object_uid = 1001;
+    bag.parent_index = 0;
+    recovery.corpse.push_back(bag);
+    player_item_snapshot coins = {};
+    coins.object_uid = 1002;
+    coins.parent_index = 1;
+    coins.vnum = 3;
+    coins.type = ITEM_MONEY;
+    coins.values[0] = 123;
+    recovery.corpse.push_back(coins);
+    coins.object_uid = 1003;
+    coins.parent_index = 0;
+    for (int i = 0; i < 4; ++i) coins.values[i] = INT32_MAX;
+    recovery.corpse.push_back(coins);
+    recovery.custody = {
+        {{1001, 1001, 0, 8, 500, item_custody_state::active}, {item_owner_type::player, 80, 0}, 10},
+        {{1002, 1001, 1001, ITEM_TRANSFER_ABSENT_REVISION, 3, item_custody_state::absent}, {}, 0},
+        {{1003, 1003, 0, ITEM_TRANSFER_ABSENT_REVISION, 3, item_custody_state::absent}, {}, 0},
+        // An unexplained descendant remains evidence, never guessed to be consumed.
+        {{1004, 1001, 1001, 9, 3, item_custody_state::active}, {item_owner_type::player, 80, 0}, 10},
+    };
+    critical_operation_id unsettled = {};
+    unsettled.bytes[0] = 2;
+    recovery.unresolved_operations.push_back(unsettled);
+    std::vector<uint8_t> death_bytes;
+    assert(player_snapshot_encode(death, &death_bytes) == player_snapshot_codec_result::ok);
+    assert(player_snapshot_decode(death_bytes.data(), death_bytes.size(), &decoded) == player_snapshot_codec_result::ok);
+    assert(decoded.items.empty() && decoded.pets.empty());
+    assert(decoded.death->corpse[2].parent_index == 1 && decoded.death->corpse[2].values[0] == 123);
+    assert(decoded.death->custody[3].item.item_uid == 1004);
+    assert(decoded.death->wallet_before[3] == INT32_MAX && decoded.death->wallet_revision == 12);
+    assert(decoded.death->unresolved_operations[0].bytes == unsettled.bytes);
+    auto bad_death = death;
+    bad_death.items.push_back(bag); // Cannot also restore these assets to active inventory.
+    assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);
+    bad_death = death;
+    bad_death.death->custody.erase(bad_death.death->custody.begin());
+    assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);
+    bad_death = death;
+    bad_death.death->corpse[2].object_uid = bag.object_uid;
+    assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);
+    bad_death = death;
+    bad_death.death->corpse[3].values[0] -= 1;
+    assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);
+    bad_death = death;
+    bad_death.death->corpse[0].values[CORPSE_PID] += 1;
+    assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);
+    auto short_death = death_bytes;
+    short_death.pop_back();
+    assert(player_snapshot_decode(short_death.data(), short_death.size(), &decoded) == player_snapshot_codec_result::truncated);
 
     assert(player_save_journal_init(directory.c_str()));
     struct stat status = {};
@@ -157,6 +245,26 @@ int main(int argc, char **argv)
     assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::ok);
     assert((replay.applied == std::vector<std::pair<int, player_revision_t>>{{10, 2}, {20, 1}}));
     assert(player_save_journal_health_copy().duplicates == 1);
+    assert(player_save_journal_health_copy().records == 0);
+
+    // A later player checkpoint cannot discard an unresolved death. Restart and
+    // replay retain its complete payload until its own disposition is acknowledged.
+    assert(player_save_journal_append(death) == player_save_journal_result::ok);
+    assert(player_save_journal_append(make_snapshot(80, 5)) == player_save_journal_result::ok);
+    assert(player_save_journal_checkpoint(80, 5) == player_save_journal_result::ok);
+    assert(player_save_journal_health_copy().records == 1);
+    player_save_journal_shutdown();
+    assert(player_save_journal_init(directory.c_str()));
+    replay.expected_death = death_bytes;
+    replay.stale_death = true;
+    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == 1);
+    replay.stale_death = false;
+    replay.blocked = true;
+    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::replay_blocked);
+    assert(player_save_journal_health_copy().records == 1);
+    replay.blocked = false;
+    assert(player_save_journal_replay(replay_apply, &replay) == player_save_journal_result::ok);
     assert(player_save_journal_health_copy().records == 0);
 
     assert(player_save_journal_append(make_snapshot(30, 3)) == player_save_journal_result::ok);

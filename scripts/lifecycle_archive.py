@@ -32,6 +32,8 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
     ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
     ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
+    ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
+    ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
 )
 MAX_ROW_BUDGET = 256
 MAX_BYTE_BUDGET = 1024 * 1024

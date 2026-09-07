@@ -2,6 +2,7 @@
 
 #include "flatfile/flatfile_store.h"
 #include "player/player_snapshot_codec.h"
+#include "world/vnum.obj.h"
 
 #include <algorithm>
 #include <array>
@@ -454,6 +455,17 @@ bool normalize_items(const std::vector<player_item_snapshot> &original,
 			    !positions.emplace(item.object_uid, nodes.size()).second)
 				return false;
 			nodes.push_back({ item, parent_uid });
+			if (owner != owned.end() && !owner->second.coin_payload.empty())
+			{
+				std::vector<player_item_snapshot> coins;
+				if (player_item_snapshot_list_decode(
+					    owner->second.coin_payload.data(),
+					    owner->second.coin_payload.size(),
+					    &coins) != player_snapshot_codec_result::ok ||
+				    coins.size() != 1 || coins[0].object_uid != item.object_uid)
+					return false;
+				nodes.back().item = std::move(coins[0]);
+			}
 		}
 		for (const auto &item : additions)
 		{
@@ -748,7 +760,7 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 		return flatfile_shop_trade_materialization_result::invalid;
 	materialization_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_shop_trade_materialization_result::ok || catalog.events.empty())
+	if (loaded != flatfile_shop_trade_materialization_result::ok)
 		return loaded;
 	std::unordered_map<uint64_t, flatfile_item_ownership_record> owner_records;
 	std::unordered_set<uint64_t> mentioned;
@@ -773,6 +785,44 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 				if (inbound(event.action))
 					latest_inbound[item.object_uid] = item;
 			}
+		}
+		// Coin commits carry their current payload in custody even when the
+		// process stopped before a player snapshot or transfer event was written.
+		for (const auto &record : owned)
+			if (!record.coin_payload.empty())
+			{
+				std::vector<player_item_snapshot> coins;
+				if (player_item_snapshot_list_decode(
+					    record.coin_payload.data(), record.coin_payload.size(),
+					    &coins) != player_snapshot_codec_result::ok ||
+				    coins.size() != 1 || coins[0].object_uid != record.item_uid)
+					return flatfile_shop_trade_materialization_result::invalid;
+				mentioned.insert(record.item_uid);
+				latest_inbound[record.item_uid] = std::move(coins[0]);
+			}
+		std::vector<uint64_t> saved_coins;
+		auto collect_coins = [&](const std::vector<player_item_snapshot> &items)
+		{
+			for (const auto &item : items)
+				if (item.vnum == VOBJ_COINS)
+					saved_coins.push_back(item.object_uid);
+		};
+		collect_coins(snapshot->items);
+		for (const auto &pet : snapshot->pets)
+			collect_coins(pet.items);
+		if (!saved_coins.empty())
+		{
+			std::vector<flatfile_item_ownership_record> coins;
+			const auto read = flatfile_item_repository_load_coins_locked(
+				root, lock, saved_coins, &coins, error);
+			if (read != flatfile_item_repository_result::ok)
+				return read == flatfile_item_repository_result::io_error ?
+					       flatfile_shop_trade_materialization_result::io_error :
+					       flatfile_shop_trade_materialization_result::invalid;
+			for (const auto &coin : coins)
+				if (coin.state == item_custody_state::destroyed &&
+				    coin.owner.type == item_owner_type::destruction)
+					mentioned.insert(coin.item_uid);
 		}
 		if (mentioned.empty())
 			return flatfile_shop_trade_materialization_result::ok;

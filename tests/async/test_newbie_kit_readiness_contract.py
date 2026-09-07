@@ -20,7 +20,7 @@ assert "item_creation_grant_blocks_commands" in header
 newbie_kit = nanny.split("void load_obj_to_newbies(P_char ch)", 1)[1]
 newbie_kit = newbie_kit.split("/* check for a legal player name", 1)[0]
 assert newbie_kit.rindex("item_creation_grant_mark_blocking(ch)") > newbie_kit.rindex(
-    "obj_to_char(shield, ch)"
+    "obj_to_char(obj, ch)"
 )
 
 command_gate = comm.split("casting_input =", 1)[1].split("PROFILE_END(commands)", 1)[0]

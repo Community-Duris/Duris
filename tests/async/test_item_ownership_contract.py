@@ -105,6 +105,13 @@ class ItemOwnershipContractTests(unittest.TestCase):
     def test_snapshot_repositories_do_not_write_owner_authority(self):
         for name in ("player_snapshot_repository.c", "sql_player.c", "files.c"):
             source = (SRC / name).read_text()
+            if name == "player_snapshot_repository.c":
+                start = source.index("query_result apply_death(")
+                end = source.index("} // namespace", start)
+                death = source[start:end]
+                self.assertIn("snapshot.death", death)
+                self.assertIn("item_custody_state::quarantined", death)
+                source = source[:start] + source[end:]
             self.assertNotIn("UPDATE item_current_owner", source)
             self.assertNotIn("DELETE FROM item_current_owner", source)
             self.assertNotIn("UPDATE item_owner_revision", source)

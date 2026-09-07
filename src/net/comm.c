@@ -1546,7 +1546,10 @@ resume_game_loop:
 				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
 				 point->connected == CON_PLAYING && !point->showstr_count &&
 				 !point->str);
-			creation_grant_input = t_ch && item_creation_grant_blocks_commands(t_ch);
+			// Pre-entry input must still advance through RMOTD/enter_game;
+			// only playing commands wait for the complete durable kit.
+			creation_grant_input = point->connected == CON_PLAYING && t_ch &&
+					       item_creation_grant_blocks_commands(t_ch);
 
 			if ((!t_ch ||
 			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
@@ -1693,6 +1696,7 @@ resume_game_loop:
 							  "operation metadata redacted");
 			player_save_pipeline_pulse();
 			persistence_pulse_character_saves();
+			death_extract_retry_pulse();
 			player_load_result load_completions[32] = {};
 			const size_t load_completion_count =
 				player_load_pipeline_pulse(load_completions, 32);
@@ -1948,6 +1952,17 @@ resume_game_loop:
 			goto resume_game_loop;
 		}
 		return;
+	}
+
+	if (!_pwipe && item_creation_grant_batches_pending())
+	{
+		persistence_alert(AVATAR, "starter_grant", "shutdown", "none", "none",
+				  "kit_pending",
+				  "shutdown_cancelled=1 retry_after_kit_completion=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
 	}
 
 	critical_command_coordinator_quiesce();
@@ -2720,6 +2735,7 @@ void close_socket(struct descriptor_data *d)
 		else
 		{
 			logit(LOG_COMM, "Losing player: %s [%s].", GET_NAME(d->character), d->host);
+			item_creation_grant_cancel_batch_before_entry(d->character);
 			free_char(d->character);
 			d->character = NULL;
 		}
@@ -3511,15 +3527,7 @@ int process_output(P_desc t)
 	string descbuf;
 
 	bool text = t->output.head;
-
-	if (text && STATE(t) == CON_PLAYING && IS_PC(realChar) &&
-	    ((t->prompt_mode == (PLR_FLAGGED(realChar, PLR_SMARTPROMPT)) ||
-	      (t->prompt_mode != PLR_FLAGGED(realChar, PLR_OLDSMARTP)))))
-	{
-		if (!t->snoop.snooping || !t->snoop.snooping->desc ||
-		    !t->snoop.snooping->desc->prompt_mode)
-			descbuf += "\r\n";
-	}
+	bool output_prompt_mode = t->prompt_mode;
 
 	if (text && !t->connected && t->character &&
 	    (IS_PC(t->character) || IS_MORPH(t->character)) &&
@@ -3547,8 +3555,26 @@ int process_output(P_desc t)
 	if (realChar && GET_STAT(realChar) == STAT_DEAD)
 		t->prompt_mode = FALSE;
 
-	bool had_prompt = t->prompt_mode; // track if prompt will be sent
-	make_prompt(t);
+	// Keep ordinary command prompts pending until a transaction and its messages publish.
+	// Pager and string-editor prompts remain available while unrelated work is in flight.
+	bool defer_prompt = t->prompt_mode && realChar && !t->showstr_count && !t->str &&
+			    (item_movement_transaction_player_busy(realChar) ||
+			     currency_transaction_player_busy(realChar));
+	if (defer_prompt)
+		output_prompt_mode = FALSE;
+
+	if (text && STATE(t) == CON_PLAYING && IS_PC(realChar) &&
+	    ((output_prompt_mode == (PLR_FLAGGED(realChar, PLR_SMARTPROMPT)) ||
+	      (output_prompt_mode != PLR_FLAGGED(realChar, PLR_OLDSMARTP)))))
+	{
+		if (!t->snoop.snooping || !t->snoop.snooping->desc ||
+		    !t->snoop.snooping->desc->prompt_mode)
+			descbuf += "\r\n";
+	}
+
+	bool had_prompt = t->prompt_mode && !defer_prompt;
+	if (had_prompt)
+		make_prompt(t);
 
 	/* Cycle thru output queue */
 	while (get_from_q(&t->output, buf))

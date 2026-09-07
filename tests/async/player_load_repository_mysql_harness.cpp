@@ -102,7 +102,8 @@ void verify_manifest_repository_loads(MYSQL *connection, const char *path)
 		request.account_name = account_for_pid(connection, pid);
 		const player_load_result result = execute_load(connection, request, request_id++);
 		if (result.outcome != player_load_outcome::applied || result.pid != pid ||
-		    result.snapshot.pid != pid || result.metrics.query_count != 22 ||
+		    result.snapshot.pid != pid ||
+		    result.metrics.query_count != PLAYER_LOAD_QUERY_MAX ||
 		    result.read_components != PLAYER_LOAD_SESSION04_READS)
 		{
 			const std::string category =
@@ -166,7 +167,7 @@ int main()
 	assert(result.request_id == request.request_id && result.pid == pid);
 	assert(result.snapshot.pid == pid);
 	assert(result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS);
-	assert(result.metrics.query_count == 22);
+	assert(result.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
 	assert(result.read_components == PLAYER_LOAD_SESSION04_READS);
 	assert(result.recent_pvp_deaths.size() <= GAMEPLAY_READ_RECENT_DURABLE_MAX);
 	assert(result.completed_epic_zones.size() <= GAMEPLAY_READ_COMPLETED_ZONE_MAX);
@@ -238,8 +239,22 @@ int main()
 	       "epic_gain", "epic_ledger" })
 	{
 		const std::string temporary = std::string("fixture_") + table;
-		execute_sql(connection, "CREATE TEMPORARY TABLE " + temporary + " LIKE " + table);
-		execute_sql(connection, "ALTER TABLE " + temporary + " RENAME TO " + table);
+		if (std::getenv("PLAYER_LOAD_DISPOSABLE_SCHEMA"))
+		{
+			// Only the wrapper's disposable schema may use real fixtures. MySQL 8
+			// cannot reopen a temporary table in the loader's batched UNION query.
+			assert(std::string(std::getenv("DB_NAME")) == "currency_coin_test");
+			execute_sql(connection,
+				    "RENAME TABLE " + std::string(table) + " TO " + temporary);
+			execute_sql(connection,
+				    "CREATE TABLE " + std::string(table) + " LIKE " + temporary);
+		}
+		else
+		{
+			execute_sql(connection,
+				    "CREATE TEMPORARY TABLE " + temporary + " LIKE " + table);
+			execute_sql(connection, "ALTER TABLE " + temporary + " RENAME TO " + table);
+		}
 	}
 	for (int index = 0; index < 25; ++index)
 	{
@@ -296,8 +311,13 @@ int main()
 		    "(1002,'SPELLBOOK','[1,7,31]'),(1003,'detail','fixture')");
 
 	player_load_result fixture = execute_load(connection, request, 81);
+	if (fixture.outcome != player_load_outcome::applied)
+		std::cerr << "fixture load failed: outcome=" << static_cast<int>(fixture.outcome)
+			  << " error=" << fixture.error_code << " stage="
+			  << (fixture.failed_component ? fixture.failed_component : "none") << '\n';
 	assert(fixture.outcome == player_load_outcome::applied);
-	assert(fixture.metrics.query_count == 22 && fixture.snapshot.items.size() == 3);
+	assert(fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	       fixture.snapshot.items.size() == 3);
 	assert(fixture.recent_pvp_deaths.size() == 20);
 	assert(fixture.recent_pvp_deaths.front() == 2000000000 &&
 	       fixture.recent_pvp_deaths.back() == 1999999981);
@@ -406,7 +426,8 @@ int main()
 		    "(3101,'detail','pet fixture')");
 	player_load_result pet_fixture = execute_load(connection, request, 88);
 	assert(pet_fixture.outcome == player_load_outcome::applied);
-	assert(pet_fixture.metrics.query_count == 22 && pet_fixture.snapshot.pets.size() == 1);
+	assert(pet_fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
+	       pet_fixture.snapshot.pets.size() == 1);
 	assert(pet_fixture.pet_identities.size() == 1 &&
 	       pet_fixture.pet_identities[0].database_id == 3001);
 	assert(pet_fixture.snapshot.pets[0].items.size() == 2 &&
@@ -491,12 +512,14 @@ int main()
 	execute_sql(connection, "DELETE FROM item_current_owner");
 	player_load_result empty = execute_load(connection, request, 85);
 	assert(empty.outcome == player_load_outcome::applied && empty.snapshot.items.empty());
-	assert(empty.item_owner_revision == 7 && empty.metrics.query_count == 22);
+	assert(empty.item_owner_revision == 7 &&
+	       empty.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
 	execute_sql(connection, "DELETE FROM item_owner_revision");
 	player_load_result never_owned = execute_load(connection, request, 86);
 	assert(never_owned.outcome == player_load_outcome::applied &&
 	       never_owned.snapshot.items.empty());
-	assert(never_owned.item_owner_revision == 0 && never_owned.metrics.query_count == 22);
+	assert(never_owned.item_owner_revision == 0 &&
+	       never_owned.metrics.query_count == PLAYER_LOAD_QUERY_MAX);
 
 	// Serialized payload without any custody row is the orphan that used to lock the
 	// character out for good. It is skipped and counted, and the load still applies.

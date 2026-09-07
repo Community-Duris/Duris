@@ -640,6 +640,12 @@ int write_cargo()
 		return FALSE;
 	}
 
+	// Known capacity limitation (issue #80): strncat() below limits source bytes,
+	// not remaining destination space.  The current 10x10 tuples of fixed labels,
+	// int prices and float modifiers fit each 16 KiB statement and the combined
+	// 64 KiB buffer.  Before increasing NUM_PORTS or tuple widths, make assembly
+	// capacity-aware, including the final combined statement.  The owner accepted
+	// documenting this limitation without changing persistence (2026-09-04).
 	char buffer[MAX_STRING_LENGTH] = { 0 };
 	char cargoPrices[MAX_STRING_LENGTH / 4] = { 0 };
 	char contrabandPrices[MAX_STRING_LENGTH / 4] = { 0 };

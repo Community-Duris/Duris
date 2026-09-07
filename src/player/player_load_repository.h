@@ -13,7 +13,7 @@
 constexpr uint32_t PLAYER_LOAD_SCHEMA_VERSION = 1;
 constexpr size_t PLAYER_LOAD_ACCOUNT_MAX = 50;
 constexpr size_t PLAYER_LOAD_NAME_MAX = 32;
-constexpr size_t PLAYER_LOAD_QUERY_MAX = 22;
+constexpr size_t PLAYER_LOAD_QUERY_MAX = 23;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 // A payload row the ownership ledger no longer backs is skipped rather than refusing the

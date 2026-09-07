@@ -810,8 +810,10 @@ int get_next_speed_change(P_ship ship)
  * crew -- see update_ship_status() (ship_combat.c), which is the usual entry
  * point and calls this for you.
  *
- * (The flying bonus is deliberately applied to both the ceiling and the
- * running total; that is long-standing behaviour and is left as-is.)
+ * The flying bonus deliberately applies to both the ceiling and the running
+ * total, masking some weight/sail/crew penalties before the clamp.  Keep this
+ * behaviour per the owner decision in issue #80 (2026-09-04); any future flying
+ * ship rebalance should revisit it explicitly.
  */
 void update_maxspeed(P_ship ship, int breach_count)
 {

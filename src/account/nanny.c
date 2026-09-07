@@ -6,6 +6,8 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "account/newbie_kit_plan.h"
+#include "world/object_template.h"
 #include "account/creation_availability_config.h"
 #include "combat/chaos_config.h"
 #include "account/chaos_eq_data.h"
@@ -28,6 +30,8 @@
 #include "world/epic.h"
 #include "world/epic_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/crafting.h"
+#include <array>
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_transaction.h"
@@ -103,6 +107,7 @@ extern struct mm_ds *dead_mob_pool;
 extern char *greetings;
 extern char *greetinga1;
 extern bool has_eq_slot(P_char ch, int wear_slot);
+extern int equipment_pos_table[CUR_MAX_WEAR][3];
 extern char *greetinga2;
 extern char *greetinga3;
 extern char *greetinga4;
@@ -347,63 +352,16 @@ static void add_newbie_keyword(P_obj obj)
 	set_keywords(obj, keywords);
 }
 
-static void LoadNewbyShit(P_char ch, int *items)
-{
-	int i;
-	P_obj obj;
-
-	for (i = 0; items[i] != -1; i++)
-	{
-		if ((obj = read_object(items[i], VIRTUAL)) == NULL)
-		{
-			logit(LOG_DEBUG, "Cannot load init item with virtual number: %d for %s",
-			      items[i], GET_NAME(ch));
-		}
-		else
-		{
-			obj->cost = 1;
-			if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON &&
-			    obj->type != ITEM_SPELLBOOK && obj->type != ITEM_LIGHT &&
-			    obj->type != ITEM_TOTEM && IS_PC(ch))
-				SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
-			if (obj->type == ITEM_SPELLBOOK)
-			{
-				for (int j = FIRST_SPELL; j <= LAST_SPELL; j++)
-				{
-					if (get_spell_circle(ch, j) == 1)
-					{
-						AddSpellToSpellBook(ch, obj, j);
-						obj->value[3]++;
-					}
-				}
-			}
-
-			if (obj->type == ITEM_WEAPON)
-			{
-				// during char creation skills are not initialized yet
-				int slev = GET_LVL_FOR_SKILL(ch, required_weapon_skill(obj));
-				if (!slev || slev > GET_LEVEL(ch) || !can_char_use_item(ch, obj))
-				{
-					extract_obj(obj);
-					continue;
-				}
-			}
-
-			add_newbie_keyword(obj);
-			obj_to_char(obj, ch);
-			if (!IS_PC(ch))
-				CheckEqWorthUsing(ch, obj);
-		}
-	}
-}
-
 static void prepare_chaos_kit_item(P_char ch, P_obj obj)
 {
 	obj->cost = 1;
-	REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
-	if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON && obj->type != ITEM_SPELLBOOK &&
-	    obj->type != ITEM_LIGHT && obj->type != ITEM_TOTEM && IS_PC(ch))
-		SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
+	// Starter instances are permanent and visible. Consumables still use their
+	// normal type/procedure consumption, and wearer buffs remain intentional.
+	REMOVE_BIT(obj->extra_flags, chaos_eq_permanent_strip_flags);
+	REMOVE_BIT(obj->extra2_flags, chaos_eq_permanent_strip_extra2_flags);
+	for (auto &affect : obj->affected)
+		if (affect.location == APPLY_CURSE)
+			affect = {};
 	if (obj->type == ITEM_SPELLBOOK && OBJ_VNUM(obj) != MASTER_SPELLBOOK_VNUM)
 	{
 		for (int j = FIRST_SPELL; j <= LAST_SPELL; j++)
@@ -537,50 +495,136 @@ static void schedule_chaos_starting_bank(P_char ch)
 	}
 }
 
-static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *item)
+// The builder owns only unpublished roots. The ownership coordinator assumes
+// responsibility for all of them only after successful batch admission.
+struct chaos_kit_objects
+{
+	std::array<P_obj, ITEM_MOVEMENT_PENDING_MAX> roots = {};
+	size_t count = 0;
+
+	~chaos_kit_objects()
+	{
+		for (size_t i = 0; i < count; ++i)
+			extract_obj(roots[i], FALSE);
+	}
+
+	bool append_root(P_obj obj)
+	{
+		if (count == roots.size())
+			return false;
+		roots[count++] = obj;
+		return true;
+	}
+
+	bool contains_vnum(int vnum) const
+	{
+		for (size_t i = 0; i < count; ++i)
+		{
+			if (OBJ_VNUM(roots[i]) == vnum)
+				return true;
+			for (P_obj child = roots[i]->contains; child; child = child->next_content)
+				if (OBJ_VNUM(child) == vnum)
+					return true;
+		}
+		return false;
+	}
+};
+
+static bool chaos_kit_skill_available(P_char ch, int skill)
+{
+	// Creation precedes enter_game's level-56 skill initialization. Use the
+	// character's class/race/spec eligibility, not its still-empty skill value.
+	const int required_level = GET_LVL_FOR_SKILL(ch, skill);
+	return required_level > 0 && required_level <= 56;
+}
+
+static bool chaos_kit_weapon_slot(int slot)
+{
+	return slot == PRIMARY_WEAPON || slot == SECONDARY_WEAPON || slot == THIRD_WEAPON ||
+	       slot == FOURTH_WEAPON;
+}
+
+static bool chaos_kit_fits_slot(P_obj obj, int slot)
+{
+	if (slot == WEAR_NONE)
+		return true;
+	if (slot == WEAR_LIGHT)
+		return obj->type == ITEM_LIGHT;
+	for (const auto &position : equipment_pos_table)
+		if (position[2] == slot && CAN_WEAR(obj, position[0]))
+			return true;
+	return false;
+}
+
+static bool append_chaos_kit_item(P_char ch, P_obj bag, const chaos_kit_item *item,
+				  chaos_kit_objects &kit)
 {
 	if (!item || !item->vnum)
 		return true;
+	if (item->slot < WEAR_NONE || item->slot > CUR_MAX_WEAR)
+		return false;
+	if (GET_CLASS(ch, CLASS_MONK) && chaos_kit_weapon_slot(item->slot))
+		return true;
+	if (item->slot >= 0 &&
+	    (item->slot == SECONDARY_WEAPON ? !chaos_kit_skill_available(ch, SKILL_DUAL_WIELD) :
+					      !has_eq_slot(ch, item->slot)))
+		return true;
+
 	P_obj obj = read_object(item->vnum, VIRTUAL);
 	if (!obj)
 	{
-		logit(LOG_DEBUG, "Cannot load CHAOS kit item with virtual number: %d for %s",
-		      item->vnum, GET_NAME(ch));
+		logit(LOG_FILE, "Cannot load CHAOS kit item vnum %d for pid %d", item->vnum,
+		      GET_PID(ch));
 		return false;
 	}
-	if (item->slot >= 0 && item->slot != SECONDARY_WEAPON && !has_eq_slot(ch, item->slot))
+	if (GET_CLASS(ch, CLASS_MONK) &&
+	    (obj->type == ITEM_WEAPON || obj->type == ITEM_FIREWEAPON ||
+	     obj->type == ITEM_MISSILE || CAN_WEAR(obj, ITEM_WIELD)))
 	{
-		logit(LOG_DEBUG,
-		      "Skipping CHAOS kit item vnum %d in unavailable slot %d for pid %d",
-		      item->vnum, item->slot, GET_PID(ch));
 		extract_obj(obj, FALSE);
 		return true;
 	}
-	if (item->slot >= 0 && !can_char_use_item(ch, obj))
+	if (!can_char_use_item(ch, obj) || !chaos_kit_fits_slot(obj, item->slot))
 	{
-		logit(LOG_FILE, "Skipping unusable CHAOS kit item vnum %d for pid %d", item->vnum,
-		      GET_PID(ch));
+		logit(LOG_FILE, "Invalid CHAOS kit item vnum %d in slot %d for pid %d", item->vnum,
+		      item->slot, GET_PID(ch));
 		extract_obj(obj, FALSE);
-		return true;
+		return false;
 	}
 	prepare_chaos_kit_item(ch, obj);
-	if (OBJ_VNUM(obj) == VOBJ_CHAOS_CRAFT_POUCH)
-		REMOVE_BIT(obj->extra_flags, ITEM_TRANSIENT);
+	const int class_id = flag2idx(ch->player.m_class);
+	if (class_id > 0 && class_id <= CLASS_COUNT && chaos_eq_physical_classes[class_id] &&
+	    item->slot == chaos_eq_globe_slot)
+		SET_BIT(obj->bitvector2, AFF2_GLOBE);
+
+	if (item->slot >= 0)
+	{
+		if (kit.append_root(obj))
+			return true;
+		extract_obj(obj, FALSE);
+		return false;
+	}
 	if (!obj_can_nest(obj, bag))
 	{
-		logit(LOG_FILE, "Cannot place CHAOS kit item vnum %d in starter bag for pid %d",
+		logit(LOG_FILE, "Cannot place CHAOS support item vnum %d in bag for pid %d",
 		      item->vnum, GET_PID(ch));
 		extract_obj(obj, FALSE);
 		return false;
 	}
 	obj_to_obj(obj, bag);
-	return obj->loc.inside == bag;
+	if (obj->loc.inside == bag)
+		return true;
+	extract_obj(obj, FALSE);
+	return false;
 }
 
 static void load_chaos_new_character_kit(P_char ch)
 {
 	static const int bag_vnum = 96443;
-	if (!ch || IS_NPC(ch) || ch->carrying)
+	if (!ch || IS_NPC(ch) || ch->carrying || item_movement_transaction_player_busy(ch))
+		return;
+	const int class_id = flag2idx(ch->player.m_class);
+	if (class_id < 1 || class_id > CLASS_COUNT)
 		return;
 
 	P_obj bag = read_object(bag_vnum, VIRTUAL);
@@ -595,35 +639,47 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 	prepare_chaos_kit_item(ch, bag);
+	chaos_kit_objects kit;
+	kit.append_root(bag);
 
-	int class_id = flag2idx(ch->player.m_class);
-	if (class_id < 1 || class_id > CLASS_COUNT)
-		class_id = flag2idx(CLASS_WARRIOR);
 	const int profile_id = chaos_eq_use_enhanceable_profile() ? 1 : 0;
 	const chaos_eq_profile &profile = chaos_eq_profiles[class_id][profile_id];
 	bool item_failure = false;
 	for (const chaos_kit_item *item = profile.items; item && item->vnum; ++item)
-		if (!append_chaos_kit_item(ch, bag, item))
+		if (!append_chaos_kit_item(ch, bag, item, kit))
 			item_failure = true;
 	const chaos_kit_item *optional_items = profile_id ? chaos_eq_enhanceable_optional_slots :
 							    chaos_eq_standard_optional_slots;
 	for (const chaos_kit_item *item = optional_items; item && item->vnum; ++item)
-		if (!append_chaos_kit_item(ch, bag, item))
+		if (!append_chaos_kit_item(ch, bag, item, kit))
 			item_failure = true;
 	for (const chaos_kit_item *item = chaos_eq_support_consumables; item && item->vnum; ++item)
-		if (!append_chaos_kit_item(ch, bag, item))
+		if (!append_chaos_kit_item(ch, bag, item, kit))
 			item_failure = true;
+	for (const auto &utility : chaos_eq_utility_items)
+	{
+		if (!utility.vnum || !chaos_kit_skill_available(ch, utility.skill))
+			continue;
+		const int vnum = utility.skill == SKILL_SALVAGE ? crafting_scientific_tools_vnum() :
+								  utility.vnum;
+		if (vnum <= 0)
+			continue; // An explicitly disabled configurable tool is not a missing prototype.
+		if (kit.contains_vnum(vnum))
+			continue;
+		const chaos_kit_item item = { WEAR_NONE, vnum };
+		for (int i = 0; i < utility.count; ++i)
+			if (!append_chaos_kit_item(ch, bag, &item, kit))
+				item_failure = true;
+	}
 	if (chaos_starter_materials_enabled())
 	{
 		const chaos_kit_item pouch = { WEAR_NONE, VOBJ_CHAOS_CRAFT_POUCH };
-		if (!append_chaos_kit_item(ch, bag, &pouch))
+		if (!append_chaos_kit_item(ch, bag, &pouch, kit))
 			item_failure = true;
 	}
 	if (item_failure)
 	{
-		extract_obj(bag, FALSE);
-		statuslog(56,
-			  "&+RALERT&n: CHAOS starter kit contains an unavailable item for pid %d",
+		statuslog(56, "&+RALERT&n: CHAOS starter kit has an invalid item for pid %d",
 			  GET_PID(ch));
 		send_to_char(
 			"Your CHAOS equipment kit could not be prepared; please contact staff.\r\n",
@@ -631,15 +687,16 @@ static void load_chaos_new_character_kit(P_char ch)
 		return;
 	}
 
-	if (!item_creation_grant_submit_to_player_before_entry(ch, bag, ch))
+	if (!item_creation_grant_submit_batch_to_player_before_entry(ch, kit.roots.data(),
+								     kit.count, ch))
 	{
-		extract_obj(bag, FALSE);
-		statuslog(56, "&+RALERT&n: CHAOS starter bag grant could not be queued");
+		statuslog(56, "&+RALERT&n: CHAOS starter kit grant could not be queued");
 		send_to_char(
-			"Your CHAOS equipment bag could not be granted; please contact staff.\r\n",
+			"Your CHAOS equipment kit could not be granted; please contact staff.\r\n",
 			ch);
 		return;
 	}
+	kit.count = 0; // The coordinator now owns every root, including bag contents.
 }
 
 void schedule_chaos_new_character_kit_before_entry(P_char ch)
@@ -658,1632 +715,93 @@ void schedule_chaos_new_character_kit_before_entry(P_char ch)
 	load_chaos_new_character_kit(ch);
 }
 
+// Main-thread capture adapter. This value-only view is never registered, given
+// an identity or passed to publication/worker code. Reuse the authoritative
+// weapon predicates instead of maintaining a second race/class policy.
+static newbie_item_facts capture_newbie_item_facts(P_char ch, const newbie_kit_item &item)
+{
+	const auto *prototype = find_object_template(item.vnum);
+	if (!prototype)
+		return {};
+	newbie_item_facts facts{ true, true, prototype->type == ITEM_SPELLBOOK };
+	if (item.regular && prototype->type == ITEM_WEAPON)
+	{
+		obj_data view{};
+		view.R_num = prototype->R_num;
+		view.type = prototype->type;
+		view.value[0] = prototype->value[0];
+		view.extra_flags = prototype->extra_flags;
+		view.anti_flags = prototype->anti_flags;
+		view.anti2_flags = prototype->anti2_flags;
+		// Only used for diagnostics by required_weapon_skill().
+		view.short_description = const_cast<char *>(prototype->short_description.c_str());
+		const int skill_level = GET_LVL_FOR_SKILL(ch, required_weapon_skill(&view));
+		facts.weapon_admitted = skill_level && skill_level <= GET_LEVEL(ch) &&
+					can_char_use_item(ch, &view);
+	}
+	return facts;
+}
+
 void load_obj_to_newbies(P_char ch)
 {
-	int *class_kit;
-	int *newbie_kits[LAST_RACE][CLASS_COUNT + 1];
-
-	/*Thrikreen Basics*/
-	static int thrikreen_good_eq[] = { 677, 283, 285, 1112, 286,  288, 290,
-					   613, 398, 398, 1176, 1167, -1 };
-
-	static int thrikreen_evil_eq[] = { 677, 283, 285, 1112, 286, 288, 290, 613, 1170, 1173, -1 };
-
-	/*Minotaur Basics*/
-	static int minotaur_good_eq[] = { 677,	283,  285,  1112, 286, 288, 290, 398, 398,
-					  1176, 1167, 1182, 603,  108, 109, 111, -1 };
-
-	static int minotaur_evil_eq[] = { 677,	283,  285, 1112, 286, 288, 290, 1170,
-					  1173, 1182, 603, 108,	 109, 111, -1 };
-
-	memset(newbie_kits, 0, sizeof(newbie_kits));
-
-#define CREATE_KIT(race, cls, kit)       \
-	static int race##_##cls[] = kit; \
-	newbie_kits[race][flag2idx(cls)] = race##_##cls;
-#define PROTECT(...) __VA_ARGS__
-	CREATE_KIT(RACE_BARBARIAN, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 560, 603, 398, 398, 1154, 1155,
-			     -1 }));
-	CREATE_KIT(RACE_BARBARIAN, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_DRUID,
-		   PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_BARBARIAN, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_BARBARIAN, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*Githzerai Basics*/
-	CREATE_KIT(RACE_GITHZERAI, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 566, 390, 398, 398, 1152, 1153,
-			     -1 }));
-
-	/*Githzerai Classes*/
-	CREATE_KIT(RACE_GITHZERAI, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_DRUID,
-		   PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_GITHZERAI, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_GITHZERAI, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/* Tiefling Basics */
-
-	CREATE_KIT(RACE_TIEFLING, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 566, 390, 398, 398, 1152, 1153,
-			     -1 }));
-
-	/* Tiefling Classes */
-	CREATE_KIT(RACE_TIEFLING, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_TIEFLING, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_TIEFLING, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-	/* End Tiefling */
-
-	/*Human Basics*/
-	CREATE_KIT(RACE_HUMAN, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 566, 390, 398, 398, 1152, 1153,
-			     -1 }));
-
-	/*Human Classes*/
-	CREATE_KIT(RACE_HUMAN, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_HUMAN, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_HUMAN, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 })); /*END Human Classes*/
-
-	/*Drow Elf Basics*/
-	CREATE_KIT(
-		RACE_DROW, 0,
-		PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 561, 604, 36016, 1156, 1157, -1 }));
-
-	/*Drow Elf Classes*/
-	CREATE_KIT(RACE_DROW, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_SHAMAN, PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_DROW, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_DROW, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Drow Elf Classes*/
-
-	/*Duergar Basics*/
-	CREATE_KIT(RACE_DUERGAR, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 562, 605, 1164, 1165, -1 }));
-
-	/*Duergar Classes*/
-	CREATE_KIT(RACE_DUERGAR, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_DUERGAR, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_DUERGAR, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-	/*END Duergar Classes*/
-
-	/*Gnome Basics*/
-	CREATE_KIT(RACE_GNOME, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 563, 605, 398, 398, 1166, 1167,
-			     -1 }));
-
-	/*Gnome Classes*/
-	CREATE_KIT(RACE_GNOME, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_GNOME, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_GNOME, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-	/*END Gnome Classes*/
-
-	/*Half Elf Basics*/
-	CREATE_KIT(RACE_HALFELF, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 564, 607, 398, 398, 1160, 1161,
-			     -1 }));
-
-	/*Half Elf Class EQ*/
-	CREATE_KIT(RACE_HALFELF, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_NECROMANCER,
-		   PROTECT({ 1114, 1115, 1143, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1113,
-			     1113, 1114, 1115, 1116, 1117, 1117, 1117, 1117, 1117,
-			     1117, 1117, 1117, 1117, 1117, 1118, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_BARD, PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_ASSASSIN,
-		   PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_THIEF,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_ROGUE,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_PALADIN, PROTECT({ 1101, 1102, 1103, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_HALFELF, CLASS_THEURGIST,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, -1 }));
-	/*END Half Elf Classes*/
-
-	/*Halfling Basics*/
-	CREATE_KIT(RACE_HALFLING, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 565, 608, 398, 398, 1168, 1169,
-			     -1 }));
-
-	/*Halfling Classes*/
-	CREATE_KIT(RACE_HALFLING, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_HALFLING, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_HALFLING, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Halfling Classes*/
-
-	/*Thrikreen Classes*/
-	CREATE_KIT(RACE_THRIKREEN, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1101, 1102, 1104, 1104, 1105, 1105, 1105, 1105, 1106, 580, 580,
-			     580, 580, 581, 581, -1 }));
-	/*END Thrikreen Classes*/
-
-	/*Centaur Basics*/
-	CREATE_KIT(RACE_CENTAUR, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 398, 398, 591, 590, 1178, 1179,
-			     -1 }));
-
-	/*Centaur Classes*/
-	CREATE_KIT(RACE_CENTAUR, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_CENTAUR, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_CENTAUR, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Centaur Classes*/
-
-	CREATE_KIT(RACE_HARPY, CLASS_SORCERER, PROTECT({ 706, 735, 731, 731, -1 }));
-	CREATE_KIT(RACE_HARPY, CLASS_CONJURER, PROTECT({ 706, 735, 731, 731, -1 }));
-	CREATE_KIT(RACE_HARPY, CLASS_SUMMONER, PROTECT({ 706, 735, 731, 731, -1 }));
-	CREATE_KIT(RACE_HARPY, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-	CREATE_KIT(RACE_HARPY, CLASS_BARD, PROTECT({ 1128, 1130, 1131, 1134, -1 }));
-
-	CREATE_KIT(RACE_HARPY, CLASS_SHAMAN,
-		   PROTECT({ 731, 731, 706, 735, 107, 106, 105, 679, 388, -1 }));
-
-	/*Planetbound Illithid Basic*/
-	CREATE_KIT(RACE_ILLITHID, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 567, 609, 733, 1174, 1175, -1 }));
-
-	/*Planetbound Illithid Classes*/
-	CREATE_KIT(RACE_PILLITHID, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_PILLITHID, CLASS_PSIONICIST, PROTECT({ 1112, 706, 1131, -1 }));
-
-	CREATE_KIT(RACE_PILLITHID, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_PILLITHID, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_PILLITHID, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_PILLITHID, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	/*END Planetbound Illithid Classes*/
-
-	/*Illithid Classes*/
-	CREATE_KIT(RACE_ILLITHID, CLASS_PSIONICIST, PROTECT({ 1112, 706, 1131, -1 }));
-	/*END Illithid Classes*/
-
-	/*Githyanki Basic*/
-	CREATE_KIT(RACE_GITHYANKI, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1180, 1181, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1123, 1125, 1126, 1127, -1 }));
-
-	/*Githyanki Classes*/
-	CREATE_KIT(RACE_GITHYANKI, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_DRUID,
-		   PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_GITHYANKI, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_GITHYANKI, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-	/*End Githyanki Classes*/
-
-	/*Phantom Basic*/
-	CREATE_KIT(RACE_PHANTOM, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1180, 1181, -1 }));
-
-	/*Phantom Classes*/
-	CREATE_KIT(RACE_PHANTOM, CLASS_PSIONICIST, PROTECT({ 624, -1 }));
-
-	CREATE_KIT(RACE_PHANTOM, CLASS_REAVER,
-		   PROTECT({ 1109, 1108, 1107, 1106, 1105, 1105, 1104, 1103, 1102, 110, 604, 1157,
-			     256, -1 }));
-
-	/* End Phantom Classes */
-
-	/*Minotaur Classes*/
-	CREATE_KIT(RACE_MINOTAUR, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_MINOTAUR, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_MINOTAUR, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Minotaur Classes*/
-
-	/*Grey Elf Basics*/
-	CREATE_KIT(RACE_GREY, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 568, 610, 398, 398, 1158, 1159,
-			     -1 }));
-
-	/*Grey Elf Classes*/
-	CREATE_KIT(RACE_GREY, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_SHAMAN, PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_GREY, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_GREY, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Grey Elf Classes*/
-
-	/*Dwarf Basic*/
-	CREATE_KIT(RACE_MOUNTAIN, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 569, 611, 398, 398, 1162, 1163,
-			     -1 }));
-
-	/*Dwarf Classes*/
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_MOUNTAIN, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_MOUNTAIN, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Dwarf Classes*/
-
-	/*Ogre Basic*/
-	CREATE_KIT(RACE_OGRE, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 570, 612, 1170, 1183, 1183, 1184,
-			     -1 }));
-
-	/*Orog Basics*/
-	CREATE_KIT(RACE_OROG, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-
-	/*Orog Classes*/
-	CREATE_KIT(RACE_OGRE, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_SHAMAN, PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_OGRE, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_OGRE, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*Orc Classes*/
-	CREATE_KIT(RACE_ORC, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_SHAMAN, PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_ORC, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	CREATE_KIT(RACE_ORC, CLASS_BERSERKER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	/*END Orc Classes*/
-
-	/*Lich Basics*/
-	CREATE_KIT(RACE_LICH, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-
-	/*Lich Classes */
-	CREATE_KIT(RACE_LICH, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_LICH, CLASS_DREADLORD,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 286, -1 }));
-
-	CREATE_KIT(RACE_LICH, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, -1 }));
-
-	/*END Lich Classes */
-
-	/*Death Knight Basics*/
-	CREATE_KIT(RACE_PDKNIGHT, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1106, 1107, -1 }));
-
-	/*Death Knight Classes */
-	CREATE_KIT(RACE_PDKNIGHT, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_PDKNIGHT, CLASS_ANTIPALADIN, PROTECT({ 1101, 1102, 1103, 1111, -1 }));
-
-	/*END Death Knight Classes */
-
-	/*Vampire Basics*/
-
-	CREATE_KIT(RACE_VAMPIRE, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-
-	/*Vampire Classes */
-
-	CREATE_KIT(RACE_VAMPIRE, CLASS_ANTIPALADIN, PROTECT({ 1101, 1102, 1103, 1107, 1111, -1 }));
-
-	CREATE_KIT(RACE_VAMPIRE, CLASS_THIEF,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_VAMPIRE, CLASS_ASSASSIN,
-		   PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, -1 }));
-
-	CREATE_KIT(RACE_VAMPIRE, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_VAMPIRE, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(RACE_VAMPIRE, CLASS_DREADLORD,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 286, -1 }));
-	/*END Vampire Classes */
-
-	/*Wight Basics*/
-	CREATE_KIT(RACE_WIGHT, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-	/*Wight Classes*/
-	CREATE_KIT(
-		RACE_WIGHT, CLASS_WARRIOR,
-		PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, 286, -1 }));
-	CREATE_KIT(RACE_WIGHT, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, 286, -1 }));
-	/*END Wight Classes*/
-
-	/*Storm Giant Basics*/
-	CREATE_KIT(RACE_SGIANT, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-	/*Storm Giant Classes*/
-	CREATE_KIT(RACE_SGIANT, CLASS_WARRIOR,
-		   PROTECT({ 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, 286, 274, -1 }));
-	CREATE_KIT(RACE_SGIANT, CLASS_MERCENARY,
-		   PROTECT({ 1103, 1104, 1106, 1107, 1108, 1112, 286, 274, -1 }));
-	/*END Storm Giant Classes*/
-
-	/*Shade Basics*/
-	CREATE_KIT(RACE_SHADE, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-	/*Shade Classes*/
-	CREATE_KIT(RACE_SHADE, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-	CREATE_KIT(RACE_SHADE, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-	CREATE_KIT(RACE_SHADE, CLASS_REAVER,
-		   PROTECT({ 1109, 1108, 1107, 1106, 1105, 1105, 1104, 1103, 1102, 110, 604, 1157,
-			     256, -1 }));
-	CREATE_KIT(RACE_SHADE, CLASS_DREADLORD,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 286, -1 }));
-
-	/*END Shade Classes*/
-
-	/*Revenant Basics*/
-	CREATE_KIT(RACE_REVENANT, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-	/*Revenant Classes*/
-	CREATE_KIT(RACE_REVENANT, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-	CREATE_KIT(RACE_REVENANT, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-	/*END Revenant Classes*/
-
-	/*Shadow beast Basics*/
-
-	CREATE_KIT(RACE_PSBEAST, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-
-	/*Shadow Beast Classes */
-
-	CREATE_KIT(RACE_PSBEAST, CLASS_ASSASSIN,
-		   PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, -1 }));
-
-	CREATE_KIT(RACE_PSBEAST, CLASS_THIEF,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_PSBEAST, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_PSBEAST, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-	/* End shadow beast */
-
-	/*Troll Basic*/
-	CREATE_KIT(RACE_TROLL, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1155, 571, 613, -1 }));
-
-	/*Troll Classes*/
-	CREATE_KIT(RACE_TROLL, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_TROLL, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_TROLL, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Troll Classes*/
-
-	/*Goblin Basics*/
-	CREATE_KIT(RACE_GOBLIN, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-
-	/*Goblin Classes*/
-	CREATE_KIT(RACE_GOBLIN, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_GOBLIN, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_GOBLIN, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Goblin Classes*/
-
-	/*Drider Basics*/
-	CREATE_KIT(
-		RACE_DRIDER, 0,
-		PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 561, 604, 36016, 1156, 1157, -1 }));
-
-	/*Drider Classes*/
-	CREATE_KIT(RACE_DRIDER, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_DRIDER, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1123, 1125, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_DRIDER, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_DRIDER, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_DRIDER, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_DRIDER, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, -1 }));
-
-	CREATE_KIT(RACE_DRIDER, CLASS_REAVER,
-		   PROTECT({ 1109, 1108, 1107, 1106, 1105, 1104, 1103, 1102, 1101, 604, 1157, 1156,
-			     1115, 1114, -1 }));
-
-	/* END Drider Classes */
-
-	/*Kobold Basics*/
-	CREATE_KIT(RACE_KOBOLD, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1173, 612, -1 }));
-
-	/*Goblin Classes*/
-	CREATE_KIT(RACE_KOBOLD, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_KOBOLD, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_KOBOLD, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-
-	/*END Kobold Classes*/
-
-	/*Kuo Toa Basic*/
-	CREATE_KIT(RACE_KUOTOA, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 1172, 1155, 571, 613, -1 }));
-
-	/*Troll Classes*/
-	CREATE_KIT(RACE_KUOTOA, CLASS_CLERIC, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_KUOTOA, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(RACE_KUOTOA, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_KUOTOA, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_KUOTOA, CLASS_ROGUE,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 412, 412, 412, -1 }));
-
-	/*END Troll Classes*/
-
-	/* Firbolg Basic */
-	CREATE_KIT(RACE_FIRBOLG, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 560, 603, 398, 398, 1154, 1155,
-			     -1 }));
-
-	/* Firbolg Classes */
-	CREATE_KIT(RACE_FIRBOLG, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_PALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_ANTIPALADIN,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1110, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_SHAMAN,
-		   PROTECT({ 108, 109, 111, 1144, 1145, 1146, 1127, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_NECROMANCER,
-		   PROTECT({ 1112, 1114, 1115, 1141, 1142, 1143, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_MONK, PROTECT({ 1147, 1148, 1149, 1150, 1151, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_MERCENARY,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1106, 1107, 1108, 1112, -1 }));
-
-	CREATE_KIT(
-		RACE_FIRBOLG, CLASS_ROGUE,
-		PROTECT({ 1112, 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_BARD,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, 1241, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_ALCHEMIST, PROTECT({ 377, 676, 52, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_ILLUSIONIST,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, 203, 204, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_ETHERMANCER, PROTECT({ 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_FIRBOLG, CLASS_REAVER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1108, 203, 204,
-			     -1 }));
-	/* END Firbolg */
-
-	/*Wood Elf Basics*/
-	CREATE_KIT(RACE_WOODELF, 0,
-		   PROTECT({ 677, 283, 285, 1112, 286, 288, 290, 568, 610, 398, 398, 1158, 1159,
-			     -1 }));
-
-	/*Wood Elf Classes*/
-	CREATE_KIT(RACE_WOODELF, CLASS_WARRIOR,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1108, 1109, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_RANGER,
-		   PROTECT({ 1101, 1102, 1103, 1104, 1105, 1105, 1106, 1107, 1113,
-			     1113, 1114, 1115, 1116, 1117, 1117, 1117, 1117, 1117,
-			     1117, 1117, 1117, 1117, 1117, 1118, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_CLERIC,
-		   PROTECT({ 1119, 1120, 1121, 1122, 1124, 1126, 1127, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_CONJURER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_SUMMONER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_DRUID, PROTECT({ 1135, 1136, 1137, 1138, 1139, 1140, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_SORCERER,
-		   PROTECT({ 1114, 1115, 1131, 706, 735, 731, 731, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_THIEF,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_ROGUE,
-		   PROTECT({ 1112, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	CREATE_KIT(RACE_WOODELF, CLASS_BARD, PROTECT({ 1112, 1128, 1129, 1130, 1131, 1134, -1 }));
-	/*END Wood Elf Classes*/
-	CREATE_KIT(
-		RACE_SKELETON, CLASS_ROGUE,
-		PROTECT({ 1317, 1317, 1128, 1129, 1130, 1131, 1132, 412, 412, 412, 412, 412, -1 }));
-
-	if (ch->carrying && IS_PC(ch)) /* we are _NOT_ here to give people free eq many times */
+	// Queued grants are not yet in carrying. Reject another request until the
+	// authoritative coordinator has published or discarded the existing kit.
+	if (!ch || item_movement_transaction_player_busy(ch) || (ch->carrying && IS_PC(ch)))
 		return;
+	newbie_kit_input input;
+	input.race = GET_RACE(ch);
+	input.alignment = GET_ALIGNMENT(ch);
+	input.main_class = ch->player.m_class;
+	input.all_classes = creation_all_classes_enabled();
+	input.blighter = GET_CLASS(ch, CLASS_BLIGHTER);
+	input.ailvio = ch->in_room > NOWHERE && ch->in_room <= top_of_world &&
+		       world[ch->in_room].number == 29201;
+	input.bandages = GET_LVL_FOR_SKILL(ch, SKILL_BANDAGE);
+	input.shield = !GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN);
+	const auto selection = make_newbie_kit_plan(input);
+	std::vector<newbie_item_facts> facts;
+	for (const auto &item : selection)
+		facts.push_back(capture_newbie_item_facts(ch, item));
 
-	if (newbie_kits[GET_RACE(ch)][0])
-		LoadNewbyShit(ch, newbie_kits[GET_RACE(ch)][0]);
-
-	if (GET_RACE(ch) == RACE_THRIKREEN)
+	// Snapshot the spell decisions once, before publishing any live item.
+	std::vector<int> first_circle;
+	for (int spell = FIRST_SPELL; spell <= LAST_SPELL; ++spell)
+		if (get_spell_circle(ch, spell) == 1)
+			first_circle.push_back(spell);
+	const auto plan = prepare_newbie_kit_items(selection, facts, first_circle);
+	for (const auto &prepared : plan)
 	{
-		if (GET_ALIGNMENT(ch) >= 0)
-			LoadNewbyShit(ch, thrikreen_good_eq);
-		else
-			LoadNewbyShit(ch, thrikreen_evil_eq);
-	}
-
-	if (GET_RACE(ch) == RACE_MINOTAUR)
-	{
-		if (GET_ALIGNMENT(ch) >= 0)
-			LoadNewbyShit(ch, minotaur_good_eq);
-		else
-			LoadNewbyShit(ch, minotaur_evil_eq);
-	}
-
-	class_kit = newbie_kits[GET_RACE(ch)][flag2idx(ch->player.m_class)];
-	if (!class_kit && creation_all_classes_enabled())
-	{
-		int cls = flag2idx(ch->player.m_class);
-
-		/* Most race/class combinations can reuse the class's Human kit. The
-		   remaining classes use the closest existing class kit so book users
-		   still receive a populated spellbook and every class gets equipment. */
-		class_kit = newbie_kits[RACE_HUMAN][cls];
-		if (!class_kit)
+		const auto &item = prepared.item;
+		const auto *prototype = find_object_template(item.vnum);
+		if (!prototype)
 		{
-			switch (ch->player.m_class)
-			{
-			case CLASS_PSIONICIST:
-			case CLASS_MINDFLAYER:
-				class_kit = newbie_kits[RACE_PILLITHID][flag2idx(CLASS_PSIONICIST)];
-				break;
-			case CLASS_ASSASSIN:
-				class_kit = newbie_kits[RACE_HALFELF][flag2idx(CLASS_ASSASSIN)];
-				break;
-			case CLASS_THIEF:
-				class_kit = newbie_kits[RACE_HALFELF][flag2idx(CLASS_THIEF)];
-				break;
-			case CLASS_WARLOCK:
-				class_kit = newbie_kits[RACE_HUMAN][flag2idx(CLASS_ROGUE)];
-				break;
-			case CLASS_BERSERKER:
-				class_kit = newbie_kits[RACE_ORC][flag2idx(CLASS_BERSERKER)];
-				break;
-			case CLASS_DREADLORD:
-				class_kit = newbie_kits[RACE_LICH][flag2idx(CLASS_DREADLORD)];
-				break;
-			case CLASS_AVENGER:
-				class_kit = newbie_kits[RACE_HUMAN][flag2idx(CLASS_PALADIN)];
-				break;
-			case CLASS_THEURGIST:
-				class_kit = newbie_kits[RACE_HALFELF][flag2idx(CLASS_THEURGIST)];
-				break;
-			case CLASS_DRAGOON:
-				class_kit = newbie_kits[RACE_HUMAN][flag2idx(CLASS_WARRIOR)];
-				break;
-			}
+			logit(LOG_DEBUG, "Cannot load cached init item with virtual number: %d",
+			      item.vnum);
+			continue;
 		}
-	}
-
-	if (class_kit)
-	{
-		LoadNewbyShit(ch, class_kit);
-	}
-	else if (GET_CLASS(ch, CLASS_BLIGHTER))
-	{
-		// shield, weapons*5, armor*8.
-		static int blighter_stuff[] = { 1109, 1108, 1113, 1112, 1140, 677, 239, 618,
-						679,  680,  729,  729,	452,  437, -1 };
-		LoadNewbyShit(ch, blighter_stuff);
-	}
-
-	if (world[ch->in_room].number == 29201) // Ailvio
-	{
-		P_obj note = read_object(29319, VIRTUAL);
-
-		if (note)
+		P_obj obj = instantiate_object_template(*prototype);
+		if (item.regular)
 		{
-			add_newbie_keyword(note);
-			obj_to_char(note, ch);
+			obj->cost = 1;
+			if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON &&
+			    obj->type != ITEM_SPELLBOOK && obj->type != ITEM_LIGHT &&
+			    obj->type != ITEM_TOTEM && IS_PC(ch))
+				SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
+			if (obj->type == ITEM_SPELLBOOK)
+				for (int spell : prepared.spells)
+				{
+					AddSpellToSpellBook(ch, obj, spell);
+					obj->value[3]++;
+				}
 		}
+		add_newbie_keyword(obj);
+		obj_to_char(obj, ch);
+		if (item.regular && !IS_PC(ch))
+			CheckEqWorthUsing(ch, obj);
 	}
-
-	if (GET_LVL_FOR_SKILL(ch, SKILL_BANDAGE)) // all but necros
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			P_obj bandage = read_object(393, VIRTUAL);
-			if (bandage)
-			{
-				add_newbie_keyword(bandage);
-				obj_to_char(bandage, ch);
-			}
-		}
-	}
-
-	if (!GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN))
-	{
-		P_obj shield = read_object(458, VIRTUAL);
-		if (shield)
-		{
-			add_newbie_keyword(shield);
-			obj_to_char(shield, ch);
-		}
-	}
-
 	if (item_creation_grant_mark_blocking(ch))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
 }
-
-#undef CREATE_KIT
 
 /* check for a legal player name, since it's only called when a new character
    is created, we can make it pretty much as detailed as we want, thus:

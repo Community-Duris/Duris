@@ -30,9 +30,19 @@ give = body("void do_give(")
 submit = body("bool submit_coin_debit(")
 completion = body("void coin_debit_completion(")
 publish_drop = body("void publish_coin_drop(")
-publish_put = body("bool publish_coin_put(")
+publish_put = body("static bool submit_coin_put(")
 give_credit = body("bool begin_coin_give_credit(")
 give_completion = body("void coin_give_credit_completion(")
+atomic_give = body("bool submit_coin_give(")
+atomic_give_completion = body("bool coin_give_completion(")
+
+# Normal player-to-player gives use one command before the legacy NPC/mint routes.
+# The runtime currency harness exercises this helper and its completion callback.
+assert submit.index("submit_coin_give(actor, recipient, context)") < submit.index(
+    "currency_transaction_submit_wallet_value(")
+assert "currency_transaction_submit_coin(" in atomic_give
+assert "currency_transaction_submit_wallet_value(" not in atomic_give
+assert "refund_committed_coin_debit" not in atomic_give_completion
 
 for name, command in (
     ("drop all.coins", drop_all),
@@ -59,9 +69,9 @@ assert "create_money(" in publish_drop
 assert "obj_to_room(" in publish_drop
 assert "create_money(" in publish_put
 assert "coin_put_destination_custody(" in publish_put
-assert "item_movement_transaction_submit(" in publish_put
+assert "currency_transaction_submit_coin(" in publish_put
 assert "coin_put_custody_completion" in publish_put
-assert "extract_obj(old_money)" not in publish_put
+assert "refund_committed_coin_debit" not in publish_put
 assert "currency_transaction_submit_wallet_value(" in give_credit
 assert "recipient, value, currency_reason_type::wallet_reward" in give_credit
 assert "uint8_t debit_committed;" in ACTOBJ

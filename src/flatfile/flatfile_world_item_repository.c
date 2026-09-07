@@ -3,6 +3,7 @@
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_store.h"
 #include "player/player_snapshot_codec.h"
+#include "economy/coin_transfer_command.h"
 
 #include <algorithm>
 #include <array>
@@ -782,6 +783,49 @@ flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_re
 	return flatfile_world_item_result::ok;
 }
 
+flatfile_world_item_result flatfile_world_item_read_coin(const std::string &root,
+							 const flatfile_authority_lock &lock,
+							 const item_owner_identity &owner,
+							 uint64_t uid, player_item_snapshot *item,
+							 std::string *error)
+{
+	if (!lock.matches(root) || !uid || !item ||
+	    (owner.type != item_owner_type::room && owner.type != item_owner_type::corpse))
+		return flatfile_world_item_result::invalid;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	size_t matches = 0;
+	auto inspect = [&](const std::vector<player_item_snapshot> &items)
+	{
+		for (const auto &candidate : items)
+			if (candidate.object_uid == uid)
+			{
+				*item = candidate;
+				++matches;
+			}
+	};
+	if (owner.type == item_owner_type::corpse)
+	{
+		for (const auto &corpse : catalog.corpses)
+			if (item_corpse_owner_id(corpse.owner_pid, corpse.save_id) == owner.id)
+				inspect(corpse.items);
+	}
+	else
+	{
+		for (const auto &room : catalog.rooms)
+			if (static_cast<uint64_t>(room.room_vnum) == owner.id)
+				inspect(room.items);
+		for (const auto &saved : catalog.saved_items)
+			if (static_cast<uint64_t>(saved.room_vnum) == owner.id)
+				inspect(saved.items);
+	}
+	return matches == 1 ? flatfile_world_item_result::ok :
+	       matches	    ? flatfile_world_item_result::conflict :
+			      flatfile_world_item_result::not_found;
+}
+
 flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_world_item_player_removal *removal,
@@ -1231,6 +1275,124 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 	mutation->after_image = { catalog_filename, std::move(encoded) };
 	mutation->room_revision = room->revision;
 	return flatfile_world_item_result::ok;
+}
+
+// Coin custody is authoritative, but an existing room-transfer projection must
+// advance in the same transaction or the next ordinary loot command goes stale.
+flatfile_world_item_result
+flatfile_world_item_prepare_coin_rooms(const std::string &root, const flatfile_authority_lock &lock,
+				       const coin_transfer_payload &payload,
+				       const coin_transfer_result &result,
+				       flatfile_authority_after_image *image, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !image)
+		return flatfile_world_item_result::invalid;
+	*image = {};
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_world_item_result::not_found)
+		return flatfile_world_item_result::unchanged;
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	bool changed = false;
+	const coin_transfer_endpoint *endpoints[] = { &payload.source, &payload.destination };
+	for (size_t index = 0; index < 2; ++index)
+	{
+		const auto &endpoint = *endpoints[index];
+		if (endpoint.change.type != critical_command_type::item_transfer)
+			continue;
+		item_transfer_payload transfer;
+		if (!item_transfer_command_decode_payload(endpoint.change, &transfer) ||
+		    transfer.item_count != 1)
+			return flatfile_world_item_result::invalid;
+		const bool creation = transfer.from_owner.type == item_owner_type::system;
+		const auto &owner = creation ? transfer.to_owner : transfer.from_owner;
+		if (owner.type != item_owner_type::room)
+			continue;
+		auto room = std::find_if(
+			catalog.rooms.begin(), catalog.rooms.end(), [&](const auto &entry)
+			{ return static_cast<uint64_t>(entry.room_vnum) == owner.id; });
+		// Imported saved-item piles have no room-transfer projection. They retain
+		// the existing custody/coin-payload loading path.
+		if (room == catalog.rooms.end())
+			continue;
+		const uint64_t revision = creation ? result.piles[index].to_owner_revision :
+						     result.piles[index].from_owner_revision;
+		if (!revision || room->revision != revision - 1)
+			return flatfile_world_item_result::conflict;
+		std::vector<player_item_snapshot> exact;
+		if (player_item_snapshot_list_decode(transfer.item_blob.data(),
+						     transfer.item_blob_size,
+						     &exact) != player_snapshot_codec_result::ok ||
+		    exact.size() != 1 || !payload_items_match(transfer, exact) ||
+		    !canonicalize_detached_items(&exact))
+			return flatfile_world_item_result::invalid;
+		const uint64_t uid = transfer.selected_item_uid;
+		const size_t position = room_item_index(room->items, uid);
+		const bool consumed = transfer.to_owner.type == item_owner_type::destruction;
+		if (creation ? position != room->items.size() : position == room->items.size())
+			return flatfile_world_item_result::conflict;
+		int32_t parent = PLAYER_SNAPSHOT_NO_PARENT;
+		int64_t old_weight = 0;
+		if (!creation)
+		{
+			const auto &stored = room->items[position];
+			parent = stored.parent_index;
+			old_weight = stored.weight;
+			if (!std::equal(endpoint.before.begin(), endpoint.before.end(),
+					stored.values.begin()) ||
+			    !room_item_root_matches(room->items, position,
+						    transfer.items[0].root_item_uid) ||
+			    (parent == PLAYER_SNAPSHOT_NO_PARENT ?
+				     0 :
+				     room->items[parent].object_uid) !=
+				    transfer.items[0].parent_item_uid)
+				return flatfile_world_item_result::conflict;
+		}
+		else if (transfer.target_parent_item_uid)
+		{
+			const size_t found =
+				room_item_index(room->items, transfer.target_parent_item_uid);
+			if (found == room->items.size() ||
+			    !room_item_root_matches(room->items, found,
+						    transfer.target_root_item_uid))
+				return flatfile_world_item_result::conflict;
+			parent = static_cast<int32_t>(found);
+		}
+		const int64_t new_weight = consumed ? 0 : exact[0].weight;
+		if (parent != PLAYER_SNAPSHOT_NO_PARENT &&
+		    !apply_room_weight_delta(&room->items, static_cast<size_t>(parent),
+					     new_weight - old_weight))
+			return flatfile_world_item_result::conflict;
+		if (consumed)
+		{
+			std::vector<player_item_snapshot> selected, remaining;
+			if (player_item_snapshot_extract_forest(room->items, { uid }, &selected,
+								&remaining) !=
+				    player_snapshot_codec_result::ok ||
+			    selected.size() != 1)
+				return flatfile_world_item_result::conflict;
+			room->items = std::move(remaining);
+		}
+		else
+		{
+			exact[0].parent_index = parent;
+			if (creation)
+				room->items.push_back(std::move(exact[0]));
+			else
+				room->items[position] = std::move(exact[0]);
+		}
+		room->revision = revision;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_world_item_result::unchanged;
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_world_item_result::conflict;
+	++catalog.revision;
+	image->filename = catalog_filename;
+	return encode_catalog(catalog, &image->bytes) ? flatfile_world_item_result::ok :
+							flatfile_world_item_result::invalid;
 }
 
 flatfile_world_item_result flatfile_world_item_prepare_corpse_release(

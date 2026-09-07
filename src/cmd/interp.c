@@ -1285,6 +1285,7 @@ bool cmd_depends_on_currency_transaction(int cmd)
 {
 	switch (cmd)
 	{
+	case CMD_GET:
 	case CMD_DROP:
 	case CMD_PUT:
 	case CMD_GIVE:
