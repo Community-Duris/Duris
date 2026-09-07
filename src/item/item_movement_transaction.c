@@ -273,13 +273,13 @@ bool creation_grant_request_valid(const pending_creation_grant &request)
 		return false;
 	if (request.to_room)
 		return request.room > NOWHERE && request.room <= top_of_world;
-	if (!request.allow_pre_entry && !find_player_by_pid(request.recipient_pid))
+	if (!request.allow_pre_entry && !find_live_player(request.recipient_pid))
 		return false;
 	if (request.allow_pre_entry && request.target_container_uid)
 		return false;
 	if (!request.target_container_uid)
 		return true;
-	P_char recipient = find_player_by_pid(request.recipient_pid);
+	P_char recipient = find_live_player(request.recipient_pid);
 	if (!recipient)
 		return false;
 	P_obj container = find_item(request.target_container_uid);
@@ -334,7 +334,7 @@ void pump_creation_grants()
 		creation_grant_queue &queue = current->second;
 		if (queue.active || queue.requests.empty())
 			continue;
-		P_char actor = find_player_by_pid(current->first);
+		P_char actor = find_live_player(current->first);
 		if (!actor)
 			continue;
 		const pending_creation_grant &request = queue.requests.front();
@@ -406,7 +406,7 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	}
 	else
 	{
-		P_char recipient = find_player_by_pid(request.recipient_pid);
+		P_char recipient = find_live_player(request.recipient_pid);
 		if (!recipient)
 			logit(LOG_FILE,
 			      "item creation grant committed to an unavailable player (uid=%llu pid=%u)",

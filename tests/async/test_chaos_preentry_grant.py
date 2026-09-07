@@ -61,7 +61,7 @@ assert approval_success.index("approve_name(GET_NAME(d1->character))") < approva
 # A pre-entry direct-to-player grant may validate by durable PID ownership, but
 # target-container grants must not silently inherit this exception.
 assert re.search(
-    r"if \(!request\.allow_pre_entry && !find_player_by_pid\(request\.recipient_pid\)\)",
+    r"if \(!request\.allow_pre_entry && !find_live_player\(request\.recipient_pid\)\)",
     TRANSACTION_C,
 )
 assert "request.allow_pre_entry && request.target_container_uid" in TRANSACTION_C
