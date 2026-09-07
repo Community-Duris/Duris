@@ -7,6 +7,7 @@ constexpr int WORLD_QUEST_MIN_LEVEL = 11;
 constexpr int WORLD_QUEST_MAPLESS_MIN_LEVEL = 41;
 constexpr double WORLD_QUEST_LEVEL_FIT_SCALE = 6.0;
 constexpr int WORLD_QUEST_MAX_TARGET_PROBES = 32;
+constexpr int WORLD_QUEST_MAX_HISTORY_CHECKS = 32;
 
 inline bool world_quest_item_passes_floor(int quest_level, int itemvalue)
 {

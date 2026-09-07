@@ -298,7 +298,7 @@ bool static_zone_eligibility(int zone, P_char ch)
 }
 
 int select_cached_mob(const quest_zone_profile &zone, P_char ch, int quest_type,
-		      int *target_probe_budget)
+		      int *target_probe_budget, const std::vector<int> &excluded_targets)
 {
 	const int player_level = GET_LEVEL(ch);
 	const int kind_of_quest = quest_type == 0 ? number(1, 2) : quest_type;
@@ -307,6 +307,9 @@ int select_cached_mob(const quest_zone_profile &zone, P_char ch, int quest_type,
 
 	for (const quest_mob_profile &mob : zone.mobs)
 	{
+		if (std::find(excluded_targets.begin(), excluded_targets.end(), mob.vnum) !=
+		    excluded_targets.end())
+			continue;
 		if (mob.rnum < 0 || mob.rnum > top_of_mobt)
 			continue;
 		if (kind_of_quest == FIND_AND_KILL)
@@ -493,12 +496,14 @@ int world_quest_policy_select_zone(P_char ch, const std::vector<int> &valid_zone
 }
 
 int world_quest_policy_suggest_mob(int zone_number, P_char ch, int quest_type,
-				   int *target_probe_budget)
+				   int *target_probe_budget,
+				   const std::vector<int> &excluded_targets)
 {
 	if (!ch || !world_quest_policy_bootstrap() || zone_number < 0 ||
 	    zone_number > top_of_zone_table)
 		return -1;
-	return select_cached_mob(quest_zones[zone_number], ch, quest_type, target_probe_budget);
+	return select_cached_mob(quest_zones[zone_number], ch, quest_type, target_probe_budget,
+				 excluded_targets);
 }
 
 int world_quest_policy_random_item(int zone_number)

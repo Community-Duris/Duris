@@ -95,6 +95,7 @@ The item-count factor is linear by design. This is a probability distribution ov
 - For players below level 31, ask targets with `AFF_INVISIBLE`, `AFF2_CONCEALMENT`, `AFF3_ECTOPLASMIC_FORM`, or `AFF_HIDE` are rejected.
 - Player-specific aggression remains authoritative; cached metadata only narrows static candidates.
 - Temporary dynamic aggression probes are bounded and operate only on cached candidates, never by scanning every mobile prototype for every request.
+- Completed targets are excluded for the rest of the request, and selection retries distinct targets of the same quest type in the same zone before moving on. A request permits at most 32 target-history checks across all zones and types; a history-read error stops it without assigning quest state.
 
 ### FR-007 — Item floor and reward selection
 

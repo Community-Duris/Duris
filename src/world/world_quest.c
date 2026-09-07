@@ -730,6 +730,8 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 	int quest_mob = -1;
 	int quest_type = -1;
 	int target_probe_budget = WORLD_QUEST_MAX_TARGET_PROBES;
+	int history_check_budget = WORLD_QUEST_MAX_HISTORY_CHECKS;
+	vector<int> tried_targets;
 
 	if (failure)
 		*failure = QUEST_CREATION_NO_FAILURE;
@@ -752,10 +754,10 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 		return FALSE;
 	}
 
-	// A failed target probe removes only that zone from this request. The
+	// Visit each zone once, trying distinct targets before moving on. The
 	// catalog and its cached scores are never rebuilt on the command path.
 	vector<int> remaining_zones = valid_zones;
-	while (!remaining_zones.empty())
+	while (!remaining_zones.empty() && history_check_budget > 0)
 	{
 		quest_zone = world_quest_policy_select_zone(ch, remaining_zones);
 		if (quest_zone < 0)
@@ -779,28 +781,45 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 		for (int attempt = 0; attempt < type_attempts; ++attempt)
 		{
 			quest_type = attempt == 0 ? first_type : second_type;
-			quest_mob = world_quest_policy_suggest_mob(quest_zone, ch, quest_type,
-								   &target_probe_budget);
-			if (quest_mob <= 0)
-				continue;
-
-			const int mob_rnum = real_mobile(quest_mob);
-			if (mob_rnum < 0 ||
-			    (quest_type == FIND_AND_KILL && mob_index[mob_rnum].number < 2) ||
-			    (quest_type == FIND_AND_ASK && mob_index[mob_rnum].number < 1))
+			while (history_check_budget > 0)
 			{
-				quest_mob = -1;
-				continue;
-			}
+				quest_mob = world_quest_policy_suggest_mob(quest_zone, ch,
+									   quest_type,
+									   &target_probe_budget,
+									   tried_targets);
+				if (quest_mob <= 0)
+					break;
+				tried_targets.push_back(quest_mob);
+				--history_check_budget;
 
-			// A persistence read error is not permission to issue a duplicate
-			// quest, so the adapter's nonzero result fails this candidate closed.
-			if (sql_world_quest_done_already(ch, quest_mob) != 0)
-			{
-				quest_mob = -1;
-				continue;
+				const int mob_rnum = real_mobile(quest_mob);
+				if (mob_rnum < 0 ||
+				    (quest_type == FIND_AND_KILL &&
+				     mob_index[mob_rnum].number < 2) ||
+				    (quest_type == FIND_AND_ASK && mob_index[mob_rnum].number < 1))
+				{
+					quest_mob = -1;
+					continue;
+				}
+
+				const int completed = sql_world_quest_done_already(ch, quest_mob);
+				if (completed < 0)
+				{
+					// A failed read stops the request; it must not grant a quest
+					// or trigger more history queries against a failing backend.
+					if (failure)
+						*failure = QUEST_CREATION_NO_ELIGIBLE_TARGET;
+					return FALSE;
+				}
+				if (completed > 0)
+				{
+					quest_mob = -1;
+					continue;
+				}
+				break;
 			}
-			break;
+			if (quest_mob > 0)
+				break;
 		}
 		if (quest_mob > 0)
 			break;
