@@ -2,7 +2,8 @@
 """Synthetic runtime regression for boot-only newbie object-template parsing.
 
 Executes extracted production db.c parser/cache/publisher, fread_string,
-strn_cmp, and isname against a temporary object file. Memory pool, identity, event, conversion,
+strn_cmp, isname, and the default proc parser against a temporary object file.
+Memory pool, identity, event, conversion,
 and procedure-library endpoints are fixtures; no database or game is started.
 Linux g++, ASan/UBSan and the repository headers are required.
 """
@@ -28,13 +29,15 @@ PRELUDE = r'''
 #include <unordered_set>
 
 FILE *obj_f = nullptr;
-static index_data indexes[8]{};
+static index_data indexes[9]{};
 P_index obj_index = indexes;
-int top_of_objt = 7;
+int top_of_objt = 8;
 P_obj object_list = nullptr;
 mm_ds *dead_obj_pool = nullptr;
 static unsigned pool_allocations, uid_allocations, proc_calls, conversion_calls;
 static unsigned periodic_calls, event_calls, duplicate_strings;
+static unsigned empty_proc_rejections, noarg_proc_calls;
+char *proclibobj_parse_default(char *);
 static std::unordered_set<void *> allocations;
 static std::unordered_map<int, object_template> starter_object_templates;
 void logit(const char *, const char *, ...) {}
@@ -90,7 +93,20 @@ int proclibObj_add(P_obj obj, char *name, char *args)
 {
     assert_published(obj);
     assert(name && args);
-    assert(strcmp(name, "fixture") == 0 && strcmp(args, "synthetic args") == 0);
+    if (strcmp(name, "fixture") == 0)
+    {
+        if (!*args) { ++empty_proc_rejections; return 1; }
+        assert(strcmp(args, "synthetic args") == 0);
+    }
+    else
+    {
+        assert(strcmp(name, "hummer") == 0 && !*args);
+        args[0] = '\0'; // The adapter supplies a writable, nonnull empty argument.
+        char *parsed = proclibobj_parse_default(args);
+        assert(parsed && strcmp(parsed, " ") == 0);
+        FREE(parsed);
+        ++noarg_proc_calls;
+    }
     ++proc_calls; SET_BIT(obj->extra_flags, ITEM_PROCLIB);
     obj_index[obj->R_num].func.obj = item_switch;
     return 0; // consumed procedure descriptions are not ordinary extra descriptions
@@ -134,6 +150,7 @@ static void assert_inert()
     assert(pool_allocations == 0 && uid_allocations == 0 && object_list == nullptr);
     assert(proc_calls == 0 && periodic_calls == 0 && event_calls == 0 && conversion_calls == 0);
     assert(duplicate_strings == 0 && allocations.empty());
+    assert(empty_proc_rejections == 0 && noarg_proc_calls == 0);
     for (const auto &index : indexes)
         assert(index.number == 0 && !index.keys && !index.desc1 && !index.desc2 &&
                !index.desc3 && !index.func.obj);
@@ -176,6 +193,8 @@ int main()
                  "E\n_proclib_fixture~\n~\n");
     write_record(7, "VALID_PROC", ITEM_CONTAINER, 0, ITEM_TAKE, false,
                  "E\n_proclib_fixture~\nsynthetic args~\n");
+    write_record(8, "NOARG_PROC", ITEM_CONTAINER, 0, ITEM_TAKE, false,
+                 "E\n_proclib_hummer~\n~\n");
     fflush(obj_f);
     for (int nr = 0; nr <= top_of_objt; ++nr) assert(cache_object_template(100 + nr));
     assert(!cache_object_template(999) && !find_object_template(999));
@@ -252,7 +271,8 @@ int main()
     for (int vnum : {101, 102, 103}) instantiate_object_template(*find_object_template(vnum));
     assert(pool_allocations == 5 && uid_allocations == 5 && conversion_calls == 5);
     assert(indexes[3].func.obj == item_switch && periodic_calls == 3 && event_calls == 5);
-    // Malformed procedure fields remain ordinary nullable extras. None may
+    // Missing keywords and rejected argument-dependent procs remain nullable
+    // extras. None may
     // dispatch a procedure, free a nullptr, or register a periodic/event hook.
     for (int vnum : {104, 105, 106})
     {
@@ -284,6 +304,19 @@ int main()
     assert(duplicate_strings == previous_duplicates + 5);
     assert(proc_calls == 3 && periodic_calls == 4 && event_calls == 6);
     assert(pool_allocations == 9 && uid_allocations == 9 && conversion_calls == 9);
+    assert(empty_proc_rejections == 1 && noarg_proc_calls == 0);
+    // Production's default parser accepts a no-argument hummer. Its empty file
+    // description stays nullable in the template but must not suppress the proc.
+    const auto *noarg_template = find_object_template(108);
+    assert(noarg_template->descriptions[0].description.empty());
+    const auto before_noarg_duplicates = duplicate_strings;
+    P_obj noarg_proc = instantiate_object_template(*noarg_template);
+    assert(!noarg_proc->ex_description && IS_SET(noarg_proc->extra_flags, ITEM_PROCLIB));
+    assert(indexes[8].number == 1 && indexes[8].func.obj == item_switch);
+    assert(duplicate_strings == before_noarg_duplicates + 4);
+    assert(empty_proc_rejections == 1 && noarg_proc_calls == 1);
+    assert(proc_calls == 4 && periodic_calls == 5 && event_calls == 7);
+    assert(pool_allocations == 10 && uid_allocations == 10 && conversion_calls == 10);
     cleanup(); starter_object_templates.clear();
     puts("newbie object template runtime: ok");
 }
@@ -292,6 +325,7 @@ int main()
 
 def main() -> int:
     functions = [
+        extract_function("specs/specs.library.c", "char *proclibobj_parse_default(char *)"),
         extract_function("db.c", "char *fread_string(FILE *fl)"),
         extract_function("core/utility.c", "int strn_cmp(const char *arg1, const char *arg2, uint n)"),
         extract_function("handler.c", "bool isname(const char *str, const char *namelist)"),

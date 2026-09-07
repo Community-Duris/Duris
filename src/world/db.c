@@ -3054,13 +3054,15 @@ P_obj instantiate_object_template(const object_template &prototype)
 		new_descr->description = description.description.empty() ?
 						 nullptr :
 						 str_dup(description.description.c_str());
-		// Empty text remains nullable, but proc lookup/parsing requires both fields.
-		if (new_descr->keyword && new_descr->description &&
-		    !strn_cmp("_proclib_", new_descr->keyword, 9) &&
-		    !proclibObj_add(obj, new_descr->keyword + 9, new_descr->description))
+		// Preserve nullable text while allowing procedures that take no arguments.
+		char empty_args[] = "";
+		if (new_descr->keyword && !strn_cmp("_proclib_", new_descr->keyword, 9) &&
+		    !proclibObj_add(obj, new_descr->keyword + 9,
+				    new_descr->description ? new_descr->description : empty_args))
 		{
 			FREE(new_descr->keyword);
-			FREE(new_descr->description);
+			if (new_descr->description)
+				FREE(new_descr->description);
 			FREE(new_descr);
 			continue;
 		}
