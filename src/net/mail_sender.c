@@ -559,6 +559,11 @@ void mail_sender_shutdown(void)
 	health.running = false;
 	health.stop_pending = false;
 	health.inflight = 0;
+	/* The worker is joined, so nothing reads the snapshot again: scrub the relay
+	 * credential rather than leave it in the heap for the rest of the process's
+	 * life. mail_sender_reset_for_tests() has always done this. */
+	OPENSSL_cleanse(sender_config.password.data(), sender_config.password.size());
+	sender_config.password.clear();
 	refresh_health_locked();
 }
 
@@ -641,7 +646,16 @@ mail_result mail_sender_send_libcurl(const mail_job &job, const mail_sender_conf
 			setup = code;
 	};
 	apply(curl_easy_setopt(easy, CURLOPT_CURLU, url));
+	/* CURLOPT_PROTOCOLS_STR arrived in libcurl 7.85; the older enum option is
+	 * how the same restriction is spelled on a distribution that predates it
+	 * (Ubuntu 20.04 ships 7.68, Debian 11 ships 7.74). Either way this handle
+	 * will speak nothing but SMTP. */
+#if LIBCURL_VERSION_NUM >= 0x075500
 	apply(curl_easy_setopt(easy, CURLOPT_PROTOCOLS_STR, "smtp,smtps"));
+#else
+	apply(curl_easy_setopt(easy, CURLOPT_PROTOCOLS,
+			       static_cast<long>(CURLPROTO_SMTP | CURLPROTO_SMTPS)));
+#endif
 	if (config.tls)
 		apply(curl_easy_setopt(easy, CURLOPT_USE_SSL, static_cast<long>(CURLUSESSL_ALL)));
 	if (!config.username.empty() && !config.password.empty())

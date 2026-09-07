@@ -229,11 +229,20 @@ void account_recovery_new_password(P_desc d, char *arg)
 	}
 	if (!valid_password(d, arg))
 	{
+		/* The typed password stays in the descriptor's input buffer until
+		 * something else overwrites it; scrub it here as well as on the
+		 * path that hashes it, so a rejected password is no longer-lived
+		 * in memory than an accepted one. */
+		OPENSSL_cleanse(arg, strlen(arg));
 		account_recovery_new_password(d, NULL);
 		return;
 	}
 
 	char *hash = bcrypt_hash_password(arg);
+
+	/* Last read of the plaintext: scrub the input buffer before either exit. */
+	OPENSSL_cleanse(arg, strlen(arg));
+
 	if (!hash)
 	{
 		SEND_TO_Q("Error hashing password, please try again.\r\n", d);
@@ -279,8 +288,14 @@ void account_recovery_verify_new_password(P_desc d, char *arg)
 		return;
 	}
 
-	if (!d->account_recovery_pending_hash ||
-	    !bcrypt_verify_password(arg, d->account_recovery_pending_hash))
+	const bool matches = d->account_recovery_pending_hash &&
+			     bcrypt_verify_password(arg, d->account_recovery_pending_hash);
+
+	/* Last read of the confirmation: scrub the input buffer whichever way it
+	 * went, so the plaintext is not left sitting in the descriptor's queue. */
+	OPENSSL_cleanse(arg, strlen(arg));
+
+	if (!matches)
 	{
 		SEND_TO_Q("\r\nPasswords do not match!\r\n", d);
 		/* Only the hash goes: the flow returns to S3 and completion still needs the

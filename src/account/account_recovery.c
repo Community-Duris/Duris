@@ -676,6 +676,9 @@ account_recovery_complete_outcome account_recovery_complete(const char *acct_nam
 	const account_recovery_apply_outcome applied = account_apply_recovered_password(
 		acct_name, new_bcrypt_hash, fingerprint, keep_session);
 
+	/* The same stack hygiene the module's other two fingerprint copies keep. */
+	OPENSSL_cleanse(fingerprint, sizeof fingerprint);
+
 	found = entries.find(name);
 	recovery_entry *entry = found != entries.end() ? &found->second : nullptr;
 	switch (applied)
