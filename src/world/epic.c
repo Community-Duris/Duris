@@ -572,20 +572,21 @@ void group_gain_epic(P_char ch, int type, int data, int amount)
 	}
 }
 
-void gain_epic(P_char ch, int type, int data, int amount)
+static bool prepare_epic_award(P_char ch, int type, int data, int amount, bool completing_task,
+			       epic_award_context *prepared)
 {
 	// If invalid ch or bad load of errand_notch (don't care about notch as we don't use skillpoints anymore).
 	if (!IS_ALIVE(ch) || errand_notch < 1)
 	{
 		debug("gain_epic: Bad ch '%s' %d, or bad errand_notch %d.",
 		      (ch == NULL) ? "NULL" : J_NAME(ch), type, errand_notch);
-		return;
+		return false;
 	}
 
 	// If we're not gaining epics, then perhaps we should be using a different function?  NPCs don't gain epics.
 	if (amount < 1 || IS_NPC(ch))
 	{
-		return;
+		return false;
 	}
 
 	// Epic bonus from witch potion.
@@ -599,7 +600,7 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	//   bottle (epic bottles), PvP, ship PvP, or boons.
 	bool task_penalty = type != EPIC_RANDOMMOB && type != EPIC_STRAHDME &&
 			    type != EPIC_BOTTLE && type != EPIC_PVP && type != EPIC_SHIP_PVP &&
-			    type != EPIC_BOON && has_epic_task(ch);
+			    type != EPIC_BOON && has_epic_task(ch) && !completing_task;
 	if (task_penalty)
 	{
 		amount = MAX(1, (int)(amount * get_property("epic.errand.penaltyMod", 0.25)));
@@ -622,6 +623,16 @@ void gain_epic(P_char ch, int type, int data, int amount)
 		}
 	}
 
+	*prepared = { type, data, amount, blessing, task_penalty };
+	return amount > 0;
+}
+
+void gain_epic(P_char ch, int type, int data, int amount)
+{
+	epic_award_context context = {};
+	if (!prepare_epic_award(ch, type, data, amount, false, &context))
+		return;
+	amount = context.amount;
 	const epic_reason_type reason = epic_award_reason(type);
 	if (reason == epic_reason_type::unknown)
 	{
@@ -634,7 +645,6 @@ void gain_epic(P_char ch, int type, int data, int amount)
 		send_to_char("The epic award service is busy. Please try again.\n", ch);
 		return;
 	}
-	const epic_award_context context = { type, data, amount, blessing, task_penalty };
 	if (!epic_transaction_submit_identified(ch, operation_id, amount, reason, data, 0,
 						epic_award_source(type),
 						critical_deadline_class::interactive,
@@ -1025,66 +1035,57 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 	}
 }
 
-void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value)
+static P_obj find_epic_stone(uint64_t uid)
 {
-	int curr_epics;
-	char buf[256];
+	for (P_obj obj = object_list; obj; obj = obj->next)
+		if (obj->obj_uid == uid)
+			return obj;
+	return nullptr;
+}
 
-	if (!obj || !ch || !epic_value || IS_NPC(ch))
+void epic_publish_stone_award(P_char ch, const zone_touch_result &result, size_t index)
+{
+	if (!ch || IS_NPC(ch) || index >= result.group_size || result.recovered_claim)
 		return;
-
-	curr_epics = ch->only.pc->epics;
-
-	/*if(get_zone_exp(ch, world[ch->in_room].zone) < calc_min_zone_exp(ch))
-	{
-	  act("The burst of &+Bblue energy&n from $p flows around $n, leaving them unaffected!",
-	      FALSE, ch, obj, ch, TO_NOTVICT);
-	  act("The burst of &+Bblue energy&n from $p flows around you, leaving you unaffected!",
-	      FALSE, ch, obj, 0, TO_CHAR);
-	  send_to_char("You did not gain enough experience here before trying to gain more power!\n", ch);
-	  return;
-	}*/
-
-	act("The mystic &+Bblue energy&n from $p flows into $n!", FALSE, ch, obj, ch, TO_NOTVICT);
-	act("The mystic &+Bblue energy&n from $p flows into you!", FALSE, ch, obj, 0, TO_CHAR);
-
-	act("From deep inside, you realize that you have reached one of the key nodes of the\n"
-	    "magical energies flowing through the World of &+rDuris&n!\n"
-	    "Your body and mind align smoothly with the energy, embracing its powers, giving\n"
-	    "you strength and new knowledge!",
-	    FALSE, ch, obj, 0, TO_CHAR);
-
+	const auto &award = result.awards[index];
 	epic_stone_set_affect(ch);
+	struct affected_type *task = get_epic_task(ch);
+	if (award.errand && task && task->modifier == award.errand)
+	{
+		epic_complete_errand(ch, award.errand);
+		affect_remove(ch, task);
+		send_to_char("The Gods of Duris are pleased with your achievement!\r\n", ch);
+	}
+	const epic_award_context context = { EPIC_ZONE, static_cast<int>(result.zone_number),
+					     award.amount, (award.flags & 1) != 0,
+					     (award.flags & 2) != 0 };
+	const bool uses_free_level = GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
+				     GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50);
+	epic_award_committed(ch, true, {}, 0, reinterpret_cast<const uint8_t *>(&context),
+			     sizeof(context));
+	// Spending for stone levels and boon completion follows the secured award.
+	if (!uses_free_level)
+		if (P_obj obj = find_epic_stone(result.stone_uid))
+			epic_stone_level_char(obj, ch);
+	check_boon_completion(ch, nullptr, result.zone_number, BOPT_ZONE);
+}
 
-	/* if char is completing their epic errand, give them extra epic points! */
-	struct affected_type *afp = get_epic_task(ch);
-	if (afp && ((afp->modifier == obj->value[2]) || (0 - afp->modifier == obj->value[2])))
+void epic_finish_stone_touch(const zone_touch_result &result)
+{
+	if (P_obj obj = find_epic_stone(result.stone_uid))
 	{
-		send_to_char("The &+rGods of Duris&n are very pleased with your achievement!\n"
-			     "You can now continue with your quest for &+Wpower!\n",
-			     ch);
-		epic_complete_errand(ch, afp->modifier);
-		affect_remove(ch, afp);
-		gain_epic(ch, EPIC_ZONE, obj->value[2],
-			  (int)(epic_value * get_property("epic.errand.completeBonusMod", 1.5)));
+		act("A storm of &+Bblue energy&n erupts from $p!", FALSE, 0, obj, 0, TO_ROOM);
+		act("$p flashes brightly then blurs, and remains still and powerless.", FALSE, 0,
+		    obj, 0, TO_ROOM);
+		REMOVE_BIT(obj->extra2_flags, ITEM2_MAGIC);
 	}
-	else
+	if (result.record_zone && !result.recovered_claim)
 	{
-		/* not on epic errand, just give them the epic points */
-		gain_epic(ch, EPIC_ZONE, obj->value[2], epic_value);
+		if (P_char toucher = find_player_by_pid(result.toucher_pid))
+			if (get_property("thanksgiving", 0.000))
+				thanksgiving_proc(toucher);
+		epic_publish_zone_touch(result);
 	}
-
-	snprintf(buf, 256, "epic.forLevel.%d", GET_LEVEL(ch) + 1);
-	// Characters can now level up to 55 by epics and exp alone - 11/13/12 Drannak
-	// Characters can now level up to 56 with double epics/exp. If they get BIT_32*2 epics they can be a imm... not.
-	// Characters with exp >= exp needed for lvl need epics to level.
-	if ((GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1]) &&
-	    ((GET_LEVEL(ch) == (obj->value[3] - 1)) ||
-	     (curr_epics / 2 > get_property(buf, (int)BIT_32))))
-	{
-		epic_stone_level_char(obj, ch);
-	}
-	check_boon_completion(ch, NULL, obj->value[2], BOPT_ZONE);
 }
 
 int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
@@ -1121,7 +1122,9 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			REMOVE_BIT(obj->wear_flags, ITEM_TAKE);
 
-			if (OBJ_MAGIC(obj) && !number(0, 5))
+			if (OBJ_MAGIC(obj) && !number(0, 5) &&
+			    !zone_touch_transaction_busy(obj->obj_uid, obj->value[2]) &&
+			    !epic_zone_done_now(obj->value[2]))
 			{
 				act("A powerful humming sound can be heard from $p.", FALSE, 0, obj,
 				    0, TO_ROOM);
@@ -1145,6 +1148,11 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
 		zone_number = obj->value[2];
 
+		if (zone_touch_transaction_busy(obj->obj_uid, zone_number))
+		{
+			send_to_char("The stone's reward is still pending. Please wait.\r\n", ch);
+			return TRUE;
+		}
 		/* the (magic) flag determines if the stone has been touched or not */
 		if (!OBJ_MAGIC(obj) || epic_zone_done_now(zone_number))
 		{
@@ -1192,10 +1200,6 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		act("$n touches $p.", FALSE, ch, obj, ch, TO_NOTVICT);
 		act("You touch $p.", FALSE, ch, obj, 0, TO_CHAR);
 
-		act("$p begins to vibrate madly, shaking the entire room\n"
-		    "almost knocking you off your feet!\n"
-		    "Suddenly, a huge storm of &+Bblue energy&n erupts from it!",
-		    FALSE, ch, obj, 0, TO_ROOM);
 
 		if (zone_number)
 		{
@@ -1203,8 +1207,6 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 				  zone_table[real_zone0(zone_number)].name);
 			epiclog(56, "%s touched the epic stone in %s.", J_NAME(ch),
 				strip_ansi(zone_table[real_zone0(zone_number)].name).c_str());
-			if (get_property("thanksgiving", 0.000))
-				thanksgiving_proc(ch);
 		}
 
 		vector<P_char> participants = { ch };
@@ -1220,40 +1222,52 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 			send_to_char("Too many participants are touching the stone.\r\n", ch);
 			return TRUE;
 		}
-		if (zone_number > 0 && zone_number != RANDOM_ZONE_ID)
+		int delta = GET_RACEWAR(ch);
+		delta = delta == RACEWAR_EVIL ? -1 : (delta == RACEWAR_GOOD ? 1 : 0);
+		zone_touch_payload touch = {};
+		touch.zone_number = zone_number;
+		touch.toucher_pid = GET_PID(ch);
+		touch.boot_time = boot_time;
+		touch.touched_at = time(nullptr);
+		touch.group_size = participants.size();
+		touch.epic_value = epic_value;
+		touch.alignment_delta = delta;
+		touch.record_zone = zone_number > 0 && zone_number != RANDOM_ZONE_ID;
+		touch.reset_requested = touch.record_zone &&
+					!zone_table[real_zone0(zone_number)].reset_mode;
+		touch.stone_uid = obj->obj_uid;
+		touch.stone_level = obj->value[3];
+		bool ready = touch.stone_uid != 0;
+		for (size_t i = 0; i < participants.size() && ready; ++i)
 		{
-			int delta = GET_RACEWAR(ch);
-			delta = (delta == RACEWAR_EVIL) ? -1 : (delta == RACEWAR_GOOD ? 1 : 0);
-			zone_touch_payload touch = {
-				.zone_number = static_cast<uint32_t>(zone_number),
-				.toucher_pid = static_cast<uint32_t>(GET_PID(ch)),
-				.boot_time = static_cast<int32_t>(boot_time),
-				.touched_at = static_cast<int32_t>(time(nullptr)),
-				.group_size = static_cast<uint16_t>(participants.size()),
-				.participant_pids = {},
-				.epic_value = epic_value,
-				.alignment_delta = static_cast<int16_t>(delta),
-				.reset_requested = static_cast<uint8_t>(
-					!zone_table[real_zone0(zone_number)].reset_mode)
-			};
-			for (size_t index = 0; index < participants.size(); ++index)
-				touch.participant_pids[index] =
-					static_cast<uint32_t>(GET_PID(participants[index]));
-			if (!zone_touch_transaction_submit(touch))
-			{
-				send_to_char(
-					"The zone-touch service is busy. Please try again.\r\n",
-					ch);
-				return TRUE;
-			}
+			P_char participant = participants[i];
+			touch.participant_pids[i] = GET_PID(participant);
+			struct affected_type *task = get_epic_task(participant);
+			const int errand = task && (task->modifier == zone_number ||
+						    -task->modifier == zone_number) ?
+						   task->modifier :
+						   0;
+			const int value =
+				errand ?
+					static_cast<int>(
+						epic_value *
+						get_property("epic.errand.completeBonusMod", 1.5)) :
+					epic_value;
+			epic_award_context award = {};
+			ready = prepare_epic_award(participant, EPIC_ZONE, zone_number, value,
+						   errand != 0, &award);
+			touch.awards[i] = { award.amount, errand,
+					    static_cast<uint8_t>((award.blessing ? 1 : 0) |
+								 (award.task_penalty ? 2 : 0)) };
 		}
-
-		for (P_char participant : participants)
-			epic_stone_one_touch(obj, participant, epic_value);
-
-		act("$p flashes brightly then blurs, and remains still and powerless.", FALSE, 0,
-		    obj, 0, TO_ROOM);
-		REMOVE_BIT(obj->extra2_flags, ITEM2_MAGIC);
+		if (!ready || !zone_touch_transaction_submit(touch))
+		{
+			send_to_char(
+				"The stone reward service is unavailable. Please try again.\r\n",
+				ch);
+			return TRUE;
+		}
+		send_to_char("The stone's reward is pending.\r\n", ch);
 
 		return TRUE;
 	}

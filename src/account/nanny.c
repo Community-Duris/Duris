@@ -1,3 +1,4 @@
+#include "world/zone_touch_transaction.h"
 /*****************************************************************************
  *  File: nanny.c                                            Part of Duris   *
  *  Usage: handle non-playing sockets (new character creation too)           *
@@ -1727,6 +1728,7 @@ void enter_game(P_desc d)
 		schedule_chaos_starting_bank(ch);
 	}
 	epic_transaction_player_ready(ch);
+	zone_touch_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
 	item_movement_transaction_player_ready(ch);
 	shop_trade_transaction_player_ready(ch);
@@ -2343,6 +2345,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	tmp_ch->specials.timer = 0;
 	STATE(d) = CON_PLAYING;
 	epic_transaction_player_ready(tmp_ch);
+	zone_touch_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
 	item_movement_transaction_player_ready(tmp_ch);
 	shop_trade_transaction_player_ready(tmp_ch);

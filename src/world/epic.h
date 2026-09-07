@@ -92,7 +92,8 @@ struct affected_type *get_epic_task(P_char ch);
 bool has_epic_task(P_char ch);
 
 int epic_stone(P_obj obj, P_char ch, int cmd, char *arg);
-void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value);
+void epic_publish_stone_award(P_char ch, const zone_touch_result &result, size_t index);
+void epic_finish_stone_touch(const zone_touch_result &result);
 void epic_free_level(P_char ch);
 void epic_stone_level_char(P_obj obj, P_char ch);
 void epic_stone_set_affect(P_char ch);

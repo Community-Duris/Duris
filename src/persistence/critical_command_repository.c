@@ -1486,7 +1486,128 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		zone_touch_result zone_result = {};
 		unsigned int result_code = 0;
 		bool mutation_applied = false;
-		if (!zone_touch_repository_execute(connection, command, &zone_result, &result_code,
+		static_cast<zone_touch_payload &>(zone_result) = zone_payload;
+		if (zone_payload.stone_uid)
+		{
+			// The claim, every child ledger, and zone history share this transaction.
+			// Re-touching a surviving object after a lost callback recovers its receipt.
+			if (!execute(connection, "SAVEPOINT stone_awards"))
+			{
+				const auto error = database_error(connection);
+				rollback(connection);
+				return failure(error);
+			}
+			const std::string claim_query =
+				"SELECT i.result_payload FROM epic_stone_claim c JOIN critical_operation_inbox i "
+				"ON i.operation_id=c.operation_id WHERE c.stone_uid=" +
+				std::to_string(zone_payload.stone_uid) + " FOR UPDATE";
+			if (!execute(connection, claim_query.c_str()))
+			{
+				const auto error = database_error(connection);
+				rollback(connection);
+				return failure(error);
+			}
+			MYSQL_RES *claims = mysql_store_result(connection);
+			MYSQL_ROW claim = claims ? mysql_fetch_row(claims) : nullptr;
+			bool recovered = false;
+			if (claim)
+			{
+				unsigned long *lengths = mysql_fetch_lengths(claims);
+				recovered = lengths &&
+					    zone_touch_command_decode_result(
+						    reinterpret_cast<const uint8_t *>(claim[0]),
+						    lengths[0], &zone_result) &&
+					    zone_result.stone_uid == zone_payload.stone_uid;
+				if (!recovered)
+					result_code = EBADMSG;
+				zone_result.recovered_claim = recovered;
+			}
+			if (claims)
+				mysql_free_result(claims);
+			if (!claims)
+			{
+				const auto error = database_error(connection);
+				rollback(connection);
+				return failure(error ? error : EIO);
+			}
+			if (!recovered && !result_code)
+			{
+				char parent_hex[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+				critical_operation_id_to_hex(command.operation_id, parent_hex,
+							     sizeof(parent_hex));
+				const std::string claim_insert =
+					"INSERT INTO epic_stone_claim(stone_uid,operation_id) VALUES(" +
+					std::to_string(zone_payload.stone_uid) + ",UNHEX('" +
+					parent_hex + "'))";
+				if (!execute(connection, claim_insert.c_str()))
+				{
+					const auto error = database_error(connection);
+					rollback(connection);
+					return failure(error);
+				}
+				// Lock players in canonical order, irrespective of group ordering.
+				std::vector<size_t> order;
+				for (size_t i = 0; i < zone_payload.group_size; ++i)
+					order.push_back(i);
+				std::sort(order.begin(), order.end(),
+					  [&](size_t a, size_t b) {
+						  return zone_payload.participant_pids[a] <
+							 zone_payload.participant_pids[b];
+					  });
+				for (size_t i : order)
+				{
+					critical_command child = {};
+					std::array<uint8_t, SHA256_DIGEST_LENGTH>
+						child_hash = {},
+						child_keys_hash = {};
+					epic_command_result award_result = {};
+					bool mutated = false;
+					if (!zone_touch_award_command(command, i, &child) ||
+					    !command_hashes(child, &child_hash, &child_keys_hash) ||
+					    !insert_inbox(connection, child, child_hash,
+							  child_keys_hash) ||
+					    !execute_epic_state(connection, child, &award_result,
+								&result_code, &mutated))
+					{
+						const auto db_error = database_error(connection);
+						const auto error = db_error ? db_error : errno;
+						rollback(connection);
+						return failure(error ? error : EIO);
+					}
+					if (result_code)
+						break;
+					std::array<uint8_t, EPIC_RESULT_PAYLOAD_BYTES>
+						award_bytes = {};
+					if (!mutated ||
+					    !epic_command_encode_result(award_result,
+									&award_bytes) ||
+					    !insert_outbox(connection, child, award_bytes.data(),
+							   award_bytes.size()) ||
+					    !finish_inbox(connection, child, award_result.revision,
+							  0, award_bytes.data(),
+							  award_bytes.size()))
+					{
+						const auto error = database_error(connection);
+						rollback(connection);
+						return failure(error ? error : EIO);
+					}
+					zone_result.balances[i] = award_result.balance;
+					zone_result.revisions[i] = award_result.revision;
+				}
+			}
+			if (result_code)
+			{
+				if (!execute(connection, "ROLLBACK TO SAVEPOINT stone_awards"))
+				{
+					const auto error = database_error(connection);
+					rollback(connection);
+					return failure(error);
+				}
+				zone_result = zone_touch_result(zone_payload);
+			}
+		}
+		if (!result_code && !zone_result.recovered_claim && zone_payload.record_zone &&
+		    !zone_touch_repository_execute(connection, command, &zone_result, &result_code,
 						   &mutation_applied))
 		{
 			const unsigned int database_failure = database_error(connection);
@@ -1494,6 +1615,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			rollback(connection);
 			return failure(error);
 		}
+		if (zone_payload.stone_uid && !result_code)
+			mutation_applied =
+				true; // Successful recovery also needs its own receipt outbox.
 		std::array<uint8_t, ZONE_TOUCH_RESULT_BYTES> result_payload = {};
 		if (!zone_touch_command_encode_result(zone_result, &result_payload) ||
 		    (mutation_applied && !insert_outbox(connection, command, result_payload.data(),

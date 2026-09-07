@@ -38,6 +38,37 @@
   },
   "entries": [
     {
+      "id": "database:epic_stone_claim",
+      "kind": "database_table",
+      "locator": "epic_stone_claim",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "prevent duplicate epic stone awards and recover committed reward receipts",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:critical_operation_inbox"
+      ]
+    },
+    {
       "id": "database:account_banks",
       "kind": "database_table",
       "locator": "account_banks",
