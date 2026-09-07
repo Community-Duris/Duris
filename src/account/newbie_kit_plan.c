@@ -1632,7 +1632,8 @@ const kit_table &legacy_kits()
 std::vector<newbie_kit_item> make_newbie_kit_plan(const newbie_kit_input &input)
 {
 	std::vector<newbie_kit_item> result;
-	if (input.race < 0 || input.race > LAST_RACE || flag2idx(input.main_class) > CLASS_COUNT)
+	if (input.race < 0 || input.race > LAST_RACE || input.main_class <= 0 ||
+	    flag2idx(input.main_class) > CLASS_COUNT)
 		return result;
 	const auto &newbie_kits = legacy_kits();
 	const int *class_kit;

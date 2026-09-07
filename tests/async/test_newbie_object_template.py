@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Synthetic runtime regression for boot-only newbie object-template parsing.
 
-Executes extracted production db.c parser/cache/publisher, fread_string, and
-isname against a temporary object file. Memory pool, identity, event, conversion,
+Executes extracted production db.c parser/cache/publisher, fread_string,
+strn_cmp, and isname against a temporary object file. Memory pool, identity, event, conversion,
 and procedure-library endpoints are fixtures; no database or game is started.
 Linux g++, ASan/UBSan and the repository headers are required.
 """
@@ -28,9 +28,9 @@ PRELUDE = r'''
 #include <unordered_set>
 
 FILE *obj_f = nullptr;
-static index_data indexes[4]{};
+static index_data indexes[8]{};
 P_index obj_index = indexes;
-int top_of_objt = 3;
+int top_of_objt = 7;
 P_obj object_list = nullptr;
 mm_ds *dead_obj_pool = nullptr;
 static unsigned pool_allocations, uid_allocations, proc_calls, conversion_calls;
@@ -41,7 +41,9 @@ void logit(const char *, const char *, ...) {}
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 void *__malloc(size_t size, const char *, const char *, int)
 {
-    void *result = calloc(1, size); assert(result); allocations.insert(result); return result;
+    assert(size > 0);
+    void *result = calloc(1, size); assert(result);
+    assert(allocations.insert(result).second); return result;
 }
 // Match the checked allocator's non-null contract: the empty fread_string case
 // must be guarded by read_template_string, not hidden by a permissive free stub.
@@ -51,6 +53,7 @@ void __free(void *ptr, const char *, int)
 }
 char *str_dup(const char *text)
 {
+    assert(text && *text); // Empty file fields must retain the legacy nullptr representation.
     ++duplicate_strings;
     char *result = static_cast<char *>(__malloc(strlen(text) + 1, nullptr, nullptr, 0));
     strcpy(result, text); return result;
@@ -71,11 +74,6 @@ int real_object(int vnum)
         if (indexes[nr].virtual_number == vnum) return nr;
     return -1;
 }
-int strn_cmp(const char *left, const char *right, uint count)
-{
-    if (!left || !right) return left == right ? 0 : left ? 1 : -1;
-    return strncasecmp(left, right, count);
-}
 int number(int low, int high) { assert(low == -4 && high == 4); return 0; }
 static void assert_published(P_obj obj)
 {
@@ -91,6 +89,7 @@ int item_switch(P_obj obj, P_char, int cmd, char *)
 int proclibObj_add(P_obj obj, char *name, char *args)
 {
     assert_published(obj);
+    assert(name && args);
     assert(strcmp(name, "fixture") == 0 && strcmp(args, "synthetic args") == 0);
     ++proc_calls; SET_BIT(obj->extra_flags, ITEM_PROCLIB);
     obj_index[obj->R_num].func.obj = item_switch;
@@ -113,7 +112,7 @@ void convertObj(P_obj obj) { assert_published(obj); ++conversion_calls; }
 
 DRIVER = r'''
 static void write_record(int nr, const char *name, int type, int first_value,
-                         unsigned long wear, bool rich)
+                         unsigned long wear, bool rich, const char *extra = "")
 {
     indexes[nr].virtual_number = 100 + nr;
     indexes[nr].pos = ftell(obj_f);
@@ -126,7 +125,7 @@ static void write_record(int nr, const char *name, int type, int first_value,
         record << "B5\n4294967296\nE\n_proclib_fixture~\nsynthetic args~\n"
                   "E\nmark~\nAn independent mark.~\nA\n4 -2\nA\n5 3\nT\n9 10 11 12\n";
     else
-        record << "S\n";
+        record << extra << "S\n";
     const std::string text = record.str();
     assert(fwrite(text.data(), 1, text.size(), obj_f) == text.size());
 }
@@ -169,8 +168,16 @@ int main()
     write_record(1, "BOOMERANG", ITEM_WEAPON, WEAPON_2HANDSWORD, ITEM_HOLD, false);
     write_record(2, "ARMOR", ITEM_ARMOR, 0, ITEM_TAKE, false);
     write_record(3, "SWITCH", ITEM_SWITCH, 0, 0, false);
+    write_record(4, "EMPTY_KEYWORD", ITEM_CONTAINER, 0, ITEM_TAKE, false,
+                 "E\n~\nDescription without a keyword.~\n");
+    write_record(5, "EMPTY_DESCRIPTION", ITEM_CONTAINER, 0, ITEM_TAKE, false,
+                 "E\nmark~\n~\n");
+    write_record(6, "EMPTY_PROC_DESCRIPTION", ITEM_CONTAINER, 0, ITEM_TAKE, false,
+                 "E\n_proclib_fixture~\n~\n");
+    write_record(7, "VALID_PROC", ITEM_CONTAINER, 0, ITEM_TAKE, false,
+                 "E\n_proclib_fixture~\nsynthetic args~\n");
     fflush(obj_f);
-    for (int nr = 0; nr < 4; ++nr) assert(cache_object_template(100 + nr));
+    for (int nr = 0; nr <= top_of_objt; ++nr) assert(cache_object_template(100 + nr));
     assert(!cache_object_template(999) && !find_object_template(999));
     assert_inert();
     const auto *bag = find_object_template(100);
@@ -196,6 +203,10 @@ int main()
     assert(IS_SET(weapon->wear_flags, ITEM_HOLD) && IS_SET(weapon->wear_flags, ITEM_TAKE));
     assert(find_object_template(102)->type == ITEM_WORN);
     assert(weapon->bitvector5 == 0 && weapon->affected[0].location == 0 && weapon->trap_eff == 0);
+    assert(find_object_template(104)->descriptions[0].keyword.empty());
+    assert(find_object_template(105)->descriptions[0].description.empty());
+    assert(find_object_template(106)->descriptions[0].keyword == "_proclib_fixture" &&
+           find_object_template(106)->descriptions[0].description.empty());
 
     // No readable source remains: cached lookup, repeated cache hit and every
     // publication below must work without reparsing an object file.
@@ -241,6 +252,38 @@ int main()
     for (int vnum : {101, 102, 103}) instantiate_object_template(*find_object_template(vnum));
     assert(pool_allocations == 5 && uid_allocations == 5 && conversion_calls == 5);
     assert(indexes[3].func.obj == item_switch && periodic_calls == 3 && event_calls == 5);
+    // Malformed procedure fields remain ordinary nullable extras. None may
+    // dispatch a procedure, free a nullptr, or register a periodic/event hook.
+    for (int vnum : {104, 105, 106})
+    {
+        const auto previous_duplicates = duplicate_strings;
+        P_obj obj = instantiate_object_template(*find_object_template(vnum));
+        auto *desc = obj->ex_description;
+        assert(desc && !desc->next);
+        if (vnum == 104)
+        {
+            assert(desc->keyword == nullptr && desc->description);
+            assert(strcmp(desc->description, "Description without a keyword.") == 0);
+        }
+        else
+        {
+            assert(desc->keyword && desc->description == nullptr);
+            assert(strcmp(desc->keyword, vnum == 105 ? "mark" : "_proclib_fixture") == 0);
+        }
+        assert(duplicate_strings == previous_duplicates + 4);
+        assert(!IS_SET(obj->extra_flags, ITEM_PROCLIB) && !indexes[vnum - 100].func.obj);
+        assert(indexes[vnum - 100].number == 1);
+        assert(proc_calls == 2 && periodic_calls == 3 && event_calls == 5);
+        assert(pool_allocations == static_cast<unsigned>(vnum - 98) &&
+               uid_allocations == pool_allocations && conversion_calls == pool_allocations);
+    }
+    const auto previous_duplicates = duplicate_strings;
+    P_obj valid_proc = instantiate_object_template(*find_object_template(107));
+    assert(!valid_proc->ex_description && IS_SET(valid_proc->extra_flags, ITEM_PROCLIB));
+    assert(indexes[7].number == 1 && indexes[7].func.obj == item_switch);
+    assert(duplicate_strings == previous_duplicates + 5);
+    assert(proc_calls == 3 && periodic_calls == 4 && event_calls == 6);
+    assert(pool_allocations == 9 && uid_allocations == 9 && conversion_calls == 9);
     cleanup(); starter_object_templates.clear();
     puts("newbie object template runtime: ok");
 }
@@ -250,6 +293,7 @@ int main()
 def main() -> int:
     functions = [
         extract_function("db.c", "char *fread_string(FILE *fl)"),
+        extract_function("core/utility.c", "int strn_cmp(const char *arg1, const char *arg2, uint n)"),
         extract_function("handler.c", "bool isname(const char *str, const char *namelist)"),
         extract_function("db.c", "void skip_fread(FILE *fl)"),
         extract_function("db.c", "std::string read_template_string(FILE *file,"),

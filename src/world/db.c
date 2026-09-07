@@ -3054,7 +3054,9 @@ P_obj instantiate_object_template(const object_template &prototype)
 		new_descr->description = description.description.empty() ?
 						 nullptr :
 						 str_dup(description.description.c_str());
-		if (!strn_cmp("_proclib_", new_descr->keyword, 9) &&
+		// Empty text remains nullable, but proc lookup/parsing requires both fields.
+		if (new_descr->keyword && new_descr->description &&
+		    !strn_cmp("_proclib_", new_descr->keyword, 9) &&
 		    !proclibObj_add(obj, new_descr->keyword + 9, new_descr->description))
 		{
 			FREE(new_descr->keyword);

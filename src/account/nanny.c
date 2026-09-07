@@ -649,7 +649,8 @@ void load_obj_to_newbies(P_char ch)
 	input.main_class = ch->player.m_class;
 	input.all_classes = creation_all_classes_enabled();
 	input.blighter = GET_CLASS(ch, CLASS_BLIGHTER);
-	input.ailvio = world[ch->in_room].number == 29201;
+	input.ailvio = ch->in_room > NOWHERE && ch->in_room <= top_of_world &&
+		       world[ch->in_room].number == 29201;
 	input.bandages = GET_LVL_FOR_SKILL(ch, SKILL_BANDAGE);
 	input.shield = !GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN);
 	const auto selection = make_newbie_kit_plan(input);

@@ -74,12 +74,31 @@ def digest(items):
 
 HARNESS = r'''
 #include "account/newbie_kit_plan.h"
+#include "core/config.h"
 #include "core/defines.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <algorithm>
+namespace room_fixture {
+struct character { int in_room; };
+struct room { int number; };
+room world[] = {{29201}, {42}};
+const int top_of_world = 1;
+bool ailvio(character *ch) {
+    newbie_kit_input input;
+    ROOM_ASSIGNMENT
+    return input.ailvio;
+}
+}
 int main() {
+    for (int room : {-2, NOWHERE, 2, INT_MAX}) {
+        room_fixture::character ch{room};
+        assert(!room_fixture::ailvio(&ch));
+    }
+    room_fixture::character first{0}, last{1};
+    assert(room_fixture::ailvio(&first));
+    assert(!room_fixture::ailvio(&last));
     const auto coverage = newbie_kit_template_vnums();
     for (int race = 0; race <= LAST_RACE; ++race)
     for (int cls = 0; cls < CLASS_COUNT; ++cls)
@@ -109,7 +128,14 @@ int main() {
     spells.clear(); facts.clear(); selection.clear();
     assert(prepared[0].spells.size() == 3); // job-local ownership
     assert(prepare_newbie_kit_items({{1,true}}, {}, {}).empty());
-    newbie_kit_input bad; bad.race = -1;
+    // A missing class must not reuse the basic-kit column, including with fallbacks on.
+    for (bool all : {false, true}) {
+        newbie_kit_input missing{RACE_HUMAN, 0, 0, all, false, true, true, true};
+        assert(make_newbie_kit_plan(missing).empty());
+        missing.main_class = -1;
+        assert(make_newbie_kit_plan(missing).empty());
+    }
+    newbie_kit_input bad; bad.main_class = CLASS_WARRIOR; bad.race = -1;
     assert(make_newbie_kit_plan(bad).empty());
     bad.race = LAST_RACE + 1;
     assert(make_newbie_kit_plan(bad).empty());
@@ -119,6 +145,8 @@ int main() {
 # Integration boundaries: bounded main-thread capture/publication, no cold fallback.
 nanny = (ROOT / 'src/account/nanny.c').read_text()
 loader = nanny.split('void load_obj_to_newbies(P_char ch)', 1)[1].split('/* check for a legal player name', 1)[0]
+room_assignment = re.search(r'input\.ailvio\s*=[^;]+;', loader).group(0)
+HARNESS = HARNESS.replace('ROOM_ASSIGNMENT', room_assignment)
 assert 'read_object(' not in loader
 assert loader.index('item_movement_transaction_player_busy(ch)') < loader.index('make_newbie_kit_plan(input)')
 assert loader.index('prepare_newbie_kit_items(') < loader.index('instantiate_object_template(')
