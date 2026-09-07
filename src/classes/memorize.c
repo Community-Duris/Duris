@@ -2362,9 +2362,22 @@ void add_scribing(P_char ch, int spl, P_obj book, int flag, P_obj obj, P_char te
 	}
 }
 
+// Hand slots are storage roles: four-handed scribers may also carry other gear.
+// During an event, require the original destination book, not a replacement.
+static P_obj scribing_implement(P_char ch, int type, P_obj required = nullptr)
+{
+	for (int slot : { WIELD, HOLD, WIELD2, WIELD3, WIELD4 })
+	{
+		P_obj obj = ch->equipment[slot];
+		if (obj && obj->type == type && (!required || obj == required))
+			return obj;
+	}
+	return nullptr;
+}
+
 int ScriberSillyChecks(P_char ch, int spl)
 {
-	P_obj o1, o2, o3;
+	P_obj o1, o2;
 	struct extra_descr_data *d;
 
 	if (IS_AFFECTED2(ch, AFF2_MEMORIZING))
@@ -2387,27 +2400,20 @@ int ScriberSillyChecks(P_char ch, int spl)
 		return FALSE;
 	}
 
-	// Modified by DTS 7/9/95 - yet another possible null ptr. dereference
-	if (!(o1 = ch->equipment[WIELD]) || !(o2 = ch->equipment[HOLD]))
+	o1 = scribing_implement(ch, ITEM_SPELLBOOK);
+	o2 = scribing_implement(ch, ITEM_PEN);
+	if (!o1 && !o2)
 	{
 		send_to_char("You lack one of the necessary implements for scribing!\n", ch);
 		return FALSE;
 	}
 
-	// If o1 is a PEN, swap o1 and o2, so o2 is the PEN, and o1 is the SPELLBOOK, hopefully.
-	if (o1->type == ITEM_PEN)
-	{
-		o3 = o1;
-		o1 = o2;
-		o2 = o3;
-	}
-
-	if (o2->type != ITEM_PEN)
+	if (!o2)
 	{
 		send_to_char("You need a quill with which to scribe to spellbook! [held]\n", ch);
 		return FALSE;
 	}
-	if (o1->type != ITEM_SPELLBOOK)
+	if (!o1)
 	{
 		send_to_char("You need a spellbook to write to at hand! [held]\n", ch);
 		return FALSE;
@@ -2530,13 +2536,13 @@ void do_teach(P_char ch, char *arg, int cmd)
 		send_to_char("Your student isn't ready to start yet!\n", ch);
 		return;
 	}
-	add_scribing(target, tmp, SpellBookAtHand(target), 0, 0, ch);
+	add_scribing(target, tmp, scribing_implement(target, ITEM_SPELLBOOK), 0, 0, ch);
 }
 
 void do_scribe(P_char ch, char *arg, int /*cmd*/)
 {
 	int spl = 0;
-	P_obj o1, o2, o3;
+	P_obj o1, o3;
 	P_char teacher;
 
 	// No scribing services, at least of now. we'll see later tho.
@@ -2581,15 +2587,7 @@ void do_scribe(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 
-	o1 = ch->equipment[WIELD];
-	o2 = ch->equipment[HOLD];
-
-	// Shortened this and made it make sense.  Book in other hand.
-	if (o1->type != ITEM_SPELLBOOK)
-	{
-		// ScriberSillyChecks -> o1 and o2 are spellbook and pen (or pen and spellbook).
-		o1 = o2;
-	}
+	o1 = scribing_implement(ch, ITEM_SPELLBOOK);
 
 	// If ch doesn't have a book with spl in it already,
 	if (!(o3 = FindSpellBookWithSpell(
@@ -2641,12 +2639,8 @@ void event_scribe(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void
 	 */
 	if ((GET_STAT(ch) != STAT_RESTING) ||
 	    ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)) ||
-	    (!ch->equipment[WIELD] || !ch->equipment[HOLD]) ||
-	    (ch->equipment[WIELD]->type != ITEM_SPELLBOOK &&
-	     ch->equipment[HOLD]->type != ITEM_SPELLBOOK) ||
-	    (ch->equipment[WIELD]->type != ITEM_PEN && ch->equipment[HOLD]->type != ITEM_PEN) ||
-	    (!s_data || !(s_data->book)) ||
-	    ((s_data->book != ch->equipment[HOLD]) && (s_data->book != ch->equipment[WIELD])))
+	    (!s_data || !(s_data->book)) || !scribing_implement(ch, ITEM_SPELLBOOK, s_data->book) ||
+	    !scribing_implement(ch, ITEM_PEN))
 	{
 		disarm_char_nevents(ch, event_scribe);
 		send_to_char("So much for that scribing effort!\n", ch);
