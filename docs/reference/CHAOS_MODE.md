@@ -33,8 +33,10 @@ when `ENVIRONMENT=local`. It does not enable Chaos mode by itself.
 Chaos characters are rebuilt at mortal level 56 on entry. A newly created
 character can also receive:
 
-- one starter bag containing the selected class profile, applicable optional
-  body-slot items, support consumables, and the material pouch when enabled;
+- the selected class profile and applicable optional body-slot items directly
+  in inventory, ready for `wear` or `wear all`;
+- one starter bag containing support consumables, eligible utility tools, and
+  the material pouch when enabled;
 - every eligible no-specialization epic skill;
 - a free-frigate claim, using the persisted `AIP_FREESLOOP` effect as the
   compatibility marker for the existing dock reward flow;
@@ -45,15 +47,28 @@ The class equipment bag is part of Chaos mode itself; the
 `CHAOS_STARTER_BONUSES` master does not disable it. The material pouch inside
 the bag and the other four optional rewards do require the master switch.
 
-The equipment grant is a single nested durable root. Character creation first
-establishes the player's persistence baseline, builds and validates the entire
-bag, then submits one pre-entry creation grant. Missing required prototypes,
-invalid nesting, or a failed durable submission withholds the whole kit rather
-than publishing a partial one. Items for body slots the character does not have
-and items the character cannot use are skipped by the documented runtime
-filters. Approval mode defers the equipment grant until the approval-success
-transition. The prepared message is emitted only after durable completion and
-game entry.
+Character creation first establishes the player's persistence baseline and
+prepares every object before admitting the complete set of detached roots to
+the existing pre-entry ownership coordinator. Wearables are individual roots;
+the support bag is one root with nested contents. Missing required prototypes,
+invalid wear flags, unusable items, or failed batch admission withhold the kit.
+Unavailable race/body slots and ineligible weapon slots are omitted. Approval
+mode defers the grant until approval succeeds.
+
+Once admitted, roots commit sequentially through the existing ownership path.
+Commands and the game prompt wait for completion, so `wear all` cannot race a
+partially published kit. The CHAOS prepared message follows completion. A failed
+ownership operation stops the remaining grants and reports failure; any earlier
+committed roots remain durable. This is atomic queue admission, not a new
+kit-wide database transaction or durable retry receipt. Existing ownership and
+save/relog topology remain authoritative. Orderly copyover and shutdown cancel
+before quiescing while an accepted starter batch is pending; retry the operation
+after completion. An abrupt process loss still has the per-root recovery limits
+of the existing ownership framework. Disconnecting before game entry cancels
+unsubmitted kit roots, retains any already-journaled head for existing durable
+recovery, and releases the maintenance fence without a success announcement. A
+failed or interrupted partial grant may require staff recovery; it is not
+automatically duplicated on login.
 
 Epic and bank rewards use stable operation identities and pending player flags,
 so retry follows the critical-command result instead of applying an anonymous
@@ -72,7 +87,7 @@ unlocks do not spend epic points. In non-Chaos mode, the persisted
 
 `src/account/chaos_eq_data.h` is generated, not hand-maintained. It contains a
 standard and enhanceable profile for each of the 30 classes, shared optional
-body-slot entries, and shared consumables. The catalog pipeline separates the
+body-slot entries, shared consumables, and skill-gated utilities. The catalog pipeline separates the
 durable selection policy from dated observations about a particular character
 population:
 
@@ -86,22 +101,73 @@ population:
    generated analysis; that report is evidence for a generation run, not a
    maintained runtime contract.
 
-Normal-profile equipment excludes artifacts, Ioun-slot items, `unique`
-keywords, item-level class/race restrictions, non-portable items,
-transient/no-rent/no-show/no-sell flags, quest items, and placeholder VNUM
-1252. The named class fundamentals (the standard master spellbook and Bard
-instruments) are the only explicit standard-profile policy exceptions. The
-enhanceable profile additionally requires the current boot-time enhancement
-predicate, including takeability, allowed effect masks, economics, item type,
-and configured pool exclusions. Generator risk is capped at 4.0; candidates
-are aggregate per-slot selections with validated portable fallbacks, never a
-copy of one character's equipment. Support consumables use bounded starter
-quantities and exclude charged staves and wands.
+The physical starter roles are **Warrior, Ranger, Paladin, Anti-Paladin, Monk,
+Rogue, Assassin, Mercenary, Bard, Thief, Berserker, Reaver, Dreadlord, Avenger,
+and Dragoon**. These include melee hybrids deliberately. Both profiles reject
+positive max-WIS equipment for these roles and use physical-stat scores when
+selecting replacements. Shared optional body items follow the same max-WIS
+rule. Monk profiles contain neither weapon slots nor weapon-bearing items;
+runtime preparation repeats that check for all profile, optional, and support
+entries. Generation fails if an applicable core slot has no valid candidate.
 
-Run the analyzer only against an explicitly authorized development database or
-restored non-production clone. Never use production to discover or tune the
-catalog. Review generator-policy changes and the emitted header together; do
-not add an exception by editing a generated class array directly.
+Every physical role receives permanent Globe of Invulnerability on its first
+neck item (`WEAR_NECK_1`, available to every player race). The generated policy
+adds the canonical object `bitvector2` flag `AFF2_GLOBE` to that starter instance.
+Active AREA prototypes currently have no such globe-bearing item, so this is an
+explicit starter balance rule, not a claimed existing prototype effect. Wearing
+the item grants the effect through normal equipment handling; item snapshots
+preserve it across save/relog. Area prototypes are unchanged.
+
+Starter instances, including their bag and durable tools, remove
+`ITEM_TRANSIENT`, `ITEM_NODROP`, `ITEM_INVISIBLE`, `ITEM_SECRET`, `ITEM_NOSHOW`,
+`ITEM_BURIED`, `ITEM_NORENT`, `ITEM2_CRUMBLELOOT`, and every `APPLY_CURSE` affect.
+The generator records and validates this policy, and runtime preparation
+reapplies it to current object data. Intended magic, role, and wearer-affect
+bits remain. Consumables retain their normal type/procedure consumption; an
+armed trap can still become secret and expire through the normal trap command.
+
+Normal-profile selection still excludes artifacts, Ioun-slot items, `unique`
+keywords, non-portable and class-restricted candidates, forbidden source flags,
+quest items, and placeholder VNUM 1252. Named class fundamentals retain their
+explicit selection exceptions. Enhanceable selections still pass the boot-time
+enhancement predicate; risk remains capped at 4.0. Runtime checks current wear
+compatibility and class/race usability before ownership submission.
+
+Utility grants use the character's class/race/specialization skill availability
+at level 56, because learned skill values are initialized only on game entry:
+
+| Required skill | Bag grant | Count |
+| --- | --- | ---: |
+| Fishing | Fishing pole, VNUM 336 | 1 |
+| Pick Lock | Lockpicks, VNUM 412 | 1 |
+| Trap | Huntsman traps, VNUM 73 | 3 |
+| Salvage | Scientific tools, configured VNUM (default 400227) | 3 |
+
+Each utility group is added once; existing kit entries with its resolved VNUM
+prevent duplicate grants. Fishing needs no bait and lockpicks are their own
+tool. Traps and scientific tools are consumable supplies. The existing optional
+craft pouch supplies supported recipe materials. The active Craft/Forge paths
+do not require the hammer/parchment tools from the disabled legacy path. A
+configured scientific-tool prototype must exist and pass runtime validation.
+
+A sanitized seed records the prior catalog's VNUM/slot choices and its source
+commit, without player records or population statistics. Regenerate from this
+seed plus current active AREA/enhancement data without database access:
+
+```sh
+python3 scripts/chaos_eq_catalog.py --static-seed docs/data/chaos_eq_seed.json \
+  --repo-root . --output-dir bin/chaos-catalog \
+  --header-out src/account/chaos_eq_data.h \
+  --policy-report-out docs/reference/CHAOS_KIT_CATALOG.md
+python3 scripts/chaos_eq_validate.py --catalog bin/chaos-catalog/catalog.json --repo-root .
+```
+
+The seed is a selection baseline, not new observed-player evidence. The
+aggregate analyzer remains available only for an explicitly authorized
+development database or restored non-production clone. Review generator policy,
+sanitized seed changes, and emitted header together. Never edit generated class
+arrays manually. Repository tests establish implementation behavior; deployed
+balance still requires game-owner review.
 
 ## Craft pouch
 
@@ -136,6 +202,9 @@ Implementation details are in `src/combat/chaos_materials.c` and
 ```text
 python3 tests/async/test_chaos_env_toggle.py
 python3 tests/async/test_chaos_eq_profile.py
+python3 tests/async/test_chaos_kit_policy.py
+python3 tests/async/test_chaos_kit_runtime.py
+python3 tests/async/test_item_movement_input_queue.py
 python3 tests/async/test_chaos_new_character_kit.py
 python3 tests/async/test_chaos_preentry_grant.py
 python3 tests/async/test_chaos_infinite_starting_grants.py

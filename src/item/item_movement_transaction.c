@@ -64,6 +64,7 @@ struct creation_grant_queue
 	bool active = false;
 	bool blocks_actor_commands = false;
 	bool announce_on_completion = false;
+	bool stop_on_failure = false;
 };
 
 std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
@@ -334,10 +335,10 @@ void pump_creation_grants()
 		creation_grant_queue &queue = current->second;
 		if (queue.active || queue.requests.empty())
 			continue;
+		const pending_creation_grant &request = queue.requests.front();
 		P_char actor = find_live_player(current->first);
 		if (!actor)
 			continue;
-		const pending_creation_grant &request = queue.requests.front();
 		if (!creation_grant_request_valid(request))
 		{
 			discard_creation_queue(actor, queue);
@@ -406,7 +407,13 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	}
 	else
 	{
-		P_char recipient = find_live_player(request.recipient_pid);
+		// A pre-entry self grant belongs to the retained live character even
+		// if its socket disappeared while the ownership operation was pending.
+		P_char recipient = request.allow_pre_entry &&
+						   request.recipient_pid ==
+							   static_cast<uint32_t>(GET_PID(actor)) ?
+					   actor :
+					   find_live_player(request.recipient_pid);
 		if (!recipient)
 			logit(LOG_FILE,
 			      "item creation grant committed to an unavailable player (uid=%llu pid=%u)",
@@ -436,6 +443,14 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	}
 	queue.requests.pop_front();
 	queue.active = false;
+	if (!committed && queue.stop_on_failure)
+	{
+		// Earlier committed roots remain durable. Discard only unpublished
+		// tail requests and never report a partial kit as successfully ready.
+		discard_creation_queue(actor, queue);
+		creation_grants.erase(queue_found);
+		return;
+	}
 	if (queue.requests.empty())
 	{
 		const bool blocks_actor_commands = queue.blocks_actor_commands;
@@ -443,7 +458,10 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		creation_grants.erase(queue_found);
 		if (blocks_actor_commands && actor->desc)
 		{
-			send_to_char("Your starter kit is ready.\r\n", actor);
+			send_to_char(announce_on_completion ?
+					     "Your Chaos Equipment has been prepared!!\r\n" :
+					     "Your starter kit is ready.\r\n",
+				     actor);
 			actor->desc->prompt_mode = TRUE;
 		}
 		else if (announce_on_completion && actor->desc &&
@@ -1007,6 +1025,49 @@ bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj objec
 	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true);
 }
 
+bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj const *objects,
+							     size_t count, P_char recipient)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || recipient != actor || !objects ||
+	    !count || count > ITEM_MOVEMENT_PENDING_MAX)
+		return false;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (creation_grants.find(actor_pid) != creation_grants.end())
+		return false;
+	for (size_t i = 0; i < count; ++i)
+	{
+		if (!objects[i] || !objects[i]->obj_uid || !OBJ_NOWHERE(objects[i]))
+			return false;
+		for (size_t j = 0; j < i; ++j)
+			if (objects[i]->obj_uid == objects[j]->obj_uid)
+				return false;
+	}
+
+	// Stage the complete queue before submission. Admission failures retain
+	// all roots with the caller; accepted roots use the existing coordinator.
+	try
+	{
+		creation_grant_queue queue;
+		queue.blocks_actor_commands = true;
+		queue.announce_on_completion = true;
+		queue.stop_on_failure = true;
+		for (size_t i = 0; i < count; ++i)
+			queue.requests.push_back(
+				{ objects[i]->obj_uid, 0, actor_pid, NOWHERE, false, true });
+		if (!creation_grants.emplace(actor_pid, std::move(queue)).second)
+			return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	auto found = creation_grants.find(actor_pid);
+	if (start_creation_grant(actor, found->second))
+		return true;
+	creation_grants.erase(found);
+	return false;
+}
+
 bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room)
 {
 	return queue_creation_grant(actor, object, NULL, room, NULL, true, false);
@@ -1029,6 +1090,46 @@ bool item_creation_grant_blocks_commands(P_char actor)
 		return false;
 	auto found = creation_grants.find(static_cast<uint32_t>(GET_PID(actor)));
 	return found != creation_grants.end() && found->second.blocks_actor_commands;
+}
+
+bool item_creation_grant_batches_pending(void)
+{
+	return std::any_of(creation_grants.begin(), creation_grants.end(),
+			   [](const auto &entry) { return entry.second.stop_on_failure; });
+}
+
+void item_creation_grant_cancel_batch_before_entry(P_char actor)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 ||
+	    (actor->desc && actor->desc->connected == CON_PLAYING))
+		return;
+	auto found = creation_grants.find(static_cast<uint32_t>(GET_PID(actor)));
+	if (found == creation_grants.end() || !found->second.stop_on_failure)
+		return;
+	creation_grant_queue &queue = found->second;
+	const size_t retained = queue.active ? 1 : 0;
+	size_t extracted = 0;
+	while (queue.requests.size() > retained)
+	{
+		P_obj object = find_item(queue.requests.back().item_uid);
+		if (object && OBJ_NOWHERE(object))
+		{
+			extract_obj(object, FALSE);
+			++extracted;
+		}
+		queue.requests.pop_back();
+	}
+	logit(LOG_COMM,
+	      "item creation grant batch cancelled before entry (pid=%d retained_active=%d "
+	      "extracted_tail=%zu)",
+	      GET_PID(actor), retained ? 1 : 0, extracted);
+	// An active head is already journaled. Keep its deferred completion so
+	// durable ownership/revision publication is never silently abandoned.
+	queue.stop_on_failure = false;
+	queue.blocks_actor_commands = false;
+	queue.announce_on_completion = false;
+	if (queue.requests.empty())
+		creation_grants.erase(found);
 }
 
 void item_movement_transaction_handle_completions(const critical_completion *completions,

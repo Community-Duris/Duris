@@ -110,6 +110,57 @@ SLOT_WEAR_BITS = {
 
 BOOK_CLASSES = {"Sorcerer", "Conjurer", "Necromancer", "Illusionist", "Bard", "Summoner", "Reaver", "Theurgist"}
 
+# Deliberate starter roles, including melee hybrids; never infer from cohort size.
+PHYSICAL_CLASSES = frozenset({
+    "Warrior", "Ranger", "Paladin", "Anti-Paladin", "Monk", "Rogue", "Assassin",
+    "Mercenary", "Bard", "Thief", "Berserker", "Reaver", "Dreadlord", "Avenger", "Dragoon",
+})
+WEAPON_SLOTS = frozenset({16, 17, 25, 26})
+ITEM_TYPE_WEAPONS = frozenset({5, 6, 7})
+ITEM_WIELD_FLAG = 1 << 13
+PERMANENT_STRIP_FLAGS = ("ITEM_TRANSIENT", "ITEM_NODROP", "ITEM_INVISIBLE",
+                         "ITEM_SECRET", "ITEM_NOSHOW", "ITEM_BURIED", "ITEM_NORENT")
+PERMANENT_POLICY = {"strip_extra_flags": list(PERMANENT_STRIP_FLAGS),
+                    "strip_extra2_flags": ["ITEM2_CRUMBLELOOT"],
+                    "strip_affects": ["APPLY_CURSE"]}
+# Historical shared potion 1716 excludes Warrior. 80186 preserves its three
+# spells (Hawkvision, Lionrage, Elephantstrength) for all classes at level 20
+# rather than 40. Keep the seed unchanged as a record of the prior header.
+SHARED_SUPPORT_OVERRIDES = {1716: 80186}
+UTILITY_POLICY = [
+    {"vnum": 336, "skill": "SKILL_FISHING", "count": 1, "role": "fishing pole"},
+    {"vnum": 412, "skill": "SKILL_PICK_LOCK", "count": 1, "role": "lockpicks"},
+    {"vnum": 73, "skill": "SKILL_TRAP", "count": 3, "role": "consumable huntsman traps"},
+    {"vnum": 400227, "skill": "SKILL_SALVAGE", "count": 3,
+     "role": "consumable scientific tools; runtime configured VNUM"},
+]
+
+
+def role_item_valid(metric: dict[str, Any], class_name: str, slot: int) -> bool:
+    static = metric.get("static") or {}
+    if class_name == "Monk" and (slot in WEAPON_SLOTS or
+            int(metric.get("item_type", 0)) in ITEM_TYPE_WEAPONS or
+            int(static.get("wear_flags", 0)) & ITEM_WIELD_FLAG):
+        return False
+    if class_name in PHYSICAL_CLASSES:
+        affects = metric.get("effect_summary", {}).get("affects", {})
+        if float(affects.get("wis_max", 0)) > 0:
+            return False
+        mental_bonus = sum(max(0, float(affects.get(name, 0))) for name in
+                           ("int", "wis", "mana", "int_max", "pow_max", "cha_max", "pow", "cha"))
+        if mental_bonus > 0 and physical_score(metric) == 0:
+            return False
+    return True
+
+
+def physical_score(metric: dict[str, Any]) -> float:
+    affects = metric.get("effect_summary", {}).get("affects", {})
+    return sum(max(0, float(affects.get(name, 0))) * weight for name, weight in {
+        "damroll": 5, "hitroll": 3, "hit": .15, "str": 2, "dex": 2, "agi": 2,
+        "con": 2, "str_max": 3, "dex_max": 3, "agi_max": 3, "con_max": 3,
+    }.items())
+
+
 # The risk score is evidence-oriented, not a claim about the game's exact
 # combat power.  It suppresses one-off effect bundles from the starting kit and
 # leaves them visible as alternatives in the report.
@@ -162,15 +213,21 @@ def choose_equipment(
         if int(entry["slot"]) in CORE_SLOTS
     }
     for slot in CORE_SLOTS:
+        if class_name == "Monk" and slot in WEAPON_SLOTS:
+            continue
         entry = direct.get(slot)
         metric = metrics.get(int(entry["vnum"])) if entry else None
         choice_reason = "direct class/slot recommendation"
-        if not metric or not item_is_valid(metric, profile, class_id, slot):
+        if (not metric or not item_is_valid(metric, profile, class_id, slot) or
+                not role_item_valid(metric, class_name, slot)):
             choices = [
                 candidate for candidate in metrics.values()
                 if item_is_valid(candidate, profile, class_id, slot)
+                and role_item_valid(candidate, class_name, slot)
             ]
-            choices.sort(key=lambda candidate: (fallback_score(candidate, slot), candidate["vnum"]), reverse=True)
+            choices.sort(key=lambda candidate: (
+                physical_score(candidate) if class_name in PHYSICAL_CLASSES else 0,
+                fallback_score(candidate, slot), candidate["vnum"]), reverse=True)
             metric = choices[0] if choices else None
             choice_reason = "portable validated fallback; no safe direct recommendation"
         if not metric:
@@ -189,6 +246,7 @@ def choose_equipment(
             "effect_summary": metric.get("effect_summary", {}),
             "reason": metric.get("reason", ""),
             "selection_reason": choice_reason,
+            "permanent_policy": PERMANENT_POLICY,
         }
         selected.append(item)
         decisions.append({
@@ -197,6 +255,11 @@ def choose_equipment(
             "vnum": metric["vnum"],
             "reason": choice_reason,
         })
+    if class_name in PHYSICAL_CLASSES:
+        if any(decision["status"] == "missing" for decision in decisions):
+            raise ValueError(f"{profile}/{class_name}: incomplete physical role equipment")
+        globe_item = next(item for item in selected if item["slot"] == 3)
+        globe_item["granted_bitvector2"] = "AFF2_GLOBE"
     return selected, decisions
 
 
@@ -303,6 +366,32 @@ def choose_support_consumables(analysis: dict[str, Any]) -> list[dict[str, Any]]
     return support
 
 
+def prepare_shared_consumables(analysis: dict[str, Any], metrics: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = analysis.get("seed_consumables") or choose_support_consumables(analysis)
+    result = []
+    seen: set[int] = set()
+    for row in rows:
+        source_vnum = int(row["vnum"])
+        vnum = SHARED_SUPPORT_OVERRIDES.get(source_vnum, source_vnum)
+        metric = metrics.get(vnum)
+        if (not metric or fundamental_exceptions(metric) or not metric.get("race_portable") or
+                not all(metric.get("class_eligible", {}).get(str(cid), False)
+                        for cid in analysis["class_ids"].values())):
+            raise ValueError(f"shared consumable {vnum}: not usable by every class and playable race")
+        if metric["type_name"] != row["category"]:
+            raise ValueError(f"shared consumable {vnum}: replacement changes support category")
+        if vnum in seen:
+            raise ValueError(f"shared consumable {vnum}: duplicate support family")
+        seen.add(vnum)
+        result.append({**row, "vnum": vnum, "name": metric["name"]})
+        if source_vnum != vnum:
+            result[-1]["replacement_for"] = source_vnum
+            result[-1]["reason"] = f"all-class shared-support replacement for {source_vnum}"
+            for key in ("observed_players", "median_quantity", "upper_quartile_quantity"):
+                result[-1][key] = metric.get(key, 0)
+    return result
+
+
 def choose_optional_variations(analysis: dict[str, Any], profile: str, metrics: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
     class_ids = analysis.get("class_ids", {})
     requirements = [
@@ -331,6 +420,8 @@ def choose_optional_variations(analysis: dict[str, Any], profile: str, metrics: 
                 continue
             candidates = []
             for metric in metrics.values():
+                if not role_item_valid(metric, "Warrior", slot):
+                    continue
                 if metric.get("exclusion_reasons") or not metric.get("race_portable"):
                     continue
                 if profile == "enhanceable" and not metric.get("enhanceable"):
@@ -346,7 +437,10 @@ def choose_optional_variations(analysis: dict[str, Any], profile: str, metrics: 
                     continue
                 support = int(metric.get("slot_players", {}).get(str(slot), 0))
                 candidates.append((support, metric.get("observed_players", 0), -float(metric.get("risk_score", 0.0)), metric))
-            candidates.sort(key=lambda item: (item[0], item[1], item[2], -item[3]["vnum"]), reverse=True)
+            preferred = {item["vnum"] for item in analysis.get("seed_optional", {}).get(profile, [])
+                         if item["slot"] == slot}
+            candidates.sort(key=lambda item: (item[3]["vnum"] in preferred,
+                            item[0], item[1], item[2], -item[3]["vnum"]), reverse=True)
             if candidates:
                 metric = candidates[0][3]
                 variations.append({
@@ -458,11 +552,25 @@ def emit_header(path: Path, analysis: dict[str, Any], catalog: dict[str, Any], r
         "",
         "#include \"core/defines.h\"",
         "",
+        '#include "magic/spells.h"',
+        "",
         "/* Generated by scripts/chaos_eq_catalog.py; do not edit by hand. */",
         "struct chaos_kit_item { int slot; int vnum; };",
         "struct chaos_eq_profile { const chaos_kit_item *items; };",
+        "struct chaos_utility_item { int vnum; int skill; int count; };",
+        "static const unsigned int chaos_eq_permanent_strip_flags = " + " | ".join(PERMANENT_STRIP_FLAGS) + ";",
+        "static const unsigned int chaos_eq_permanent_strip_extra2_flags = ITEM2_CRUMBLELOOT;",
+        "static const int chaos_eq_globe_slot = WEAR_NECK_1;",
         "",
     ]
+    lines.append("static const bool chaos_eq_physical_classes[CLASS_COUNT + 1] = {")
+    lines.append("    false, /* CLASS_NONE */")
+    for class_name, _ in sorted(class_ids.items(), key=lambda item: int(item[1])):
+        lines.append(f"    {'true' if class_name in PHYSICAL_CLASSES else 'false'}, /* {class_name} */")
+    lines.extend(["};", "", "static const chaos_utility_item chaos_eq_utility_items[] = {"])
+    for item in catalog["utility_items"]:
+        lines.append(f"    {{ {item['vnum']}, {item['skill']}, {item['count']} }},")
+    lines.extend(["    { 0, 0, 0 }", "};", ""])
     profile_arrays: dict[str, dict[str, str]] = {"standard": {}, "enhanceable": {}}
     for profile in ("standard", "enhanceable"):
         matrix = catalog["profiles"][profile]
@@ -511,27 +619,32 @@ def emit_header(path: Path, analysis: dict[str, Any], catalog: dict[str, Any], r
 
 def build_catalog(analysis: dict[str, Any]) -> dict[str, Any]:
     metrics = {int(item["vnum"]): item for item in analysis["candidates"]}
-    fundamentals = build_fundamentals(analysis, metrics)
+    fundamentals = analysis.get("seed_fundamentals") or build_fundamentals(analysis, metrics)
     profiles: dict[str, dict[str, dict[str, Any]]] = {}
     for profile in ("standard", "enhanceable"):
         profiles[profile] = class_matrix(analysis, metrics, profile, fundamentals[profile])
-    consumables = choose_support_consumables(analysis)
+    consumables = prepare_shared_consumables(analysis, metrics)
     optional = {
         "standard": choose_optional_variations(analysis, "standard", metrics),
         "enhanceable": choose_optional_variations(analysis, "enhanceable", metrics),
     }
     common = {profile: common_by_slot(profiles[profile]) for profile in profiles}
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "source": {
             "analysis_schema_version": analysis.get("schema_version"),
             "cohort": analysis.get("cohort"),
             "class_ids": analysis.get("class_ids", {}),
-            "selection_policy": {"max_item_risk": MAX_ITEM_RISK, "core_slots": list(CORE_SLOTS)},
+            "selection_policy": {"max_item_risk": MAX_ITEM_RISK, "core_slots": list(CORE_SLOTS),
+                                 "physical_classes": sorted(PHYSICAL_CLASSES),
+                                 "monk_excluded_slots": sorted(WEAPON_SLOTS),
+                                 "physical_globe_slot": 3, "physical_globe_affect": "AFF2_GLOBE",
+                                 "permanent_policy": PERMANENT_POLICY},
             "note": "equipment profiles are aggregate/template-level; optional support and race-slot variations are separated",
         },
         "fundamentals": fundamentals,
         "consumables": consumables,
+        "utility_items": UTILITY_POLICY,
         "profiles": profiles,
         "common_by_slot": common,
         "optional_race_slot_variations": optional,
@@ -550,20 +663,153 @@ def build_catalog(analysis: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def emit_policy_report(path: Path, catalog: dict[str, Any]) -> None:
+    lines = ["# Generated CHAOS starter catalog policy", "",
+             "Generated by `scripts/chaos_eq_catalog.py`; do not edit by hand.", "",
+             "Source: current active AREA templates and sanitized baseline slot/VNUM recommendations",
+             "from `docs/data/chaos_eq_seed.json` (header at commit `5c3ee7a`). No player data,",
+             "SQL access, live-game observations, or reconstructed observation counts are used.", "",
+             "## Roles and permanence", "",
+             "Physical membership (including melee hybrids): " + ", ".join(sorted(PHYSICAL_CLASSES)) + ".", "",
+             "Monk excludes all weapon types, wieldable objects, and primary/secondary/third/fourth",
+             "weapon slots. Physical profiles cover every core slot (except Monk weapons); runtime",
+             "body-plan/class/dual-wield checks determine which slots actually apply to a character.",
+             "Positive max-WIS is rejected for physical and shared optional gear. Mental-stat-only",
+             "items without physical bonuses are rejected for physical roles; replacements rank",
+             "damage, hitroll, hit points, strength, dexterity, agility and constitution first.", "",
+             "Every physical profile grants `AFF2_GLOBE` in `bitvector2` of the first neck item.",
+             "Active AREA prototypes have no permanent full-globe bit; this is an explicit generated",
+             "starter-instance policy, not a prototype mutation or temporary spell/consumable.",
+             "The neck slot is supported by every playable body plan, including Thri-Kreen.", "",
+             "Permanent instance normalization strips " + ", ".join(f"`{flag}`" for flag in PERMANENT_STRIP_FLAGS) + ",",
+             "`ITEM2_CRUMBLELOOT` and `APPLY_CURSE`. Intended magical/role flags remain, including",
+             "wearer buffs (e.g. invisibility), distinct from item presentation flags. This normalization",
+             "also applies to class fundamentals and tools. Normal food/charge/tool consumption remains.", "",
+             "## Utilities", "", "| VNUM | Prospective skill | Count | Use |", "| --- | --- | --- | --- |"]
+    for item in catalog["utility_items"]:
+        lines.append(f"| {item['vnum']} | `{item['skill']}` | {item['count']} | {item['role']} |")
+    lines.extend(["", "Eligibility uses class/race skill availability at CHAOS level 56 because the grant",
+                  "precedes skill learning. Runtime deduplicates by resolved VNUM against equipment",
+                  "and support; three trap/tool copies are intentional consumable quantities.",
+                  "Fishing requires no bait; lockpicks and huntsman traps are self-contained. Scientific",
+                  "tools use the configured crafting VNUM and are consumed by salvage. Existing CHAOS",
+                  "material-pouch grants provide recipe materials; no disabled legacy forge hammer/",
+                  "parchment path is enabled. Trap arming may subsequently set secret/decay flags as",
+                  "part of ordinary skill use. Utility/support items may be stored in the bag; wearable",
+                  "equipment arrives directly in inventory.", "", "Shared consumables must also be usable by every class and playable race.",
+                  "Historical seed potion 1716 excludes Warrior. The explicit replacement is 80186",
+                  "(three clear potions), preserving Hawkvision, Lionrage and Elephantstrength at",
+                  "cast level 20 rather than 40. Both source restrictions and replacement category",
+                  "are revalidated; no other restricted shared support is silently accepted.", "", "## Selected profiles", "",
+                  "| Profile | Class | Core slots | Globe item VNUM | Slot:VNUM equipment |",
+                  "| --- | --- | --- | --- | --- |"])
+    for profile, matrix in catalog["profiles"].items():
+        for name, row in matrix.items():
+            equipment = row["equipment"]
+            globe = next((str(i["vnum"]) for i in equipment if i.get("granted_bitvector2")), "none")
+            pairs = ", ".join(f"{i['slot']}:{i['vnum']}" for i in equipment)
+            lines.append(f"| {profile} | {name} | {len(equipment)} | {globe} | {pairs} |")
+    lines.extend(["", "## Reproduction", "", "From the repository root with Python 3 and clang-format:", "", "```sh",
+                  "python3 scripts/chaos_eq_catalog.py --static-seed docs/data/chaos_eq_seed.json --output-dir bin/chaos-catalog --header-out src/account/chaos_eq_data.h --policy-report-out docs/reference/CHAOS_KIT_CATALOG.md --repo-root .",
+                  "python3 scripts/chaos_eq_validate.py --catalog bin/chaos-catalog/catalog.json --repo-root .",
+                  "python3 tests/async/test_chaos_kit_policy.py", "```", ""])
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def static_analysis(seed: dict[str, Any], repo_root: Path) -> dict[str, Any]:
+    """Revalidate a sanitized recommendation seed against active AREA templates.
+
+    This is deliberately not reconstructed player/cohort evidence. All observed
+    counts are zero, and scores/effects come from current source prototypes.
+    """
+    from chaos_eq_analyze import (
+        ITEM_TYPE_NAMES, SAVE_APPLY_NAMES, STAT_APPLY_NAMES, area_file_names,
+        clean_text, enhance_rejection_reasons, item_exclusion_reasons,
+        make_effect_summary, object_class_allowed, object_race_portable,
+        parse_defines, parse_enhance_config, parse_flag_maps, reconcile_area_objects,
+    )
+    constants = parse_defines(repo_root / "src/core/defines.h")
+    objects, diagnostics = reconcile_area_objects(
+        area_file_names(repo_root / "areas/obj", repo_root / "areas/AREA"), {}, constants)
+    if diagnostics["parse_errors"]:
+        raise ValueError(diagnostics["parse_errors"])
+    enhance = parse_enhance_config(repo_root / "lib/enhance.cfg", constants)
+    flag_names, _ = parse_flag_maps(constants)
+    apply_names = {value: STAT_APPLY_NAMES.get(name, SAVE_APPLY_NAMES.get(name, name.lower()))
+                   for name, value in constants.items() if name.startswith("APPLY_")}
+    races = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 20, 30, 31, 32, 36, 37]
+    candidates = []
+    for obj in objects.values():
+        summary = make_effect_summary(obj.affects, [], obj.bitvectors, flag_names, apply_names)
+        exclusions = item_exclusion_reasons(obj, constants, races)
+        if obj.ambiguous:
+            exclusions.append("ambiguous_active_prototype")
+        candidates.append({
+            "vnum": obj.vnum, "name": clean_text(obj.short_description),
+            "item_type": obj.object_type, "type_name": ITEM_TYPE_NAMES.get(obj.object_type, "other"),
+            "observed_players": 0, "observed_share": 0, "slot_players": {},
+            "effect_summary": summary, "power_score": summary["power_score"],
+            "risk_score": summary["risk_score"], "exclusion_reasons": exclusions,
+            "race_portable": object_race_portable(obj, races, constants)[0],
+            "enhanceable": not enhance_rejection_reasons(obj, enhance, constants),
+            "class_eligible": {str(cid): object_class_allowed(obj, int(cid), constants)
+                               for cid in seed["class_ids"].values()},
+            "static": {"wear_flags": obj.wear_flags, "extra_flags": obj.extra_flags,
+                       "extra2_flags": obj.extra2_flags, "values": obj.values,
+                       "bitvectors": obj.bitvectors, "affects": obj.affects},
+            "reason": "current AREA prototype; no player observation evidence",
+        })
+    metrics = {item["vnum"]: item for item in candidates}
+    fundamentals = {}
+    for profile, chosen in seed["fundamentals"].items():
+        book = metrics[chosen["spellbook"]]
+        totem = metrics[chosen["shaman_totem"]]
+        instruments = []
+        for vnum in chosen["bard_instruments"]:
+            item = metrics[vnum]
+            instruments.append({"vnum": vnum, "name": item["name"],
+                                "instrument_type": str(item["static"]["values"][0]),
+                                "enhanceable": item["enhanceable"]})
+        fundamentals[profile] = {
+            "spellbook": {"vnum": book["vnum"], "name": book["name"],
+                          "beltable": True, "enhanceable": book["enhanceable"]},
+            "shaman_totem": {"vnum": totem["vnum"], "name": totem["name"],
+                             "enhanceable": totem["enhanceable"]},
+            "bard_instruments": instruments,
+        }
+    return {"schema_version": 2, "cohort": {"kind": "static AREA with baseline recommendation seed",
+            "observed_characters": 0}, "class_ids": seed["class_ids"], "candidates": candidates,
+            "recommendations": seed["recommendations"], "seed_fundamentals": fundamentals,
+            "seed_consumables": [{**item, "name": metrics[item["vnum"]]["name"],
+                "category": metrics[item["vnum"]]["type_name"]} for item in seed["consumables"]],
+            "seed_optional": seed["optional"]}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--analysis", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--analysis")
+    source.add_argument("--static-seed", help="sanitized baseline recommendations; no SQL or player access")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--header-out")
+    parser.add_argument("--policy-report-out")
     parser.add_argument("--repo-root", default=".")
     args = parser.parse_args()
-    analysis = json.loads(Path(args.analysis).read_text(encoding="utf-8"))
+    analysis = (static_analysis(json.loads(Path(args.static_seed).read_text(encoding="utf-8")),
+                                Path(args.repo_root).resolve()) if args.static_seed else
+                json.loads(Path(args.analysis).read_text(encoding="utf-8")))
     catalog = build_catalog(analysis)
+    from chaos_eq_validate import validate
+    issues = validate(catalog, Path(args.repo_root).resolve())
+    if issues:
+        raise ValueError("catalog validation failed: " + "; ".join(issues))
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "catalog.json").write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if args.header_out:
         emit_header(Path(args.header_out), analysis, catalog, Path(args.repo_root).resolve())
+    if args.policy_report_out:
+        emit_policy_report(Path(args.policy_report_out), catalog)
     print(json.dumps({
         "catalog": str((output_dir / "catalog.json").resolve()),
         "classes": catalog["diagnostics"]["classes"],

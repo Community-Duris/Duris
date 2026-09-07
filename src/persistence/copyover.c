@@ -9,6 +9,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "persistence/copyover.h"
+#include "item/item_movement_transaction.h"
 #include "sql/sql_player.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -464,6 +465,13 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	int num_descs, num_mobs, num_objs, num_rooms;
 	char exec_buf[256];
 	const char *copyover_tmp = COPYOVER_FILE ".tmp";
+
+	if (item_creation_grant_batches_pending())
+	{
+		notify_copyover_failure(
+			"\r\n*** Copyover cancelled: starter equipment is still being granted; retry after completion. ***\r\n");
+		return false;
+	}
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);

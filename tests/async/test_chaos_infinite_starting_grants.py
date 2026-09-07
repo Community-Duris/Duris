@@ -158,7 +158,8 @@ assert "WEAR_ATTACH_BELT_1" in MATERIALS_C
 assert "WEAR_ATTACH_BELT_3" in MATERIALS_C
 assert "chaos_material_pouch_contents_description" in MATERIALS
 assert "VOBJ_CHAOS_CRAFT_POUCH" in NANNY
-assert "REMOVE_BIT(obj->extra_flags, ITEM_TRANSIENT)" in NANNY
+assert "REMOVE_BIT(obj->extra_flags, chaos_eq_permanent_strip_flags)" in NANNY
+assert "ITEM_TRANSIENT" in (ROOT / "src/account/chaos_eq_data.h").read_text()
 assert "chaos_starter_materials_enabled()" in NANNY
 CRAFTING = source("crafting.c").read_text(encoding="utf-8", errors="replace")
 assert "chaos_material_pouch_available" in CRAFTING

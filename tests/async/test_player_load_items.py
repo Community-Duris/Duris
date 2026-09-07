@@ -410,6 +410,60 @@ int main()
         release_tree(owner.character.carrying);
     }
 
+    // Native snapshots carry spell IDs directly, including an empty spellbook.
+    for (bool complete_snapshot : {false, true}) {
+        for (const std::vector<int> &spell_ids :
+             {std::vector<int>{}, std::vector<int>{0, 1, 7, 31, MAX_SKILLS - 1}}) {
+            reset_test_state();
+            test_character owner(42);
+            player_load_result result = base_result();
+            add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+            result.snapshot.items[0].type = ITEM_SPELLBOOK;
+            result.snapshot.items[0].extra_descriptions.push_back(
+                {"SPELLBOOK", "", true, spell_ids});
+            player_load_item_materialize_metrics metrics = {};
+            assert(player_load_item_graph_materialize_for_owner(
+                &owner.character, result.snapshot.items, result.item_identities,
+                {item_owner_type::player, 42, 0}, result.item_owner_revision,
+                true, complete_snapshot, &metrics));
+            assert(metrics.outcome == player_load_item_materialize_outcome::applied);
+            const extra_descr_data *entry = owner.character.carrying->ex_description;
+            const char marker[] = {3, 1, 3, 0};
+            assert(entry && !entry->next && std::strcmp(entry->keyword, marker) == 0);
+            unsigned char expected[(MAX_SKILLS + 1) / 8 + 1] = {};
+            for (int spell : spell_ids) expected[spell / 8] |= 1u << (spell % 8);
+            assert(std::memcmp(entry->description, expected, sizeof(expected)) == 0);
+            release_tree(owner.character.carrying);
+        }
+    }
+
+    // Reapplying saved metadata must recognize the prototype's identical book.
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 102, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.snapshot.items[0].extra_descriptions.push_back(
+            {"book spell spellbook", "Every spell a spellbook can contain.", false, {}});
+        result.snapshot.items[0].extra_descriptions.push_back(
+            {"SPELLBOOK", "", true, {31, 1, 7}});
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_items_materialize(&owner.character, result, &metrics));
+        size_t descriptions = 0, books = 0;
+        const char marker[] = {3, 1, 3, 0};
+        for (extra_descr_data *entry = owner.character.carrying->ex_description; entry;
+             entry = entry->next) {
+            ++descriptions;
+            if (std::strcmp(entry->keyword, marker) != 0) continue;
+            ++books;
+            unsigned char expected[(MAX_SKILLS + 1) / 8 + 1] = {};
+            for (int spell : {1, 7, 31}) expected[spell / 8] |= 1u << (spell % 8);
+            assert(std::memcmp(entry->description, expected, sizeof(expected)) == 0);
+        }
+        assert(descriptions == 2 && books == 1);
+        release_tree(owner.character.carrying);
+    }
+
     {
         reset_test_state();
         test_character owner(42);
@@ -532,6 +586,65 @@ int main()
             result.item_owner_revision, true, true, &roots, &metrics));
         assert(roots.empty() && metrics.outcome ==
                player_load_item_materialize_outcome::invalid_snapshot);
+    }
+
+    // Distinct native books coexist; reordered copies are duplicate metadata.
+    for (bool duplicate : {false, true}) {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.snapshot.items[0].extra_descriptions.push_back(
+            {"SPELLBOOK", "", true, {1, 7}});
+        result.snapshot.items[0].extra_descriptions.push_back(
+            {"SPELLBOOK", "", true, duplicate ? std::vector<int>{7, 1} : std::vector<int>{31}});
+        player_load_item_materialize_metrics metrics = {};
+        const bool applied = player_load_items_materialize(&owner.character, result, &metrics);
+        if (duplicate) {
+            assert(!applied && metrics.outcome == player_load_item_materialize_outcome::invalid_snapshot);
+            assert(allocations == 0 && item_ownership_runtime_size() == 0);
+            assert(!owner.character.carrying);
+        } else {
+            assert(applied);
+            size_t descriptions = 0;
+            bool first = false, second = false;
+            for (extra_descr_data *entry = owner.character.carrying->ex_description; entry;
+                 entry = entry->next) {
+                ++descriptions;
+                unsigned char expected_first[(MAX_SKILLS + 1) / 8 + 1] = {};
+                unsigned char expected_second[(MAX_SKILLS + 1) / 8 + 1] = {};
+                expected_first[0] = (1u << 1) | (1u << 7);
+                expected_second[31 / 8] = 1u << (31 % 8);
+                first |= std::memcmp(entry->description, expected_first, sizeof(expected_first)) == 0;
+                second |= std::memcmp(entry->description, expected_second, sizeof(expected_second)) == 0;
+            }
+            assert(descriptions == 2 && first && second);
+            release_tree(owner.character.carrying);
+        }
+    }
+
+    // Invalid native data is rejected before allocations or custody publication.
+    for (const player_item_extra_description_snapshot &description :
+         std::vector<player_item_extra_description_snapshot>{
+             {"SPELLBOOK", "", true, {1, 1}},
+             {"SPELLBOOK", "", true, {-1}},
+             {"SPELLBOOK", "", true, {MAX_SKILLS}},
+             {"SPELLBOOK", "[]", true, {1}},
+             {"SPELLBOOK", "[1]", true, {1}},
+             {"ordinary", "text", false, {1}},
+             {"SPELLBOOK", "[1,1]", true, {}},
+             {"SPELLBOOK", "[-1]", true, {}},
+             {"SPELLBOOK", "[" + std::to_string(MAX_SKILLS) + "]", true, {}}}) {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.snapshot.items[0].extra_descriptions.push_back(description);
+        player_load_item_materialize_metrics metrics = {};
+        assert(!player_load_items_materialize(&owner.character, result, &metrics));
+        assert(metrics.outcome == player_load_item_materialize_outcome::invalid_snapshot);
+        assert(allocations == 0 && item_ownership_runtime_size() == 0);
+        assert(!owner.character.carrying && !owner.character.equipment[0]);
     }
 
     auto invalid = [](player_load_result result) {

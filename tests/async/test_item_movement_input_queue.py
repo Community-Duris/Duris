@@ -140,6 +140,11 @@ int top_of_objt = 3;
 extern const int top_of_world = 0;
 
 static bool command_submitted = false;
+static bool reject_submission = false;
+static bool hide_player_lookup = false;
+static unsigned extracted_count = 0;
+static std::vector<uint64_t> extracted_uids;
+static std::string grant_messages;
 static critical_command submitted_command = {};
 static uint64_t pending_coin_uid = 0;
 bool currency_transaction_coin_item_busy(uint64_t uid)
@@ -149,18 +154,24 @@ bool currency_transaction_coin_item_busy(uint64_t uid)
 
 void logit(const char *, const char *, ...) {}
 void __free(void *memory, const char *, int) { free(memory); }
-void send_to_char(const char *, P_char) {}
+void send_to_char(const char *text, P_char) { grant_messages += text; }
 void send_to_char(const char *, P_char, int) {}
-void extract_obj(P_obj, int) {}
+void extract_obj(P_obj object, int) { ++extracted_count; extracted_uids.push_back(object->obj_uid); }
 void obj_from_char(P_obj) {}
-void obj_to_char(P_obj, P_char) {}
+void obj_to_char(P_obj object, P_char actor)
+{
+    object->loc_p = LOC_CARRIED;
+    object->loc.carrying = actor;
+    object->next_content = actor->carrying;
+    actor->carrying = object;
+}
 void obj_to_obj(P_obj, P_obj) {}
 void obj_to_room(P_obj, int) {}
 void mark_player_dirty_components(int, player_component_mask_t) {}
 
 P_char find_player_by_pid(int pid)
 {
-	return character_list && character_list->only.pc && character_list->only.pc->pid == pid ?
+	return !hide_player_lookup && character_list && character_list->only.pc && character_list->only.pc->pid == pid ?
 		       character_list :
 		       NULL;
 }
@@ -173,6 +184,7 @@ P_char find_player_by_pid(int pid)
 critical_submit_result critical_command_coordinator_submit(critical_command queued)
 {
 	assert(!command_submitted);
+	if (reject_submission) return critical_submit_result::unavailable;
 	command_submitted = true;
 	submitted_command = std::move(queued);
 	return critical_submit_result::accepted;
@@ -740,6 +752,191 @@ int main()
 	drain(&q);
 	item_movement_transaction_reset_for_tests();
 	assert(!item_movement_transaction_player_busy(&actor));
+
+
+    // CHAOS pre-entry multi-root admission stages every root before any command.
+    // All fixtures below are in-memory; no persistence service is connected.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    pending_coin_uid = 0;
+    command_submitted = false;
+    actor.carrying = nullptr;
+    descriptor_data grant_descriptor = {};
+    grant_descriptor.connected = CON_PLAYING;
+    actor.desc = &grant_descriptor;
+    obj_data grant_first = {};
+    grant_first.obj_uid = 301;
+    grant_first.R_num = 0;
+    grant_first.loc_p = LOC_NOWHERE;
+    obj_data grant_second = {};
+    grant_second.obj_uid = 302;
+    grant_second.R_num = 1;
+    grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next = &grant_second;
+    object_list = &grant_first;
+    P_obj grants[] = {&grant_first, &grant_second};
+    P_obj duplicates[] = {&grant_first, &grant_first};
+    P_obj invalid_tail[] = {&grant_first, nullptr};
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, nullptr, 2, &actor));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 0, &actor));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 1025, &actor));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, duplicates, 2, &actor));
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, invalid_tail, 2, &actor));
+    grant_second.loc_p = LOC_ROOM;
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    grant_second.loc_p = LOC_NOWHERE;
+    assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
+    assert(!item_creation_grant_batches_pending());
+    assert(extracted_count == 0);
+    reject_submission = true;
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    assert(!item_creation_grant_blocks_commands(&actor));
+    assert(!item_creation_grant_batches_pending());
+    assert(extracted_count == 0 && OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
+    reject_submission = false;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    assert(command_submitted && item_creation_grant_blocks_commands(&actor));
+    assert(item_creation_grant_batches_pending());
+    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    push(&q, "wear grant");
+    assert(!get_playing_cmd_from_q(&actor, &q, dest));
+    expect_text(q.head->text, "wear grant", "batch holds immediate wear");
+    drain(&q);
+
+    // Commit the first root, then the second. The queue keeps the whole-kit gate
+    // until the final result; repeated completion publication is idempotent.
+    auto complete_grant = [&](uint64_t uid, uint64_t owner_revision)
+    {
+        item_transfer_result grant_result = {uid, 1, owner_revision, owner_revision, 1, 0};
+        critical_completion grant_completion = {};
+        grant_completion.operation_id = submitted_command.operation_id;
+        grant_completion.outcome = critical_apply_outcome::applied;
+        std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> payload = {};
+        assert(item_transfer_command_encode_result(grant_result, &payload));
+        grant_completion.result_size = payload.size();
+        std::copy(payload.begin(), payload.end(), grant_completion.result_payload.begin());
+        command_submitted = false;
+        item_movement_transaction_handle_completions(&grant_completion, 1);
+        item_movement_transaction_handle_completions(&grant_completion, 1);
+    };
+    complete_grant(301, 1);
+    assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_NOWHERE(&grant_second));
+    assert(command_submitted && item_creation_grant_blocks_commands(&actor));
+    assert(item_creation_grant_batches_pending());
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
+    complete_grant(302, 2);
+    assert(OBJ_CARRIED_BY(&grant_second, &actor));
+    assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
+    assert(!item_creation_grant_batches_pending());
+    const auto announced = grant_messages.find("Your Chaos Equipment has been prepared!!");
+    assert(announced != std::string::npos);
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!", announced + 1) == std::string::npos);
+
+    // A terminal failure stops the remaining batch and cannot announce success.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    actor.carrying = nullptr;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_messages.clear();
+    extracted_count = 0;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    critical_completion failed_grant = {};
+    failed_grant.operation_id = submitted_command.operation_id;
+    failed_grant.outcome = critical_apply_outcome::terminal_failure;
+    failed_grant.error_code = EIO;
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&failed_grant, 1);
+    assert(extracted_count == 2);
+    assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
+    assert(!item_creation_grant_batches_pending());
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
+    // If a later root fails, an earlier committed root remains published; only
+    // the uncommitted remainder is discarded and no whole-kit success is sent.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    actor.carrying = nullptr;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_messages.clear();
+    extracted_count = 0;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    complete_grant(301, 1);
+    assert(OBJ_CARRIED_BY(&grant_first, &actor));
+    failed_grant.operation_id = submitted_command.operation_id;
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&failed_grant, 1);
+    assert(extracted_count == 1 && OBJ_CARRIED_BY(&grant_first, &actor));
+    assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
+    assert(!item_creation_grant_batches_pending());
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
+    // Losing the descriptor between roots must not strand committed items.
+    // find_player_by_pid models its connected-only lookup, while character_list
+    // still contains the live linkdead actor used for callback publication.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    actor.carrying = nullptr;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_messages.clear();
+    extracted_count = 0;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    complete_grant(301, 1);
+    hide_player_lookup = true;
+    assert(item_creation_grant_batches_pending());
+    actor.desc = nullptr;
+    assert(find_player_by_pid(42) == nullptr && character_list == &actor);
+    complete_grant(302, 2);
+    assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_CARRIED_BY(&grant_second, &actor));
+    assert(extracted_count == 0 && !command_submitted);
+    assert(!item_creation_grant_blocks_commands(&actor));
+    assert(!item_creation_grant_batches_pending());
+    hide_player_lookup = false;
+
+    // A socket lost at the pre-entry MOTD has no live character to drain the
+    // tail. Cancel only unsubmitted roots; retain the journaled head so its
+    // exact-PID completion can publish when that player next enters.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    actor.carrying = nullptr;
+    actor.desc = &grant_descriptor;
+    grant_descriptor.connected = CON_PLAYING;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_messages.clear();
+    extracted_count = 0;
+    extracted_uids.clear();
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    item_creation_grant_cancel_batch_before_entry(&actor);
+    assert(item_creation_grant_batches_pending() && extracted_count == 0);
+    grant_descriptor.connected = CON_RMOTD;
+    character_list = nullptr;
+    item_creation_grant_cancel_batch_before_entry(&actor);
+    item_creation_grant_cancel_batch_before_entry(&actor); // idempotent close/retry
+    assert(extracted_count == 1 && extracted_uids[0] == grant_second.obj_uid);
+    assert(OBJ_NOWHERE(&grant_first));
+    assert(!item_creation_grant_batches_pending() && !item_creation_grant_blocks_commands(&actor));
+    assert(item_movement_transaction_player_busy(&actor));
+    complete_grant(301, 1);
+    assert(item_movement_transaction_health_copy().retained_offline == 1);
+    assert(OBJ_NOWHERE(&grant_first));
+    pc_only_data other_pc{};
+    other_pc.pid = 43;
+    char_data other_actor{};
+    other_actor.only.pc = &other_pc;
+    item_movement_transaction_player_ready(&other_actor);
+    assert(OBJ_NOWHERE(&grant_first));
+    character_list = &actor;
+    grant_descriptor.connected = CON_PLAYING;
+    item_movement_transaction_player_ready(&actor);
+    item_movement_transaction_player_ready(&actor);
+    assert(OBJ_CARRIED_BY(&grant_first, &actor));
+    assert(extracted_count == 1 && actor.carrying == &grant_first && !grant_first.next_content);
+    assert(!command_submitted && !item_creation_grant_batches_pending());
+    assert(!item_movement_transaction_player_busy(&actor));
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
+    item_movement_transaction_reset_for_tests();
+    actor.desc = nullptr;
 
 	printf("item movement input queue runtime: ok\n");
 	return 0;
