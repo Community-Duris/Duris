@@ -98,8 +98,9 @@ assert index(do_start, "SPEC_ASSMASTER") < index(do_start, "NewbySkillSet")
 # combinations are opened. Existing Human kits cover the common case; explicit
 # representative fallbacks cover the classes without one.
 # Tolerate the wrap clang-format puts after CREATE_KIT( on long kit lines.
-human_kits = set(re.findall(r"CREATE_KIT\(\s*RACE_HUMAN,\s*(CLASS_[A-Z]+)\s*,", nanny))
-fallback = nanny.split("if (!class_kit && creation_all_classes_enabled())", 1)[1].split("if (class_kit)", 1)[0]
+plan = (ROOT / "src/account/newbie_kit_plan.c").read_text()
+human_kits = set(re.findall(r"CREATE_KIT\(\s*RACE_HUMAN,\s*(CLASS_[A-Z]+)\s*,", plan))
+fallback = plan.split("if (!class_kit && input.all_classes)", 1)[1].split("if (class_kit)", 1)[0]
 fallback_classes = set(re.findall(r"case (CLASS_[A-Z]+):", fallback))
 covered = human_kits | fallback_classes | {"CLASS_BLIGHTER"}
 assert set(class_symbols) <= covered, sorted(set(class_symbols) - covered)
