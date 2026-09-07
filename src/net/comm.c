@@ -685,16 +685,13 @@ void run_the_game(int port, int sslport)
 	calculate_map_coordinates();
 	fprintf(stderr, "--  Done calculating maps coordinates.\r\n");
 
-	fprintf(stderr, "-- Calculating avg mob level for each zone.\r\n");
-	if (!mini_mode)
+	fprintf(stderr, "-- Calculating avg mob level and world-quest catalog.\r\n");
+	if (calc_zone_mob_level() < 0)
 	{
-		calc_zone_mob_level();
+		logit(LOG_EXIT, "World quest catalog unavailable; bartender quests fail closed.");
+		fprintf(stderr, "World quest catalog unavailable; bartender quests fail closed.\n");
 	}
-	else
-	{
-		fprintf(stderr, "--  Skipping mob-level tradeskill load in mini mode.\r\n");
-	}
-	fprintf(stderr, "--  Done calculating mob level.\r\n");
+	fprintf(stderr, "--  Done calculating mob level and world-quest catalog.\r\n");
 
 	if (!mini_mode)
 		initialize_tradeskills();

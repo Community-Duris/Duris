@@ -2925,6 +2925,7 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+#ifndef __NO_MYSQL__
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 	{
 		if (!currency_transaction_submit_wallet_value(
@@ -2943,6 +2944,7 @@ void ADD_MONEY(P_char ch, int amount)
 		}
 		return;
 	}
+#endif
 
 	/* plat is a bit rarer, and thus is returned as change less often */
 	if (amount > 999)
@@ -3083,6 +3085,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 		return -1;
 	if (mode != 0)
 		return -1;
+#ifndef __NO_MYSQL__
 	if (IS_PC(ch) && GET_PID(ch) > 0)
 		return currency_transaction_submit_wallet_value(
 			       ch, -(int64_t)amount, currency_reason_type::wallet_spend, 0,
@@ -3090,6 +3093,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 			       currency_adjustment_committed, nullptr, 0) ?
 			       0 :
 			       -1;
+#endif
 
 	if (amount > GET_COPPER(ch))
 	{
