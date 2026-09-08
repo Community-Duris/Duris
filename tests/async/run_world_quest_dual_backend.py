@@ -106,6 +106,28 @@ def wait_for_db(container: str, root_password: str) -> None:
     raise AssertionError("isolated MariaDB did not become ready")
 
 
+def docker_published_port(container: str) -> int:
+    result = subprocess.run(
+        ["docker", "port", container, "3306/tcp"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+    require(result.returncode == 0, "could not read disposable MariaDB published port")
+    for mapping in result.stdout.splitlines():
+        _, separator, port_text = mapping.strip().rpartition(":")
+        if not separator:
+            continue
+        try:
+            port = int(port_text)
+        except ValueError:
+            continue
+        if 1024 < port <= 65535:
+            return port
+    raise AssertionError("disposable MariaDB did not publish a usable host port")
+
+
 def start_database(database: str) -> tuple[str, int, str, str]:
     container = f"duris-world-quest-{os.getpid()}-{uuid.uuid4().hex[:8]}"
     root_password = "root-" + uuid.uuid4().hex
@@ -117,9 +139,10 @@ def start_database(database: str) -> tuple[str, int, str, str]:
             "-e", "MARIADB_USER=duris",
             "-e", "MARIADB_PASSWORD=" + db_password,
             "-e", "MARIADB_ROOT_PASSWORD=" + root_password,
-            "--network=container:hermes", DB_IMAGE,
+            "--publish", "127.0.0.1::3306/tcp", DB_IMAGE,
         ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False)
         require(result.returncode == 0, "could not start disposable MariaDB")
+        host_port = docker_published_port(container)
         wait_for_db(container, root_password)
         bootstrap = (ROOT / "migrations" / "bootstrap_multithread_safe.sql").read_bytes()
         loaded = subprocess.run([
@@ -128,7 +151,7 @@ def start_database(database: str) -> tuple[str, int, str, str]:
         ], input=bootstrap, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
         require(loaded.returncode == 0,
                 "disposable MariaDB bootstrap failed:\n" + loaded.stdout.decode(errors="replace")[-12000:])
-        return container, 3306, root_password, db_password
+        return container, host_port, root_password, db_password
     except BaseException:
         subprocess.run(["docker", "rm", "-f", container], stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL, check=False)
@@ -446,7 +469,9 @@ def main() -> None:
     world = run(["make", "world"], timeout=600)
     require(world.returncode == 0,
             "full-world data generation failed:\n" + world.stdout.decode(errors="replace")[-12000:])
-    with tempfile.TemporaryDirectory(prefix="world-quest-build-", dir=ROOT / "bin/tests") as build_tmp:
+    build_parent = ROOT / "bin" / "tests"
+    build_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="world-quest-build-", dir=build_parent) as build_tmp:
         build_root = pathlib.Path(build_tmp)
         backends = ("mariadb", "flatfile") if REQUESTED_BACKEND == "both" else (REQUESTED_BACKEND,)
         results = [run_backend(backend, build_root) for backend in backends]

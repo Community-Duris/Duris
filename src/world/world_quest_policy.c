@@ -66,6 +66,8 @@ struct quest_zone_profile
 {
 	int number = -1;
 	int runtime_average_level = -1;
+	int64_t mob_level_sum = 0;
+	int64_t mob_level_count = 0;
 	double average_level = -1.0;
 	int map_room = -1;
 	std::vector<quest_mob_profile> mobs;
@@ -217,13 +219,11 @@ void load_mobile_profiles()
 				    IS_AFFECTED3(probe.value, AFF3_ECTOPLASMIC_FORM);
 		profile.hidden = IS_AFFECTED(probe.value, AFF_HIDE);
 		quest_zones[zone].mobs.push_back(profile);
-		quest_zones[zone].average_level = (quest_zones[zone].average_level < 0.0 ?
-							   0.0 :
-							   quest_zones[zone].average_level);
-		const int count = static_cast<int>(quest_zones[zone].mobs.size());
-		quest_zones[zone].average_level +=
-			(static_cast<double>(profile.level) - quest_zones[zone].average_level) /
-			static_cast<double>(count);
+		++quest_zones[zone].mob_level_count;
+		quest_zones[zone].mob_level_sum += profile.level;
+		quest_zones[zone].average_level =
+			static_cast<double>(quest_zones[zone].mob_level_sum) /
+			static_cast<double>(quest_zones[zone].mob_level_count);
 	}
 }
 
@@ -289,8 +289,7 @@ bool static_zone_eligibility(int zone, P_char ch)
 	const int level = GET_LEVEL(ch);
 	if (level < WORLD_QUEST_MIN_LEVEL || level >= TOTALLVLS)
 		return false;
-	if (profile.runtime_average_level <= level - 7 ||
-	    profile.runtime_average_level >= level + 5)
+	if (!world_quest_zone_level_window_accepts(level, profile.runtime_average_level))
 		return false;
 	if (profile.map_room < 0 && level < WORLD_QUEST_MAPLESS_MIN_LEVEL)
 		return false;
@@ -381,8 +380,13 @@ bool world_quest_policy_bootstrap()
 		load_mobile_profiles();
 		for (quest_zone_profile &zone : quest_zones)
 		{
-			if (zone.average_level >= 0.0)
-				zone.runtime_average_level = static_cast<int>(zone.average_level);
+			if (zone.mob_level_count > 0)
+			{
+				zone.average_level = static_cast<double>(zone.mob_level_sum) /
+						     static_cast<double>(zone.mob_level_count);
+				zone.runtime_average_level = world_quest_truncated_average_level(
+					zone.mob_level_sum, zone.mob_level_count);
+			}
 			if (zone.runtime_average_level >= 0)
 				zone_table[&zone - quest_zones.data()].avg_mob_level =
 					zone.runtime_average_level;

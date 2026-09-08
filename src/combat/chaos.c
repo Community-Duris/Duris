@@ -164,7 +164,6 @@ static void chaos_pouch_test_generate(P_char ch, const char *arg)
 		send_to_char("Chaos pouch test generation was not recorded.\r\n", ch);
 }
 
-#ifndef __NO_MYSQL__
 static void chaos_test_funds_committed(P_char ch, bool committed, const currency_command_result &,
 				       unsigned int, const uint8_t *, size_t)
 {
@@ -173,7 +172,6 @@ static void chaos_test_funds_committed(P_char ch, bool committed, const currency
 	else
 		send_to_char("Quest-room test funds failed.\n", ch);
 }
-#endif
 
 static bool chaos_test_account_authorized(P_char ch)
 {
@@ -218,11 +216,6 @@ static bool chaos_test_questroom(P_char ch, char *arg)
 		return true;
 	}
 	send_to_char("Quest-room test move complete.\n", ch);
-#ifdef __NO_MYSQL__
-	ADD_MONEY(ch, 100000);
-	send_to_char("Quest-room test funds queued.\n", ch);
-	send_to_char("Quest-room test funds committed.\n", ch);
-#else
 	if (!currency_transaction_submit_wallet_value(
 		    ch, 100000, currency_reason_type::wallet_reward, 0,
 		    critical_source_site::command, critical_deadline_class::interactive,
@@ -232,7 +225,6 @@ static bool chaos_test_questroom(P_char ch, char *arg)
 		return true;
 	}
 	send_to_char("Quest-room test funds queued.\n", ch);
-#endif
 	return true;
 }
 

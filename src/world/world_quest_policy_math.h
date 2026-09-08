@@ -2,12 +2,28 @@
 #define DURIS_WORLD_QUEST_POLICY_MATH_H
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 
 constexpr int WORLD_QUEST_MIN_LEVEL = 11;
 constexpr int WORLD_QUEST_MAPLESS_MIN_LEVEL = 41;
 constexpr double WORLD_QUEST_LEVEL_FIT_SCALE = 6.0;
 constexpr int WORLD_QUEST_MAX_TARGET_PROBES = 32;
 constexpr int WORLD_QUEST_MAX_HISTORY_CHECKS = 32;
+
+inline int world_quest_truncated_average_level(int64_t level_sum, int64_t sample_count)
+{
+	if (level_sum < 0 || sample_count <= 0)
+		return -1;
+	const int64_t average = level_sum / sample_count;
+	return average > std::numeric_limits<int>::max() ? std::numeric_limits<int>::max() :
+							   static_cast<int>(average);
+}
+
+inline bool world_quest_zone_level_window_accepts(int player_level, int runtime_average_level)
+{
+	return runtime_average_level > player_level - 7 && runtime_average_level < player_level + 5;
+}
 
 inline bool world_quest_item_passes_floor(int quest_level, int itemvalue)
 {

@@ -18,6 +18,7 @@ SQL = source("sql/sql.c").read_text()
 DB = source("world/db.c").read_text()
 CHAOS = source("combat/chaos.c").read_text()
 UTILITY = source("core/utility.c").read_text()
+DUAL_BACKEND = (ROOT / "tests" / "async" / "run_world_quest_dual_backend.py").read_text()
 
 
 def test_policy_math_and_item_floor() -> None:
@@ -139,12 +140,65 @@ def test_local_quest_helper_is_not_a_general_mortal_teleport() -> None:
     assert "ch->desc->host" in CHAOS
     assert "room_vnum != 16633" in CHAOS
     assert "#ifdef TEST_MUD" not in CHAOS
-    assert "ADD_MONEY(ch, 100000);" in CHAOS
+    assert "currency_transaction_submit_wallet_value" in CHAOS
 
 
-def test_flatfile_wallet_path_does_not_submit_mariadb_transactions() -> None:
-    assert "#ifndef __NO_MYSQL__" in UTILITY
-    assert "currency_transaction_submit_wallet_value" in UTILITY
+def test_flatfile_wallet_adjustments_use_backend_neutral_transactions() -> None:
+    add_money = extract_function("core/utility.c", "void ADD_MONEY(")
+    sub_money = extract_function("core/utility.c", "int SUB_MONEY(")
+    for function in (add_money, sub_money):
+        assert "currency_transaction_submit_wallet_value" in function
+        assert "#ifndef __NO_MYSQL__" not in function
+
+
+def test_questroom_wallet_adjustment_reports_async_completion_in_all_backends() -> None:
+    questroom = extract_function("combat/chaos.c", "static bool chaos_test_questroom(")
+    callback = extract_function("combat/chaos.c", "static void chaos_test_funds_committed(")
+    assert "currency_transaction_submit_wallet_value" in questroom
+    assert "chaos_test_funds_committed" in questroom
+    assert "#ifdef __NO_MYSQL__" not in questroom
+    assert "#ifndef __NO_MYSQL__" not in callback
+
+
+def test_zone_average_uses_integer_sum_for_truncation_and_level_boundaries() -> None:
+    harness = r'''
+#include "world/world_quest_policy_math.h"
+int main() {
+    // Split Shield's verified 34 mobile prototypes sum to 544.
+    if (world_quest_truncated_average_level(544, 34) != 16) return 1;
+    if (world_quest_zone_level_window_accepts(11, 16)) return 2;
+    if (!world_quest_zone_level_window_accepts(22, 16)) return 3;
+    return 0;
+}
+'''
+    with tempfile.TemporaryDirectory(prefix="duris-world-quest-average-") as directory:
+        root = Path(directory)
+        source_path = root / "average_test.cpp"
+        binary = root / "average_test"
+        source_path.write_text(harness)
+        subprocess.run(
+            ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
+             "-Isrc", str(source_path), "-o", str(binary)],
+            cwd=ROOT,
+            check=True,
+        )
+        subprocess.run([str(binary)], cwd=ROOT, check=True)
+    assert "mob_level_sum" in POLICY
+    assert "mob_level_count" in POLICY
+    assert "static_cast<double>(zone.mob_level_sum)" in POLICY
+
+
+def test_dual_backend_creates_build_parent_before_temporary_directory() -> None:
+    main = DUAL_BACKEND[DUAL_BACKEND.index("def main()") :]
+    assert 'build_parent = ROOT / "bin" / "tests"' in main
+    assert "build_parent.mkdir(parents=True, exist_ok=True)" in main
+
+
+def test_dual_backend_publishes_mariadb_on_a_dynamic_host_port() -> None:
+    assert "--network=container:hermes" not in DUAL_BACKEND
+    assert '"--publish", "127.0.0.1::3306/tcp"' in DUAL_BACKEND
+    assert '"docker", "port", container, "3306/tcp"' in DUAL_BACKEND
+    assert "return container, port, root_password, db_password" in DUAL_BACKEND
 
 
 def test_quest_reward_uses_accepted_level_cache() -> None:
@@ -171,7 +225,11 @@ if __name__ == "__main__":
         test_mariadb_world_quest_reads_fail_closed,
         test_temporary_mobile_load_failures_are_cleaned,
         test_local_quest_helper_is_not_a_general_mortal_teleport,
-        test_flatfile_wallet_path_does_not_submit_mariadb_transactions,
+        test_flatfile_wallet_adjustments_use_backend_neutral_transactions,
+        test_questroom_wallet_adjustment_reports_async_completion_in_all_backends,
+        test_zone_average_uses_integer_sum_for_truncation_and_level_boundaries,
+        test_dual_backend_creates_build_parent_before_temporary_directory,
+        test_dual_backend_publishes_mariadb_on_a_dynamic_host_port,
         test_quest_reward_uses_accepted_level_cache,
         test_failure_reason_reaches_bartender_feedback,
     ]
