@@ -117,6 +117,26 @@ codec/crash coverage. They are precursor evidence only. They do not perform the 
 representative workload profiles, 30-minute 200-player holds, production-clone query
 measurements, or complete fault/reconciliation matrix required by Session 14.
 
+### Account recovery contracts
+
+Password reset by email is covered by an executed core harness (injected mail sender and
+clock, no network), a wire-level SMTP harness against a fake relay on `127.0.0.1`, a
+source-contract pin set, and a telnet journey that boots the client-free server with a
+fake relay. None of them needs a real relay or a database; the compiled harnesses need
+`g++` plus the libcurl and OpenSSL development headers from the dependency metapackage:
+
+```bash
+python3 tests/async/test_account_recovery.py
+python3 tests/async/test_account_recovery_smtp_live.py
+python3 tests/async/test_account_recovery_contract.py
+python3 tests/async/test_account_recovery_journey.py
+```
+
+The harnesses never print a reset code or an address; a captured code reaches the driver
+only through a temporary file. TLS/STARTTLS and SMTP AUTH are not exercised (the fake relay
+is plaintext on loopback, which the configuration rules permit), so the first production
+send is the first evidence for a real relay.
+
 ### Lifecycle and privacy contracts
 
 Run the source/synthetic controls first:

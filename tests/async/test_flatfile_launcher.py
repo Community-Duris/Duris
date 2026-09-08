@@ -19,7 +19,10 @@ def run(script: pathlib.Path, env: dict[str, str], *arguments: str) -> subproces
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         # A successful cycle includes a 10-second shutdown delay and a real
-        # backup filesystem sync. Allow headroom for concurrent CI builds.
+        # backup filesystem sync. Allow headroom for concurrent CI builds: the
+        # old 20-second budget left everything but that fixed sleep barely ten
+        # seconds, which held on an idle machine and not on a loaded runner
+        # where this suite runs eight tests at a time and several build a server.
         timeout=60,
     )
 

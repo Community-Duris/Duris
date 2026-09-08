@@ -84,6 +84,10 @@ rationale, compensating control, and expiry date.
   and scanned all 19 resolved direct packages. It reported one unfixed MEDIUM advisory
   (`CVE-2024-52005`) for the installed Ubuntu Git package and no fixed HIGH/CRITICAL
   finding. This passes the stated gate but is not a clean or vulnerability-free claim.
+- Follow-up: libcurl4-gnutls-dev added to the build dependencies (2026-09-06); the next security.yml run re-baselines the resolved package count.
+  libcurl enters the SBOM and the Trivy scope with a high advisory cadence, so a fixed
+  HIGH/CRITICAL finding against the Ubuntu 24.04 package fails CI until the distribution
+  update lands; the fix is the package update, never a weakened transport setting.
 - Transitive and deployment dependency vulnerability status: `UNKNOWN` by design.
 
 Security reports follow [SECURITY.md](../../SECURITY.md). Generated reports, scanner

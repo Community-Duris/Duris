@@ -3300,11 +3300,11 @@ int move_cost(P_char ch, int dir)
 
 	int sector_idx_a = (int)world[ch->in_room].sector_type;
 	int sector_idx_b = (int)world[world[ch->in_room].dir_option[dir]->to_room].sector_type;
-	int num_sectors = 12;
+	int num_sectors = NUM_SECT_TYPES;
 	if (sector_idx_a < 0 || sector_idx_a >= num_sectors)
-		sector_idx_a = 3; /* SECT_FIELD */
+		sector_idx_a = SECT_FIELD;
 	if (sector_idx_b < 0 || sector_idx_b >= num_sectors)
-		sector_idx_b = 3;
+		sector_idx_b = SECT_FIELD;
 	a = movement_loss[sector_idx_a];
 	b = movement_loss[sector_idx_b];
 
@@ -6391,11 +6391,15 @@ void hummer(P_obj obj)
 
 bool grouped(P_char ch, P_char ch2)
 {
+	if (!ch || !ch2)
+		return false;
+
 	if (ch->group && ch->group == ch2->group)
 		return true;
 
-	if (SET_BIT(ch->specials.act, ACT_GUILD_GOLEM) ||
-	    SET_BIT(ch2->specials.act, ACT_GUILD_GOLEM))
+	// Players share this bit with PLR_AFK; only NPCs can be guild golems.
+	if ((IS_NPC(ch) && IS_SET(ch->specials.act, ACT_GUILD_GOLEM)) ||
+	    (IS_NPC(ch2) && IS_SET(ch2->specials.act, ACT_GUILD_GOLEM)))
 	{
 		if (ch->player.racewar == ch2->player.racewar)
 			return true;

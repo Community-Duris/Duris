@@ -50,6 +50,35 @@ for token in ("DB_HOST_DEFAULT", "DB_USER_DEFAULT", "DB_PASSWD_DEFAULT", "DB_NAM
     if token in sql_header:
         failures.append(f"src/sql/sql.h restores compiled database default {token}")
 
+# Account recovery mail: the SMTP credential comes from the environment only, is read in
+# exactly one translation unit, and the libcurl surface can neither print error prose nor
+# weaken certificate verification.
+MAIL_SENDER = "src/net/mail_sender.c"
+for path in tracked_files():
+    if not path.is_file():
+        continue
+    relative = path.relative_to(ROOT).as_posix()
+    data = path.read_bytes()
+    if relative.startswith("src/"):
+        for token in (b"MAIL_PASSWORD_DEFAULT", b"MAIL_USERNAME_DEFAULT"):
+            if token in data:
+                failures.append(f"{relative} restores compiled mail credential default {token.decode()}")
+        if re.search(rb'getenv\s*\(\s*"MAIL_PASSWORD"\s*\)', data) and relative != MAIL_SENDER:
+            failures.append(f"{relative} reads MAIL_PASSWORD outside {MAIL_SENDER}")
+        for token in (
+            b"CURLOPT_VERBOSE",
+            b"CURLOPT_ERRORBUFFER",
+            b"CURLOPT_SSL_VERIFYPEER",
+            b"CURLOPT_SSL_VERIFYHOST",
+            b"CURLUSESSL_TRY",
+        ):
+            if token in data:
+                failures.append(
+                    f"{relative} exposes or weakens the libcurl mail transport with {token.decode()}"
+                )
+    elif relative.endswith(".sh") and re.search(rb"\$\{MAIL_PASSWORD[:-]", data):
+        failures.append(f"{relative} restores mail password fallback ${{MAIL_PASSWORD:-")
+
 production_import = (ROOT / "scripts/import_help_to_prod.sh").read_text()
 for token in ("${DB_USER:-", "${DB_PASSWD:-"):
     if token in production_import:
