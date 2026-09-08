@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """Grouping must not mutate act flags, including through AoE/bard/map selection."""
+import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 from _paths import ROOT, SRC, extract_function
+
+
+if shutil.which("g++") is None:
+    print("Skipping test_grouped_flags: g++ compiler not found in PATH")
+    sys.exit(0)
 
 
 def condition(text, anchor):
@@ -30,7 +37,7 @@ def condition(text, anchor):
 bard = extract_function("bard.c", "void event_bardsong(P_char ch,")
 echo = extract_function("bard.c", "void event_echosong(P_char ch,")
 riff = extract_function("bard.c", "void do_riff(P_char ch,")
-map_source = (SRC / "map.c").read_text()
+map_source = (SRC / "map.c").read_text(encoding="utf-8")
 # Execute actual selection predicates; the rest of each event (scheduling,
 # saving throws, spell effects) is deliberately outside this isolated harness.
 selectors = {
@@ -69,7 +76,7 @@ void affect_remove(P_char, affected_type *) { assert(false); }
 P_char get_linking_char(P_char, ush_int) { return nullptr; }
 '''
 # Use production flag definitions, including the bard-local song flags.
-for line in (SRC / "bard.c").read_text().splitlines():
+for line in (SRC / "bard.c").read_text(encoding="utf-8").splitlines():
     if line.startswith(("#define SONG_AGGRESSIVE ", "#define SONG_ALLIES ")):
         harness += line + "\n"
 harness += extract_function("utility.c", "bool grouped(P_char ch,") + "\n"
@@ -81,6 +88,10 @@ int main()
     static_assert(ACT_GUILD_GOLEM == PLR_AFK);
     const unsigned long flags[] = {0, PLR_AFK, ACT_ISNPC, ACT_ISNPC | ACT_GUILD_GOLEM};
     group_list first{}, second{};
+    char_data null_probe{};
+    assert(!grouped(nullptr, &null_probe));
+    assert(!grouped(&null_probe, nullptr));
+    assert(!grouped(nullptr, nullptr));
     unsigned cases = 0;
     for (unsigned a = 0; a < 4; ++a)
     for (unsigned b = 0; b < 4; ++b)
@@ -116,7 +127,7 @@ int main()
         }
         ++cases;
     }
-    puts("grouped/AoE/bard/echo/riff/map flags: 128 cases passed");
+    puts("grouped/AoE/bard/echo/riff/map flags: 128 cases plus null guards passed");
     assert(cases == 128);
 }
 '''

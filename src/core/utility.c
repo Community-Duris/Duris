@@ -6356,6 +6356,9 @@ void hummer(P_obj obj)
 
 bool grouped(P_char ch, P_char ch2)
 {
+	if (!ch || !ch2)
+		return false;
+
 	if (ch->group && ch->group == ch2->group)
 		return true;
 
