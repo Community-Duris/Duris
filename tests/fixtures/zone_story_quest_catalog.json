@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "content_revision": 7,
+  "definitions": [
+    {
+      "definition_id": "zone-story:900:001",
+      "source_system": "zone_story",
+      "zone_number": 900,
+      "source_area": "fixture-area",
+      "giver_vnum": 1001,
+      "completion_key": "zone-story:900:001",
+      "active": true,
+      "eligible_for_zone_completion": true,
+      "repeatable": true,
+      "content_revision": 7
+    },
+    {
+      "definition_id": "zone-story:900:002",
+      "source_system": "zone_story",
+      "zone_number": 900,
+      "source_area": "fixture-area",
+      "giver_vnum": 1002,
+      "completion_key": "zone-story:900:002",
+      "active": true,
+      "eligible_for_zone_completion": true,
+      "repeatable": true,
+      "content_revision": 7
+    },
+    {
+      "definition_id": "zone-story:901:001",
+      "source_system": "zone_story",
+      "zone_number": 901,
+      "source_area": "fixture-area",
+      "giver_vnum": 1003,
+      "completion_key": "zone-story:901:001",
+      "active": true,
+      "eligible_for_zone_completion": true,
+      "repeatable": true,
+      "content_revision": 7
+    }
+  ]
+}
