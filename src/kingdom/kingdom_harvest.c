@@ -1121,9 +1121,15 @@ static bool kingdom_load_one_node(int region, int res)
 	obj_to_room(node, to_room);
 	node = NULL; /* deliberately unusable from here down */
 
-	wizlog(56, "Kingdom %s%s node (richness %d, %d draws) loaded in room %d",
-	       underdark ? "underdark " : "", kingdom_resource_name(res), richness, charges,
-	       room_vnum);
+	/* THE FILE, NOT THE WIZLOG CHANNEL. A cold boot seeds both regions to
+	 * quota in one sweep -- 140 nodes on the shipped counts -- and a line
+	 * each buried every other wizlog message on the mud behind a wall of
+	 * placements nobody had asked to watch. The per-node trail is still
+	 * worth keeping, so it goes where a trail belongs; the sweep that
+	 * called this announces itself once, in kingdom_nodes_reload(). */
+	logit(LOG_KINGDOM, "nodes: %s%s node (richness %d, %d draws) loaded in room %d.",
+	      underdark ? "underdark " : "", kingdom_resource_name(res), richness, charges,
+	      room_vnum);
 
 	return true;
 }
@@ -1259,7 +1265,10 @@ static void kingdom_nodes_reload(int region)
 	 * it freed is as likely to come back a stone seam. That randomness is the
 	 * point of a single population -- a per-resource quota would refill the
 	 * spring, in a new room but as the same world. */
-	for (int have = kingdom_node_census(region); have < wanted; have++)
+	int have = kingdom_node_census(region);
+	int placed = 0;
+
+	for (; have < wanted; have++)
 	{
 		/* A failed placement ends the refill for this pass: whatever
 		 * refused it -- an exhausted 10000-try budget, a missing
@@ -1267,7 +1276,19 @@ static void kingdom_nodes_reload(int region)
 		 * node still short. The next sweep starts fresh. */
 		if (!kingdom_load_one_node(region, number(0, KRES_MAX - 1)))
 			break;
+
+		placed++;
 	}
+
+	/* ONE line per sweep, and only when the sweep did something. Every ten
+	 * minutes a region that is already at quota places nothing, and a
+	 * silent sweep is the normal case: the wizlog channel should carry the
+	 * refills, not a heartbeat. `have` is the standing count reached, which
+	 * falls short of `wanted` exactly when a placement was refused -- so the
+	 * one line that shows a shortfall is also the one worth reading. */
+	if (placed > 0)
+		wizlog(56, "Kingdom nodes: %s replenished %d (%d of %d standing).",
+		       kingdom_node_regions[region].name, placed, have, wanted);
 
 	kingdom_node_schedule_sweep(region);
 }
