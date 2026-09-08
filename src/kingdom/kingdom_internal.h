@@ -414,6 +414,9 @@ long kingdom_guard_promotion_cost(int from, int to);
 /* The CLASS_* bit for a class name a player typed, or 0 for one no guard may
  * take. The list is deliberately short -- see kingdom_guard_classes. */
 int kingdom_guard_class_by_name(const char *name);
+/* >1 with the candidates written into `out` when a stem could mean several
+ * callings, 0 otherwise. See kingdom_guard_class_by_name(). */
+int kingdom_guard_class_ambiguous(const char *name, char *out, size_t out_len);
 /* Display name of a guard class bit, or "unschooled" for 0. */
 const char *kingdom_guard_class_name(int guard_class);
 /* Every class a GUARD may take, comma-separated, into the caller's buffer. */

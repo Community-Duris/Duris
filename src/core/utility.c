@@ -6275,9 +6275,22 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 				continue;
 			}
 		}
-		area_cast_depth++;
-		spell_func(level, ch, (char *)&hit, 0, area_target, NULL);
-		area_cast_depth--;
+		/* A guard, not a bare ++/--. The counter is global, and the pair
+		 * is the whole of what keeps a single-target spell from being
+		 * paid at area rates. One non-local exit out of spell_func()
+		 * would leave it standing above zero for the rest of the boot
+		 * and quietly hand the +20% to every NPC spell cast afterwards;
+		 * a destructor cannot be skipped. */
+		{
+			struct area_cast_guard
+			{
+				area_cast_guard() { area_cast_depth++; }
+				~area_cast_guard() { area_cast_depth--; }
+			} depth_guard;
+
+			spell_func(level, ch, (char *)&hit, 0, area_target, NULL);
+		}
+
 		hit++;
 	}
 

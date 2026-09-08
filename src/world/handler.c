@@ -202,6 +202,36 @@ void recalc_container_weight(P_obj cont)
 	add_weight(cont, delta);
 }
 
+/*
+ * Keep a WEIGHT-REDUCING container honest the moment its load changes.
+ *
+ * obj_to_obj()/obj_from_obj() move an item's FULL weight into and out of the
+ * container it lands in. That is right for the 1,251 containers that reduce
+ * nothing, and wrong for a gathering bag: until something happened to call
+ * container_total_weight() -- only capacity checks do -- the bag's carrier was
+ * billed the whole load and the bag's reduction did nothing at all. The same
+ * asymmetry runs the other way once a recalculation HAS happened: the bag then
+ * holds the reduced figure, and taking an item out subtracts its full weight,
+ * leaving the bag lighter than the truth.
+ *
+ * Neither error accumulates -- recalc_container_weight() recomputes from the
+ * shell plus a fresh sum of the contents, not by incrementing, so it corrects
+ * the figure in either direction -- but between the move and the next capacity
+ * check the number a player is carrying is simply wrong. Calling it here makes
+ * "wrong until something asks" into "right immediately", and
+ * propagate_weight_delta() inside add_weight() carries the correction up to
+ * whoever is holding the bag.
+ *
+ * Gated on the reduction, not on being a container: this reads the prototype,
+ * and every container that reduces nothing keeps the cheap incremental path it
+ * has always had.
+ */
+static void resync_reducing_container(P_obj cont)
+{
+	if (container_weight_reduction_pct(cont) > 0)
+		recalc_container_weight(cont);
+}
+
 void container_reset_empty_weight(P_obj cont)
 {
 	if (!obj_is_container_type(cont))
@@ -2951,6 +2981,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 	}
 
 	add_weight(obj_to, obj->weight);
+	resync_reducing_container(obj_to);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
 	  wgt = GET_OBJ_WEIGHT(obj);
 	  for (tmp_obj = obj->loc.inside; wgt && tmp_obj;
@@ -3019,6 +3050,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 	append_obj_to_list(&obj_to->contains, obj);
 
 	add_weight(obj_to, obj->weight);
+	resync_reducing_container(obj_to);
 
 	mark_container_dirty(obj_to);
 }
@@ -3123,6 +3155,10 @@ void obj_from_obj(P_obj obj)
 	}
 
 	add_weight(obj_from, -(obj->weight));
+
+	/* Safe here and nowhere earlier: `obj` has already been unlinked above,
+	 * so the fresh sum is of what actually remains inside. */
+	resync_reducing_container(obj_from);
 	/*    wgt = GET_OBJ_WEIGHT(obj);
 		    for( tmp = obj->loc.inside; wgt && tmp; tmp = OBJ_INSIDE(tmp) ? tmp->loc.inside : NULL )
 		    {

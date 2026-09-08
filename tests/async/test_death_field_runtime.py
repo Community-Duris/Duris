@@ -47,6 +47,13 @@ static std::map<P_char, std::string> transcript;
 static bool resist = false, evasion = false;
 static float minimum = 60;
 static int announcements;
+/* utility.c's file-static area-cast depth. cast_as_damage_area() is lifted into
+ * this harness verbatim and raises it around each victim's spell, so the
+ * fixture has to own the storage; the reader that consults it lives in
+ * dam_mods.c, which is not lifted. Without this the harness stopped compiling
+ * the moment the depth was introduced -- and a harness that will not build is
+ * the whole test failing, not one assertion. */
+static int area_cast_depth = 0;
 static spellcast_datatype queued{};
 static bool event_pending;
 static P_char queued_caster, queued_victim;

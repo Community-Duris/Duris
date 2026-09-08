@@ -1850,6 +1850,120 @@ def test_prospect_is_open_to_everyone() -> None:
           "guildhall placement and prospecting share one terrain predicate")
 
 
+def test_review_fixes_from_the_second_round_hold() -> None:
+    """The four findings raised in review, each pinned where it was answered.
+
+    Every one of them is a rule that reads as an ordinary line of code and
+    would be silently undone by a plausible edit: an ambiguity guard looks
+    like a redundant loop, a resync looks like a wasted recalculation, an
+    RAII guard looks like a verbose ++/--, and a log line moved to a file
+    looks like a log line that could move back.
+    """
+
+    # ------------------------------------------------------------------ #
+    # 1. an ambiguous calling resolves to NOTHING, not to the first row    #
+    # ------------------------------------------------------------------ #
+    guards = read("src/kingdom/kingdom_guards.c")
+    matcher = function_bodies(guards, r"\bint\s+kingdom_guard_class_by_name\s*\(")
+    check(len(matcher) == 1, "kingdom_guard_class_by_name is defined once", f"{len(matcher)}")
+    if matcher:
+        code = strip_comments(matcher[0])
+        check("matches == 1" in code,
+              "a stem matching several callings resolves to nothing rather than to "
+              "whichever row the table happens to list first")
+        check("strcasecmp(name" in code,
+              "a full calling name still wins outright, which is what keeps the "
+              "persistence round-trip in kingdom_db_valid_guard_class() true")
+
+    # The exact-match rule above is only safe while no calling is a prefix of
+    # another; if one ever is, a full name becomes ambiguous and persistence
+    # starts rejecting a class it wrote itself.
+    names = re.findall(r'\{\s*"([a-z]+)",\s*CLASS_', guards)
+    check(len(names) >= 20, "the calling table was found", f"{len(names)} names")
+    shadowed = sorted({(a, b) for a in names for b in names if a != b and b.startswith(a)})
+    check(not shadowed,
+          "no calling name is a prefix of another, so an exact name is never ambiguous",
+          str(shadowed))
+
+    # Five verbs take a typed calling and three of them charge prestige for it.
+    claim = strip_comments(read("src/kingdom/kingdom_claim.c"))
+    check(claim.count("kingdom_guard_class_ambiguous(") == 5,
+          "every verb that takes a typed calling says what an ambiguous stem could "
+          "have meant instead of calling it unknown",
+          f"{claim.count('kingdom_guard_class_ambiguous(')} call sites")
+
+    # ------------------------------------------------------------------ #
+    # 2. a weight-reducing container is resynced the moment its load moves #
+    # ------------------------------------------------------------------ #
+    handler = read("src/world/handler.c")
+    resync = function_bodies(handler, r"\bstatic\s+void\s+resync_reducing_container\s*\(")
+    check(len(resync) == 1, "resync_reducing_container is defined once", f"{len(resync)}")
+    if resync:
+        code = strip_comments(resync[0])
+        check("container_weight_reduction_pct(cont) > 0" in code,
+              "the resync is gated on the reduction, so a container that reduces "
+              "nothing keeps its cheap incremental path")
+        check("recalc_container_weight(cont)" in code,
+              "the resync recomputes from the shell plus a fresh sum, so it corrects "
+              "the weight in either direction")
+
+    for signature, argument in ((r"\bvoid\s+obj_to_obj\s*\(", "obj_to"),
+                                (r"\bvoid\s+obj_to_obj_at_end\s*\(", "obj_to"),
+                                (r"\bvoid\s+obj_from_obj\s*\(", "obj_from")):
+        bodies = function_bodies(handler, signature)
+        check(len(bodies) == 1, f"{signature} is defined once", f"{len(bodies)}")
+        if not bodies:
+            continue
+        code = strip_comments(bodies[0])
+        check(f"resync_reducing_container({argument})" in code,
+              f"{argument} is resynced after its load changes, so a gathering bag's "
+              "carrier is billed the reduced weight immediately")
+        moved = code.find(f"add_weight({argument}")
+        synced = code.find(f"resync_reducing_container({argument})")
+        check(-1 < moved < synced,
+              f"the resync of {argument} runs after the item has finished moving, so "
+              "the fresh sum is of what is actually inside")
+
+    # ------------------------------------------------------------------ #
+    # 3. the area-cast depth cannot leak past a non-local exit             #
+    # ------------------------------------------------------------------ #
+    utility = strip_comments(read("src/core/utility.c"))
+    check(utility.count("area_cast_depth++") == 1 and utility.count("area_cast_depth--") == 1,
+          "the area-cast depth is raised and lowered in exactly one place each")
+    guard_at = utility.find("struct area_cast_guard")
+    raised = utility.find("area_cast_depth++")
+    lowered = utility.find("area_cast_depth--")
+    spell = utility.find("spell_func(level, ch, (char *)&hit, 0, area_target, NULL)")
+    check(-1 < guard_at < raised < lowered < spell,
+          "both halves of the pair are written before the spell runs, which they can "
+          "only be inside a guard whose destructor cannot be skipped",
+          f"guard {guard_at}, ++ {raised}, -- {lowered}, call {spell}")
+
+    # ------------------------------------------------------------------ #
+    # 4. placement writes a file line; the sweep writes the wizlog line    #
+    # ------------------------------------------------------------------ #
+    harvest_text = read("src/kingdom/kingdom_harvest.c")
+    node = function_bodies(harvest_text, r"\bstatic\s+bool\s+kingdom_load_one_node\s*\(")
+    check(len(node) == 1 and "wizlog(" not in node[0],
+          "placing one node writes no wizlog line, so a cold boot's 140 placements "
+          "cannot bury the channel")
+    sweep = function_bodies(harvest_text, r"\bstatic\s+void\s+kingdom_nodes_reload\s*\(")
+    check(len(sweep) == 1 and "wizlog(" in sweep[0] and "placed > 0" in sweep[0],
+          "the sweep announces itself once, and only when it actually placed something")
+
+    mining_text = read("src/economy/mining.c")
+    # Not "no wizlog at all": the one that survives in load_one_mine reports a
+    # missing prototype, which is an error worth a channel and happens once.
+    mine = function_bodies(mining_text, r"\bbool\s+load_one_mine\s*\(")
+    check(len(mine) == 1
+          and 'wizlog(56, "Mine (' not in mine[0]
+          and 'logit(LOG_DEBUG, "mines: mine' in mine[0],
+          "placing one mine writes a file line rather than a wizlog line")
+    mines = function_bodies(mining_text, r"\bvoid\s+load_mines\s*\(")
+    check(len(mines) == 1 and "wizlog(" in mines[0] and "placed > 0" in mines[0],
+          "a mine pass announces itself once, and only when it placed something")
+
+
 for _name, _fn in sorted(globals().items()):
     if _name.startswith("test_") and callable(_fn):
         _fn()

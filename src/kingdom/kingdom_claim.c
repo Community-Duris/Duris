@@ -1122,6 +1122,23 @@ void kingdom_roster_hire(P_char ch, char *rest)
 
 	one_argument(rest, wanted);
 
+	/* Before anything is charged: an ambiguous stem now resolves to
+	 * nothing (kingdom_guard_class_by_name()), and "that is not a
+	 * calling" would be a lie about a word that names several. */
+	char could_mean[256];
+
+	if (kingdom_guard_class_ambiguous(wanted, could_mean, sizeof(could_mean)))
+	{
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "'&+W%s&n' could be %s. Type enough of the name to tell them "
+			 "apart.\r\n",
+			 wanted, could_mean);
+		send_to_char(say, ch);
+		return;
+	}
+
 	const int guard_class = kingdom_guard_class_by_name(wanted);
 
 	if (guard_class && kingdom_guard_class_is_specialised(guard_class))
@@ -1280,6 +1297,23 @@ void kingdom_roster_upgrade(P_char ch, char *rest)
 
 	if (*wanted)
 	{
+		/* Before anything is charged: an ambiguous stem now resolves to
+		 * nothing (kingdom_guard_class_by_name()), and "that is not a
+		 * calling" would be a lie about a word that names several. */
+		char could_mean[256];
+
+		if (kingdom_guard_class_ambiguous(wanted, could_mean, sizeof(could_mean)))
+		{
+			char say[MAX_STRING_LENGTH];
+
+			snprintf(say, sizeof(say),
+				 "'&+W%s&n' could be %s. Type enough of the name to tell them "
+				 "apart.\r\n",
+				 wanted, could_mean);
+			send_to_char(say, ch);
+			return;
+		}
+
 		guard_class = kingdom_guard_class_by_name(wanted);
 
 		if (!guard_class || kingdom_guard_class_is_specialised(guard_class))
@@ -1426,6 +1460,29 @@ void kingdom_roster_champion(P_char ch, char *rest)
 	rest = one_argument(rest, first);
 	one_argument(rest, second);
 
+	/* Both names, before anything is charged: an ambiguous stem now resolves
+	 * to nothing (kingdom_guard_class_by_name()), and the refusal below --
+	 * which is about needing two DIFFERENT callings -- would say nothing
+	 * about the word that was actually the problem. */
+	const char *const typed_names[2] = { first, second };
+
+	for (const char *typed : typed_names)
+	{
+		char could_mean[512];
+
+		if (!kingdom_guard_class_ambiguous(typed, could_mean, sizeof(could_mean)))
+			continue;
+
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "'&+W%s&n' could be %s. Type enough of the name to tell them "
+			 "apart.\r\n",
+			 typed, could_mean);
+		send_to_char(say, ch);
+		return;
+	}
+
 	const int class_one = kingdom_guard_class_by_name(first);
 	const int class_two = kingdom_guard_class_by_name(second);
 
@@ -1564,6 +1621,23 @@ void kingdom_roster_respec(P_char ch, char *rest)
 		return;
 	}
 
+	/* Before anything is charged: an ambiguous stem now resolves to
+	 * nothing (kingdom_guard_class_by_name()), and "that is not a
+	 * calling" would be a lie about a word that names several. */
+	char could_mean[256];
+
+	if (kingdom_guard_class_ambiguous(wanted, could_mean, sizeof(could_mean)))
+	{
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "'&+W%s&n' could be %s. Type enough of the name to tell them "
+			 "apart.\r\n",
+			 wanted, could_mean);
+		send_to_char(say, ch);
+		return;
+	}
+
 	const int guard_class = kingdom_guard_class_by_name(wanted);
 
 	if (!guard_class || kingdom_guard_class_is_specialised(guard_class))
@@ -1656,6 +1730,29 @@ void kingdom_roster_champion_respec(P_char ch, char *rest)
 
 	rest = one_argument(rest, first);
 	one_argument(rest, second);
+
+	/* Both names, before anything is charged: an ambiguous stem now resolves
+	 * to nothing (kingdom_guard_class_by_name()), and the refusal below --
+	 * which is about needing two DIFFERENT callings -- would say nothing
+	 * about the word that was actually the problem. */
+	const char *const typed_names[2] = { first, second };
+
+	for (const char *typed : typed_names)
+	{
+		char could_mean[512];
+
+		if (!kingdom_guard_class_ambiguous(typed, could_mean, sizeof(could_mean)))
+			continue;
+
+		char say[MAX_STRING_LENGTH];
+
+		snprintf(say, sizeof(say),
+			 "'&+W%s&n' could be %s. Type enough of the name to tell them "
+			 "apart.\r\n",
+			 typed, could_mean);
+		send_to_char(say, ch);
+		return;
+	}
 
 	const int class_one = kingdom_guard_class_by_name(first);
 	const int class_two = kingdom_guard_class_by_name(second);

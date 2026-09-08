@@ -558,16 +558,82 @@ static const struct
 constexpr int kingdom_guard_class_count =
 	(int)(sizeof(kingdom_guard_classes) / sizeof(kingdom_guard_classes[0]));
 
+/*
+ * Resolve a typed calling, and REFUSE A STEM THAT COULD MEAN MORE THAN ONE.
+ *
+ * The engine's habit is that the first table entry a prefix matches wins, and
+ * that is fine for a verb you can retype. These verbs spend 1,000 and 5,000
+ * prestige, and the table has eleven stems that fork: `c` reaches cleric before
+ * conjurer, `s` reaches shaman before sorcerer and summoner, `d` reaches druid
+ * before dreadlord and dragoon. Buying the wrong calling because the first
+ * letter happened to land on an earlier row is not a mistake a player can undo
+ * without paying again, so an ambiguous stem resolves to nothing and the verb
+ * says what it could have meant.
+ *
+ * A full name still wins outright, which is also what keeps the round-trip in
+ * kingdom_db_valid_guard_class() -- name to bit and back -- true: no calling in
+ * the table is a prefix of another, so an exact match is never ambiguous.
+ */
 int kingdom_guard_class_by_name(const char *name)
 {
 	if (!name || !*name)
 		return 0;
 
+	int only = 0;
+	int matches = 0;
+
 	for (int i = 0; i < kingdom_guard_class_count; i++)
-		if (is_abbrev(name, kingdom_guard_classes[i].name))
+	{
+		if (!is_abbrev(name, kingdom_guard_classes[i].name))
+			continue;
+
+		if (!strcasecmp(name, kingdom_guard_classes[i].name))
 			return kingdom_guard_classes[i].bit;
 
-	return 0;
+		only = kingdom_guard_classes[i].bit;
+		matches++;
+	}
+
+	return matches == 1 ? only : 0;
+}
+
+/*
+ * What an unresolved stem could have meant, comma-separated, and how many that
+ * was. Answers 0 for a stem that named nothing at all, so a refusal can tell
+ * "type more of it" apart from "that is not a calling" -- the first is worth a
+ * different sentence, and after the ambiguity rule above it is the case a
+ * player who typed one letter will actually hit.
+ */
+int kingdom_guard_class_ambiguous(const char *name, char *out, size_t out_len)
+{
+	if (out && out_len)
+		out[0] = '\0';
+
+	if (!name || !*name)
+		return 0;
+
+	int matches = 0;
+
+	for (int i = 0; i < kingdom_guard_class_count; i++)
+	{
+		if (!is_abbrev(name, kingdom_guard_classes[i].name))
+			continue;
+
+		matches++;
+
+		if (!out || !out_len)
+			continue;
+
+		const size_t used = strlen(out);
+
+		if (used + 2 >= out_len)
+			continue;
+
+		snprintf(out + used, out_len - used, "%s%s", used ? ", " : "",
+			 kingdom_guard_classes[i].name);
+	}
+
+	return matches > 1 ? matches : 0;
 }
 
 /* True for a calling only the champion may take. The persistence validators
