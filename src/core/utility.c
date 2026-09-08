@@ -3300,11 +3300,11 @@ int move_cost(P_char ch, int dir)
 
 	int sector_idx_a = (int)world[ch->in_room].sector_type;
 	int sector_idx_b = (int)world[world[ch->in_room].dir_option[dir]->to_room].sector_type;
-	int num_sectors = 12;
+	int num_sectors = NUM_SECT_TYPES;
 	if (sector_idx_a < 0 || sector_idx_a >= num_sectors)
-		sector_idx_a = 3; /* SECT_FIELD */
+		sector_idx_a = SECT_FIELD;
 	if (sector_idx_b < 0 || sector_idx_b >= num_sectors)
-		sector_idx_b = 3;
+		sector_idx_b = SECT_FIELD;
 	a = movement_loss[sector_idx_a];
 	b = movement_loss[sector_idx_b];
 
