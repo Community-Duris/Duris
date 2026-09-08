@@ -192,7 +192,26 @@ assert "fence->revision == durable_ready.back().revision" in dispatcher
 assert "fence->revision == completions[index].revision" in pulse
 assert "completions[index].durable_revision >= fence->revision" in pulse
 assert "std::chrono::steady_clock::now()" in terminal
-assert "player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, &revision)" in terminal
+# Both terminal entry points reserve the fence and mark a fresh ALL revision.
+begin_fence = section(
+    PIPELINE,
+    "bool begin_terminal_fence(int pid, player_revision_t *revision)",
+    "player_save_terminal_result await_terminal_fence",
+)
+assert "player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, revision)" in begin_fence
+assert terminal.count("begin_terminal_fence(pid, &revision)") == 2
+# A refused corpse handoff is finalized by recording the death itself, not by
+# checkpointing a character whose refused assets are still only live objects.
+death_terminal = section(
+    PIPELINE,
+    "player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,",
+    "/** Pump the pipeline until this player revision is durable",
+)
+assert "player_death_snapshot_capture(ch, corpse, wallet_pile, operation_id, revision" in death_terminal
+assert death_terminal.index("player_death_snapshot_capture") < death_terminal.index(
+    "enqueue_snapshot(std::move(snapshot))"
+) < death_terminal.index("await_terminal_fence(pid, revision")
+assert "player_save_pipeline_checkpoint_dirty" not in death_terminal
 assert "promote_existing" not in terminal
 assert terminal.index("if (fence->acknowledged)") < terminal.index("if (allow_journal_handoff")
 assert "*fence = {};" in terminal
@@ -213,13 +232,45 @@ print("nonterminal player save pipeline contracts passed")
 
 # Run the actual terminal coordinator against controlled worker ACKs. In
 # particular, an ACKed nonterminal retry must not authorize a later camp.
+# The slice starts inside the anonymous namespace holding the fence helpers.
+terminal_slice = "namespace\n{\n" + section(
+    PIPELINE,
+    "bool begin_terminal_fence(int pid, player_revision_t *revision)",
+    "void player_save_pipeline_pulse",
+)
 terminal_preamble = r'''
 #include "player/player_save_pipeline.h"
+#include "player/player_snapshot.h"
+#include "player/player_snapshot_capture.h"
 #include <cassert>
 #include <chrono>
 #include <mutex>
 #include <thread>
 struct char_data { int pid; };
+struct obj_data { int uid; };
+player_snapshot_capture_result death_capture_result = player_snapshot_capture_result::ok;
+int death_enqueued = 0;
+bool enqueue_refused = false;
+bool queue_mismatch = false;
+player_snapshot_capture_result player_death_snapshot_capture(
+    P_char ch, P_obj, P_obj, const critical_operation_id &, player_revision_t revision, int,
+    const std::vector<critical_operation_id> &, player_snapshot *snapshot)
+{
+    snapshot->pid = ch->pid;
+    snapshot->revision = revision;
+    snapshot->components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+    if (queue_mismatch) snapshot->components = PLAYER_COMPONENT_STATUS;
+    return death_capture_result;
+}
+player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot)
+{
+    player_revision_snapshot current = {};
+    assert(player_revision_snapshot_copy(snapshot.pid, &current));
+    assert(current.queued_revision == snapshot.revision);
+    assert(current.queued_components == snapshot.components);
+    ++death_enqueued;
+    return enqueue_refused ? player_save_pipeline_result::unavailable : player_save_pipeline_result::queued;
+}
 #define IS_NPC(ch) false
 #define GET_PID(ch) ((ch)->pid)
 #define LOG_STATUS 0
@@ -231,7 +282,7 @@ int captured_intent = 1, captured_room = 0;
 player_revision_t captured_revision = 0;
 bool database_ready = true, journal_ready = false;
 terminal_fence *find_terminal_fence_locked(int pid) { return fence.pid == pid ? &fence : nullptr; }
-terminal_fence *allocate_terminal_fence_locked(int pid) { fence.pid = pid; return &fence; }
+terminal_fence *allocate_terminal_fence_locked(int pid) { if (fence.pid && fence.pid != pid) return nullptr; fence.pid = pid; return &fence; }
 bool trace_player_saves() { return true; }
 bool snapshot_is_journaled_locked(const player_revision_snapshot &) { return true; }
 uint64_t persistence_observability_now_usec() { return 0; }
@@ -303,6 +354,60 @@ int main() {
         assert(player_save_pipeline_terminal(&player, 4, 22804, 20, true) ==
                player_save_terminal_result::journal_durable);
         assert(captured_intent == 4 && captured_room == 22804);
+
+        // A death with no live corpse has nothing to record, and must not reserve
+        // a fence or mark a revision on the way to finding that out.
+        const critical_operation_id operation = {};
+        const player_revision_t before_death = captured_revision;
+        assert(player_save_pipeline_terminal_death(&player, nullptr, nullptr, operation,
+                                                   22805, 20, false) ==
+               player_save_terminal_result::invalid);
+        assert(captured_revision == before_death && captured_room == 22804);
+
+        // Neither backend could take the record. The caller is told so it can keep
+        // the live character and its refused assets instead of releasing them.
+        obj_data corpse{1};
+        database_ready = false; journal_ready = false;
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22806, 1, false) ==
+               player_save_terminal_result::timed_out);
+        // Capacity refusal cannot enqueue a partial record or authorize release,
+        // even if an older terminal fence had already been acknowledged.
+        const int enqueued_before = death_enqueued;
+        const auto failures_before = health.capture_failures;
+        fence.acknowledged = true;
+        death_capture_result = player_snapshot_capture_result::limit_exceeded;
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22806, 20, true) ==
+               player_save_terminal_result::invalid);
+        assert(death_enqueued == enqueued_before);
+        assert(health.capture_failures == failures_before + 1);
+        assert(fence.pid == 0);
+        // Repeated failures on distinct players must not consume fence capacity.
+        for (int pid = 2; pid <= 300; ++pid) {
+            char_data other{pid};
+            assert(player_revision_hydrate(pid, 1));
+            assert(player_save_pipeline_terminal_death(&other, &corpse, nullptr, operation,
+                                                       22806, 20, false) ==
+                   player_save_terminal_result::invalid);
+            assert(fence.pid == 0);
+        }
+        death_capture_result = player_snapshot_capture_result::ok;
+        for (int refusal = 0; refusal < 2; ++refusal) {
+            queue_mismatch = refusal == 0;
+            enqueue_refused = refusal == 1;
+            assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                       22806, 20, false) ==
+                   player_save_terminal_result::unavailable);
+            assert(fence.pid == 0);
+        }
+        queue_mismatch = false; enqueue_refused = false;
+        database_ready = true;
+        assert(player_save_pipeline_terminal(&player, 6, 22806, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
+        assert(player_save_pipeline_terminal_death(&player, &corpse, nullptr, operation,
+                                                   22806, 20, false) ==
+               player_save_terminal_result::database_acknowledged);
     }
 }
 '''
@@ -310,7 +415,7 @@ terminal_build = ROOT / "bin/tests/terminal-save-intent"
 terminal_build.mkdir(parents=True, exist_ok=True)
 terminal_source = terminal_build / "regression.cpp"
 terminal_binary = terminal_build / "regression"
-terminal_source.write_text(terminal_preamble + terminal + terminal_main)
+terminal_source.write_text(terminal_preamble + terminal_slice + terminal_main)
 subprocess.run([
     "g++", "-std=c++20", "-Isrc", str(terminal_source),
     "src/player/player_revision_state.c", "-pthread", "-o", str(terminal_binary),

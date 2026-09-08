@@ -48,7 +48,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
 	 src/economy/boon_reward_command.c src/economy/boon_reward_repository.c \
 	 src/world/zone_touch_command.c src/world/zone_touch_repository.c \
 	 src/account/session_audit_command.c src/account/session_audit_repository.c \
-	 src/persistence/critical_command_repository.c \
+	 src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
+    src/persistence/critical_command_repository.c \
     "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/critical_command_mysql_harness"
 "$ROOT/bin/tests/critical_command_mysql_harness"

@@ -1,6 +1,9 @@
 #include "player/player_load_repository.h"
 
 #include "persistence/persistence_observability.h"
+#include "player/player_snapshot_codec.h"
+#include "world/vnum.obj.h"
+#include "core/structs.h"
 
 #include <mysql/mysql.h>
 
@@ -10,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <strings.h>
@@ -685,7 +689,9 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"pi.bitvector2,pi.bitvector3,pi.bitvector4,pi.bitvector5,pi.item_material,"
 		"pi.obj_uid,pi.item_condition,own.item_uid,own.root_item_uid,"
 		"own.parent_item_uid,own.owner_type,own.owner_id,own.owner_context_id,"
-		"own.item_revision,own.vnum,own.state,owner_revision.revision FROM player_items pi "
+		"own.item_revision,own.vnum,own.state,owner_revision.revision,"
+		"(own.coin_payload IS NOT NULL OR (own.vnum=3 AND own.state=2 AND "
+		"own.owner_type=8 AND own.owner_id=0 AND own.owner_context_id=0)) FROM player_items pi "
 		"LEFT JOIN item_current_owner own ON own.item_uid=pi.obj_uid LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=own.owner_type "
 		"AND owner_revision.owner_id=own.owner_id AND "
@@ -694,6 +700,18 @@ bool load_items(MYSQL *connection, player_load_result *result)
 	if (!load_rows(connection, item_sql, result,
 		       [&](MYSQL_ROW row)
 		       {
+			       if (row[41] && !strcmp(row[41], "1"))
+			       {
+				       uint64_t database_id = 0;
+				       if (!parse_unsigned(row[0], UINT64_MAX, &database_id))
+					       return false;
+				       // A snapshot may predate the coin commit. Its amount and
+				       // metadata must not override the authoritative payload below.
+				       // Explicitly destroyed coins are completed pickups, not
+				       // corruption to count toward the login refusal threshold.
+				       stale_database_ids.insert(database_id);
+				       return true;
+			       }
 			       if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX)
 			       {
 				       result->outcome = player_load_outcome::limit_exceeded;
@@ -744,6 +762,61 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		       }))
 		return false;
 
+	// Reconstruct committed piles even if the process stopped before a player
+	// snapshot could publish them. Placement comes from the same custody row.
+	const std::string coin_sql =
+		"SELECT own.item_uid,own.root_item_uid,COALESCE(own.parent_item_uid,0),"
+		"own.item_revision,revision.revision,own.coin_payload FROM item_current_owner own "
+		"JOIN item_owner_revision revision ON revision.owner_type=own.owner_type "
+		"AND revision.owner_id=own.owner_id AND revision.owner_context_id=own.owner_context_id "
+		"WHERE own.owner_type=1 AND own.owner_id=" +
+		pid +
+		" AND own.owner_context_id=0 AND own.state=1 AND own.coin_payload IS NOT NULL ORDER BY own.item_uid";
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> coin_rows(
+		query(connection, coin_sql, result), mysql_free_result);
+	if (!coin_rows)
+		return false;
+	uint64_t next_database_id = 0;
+	for (const auto &entry : item_by_database_id)
+		next_database_id = std::max(next_database_id, entry.first);
+	for (uint64_t database_id : stale_database_ids)
+		next_database_id = std::max(next_database_id, database_id);
+	while (MYSQL_ROW row = mysql_fetch_row(coin_rows.get()))
+	{
+		if (result->snapshot.items.size() >= PLAYER_LOAD_ITEM_MAX ||
+		    next_database_id == UINT64_MAX ||
+		    !add_result_budget(coin_rows.get(), row, result))
+		{
+			result->outcome = player_load_outcome::limit_exceeded;
+			return false;
+		}
+		player_load_item_identity identity;
+		identity.database_id = ++next_database_id;
+		identity.quantity = 1;
+		identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+		identity.owner = { item_owner_type::player, static_cast<uint64_t>(result->pid), 0 };
+		identity.state = item_custody_state::active;
+		const auto *lengths = mysql_fetch_lengths(coin_rows.get());
+		std::vector<player_item_snapshot> items;
+		if (!parse_unsigned(row[0], UINT64_MAX, &identity.item_uid) ||
+		    !parse_unsigned(row[1], UINT64_MAX, &identity.root_item_uid) ||
+		    !parse_unsigned(row[2], UINT64_MAX, &identity.parent_item_uid) ||
+		    !parse_unsigned(row[3], UINT64_MAX, &identity.item_revision) ||
+		    !parse_unsigned(row[4], UINT64_MAX, &identity.owner_revision) || !lengths ||
+		    !row[5] ||
+		    player_item_snapshot_list_decode(reinterpret_cast<const uint8_t *>(row[5]),
+						     lengths[5],
+						     &items) != player_snapshot_codec_result::ok ||
+		    items.size() != 1 || items[0].object_uid != identity.item_uid ||
+		    items[0].vnum != VOBJ_COINS || items[0].type != ITEM_MONEY ||
+		    item_by_uid.count(identity.item_uid))
+			return false;
+		const size_t index = result->snapshot.items.size();
+		item_by_uid.emplace(identity.item_uid, index);
+		result->snapshot.items.push_back(std::move(items[0]));
+		result->item_identities.push_back(identity);
+	}
+
 	// Custody is authoritative. A stale player_items.container_id is repaired in the
 	// materialized graph instead of locking out the whole character; the post-entry
 	// full save then rewrites the projection with this placement.
@@ -754,8 +827,10 @@ bool load_items(MYSQL *connection, player_load_result *result)
 
 	const std::string ownership_summary_sql =
 		"SELECT COALESCE(owner_revision.revision,0),COUNT(own.item_uid),"
-		"COALESCE(SUM(CASE WHEN own.item_uid IS NOT NULL AND payload.obj_uid IS NULL THEN 1 "
-		"ELSE 0 END),0),owner_revision.owner_id IS NOT NULL,COUNT(payload.obj_uid) FROM "
+		"COALESCE(SUM(CASE WHEN own.item_uid IS NOT NULL AND own.coin_payload IS NULL "
+		"AND payload.obj_uid IS NULL THEN 1 ELSE 0 END),0),owner_revision.owner_id IS NOT NULL,"
+		"COALESCE(SUM(own.item_uid IS NOT NULL AND (own.coin_payload IS NOT NULL OR "
+		"payload.obj_uid IS NOT NULL)),0) FROM "
 		"(SELECT 1) singleton LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=" +
 		std::to_string(static_cast<unsigned int>(item_owner_type::player)) +
@@ -766,7 +841,7 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		" AND own.owner_id=" + pid + " AND own.owner_context_id=0 AND own.state=" +
 		std::to_string(static_cast<unsigned int>(item_custody_state::active)) +
 		" LEFT JOIN (SELECT pi.obj_uid FROM player_items pi WHERE pi.pid=" + pid +
-		" UNION ALL SELECT ppi.obj_uid FROM player_pet_items ppi JOIN player_pets pp ON "
+		" UNION SELECT ppi.obj_uid FROM player_pet_items ppi JOIN player_pets pp ON "
 		"pp.id=ppi.pet_id WHERE pp.owner_pid=" +
 		pid + ") payload ON payload.obj_uid=own.item_uid" +
 		" GROUP BY owner_revision.revision,owner_revision.owner_id";

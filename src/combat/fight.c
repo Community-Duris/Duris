@@ -58,6 +58,9 @@
 #include "net/ws_handlers.h"
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
+#include "economy/currency_transaction.h"
+#include "player/player_save_pipeline.h"
+#include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "combat/combat_outcome_transaction.h"
@@ -1474,6 +1477,25 @@ P_obj corpse_live_item(uint64_t uid)
 	return NULL;
 }
 
+// A refused corpse handoff resubmits into the same refusal forever. The owner is
+// recorded here so the death finalizes through the durable disposition instead.
+bool corpse_transfer_disputed(P_char character)
+{
+	return character && IS_PC(character) && character->only.pc->death_custody_disputed;
+}
+
+void note_corpse_transfer_dispute(P_char character)
+{
+	if (character && IS_PC(character))
+		character->only.pc->death_custody_disputed = true;
+}
+
+void clear_corpse_transfer_dispute(P_char character)
+{
+	if (character && IS_PC(character))
+		character->only.pc->death_custody_disputed = false;
+}
+
 bool submit_next_corpse_item(P_char character, P_obj corpse);
 
 void corpse_item_completion(P_char character, bool committed, const item_transfer_result &result,
@@ -1487,9 +1509,12 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 	P_obj item = corpse_live_item(context.item_uid);
 	if (!committed)
 	{
+		// Resubmitting reproduces the refusal. The death is finalized through the
+		// durable disposition, which preserves the refused payload and custody.
+		note_corpse_transfer_dispute(character);
 		persistence_alert(AVATAR, "corpse", "ownership_transfer", "none", "none",
-				  "rejected_preserved", "item_uid=%llu error=%u", context.item_uid,
-				  error_code);
+				  "rejected_preserved", "item_uid=%llu error=%u disputed=1",
+				  context.item_uid, error_code);
 		return;
 	}
 	if (!corpse || !item || !OBJ_CARRIED_BY(item, character) ||
@@ -1520,14 +1545,6 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 		return false;
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(character)), 0 };
-	for (P_obj candidate = character->carrying, next = NULL; candidate; candidate = next)
-	{
-		next = candidate->next_content;
-		if (GET_ITEM_TYPE(candidate) != ITEM_MONEY)
-			continue;
-		obj_from_char(candidate);
-		obj_to_obj(candidate, corpse);
-	}
 	P_obj item = NULL;
 	item_ownership_runtime_entry runtime = {};
 	for (P_obj candidate = character->carrying; candidate; candidate = candidate->next_content)
@@ -1616,8 +1633,10 @@ P_obj make_corpse(P_char ch, int loss)
 	 * things.)
 	 */
 
-	if (!IS_TRUSTED(ch))
-		money_to_inventory(ch);
+	// A wallet that cannot even be submitted for conversion still owes its coins.
+	// Record the dispute so the death finalizes through the durable disposition.
+	if (!IS_TRUSTED(ch) && !money_to_inventory(ch))
+		note_corpse_transfer_dispute(ch);
 
 	corpse->value[CORPSE_LEVEL] = GET_LEVEL(ch); /* for animate dead */
 
@@ -1819,7 +1838,8 @@ P_obj make_corpse(P_char ch, int loss)
 		// transfer conflict, and a refusal here reads as failed_preserved even
 		// though nothing was lost. die() defers the death while the pipeline is
 		// busy and the recovery event restarts the chain once it drains.
-		if (!item_movement_transaction_player_busy(ch))
+		if (!item_movement_transaction_player_busy(ch) &&
+		    !currency_transaction_player_busy(ch))
 			(void)submit_next_corpse_item(ch, corpse);
 	}
 
@@ -2434,6 +2454,57 @@ void kill_gain(P_char ch, P_char victim);
  */
 #define DEATH_EXTRACT_RETRY_INITIAL 4
 #define DEATH_EXTRACT_RETRY_MAX 60
+// The death recovery budget: a refused handoff must reach durable storage and
+// release the character to the account menu inside this window.
+#define DEATH_DISPOSITION_TIMEOUT_MSEC 2000
+
+/** Finish a death whose record is durable: report it, then release to the account menu. */
+static void release_after_terminal_death(P_char ch, const char *outcome)
+{
+	persistence_alert(AVATAR, "player_save", "death", "none", "none", outcome,
+			  "extract_refused=0");
+	send_to_char("Your death has been recorded; the world lets go of you.\r\n", ch);
+	ch->only.pc->pc_timer[1] = 0; // reset flee timer
+	add_track(ch, NUM_EXITS);
+	if (GET_LEVEL(ch) < MINLVLIMMORTAL)
+		update_ingame_racewar(-GET_RACEWAR(ch));
+	extract_char_after_terminal_save(ch);
+}
+
+/** Record the refused death disposition durably; false keeps live state for a retry. */
+static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)
+{
+	P_obj corpse = corpse_uid ? corpse_live_item(corpse_uid) : NULL;
+	critical_operation_id operation = {};
+	if (!ch || !corpse || !critical_operation_id_generate(&operation))
+		return false;
+	P_obj wallet_pile = NULL;
+	if (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || GET_PLATINUM(ch))
+	{
+		// A wallet still holding coins means its conversion never committed. The
+		// disposition owes the player that wallet instead of dropping it.
+		wallet_pile = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),
+					   GET_PLATINUM(ch));
+		if (!wallet_pile)
+			return false;
+	}
+	bool allow_journal_handoff = true;
+#ifdef __NO_MYSQL__
+	allow_journal_handoff = false;
+#endif
+	const player_save_terminal_result saved = player_save_pipeline_terminal_death(
+		ch, corpse, wallet_pile, operation,
+		calculate_save_room(ch, RENT_DEATH, ch->in_room), DEATH_DISPOSITION_TIMEOUT_MSEC,
+		allow_journal_handoff);
+	if (wallet_pile)
+		extract_obj(wallet_pile, FALSE);
+	const bool durable = saved == player_save_terminal_result::database_acknowledged ||
+			     saved == player_save_terminal_result::journal_durable;
+	persistence_alert(AVATAR, "player_save", "death", "none", "none",
+			  durable ? "death_disposition_recorded" : "death_disposition_failed",
+			  "outcome=%u wallet=%d", (unsigned)saved, wallet_pile ? 1 : 0);
+	return durable;
+}
 
 struct death_extract_retry_context
 {
@@ -2443,6 +2514,7 @@ struct death_extract_retry_context
 
 static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data);
 static void hold_for_death_extract_retry(P_char ch);
+static bool death_retry_fallback_pending = false;
 
 static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)
 {
@@ -2463,9 +2535,44 @@ static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int del
 	const nevent_schedule_result scheduled = add_event(
 		event_death_extract_retry, delay, ch, NULL, NULL, 0, &context, sizeof(context));
 	hold_for_death_extract_retry(ch);
+	ch->only.pc->death_retry_due_usec = 0;
 	if (!scheduled)
+	{
+		// Retain the retry on the character without another allocation. The game
+		// pulse can retry a refused event without releasing unsaved live assets.
+		ch->only.pc->death_retry_corpse_uid = corpse_uid;
+		ch->only.pc->death_retry_delay = delay;
+		ch->only.pc->death_retry_due_usec =
+			persistence_observability_now_usec() +
+			static_cast<uint64_t>(delay) * 1000000 / WAIT_SEC;
+		death_retry_fallback_pending = true;
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_schedule_failed", "delay=%d", delay);
+	}
+}
+
+/** Retry failed event admission from the game thread without extracting unsaved state. */
+void death_extract_retry_pulse(void)
+{
+	if (!death_retry_fallback_pending)
+		return;
+	death_retry_fallback_pending = false;
+	const uint64_t now = persistence_observability_now_usec();
+	for (P_char ch = character_list, next; ch; ch = next)
+	{
+		next = ch->next;
+		if (!IS_PC(ch) || !ch->only.pc->death_retry_due_usec)
+			continue;
+		if (ch->only.pc->death_retry_due_usec > now)
+		{
+			death_retry_fallback_pending = true;
+			continue;
+		}
+		death_extract_retry_context context = { ch->only.pc->death_retry_delay,
+							ch->only.pc->death_retry_corpse_uid };
+		ch->only.pc->death_retry_due_usec = 0;
+		event_death_extract_retry(ch, NULL, NULL, &context);
+	}
 }
 
 static void hold_for_death_extract_retry(P_char ch)
@@ -2489,12 +2596,13 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 
 	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
 	{
+		clear_corpse_transfer_dispute(ch);
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
 		return;
 	}
 
-	if (item_movement_transaction_player_busy(ch))
+	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_awaiting_corpse_items", "delay=%d",
@@ -2507,6 +2615,24 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	}
 
 	P_obj corpse = context.corpse_uid ? corpse_live_item(context.corpse_uid) : NULL;
+	if (corpse_transfer_disputed(ch))
+	{
+		// The refused assets only exist on the live character and in the ledger.
+		// Never fall through to the ordinary save, which would record an empty
+		// character while a missing corpse still owed them their payload.
+		if (!corpse || !save_disputed_death_disposition(ch, context.corpse_uid))
+		{
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  corpse ? "death_disposition_retry" :
+						   "death_recovery_corpse_missing",
+					  "delay=%d", previous_delay * 2);
+			schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);
+			return;
+		}
+		clear_corpse_transfer_dispute(ch);
+		release_after_terminal_death(ch, "death_disposition_completed");
+		return;
+	}
 	if (corpse && ch->carrying)
 	{
 		const bool submitted = submit_next_corpse_item(ch, corpse);
@@ -2527,14 +2653,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
-	persistence_alert(AVATAR, "player_save", "death", "none", "none",
-			  "death_recovery_completed", "extract_refused=0");
-	send_to_char("Your death has been recorded; the world lets go of you.\r\n", ch);
-	ch->only.pc->pc_timer[1] = 0; // reset flee timer
-	add_track(ch, NUM_EXITS);
-	if (GET_LEVEL(ch) < MINLVLIMMORTAL)
-		update_ingame_racewar(-GET_RACEWAR(ch));
-	extract_char_after_terminal_save(ch);
+	release_after_terminal_death(ch, "death_recovery_completed");
 }
 
 void die(P_char ch, P_char killer)
@@ -2578,6 +2697,9 @@ void die(P_char ch, P_char killer)
 		do_return(ch, 0, -4);
 
 	ch = ForceReturn(ch);
+	// A new death starts undisputed. Nothing else retires the entry when a
+	// recovery is abandoned, and a stale one would skip the corpse handoff.
+	clear_corpse_transfer_dispute(ch);
 	/* count xp gained by killer */
 
 	/* make mirror images disappear */
@@ -3110,11 +3232,14 @@ void die(P_char ch, P_char killer)
 	if (IS_PC(ch))
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
-		if (!CHAR_IN_ARENA(ch) && item_movement_transaction_player_busy(ch))
+		if (!CHAR_IN_ARENA(ch) &&
+		    (item_movement_transaction_player_busy(ch) ||
+		     currency_transaction_player_busy(ch) || corpse_transfer_disputed(ch)))
 		{
 			persistence_alert(AVATAR, "player_save", "death", "none", "none",
 					  "corpse_items_in_flight",
-					  "extract_refused=1 recovery_scheduled=1");
+					  "extract_refused=1 recovery_scheduled=1 disputed=%d",
+					  corpse_transfer_disputed(ch) ? 1 : 0);
 			schedule_death_extract_retry(ch, death_corpse_uid,
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;

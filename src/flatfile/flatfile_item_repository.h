@@ -22,6 +22,7 @@ struct flatfile_item_ownership_record
 	uint64_t item_revision = 0;
 	int32_t vnum = 0;
 	item_custody_state state = item_custody_state::absent;
+	std::vector<uint8_t> coin_payload = {};
 };
 
 enum class flatfile_item_repository_result
@@ -79,6 +80,10 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<uint64_t> &uids, std::vector<flatfile_item_ownership_record> *coins,
+	std::string *error);
 flatfile_item_repository_result flatfile_item_repository_list_active_player_items(
 	const std::string &root, std::vector<flatfile_item_ownership_record> *items,
 	std::string *error);
@@ -102,6 +107,10 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	const std::vector<flatfile_corpse_custody_item> &expected_items,
 	flatfile_item_corpse_release_mutation *mutation, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	flatfile_authority_operation *operation, std::string *error);
+/* Retain refused death custody without allowing normal inventory materialization. */
+flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error);
 /* Prepare player and verified locker-custody removal as one authority image. */

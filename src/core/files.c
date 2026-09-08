@@ -1241,7 +1241,11 @@ bool capture_corpse_money(P_obj object, std::array<int32_t, 4> *money)
 		{
 			P_obj current = pending.back();
 			pending.pop_back();
-			if (GET_ITEM_TYPE(current) == ITEM_MONEY)
+			// Custodied piles already have an exact item payload in the corpse.
+			// The legacy scalar stores only untracked money, or restore creates it twice.
+			item_ownership_runtime_entry custody = {};
+			if (GET_ITEM_TYPE(current) == ITEM_MONEY &&
+			    !item_ownership_runtime_lookup(current->obj_uid, &custody))
 				for (size_t denomination = 0; denomination < money->size();
 				     ++denomination)
 				{

@@ -577,7 +577,7 @@ void githyanki_weapon(P_char ch)
  * Gain in various points
  */
 
-static void advance_level_impl(P_char ch, bool notify_player);
+static void advance_level_impl(P_char ch, bool notify_player, bool process_boons);
 
 static void notify_level_advancement(P_char ch, int previous_level)
 {
@@ -609,12 +609,12 @@ void illithid_advance_level(P_char ch)
 	for (i = GET_LEVEL(ch) + 1; i > minlvl && (new_exp_table[i] <= GET_EXP(ch)); i++)
 	{
 		GET_EXP(ch) -= new_exp_table[i];
-		advance_level_impl(ch, false);
+		advance_level_impl(ch, false, true);
 	}
 	notify_level_advancement(ch, previous_level);
 }
 
-static void advance_level_impl(P_char ch, bool notify_player)
+static void advance_level_impl(P_char ch, bool notify_player, bool process_boons)
 {
 	/*  struct time_info_data playing_time;*/
 	int i;
@@ -720,7 +720,8 @@ static void advance_level_impl(P_char ch, bool notify_player)
 	affect_total(ch, FALSE);
 	update_pos(ch);
 
-	check_boon_completion(ch, NULL, 0, BOPT_LEVEL);
+	if (process_boons)
+		check_boon_completion(ch, NULL, 0, BOPT_LEVEL);
 
 	// Send GMCP update for level change
 	gmcp_char_status(ch);
@@ -731,7 +732,7 @@ static void advance_level_impl(P_char ch, bool notify_player)
 
 void advance_level(P_char ch)
 {
-	advance_level_impl(ch, true);
+	advance_level_impl(ch, true, true);
 }
 
 void advance_to_level(P_char ch, int target_level)
@@ -739,7 +740,7 @@ void advance_to_level(P_char ch, int target_level)
 	const int previous_level = GET_LEVEL(ch);
 
 	while (GET_LEVEL(ch) < target_level)
-		advance_level_impl(ch, false);
+		advance_level_impl(ch, false, false);
 	notify_level_advancement(ch, previous_level);
 }
 
@@ -1462,7 +1463,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (a)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
-				advance_level_impl(ch, false);
+				advance_level_impl(ch, false, true);
 			}
 		}
 		else
@@ -1475,7 +1476,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (b)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
-				advance_level_impl(ch, false);
+				advance_level_impl(ch, false, true);
 			}
 		}
 		notify_level_advancement(ch, previous_level);

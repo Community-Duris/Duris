@@ -44,9 +44,9 @@ assert 'alt_book = choose_book(metrics, "enhanceable", class_ids)' in CATALOG
 append_body = NANNY.split("static bool append_chaos_kit_item", 1)[1].split(
     "static void load_chaos_new_character_kit", 1
 )[0]
-unusable_body = append_body.split("if (item->slot >= 0 && !can_char_use_item", 1)[1]
+unusable_body = append_body.split("if (!can_char_use_item(ch, obj) || !chaos_kit_fits_slot(obj, item->slot))", 1)[1].split("prepare_chaos_kit_item", 1)[0]
 assert "extract_obj(obj, FALSE);" in unusable_body
-assert "return true;" in unusable_body
+assert "return false;" in unusable_body
 
 assert "assert vnum in objects, (array_name, vnum)" in (
     ROOT / "tests/async/test_chaos_new_character_kit.py"

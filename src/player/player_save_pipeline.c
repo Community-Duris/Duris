@@ -408,6 +408,40 @@ player_save_pipeline_result player_save_pipeline_request(P_char ch,
 	return player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 }
 
+namespace
+{
+/** Reserve this player's durability fence and mark the revision the caller will wait on. */
+bool begin_terminal_fence(int pid, player_revision_t *revision)
+{
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!health.initialized)
+			return false;
+		if (!allocate_terminal_fence_locked(pid))
+			return false;
+	}
+	// Every terminal call captures the caller's current intent and room. A
+	// previous timeout may have been ACKed by a nonterminal retry; its fence
+	// cannot authorize removal using the old snapshot or logout intent.
+	if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, revision))
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (terminal_fence *fence = find_terminal_fence_locked(pid))
+			*fence = {};
+		return false;
+	}
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	terminal_fence *fence = find_terminal_fence_locked(pid);
+	if (!fence)
+		return false;
+	*fence = { pid, *revision, false, false };
+	return true;
+}
+
+player_save_terminal_result await_terminal_fence(int pid, player_revision_t revision,
+						 uint64_t timeout_msec, bool allow_journal_handoff);
+} // namespace
+
 /** Capture fresh terminal intent and wait for its durability fence within the caller timeout. */
 player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
 							  uint64_t timeout_msec,
@@ -417,26 +451,8 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 		return player_save_terminal_result::invalid;
 	const int pid = GET_PID(ch);
 	player_revision_t revision = 0;
-	{
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		if (!health.initialized)
-			return player_save_terminal_result::unavailable;
-		terminal_fence *fence = allocate_terminal_fence_locked(pid);
-		if (!fence)
-			return player_save_terminal_result::unavailable;
-	}
-	// Every terminal call captures the caller's current intent and room. A
-	// previous timeout may have been ACKed by a nonterminal retry; its fence
-	// cannot authorize removal using the old snapshot or logout intent.
-	if (!player_revision_mark(pid, PLAYER_CHECKPOINT_COMPONENT_ALL, &revision))
+	if (!begin_terminal_fence(pid, &revision))
 		return player_save_terminal_result::unavailable;
-	{
-		std::lock_guard<std::mutex> lock(pipeline_mutex);
-		terminal_fence *fence = find_terminal_fence_locked(pid);
-		if (!fence)
-			return player_save_terminal_result::unavailable;
-		*fence = { pid, revision, false, false };
-	}
 	const auto checkpoint = player_save_pipeline_checkpoint_dirty(ch, save_intent, room_vnum);
 	if (trace_player_saves())
 		logit(LOG_STATUS,
@@ -444,6 +460,71 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 		      (unsigned long long)persistence_observability_now_usec(), pid,
 		      (unsigned long long)revision, (unsigned)checkpoint, save_intent,
 		      (unsigned long long)timeout_msec, allow_journal_handoff);
+	return await_terminal_fence(pid, revision, timeout_msec, allow_journal_handoff);
+}
+
+/** Record an immutable death disposition and wait for it to become durable. */
+player_save_terminal_result
+player_save_pipeline_terminal_death(P_char ch, P_obj corpse, P_obj wallet_pile,
+				    const critical_operation_id &operation_id, int room_vnum,
+				    uint64_t timeout_msec, bool allow_journal_handoff)
+{
+	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0 || !corpse || !timeout_msec)
+		return player_save_terminal_result::invalid;
+	const int pid = GET_PID(ch);
+	player_revision_t revision = 0;
+	if (!begin_terminal_fence(pid, &revision))
+		return player_save_terminal_result::unavailable;
+	// Only an enqueued snapshot may retain a fence for an asynchronous ACK.
+	// Capture/queue refusal must release capacity for other terminal saves.
+	struct unqueued_fence_guard
+	{
+		int pid;
+		bool queued = false;
+		~unqueued_fence_guard()
+		{
+			if (!queued)
+			{
+				std::lock_guard<std::mutex> lock(pipeline_mutex);
+				if (terminal_fence *fence = find_terminal_fence_locked(pid))
+					*fence = {};
+			}
+		}
+	} guard{ pid };
+	player_snapshot snapshot;
+	if (player_death_snapshot_capture(ch, corpse, wallet_pile, operation_id, revision,
+					  room_vnum, {},
+					  &snapshot) != player_snapshot_capture_result::ok)
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		++health.capture_failures;
+		return player_save_terminal_result::invalid;
+	}
+	player_revision_t queued_revision = 0;
+	player_component_mask_t components = 0;
+	if (!player_revision_queue(pid, &queued_revision, &components) ||
+	    queued_revision != revision || components != snapshot.components)
+		return player_save_terminal_result::unavailable;
+	const auto queued = enqueue_snapshot(std::move(snapshot));
+	if (queued != player_save_pipeline_result::queued &&
+	    queued != player_save_pipeline_result::coalesced)
+		return player_save_terminal_result::unavailable;
+	guard.queued = true;
+	if (trace_player_saves())
+		logit(LOG_STATUS,
+		      "PLAYER SAVE TRACE: stage=terminal_death_begin mono_us=%llu pid=%d revision=%llu room=%d timeout_ms=%llu journal_allowed=%d",
+		      (unsigned long long)persistence_observability_now_usec(), pid,
+		      (unsigned long long)revision, room_vnum, (unsigned long long)timeout_msec,
+		      allow_journal_handoff);
+	return await_terminal_fence(pid, revision, timeout_msec, allow_journal_handoff);
+}
+
+namespace
+{
+/** Pump the pipeline until this player revision is durable or the deadline passes. */
+player_save_terminal_result await_terminal_fence(int pid, player_revision_t revision,
+						 uint64_t timeout_msec, bool allow_journal_handoff)
+{
 	const auto deadline =
 		std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_msec);
 	while (std::chrono::steady_clock::now() < deadline)
@@ -492,6 +573,7 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 	++health.terminal_timeouts;
 	return player_save_terminal_result::timed_out;
 }
+} // namespace
 
 /** Apply bounded worker completions and submit journaled snapshots from the game thread. */
 void player_save_pipeline_pulse(void)

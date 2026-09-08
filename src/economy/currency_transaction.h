@@ -3,6 +3,7 @@
 
 #include "persistence/critical_command_coordinator.h"
 #include "economy/currency_command.h"
+#include "economy/coin_transfer_command.h"
 #include "core/structs.h"
 
 #include <cstddef>
@@ -16,6 +17,16 @@ using currency_completion_fn = void (*)(P_char character, bool committed,
 					unsigned int error_code, const uint8_t *context,
 					size_t context_size);
 
+// Return false only when committed live publication needs another game pulse.
+using coin_completion_fn = bool (*)(P_char actor, bool committed,
+				    const coin_transfer_payload &payload,
+				    const coin_transfer_result &result, unsigned int error_code,
+				    const uint8_t *context, size_t context_size);
+
+// A committed callback receives EOWNERDEAD on its final cleanup notification if
+// bounded live publication fails. It must not refund or reapply committed money.
+constexpr unsigned int CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS = 8;
+
 struct currency_transaction_health
 {
 	uint64_t pending;
@@ -25,10 +36,17 @@ struct currency_transaction_health
 	uint64_t rejected;
 	uint64_t submission_failures;
 	uint64_t malformed_completions;
+	uint64_t publication_abandoned;
 };
 
 bool currency_transaction_can_submit(P_char character);
 bool currency_transaction_player_busy(P_char character);
+bool currency_transaction_coin_item_busy(uint64_t item_uid);
+bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
+				      coin_transfer_endpoint *endpoint);
+bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,
+				      coin_completion_fn completion, const void *context,
+				      size_t context_size);
 bool currency_transaction_publish_wallet(P_char character, const currency_vector &wallet,
 					 uint64_t wallet_revision);
 bool currency_transaction_publish_balances(P_char character, const char *account_name,

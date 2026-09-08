@@ -8,6 +8,35 @@ import re
 from _paths import ROOT, source
 
 NANNY = source("nanny.c").read_text(encoding="utf-8", errors="replace")
+LIMITS = source("limits.c").read_text(encoding="utf-8", errors="replace")
+
+
+def function_body(signature: str) -> str:
+    start = LIMITS.index(signature)
+    opening = LIMITS.index("{", start)
+    depth = 0
+    for position in range(opening, len(LIMITS)):
+        if LIMITS[position] == "{":
+            depth += 1
+        elif LIMITS[position] == "}":
+            depth -= 1
+            if depth == 0:
+                return LIMITS[start : position + 1]
+    raise AssertionError(signature)
+
+
+ADVANCE_IMPL = function_body(
+    "static void advance_level_impl(P_char ch, bool notify_player, bool process_boons)\n{"
+)
+ILLITHID_ADVANCE = function_body("void illithid_advance_level(P_char ch)\n{")
+ADVANCE_LEVEL = function_body("void advance_level(P_char ch)\n{")
+ADVANCE_TO_LEVEL = function_body("void advance_to_level(P_char ch, int target_level)\n{")
+GAIN_EXP_START = LIMITS.index(
+    "int gain_exp(P_char ch, P_char victim, const int value, int type)\n{"
+)
+GAIN_EXP_END = LIMITS.index("\nint gain_condition(P_char ch, int condition, int value)", GAIN_EXP_START)
+GAIN_EXP = LIMITS[GAIN_EXP_START:GAIN_EXP_END]
+
 NANNY_COMPACT = re.sub(r"\s+", "", NANNY)
 MATERIALS = source("chaos_materials.h").read_text(encoding="utf-8", errors="replace")
 MATERIALS_C_PATH = ROOT / "src/combat/chaos_materials.c"
@@ -80,6 +109,15 @@ assert "REMOVE_BIT(ch->specials.act3, PLR3_CHAOS_STARTER_BANK_PENDING)" in NANNY
 assert "mark_player_dirty_components" in NANNY
 assert "if (!ch || !chaos_starter_bonuses_enabled())" in NANNY
 
+# Bulk level catch-up must not enqueue one optional boon transaction per level;
+# ordinary single-level advancement and XP/Illithid catch-up retain the hook.
+assert "if (process_boons)\n\t\tcheck_boon_completion(ch, NULL, 0, BOPT_LEVEL);" in ADVANCE_IMPL
+assert ADVANCE_LEVEL.count("advance_level_impl(ch, true, true);") == 1
+assert ILLITHID_ADVANCE.count("advance_level_impl(ch, false, true);") == 1
+assert ADVANCE_TO_LEVEL.count("advance_level_impl(ch, false, false);") == 1
+assert "advance_level_impl(ch, false, true);" not in ADVANCE_TO_LEVEL
+assert GAIN_EXP.count("advance_level_impl(ch, false, true);") == 2
+
 assert "epic_transaction_submit_identified(ch,operation_id,20000" in NANNY_COMPACT
 assert "bank_delta.amount[3]=1000000;" in NANNY_COMPACT
 assert "currency_transaction_submit_identified(ch,operation_id,{},bank_delta" in NANNY_COMPACT
@@ -98,7 +136,7 @@ assert "if (chaos_mode && !chaos_starter_epic_skills_enabled())" in GUILD
 assert "chaos_starter_reward" in EPIC_COMMAND
 assert "reason <= epic_reason_type::chaos_starter_reward" in EPIC_CODEC
 assert "chaos_starter_reward" in CURRENCY_COMMAND
-assert "reason <= currency_reason_type::chaos_starter_reward" in CURRENCY_CODEC
+assert "reason <= currency_reason_type::coin_transfer" in CURRENCY_CODEC
 
 assert "chaos_starter_frigate_enabled" in SHIP_SHOP
 assert "const int tattoo_reward_hull = chaos_frigate_reward ? SH_FRIGATE : SH_SLOOP;" in SHIP_SHOP
@@ -120,7 +158,8 @@ assert "WEAR_ATTACH_BELT_1" in MATERIALS_C
 assert "WEAR_ATTACH_BELT_3" in MATERIALS_C
 assert "chaos_material_pouch_contents_description" in MATERIALS
 assert "VOBJ_CHAOS_CRAFT_POUCH" in NANNY
-assert "REMOVE_BIT(obj->extra_flags, ITEM_TRANSIENT)" in NANNY
+assert "REMOVE_BIT(obj->extra_flags, chaos_eq_permanent_strip_flags)" in NANNY
+assert "ITEM_TRANSIENT" in (ROOT / "src/account/chaos_eq_data.h").read_text()
 assert "chaos_starter_materials_enabled()" in NANNY
 CRAFTING = source("crafting.c").read_text(encoding="utf-8", errors="replace")
 assert "chaos_material_pouch_available" in CRAFTING

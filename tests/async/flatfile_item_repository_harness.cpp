@@ -1,7 +1,12 @@
 #include "core/defines.h"
 #include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
+#include "economy/coin_transfer_command.h"
+#include "world/vnum.obj.h"
+#include <openssl/sha.h>
 #include "flatfile/flatfile_locker_repository.h"
+#include "flatfile/flatfile_world_item_repository.h"
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "player/player_snapshot_codec.h"
 
@@ -294,11 +299,517 @@ static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid
 	return payload;
 }
 
+static void coin_matrix(const fs::path &path)
+{
+	const std::string root = path.string();
+	std::string error;
+	fs::create_directories(path / "domains");
+	fs::permissions(path, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(path / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity player = { item_owner_type::player, 42, 0 };
+	constexpr uint64_t bag_uid = 70000, pile_uid = 70001;
+	require(flatfile_item_repository_establish_owner(
+			root, player,
+			{ { bag_uid, bag_uid, 0, player, 1, 96443, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"coin bag baseline: " + error);
+	flatfile_player_domain_record baseline;
+	baseline.pid = 42;
+	baseline.account_name = "coin-account";
+	baseline.racewar = 1;
+	baseline.domains.wallet[0] = 1000;
+	require(flatfile_player_domain_establish(root, baseline, &error) ==
+			flatfile_player_domain_result::ok,
+		"coin wallet baseline: " + error);
+	auto domain = [&](int32_t pid)
+	{
+		flatfile_player_domain_record record;
+		require(flatfile_player_domain_load(root, pid, "coin-account", 1, &record,
+						    &error) == flatfile_player_domain_result::ok,
+			"coin wallet load: " + error);
+		return record;
+	};
+	auto ownership =
+		[&](item_owner_identity owner, std::vector<flatfile_item_ownership_record> *items)
+	{
+		uint64_t revision = 0;
+		const auto loaded =
+			flatfile_item_repository_load_owner(root, owner, &revision, items, &error);
+		require(loaded == flatfile_item_repository_result::ok ||
+				loaded == flatfile_item_repository_result::not_found,
+			"coin ownership load: " + error);
+		return revision;
+	};
+	auto wallet = [&](int32_t pid, int32_t before, int32_t after)
+	{
+		const auto record = domain(pid);
+		coin_transfer_endpoint endpoint;
+		endpoint.before[0] = before;
+		endpoint.after[0] = after;
+		currency_command_payload payload = {};
+		payload.pid = pid;
+		payload.racewar = 1;
+		payload.reason = currency_reason_type::coin_transfer;
+		strcpy(payload.account_name.data(), "coin-account");
+		payload.wallet_delta.amount[0] = int64_t(after) - before;
+		require(currency_command_build(&endpoint.change, operation(1), payload,
+					       record.domains.wallet_revision,
+					       record.domains.bank_revision,
+					       critical_source_site::command,
+					       critical_deadline_class::interactive),
+			"coin wallet build");
+		return endpoint;
+	};
+	auto pile = [&](uint64_t uid, int32_t before, int32_t after,
+			item_owner_identity owner = { item_owner_type::player, 42, 0 },
+			uint64_t parent_uid = 70000)
+	{
+		coin_transfer_endpoint endpoint;
+		endpoint.before[0] = before;
+		endpoint.after[0] = after;
+		item_transfer_payload payload = {};
+		payload.from_owner = before ? owner :
+					      item_owner_identity{ item_owner_type::system, 0, 0 };
+		payload.to_owner =
+			after ? owner : item_owner_identity{ item_owner_type::destruction, 0, 0 };
+		std::vector<flatfile_item_ownership_record> items;
+		payload.expected_from_revision = ownership(payload.from_owner, &items);
+		uint64_t item_revision = ITEM_TRANSFER_ABSENT_REVISION;
+		for (const auto &item : items)
+			if (item.item_uid == uid)
+				item_revision = item.item_revision;
+		payload.expected_to_revision = ownership(payload.to_owner, &items);
+		payload.selected_item_uid = uid;
+		payload.target_root_item_uid = after && parent_uid ? parent_uid : uid;
+		payload.target_parent_item_uid = after ? parent_uid : 0;
+		payload.expected_target_parent_revision = after && parent_uid ? 1 : 0;
+		payload.reason = !before ? item_transfer_reason::creation :
+				 !after	 ? item_transfer_reason::destruction :
+					   item_transfer_reason::player_put;
+		payload.item_count = 1;
+		payload.items[0] = { uid,
+				     before && parent_uid ? parent_uid : uid,
+				     before ? parent_uid : 0,
+				     item_revision,
+				     VOBJ_COINS,
+				     before ? item_custody_state::active :
+					      item_custody_state::absent };
+		player_item_snapshot snapshot = {};
+		snapshot.object_uid = uid;
+		snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		snapshot.equipment_slot = -1;
+		snapshot.vnum = VOBJ_COINS;
+		snapshot.type = ITEM_MONEY;
+		snapshot.values[0] = after ? after : before;
+		snapshot.name = "coins";
+		snapshot.string_mask = 1;
+		std::vector<uint8_t> blob;
+		require(player_item_snapshot_list_encode({ snapshot }, &blob) ==
+				player_snapshot_codec_result::ok,
+			"coin pile encode");
+		payload.item_blob_size = blob.size();
+		std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+		require(item_transfer_command_build(&endpoint.change, operation(1), payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"coin pile build");
+		return endpoint;
+	};
+	auto command = [&](coin_transfer_endpoint source, coin_transfer_endpoint destination)
+	{
+		critical_operation_id id;
+		require(critical_operation_id_generate(&id), "coin operation id");
+		critical_command built;
+		require(coin_transfer_command_build(&built, id, { source, destination },
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+			"coin command build");
+		built.accepted_at_usec = 1;
+		return built;
+	};
+	auto apply = [&](const critical_command &value)
+	{
+		return flatfile_critical_command_repository_apply_selected(
+			value, const_cast<char *>(root.c_str()));
+	};
+	auto amount = [&](uint64_t uid)
+	{
+		std::vector<flatfile_item_ownership_record> items;
+		ownership(player, &items);
+		const auto found = std::find_if(items.begin(), items.end(), [&](const auto &item)
+						{ return item.item_uid == uid; });
+		require(found != items.end(), "coin pile disappeared");
+		std::vector<player_item_snapshot> decoded;
+		require(player_item_snapshot_list_decode(found->coin_payload.data(),
+							 found->coin_payload.size(), &decoded) ==
+					player_snapshot_codec_result::ok &&
+				decoded.size() == 1 && decoded[0].object_uid == uid,
+			"coin durable payload");
+		return decoded[0].values[0];
+	};
+	auto reload = [&](int32_t expected, const std::vector<uint64_t> &old_coins)
+	{
+		player_snapshot snapshot;
+		snapshot.pid = 42;
+		player_item_snapshot bag;
+		bag.object_uid = bag_uid;
+		bag.vnum = 96443;
+		bag.type = ITEM_CONTAINER;
+		bag.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		snapshot.items.push_back(bag);
+		for (uint64_t uid : old_coins)
+		{
+			player_item_snapshot old;
+			old.object_uid = uid;
+			old.vnum = VOBJ_COINS;
+			old.type = ITEM_MONEY;
+			old.values[0] = 1;
+			old.parent_index = 0;
+			snapshot.items.push_back(old);
+		}
+		std::vector<flatfile_item_ownership_record> owned;
+		ownership(player, &owned);
+		flatfile_authority_lock lock;
+		require(lock.acquire(root, &error) &&
+				flatfile_shop_trade_materialization_reconcile(root, lock, 42, owned,
+									      &snapshot, &error) ==
+					flatfile_shop_trade_materialization_result::ok,
+			"coin snapshot recovery failed: " + error);
+		require(snapshot.items.size() == (expected ? 2u : 1u),
+			"coin recovery duplicated or retained consumed piles");
+		if (expected)
+			require(snapshot.items[1].object_uid == pile_uid &&
+					snapshot.items[1].values[0] == expected &&
+					snapshot.items[1].parent_index == 0 &&
+					snapshot.items[1].name == "coins",
+				"stale coin projection won over authority");
+	};
+	auto put = command(wallet(42, 1000, 900), pile(pile_uid, 0, 100));
+	setenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT", "1", 1);
+	require(apply(put).outcome == critical_apply_outcome::retryable_failure,
+		"coin pre-commit failure was not injected");
+	unsetenv("DURIS_FLATFILE_TEST_FAIL_BEFORE_AUTHORITY_COMMIT");
+	std::vector<flatfile_item_ownership_record> untouched;
+	ownership(player, &untouched);
+	require(domain(42).domains.wallet[0] == 1000 && untouched.size() == 1 &&
+			!fs::exists(path / "domains/.critical-authority-transaction"),
+		"coin pre-commit failure changed money or created a durable intent");
+	require(apply(put).outcome == critical_apply_outcome::applied, "coin creation failed");
+	require(domain(42).domains.wallet[0] == 900 && amount(pile_uid) == 100,
+		"coin creation lost value");
+	require(apply(put).outcome == critical_apply_outcome::already_applied,
+		"coin creation replay");
+	reload(100, {});
+	auto merge = command(wallet(42, 900, 700), pile(pile_uid, 100, 300));
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(apply(merge).outcome == critical_apply_outcome::retryable_failure,
+		"coin interruption was not injected");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(apply(merge).outcome == critical_apply_outcome::already_applied,
+		"coin interrupted commit did not recover");
+	require(domain(42).domains.wallet[0] == 700 && amount(pile_uid) == 300,
+		"coin recovery duplicated/lost value");
+	reload(300, { pile_uid });
+	auto stale = command(wallet(42, 700, 650), pile(pile_uid, 299, 349));
+	require(apply(stale).error_code == ESTALE && apply(stale).error_code == ESTALE,
+		"coin stale amount was accepted");
+	require(domain(42).domains.wallet[0] == 700 && amount(pile_uid) == 300,
+		"coin rejection changed source");
+	auto partial = command(pile(pile_uid, 300, 125), wallet(42, 700, 875));
+	require(apply(partial).outcome == critical_apply_outcome::applied &&
+			amount(pile_uid) == 125,
+		"coin partial pickup");
+	auto second = command(wallet(42, 875, 850), pile(pile_uid + 1, 0, 25));
+	require(apply(second).outcome == critical_apply_outcome::applied, "second pile creation");
+	auto combine = command(pile(pile_uid + 1, 25, 0), pile(pile_uid, 125, 150));
+	require(apply(combine).outcome == critical_apply_outcome::applied &&
+			amount(pile_uid) == 150,
+		"shared owner pile merge");
+	auto pickup = command(pile(pile_uid, 150, 0), wallet(42, 850, 1000));
+	require(apply(pickup).outcome == critical_apply_outcome::applied &&
+			domain(42).domains.wallet[0] == 1000,
+		"coin full pickup");
+	std::vector<flatfile_item_ownership_record> remaining;
+	ownership(player, &remaining);
+	require(remaining.size() == 1 && remaining[0].item_uid == bag_uid,
+		"consumed pile remains in bag custody");
+	ownership({ item_owner_type::destruction, 0, 0 }, &remaining);
+	require(remaining.empty(), "destroyed coins were returned as active items");
+	reload(0, { pile_uid, pile_uid + 1 });
+	std::vector<uint64_t> consumed;
+	for (size_t index = 0; index <= PLAYER_LOAD_ITEM_SKIP_MAX; ++index)
+	{
+		const uint64_t uid = pile_uid + 2 + index;
+		auto create = command(wallet(42, 1000, 999), pile(uid, 0, 1));
+		require(apply(create).outcome == critical_apply_outcome::applied,
+			"repeated coin creation");
+		auto consume = command(pile(uid, 1, 0), wallet(42, 999, 1000));
+		require(apply(consume).outcome == critical_apply_outcome::applied,
+			"repeated coin pickup");
+		consumed.push_back(uid);
+	}
+	reload(0, consumed);
+	baseline.pid = 43;
+	baseline.domains.wallet = {};
+	require(flatfile_player_domain_establish(root, baseline, &error) ==
+			flatfile_player_domain_result::ok,
+		"recipient baseline");
+	auto give = command(wallet(42, 1000, 990), wallet(43, 0, 10));
+	require(apply(give).outcome == critical_apply_outcome::applied &&
+			apply(give).outcome == critical_apply_outcome::already_applied,
+		"shared-account coin give failed/repeated");
+	require(domain(42).domains.wallet[0] == 990 && domain(43).domains.wallet[0] == 10,
+		"shared-account give lost value");
+	// Read the existing world/locker payload exactly once, then retain the remainder
+	// in custody even while the older owner snapshot still contains the full amount.
+	player_item_snapshot legacy;
+	legacy.object_uid = 80001;
+	legacy.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	legacy.equipment_slot = -1;
+	legacy.vnum = VOBJ_COINS;
+	legacy.type = ITEM_MONEY;
+	legacy.values[0] = 50;
+	legacy.name = "legacy coins";
+	legacy.string_mask = 1;
+	auto corpse = transfer_corpse();
+	corpse.items = { legacy };
+	corpse.items[0].object_uid = 80002;
+	flatfile_saved_world_item_record saved;
+	saved.item_key = "legacy-coins";
+	saved.room_vnum = 600;
+	saved.revision = 1;
+	saved.items = { legacy };
+	require(flatfile_world_item_establish(root, { corpse }, { saved }, &error) ==
+			flatfile_world_item_result::ok,
+		"legacy world baseline: " + error);
+	auto locker = transfer_locker();
+	locker.chests[0].items = { legacy };
+	locker.chests[0].items[0].object_uid = 80003;
+	require(flatfile_locker_establish(root, { locker }, {}, &error) ==
+			flatfile_locker_result::ok,
+		"legacy locker baseline: " + error);
+	const item_owner_identity legacy_owners[] = { { item_owner_type::room, 600, 0 },
+						      { item_owner_type::corpse,
+							item_corpse_owner_id(42, 20), 0 },
+						      { item_owner_type::locker, 2, 11 } };
+	for (size_t index = 0; index < 3; ++index)
+	{
+		const auto owner = legacy_owners[index];
+		const uint64_t uid = 80001 + index;
+		require(flatfile_item_repository_establish_owner(
+				root, owner,
+				{ { uid, uid, 0, owner, 1, VOBJ_COINS,
+				    item_custody_state::active } },
+				&error) == flatfile_item_baseline_result::applied,
+			"legacy coin custody baseline: " + error);
+		const uint64_t cash = domain(42).domains.wallet[0];
+		auto wrong = command(pile(uid, 49, 0, owner, 0), wallet(42, cash, cash + 49));
+		require(apply(wrong).error_code == ESTALE && domain(42).domains.wallet[0] == cash,
+			"legacy amount mismatch credited wallet");
+		auto partial = command(pile(uid, 50, 20, owner, 0), wallet(42, cash, cash + 30));
+		require(apply(partial).outcome == critical_apply_outcome::applied &&
+				apply(partial).outcome == critical_apply_outcome::already_applied,
+			"legacy partial pickup or replay failed");
+		auto finish = command(pile(uid, 20, 0, owner, 0), wallet(42, cash + 30, cash + 50));
+		require(apply(finish).outcome == critical_apply_outcome::applied &&
+				domain(42).domains.wallet[0] == cash + 50,
+			"legacy snapshot overrode canonical remainder");
+		ownership(owner, &remaining);
+		require(remaining.empty(), "legacy consumed coin remains active");
+	}
+	const item_owner_identity missing_owner = { item_owner_type::room, 601, 0 };
+	require(flatfile_item_repository_establish_owner(
+			root, missing_owner,
+			{ { 80004, 80004, 0, missing_owner, 1, VOBJ_COINS,
+			    item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"missing payload custody baseline");
+	const uint64_t cash = domain(42).domains.wallet[0];
+	auto missing = command(wallet(42, cash, cash - 10), pile(80004, 50, 60, missing_owner, 0));
+	require(apply(missing).error_code == ENOENT && apply(missing).error_code == ENOENT &&
+			domain(42).domains.wallet[0] == cash,
+		"missing legacy payload debited wallet");
+	ownership(missing_owner, &remaining);
+	require(remaining.size() == 1 && remaining[0].item_uid == 80004 &&
+			remaining[0].coin_payload.empty(),
+		"missing legacy payload was guessed or deleted");
+
+	// NPC money enters custody through an ordinary absent-item admission before
+	// atomic pickup. No wallet change is part of that admission or its replay.
+	const item_owner_identity npc_room = { item_owner_type::room, 602, 0 };
+	const uint64_t npc_uid = 81000;
+	auto admitted_endpoint = pile(npc_uid, 0, 50, npc_room, 0);
+	item_transfer_payload admission_payload;
+	require(item_transfer_command_decode_payload(admitted_endpoint.change, &admission_payload),
+		"decode NPC admission");
+	critical_operation_id admission_id;
+	require(critical_operation_id_generate(&admission_id), "NPC admission ID");
+	critical_command admission;
+	require(item_transfer_command_build(&admission, admission_id, admission_payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"NPC admission build");
+	admission.accepted_at_usec = 1;
+	const auto admitted = flatfile_item_repository_apply(root, admission);
+	require(admitted.outcome == critical_apply_outcome::applied,
+		"NPC admission failed: " + std::to_string(admitted.error_code));
+	require(flatfile_item_repository_apply(root, admission).outcome ==
+				critical_apply_outcome::already_applied &&
+			domain(42).domains.wallet[0] == cash,
+		"NPC admission replay changed wallet");
+	ownership(npc_room, &remaining);
+	require(remaining.size() == 1 && remaining[0].item_uid == npc_uid &&
+			remaining[0].root_item_uid == npc_uid && remaining[0].parent_item_uid == 0,
+		"NPC admission owner/parent");
+	auto conflicting_admission = [&]
+	{
+		std::vector<flatfile_item_ownership_record> rows;
+		admission_payload.expected_from_revision =
+			ownership(admission_payload.from_owner, &rows);
+		admission_payload.expected_to_revision =
+			ownership(admission_payload.to_owner, &rows);
+		critical_operation_id id;
+		critical_command request;
+		require(critical_operation_id_generate(&id) &&
+				item_transfer_command_build(&request, id, admission_payload,
+							    critical_source_site::command,
+							    critical_deadline_class::interactive),
+			"conflicting admission build");
+		request.accepted_at_usec = 1;
+		const auto rejected = flatfile_item_repository_apply(root, request);
+		require(rejected.error_code == EEXIST &&
+				flatfile_item_repository_apply(root, request).error_code == EEXIST,
+			"missing runtime custody could overwrite a durable UID");
+	};
+	conflicting_admission();
+	auto check_room_coins = [&](int32_t expected)
+	{
+		std::vector<flatfile_room_item_record> rooms;
+		require(flatfile_world_item_list_rooms(root, &rooms, &error) ==
+				flatfile_world_item_result::ok,
+			"read admitted NPC room");
+		const auto room = std::find_if(
+			rooms.begin(), rooms.end(), [&](const auto &entry)
+			{ return entry.room_vnum == static_cast<int32_t>(npc_room.id); });
+		require(room != rooms.end() && room->revision == ownership(npc_room, &remaining),
+			"coin commit left room revision stale");
+		require(room->items.size() == (expected ? 1U : 0U) &&
+				(!expected || (room->items[0].object_uid == npc_uid &&
+					       room->items[0].values[0] == expected)),
+			"coin commit left stale room pile payload");
+	};
+	auto npc_partial = command(pile(npc_uid, 50, 40, npc_room, 0), wallet(42, cash, cash + 10));
+	require(apply(npc_partial).outcome == critical_apply_outcome::applied &&
+			apply(npc_partial).outcome == critical_apply_outcome::already_applied,
+		"admitted NPC partial pickup/replay");
+	check_room_coins(40);
+	auto npc_second =
+		command(wallet(42, cash + 10, cash - 10), pile(npc_uid + 2, 0, 20, npc_room, 0));
+	require(apply(npc_second).outcome == critical_apply_outcome::applied,
+		"second room pile creation");
+	auto npc_merge =
+		command(pile(npc_uid + 2, 20, 0, npc_room, 0), pile(npc_uid, 40, 60, npc_room, 0));
+	require(apply(npc_merge).outcome == critical_apply_outcome::applied &&
+			apply(npc_merge).outcome == critical_apply_outcome::already_applied &&
+			domain(42).domains.wallet[0] == cash - 10,
+		"NPC pile merge/replay changed wallet");
+	check_room_coins(60);
+	auto npc_pickup =
+		command(pile(npc_uid, 60, 0, npc_room, 0), wallet(42, cash - 10, cash + 50));
+	const pid_t pickup_process = fork();
+	require(pickup_process >= 0, "NPC pickup restart fork");
+	if (pickup_process == 0)
+		_exit(apply(npc_pickup).outcome == critical_apply_outcome::applied ? 0 : 1);
+	int pickup_status = 0;
+	require(waitpid(pickup_process, &pickup_status, 0) == pickup_process &&
+			WIFEXITED(pickup_status) && WEXITSTATUS(pickup_status) == 0,
+		"NPC pickup in a new process failed");
+	require(apply(npc_pickup).outcome == critical_apply_outcome::already_applied &&
+			domain(42).domains.wallet[0] == cash + 50,
+		"NPC pickup replay changed wallet");
+	check_room_coins(0);
+	conflicting_admission(); // Retired UIDs cannot be minted again either.
+	// The next ordinary NPC loot admission must still be possible after pickup.
+	// This exercises the room projection as well as the ownership catalog.
+	item_transfer_payload next_loot = admission_payload;
+	next_loot.selected_item_uid = npc_uid + 1;
+	next_loot.target_root_item_uid = npc_uid + 1;
+	next_loot.items[0] = { npc_uid + 1, npc_uid + 1,
+			       0,	    ITEM_TRANSFER_ABSENT_REVISION,
+			       15,	    item_custody_state::absent };
+	player_item_snapshot banana = {};
+	banana.object_uid = npc_uid + 1;
+	banana.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	banana.equipment_slot = -1;
+	banana.vnum = 15;
+	banana.type = ITEM_FOOD;
+	banana.name = "banana";
+	std::vector<uint8_t> banana_blob;
+	require(player_item_snapshot_list_encode({ banana }, &banana_blob) ==
+			player_snapshot_codec_result::ok,
+		"NPC ordinary loot encode");
+	next_loot.item_blob_size = banana_blob.size();
+	std::copy(banana_blob.begin(), banana_blob.end(), next_loot.item_blob.begin());
+	critical_operation_id next_id;
+	critical_command next_command;
+	require(critical_operation_id_generate(&next_id) &&
+			item_transfer_command_build(&next_command, next_id, next_loot,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+		"NPC ordinary loot build");
+	next_command.accepted_at_usec = 1;
+	const auto next_result = flatfile_item_repository_apply(root, next_command);
+	require(next_result.outcome == critical_apply_outcome::applied,
+		"ordinary NPC loot after coin pickup failed: " +
+			std::to_string(next_result.error_code));
+	// A real container handoff must see no phantom descendants after coin pickup.
+	item_transfer_payload move = {};
+	move.from_owner = player;
+	move.to_owner = { item_owner_type::player, 43, 0 };
+	move.expected_from_revision = ownership(player, &remaining);
+	require(remaining.size() == 1, "spent coin remained before bag movement");
+	move.expected_to_revision = ownership(move.to_owner, &remaining);
+	move.reason = item_transfer_reason::player_give;
+	move.selected_item_uid = bag_uid;
+	move.target_root_item_uid = bag_uid;
+	move.item_count = 1;
+	move.items[0] = { bag_uid, bag_uid, 0, 1, 96443, item_custody_state::active };
+	player_item_snapshot bag;
+	bag.object_uid = bag_uid;
+	bag.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	bag.equipment_slot = -1;
+	bag.vnum = 96443;
+	bag.type = ITEM_CONTAINER;
+	std::vector<uint8_t> blob;
+	require(player_item_snapshot_list_encode({ bag }, &blob) ==
+			player_snapshot_codec_result::ok,
+		"coin bag movement payload");
+	move.item_blob_size = blob.size();
+	std::copy(blob.begin(), blob.end(), move.item_blob.begin());
+	critical_operation_id id;
+	critical_command move_command;
+	require(critical_operation_id_generate(&id) &&
+			item_transfer_command_build(&move_command, id, move,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive),
+		"coin bag movement command");
+	move_command.accepted_at_usec = 1;
+	require(apply(move_command).outcome == critical_apply_outcome::applied &&
+			apply(move_command).outcome == critical_apply_outcome::already_applied,
+		"spent coins broke subsequent bag handoff");
+	ownership(move.to_owner, &remaining);
+	require(remaining.size() == 1 && remaining[0].item_uid == bag_uid,
+		"bag recipient inherited phantom coins");
+	std::cout
+		<< "flatfile coin atomic conversion, interrupted commit, replay, rejection, merge and retirement passed\n";
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	const fs::path domains = root / "domains";
+	coin_matrix(root / "coin-matrix");
 	fs::create_directories(domains);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);
@@ -331,13 +842,40 @@ int main(int argc, char **argv)
 			flatfile_item_baseline_result::conflict,
 		"conflicting owner baseline was accepted");
 	{
-		std::fstream legacy(domains / "item_ownership",
-				    std::ios::in | std::ios::out | std::ios::binary);
-		require(legacy.good(), "could not open item catalog for v1 compatibility fixture");
-		const char version[] = { 1, 0, 0, 0 };
-		legacy.seekp(8);
-		legacy.write(version, sizeof(version));
-		legacy.close();
+		const fs::path filename = domains / "item_ownership";
+		std::ifstream input(filename, std::ios::binary);
+		std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(input)), {});
+		auto read32 = [&](size_t offset)
+		{
+			require(offset + 4 <= bytes.size(), "truncated legacy fixture");
+			uint32_t value = 0;
+			for (size_t i = 0; i < 4; ++i)
+				value |= uint32_t(bytes[offset + i]) << (8 * i);
+			return value;
+		};
+		require(read32(56) == 1 && read32(60) == 2 && read32(64) == 0,
+			"unexpected baseline fixture counts");
+		// Remove v3's empty per-item payload fields to reproduce an actual v1 file.
+		std::vector<uint8_t> payload(bytes.begin() + 56, bytes.begin() + 93);
+		size_t offset = 93;
+		for (size_t i = 0; i < 2; ++i)
+		{
+			require(read32(offset + 54) == 0,
+				"legacy fixture unexpectedly has coin payloads");
+			payload.insert(payload.end(), bytes.begin() + offset,
+				       bytes.begin() + offset + 54);
+			offset += 58;
+		}
+		require(offset == bytes.size(), "unexpected baseline trailing data");
+		bytes.resize(56);
+		bytes[8] = 1;
+		for (size_t i = 0; i < 4; ++i)
+			bytes[12 + i] = static_cast<uint8_t>(payload.size() >> (8 * i));
+		SHA256(payload.data(), payload.size(), bytes.data() + 24);
+		bytes.insert(bytes.end(), payload.begin(), payload.end());
+		std::ofstream output(filename, std::ios::binary | std::ios::trunc);
+		output.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+		output.close();
 		uint64_t legacy_revision = 0;
 		std::vector<flatfile_item_ownership_record> legacy_items;
 		require(flatfile_item_repository_load_owner(

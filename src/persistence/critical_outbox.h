@@ -5,6 +5,11 @@
 #include <cstdint>
 #include <vector>
 
+// Coin parents are audit receipts; their two child records publish the effects.
+constexpr uint16_t CRITICAL_OUTBOX_COIN_RECEIPT_DESTINATION = 10;
+constexpr uint16_t CRITICAL_OUTBOX_COIN_RECEIPT_EVENT = 1;
+constexpr size_t CRITICAL_OUTBOX_COIN_RECEIPT_BYTES = 32;
+
 constexpr size_t CRITICAL_OUTBOX_BATCH_MAX = 64;
 constexpr size_t CRITICAL_OUTBOX_RECORD_MAX_BYTES = 65535;
 constexpr size_t CRITICAL_OUTBOX_QUEUE_MAX_BYTES = 4 * 1024 * 1024;

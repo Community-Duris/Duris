@@ -10,7 +10,7 @@ SOURCES = (
 )
 
 for source in SOURCES:
-    assert 'TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-")' in source
+    assert 'TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-"' in source
     assert "build_flatfile_server(pathlib.Path(build_tmp))" in source
     assert 'ROOT / "bin/tests/flatfile-combat"' not in source
 

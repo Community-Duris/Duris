@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 174;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 177;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -29,16 +29,17 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms',"
 	"'guildhalls','guilds','ip_info','item_current_owner',"
 	"'item_owner_revision','item_ownership_baseline','item_ownership_ledger','item_ownership_quarantine',"
-	"'item_uid_allocator','items','kingdom_land','kingdom_realms','level_cap',"
-	"'lifecycle_archive_batches','lifecycle_archive_evidence','lifecycle_archive_jobs','lifecycle_archive_rows',"
-	"'locker_access','locker_activity_log','locker_chests','locker_item_affects',"
-	"'locker_item_extra_descr','locker_items','locker_kickouts','locker_session_state',"
-	"'lockers','log_entries','lookup_dataset_state','mud_info',"
-	"'mud_schema_baselines','mud_schema_history','mud_schema_migration_state','mud_schema_migrations',"
-	"'multiplay_whitelist','nexus_stones','offline_messages','outposts',"
-	"'pages','persistence_item_events','persistence_scalar_events','personal_data_export_audit',"
-	"'personal_data_export_requests','personal_data_export_sections','ping','pkill_event',"
-	"'pkill_info','player_affects','player_data','player_forged_items',"
+	"'item_uid_allocator','items','kingdom_garrison','kingdom_land',"
+	"'kingdom_realms','level_cap','lifecycle_archive_batches','lifecycle_archive_evidence',"
+	"'lifecycle_archive_jobs','lifecycle_archive_rows','locker_access','locker_activity_log',"
+	"'locker_chests','locker_item_affects','locker_item_extra_descr','locker_items',"
+	"'locker_kickouts','locker_session_state','lockers','log_entries',"
+	"'lookup_dataset_state','mud_info','mud_schema_baselines','mud_schema_history',"
+	"'mud_schema_migration_state','mud_schema_migrations','multiplay_whitelist','nexus_stones',"
+	"'offline_messages','outposts','pages','persistence_item_events',"
+	"'persistence_scalar_events','personal_data_export_audit','personal_data_export_requests','personal_data_export_sections',"
+	"'ping','pkill_event','pkill_info','player_affects',"
+	"'player_data','player_death_custody','player_death_disposition','player_forged_items',"
 	"'player_granted_cmds','player_intros','player_item_affects','player_item_extra_descr',"
 	"'player_items','player_languages','player_pet_item_affects','player_pet_item_extra_descr',"
 	"'player_pet_items','player_pets','player_recipes','player_shapechanges',"
@@ -55,28 +56,19 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"0ec0366920b78703c006c6d4f159026c659d071c38aad5e142c2573754aaa8f3";
+	"b5d52cca2efb9fc8f1192249c25d4affdf1b6cc005fb9ab982f0309f859c6287";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"92dd682008ba94f8aecc63595dc46f9d6f1f865adecd174e58e2a2ce14220f2c";
-/* Head 0009 adds kingdom_garrison, the roster of purchased guards. The three
- * checksums below are SHA-256 over the migration FILES and over the rolling
- * ledger, all computable offline; the two normalised metadata fingerprints
- * above are NOT, because they hash information_schema on a live server. That is
- * why kingdom_garrison is deliberately absent from RUNTIME_TABLE_SQL_LIST: the
- * fingerprint, the table count and the engine/collation checks all scope
- * themselves to that list, so a table outside it needs no live regeneration --
- * and RUNTIME_CURRENT_TABLE_COUNT above is therefore unchanged at 174.
- * Adding it to the list is a follow-up for whoever next has both a MySQL 8 and
- * a MariaDB 10.11 to hand; until then the module degrades exactly the way
- * kingdom_realms already does when its own table cannot be read. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0009_kingdom_garrison";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 9;
+	"6068b13bb215df55c01fd42521ca2a6ff73cdab281a7f214b247eeb841be9eab";
+/* Includes the death disposition and custody tables introduced by migration 0011.
+ * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0011_player_death_disposition";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 11;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"e295446be0ae22bb48989db87166641b8f8f599fa711133a3fd3f8370db9d8b3";
+	"209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9";
+	"cfeba2cc7cd8f07b1b24e490d2d05167231e76cbdcb96ced21b98671612f12e3";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"37fabde7d3c00518b92b35519442106b74dcb92fd18eebc6251c3470da56f561";
+	"c308bec958dac85b44ad4b0fd26c9cef8a174b8d34094de502a5a7881d9abce6";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

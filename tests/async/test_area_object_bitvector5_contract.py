@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 db = (SRC / "db.c").read_text()
 docs = (ROOT / "docs/content/AREA_OBJECT_FORMAT.md").read_text()
 
-loader_start = index(db, "P_obj read_object(int nr, int type)")
+loader_start = index(db, "object_template parse_object_template(int nr)")
 numeric_start = index(db, "/* *** numeric data *** */", loader_start)
 extras_start = index(db, "/* *** extra descriptions *** */", numeric_start)
 loader = db[numeric_start:extras_start]
