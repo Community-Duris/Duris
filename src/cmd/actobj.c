@@ -6946,7 +6946,10 @@ int numb_artis_using(P_char ch)
 }
 
 /*
- * Calculates the number of free hands CH has.
+ * Capacity is two hands (four for HAS_FOUR_HANDS), regardless of race.
+ * Giant-class races, including minotaurs, get their weapon discount solely
+ * from wield_item_size; an extra allowance here double-counts that benefit
+ * and makes admission depend on equip order or whether WIELD is occupied.
  */
 int get_numb_free_hands(P_char ch)
 {
@@ -6959,7 +6962,7 @@ int get_numb_free_hands(P_char ch)
 		free_hands -= wield_item_size(ch, ch->equipment[HOLD]);
 
 	if (ch->equipment[WEAR_SHIELD])
-		free_hands--;
+		free_hands -= wield_item_size(ch, ch->equipment[WEAR_SHIELD]);
 
 	if (ch->equipment[WIELD])
 		free_hands -= wield_item_size(ch, ch->equipment[WIELD]);
@@ -6976,15 +6979,41 @@ int get_numb_free_hands(P_char ch)
 	if (free_hands < 0)
 		free_hands = 0;
 
-	if (IS_GIANT(ch) && free_hands > 0)
+	return free_hands;
+}
+
+// Capacity and item cost are accounted for before placement. These are legacy
+// storage roles, not anatomical hands: held implements may occupy weapon slots.
+static int free_hand_slot(P_char ch, bool holding, int cost)
+{
+	if (holding && !ch->equipment[HOLD])
+		return HOLD;
+	// Combat distinguishes primary/third from secondary/fourth, so prefer
+	// the established paired placement using character-aware costs. The shared
+	// budget still permits mixed gear in otherwise unoccupied storage slots.
+	if (HAS_FOUR_HANDS(ch))
 	{
-		if (GET_RACE(ch) == RACE_MINOTAUR && ch->equipment[WIELD])
-			return free_hands;
-		else
-			return free_hands + 1;
+		for (int primary : { PRIMARY_WEAPON, THIRD_WEAPON })
+		{
+			int secondary = primary == PRIMARY_WEAPON ? SECONDARY_WEAPON :
+								    FOURTH_WEAPON;
+			if (!ch->equipment[primary] && (cost == 1 || !ch->equipment[secondary]))
+				return primary;
+			if (cost == 1 && !ch->equipment[secondary] &&
+			    (!ch->equipment[primary] ||
+			     wield_item_size(ch, ch->equipment[primary]) == 1))
+				return secondary;
+		}
 	}
 
-	return free_hands;
+	for (int slot : { PRIMARY_WEAPON, SECONDARY_WEAPON, THIRD_WEAPON, FOURTH_WEAPON })
+	{
+		if (!HAS_FOUR_HANDS(ch) && (slot == THIRD_WEAPON || slot == FOURTH_WEAPON))
+			break;
+		if (!ch->equipment[slot])
+			return slot;
+	}
+	return -1;
 }
 
 /*
@@ -7823,10 +7852,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			break;
 		}
 
-		hands_needed = (IS_SET(obj_object->extra_flags, ITEM_TWOHANDS) ||
-				obj_object->value[0] == WEAPON_2HANDSWORD) ?
-				       2 :
-				       1;
+		hands_needed = wield_item_size(ch, obj_object);
 
 		if (hands_needed == 2 && free_hands < 2)
 		{
@@ -7845,128 +7871,45 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			break;
 		}
-		/*
-			 * Check wield to where .. if primary is occupied, wield to
-			 * secondary, and vice versa.  Four-handed guys aren't quite so simple.
-			 */
-		if (HAS_FOUR_HANDS(ch))
+		wield_to_where = free_hand_slot(ch, false, hands_needed);
+		if (wield_to_where < 0)
 		{
-			if (hands_needed == 1)
-			{
-				if (!ch->equipment[PRIMARY_WEAPON])
-				{
-					wield_to_where = PRIMARY_WEAPON;
-				}
-				else if (!ch->equipment[SECONDARY_WEAPON] &&
-					 (!ch->equipment[PRIMARY_WEAPON] ||
-					  !(IS_SET(ch->equipment[PRIMARY_WEAPON]->extra_flags,
-						   ITEM_TWOHANDS) ||
-					    ch->equipment[PRIMARY_WEAPON]->value[0] ==
-						    WEAPON_2HANDSWORD) ||
-					  IS_TRUSTED(ch)))
-				{
-					wield_to_where = SECONDARY_WEAPON;
-				}
-				else if (!ch->equipment[THIRD_WEAPON])
-				{
-					wield_to_where = THIRD_WEAPON;
-				}
-				else if (!ch->equipment[FOURTH_WEAPON] &&
-					 (!(IS_SET(ch->equipment[THIRD_WEAPON]->extra_flags,
-						   ITEM_TWOHANDS) ||
-					    ch->equipment[THIRD_WEAPON]->value[0] ==
-						    WEAPON_2HANDSWORD) ||
-					  IS_TRUSTED(ch)))
-				{
-					wield_to_where = FOURTH_WEAPON;
-				}
-				else
-				{
-					if (showit)
-					{
-						send_to_char(
-							"You are already wielding as many weapons as you can.\r\n",
-							ch);
-					}
-					break;
-				}
-			}
-			// Let's assume everything takes one or two hands, so here we are doing
-			// the case where the weapon takes two hands
-			else
-			{
-				if (!ch->equipment[PRIMARY_WEAPON] &&
-				    !ch->equipment[SECONDARY_WEAPON])
-				{
-					wield_to_where = PRIMARY_WEAPON;
-				}
-				else if (!ch->equipment[THIRD_WEAPON])
-				{
-					if (ch->equipment[FOURTH_WEAPON])
-					{
-						if (showit)
-						{
-							send_to_char(
-								"You do not have enough hands free to use that.\r\n",
-								ch);
-						}
-						break;
-					}
-					wield_to_where = THIRD_WEAPON;
-				}
-				else
-				{
-					if (showit)
-					{
-						send_to_char(
-							"You do not have enough hands free to use that.\r\n",
-							ch);
-					}
-					break;
-				}
-			}
+			if (showit)
+				send_to_char(
+					"You are already wielding as many weapons as you can.\r\n",
+					ch);
+			break;
 		}
-		else
+		// Preserve the existing four-hand training exemption. For two hands,
+		// test actual weapons in either slot so removal/equip order cannot bypass
+		// training, and a held book in WIELD is not mistaken for a weapon.
+		if (!HAS_FOUR_HANDS(ch))
 		{
-			if (ch->equipment[PRIMARY_WEAPON])
+			bool armed = false;
+			for (int slot : { PRIMARY_WEAPON, SECONDARY_WEAPON })
+				if (ch->equipment[slot] && ch->equipment[slot]->type == ITEM_WEAPON)
+					armed = true;
+			if (armed && ((IS_PC(ch) && !GET_CHAR_SKILL(ch, SKILL_DUAL_WIELD)) ||
+				      (IS_NPC(ch) && (!IS_WARRIOR(ch) || (GET_LEVEL(ch) < 15)) &&
+				       (!IS_THIEF(ch) || (GET_LEVEL(ch) < 20)))))
 			{
-				if (ch->equipment[SECONDARY_WEAPON])
-				{
-					if (showit)
-					{
-						send_to_char(
-							"You are already wielding two weapons.\r\n",
-							ch);
-					}
-					break;
-				}
-				wield_to_where = SECONDARY_WEAPON;
-			}
-			else
-			{
-				wield_to_where = PRIMARY_WEAPON;
-			}
-			if (wield_to_where == SECONDARY_WEAPON)
-			{
-				if ((IS_PC(ch) && !GET_CHAR_SKILL(ch, SKILL_DUAL_WIELD)) ||
-				    (IS_NPC(ch) && (!IS_WARRIOR(ch) || (GET_LEVEL(ch) < 15)) &&
-				     (!IS_THIEF(ch) || (GET_LEVEL(ch) < 20))))
-				{
-					if (showit)
-					{
-						send_to_char(
-							"You lack the training to use two weapons.\r\n",
-							ch);
-					}
-					break;
-				}
+				if (showit)
+					send_to_char(
+						"You lack the training to use two weapons.\r\n",
+						ch);
+				break;
 			}
 
-			if ((wield_to_where == SECONDARY_WEAPON) &&
-			    (IS_REACH_WEAPON(obj_object) ||
+			// A sole weapon can occupy secondary storage beside a held implement.
+			// Once dual-wielding, validate the actual secondary weapon, including
+			// when the new weapon fills a primary slot vacated by held gear.
+			P_obj offhand = wield_to_where == SECONDARY_WEAPON ?
+						obj_object :
+						ch->equipment[SECONDARY_WEAPON];
+			if (armed && offhand && offhand->type == ITEM_WEAPON &&
+			    (IS_REACH_WEAPON(offhand) ||
 			     (!GET_CLASS(ch, CLASS_RANGER) &&
-			      (GET_OBJ_WEIGHT(obj_object) *
-				       ((IS_OGRE(ch) || IS_SNOWOGRE(ch)) ? 2 : 3) >
+			      (GET_OBJ_WEIGHT(offhand) * ((IS_OGRE(ch) || IS_SNOWOGRE(ch)) ? 2 : 3) >
 			       (str_app[STAT_INDEX(GET_C_STR(ch))].wield_w)))))
 			{
 				if (showit)
@@ -8001,10 +7944,8 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			break;
 		}
-		if ((IS_SET(obj_object->extra_flags, ITEM_TWOHANDS) ||
-		     (obj_object->type == ITEM_WEAPON &&
-		      obj_object->value[0] == WEAPON_2HANDSWORD)) &&
-		    (free_hands < 2))
+		hands_needed = wield_item_size(ch, obj_object);
+		if (hands_needed > free_hands)
 		{
 			if (showit)
 			{
@@ -8012,16 +7953,18 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			}
 			break;
 		}
-		if (ch->equipment[HOLD])
+		// A weapon placed in a weapon slot must pass wield eligibility, including
+		// training and weight. HOLD itself retains its non-attacking role.
+		if (obj_object->type == ITEM_WEAPON && ch->equipment[HOLD])
+			return wear(ch, obj_object, 12, showit);
+		wield_to_where = free_hand_slot(ch, true, hands_needed);
+		if (wield_to_where < 0)
 		{
 			if (showit)
-			{
-				act("You are already holding $p.", 0, ch, ch->equipment[HOLD], 0,
-				    TO_CHAR);
-			}
+				send_to_char("You have no free slot to hold that.\r\n", ch);
 			break;
 		}
-		execute_wear(ch, obj_object, HOLD, keyword, showit);
+		execute_wear(ch, obj_object, wield_to_where, keyword, showit);
 		return TRUE;
 		break;
 
@@ -8040,6 +7983,12 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			{
 				send_to_char("Your hands are full.\r\n", ch);
 			}
+			break;
+		}
+		if (wield_item_size(ch, obj_object) > free_hands)
+		{
+			if (showit)
+				send_to_char("You need two free hands to use that shield.\r\n", ch);
 			break;
 		}
 		// Already Wearing the Item
@@ -8379,7 +8328,7 @@ int equipment_pos_table[CUR_MAX_WEAR][3] = {
 	{ ITEM_WEAR_EYES, 15, 19 },    { ITEM_WEAR_ABOUT, 9, 12 },
 	{ ITEM_WEAR_QUIVER, 18, 23 },  { ITEM_WEAR_IOUN, 26, 41 },
 	{ ITEM_WIELD, 12, 16 }, // Primary weapon
-	{ ITEM_WIELD, 12, 17 }, // Secondary weapons, same slot as HOLD
+	{ ITEM_WIELD, 12, 17 }, // Secondary weapon storage; shares the hand budget with HOLD
 	{ ITEM_WIELD, 12, 25 }, // Tertiary weapon
 	{ ITEM_WIELD, 12, 26 }, // Quarternary weapon
 	{ ITEM_WEAR_BACK, 20, 27 },    { ITEM_ATTACH_BELT, 21, 30 }, // Primary spot

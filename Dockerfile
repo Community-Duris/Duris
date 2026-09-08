@@ -8,6 +8,7 @@ RUN apt-get update \
         gawk \
         libbsd-dev \
         libcjson-dev \
+        libcurl4-gnutls-dev \
         libgnutls28-dev \
         libhiredis-dev \
         libmariadb-dev-compat \
@@ -37,6 +38,7 @@ RUN apt-get update \
         gzip \
         libbsd0 \
         libcjson1 \
+        libcurl3t64-gnutls \
         libgnutls30t64 \
         libhiredis1.1.0 \
         libmariadb3 \
