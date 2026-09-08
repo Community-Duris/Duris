@@ -22,6 +22,9 @@ multiplexed in a single `select()` loop. Concurrency includes:
   dispatcher for economy, ownership, auction, and gameplay-outcome operations.
 - One bounded maintenance worker for staggered recurring database and snapshot work.
 - One immutable world-recovery publisher worker when Redis recovery is enabled.
+- One bounded best-effort mail worker (libcurl SMTP) for account password recovery. It is
+  not in the shutdown drain chain, is joined at shutdown (each send is bounded to 10 s
+  connect / 20 s total, no retry), and is disabled unless `MAIL_ENABLED=TRUE`.
 - Legacy item, scalar, and large-payload queue modules for remaining compatibility
   producers; they are not the player snapshot or critical-operation authority.
 - The main game loop blocking signals (including `SIGSEGV`, handled internally)
