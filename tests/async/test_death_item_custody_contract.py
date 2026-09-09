@@ -134,9 +134,9 @@ checks.append((
     contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid,") and
     contains(retry, "GET_STAT(ch) != STAT_DEAD")
 ))
-busy_retry = retry.split(
-    "if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))",
-    1)[1]
+# The busy test is read into named booleans so the poll's log line can report
+# which subsystem is holding the death; the branch itself is unchanged.
+busy_retry = retry.split("if (items_busy || currency_busy)", 1)[1]
 # only the in-flight branch: a refused handoff below it does back off.
 busy_retry = busy_retry.split("P_obj corpse = context.corpse_uid", 1)[0]
 checks.append((

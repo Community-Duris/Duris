@@ -4,6 +4,7 @@
 #include "combat/chaos_materials.h"
 #include "item/enhance.h"
 #include "item/item_movement_transaction.h"
+#include "economy/currency_transaction.h"
 #include "core/utils.h"
 
 #include <stdlib.h>
@@ -163,9 +164,76 @@ static void chaos_pouch_test_generate(P_char ch, const char *arg)
 		send_to_char("Chaos pouch test generation was not recorded.\r\n", ch);
 }
 
+static void chaos_test_funds_committed(P_char ch, bool committed, const currency_command_result &,
+				       unsigned int, const uint8_t *, size_t)
+{
+	if (committed)
+		send_to_char("Quest-room test funds committed.\n", ch);
+	else
+		send_to_char("Quest-room test funds failed.\n", ch);
+}
+
+static bool chaos_test_account_authorized(P_char ch)
+{
+	const char *expected_account = getenv("CHAOS_TEST_ACCOUNT");
+	if (!expected_account || !*expected_account || !ch || !ch->desc || !ch->desc->account ||
+	    !ch->desc->account->acct_name)
+		return false;
+	if (strcasecmp(ch->desc->account->acct_name, expected_account))
+		return false;
+	return !strcmp(ch->desc->host, "127.0.0.1") || !strcmp(ch->desc->host, "localhost") ||
+	       !strcmp(ch->desc->host, "::1");
+}
+
+static bool chaos_test_questroom(P_char ch, char *arg)
+{
+	if (!chaos_mud_enabled() || !chaos_test_commands_enabled() ||
+	    !chaos_test_account_authorized(ch))
+		return false;
+
+	char command[MAX_INPUT_LENGTH];
+	arg = one_argument(arg, command);
+	if (!is_abbrev(command, "questroom"))
+		return false;
+	const int room_vnum = atoi(arg);
+	if (room_vnum != 16633)
+		return false;
+	const int room = real_room(room_vnum);
+	if (room == NOWHERE)
+	{
+		send_to_char("That test room is unavailable right now.\n", ch);
+		return true;
+	}
+	if (!char_in_list(ch) || !IS_ALIVE(ch))
+	{
+		send_to_char("You must be alive to use the quest-room test helper.\n", ch);
+		return true;
+	}
+	char_from_room(ch);
+	if (!char_to_room(ch, room, -2))
+	{
+		send_to_char("The quest-room test move failed.\n", ch);
+		return true;
+	}
+	send_to_char("Quest-room test move complete.\n", ch);
+	if (!currency_transaction_submit_wallet_value(
+		    ch, 100000, currency_reason_type::wallet_reward, 0,
+		    critical_source_site::command, critical_deadline_class::interactive,
+		    chaos_test_funds_committed, nullptr, 0))
+	{
+		send_to_char("Quest-room test funds submission failed.\n", ch);
+		return true;
+	}
+	send_to_char("Quest-room test funds queued.\n", ch);
+	return true;
+}
+
 void do_chaos(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!IS_PC(ch))
+		return;
+
+	if (chaos_test_questroom(ch, arg))
 		return;
 
 	if (!IS_TRUSTED(ch) || !chaos_mud_enabled())

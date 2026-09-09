@@ -2457,6 +2457,56 @@ void kill_gain(P_char ch, P_char victim);
 // The death recovery budget: a refused handoff must reach durable storage and
 // release the character to the account menu inside this window.
 #define DEATH_DISPOSITION_TIMEOUT_MSEC 2000
+// How long a custody handoff may drain before the wait stops being routine.
+// DEATH_EXTRACT_RETRY_INITIAL is a delay in PULSES and WAIT_SEC of them make a
+// second, so the poll runs about once a second: this is a wait of half a
+// minute, an order of magnitude past any healthy drain, and the point at which
+// an immortal wants to hear about it.
+#define DEATH_RECOVERY_STALL_SECONDS 30
+
+/*
+ * Should this poll tell the immortals about the wait?
+ *
+ * ELAPSED TIME, NOT POLLS. The retry is scheduled a second at a time, but
+ * ne_events() runs an entry whose tick is due OR LATE, and a main loop held up
+ * by blocking work is exactly the condition this alert exists to expose:
+ * counting callbacks would report one second of waiting after a thirty-second
+ * stall and say nothing at all. So the wait is measured against a monotonic
+ * clock taken when it started, and the poll count is diagnostic only.
+ *
+ * `alerts` is how many have already gone out for THIS wait, which is what
+ * turns the answer into one line per window instead of one per poll: the next
+ * is due once the wait reaches the window after the last.
+ *
+ * Its own function rather than an expression inline so the contract test can
+ * compile THIS arithmetic instead of a copy of it -- a lifted copy cannot
+ * notice the original drifting away from it, and neither can a test that only
+ * reads the comparison.
+ */
+static bool death_custody_wait_should_alert(uint64_t waited_usec, int alerts)
+{
+	if (alerts < 0)
+		return false;
+
+	const uint64_t window_usec = (uint64_t)DEATH_RECOVERY_STALL_SECONDS * 1000000;
+
+	// A wait long enough to overflow this is a wait no clock will see.
+	if ((uint64_t)alerts + 1 > UINT64_MAX / window_usec)
+		return false;
+
+	return waited_usec >= window_usec * ((uint64_t)alerts + 1);
+}
+
+/** Forget the wait: whatever happens next is not the handoff that started it. */
+static void death_custody_wait_reset(P_char ch)
+{
+	if (!ch || !IS_PC(ch))
+		return;
+
+	ch->only.pc->death_custody_wait_since_usec = 0;
+	ch->only.pc->death_custody_wait_alerts = 0;
+	ch->only.pc->death_custody_wait_polls = 0;
+}
 
 /** Finish a death whose record is durable: report it, then release to the account menu. */
 static void release_after_terminal_death(P_char ch, const char *outcome)
@@ -2602,17 +2652,64 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
-	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
+	const bool items_busy = item_movement_transaction_player_busy(ch);
+	const bool currency_busy = currency_transaction_player_busy(ch);
+
+	if (items_busy || currency_busy)
 	{
-		persistence_alert(AVATAR, "player_save", "death", "none", "none",
-				  "death_recovery_awaiting_corpse_items", "delay=%d",
-				  DEATH_EXTRACT_RETRY_INITIAL);
 		// Corpse ownership handoffs are expected bounded work, not a failure.
 		// Poll them steadily so the account menu follows the final handoff
 		// promptly; reserve exponential backoff for an actual save failure.
+		//
+		// THE POLL ITSELF IS NOT NEWS (issue #174). Every carried item costs
+		// its own transaction, so a well-equipped death spends a poll per
+		// item, and each one was broadcasting at AVATAR to every immortal
+		// online -- a death that was draining correctly read as a database
+		// stall. The routine wait belongs in the log. The channel hears about
+		// it only once the wait is long enough that someone should look, and
+		// then once per window rather than once per poll.
+		//
+		// It also said "corpse_items" for a condition that is equally true of
+		// a wallet conversion still in flight, which sent readers looking in
+		// the wrong subsystem. Both are named now, and the wait is reported in
+		// seconds: the delay is in PULSES, and reading it as seconds is what
+		// turned a 13-poll drain into a "52 second" report.
+		const uint64_t now = persistence_observability_now_usec();
+
+		if (!ch->only.pc->death_custody_wait_since_usec)
+			ch->only.pc->death_custody_wait_since_usec = now;
+
+		const uint64_t since = ch->only.pc->death_custody_wait_since_usec;
+		const uint64_t waited_usec = now > since ? now - since : 0;
+		const uint64_t waited_whole = waited_usec / 1000000;
+		const int waited_sec = waited_whole > INT_MAX ? INT_MAX : (int)waited_whole;
+		const int polls = ++ch->only.pc->death_custody_wait_polls;
+
+		if (death_custody_wait_should_alert(waited_usec,
+						    ch->only.pc->death_custody_wait_alerts))
+		{
+			ch->only.pc->death_custody_wait_alerts++;
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  "death_recovery_awaiting_custody",
+					  "items=%d currency=%d polls=%d waited_sec=%d delay=%d",
+					  items_busy ? 1 : 0, currency_busy ? 1 : 0, polls,
+					  waited_sec, DEATH_EXTRACT_RETRY_INITIAL);
+		}
+		else
+			logit(LOG_DEBUG,
+			      "PERSISTENCE: domain=player_save action=death_recovery_awaiting_custody "
+			      "outcome=expected detail=items=%d currency=%d polls=%d "
+			      "waited_sec=%d delay=%d",
+			      items_busy ? 1 : 0, currency_busy ? 1 : 0, polls, waited_sec,
+			      DEATH_EXTRACT_RETRY_INITIAL);
+
 		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL);
 		return;
 	}
+
+	// Past the wait: a dispute, a restart, a save or a release. None of them is
+	// the handoff whose clock is running, so the next one starts its own.
+	death_custody_wait_reset(ch);
 
 	P_obj corpse = context.corpse_uid ? corpse_live_item(context.corpse_uid) : NULL;
 	if (corpse_transfer_disputed(ch))
@@ -2697,6 +2794,7 @@ void die(P_char ch, P_char killer)
 		do_return(ch, 0, -4);
 
 	ch = ForceReturn(ch);
+	death_custody_wait_reset(ch);
 	// A new death starts undisputed. Nothing else retires the entry when a
 	// recovery is abandoned, and a stale one would skip the corpse handoff.
 	clear_corpse_transfer_dispute(ch);
