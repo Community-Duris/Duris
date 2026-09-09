@@ -211,6 +211,7 @@ OBJS =  $(SHIP_OBJS) \
 				 core/mm.o \
 				 mob/mobact.o \
 				 world/world_quest.o \
+				 world/world_quest_policy.o \
 				 combat/mobcombat.o \
 				 mob/mobconv.o \
 				 mob/mobpatrol.o \
@@ -305,6 +306,9 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/boon_shop_command.o \
 				 economy/boon_shop_transaction.o \
 				 economy/shop_trade_command.o \
+				 world/zone_story_quest_tracking.o \
+				 world/zone_story_quest_catalog.o \
+				 world/zone_story_quest_repository.o \
 				 world/zone_touch_command.o \
 				 world/zone_touch_repository.o \
 				 world/zone_touch_transaction.o \
