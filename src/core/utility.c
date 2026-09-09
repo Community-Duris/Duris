@@ -7445,8 +7445,7 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 		// Otherwise, just add gold and return it.
 		else
 		{
-			snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+Y%dg%s&n", gold,
-				 color_string);
+			snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+Y%dg&n", gold);
 			return ret_string;
 		}
 	}
@@ -7470,8 +7469,7 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, const char
 		// Otherwise, just add silver and return it.
 		else
 		{
-			snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+w%ds%s&n", silver,
-				 color_string);
+			snprintf(ret_string + pos1, MAX_STRING_LENGTH - pos1, "&+w%ds&n", silver);
 			return ret_string;
 		}
 	}
