@@ -289,6 +289,11 @@ static bool item_get_ack_publication = false, item_get_deferred = false, item_ge
 static int bulk_total = 0;
 static bool submit_coin_get(P_char, P_obj, P_obj, int);
 void act(const char *, int, P_char, P_obj, void *, int) {}
+char *coins_to_string(int, int, int, int, const char *)
+{
+	static char buf[] = "coins";
+	return buf;
+}
 void writeCorpse(P_obj) {}
 void mark_player_dirty_components(int, player_component_mask_t) {}
 bool get_item_source_owner(P_char, P_obj money, P_obj container, item_owner_identity *owner)
