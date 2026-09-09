@@ -1,13 +1,42 @@
 # Issue 180: command latency attribution — verified findings and plan
 
-Status: investigation complete; implementation pending. This branch publishes
-the verified scope and implementation plan only.
+Status: implementation in progress. The bounded trace-window work in Step 4 is
+complete; the shared correlation foundation in Step 2 is complete, with final
+slow-operation join verification waiting on Step 1. Steps 1 and 3 remain.
 
 Reviewed 2026-09-10 against `origin/master` at
 `c9266bf552dce23cdb2632a921b4b96a092168f7`.
 Source: [issue #180](https://github.com/Community-Duris/Duris/issues/180), including
 the [casting follow-up](https://github.com/Community-Duris/Duris/issues/180#issuecomment-5609189204).
 Line references below refer to that revision; symbols are the durable anchors.
+
+## Current implementation state
+
+The first implementation increment replaces lifetime trace summaries with an
+atomic snapshot-and-reset API. Each 300-pulse report captures one immutable
+window and renders that same snapshot to `logs/latency_trace.log` and stderr,
+outside the producer mutex. The snapshot contains boot identity, UTC and
+monotonic boundaries, 64-bit counts/durations, per-section aggregates, and an
+exact bounded top ten maintained independently of the 4096-entry recent ring.
+Records produced while output is written belong to the next window. A file-open
+failure is reported while stderr still receives the captured snapshot.
+
+Every game-loop sample now uses one `ne_event_tick` value captured at the start
+of the pass, including samples written after `nevent_advance_tick`. Slow tick,
+event-budget, event-catch-up, and slow-event records include the same boot ID,
+absolute tick, and monotonic pulse-start value. Persistence-worker samples use
+an explicit unavailable-tick sentinel, rendered as `-`. The unused scope macro
+uses the absolute scheduler tick. The process-global trace made the old utility
+and persistence dump/reset wrappers redundant, so they were removed. The
+fallback file-write sample also moved from process CPU time to monotonic elapsed
+time while its producer was being audited.
+
+A native ASan/UBSan regression exercises bounded window reset, 64-bit ticks,
+unavailable worker ticks, distinct process identities, identical dual rendering,
+empty windows, file-open fallback, exact top ten after more than 4096 records,
+and concurrent producers/snapshots with no summary-count loss or duplication.
+The maintained server build and relevant existing tests pass; commands and
+legacy profiler behavior are unchanged at this checkpoint.
 
 ## Verification and limits
 
@@ -212,3 +241,27 @@ reported stall, prove the proposed fixes, or refute the casting mismatch. In
 particular, the abort contract accepts the existing wait-dependent queue gate.
 No server build or full/database regression suite was run for this Markdown-only
 change. The staged document also passed `git diff --cached --check` before commit.
+
+### Implementation checkpoint: trace windows and correlation foundation
+
+Passed after the first code increment:
+
+```bash
+python3 -B tests/async/test_latency_trace_runtime.py
+python3 -B tests/async/test_tick_latency_instrumentation.py
+python3 -B tests/async/test_latency_trace_global_state.py
+python3 -B tests/async/test_nevent_budget_contract.py
+python3 -B tests/async/test_nevent_scheduler_runtime.py
+python3 -B tests/async/test_casting_input_queue_runtime.py
+python3 -B tests/async/test_command_gate_recovery.py
+python3 -B tests/async/test_spell_abort_command.py
+python3 -B tests/async/test_documentation_contract.py
+./scripts/format.sh --check
+make -C src -j2
+git diff --check
+```
+
+The scheduler and latency runtime suites ran under ASan/UBSan. The build was a
+clean dependency-driven rebuild of the maintained MariaDB/development server.
+This checkpoint has not yet been smoke-tested in a running development server;
+that remains part of the final implementation validation.

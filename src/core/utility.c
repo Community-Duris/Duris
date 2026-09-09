@@ -1006,7 +1006,7 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 		return 0;
 	}
 
-	clock_t _fb_beg = clock();
+	const uint64_t fallback_started_us = latency_trace_monotonic_us();
 	if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
 		ok = 0;
 
@@ -1014,10 +1014,12 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 		ok = 0;
 	if (fclose(log_f))
 		ok = 0;
-	{
-		long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
-		latency_trace_record("fallback_file_write", _fb_us, 0);
-	}
+	const uint64_t fallback_finished_us = latency_trace_monotonic_us();
+	latency_trace_record("fallback_file_write",
+			     fallback_finished_us >= fallback_started_us ?
+				     fallback_finished_us - fallback_started_us :
+				     0,
+			     LATENCY_TRACE_TICK_UNAVAILABLE);
 	persistence_fallback_count++;
 	pthread_mutex_unlock(&persistence_fallback_log_mutex);
 
@@ -1658,20 +1660,6 @@ int persistence_replay_fallback_events(void)
 		return 0;
 	persistence_item_worker_fallback_count++;
 	return 1;
-}
-
-void utility_latency_dump(void)
-{
-	FILE *f = fopen("/durismud/logs/latency_trace.log", "a");
-	if (!f)
-		return;
-	latency_trace_dump(f);
-	fclose(f);
-}
-
-void utility_latency_reset(void)
-{
-	latency_trace_reset();
 }
 
 int persistence_start_item_event_worker(void)

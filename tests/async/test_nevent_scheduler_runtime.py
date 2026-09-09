@@ -1119,6 +1119,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
             "-pthread",
             f"-I{SRC}",
             str(harness),
+            str(SRC / "persistence" / "latency_trace.c"),
             "-Wl,--gc-sections",
             "-o",
             str(binary),

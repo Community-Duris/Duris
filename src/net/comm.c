@@ -859,10 +859,9 @@ void run_the_game(int port, int sslport)
 	/* Boot-time scalar queue flood test: overflows the queue so the
 	 * latency_trace instrumentation can capture scalar_enq_ok/drop
 	 * and fallback_file_write statistics in the next periodic dump.
-	 * Reset all TU-level ring buffers before the test so data is clean. */
+	 * Reset the process-global trace before the test so data is clean. */
+	latency_trace_init();
 	latency_trace_reset();
-	persistence_queue_latency_reset();
-	utility_latency_reset();
 #ifndef __NO_TESTS__
 	test_persistence_run_one("queue_flood_scalar");
 	test_persistence_run_one("queue_routes_oversize_scalar_to_large");
@@ -1159,6 +1158,9 @@ resume_game_loop:
 	while (!shutdownflag)
 	{
 		double loop_time_begin = loop_monotonic_seconds();
+		const uint64_t loop_tick = (uint64_t)ne_event_tick;
+		const uint64_t loop_start_mono_us = latency_trace_monotonic_us();
+		latency_trace_begin_pulse(loop_tick, loop_start_mono_us);
 		// check for signal-initiated shutdown (from launcher)
 		//PROFILE_START(process_signal_shutdown_pending);
 		if (signal_shutdown_pending)
@@ -1354,7 +1356,8 @@ resume_game_loop:
 		}
 		PROFILE_END(connections);
 		double connections_time = loop_monotonic_seconds() - connections_begin;
-		latency_trace_record("connections", (long)(connections_time * 1000000.0), pulse);
+		latency_trace_record("connections", (uint64_t)(connections_time * 1000000.0),
+				     loop_tick);
 
 #if 0
     if (debug_mode)
@@ -1585,7 +1588,7 @@ resume_game_loop:
 		}
 		PROFILE_END(commands);
 		double commands_time = loop_monotonic_seconds() - commands_begin;
-		latency_trace_record("commands", (long)(commands_time * 1000000.0), pulse);
+		latency_trace_record("commands", (uint64_t)(commands_time * 1000000.0), loop_tick);
 
 		PROFILE_START(prompts);
 		double prompts_begin = loop_monotonic_seconds();
@@ -1663,7 +1666,7 @@ resume_game_loop:
 
 		PROFILE_END(prompts);
 		double prompts_time = loop_monotonic_seconds() - prompts_begin;
-		latency_trace_record("prompts", (long)(prompts_time * 1000000.0), pulse);
+		latency_trace_record("prompts", (uint64_t)(prompts_time * 1000000.0), loop_tick);
 
 		/* handle heartbeat stuff */
 		/* ne_events() closes the current tick's pre-event scheduling phase. */
@@ -1671,7 +1674,8 @@ resume_game_loop:
 		ne_events();
 		double ne_events_end = loop_monotonic_seconds();
 		double ne_events_time = ne_events_end - ne_events_begin;
-		latency_trace_record("ne_events", (long)(ne_events_time * 1000000.0), pulse);
+		latency_trace_record("ne_events", (uint64_t)(ne_events_time * 1000000.0),
+				     loop_tick);
 
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))
@@ -1728,9 +1732,10 @@ resume_game_loop:
 			}
 			account_recovery_pulse();
 			redis_world_recovery_pulse();
-			latency_trace_record("gmcp_flush",
-					     (long)((loop_monotonic_seconds() - _gmcp) * 1000000.0),
-					     pulse);
+			latency_trace_record(
+				"gmcp_flush",
+				(uint64_t)((loop_monotonic_seconds() - _gmcp) * 1000000.0),
+				loop_tick);
 		}
 		maintenance_result maintenance_results[MAINTENANCE_COMPLETION_MAX] = {};
 		const size_t maintenance_count = maintenance_scheduler_pulse(
@@ -1759,7 +1764,8 @@ resume_game_loop:
 
 		PROFILE_END(activities);
 		double activities_time = loop_monotonic_seconds() - activities_begin;
-		latency_trace_record("activities", (long)(activities_time * 1000000.0), pulse);
+		latency_trace_record("activities", (uint64_t)(activities_time * 1000000.0),
+				     loop_tick);
 
 		PROFILE_START(combat);
 		double combat_begin = loop_monotonic_seconds();
@@ -1841,7 +1847,7 @@ resume_game_loop:
 		//      }
 		PROFILE_END(combat);
 		double combat_time = loop_monotonic_seconds() - combat_begin;
-		latency_trace_record("combat", (long)(combat_time * 1000000.0), pulse);
+		latency_trace_record("combat", (uint64_t)(combat_time * 1000000.0), loop_tick);
 
 		PROFILE_START(pulse_reset);
 		// tics since last checkpoint signal
@@ -1868,15 +1874,20 @@ resume_game_loop:
 		double affect_and_points_end = loop_monotonic_seconds();
 		double affect_and_points_time = affect_and_points_end - affect_and_points_begin;
 		latency_trace_record("affect_and_points",
-				     (long)(affect_and_points_time * 1000000.0), pulse);
-		latency_trace_record("affect_update", (long)(affect_time * 1000000.0), pulse);
-		latency_trace_record("point_update", (long)(point_time * 1000000.0), pulse);
+				     (uint64_t)(affect_and_points_time * 1000000.0), loop_tick);
+		latency_trace_record("affect_update", (uint64_t)(affect_time * 1000000.0),
+				     loop_tick);
+		latency_trace_record("point_update", (uint64_t)(point_time * 1000000.0), loop_tick);
 		/* check out the time */
 		loop_time_end = loop_monotonic_seconds();
 		double loop_time = loop_time_end - loop_time_begin;
 		if (loop_time >= 0.250) // 4 ticks a sec
 		{
-			statuslog(56, "MUD TICK TOOK TOO LONG - loop time - %f", loop_time);
+			statuslog(56,
+				  "MUD TICK TOOK TOO LONG - loop time - %f: boot=%s tick=%" PRIu64
+				  " pulse_start_mono_us=%" PRIu64,
+				  loop_time, latency_trace_boot_id(), loop_tick,
+				  loop_start_mono_us);
 			statuslog(56, "  - connections time - %f", connections_time);
 			statuslog(56, "  - activities time - %f", activities_time);
 			statuslog(56, "  - combat time - %f", combat_time);
@@ -1887,19 +1898,24 @@ resume_game_loop:
 			statuslog(56, "    - affect_update time - %f", affect_time);
 			statuslog(56, "    - point_update time - %f", point_time);
 		}
-		latency_trace_record("total_tick", (long)(loop_time * 1000000.0), pulse);
+		latency_trace_record("total_tick", (uint64_t)(loop_time * 1000000.0), loop_tick);
 		if (!(tics % 300))
 		{
+			latency_trace_snapshot snapshot = {};
+			latency_trace_snapshot_capture(&snapshot);
 			FILE *_ltf = fopen("logs/latency_trace.log", "a");
 			if (_ltf)
 			{
-				latency_trace_dump(_ltf);
+				latency_trace_snapshot_dump(_ltf, &snapshot);
 				fclose(_ltf);
 			}
-			latency_trace_dump(stderr);
+			else
+				statuslog(
+					56,
+					"LATENCY TRACE: could not open logs/latency_trace.log: errno=%d",
+					errno);
+			latency_trace_snapshot_dump(stderr, &snapshot);
 			fflush(stderr);
-			persistence_queue_latency_dump();
-			utility_latency_dump();
 		}
 		memcpy(&timeout, &opt_time, sizeof(timeout));
 		suseconds_t usec_spent = (suseconds_t)(loop_time * 1000 * 1000);

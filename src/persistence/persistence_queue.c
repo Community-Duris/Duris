@@ -764,7 +764,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 			      "persistence_scalar_event_queue_enqueue: failed to grow queue\n");
 			q->dropped++;
 			ok = 0;
-			latency_trace_record("scalar_enq_drop", 0, 0);
+			latency_trace_record("scalar_enq_drop", 0, LATENCY_TRACE_TICK_UNAVAILABLE);
 		}
 	}
 
@@ -772,7 +772,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 	{
 		q->dropped++;
 		ok = 0;
-		latency_trace_record("scalar_enq_drop", 0, 0);
+		latency_trace_record("scalar_enq_drop", 0, LATENCY_TRACE_TICK_UNAVAILABLE);
 	}
 	else
 	{
@@ -781,7 +781,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 		q->tail = (q->tail + 1) % q->capacity;
 		q->count++;
 		pthread_cond_signal(&persistence_scalar_event_queue_cond);
-		latency_trace_record("scalar_enq_ok", 0, 0);
+		latency_trace_record("scalar_enq_ok", 0, LATENCY_TRACE_TICK_UNAVAILABLE);
 	}
 
 	pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
@@ -1765,18 +1765,4 @@ const char *persistence_sql_escape_field(const char *in, char *buf, int buf_size
 	}
 	buf[j] = '\0';
 	return buf;
-}
-
-void persistence_queue_latency_dump(void)
-{
-	FILE *f = fopen("/durismud/logs/latency_trace.log", "a");
-	if (!f)
-		return;
-	latency_trace_dump(f);
-	fclose(f);
-}
-
-void persistence_queue_latency_reset(void)
-{
-	latency_trace_reset();
 }

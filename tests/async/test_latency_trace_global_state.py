@@ -10,9 +10,12 @@ impl = (SRC / "latency_trace.c").read_text()
 
 assert "extern latency_entry _latency_buf" in header
 assert "extern pthread_mutex_t _latency_mutex" in header
-assert "extern _latency_section _latency_sections" in header
+assert "extern latency_section _latency_sections" in header
 assert "latency_entry _latency_buf" in impl
 assert "pthread_mutex_t _latency_mutex" in impl
 assert "latency_trace.o" in makefile
+assert "LATENCY_TRACE_TICK_UNAVAILABLE" in header
+assert "latency_trace_snapshot_capture" in header
+assert "latency_trace_snapshot_dump" in header
 
 print("process-global latency trace checks passed")

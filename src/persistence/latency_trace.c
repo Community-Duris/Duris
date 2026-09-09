@@ -1,8 +1,266 @@
 #include "persistence/latency_trace.h"
 
+#include <string.h>
+#include <unistd.h>
+
 latency_entry _latency_buf[LATENCY_TRACE_MAX_SAMPLES];
 int _latency_head = 0;
 int _latency_count = 0;
 pthread_mutex_t _latency_mutex = PTHREAD_MUTEX_INITIALIZER;
-_latency_section _latency_sections[_LATENCY_MAX_SECTIONS];
+latency_section _latency_sections[LATENCY_MAX_SECTIONS];
 int _latency_nsections = 0;
+
+static latency_entry latency_window_top[LATENCY_TRACE_TOP_COUNT];
+static int latency_window_top_count = 0;
+static uint64_t latency_window_sample_count = 0;
+static uint64_t latency_window_start_utc_us = 0;
+static uint64_t latency_window_start_mono_us = 0;
+static char latency_boot_id[LATENCY_TRACE_BOOT_ID_LENGTH] = "uninitialized";
+static bool latency_initialized = false;
+static uint64_t latency_current_tick = LATENCY_TRACE_TICK_UNAVAILABLE;
+static uint64_t latency_pulse_start_mono_us = 0;
+
+static uint64_t latency_clock_us(clockid_t clock_id)
+{
+	struct timespec now = {};
+
+	if (clock_gettime(clock_id, &now) != 0 || now.tv_sec < 0)
+		return 0;
+	return (uint64_t)now.tv_sec * 1000000ULL + (uint64_t)now.tv_nsec / 1000ULL;
+}
+
+uint64_t latency_trace_monotonic_us(void)
+{
+	return latency_clock_us(CLOCK_MONOTONIC);
+}
+
+static void latency_trace_initialize_locked(void)
+{
+	if (latency_initialized)
+		return;
+
+	const uint64_t utc_us = latency_clock_us(CLOCK_REALTIME);
+	latency_window_start_utc_us = utc_us;
+	latency_window_start_mono_us = latency_clock_us(CLOCK_MONOTONIC);
+	if (utc_us)
+		snprintf(latency_boot_id, sizeof latency_boot_id, "%" PRIu64 "-%ld", utc_us,
+			 (long)getpid());
+	else
+		snprintf(latency_boot_id, sizeof latency_boot_id, "unknown-%ld", (long)getpid());
+	latency_initialized = true;
+}
+
+void latency_trace_init(void)
+{
+	pthread_mutex_lock(&_latency_mutex);
+	latency_trace_initialize_locked();
+	pthread_mutex_unlock(&_latency_mutex);
+}
+
+const char *latency_trace_boot_id(void)
+{
+	latency_trace_init();
+	return latency_boot_id;
+}
+
+void latency_trace_begin_pulse(uint64_t tick, uint64_t monotonic_us)
+{
+	latency_current_tick = tick;
+	latency_pulse_start_mono_us = monotonic_us;
+}
+
+uint64_t latency_trace_current_tick(void)
+{
+	return latency_current_tick;
+}
+
+uint64_t latency_trace_pulse_start_monotonic_us(void)
+{
+	return latency_pulse_start_mono_us;
+}
+
+static int latency_find_section(const char *name)
+{
+	for (int index = 0; index < _latency_nsections; ++index)
+		if (_latency_sections[index].name == name)
+			return index;
+	return -1;
+}
+
+static void latency_update_section(const char *name, uint64_t duration_us)
+{
+	int index = latency_find_section(name);
+	if (index < 0 && _latency_nsections < LATENCY_MAX_SECTIONS)
+	{
+		index = _latency_nsections++;
+		_latency_sections[index] = { name, duration_us, duration_us, duration_us, 1 };
+		return;
+	}
+	if (index < 0)
+		return;
+
+	latency_section *section = &_latency_sections[index];
+	if (duration_us < section->min_us)
+		section->min_us = duration_us;
+	if (duration_us > section->max_us)
+		section->max_us = duration_us;
+	section->total_us += duration_us;
+	section->count++;
+}
+
+static void latency_update_top(const char *name, uint64_t duration_us, uint64_t tick)
+{
+	int index = latency_window_top_count;
+	if (index < LATENCY_TRACE_TOP_COUNT)
+		latency_window_top_count++;
+	else
+	{
+		index = LATENCY_TRACE_TOP_COUNT - 1;
+		if (duration_us <= latency_window_top[index].duration_us)
+			return;
+	}
+
+	latency_window_top[index] = { name, duration_us, tick };
+	while (index > 0 &&
+	       latency_window_top[index].duration_us > latency_window_top[index - 1].duration_us)
+	{
+		latency_entry swap = latency_window_top[index - 1];
+		latency_window_top[index - 1] = latency_window_top[index];
+		latency_window_top[index] = swap;
+		--index;
+	}
+}
+
+void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick)
+{
+#if LATENCY_TRACE_ENABLED
+	if (!name)
+		return;
+	pthread_mutex_lock(&_latency_mutex);
+	latency_trace_initialize_locked();
+	const int index = _latency_head;
+	_latency_buf[index] = { name, duration_us, tick };
+	_latency_head = (index + 1) % LATENCY_TRACE_MAX_SAMPLES;
+	if (_latency_count < LATENCY_TRACE_MAX_SAMPLES)
+		_latency_count++;
+	latency_window_sample_count++;
+	latency_update_section(name, duration_us);
+	latency_update_top(name, duration_us, tick);
+	pthread_mutex_unlock(&_latency_mutex);
+#else
+	(void)name;
+	(void)duration_us;
+	(void)tick;
+#endif
+}
+
+static void latency_reset_locked(uint64_t utc_us, uint64_t mono_us)
+{
+	_latency_head = 0;
+	_latency_count = 0;
+	_latency_nsections = 0;
+	latency_window_top_count = 0;
+	latency_window_sample_count = 0;
+	latency_window_start_utc_us = utc_us;
+	latency_window_start_mono_us = mono_us;
+}
+
+void latency_trace_reset(void)
+{
+#if LATENCY_TRACE_ENABLED
+	pthread_mutex_lock(&_latency_mutex);
+	latency_trace_initialize_locked();
+	const uint64_t utc_us = latency_clock_us(CLOCK_REALTIME);
+	const uint64_t mono_us = latency_clock_us(CLOCK_MONOTONIC);
+	latency_reset_locked(utc_us, mono_us);
+	pthread_mutex_unlock(&_latency_mutex);
+#endif
+}
+
+void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot)
+{
+#if LATENCY_TRACE_ENABLED
+	if (!snapshot)
+		return;
+	pthread_mutex_lock(&_latency_mutex);
+	latency_trace_initialize_locked();
+	const uint64_t utc_us = latency_clock_us(CLOCK_REALTIME);
+	const uint64_t mono_us = latency_clock_us(CLOCK_MONOTONIC);
+	memset(snapshot, 0, sizeof *snapshot);
+	memcpy(snapshot->sections, _latency_sections,
+	       (size_t)_latency_nsections * sizeof snapshot->sections[0]);
+	snapshot->section_count = _latency_nsections;
+	memcpy(snapshot->top, latency_window_top,
+	       (size_t)latency_window_top_count * sizeof snapshot->top[0]);
+	snapshot->top_count = latency_window_top_count;
+	snapshot->sample_count = latency_window_sample_count;
+	snapshot->window_start_utc_us = latency_window_start_utc_us;
+	snapshot->window_end_utc_us = utc_us;
+	snapshot->window_start_mono_us = latency_window_start_mono_us;
+	snapshot->window_end_mono_us = mono_us;
+	snprintf(snapshot->boot_id, sizeof snapshot->boot_id, "%s", latency_boot_id);
+	latency_reset_locked(utc_us, mono_us);
+	pthread_mutex_unlock(&_latency_mutex);
+#else
+	if (snapshot)
+		memset(snapshot, 0, sizeof *snapshot);
+#endif
+}
+
+static void latency_sort_sections(latency_section *sections, int count)
+{
+	for (int index = 0; index < count; ++index)
+		for (int candidate = index + 1; candidate < count; ++candidate)
+			if (sections[candidate].total_us > sections[index].total_us)
+			{
+				latency_section swap = sections[index];
+				sections[index] = sections[candidate];
+				sections[candidate] = swap;
+			}
+}
+
+void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *snapshot)
+{
+#if LATENCY_TRACE_ENABLED
+	if (!output || !snapshot)
+		return;
+	latency_section sections[LATENCY_MAX_SECTIONS] = {};
+	memcpy(sections, snapshot->sections, (size_t)snapshot->section_count * sizeof sections[0]);
+	latency_sort_sections(sections, snapshot->section_count);
+
+	fprintf(output, "\n===== LATENCY TRACE SUMMARY =====\n");
+	fprintf(output,
+		"boot=%s window_start_utc_us=%" PRIu64 " window_end_utc_us=%" PRIu64
+		" window_start_mono_us=%" PRIu64 " window_end_mono_us=%" PRIu64 " samples=%" PRIu64
+		"\n",
+		snapshot->boot_id, snapshot->window_start_utc_us, snapshot->window_end_utc_us,
+		snapshot->window_start_mono_us, snapshot->window_end_mono_us,
+		snapshot->sample_count);
+	fprintf(output, "%-30s %12s %12s %12s %12s\n", "Section", "min(us)", "max(us)", "avg(us)",
+		"samples");
+	for (int index = 0; index < snapshot->section_count; ++index)
+	{
+		const latency_section *section = &sections[index];
+		const uint64_t average = section->count ? section->total_us / section->count : 0;
+		fprintf(output, "%-30s %12" PRIu64 " %12" PRIu64 " %12" PRIu64 " %12" PRIu64 "\n",
+			section->name, section->min_us, section->max_us, average, section->count);
+	}
+
+	fprintf(output, "\n--- Top-10 worst individual samples ---\n");
+	fprintf(output, "%-30s %12s %20s\n", "Section", "us", "tick");
+	for (int index = 0; index < snapshot->top_count; ++index)
+	{
+		const latency_entry *entry = &snapshot->top[index];
+		if (entry->tick == LATENCY_TRACE_TICK_UNAVAILABLE)
+			fprintf(output, "%-30s %12" PRIu64 " %20s\n", entry->name,
+				entry->duration_us, "-");
+		else
+			fprintf(output, "%-30s %12" PRIu64 " %20" PRIu64 "\n", entry->name,
+				entry->duration_us, entry->tick);
+	}
+	fprintf(output, "===== END LATENCY TRACE =====\n\n");
+#else
+	(void)output;
+	(void)snapshot;
+#endif
+}

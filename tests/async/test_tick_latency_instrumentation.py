@@ -84,6 +84,20 @@ if loop:
         contains(loop, 'fopen("logs/latency_trace.log", "a")') and
         not contains(loop, "/durismud/logs")
     ))
+    checks.append((
+        "one absolute scheduler tick correlates the whole loop",
+        contains(loop, "const uint64_t loop_tick = (uint64_t)ne_event_tick;") and
+        all(contains(loop, f'latency_trace_record("{name}"')
+            for name in ("connections", "commands", "prompts", "ne_events",
+                         "activities", "combat", "affect_and_points",
+                         "total_tick")) and
+        not re.search(r'latency_trace_record\([^;]+,\s*pulse\);', loop, re.S)
+    ))
+    checks.append((
+        "periodic outputs reuse one captured reporting window",
+        contains(loop, "latency_trace_snapshot_capture(&snapshot);") and
+        loop.count("latency_trace_snapshot_dump(") == 2
+    ))
 
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:
