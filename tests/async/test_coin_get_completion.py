@@ -16,6 +16,8 @@ assert COMPLETION, "coin_get_completion definition not found"
 assert "coins_to_string(" in COMPLETION
 assert "You get %d platinum, %d gold, %d silver, and %d copper coins." not in COMPLETION
 assert "act(" in COMPLETION and "TO_ROOM" in COMPLETION
+assert "$n gets some coins from $P." in COMPLETION
+assert "$n gets some coins." in COMPLETION
 
 HARNESS = r'''
 #include <array>
@@ -26,6 +28,7 @@ HARNESS = r'''
 #include <errno.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #define MAX_STRING_LENGTH 65536
 #define TRUE 1
@@ -86,23 +89,42 @@ struct bulk_get_state
 
 static std::string actor_text;
 static std::string room_text;
+static std::vector<std::string> room_args;
 static int room_acts = 0;
+static P_obj room_container = nullptr;
 static std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
+static std::unordered_map<uint64_t, obj_data> live_items;
+static uint64_t next_uid = 1;
 
 void send_to_char(const char *txt, P_char)
 {
 	if (txt)
 		actor_text += txt;
 }
-void act(const char *str, int, P_char, P_obj, void *, int type)
+void act(const char *str, int, P_char, P_obj, void *vict_obj, int type)
 {
 	if (type == TO_ROOM && str)
 	{
 		room_text += str;
+		room_args.push_back(str ? str : "");
+		if (vict_obj)
+			room_container = static_cast<P_obj>(vict_obj);
 		++room_acts;
 	}
 }
-P_obj find_live_item_uid(uint64_t) { return nullptr; }
+P_obj find_live_item_uid(uint64_t uid)
+{
+	auto found = live_items.find(uid);
+	return found == live_items.end() ? nullptr : &found->second;
+}
+static P_obj make_container(int type = 0)
+{
+	obj_data stored = {};
+	stored.type = type;
+	uint64_t uid = next_uid++;
+	live_items[uid] = stored;
+	return &live_items[uid];
+}
 static bool publish_coin_pile(const coin_transfer_endpoint &, const item_transfer_result &, uint64_t)
 {
 	return true;
@@ -114,29 +136,102 @@ static void finish_bulk_get(P_char, uint32_t) {}
 void debug(const char *, ...) {}
 ''' + extract_function("utility.c", "char *coins_to_string(int platinum, int gold, int silver, int copper, const char *color_string)") + "\n" + extract_function("actobj.c", "struct coin_pickup_context") + ";\n" + extract_function("actobj.c", "static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,") + r'''
 
-static void expect_get(const coin_transfer_payload &payload, int showit, const char *want_line)
+// A zero-denomination omission failure must name the denomination token
+// itself (e.g. "0g" as a standalone count), not a trailing digit of a
+// larger quantity: "10g" and "100c" are legal pickup amounts.
+static bool has_zero_denomination(const std::string &text, char unit)
+{
+	for (size_t pos = 0; (pos = text.find(unit, pos)) != std::string::npos; ++pos)
+	{
+		size_t start = pos;
+		while (start > 0 && text[start - 1] >= '0' && text[start - 1] <= '9')
+			--start;
+		if (start == pos)
+			continue;
+		bool all_zero = true;
+		for (size_t i = start; i < pos; ++i)
+		{
+			if (text[i] != '0')
+			{
+				all_zero = false;
+				break;
+			}
+		}
+		if (!all_zero)
+			continue;
+		// Only a count whose digits are all zero is an omitted-denomination
+		// failure; require a non-digit boundary so "10g" does not match.
+		if (start > 0 && text[start - 1] >= '0' && text[start - 1] <= '9')
+			continue;
+		return true;
+	}
+	return false;
+}
+
+static void expect_zero_denominations_omitted(const std::string &text)
+{
+	assert(!has_zero_denomination(text, 'p'));
+	assert(!has_zero_denomination(text, 'g'));
+	assert(!has_zero_denomination(text, 's'));
+	assert(!has_zero_denomination(text, 'c'));
+}
+
+static coin_transfer_payload make_payload(const std::array<int32_t, 4> &before,
+					  const std::array<int32_t, 4> &after = {})
+{
+	coin_transfer_payload payload = {};
+	payload.source.before = before;
+	payload.source.after = after;
+	return payload;
+}
+
+static void run_completion(P_char actor, bool committed, const coin_transfer_payload &payload,
+			   P_obj container, int showit)
+{
+	coin_pickup_context context = {};
+	context.container_uid = 0;
+	for (const auto &[uid, stored] : live_items)
+	{
+		if (&stored == container)
+		{
+			context.container_uid = uid;
+			break;
+		}
+	}
+	context.showit = showit;
+	coin_transfer_result result = {};
+	assert(coin_get_completion(actor, committed, payload, result, 0,
+				   reinterpret_cast<const uint8_t *>(&context), sizeof(context)));
+}
+
+static void expect_get(const coin_transfer_payload &payload, int showit, const char *want_line,
+		       P_obj container = nullptr, bool expect_container_message = false)
 {
 	actor_text.clear();
 	room_text.clear();
+	room_args.clear();
 	room_acts = 0;
+	room_container = nullptr;
 	pc_only_data player = {};
 	player.pid = 42;
 	char_data actor = {};
 	actor.only_pc = &player;
-	coin_pickup_context context = {};
-	context.showit = showit;
-	coin_transfer_result result = {};
-	assert(coin_get_completion(&actor, true, payload, result, 0,
-				   reinterpret_cast<const uint8_t *>(&context), sizeof(context)));
+	run_completion(&actor, true, payload, container, showit);
 	assert(actor_text == want_line);
-	assert(actor_text.find("0p") == std::string::npos);
-	assert(actor_text.find("0g") == std::string::npos);
-	assert(actor_text.find("0s") == std::string::npos);
-	assert(actor_text.find("0c") == std::string::npos);
+	expect_zero_denominations_omitted(actor_text);
 	if (showit)
 	{
 		assert(room_acts == 1);
-		assert(room_text.find("$n gets some coins.") != std::string::npos);
+		if (expect_container_message)
+		{
+			assert(room_text.find("$n gets some coins from $P.") != std::string::npos);
+			assert(room_container == container);
+		}
+		else
+		{
+			assert(room_text.find("$n gets some coins.") != std::string::npos);
+			assert(room_container == nullptr);
+		}
 	}
 	else
 		assert(room_acts == 0);
@@ -146,26 +241,98 @@ int main()
 {
 	char want[MAX_STRING_LENGTH];
 
-	coin_transfer_payload gold_only;
-	gold_only.source.before = {0, 0, 15, 0};
+	coin_transfer_payload gold_only = make_payload({0, 0, 15, 0});
 	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 15, 0, 0, "&+y"));
 	expect_get(gold_only, 1, want);
 	assert(std::string(want).find("&+Y") != std::string::npos);
 	assert(std::string(want).find("&+W") == std::string::npos);
 
-	coin_transfer_payload mixed;
-	mixed.source.before = {0, 3, 0, 1};
+	// Two-digit quantities end in zero without being zero denominations.
+	coin_transfer_payload double_digit_gold = make_payload({0, 0, 10, 0});
+	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 10, 0, 0, "&+y"));
+	expect_get(double_digit_gold, 0, want);
+
+	coin_transfer_payload mixed = make_payload({0, 3, 0, 1});
 	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(1, 0, 3, 0, "&+y"));
 	expect_get(mixed, 1, want);
 	assert(std::string(want).find("&+W") != std::string::npos);
 	assert(std::string(want).find("&+w") != std::string::npos);
 	assert(std::string(want).find("&+Y") == std::string::npos);
 
-	coin_transfer_payload copper_only;
-	copper_only.source.before = {4, 0, 0, 0};
+	coin_transfer_payload copper_only = make_payload({4, 0, 0, 0});
 	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 0, 0, 4, "&+y"));
 	expect_get(copper_only, 0, want);
 	assert(std::string(want).find("&+y") != std::string::npos);
+
+	coin_transfer_payload platinum_only = make_payload({0, 0, 0, 5});
+	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(5, 0, 0, 0, "&+y"));
+	expect_get(platinum_only, 1, want);
+	assert(std::string(want).find("&+W") != std::string::npos);
+
+	coin_transfer_payload all_four = make_payload({4, 3, 2, 1});
+	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(1, 2, 3, 4, "&+y"));
+	expect_get(all_four, 1, want);
+	assert(std::string(want).find("and") != std::string::npos);
+
+	// The room message names the container when coins come out of one.
+	P_obj chest = make_container();
+	expect_get(gold_only, 1, want[0] ? ({
+		snprintf(want, sizeof(want), "You get %s.\r\n",
+			 coins_to_string(0, 15, 0, 0, "&+y"));
+		want;
+	}) : want, chest, true);
+	expect_get(gold_only, 0, want, chest, false);
+
+	// A partial pickup leaves coins behind and says so.
+	actor_text.clear();
+	room_text.clear();
+	room_acts = 0;
+	{
+		pc_only_data player = {};
+		player.pid = 42;
+		char_data actor = {};
+		actor.only_pc = &player;
+		coin_transfer_payload leftover = make_payload({0, 0, 15, 0}, {0, 0, 5, 0});
+		snprintf(want, sizeof(want), "You get %s.\r\n",
+			 coins_to_string(0, 10, 0, 0, "&+y"));
+		run_completion(&actor, true, leftover, nullptr, 0);
+		assert(actor_text.find(want) == 0);
+		assert(actor_text.find("You couldn't carry all the coins.\r\n") !=
+		       std::string::npos);
+	}
+
+	// An uncommitted completion changes nothing and says so.
+	{
+		pc_only_data player = {};
+		player.pid = 42;
+		char_data actor = {};
+		actor.only_pc = &player;
+		actor_text.clear();
+		room_text.clear();
+		room_acts = 0;
+		coin_transfer_payload payload = make_payload({0, 0, 15, 0});
+		coin_pickup_context context = {};
+		coin_transfer_result result = {};
+		assert(coin_get_completion(&actor, false, payload, result, 0,
+					   reinterpret_cast<const uint8_t *>(&context),
+					   sizeof(context)));
+		assert(actor_text == "The coin transfer did not commit; nothing changed.\r\n");
+		assert(room_acts == 0);
+	}
+
+	// Zero coins render as "nothing", never as four zero denominations.
+	{
+		pc_only_data player = {};
+		player.pid = 42;
+		char_data actor = {};
+		actor.only_pc = &player;
+		actor_text.clear();
+		snprintf(want, sizeof(want), "You get %s.\r\n",
+			 coins_to_string(0, 0, 0, 0, "&+y"));
+		run_completion(&actor, true, make_payload({0, 0, 0, 0}), nullptr, 0);
+		assert(actor_text == want);
+		assert(actor_text.find("nothing") != std::string::npos);
+	}
 	return 0;
 }
 '''

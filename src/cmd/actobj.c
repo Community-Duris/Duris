@@ -3813,7 +3813,13 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 			if (partial)
 				send_to_char("You couldn't carry all the coins.\r\n", actor);
 			if (context.showit)
-				act("$n gets some coins.", TRUE, actor, 0, 0, TO_ROOM);
+			{
+				if (container)
+					act("$n gets some coins from $P.", TRUE, actor, 0,
+					    container, TO_ROOM);
+				else
+					act("$n gets some coins.", TRUE, actor, 0, 0, TO_ROOM);
+			}
 			mark_player_dirty_components(GET_PID(actor),
 						     PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_INVENTORY);
