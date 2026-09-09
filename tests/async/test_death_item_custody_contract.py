@@ -99,21 +99,23 @@ checks.append((
     contains(body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{"),
              "SET_POS(ch, GET_POS(ch) + STAT_DEAD);") and
     contains(body(fight, "static void schedule_death_extract_retry(P_char ch, uint64_t "
-                         "corpse_uid, int delay)"),
+                         "corpse_uid, int delay, int polls)"),
              "hold_for_death_extract_retry(ch);") and
     die.index("persistence_save_character_terminal(ch, RENT_DEATH)") <
     die.index("GET_HIT(ch) = 1;")
 ))
 schedule = body(
     fight,
-    "static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)",
+    "static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, "
+    "int delay, int polls)",
 )
 checks.append((
     "the private death retry can be linked to a dead character safely",
     schedule.index("SET_POS(ch, GET_POS(ch) + STAT_NORMAL);") <
     schedule.index("const nevent_schedule_result scheduled = add_event(") <
     schedule.index("hold_for_death_extract_retry(ch);") and
-    contains(schedule, "const death_extract_retry_context context = { delay, corpse_uid };") and
+    contains(schedule,
+             "const death_extract_retry_context context = { delay, corpse_uid, polls };") and
     contains(schedule, "NULL, NULL, 0, &context") and
     contains(schedule, '"death_recovery_schedule_failed"')
 ))
@@ -134,9 +136,7 @@ checks.append((
     contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid,") and
     contains(retry, "GET_STAT(ch) != STAT_DEAD")
 ))
-busy_retry = retry.split(
-    "if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))",
-    1)[1]
+busy_retry = retry.split("if (items_busy || currency_busy)", 1)[1]
 # only the in-flight branch: a refused handoff below it does back off.
 busy_retry = busy_retry.split("P_obj corpse = context.corpse_uid", 1)[0]
 checks.append((
@@ -146,7 +146,8 @@ checks.append((
 ))
 checks.append((
     "actual terminal save failures retain bounded exponential backoff",
-    contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);")
+    contains(retry,
+             "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2, 0);")
 ))
 checks.append((
     "a stalled handoff is resubmitted before death can be saved or extracted",
@@ -184,7 +185,8 @@ checks.append((
     "a missing corpse cannot let an ordinary empty save discard the refused assets",
     contains(retry, "if (!corpse || !save_disputed_death_disposition(ch, context.corpse_uid))")
     and contains(retry, '"death_recovery_corpse_missing"')
-    and contains(retry, "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);")
+    and contains(retry,
+             "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2, 0);")
 ))
 checks.append((
     "the durable record is only released once, and only after it is durable",
@@ -320,11 +322,12 @@ bool accept_event = false;
 bool add_event(void (*)(P_char,P_char,P_obj,void*), int, P_char, P_char, P_obj, int, const void*, size_t) { return accept_event; }
 void persistence_alert(int, const char*, const char*, const char*, const char*, const char*, const char*, ...) {}
 P_char character_list = nullptr;
-struct death_extract_retry_context { int delay; uint64_t corpse_uid; };
+struct death_extract_retry_context { int delay; uint64_t corpse_uid; int polls; };
 static bool death_retry_fallback_pending = false;
 static void event_death_extract_retry(P_char, P_char, P_obj, void*);
 static void hold_for_death_extract_retry(P_char);
-""" + body(fight, "static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)")
+""" + body(fight, "static void schedule_death_extract_retry(P_char ch, "
+                      "uint64_t corpse_uid, int delay, int polls)")
     + body(fight, "void death_extract_retry_pulse(void)")
     + body(fight, "static void hold_for_death_extract_retry(P_char ch)\n{") + r"""
 int attempts = 0;
@@ -332,13 +335,13 @@ static void event_death_extract_retry(P_char ch, P_char, P_obj, void *data) {
     const auto context = *static_cast<death_extract_retry_context *>(data);
     assert(context.corpse_uid == 999 && ch->stat == STAT_DEAD);
     ++attempts;
-    schedule_death_extract_retry(ch, context.corpse_uid, context.delay);
+    schedule_death_extract_retry(ch, context.corpse_uid, context.delay, context.polls);
 }
 int main() {
     pc_only_data pc;
     char_data ch{{&pc}};
     character_list = &ch;
-    schedule_death_extract_retry(&ch, 999, 4);
+    schedule_death_extract_retry(&ch, 999, 4, 0);
     assert(ch.stat == STAT_DEAD && death_retry_fallback_pending);
     death_extract_retry_pulse();
     assert(attempts == 0);

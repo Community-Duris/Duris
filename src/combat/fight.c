@@ -2457,6 +2457,12 @@ void kill_gain(P_char ch, P_char victim);
 // The death recovery budget: a refused handoff must reach durable storage and
 // release the character to the account menu inside this window.
 #define DEATH_DISPOSITION_TIMEOUT_MSEC 2000
+// How long a custody handoff may drain before the wait stops being routine.
+// DEATH_EXTRACT_RETRY_INITIAL is a delay in PULSES and WAIT_SEC of them make a
+// second, so the poll runs about once a second: this is a wait of half a
+// minute, an order of magnitude past any healthy drain, and the point at which
+// an immortal wants to hear about it.
+#define DEATH_RECOVERY_STALL_SECONDS 30
 
 /** Finish a death whose record is durable: report it, then release to the account menu. */
 static void release_after_terminal_death(P_char ch, const char *outcome)
@@ -2510,13 +2516,17 @@ struct death_extract_retry_context
 {
 	int delay;
 	uint64_t corpse_uid;
+	// Consecutive polls spent waiting on a custody handoff. Reset by every
+	// branch that is not that wait, so it measures one drain rather than the
+	// whole death.
+	int polls;
 };
 
 static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data);
 static void hold_for_death_extract_retry(P_char ch);
 static bool death_retry_fallback_pending = false;
 
-static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay)
+static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int delay, int polls)
 {
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
@@ -2529,7 +2539,7 @@ static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int del
 	// add_event() rejects dead character owners. Briefly expose a live state while
 	// linking the private recovery event, then restore the pending death before
 	// returning to the game loop.
-	const death_extract_retry_context context = { delay, corpse_uid };
+	const death_extract_retry_context context = { delay, corpse_uid, polls };
 	GET_HIT(ch) = 1;
 	SET_POS(ch, GET_POS(ch) + STAT_NORMAL);
 	const nevent_schedule_result scheduled = add_event(
@@ -2568,8 +2578,11 @@ void death_extract_retry_pulse(void)
 			death_retry_fallback_pending = true;
 			continue;
 		}
+		// polls restarts at 0 here. This path only runs when add_event()
+		// refused the retry, which alerts under its own name, so the
+		// operator is not relying on the stall counter to see it.
 		death_extract_retry_context context = { ch->only.pc->death_retry_delay,
-							ch->only.pc->death_retry_corpse_uid };
+							ch->only.pc->death_retry_corpse_uid, 0 };
 		ch->only.pc->death_retry_due_usec = 0;
 		event_death_extract_retry(ch, NULL, NULL, &context);
 	}
@@ -2585,7 +2598,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 {
 	const death_extract_retry_context context =
 		data ? *((death_extract_retry_context *)data) :
-		       death_extract_retry_context{ DEATH_EXTRACT_RETRY_INITIAL, 0 };
+		       death_extract_retry_context{ DEATH_EXTRACT_RETRY_INITIAL, 0, 0 };
 	const int previous_delay = context.delay;
 
 	(void)victim;
@@ -2602,15 +2615,51 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
-	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
+	const bool items_busy = item_movement_transaction_player_busy(ch);
+	const bool currency_busy = currency_transaction_player_busy(ch);
+
+	if (items_busy || currency_busy)
 	{
-		persistence_alert(AVATAR, "player_save", "death", "none", "none",
-				  "death_recovery_awaiting_corpse_items", "delay=%d",
-				  DEATH_EXTRACT_RETRY_INITIAL);
 		// Corpse ownership handoffs are expected bounded work, not a failure.
 		// Poll them steadily so the account menu follows the final handoff
 		// promptly; reserve exponential backoff for an actual save failure.
-		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL);
+		//
+		// THE POLL ITSELF IS NOT NEWS (issue #174). Every carried item costs
+		// its own transaction, so a well-equipped death spends a poll per
+		// item, and each one was broadcasting at AVATAR to every immortal
+		// online -- a death that was draining correctly read as a database
+		// stall. The routine wait belongs in the log. The channel hears about
+		// it only once the wait is long enough that someone should look.
+		//
+		// It also said "corpse_items" for a condition that is equally true of
+		// a wallet conversion still in flight, which sent readers looking in
+		// the wrong subsystem. Both are now named, and the wait is reported in
+		// seconds: the delay is in PULSES, and reading it as seconds is what
+		// turned a 13-second drain into a "52 second" report.
+		const int polls = context.polls + 1;
+		const int waited_sec = polls * DEATH_EXTRACT_RETRY_INITIAL / WAIT_SEC;
+		const int before_sec = context.polls * DEATH_EXTRACT_RETRY_INITIAL / WAIT_SEC;
+
+		// One line each time another whole stall-window passes, rather than
+		// one per poll: a genuine stall stays visible without becoming the
+		// flood this branch was.
+		if (waited_sec / DEATH_RECOVERY_STALL_SECONDS >
+		    before_sec / DEATH_RECOVERY_STALL_SECONDS)
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  "death_recovery_awaiting_custody",
+					  "items=%d currency=%d polls=%d waited_sec=%d delay=%d",
+					  items_busy ? 1 : 0, currency_busy ? 1 : 0, polls,
+					  waited_sec, DEATH_EXTRACT_RETRY_INITIAL);
+		else
+			logit(LOG_DEBUG,
+			      "PERSISTENCE: domain=player_save action=death_recovery_awaiting_custody "
+			      "outcome=expected detail=items=%d currency=%d polls=%d "
+			      "waited_sec=%d delay=%d",
+			      items_busy ? 1 : 0, currency_busy ? 1 : 0, polls, waited_sec,
+			      DEATH_EXTRACT_RETRY_INITIAL);
+
+		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL,
+					     polls);
 		return;
 	}
 
@@ -2626,7 +2675,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 					  corpse ? "death_disposition_retry" :
 						   "death_recovery_corpse_missing",
 					  "delay=%d", previous_delay * 2);
-			schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);
+			schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2, 0);
 			return;
 		}
 		clear_corpse_transfer_dispute(ch);
@@ -2641,7 +2690,8 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 				  submitted ? 1 : 0, DEATH_EXTRACT_RETRY_INITIAL);
 		// Publication removes the item from the character. Until that happens the
 		// terminal snapshot must not capture it and extraction must not drop it.
-		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL);
+		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL,
+					     0);
 		return;
 	}
 
@@ -2649,7 +2699,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_retry", "delay=%d", previous_delay * 2);
-		schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2);
+		schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2, 0);
 		return;
 	}
 
@@ -3241,7 +3291,7 @@ void die(P_char ch, P_char killer)
 					  "extract_refused=1 recovery_scheduled=1 disputed=%d",
 					  corpse_transfer_disputed(ch) ? 1 : 0);
 			schedule_death_extract_retry(ch, death_corpse_uid,
-						     DEATH_EXTRACT_RETRY_INITIAL);
+						     DEATH_EXTRACT_RETRY_INITIAL, 0);
 			return;
 		}
 		P_obj death_corpse = death_corpse_uid ? corpse_live_item(death_corpse_uid) : NULL;
@@ -3253,7 +3303,7 @@ void die(P_char ch, P_char killer)
 					  "submitted=%d extract_refused=1 recovery_scheduled=1",
 					  submitted ? 1 : 0);
 			schedule_death_extract_retry(ch, death_corpse_uid,
-						     DEATH_EXTRACT_RETRY_INITIAL);
+						     DEATH_EXTRACT_RETRY_INITIAL, 0);
 			return;
 		}
 		if (!CHAR_IN_ARENA(ch) && !persistence_save_character_terminal(ch, RENT_DEATH))
@@ -3267,7 +3317,7 @@ void die(P_char ch, P_char killer)
 			// the save pipeline retries on its own, but nothing else ever retries
 			// the death itself; this completes the extraction once it succeeds
 			schedule_death_extract_retry(ch, death_corpse_uid,
-						     DEATH_EXTRACT_RETRY_INITIAL);
+						     DEATH_EXTRACT_RETRY_INITIAL, 0);
 			return;
 		}
 		GET_HIT(ch) = 1;

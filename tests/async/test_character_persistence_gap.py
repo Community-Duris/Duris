@@ -131,7 +131,7 @@ require(
     "the recovery event must abandon extraction after resurrection",
 )
 require(
-    "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2)" in retry,
+    "schedule_death_extract_retry(ch, context.corpse_uid, previous_delay * 2, 0)" in retry,
     "a failed retry must reschedule with backoff",
 )
 require(
