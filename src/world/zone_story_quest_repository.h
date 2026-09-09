@@ -32,7 +32,8 @@ class completion_repository
 				     zone_story_quest_tracking::completion_transaction *transaction,
 				     std::string *error = nullptr) const = 0;
 	virtual std::vector<zone_story_quest_tracking::completion_transaction>
-	list_for_pid(uint32_t pid, uint32_t season_id, int32_t zone_number) const = 0;
+	list_for_pid(uint32_t pid, uint32_t season_id, int32_t zone_number,
+		     uint32_t content_revision) const = 0;
 };
 
 class in_memory_completion_repository final : public completion_repository
@@ -44,7 +45,8 @@ class in_memory_completion_repository final : public completion_repository
 			     zone_story_quest_tracking::completion_transaction *transaction,
 			     std::string *error = nullptr) const override;
 	std::vector<zone_story_quest_tracking::completion_transaction>
-	list_for_pid(uint32_t pid, uint32_t season_id, int32_t zone_number) const override;
+	list_for_pid(uint32_t pid, uint32_t season_id, int32_t zone_number,
+		     uint32_t content_revision) const override;
 	std::size_t size() const;
 
     private:

@@ -95,6 +95,25 @@ int main()
 	require(!validate_transaction(unsupported, &error),
 		"unsupported transaction schema was accepted");
 
+	std::string serialize_err;
+	require(serialize_transaction(unsupported, &serialize_err).empty(),
+		"invalid transaction serialization did not return empty string");
+	require(!serialize_err.empty(),
+		"invalid transaction serialization did not set error string");
+
+	quest_definition default_quest;
+	require(!validate_definition(default_quest, &error),
+		"default quest definition should be invalid");
+	require(!default_quest.active && !default_quest.repeatable &&
+			default_quest.zone_number == 0 && default_quest.giver_vnum == 0,
+		"quest definition default values were not initialized");
+
+	completion_transaction default_tx;
+	require(!validate_transaction(default_tx, &error),
+		"default completion transaction should be invalid");
+	require(default_tx.schema_version == 0 && default_tx.direct_completer_pid == 0,
+		"completion transaction default values were not initialized");
+
 	zone_story_quest_catalog::catalog catalog = {
 		.content_revision = 7,
 		.definitions = { definition("zone-story:900:001", 900),
@@ -108,6 +127,24 @@ int main()
 		"zone definition count was incorrect");
 	require(zone_story_quest_catalog::eligible_definition_count(catalog, 901, 7) == 1,
 		"second zone definition count was incorrect");
+
+	zone_story_quest_catalog::catalog non_repeatable_catalog = {
+		.content_revision = 7, .definitions = { definition("zone-story:900:001", 900) }
+	};
+	non_repeatable_catalog.definitions[0].repeatable = false;
+	require(zone_story_quest_catalog::eligible_definition_count(non_repeatable_catalog, 900,
+								    7) == 1,
+		"eligible_definition_count should not filter on repeatable");
+
+	zone_story_quest_catalog::catalog invalid_catalog = { .schema_version = 999,
+							      .content_revision = 0,
+							      .definitions = {} };
+	diagnostics.clear();
+	require(!zone_story_quest_catalog::validate(invalid_catalog, &diagnostics),
+		"invalid catalog was accepted");
+	require(diagnostics.size() == 2, "expected 2 catalog-level diagnostics");
+	require(diagnostics[0].index == -1 && diagnostics[1].index == -1,
+		"catalog-level diagnostics must have index -1");
 
 	catalog.definitions.push_back(definition("zone-story:900:001", 900));
 	diagnostics.clear();

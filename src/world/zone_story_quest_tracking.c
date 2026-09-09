@@ -212,9 +212,9 @@ bool is_leadership_transaction(const completion_transaction &transaction)
 	       contains_pid(transaction.credited_pids, transaction.direct_completer_pid);
 }
 
-std::string serialize_transaction(const completion_transaction &transaction)
+std::string serialize_transaction(const completion_transaction &transaction, std::string *error)
 {
-	if (!validate_transaction(transaction, nullptr))
+	if (!validate_transaction(transaction, error))
 		return {};
 	return "v" + std::to_string(transaction.schema_version) + "|" +
 	       hex_encode(transaction.transaction_id) + "|" +

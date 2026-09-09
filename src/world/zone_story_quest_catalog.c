@@ -6,7 +6,7 @@ namespace zone_story_quest_catalog
 {
 namespace
 {
-void add_diagnostic(std::vector<diagnostic> *diagnostics, std::size_t index, const char *code,
+void add_diagnostic(std::vector<diagnostic> *diagnostics, int64_t index, const char *code,
 		    const std::string &message)
 {
 	if (diagnostics)
@@ -21,13 +21,13 @@ bool validate(const catalog &catalog, std::vector<diagnostic> *diagnostics)
 	bool valid = true;
 	if (catalog.schema_version != ZONE_STORY_QUEST_CATALOG_SCHEMA_VERSION)
 	{
-		add_diagnostic(diagnostics, 0, "unsupported_schema_version",
+		add_diagnostic(diagnostics, -1, "unsupported_schema_version",
 			       "catalog schema_version is not supported");
 		valid = false;
 	}
 	if (catalog.content_revision == 0)
 	{
-		add_diagnostic(diagnostics, 0, "invalid_content_revision",
+		add_diagnostic(diagnostics, -1, "invalid_content_revision",
 			       "catalog content_revision must be positive");
 		valid = false;
 	}
@@ -39,18 +39,20 @@ bool validate(const catalog &catalog, std::vector<diagnostic> *diagnostics)
 		std::string error;
 		if (!zone_story_quest_tracking::validate_definition(definition, &error))
 		{
-			add_diagnostic(diagnostics, index, "invalid_definition", error);
+			add_diagnostic(diagnostics, static_cast<int64_t>(index),
+				       "invalid_definition", error);
 			valid = false;
 		}
 		if (!definition_ids.insert(definition.definition_id).second)
 		{
-			add_diagnostic(diagnostics, index, "duplicate_definition_id",
-				       definition.definition_id);
+			add_diagnostic(diagnostics, static_cast<int64_t>(index),
+				       "duplicate_definition_id", definition.definition_id);
 			valid = false;
 		}
 		if (definition.content_revision != catalog.content_revision)
 		{
-			add_diagnostic(diagnostics, index, "revision_mismatch",
+			add_diagnostic(diagnostics, static_cast<int64_t>(index),
+				       "revision_mismatch",
 				       "definition revision does not match catalog revision");
 			valid = false;
 		}
@@ -65,7 +67,7 @@ std::size_t eligible_definition_count(const catalog &catalog, int32_t zone_numbe
 	for (const auto &definition : catalog.definitions)
 	{
 		if (definition.active && definition.eligible_for_zone_completion &&
-		    definition.repeatable && definition.zone_number == zone_number &&
+		    definition.zone_number == zone_number &&
 		    definition.content_revision == content_revision)
 			++count;
 	}

@@ -55,14 +55,15 @@ bool in_memory_completion_repository::get_transaction(
 }
 
 std::vector<zone_story_quest_tracking::completion_transaction>
-in_memory_completion_repository::list_for_pid(uint32_t pid, uint32_t season_id,
-					      int32_t zone_number) const
+in_memory_completion_repository::list_for_pid(uint32_t pid, uint32_t season_id, int32_t zone_number,
+					      uint32_t content_revision) const
 {
 	std::vector<zone_story_quest_tracking::completion_transaction> matching;
 	for (const auto &entry : transactions_)
 	{
 		const auto &transaction = entry.second;
 		if (transaction.season_id == season_id && transaction.zone_number == zone_number &&
+		    transaction.content_revision == content_revision &&
 		    std::find(transaction.credited_pids.begin(), transaction.credited_pids.end(),
 			      pid) != transaction.credited_pids.end())
 			matching.push_back(transaction);

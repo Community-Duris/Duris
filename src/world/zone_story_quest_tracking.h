@@ -21,28 +21,28 @@ struct quest_definition
 {
 	std::string definition_id;
 	std::string source_system;
-	int32_t zone_number;
+	int32_t zone_number = 0;
 	std::string source_area;
-	int32_t giver_vnum;
+	int32_t giver_vnum = 0;
 	std::string completion_key;
-	bool active;
-	bool eligible_for_zone_completion;
-	bool repeatable;
-	uint32_t content_revision;
+	bool active = false;
+	bool eligible_for_zone_completion = false;
+	bool repeatable = false;
+	uint32_t content_revision = 0;
 };
 
 struct completion_transaction
 {
-	uint32_t schema_version;
+	uint32_t schema_version = 0;
 	std::string transaction_id;
 	std::string quest_definition_id;
-	int32_t zone_number;
-	uint32_t direct_completer_pid;
+	int32_t zone_number = 0;
+	uint32_t direct_completer_pid = 0;
 	std::vector<uint32_t> credited_pids;
-	int32_t room_vnum;
-	int64_t completed_at;
-	uint32_t season_id;
-	uint32_t content_revision;
+	int32_t room_vnum = 0;
+	int64_t completed_at = 0;
+	uint32_t season_id = 0;
+	uint32_t content_revision = 0;
 };
 
 bool validate_definition(const quest_definition &definition, std::string *error = nullptr);
@@ -52,7 +52,8 @@ uint32_t credit_mask_for_pid(const completion_transaction &transaction, uint32_t
 bool is_solo_transaction(const completion_transaction &transaction);
 bool is_leadership_transaction(const completion_transaction &transaction);
 
-std::string serialize_transaction(const completion_transaction &transaction);
+std::string serialize_transaction(const completion_transaction &transaction,
+				  std::string *error = nullptr);
 bool deserialize_transaction(std::string_view encoded, completion_transaction *transaction,
 			     std::string *error = nullptr);
 } // namespace zone_story_quest_tracking

@@ -56,10 +56,12 @@ int main()
 	const auto group = transaction("tx-group", 42, { 42, 77 });
 	require(repository.record(group, &error) == record_result::applied,
 		"group transaction was not applied");
-	require(repository.list_for_pid(77, 3, 900).size() == 1,
-		"PID/season/zone query did not find group credit");
-	require(repository.list_for_pid(77, 4, 900).empty(), "season filter was ignored");
-	require(repository.list_for_pid(77, 3, 901).empty(), "zone filter was ignored");
+	require(repository.list_for_pid(77, 3, 900, 7).size() == 1,
+		"PID/season/zone/revision query did not find group credit");
+	require(repository.list_for_pid(77, 4, 900, 7).empty(), "season filter was ignored");
+	require(repository.list_for_pid(77, 3, 901, 7).empty(), "zone filter was ignored");
+	require(repository.list_for_pid(77, 3, 900, 8).empty(),
+		"content_revision filter was ignored");
 
 	auto conflict = solo;
 	conflict.room_vnum = 90002;

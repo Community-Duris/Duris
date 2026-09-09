@@ -21,7 +21,7 @@ struct catalog
 
 struct diagnostic
 {
-	std::size_t index;
+	int64_t index = -1;
 	std::string code;
 	std::string message;
 };
