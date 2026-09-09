@@ -353,20 +353,40 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	}
 	if (creation)
 	{
+		std::vector<item_ownership_runtime_entry> created;
+		try
+		{
+			created.reserve(payload.item_count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
 		for (size_t index = 0; index < payload.item_count; ++index)
 		{
+			const item_transfer_entry &item = payload.items[index];
 			uint64_t target_root = 0, target_parent = 0;
-			if (!item_transfer_target_topology(payload, payload.items[index].item_uid,
-							   &target_root, &target_parent) ||
-			    entries.find(payload.items[index].item_uid) != entries.end() ||
-			    !item_ownership_runtime_hydrate(
-				    { payload.items[index].item_uid, target_root, target_parent,
-				      payload.to_owner, 1, result.to_owner_revision,
-				      payload.items[index].vnum, item_custody_state::active }))
+			if (item.expected_state != item_custody_state::absent ||
+			    item.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION ||
+			    entries.find(item.item_uid) != entries.end() ||
+			    !item_transfer_target_topology(payload, item.item_uid, &target_root,
+							   &target_parent) ||
+			    item.vnum <= 0)
 				return false;
+			try
+			{
+				created.push_back({ item.item_uid, target_root, target_parent,
+						    payload.to_owner, 1, result.to_owner_revision,
+						    item.vnum, item_custody_state::active });
+			}
+			catch (const std::bad_alloc &)
+			{
+				return false;
+			}
 		}
+		if (!item_ownership_runtime_hydrate_batch(created.data(), created.size()))
+			return false;
 		owner_revisions[payload.from_owner] = result.from_owner_revision;
-		owner_revisions[payload.to_owner] = result.to_owner_revision;
 		return true;
 	}
 	for (size_t index = 0; index < payload.item_count; ++index)
