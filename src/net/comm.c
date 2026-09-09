@@ -9,6 +9,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/command_latency.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -988,6 +989,24 @@ static double loop_monotonic_seconds(void)
 	return (double)now.tv_sec + (double)now.tv_nsec / 1E9;
 }
 
+static void prepare_descriptor_latency_event(command_latency_event *event,
+					     command_latency_kind kind, P_desc descriptor,
+					     const char *playing_input)
+{
+	P_char player =
+		descriptor ? (descriptor->original ? descriptor->original : descriptor->character) :
+			     NULL;
+	const bool identified_player = player && IS_PC(player);
+	command_latency_event_prepare(event, kind, descriptor ? descriptor->connected : -1,
+				      identified_player ? (long)GET_ID(player) : -1L,
+				      identified_player ? GET_NAME(player) : NULL, playing_input);
+}
+
+static void emit_command_latency(const char *line, void * /*context*/)
+{
+	statuslog(56, "%s", line);
+}
+
 /** Select normal or transaction-gated dequeue from the live busy state. */
 static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *dest)
 {
@@ -1367,6 +1386,8 @@ resume_game_loop:
 		/* process_commands */
 		PROFILE_START(commands);
 		double commands_begin = loop_monotonic_seconds();
+		const uint64_t command_sweep_started_us = latency_trace_monotonic_us();
+		command_latency_tracker command_latency = {};
 		for (point = descriptor_list, player_count = 0; point; point = next_to_process)
 		{
 			next_to_process = point->next;
@@ -1376,7 +1397,16 @@ resume_game_loop:
 
 			if (point->connected == CON_SSLNEGO)
 			{
-				switch (ssl_negotiate(point->sslses))
+				command_latency_event ssl_event = {};
+				prepare_descriptor_latency_event(&ssl_event, COMMAND_LATENCY_SSL,
+								 point, NULL);
+				const uint64_t ssl_started_us = latency_trace_monotonic_us();
+				const int ssl_result = ssl_negotiate(point->sslses);
+				command_latency_record(
+					&command_latency, &ssl_event,
+					command_latency_elapsed_us(ssl_started_us,
+								   latency_trace_monotonic_us()));
+				switch (ssl_result)
 				{
 				case 0:
 					greet(point);
@@ -1574,18 +1604,71 @@ resume_game_loop:
 				point->prompt_mode = TRUE;
 
 				if (point->showstr_count) /* pager for text */
+				{
+					command_latency_event pager_event = {};
+					prepare_descriptor_latency_event(
+						&pager_event, COMMAND_LATENCY_PAGER, point, NULL);
+					const uint64_t pager_started_us =
+						latency_trace_monotonic_us();
 					show_string(point, comm);
+					command_latency_record(
+						&command_latency, &pager_event,
+						command_latency_elapsed_us(
+							pager_started_us,
+							latency_trace_monotonic_us()));
+				}
 				else if (point->str) /* mail, boards */
+				{
+					command_latency_event editor_event = {};
+					prepare_descriptor_latency_event(
+						&editor_event, COMMAND_LATENCY_EDITOR, point, NULL);
+					const uint64_t editor_started_us =
+						latency_trace_monotonic_us();
 					string_add(point, comm);
+					command_latency_record(
+						&command_latency, &editor_event,
+						command_latency_elapsed_us(
+							editor_started_us,
+							latency_trace_monotonic_us()));
+				}
 				else if (point->connected == CON_PLAYING)
+				{
+					command_latency_event playing_event = {};
+					prepare_descriptor_latency_event(&playing_event,
+									 COMMAND_LATENCY_PLAYING,
+									 point, comm);
+					const uint64_t playing_started_us =
+						latency_trace_monotonic_us();
 					dispatch_playing_command(t_ch, comm);
+					command_latency_record(
+						&command_latency, &playing_event,
+						command_latency_elapsed_us(
+							playing_started_us,
+							latency_trace_monotonic_us()));
+				}
 				else
 				{
+					command_latency_event nanny_event = {};
+					prepare_descriptor_latency_event(
+						&nanny_event, COMMAND_LATENCY_NANNY, point, NULL);
+					const uint64_t nanny_started_us =
+						latency_trace_monotonic_us();
 					point->wait = 0;
 					nanny(point, comm);
+					command_latency_record(
+						&command_latency, &nanny_event,
+						command_latency_elapsed_us(
+							nanny_started_us,
+							latency_trace_monotonic_us()));
 				}
 			}
 		}
+		const uint64_t command_sweep_us = command_latency_elapsed_us(
+			command_sweep_started_us, latency_trace_monotonic_us());
+		if (command_sweep_us >= COMMAND_LATENCY_SLOW_US || command_latency.slow_count)
+			command_latency_report(&command_latency, command_sweep_us,
+					       latency_trace_boot_id(), loop_tick,
+					       loop_start_mono_us, emit_command_latency, NULL);
 		PROFILE_END(commands);
 		double commands_time = loop_monotonic_seconds() - commands_begin;
 		latency_trace_record("commands", (uint64_t)(commands_time * 1000000.0), loop_tick);

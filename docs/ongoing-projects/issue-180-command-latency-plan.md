@@ -1,9 +1,7 @@
 # Issue 180: command latency attribution — verified findings and plan
 
-Status: implementation in progress. The bounded trace-window work in Step 4 is
-complete; the shared correlation foundation in Step 2 is complete, with final
-slow-operation join verification waiting on Step 1. Step 3 is complete; Step 1
-remains.
+Status: code implementation complete; final regression and local runtime smoke
+validation pending. All four planned steps are implemented on this branch.
 
 Reviewed 2026-09-10 against `origin/master` at
 `c9266bf552dce23cdb2632a921b4b96a092168f7`.
@@ -56,6 +54,23 @@ retrograde-read cases. A real-clock case sleeps while eight worker threads burn
 CPU and confirms the measured interval remains wall elapsed time. Source
 contracts verify explicit microsecond output and the inclusive 50,000 us event
 threshold.
+
+The third implementation increment adds a fixed-size command-sweep tracker. It
+times playing dispatch, nanny, pager, editor, and SSL negotiation independently
+of debug profiling. At 50,000 us it emits a correlated slow-operation record;
+at the same sweep threshold it emits operation counts/totals/maxima plus the
+unmeasured descriptor-maintenance residual. Labels are copied before dispatch,
+so commands that extract a character or close a descriptor cannot invalidate
+diagnostic data. Playing records contain only a bounded sanitized first token;
+nanny, pager, and editor records never retain their input. Player identity is
+bounded and sanitized as well.
+
+Output is capped at the eight slowest operations plus one summary and at most
+five fixed kind summaries per pulse. The slowest operation is always retained,
+and the summary discloses how many additional slow operations were suppressed.
+Fast sweeps emit nothing. The tracker lives in one small module used by all five
+descriptor call sites; the surrounding dequeue and dispatch selection is
+unchanged.
 
 ## Verification and limits
 
@@ -131,7 +146,7 @@ remain hypotheses until dispatch measurements support them.
 
 ## Implementation sequence
 
-### 1. Attribute slow descriptor work without enabling debug profiling
+### 1. Attribute slow descriptor work without enabling debug profiling — complete
 
 - Time the existing playing, nanny, pager, and editor dispatch branches with
   `CLOCK_MONOTONIC`, using the existing loop helper. Emit a slow-operation record
@@ -162,7 +177,7 @@ Assert no credentials or free-text bodies enter output. Verify pager/editor and
 casting/transaction queue selection remain unchanged. A busy pulse must produce
 bounded diagnostics and disclose suppression.
 
-### 2. Make trace and status records joinable
+### 2. Make trace and status records joinable — complete
 
 - Capture `ne_event_tick` once at pulse start and reuse that value throughout
   the pulse. Keep scheduler `pulse` unchanged. Use an explicit unsigned 64-bit
@@ -182,7 +197,7 @@ and two boot identities; verify matching IDs before/after the event pass and
 unambiguous non-loop records. Join a synthetic slow command to the corresponding
 trace and slow-tick report using emitted fields alone.
 
-### 3. Correct legacy profiler clocks and units
+### 3. Correct legacy profiler clocks and units — complete
 
 - Replace CPU ticks in `PROFILE_DEFINE/DECLARE/RESET/START/END` with monotonic
   elapsed values. Choose microseconds for stored/output durations and label them
@@ -199,7 +214,7 @@ to the measured duration, and the 50 ms `LONG EVENT` threshold uses correct
 units. Test reset, toggles, zero calls, and output conversion. Use controlled
 clocks where exact boundaries matter; avoid timing-sensitive equality tests.
 
-### 4. Give periodic summaries consistent windows
+### 4. Give periodic summaries consistent windows — complete
 
 - Define each report as the samples since the previous snapshot, with window
   start/end metadata. Capture and reset under the trace mutex, then format the
@@ -220,9 +235,9 @@ both output destinations receive identical snapshot content; more than 4096
 records retain the window's true worst ten; concurrent record/snapshot activity
 loses or duplicates no summary counts. Exercise empty windows and file failure.
 
-Steps 1 and 2 form the first useful investigation increment. Steps 3 and 4 can
-then be implemented independently, while coordinating shared timing/trace types.
-All steps are future work, not claims about this documentation branch.
+Steps 1 and 2 were implemented around shared correlation fields. Steps 3 and 4
+were delivered as independent monotonic-profiler and bounded-window increments.
+The acceptance notes remain here as the authoritative regression scope.
 
 ## Scope review and validation
 
@@ -302,4 +317,28 @@ git diff --check
 The new profiler regression and the scheduler suite ran under ASan/UBSan. No
 runtime profiling session has been collected yet; final development smoke
 testing will exercise `debug profile on`, `save`, `reset`, and `off` through the
-configured test character after Step 1 is complete.
+configured test character.
+
+### Implementation checkpoint: command attribution
+
+Passed during the command-attribution increment:
+
+```bash
+python3 -B tests/async/test_command_latency_runtime.py
+python3 -B tests/async/test_casting_input_queue_runtime.py
+python3 -B tests/async/test_command_gate_recovery.py
+python3 -B tests/async/test_spell_abort_command.py
+python3 -B tests/async/test_tick_latency_instrumentation.py
+./scripts/format.sh --check
+make -C src -j2
+git diff --check
+```
+
+The new native test runs under ASan/UBSan. It covers 49,999/50,000/200,000 us
+durations with no profiler dependency, all five kinds, aggregate short work,
+maintenance residual, pre-dispatch copied identity, argument and nanny-input
+redaction, control-character sanitization, exact 64-bit correlation fields,
+SSL attribution, output capping, suppression counts, and slowest retention.
+Existing source contracts confirm pager/editor/playing/nanny selection and the
+casting and transaction-aware queue gates remain in place. Final full focused
+regression and local runtime results will be recorded below.
