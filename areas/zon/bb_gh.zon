@@ -60,6 +60,10 @@ G 1 412 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 384 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 30301 999 0 100 0 0 0          *    a small pouch of mushrooms
 G 1 385 999 0 100 0 0 0            *    (object not in this .OBJ file)
+G 1 491 999 0 100 0 0 0
+G 1 492 999 0 100 0 0 0
+G 1 493 999 0 100 0 0 0
+G 1 494 999 0 100 0 0 0
 M 0 30311 2 30340 100 0 0 0        * a shadow wraith
 M 0 30310 6 30340 100 0 0 0        * a shadow wraith
 M 0 30310 6 30340 100 0 0 0        * a shadow wraith
