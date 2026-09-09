@@ -785,6 +785,7 @@ void load_obj_to_newbies(P_char ch)
 		{
 			obj->cost = 1;
 			if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON &&
+			    obj->type != ITEM_CONTAINER && obj->type != ITEM_QUIVER &&
 			    obj->type != ITEM_SPELLBOOK && obj->type != ITEM_LIGHT &&
 			    obj->type != ITEM_TOTEM && IS_PC(ch))
 				SET_BIT(obj->extra_flags, ITEM_TRANSIENT);

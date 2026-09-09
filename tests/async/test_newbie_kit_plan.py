@@ -150,6 +150,15 @@ HARNESS = HARNESS.replace('ROOM_ASSIGNMENT', room_assignment)
 assert 'read_object(' not in loader
 assert loader.index('item_movement_transaction_player_busy(ch)') < loader.index('make_newbie_kit_plan(input)')
 assert loader.index('prepare_newbie_kit_items(') < loader.index('instantiate_object_template(')
+# A transient starter container bypasses the ownership grant in obj_to_char(),
+# leaving put/put all unable to establish durable child topology.
+transient_policy = re.search(
+    r'if \(obj->type != ITEM_FOOD.*?SET_BIT\(obj->extra_flags, ITEM_TRANSIENT\);',
+    loader,
+    re.S,
+).group(0)
+assert 'obj->type != ITEM_CONTAINER' in transient_policy
+assert 'obj->type != ITEM_QUIVER' in transient_policy
 assert loader.index('add_newbie_keyword(obj)') < loader.index('obj_to_char(obj, ch)')
 assert loader.index('obj_to_char(obj, ch)') < loader.index('item_creation_grant_mark_blocking(ch)')
 assert 'P_char' not in text and 'P_obj' not in text and 'object_list' not in text
