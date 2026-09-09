@@ -1,7 +1,9 @@
 # Issue 180: command latency attribution — verified findings and plan
 
-Status: code implementation complete; final regression and local runtime smoke
-validation pending. All four planned steps are implemented on this branch.
+Status: implementation complete and validated 2026-09-10. All four planned
+steps are implemented. Focused regressions and a local correlated slow-pulse
+smoke passed; live playing-state checks are limited by the pre-existing local
+test-character data failure recorded below.
 
 Reviewed 2026-09-10 against `origin/master` at
 `c9266bf552dce23cdb2632a921b4b96a092168f7`.
@@ -77,9 +79,9 @@ unchanged.
 The code confirms missing attribution for work in the descriptor sweep. It does
 not identify the operation responsible for the reported production stalls.
 The quoted 265 ms and 1.11–1.16 s samples are supplied observations, not fresh
-measurements reproduced in this investigation. No production connection, database
-operation, server restart, runtime configuration change, or log collection was
-needed for this source-level verification.
+measurements reproduced in this investigation. No production system was
+contacted or changed. The final section records a separate loopback-only
+development smoke against the local database.
 
 | Issue claim | Verdict and source evidence | Planned response |
 | --- | --- | --- |
@@ -297,8 +299,7 @@ git diff --check
 
 The scheduler and latency runtime suites ran under ASan/UBSan. The build was a
 clean dependency-driven rebuild of the maintained MariaDB/development server.
-This checkpoint has not yet been smoke-tested in a running development server;
-that remains part of the final implementation validation.
+The final development smoke is recorded below.
 
 ### Implementation checkpoint: monotonic legacy profiler
 
@@ -314,10 +315,9 @@ make -C src -j2
 git diff --check
 ```
 
-The new profiler regression and the scheduler suite ran under ASan/UBSan. No
-runtime profiling session has been collected yet; final development smoke
-testing will exercise `debug profile on`, `save`, `reset`, and `off` through the
-configured test character.
+The new profiler regression and the scheduler suite ran under ASan/UBSan. The
+final development-smoke limitation for the configured test character is
+recorded below.
 
 ### Implementation checkpoint: command attribution
 
@@ -341,4 +341,69 @@ redaction, control-character sanitization, exact 64-bit correlation fields,
 SSL attribution, output capping, suppression counts, and slowest retention.
 Existing source contracts confirm pager/editor/playing/nanny selection and the
 casting and transaction-aware queue gates remain in place. Final full focused
-regression and local runtime results will be recorded below.
+regression and local runtime results follow.
+
+### Final focused regression
+
+Passed on the completed implementation:
+
+```bash
+python3 -B tests/async/test_command_latency_runtime.py
+python3 -B tests/async/test_latency_trace_runtime.py
+python3 -B tests/async/test_profile_monotonic_runtime.py
+python3 -B tests/async/test_tick_latency_instrumentation.py
+python3 -B tests/async/test_latency_trace_global_state.py
+python3 -B tests/async/test_reported_latency_contract.py
+python3 -B tests/async/test_nevent_budget_contract.py
+python3 -B tests/async/test_nevent_scheduler_runtime.py
+python3 -B tests/async/test_casting_input_queue_runtime.py
+python3 -B tests/async/test_command_gate_recovery.py
+python3 -B tests/async/test_spell_abort_command.py
+python3 -B tests/async/test_documentation_contract.py
+python3 -B tests/async/test_minimal_boot.py
+./scripts/format.sh --check
+make -C src -j2
+git diff --check
+```
+
+The command-attribution, trace-window, profiler, and scheduler runtime suites
+ran under ASan/UBSan. The maintained MariaDB/development server build completed
+with its warning-as-error profile.
+
+### Local correlated runtime smoke
+
+The standard minimal launcher validated the local environment, applied no
+pending migrations, and passed runtime schema compatibility, but stopped before
+boot because its backup subprocess could not shell-source one existing unquoted
+credential value in `.env`. The file was not edited. For branch qualification,
+the built server was started directly in minimal mode with the same local
+values loaded literally and the launcher's normal local development database
+name resolution. It booted normally on loopback, reported
+`{"status":"healthy","persistence":"ready"}`, accepted a TLS connection, and
+stopped normally after each run.
+
+The configured account completed account-name, password, login-page, menu, and
+character-selection nanny states. Both distinct characters on that account
+then failed closed during asynchronous materialization because their existing
+local item graphs reference 6 and 58 missing payload rows, respectively.
+Repairing those rows is unrelated player-data work, so the live playing, pager,
+editor, queue-command, and `debug profile on/save/reset/off` checks were not
+run. Their implementation coverage remains the focused sanitizer regressions
+and source contracts above.
+
+A valid nanny password check was then run under the same bounded CPU-contention
+method used by the profiler qualification: the local server and two CPU workers
+temporarily shared one allowed CPU, and the server's original affinity was
+restored afterward. This produced a 430,497 us slow nanny operation, a 430,501
+us command sweep, and a 430,683 us slow tick. All three records shared boot ID
+`1788994073434007-2562719`, tick `374`, and pulse start `175329626420` us. The
+next immutable trace window retained `commands=430575 us` and
+`total_tick=430683 us` at tick `374` as its two worst samples.
+
+The slow-operation output was exactly one operation, one sweep summary, and one
+kind summary. It identified `kind=nanny`, numeric connection state, and no
+player or input (`player_id=-1`, `player=-`, `operation=nanny`), with
+`suppressed=0` and a 4 us maintenance residual. An automated post-run check
+joined the operation, sweep, slow tick, and trace window using emitted fields
+alone and confirmed that none of the configured account, password, or character
+values appeared in any command diagnostic. No production system was contacted.
