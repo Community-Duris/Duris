@@ -93,7 +93,9 @@ static const char *KINGDOM_SYNTAX =
 	"  kingdom roster           every guard: class, level, cost to promote\r\n"
 	"  kingdom hire <class>     raise a new guard                    (leader)\r\n"
 	"  kingdom promote <#> [class]  raise one to the next tier       (leader)\r\n"
+	"  kingdom respec <#> <class>   re-school a guard, same rank    (leader)\r\n"
 	"  kingdom champion <class> <class>  raise the realm's one champion (leader)\r\n"
+	"  kingdom champion respec <class> <class>  re-school it        (leader)\r\n"
 	"  kingdom help             the long explanation\r\n";
 
 static const char *KINGDOM_DISABLED = "Kingdoms are not enabled on this world.\r\n";
@@ -475,11 +477,24 @@ static void kingdom_cmd_help(P_char ch)
 		 kingdom_coin_string(kingdom_cfg.guard_cost_base), KINGDOM_GUARD_BASE_LEVEL,
 		 KINGDOM_GUARD_TOP_LEVEL);
 	out += line;
+	char champion_classes[512];
+
+	kingdom_champion_class_list(champion_classes, sizeof(champion_classes));
 	snprintf(line, sizeof(line),
 		 "  A realm holding every square may raise ONE champion for %s: level %d,\r\n"
 		 "  multiclass, and it plants a banner that buffs or heals the whole garrison\r\n"
-		 "  until someone tears it down.\r\n",
-		 kingdom_coin_string(KINGDOM_CHAMPION_COST), KINGDOM_CHAMPION_LEVEL);
+		 "  until someone tears it down. Losing a square UNMAKES it; retake the\r\n"
+		 "  eightieth and a new one may be raised, at the full price. It may take\r\n"
+		 "  callings no guard may: %s.\r\n",
+		 kingdom_coin_string(KINGDOM_CHAMPION_COST), KINGDOM_CHAMPION_LEVEL,
+		 champion_classes);
+	out += line;
+	snprintf(line, sizeof(line),
+		 "  A guard is re-schooled at its present rank for %lu prestige\r\n"
+		 "  ('&+Wkingdom respec <#> <class>&n'), the champion for %lu\r\n"
+		 "  ('&+Wkingdom champion respec <class> <class>&n'). Levels never move.\r\n",
+		 (unsigned long)KINGDOM_GUARD_RESPEC_PRESTIGE,
+		 (unsigned long)KINGDOM_CHAMPION_RESPEC_PRESTIGE);
 	out += line;
 
 	out += "\r\n&+WUpkeep&n\r\n";
@@ -493,8 +508,9 @@ static void kingdom_cmd_help(P_char ch)
 	out += "  payment arrives:\r\n";
 	out += "    1  the guards disperse\r\n";
 	out += "    2  the realm stops banking what its people gather\r\n";
-	out += "    3  one OUTER ring reverts, and another every cycle after that\r\n";
-	out += "  Land that reverts costs the full original price to take back.\r\n";
+	out += "    3  the OUTERMOST SQUARE reverts, and another every cycle after that\r\n";
+	out += "  Land that reverts costs the full original price to take back, and losing a\r\n";
+	out += "  square unmakes the champion: only a realm holding all eighty may have one.\r\n";
 
 	out += "\r\n&+WNodes&n\r\n";
 	out += "  Resource nodes load at random across the whole world, the Underdark\r\n";
@@ -604,6 +620,13 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("Do you mean '&+Wkingdom status&n' or '&+Wkingdom survey&n'?\r\n", ch);
 		return;
 	}
+	/* `r`, `re` and `res` are shared by `roster` and `respec`: one lists the
+	 * garrison and the other spends a thousand prestige on it. */
+	if (str_cmp(token, "r") == 0 || str_cmp(token, "re") == 0 || str_cmp(token, "res") == 0)
+	{
+		send_to_char("Do you mean '&+Wkingdom roster&n' or '&+Wkingdom respec&n'?\r\n", ch);
+		return;
+	}
 
 	/* harvest and survey are NOT guild verbs, so they dispatch AHEAD of the
 	 * guild gate below. Nodes load anywhere except on land a realm controls,
@@ -705,7 +728,23 @@ void do_kingdom(P_char ch, char *argument, int /*cmd*/)
 	}
 	else if (is_abbrev(token, "champion"))
 	{
-		kingdom_roster_champion(ch, rest);
+		/* `kingdom champion respec <class> <class>` re-schools the one the
+		 * realm already has; anything else raises a new one. */
+		char second[MAX_INPUT_LENGTH];
+		char *after = one_argument(rest, second);
+
+		if (*second && is_abbrev(second, "respec"))
+		{
+			kingdom_roster_champion_respec(ch, after);
+		}
+		else
+		{
+			kingdom_roster_champion(ch, rest);
+		}
+	}
+	else if (is_abbrev(token, "respec"))
+	{
+		kingdom_roster_respec(ch, rest);
 	}
 	else
 	{

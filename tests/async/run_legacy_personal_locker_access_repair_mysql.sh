@@ -17,23 +17,32 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-docker run --rm -d --name "$container_name" -p 127.0.0.1::3306 \
+if mysql --help 2>&1 | grep -q -- '--ssl-mode'; then
+	MYSQL_SSL=(--ssl-mode=PREFERRED)
+else
+	MYSQL_SSL=(--skip-ssl)
+fi
+docker run -d --name "$container_name" -p 127.0.0.1::3306 \
 	-e MYSQL_ROOT_PASSWORD="$password" "$image" >/dev/null
 mapping="$(docker port "$container_name" 3306/tcp)"
 db_port="${mapping##*:}"
 
 ready=0
 for _ in $(seq 1 90); do
-	if MYSQL_PWD="$password" mysql --skip-ssl -h127.0.0.1 -P"$db_port" \
+	if MYSQL_PWD="$password" mysql "${MYSQL_SSL[@]}" -h127.0.0.1 -P"$db_port" \
 		-uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
 		ready=1
 		break
 	fi
 	sleep 1
 done
-[[ "$ready" == 1 ]]
+if [[ "$ready" != 1 ]]; then
+	echo "isolated locker-repair database did not become reachable" >&2
+	docker logs "$container_name" >&2 || true
+	exit 1
+fi
 
-MYSQL=(mysql --skip-ssl -h127.0.0.1 -P"$db_port" -uroot -N -B)
+MYSQL=(mysql "${MYSQL_SSL[@]}" -h127.0.0.1 -P"$db_port" -uroot -N -B)
 MYSQL_PWD="$password" "${MYSQL[@]}" -e "CREATE DATABASE $database_name;"
 MYSQL_PWD="$password" "${MYSQL[@]}" "$database_name" <<'SQL'
 CREATE TABLE account_characters (

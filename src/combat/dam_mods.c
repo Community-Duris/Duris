@@ -597,6 +597,20 @@ dam_mod->mod = -(aura_mod(victim, AURA_SPELL_PROTECTION) / 100.0);
 }
 }
 ,
+	/* A mob's AREA spells hit harder than its single-target ones (ruled
+   2026-09-05: +20%). Area damage is what makes a caster mob frightening to a
+   group, and it was scaled exactly like everything else. Charmed pets are
+   excluded for the same reason every other mob bonus excludes them -- the
+   bonus is meant to make the world dangerous, not to arm the player. The
+   damage pipeline is never told which spell it is scaling, so the fact comes
+   from cast_as_damage_area()'s own loop. */
+	{ MAKE_DAM_MOD_PRED(){ if (IS_NPC(caster) && !IS_PC_PET(caster) && area_cast_in_progress()){
+		dam_mod->mod += get_property("damage.mob.area.bonus", 1.20) - 1.0;
+dam_mod->type = dam_mod_type::More;
+}
+}
+}
+,
 }
 ;
 

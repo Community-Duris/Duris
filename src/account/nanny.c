@@ -1,3 +1,4 @@
+#include "world/zone_touch_transaction.h"
 /*****************************************************************************
  *  File: nanny.c                                            Part of Duris   *
  *  Usage: handle non-playing sockets (new character creation too)           *
@@ -785,6 +786,7 @@ void load_obj_to_newbies(P_char ch)
 		{
 			obj->cost = 1;
 			if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON &&
+			    obj->type != ITEM_CONTAINER && obj->type != ITEM_QUIVER &&
 			    obj->type != ITEM_SPELLBOOK && obj->type != ITEM_LIGHT &&
 			    obj->type != ITEM_TOTEM && IS_PC(ch))
 				SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
@@ -1728,6 +1730,7 @@ void enter_game(P_desc d)
 		schedule_chaos_starting_bank(ch);
 	}
 	epic_transaction_player_ready(ch);
+	zone_touch_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
 	item_movement_transaction_player_ready(ch);
 	shop_trade_transaction_player_ready(ch);
@@ -2344,6 +2347,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	tmp_ch->specials.timer = 0;
 	STATE(d) = CON_PLAYING;
 	epic_transaction_player_ready(tmp_ch);
+	zone_touch_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
 	item_movement_transaction_player_ready(tmp_ch);
 	shop_trade_transaction_player_ready(tmp_ch);
@@ -4864,127 +4868,49 @@ void nanny(P_desc d, char *arg)
 			add_char_to_account(d);
 #endif
 			SEND_TO_Q(motd.c_str(), d);
-			SEND_TO_Q("\r\n\r\n*** PRESS RETURN to read Duris rules. ", d);
-			SEND_TO_Q(
-				"\r\n*** (Note: You MUST read and agree to all rules to play this mud!)\r\n",
-				d);
-			STATE(d) = CON_GET_RETURN;
-		}
-		break;
-
-		/* Prepare for the mighty disclaimer */
-	case CON_GET_RETURN:
-
-		do_help(d->character, writable_arg("rules"), -4);
-		SEND_TO_Q("\r\n", d);
-
-		SEND_TO_Q(
-			"\r\n\r\n*** Do you agree to abide by everything written in the set of rules?",
-			d);
-		SEND_TO_Q("\r\n\r\n(By entering No (or N), you will exit the Mud.)", d);
-		SEND_TO_Q("\r\n\r\nYour official and legal response:", d);
-		STATE(d) = CON_DISCLMR;
-
-		/*   STATE(d) = CON_DSCLMR; */
-		break;
-
-		/*
-			   case CON_DISCLMR:
-			   SEND_TO_Q("\r\n", d);
-			   SEND_TO_Q(
-			   "\r\n\r\n*** Do you agree to abide by everything written in the disclaimer?", d);
-			   SEND_TO_Q("\r\n\r\n(By entering No (or N), you will exit the Mud.)", d);
-			   SEND_TO_Q("\r\n\r\nYour official and legal responce:", d);
-			   STATE(d) = CON_DISCLMR;
-			   break;
+			/*
+			 * The character is complete.  There is no rules-agreement
+			 * gate: the rules stay available through the `rules`
+			 * command and `help rules`, and a new character now goes
+			 * straight to the approval decision, which is what the
+			 * WebSocket creation path has always done.
 			 */
-
-		/* response to disclaimer */
-	case CON_DISCLMR:
-		for (; isspace(*arg); arg++)
-			;
-		switch (*arg)
-		{
-		case 'N':
-		case 'n':
-			SEND_TO_Q("\r\n\r\nThank you for considering our mud.\r\n", d);
-			close_socket(d);
-			return;
-			break;
-		case 'Y':
-		case 'y':
-			SEND_TO_Q(
-				"\r\n\r\nYou have selected Yes, and hereby agree to all conditions in the set of rules.\r\n",
-				d);
-			// Note: Actual approval logic is handled in the code after this switch statement
-			break;
-		default:
-			SEND_TO_Q("\r\nThat is not a correct response. Try again.\r\n", d);
-			return;
-			break;
-		}
-		if (pfile_exists("Players/Accepted", GET_NAME(d->character)))
-		{
-			SEND_TO_Q(
-				"This name has been accepted before, and it is accepted once more.\r\n\r\n"
-				"*** PRESS RETURN:\r\n",
-				d);
-			STATE(d) = CON_RMOTD;
-			statuslog(d->character->player.level,
-				  "%s auto-accepted due to having been accepted before.",
-				  GET_NAME(d->character));
-			schedule_chaos_new_character_kit_before_entry(d->character);
-		}
-		else if (!IS_TRUSTED(d->character) && approve_mode)
-		{
-			/* Do not pregrant Chaos equipment before approval. If approval mode is
-			 * re-enabled, schedule it from the approval-success transition. */
-			SEND_TO_Q(
-				"Now you have to wait for your character to be approved by a god.\r\nProcess should not take long.\r\nIf no god is on to approve you, you will &+WNOT&N be auto-approved.\r\n",
-				d);
-			STATE(d) = CON_ACCEPTWAIT;
-			d->character->only.pc->pc_timer[PC_TIMER_HEAVEN] =
-				time(NULL) - d->character->only.pc->pc_timer[PC_TIMER_HEAVEN];
-			newby_announce(d);
-		}
-		else
-		{
-			// Approval mode is OFF - proceed directly
-			SEND_TO_Q("\r\n*** PRESS RETURN:\r\n", d);
-			if (chaos_mud_enabled())
+			if (pfile_exists("Players/Accepted", GET_NAME(d->character)))
+			{
+				SEND_TO_Q(
+					"This name has been accepted before, and it is accepted once more.\r\n\r\n"
+					"*** PRESS RETURN:\r\n",
+					d);
+				STATE(d) = CON_RMOTD;
+				statuslog(d->character->player.level,
+					  "%s auto-accepted due to having been accepted before.",
+					  GET_NAME(d->character));
 				schedule_chaos_new_character_kit_before_entry(d->character);
+			}
+			else if (!IS_TRUSTED(d->character) && approve_mode)
+			{
+				/* Do not pregrant Chaos equipment before approval. If approval mode
+				 * is re-enabled, schedule it from the approval-success transition. */
+				SEND_TO_Q(
+					"Now you have to wait for your character to be approved by a god.\r\nProcess should not take long.\r\nIf no god is on to approve you, you will &+WNOT&N be auto-approved.\r\n",
+					d);
+				STATE(d) = CON_ACCEPTWAIT;
+				d->character->only.pc->pc_timer[PC_TIMER_HEAVEN] =
+					time(NULL) -
+					d->character->only.pc->pc_timer[PC_TIMER_HEAVEN];
+				newby_announce(d);
+			}
 			else
-				writeCharacter(d->character, 2, NOWHERE);
-			STATE(d) = CON_RMOTD;
+			{
+				// Approval mode is OFF - proceed directly
+				SEND_TO_Q("\r\n*** PRESS RETURN:\r\n", d);
+				if (chaos_mud_enabled())
+					schedule_chaos_new_character_kit_before_entry(d->character);
+				else
+					writeCharacter(d->character, 2, NOWHERE);
+				STATE(d) = CON_RMOTD;
+			}
 		}
-		/*    for (; isspace(*arg); arg++);
-			    switch (*arg) {
-			    case 'Y':
-			    case 'y':
-			      SEND_TO_Q(
-			                 "\r\n\r\nYou have selected Yes, and hereby agree to all conditions in the disclaimer.\r\n", d);
-			      if (!IS_TRUSTED(d->character) && approve_mode) {
-			                  writeCharacter(d->character, 2, NOWHERE);
-			        SEND_TO_Q("Now you have to wait for your character to be approved by a god.\r\nProcess should not take long.\r\n", d);
-			        STATE(d) = CON_ACCEPTWAIT;
-			        newby_announce(d);
-			      } else {
-			        SEND_TO_Q("\r\n*** PRESS RETURN:\r\n", d);
-			        writeCharacter(d->character, 2, NOWHERE);
-			        STATE(d) = CON_RMOTD;
-			      }
-			      break;
-			    case 'N':
-			    case 'n':
-			      SEND_TO_Q("\r\n\r\nThank you for considering our mud.\r\n", d);
-			      close_socket(d);
-			      return;
-			      break;
-			    default:
-			      SEND_TO_Q("\r\nThat is not a correct response. Try again.\r\n", d);
-			      return;
-			      break;
-			    }*/
 		break;
 
 	case CON_ACCEPTWAIT:

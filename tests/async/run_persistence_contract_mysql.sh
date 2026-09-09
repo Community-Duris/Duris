@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-docker run --rm -d --name "$NAME" \
+docker run -d --name "$NAME" \
     -e MYSQL_ROOT_PASSWORD="$PASSWORD" mysql:8.0 >/dev/null
 
 for _ in $(seq 1 60); do

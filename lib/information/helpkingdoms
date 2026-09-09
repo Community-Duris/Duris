@@ -136,7 +136,8 @@ order:
 
   1. The guards go home.
   2. The realm stops banking what its people gather.
-  3. One OUTER RING is lost per further missed payment.
+  3. The OUTERMOST SQUARE is lost per further missed payment, and
+     losing a square also unmakes the realm's champion.
 
 Depositing coin does not itself lift a rung. The ladder unwinds at the
 next reckoning, when the charge is actually met: that payment stops the
@@ -229,6 +230,8 @@ nothing.
   kingdom hire <class>        raise a new one. (leader)
   kingdom promote <#> [class] raise one to the next realm tier, and
                               re-school it if you name a class. (leader)
+  kingdom respec <#> <class>  re-school one at its present rank, for
+                              1,000 prestige. (leader)
 
 A new guard costs 5,000 platinum and stands at level 45. HOW HIGH IT
 MAY RISE IS SET BY YOUR COMPLETED RINGS. The first ring unlocks level
@@ -243,6 +246,13 @@ Each promotion costs a quarter of the span up to 20,000 platinum, so a
 guard taken all the way to 56 has cost exactly that in total. PROMOTION
 IS ONE-WAY. A guard's level never falls - not on arrears, not on land
 lost, not on request - and there is no refund and no demote verb.
+
+A CALLING CAN BE CHANGED, A LEVEL CANNOT. 'kingdom respec <#> <class>'
+re-schools a guard at its present rank for 1,000 prestige, and
+'kingdom champion respec <class> <class>' re-swears the champion for
+5,000. Prestige, not coin: the treasury already buys the garrison, and
+changing your mind about what it is costs standing instead. The guard
+or champion is replaced on its post with one of the new calling.
 
 Losing land lowers the ceiling for the NEXT promotion and takes no
 level already paid for. It can put a guard on the bench: the roster
@@ -275,9 +285,17 @@ one champion, for 25,000 platinum:
 It is the module's only multiclass mob: name two callings and they must
 differ. It stands at level 60, keeps everything a guard keeps, and adds
 inertial barrier, blur, flurry, deflection and Stornog's greater
-spheres. There is exactly one, it is never promoted, and losing a
-square sends it home rather than unmaking it - it takes the field again
-when the eightieth square is retaken, at no further cost.
+spheres. There is exactly one and it is never promoted.
+
+LOSING A SQUARE UNMAKES IT. A champion answers only to a whole realm,
+so the moment the realm falls below eighty squares - to arrears or to
+'kingdom abandon' - the champion is destroyed and its banner comes
+down. Retake the eightieth square and a new one may be raised, at the
+full price. It is not a bench: what was paid for is gone.
+
+The champion may take callings no guard may: dreadlord, reaver,
+avenger, dragoon, blighter, ethermancer, illusionist, theurgist,
+summoner, conjurer and psionicist, as well as any of a guard's.
 
 THE BANNER IS WHAT THE CHAMPION IS FOR. It plants one where it stands:
 

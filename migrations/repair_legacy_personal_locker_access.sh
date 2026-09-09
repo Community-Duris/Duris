@@ -167,8 +167,11 @@ printf 'candidate_count=1 item_count=%s owner_path_ready=1 visitor_grant_ready=%
 }
 
 umask 077
-"${MYSQLDUMP[@]}" --no-create-info --skip-triggers --compact "$DB_NAME" locker_access \
-	--where="LOWER(owner)=LOWER('$locker_name')" > "$backup_path"
+{
+	printf '%s\n' '-- Duris legacy locker-access backup v1'
+	"${MYSQLDUMP[@]}" --no-create-info --skip-triggers --compact "$DB_NAME" locker_access \
+		--where="LOWER(owner)=LOWER('$locker_name')"
+} > "$backup_path"
 [[ -s "$backup_path" ]] || {
 	echo 'locker access backup was not created; refusing repair' >&2
 	exit 1

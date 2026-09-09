@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -137,11 +138,21 @@ def process_environment(config: dict[str, str]) -> dict[str, str]:
     return environment
 
 
+@functools.lru_cache(maxsize=1)
+def preferred_mysql_ssl_arguments() -> tuple[str, ...]:
+    """Select the supported local SSL preference flag for the installed client."""
+    help_text = subprocess.run(
+        ["mysql", "--help"], capture_output=True, text=True, check=False).stdout
+    if "--ssl-mode" in help_text:
+        return ("--ssl-mode=PREFERRED",)
+    return ("--skip-ssl",)
+
+
 def connection_arguments(config: dict[str, str]) -> list[str]:
     socket_path = config.get("DB_SOCKET", "")
     if socket_path:
         return ["--protocol=socket", f"--socket={socket_path}"]
-    return ["--skip-ssl", "--host", config["DB_HOST"],
+    return [*preferred_mysql_ssl_arguments(), "--host", config["DB_HOST"],
             "--port", config.get("DB_PORT", "3306")]
 
 

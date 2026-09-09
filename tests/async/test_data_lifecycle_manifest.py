@@ -88,7 +88,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 177)
+        self.assertEqual(report["database_tables"], 178)
         self.assertEqual(report["non_database_stores"], 22)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])

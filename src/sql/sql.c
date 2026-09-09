@@ -85,6 +85,7 @@ extern P_room world;
 void get_pkill_player_description(P_char ch, char *buffer);
 
 #ifndef __NO_MYSQL__
+#include <errmsg.h>
 static int sql_trace_burst = 0;
 static const pid_t sql_main_process_id = getpid();
 static bool sql_trace_enabled(void);
@@ -1037,12 +1038,19 @@ MYSQL *sql_open_configured_connection(unsigned long client_flags)
 		return NULL;
 
 	unsigned int timeout = RUNTIME_DB_TIMEOUT_SECONDS;
+	bool options_failed = mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
+			      mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
+			      mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
+	/* MySQL defaults automatic reconnect off and emits a deprecation warning even
+	 * when MYSQL_OPT_RECONNECT is explicitly set to false. MariaDB still supports
+	 * the option without that warning, so preserve the explicit setting there. */
+#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)
 	bool reconnect = false;
-	if (mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
-	    mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
-	    mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout) ||
-	    mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect) ||
-	    mysql_options(conn, MYSQL_SET_CHARSET_NAME, RUNTIME_DB_CHARACTER_SET))
+	options_failed = options_failed || mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
+#endif
+	options_failed = options_failed ||
+			 mysql_options(conn, MYSQL_SET_CHARSET_NAME, RUNTIME_DB_CHARACTER_SET);
+	if (options_failed)
 	{
 		mysql_close(conn);
 		return NULL;
@@ -3329,6 +3337,16 @@ void sql_clear_results_on(MYSQL *conn)
 			if (mysql_field_count(conn) == 0)
 			{
 				// printf("%lld rows affected\n", mysql_affected_rows(conn));
+			}
+			else if (mysql_errno(conn) == CR_COMMANDS_OUT_OF_SYNC)
+			{
+				// Legacy callers often consume and free their result before the next
+				// pre-query drain. A second mysql_store_result() reports 2014 even
+				// though no result remains and the connection is usable. Do not turn
+				// that already-consumed state into a production trace burst.
+				if (sql_trace_enabled())
+					sql_trace_log_drain(conn, "clear/already_consumed", false);
+				break;
 			}
 			else if (mysql_errno(conn) == 0)
 			{

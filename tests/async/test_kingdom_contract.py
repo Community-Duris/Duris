@@ -1143,15 +1143,67 @@ def test_arrears_ladder_and_boot_grace() -> None:
         flat = re.sub(r"\s+", " ", apply_bodies[0])
         check(
             re.search(
-                r"arrears == KARR_RINGS_REVERTING\s*\)\s*\(?\s*void\s*\)?\s*revert_outer_ring\s*\(",
+                r"arrears == KARR_LAND_REVERTING && revert_outer_square\s*\(",
                 flat,
             )
             is not None,
-            "the bottom rung (KARR_RINGS_REVERTING) is what reverts the outer ring",
+            "the bottom rung (KARR_LAND_REVERTING) is what reverts the outermost square",
+        )
+        check(
+            "kingdom_champion_destroy(" in flat,
+            "losing land to arrears unmakes the champion, which needs every square",
         )
         check(
             re.search(r"highest_claim <= 0\s*\)\s*kingdom_clear_arrears\s*\(", flat) is not None,
-            "arrears clear once the last ring has reverted (nothing held, nothing owed)",
+            "arrears clear once the last square has reverted (nothing held, nothing owed)",
+        )
+
+    # One square per missed cycle, not a whole ring: the reversion is a
+    # decrement, and it must still rebuild the square index (ruled 2026-09-05).
+    revert = function_bodies(upkeep, r"\bstatic\s+bool\s+revert_outer_square\s*\(")
+    check(len(revert) == 1, "revert_outer_square is defined", f"{len(revert)}")
+    if revert:
+        code = strip_comments(revert[0])
+        check(
+            "realm.highest_claim--" in code and "kingdom_ring_first_index" not in code,
+            "a missed cycle costs exactly one square, not the whole outer ring",
+        )
+        check(
+            "kingdom_unindex_realm(" in code and "kingdom_reindex_realm(" in code,
+            "the square index is rebuilt the moment highest_claim moves",
+        )
+
+    # Both paths that shrink a realm must unmake the champion, and neither may
+    # reach for the champion body itself: kingdom_champion_refresh() owns that.
+    destroy = function_bodies(
+        (ROOT / "src/kingdom/kingdom_guards.c").read_text(encoding="utf-8", errors="replace"),
+        r"\bbool\s+kingdom_champion_destroy\s*\(",
+    )
+    check(len(destroy) == 1, "kingdom_champion_destroy is defined", f"{len(destroy)}")
+    if destroy:
+        code = strip_comments(destroy[0])
+        check(
+            "realm.champion_class = 0" in code,
+            "unmaking the champion clears the class that IS its existence",
+        )
+        check(
+            "kingdom_banners_of_realm_destroy(" in code,
+            "the champion's banner comes down with it",
+        )
+        check(
+            "extract_char(" not in code,
+            "the body is left to the reconciler, keeping one champion scan in the file",
+        )
+    abandon = function_bodies(
+        (ROOT / "src/kingdom/kingdom_claim.c").read_text(encoding="utf-8", errors="replace"),
+        r"\bbool\s+kingdom_abandon_last\s*\(",
+    )
+    if abandon:
+        code = strip_comments(abandon[0])
+        check(
+            "kingdom_champion_destroy(" in code
+            and code.index("kingdom_champion_destroy(") < code.index("kingdom_persist_realm("),
+            "giving up a square unmakes the champion before the record is written",
         )
 
     event = function_bodies(upkeep, r"\bvoid\s+kingdom_upkeep_event\s*\(\s*void\s*\)")
@@ -1796,6 +1848,120 @@ def test_prospect_is_open_to_everyone() -> None:
                                  r"\bbool\s+guildhall_map_check\s*\(")
     check(len(hall_check) == 1 and "guildhall_valid_map_seat(rroom)" in hall_check[0],
           "guildhall placement and prospecting share one terrain predicate")
+
+
+def test_review_fixes_from_the_second_round_hold() -> None:
+    """The four findings raised in review, each pinned where it was answered.
+
+    Every one of them is a rule that reads as an ordinary line of code and
+    would be silently undone by a plausible edit: an ambiguity guard looks
+    like a redundant loop, a resync looks like a wasted recalculation, an
+    RAII guard looks like a verbose ++/--, and a log line moved to a file
+    looks like a log line that could move back.
+    """
+
+    # ------------------------------------------------------------------ #
+    # 1. an ambiguous calling resolves to NOTHING, not to the first row    #
+    # ------------------------------------------------------------------ #
+    guards = read("src/kingdom/kingdom_guards.c")
+    matcher = function_bodies(guards, r"\bint\s+kingdom_guard_class_by_name\s*\(")
+    check(len(matcher) == 1, "kingdom_guard_class_by_name is defined once", f"{len(matcher)}")
+    if matcher:
+        code = strip_comments(matcher[0])
+        check("matches == 1" in code,
+              "a stem matching several callings resolves to nothing rather than to "
+              "whichever row the table happens to list first")
+        check("strcasecmp(name" in code,
+              "a full calling name still wins outright, which is what keeps the "
+              "persistence round-trip in kingdom_db_valid_guard_class() true")
+
+    # The exact-match rule above is only safe while no calling is a prefix of
+    # another; if one ever is, a full name becomes ambiguous and persistence
+    # starts rejecting a class it wrote itself.
+    names = re.findall(r'\{\s*"([a-z]+)",\s*CLASS_', guards)
+    check(len(names) >= 20, "the calling table was found", f"{len(names)} names")
+    shadowed = sorted({(a, b) for a in names for b in names if a != b and b.startswith(a)})
+    check(not shadowed,
+          "no calling name is a prefix of another, so an exact name is never ambiguous",
+          str(shadowed))
+
+    # Five verbs take a typed calling and three of them charge prestige for it.
+    claim = strip_comments(read("src/kingdom/kingdom_claim.c"))
+    check(claim.count("kingdom_guard_class_ambiguous(") == 5,
+          "every verb that takes a typed calling says what an ambiguous stem could "
+          "have meant instead of calling it unknown",
+          f"{claim.count('kingdom_guard_class_ambiguous(')} call sites")
+
+    # ------------------------------------------------------------------ #
+    # 2. a weight-reducing container is resynced the moment its load moves #
+    # ------------------------------------------------------------------ #
+    handler = read("src/world/handler.c")
+    resync = function_bodies(handler, r"\bstatic\s+void\s+resync_reducing_container\s*\(")
+    check(len(resync) == 1, "resync_reducing_container is defined once", f"{len(resync)}")
+    if resync:
+        code = strip_comments(resync[0])
+        check("container_weight_reduction_pct(cont) > 0" in code,
+              "the resync is gated on the reduction, so a container that reduces "
+              "nothing keeps its cheap incremental path")
+        check("recalc_container_weight(cont)" in code,
+              "the resync recomputes from the shell plus a fresh sum, so it corrects "
+              "the weight in either direction")
+
+    for signature, argument in ((r"\bvoid\s+obj_to_obj\s*\(", "obj_to"),
+                                (r"\bvoid\s+obj_to_obj_at_end\s*\(", "obj_to"),
+                                (r"\bvoid\s+obj_from_obj\s*\(", "obj_from")):
+        bodies = function_bodies(handler, signature)
+        check(len(bodies) == 1, f"{signature} is defined once", f"{len(bodies)}")
+        if not bodies:
+            continue
+        code = strip_comments(bodies[0])
+        check(f"resync_reducing_container({argument})" in code,
+              f"{argument} is resynced after its load changes, so a gathering bag's "
+              "carrier is billed the reduced weight immediately")
+        moved = code.find(f"add_weight({argument}")
+        synced = code.find(f"resync_reducing_container({argument})")
+        check(-1 < moved < synced,
+              f"the resync of {argument} runs after the item has finished moving, so "
+              "the fresh sum is of what is actually inside")
+
+    # ------------------------------------------------------------------ #
+    # 3. the area-cast depth cannot leak past a non-local exit             #
+    # ------------------------------------------------------------------ #
+    utility = strip_comments(read("src/core/utility.c"))
+    check(utility.count("area_cast_depth++") == 1 and utility.count("area_cast_depth--") == 1,
+          "the area-cast depth is raised and lowered in exactly one place each")
+    guard_at = utility.find("struct area_cast_guard")
+    raised = utility.find("area_cast_depth++")
+    lowered = utility.find("area_cast_depth--")
+    spell = utility.find("spell_func(level, ch, (char *)&hit, 0, area_target, NULL)")
+    check(-1 < guard_at < raised < lowered < spell,
+          "both halves of the pair are written before the spell runs, which they can "
+          "only be inside a guard whose destructor cannot be skipped",
+          f"guard {guard_at}, ++ {raised}, -- {lowered}, call {spell}")
+
+    # ------------------------------------------------------------------ #
+    # 4. placement writes a file line; the sweep writes the wizlog line    #
+    # ------------------------------------------------------------------ #
+    harvest_text = read("src/kingdom/kingdom_harvest.c")
+    node = function_bodies(harvest_text, r"\bstatic\s+bool\s+kingdom_load_one_node\s*\(")
+    check(len(node) == 1 and "wizlog(" not in node[0],
+          "placing one node writes no wizlog line, so a cold boot's 140 placements "
+          "cannot bury the channel")
+    sweep = function_bodies(harvest_text, r"\bstatic\s+void\s+kingdom_nodes_reload\s*\(")
+    check(len(sweep) == 1 and "wizlog(" in sweep[0] and "placed > 0" in sweep[0],
+          "the sweep announces itself once, and only when it actually placed something")
+
+    mining_text = read("src/economy/mining.c")
+    # Not "no wizlog at all": the one that survives in load_one_mine reports a
+    # missing prototype, which is an error worth a channel and happens once.
+    mine = function_bodies(mining_text, r"\bbool\s+load_one_mine\s*\(")
+    check(len(mine) == 1
+          and 'wizlog(56, "Mine (' not in mine[0]
+          and 'logit(LOG_DEBUG, "mines: mine' in mine[0],
+          "placing one mine writes a file line rather than a wizlog line")
+    mines = function_bodies(mining_text, r"\bvoid\s+load_mines\s*\(")
+    check(len(mines) == 1 and "wizlog(" in mines[0] and "placed > 0" in mines[0],
+          "a mine pass announces itself once, and only when it placed something")
 
 
 for _name, _fn in sorted(globals().items()):

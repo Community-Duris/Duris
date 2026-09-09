@@ -306,6 +306,9 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/boon_shop_command.o \
 				 economy/boon_shop_transaction.o \
 				 economy/shop_trade_command.o \
+				 world/zone_story_quest_tracking.o \
+				 world/zone_story_quest_catalog.o \
+				 world/zone_story_quest_repository.o \
 				 world/zone_touch_command.o \
 				 world/zone_touch_repository.o \
 				 world/zone_touch_transaction.o \

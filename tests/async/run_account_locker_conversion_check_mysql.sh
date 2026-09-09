@@ -14,7 +14,7 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-docker run --rm -d --name "$container_name" \
+docker run -d --name "$container_name" \
 	-e MYSQL_ROOT_PASSWORD="$password" "$image" >/dev/null
 ready=0
 for _ in $(seq 1 90); do

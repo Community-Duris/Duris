@@ -361,6 +361,10 @@ int main()
         add_item(result, 1, 10, 100, PLAYER_SNAPSHOT_NO_PARENT, 0);
         add_item(result, 2, 11, 101, 0, 0);
         add_item(result, 3, 12, 101, PLAYER_SNAPSHOT_NO_PARENT, 1);
+        // Owned transient gear must restore in containers and equipment slots
+        // with its dissolve-on-drop flag intact; transient is not no-rent.
+        result.snapshot.items[1].extra_flags = ITEM_TRANSIENT;
+        result.snapshot.items[2].extra_flags = ITEM_TRANSIENT;
         result.snapshot.items[1].string_mask = STRUNG_DESC2;
         result.snapshot.items[1].short_description = "saved item";
         result.snapshot.items[1].extra_descriptions.push_back(
@@ -375,6 +379,8 @@ int main()
                owner.character.carrying->contains->obj_uid == 11);
         assert(owner.character.carrying->weight == 5);
         assert(owner.character.equipment[0] && owner.character.equipment[0]->obj_uid == 12);
+        assert(IS_OBJ_STAT(owner.character.carrying->contains, ITEM_TRANSIENT));
+        assert(IS_OBJ_STAT(owner.character.equipment[0], ITEM_TRANSIENT));
         assert(balance_calls == 1 && item_ownership_runtime_size() == 3);
         item_ownership_runtime_entry entry = {};
         assert(item_ownership_runtime_lookup(11, &entry));

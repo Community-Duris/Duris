@@ -6,12 +6,12 @@ server's production WebSocket listener is loopback-only.
 
 ## Authentication
 
-1. Send `{"cmd":"durisweb_challenge","data":{}}`.
+1. Send `{"type":"cmd","cmd":"durisweb_challenge","data":{}}`.
 2. Read `{"type":"durisweb_challenge","nonce":"<64 hex>","expiresIn":30}`.
 3. Compute the lowercase hex HMAC-SHA256 of `<unix-minute>:<nonce>` with
    `DURISWEB_SECRET`.
 4. Within 30 seconds send
-   `{"cmd":"durisweb_auth","data":{"sig":"<64 hex>"}}`.
+   `{"type":"cmd","cmd":"durisweb_auth","data":{"sig":"<64 hex>"}}`.
 
 The nonce is random, connection-bound, single-use, and invalidated after an
 authentication attempt. The server accepts the adjacent minute on either side
@@ -56,7 +56,7 @@ ingestion, not logging.
 Request current state with:
 
 ```json
-{"cmd":"durisweb_hook_state","data":{}}
+{"type":"cmd","cmd":"durisweb_hook_state","data":{}}
 ```
 
 The response, also pushed unsolicited whenever a `durisweb.hook.*` property
@@ -86,6 +86,7 @@ Set one MUD-owned hook with the authenticated service command:
 
 ```json
 {
+  "type": "cmd",
   "cmd": "durisweb_hook_set",
   "data": {
     "requestId": "durisweb_hook_set_42_1788264000000",
@@ -130,6 +131,7 @@ back to the seller in one transaction.
 
 ```json
 {
+  "type": "cmd",
   "cmd": "durisweb_auction_remove",
   "data": {
     "requestId": "durisweb_auction_remove_7_1788264000000",

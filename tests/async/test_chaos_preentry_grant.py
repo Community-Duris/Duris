@@ -21,9 +21,7 @@ TRANSACTION_H = (ROOT / "src/item/item_movement_transaction.h").read_text(
 )
 
 
-disclaimer = NANNY.split("\tcase CON_DISCLMR:", 1)[1].split(
-    "\tcase CON_ACCEPTWAIT:", 1
-)[0]
+keepchar = NANNY.split("\tcase CON_KEEPCHAR:", 1)[1].split("\tcase CON_ACCEPTWAIT:", 1)[0]
 enter_game = NANNY.split("void enter_game", 1)[1].split("void reconnect", 1)[0]
 chaos_loader = NANNY.split("static void load_chaos_new_character_kit", 1)[1].split(
     "void load_obj_to_newbies", 1
@@ -39,10 +37,17 @@ assert "allow_pre_entry" in TRANSACTION_C
 assert "announce_on_completion" in TRANSACTION_C
 assert "Your Chaos Equipment has been prepared!!" in TRANSACTION_C
 
-# The active rules-agreement path must schedule after the baseline save and before
-# it transitions to CON_RMOTD; the old enter_game submission must be gone.
+# Completing a new character must schedule after the baseline save and before the
+# transition to CON_RMOTD; the old enter_game submission must be gone.  The
+# rules-agreement gate that used to host this branch is retired, so it now lives
+# in the creation state that finishes the character.
 preentry_call = "schedule_chaos_new_character_kit_before_entry(d->character)"
-assert preentry_call in disclaimer
+assert preentry_call in keepchar
+
+# The retired gate must not come back.
+assert "official and legal response" not in NANNY
+assert "case CON_DISCLMR:" not in NANNY
+assert "case CON_GET_RETURN:" not in NANNY
 assert "writeCharacter(ch, 2, NOWHERE)" in schedule_helper
 assert schedule_helper.index("writeCharacter(ch, 2, NOWHERE)") < schedule_helper.index("load_chaos_new_character_kit(ch)")
 assert "load_chaos_new_character_kit(ch);" not in enter_game

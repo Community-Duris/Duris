@@ -98,6 +98,20 @@ class LegacyDumpImportTest(unittest.TestCase):
             with self.assertRaises(legacy.LegacyImportError):
                 legacy.validate_target(invalid)
 
+    def test_loopback_transport_uses_installed_client_ssl_option(self):
+        """Support MySQL's ssl-mode flag and MariaDB's skip-ssl flag."""
+        with mock.patch.object(
+                legacy, "preferred_mysql_ssl_arguments",
+                return_value=("--ssl-mode=PREFERRED",)):
+            arguments = legacy.connection_arguments(self.valid_config())
+        self.assertIn("--ssl-mode=PREFERRED", arguments)
+        self.assertNotIn("--skip-ssl", arguments)
+
+        with mock.patch.object(
+                legacy, "preferred_mysql_ssl_arguments", return_value=("--skip-ssl",)):
+            arguments = legacy.connection_arguments(self.valid_config())
+        self.assertIn("--skip-ssl", arguments)
+
     def test_wipe_removes_events_routines_views_and_tables(self):
         executed: list[str] = []
 
@@ -140,7 +154,11 @@ class LegacyDumpImportTest(unittest.TestCase):
                 process.wait.return_value = 1
                 return process
 
-            with mock.patch.object(legacy.subprocess, "Popen", side_effect=fake_popen):
+            with mock.patch.object(
+                    legacy, "preferred_mysql_ssl_arguments",
+                    return_value=("--ssl-mode=PREFERRED",)), \
+                    mock.patch.object(
+                        legacy.subprocess, "Popen", side_effect=fake_popen):
                 with self.assertRaisesRegex(
                         legacy.LegacyImportError, "synthetic mysql failure"):
                     legacy.import_stream(self.valid_config(), dump, normalize=False)
@@ -155,7 +173,11 @@ class LegacyDumpImportTest(unittest.TestCase):
             process.stdin = io.BytesIO()
             process.wait.side_effect = [KeyboardInterrupt, -15]
             process.poll.return_value = None
-            with mock.patch.object(legacy.subprocess, "Popen", return_value=process):
+            with mock.patch.object(
+                    legacy, "preferred_mysql_ssl_arguments",
+                    return_value=("--ssl-mode=PREFERRED",)), \
+                    mock.patch.object(
+                        legacy.subprocess, "Popen", return_value=process):
                 with self.assertRaises(KeyboardInterrupt):
                     legacy.import_stream(self.valid_config(), dump, normalize=False)
             process.terminate.assert_called_once_with()

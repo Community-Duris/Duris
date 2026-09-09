@@ -141,6 +141,17 @@ if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne 7777 ]]; then
   echo "Production mode requires port 7777" >&2
   exit 1
 fi
+if [[ "$ENVIRONMENT" == "production" ]]; then
+  if [[ ${#DURISWEB_SECRET} -lt 32 || "${DURISWEB_SECRET:-}" == "put-secret-here" ]]; then
+    echo "Production DURISWEB_SECRET must be at least 32 characters and must not use the example placeholder" >&2
+    exit 1
+  fi
+  if [[ -n "${DURISWEB_SECRET_PREVIOUS:-}" ]] &&
+     [[ ${#DURISWEB_SECRET_PREVIOUS} -lt 32 || "$DURISWEB_SECRET_PREVIOUS" == "put-secret-here" ]]; then
+    echo "Production DURISWEB_SECRET_PREVIOUS must be empty or a non-placeholder key of at least 32 characters" >&2
+    exit 1
+  fi
+fi
 if (( FLATFILE_REQUIRED == 1 )); then
   if [[ -z "${FLATFILE_STATE_DIR:-}" ]]; then
     echo "FLATFILE_STATE_DIR is required for persistence mode $PERSISTENCE_MODE" >&2

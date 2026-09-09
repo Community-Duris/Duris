@@ -15,7 +15,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from import_legacy_dump import LegacyImportError, process_environment, read_env_file
+from import_legacy_dump import (
+    LegacyImportError,
+    preferred_mysql_ssl_arguments,
+    process_environment,
+    read_env_file,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,7 +109,7 @@ def connection_arguments(config: dict[str, str]) -> list[str]:
         return ["--protocol=socket", f"--socket={socket_path}"]
     target = ["--host", config["DB_HOST"], "--port", config.get("DB_PORT", "3306")]
     if config["DB_HOST"] in LOOPBACK_HOSTS:
-        return ["--skip-ssl", *target]
+        return [*preferred_mysql_ssl_arguments(), *target]
     ca_path = Path(config.get("DB_SSL_CA", ""))
     if config.get("DB_TLS", "").upper() != "TRUE" or not ca_path.is_absolute() or \
             ca_path.is_symlink() or not ca_path.is_file():

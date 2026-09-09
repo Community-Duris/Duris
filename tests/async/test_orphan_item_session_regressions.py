@@ -165,10 +165,10 @@ to_char = handler[handler.index("void obj_to_char("):]
 to_char = to_char[:to_char.index("void obj_from_char(")]
 ownership_guard = condition_after(to_char, "// A persisted generic item")
 ownership_guard_body = braced_block_after(to_char, "// A persisted generic item")
-check("obj_to_char defers missing or mismatched generic ownership rows",
+check("obj_to_char defers missing or mismatched ownership including transient gear",
       normalize_cxx(ownership_guard)
       == normalize_cxx("""IS_PC(ch) && GET_PID(ch) > 0 && object->obj_uid &&
-      object->type != ITEM_MONEY && !IS_SET(object->extra_flags, ITEM_TRANSIENT) &&
+      object->type != ITEM_MONEY &&
       !(object->type == ITEM_CORPSE &&
         IS_SET(object->value[CORPSE_FLAGS], PC_CORPSE))""")
       and "item_ownership_runtime_lookup(object->obj_uid, &ownership)" in ownership_guard_body
