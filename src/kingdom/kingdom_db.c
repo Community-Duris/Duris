@@ -136,7 +136,7 @@ bool record_is_sane(const kingdom_realm &realm)
 		return false;
 	if (realm.highest_claim < 0 || realm.highest_claim > KINGDOM_MAX_SQUARES)
 		return false;
-	if (realm.arrears < KARR_CURRENT || realm.arrears > KARR_RINGS_REVERTING)
+	if (realm.arrears < KARR_CURRENT || realm.arrears > KARR_LAND_REVERTING)
 		return false;
 	if (realm.missed_cycles < 0)
 		return false;

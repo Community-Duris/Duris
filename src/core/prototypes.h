@@ -1493,6 +1493,10 @@ int can_call_woodland_beings(P_char, int);
 int can_raise_undead(P_char, int);
 int can_raise_draco(P_char, int, bool);
 bool should_area_hit(P_char, P_char);
+/* True while cast_as_damage_area() is inside its victim loop (core/utility.c).
+ * The damage pipeline is never told which spell it is scaling, so this is how a
+ * modifier learns that the damage in front of it came from an area spell. */
+bool area_cast_in_progress(void);
 bool BardAffectCheck(P_char, P_char, int);
 bool check_item_teleport(P_char, char *, int);
 int is_any_draco(P_char);
@@ -1969,6 +1973,9 @@ void startPvP(P_char ch, bool racewar);
 
 void set_npc_multi(P_char);
 void convertMob(P_char);
+/* Re-stamp an NPC's castable circles from its CURRENT level (mob/mobconv.c).
+ * Call after anything that raises a mob's level once it is in the world. */
+void refresh_npc_spell_slots(P_char);
 int GetFormType(P_char);
 
 // mobpatrol

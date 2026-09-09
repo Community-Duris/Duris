@@ -5020,6 +5020,78 @@ banner sanctity holy kingdom _banner_~
 12 6 3 0 5 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 0 0 100
+#487
+stone rough lump mineral material _material_~
+&+La lump of rough &+wstone&n~
+&+LA lump of rough &+wstone&+L has been left here.&n~
+~
+8 11 2 0 5 0 0 16385 0 0 0
+0 0 0 0 0 0 0 0
+5 900 100
+#488
+timber cut length log wood material _material_~
+&+ya length of cut &+Ltimber&n~
+&+yA length of cut &+Ltimber&+y has been left here.&n~
+~
+8 6 3 0 5 0 0 16385 0 0 0
+0 0 0 0 0 0 0 0
+4 900 100
+#489
+flax bundle dried fibre material _material_~
+&+ya bundle of dried &+Lflax&n~
+&+yA bundle of dried &+Lflax&+y has been left here.&n~
+~
+8 42 2 0 5 0 0 16385 0 0 0
+0 0 0 0 0 0 0 0
+2 900 100
+#490
+water skin drawn clean material _material_~
+&+ca skin of drawn &+Cwater&n~
+&+cA skin of drawn &+Cwater&+c has been left here.&n~
+~
+8 40 2 0 5 0 0 16385 0 0 0
+0 0 0 0 0 0 0 0
+3 900 100
+#491
+bag gathering satchel worn _gathering_bag_~
+&+ya worn gatherer's satchel&n~
+&+yA worn gatherer's satchel lies here.&n~
+~
+15 13 3 0 5 0 0 4194305 0 0 0
+80 1 0 0 0 0 0 0
+3 99010 100
+#492
+bag gathering satchel stitched _gathering_bag_~
+&+ya stitched gatherer's satchel&n~
+&+yA stitched gatherer's satchel lies here.&n~
+~
+15 13 3 0 6 0 0 4194305 0 0 0
+150 1 0 0 20 0 0 0
+3 247525 100
+#493
+bag gathering pack harvester deep _gathering_bag_~
+&+Ya harvester's deep pack&n~
+&+YA harvester's deep pack lies here.&n~
+~
+15 13 4 0 7 0 0 4194305 0 0 0
+250 1 0 0 35 0 0 0
+4 495050 100
+#494
+bag gathering pack warden _gathering_bag_~
+&+Ma warden's gathering pack&n~
+&+MA warden's gathering pack lies here.&n~
+~
+15 13 4 0 8 0 0 4194305 0 0 0
+400 1 0 0 50 0 0 0
+4 990099 100
+#495
+weapon issued kingdom guard garrison _issued_~
+&+La guard's issued weapon&n~
+&+LA guard's issued weapon lies here, already crumbling.&n~
+~
+5 15 3 0 6 0 8913032 8193 1024 0 0
+5 2 6 0 0 0 0 0
+8 0 100
 #498
 compact pile bones~
 &+La compact pile of &+Wbones&n~

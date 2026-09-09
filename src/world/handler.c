@@ -125,6 +125,28 @@ static int obj_prototype_weight(P_obj obj)
 	return w;
 }
 
+/*
+ * value[4] on an ITEM_CONTAINER is a WEIGHT REDUCTION PERCENTAGE (0..90).
+ *
+ * Added for the gathering bags (ruled 2026-09-05: a costlier bag carries more
+ * and weighs its carrier down less). It is zero on every container prototype
+ * that shipped before them -- all 1,251 of them use value[0..3] only -- so this
+ * is a no-op for the whole existing world, and the clamp is here because an
+ * immortal can edit an instance's values by hand.
+ */
+static int container_weight_reduction_pct(P_obj cont)
+{
+	if (!cont || cont->type != ITEM_CONTAINER)
+		return 0;
+
+	const int pct = cont->value[4];
+
+	if (pct <= 0)
+		return 0;
+
+	return pct > 90 ? 90 : pct;
+}
+
 static int sum_direct_contents_weight(P_obj cont)
 {
 	P_obj o;
@@ -134,6 +156,14 @@ static int sum_direct_contents_weight(P_obj cont)
 	{
 		w += GET_OBJ_WEIGHT(o);
 	}
+
+	/* Applied once to the total rather than per item, so the reduction does
+	 * not drift with how the same load happens to be split up. */
+	const int pct = container_weight_reduction_pct(cont);
+
+	if (pct > 0 && w > 0)
+		w -= (int)((long)w * pct / 100);
+
 	return w;
 }
 
@@ -170,6 +200,36 @@ void recalc_container_weight(P_obj cont)
 		return;
 	}
 	add_weight(cont, delta);
+}
+
+/*
+ * Keep a WEIGHT-REDUCING container honest the moment its load changes.
+ *
+ * obj_to_obj()/obj_from_obj() move an item's FULL weight into and out of the
+ * container it lands in. That is right for the 1,251 containers that reduce
+ * nothing, and wrong for a gathering bag: until something happened to call
+ * container_total_weight() -- only capacity checks do -- the bag's carrier was
+ * billed the whole load and the bag's reduction did nothing at all. The same
+ * asymmetry runs the other way once a recalculation HAS happened: the bag then
+ * holds the reduced figure, and taking an item out subtracts its full weight,
+ * leaving the bag lighter than the truth.
+ *
+ * Neither error accumulates -- recalc_container_weight() recomputes from the
+ * shell plus a fresh sum of the contents, not by incrementing, so it corrects
+ * the figure in either direction -- but between the move and the next capacity
+ * check the number a player is carrying is simply wrong. Calling it here makes
+ * "wrong until something asks" into "right immediately", and
+ * propagate_weight_delta() inside add_weight() carries the correction up to
+ * whoever is holding the bag.
+ *
+ * Gated on the reduction, not on being a container: this reads the prototype,
+ * and every container that reduces nothing keeps the cheap incremental path it
+ * has always had.
+ */
+static void resync_reducing_container(P_obj cont)
+{
+	if (container_weight_reduction_pct(cont) > 0)
+		recalc_container_weight(cont);
 }
 
 void container_reset_empty_weight(P_obj cont)
@@ -2921,6 +2981,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 	}
 
 	add_weight(obj_to, obj->weight);
+	resync_reducing_container(obj_to);
 	/* Broken out into a recursive function; neater and more correct for handling negative weights properly.
 	  wgt = GET_OBJ_WEIGHT(obj);
 	  for (tmp_obj = obj->loc.inside; wgt && tmp_obj;
@@ -2989,6 +3050,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 	append_obj_to_list(&obj_to->contains, obj);
 
 	add_weight(obj_to, obj->weight);
+	resync_reducing_container(obj_to);
 
 	mark_container_dirty(obj_to);
 }
@@ -3093,6 +3155,10 @@ void obj_from_obj(P_obj obj)
 	}
 
 	add_weight(obj_from, -(obj->weight));
+
+	/* Safe here and nowhere earlier: `obj` has already been unlinked above,
+	 * so the fresh sum is of what actually remains inside. */
+	resync_reducing_container(obj_from);
 	/*    wgt = GET_OBJ_WEIGHT(obj);
 		    for( tmp = obj->loc.inside; wgt && tmp; tmp = OBJ_INSIDE(tmp) ? tmp->loc.inside : NULL )
 		    {

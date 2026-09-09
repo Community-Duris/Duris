@@ -71,6 +71,20 @@
 #define VOBJ_KINGDOM_NODE_UD_WOOD 482 /* a fungal stand    */
 #define VOBJ_KINGDOM_NODE_UD_FIBRE 483 /* cave silk         */
 #define VOBJ_KINGDOM_NODE_UD_WATER 484 /* a dark pool       */
+/* Gathering-bag materials (src/kingdom/): 487-490, CONTIGUOUS in
+ * kingdom_resource order; kingdom_harvest.c static_asserts the layout. 485 and
+ * 486 are the champion's two banners, private to the module. */
+#define VOBJ_KINGDOM_MAT_MINERAL 487 /* a lump of rough stone  */
+#define VOBJ_KINGDOM_MAT_WOOD 488 /* a length of cut timber */
+#define VOBJ_KINGDOM_MAT_FIBRE 489 /* a bundle of dried flax */
+#define VOBJ_KINGDOM_MAT_WATER 490 /* a skin of drawn water  */
+/* Gathering bags, CONTIGUOUS and ascending in tier: capacity and weight
+ * reduction both rise with the price. */
+#define VOBJ_GATHERING_BAG_FIRST 491
+#define VOBJ_GATHERING_BAG_LAST 494
+/* The garrison's issued weapon. ONE prototype, restrung and retyped per guard
+ * from its class and rank the way randomeq.c scales VOBJ_RANDOM_WEAPON. */
+#define VOBJ_KINGDOM_GUARD_WEAPON 495
 
 #define VOBJ_RANDOM_ARMOR 1252
 #define VOBJ_RANDOM_THRUSTED 1253

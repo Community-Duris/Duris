@@ -34,6 +34,10 @@ G 1 6089 999 0 100 0 0 0           *    (object not in this .OBJ file)
 G 1 398 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 3050 999 0 100 0 0 0           *    (object not in this .OBJ file)
 G 1 377 999 0 100 0 0 0            *    (object not in this .OBJ file)
+G 1 491 999 0 100 0 0 0
+G 1 492 999 0 100 0 0 0
+G 1 493 999 0 100 0 0 0
+G 1 494 999 0 100 0 0 0
 M 0 29610 3 29610 100 0 0 0        * a pillar of gore
 M 0 29610 3 29610 100 0 0 0        * a pillar of gore
 M 0 29610 3 29610 100 0 0 0        * a pillar of gore

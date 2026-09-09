@@ -19,6 +19,7 @@ float hp_mob_npc_pc_ratio;
 extern P_room world;
 extern struct zone_data *zone_table;
 extern char *specdata[][MAX_SPEC];
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 
 void set_npc_multi(P_char ch)
 {
@@ -39,6 +40,39 @@ void set_npc_multi(P_char ch)
 	}
 
 	ch->specials.affected_by4 &= ~AFF4_MULTI_CLASS;
+}
+
+/*
+ * Give an NPC the spell budget of the level it is actually standing at.
+ *
+ * A mob's castable circles are undead_spell_slots[], and read_mobile() fills
+ * them once from spl_table[] using the level in the .mob file. Nothing ever
+ * refilled them, so any mob whose level changed after it was read -- the class
+ * default and the two clamps in convertMob(), and every later promotion --
+ * kept casting at the level it was loaded with. A kingdom guard promoted from
+ * 45 to 56 never gained a single circle.
+ *
+ * Circle availability is (level - 1) / 5 + 1, so circle 12 opens at level 56:
+ * this is what "a mob of 56 or better has its level-56 spells" means, and it
+ * is the same table the player memorisation code reads. Skills need no
+ * equivalent: GET_CHAR_SKILL_P() computes an NPC's percentage from its class
+ * and its CURRENT level every time it is asked.
+ */
+void refresh_npc_spell_slots(P_char ch)
+{
+	if (!ch || IS_PC(ch))
+		return;
+
+	int level = GET_LEVEL(ch);
+
+	if (level < 0)
+		level = 0;
+	if (level >= TOTALLVLS)
+		level = TOTALLVLS - 1;
+
+	ch->specials.undead_spell_slots[0] = 0;
+	for (int circle = 1; circle <= MAX_CIRCLE; circle++)
+		ch->specials.undead_spell_slots[circle] = spl_table[level][circle - 1];
 }
 
 void convertMob(P_char ch)
@@ -139,6 +173,13 @@ void convertMob(P_char ch)
 	if (GET_LEVEL(ch) > MAXLVL)
 		ch->player.level = MAXLVL;
 	level = GET_LEVEL(ch);
+
+	/* Re-stamp the spell budget for the level this mob actually ended up at.
+	 * read_mobile() takes the snapshot from the .mob file's level, which is
+	 * right for a mob nobody moves, but the class default above and either
+	 * clamp can change the level after it -- and anything that promotes a mob
+	 * later leaves it casting at the level it was loaded with. */
+	refresh_npc_spell_slots(ch);
 
 	xp = copp = silv = gold = plat = 0;
 
@@ -403,10 +444,21 @@ void convertMob(P_char ch)
 
 	hits -= (int)(0.5 * hits * (1.0 - class_hitpoints[flag2idx(ch->player.m_class)]));
 
+	/*
+	 * A chaos mud runs mobs at a tenth of their hitpoints.
+	 *
+	 * This was `hits * (1 / 10)`, and `1 / 10` is integer division: it is 0,
+	 * so every mob on a chaos server was built with 0 hitpoints and handed
+	 * the one the line below added. Every mob in the game had 1 hit point.
+	 * The divide is now the integer divide it always meant to be, and the
+	 * floor is only what a divide needs -- a level-1 mob rounding to nothing
+	 * still has to be alive.
+	 */
 	if (chaos_mud_enabled())
 	{
-		hits = (int)(hits * (1 / 10));
-		hits += 1; // make sure they have at least a single hp..
+		hits /= 10;
+		if (hits < 1)
+			hits = 1;
 	}
 
 	ch->points.base_hit = hits;
