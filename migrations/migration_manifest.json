@@ -288,6 +288,16 @@
       "verify": "immutable/0011_player_death_disposition.sh",
       "verify_checksum": "cfeba2cc7cd8f07b1b24e490d2d05167231e76cbdcb96ced21b98671612f12e3",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0012_epic_stone_claim",
+      "sequence": 12,
+      "description": "Claim epic stone rewards atomically with participant ledgers",
+      "apply": "immutable/0012_epic_stone_claim.sql",
+      "apply_checksum": "8a1ea4c09d6989ffa90a6b174e2fc88f52d0642cb0940461e46a457039c107a9",
+      "verify": "immutable/0012_epic_stone_claim.sh",
+      "verify_checksum": "8e159b95bf80b1484c60bc4a9f983a4aa9c0fb0523e85b4c48db7d798c556e16",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

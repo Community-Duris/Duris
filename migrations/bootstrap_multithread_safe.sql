@@ -2335,4 +2335,15 @@ CREATE TABLE `mud_schema_migration_state` (
 INSERT INTO `mud_schema_migration_state` (`state_id`,`applied_count`,`history_checksum`)
 VALUES (1,0,UNHEX(SHA2('',256)));
 
+-- One durable reward claim per stone incarnation (globally allocated object UID).
+CREATE TABLE IF NOT EXISTS epic_stone_claim (
+    stone_uid BIGINT UNSIGNED NOT NULL,
+    operation_id BINARY(16) NOT NULL,
+    PRIMARY KEY (stone_uid),
+    KEY idx_epic_stone_claim_operation (operation_id),
+    CONSTRAINT epic_stone_claim_operation_fk FOREIGN KEY (operation_id)
+        REFERENCES critical_operation_inbox (operation_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

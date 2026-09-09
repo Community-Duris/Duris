@@ -24,6 +24,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
     ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
     ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
+    ROOT / "migrations" / "immutable" / "0012_epic_stone_claim.sql",
 )
 
 ROOT_FIELDS = {

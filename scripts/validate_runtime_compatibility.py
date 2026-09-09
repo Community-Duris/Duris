@@ -109,7 +109,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 177:
+            value["current_table_count"] != 178:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",

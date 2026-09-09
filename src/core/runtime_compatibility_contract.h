@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 177;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 178;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -25,7 +25,7 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'corpses','critical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe',"
 	"'critical_test_state','ctf_data','currency_bank_baseline','currency_ledger',"
 	"'currency_wallet_baseline','epic_balance_baseline','epic_bonus','epic_gain',"
-	"'epic_ledger','eq_drop','frag_leaderboard','guild_members',"
+	"'epic_ledger','epic_stone_claim','eq_drop','frag_leaderboard','guild_members',"
 	"'guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms',"
 	"'guildhalls','guilds','ip_info','item_current_owner',"
 	"'item_owner_revision','item_ownership_baseline','item_ownership_ledger','item_ownership_quarantine',"
@@ -56,19 +56,19 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"b5d52cca2efb9fc8f1192249c25d4affdf1b6cc005fb9ab982f0309f859c6287";
+	"bcd4e7b97cb03b81af1a9136bb7ba70391c03344babd0836311a3193843b0c0a";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"6068b13bb215df55c01fd42521ca2a6ff73cdab281a7f214b247eeb841be9eab";
-/* Includes the death disposition and custody tables introduced by migration 0011.
+	"092ee0e322c5ffcb3a5d40594314b2bc749db0709d074ad8671edc133cf2c510";
+/* Includes the durable epic stone claims introduced by migration 0012.
  * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0011_player_death_disposition";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 11;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0012_epic_stone_claim";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 12;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057";
+	"8a1ea4c09d6989ffa90a6b174e2fc88f52d0642cb0940461e46a457039c107a9";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"cfeba2cc7cd8f07b1b24e490d2d05167231e76cbdcb96ced21b98671612f12e3";
+	"8e159b95bf80b1484c60bc4a9f983a4aa9c0fb0523e85b4c48db7d798c556e16";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"c308bec958dac85b44ad4b0fd26c9cef8a174b8d34094de502a5a7881d9abce6";
+	"ff1588566c193a669a35b4dc633bf3aa210ac71d441c2285648d2cc4e02fc8bd";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
