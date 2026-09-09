@@ -62,6 +62,7 @@ struct creation_grant_queue
 {
 	std::deque<pending_creation_grant> requests;
 	bool active = false;
+	bool batch_submission = false;
 	bool blocks_actor_commands = false;
 	bool announce_on_completion = false;
 	bool stop_on_failure = false;
@@ -91,7 +92,8 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry) {
+			   [&](const auto &entry)
+			   {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -486,12 +488,117 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 	}
 }
 
+void creation_grant_batch_completion(P_char actor, bool committed, const item_transfer_result &,
+				     unsigned int error_code, const uint8_t *encoded,
+				     size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(uint32_t) || IS_NPC(actor) ||
+	    GET_PID(actor) <= 0)
+		return;
+	uint32_t actor_pid = 0;
+	memcpy(&actor_pid, encoded, sizeof(actor_pid));
+	auto queue_found = creation_grants.find(actor_pid);
+	if (queue_found == creation_grants.end() || queue_found->second.requests.empty() ||
+	    !queue_found->second.active || !queue_found->second.batch_submission)
+		return;
+	creation_grant_queue &queue = queue_found->second;
+	const bool blocks_actor_commands = queue.blocks_actor_commands;
+	const bool announce_on_completion = queue.announce_on_completion;
+	if (!committed)
+	{
+		logit(LOG_FILE, "item creation grant batch did not commit (pid=%u error=%u)",
+		      actor_pid, error_code);
+		discard_creation_queue(actor, queue);
+		creation_grants.erase(queue_found);
+		return;
+	}
+
+	bool publication_failed = false;
+	size_t published = 0;
+	for (const pending_creation_grant &request : queue.requests)
+	{
+		P_obj object = find_item(request.item_uid);
+		if (!object || !OBJ_NOWHERE(object))
+		{
+			publication_failed = true;
+			logit(LOG_FILE,
+			      "item creation grant batch committed but live publication was stale "
+			      "(pid=%u uid=%llu)",
+			      actor_pid, (unsigned long long)request.item_uid);
+			continue;
+		}
+		obj_to_char(object, actor);
+		++published;
+	}
+	if (published)
+		mark_player_dirty_components(actor_pid, PLAYER_COMPONENT_EQUIPMENT |
+								PLAYER_COMPONENT_INVENTORY);
+	queue.requests.clear();
+	queue.active = false;
+	creation_grants.erase(queue_found);
+	if (publication_failed)
+	{
+		send_to_char(
+			"The ownership authority committed, but part of the starter kit could not be "
+			"published live.\r\n",
+			actor);
+	}
+	else if (blocks_actor_commands && actor->desc)
+	{
+		send_to_char(announce_on_completion ?
+				     "Your Chaos Equipment has been prepared!!\r\n" :
+				     "Your starter kit is ready.\r\n",
+			     actor);
+	}
+	else if (announce_on_completion && actor->desc && actor->desc->connected == CON_PLAYING)
+	{
+		send_to_char("Your Chaos Equipment has been prepared!!\r\n", actor);
+	}
+	if (blocks_actor_commands && actor->desc)
+		actor->desc->prompt_mode = TRUE;
+}
+
 bool start_creation_grant(P_char actor, creation_grant_queue &queue)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || queue.active ||
 	    queue.requests.empty())
 		return false;
 	const pending_creation_grant &request = queue.requests.front();
+	if (queue.batch_submission)
+	{
+		if (!creation_grant_request_valid(request))
+			return false;
+		const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+		std::vector<P_obj> objects;
+		try
+		{
+			objects.reserve(queue.requests.size());
+			for (const pending_creation_grant &candidate : queue.requests)
+			{
+				P_obj object = find_item(candidate.item_uid);
+				if (candidate.to_room || candidate.target_container_uid ||
+				    !candidate.allow_pre_entry ||
+				    candidate.recipient_pid != actor_pid || !object ||
+				    !OBJ_NOWHERE(object))
+					return false;
+				objects.push_back(object);
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		const item_owner_identity system_owner = { item_owner_type::system, 0, 0 };
+		item_movement_reject reject = item_movement_reject::none;
+		if (!item_movement_transaction_submit_batch(
+			    actor, objects.data(), objects.size(), NULL, system_owner,
+			    creation_grant_owner(request), item_transfer_reason::creation, 0,
+			    creation_grant_batch_completion, &actor_pid, sizeof(actor_pid), NULL,
+			    &reject))
+			return false;
+		queue.active = true;
+		return true;
+	}
 	P_obj object = find_item(request.item_uid);
 	if (!creation_grant_request_valid(request))
 		return false;
@@ -815,10 +922,13 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		reject = &discarded;
 	*reject = item_movement_reject::none;
 	const bool corpse_transfer = reason == item_transfer_reason::corpse_loot;
+	const bool creation = from_owner.type == item_owner_type::system &&
+			      to_owner.type == item_owner_type::player &&
+			      reason == item_transfer_reason::creation;
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !roots || !root_count ||
 	    root_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    corpse_transfer != (corpse_context != NULL))
+	    corpse_transfer != (corpse_context != NULL) || (creation && target_container))
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
@@ -854,14 +964,28 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		{
 			P_obj root = ordered_roots[root_index];
 			item_ownership_runtime_entry runtime = {};
-			if (!root || !root->obj_uid ||
-			    !item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
-			    !item_owner_identity_equal(runtime.owner, from_owner))
+			if (!root || !root->obj_uid)
 				return reject_with(reject, item_movement_reject::owner_mismatch);
 			if (coin_movement_pending(root))
 				return reject_with(reject, item_movement_reject::pending_conflict);
-			if (!capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items))
-				return reject_with(reject, item_movement_reject::topology_mismatch);
+			if (creation)
+			{
+				if (item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
+				    !capture_absent(root, root->obj_uid, 0, &items))
+					return reject_with(reject,
+							   item_movement_reject::owner_mismatch);
+			}
+			else
+			{
+				if (!item_ownership_runtime_lookup(root->obj_uid, &runtime) ||
+				    !item_owner_identity_equal(runtime.owner, from_owner))
+					return reject_with(reject,
+							   item_movement_reject::owner_mismatch);
+				if (!capture(root, runtime.root_item_uid, runtime.parent_item_uid,
+					     &items))
+					return reject_with(reject,
+							   item_movement_reject::topology_mismatch);
+			}
 
 			std::vector<player_item_snapshot> tree;
 			if (player_item_snapshot_tree_capture(root, &tree, nullptr) !=
@@ -1049,6 +1173,7 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 	{
 		creation_grant_queue queue;
 		queue.blocks_actor_commands = true;
+		queue.batch_submission = true;
 		queue.announce_on_completion = true;
 		queue.stop_on_failure = true;
 		for (size_t i = 0; i < count; ++i)
@@ -1107,7 +1232,8 @@ void item_creation_grant_cancel_batch_before_entry(P_char actor)
 	if (found == creation_grants.end() || !found->second.stop_on_failure)
 		return;
 	creation_grant_queue &queue = found->second;
-	const size_t retained = queue.active ? 1 : 0;
+	const size_t retained =
+		queue.active ? (queue.batch_submission ? queue.requests.size() : 1) : 0;
 	size_t extracted = 0;
 	while (queue.requests.size() > retained)
 	{

@@ -803,11 +803,10 @@ int main()
     expect_text(q.head->text, "wear grant", "batch holds immediate wear");
     drain(&q);
 
-    // Commit the first root, then the second. The queue keeps the whole-kit gate
-    // until the final result; repeated completion publication is idempotent.
-    auto complete_grant = [&](uint64_t uid, uint64_t owner_revision)
+    // Commit both roots in one atomic operation. Repeated completion delivery is ignored.
+    auto complete_grant = [&](uint64_t root_uid, uint64_t owner_revision)
     {
-        item_transfer_result grant_result = {uid, 1, owner_revision, owner_revision, 1, 0};
+        item_transfer_result grant_result = {root_uid, 2, owner_revision, owner_revision, 1, 0};
         critical_completion grant_completion = {};
         grant_completion.operation_id = submitted_command.operation_id;
         grant_completion.outcome = critical_apply_outcome::applied;
@@ -820,12 +819,7 @@ int main()
         item_movement_transaction_handle_completions(&grant_completion, 1);
     };
     complete_grant(301, 1);
-    assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_NOWHERE(&grant_second));
-    assert(command_submitted && item_creation_grant_blocks_commands(&actor));
-    assert(item_creation_grant_batches_pending());
-    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
-    complete_grant(302, 2);
-    assert(OBJ_CARRIED_BY(&grant_second, &actor));
+    assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_CARRIED_BY(&grant_second, &actor));
     assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
     const auto announced = grant_messages.find("Your Chaos Equipment has been prepared!!");
@@ -851,8 +845,7 @@ int main()
     assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
-    // If a later root fails, an earlier committed root remains published; only
-    // the uncommitted remainder is discarded and no whole-kit success is sent.
+    // A duplicate terminal completion after an atomic batch publication is ignored.
     item_movement_transaction_reset_for_tests();
     item_ownership_runtime_reset();
     actor.carrying = nullptr;
@@ -862,17 +855,18 @@ int main()
     extracted_count = 0;
     assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
     complete_grant(301, 1);
-    assert(OBJ_CARRIED_BY(&grant_first, &actor));
+    const unsigned extracted_after_commit = extracted_count;
     failed_grant.operation_id = submitted_command.operation_id;
-    command_submitted = false;
     item_movement_transaction_handle_completions(&failed_grant, 1);
-    assert(extracted_count == 1 && OBJ_CARRIED_BY(&grant_first, &actor));
+    assert(extracted_count == extracted_after_commit &&
+           OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_CARRIED_BY(&grant_second, &actor));
     assert(!command_submitted && !item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
-    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
-    // Losing the descriptor between roots must not strand committed items.
-    // find_player_by_pid models its connected-only lookup, while character_list
-    // still contains the live linkdead actor used for callback publication.
+    const auto duplicate_success = grant_messages.find("Your Chaos Equipment has been prepared!!");
+    assert(duplicate_success != std::string::npos);
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!", duplicate_success + 1) == std::string::npos);
+    // Losing the descriptor during a batch must not strand committed items.
+    // character_list still contains the linkdead actor used for callback publication.
     item_movement_transaction_reset_for_tests();
     item_ownership_runtime_reset();
     actor.carrying = nullptr;
@@ -880,22 +874,21 @@ int main()
     grant_first.next_content = grant_second.next_content = nullptr;
     grant_messages.clear();
     extracted_count = 0;
+    character_list = &actor;
     assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
-    complete_grant(301, 1);
     hide_player_lookup = true;
-    assert(item_creation_grant_batches_pending());
     actor.desc = nullptr;
     assert(find_player_by_pid(42) == nullptr && character_list == &actor);
-    complete_grant(302, 2);
+    complete_grant(301, 1);
     assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_CARRIED_BY(&grant_second, &actor));
     assert(extracted_count == 0 && !command_submitted);
     assert(!item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
     hide_player_lookup = false;
+    actor.desc = &grant_descriptor;
 
-    // A socket lost at the pre-entry MOTD has no live character to drain the
-    // tail. Cancel only unsubmitted roots; retain the journaled head so its
-    // exact-PID completion can publish when that player next enters.
+    // A socket lost at the pre-entry MOTD cannot drain an active multi-root
+    // operation. Retain the complete journaled operation for the next entry.
     item_movement_transaction_reset_for_tests();
     item_ownership_runtime_reset();
     actor.carrying = nullptr;
@@ -913,25 +906,25 @@ int main()
     character_list = nullptr;
     item_creation_grant_cancel_batch_before_entry(&actor);
     item_creation_grant_cancel_batch_before_entry(&actor); // idempotent close/retry
-    assert(extracted_count == 1 && extracted_uids[0] == grant_second.obj_uid);
-    assert(OBJ_NOWHERE(&grant_first));
+    assert(extracted_count == 0 && OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
     assert(!item_creation_grant_batches_pending() && !item_creation_grant_blocks_commands(&actor));
     assert(item_movement_transaction_player_busy(&actor));
     complete_grant(301, 1);
     assert(item_movement_transaction_health_copy().retained_offline == 1);
-    assert(OBJ_NOWHERE(&grant_first));
+    assert(OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
     pc_only_data other_pc{};
     other_pc.pid = 43;
     char_data other_actor{};
     other_actor.only.pc = &other_pc;
     item_movement_transaction_player_ready(&other_actor);
-    assert(OBJ_NOWHERE(&grant_first));
+    assert(OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
     character_list = &actor;
     grant_descriptor.connected = CON_PLAYING;
     item_movement_transaction_player_ready(&actor);
     item_movement_transaction_player_ready(&actor);
-    assert(OBJ_CARRIED_BY(&grant_first, &actor));
-    assert(extracted_count == 1 && actor.carrying == &grant_first && !grant_first.next_content);
+    assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_CARRIED_BY(&grant_second, &actor));
+    assert(extracted_count == 0 && actor.carrying == &grant_second &&
+           grant_second.next_content == &grant_first);
     assert(!command_submitted && !item_creation_grant_batches_pending());
     assert(!item_movement_transaction_player_busy(&actor));
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
