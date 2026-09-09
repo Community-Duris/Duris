@@ -17,7 +17,7 @@ with tempfile.TemporaryDirectory() as tmp:
     harness_binary = tmp_path / "log_directory_harness"
     target = tmp_path / "missing" / "nested" / "status"
     mysql_includes = shlex.split(
-        subprocess.check_output(["mariadb_config", "--include"], text=True)
+        subprocess.check_output(["mysql_config", "--cflags"], text=True)
     )
 
     harness_source.write_text(

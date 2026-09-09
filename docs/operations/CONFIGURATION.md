@@ -69,9 +69,11 @@ name (`duris` or `duris_prod`) is redirected to `duris_dev` before the allow-lis
 Use a separate database account, target, and non-`7777` port for development. The
 redirect does not make a production credential safe to reuse locally.
 
-Every connection has 10-second connect/read/write deadlines, disables automatic
-reconnect, and must establish the same verified session contract: `utf8mb4`, time zone
-`+00:00`, `READ-COMMITTED`, and `STRICT_TRANS_TABLES`,
+Every connection has 10-second connect/read/write deadlines and disables automatic
+reconnect. MySQL's client default keeps reconnect off without invoking its deprecated
+`MYSQL_OPT_RECONNECT` option; MariaDB builds set the still-supported option to false
+explicitly. Every connection must establish the same verified session contract:
+`utf8mb4`, time zone `+00:00`, `READ-COMMITTED`, and `STRICT_TRANS_TABLES`,
 `ERROR_FOR_DIVISION_BY_ZERO`, and `NO_ENGINE_SUBSTITUTION`. Loopback TCP and an
 explicit local-role socket are treated as protected local transport. Any other host
 requires enforced TLS, CA verification, and a negotiated cipher. Boot also requires a
@@ -324,8 +326,8 @@ craft-pouch contract is in [CHAOS_MODE.md](../reference/CHAOS_MODE.md).
 | `DURIS_WEBSOCKET_PORT` | WebSocket and HTTP health-listener port. It defaults to `4050`; values must be decimal ports from 1 through 65535. |
 | `DURIS_WEBSOCKET_LISTEN_ADDRESS` | WebSocket-only numeric listener address; defaults to `LISTEN_ADDRESS`, and to `127.0.0.1` when neither is set. Production requires exact loopback so a local TLS reverse proxy owns the public endpoint. |
 | `DURIS_WEBSOCKET_ALLOWED_ORIGINS` | Exact comma-separated browser `Origin` allow-list. Required in production; non-browser service connections may omit `Origin`. |
-| `DURISWEB_SECRET` | Current shared key for one-time DurisWeb challenge-response authentication. See the DurisWeb API reference. |
-| `DURISWEB_SECRET_PREVIOUS` | Optional previous service key accepted during a bounded zero-downtime rotation. Remove it after every backend has switched. |
+| `DURISWEB_SECRET` | Current shared key for one-time DurisWeb challenge-response authentication. Production requires at least 32 characters and rejects the public example placeholder. See the DurisWeb API reference. |
+| `DURISWEB_SECRET_PREVIOUS` | Optional previous service key accepted during a bounded zero-downtime rotation. In production it must be empty or at least 32 characters and non-placeholder; remove it after every backend has switched. |
 | `DURISWEB_PRIVATE_PRESENCE` | Exact `TRUE` opts the authenticated backend into account names, IP addresses, client metadata, and invisible staff presence. The default WebSocket and Redis presence feeds omit them. |
 
 ### DurisWeb hook toggles

@@ -67,7 +67,10 @@ RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 `TEST_JOBS=0` is the default and selects up to eight workers based on available
 CPUs. Test output is buffered per process so parallel failures remain readable.
 The runner executes every discovered `test_*.py` in a separate process and
-returns nonzero if any test fails.
+returns nonzero if any test fails. Tests that build a complete isolated
+flat-file server or a large sanitizer harness run serially after the parallel
+phase so their inner compiler workers cannot starve one another and exhaust
+per-build timeouts.
 
 `make test-all` deliberately excludes Docker and externally provisioned
 database checks. `make test-db` creates and destroys isolated MySQL containers;

@@ -39,6 +39,19 @@ static void ws_auth_reset(time_t *window_start, unsigned int *attempts)
 	*attempts = 0;
 }
 
+static int ws_durisweb_secret_usable(const char *secret)
+{
+	const char *environment;
+
+	if (!secret || !*secret)
+		return 0;
+	environment = getenv("ENVIRONMENT");
+	if (environment && !strcmp(environment, "production") &&
+	    (strlen(secret) < 32 || !strcmp(secret, "put-secret-here")))
+		return 0;
+	return 1;
+}
+
 /* Shared DurisWeb HMAC authentication contract for WebSocket and GMCP. */
 static int ws_issue_durisweb_challenge(char challenge[65], time_t *expires)
 {
@@ -62,7 +75,7 @@ static int ws_verify_durisweb_signature_with_secret(const char *sig, const char 
 	char expected[65];
 	int message_len;
 
-	if (!secret || !*secret)
+	if (!ws_durisweb_secret_usable(secret))
 		return 0;
 	message_len = snprintf(message, sizeof(message), "%ld:%s", minute, challenge);
 	if (message_len < 0 || (size_t)message_len >= sizeof(message) ||
@@ -85,7 +98,7 @@ static int ws_verify_durisweb_signature(const char *sig, const char *challenge,
 	long minute;
 
 	if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge ||
-	    strlen(challenge) != 64)
+	    !ws_durisweb_secret_usable(secret) || strlen(challenge) != 64)
 		return 0;
 	for (size_t i = 0; i < 64; i++)
 	{

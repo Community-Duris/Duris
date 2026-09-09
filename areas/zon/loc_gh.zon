@@ -37,6 +37,10 @@ G 1 347 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 108 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 109 999 0 100 0 0 0            *    (object not in this .OBJ file)
 G 1 111 999 0 100 0 0 0            *    (object not in this .OBJ file)
+G 1 491 999 0 100 0 0 0
+G 1 492 999 0 100 0 0 0
+G 1 493 999 0 100 0 0 0
+G 1 494 999 0 100 0 0 0
 M 0 29303 3 29310 100 0 0 0        * a stone golem
 M 0 29302 3 29310 100 0 0 0        * a stone golem
 M 0 29300 6 29310 100 0 0 0        * a stone golem

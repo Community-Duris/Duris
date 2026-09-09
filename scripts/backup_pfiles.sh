@@ -220,6 +220,12 @@ DUMP_ARGS=()
 if mysqldump --help 2>/dev/null | grep -q -- '--connect-timeout'; then
   DUMP_ARGS+=(--connect-timeout=10)
 fi
+# MySQL 8 attempts to read global tablespace metadata unless explicitly told
+# not to. Schema-scoped backup accounts do not need PROCESS privilege for a
+# logical database dump, and granting it would violate least privilege.
+if mysqldump --help 2>/dev/null | grep -q -- '--no-tablespaces'; then
+  DUMP_ARGS+=(--no-tablespaces)
+fi
 DUMP_ARGS+=(
   --user="$DB_USER"
   --single-transaction

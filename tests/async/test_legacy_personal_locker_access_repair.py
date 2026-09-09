@@ -28,6 +28,7 @@ checks = {
     "backup happens before mutation": (
         repair.index('MYSQLDUMP=(mysqldump')
         < repair.index('INSERT IGNORE INTO locker_access(owner,visitor)')
+        and "Duris legacy locker-access backup v1" in repair
     ),
     "grant is additive and idempotent": "INSERT IGNORE INTO locker_access" in repair,
     "production use requires an exact target acknowledgment": (
@@ -45,6 +46,10 @@ checks = {
         '"$after" == "$before"' in rehearsal
         and "access-before-second.sql" in rehearsal
         and '[[ "$grant" == 1' in rehearsal
+    ),
+    "rehearsal selects a client-compatible local SSL option": (
+        "--ssl-mode=PREFERRED" in rehearsal
+        and "MYSQL_SSL" in rehearsal
     ),
 }
 

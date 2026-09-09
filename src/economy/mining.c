@@ -695,9 +695,18 @@ bool load_one_mine(int map)
 			"&+LA few glimmers &+Ws&+wpa&+Wrk&+wle&+L in the &+yearth &+Lhere.&n");
 	}
 
+	const char *where = world[to_room].name;
+	const int where_vnum = ROOM_VNUM(to_room);
+	const int quality = mine->value[1];
+
 	obj_to_room(mine, to_room);
-	wizlog(56, "Mine (%d) loaded in %s [%d]", mine->value[1], world[to_room].name,
-	       ROOM_VNUM(to_room));
+
+	/* THE FILE, NOT THE WIZLOG CHANNEL. A boot -- or an immortal's
+	 * `loadmines all` -- fills every region in one pass, and a line each
+	 * buried every other wizlog message behind placements nobody had asked
+	 * to watch. The per-mine trail keeps its detail and goes where a trail
+	 * belongs; load_mines() announces the pass once. */
+	logit(LOG_DEBUG, "mines: mine (%d) loaded in %s [%d].", quality, where, where_vnum);
 
 	return TRUE;
 }
@@ -724,20 +733,34 @@ void load_mines(bool set_event, bool load_all, int map)
 	max_mines += number(-max_mines / 6, max_mines / 6);
 	// debug("mines currently loaded: %d / %d", num_mines, max_mines );
 
+	int placed = 0;
+
 	if (num_mines < max_mines)
 	{
 		if (load_all)
 		{
 			for (int i = 0; (i < (max_mines - num_mines)); i++)
 			{
-				load_one_mine(map);
+				if (load_one_mine(map))
+					placed++;
 			}
 		}
 		else
 		{
-			load_one_mine(map);
+			if (load_one_mine(map))
+				placed++;
 		}
 	}
+
+	/* ONE line per pass, and only when the pass did something. A region
+	 * already at strength places nothing every ten minutes, all day, and a
+	 * silent pass is the normal case: the channel should carry the refills,
+	 * not a heartbeat. The standing count is the one actually reached, so a
+	 * pass that fell short of its target says so on the same line -- that is
+	 * the line worth reading. */
+	if (placed > 0)
+		wizlog(56, "Mines: %s loaded %d (%d of %d standing).", mine_data[map].name, placed,
+		       num_mines + placed, max_mines);
 
 	mdata.map = map;
 

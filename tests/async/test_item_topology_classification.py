@@ -47,6 +47,16 @@ class ItemTopologyClassificationTest(unittest.TestCase):
         """Return category names for compact fixture assertions."""
         return [finding.category for finding in topology.classify(rows, maximum_depth)]
 
+    def test_loopback_transport_uses_client_compatible_ssl_option(self):
+        """Delegate local SSL option selection to the shared client probe."""
+        config = {"DB_HOST": "127.0.0.1", "DB_PORT": "3306"}
+        with mock.patch.object(
+                topology, "preferred_mysql_ssl_arguments",
+                return_value=("--ssl-mode=PREFERRED",)):
+            arguments = topology.connection_arguments(config)
+        self.assertIn("--ssl-mode=PREFERRED", arguments)
+        self.assertNotIn("--skip-ssl", arguments)
+
     def test_acyclic_parent_and_root_drift_is_repairable(self):
         """Classify consistent acyclic projection lag as repairable."""
         rows = [row(1), row(2, 1, 1, current_parent_uid=None, current_root_uid=2)]

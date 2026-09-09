@@ -13,7 +13,7 @@ if [[ "$DB_IMAGE" == mariadb:* ]]; then
 else
     ROOT_PASSWORD_ENV="MYSQL_ROOT_PASSWORD"
 fi
-docker run --rm -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" >/dev/null
+docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" >/dev/null
 ready=0
 for _ in $(seq 1 90); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then

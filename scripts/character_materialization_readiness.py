@@ -21,6 +21,7 @@ from typing import Callable
 from chaos_eq_analyze import area_file_names, parse_defines, reconcile_area_objects
 from import_legacy_dump import (
     LegacyImportError,
+    preferred_mysql_ssl_arguments,
     process_environment,
     read_env_file,
 )
@@ -50,7 +51,7 @@ def connection_arguments(config: dict[str, str]) -> list[str]:
         return ["--protocol=socket", f"--socket={socket_path}"]
     arguments = ["--host", config["DB_HOST"], "--port", config.get("DB_PORT", "3306")]
     if config["DB_HOST"] in LOOPBACK_HOSTS:
-        return ["--skip-ssl", *arguments]
+        return [*preferred_mysql_ssl_arguments(), *arguments]
     ca_path = Path(config.get("DB_SSL_CA", ""))
     if config.get("DB_TLS", "").upper() != "TRUE" or not ca_path.is_absolute() or \
             ca_path.is_symlink() or not ca_path.is_file():

@@ -66,7 +66,7 @@ int main()
     critical_command zone_command = {};
     assert(zone_touch_command_build(&zone_command, operation, zone));
     assert(zone_command.keys.size() == 4);
-    zone_touch_payload decoded_zone = {};
+    zone_touch_result decoded_zone = {};
     assert(zone_touch_command_decode_payload(zone_command, &decoded_zone));
     assert(decoded_zone.participant_pids[2] == 44);
     std::array<uint8_t, ZONE_TOUCH_RESULT_BYTES> zone_bytes = {};
@@ -89,7 +89,7 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", f"-I{SRC}",
                 str(harness), str(SRC / "critical_command.c"),
                 str(SRC / "boon_reward_command.c"), str(SRC / "boon_shop_command.c"),
-                str(SRC / "zone_touch_command.c"),
+                str(SRC / "zone_touch_command.c"), str(SRC / "epic_command.c"),
                 "-lcrypto", "-o", str(binary),
             ], check=True)
             subprocess.run([str(binary)], check=True)

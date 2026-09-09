@@ -1,5 +1,6 @@
 """Contracts for the repository-level build and regression harness."""
 
+import importlib.util
 import os
 import re
 import subprocess
@@ -36,6 +37,29 @@ assert "tests/run_regression_tests.py" in makefile
 assert "tests/async/run_signal_handlers.sh" in makefile
 assert re.search(r"^test-all:\s*build\s*$", makefile, re.MULTILINE)
 assert "$(MAKE) test" in makefile
+
+runner_spec = importlib.util.spec_from_file_location("duris_regression_runner", RUNNER)
+assert runner_spec is not None and runner_spec.loader is not None
+runner = importlib.util.module_from_spec(runner_spec)
+sys.modules[runner_spec.name] = runner
+runner_spec.loader.exec_module(runner)
+expected_resource_intensive = {
+    "test_account_recovery_journey.py",
+    "test_flatfile_boot_preflight.py",
+    "test_flatfile_chaos_new_character_kit.py",
+    "test_flatfile_combat_journey.py",
+    "test_flatfile_full_world_boot.py",
+    "test_item_movement_prompt_runtime.py",
+}
+assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
+sample_tests = [
+    Path("test_fast.py"),
+    Path("test_flatfile_combat_journey.py"),
+    Path("test_account_recovery_journey.py"),
+]
+parallel_tests, resource_intensive_tests = runner.partition_tests(sample_tests)
+assert parallel_tests == [Path("test_fast.py")]
+assert resource_intensive_tests == sample_tests[1:]
 
 editor_makefile = (ROOT / "areas" / "de" / "src" / "Makefile").read_text()
 assert re.search(r"^CXX_STANDARD\s*=\s*-std=c\+\+20$", editor_makefile, re.MULTILINE)
@@ -81,6 +105,11 @@ assert "TEST_MATCH" in testing_doc
 
 for wrapper in (ROOT / "tests" / "async").glob("run_*.sh"):
     assert os.access(wrapper, os.X_OK), f"test wrapper is not executable: {wrapper.name}"
+    source = wrapper.read_text()
+    if "docker rm -f" in source:
+        assert "docker run --rm -d" not in source, (
+            f"{wrapper.name} races Docker auto-removal against its cleanup trap"
+        )
 
 for script in ("m_slow", "m_quick", "make_all", "moveall", "make_lookup"):
     lines = (ROOT / "areas" / script).read_text().splitlines()

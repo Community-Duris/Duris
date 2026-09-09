@@ -3300,11 +3300,11 @@ int move_cost(P_char ch, int dir)
 
 	int sector_idx_a = (int)world[ch->in_room].sector_type;
 	int sector_idx_b = (int)world[world[ch->in_room].dir_option[dir]->to_room].sector_type;
-	int num_sectors = 12;
+	int num_sectors = NUM_SECT_TYPES;
 	if (sector_idx_a < 0 || sector_idx_a >= num_sectors)
-		sector_idx_a = 3; /* SECT_FIELD */
+		sector_idx_a = SECT_FIELD;
 	if (sector_idx_b < 0 || sector_idx_b >= num_sectors)
-		sector_idx_b = 3;
+		sector_idx_b = SECT_FIELD;
 	a = movement_loss[sector_idx_a];
 	b = movement_loss[sector_idx_b];
 
@@ -6142,6 +6142,26 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
 }
 
 /*
+ * How deep we are inside an area spell's victim loop.
+ *
+ * spell_damage() and its modifier predicates are handed a caster, a victim and
+ * a damage type, but never the spell, so nothing downstream can ask whether the
+ * damage it is scaling came from an area spell. This is the one chokepoint every
+ * area damage spell passes through -- thirty-odd in magic.c and the two dragon
+ * breaths in mobact.c -- so the loop below records the fact for them.
+ *
+ * A counter rather than a flag because an area spell can land damage that casts
+ * again: a deflected bolt re-enters with a different caster, and the reflected
+ * damage is not itself an area cast at its own level.
+ */
+static int area_cast_depth = 0;
+
+bool area_cast_in_progress(void)
+{
+	return area_cast_depth > 0;
+}
+
+/*
  * Used by damage area spells
  */
 int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),
@@ -6255,7 +6275,22 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 				continue;
 			}
 		}
-		spell_func(level, ch, (char *)&hit, 0, area_target, NULL);
+		/* A guard, not a bare ++/--. The counter is global, and the pair
+		 * is the whole of what keeps a single-target spell from being
+		 * paid at area rates. One non-local exit out of spell_func()
+		 * would leave it standing above zero for the rest of the boot
+		 * and quietly hand the +20% to every NPC spell cast afterwards;
+		 * a destructor cannot be skipped. */
+		{
+			struct area_cast_guard
+			{
+				area_cast_guard() { area_cast_depth++; }
+				~area_cast_guard() { area_cast_depth--; }
+			} depth_guard;
+
+			spell_func(level, ch, (char *)&hit, 0, area_target, NULL);
+		}
+
 		hit++;
 	}
 
@@ -6356,11 +6391,15 @@ void hummer(P_obj obj)
 
 bool grouped(P_char ch, P_char ch2)
 {
+	if (!ch || !ch2)
+		return false;
+
 	if (ch->group && ch->group == ch2->group)
 		return true;
 
-	if (SET_BIT(ch->specials.act, ACT_GUILD_GOLEM) ||
-	    SET_BIT(ch2->specials.act, ACT_GUILD_GOLEM))
+	// Players share this bit with PLR_AFK; only NPCs can be guild golems.
+	if ((IS_NPC(ch) && IS_SET(ch->specials.act, ACT_GUILD_GOLEM)) ||
+	    (IS_NPC(ch2) && IS_SET(ch2->specials.act, ACT_GUILD_GOLEM)))
 	{
 		if (ch->player.racewar == ch2->player.racewar)
 			return true;

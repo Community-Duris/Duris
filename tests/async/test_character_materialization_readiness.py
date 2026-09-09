@@ -212,6 +212,16 @@ class CharacterMaterializationReadinessTest(unittest.TestCase):
         with self.assertRaisesRegex(readiness.ReadinessError, "require TLS"):
             readiness.connection_arguments(config)
 
+    def test_loopback_transport_uses_client_compatible_ssl_option(self):
+        """Delegate local SSL option selection to the shared client probe."""
+        config = {"DB_HOST": "127.0.0.1", "DB_PORT": "3306"}
+        with mock.patch.object(
+                readiness, "preferred_mysql_ssl_arguments",
+                return_value=("--ssl-mode=PREFERRED",)):
+            arguments = readiness.connection_arguments(config)
+        self.assertIn("--ssl-mode=PREFERRED", arguments)
+        self.assertNotIn("--skip-ssl", arguments)
+
     def test_area_file_names_supports_strict_mobile_manifests(self):
         """Share manifest parsing while making missing mobile files fatal."""
         with tempfile.TemporaryDirectory() as temporary:

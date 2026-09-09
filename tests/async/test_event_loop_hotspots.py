@@ -16,6 +16,8 @@ Verifies:
    visited once per full period.
 2. The mob sanity check still runs on every pass.
 3. sql_trace_enabled() only turns tracing on when the environment asks for it.
+4. A redundant drain after a legacy caller consumed its result does not enable a
+   production trace burst for MySQL's commands-out-of-sync diagnostic.
 """
 
 from _paths import SRC
@@ -78,6 +80,14 @@ if m:
     ))
 else:
     checks.append(("sql_trace_enabled present", False))
+
+checks.append((
+    "already-consumed MySQL results do not enable a trace burst",
+    contains(sql, "mysql_errno(conn) == CR_COMMANDS_OUT_OF_SYNC") and
+    contains(sql, 'sql_trace_log_drain(conn, "clear/already_consumed", false)') and
+    sql.index("mysql_errno(conn) == CR_COMMANDS_OUT_OF_SYNC") <
+    sql.index('sql_trace_log_drain(conn, "clear/error", true)')
+))
 
 failed = [name for name, ok in checks if not ok]
 for name, ok in checks:

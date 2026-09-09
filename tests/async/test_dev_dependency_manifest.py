@@ -34,10 +34,11 @@ for package in (
         f"{package} is not a direct developer dependency"
     )
 
-# The runtime test harness calls mariadb_config directly and the server Makefile
-# uses the compatible /usr/include/mysql path, so install both through compat.
-assert re.search(r"(^|[,|])\s*libmariadb-dev-compat\s*(?=[,|]|$)", depends), (
-    "libmariadb-dev-compat is required for MariaDB tooling and include paths"
+# The runtime harnesses call mysql_config directly. Preserve an installed MySQL
+# development family while allowing MariaDB's compatibility package to provide
+# the same command and include layout.
+assert "default-libmysqlclient-dev | libmariadb-dev-compat" in depends, (
+    "missing MySQL/MariaDB development package alternatives"
 )
 
 # Preserve an already-installed database family for the client and server
