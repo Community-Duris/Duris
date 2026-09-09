@@ -13,9 +13,13 @@ from _paths import ROOT, extract_function, rel
 
 PRELUDE = r'''
 #include "core/utils.h"
+#include "core/prototypes.h"
+#include "classes/necromancy.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_codec.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -61,6 +65,10 @@ P_char find_player_by_pid(int pid)
 void obj_to_char(P_obj obj, P_char ch)
 {
     assert(OBJ_NOWHERE(obj));
+    // Execute the production publication guard; only the world-list mutation
+    // below is a fixture. This catches flags bypassing the real grant boundary.
+    P_obj object = obj;
+    PUBLICATION_GUARD
     item_ownership_runtime_entry row{};
     assert(item_ownership_runtime_lookup(obj->obj_uid, &row));
     assert(row.owner.type == item_owner_type::player && row.owner.id == (uint64_t)GET_PID(ch));
@@ -176,6 +184,80 @@ static void deliver(const critical_completion &completion)
 }
 int main()
 {
+    // Transient is not no-rent: the normal publication boundary must grant
+    // custody before exposing armor, shields, or transient containers.
+    for (int type : {ITEM_ARMOR, ITEM_SHIELD, ITEM_CONTAINER})
+    {
+        fixture f;
+        f.bag.type = type;
+        f.bag.extra_flags = ITEM_TRANSIENT;
+        f.food.type = ITEM_WEAPON;
+        f.extra.type = ITEM_ARMOR;
+        f.extra.extra_flags = ITEM_TRANSIENT | ITEM_NORENT;
+        obj_to_char(&f.bag, &f.actor);
+        obj_to_char(&f.food, &f.actor);
+        obj_to_char(&f.extra, &f.actor);
+        assert(publications.empty() && f.actor.carrying == nullptr);
+        assert(OBJ_NOWHERE(&f.bag) && submitted.size() == 1);
+        assert(item_creation_grant_mark_blocking(&f.actor));
+        while (!submitted.empty())
+        {
+            item_transfer_payload payload{};
+            assert(item_transfer_command_decode_payload(submitted.front(), &payload));
+            std::vector<player_item_snapshot> captured;
+            assert(player_item_snapshot_list_decode(payload.item_blob.data(),
+                payload.item_blob_size, &captured) == player_snapshot_codec_result::ok);
+            assert(captured.size() == 1);
+            if (captured[0].object_uid == f.bag.obj_uid)
+                assert(captured[0].extra_flags == ITEM_TRANSIENT);
+            const auto completed = next_completion(critical_apply_outcome::applied);
+            deliver(completed); deliver(completed);
+        }
+        assert(publications[100] == 1 && publications[101] == 1 && publications[102] == 1);
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        assert(f.bag.extra_flags == ITEM_TRANSIENT);
+        // Capture a worn transient and a carried weapon, with an independently
+        // no-rent transient present. Only no-rent is filtered from the save.
+        obj_from_char(&f.bag);
+        f.bag.loc_p = LOC_WORN;
+        f.bag.loc.wearing = &f.actor;
+        f.actor.equipment[0] = &f.bag;
+        std::vector<player_item_snapshot> saved, decoded;
+        assert(player_item_snapshot_list_capture(&f.actor, true, true, true, &saved, nullptr) ==
+               player_snapshot_capture_result::ok);
+        assert(saved.size() == 2 && saved[0].object_uid == 100);
+        assert(saved[0].extra_flags == ITEM_TRANSIENT && saved[0].equipment_slot == 1);
+        assert(saved[1].object_uid == 101 && saved[1].equipment_slot == 0);
+        std::vector<uint8_t> bytes;
+        assert(player_item_snapshot_list_encode(saved, &bytes) == player_snapshot_codec_result::ok);
+        assert(player_item_snapshot_list_decode(bytes.data(), bytes.size(), &decoded) ==
+               player_snapshot_codec_result::ok);
+        assert(decoded.size() == 2 && decoded[0].object_uid == 100);
+        assert(decoded[0].extra_flags == ITEM_TRANSIENT && decoded[0].equipment_slot == 1);
+        for (const auto &item : decoded)
+        {
+            item_ownership_runtime_entry row{};
+            assert(item_ownership_runtime_lookup(item.object_uid, &row));
+            assert(row.owner.id == 42 && row.state == item_custody_state::active);
+        }
+    }
+    // A failed transient grant never publishes the object. A refused queue
+    // submission and a failed commit both clean up once at the existing boundary.
+    for (bool refuse_submission : {false, true})
+    {
+        fixture f;
+        f.bag.extra_flags = ITEM_TRANSIENT;
+        if (refuse_submission) submit_result = critical_submit_result::unavailable;
+        obj_to_char(&f.bag, &f.actor);
+        if (!refuse_submission)
+        {
+            const auto failed = next_completion(critical_apply_outcome::terminal_failure);
+            deliver(failed); deliver(failed);
+        }
+        assert(publications.empty() && f.actor.carrying == nullptr);
+        assert(extractions[100] == 1 && submitted.empty());
+        assert(!item_movement_transaction_player_busy(&f.actor));
+    }
     // A held grant does not publish early or hold an unrelated player's dispatch.
     // After disconnect, publish to the retained character and continue its queue.
     {
@@ -276,7 +358,10 @@ int main()
 
 
 def main() -> int:
-    harness = "\n".join([PRELUDE, extract_function(
+    to_char = extract_function("handler.c", "void obj_to_char(")
+    guard = to_char[to_char.index("// A persisted generic item"):
+                    to_char.index("if (ch->carrying &&")]
+    harness = "\n".join([PRELUDE.replace("PUBLICATION_GUARD", guard), extract_function(
         "comm.c", "static void dispatch_playing_command(P_char character, char *input)"), DRIVER])
     with tempfile.TemporaryDirectory() as directory:
         source = Path(directory) / "newbie_grant_lifecycle.cpp"
