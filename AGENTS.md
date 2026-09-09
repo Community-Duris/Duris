@@ -8,7 +8,6 @@
 - Keep all project documentation in `docs/` where practical.
 - Read `README.md` for setup, runtime, and database details.
 - `.env` indicates whether this is local/dev or production/remote, and holds the DB credentials.
-- Use `scripts/start_mud.sh` to start/run the game.
 - An in-game account is set up for testing, with credentials in `.env`: `GAME_ACCOUNT_NAME`, `GAME_ACCOUNT_PASSWORD`, `GAME_ACCOUNT_CHARACTER_NAME`.
 
 ## Working conventions
