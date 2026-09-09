@@ -22,7 +22,7 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 chmod 700 "$temporary_root"
-docker run --rm -d --name "$container_name" -p 127.0.0.1::3306 \
+docker run -d --name "$container_name" -p 127.0.0.1::3306 \
 	-e "$root_password_environment=$password" "$image" >/dev/null
 mapping="$(docker port "$container_name" 3306/tcp)"
 db_port="${mapping##*:}"

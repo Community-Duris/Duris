@@ -56,6 +56,21 @@ int main()
     if (!ws_auth_rate_limited(&window, &attempts, 5, 60)) return 7;
     ws_auth_reset(&window, &attempts);
     if (window || attempts) return 8;
+
+    setenv("ENVIRONMENT", "production", 1);
+    unsetenv("DURISWEB_SECRET_PREVIOUS");
+    setenv("DURISWEB_SECRET", "put-secret-here", 1);
+    sign_for("put-secret-here", challenge, signature);
+    if (ws_verify_durisweb_signature(signature, challenge, expires)) return 9;
+    setenv("DURISWEB_SECRET", "0123456789abcdef0123456789abcde", 1);
+    sign_for("0123456789abcdef0123456789abcde", challenge, signature);
+    if (ws_verify_durisweb_signature(signature, challenge, expires)) return 10;
+    setenv("DURISWEB_SECRET", "0123456789abcdef0123456789abcdef", 1);
+    sign_for("0123456789abcdef0123456789abcdef", challenge, signature);
+    if (!ws_verify_durisweb_signature(signature, challenge, expires)) return 11;
+    setenv("DURISWEB_SECRET_PREVIOUS", "put-secret-here", 1);
+    sign_for("put-secret-here", challenge, signature);
+    if (ws_verify_durisweb_signature(signature, challenge, expires)) return 12;
     return 0;
 }
 '''

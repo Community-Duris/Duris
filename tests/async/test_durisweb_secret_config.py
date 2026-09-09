@@ -12,6 +12,7 @@ SQL = (SRC / "sql.c").read_text()
 ENV_FILE = (SRC / "env_file.c").read_text()
 COMM = (SRC / "comm.c").read_text()
 EXAMPLE = (ROOT / ".env.example").read_text()
+CYCLE = (ROOT / "scripts/cycle_mud.sh").read_text()
 
 
 for source in (WS, GMCP, AUTH):
@@ -25,6 +26,10 @@ assert "char expected[65];" in AUTH
 assert "expected[64] = '\\0';" in AUTH
 assert "CRYPTO_memcmp(sig, expected, 64)" in AUTH
 assert 'getenv("DURISWEB_SECRET_PREVIOUS")' in AUTH
+assert "ws_durisweb_secret_usable" in AUTH
+assert 'strcmp(environment, "production")' in AUTH
+assert 'strlen(secret) < 32' in AUTH
+assert 'strcmp(secret, "put-secret-here")' in AUTH
 assert "RAND_bytes" in AUTH
 assert '"%ld:%s", minute, challenge' in AUTH
 
@@ -34,5 +39,8 @@ assert "DURISWEB_SECRET=put-secret-here" in EXAMPLE
 assert 'open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW)' in ENV_FILE
 assert ".env.example" not in ENV_FILE
 assert "if (load_env_file() < 0)" in COMM
+assert '[[ ${#DURISWEB_SECRET} -lt 32' in CYCLE
+assert '"${DURISWEB_SECRET:-}" == "put-secret-here"' in CYCLE
+assert '[[ ${#DURISWEB_SECRET_PREVIOUS} -lt 32' in CYCLE
 
 print("DurisWeb secret configuration contracts passed")

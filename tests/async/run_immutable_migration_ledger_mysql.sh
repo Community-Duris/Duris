@@ -6,7 +6,7 @@ PASSWORD=$(printf 'migration-ledger-%s-%s' "$$" "$RANDOM")
 DB_NAME="migration_ledger_test"
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
-docker run --rm -d --name "$NAME" -e MYSQL_ROOT_PASSWORD="$PASSWORD" mysql:8.0 >/dev/null
+docker run -d --name "$NAME" -e MYSQL_ROOT_PASSWORD="$PASSWORD" mysql:8.0 >/dev/null
 for _ in $(seq 1 60); do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1 && break
     sleep 1

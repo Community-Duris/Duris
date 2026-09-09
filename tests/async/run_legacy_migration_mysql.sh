@@ -16,23 +16,32 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 chmod 600 "$CONFIG"
-docker run --rm -d --name "$NAME" -p 127.0.0.1::3306 \
+if mysql --help 2>&1 | grep -q -- '--ssl-mode'; then
+    MYSQL_SSL=(--ssl-mode=PREFERRED)
+else
+    MYSQL_SSL=(--skip-ssl)
+fi
+docker run -d --name "$NAME" -p 127.0.0.1::3306 \
     -e MYSQL_ROOT_PASSWORD="$PASSWORD" "$DB_IMAGE" >/dev/null
 mapping=$(docker port "$NAME" 3306/tcp)
 DB_PORT=${mapping##*:}
 
 ready=0
 for _ in $(seq 1 90); do
-    if MYSQL_PWD="$PASSWORD" mysql --skip-ssl -h127.0.0.1 -P"$DB_PORT" \
+    if MYSQL_PWD="$PASSWORD" mysql "${MYSQL_SSL[@]}" -h127.0.0.1 -P"$DB_PORT" \
         -uroot -N -B -e 'SELECT 1' >/dev/null 2>&1; then
         ready=1
         break
     fi
     sleep 1
 done
-[[ "$ready" == 1 ]]
+if [[ "$ready" != 1 ]]; then
+    echo "isolated legacy-migration database did not become reachable" >&2
+    docker logs "$NAME" >&2 || true
+    exit 1
+fi
 
-MYSQL=(mysql --skip-ssl -h127.0.0.1 -P"$DB_PORT" -uroot)
+MYSQL=(mysql "${MYSQL_SSL[@]}" -h127.0.0.1 -P"$DB_PORT" -uroot)
 MYSQL_PWD="$PASSWORD" "${MYSQL[@]}" -e "
 CREATE DATABASE $MIGRATED_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE $BOOTSTRAP_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"

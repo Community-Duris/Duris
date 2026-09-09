@@ -79,6 +79,29 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     if rejected.returncode == 0 or "require ENVIRONMENT=local" not in rejected.stdout:
         raise AssertionError("development launcher accepted a production environment")
 
+    production_check_env = dict(flat_env)
+    production_check_env.update(
+        {
+            "ENVIRONMENT": "production",
+            "DURISWEB_SECRET": "0123456789abcdef0123456789abcdef",
+        }
+    )
+    checked = run(script, production_check_env, "--production", "--check-config")
+    if checked.returncode != 0 or "database-independent configuration" not in checked.stdout:
+        raise AssertionError("valid production secret was rejected:\n" + checked.stdout)
+
+    placeholder_secret_env = dict(production_check_env)
+    placeholder_secret_env["DURISWEB_SECRET"] = "put-secret-here"
+    rejected = run(script, placeholder_secret_env, "--production", "--check-config")
+    if rejected.returncode == 0 or "must not use the example placeholder" not in rejected.stdout:
+        raise AssertionError("production launcher accepted the public example secret")
+
+    short_previous_secret_env = dict(production_check_env)
+    short_previous_secret_env["DURISWEB_SECRET_PREVIOUS"] = "short-old-key"
+    rejected = run(script, short_previous_secret_env, "--production", "--check-config")
+    if rejected.returncode == 0 or "must be empty" not in rejected.stdout:
+        raise AssertionError("production launcher accepted a weak previous secret")
+
     missing_root = dict(flat_env)
     del missing_root["FLATFILE_STATE_DIR"]
     rejected = run(script, missing_root, "--check-config")

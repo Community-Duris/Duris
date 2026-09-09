@@ -75,10 +75,15 @@ for option in (
     "MYSQL_OPT_CONNECT_TIMEOUT",
     "MYSQL_OPT_READ_TIMEOUT",
     "MYSQL_OPT_WRITE_TIMEOUT",
-    "MYSQL_OPT_RECONNECT",
     "MYSQL_SET_CHARSET_NAME",
 ):
     assert option in constructor
+reconnect_guard = constructor.split(
+    "#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)", 1
+)[1].split("#endif", 1)[0]
+assert "MYSQL_OPT_RECONNECT" in reconnect_guard
+assert constructor.count("mysql_options(conn, MYSQL_OPT_RECONNECT") == 1
+assert "MySQL defaults automatic reconnect off" in constructor
 for option in (
     "MYSQL_OPT_SSL_ENFORCE",
     "MYSQL_OPT_SSL_VERIFY_SERVER_CERT",
@@ -88,7 +93,7 @@ for option in (
 ):
     assert option in constructor
 assert "DB_TLS" in runtime and "DB_SSL_CA" in runtime
-print("[PASS] database connection deadlines and verified remote TLS are canonical")
+print("[PASS] connection deadlines, reconnect policy, and verified remote TLS are canonical")
 
 session = section(sql, "static bool sql_apply_session_contract", "MYSQL *sql_open_configured_connection")
 verify = section(sql, "static bool sql_verify_session_contract", "static bool sql_apply_session_contract")

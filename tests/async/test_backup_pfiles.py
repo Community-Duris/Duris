@@ -17,7 +17,12 @@ def write_executable(path: Path, text: str) -> None:
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
 
 
-def run_backup(base: Path, mode: str, fail_gzip: bool = False) -> subprocess.CompletedProcess[str]:
+def run_backup(
+    base: Path,
+    mode: str,
+    fail_gzip: bool = False,
+    advertise_no_tablespaces: bool = False,
+) -> subprocess.CompletedProcess[str]:
     base.mkdir()
     env_file = base / "backup.env"
     env_file.write_text(
@@ -47,6 +52,9 @@ def run_backup(base: Path, mode: str, fail_gzip: bool = False) -> subprocess.Com
         "supported=' --user --single-transaction --quick --hex-blob"
         " --protocol --socket --host --port --ssl-ca --ssl-verify-server-cert"
         " --databases '\n"
+        "if [[ \"${ADVERTISE_NO_TABLESPACES:-0}\" == 1 ]]; then\n"
+        "  supported+='--no-tablespaces '\n"
+        "fi\n"
         "for arg; do\n"
         "  case \"$arg\" in\n"
         "    --help) printf '%s\\n' $supported; exit 0 ;;\n"
@@ -57,6 +65,12 @@ def run_backup(base: Path, mode: str, fail_gzip: bool = False) -> subprocess.Com
         "      esac ;;\n"
         "  esac\n"
         "done\n"
+        "if [[ \"${ADVERTISE_NO_TABLESPACES:-0}\" == 1 ]]; then\n"
+        "  case \" $* \" in\n"
+        "    *' --no-tablespaces '*) ;;\n"
+        "    *) echo 'mysqldump: expected --no-tablespaces' >&2; exit 8 ;;\n"
+        "  esac\n"
+        "fi\n"
         "case \"${DUMP_MODE:?}\" in\n"
         "  success)\n"
         "    printf '%s\\n' 'CREATE TABLE `accounts` (' 'CREATE TABLE `player_data` (' 'CREATE TABLE `ships` ('\n"
@@ -75,6 +89,7 @@ def run_backup(base: Path, mode: str, fail_gzip: bool = False) -> subprocess.Com
             "BACKUP_ENV_FILE": str(env_file),
             "DATABASE_BACKUP_DIR": str(backup_dir),
             "DUMP_MODE": mode,
+            "ADVERTISE_NO_TABLESPACES": "1" if advertise_no_tablespaces else "0",
             "PATH": f"{stubs}:/usr/bin:/bin",
         }
     )
@@ -102,6 +117,12 @@ with tempfile.TemporaryDirectory(prefix="duris-backup-test-") as temp:
     assert "CREATE TABLE `player_data`" in dump
     assert "CREATE TABLE `ships`" in dump
     assert not list((base / "success" / "backups").glob("*.tmp.*"))
+
+    mysql_success = run_backup(
+        base / "mysql-success", "success", advertise_no_tablespaces=True
+    )
+    assert mysql_success.returncode == 0, mysql_success.stdout
+    assert len(list((base / "mysql-success" / "backups").glob("*.sql.gz"))) == 1
 
     for case, mode, fail_gzip in (
         ("dump-failure", "failure", False),

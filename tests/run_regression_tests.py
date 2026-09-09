@@ -16,6 +16,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TEST_DIRECTORY = ROOT / "tests" / "async"
 MAX_AUTOMATIC_JOBS = 8
+RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
+    {
+        "test_account_recovery_journey.py",
+        "test_flatfile_boot_preflight.py",
+        "test_flatfile_chaos_new_character_kit.py",
+        "test_flatfile_combat_journey.py",
+        "test_flatfile_full_world_boot.py",
+        "test_item_movement_prompt_runtime.py",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -35,6 +45,12 @@ def discover_tests(match: str | None) -> list[Path]:
 
 def automatic_jobs() -> int:
     return min(MAX_AUTOMATIC_JOBS, max(1, os.cpu_count() or 1))
+
+
+def partition_tests(tests: list[Path]) -> tuple[list[Path], list[Path]]:
+    parallel = [path for path in tests if path.name not in RESOURCE_INTENSIVE_TEST_NAMES]
+    resource_intensive = [path for path in tests if path.name in RESOURCE_INTENSIVE_TEST_NAMES]
+    return parallel, resource_intensive
 
 
 def run_test(path: Path) -> TestResult:
@@ -99,24 +115,36 @@ def main() -> int:
         return 2
 
     jobs = args.jobs or automatic_jobs()
+    parallel_tests, resource_intensive_tests = partition_tests(tests)
     started = time.monotonic()
     failures: list[TestResult] = []
-    print(f"Running {len(tests)} Python regression tests with {jobs} worker(s)")
+    completed_count = 0
+    print(
+        f"Running {len(tests)} Python regression tests with {jobs} worker(s); "
+        f"serializing {len(resource_intensive_tests)} resource-intensive test(s)"
+    )
+
+    def report(result: TestResult) -> None:
+        nonlocal completed_count
+        completed_count += 1
+        status = "PASS" if result.returncode == 0 else "FAIL"
+        print(
+            f"[{completed_count:>{len(str(len(tests)))}}/{len(tests)}] "
+            f"{status} {relative(result.path)} ({result.elapsed:.2f}s)",
+            flush=True,
+        )
+        if result.returncode != 0:
+            failures.append(result)
 
     with ThreadPoolExecutor(max_workers=jobs) as executor:
         pending: dict[Future[TestResult], Path] = {
-            executor.submit(run_test, path): path for path in tests
+            executor.submit(run_test, path): path for path in parallel_tests
         }
-        for completed_count, future in enumerate(as_completed(pending), start=1):
-            result = future.result()
-            status = "PASS" if result.returncode == 0 else "FAIL"
-            print(
-                f"[{completed_count:>{len(str(len(tests)))}}/{len(tests)}] "
-                f"{status} {relative(result.path)} ({result.elapsed:.2f}s)",
-                flush=True,
-            )
-            if result.returncode != 0:
-                failures.append(result)
+        for future in as_completed(pending):
+            report(future.result())
+
+    for path in resource_intensive_tests:
+        report(run_test(path))
 
     for result in failures:
         print(f"\n--- {relative(result.path)} output ---")
