@@ -215,7 +215,6 @@ extern struct sector_data *sector_table;
 extern const struct racial_data_type racial_data[LAST_RACE + 1];
 void interaction_to_new_wrapper(P_char, P_char, char *);
 void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data);
-void register_func_call(void *func, double time);
 const char *get_function_name(void *func);
 void release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
 extern void event_mob_mundane(P_char, P_char, P_obj, void *);
@@ -1618,8 +1617,7 @@ void ne_events(void)
 			if (periodic_callback)
 				nevent_periodic_complete(current_nevent);
 			PROFILE_END(event_func);
-			PROFILE_REGISTER_CALL(callback_func,
-					      event_func_profile_end - event_func_profile_beg)
+			PROFILE_REGISTER_CALL(callback_func, PROFILE_LAST_US(event_func))
 #else
 			(callback_func)(current_nevent->ch, current_nevent->victim,
 					current_nevent->obj, current_nevent->data);
@@ -2637,23 +2635,20 @@ void show_world_events(P_char ch, const char *arg)
 PROFILES(DEFINE);
 bool do_profile = FALSE;
 
-void save_profile_data(const char *name, double total_inside, double total_outside, unsigned total)
+void save_profile_data(const char *name, uint64_t total_inside_us, uint64_t total_outside_us,
+		       unsigned total)
 {
+	const double average_us = total ? (double)total_inside_us / (double)total : 0.0;
+	const double elapsed_us = (double)total_inside_us + (double)total_outside_us;
+	const double share = elapsed_us > 0.0 ? (double)total_inside_us / elapsed_us * 100.0 : 0.0;
 	logit(LOG_FILE,
-	      "Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
-	      name, total_inside, total_outside, total,
-	      (total != 0) ? (total_inside / (double)total) : 0,
-	      (total_inside + total_outside != 0) ?
-		      (total_inside / (total_inside + total_outside) * 100.0) :
-		      0);
-	statuslog(
-		56,
-		"Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
-		name, total_inside, total_outside, total,
-		(total != 0) ? (total_inside / (double)total) : 0,
-		(total_inside + total_outside != 0) ?
-			(total_inside / (total_inside + total_outside) * 100.0) :
-			0);
+	      "Profile info for \"%s\": inside_us=%" PRIu64 " outside_us=%" PRIu64
+	      " total_calls=%u average_us=%.0f share=%6.3f%%",
+	      name, total_inside_us, total_outside_us, total, average_us, share);
+	statuslog(56,
+		  "Profile info for \"%s\": inside_us=%" PRIu64 " outside_us=%" PRIu64
+		  " total_calls=%u average_us=%.0f share=%6.3f%%",
+		  name, total_inside_us, total_outside_us, total, average_us, share);
 }
 
 struct FuncCallInfo
@@ -2661,7 +2656,7 @@ struct FuncCallInfo
 	const char *name;
 	const void *addr;
 	unsigned calls;
-	double time;
+	uint64_t total_us;
 	FuncCallInfo *next;
 	FuncCallInfo *prev;
 };
@@ -2682,7 +2677,7 @@ void reset_func_call_info()
 	do
 	{
 		curr->calls = 0;
-		curr->time = 0;
+		curr->total_us = 0;
 		curr = curr->next;
 	} while (curr != func_call_info.data());
 }
@@ -2706,8 +2701,8 @@ void init_func_call_info()
 
 void save_func_call_info()
 {
-	unsigned total_calls = 0;
-	double total_time = 0;
+	uint64_t total_calls = 0;
+	uint64_t total_us = 0;
 
 	if (func_call_info.empty())
 		return;
@@ -2715,7 +2710,7 @@ void save_func_call_info()
 	do
 	{
 		total_calls += curr->calls;
-		total_time += curr->time;
+		total_us += curr->total_us;
 		curr = curr->next;
 	} while (curr != func_call_info.data());
 
@@ -2723,28 +2718,31 @@ void save_func_call_info()
 	do
 	{
 		logit(LOG_FILE,
-		      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
+		      "Profile info for function \"%-30s\": total_calls=%9u (%7.3f%%) total_us=%12" PRIu64
+		      " (%7.3f%%)",
 		      curr->name, curr->calls,
 		      (total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) : 0,
-		      curr->time / 1000.,
-		      (total_time != 0) ? (curr->time / total_time * 100.0) : 0);
+		      curr->total_us,
+		      (total_us != 0) ? ((double)curr->total_us / (double)total_us * 100.0) : 0);
 		statuslog(
 			56,
-			"Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
+			"Profile info for function \"%-30s\": total_calls=%9u (%7.3f%%) total_us=%12" PRIu64
+			" (%7.3f%%)",
 			curr->name, curr->calls,
 			(total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) :
 					     0,
-			curr->time / 1000.,
-			(total_time != 0) ? (curr->time / total_time * 100.0) : 0);
+			curr->total_us,
+			(total_us != 0) ? ((double)curr->total_us / (double)total_us * 100.0) : 0);
 		curr = curr->next;
 	} while (curr != func_call_info.data() && curr->calls != 0);
 
 	logit(LOG_FILE,
-	      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
-	      "TOTAL", total_calls, 100.0, total_time / 1000., 100.0);
+	      "Profile info for function \"%-30s\": total_calls=%9" PRIu64
+	      " (%7.3f%%) total_us=%12" PRIu64 " (%7.3f%%)",
+	      "TOTAL", total_calls, 100.0, total_us, 100.0);
 }
 
-void register_func_call(void *func, double time)
+void register_func_call(void *func, uint64_t duration_us)
 {
 	if (func_call_info.empty())
 		return;
@@ -2753,14 +2751,17 @@ void register_func_call(void *func, double time)
 	{
 		if (curr->addr == func)
 		{
-			double wallClockInSec = time / (double)CLOCKS_PER_SEC;
-			if (wallClockInSec > 0.05)
+			if (duration_us >= 50000)
 			{
-				statuslog(56, "LONG EVENT \"%-30s\": took %f seconds", curr->name,
-					  wallClockInSec);
+				statuslog(56,
+					  "LONG EVENT \"%-30s\": boot=%s tick=%" PRIu64
+					  " pulse_start_mono_us=%" PRIu64 " duration_us=%" PRIu64,
+					  curr->name, latency_trace_boot_id(),
+					  latency_trace_current_tick(),
+					  latency_trace_pulse_start_monotonic_us(), duration_us);
 			}
 			curr->calls++;
-			curr->time += time;
+			curr->total_us += duration_us;
 			FuncCallInfo *prev = curr->prev;
 			if (prev != unknown && curr->calls > prev->calls)
 			{
@@ -2777,7 +2778,7 @@ void register_func_call(void *func, double time)
 		}
 	}
 	unknown->calls++;
-	unknown->time += time;
+	unknown->total_us += duration_us;
 }
 
 #endif

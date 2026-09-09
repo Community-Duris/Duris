@@ -2,7 +2,8 @@
 
 Status: implementation in progress. The bounded trace-window work in Step 4 is
 complete; the shared correlation foundation in Step 2 is complete, with final
-slow-operation join verification waiting on Step 1. Steps 1 and 3 remain.
+slow-operation join verification waiting on Step 1. Step 3 is complete; Step 1
+remains.
 
 Reviewed 2026-09-10 against `origin/master` at
 `c9266bf552dce23cdb2632a921b4b96a092168f7`.
@@ -37,6 +38,24 @@ empty windows, file-open fallback, exact top ten after more than 4096 records,
 and concurrent producers/snapshots with no summary-count loss or duplication.
 The maintained server build and relevant existing tests pass; commands and
 legacy profiler behavior are unchanged at this checkpoint.
+
+The second implementation increment replaces `clock_t` profiler state with a
+shared monotonic microsecond timer. All section and per-event accumulators,
+function signatures, saves, averages, and the 50 ms `LONG EVENT` threshold now
+use explicit microseconds. Failed or retrograde clock reads produce a zero
+duration rather than an underflow while preserving call counts. Enabling the
+debug profiler rebases timer endpoints without clearing accumulated results,
+so time spent while profiling is disabled does not enter the next outside-time
+sample. Existing scheduler callback/pass analytics were already monotonic and
+remain unchanged. `LONG EVENT` now carries the same boot/tick/pulse correlation
+fields as the other event diagnostics.
+
+A native ASan/UBSan regression drives the timer with a controlled monotonic
+clock through exact elapsed, outside, rebase, disabled, failed-read, and
+retrograde-read cases. A real-clock case sleeps while eight worker threads burn
+CPU and confirms the measured interval remains wall elapsed time. Source
+contracts verify explicit microsecond output and the inclusive 50,000 us event
+threshold.
 
 ## Verification and limits
 
@@ -265,3 +284,22 @@ The scheduler and latency runtime suites ran under ASan/UBSan. The build was a
 clean dependency-driven rebuild of the maintained MariaDB/development server.
 This checkpoint has not yet been smoke-tested in a running development server;
 that remains part of the final implementation validation.
+
+### Implementation checkpoint: monotonic legacy profiler
+
+Passed after the profiler increment:
+
+```bash
+python3 -B tests/async/test_profile_monotonic_runtime.py
+python3 -B tests/async/test_nevent_scheduler_runtime.py
+python3 -B tests/async/test_latency_trace_runtime.py
+python3 -B tests/async/test_tick_latency_instrumentation.py
+./scripts/format.sh --check
+make -C src -j2
+git diff --check
+```
+
+The new profiler regression and the scheduler suite ran under ASan/UBSan. No
+runtime profiling session has been collected yet; final development smoke
+testing will exercise `debug profile on`, `save`, `reset`, and `off` through the
+configured test character after Step 1 is complete.
