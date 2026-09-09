@@ -13,6 +13,12 @@ hears about it only when the wait passes DEATH_RECOVERY_STALL_SECONDS, and then
 once per stall window rather than once per poll, so a genuine stall is still
 visible without being a flood.
 
+The wait is measured against a MONOTONIC CLOCK, not against the number of retry
+callbacks that happened to run. ne_events() executes an entry whose tick is due
+or late, and a main loop held up by blocking work is exactly the condition the
+alert exists to expose; counting callbacks would report one second of waiting
+after a thirty-second stall and stay silent.
+
 Two reporting bugs went with it. The message was named for corpse items while
 its condition is equally true of a wallet conversion still in flight, sending
 readers to the wrong subsystem; and it printed a delay in PULSES that reads like
@@ -25,14 +31,15 @@ at AVATAR. This test fails if any of them is demoted along with the poll.
 """
 
 from pathlib import Path
+import re
 import subprocess
-import sys
 import tempfile
 
 from _paths import SRC
 from contract_text import contains, index
 
 fight = (SRC / "fight.c").read_text(encoding="utf-8", errors="replace")
+utility = (SRC / "utility.c").read_text(encoding="utf-8", errors="replace")
 
 
 def body(text, signature):
@@ -47,6 +54,46 @@ def body(text, signature):
             if depth == 0:
                 return text[start:offset + 1]
     raise AssertionError("unterminated function: " + signature)
+
+
+def call_arguments(text, offset):
+    """The argument list of the call whose name starts at `offset`, split at
+    top-level commas."""
+    opened = text.index("(", offset)
+    depth = 0
+    quoted = False
+    escaped = False
+    arguments = [""]
+    for index_ in range(opened, len(text)):
+        character = text[index_]
+        if escaped:
+            escaped = False
+            arguments[-1] += character
+            continue
+        if character == "\\":
+            escaped = True
+            arguments[-1] += character
+            continue
+        if character == '"':
+            quoted = not quoted
+            arguments[-1] += character
+            continue
+        if quoted:
+            arguments[-1] += character
+            continue
+        if character in "([":
+            depth += 1
+            if depth == 1:
+                continue
+        elif character in ")]":
+            depth -= 1
+            if depth == 0:
+                return [argument.strip() for argument in arguments]
+        elif character == "," and depth == 1:
+            arguments.append("")
+            continue
+        arguments[-1] += character
+    raise AssertionError("unterminated call at offset %d" % offset)
 
 
 # The prototype is not the definition: ask for the signature WITH its opening
@@ -66,29 +113,48 @@ assert contains(busy, "logit(LOG_DEBUG,"), (
 assert "outcome=expected" in busy, (
     "the logged wait must be marked expected so it is not read as a failure")
 assert contains(busy, "schedule_death_extract_retry(ch, context.corpse_uid, "
-                      "DEATH_EXTRACT_RETRY_INITIAL, polls)"), (
-    "the poll must keep polling at the steady interval and carry its count")
+                      "DEATH_EXTRACT_RETRY_INITIAL)"), (
+    "the poll must keep polling at the steady interval")
+
+# ------------------------------------------------------------------ #
+# The wait is a CLOCK, not a callback count                            #
+# ------------------------------------------------------------------ #
+assert contains(busy, "persistence_observability_now_usec()"), (
+    "the wait must be measured against the monotonic clock, because a late or "
+    "deferred callback is exactly the stall this alert exists to report")
+assert contains(busy, "ch->only.pc->death_custody_wait_since_usec"), (
+    "the wait's start must live on the player, so the fallback pulse -- which "
+    "rebuilds the event context from scratch -- sees the same clock")
+assert contains(busy, "const uint64_t waited_usec = now > since ? now - since : 0"),  (
+    "the elapsed wait must be derived from the clock and cannot go negative")
+assert contains(busy, "death_custody_wait_should_alert(waited_usec"), (
+    "the decision must be taken on elapsed microseconds")
+polls_at = index(busy, "const int polls =")
+assert "waited_sec" in busy and polls_at > index(busy, "waited_usec"), (
+    "polls is diagnostic metadata, derived after the measurement, never the "
+    "measurement itself")
+
+# Every path that leaves the wait must clear its clock, or the next handoff
+# inherits an elapsed time it never spent and alerts immediately.
+assert contains(retry, "death_custody_wait_reset(ch);"), (
+    "falling out of the wait must reset its clock")
+assert index(retry, "death_custody_wait_reset(ch);") > busy_end, (
+    "the reset belongs after the wait, not inside it")
+die = body(fight, "void die(P_char ch, P_char killer)\n{")
+assert contains(die, "death_custody_wait_reset(ch);"), (
+    "a new death must not inherit the previous wait's clock")
 
 # ------------------------------------------------------------------ #
 # A wait long enough to be suspicious still reaches the channel        #
 # ------------------------------------------------------------------ #
-assert "DEATH_RECOVERY_STALL_SECONDS" in busy, (
-    "escalation must be gated on the stall window, not on every poll")
 assert contains(busy, "persistence_alert(AVATAR"), (
     "a stalled custody handoff must still alert")
-escalation = index(busy, "DEATH_RECOVERY_STALL_SECONDS")
+assert contains(busy, "ch->only.pc->death_custody_wait_alerts++"), (
+    "each alert must be counted, or the stall re-alerts on every poll")
 alert = index(busy, "persistence_alert(AVATAR")
 debug = index(busy, "logit(LOG_DEBUG,")
-assert escalation < alert < debug, (
+assert index(busy, "death_custody_wait_should_alert") < alert < debug, (
     "the alert must be the gated branch and the log the fallback, not the reverse")
-
-# The gate itself, not merely a mention of the window. The native harness below
-# re-implements this expression to prove what it does; pinning the original is
-# what keeps that copy honest, because a lifted copy cannot notice the source
-# drifting away from it.
-assert contains(busy, "if (waited_sec / DEATH_RECOVERY_STALL_SECONDS > "
-                      "before_sec / DEATH_RECOVERY_STALL_SECONDS)"), (
-    "the alert must fire only on the poll that crosses into a new stall window")
 
 # ------------------------------------------------------------------ #
 # The message says which subsystem is busy, and how long in seconds    #
@@ -100,29 +166,6 @@ assert "death_recovery_awaiting_custody" in busy, (
     "can equally cause")
 assert "death_recovery_awaiting_corpse_items" not in fight, (
     "the misleading action name must be gone, not merely joined by a new one")
-
-# ------------------------------------------------------------------ #
-# persistence_alert renders NO detail unless every conversion is       #
-# numeric (persistence_alert_format_is_numeric in utility.c), so a %s  #
-# in a detail silently prints nothing at all.                          #
-# ------------------------------------------------------------------ #
-offset = 0
-while True:
-    offset = fight.find("persistence_alert(", offset)
-    if offset < 0:
-        break
-    depth = 0
-    for end in range(fight.index("(", offset), len(fight)):
-        if fight[end] == "(":
-            depth += 1
-        elif fight[end] == ")":
-            depth -= 1
-            if depth == 0:
-                break
-    call = fight[offset:end + 1]
-    assert "%s" not in call, (
-        "persistence_alert drops a detail containing %s: " + " ".join(call.split())[:120])
-    offset = end
 
 # ------------------------------------------------------------------ #
 # Real failures stay loud                                              #
@@ -140,49 +183,69 @@ for action in ("death_recovery_abandoned",
     assert opened >= 0 and "AVATAR" in fight[opened:where], (
         action + " must remain an AVATAR alert")
 
-print("[PASS] the routine custody poll is logged; stalls and failures still alert")
+print("[PASS] the wait is clocked and logged; stalls and failures still alert")
 
 # ------------------------------------------------------------------ #
-# The escalation arithmetic, run rather than read: one alert per stall #
-# window, and none at all for a drain that finishes inside one.        #
+# The escalation arithmetic, RUN -- and run as the production          #
+# function, compiled from the production source with the production    #
+# constant, so neither the formula nor the threshold can drift away    #
+# from what this test claims about them.                               #
 # ------------------------------------------------------------------ #
-HARNESS = r"""
+threshold = re.search(r"#define DEATH_RECOVERY_STALL_SECONDS\s+(\d+)", fight)
+assert threshold, "the stall window must be a named constant"
+STALL_SECONDS = int(threshold.group(1))
+assert STALL_SECONDS == 30, (
+    "the documented stall window is 30s; change this pin deliberately, not by "
+    "accident -- the PR and the operators' expectations both name it")
+
+decision = body(fight, "static bool death_custody_wait_should_alert(uint64_t waited_usec, "
+                       "int alerts)")
+
+HARNESS = """
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 
-#define WAIT_SEC 4
-#define DEATH_EXTRACT_RETRY_INITIAL 4
-#define DEATH_RECOVERY_STALL_SECONDS 30
+#define DEATH_RECOVERY_STALL_SECONDS %d
 
-// Lifted from event_death_extract_retry's busy branch.
-static bool alerts_on_poll(int previous_polls)
-{
-        const int polls = previous_polls + 1;
-        const int waited_sec = polls * DEATH_EXTRACT_RETRY_INITIAL / WAIT_SEC;
-        const int before_sec = previous_polls * DEATH_EXTRACT_RETRY_INITIAL / WAIT_SEC;
-        return waited_sec / DEATH_RECOVERY_STALL_SECONDS >
-               before_sec / DEATH_RECOVERY_STALL_SECONDS;
-}
+%s
 
 int main()
 {
-        // The reported flood: 13 polls for a 13-item corpse. Not one alert.
-        for (int poll = 0; poll < 13; ++poll)
-                assert(!alerts_on_poll(poll));
+        const uint64_t second = 1000000;
+        const uint64_t window = (uint64_t)DEATH_RECOVERY_STALL_SECONDS * second;
 
-        // A stall does not go unheard, and is not a flood either.
+        // The reported flood: a drain that finishes inside the window is silent
+        // however many polls it took, because polls are not the measure.
+        for (uint64_t elapsed = 0; elapsed < window; elapsed += second)
+                assert(!death_custody_wait_should_alert(elapsed, 0));
+
+        // The first alert lands exactly on the window, not before it.
+        assert(death_custody_wait_should_alert(window, 0));
+        assert(!death_custody_wait_should_alert(window - 1, 0));
+
+        // Having alerted once, the next is a whole window later: a stall stays
+        // visible without becoming the flood this branch was.
+        assert(!death_custody_wait_should_alert(window + second, 1));
+        assert(!death_custody_wait_should_alert(2 * window - 1, 1));
+        assert(death_custody_wait_should_alert(2 * window, 1));
+
+        // A stalled main loop that skipped every intervening poll still reports
+        // on the first callback that runs -- the whole point of a clock.
+        assert(death_custody_wait_should_alert(10 * window, 0));
+
+        // Five minutes of stall, sampled once a second, alerts once per window.
         int alerts = 0;
-        for (int poll = 0; poll < 300; ++poll)
-                if (alerts_on_poll(poll))
+        for (uint64_t elapsed = 0; elapsed <= 300 * second; elapsed += second)
+                if (death_custody_wait_should_alert(elapsed, alerts))
                         ++alerts;
-        const int seconds = 300 * DEATH_EXTRACT_RETRY_INITIAL / WAIT_SEC;
-        assert(alerts == seconds / DEATH_RECOVERY_STALL_SECONDS);
-        assert(alerts == 10);
+        assert(alerts == 300 / DEATH_RECOVERY_STALL_SECONDS);
 
-        printf("%d polls: 0 alerts under the window, %d over five minutes\n", 13, alerts);
+        printf("silent below %%ds; %%d alerts over five minutes\\n",
+               DEATH_RECOVERY_STALL_SECONDS, alerts);
         return 0;
 }
-"""
+""" % (STALL_SECONDS, decision)
 
 with tempfile.TemporaryDirectory(prefix="death-alert-level-") as directory:
     source = Path(directory) / "escalation.cpp"
@@ -192,4 +255,68 @@ with tempfile.TemporaryDirectory(prefix="death-alert-level-") as directory:
                    check=True)
     subprocess.run([str(binary)], check=True)
 
-print("[PASS] one alert per stall window, none for a drain that finishes inside one")
+print("[PASS] one alert per elapsed window, however the polls happen to fall")
+
+# ------------------------------------------------------------------ #
+# persistence_alert renders NO detail unless EVERY conversion is       #
+# numeric, and the compiler cannot help: the function carries no       #
+# printf format attribute. Run the real validator over every call's    #
+# real format rather than looking for one bad conversion by hand.      #
+# ------------------------------------------------------------------ #
+validator = body(utility, "static int persistence_alert_format_is_numeric(const char *format)")
+
+formats = []
+offset = 0
+while True:
+    offset = fight.find("persistence_alert(", offset)
+    if offset < 0:
+        break
+    arguments = call_arguments(fight, offset)
+    offset += len("persistence_alert(")
+    if len(arguments) < 7:
+        continue
+    detail = arguments[6]
+    pieces = re.findall(r'"((?:[^"\\]|\\.)*)"', detail)
+    assert pieces, (
+        "a persistence_alert detail that is not a literal cannot be checked "
+        "here: " + " ".join(detail.split())[:100])
+    formats.append("".join(pieces))
+
+assert len(formats) >= 15, "expected every persistence_alert in fight.c, found %d" % len(formats)
+
+CASES = "\n".join(
+    '        assert(persistence_alert_format_is_numeric("%s") == 1);' % text
+    for text in formats)
+
+VALIDATOR_HARNESS = """
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+
+%s
+
+int main()
+{
+%s
+
+        // The guard is only worth anything if it rejects what production
+        // rejects: these are the conversions that silently blank a detail.
+        assert(persistence_alert_format_is_numeric("subsystem=%%s") == 0);
+        assert(persistence_alert_format_is_numeric("delay=%%p") == 0);
+        assert(persistence_alert_format_is_numeric("who=%%c") == 0);
+        assert(persistence_alert_format_is_numeric("count=%%n") == 0);
+
+        printf("%d persistence_alert formats accepted by the real validator\\n");
+        return 0;
+}
+""" % (validator, CASES, len(formats))
+
+with tempfile.TemporaryDirectory(prefix="death-alert-format-") as directory:
+    source = Path(directory) / "formats.cpp"
+    binary = Path(directory) / "formats"
+    source.write_text(VALIDATOR_HARNESS)
+    subprocess.run(["g++", "-std=c++20", "-Wall", "-Werror", str(source), "-o", str(binary)],
+                   check=True)
+    subprocess.run([str(binary)], check=True)
+
+print("[PASS] every persistence_alert detail survives the real format validator")
