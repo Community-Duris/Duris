@@ -37,6 +37,7 @@
 #include "world/vnum.room.h"
 #include "world/weather.h"
 #include "world/world_quest.h"
+#include "world/world_quest_policy_math.h"
 
 /*
  * external variables
@@ -10967,6 +10968,12 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 		if (!isname(what, "quest") && !isname(arg, "q"))
 			return FALSE;
 
+		if (GET_LEVEL(pl) < WORLD_QUEST_MIN_LEVEL)
+		{
+			mobsay(ch, "You need to reach level 11 before taking world quests.");
+			return TRUE;
+		}
+
 		if (sql_world_quest_can_do_another(pl) < 1)
 		{
 			act("$n says, 'Sorry, I don't have any more quests for right now.'", TRUE,
@@ -11028,7 +11035,8 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 		SUB_MONEY(pl, temp, 0);
 		send_to_char("You hand over the money.\r\n", pl);
 
-		if (createQuest(pl, ch))
+		quest_creation_failure failure = QUEST_CREATION_NO_FAILURE;
+		if (createQuest(pl, ch, &failure))
 		{
 			do_quest(pl, writable_arg(""), 0);
 			mobsay(ch,
@@ -11037,7 +11045,17 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			return TRUE;
 		}
 
-		if (GET_LEVEL(pl) >= MAXLVLMORTAL)
+		if (failure == QUEST_CREATION_NO_ELIGIBLE_ZONE)
+		{
+			mobsay(ch,
+			       "Hmm, I can't find an eligible quest zone for you right now. Try one of my colleagues around the world.");
+		}
+		else if (failure == QUEST_CREATION_NO_ELIGIBLE_TARGET)
+		{
+			mobsay(ch,
+			       "Hmm, I found quest zones, but no suitable quest target is available right now. Try one of my colleagues around the world.");
+		}
+		else if (GET_LEVEL(pl) >= MAXLVLMORTAL)
 			mobsay(ch,
 			       "Hmm, I can't find a suitable quest for someone of your experience right now. Try one of my colleagues around the world.");
 		else
