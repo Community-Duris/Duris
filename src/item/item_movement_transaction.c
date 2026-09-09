@@ -42,6 +42,8 @@ struct pending_movement
 	size_t context_size;
 	bool completion_ready;
 	bool publication_failed;
+	bool creation_batch;
+	bool registry_applied;
 	critical_completion completed;
 };
 
@@ -66,9 +68,11 @@ struct creation_grant_queue
 	bool blocks_actor_commands = false;
 	bool announce_on_completion = false;
 	bool stop_on_failure = false;
+	bool publication_failed = false;
 };
 
 std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
+const item_owner_identity system_owner_identity = { item_owner_type::system, 0, 0 };
 
 std::string operation_key(const critical_operation_id &operation_id)
 {
@@ -269,6 +273,25 @@ item_owner_identity creation_grant_owner(const pending_creation_grant &request)
 		       item_owner_identity{ item_owner_type::player, request.recipient_pid, 0 };
 }
 
+bool creation_grant_conflicts(const pending_creation_grant &request)
+{
+	item_ownership_runtime_entry runtime = {};
+	const item_owner_identity source =
+		item_ownership_runtime_lookup(request.item_uid, &runtime) ? runtime.owner :
+									    system_owner_identity;
+	return movement_conflicts(source, creation_grant_owner(request));
+}
+
+bool creation_grant_tree_available(P_obj object)
+{
+	if (!object || find_item(object->obj_uid) != object)
+		return false;
+	for (P_obj child = object->contains; child; child = child->next_content)
+		if (!creation_grant_tree_available(child))
+			return false;
+	return true;
+}
+
 bool creation_grant_request_valid(const pending_creation_grant &request)
 {
 	P_obj object = find_item(request.item_uid);
@@ -327,7 +350,7 @@ void discard_creation_queue(P_char actor, creation_grant_queue &queue)
 	}
 }
 
-bool start_creation_grant(P_char actor, creation_grant_queue &queue);
+bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_movement_reject *reject);
 
 void pump_creation_grants()
 {
@@ -347,11 +370,13 @@ void pump_creation_grants()
 			creation_grants.erase(current);
 			continue;
 		}
-		const item_owner_identity owner = creation_grant_owner(request);
-		if (movement_conflicts(owner, owner))
+		if (creation_grant_conflicts(request))
 			continue;
-		if (!start_creation_grant(actor, queue))
+		item_movement_reject reject = item_movement_reject::none;
+		if (!start_creation_grant(actor, queue, &reject))
 		{
+			if (item_movement_reject_is_transient(reject))
+				continue;
 			discard_creation_queue(actor, queue);
 			creation_grants.erase(current);
 		}
@@ -480,8 +505,11 @@ void creation_grant_completion(P_char actor, bool committed, const item_transfer
 		creation_grants.erase(queue_found);
 		return;
 	}
-	const item_owner_identity owner = creation_grant_owner(next);
-	if (!movement_conflicts(owner, owner) && !start_creation_grant(actor, queue))
+	if (creation_grant_conflicts(next))
+		return;
+	item_movement_reject reject = item_movement_reject::none;
+	if (!start_creation_grant(actor, queue, &reject) &&
+	    !item_movement_reject_is_transient(reject))
 	{
 		discard_creation_queue(actor, queue);
 		creation_grants.erase(queue_found);
@@ -514,20 +542,45 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 	}
 
 	bool publication_failed = false;
-	size_t published = 0;
 	for (const pending_creation_grant &request : queue.requests)
 	{
 		P_obj object = find_item(request.item_uid);
-		if (!object || !OBJ_NOWHERE(object))
+		if (!object || !OBJ_NOWHERE(object) || !creation_grant_tree_available(object))
 		{
 			publication_failed = true;
 			logit(LOG_FILE,
 			      "item creation grant batch committed but live publication was stale "
 			      "(pid=%u uid=%llu)",
 			      actor_pid, (unsigned long long)request.item_uid);
-			continue;
 		}
-		obj_to_char(object, actor);
+	}
+	if (publication_failed)
+	{
+		// Keep the committed operation and its command hold so player_ready() can
+		// retry publication after the live object graph has been reconciled.
+		if (!queue.publication_failed)
+		{
+			queue.publication_failed = true;
+			statuslog(
+				56,
+				"&+RALERT&n: committed starter kit needs live publication repair (pid=%u)",
+				actor_pid);
+			persistence_alert(AVATAR, "item", "redacted", "none", "none",
+					  "stale_live_publication", "pid=%u", actor_pid);
+			send_to_char(
+				"The ownership authority committed, but the starter kit needs live "
+				"publication repair. Please wait or reconnect.\r\n",
+				actor);
+		}
+		return;
+	}
+	queue.publication_failed = false;
+	size_t published = 0;
+	for (const pending_creation_grant &request : queue.requests)
+	{
+		P_obj object = find_item(request.item_uid);
+		if (!OBJ_CARRIED_BY(object, actor))
+			obj_to_char(object, actor);
 		++published;
 	}
 	if (published)
@@ -536,14 +589,7 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 	queue.requests.clear();
 	queue.active = false;
 	creation_grants.erase(queue_found);
-	if (publication_failed)
-	{
-		send_to_char(
-			"The ownership authority committed, but part of the starter kit could not be "
-			"published live.\r\n",
-			actor);
-	}
-	else if (blocks_actor_commands && actor->desc)
+	if (blocks_actor_commands && actor->desc)
 	{
 		send_to_char(announce_on_completion ?
 				     "Your Chaos Equipment has been prepared!!\r\n" :
@@ -558,16 +604,22 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 		actor->desc->prompt_mode = TRUE;
 }
 
-bool start_creation_grant(P_char actor, creation_grant_queue &queue)
+bool start_creation_grant(P_char actor, creation_grant_queue &queue, item_movement_reject *reject)
 {
+	item_movement_reject discarded = item_movement_reject::none;
+	if (!reject)
+		reject = &discarded;
+	*reject = item_movement_reject::none;
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || queue.active ||
 	    queue.requests.empty())
-		return false;
+		return reject_with(reject, item_movement_reject::invalid_request);
 	const pending_creation_grant &request = queue.requests.front();
+	if (creation_grant_conflicts(request))
+		return reject_with(reject, item_movement_reject::pending_conflict);
 	if (queue.batch_submission)
 	{
 		if (!creation_grant_request_valid(request))
-			return false;
+			return reject_with(reject, item_movement_reject::owner_mismatch);
 		const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 		std::vector<P_obj> objects;
 		try
@@ -580,28 +632,27 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue)
 				    !candidate.allow_pre_entry ||
 				    candidate.recipient_pid != actor_pid || !object ||
 				    !OBJ_NOWHERE(object))
-					return false;
+					return reject_with(reject,
+							   item_movement_reject::owner_mismatch);
 				objects.push_back(object);
 			}
 		}
 		catch (const std::bad_alloc &)
 		{
-			return false;
+			return reject_with(reject, item_movement_reject::allocation_failure);
 		}
-		const item_owner_identity system_owner = { item_owner_type::system, 0, 0 };
-		item_movement_reject reject = item_movement_reject::none;
 		if (!item_movement_transaction_submit_batch(
-			    actor, objects.data(), objects.size(), NULL, system_owner,
+			    actor, objects.data(), objects.size(), NULL, system_owner_identity,
 			    creation_grant_owner(request), item_transfer_reason::creation, 0,
 			    creation_grant_batch_completion, &actor_pid, sizeof(actor_pid), NULL,
-			    &reject))
+			    reject))
 			return false;
 		queue.active = true;
 		return true;
 	}
 	P_obj object = find_item(request.item_uid);
 	if (!creation_grant_request_valid(request))
-		return false;
+		return reject_with(reject, item_movement_reject::owner_mismatch);
 	P_obj target_container =
 		request.target_container_uid ? find_item(request.target_container_uid) : NULL;
 	const item_owner_identity owner = creation_grant_owner(request);
@@ -613,7 +664,8 @@ bool start_creation_grant(P_char actor, creation_grant_queue &queue)
 		    adopted ? item_transfer_reason::operator_repair :
 			      item_transfer_reason::creation,
 		    object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,
-		    creation_grant_completion, &request.item_uid, sizeof(request.item_uid)))
+		    creation_grant_completion, &request.item_uid, sizeof(request.item_uid), NULL,
+		    reject))
 		return false;
 	queue.active = true;
 	return true;
@@ -638,7 +690,7 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 			creation_grants.erase(found);
 		return false;
 	}
-	if (queue.requests.size() >= ITEM_MOVEMENT_PENDING_MAX)
+	if (queue.requests.size() >= ITEM_CREATION_GRANT_MAX_ROOTS)
 	{
 		if (inserted)
 			creation_grants.erase(found);
@@ -667,7 +719,10 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 	}
 	if (queue.active || queue.requests.size() > 1)
 		return true;
-	if (start_creation_grant(actor, queue))
+	item_movement_reject reject = item_movement_reject::none;
+	if (start_creation_grant(actor, queue, &reject))
+		return true;
+	if (item_movement_reject_is_transient(reject))
 		return true;
 	queue.requests.pop_back();
 	if (queue.requests.empty())
@@ -697,9 +752,12 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
-	bool registry_applied = false;
-	if (committed)
+	bool registry_applied = entry.registry_applied;
+	if (committed && !registry_applied)
+	{
 		registry_applied = item_ownership_runtime_apply(entry.payload, result);
+		entry.registry_applied = registry_applied;
+	}
 	if (committed && !registry_applied)
 	{
 		if (!entry.publication_failed)
@@ -708,6 +766,34 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			++health.rejected;
 			++health.stale_publications;
 		}
+		account_health();
+		return;
+	}
+	if (entry.creation_batch)
+	{
+		const item_movement_completion_fn completion_fn = entry.completion;
+		const auto context = entry.context;
+		const size_t context_size = entry.context_size;
+		const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
+		if (completion_fn)
+			completion_fn(actor, committed, result, error_code, context.data(),
+				      context_size);
+		if (committed)
+		{
+			auto queue_found = creation_grants.find(entry.actor_pid);
+			if (queue_found != creation_grants.end() && queue_found->second.active &&
+			    queue_found->second.batch_submission &&
+			    queue_found->second.publication_failed)
+			{
+				account_health();
+				return;
+			}
+		}
+		pending.erase(found);
+		if (committed)
+			++health.committed;
+		else
+			++health.rejected;
 		account_health();
 		return;
 	}
@@ -789,13 +875,15 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
-	if (movement_conflicts(from_owner, to_owner) || coin_movement_pending(root) ||
-	    coin_movement_pending(target_container))
-		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry runtime = {};
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
 	const bool adopted = item_ownership_runtime_lookup(root->obj_uid, &runtime);
+	const item_owner_identity effective_from = adopted ? from_owner : system_owner_identity;
+	const item_owner_identity effective_to = adopted ? to_owner : from_owner;
+	if (movement_conflicts(effective_from, effective_to) || coin_movement_pending(root) ||
+	    coin_movement_pending(target_container))
+		return reject_with(reject, item_movement_reject::pending_conflict);
 	if ((adopted && !item_owner_identity_equal(runtime.owner, from_owner)) ||
 	    (target_container &&
 	     (!target_container->obj_uid ||
@@ -819,12 +907,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return reject_with(reject, item_movement_reject::topology_mismatch);
 	std::sort(items.begin(), items.end(), [](const auto &left, const auto &right)
 		  { return left.item_uid < right.item_uid; });
-	const item_owner_identity system_owner = { item_owner_type::system, 0, 0 };
 	uint64_t system_revision = 0;
-	if (!adopted && !item_ownership_runtime_owner_revision(system_owner, &system_revision))
+	if (!adopted &&
+	    !item_ownership_runtime_owner_revision(system_owner_identity, &system_revision))
 		return reject_with(reject, item_movement_reject::missing_owner_revision);
 	item_transfer_payload payload = {
-		.from_owner = adopted ? from_owner : system_owner,
+		.from_owner = adopted ? from_owner : system_owner_identity,
 		.to_owner = adopted ? to_owner : from_owner,
 		.reason = adopted ? reason : item_transfer_reason::creation,
 		.reason_id = reason_id,
@@ -881,6 +969,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.context_size = context_size,
 		.completion_ready = false,
 		.publication_failed = false,
+		.creation_batch = false,
+		.registry_applied = false,
 		.completed = {}
 	};
 	if (context_size)
@@ -1069,6 +1159,8 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		.context_size = context_size,
 		.completion_ready = false,
 		.publication_failed = false,
+		.creation_batch = creation,
+		.registry_applied = false,
 		.completed = {}
 	};
 	if (context_size)
@@ -1153,7 +1245,7 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 							     size_t count, P_char recipient)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || recipient != actor || !objects ||
-	    !count || count > ITEM_MOVEMENT_PENDING_MAX)
+	    !count || count > ITEM_CREATION_GRANT_MAX_ROOTS)
 		return false;
 	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
 	if (creation_grants.find(actor_pid) != creation_grants.end())
@@ -1187,7 +1279,10 @@ bool item_creation_grant_submit_batch_to_player_before_entry(P_char actor, P_obj
 		return false;
 	}
 	auto found = creation_grants.find(actor_pid);
-	if (start_creation_grant(actor, found->second))
+	item_movement_reject reject = item_movement_reject::none;
+	if (start_creation_grant(actor, found->second, &reject))
+		return true;
+	if (item_movement_reject_is_transient(reject))
 		return true;
 	creation_grants.erase(found);
 	return false;

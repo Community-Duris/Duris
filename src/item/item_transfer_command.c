@@ -352,9 +352,7 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		{
 			const item_transfer_entry &entry = payload.items[index];
 			if (!entry.item_uid || !entry.root_item_uid || entry.vnum <= 0 ||
-			    (creation_batch ? (entry.root_item_uid != entry.item_uid ||
-					       entry.parent_item_uid ||
-					       entry.expected_item_revision !=
+			    (creation_batch ? (entry.expected_item_revision !=
 						       ITEM_TRANSFER_ABSENT_REVISION ||
 					       entry.expected_state != item_custody_state::absent) :
 					      entry.expected_state != item_custody_state::active) ||
@@ -362,7 +360,22 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 			    entry.item_uid == payload.target_parent_item_uid)
 				return false;
 			if (creation_batch)
+			{
+				const uint64_t selected_root =
+					selected_root_for(payload, entry.item_uid);
+				const item_transfer_entry *root =
+					find_payload_item(payload, selected_root);
+				uint64_t target_root = 0, target_parent = 0;
+				if (!root || selected_root != entry.root_item_uid ||
+				    root->root_item_uid != root->item_uid ||
+				    root->parent_item_uid ||
+				    !target_topology_for(payload, entry.item_uid, &target_root,
+							 &target_parent) ||
+				    target_root != entry.root_item_uid ||
+				    target_parent != entry.parent_item_uid)
+					return false;
 				continue;
+			}
 			const uint64_t selected_root = selected_root_for(payload, entry.item_uid);
 			const item_transfer_entry *selected =
 				find_payload_item(payload, selected_root);
@@ -739,7 +752,8 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	       std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
 			  expected.expected_revisions.begin(),
 			  [](const critical_expected_revision &left,
-			     const critical_expected_revision &right) {
+			     const critical_expected_revision &right)
+			  {
 				  return critical_entity_key_equal(left.key, right.key) &&
 					 left.revision == right.revision;
 			  });

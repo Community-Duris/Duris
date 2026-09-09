@@ -643,8 +643,23 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 	const bool creation = payload.from_owner.type == item_owner_type::system;
 	if (creation)
 	{
-		if (!load_root(connection, payload.items[0].root_item_uid, &current))
+		std::vector<uint64_t> source_roots;
+		try
+		{
+			for (size_t index = 0; index < payload.item_count; ++index)
+				source_roots.push_back(payload.items[index].root_item_uid);
+			std::sort(source_roots.begin(), source_roots.end());
+			source_roots.erase(std::unique(source_roots.begin(), source_roots.end()),
+					   source_roots.end());
+		}
+		catch (const std::bad_alloc &)
+		{
+			errno = ENOMEM;
 			return false;
+		}
+		for (size_t index = 0; index < source_roots.size(); ++index)
+			if (!load_root(connection, source_roots[index], &current, index != 0))
+				return false;
 	}
 	else
 	{

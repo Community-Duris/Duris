@@ -153,6 +153,9 @@ bool currency_transaction_coin_item_busy(uint64_t uid)
 }
 
 void logit(const char *, const char *, ...) {}
+void statuslog(int, const char *, ...) {}
+void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
+                      const char *, ...) {}
 void __free(void *memory, const char *, int) { free(memory); }
 void send_to_char(const char *text, P_char) { grant_messages += text; }
 void send_to_char(const char *, P_char, int) {}
@@ -789,11 +792,14 @@ int main()
     assert(!item_creation_grant_batches_pending());
     assert(extracted_count == 0);
     reject_submission = true;
-    assert(!item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    assert(item_creation_grant_blocks_commands(&actor));
+    assert(item_creation_grant_batches_pending());
+    reject_submission = false;
+    item_movement_transaction_reset_for_tests();
     assert(!item_creation_grant_blocks_commands(&actor));
     assert(!item_creation_grant_batches_pending());
     assert(extracted_count == 0 && OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
-    reject_submission = false;
     assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
     assert(command_submitted && item_creation_grant_blocks_commands(&actor));
     assert(item_creation_grant_batches_pending());
@@ -825,6 +831,45 @@ int main()
     const auto announced = grant_messages.find("Your Chaos Equipment has been prepared!!");
     assert(announced != std::string::npos);
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!", announced + 1) == std::string::npos);
+
+    // A stale live root retains the committed operation instead of publishing
+    // a partial kit. Restoring the live registry lets player_ready() reconcile it.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    command_submitted = false;
+    actor.carrying = nullptr;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_first.next = &grant_second;
+    object_list = &grant_first;
+    grant_messages.clear();
+    extracted_count = 0;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    critical_completion partial_completion = {};
+    partial_completion.operation_id = submitted_command.operation_id;
+    partial_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result partial_result = {301, 2, 1, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> partial_encoded = {};
+    assert(item_transfer_command_encode_result(partial_result, &partial_encoded));
+    partial_completion.result_size = partial_encoded.size();
+    std::copy(partial_encoded.begin(), partial_encoded.end(), partial_completion.result_payload.begin());
+    grant_first.next = nullptr; // Simulate a stale/missing second live object.
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&partial_completion, 1);
+    assert(OBJ_NOWHERE(&grant_first) && OBJ_NOWHERE(&grant_second));
+    assert(item_movement_transaction_health_copy().pending == 1);
+    assert(item_movement_transaction_player_busy(&actor));
+    assert(item_creation_grant_batches_pending());
+    assert(grant_messages.find("publication repair") != std::string::npos);
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
+    grant_first.next = &grant_second;
+    item_movement_transaction_player_ready(&actor);
+    assert(OBJ_CARRIED_BY(&grant_first, &actor) && OBJ_CARRIED_BY(&grant_second, &actor));
+    assert(!item_movement_transaction_player_busy(&actor));
+    assert(!item_creation_grant_batches_pending());
+    const auto reconciled_success = grant_messages.find("Your Chaos Equipment has been prepared!!");
+    assert(reconciled_success != std::string::npos);
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!", reconciled_success + 1) == std::string::npos);
 
     // A terminal failure stops the remaining batch and cannot announce success.
     item_movement_transaction_reset_for_tests();
@@ -928,7 +973,90 @@ int main()
     assert(!command_submitted && !item_creation_grant_batches_pending());
     assert(!item_movement_transaction_player_busy(&actor));
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!") == std::string::npos);
+
+    // A second pre-entry character waits behind an in-flight system-owned
+    // creation without losing its staged roots or returning a false failure.
     item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    command_submitted = false;
+    submitted_command = {};
+    grant_messages.clear();
+    actor.carrying = nullptr;
+    actor.desc = &grant_descriptor;
+    grant_descriptor.connected = CON_PLAYING;
+    grant_first.loc_p = LOC_NOWHERE;
+    grant_first.next_content = nullptr;
+    obj_data concurrent_first = {};
+    concurrent_first.obj_uid = 401;
+    concurrent_first.R_num = 0;
+    concurrent_first.loc_p = LOC_NOWHERE;
+    concurrent_first.next_content = nullptr;
+    obj_data concurrent_second = {};
+    concurrent_second.obj_uid = 402;
+    concurrent_second.R_num = 1;
+    concurrent_second.loc_p = LOC_NOWHERE;
+    concurrent_second.next_content = nullptr;
+    grant_first.next = &concurrent_first;
+    concurrent_first.next = &concurrent_second;
+    concurrent_second.next = nullptr;
+    object_list = &grant_first;
+    pc_only_data concurrent_pc = {};
+    concurrent_pc.pid = 43;
+    char_data concurrent_actor = {};
+    concurrent_actor.only.pc = &concurrent_pc;
+    concurrent_actor.in_room = 0;
+    descriptor_data concurrent_descriptor = {};
+    concurrent_descriptor.connected = CON_PLAYING;
+    concurrent_actor.desc = &concurrent_descriptor;
+    actor.next = &concurrent_actor;
+    concurrent_actor.next = nullptr;
+    character_list = &actor;
+    const item_owner_identity creation_system_owner = { item_owner_type::system, 0, 0 };
+    P_obj first_pending_root[] = { &grant_first };
+    item_movement_reject conflict_reject = item_movement_reject::none;
+    assert(item_movement_transaction_submit_batch(
+        &actor, first_pending_root, 1, NULL, creation_system_owner, player_owner,
+        item_transfer_reason::creation, 0, NULL, NULL, 0, NULL, &conflict_reject));
+    assert(command_submitted);
+    P_obj concurrent_roots[] = { &concurrent_first, &concurrent_second };
+    assert(item_creation_grant_submit_batch_to_player_before_entry(
+        &concurrent_actor, concurrent_roots, 2, &concurrent_actor));
+    assert(command_submitted && item_creation_grant_batches_pending() &&
+           item_movement_transaction_player_busy(&concurrent_actor));
+
+    critical_completion first_creation_completion = {};
+    first_creation_completion.operation_id = submitted_command.operation_id;
+    first_creation_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result first_creation_result = {301, 1, 1, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> first_creation_encoded = {};
+    assert(item_transfer_command_encode_result(first_creation_result, &first_creation_encoded));
+    first_creation_completion.result_size = first_creation_encoded.size();
+    std::copy(first_creation_encoded.begin(), first_creation_encoded.end(),
+              first_creation_completion.result_payload.begin());
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&first_creation_completion, 1);
+    assert(command_submitted && item_creation_grant_batches_pending());
+
+    critical_completion concurrent_creation_completion = {};
+    concurrent_creation_completion.operation_id = submitted_command.operation_id;
+    concurrent_creation_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result concurrent_creation_result = {401, 2, 2, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> concurrent_creation_encoded = {};
+    assert(item_transfer_command_encode_result(concurrent_creation_result,
+                                               &concurrent_creation_encoded));
+    concurrent_creation_completion.result_size = concurrent_creation_encoded.size();
+    std::copy(concurrent_creation_encoded.begin(), concurrent_creation_encoded.end(),
+              concurrent_creation_completion.result_payload.begin());
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&concurrent_creation_completion, 1);
+    assert(OBJ_CARRIED_BY(&concurrent_first, &concurrent_actor) &&
+           OBJ_CARRIED_BY(&concurrent_second, &concurrent_actor));
+    assert(!item_creation_grant_batches_pending() &&
+           !item_movement_transaction_player_busy(&concurrent_actor));
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    actor.next = nullptr;
+    character_list = nullptr;
     actor.desc = nullptr;
 
 	printf("item movement input queue runtime: ok\n");

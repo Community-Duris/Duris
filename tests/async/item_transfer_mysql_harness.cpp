@@ -110,6 +110,31 @@ item_transfer_payload payload(item_owner_identity from, item_owner_identity to,
 	return value;
 }
 
+item_transfer_payload multi_root_creation_payload(uint64_t first_root, uint64_t first_child,
+						  uint64_t second_root, uint64_t from_revision,
+						  uint64_t to_revision)
+{
+	item_transfer_payload value = {};
+	value.from_owner = { item_owner_type::system, 0, 0 };
+	value.to_owner = { item_owner_type::player, 4000000001, 0 };
+	value.reason = item_transfer_reason::creation;
+	value.reason_id = 181;
+	value.expected_from_revision = from_revision;
+	value.expected_to_revision = to_revision;
+	value.multi_root = true;
+	value.item_count = 3;
+	value.items[0] = { first_root, first_root,
+			   0,	       ITEM_TRANSFER_ABSENT_REVISION,
+			   1101,       item_custody_state::absent };
+	value.items[1] = { first_child, first_root,
+			   first_root,	ITEM_TRANSFER_ABSENT_REVISION,
+			   1102,	item_custody_state::absent };
+	value.items[2] = { second_root, second_root,
+			   0,		ITEM_TRANSFER_ABSENT_REVISION,
+			   1103,	item_custody_state::absent };
+	return value;
+}
+
 critical_apply_result apply(MYSQL *connection, uint8_t id, const item_transfer_payload &value)
 {
 	critical_command command = {};
@@ -252,6 +277,48 @@ int main()
 	       collision.error_code == EEXIST);
 
 	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(connection, 3));
+	const uint64_t batch_first_root = item_uid_allocator_next();
+	const uint64_t batch_first_child = item_uid_allocator_next();
+	const uint64_t batch_second_root = item_uid_allocator_next();
+	system_revision = owner_revision(connection, system);
+	player_one_revision = owner_revision(connection, player_one);
+	const item_transfer_payload batch_payload =
+		multi_root_creation_payload(batch_first_root, batch_first_child, batch_second_root,
+					    system_revision, player_one_revision);
+	critical_apply_result batch_created = apply(connection, 14, batch_payload);
+	assert(batch_created.outcome == critical_apply_outcome::applied &&
+	       batch_created.error_code == 0);
+	item_transfer_result batch_created_result = {};
+	assert(item_transfer_command_decode_result(batch_created.result_payload.data(),
+						   batch_created.result_size,
+						   &batch_created_result));
+	assert(batch_created_result.root_item_uid == batch_first_root &&
+	       batch_created_result.item_count == 3 &&
+	       batch_created_result.from_owner_revision == system_revision + 1 &&
+	       batch_created_result.to_owner_revision == player_one_revision + 1 &&
+	       batch_created_result.max_item_revision == 1);
+	const std::string batch_uid_list = std::to_string(batch_first_root) + "," +
+					   std::to_string(batch_first_child) + "," +
+					   std::to_string(batch_second_root);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+				   batch_uid_list + ") AND owner_type=1 AND owner_id=" +
+				   std::to_string(player_one.id) + " AND state=1")
+					  .c_str()) == 3);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				   std::to_string(batch_first_child) +
+				   " AND root_item_uid=" + std::to_string(batch_first_root) +
+				   " AND parent_item_uid=" + std::to_string(batch_first_root))
+					  .c_str()) == 1);
+	batch_created = apply(connection, 14, batch_payload);
+	item_transfer_result batch_replayed_result = {};
+	assert(batch_created.outcome == critical_apply_outcome::already_applied &&
+	       item_transfer_command_decode_result(batch_created.result_payload.data(),
+						   batch_created.result_size,
+						   &batch_replayed_result) &&
+	       batch_replayed_result.to_owner_revision == batch_created_result.to_owner_revision);
+
+	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 4));
 	root_uid = item_uid_allocator_next();
 	child_uid = item_uid_allocator_next();
@@ -344,9 +411,9 @@ int main()
 
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 2));
-	assert(item_uid_allocator_next() == allocator_start + 6);
-	assert(item_uid_allocator_next() == allocator_start + 7);
-	for (uint8_t id = 1; id <= 13; ++id)
+	assert(item_uid_allocator_next() == allocator_start + 9);
+	assert(item_uid_allocator_next() == allocator_start + 10);
+	for (uint8_t id = 1; id <= 14; ++id)
 	{
 		const std::string hex = operation_hex(id);
 		execute(connection,

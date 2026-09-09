@@ -77,16 +77,19 @@ static critical_command creation_batch(uint8_t discriminator)
 	payload.expected_from_revision = 0;
 	payload.expected_to_revision = 0;
 	payload.multi_root = true;
-	payload.item_count = 3;
+	payload.item_count = 4;
 	payload.items[0] = { 200, 200,
 			     0,	  ITEM_TRANSFER_ABSENT_REVISION,
 			     700, item_custody_state::absent };
-	payload.items[1] = { 201, 201,
-			     0,	  ITEM_TRANSFER_ABSENT_REVISION,
+	payload.items[1] = { 201, 200,
+			     200, ITEM_TRANSFER_ABSENT_REVISION,
 			     701, item_custody_state::absent };
 	payload.items[2] = { 202, 202,
 			     0,	  ITEM_TRANSFER_ABSENT_REVISION,
 			     702, item_custody_state::absent };
+	payload.items[3] = { 203, 202,
+			     202, ITEM_TRANSFER_ABSENT_REVISION,
+			     703, item_custody_state::absent };
 	critical_command command = {};
 	require(item_transfer_command_build(&command, operation(discriminator), payload,
 					    critical_source_site::command,
@@ -987,7 +990,7 @@ int main(int argc, char **argv)
 			std::to_string(static_cast<unsigned int>(batch_applied.outcome)) +
 			" error=" + std::to_string(batch_applied.error_code));
 	const item_transfer_result batch_result = result_of(batch_applied);
-	require(batch_result.root_item_uid == 200 && batch_result.item_count == 3 &&
+	require(batch_result.root_item_uid == 200 && batch_result.item_count == 4 &&
 			batch_result.from_owner_revision == 1 &&
 			batch_result.to_owner_revision == 1 && batch_result.max_item_revision == 1,
 		"multi-root item creation returned incorrect revisions");
@@ -997,10 +1000,15 @@ int main(int argc, char **argv)
 						    { item_owner_type::player, 44, 0 },
 						    &batch_owner_revision, &batch_items, &error) ==
 				flatfile_item_repository_result::ok &&
-			batch_owner_revision == 1 && batch_items.size() == 3 &&
+			batch_owner_revision == 1 && batch_items.size() == 4 &&
 			batch_items[0].item_uid == 200 && batch_items[0].root_item_uid == 200 &&
-			batch_items[1].item_uid == 201 && batch_items[1].root_item_uid == 201 &&
-			batch_items[2].item_uid == 202 && batch_items[2].root_item_uid == 202,
+			batch_items[0].parent_item_uid == 0 && batch_items[1].item_uid == 201 &&
+			batch_items[1].root_item_uid == 200 &&
+			batch_items[1].parent_item_uid == 200 && batch_items[2].item_uid == 202 &&
+			batch_items[2].root_item_uid == 202 &&
+			batch_items[2].parent_item_uid == 0 && batch_items[3].item_uid == 203 &&
+			batch_items[3].root_item_uid == 202 &&
+			batch_items[3].parent_item_uid == 202,
 		"multi-root item creation topology did not round trip: " + error);
 	batch_applied = flatfile_item_repository_apply(creation_batch_root.string(), batch_create);
 	require(batch_applied.outcome == critical_apply_outcome::already_applied &&

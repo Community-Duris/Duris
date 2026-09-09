@@ -7,6 +7,9 @@ from _paths import SRC
 MOVEMENT = (SRC / "item_movement_transaction.c").read_text(
     encoding="utf-8", errors="replace"
 )
+MOVEMENT_HEADER = (SRC / "item/item_movement_transaction.h").read_text(
+    encoding="utf-8", errors="replace"
+)
 
 
 def function_body(source: str, signature: str, *, last: bool = False) -> str:
@@ -35,7 +38,11 @@ assert "capture_absent(" in BATCH_SUBMIT
 assert "item_transfer_reason::creation" in BATCH_SUBMIT
 assert "creation_grant_batch_completion" in START_GRANT
 assert "item_movement_transaction_submit_batch(" in START_GRANT
+assert "creation_grant_conflicts" in START_GRANT
+assert "item_movement_reject_is_transient" in PRE_ENTRY_BATCH
 assert "queue.batch_submission = true" in PRE_ENTRY_BATCH
 assert "queue.batch_submission ? queue.requests.size()" in CANCEL
+assert "ITEM_CREATION_GRANT_MAX_ROOTS" in MOVEMENT_HEADER
+assert "count > ITEM_CREATION_GRANT_MAX_ROOTS" in PRE_ENTRY_BATCH
 
 print("[PASS] detached starter roots use one creation batch submission")
