@@ -3808,7 +3808,7 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 			}
 			char line[MAX_STRING_LENGTH];
 			snprintf(line, sizeof(line), "You get %s.\r\n",
-				 coins_to_string(got[3], got[2], got[1], got[0], "&n"));
+				 coins_to_string(got[3], got[2], got[1], got[0], "&+y"));
 			send_to_char(line, actor);
 			if (partial)
 				send_to_char("You couldn't carry all the coins.\r\n", actor);

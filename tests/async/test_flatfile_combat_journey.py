@@ -438,8 +438,7 @@ def complete_npc_combat_journey(client: MudClient, reset_coins: bool = False) ->
     corpse = client.expect("banana", timeout=10)
     require("corpse" in corpse.lower(), "loot marker was not inside the corpse")
 
-    expected_coins = ("You get 0 platinum, 0 gold, 3 silver, and 0 copper coins." if reset_coins else
-                      "You get 0 platinum, 0 gold, 0 silver, and 1 copper coins.")
+    expected_coins = "You get 3s." if reset_coins else "You get 1c."
     deadline = time.monotonic() + 15
     while True:
         client.send("get coins corpse")
@@ -522,8 +521,7 @@ def recover_player_corpse(port: int, reset_coins: bool = False) -> None:
         client.send(f"get banana {CHARACTER}")
         client.expect("get a banana", timeout=15)
         client.send(f"get coins {CHARACTER}")
-        client.expect("You get 0 platinum, 0 gold, 3 silver, and 0 copper coins." if reset_coins else
-                      "You get 0 platinum, 0 gold, 0 silver, and 1 copper coins.", timeout=15)
+        client.expect("You get 3s." if reset_coins else "You get 1c.", timeout=15)
         client.send("save")
         client.expect(f"Save complete for {CHARACTER}.", timeout=15)
         client.send("quit")

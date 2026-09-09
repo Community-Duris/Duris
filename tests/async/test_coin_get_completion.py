@@ -30,12 +30,13 @@ HARNESS = r'''
 #define MAX_STRING_LENGTH 65536
 #define TRUE 1
 #define TO_ROOM 0
-#define ITEM_CORPSE 23
+#define ITEM_CORPSE 24
 #define CORPSE_FLAGS 1
 #define PC_CORPSE 1
 #define IS_SET(flag, bit) ((flag) & (bit))
-#define PLAYER_COMPONENT_STATUS 1
-#define PLAYER_COMPONENT_INVENTORY 2
+typedef uint64_t player_component_mask_t;
+#define PLAYER_COMPONENT_STATUS (UINT64_C(1) << 0)
+#define PLAYER_COMPONENT_INVENTORY (UINT64_C(1) << 10)
 #define BIT_1 1U
 #define BIT_2 2U
 #define BIT_3 4U
@@ -106,7 +107,7 @@ static bool publish_coin_pile(const coin_transfer_endpoint &, const item_transfe
 {
 	return true;
 }
-void mark_player_dirty_components(int, int) {}
+void mark_player_dirty_components(int, player_component_mask_t) {}
 void writeCorpse(P_obj) {}
 static bool finish_bulk_get_after_commit(P_char, bulk_get_state &, P_obj) { return true; }
 static void finish_bulk_get(P_char, uint32_t) {}
@@ -128,10 +129,10 @@ static void expect_get(const coin_transfer_payload &payload, int showit, const c
 	assert(coin_get_completion(&actor, true, payload, result, 0,
 				   reinterpret_cast<const uint8_t *>(&context), sizeof(context)));
 	assert(actor_text == want_line);
-	assert(actor_text.find("0 platinum") == std::string::npos);
-	assert(actor_text.find("0 gold") == std::string::npos);
-	assert(actor_text.find("0 silver") == std::string::npos);
-	assert(actor_text.find("0 copper") == std::string::npos);
+	assert(actor_text.find("0p") == std::string::npos);
+	assert(actor_text.find("0g") == std::string::npos);
+	assert(actor_text.find("0s") == std::string::npos);
+	assert(actor_text.find("0c") == std::string::npos);
 	if (showit)
 	{
 		assert(room_acts == 1);
@@ -147,14 +148,14 @@ int main()
 
 	coin_transfer_payload gold_only;
 	gold_only.source.before = {0, 0, 15, 0};
-	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 15, 0, 0, "&n"));
+	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 15, 0, 0, "&+y"));
 	expect_get(gold_only, 1, want);
 	assert(std::string(want).find("&+Y") != std::string::npos);
 	assert(std::string(want).find("&+W") == std::string::npos);
 
 	coin_transfer_payload mixed;
 	mixed.source.before = {0, 3, 0, 1};
-	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(1, 0, 3, 0, "&n"));
+	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(1, 0, 3, 0, "&+y"));
 	expect_get(mixed, 1, want);
 	assert(std::string(want).find("&+W") != std::string::npos);
 	assert(std::string(want).find("&+w") != std::string::npos);
@@ -162,7 +163,7 @@ int main()
 
 	coin_transfer_payload copper_only;
 	copper_only.source.before = {4, 0, 0, 0};
-	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 0, 0, 4, "&n"));
+	snprintf(want, sizeof(want), "You get %s.\r\n", coins_to_string(0, 0, 0, 4, "&+y"));
 	expect_get(copper_only, 0, want);
 	assert(std::string(want).find("&+y") != std::string::npos);
 	return 0;
