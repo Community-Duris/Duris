@@ -49,6 +49,9 @@ bool player_load_item_graph_materialize_detached(
 	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
 	bool complete_snapshot_state, std::vector<P_obj> *roots,
 	player_load_item_materialize_metrics *metrics);
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &payload,
+						 const item_transfer_result &result,
+						 std::vector<P_obj> *roots);
 void player_load_items_activate_equipment(P_char character);
 void player_load_items_discard(P_char character);
 

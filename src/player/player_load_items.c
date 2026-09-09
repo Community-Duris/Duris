@@ -2,6 +2,7 @@
 
 #include "net/comm.h"
 #include "item/item_ownership_runtime.h"
+#include "player/player_snapshot_codec.h"
 #include "core/prototypes.h"
 #include "magic/spells.h"
 #include "core/structs.h"
@@ -722,6 +723,90 @@ bool player_load_item_graph_materialize_detached(
 	return materialize_item_graph(nullptr, roots, items, identities, expected_owner,
 				      owner_revision, hydrate_ownership, complete_snapshot_state,
 				      metrics);
+}
+
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &payload,
+						 const item_transfer_result &result,
+						 std::vector<P_obj> *roots)
+{
+	if (!roots || !item_owner_identity_valid(payload.from_owner) ||
+	    payload.from_owner.type != item_owner_type::system ||
+	    payload.to_owner.type != item_owner_type::player ||
+	    !item_owner_identity_valid(payload.to_owner) ||
+	    payload.reason != item_transfer_reason::creation || !payload.multi_root ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    result.item_count != payload.item_count ||
+	    result.root_item_uid != item_transfer_result_root(payload) ||
+	    !result.to_owner_revision || payload.item_blob_size > payload.item_blob.size() ||
+	    !payload.item_blob_size || payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid)
+		return false;
+
+	std::vector<player_item_snapshot> items;
+	std::vector<player_load_item_identity> identities;
+	std::unordered_map<uint64_t, size_t> snapshot_indices;
+	try
+	{
+		if (player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size,
+						     &items) != player_snapshot_codec_result::ok ||
+		    items.size() != payload.item_count)
+			return false;
+		for (player_item_snapshot &item : items)
+			item.equipment_slot = -1;
+		snapshot_indices.reserve(items.size());
+		identities.reserve(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const player_item_snapshot &item = items[index];
+			if (!item.object_uid || item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(items.size()) ||
+			    !snapshot_indices.emplace(item.object_uid, index).second)
+				return false;
+		}
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const player_item_snapshot &item = items[index];
+			const auto entry = std::find_if(
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				[&](const item_transfer_entry &candidate)
+				{ return candidate.item_uid == item.object_uid; });
+			if (entry == payload.items.begin() + payload.item_count ||
+			    entry->vnum != item.vnum ||
+			    entry->expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION ||
+			    entry->expected_state != item_custody_state::absent)
+				return false;
+			const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+			if ((root &&
+			     (entry->parent_item_uid || entry->root_item_uid != entry->item_uid)) ||
+			    (!root &&
+			     entry->parent_item_uid !=
+				     items[static_cast<size_t>(item.parent_index)].object_uid))
+				return false;
+			player_load_item_identity identity = {};
+			identity.database_id = index + 1;
+			identity.serialized_parent_id =
+				root ? 0 : static_cast<uint64_t>(item.parent_index) + 1;
+			identity.quantity = 1;
+			identity.override_mask = PLAYER_LOAD_ITEM_OVERRIDE_ALL;
+			identity.item_uid = entry->item_uid;
+			identity.root_item_uid = entry->root_item_uid;
+			identity.parent_item_uid = entry->parent_item_uid;
+			identity.owner = payload.to_owner;
+			identity.item_revision = 1;
+			identity.owner_revision = result.to_owner_revision;
+			identity.state = item_custody_state::active;
+			identities.push_back(identity);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	player_load_item_materialize_metrics metrics = {};
+	return player_load_item_graph_materialize_detached(items, identities, payload.to_owner,
+							   result.to_owner_revision, false, true,
+							   roots, &metrics);
 }
 
 bool player_load_item_graph_materialize(P_char character,

@@ -20,6 +20,7 @@ PRELUDE = r'''
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_load_items.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -44,6 +45,14 @@ static std::map<uint64_t, int> publications, extractions;
 static std::map<int, int> dirty, commands;
 static std::string fixture_messages;
 void logit(const char *, const char *, ...) {}
+void statuslog(int, const char *, ...) {}
+void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
+                       const char *, ...) {}
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
+                                                 const item_transfer_result &, std::vector<P_obj> *)
+{
+    return false;
+}
 void __free(void *p, const char *, int) { free(p); }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }

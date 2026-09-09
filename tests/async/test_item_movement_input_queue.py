@@ -73,6 +73,7 @@ PRELUDE = r'''
 #include "item/item_ownership_runtime.h"
 #include "item/item_transfer_command.h"
 #include "persistence/persistence_checkpoint.h"
+#include "player/player_load_items.h"
 
 #include <algorithm>
 #include <cassert>
@@ -145,6 +146,9 @@ static bool hide_player_lookup = false;
 static unsigned extracted_count = 0;
 static std::vector<uint64_t> extracted_uids;
 static std::string grant_messages;
+static bool recover_creation_batch = false;
+static obj_data recovered_grant_first = {};
+static obj_data recovered_grant_second = {};
 static critical_command submitted_command = {};
 static uint64_t pending_coin_uid = 0;
 bool currency_transaction_coin_item_busy(uint64_t uid)
@@ -156,6 +160,22 @@ void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
                       const char *, ...) {}
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
+                                                 const item_transfer_result &, std::vector<P_obj> *roots)
+{
+    if (!recover_creation_batch || !roots)
+        return false;
+    recovered_grant_first.loc_p = LOC_NOWHERE;
+    recovered_grant_second.loc_p = LOC_NOWHERE;
+    recovered_grant_first.next_content = recovered_grant_second.next_content = nullptr;
+    recovered_grant_first.next = &recovered_grant_second;
+    recovered_grant_second.next = nullptr;
+    object_list = &recovered_grant_first;
+    roots->clear();
+    roots->push_back(&recovered_grant_first);
+    roots->push_back(&recovered_grant_second);
+    return true;
+}
 void __free(void *memory, const char *, int) { free(memory); }
 void send_to_char(const char *text, P_char) { grant_messages += text; }
 void send_to_char(const char *, P_char, int) {}
@@ -870,6 +890,50 @@ int main()
     const auto reconciled_success = grant_messages.find("Your Chaos Equipment has been prepared!!");
     assert(reconciled_success != std::string::npos);
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!", reconciled_success + 1) == std::string::npos);
+
+    // A missing root can be rebuilt from the committed transfer snapshot.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    command_submitted = false;
+    submitted_command = {};
+    actor.carrying = nullptr;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_first.next = &grant_second;
+    object_list = &grant_first;
+    recovered_grant_first = {};
+    recovered_grant_first.obj_uid = 301;
+    recovered_grant_first.R_num = 0;
+    recovered_grant_first.loc_p = LOC_NOWHERE;
+    recovered_grant_second = {};
+    recovered_grant_second.obj_uid = 302;
+    recovered_grant_second.R_num = 1;
+    recovered_grant_second.loc_p = LOC_NOWHERE;
+    grant_messages.clear();
+    extracted_count = 0;
+    recover_creation_batch = true;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    critical_completion recovered_completion = {};
+    recovered_completion.operation_id = submitted_command.operation_id;
+    recovered_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result recovered_result = {301, 2, 1, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> recovered_encoded = {};
+    assert(item_transfer_command_encode_result(recovered_result, &recovered_encoded));
+    recovered_completion.result_size = recovered_encoded.size();
+    std::copy(recovered_encoded.begin(), recovered_encoded.end(),
+              recovered_completion.result_payload.begin());
+    grant_first.next = nullptr;
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&recovered_completion, 1);
+    assert(OBJ_CARRIED_BY(&recovered_grant_first, &actor) &&
+           OBJ_CARRIED_BY(&recovered_grant_second, &actor));
+    assert(!item_creation_grant_batches_pending() &&
+           !item_movement_transaction_player_busy(&actor));
+    assert(grant_messages.find("publication repair") == std::string::npos);
+    assert(grant_messages.find("Your Chaos Equipment has been prepared!!") != std::string::npos);
+    recover_creation_batch = false;
+    object_list = &grant_first;
+    grant_first.next = &grant_second;
 
     // A terminal failure stops the remaining batch and cannot announce success.
     item_movement_transaction_reset_for_tests();

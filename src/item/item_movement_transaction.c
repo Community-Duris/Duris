@@ -6,6 +6,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_load_items.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
 
@@ -292,6 +293,71 @@ bool creation_grant_tree_available(P_obj object)
 	return true;
 }
 
+bool creation_grant_batch_live_ready(P_char actor, const creation_grant_queue &queue)
+{
+	for (const pending_creation_grant &request : queue.requests)
+	{
+		P_obj object = find_item(request.item_uid);
+		if (!object || (!OBJ_NOWHERE(object) && !OBJ_CARRIED_BY(object, actor)) ||
+		    !creation_grant_tree_available(object))
+			return false;
+	}
+	return true;
+}
+
+void note_creation_grant_publication_failure(P_char actor, creation_grant_queue &queue,
+					     uint32_t actor_pid)
+{
+	if (queue.publication_failed)
+		return;
+	queue.publication_failed = true;
+	statuslog(56, "&+RALERT&n: committed starter kit needs live publication repair (pid=%u)",
+		  actor_pid);
+	persistence_alert(AVATAR, "item", "redacted", "none", "none", "stale_live_publication",
+			  "pid=%u", actor_pid);
+	send_to_char("The ownership authority committed, but the starter kit needs live "
+		     "publication repair. Please wait or reconnect.\r\n",
+		     actor);
+}
+
+bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
+				    creation_grant_queue &queue, const item_transfer_result &result)
+{
+	bool needs_reconciliation = false;
+	for (const pending_creation_grant &request : queue.requests)
+	{
+		P_obj object = find_item(request.item_uid);
+		if (object && !OBJ_NOWHERE(object))
+			return false;
+		if (!object || !creation_grant_tree_available(object))
+			needs_reconciliation = true;
+	}
+	if (!needs_reconciliation)
+		return true;
+
+	for (size_t index = 0; index < entry.payload.item_count; ++index)
+	{
+		P_obj object = find_item(entry.payload.items[index].item_uid);
+		if (object && OBJ_NOWHERE(object))
+			extract_obj(object, FALSE);
+	}
+	std::vector<P_obj> roots;
+	if (!player_load_item_graph_materialize_creation(entry.payload, result, &roots) ||
+	    roots.size() != queue.requests.size())
+	{
+		for (P_obj root : roots)
+			if (root && OBJ_NOWHERE(root))
+				extract_obj(root, FALSE);
+		return false;
+	}
+	for (P_obj root : roots)
+		if (!root || !OBJ_NOWHERE(root))
+			return false;
+	for (P_obj root : roots)
+		obj_to_char(root, actor);
+	return true;
+}
+
 bool creation_grant_request_valid(const pending_creation_grant &request)
 {
 	P_obj object = find_item(request.item_uid);
@@ -541,37 +607,9 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 		return;
 	}
 
-	bool publication_failed = false;
-	for (const pending_creation_grant &request : queue.requests)
+	if (!creation_grant_batch_live_ready(actor, queue))
 	{
-		P_obj object = find_item(request.item_uid);
-		if (!object || !OBJ_NOWHERE(object) || !creation_grant_tree_available(object))
-		{
-			publication_failed = true;
-			logit(LOG_FILE,
-			      "item creation grant batch committed but live publication was stale "
-			      "(pid=%u uid=%llu)",
-			      actor_pid, (unsigned long long)request.item_uid);
-		}
-	}
-	if (publication_failed)
-	{
-		// Keep the committed operation and its command hold so player_ready() can
-		// retry publication after the live object graph has been reconciled.
-		if (!queue.publication_failed)
-		{
-			queue.publication_failed = true;
-			statuslog(
-				56,
-				"&+RALERT&n: committed starter kit needs live publication repair (pid=%u)",
-				actor_pid);
-			persistence_alert(AVATAR, "item", "redacted", "none", "none",
-					  "stale_live_publication", "pid=%u", actor_pid);
-			send_to_char(
-				"The ownership authority committed, but the starter kit needs live "
-				"publication repair. Please wait or reconnect.\r\n",
-				actor);
-		}
+		note_creation_grant_publication_failure(actor, queue, actor_pid);
 		return;
 	}
 	queue.publication_failed = false;
@@ -722,8 +760,6 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 	item_movement_reject reject = item_movement_reject::none;
 	if (start_creation_grant(actor, queue, &reject))
 		return true;
-	if (item_movement_reject_is_transient(reject))
-		return true;
 	queue.requests.pop_back();
 	if (queue.requests.empty())
 		creation_grants.erase(found);
@@ -771,6 +807,21 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	}
 	if (entry.creation_batch)
 	{
+		if (committed)
+		{
+			auto queue_found = creation_grants.find(entry.actor_pid);
+			if (queue_found != creation_grants.end() && queue_found->second.active &&
+			    queue_found->second.batch_submission &&
+			    !creation_grant_batch_live_ready(actor, queue_found->second) &&
+			    !reconcile_creation_grant_batch(actor, entry, queue_found->second,
+							    result))
+			{
+				note_creation_grant_publication_failure(actor, queue_found->second,
+									entry.actor_pid);
+				account_health();
+				return;
+			}
+		}
 		const item_movement_completion_fn completion_fn = entry.completion;
 		const auto context = entry.context;
 		const size_t context_size = entry.context_size;

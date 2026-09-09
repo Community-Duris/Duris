@@ -39,6 +39,8 @@ assert "item_transfer_reason::creation" in BATCH_SUBMIT
 assert "creation_grant_batch_completion" in START_GRANT
 assert "item_movement_transaction_submit_batch(" in START_GRANT
 assert "creation_grant_conflicts" in START_GRANT
+assert "reconcile_creation_grant_batch" in MOVEMENT
+assert "player_load_item_graph_materialize_creation" in MOVEMENT
 assert "item_movement_reject_is_transient" in PRE_ENTRY_BATCH
 assert "queue.batch_submission = true" in PRE_ENTRY_BATCH
 assert "queue.batch_submission ? queue.requests.size()" in CANCEL
