@@ -43,6 +43,8 @@ using namespace std;
 #include "sql/sql.h"
 #include "world/weather.h"
 #include "world/world_quest.h"
+#include "world/world_quest_policy.h"
+#include "world/world_quest_policy_math.h"
 
 /* * external variables */
 
@@ -184,8 +186,11 @@ int quest_exp_reward(P_char ch, int /*type*/)
 
 P_obj quest_item_reward(P_char ch)
 {
-	P_obj reward = read_object(
-		real_object(getItemFromZone(real_zone(ch->only.pc->quest_zone_number))), REAL);
+	const int quest_level = ch->only.pc->quest_level > 0 ? ch->only.pc->quest_level :
+							       GET_LEVEL(ch);
+	P_obj reward = read_object(real_object(getQuestItemFromZone(
+					   real_zone(ch->only.pc->quest_zone_number), quest_level)),
+				   REAL);
 
 	if (!reward)
 	{
@@ -719,101 +724,136 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 
 // Attempts to create a quest for ch (a PC), given by giver (a NPC).
 // Returns TRUE if successful, and FALSE if failed.
-bool createQuest(P_char ch, P_char giver)
+bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 {
 	int quest_zone = -1;
 	int quest_mob = -1;
-	int QUEST_TYPE = -1;
+	int quest_type = -1;
+	int target_probe_budget = WORLD_QUEST_MAX_TARGET_PROBES;
+	int history_check_budget = WORLD_QUEST_MAX_HISTORY_CHECKS;
+	vector<int> tried_targets;
+
+	if (failure)
+		*failure = QUEST_CREATION_NO_FAILURE;
 
 	// Fail if missing an arg, or ch not a PC, or giver not an NPC or God.
 	if (!giver || !ch || IS_NPC(ch) || (IS_PC(giver) && !IS_TRUSTED(giver)))
 	{
+		if (failure)
+			*failure = QUEST_CREATION_INVALID_ACTOR;
 		return FALSE;
 	}
 
-	// No valid zone found return FALSE
 	vector<int> valid_zones;
 	getQuestZoneList(ch, valid_zones);
-
 	if (valid_zones.empty())
 	{
 		wizlog(56, "Unable to find a quest zone for %s", GET_NAME(ch));
+		if (failure)
+			*failure = QUEST_CREATION_NO_ELIGIBLE_ZONE;
 		return FALSE;
 	}
 
-	for (int z = 0; z < 10; z++)
+	// Visit each zone once, trying distinct targets before moving on. The
+	// catalog and its cached scores are never rebuilt on the command path.
+	vector<int> remaining_zones = valid_zones;
+	while (!remaining_zones.empty() && history_check_budget > 0)
 	{
-		quest_zone = valid_zones[number(0, valid_zones.size() - 1)];
-
-		for (int m = 0; m < 3; m++)
+		quest_zone = world_quest_policy_select_zone(ch, remaining_zones);
+		if (quest_zone < 0)
+			break;
+		for (vector<int>::iterator zone = remaining_zones.begin();
+		     zone != remaining_zones.end(); ++zone)
 		{
-			QUEST_TYPE = number(1, 2);
-			if (GET_LEVEL(ch) > 49)
+			if (*zone == quest_zone)
 			{
-				QUEST_TYPE = FIND_AND_KILL;
+				remaining_zones.erase(zone);
+				break;
 			}
-			// wizlog(56, "suggesting zone:%s for this dude",zone_table[quest_zone].name);
-			quest_mob = suggestQuestMob(quest_zone, ch, QUEST_TYPE);
-			// If there aren't enough mobs to complete a quest (Need 2 for kill, 1 for ask)..
-			if (quest_mob > 0 && ((QUEST_TYPE == FIND_AND_KILL &&
-					       mob_index[real_mobile(quest_mob)].number <= 1) ||
-					      (QUEST_TYPE == FIND_AND_ASK &&
-					       mob_index[real_mobile(quest_mob)].number < 1)))
-			{
-				quest_mob = -1;
-			}
-			// wizlog(56, "suggesting quest mob :%d for this dude",quest_mob);
-			if (quest_mob == -1 && GET_LEVEL(ch) < 50)
-			{
-				// Swap Quest type and try again.
-				QUEST_TYPE = (QUEST_TYPE == FIND_AND_KILL) ? FIND_AND_ASK :
-									     FIND_AND_KILL;
+		}
 
-				quest_mob = suggestQuestMob(quest_zone, ch, QUEST_TYPE);
-				// If there aren't enough mobs to complete a quest (Need 2 for kill, 1 for ask)..
-				if (quest_mob > 0 &&
-				    ((QUEST_TYPE == FIND_AND_KILL &&
-				      mob_index[real_mobile(quest_mob)].number <= 1) ||
-				     (QUEST_TYPE == FIND_AND_ASK &&
-				      mob_index[real_mobile(quest_mob)].number < 1)))
+		const int first_type = GET_LEVEL(ch) > 49 ? FIND_AND_KILL : number(1, 2);
+		const int second_type =
+			first_type == FIND_AND_KILL ?
+				FIND_AND_ASK :
+				(first_type == FIND_AND_ASK ? FIND_AND_KILL : FIND_AND_ASK);
+		const int type_attempts = GET_LEVEL(ch) > 49 ? 1 : 2;
+		for (int attempt = 0; attempt < type_attempts; ++attempt)
+		{
+			quest_type = attempt == 0 ? first_type : second_type;
+			while (history_check_budget > 0)
+			{
+				quest_mob = world_quest_policy_suggest_mob(quest_zone, ch,
+									   quest_type,
+									   &target_probe_budget,
+									   tried_targets);
+				if (quest_mob <= 0)
+					break;
+				tried_targets.push_back(quest_mob);
+				--history_check_budget;
+
+				const int mob_rnum = real_mobile(quest_mob);
+				if (mob_rnum < 0 ||
+				    (quest_type == FIND_AND_KILL &&
+				     mob_index[mob_rnum].number < 2) ||
+				    (quest_type == FIND_AND_ASK && mob_index[mob_rnum].number < 1))
 				{
 					quest_mob = -1;
-					break;
+					continue;
 				}
-			}
 
-			if (sql_world_quest_done_already(ch, quest_mob))
-			{
-				quest_mob = -1;
+				const int completed = sql_world_quest_done_already(ch, quest_mob);
+				if (completed < 0)
+				{
+					// A failed read stops the request; it must not grant a quest
+					// or trigger more history queries against a failing backend.
+					if (failure)
+						*failure = QUEST_CREATION_NO_ELIGIBLE_TARGET;
+					return FALSE;
+				}
+				if (completed > 0)
+				{
+					quest_mob = -1;
+					continue;
+				}
+				break;
 			}
-
-			if (quest_mob != -1)
+			if (quest_mob > 0)
 				break;
 		}
-		if (quest_mob != -1)
+		if (quest_mob > 0)
 			break;
 	}
 
-	if (quest_mob == -1)
+	if (quest_mob <= 0)
 	{
-		wizlog(56, "Unable to find a valid quest for %s", GET_NAME(ch));
+		wizlog(56, "Unable to find a valid quest target for %s", GET_NAME(ch));
+		if (failure)
+			*failure = QUEST_CREATION_NO_ELIGIBLE_TARGET;
 		return FALSE;
 	}
 
+	const int rnum = real_mobile(quest_mob);
+	if (rnum < 0)
+	{
+		if (failure)
+			*failure = QUEST_CREATION_NO_ELIGIBLE_TARGET;
+		return FALSE;
+	}
+
+	const int quest_kill_original = MIN(number(7, 9), mob_index[rnum].number - 1);
 	ch->only.pc->quest_shares_left = 4;
 	ch->only.pc->quest_active = 1;
 	ch->only.pc->quest_mob_vnum = quest_mob;
-	ch->only.pc->quest_type = QUEST_TYPE;
+	ch->only.pc->quest_type = quest_type;
 	ch->only.pc->quest_accomplished = 0;
 	ch->only.pc->quest_started = time(NULL);
 	ch->only.pc->quest_zone_number = zone_table[quest_zone].number;
 	ch->only.pc->quest_giver = GET_VNUM(giver);
 	ch->only.pc->quest_level = GET_LEVEL(ch);
 	ch->only.pc->quest_receiver = GET_PID(ch);
-
-	int rnum = real_mobile(quest_mob);
-
-	ch->only.pc->quest_kill_original = MIN(number(7, 9), mob_index[rnum].number - 1);
+	ch->only.pc->quest_kill_how_many = 0;
+	ch->only.pc->quest_kill_original = quest_kill_original;
 	debug("Quest Kill Original Value: %d, mob_index number: %d, mob_index limit: %d, mob_vnum: %d",
 	      ch->only.pc->quest_kill_original, mob_index[rnum].number, mob_index[rnum].limit - 1,
 	      mob_index[rnum].virtual_number);
@@ -895,368 +935,35 @@ int quest_buy_map(P_char ch)
 	return 1;
 }
 
-// Return random vnum for item from zone.
+// Return random vnum for an item from a zone's boot-time cache.
 int getItemFromZone(int zone)
 {
-	/* For debugging...
-	char     buf[MAX_STRING_LENGTH];
-	*/
-	int i;
-	struct zone_data *z_num = &zone_table[zone];
-	P_obj t_obj;
+	return world_quest_policy_random_item(zone);
+}
 
-	int valid_items[1000];
-	int list = 0;
-
-	for (i = 0; i <= top_of_objt; i++)
-	{
-		if ((obj_index[i].virtual_number >= world[z_num->real_bottom].number) &&
-		    (obj_index[i].virtual_number <= world[z_num->real_top].number))
-		{
-			// Easier to just load one, and free it, than load only ones that aren't already in game.
-			if ((t_obj = read_object(obj_index[i].virtual_number, VIRTUAL)))
-			{
-				if (IS_SET(t_obj->extra_flags, ITEM_NORENT) ||
-				    IS_SET(t_obj->str_mask, STRUNG_KEYS) ||
-				    !IS_SET(t_obj->wear_flags, ITEM_TAKE) ||
-				    IS_SET(t_obj->extra_flags, ITEM_TRANSIENT)
-				    // These are _allowed_ types
-				    ||
-				    (t_obj->type != ITEM_WAND && t_obj->type != ITEM_STAFF &&
-				     t_obj->type != ITEM_ARMOR && t_obj->type != ITEM_WORN &&
-				     t_obj->type != ITEM_BOOK && t_obj->type != ITEM_QUIVER &&
-				     t_obj->type != ITEM_INSTRUMENT &&
-				     t_obj->type != ITEM_SPELLBOOK && t_obj->type != ITEM_TOTEM &&
-				     t_obj->type != ITEM_SHIELD && t_obj->type != ITEM_FIREWEAPON &&
-				     t_obj->type != ITEM_WEAPON && t_obj->type != ITEM_POTION) ||
-				    IS_SET(t_obj->bitvector, AFF_STONE_SKIN) ||
-				    IS_SET(t_obj->bitvector, AFF_HIDE) ||
-				    IS_SET(t_obj->bitvector, AFF_SNEAK) ||
-				    IS_SET(t_obj->bitvector, AFF_FLY) ||
-				    IS_SET(t_obj->bitvector, AFF4_NOFEAR) ||
-				    IS_SET(t_obj->bitvector2, AFF2_AIR_AURA) ||
-				    IS_SET(t_obj->bitvector2, AFF2_EARTH_AURA) ||
-				    IS_SET(t_obj->bitvector3, AFF3_INERTIAL_BARRIER) ||
-				    IS_SET(t_obj->bitvector3, AFF3_REDUCE) ||
-				    IS_SET(t_obj->bitvector2, AFF2_GLOBE) ||
-				    IS_SET(t_obj->bitvector, AFF_HASTE) ||
-				    IS_SET(t_obj->bitvector, AFF_DETECT_INVISIBLE) ||
-				    IS_SET(t_obj->bitvector4, AFF4_DETECT_ILLUSION) ||
-				    IS_NOSHOW(t_obj) || GET_OBJ_WEIGHT(t_obj) > 99 ||
-				    IS_ARTIFACT(t_obj) || isname("_noquest_", t_obj->name) ||
-				    IS_OBJ_STAT2(t_obj, ITEM2_QUESTITEM))
-				{
-					extract_obj(t_obj, FALSE);
-					continue;
-				}
-				/* Debugging code.
-				snprintf(buf, MAX_STRING_LENGTH, "%6d  %5d  %-s\n", obj_index[i].virtual_number, obj_index[i].number - 1,
-				  (t_obj->short_description) ? t_obj->short_description : "None");
-				wizlog(56, "%s", buf);
-				*/
-
-				valid_items[list++] = obj_index[i].virtual_number;
-				extract_obj(t_obj, FALSE);
-				t_obj = NULL;
-			}
-			else
-			{
-				logit(LOG_DEBUG, "do_world(): obj %d not loadable",
-				      obj_index[i].virtual_number);
-			}
-		}
-	}
-
-	if (list == 0)
-		return -1;
-
-	return valid_items[number(0, list - 1)];
+int getQuestItemFromZone(int zone, int quest_level)
+{
+	return world_quest_policy_random_quest_item(zone, quest_level);
 }
 
 bool isInvalidQuestZone(int zone_number)
 {
-	struct zone_info zone;
-	if (!get_zone_info(zone_number, &zone))
-		return TRUE;
-
-	return !zone.quest_zone;
+	return world_quest_policy_zone_is_invalid(zone_number);
 }
 
 void getQuestZoneList(P_char ch, vector<int> &valid_zones)
 {
-	// If lvl 15 or lower it's same zone as the dude.
-	// if( GET_LEVEL(ch) < 15)
-	//	return world[ch->in_room].zone;
-
-	int curZone = world[ch->in_room].zone;
-	vector<int> curMapExits;
-	bool curUDExit = false;
-	bool curUCExit = false;
-	for (int i = zone_table[curZone].real_bottom;
-	     (i != NOWHERE) && (i <= zone_table[curZone].real_top); i++)
-	{
-		for (int i2 = 0; i2 < NUM_EXITS; i2++)
-		{
-			if (!world[i].dir_option[i2])
-				continue;
-			int to_room = world[i].dir_option[i2]->to_room;
-			if (to_room == NOWHERE)
-				continue;
-			if (world[to_room].zone == curZone)
-				continue;
-			if (IS_MAP_ROOM(to_room))
-			{
-				curMapExits.push_back(to_room);
-				if (IS_UD_MAP(to_room))
-					curUDExit = true;
-				if (world[to_room].continent == CONT_UC)
-					curUCExit = true;
-			}
-			else
-			{ // lets try looking zone ahead
-				int nextZone = world[to_room].zone;
-				for (int j = zone_table[nextZone].real_bottom;
-				     (j != NOWHERE) && (j <= zone_table[nextZone].real_top); j++)
-				{
-					for (int j2 = 0; j2 < NUM_EXITS; j2++)
-					{
-						if (!world[j].dir_option[j2])
-							continue;
-						int to_room1 = world[j].dir_option[j2]->to_room;
-						if (to_room1 == NOWHERE)
-							continue;
-						if (world[to_room1].zone == curZone ||
-						    world[to_room1].zone == nextZone)
-							continue;
-						if (!IS_MAP_ROOM(to_room1))
-							continue;
-
-						size_t k = 0;
-						for (; k < curMapExits.size(); k++)
-							if (curMapExits[k] == to_room1)
-								break;
-						if (k == curMapExits.size())
-						{
-							curMapExits.push_back(to_room1);
-							if (IS_UD_MAP(to_room1))
-								curUDExit = true;
-							if (world[to_room1].continent == CONT_UC)
-								curUCExit = true;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Add zones to list that's -5 - -15 in avg levels
-	for (int zone_count = 0; zone_count <= top_of_zone_table; zone_count++)
-	{
-		if (isInvalidQuestZone(zone_table[zone_count].number) ||
-		    zone_table[zone_count].hometown != 0 ||
-		    zone_table[zone_count].avg_mob_level < 0)
-			continue;
-
-		if (zone_table[zone_count].avg_mob_level >= (GET_LEVEL(ch) + 5) ||
-		    zone_table[zone_count].avg_mob_level <= (GET_LEVEL(ch) - 7))
-			continue;
-
-		if (zone_count == curZone) // do not use same zone as the dude is in..
-			continue;
-
-		if (GET_LEVEL(ch) >= 51)
-		{
-			valid_zones.push_back(zone_count);
-			continue;
-		}
-
-		int zone_maproom = get_map_room(zone_count);
-		if (zone_maproom == -1)
-			continue;
-
-		if (curMapExits.size() == 0)
-		{ // bartender doesnt have exits to map, gives only to 40+
-			if (GET_LEVEL(ch) >= 40)
-				valid_zones.push_back(zone_count);
-			continue;
-		}
-
-		for (size_t i = 0; i < curMapExits.size(); i++)
-		{
-			int cur_maproom = curMapExits[i];
-			if (GET_LEVEL(ch) < 30)
-			{
-				if (world[zone_maproom].map_section !=
-				    world[cur_maproom].map_section)
-				{ // same continent below 30.
-					continue;
-				}
-				int distance = calculate_map_distance(zone_maproom, cur_maproom);
-				// debug("Distance between %d and %d is %d", world[zone_maproom].number, world[cur_maproom].number, distance);
-				if (distance >
-				    (3000 + GET_LEVEL(ch) * GET_LEVEL(ch) * GET_LEVEL(ch)))
-				{ // mostly affects 25-
-					continue;
-				}
-			}
-			if (IS_UD_MAP(zone_maproom) && !curUDExit && GOOD_RACE(ch) &&
-			    GET_LEVEL(ch) < 40)
-			{ // only bartenders with direct exit to UD give UD quests to goods below 40
-				continue;
-			}
-			if (world[zone_maproom].continent == CONT_UC && !curUCExit &&
-			    (GET_LEVEL(ch) < 35 || (GOOD_RACE(ch) && GET_LEVEL(ch) < 40)))
-			{ // evils dont get UC quests till 35, goods till 40 (unless its UC bartender)
-				continue;
-			}
-			valid_zones.push_back(zone_count);
-			break;
-		}
-	}
+	world_quest_policy_zone_list(ch, valid_zones);
 }
 
 int suggestQuestMob(int zone_num, P_char ch, int QUEST_TYPE)
 {
-	P_char t_mob;
-	int i;
-	int valid_mobs[300];
-	int list = 0;
-	int KIND_OF_QUEST = -1;
-	int MAX_LEVEL = GET_LEVEL(ch);
-
-	if (QUEST_TYPE == 0)
-		KIND_OF_QUEST = number(1, 2);
-	else
-		KIND_OF_QUEST = QUEST_TYPE;
-
-	if (KIND_OF_QUEST == FIND_AND_KILL) // FIND AND KILL A MOB
-	{
-		MAX_LEVEL = MAX_LEVEL + 6;
-	}
-	if (KIND_OF_QUEST == FIND_AND_ASK) // FIND AND TALK TO HIM
-	{
-		MAX_LEVEL = 62;
-	}
-
-	// wizlog(56, "Looking for a vald mob in: %s KIND_OF_QUEST = %d MAX_LEVEL=%d", zone_table[zone_num].name, KIND_OF_QUEST, MAX_LEVEL);
-	for (i = 0; i <= top_of_mobt; i++)
-	{
-		if ((mob_index[i].virtual_number >=
-		     world[zone_table[zone_num].real_bottom].number) &&
-		    (mob_index[i].virtual_number <= world[zone_table[zone_num].real_top].number))
-		{
-			if ((t_mob = read_mobile(mob_index[i].virtual_number, VIRTUAL)))
-			{
-				if (IS_SET(t_mob->specials.act, ACT_SPEC))
-				{
-					REMOVE_BIT(t_mob->specials.act, ACT_SPEC);
-				}
-
-				char_to_room(t_mob, 1, -2);
-
-				if ((GET_LEVEL(t_mob) < MAX_LEVEL &&
-				     GET_LEVEL(t_mob) > GET_LEVEL(ch) - 5 &&
-				     KIND_OF_QUEST == FIND_AND_KILL) ||
-				    (GET_LEVEL(t_mob) < MAX_LEVEL && KIND_OF_QUEST == FIND_AND_ASK))
-				{
-					if ((mob_index[i].number == 2 &&
-					     KIND_OF_QUEST == FIND_AND_ASK) ||
-					    (KIND_OF_QUEST == FIND_AND_KILL &&
-					     mob_index[i].number > 2))
-					{
-						if (KIND_OF_QUEST == FIND_AND_KILL)
-						{
-							ch->only.pc->quest_kill_how_many = 0; /*
-							 ch->only.pc->quest_kill_original =  MIN(number(7,9) , mob_index[i].limit - 1);
-							 debug("Quest Kill Original Value: %d, mob_index number: %d, mob_index limit: %d, mob_vnum: %d",
-							  ch->only.pc->quest_kill_original, mob_index[i].number, mob_index[i].limit -1, mob_index[i].virtual_number);*/
-						}
-
-						if ((aggressive_to(t_mob, ch) &&
-						     KIND_OF_QUEST == FIND_AND_ASK) ||
-						    (!CAN_SPEAK(t_mob) &&
-						     KIND_OF_QUEST == FIND_AND_ASK))
-						{
-							// dont suggest aggresive ask mobs..nor not humanoids
-							;
-						}
-						else
-						{
-							valid_mobs[list] =
-								mob_index[i].virtual_number;
-							list++;
-						}
-					}
-				}
-
-				if (t_mob)
-				{
-					extract_char(t_mob);
-					t_mob = NULL;
-				}
-			}
-			else
-			{
-				logit(LOG_DEBUG, "do_world(): mob %d not loadable",
-				      mob_index[i].virtual_number);
-			}
-		}
-	}
-
-	if (list == 0)
-	{
-		return -1;
-	}
-	else
-	{
-		return valid_mobs[number(0, list - 1)];
-	}
+	int target_probe_budget = WORLD_QUEST_MAX_TARGET_PROBES;
+	return world_quest_policy_suggest_mob(zone_num, ch, QUEST_TYPE, &target_probe_budget);
 }
 
-// Called from comm.c to populate avg_mob_level
+// Called from comm.c to populate the boot-time world-quest catalog and avg_mob_level.
 int calc_zone_mob_level()
 {
-	// Use C-style arrays instead of std::vector to avoid destructor issues
-	float *avg_mob_level = (float *)calloc(top_of_zone_table + 1, sizeof(float));
-	float *mob_count = (float *)calloc(top_of_zone_table + 1, sizeof(float));
-
-	if (!avg_mob_level || !mob_count)
-	{
-		if (avg_mob_level)
-			free(avg_mob_level);
-		if (mob_count)
-			free(mob_count);
-		return 0;
-	}
-
-	for (P_char tch = character_list; tch; tch = tch->next)
-	{
-		if (!IS_NPC(tch))
-			continue;
-
-		if (GET_ZONE(tch) > top_of_zone_table)
-			continue;
-
-		avg_mob_level[GET_ZONE(tch)] =
-			((avg_mob_level[GET_ZONE(tch)] * mob_count[GET_ZONE(tch)]) +
-			 (float)GET_LEVEL(tch)) /
-			(mob_count[GET_ZONE(tch)] + 1.0);
-		mob_count[GET_ZONE(tch)] += 1.0;
-	}
-
-	for (int i = 0; i <= top_of_zone_table; i++)
-	{
-		if (mob_count[i] < 1)
-		{
-			zone_table[i].avg_mob_level = -1;
-		}
-		else
-		{
-			zone_table[i].avg_mob_level = (int)avg_mob_level[i];
-		}
-	}
-
-	free(avg_mob_level);
-	free(mob_count);
-	return 0;
+	return world_quest_policy_bootstrap() ? 0 : -1;
 }

@@ -368,6 +368,11 @@ int main(int argc, char **argv)
 			currency_result.wallet.amount[0] == 1 &&
 			currency_result.wallet_revision == 4 && currency_result.bank_revision == 6,
 		"coin-command wallet debit did not apply through flatfile currency authority");
+	require(flatfile_player_domain_load(root.string(), 42, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.wallet[0] == 1 && loaded.domains.wallet_revision == 4 &&
+			loaded.domains.bank[0] == 4 && loaded.domains.bank_revision == 6,
+		"negative wallet adjustment did not survive established-player save/load");
 
 	convert_player_domain_to_v2(domains / "player-45.domain");
 	require(flatfile_player_domain_load(root.string(), 45, "account-one", 1, &loaded, &error) ==

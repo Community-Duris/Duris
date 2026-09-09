@@ -2968,6 +2968,12 @@ int sql_world_quest_can_do_another(P_char ch)
 			"SELECT count(id) FROM world_quest_accomplished where pid = %d and TO_DAYS( NOW() ) - TO_DAYS( timestamp ) <= 0",
 			GET_PID(ch));
 
+	if (!db)
+	{
+		logit(LOG_DEBUG, "sql_world_quest_can_do_another: count query failed");
+		return -1;
+	}
+
 	int returning_value = 0;
 	if (GET_LEVEL(ch) <= 30)
 		returning_value = get_property("world.quest.max.level.30.andUnder", 6.000);
@@ -2980,41 +2986,46 @@ int sql_world_quest_can_do_another(P_char ch)
 	else
 		returning_value = get_property("world.quest.max.level.other", 6.000);
 
-	if (db)
+	MYSQL_ROW row = mysql_fetch_row(db);
+	if (NULL == row || NULL == row[0])
 	{
-		MYSQL_ROW row = mysql_fetch_row(db);
-		if (NULL != row)
-		{
-			returning_value = returning_value - atoi(row[0]);
-		}
-
-		while ((row = mysql_fetch_row(db)))
-			;
 		mysql_free_result(db);
+		logit(LOG_DEBUG, "sql_world_quest_can_do_another: count row missing");
+		return -1;
 	}
+	returning_value -= atoi(row[0]);
+
+	while ((row = mysql_fetch_row(db)))
+		;
+	mysql_free_result(db);
 	return MAX(returning_value, 0);
 }
 
 int sql_world_quest_done_already(P_char ch, int quest_target)
 {
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || quest_target <= 0)
+		return -1;
 	MYSQL_RES *db = db_query(
 		"SELECT count(id) FROM world_quest_accomplished where quest_target = %d and pid = %d",
 		quest_target, GET_PID(ch));
-	int returning_value = 0;
-	if (db)
+	if (!db)
 	{
-		MYSQL_ROW row = mysql_fetch_row(db);
-		if (NULL != row)
-		{
-			returning_value = atoi(row[0]);
-		}
-		else
-			returning_value = 0;
-
-		while ((row = mysql_fetch_row(db)))
-			;
-		mysql_free_result(db);
+		logit(LOG_DEBUG, "sql_world_quest_done_already: count query failed");
+		return -1;
 	}
+
+	MYSQL_ROW row = mysql_fetch_row(db);
+	if (NULL == row || NULL == row[0])
+	{
+		mysql_free_result(db);
+		logit(LOG_DEBUG, "sql_world_quest_done_already: count row missing");
+		return -1;
+	}
+	const int returning_value = atoi(row[0]);
+
+	while ((row = mysql_fetch_row(db)))
+		;
+	mysql_free_result(db);
 	return returning_value;
 }
 

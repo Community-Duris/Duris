@@ -101,6 +101,7 @@ struct wizban_t *wizconnect = NULL;
 struct zone_data *zone_table; /* table of reset data             */
 struct sector_data *sector_table; /* mostly weather info             */
 int top_of_zone_table = 0; /* The highest valid zone rnum     */
+static bool mobile_probe_mode = false;
 struct message_list fight_messages[MAX_MESSAGES]; /* fighting messages  */
 
 char *guild_frags = NULL;
@@ -1958,6 +1959,7 @@ P_char read_mobile(int nr, int type)
 	{
 		wizlog(56, "mob has no only.npc struct!");
 		logit(LOG_DEBUG, "mob %s has no only.npc struct!", GET_NAME(mob));
+		mm_release(dead_mob_pool, mob);
 		return NULL;
 	}
 
@@ -1992,6 +1994,10 @@ P_char read_mobile(int nr, int type)
 		if (!mob->player.name)
 		{
 			wizlog(56, "Error with mob:  No name");
+			static char partial_mobile_name[] = "partial_mobile";
+			mob->player.name = partial_mobile_name;
+			SET_BIT(mob->specials.act, ACT_ISNPC);
+			extract_char(mob);
 			return NULL;
 		}
 		for (j = 0; *(mob->player.name + j); j++) /* make sure all keywords
@@ -2087,6 +2093,7 @@ P_char read_mobile(int nr, int type)
 		{
 			logit(LOG_DEBUG, "Mob %d has messed up format.",
 			      mob_index[nr].virtual_number);
+			SET_BIT(mob->specials.act, ACT_ISNPC);
 			extract_char(mob);
 			return NULL;
 		}
@@ -2681,7 +2688,8 @@ P_char read_mobile(int nr, int type)
 
 	clearMemory(mob);
 
-	if (IS_SET(mob->specials.act, ACT_SPEC) && (mob_index[nr].func.mob == 0))
+	if (!mobile_probe_mode && IS_SET(mob->specials.act, ACT_SPEC) &&
+	    (mob_index[nr].func.mob == 0))
 	{
 		REMOVE_BIT(mob->specials.act, ACT_SPEC);
 		if (mob_index[nr].number == 1) /*
@@ -2711,23 +2719,45 @@ P_char read_mobile(int nr, int type)
 	}
 
 	/* init a periodic event for each mob */
-	// All mobs do mundane things.
-	add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
-	// ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
-	if (IS_SET(mob->specials.act, ACT_SPEC))
+	if (!mobile_probe_mode)
 	{
-		if ((mob_index[mob->only.npc->R_num].func.mob)(mob, NULL, CMD_SET_PERIODIC, NULL))
-			add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
+		// All mobs do mundane things.
+		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), mob, 0, 0, 0, 0, 0);
+		// ACT_SPEC mobs with specials proc check CMD_SET_PERIODIC.
+		if (IS_SET(mob->specials.act, ACT_SPEC))
+		{
+			if ((mob_index[mob->only.npc->R_num].func.mob)(mob, NULL, CMD_SET_PERIODIC,
+								       NULL))
+				add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, 0, 0,
+					  0, 0, 0);
+		}
+		if (IS_ACT(mob, ACT_PATROL))
+			add_event(event_patrol_move, WAIT_SEC, mob, 0, 0, 0, 0, 0);
 	}
-	if (IS_ACT(mob, ACT_PATROL))
-		add_event(event_patrol_move, WAIT_SEC, mob, 0, 0, 0, 0, 0);
 
 	convertMob(mob);
 
-	if (IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
+	if (!mobile_probe_mode && IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
 		add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
 
 	return (mob);
+}
+
+P_char read_mobile_probe(int nr, int type)
+{
+	const bool previous_mode = mobile_probe_mode;
+	mobile_probe_mode = true;
+	try
+	{
+		P_char mob = read_mobile(nr, type);
+		mobile_probe_mode = previous_mode;
+		return mob;
+	}
+	catch (...)
+	{
+		mobile_probe_mode = previous_mode;
+		throw;
+	}
 }
 
 void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
