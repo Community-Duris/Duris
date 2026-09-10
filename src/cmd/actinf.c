@@ -2822,7 +2822,10 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 				{
 					snprintf(buf, MAX_STRING_LENGTH,
 						 "It appears to be the corpse of %s.\n",
-						 tmp_object->action_description);
+						 tmp_object->action_description &&
+								 *tmp_object->action_description ?
+							 tmp_object->action_description :
+							 "someone unknown");
 					send_to_char(buf, ch);
 					list_obj_to_char(tmp_object->contains, ch,
 							 LISTOBJ_SHORTDESC | LISTOBJ_STATS, TRUE);

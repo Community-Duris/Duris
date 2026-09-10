@@ -39,6 +39,8 @@
 #include "player/player_load_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "redis/redis_world_runtime.h"
+#include "world/world_recovery_pipeline.h"
+#include <vector>
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
 #define DMS_RUNTIME_BINARY "bin/server/dms"
@@ -305,43 +307,28 @@ static int write_room_door(FILE *fp, int room_rnum, int dir)
 
 static int write_obj_entry(FILE *fp, P_obj obj)
 {
-	struct copyover_obj entry;
-	P_obj content;
-	struct copyover_obj_content cont_entry;
-
-	memset(&entry, 0, sizeof(entry));
-	entry.vnum = OBJ_VNUM(obj);
-	entry.room = world[obj->loc.room].number; // save vnum not rnum
-	entry.type = obj->type;
-	memcpy(entry.value, obj->value, sizeof(entry.value));
-	memcpy(entry.timer, obj->timer, sizeof(entry.timer));
-
-	if (obj->name)
-		strlcpy(entry.name, obj->name, sizeof(entry.name));
-	if (obj->short_description)
-		strlcpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc));
-	if (obj->description)
-		strlcpy(entry.description, obj->description, sizeof(entry.description));
-
-	// count contents
-	entry.num_contents = 0;
-	for (content = obj->contains; content; content = content->next_content)
-	{
-		entry.num_contents++;
-	}
-
-	if (fwrite(&entry, sizeof(entry), 1, fp) != 1)
+	std::vector<char> buffer(WORLD_RECOVERY_MAX_RECORD_BYTES);
+	const int size = copyover_write_obj_to_buffer(obj, buffer.data(), buffer.size());
+	if (size <= 0)
 		return 0;
+	const uint32_t record_size = size;
+	return fwrite(&record_size, sizeof(record_size), 1, fp) == 1 &&
+	       fwrite(buffer.data(), record_size, 1, fp) == 1;
+}
 
-	// write contents
-	for (content = obj->contains; content; content = content->next_content)
-	{
-		cont_entry.vnum = OBJ_VNUM(content);
-		if (fwrite(&cont_entry, sizeof(cont_entry), 1, fp) != 1)
-			return 0;
-	}
-
-	return 1;
+static P_obj read_obj_entry(FILE *fp)
+{
+	uint32_t record_size = 0;
+	if (fread(&record_size, sizeof(record_size), 1, fp) != 1 ||
+	    record_size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
+	    record_size < sizeof(world_recovery_object_record))
+		return nullptr;
+	std::vector<char> buffer(record_size);
+	if (fread(buffer.data(), record_size, 1, fp) != 1)
+		return nullptr;
+	size_t consumed = 0;
+	P_obj object = copyover_restore_obj_from_buffer(buffer.data(), buffer.size(), &consumed);
+	return consumed == buffer.size() ? object : nullptr;
 }
 
 // raw write to socket fd
@@ -1206,89 +1193,10 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 	}
 
-	// restore objects on ground (including corpses)
-	for (i = 0; i < header.num_objects; i++)
-	{
-		struct copyover_obj obj_entry;
-		if (fread(&obj_entry, sizeof(obj_entry), 1, fp) != 1)
+	// Version 11 stores bounded trees, including nested corpse contents.
+	for (i = 0; i < header.num_objects; ++i)
+		if (!read_obj_entry(fp))
 			goto copyover_recover_fail;
-
-		rnum = real_room(obj_entry.room);
-		if (rnum < 0 || rnum > top_of_world)
-		{
-			// skip contents too
-			for (int c = 0; c < obj_entry.num_contents; c++)
-			{
-				struct copyover_obj_content dummy;
-				if (fread(&dummy, sizeof(dummy), 1, fp) != 1)
-					goto copyover_recover_fail;
-			}
-			continue;
-		}
-
-		// skip objects in ship rooms - ships are recreated fresh by initialize_ships()
-		if (IS_SHIP_ROOM(rnum))
-		{
-			for (int c = 0; c < obj_entry.num_contents; c++)
-			{
-				struct copyover_obj_content dummy;
-				if (fread(&dummy, sizeof(dummy), 1, fp) != 1)
-					goto copyover_recover_fail;
-			}
-			continue;
-		}
-
-		// create object
-		P_obj obj = read_object(obj_entry.vnum, VIRTUAL);
-		if (!obj)
-		{
-			// skip contents
-			for (int c = 0; c < obj_entry.num_contents; c++)
-			{
-				struct copyover_obj_content dummy;
-				if (fread(&dummy, sizeof(dummy), 1, fp) != 1)
-					goto copyover_recover_fail;
-			}
-			continue;
-		}
-
-		// restore state
-		obj->type = obj_entry.type;
-		memcpy(obj->value, obj_entry.value, sizeof(obj->value));
-		memcpy(obj->timer, obj_entry.timer, sizeof(obj->timer));
-
-		// restore name/desc for corpses
-		// note: not freeing old pointers - they point to shared prototype strings
-		if (obj_entry.name[0])
-		{
-			obj->name = str_dup(obj_entry.name);
-		}
-		if (obj_entry.short_desc[0])
-		{
-			obj->short_description = str_dup(obj_entry.short_desc);
-		}
-		if (obj_entry.description[0])
-		{
-			obj->description = str_dup(obj_entry.description);
-		}
-
-		// place in room
-		obj_to_room(obj, rnum);
-
-		// restore contents
-		for (int c = 0; c < obj_entry.num_contents; c++)
-		{
-			struct copyover_obj_content cont_entry;
-			if (fread(&cont_entry, sizeof(cont_entry), 1, fp) != 1)
-				goto copyover_recover_fail;
-
-			P_obj content = read_object(cont_entry.vnum, VIRTUAL);
-			if (content)
-			{
-				obj_to_obj(content, obj);
-			}
-		}
-	}
 
 	// restore door states
 	for (i = 0; i < header.num_rooms; i++)
@@ -1570,56 +1478,10 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
 {
-	struct copyover_obj entry;
-	struct copyover_obj_content cont_entry;
-	P_obj content;
-	size_t offset = 0;
-
-	if (max_len < sizeof(entry))
+	if (!obj || obj->loc_p != LOC_ROOM || obj->loc.room < 0 || obj->loc.room > top_of_world)
 		return -1;
-
-	memset(&entry, 0, sizeof(entry));
-	entry.obj_uid = obj->obj_uid;
-	entry.vnum = OBJ_VNUM(obj);
-	entry.room = world[obj->loc.room].number;
-	entry.type = obj->type;
-	memcpy(entry.value, obj->value, sizeof(entry.value));
-	memcpy(entry.timer, obj->timer, sizeof(entry.timer));
-
-	if (obj->name)
-		strlcpy(entry.name, obj->name, sizeof(entry.name));
-	if (obj->short_description)
-		strlcpy(entry.short_desc, obj->short_description, sizeof(entry.short_desc));
-	if (obj->description)
-		strlcpy(entry.description, obj->description, sizeof(entry.description));
-
-	entry.num_contents = 0;
-	for (content = obj->contains; content; content = content->next_content)
-	{
-		if (sizeof(entry) +
-			    (static_cast<size_t>(entry.num_contents) + 1) * sizeof(cont_entry) >
-		    max_len)
-			return -1;
-		entry.num_contents++;
-	}
-
-	memcpy(buf + offset, &entry, sizeof(entry));
-	offset += sizeof(entry);
-
-	// write contents
-	for (content = obj->contains; content; content = content->next_content)
-	{
-		if (offset + sizeof(cont_entry) > max_len)
-			return -1;
-
-		memset(&cont_entry, 0, sizeof(cont_entry));
-		cont_entry.obj_uid = content->obj_uid;
-		cont_entry.vnum = OBJ_VNUM(content);
-		memcpy(buf + offset, &cont_entry, sizeof(cont_entry));
-		offset += sizeof(cont_entry);
-	}
-
-	return (int)offset;
+	return world_recovery_write_object_to_buffer(obj, world[obj->loc.room].number, buf,
+						     max_len);
 }
 
 int copyover_write_door_to_buffer(int room_rnum, int dir, char *buf, size_t max_len)
@@ -1792,74 +1654,13 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 
 P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *bytes_read)
 {
-	struct copyover_obj obj_entry;
-	struct copyover_obj_content cont_entry;
-	size_t offset = 0;
-	int rnum;
-	P_obj obj;
-
-	if (len < sizeof(obj_entry))
-	{
-		*bytes_read = 0;
-		return NULL;
-	}
-
-	memcpy(&obj_entry, buf + offset, sizeof(obj_entry));
-	offset += sizeof(obj_entry);
-
-	rnum = real_room(obj_entry.room);
-	if (rnum < 0 || rnum > top_of_world)
-	{
-		offset += obj_entry.num_contents * sizeof(cont_entry);
-		*bytes_read = offset;
-		return NULL;
-	}
-
-	obj = read_object(obj_entry.vnum, VIRTUAL);
-	if (!obj)
-	{
-		offset += obj_entry.num_contents * sizeof(cont_entry);
-		*bytes_read = offset;
-		return NULL;
-	}
-
-	// restore saved obj_uid if valid
-	if (obj_entry.obj_uid > 0)
-		obj->obj_uid = obj_entry.obj_uid;
-
-	obj->type = obj_entry.type;
-	memcpy(obj->value, obj_entry.value, sizeof(obj->value));
-	memcpy(obj->timer, obj_entry.timer, sizeof(obj->timer));
-
-	if (obj_entry.name[0])
-		obj->name = str_dup(obj_entry.name);
-	if (obj_entry.short_desc[0])
-		obj->short_description = str_dup(obj_entry.short_desc);
-	if (obj_entry.description[0])
-		obj->description = str_dup(obj_entry.description);
-
-	obj_to_room(obj, rnum);
-
-	// restore contents
-	for (int c = 0; c < obj_entry.num_contents; c++)
-	{
-		if (offset + sizeof(cont_entry) > len)
-			break;
-
-		memcpy(&cont_entry, buf + offset, sizeof(cont_entry));
-		offset += sizeof(cont_entry);
-
-		P_obj content = read_object(cont_entry.vnum, VIRTUAL);
-		if (content)
-		{
-			if (cont_entry.obj_uid > 0)
-				content->obj_uid = cont_entry.obj_uid;
-			obj_to_obj(content, obj);
-		}
-	}
-
-	*bytes_read = offset;
-	return obj;
+	if (!bytes_read)
+		return nullptr;
+	*bytes_read = 0;
+	P_obj object = world_recovery_restore_object_from_buffer(buf, len);
+	if (object)
+		*bytes_read = len;
+	return object;
 }
 
 int copyover_restore_door_from_buffer(const char *buf, size_t len, size_t *bytes_read)

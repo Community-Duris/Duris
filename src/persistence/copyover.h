@@ -10,7 +10,7 @@
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 10 // bumped for NPC birthplace recovery
+#define COPYOVER_VERSION 11 // complete, nested world recovery object records
 
 // copyover file header
 struct copyover_header
@@ -119,20 +119,7 @@ struct copyover_combat
 	char target_name[50];
 };
 
-// object on ground
-struct copyover_obj
-{
-	unsigned long obj_uid;
-	int vnum;
-	int room;
-	int type; // item_corpse, etc
-	int value[8]; // matches numb_obj_vals
-	time_t timer[6]; // matches obj_data timer array
-	char name[80]; // corpses have custom names
-	char short_desc[80];
-	char description[160]; // long desc shown in room
-	int num_contents; // items inside container/corpse
-};
+// Ground object trees use world_recovery_object_record (copyover version 11).
 
 // item inside container/corpse or carried by mob
 struct copyover_obj_content

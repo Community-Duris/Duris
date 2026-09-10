@@ -191,7 +191,7 @@ bool encode_generation(recovery_generation *generation, world_recovery_header *h
 		source_offset += native_header.size;
 	}
 	generation->blob.resize(destination_offset);
-	memcpy(header->magic, "WR11", 4);
+	memcpy(header->magic, "WR12", 4);
 	header->schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
 	header->header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
 	header->sequence = generation->sequence;
@@ -297,6 +297,34 @@ bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t 
 			sizeof(entry.short_description));
 	if (object->description)
 		strlcpy(entry.description, object->description, sizeof(entry.description));
+	if (object->action_description)
+		strlcpy(entry.action_description, object->action_description,
+			sizeof(entry.action_description));
+	entry.wear_flags = object->wear_flags;
+	entry.extra_flags = object->extra_flags;
+	entry.anti_flags = object->anti_flags;
+	entry.anti2_flags = object->anti2_flags;
+	entry.extra2_flags = object->extra2_flags;
+	entry.weight = object->weight;
+	entry.material = object->material;
+	entry.cost = object->cost;
+	entry.trap_eff = object->trap_eff;
+	entry.trap_dam = object->trap_dam;
+	entry.trap_charge = object->trap_charge;
+	entry.trap_level = object->trap_level;
+	entry.condition = object->condition;
+	entry.craftsmanship = object->craftsmanship;
+	entry.z_cord = object->z_cord;
+	entry.bitvector = object->bitvector;
+	entry.bitvector2 = object->bitvector2;
+	entry.bitvector3 = object->bitvector3;
+	entry.bitvector4 = object->bitvector4;
+	entry.bitvector5 = object->bitvector5;
+	for (int index = 0; index < MAX_OBJ_AFFECT; ++index)
+	{
+		entry.affect_locations[index] = object->affected[index].location;
+		entry.affect_modifiers[index] = object->affected[index].modifier;
+	}
 	for (P_obj child = object->contains; child; child = child->next_content)
 		if (!capture_item_tree(child, room_vnum, root_uid, item_uid, items, count, skip))
 			return false;
@@ -799,7 +827,7 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 	    max_age_seconds <= 0)
 		return false;
 	world_recovery_header header = {};
-	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WR11", 4) ||
+	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WR12", 4) ||
 	    header.schema_version != WORLD_RECOVERY_SCHEMA_VERSION ||
 	    header.header_size != WORLD_RECOVERY_WIRE_HEADER_BYTES || !header.complete ||
 	    header.sequence < minimum_sequence ||
@@ -952,6 +980,24 @@ bool add_object_record(recovery_plan *plan, const unsigned char *data, size_t si
 			if (static_cast<int64_t>(static_cast<time_t>(item.timers[timer_index])) !=
 			    item.timers[timer_index])
 				return false;
+		for (int affect_index = 0; affect_index < MAX_OBJ_AFFECT; ++affect_index)
+			if (item.affect_locations[affect_index] < SCHAR_MIN ||
+			    item.affect_locations[affect_index] > SCHAR_MAX ||
+			    item.affect_modifiers[affect_index] < SCHAR_MIN ||
+			    item.affect_modifiers[affect_index] > SCHAR_MAX)
+				return false;
+		if (item.material < SCHAR_MIN || item.material > SCHAR_MAX ||
+		    item.trap_eff < SHRT_MIN || item.trap_eff > SHRT_MAX ||
+		    item.trap_dam < SHRT_MIN || item.trap_dam > SHRT_MAX ||
+		    item.trap_charge < SHRT_MIN || item.trap_charge > SHRT_MAX ||
+		    item.trap_level < SHRT_MIN || item.trap_level > SHRT_MAX ||
+		    item.condition < SHRT_MIN || item.condition > SHRT_MAX ||
+		    item.craftsmanship < SHRT_MIN || item.craftsmanship > SHRT_MAX ||
+		    item.z_cord < SHRT_MIN || item.z_cord > SHRT_MAX ||
+		    item.bitvector > ULONG_MAX || item.bitvector2 > ULONG_MAX ||
+		    item.bitvector3 > ULONG_MAX || item.bitvector4 > ULONG_MAX ||
+		    item.bitvector5 > ULONG_MAX)
+			return false;
 		if (!item.item_uid || item.item_uid > ULONG_MAX || !item.root_item_uid ||
 		    item.root_item_uid != root_uid || item.vnum <= 0 || item.type < 0 ||
 		    item.type > ITEM_LAST ||
@@ -959,6 +1005,7 @@ bool add_object_record(recovery_plan *plan, const unsigned char *data, size_t si
 		    real_object(item.vnum) < 0 || !terminated(item.name, sizeof(item.name)) ||
 		    !terminated(item.short_description, sizeof(item.short_description)) ||
 		    !terminated(item.description, sizeof(item.description)) ||
+		    !terminated(item.action_description, sizeof(item.action_description)) ||
 		    (index == 0 && item.parent_item_uid) ||
 		    (index != 0 && (!item.parent_item_uid ||
 				    parents.find(item.parent_item_uid) == parents.end())))
@@ -1169,6 +1216,11 @@ void replace_object_text(P_obj object, const world_recovery_item_snapshot &item)
 		object->description = str_dup(item.description);
 		object->str_mask |= STRUNG_DESC1;
 	}
+	if ((object->str_mask & STRUNG_DESC3) && object->action_description)
+		str_free(object->action_description);
+	object->action_description = item.action_description[0] ? str_dup(item.action_description) :
+								  nullptr;
+	object->str_mask |= STRUNG_DESC3;
 }
 
 P_obj materialize_object(const planned_object &planned)
@@ -1200,6 +1252,32 @@ P_obj materialize_object(const planned_object &planned)
 			object->value[index] = item.values[index];
 		for (int index = 0; index < 6; ++index)
 			object->timer[index] = static_cast<time_t>(item.timers[index]);
+		object->wear_flags = item.wear_flags;
+		object->extra_flags = item.extra_flags;
+		object->anti_flags = item.anti_flags;
+		object->anti2_flags = item.anti2_flags;
+		object->extra2_flags = item.extra2_flags;
+		// Restore aggregate weights after linking; obj_to_obj adds descendant weight.
+		object->weight = 0;
+		object->material = item.material;
+		object->cost = item.cost;
+		object->trap_eff = item.trap_eff;
+		object->trap_dam = item.trap_dam;
+		object->trap_charge = item.trap_charge;
+		object->trap_level = item.trap_level;
+		object->condition = item.condition;
+		object->craftsmanship = item.craftsmanship;
+		object->z_cord = item.z_cord;
+		object->bitvector = item.bitvector;
+		object->bitvector2 = item.bitvector2;
+		object->bitvector3 = item.bitvector3;
+		object->bitvector4 = item.bitvector4;
+		object->bitvector5 = item.bitvector5;
+		for (int index = 0; index < MAX_OBJ_AFFECT; ++index)
+		{
+			object->affected[index].location = item.affect_locations[index];
+			object->affected[index].modifier = item.affect_modifiers[index];
+		}
 		replace_object_text(object, item);
 		if (!item.parent_item_uid)
 			root = object;
@@ -1230,6 +1308,13 @@ P_obj materialize_object(const planned_object &planned)
 	}
 	if (!root)
 		return nullptr;
+	for (const world_recovery_item_snapshot &item : planned.items)
+	{
+		P_obj object = objects.at(item.item_uid);
+		object->weight = item.weight;
+		for (int index = 0; index < NUMB_OBJ_VALS; ++index)
+			object->value[index] = item.values[index];
+	}
 	obj_to_room(root, planned.room_rnum);
 	return root;
 }
@@ -1397,6 +1482,23 @@ bool world_recovery_restore(const unsigned char *data, size_t size, int max_age_
 int world_recovery_write_object_to_buffer(P_obj obj, int room_vnum, char *buf, size_t max_len)
 {
 	return write_object_record(obj, room_vnum, buf, max_len);
+}
+
+// File copyover shares Redis tree validation and custody restoration.
+P_obj world_recovery_restore_object_from_buffer(const char *buf, size_t len)
+{
+	recovery_plan plan;
+	if (!add_object_record(&plan, reinterpret_cast<const unsigned char *>(buf), len))
+		return nullptr;
+	std::vector<item_ownership_runtime_entry> authoritative(plan.authority_items.size());
+	if (!sql_persistence_reconcile_world_recovery_items(
+		    plan.authority_items.data(), plan.authority_items.size(), authoritative.data(),
+		    authoritative.size()))
+		return nullptr;
+	redis_floor_runtime_set_materializing(true);
+	const bool restored = materialize_plan(plan, authoritative);
+	redis_floor_runtime_set_materializing(false);
+	return restored ? find_object_uid(plan.objects.front().items.front().item_uid) : nullptr;
 }
 
 void world_recovery_capture_forget_character(P_char ch)

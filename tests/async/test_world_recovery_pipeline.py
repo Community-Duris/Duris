@@ -30,6 +30,8 @@ def section(text: str, start: str, end: str) -> str:
 HARNESS = r'''
 #include "world/world_recovery_pipeline.h"
 #include "core/utils.h"
+#include "core/prototypes.h"
+#include <cstdio>
 #include "world/world_recovery_codec.h"
 #include "persistence/copyover.h"
 #include "item/item_ownership_runtime.h"
@@ -117,6 +119,9 @@ void obj_to_obj(P_obj object, P_obj parent)
     object->loc.inside = parent;
     object->next_content = parent->contains;
     parent->contains = object;
+    for (P_obj ancestor = parent; ancestor; ancestor =
+             ancestor->loc_p == LOC_INSIDE ? ancestor->loc.inside : nullptr)
+        ancestor->weight += object->weight;
 }
 
 void obj_to_room(P_obj object, int room)
@@ -125,10 +130,14 @@ void obj_to_room(P_obj object, int room)
     object->loc.room = room;
 }
 
-void extract_obj(P_obj object, int = FALSE)
+void extract_obj(P_obj object, int)
 {
     while (object->contains)
-        extract_obj(object->contains, FALSE);
+    {
+        P_obj child = object->contains;
+        object->contains = child->next_content;
+        extract_obj(child, FALSE);
+    }
     if (object_list == object)
         object_list = object->next;
     else
@@ -141,6 +150,7 @@ void extract_obj(P_obj object, int = FALSE)
     std::free(object->name);
     std::free(object->short_description);
     std::free(object->description);
+    std::free(object->action_description);
     delete object;
     ++objects_extracted;
 }
@@ -267,7 +277,7 @@ static std::vector<unsigned char> object_generation(
     const std::vector<std::vector<world_recovery_item_snapshot>>& trees)
 {
     world_recovery_header header = {};
-    memcpy(header.magic, "WR11", 4);
+    memcpy(header.magic, "WR12", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 77;
@@ -299,6 +309,7 @@ static world_recovery_item_snapshot item(uint64_t uid, uint64_t root, uint64_t p
     value.vnum = 1000;
     value.type = ITEM_CONTAINER;
     value.flags = WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED;
+    if (fallback_fixture) value.extra_flags = ITEM_ARTIFACT;
     strcpy(value.name, "item");
     strcpy(value.short_description, "an item");
     strcpy(value.description, "An item is here.");
@@ -359,7 +370,7 @@ int main()
     lookup_succeeds = false;
 
     world_recovery_header header = {};
-    memcpy(header.magic, "WR11", 4);
+    memcpy(header.magic, "WR12", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 42;
@@ -560,6 +571,111 @@ int main()
     reset_zone(0, 2);
     assert(object_list && !object_list->next && IS_ARTIFACT(object_list));
     extract_obj(object_list, FALSE);
+
+    // File copyover must reject stale custody and roll back failed hydration too.
+    {
+        auto owned = item(990, 990, 0);
+        world_recovery_object_record record = {100, 1};
+        std::vector<char> buffer(sizeof(record) + sizeof(owned));
+        std::memcpy(buffer.data(), &record, sizeof(record));
+        std::memcpy(buffer.data() + sizeof(record), &owned, sizeof(owned));
+        size_t consumed = 0;
+        reconcile_succeeds = false;
+        assert(!copyover_restore_obj_from_buffer(buffer.data(), buffer.size(), &consumed));
+        assert(!object_list && consumed == 0);
+        reconcile_succeeds = true;
+        hydrate_succeeds = false;
+        assert(!copyover_restore_obj_from_buffer(buffer.data(), buffer.size(), &consumed));
+        assert(!object_list && consumed == 0);
+        hydrate_succeeds = true;
+    }
+
+    // Issue #198: capture actual runtime overrides, then exercise both adapters.
+    fallback_fixture = false;
+    hydrate_succeeds = true;
+    reconcile_succeeds = true;
+    obj_data corpse = {}, bag = {}, gloves = {}, fixed = {}, fresh = {};
+    corpse.obj_uid = 900; corpse.type = ITEM_CORPSE; corpse.loc_p = LOC_ROOM;
+    corpse.name = const_cast<char *>("corpse snake");
+    corpse.short_description = const_cast<char *>("the corpse of a cavern snake");
+    corpse.description = const_cast<char *>("The corpse of a cavern snake is lying here.");
+    corpse.action_description = const_cast<char *>("a cavern snake");
+    corpse.weight = 53;
+    bag.obj_uid = 901; bag.type = ITEM_CONTAINER; bag.weight = 13;
+    gloves.obj_uid = 902; gloves.type = ITEM_ARMOR; gloves.weight = 3;
+    gloves.name = const_cast<char *>("boreal hardwood gloves");
+    gloves.short_description = const_cast<char *>("some boreal hardwood gloves");
+    gloves.description = const_cast<char *>("Some boreal hardwood gloves are here.");
+    gloves.wear_flags = ITEM_TAKE | ITEM_WEAR_HANDS;
+    gloves.extra_flags = ITEM_GLOW; gloves.anti_flags = 7; gloves.anti2_flags = 9;
+    gloves.extra2_flags = 11; gloves.material = 3; gloves.cost = 1234;
+    gloves.condition = 42; gloves.craftsmanship = 17; gloves.bitvector = 0x80000000UL;
+    gloves.bitvector2 = 13; gloves.bitvector3 = 15; gloves.bitvector4 = 17; gloves.bitvector5 = 19;
+    gloves.affected[0].location = APPLY_HIT; gloves.affected[0].modifier = -5;
+    gloves.value[0] = 8; gloves.timer[0] = 12345;
+    fixed.obj_uid = 903; fixed.type = ITEM_OTHER; fixed.wear_flags = 0;
+    corpse.contains = &bag; bag.contains = &gloves; bag.next_content = &fixed;
+    char_data mortal = {}; mortal.player.level = 20;
+    for (int mode = 0; mode != 3; ++mode) {
+        // 0=file copyover; 1=clean restart; 2=crash recovery (same Redis codec).
+        auto buffer = std::vector<char>(WORLD_RECOVERY_MAX_RECORD_BYTES);
+        int size = copyover_write_obj_to_buffer(&corpse, buffer.data(), buffer.size());
+        assert(size > 0);
+        P_obj restored = nullptr;
+        if (mode == 0) {
+            FILE *file = std::tmpfile(); assert(file);
+            assert(write_obj_entry(file, &corpse)); std::rewind(file);
+            size_t consumed = 99;
+            assert(!copyover_restore_obj_from_buffer(buffer.data(), size - 1, &consumed));
+            assert(consumed == 0 && object_list == nullptr);
+            restored = read_obj_entry(file);
+            assert(std::fgetc(file) == EOF); std::fclose(file);
+            FILE *truncated = std::tmpfile(); assert(truncated);
+            uint32_t length = size;
+            assert(std::fwrite(&length, sizeof(length), 1, truncated) == 1);
+            assert(std::fwrite(buffer.data(), size - 1, 1, truncated) == 1);
+            std::rewind(truncated); assert(!read_obj_entry(truncated)); std::fclose(truncated);
+        } else {
+            world_recovery_object_record record = {};
+            std::memcpy(&record, buffer.data(), sizeof(record));
+            std::vector<world_recovery_item_snapshot> tree(record.item_count);
+            std::memcpy(tree.data(), buffer.data() + sizeof(record), tree.size() * sizeof(tree.front()));
+            auto generation = object_generation({tree});
+            clean_restart = mode == 1;
+            assert(world_recovery_restore(generation.data(), generation.size(), 300, 77, nullptr));
+            for (P_obj obj = object_list; obj; obj = obj->next)
+                if (obj->obj_uid == 900) restored = obj;
+        }
+        assert(restored && restored->obj_uid == 900 && restored->weight == 53);
+        assert(!std::strcmp(restored->action_description, "a cavern snake"));
+        P_obj restored_bag = nullptr, restored_fixed = nullptr;
+        for (P_obj obj = restored->contains; obj; obj = obj->next_content) {
+            if (obj->obj_uid == 901) restored_bag = obj;
+            if (obj->obj_uid == 903) restored_fixed = obj;
+        }
+        assert(restored_bag && restored_fixed && restored_bag->weight == 13);
+        P_obj gear = restored_bag->contains;
+        assert(gear && gear->obj_uid == 902 && gear->loc.inside == restored_bag);
+        assert(!std::strcmp(gear->short_description, gloves.short_description));
+        assert(!std::strcmp(gear->name, gloves.name));
+        assert(!std::strcmp(gear->description, gloves.description));
+        assert(gear->wear_flags == gloves.wear_flags && do_get_obj_is_takeable(&mortal, gear));
+        assert(!do_get_obj_is_takeable(&mortal, restored_fixed));
+        assert(gear->extra_flags == gloves.extra_flags && gear->anti_flags == 7 && gear->anti2_flags == 9);
+        assert(gear->extra2_flags == 11 && gear->material == 3 && gear->cost == 1234);
+        assert(gear->condition == 42 && gear->craftsmanship == 17 && gear->weight == 3);
+        assert(gear->bitvector == gloves.bitvector && gear->bitvector2 == 13 && gear->bitvector5 == 19);
+        assert(gear->affected[0].location == APPLY_HIT && gear->affected[0].modifier == -5);
+        assert(gear->value[0] == 8 && gear->timer[0] == 12345);
+        fresh.name = corpse.name; fresh.description = corpse.description; fresh.type = ITEM_CORPSE;
+        fresh.next_content = restored;
+        assert(!std::strcmp(fresh.description, restored->description));
+        assert(get_obj_in_list_vis(&mortal, "1.corpse", &fresh, false) == &fresh);
+        assert(get_obj_in_list_vis(&mortal, "2.corpse", &fresh, false) == restored);
+        assert(!get_obj_in_list_vis(&mortal, "3.corpse", &fresh, false));
+        extract_obj(restored, FALSE);
+        assert(!object_list);
+    }
     return 0;
 }
 '''
@@ -672,6 +788,25 @@ FALLBACK_SUPPORT = FALLBACK_SUPPORT.replace(
 )
 HARNESS = HARNESS.replace("int main()", FALLBACK_SUPPORT + "\nint main()", 1)
 
+
+COPYOVER_HELPERS = section(COPYOVER, "int copyover_write_obj_to_buffer", "int copyover_write_door_to_buffer") + section(COPYOVER, "P_obj copyover_restore_obj_from_buffer", "int copyover_restore_door_from_buffer") + section(COPYOVER, "static int write_obj_entry", "// raw write to socket fd")
+TAKEABILITY = section((SRC / "actobj.c").read_text(), "static bool do_get_obj_is_takeable", "static bool do_get_container_item_is_takeable")
+SELECTOR = section(HANDLER, "P_obj get_obj_in_list_vis", "/*\n * search the entire world for an object")
+SELECTOR_STUBS = r'''
+bool ac_can_see_obj(P_char, P_obj, int) { return true; }
+bool isname(const char *name, const char *keywords) {
+    return keywords && std::strstr(keywords, name);
+}
+int get_number(char **name) {
+    char *dot = std::strchr(*name, '.');
+    if (!dot) return 1;
+    const int ordinal = std::atoi(*name);
+    *name = dot + 1;
+    return ordinal;
+}
+'''
+HARNESS = HARNESS.replace("int main()", COPYOVER_HELPERS + TAKEABILITY + SELECTOR_STUBS + SELECTOR + "\nint main()", 1)
+
 with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
     source = Path(temp_dir) / "world_recovery_test.cpp"
     binary = Path(temp_dir) / "world_recovery_test"
@@ -697,7 +832,7 @@ print("[PASS] failed recovery and forced zone reset restore exactly one owned gr
 
 for token in (
     "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
-    "WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024",
+    "WORLD_RECOVERY_MAX_RECORD_BYTES = 512 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
     "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 1024",
@@ -871,4 +1006,5 @@ assert "redis_world_recovery_pulse();" in COMM
 assert "redis_world_recovery_drain(3000)" in COMM and "redis_world_recovery_drain(3000)" in COPYOVER
 print("[PASS] fenced publisher owns atomic floor handoff and cancel/join lifecycle is fail closed")
 
+print("[PASS] file/Redis nested corpse metadata, mortal takeability, and ordinal selection")
 print("immutable world recovery contracts passed")
