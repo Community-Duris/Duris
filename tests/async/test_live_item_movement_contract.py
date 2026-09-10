@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Source contracts for the live ownership ACK boundary."""
 
-from _paths import SRC
+from _paths import SRC, extract_function
 from pathlib import Path
 import unittest
 
@@ -24,9 +24,14 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("P_char", pending)
         self.assertIn("critical_command_coordinator_submit", movement)
         self.assertIn("item_ownership_runtime_apply", movement)
-        self.assertIn("movement_conflicts(from_owner, to_owner)", movement)
-        self.assertLess(movement.index("movement_conflicts(from_owner, to_owner)"),
-                        movement.index("critical_command_coordinator_submit"))
+        batch = extract_function(
+            "item_movement_transaction.c", "bool item_movement_transaction_submit_batch("
+        )
+        self.assertIn("movement_conflicts(from_owner, to_owner)", batch)
+        self.assertLess(
+            batch.index("movement_conflicts(from_owner, to_owner)"),
+            batch.index("critical_command_coordinator_submit"),
+        )
         self.assertLess(movement.index("const bool committed"),
                         movement.index("item_ownership_runtime_apply"))
 

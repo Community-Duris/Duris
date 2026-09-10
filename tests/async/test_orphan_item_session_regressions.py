@@ -186,10 +186,13 @@ check("creation grants publish only after the ownership commit",
 check("multi-item creation rewards serialize owner revisions",
       "std::deque<pending_creation_grant> requests" in movement
       and "queue.requests.pop_front()" in movement
-      and "start_creation_grant(actor, queue)" in movement)
+      and "start_creation_grant(actor, queue, &reject)" in movement
+      and "expected_from_revision = from_revision" in movement
+      and "expected_to_revision = to_revision" in movement)
 check("container placement waits before advancing a multi-item grant queue",
-      "movement_conflicts(owner, owner)" in movement
-      and "pump_creation_grants();" in movement)
+      "if (creation_grant_conflicts(next))" in movement
+      and "pump_creation_grants();" in movement
+      and "queue.requests.pop_front()" in movement)
 grant_start = movement[movement.index("bool start_creation_grant("):]
 grant_start = grant_start[:grant_start.index("bool queue_creation_grant(")]
 grant_completion = movement[movement.index("void creation_grant_completion("):]
