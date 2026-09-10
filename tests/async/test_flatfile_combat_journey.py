@@ -9,6 +9,8 @@ death, both corpse types, item movement, terminal saves, and player reload.
 
 from __future__ import annotations
 
+import server_build_artifacts
+
 import os
 import errno
 import fcntl
@@ -544,28 +546,8 @@ def verify_recovered_loot(port: int) -> None:
 
 
 def build_flatfile_server(build_root: pathlib.Path) -> pathlib.Path:
-    """Build an isolated flat-file journey server under build_root."""
-    binary = build_root / "server/dms_new"
-    build = subprocess.run(
-        [
-            "make",
-            "-C",
-            "src",
-            "PERSISTENCE_BACKEND=flatfile",
-            f"BIN_ROOT={build_root}",
-            f"OBJDIR={build_root / 'objects' / 'server'}",
-            f"SERVER_BIN_DIR={binary.parent}",
-            f"DMS_BINARY={binary}",
-            "-j2",
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=600,
-    )
-    require(build.returncode == 0, "flat-file server build failed:\n" + build.stdout[-8000:])
-    return binary
+    """Acquire the shared artifact while retaining journey-owned runtime state."""
+    return server_build_artifacts.build_flatfile_server(build_root)
 
 
 def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
@@ -729,9 +711,9 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
 if __name__ == "__main__":
     subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
                     "--build-inspector", str(INSPECTOR)], cwd=ROOT, check=True, timeout=180)
-    # The root regression runner executes this and the Chaos kit journey
-    # concurrently. Distinct temporary build roots prevent linker/runtime races
-    # and are removed after each journey, including on failure.
+    # Private temporary roots retain standalone build cleanup. The regression
+    # runner shares a verified executable across journeys; runtime fixtures
+    # remain isolated and are removed on both success and failure.
     with tempfile.TemporaryDirectory(prefix=f"flatfile-combat-{os.getpid()}-",
                                      dir=ROOT / "bin/tests") as build_tmp:
         binary = build_flatfile_server(pathlib.Path(build_tmp))

@@ -84,6 +84,80 @@ may accept the same fixture. Use isolated ordinary tables with explicit cleanup
 when needed to execute the actual production query shape. Do not weaken queries
 or narrow the backend matrix merely to make a temporary-table fixture pass.
 
+### Shared journey server artifacts
+
+The Python runner defaults `DURIS_REGRESSION_BUILD_CACHE` to
+`bin/regression-artifacts`. Account recovery, flat-file boot preflight, Chaos
+kit, combat and full-world boot acquire one compatible flat-file server from
+`tests/async/server_build_artifacts.py`. Each journey retains its own temporary
+authority, journals, logs, listeners and process cleanup. Executables are shared
+read-only; runtime state is never stored in the artifact directory. The
+item-prompt ASan/UBSan harness remains a separate build with its existing flags
+and timeout. Resource-intensive tests still run serially, with two jobs per
+server build and the original 600-second build ceiling.
+
+The artifact key covers all files under `src/` (including untracked files),
+test headers, the helper contract, the flat-file backend, and the inherited build
+environment, including profile, feature flags and Make overrides. It also hashes
+the effective compiler, Make, assembler, linker, compiler internals, installed
+headers and libraries. Standard GNU compiler search directories and explicit
+`CPATH`, `CPLUS_INCLUDE_PATH`, `C_INCLUDE_PATH` and `LIBRARY_PATH` directories,
+plus explicit include/library paths in Make's effective flags, are fingerprinted
+by content. Keep external build inputs in these declared paths;
+use `DURIS_REGRESSION_BUILD_CACHE=off` for toolchains with hidden inputs or
+wrappers that do not support GNU compiler discovery. Runtime-only full-world
+diagnostics and shell working-directory variables do not invalidate a build.
+
+On every acquisition, the helper verifies executable and build-log SHA-256
+hashes and rechecks the client-free compilation assertions. Missing or malformed
+metadata, altered binaries/logs and changed inputs trigger a fresh build. Inputs
+are checked again after compilation; a build spanning an input change is rejected.
+A per-key lock prevents duplicate concurrent builds, and atomic manifests publish
+only successful artifacts. Replacement builds use new directories so an existing
+process keeps its executable. Old generations remain until the cache is removed
+when no journeys are using it; `make clean-all` also removes `bin/`.
+
+Direct test invocations build privately unless the cache variable is set. To
+measure the complete Python gate on the same host and worker count:
+
+```bash
+DURIS_REGRESSION_BUILD_CACHE=off python3 tests/run_regression_tests.py --jobs 4
+DURIS_REGRESSION_BUILD_CACHE="$PWD/bin/benchmark-fresh" python3 tests/run_regression_tests.py --jobs 4
+DURIS_REGRESSION_BUILD_CACHE="$PWD/bin/benchmark-fresh" python3 tests/run_regression_tests.py --jobs 4
+```
+
+Choose an unused directory for the clean-cache run. Per-journey output reports
+server build time, artifact validation time, and remaining journey/fixture time.
+The last category includes inspector compilation and process startup; it is not
+solely gameplay time. Cache keys hash environment values without storing their
+plaintext in manifests. Never check cache artifacts into Git.
+
+### Build-reuse measurement (2026-09-10)
+
+The complete Python gate was measured sequentially in one Ubuntu 24.04 Linux
+container on an Intel Core i7-12700K host, with a four-CPU quota, four regression
+workers, two jobs per server build, GCC 13.3.0 and Python 3.12.3. World data was
+prepared before each gate. The baseline used commit `206c95de` with timing-only
+instrumentation around the original build calls; no assertions or deadlines were
+changed. The candidate adds one focused artifact-cache regression.
+
+| Run | Gate result | Gate wall time | Server builds | Server build time | Artifact validation | Journey/fixture time |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Before reuse | 438 passed, 0 failed | 1,314.58 s | 5 | 520.39 s | N/A | 595.74 s |
+| Empty artifact cache | 439 passed, 0 failed | 911.18 s | 1 | 113.51 s | 8.91 s | 596.48 s |
+| Retained artifact cache | 439 passed, 0 failed | 780.99 s | 0 | 0.00 s | 4.56 s | 580.60 s |
+
+Build, validation and journey/fixture columns sum the five server journeys;
+they exclude the parallel tests and the separate sanitizer harness. The gate wall
+time includes every discovered test, including that harness. The clean-cache run
+was 30.7% faster overall, and the retained-cache run was 40.6% faster. All five
+journeys used the same one published artifact across both candidate runs.
+
+These are single-run, host-specific measurements, not an SLA. "Empty cache"
+refers to server artifacts; the operating-system page cache was not flushed.
+Initial environment-setup attempts were excluded; the reported runs used the same
+installed dependencies, Linux line endings, hardware and concurrency.
+
 ## Full-world save diagnostics
 
 `test_flatfile_full_world_boot.py` supports opt-in synthetic failure/recovery
@@ -93,7 +167,7 @@ experiments without using the configured database:
 | --- | --- |
 | `DURIS_FULL_WORLD_ARTIFACT_DIR` | Retain failed synthetic authority, journals, transcripts, and server diagnostics in a private untracked directory; TLS keys are excluded and the fixture password is redacted. |
 | `DURIS_FULL_WORLD_REPEATS` | Run 1-100 fresh fixture journeys with one build. |
-| `DURIS_FULL_WORLD_BINARY_CACHE` | Optional path below `bin/`; reuse requires matching source/build-environment and executable hashes. This is specific to this test, not a suite-wide build cache. |
+| `DURIS_FULL_WORLD_BINARY_CACHE` | Legacy opt-in cache prefix below `bin/`; verified generations now live in `<prefix>.artifacts/`. Existing legacy binary/JSON pairs are not reused. `DURIS_REGRESSION_BUILD_CACHE` takes precedence when set. |
 | `DURIS_FULL_WORLD_DELAY_CAMP=1` | Hold the synthetic player lock through camp timeout; verify retention, automatic retry, and a later fresh-intent camp. |
 | `DURIS_FULL_WORLD_CRASH_PHASE` | `before_ack` or `after_ack` replaces the first clean shutdown with an intentional crash around the save durability boundary. |
 

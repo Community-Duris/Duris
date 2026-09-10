@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import server_build_artifacts
+
 import json
 import os
 import pathlib
@@ -48,29 +50,7 @@ def available_websocket_port(game_port: int) -> int:
 
 with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
     build_root = pathlib.Path(build_tmp)
-    binary = build_root / "server" / "dms_new"
-    build = subprocess.run(
-        [
-            "make",
-            "-C",
-            "src",
-            "PERSISTENCE_BACKEND=flatfile",
-            f"BIN_ROOT={build_root}",
-            f"OBJDIR={build_root / 'objects' / 'server'}",
-            f"SERVER_BIN_DIR={binary.parent}",
-            f"DMS_BINARY={binary}",
-            "-j2",
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=600,
-    )
-    require(build.returncode == 0, "client-free server build failed:\n" + build.stdout[-8000:])
-    require("-D__NO_MYSQL__" in build.stdout, "flat build did not select __NO_MYSQL__")
-    require("-I/usr/include/mysql" not in build.stdout, "flat build used system MySQL headers")
-    require("-lmysqlclient" not in build.stdout, "flat build linked the MySQL client")
+    binary = server_build_artifacts.build_flatfile_server(build_root)
 
     with tempfile.TemporaryDirectory(prefix="duris-flatfile-state-") as state_tmp:
         with tempfile.TemporaryDirectory(prefix="duris-flatfile-run-") as run_tmp:
