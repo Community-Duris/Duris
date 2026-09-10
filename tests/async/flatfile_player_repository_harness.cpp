@@ -233,6 +233,14 @@ static void inspect_authority(const std::string &root, int32_t pid)
 		std::cout << domains.domains.wallet[i];
 	}
 	std::cout << "],\"wallet_revision\":" << domains.domains.wallet_revision;
+	std::cout << ",\"bank\":[";
+	for (size_t i = 0; i < 4; ++i)
+	{
+		if (i)
+			std::cout << ',';
+		std::cout << domains.domains.bank[i];
+	}
+	std::cout << "],\"bank_revision\":" << domains.domains.bank_revision;
 	for (const auto &field : snapshot.status_integers)
 		if (field.field == player_status_field::wimpy)
 			std::cout
@@ -473,6 +481,36 @@ static void coin_player_matrix(const fs::path &path)
 /** Inspect synthetic authority on request, otherwise exercise player repository durability and recovery. */
 int main(int argc, char **argv)
 {
+	if (argc == 3 && std::string(argv[2]) == "seed-creation-bank")
+	{
+		std::string error;
+		flatfile_player_domain_record seed;
+		seed.pid = 999;
+		seed.account_name = "Journeyacct";
+		seed.racewar = 1;
+		seed.domains.bank = { 17, 23, 31, 47 };
+		require(flatfile_player_domain_establish(argv[1], seed, &error) ==
+				flatfile_player_domain_result::ok,
+			"seed creation bank: " + error);
+		currency_command_payload payload = {};
+		payload.pid = seed.pid;
+		payload.racewar = seed.racewar;
+		payload.reason = currency_reason_type::bank_reward;
+		strcpy(payload.account_name.data(), seed.account_name.c_str());
+		payload.bank_delta.amount[0] = 2;
+		critical_operation_id id = {};
+		id.bytes[0] = 201;
+		critical_command command;
+		require(currency_command_build(&command, id, payload, 0, 1,
+					       critical_source_site::command,
+					       critical_deadline_class::interactive),
+			"seed bank command");
+		command.accepted_at_usec = 1;
+		require(flatfile_player_domain_apply(argv[1], command).outcome ==
+				critical_apply_outcome::applied,
+			"advance creation bank revision");
+		return 0;
+	}
 	if (argc == 3 && std::string(argv[2]) == "seed-combat")
 	{
 		std::string error;

@@ -305,6 +305,11 @@ bool currency_transaction_can_submit(P_char character)
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
 	    pending.size() >= CURRENCY_PENDING_MAX)
 		return false;
+#ifdef __NO_MYSQL__
+	// A failed first save/hydration must not submit zero or partial revisions.
+	if (IS_SET(character->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE))
+		return false;
+#endif
 	const char *account_name = get_account_name_safe(character);
 	if (!account_name || !strcmp(account_name, "Unknown") ||
 	    strlen(account_name) > CURRENCY_ACCOUNT_NAME_MAX_BYTES)
