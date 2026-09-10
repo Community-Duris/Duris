@@ -1617,7 +1617,7 @@ void ne_events(void)
 			if (periodic_callback)
 				nevent_periodic_complete(current_nevent);
 			PROFILE_END(event_func);
-			PROFILE_REGISTER_CALL(callback_func, PROFILE_LAST_US(event_func))
+			PROFILE_REGISTER_CALL(callback_func, event_func)
 #else
 			(callback_func)(current_nevent->ch, current_nevent->victim,
 					current_nevent->obj, current_nevent->data);

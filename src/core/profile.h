@@ -24,6 +24,7 @@ typedef struct
 	bool start_valid;
 	bool end_valid;
 	bool skip_next_end;
+	bool last_valid;
 } profile_timer;
 
 static inline bool profile_monotonic_us(uint64_t *result)
@@ -39,6 +40,7 @@ static inline void profile_timer_rebase(profile_timer *timer)
 	timer->started_us = now_us;
 	timer->ended_us = now_us;
 	timer->last_us = 0;
+	timer->last_valid = false;
 	timer->start_valid = valid;
 	timer->end_valid = valid;
 	timer->skip_next_end = true;
@@ -56,6 +58,7 @@ static inline void profile_timer_start(profile_timer *timer)
 {
 	uint64_t now_us = 0;
 	timer->skip_next_end = false;
+	timer->last_valid = false;
 	timer->start_valid = profile_monotonic_us(&now_us);
 	if (!timer->start_valid)
 		return;
@@ -70,12 +73,14 @@ static inline void profile_timer_end(profile_timer *timer)
 	{
 		timer->skip_next_end = false;
 		timer->last_us = 0;
+		timer->last_valid = false;
 		timer->end_valid = profile_monotonic_us(&timer->ended_us);
 		return;
 	}
 	uint64_t now_us = 0;
 	const bool valid = profile_monotonic_us(&now_us);
 	timer->last_us = 0;
+	timer->last_valid = false;
 	if (!valid)
 	{
 		timer->end_valid = false;
@@ -86,6 +91,7 @@ static inline void profile_timer_end(profile_timer *timer)
 	if (timer->start_valid && now_us >= timer->started_us)
 	{
 		timer->calls++;
+		timer->last_valid = true;
 		timer->last_us = now_us - timer->started_us;
 		timer->total_inside_us += timer->last_us;
 	}
@@ -142,10 +148,11 @@ static inline void profile_timer_end(profile_timer *timer)
 	save_profile_data(#var, var##_profile.total_inside_us, var##_profile.total_outside_us, \
 			  var##_profile.calls);
 
-#define PROFILE_REGISTER_CALL(func, duration_us)                           \
-	{                                                                  \
-		if (do_profile)                                            \
-			register_func_call((void *)(func), (duration_us)); \
+/* Only complete, valid intervals contribute to per-function profiling. */
+#define PROFILE_REGISTER_CALL(func, var)                                           \
+	{                                                                          \
+		if (do_profile && var##_profile.last_valid)                        \
+			register_func_call((void *)(func), var##_profile.last_us); \
 	}
 
 extern void save_profile_data(const char *name, uint64_t total_inside_us, uint64_t total_outside_us,
@@ -169,7 +176,7 @@ extern void reset_func_call_info();
 #define PROFILE_END(var)
 #define PROFILE_LAST_US(var) 0
 #define PROFILE_SAVE(var)
-#define PROFILE_REGISTER_CALL(func, duration_us)
+#define PROFILE_REGISTER_CALL(func, var)
 
 #endif
 

@@ -45,6 +45,14 @@ static int fake_clock_gettime(clockid_t clock_id, struct timespec *result)
 
 bool do_profile = true;
 PROFILE_DEFINE(probe);
+static uint64_t registered_calls = 0;
+static uint64_t registered_total_us = 0;
+void register_func_call(void *, uint64_t duration_us)
+{
+	++registered_calls;
+	registered_total_us += duration_us;
+}
+
 
 static void set_samples(const fake_sample *values, size_t count)
 {
@@ -67,9 +75,17 @@ int main()
 	set_samples(normal, sizeof normal / sizeof normal[0]);
 	PROFILE_RESET(probe);
 	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(probe_profile.calls == 2);
 	assert(probe_profile.total_inside_us == 80000);
 	assert(probe_profile.total_outside_us == 80000);
@@ -84,7 +100,11 @@ int main()
 		    sizeof after_disabled_interval / sizeof after_disabled_interval[0]);
 	PROFILE_REBASE(probe);
 	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(probe_profile.total_outside_us == 90000);
@@ -92,14 +112,17 @@ int main()
 
 	const fake_sample rebase_during_outer_command[] = {
 		{ 0, 55, 0 },
- { 0, 55, 50000000 },
+	{ 0, 55, 50000000 },
 	};
 	set_samples(rebase_during_outer_command,
 		    sizeof rebase_during_outer_command / sizeof rebase_during_outer_command[0]);
 	PROFILE_REBASE(probe);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(sample_index == 2);
- assert(probe_profile.ended_us == 55050000);
+	assert(probe_profile.ended_us == 55050000);
 	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
@@ -110,7 +133,11 @@ int main()
 	};
 	set_samples(failed_start, sizeof failed_start / sizeof failed_start[0]);
 	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
@@ -122,34 +149,59 @@ int main()
 	set_samples(invalid_nanoseconds,
 		    sizeof invalid_nanoseconds / sizeof invalid_nanoseconds[0]);
 	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
 
 	const fake_sample failed_end[] = { { 0, 67, 0 }, { -1, 0, 0 } };
- set_samples(failed_end, 2);
- PROFILE_START(probe);
- PROFILE_END(probe);
- assert(probe_profile.calls == 3 && PROFILE_LAST_US(probe) == 0);
+	set_samples(failed_end, 2);
+	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
+	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
+	assert(probe_profile.calls == 3 && PROFILE_LAST_US(probe) == 0);
 
- const fake_sample backwards[] = {
+	const fake_sample backwards[] = {
 		{ 0, 70, 0 },
 		{ 0, 69, 0 },
 	};
 	set_samples(backwards, sizeof backwards / sizeof backwards[0]);
 	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
+
+	// A real zero-duration interval is valid and must still be registered.
+	const fake_sample zero[] = { { 0, 80, 0 }, { 0, 80, 0 } };
+	set_samples(zero, 2);
+	PROFILE_START(probe);
+	assert(!probe_profile.last_valid);
+	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == 4 && probe_profile.calls == 4);
+	assert(registered_total_us == probe_profile.total_inside_us);
 
 	do_profile = false;
 	set_samples(normal, sizeof normal / sizeof normal[0]);
 	PROFILE_START(probe);
 	PROFILE_END(probe);
+	PROFILE_REGISTER_CALL(nullptr, probe);
+	assert(registered_calls == probe_profile.calls);
+	assert(registered_total_us == probe_profile.total_inside_us);
 	assert(sample_index == 0);
-	assert(probe_profile.calls == 3);
+	assert(probe_profile.calls == 4);
 
 	puts("monotonic profile timer runtime checks passed");
 	return 0;
@@ -214,6 +266,8 @@ assert contains(events, '" duration_us=%" PRIu64')
 assert contains(events, '" total_calls=%" PRIu64 " average_us=%.0f')
 assert contains(debug, "PROFILES(REBASE);")
 assert contains(profile, "skip_next_end")
+assert contains(events, "PROFILE_REGISTER_CALL(callback_func, event_func)")
+assert contains(profile, "do_profile && var##_profile.last_valid")
 
 with tempfile.TemporaryDirectory(prefix="duris-profile-") as directory:
     temporary = Path(directory)

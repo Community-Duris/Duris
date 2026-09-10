@@ -488,7 +488,8 @@ The latest adversarial review was checked against PR head `42cc2bd56`.
 10. Verified that `contract_text.contains` already ignores code whitespace.
     Simplified the call assertion and removed the initialization micro-optimization
     assertion; retained behavior and ordering contracts.
-11. Failed profiler intervals no longer increment measured call counts; skipped
+11. Failed profiler intervals no longer increment measured call counts or
+    per-function event registrations; genuine zero-duration calls still count. Skipped
     rebase ends refresh the outside-time baseline. Suppression names and retention
     limits are documented, and missing ticks cannot bypass throttling.
 
@@ -501,3 +502,11 @@ documentation, and minimal-boot contracts also pass.
 The local player-data limitation documented above remains: live playing, pager,
 editor, and debug-profile command execution is not claimed by these harnesses.
 No player data or credentials were repaired for this review.
+
+
+The complete local non-database gate on the primary review fixes passed all 437
+Python regressions and the native signal-handler gate. It included real isolated
+flatfile account recovery, character creation, combat/reload, full-world boot,
+and item-movement prompt journeys. The final per-function profiler validity
+follow-up passed the extended profile and scheduler ASan/UBSan regressions and
+`make -C src -j4`; final PR CI rechecks the complete gate on that follow-up.
