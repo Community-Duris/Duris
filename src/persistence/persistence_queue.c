@@ -717,6 +717,8 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 {
 	persistence_event_queue_data *q = &persistence_scalar_event_queue;
 	int ok = 1;
+	int latency_drop_records = 0;
+	bool latency_ok_record = false;
 
 	if (!line || !*line)
 		return 0;
@@ -764,7 +766,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 			      "persistence_scalar_event_queue_enqueue: failed to grow queue\n");
 			q->dropped++;
 			ok = 0;
-			latency_trace_record("scalar_enq_drop", 0, 0);
+			latency_drop_records++;
 		}
 	}
 
@@ -772,7 +774,7 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 	{
 		q->dropped++;
 		ok = 0;
-		latency_trace_record("scalar_enq_drop", 0, 0);
+		latency_drop_records++;
 	}
 	else
 	{
@@ -781,10 +783,16 @@ int persistence_scalar_event_queue_enqueue(const char *line)
 		q->tail = (q->tail + 1) % q->capacity;
 		q->count++;
 		pthread_cond_signal(&persistence_scalar_event_queue_cond);
-		latency_trace_record("scalar_enq_ok", 0, 0);
+		latency_ok_record = true;
 	}
 
 	pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+	while (latency_drop_records-- > 0)
+		latency_trace_record_nonblocking("scalar_enq_drop", 0,
+						 LATENCY_TRACE_TICK_UNAVAILABLE);
+	if (latency_ok_record)
+		latency_trace_record_nonblocking("scalar_enq_ok", 0,
+						 LATENCY_TRACE_TICK_UNAVAILABLE);
 
 	return ok;
 }
@@ -1765,18 +1773,4 @@ const char *persistence_sql_escape_field(const char *in, char *buf, int buf_size
 	}
 	buf[j] = '\0';
 	return buf;
-}
-
-void persistence_queue_latency_dump(void)
-{
-	FILE *f = fopen("/durismud/logs/latency_trace.log", "a");
-	if (!f)
-		return;
-	latency_trace_dump(f);
-	fclose(f);
-}
-
-void persistence_queue_latency_reset(void)
-{
-	latency_trace_reset();
 }
