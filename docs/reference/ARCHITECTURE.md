@@ -127,19 +127,38 @@ These properties of the wheel are load-bearing:
 
 ### Command gate
 
-`comm.c` will not dequeue a descriptor's input while `PLR2_WAIT` is set
-(`CAN_ACT(ch)`). The bit is set by `CharWait()` and cleared by the `event_wait`
-event it schedules - so any path where that event is not scheduled, or is
-starved, leaves the player silently unable to act with the connection still up.
+`CharWait()` controls `PLR2_WAIT` (`CAN_ACT(ch)`) and schedules `event_wait`
+to clear it. It handles scheduling refusal, clamps negative delay, and records
+an absolute `wait_until_pulse` deadline with two seconds of grace. The command
+sweep clears a stuck wait when its event is absent or that deadline has passed.
+This bounds the wait flag when the loop runs; it cannot prevent whole-loop stalls.
+The deadline is runtime-only.
 
-`CharWait()` therefore clamps a negative delay, clears `PLR2_WAIT` again if
-`add_event()` refused the event, and records `ch->specials.wait_until_pulse`, an
-absolute deadline in `ne_event_tick` pulses (the delay plus a 2 s grace). The
-gate in `comm.c` clears the bit before reading input if no `event_wait` is
-scheduled *or* the deadline has passed, and logs which case it was. A player can
-no longer be gated for longer than the wait that was actually requested,
-independently of the health of the event system. `wait_until_pulse` is
-runtime-only and never saved.
+Casting has a separate `AFF2_CASTING` flag. The selective queue permits `abort`,
+`petition`, and `return` past blocked type-ahead, but currently selects that queue
+only when both casting and action-wait are active. If the wait clears first,
+ordinary input can be dequeued and rejected by the interpreter. This known gap is
+tracked in [#186](https://github.com/Community-Duris/Duris/issues/186);
+stateful spell/memorization scheduling failures are tracked separately in
+[#188](https://github.com/Community-Duris/Duris/issues/188).
+
+### Movement lifetime guard
+
+`src/cmd/actmove.c::do_move()` snapshots `character_removal_generation` before
+`do_simple_move()`. `extract_char()` and `free_char()` increment this unsigned
+64-bit counter before nested work or teardown. If no removal occurred during
+that synchronous call, the post-move global membership scan can be skipped.
+Otherwise the original `char_in_list()` check runs before `IS_ALIVE()` can
+read the mover. Removing an unrelated character must trigger the fallback scan,
+not suppress valid post-move work.
+
+The counter belongs to the single game-state thread. New movement-reachable
+unlink/free paths must invalidate it before releasing storage. This preserves
+pointer-membership semantics, including their existing address-reuse limitation;
+it is not an object-identity registry. The separate room-procedure guard in
+`char_to_room()` remains. `test_movement_liveness_runtime.py` exercises the
+production movement tail with synthetic lifecycle outcomes under ASan/UBSan;
+`test_kingdom_contract.py` pins the production invalidation hooks.
 
 ## Boot sequence
 
@@ -290,3 +309,19 @@ In-game `help` is database-backed: `wiki_help()` queries the `pages` table and
 renders wiki-formatted text (`src/cmd/wikihelp.c`), augmented by command attributes
 loaded from `docs/lib/information/command_attributes.txt`. Pipeline details:
 [HELP_SYSTEM.md](../content/HELP_SYSTEM.md).
+
+## Output transport lifetime
+
+`src/net/comm.c` retains actual transport bytes, including compressed output,
+in a bounded descriptor-owned queue. Partial plain/TLS sends and temporary
+backpressure leave unsent bytes queued for a later pulse; interrupted TLS records
+must resume before new data. Fatal writes or queue-limit violations close the
+descriptor, whose teardown releases the buffer. Newline/CP437 conversion uses
+bounded dynamic storage because combining individually bounded messages can
+exceed a fixed stack buffer.
+
+`CON_FLUSH` closes only after application, transport, and WebSocket/control
+queues drain in the output loop. Logout must deliver its goodbye and server EOF
+without another client command. `test_telnet_output_runtime.py` covers partial
+writes, retries, bounds and compression fidelity; the full-world journey checks
+account logout before and after process restart.

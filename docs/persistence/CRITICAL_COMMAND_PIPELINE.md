@@ -109,3 +109,30 @@ the epic balance. New-character initialization and authoritative SQL hydration a
 only non-transactional in-memory assignments. Focused validation is
 `python3 tests/async/test_epic_transaction_contract.py` and, on a guarded development
 database, `tests/async/run_epic_transaction_schema_mysql.sh`.
+
+## Physical coin custody
+
+`coin_transfer_command` and the currency coordinator commit wallet and physical
+pile changes together on both SQL and flat-file authority. Payload amounts,
+UID/custody, owner revisions, conservation, overflow, and operation-ID replay
+are checked before publication. The SQL parent receipt identifies both child
+operation IDs in the same transaction. Saved item `coin_payload` preserves the
+pile denominations for reload; ordinary snapshots do not create custody.
+
+An untracked NPC-wallet or reset-created pile first passes the existing absent-item
+admission path. Admission grants no money: wallet credit follows the separate
+atomic pickup commit. Its continuation rechecks the original container UID,
+location/accessibility, and custody, so moving the source during admission cannot
+publish a stale pickup. Existing active/retired durable UID conflicts fail closed.
+
+Flat-file coin publication updates the affected room projection in the same
+authority transaction, including partial piles and container weights. Otherwise
+a successful coin pickup could advance custody while leaving the next ordinary
+item pickup unable to materialize the room revision.
+
+Coin publication callbacks have at most eight attempts. On permanent publication
+failure, `EOWNERDEAD` cleanup clears retained command context and retires pending
+work without refunding an already committed debit or reporting it as rejected.
+Durable custody and command evidence remain the recovery source. The focused
+`test_coin_custody_lifecycle.py` and `test_currency_input_queue.py` harnesses and
+`run_currency_transaction_schema_mysql.sh` cover this boundary.

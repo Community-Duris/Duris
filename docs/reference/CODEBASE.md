@@ -255,3 +255,52 @@ and `test_relic_lab_reset_bounds.py` cover these paths.
   the `affects` and `pfile_converter` targets for those dedicated binaries.
 - `areas/src/` — area compiler tools that turn per-area source dirs into
   combined `world.*` files.
+
+## Bartender world-quest catalog
+
+`src/world/world_quest_policy.c` builds the global catalog once at boot through
+`calc_zone_mob_level()`, after world indexes, special procedures, and map setup.
+Both persistence backends use loaded content; `zones.quest_zone` is not an
+approval list. Repeated quest requests reuse cached mobile profiles, reward
+pools, and per-level scores rather than scanning all prototypes or querying SQL
+for zone eligibility. Temporary probes restore live entity counts.
+
+Policy excludes sentinel/non-normal zones, explicit zones 0/292/536, towns and
+hometowns, and zones without eligible local rewards. The truncated average
+prototype level must lie strictly inside `(L - 7, L + 5)`. Mapless zones require
+level 41 or higher. Source-eligible rewards pass the floor `2 * itemvalue >= L`;
+reward counts and means are calculated after that filter.
+
+For eligible zones, the relative selection weight is
+`exp(-abs(average_level - L) / 6) * (average_ivalue / L) * eligible_item_count`.
+Item count is deliberately linear; zero-reward zones have zero weight. See
+`world_quest_policy_math.h` for boundaries and constants.
+
+Targets use the inclusive level band `[L - 4, L + 5]`. Kill targets need at
+least two existing instances; ask targets need exactly one, speech capability,
+and no player-specific aggression. Below level 31, invisible/concealed/hidden
+ask targets are excluded. Dynamic aggression probes and completion-history
+checks each have a request-wide budget of 32. Previously completed targets are
+excluded from subsequent retries; a history-read error stops assignment.
+
+`createQuest()` distinguishes no eligible zone from no valid target, and the
+bartender refunds the fee on failure. Completion history still uses each
+backend's world-quest adapter. Reward selection uses the accepted quest level's
+cached pool, with the existing logged random-equipment fallback if unavailable.
+`tests/async/run_world_quest_dual_backend.py` exercises real quest grant and
+persistence in disposable MariaDB and flat-file instances; focused
+`test_world_quest_*` tests cover policy and failure boundaries.
+
+## Shared NPC area-target pruning
+
+The shared area-selection helper in `src/core/utility.c` protects an autonomous
+NPC caster's eligible melee opponent as well as its explicit spell target from
+random player-target pruning. It caps the skip count at the remaining
+unprotected players. This policy applies to shared NPC area spells, including
+Death Field; it does not bypass altitude, safe-room, alive-target or damage
+checks. Charmed NPCs and bodies controlled by switched immortals retain the
+player-controlled pruning policy.
+
+`test_death_field_runtime.py` runs the production casting/selection/damage
+chain with controlled world and defense fixtures. Its group-target cases
+verify the pruning policy; they do not reproduce every reported encounter.

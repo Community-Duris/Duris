@@ -129,3 +129,41 @@ Production execution requires explicit owner permission. After commit, reconcile
 selection, bank ownership, item custody, ship ownership, notification/read visibility,
 and all foreign keys; start the service only after the runtime readiness gates pass and
 review authorization/refusal logs through the soak period.
+
+## Cross-layer acceptance
+
+Schema compatibility, foreign keys, and repository extraction are necessary but
+insufficient import checks. Validate the effective runtime graph after saved
+prototype overrides: a container prototype overridden to armor cannot hold
+children. Pet stat bounds and saved owner-room equality must pass the real
+materializer before enabling character selection.
+
+Compare the candidate to an immutable pre-merge reference at row/value level.
+Name columns explicitly when source/target column order differs. A logical dump
+may round single-precision values; prove the restored backup matches the required
+recovery contract before using it as the preservation oracle. Treat UID, artifact,
+ancestry, and identity ambiguities as protected evidence, never as permission to
+choose an arbitrary matching row.
+
+Application links need semantic validation too. A notification may have valid
+JSON and account foreign keys while pointing at an auction deliberately excluded
+from import; an image row may exist without any reachable post/thread. Current
+control/session/transactional state and reconstructed wiki generations are not
+portable merely because their schemas match. Explicitly classify each non-empty
+source table before executing an exceptional merge.
+
+For a shared MUD/web deployment, inventory every writer and ingress service before
+maintenance, restore the complete stopped service group, and require public health
+as well as local readiness. A healthy origin alone cannot prove public recovery.
+DurisWeb's [maintenance recovery issue](https://github.com/Community-Duris/DurisWebApp/issues/11)
+tracks the complete-group contract.
+
+DurisWeb has recorded final import dispositions for
+[quarantined items](https://github.com/Community-Duris/DurisWebApp/blob/master/docs/post-import/quarantined-item-disposition.md),
+[normalized affiliations](https://github.com/Community-Duris/DurisWebApp/blob/master/docs/post-import/legacy-affiliation-disposition.md),
+and [orphaned PvP comments](https://github.com/Community-Duris/DurisWebApp/blob/master/docs/post-import/orphaned-pvp-comment-disposition.md).
+Those decisions do not authorize MUD-side recovery or imply that the protected
+work in [#126](https://github.com/Community-Duris/Duris/issues/126) and
+[#127](https://github.com/Community-Duris/Duris/issues/127) has been executed.
+The original dump, stage, and private recovery artifacts remain operator evidence;
+removing a temporary Markdown journal never authorizes their deletion.

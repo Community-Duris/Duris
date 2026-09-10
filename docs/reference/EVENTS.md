@@ -104,6 +104,9 @@ Within a bucket, insertion uses this total order:
 2. higher effective priority; then
 3. lower `sequence` (stable FIFO for otherwise equal events).
 
+Due tick is compared before priority: player priority cannot bypass older
+overdue background work.
+
 With `DURIS_NEVENT_PLAYER_PRIORITY=1`, latency-sensitive player callbacks have
 player priority: command waits, spell casts, memorization, affect balancing,
 and player regeneration. Ordinary events age above player priority after two
@@ -128,6 +131,28 @@ payload destructor, reconciles any deferral debt, decrements the live counter,
 and returns the record to the pool. Results distinguish immediate cancellation,
 deferred reclamation, stale handles, already-inactive events, invalid handles,
 and wrong-thread calls.
+
+### Short-affect owner lifetime
+
+`src/magic/affects.c::event_short_affect()` requires non-null owner/payload
+and matching owner pointers, then verifies that the affect still belongs to
+that character before emitting wear-off text and removing it. Pointer equality
+is a consistency check, not proof of lifetime.
+
+NPC expiry skips the global character-list scan because extraction and freeing
+cancel owned events before releasing the NPC. Both `affect_to_char()` and
+`set_short_affected_by()` attach the same character as owner and payload.
+Any new NPC teardown or restoration path must preserve that cancellation order.
+PC expiry retains the membership scan: player loading can restore affects before
+world-list insertion, so extending the NPC shortcut to PCs requires a separate
+lifetime audit.
+
+A callback that cancels itself remains cancellation-pending until end-of-pass
+reclamation. The dispatcher must not destroy it immediately and leave a freed
+record in the pending-cancellation list. The short-affect mode in
+`tests/async/test_nevent_scheduler_runtime.py` covers expiry, self-cancellation,
+owner deletion, address reuse, and zero NPC membership-list visits under sanitizers;
+`test_nevent_cancellation_runtime.py` covers the general cancellation contract.
 
 ## Per-pulse limits and overload recovery
 

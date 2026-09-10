@@ -164,3 +164,18 @@ bound.
   `tests/async/test_bulk_drop_put_durable_chain.py`,
   `tests/async/test_actobj_get_limits.py`, and
   `tests/async/test_wear_all_regression.py`
+
+## Asynchronous completion prompts
+
+`src/net/comm.c::process_output()` leaves an ordinary command prompt pending
+while item movement or currency publication reports the player busy, including
+inbound transfers covered by those coordinators. Queued text and unrelated
+asynchronous output still flush. Pager and string-editor prompts retain their
+own behavior. The leading newline is chosen using the deferred-prompt state so
+a delayed pickup preserves the synchronous byte ordering.
+
+`test_item_movement_prompt_runtime.py` exercises real prompt generation and
+Telnet/WebSocket text serialization with held coordinator completions, compact
+and smart-prompt variants, combat, pager/editor and switched descriptors. It
+uses fixture pickup text and transport endpoints; it is not a full browser
+network or `do_get()` journey.

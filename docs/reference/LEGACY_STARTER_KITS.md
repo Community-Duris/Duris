@@ -31,6 +31,27 @@ or the remaining queue. Existing ownership revisions, operation IDs, retries,
 replay receipts, command/prompt gates, and snapshot save ordering remain authority.
 No new worker, persistence format, database migration or recovery queue is added.
 
+## Transient gear and ownership
+
+`ITEM_TRANSIENT` controls dissolution after dropping; `ITEM_NORENT` separately
+excludes an item from player snapshots. Eligible transient gear, including flags
+inherited from prototypes, must acquire active player custody through
+`obj_to_char()` before publication. Containers and quivers are exempt from the
+legacy kit's added transient flag, but that exemption does not erase prototype
+flags or replace ownership admission.
+
+Snapshots retain eligible transient UIDs, flags, equipment slots, and container
+relationships. Both loaders require authoritative custody; an orphan payload
+must not be made loadable merely because it is transient. The grant correction
+prevents new missing-grant items, but does not recover previously lost payloads
+or backfill already-unowned inventory. Preserve incident payloads before another
+full save and use protected ownership evidence for any recovery.
+
+`extract_obj()` is a general teardown primitive and does not itself retire
+custody. Gameplay destruction requiring a durable record must use
+`item_transfer_reason::destruction`; adding unconditional transactions to every
+shutdown/copyover extraction would violate that lifecycle boundary.
+
 ## Verification
 
 Focused tests are automatically discovered by the normal regression runner:

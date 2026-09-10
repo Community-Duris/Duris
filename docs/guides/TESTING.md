@@ -78,6 +78,35 @@ the three scripts at the root of `tests/` require explicitly named disposable
 or read-only databases and are manual migration-verification tools. Never point
 them at production.
 
+MySQL fixtures that reuse a table within a statement must account for MySQL's
+`Can't reopen table` restriction on connection-local temporary tables; MariaDB
+may accept the same fixture. Use isolated ordinary tables with explicit cleanup
+when needed to execute the actual production query shape. Do not weaken queries
+or narrow the backend matrix merely to make a temporary-table fixture pass.
+
+## Full-world save diagnostics
+
+`test_flatfile_full_world_boot.py` supports opt-in synthetic failure/recovery
+experiments without using the configured database:
+
+| Variable | Effect |
+| --- | --- |
+| `DURIS_FULL_WORLD_ARTIFACT_DIR` | Retain failed synthetic authority, journals, transcripts, and server diagnostics in a private untracked directory; TLS keys are excluded and the fixture password is redacted. |
+| `DURIS_FULL_WORLD_REPEATS` | Run 1-100 fresh fixture journeys with one build. |
+| `DURIS_FULL_WORLD_BINARY_CACHE` | Optional path below `bin/`; reuse requires matching source/build-environment and executable hashes. This is specific to this test, not a suite-wide build cache. |
+| `DURIS_FULL_WORLD_DELAY_CAMP=1` | Hold the synthetic player lock through camp timeout; verify retention, automatic retry, and a later fresh-intent camp. |
+| `DURIS_FULL_WORLD_CRASH_PHASE` | `before_ack` or `after_ack` replaces the first clean shutdown with an intentional crash around the save durability boundary. |
+
+Normal runs keep their original deadlines and successful-fixture cleanup.
+Classify failures by boot, manual save, camp, recovery, or shutdown; distinguish
+an observation timeout from a rejected save. Retain the revision/worker timeline
+before diagnosing storage or scheduler latency. A passing rerun cannot establish
+the cause of a historical failure whose timeline was discarded.
+
+The separate combat journey reconnects after creation to hydrate account-bank
+revision and disables optional boons. It proves that stated fixture scope;
+it does not prove first-session currency or boon-enabled death/reward behavior.
+
 ## Validation matrix
 
 No single command proves release readiness. Use the narrowest applicable row while

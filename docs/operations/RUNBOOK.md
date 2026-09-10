@@ -65,6 +65,27 @@ Graceful shutdown from inside the game: immortal `shutdown` command
 and then removes. Copyover (`copyover` command) execs a fresh binary while
 keeping player connections alive via `copyover.dat`.
 
+### Executable rollback and callback labels
+
+Before an authorized clean build or rollout, identify the actual supervisor,
+its system/user scope, and the executable behind the listener. A service name
+or port alone does not establish environment role. Preserve the executable
+bytes and matching backend/profile stamp outside `bin/`, together with any
+runtime maintenance-scheduler state under that deletion boundary.
+`make clean-all` removes `bin/`.
+
+When copying `/proc/<pid>/exe`, dereference it into a regular file (for example,
+`cp -L`), verify that the copy is not a symlink, and compare SHA-256 digests.
+An archived proc symlink can hash correctly while the process lives and still
+be useless after exit. Verify the running executable after promotion as well;
+an ordinary in-game reboot is not proof that staged code was loaded.
+
+Callback labels in `lib/misc/event_names` must match the loaded executable.
+The launcher regenerates them with `nm --demangle`; an in-process code copyover
+must also use a matching map. Stale addresses can invalidate callback-family
+profiles even when the executable is correct. Follow the existing deployment
+path and verify both identities before comparing profiles.
+
 ### Stopping a local instance
 
 Use the same mode that started the instance:
@@ -272,8 +293,54 @@ Useful checks:
 
 ```bash
 tail -f logs/log/status                 # boot + DB issues
-grep -i 'NEVENT BUDGET' logs/log/syslog # event-callback latency telemetry
+rg 'NEVENT BUDGET' logs/log/status # event-callback latency telemetry
 ```
+
+### Command and event latency
+
+Automatic 300-pulse windows in `logs/latency_trace.log` and stderr use the same
+immutable snapshot. Join command, slow-tick, and scheduler records by boot ID,
+absolute tick, and monotonic pulse-start time; the trace file spans boots.
+Worker samples render unavailable ticks as `-`. Window counts/min/max/means and
+the exact bounded top ten describe that window, not process lifetime. Check
+`dropped_section_samples`, `dropped_contended_samples`, and
+`invalid_clock_samples` before interpreting an incomplete capture.
+
+`COMMAND OP SLOW` and command-sweep reports start at 50,000 microseconds even
+with debug profiling off. They distinguish playing, nanny, pager, editor, SSL,
+and descriptor maintenance. `unattributed_sweep_us` covers work outside the
+explicit scopes, including gates and dequeue. Playing labels use canonical
+command names or `unknown`; arguments and nanny/editor input are excluded.
+Reports retain at most eight slow operations and throttle output to one report
+per four pulses, carrying suppression counts and the worst suppressed operation
+into the next due report. A small event bucket does not explain a large command
+bucket; a budget-exhausted event pass is not necessarily a 250 ms loop overrun.
+
+For an authorized, bounded profiling capture, use `debug profile off`,
+`debug profile reset`, `debug profile on`, then after the observation interval
+`debug profile off` and `debug profile save`. These timers measure monotonic
+elapsed work, including blocking time, not total process CPU. Compare callback
+counts and per-call cost as well as totals. Nested scopes overlap and must not
+be summed. The `nevent_defer_collect`, `nevent_defer_unlink`,
+`nevent_defer_sort`, and `nevent_defer_merge` scopes isolate deferral phases;
+`short_affect_liveness` measures the conditional owner-membership guard.
+Verify profiling is off after capture.
+
+`DURIS_NEVENT_TRACE_PLAYER=1` adds per-callback due/actual ticks, lateness,
+sequence, and elapsed time to `logs/log/status`; `DURIS_NEVENT_ANALYTICS=1`
+adds callback-family windows. These settings are cached after first use and
+must be supplied to the process before use. Player traces contain player IDs:
+keep raw captures private, bound their duration, and separate startup from
+steady-state observations. The maximally late callback in a budget report is
+not a complete count of late callbacks and may belong to an NPC.
+
+For casting complaints, correlate a controlled mortal cast's intended duration,
+callback timing, completion/abort, and queued input. `event_spellcast()` schedules
+continuations relative to actual execution, so segment lateness can accumulate.
+The casting/wait mismatch is tracked in
+[#186](https://github.com/Community-Duris/Duris/issues/186). Aggregate scheduler
+samples alone do not establish a particular player's delay or justify changing
+NPC cadence, priority ordering, or budgets.
 
 ### Persistence health
 
