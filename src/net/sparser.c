@@ -1206,6 +1206,24 @@ void StopCasting(P_char ch)
 	clear_links(ch, LNK_CAST_WORLD);
 }
 
+// The scheduler copies the outer payload only; its string remains ours on rejection.
+static bool schedule_spellcast(P_char ch, P_char victim, int delay, spellcast_datatype *data)
+{
+	if (add_event(event_spellcast, delay, ch, victim, 0, 0, data, sizeof(*data)))
+		return true;
+
+	if (data->arg)
+	{
+		FREE(data->arg);
+		data->arg = NULL;
+	}
+	StopCasting(ch);
+	disarm_char_nevents(ch, event_abort_spell);
+	disarm_char_nevents(ch, event_wait);
+	REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+	return false;
+}
+
 void do_abort(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!IS_ALIVE(ch))
@@ -2142,8 +2160,8 @@ void do_will(P_char ch, char *argument, int /*cmd*/)
 	tmp_spl.timeleft -= dura;
 	DelayCommune(ch, dura);
 	SET_BIT(ch->specials.affected_by2, AFF2_CASTING);
-	add_event(event_spellcast, BOUNDED(1, dura, 4), ch, common_target_data.t_char, 0, 0,
-		  &tmp_spl, sizeof(struct spellcast_datatype));
+	if (!schedule_spellcast(ch, common_target_data.t_char, BOUNDED(1, dura, 4), &tmp_spl))
+		return;
 	if (common_target_data.t_char)
 	{
 		if (IS_SET(skills[common_target_data.ttype].targets, TAR_CHAR_WORLD))
@@ -2516,8 +2534,8 @@ void do_cast(P_char ch, char *argument, int cmd)
 	}
 
 	SET_BIT(ch->specials.affected_by2, AFF2_CASTING);
-	add_event(event_spellcast, BOUNDED(1, dura, 4), ch, common_target_data.t_char, 0, 0,
-		  &tmp_spl, sizeof(struct spellcast_datatype));
+	if (!schedule_spellcast(ch, common_target_data.t_char, BOUNDED(1, dura, 4), &tmp_spl))
+		return;
 
 	if (common_target_data.t_char)
 	{
@@ -2689,8 +2707,7 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 		i = MIN(arg->timeleft, 4);
 		arg->timeleft -= i;
 		DelayCommune(ch, i);
-		add_event(event_spellcast, BOUNDED(1, i, 4), ch, tar_char, 0, 0, arg,
-			  sizeof(struct spellcast_datatype));
+		schedule_spellcast(ch, tar_char, BOUNDED(1, i, 4), arg);
 		return;
 	}
 
