@@ -44,14 +44,28 @@ static critical_submit_result submit_result = critical_submit_result::accepted;
 static std::map<uint64_t, int> publications, extractions;
 static std::map<int, int> dirty, commands;
 static std::string fixture_messages;
+static bool recover_creation = false;
+static obj_data recovered_creation = {};
 void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
                        const char *, ...) {}
 bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
-                                                 const item_transfer_result &, std::vector<P_obj> *)
+                                                 const item_transfer_result &,
+                                                 std::vector<P_obj> *roots)
 {
-    return false;
+    if (!recover_creation || !roots)
+        return false;
+    recovered_creation = {};
+    recovered_creation.obj_uid = 100;
+    recovered_creation.R_num = 0;
+    recovered_creation.type = ITEM_CONTAINER;
+    recovered_creation.loc_p = LOC_NOWHERE;
+    recovered_creation.next = nullptr;
+    object_list = &recovered_creation;
+    roots->clear();
+    roots->push_back(&recovered_creation);
+    return true;
 }
 void __free(void *p, const char *, int) { free(p); }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
@@ -278,6 +292,22 @@ int main()
         deliver(retried);
         assert(publications[100] == 1 && extractions.empty());
         assert(!item_movement_transaction_player_busy(&f.actor));
+    }
+    // A committed normal grant with a missing live object is rebuilt from its
+    // single-root payload before publication, without losing durability.
+    {
+        fixture f;
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
+        const auto completed = next_completion(critical_apply_outcome::applied);
+        object_list = &f.extra;
+        f.extra.next = &f.food;
+        f.food.next = nullptr; // Remove the original grant from the live index.
+        recover_creation = true;
+        deliver(completed);
+        assert(OBJ_CARRIED_BY(&recovered_creation, &f.actor));
+        assert(publications[100] == 1 && extractions.empty());
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        recover_creation = false;
     }
     // A held grant does not publish early or hold an unrelated player's dispatch.
     // After disconnect, publish to the retained character and continue its queue.

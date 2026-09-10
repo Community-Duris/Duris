@@ -35,6 +35,7 @@ def check(label: str, condition: bool) -> None:
 QUEUE_GRANT = function_body(MOVEMENT, "bool queue_creation_grant(")
 RECONCILE = function_body(MOVEMENT, "bool reconcile_creation_grant_batch(")
 BATCH_COMPLETE = function_body(MOVEMENT, "void creation_grant_batch_completion(")
+SINGLE_COMPLETE = function_body(MOVEMENT, "void creation_grant_completion(")
 LIVE_READY = function_body(MOVEMENT, "bool creation_grant_batch_live_ready(")
 MATERIALIZE = function_body(
     LOAD, "bool player_load_item_graph_materialize_creation("
@@ -47,6 +48,29 @@ pop = QUEUE_GRANT.find("queue.requests.pop_back()")
 check("queue_creation_grant retains transient rejections", transient >= 0 and transient < pop)
 check("queue_creation_grant retains the queued request on transient conflict",
       "return true;" in QUEUE_GRANT[transient:pop])
+
+# Single-grant completions use the same retained publication-repair boundary as
+# batch completions; erasing the pending iterator before the callback would lose
+# a failure and invalidate the iterator when a successful callback queues next work.
+check("single grants use the publication helper", "publish_creation_grant(actor, request)" in SINGLE_COMPLETE)
+check("single publication failures retain the queue",
+      "note_creation_grant_publication_failure(actor, queue" in SINGLE_COMPLETE and
+      "return;" in SINGLE_COMPLETE[SINGLE_COMPLETE.find("note_creation_grant_publication_failure"):])
+check("single completion erases pending by stable key after callback",
+      "const std::string pending_key = found->first;" in MOVEMENT and
+      "pending.erase(pending_key);" in MOVEMENT and
+      "pending.erase(found);" not in SINGLE_COMPLETE)
+check("single missing graphs use detached reconciliation",
+      "!entry.creation_batch && entry.completion == creation_grant_completion && committed &&" in MOVEMENT and
+      re.search(r"reconcile_creation_grant_batch\(actor, entry, queue_found->second, result,\s*false\)",
+                MOVEMENT, re.S) is not None)
+
+check("single reconciliation is scoped to one request",
+      re.search(r"!entry\.creation_batch.*?entry\.payload\.reason == item_transfer_reason::creation",
+                MOVEMENT, re.S) is not None and
+      "roots.size() != request_count" in RECONCILE and
+      re.search(r"creation_grant_request_live_ready\(actor,\s*queue_found->second\.requests\.front\(\)\)",
+                MOVEMENT, re.S) is not None)
 
 # A partially published batch must be verified as actually carried, not merely
 # present in NOWHERE, before its queue/pending completion is discarded.
