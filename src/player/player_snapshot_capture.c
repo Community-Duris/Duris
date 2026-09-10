@@ -83,7 +83,7 @@ bool add_status_string(player_snapshot &snapshot, capture_budget &budget,
 	return true;
 }
 
-bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget)
+bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget, int save_intent)
 {
 #define ADD_STATUS(field, value)                                                                \
 	do                                                                                      \
@@ -133,7 +133,10 @@ bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget
 	ADD_STATUS(base_luck, ch->base_stats.Luk);
 	ADD_STATUS(mana, GET_MANA(ch));
 	ADD_STATUS(base_mana, ch->points.base_mana);
-	ADD_STATUS(hit_difference, MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch)));
+	const int hit_difference = save_intent == RENT_DEATH ?
+					   MAX(0, GET_MAX_HIT(ch) - 1) :
+					   MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch));
+	ADD_STATUS(hit_difference, hit_difference);
 	ADD_STATUS(base_hit, ch->points.base_hit);
 	ADD_STATUS(vitality, GET_VITALITY(ch));
 	ADD_STATUS(base_vitality, ch->points.base_vitality);
@@ -612,7 +615,8 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 		snapshot.room_vnum = room_vnum;
 		snapshot.recipes_are_external = true;
 		capture_budget budget;
-		if ((components & PLAYER_COMPONENT_STATUS) && !capture_status(ch, snapshot, budget))
+		if ((components & PLAYER_COMPONENT_STATUS) &&
+		    !capture_status(ch, snapshot, budget, save_intent))
 			return player_snapshot_capture_result::limit_exceeded;
 		{
 			const auto result =

@@ -223,6 +223,8 @@ int main()
     pc.pid = 42;
     pc.wallet_revision = 7;
     GET_GOLD(&ch) = 19;
+    GET_MAX_HIT(&ch) = 500;
+    GET_HIT(&ch) = -25;
     indexes[0].virtual_number = VOBJ_CORPSE;
     indexes[1].virtual_number = VOBJ_COINS;
     indexes[2].virtual_number = 100;
@@ -279,6 +281,9 @@ int main()
     for (size_t i = 1; i < 4; ++i) assert(output.death->corpse[i].parent_index == 0);
     for (const auto &row : output.status_integers)
         if (row.field == player_status_field::gold) assert(row.signed_value == 0);
+    for (const auto &row : output.status_integers)
+        if (row.field == player_status_field::hit_difference)
+            assert(row.signed_value == 499);
     std::vector<uint8_t> encoded;
     assert(player_snapshot_encode(output, &encoded) == player_snapshot_codec_result::ok);
     player_snapshot decoded;
@@ -300,7 +305,10 @@ int main()
     player_snapshot ordinary;
     assert(player_snapshot_capture(&ch, 10,
         PLAYER_CHECKPOINT_COMPONENT_ALL & ~(PLAYER_COMPONENT_INVENTORY | PLAYER_COMPONENT_EQUIPMENT),
-        RENT_DEATH, 22800, &ordinary) == player_snapshot_capture_result::ok);
+        RENT_CRASH, 22800, &ordinary) == player_snapshot_capture_result::ok);
+    for (const auto &row : ordinary.status_integers)
+        if (row.field == player_status_field::hit_difference)
+            assert(row.signed_value == 525);
     assert(player_snapshot_encode(ordinary, &encoded) == player_snapshot_codec_result::ok);
     reject();
     pc.gcmd_arr = nullptr;
