@@ -51,9 +51,11 @@ PRELUDE = r'''
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 static nevent_schedule_status injected;
 static int message_count, frees, meditation_stops;
+static std::string last_message;
 static std::vector<event_func> disarmed;
 static spellcast_datatype copied_cast;
 static int copied_time;
@@ -66,7 +68,7 @@ void event_wait(P_char, P_char, P_obj, void *) {}
 void event_memorize(P_char, P_char, P_obj, void *) {}
 void __free(void *p, const char *, int) { ++frees; std::free(p); }
 bool meming_class(P_char) { return true; }
-void send_to_char(const char *, P_char) { ++message_count; }
+void send_to_char(const char *message, P_char) { ++message_count; last_message = message; }
 void act(const char *, int, P_char, P_obj, void *, int) {}
 void disarm_char_nevents(P_char, event_func_type f) { disarmed.push_back(f); }
 void clear_links(P_char, ush_int type) {
@@ -127,6 +129,9 @@ int main() {
             assert(std::strcmp(queued.text, "look") == 0);
             assert(!room_link && !world_link);
             assert(!payload.arg && frees == 1 && message_count == 1);
+            // StopCasting already supplies feedback; adding another rejection
+            // message would duplicate it for both initial and continued casts.
+            assert(last_message == "&+rYou abort your spell before it's done!\n");
             assert(disarmed.size() == 3);
             assert(disarmed[0] == event_spellcast);
             assert(disarmed[1] == event_abort_spell);
@@ -140,6 +145,7 @@ int main() {
             assert(copied_cast.arg == payload.arg && copied_cast.timeleft == 8);
             assert(submitted == event_spellcast && submitted_delay == 4);
             assert(IS_AFFECTED2(&ch, AFF2_CASTING) && frees == 1);
+            assert(message_count == 1); // Successful retry emits no abort feedback.
             std::free(copied_cast.arg);
         }
         for (bool continuation : {false, true}) {
