@@ -12,9 +12,9 @@ full-world boot rather than harnesses alone.
 DURIS_FULL_WORLD_ARTIFACT_DIR retains synthetic authority, journals, server logs,
 exit status, and a redacted monotonic command/response timeline on failure only.
 Use a private, untracked destination. DURIS_FULL_WORLD_REPEATS (1..100) repeats
-fresh fixture journeys with one freshly built binary. DURIS_FULL_WORLD_BINARY_CACHE
-may name a binary below bin/; reuse requires matching source/environment and
-binary hashes, otherwise a fresh build replaces the cache. The two DURIS_NEVENT trace
+fresh fixture journeys with one server binary. DURIS_FULL_WORLD_BINARY_CACHE
+may name a cache prefix below bin/; verified artifacts live in its .artifacts
+directory. The suite cache takes precedence. The two DURIS_NEVENT trace
 switches are forwarded explicitly; no database or live environment is inherited.
 DURIS_FULL_WORLD_DELAY_CAMP=1 holds the synthetic player lock through the camp
 failure deadline, then verifies online usability, automatic retry, and fresh camp.
@@ -24,6 +24,7 @@ The before_ack case requires DURIS_NEVENT_TRACE_PLAYER=1 to observe submission.
 """
 
 import os
+import server_build_artifacts
 import json
 import hashlib
 import fcntl
@@ -315,55 +316,9 @@ world = subprocess.run(
 require(world.returncode == 0, "full-world data generation failed:\n" + world.stdout[-8000:])
 
 def build_server(build_root):
-    """Reuse a verified cached binary or build an isolated flatfile server."""
-    cache_value = os.environ.get("DURIS_FULL_WORLD_BINARY_CACHE")
-    cache = pathlib.Path(cache_value).resolve() if cache_value else None
-    if cache:
-        require(cache.is_relative_to((ROOT / "bin").resolve()), "binary cache must be below bin/")
-        inputs = subprocess.check_output(
-            ["git", "ls-files", "-co", "--exclude-standard", "-z", "--", "src"], cwd=ROOT)
-        digest = hashlib.sha256()
-        for name in sorted(set(inputs.split(b"\0")) - {b""}):
-            digest.update(name + b"\0" + (ROOT / os.fsdecode(name)).read_bytes())
-        digest.update(subprocess.check_output(["g++", "--version"]))
-        # Build tools and user-provided make flags must match as well as sources.
-        digest.update(json.dumps({k: v for k, v in os.environ.items() if not k.startswith("DURIS_FULL_WORLD_") and k not in ("DURIS_NEVENT_ANALYTICS", "DURIS_NEVENT_TRACE_PLAYER", "PWD", "OLDPWD", "SHLVL", "_")}, sort_keys=True).encode())
-        key = digest.hexdigest()
-        manifest = cache.with_suffix(cache.suffix + ".json")
-        if cache.is_file() and manifest.is_file():
-            metadata = json.loads(manifest.read_text())
-            if metadata.get("inputs") == key and metadata.get("binary") == hashlib.sha256(cache.read_bytes()).hexdigest():
-                record("verified_binary_reused")
-                return cache
-    binary = build_root / "server" / "dms_new"
-    build = subprocess.run(
-        [
-            "make",
-            "-C",
-            "src",
-            "PERSISTENCE_BACKEND=flatfile",
-            f"BIN_ROOT={build_root}",
-            f"OBJDIR={build_root / 'objects' / 'server'}",
-            f"SERVER_BIN_DIR={binary.parent}",
-            f"DMS_BINARY={binary}",
-            "-j2",
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=600,
-    )
-    require(build.returncode == 0, "client-free server build failed:\n" + build.stdout[-8000:])
-    require("-D__NO_MYSQL__" in build.stdout, "flat build did not select __NO_MYSQL__")
-    require("-I/usr/include/mysql" not in build.stdout, "flat build used system MySQL headers")
-    require("-lmysqlclient" not in build.stdout, "flat build linked the MySQL client")
-
-    if cache:
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(binary, cache)
-        manifest.write_text(json.dumps(dict(inputs=key, binary=hashlib.sha256(cache.read_bytes()).hexdigest())))
-    return binary
+    """Acquire the suite artifact, retaining the legacy opt-in cache control."""
+    return server_build_artifacts.build_flatfile_server(
+        build_root, legacy_cache=os.environ.get("DURIS_FULL_WORLD_BINARY_CACHE"))
 
 
 with tempfile.TemporaryDirectory(prefix="full-world-build-", dir=ROOT / "bin") as build_tmp:

@@ -17,6 +17,8 @@ load_env_file's setenv(name, value, 0) lets a real environment variable win.
 
 from __future__ import annotations
 
+import server_build_artifacts
+
 import os
 import pathlib
 import re
@@ -306,28 +308,8 @@ def generate_certificate(run_root: pathlib.Path) -> None:
 
 
 def build_flatfile_server(build_root: pathlib.Path) -> pathlib.Path:
-    """Build an isolated flat-file journey server under build_root."""
-    binary = build_root / "server/dms_new"
-    build = subprocess.run(
-        [
-            "make",
-            "-C",
-            "src",
-            "PERSISTENCE_BACKEND=flatfile",
-            f"BIN_ROOT={build_root}",
-            f"OBJDIR={build_root / 'objects' / 'server'}",
-            f"SERVER_BIN_DIR={binary.parent}",
-            f"DMS_BINARY={binary}",
-            "-j2",
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=600,
-    )
-    require(build.returncode == 0, "flat-file server build failed:\n" + build.stdout[-8000:])
-    return binary
+    """Acquire the shared artifact while retaining journey-owned runtime state."""
+    return server_build_artifacts.build_flatfile_server(build_root)
 
 
 class IsolatedServer:

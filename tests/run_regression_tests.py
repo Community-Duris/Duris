@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 import time
@@ -114,6 +115,7 @@ def main() -> int:
         print("error: no regression tests matched", file=sys.stderr)
         return 2
 
+    os.environ.setdefault("DURIS_REGRESSION_BUILD_CACHE", str(ROOT / "bin/regression-artifacts"))
     jobs = args.jobs or automatic_jobs()
     parallel_tests, resource_intensive_tests = partition_tests(tests)
     started = time.monotonic()
@@ -133,6 +135,13 @@ def main() -> int:
             f"{status} {relative(result.path)} ({result.elapsed:.2f}s)",
             flush=True,
         )
+        builds = re.findall(r"SERVER_BUILD (built|reused) build=([0-9.]+)s lookup=([0-9.]+)s", result.output)
+        if builds:
+            build_time = sum(float(build) for _, build, _ in builds)
+            lookup_time = sum(float(lookup) for _, _, lookup in builds)
+            print(f"    server artifacts: {', '.join(status for status, _, _ in builds)}; "
+                  f"build {build_time:.3f}s; validation {lookup_time:.3f}s; "
+                  f"journey/other {max(0, result.elapsed - build_time - lookup_time):.3f}s", flush=True)
         if result.returncode != 0:
             failures.append(result)
 
