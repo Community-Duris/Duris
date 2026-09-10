@@ -536,6 +536,20 @@ void stop_memorizing(P_char ch)
 	}
 }
 
+// Keep pending spell choices intact so the player can resume after a rejection.
+static bool schedule_memorize(P_char ch, int delay, const int *time = nullptr)
+{
+	if (add_event(event_memorize, delay, ch, 0, 0, 0, time, time ? sizeof(*time) : 0))
+		return true;
+
+	disarm_char_nevents(ch, event_memorize);
+	REMOVE_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
+	if (IS_AFFECTED(ch, AFF_MEDITATE))
+		stop_meditation(ch);
+	send_to_char("Your spell recovery was interrupted. Please try again.\n", ch);
+	return false;
+}
+
 int calculate_undead_time(P_char ch, int circle, bool bStatOnly)
 {
 	float remem_time, time_mult, tick_factor;
@@ -1034,7 +1048,7 @@ void handle_undead_mem(P_char ch)
 	if (highest_empty)
 	{
 		time = get_circle_memtime(ch, highest_empty);
-		add_event(event_memorize, time, ch, 0, 0, 0, &time, sizeof(time));
+		schedule_memorize(ch, time, &time);
 	}
 	else if (is_wearing_necroplasm(ch) ||
 		 !(USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)))
@@ -1129,8 +1143,7 @@ void handle_memorize(P_char ch)
 					continue;
 				}
 				time = get_circle_memtime(ch, get_spell_circle(ch, af->modifier));
-				add_event(event_memorize, time / 2, ch, 0, 0, 0, &time,
-					  sizeof(time));
+				schedule_memorize(ch, time / 2, &time);
 				return;
 			}
 			else if (!chaos_mud_enabled() && book_class(ch) &&
@@ -1225,7 +1238,7 @@ void event_memorize(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	     (!notch_skill(ch, SKILL_MEDITATE, (int)get_property("skill.notch.meditate", 3)) &&
 	      GET_CHAR_SKILL(ch, SKILL_MEDITATE) < number(0, 100))))
 	{
-		add_event(event_memorize, time / 2, ch, 0, 0, 0, 0, 0);
+		schedule_memorize(ch, time / 2);
 		return;
 	}
 
@@ -1332,8 +1345,7 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 				"You feel unable to &+rcommune&n with the &+GDr&+Lag&+Gon&n god unless mounted.\n",
 				ch);
 		else
-			add_event(event_memorize, get_circle_memtime(ch, need_mem), ch, 0, 0, 0, 0,
-				  0);
+			schedule_memorize(ch, get_circle_memtime(ch, need_mem));
 	}
 
 	if (!need_mem || USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch))
@@ -1375,8 +1387,8 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 
 	if (!IS_AFFECTED2(ch, AFF2_MEMORIZING))
 	{
-		add_event(event_memorize, get_circle_memtime(ch, get_max_circle(ch)) / 2, ch, 0, 0,
-			  0, 0, 0);
+		if (!schedule_memorize(ch, get_circle_memtime(ch, get_max_circle(ch)) / 2))
+			return;
 	}
 
 	SET_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
@@ -1403,7 +1415,7 @@ void do_npc_commune(P_char ch)
 
 	if (need_mem && !get_scheduled(ch, event_memorize))
 	{
-		add_event(event_memorize, get_circle_memtime(ch, need_mem), ch, 0, 0, 0, 0, 0);
+		schedule_memorize(ch, get_circle_memtime(ch, need_mem));
 	}
 }
 
@@ -1689,7 +1701,8 @@ void do_memorize(P_char ch, char *argument, int cmd)
 			}
 			act(Gbuf1, TRUE, ch, sbook, 0, TO_ROOM);
 			time = get_circle_memtime(ch, get_spell_circle(ch, first_to_mem));
-			add_event(event_memorize, time / 2, ch, 0, 0, 0, &time, sizeof(time));
+			if (!schedule_memorize(ch, time / 2, &time))
+				return;
 			SET_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
 		}
 		return;
@@ -1796,7 +1809,8 @@ void do_memorize(P_char ch, char *argument, int cmd)
 				       "$n looks down at $s lap and begins studying it intently.");
 		}
 		act(Gbuf1, TRUE, ch, sbook, 0, TO_ROOM);
-		add_event(event_memorize, time / 2, ch, 0, 0, 0, &time, sizeof(time));
+		if (!schedule_memorize(ch, time / 2, &time))
+			return;
 	}
 	SET_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
 	if (GET_CLASS(ch, CLASS_SHAMAN))
@@ -2016,9 +2030,7 @@ void use_spell(P_char ch, int spell)
 		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) &&
 		    !get_scheduled(ch, event_memorize))
 		{
-			add_event(event_memorize,
-				  get_circle_memtime(ch, get_spell_circle(ch, spell)), ch, 0, 0, 0,
-				  0, 0);
+			schedule_memorize(ch, get_circle_memtime(ch, get_spell_circle(ch, spell)));
 		}
 	}
 	else

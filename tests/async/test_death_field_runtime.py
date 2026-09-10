@@ -2,7 +2,9 @@
 """Exercise production NPC cast completion, area selection and spell defenses.
 
 World/event services and the final raw HP application are deterministic fixtures;
-MobCastSpell, event_spellcast, Death Field, spell_damage and wards are real code.
+MobCastSpell, event_spellcast, schedule_spellcast, Death Field, spell_damage and
+wards are real code. Scheduler rejection is covered by the spell-schedule test;
+this harness exercises successful continuation scheduling.
 """
 from pathlib import Path
 import subprocess
@@ -58,6 +60,12 @@ static spellcast_datatype queued{};
 static bool event_pending;
 static P_char queued_caster, queued_victim;
 void event_spellcast(P_char, P_char, P_obj, void *);
+void event_abort_spell(P_char, P_char, P_obj, void *) {}
+void event_wait(P_char, P_char, P_obj, void *) {}
+void disarm_char_nevents(P_char, event_func_type)
+{
+    assert(false && "successful cast scheduling must not enter rejection cleanup");
+}
 bool is_obj_in_list_vis(P_char, P_obj, P_obj) { return true; }
 void DelayCommune(P_char, int) {}
 P_char misfire_check(P_char, P_char target, int) { return target; }
@@ -323,6 +331,7 @@ def main():
         ('fight.c', 'int spell_damage(P_char ch,'),
         ('psionics.c', 'void spell_single_death_field('),
         ('psionics.c', 'void spell_death_field('),
+        ('sparser.c', 'static bool schedule_spellcast('),
         ('sparser.c', 'void event_spellcast(P_char ch,'),
         ('mobact.c', 'bool MobCastSpell(P_char ch,'),
     ]
