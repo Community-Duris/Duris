@@ -14,7 +14,7 @@ constexpr size_t MOB_WIRE_FIXED_BYTES = 286;
 constexpr size_t AFFECT_WIRE_BYTES = 60;
 constexpr size_t DOOR_WIRE_BYTES = 12;
 constexpr size_t ZONE_WIRE_BYTES = 20;
-constexpr char FLOOR_MAGIC[] = "WRF4:";
+constexpr char FLOOR_MAGIC[] = "WRF5:";
 static_assert(sizeof(int) == sizeof(int32_t));
 static_assert(sizeof(unsigned int) == sizeof(uint32_t));
 static_assert(sizeof(unsigned long) <= sizeof(uint64_t));
@@ -342,6 +342,58 @@ bool encode_object(const unsigned char *native_data, size_t native_size, unsigne
 		offset += sizeof(item.short_description);
 		memcpy(output + offset, item.description, sizeof(item.description));
 		offset += sizeof(item.description);
+		memcpy(output + offset, item.action_description, sizeof(item.action_description));
+		offset += sizeof(item.action_description);
+		put_u32(output + offset, item.wear_flags);
+		offset += 4;
+		put_u32(output + offset, item.extra_flags);
+		offset += 4;
+		put_u32(output + offset, item.anti_flags);
+		offset += 4;
+		put_u32(output + offset, item.anti2_flags);
+		offset += 4;
+		put_u32(output + offset, item.extra2_flags);
+		offset += 4;
+		put_i32(output + offset, item.weight);
+		offset += 4;
+		put_i32(output + offset, item.material);
+		offset += 4;
+		put_i32(output + offset, item.cost);
+		offset += 4;
+		put_i32(output + offset, item.trap_eff);
+		offset += 4;
+		put_i32(output + offset, item.trap_dam);
+		offset += 4;
+		put_i32(output + offset, item.trap_charge);
+		offset += 4;
+		put_i32(output + offset, item.trap_level);
+		offset += 4;
+		put_i32(output + offset, item.condition);
+		offset += 4;
+		put_i32(output + offset, item.craftsmanship);
+		offset += 4;
+		put_i32(output + offset, item.z_cord);
+		offset += 4;
+		put_u64(output + offset, item.bitvector);
+		offset += 8;
+		put_u64(output + offset, item.bitvector2);
+		offset += 8;
+		put_u64(output + offset, item.bitvector3);
+		offset += 8;
+		put_u64(output + offset, item.bitvector4);
+		offset += 8;
+		put_u64(output + offset, item.bitvector5);
+		offset += 8;
+		for (int32_t value : item.affect_locations)
+		{
+			put_i32(output + offset, value);
+			offset += 4;
+		}
+		for (int32_t value : item.affect_modifiers)
+		{
+			put_i32(output + offset, value);
+			offset += 4;
+		}
 	}
 	*output_size = offset;
 	return offset == encoded_size;
@@ -409,6 +461,59 @@ bool decode_object(const unsigned char *wire_data, size_t wire_size,
 		offset += sizeof(item.short_description);
 		memcpy(item.description, wire_data + offset, sizeof(item.description));
 		offset += sizeof(item.description);
+		memcpy(item.action_description, wire_data + offset,
+		       sizeof(item.action_description));
+		offset += sizeof(item.action_description);
+		item.wear_flags = get_u32(wire_data + offset);
+		offset += 4;
+		item.extra_flags = get_u32(wire_data + offset);
+		offset += 4;
+		item.anti_flags = get_u32(wire_data + offset);
+		offset += 4;
+		item.anti2_flags = get_u32(wire_data + offset);
+		offset += 4;
+		item.extra2_flags = get_u32(wire_data + offset);
+		offset += 4;
+		item.weight = get_i32(wire_data + offset);
+		offset += 4;
+		item.material = get_i32(wire_data + offset);
+		offset += 4;
+		item.cost = get_i32(wire_data + offset);
+		offset += 4;
+		item.trap_eff = get_i32(wire_data + offset);
+		offset += 4;
+		item.trap_dam = get_i32(wire_data + offset);
+		offset += 4;
+		item.trap_charge = get_i32(wire_data + offset);
+		offset += 4;
+		item.trap_level = get_i32(wire_data + offset);
+		offset += 4;
+		item.condition = get_i32(wire_data + offset);
+		offset += 4;
+		item.craftsmanship = get_i32(wire_data + offset);
+		offset += 4;
+		item.z_cord = get_i32(wire_data + offset);
+		offset += 4;
+		item.bitvector = get_u64(wire_data + offset);
+		offset += 8;
+		item.bitvector2 = get_u64(wire_data + offset);
+		offset += 8;
+		item.bitvector3 = get_u64(wire_data + offset);
+		offset += 8;
+		item.bitvector4 = get_u64(wire_data + offset);
+		offset += 8;
+		item.bitvector5 = get_u64(wire_data + offset);
+		offset += 8;
+		for (int32_t &value : item.affect_locations)
+		{
+			value = get_i32(wire_data + offset);
+			offset += 4;
+		}
+		for (int32_t &value : item.affect_modifiers)
+		{
+			value = get_i32(wire_data + offset);
+			offset += 4;
+		}
 		memcpy(native_record->data() + sizeof(record) +
 			       static_cast<size_t>(index) * sizeof(item),
 		       &item, sizeof(item));
@@ -471,7 +576,7 @@ bool world_recovery_encode_header(const world_recovery_header *header, unsigned 
 {
 	if (!header || !output || output_size < WORLD_RECOVERY_WIRE_HEADER_BYTES)
 		return false;
-	memcpy(output, "WR11", 4);
+	memcpy(output, "WR12", 4);
 	put_u32(output + 4, WORLD_RECOVERY_SCHEMA_VERSION);
 	put_u32(output + 8, WORLD_RECOVERY_WIRE_HEADER_BYTES);
 	put_u64(output + 12, header->sequence);
@@ -490,7 +595,7 @@ bool world_recovery_encode_header(const world_recovery_header *header, unsigned 
 bool world_recovery_decode_header(const unsigned char *data, size_t size,
 				  world_recovery_header *header)
 {
-	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || !header || memcmp(data, "WR11", 4))
+	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || !header || memcmp(data, "WR12", 4))
 		return false;
 	*header = {};
 	memcpy(header->magic, data, 4);

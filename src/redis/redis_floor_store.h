@@ -11,7 +11,7 @@ constexpr size_t REDIS_FLOOR_QUEUE_CAPACITY = 8;
 constexpr size_t REDIS_FLOOR_QUEUE_MAX_BYTES = 16 * 1024 * 1024;
 constexpr size_t REDIS_FLOOR_BATCH_CAPACITY = 2048;
 constexpr size_t REDIS_FLOOR_KEY_MAX_BYTES = 128;
-constexpr size_t REDIS_FLOOR_VALUE_MAX_BYTES = 256 * 1024;
+constexpr size_t REDIS_FLOOR_VALUE_MAX_BYTES = 512 * 1024;
 constexpr unsigned int REDIS_FLOOR_MAX_COMMAND_ATTEMPTS = 3;
 
 struct redis_floor_store_config

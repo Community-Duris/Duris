@@ -1,6 +1,6 @@
 # World Recovery Wire Format
 
-Duris world-recovery generations use schema 11. The durable Redis value is independent of
+Duris world-recovery generations use schema 12. The durable Redis value is independent of
 compiler padding, host byte order, `time_t`, `unsigned long`, and native C/C++ struct size.
 All integers are fixed-width little-endian values. Text fields are fixed-width byte arrays
 that must contain a null terminator before materialization.
@@ -11,8 +11,8 @@ The generation header is exactly 64 bytes:
 
 | Offset | Bytes | Field |
 | ---: | ---: | --- |
-| 0 | 4 | ASCII magic `WR11` |
-| 4 | 4 | Schema version, currently 11 |
+| 0 | 4 | ASCII magic `WR12` |
+| 4 | 4 | Schema version, currently 12 |
 | 8 | 4 | Header size, always 64 |
 | 12 | 8 | Monotonic publication sequence |
 | 20 | 8 | Signed Unix timestamp |
@@ -40,7 +40,7 @@ authenticated by the generation HMAC, but are not misrepresented as SQL-owned it
 Trees whose live custody identity disagrees with their floor location are omitted, and
 player corpses are left to the authoritative corpse restore path.
 
-Floor deltas use the same schema-11 object-tree payload prefixed by `WRF4:`. The Redis hash
+Floor deltas use the same schema-12 object-tree payload prefixed by `WRF5:`. The Redis hash
 field UID must match the decoded root UID before the record enters recovery planning.
 
 ## Redis storage and memory bounds
@@ -78,7 +78,7 @@ operations. Durable reads and recovery planning occur only during boot.
 ## Runtime and compatibility policy
 
 Gameplay capture retains bounded native in-process snapshots because they never leave the
-process. The existing publisher thread converts a completed generation to schema 11 in
+process. The existing publisher thread converts a completed generation to schema 12 in
 place before checksumming and Redis publication. The existing floor worker converts queued
 native object snapshots before issuing its Redis command. Durable decoding occurs only
 during boot recovery.
@@ -96,7 +96,7 @@ filesystem, process, or logging I/O is added to gameplay capture.
 
 Older schemas and floor records are rejected rather than interpreted through an ABI-dependent
 compatibility path. Recovery data is reconstructible and expiring: an incompatible current
-generation produces a normal zone boot, and the first schema-11 publication atomically
+generation produces a normal zone boot, and the first schema-12 publication atomically
 replaces the generation pointer and clears prior floor deltas.
 
 The golden-vector and round-trip contract is:
@@ -104,3 +104,75 @@ The golden-vector and round-trip contract is:
 ```bash
 python3 tests/async/test_world_recovery_codec.py
 ```
+
+## Corpse and generated item state (schema 12 / file copyover 12)
+
+Each schema-12 item is 728 wire bytes. In addition to UID/tree identity, type,
+values, timers, and display strings, it records action/owner text, wear flags,
+extra/anti flags, weight, material, cost, trap fields, condition, craftsmanship,
+z coordinate, five character bitvectors, and all fixed item affects. Recovery
+metadata `flags` remains distinct from `wear_flags`; restoration never adds
+`ITEM_TAKE` to an item that did not have it. Text retains the existing fixed-width capture convention (80-byte names and
+short descriptions, 160-byte room descriptions); action text has a 160-byte
+field including its terminator. These are bounded recovery strings, not an
+unbounded serialization of arbitrary object prose.
+
+The generated-equipment audit covers the runtime overrides in `randomeq.c`,
+including its fixed affects and bitvectors. Prototype-linked extra descriptions,
+linked temporary object affects, event pointers, and database bookkeeping are
+not newly serialized by this change. It is not a general replacement for player
+item persistence. Aggregate container weights and values are restored after
+linking descendants so container insertion does not double-count saved weight.
+
+The per-record ceiling is 512 KiB, retaining the 512-item tree limit. Floor
+records use the same increased ceiling; generation and total floor budgets
+remain unchanged.
+
+File copyover version 12 stores each ground object as a native uint32 byte
+length followed by the bounded native world-recovery object tree and its live
+custody entries. One native `item_ownership_runtime_entry` follows for each item
+marked `WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED`, in tree traversal order; no
+entry is emitted for an item absent from the runtime ledger. The byte length
+covers both the tree and custody entries, within the same 512 KiB ceiling.
+
+Copyover captures the live ledger after persistence workers have quiesced and
+drained. It preserves owner type, owner ID/context, logical root/parent UIDs,
+item/owner revisions, vnum and active state. Logical custody topology can differ
+from the physical tree (for example, items owned by a corpse); it must not be
+replaced with room ownership. Recovery validates the physical tree and the
+corresponding custody entries, materializes the objects, then atomically hydrates
+the runtime ledger. A hydration conflict rolls back newly created objects.
+This path does not call SQL room reconciliation, including in flatfile-primary
+or no-MySQL builds. Redis retains its room-only capture and SQL reconciliation
+rules. Copyover remains an ABI-local process handoff, unlike the portable Redis
+wire format; its custody entries are not a replacement for durable persistence.
+Mob inventory encoding is unchanged. Invalid or truncated object trees or
+custody records fail recovery instead of restoring a partial corpse.
+
+Version-10/11 copyover files, schema-11 generations, and `WRF4:` floor records are
+incompatible and rejected. Do not hotboot from an older executable into this
+version expecting the old handoff file to load: schedule the upgrade as a cold
+restart and account for the existing policy of normal zone boot when recovery
+snapshots are incompatible. Once both capture and restore run this version,
+subsequent copyovers and clean/crash Redis recovery retain the new fields.
+
+Already-damaged items are not repaired from their display names. Corpse
+inspection substitutes `someone unknown` for missing or empty owner text.
+
+The sanitizer-backed pipeline regression also compiles the file-copyover
+writer/adapters, the mortal loot takeability predicate, and the numbered object
+selector from production sources. It round-trips a corpse with nested generated
+gloves and a non-takeable control through file copyover and Redis, then verifies
+UIDs, runtime gear fields, mortal takeability, and mixed fresh/restored
+`N.corpse` selection. Database services and visibility/name parsing are fixture
+stubs; this is not a live server restart or an end-to-end loot transaction test.
+
+`tests/async/test_copyover_custody.py` additionally compiles the complete production
+`copyover.c` in no-MySQL mode with the real runtime ownership ledger. It calls
+`copyover_save`, replaces the process with `execv`, and calls `copyover_recover`
+in the new process. It verifies a ledger-backed ground corpse with a nested
+container and generated gloves, including both physical and logical custody
+topology. SQL reconciliation aborts if called. Idle worker drains and unrelated
+player/NPC/network services are fixture boundaries; no live game or production
+state is involved. The same fixture fails on the previous room-only copyover
+implementation before reaching process replacement.

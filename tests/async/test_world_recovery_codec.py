@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Golden vectors and round trips for the schema-11 recovery wire format."""
+"""Golden vectors and round trips for the schema-12 recovery wire format."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ int main()
     header.zone_count = 4;
     header.complete = 1;
     const std::array<unsigned char, WORLD_RECOVERY_WIRE_HEADER_BYTES> expected_header = {
-        0x57,0x52,0x31,0x31, 0x0b,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
+        0x57,0x52,0x31,0x32, 0x0c,0x00,0x00,0x00, 0x40,0x00,0x00,0x00,
         0x08,0x07,0x06,0x05,0x04,0x03,0x02,0x01,
         0xfe,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
         0x18,0x17,0x16,0x15,0x14,0x13,0x12,0x11,
@@ -51,6 +51,9 @@ int main()
     assert(world_recovery_decode_header(encoded_header.data(), encoded_header.size(),
                                         &decoded_header));
     assert(decoded_header.sequence == header.sequence && decoded_header.timestamp == -2);
+    auto legacy_header = encoded_header;
+    legacy_header[3] = '1'; legacy_header[4] = 11;
+    assert(!world_recovery_decode_header(legacy_header.data(), legacy_header.size(), &decoded_header));
     encoded_header[63] = 1;
     assert(!world_recovery_decode_header(encoded_header.data(), encoded_header.size(),
                                          &decoded_header));
@@ -99,6 +102,10 @@ int main()
     item.vnum = 456;
     item.type = 7;
     item.flags = WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED;
+    item.wear_flags = 0x01020304;
+    std::strcpy(item.action_description, "a cavern snake");
+    item.affect_modifiers[0] = -5;
+    item.bitvector5 = 0x0102030405060708ULL;
     item.values[0] = -99;
     item.timers[0] = 0x0102030405060708LL;
     memcpy(item.name, "golden", 7);
@@ -125,6 +132,11 @@ int main()
     memcpy(&decoded_item, native.data() + sizeof(object), sizeof(decoded_item));
     assert(decoded_item.item_uid == item.item_uid && decoded_item.values[0] == -99 &&
            decoded_item.timers[0] == item.timers[0] && !strcmp(decoded_item.name, "golden"));
+
+    assert(decoded_item.wear_flags == item.wear_flags);
+    assert(!std::strcmp(decoded_item.action_description, item.action_description));
+    assert(decoded_item.affect_modifiers[0] == -5 && decoded_item.bitvector5 == item.bitvector5);
+    assert(encoded_object[604] == 4 && encoded_object[607] == 1);
 
     copyover_mob mob = {};
     mob.vnum = 10;
@@ -165,10 +177,13 @@ int main()
 
     std::vector<unsigned char> floor;
     assert(world_recovery_encode_floor_object(native_object.data(), native_object.size(), &floor));
-    assert(floor.size() == 5 + encoded_object.size() && !memcmp(floor.data(), "WRF4:", 5));
+    assert(floor.size() == 5 + encoded_object.size() && !memcmp(floor.data(), "WRF5:", 5));
     uint64_t root_uid = 0;
     assert(world_recovery_floor_object_root_uid(floor.data(), floor.size(), &root_uid));
     assert(root_uid == item.item_uid);
+    floor[3] = '4';
+    assert(!world_recovery_floor_object_root_uid(floor.data(), floor.size(), &root_uid));
+    floor[3] = '5';
     floor[0] = 'X';
     assert(!world_recovery_floor_object_root_uid(floor.data(), floor.size(), &root_uid));
     return 0;
@@ -208,4 +223,4 @@ assert "const bool succeeded = prepared && execute_batch(context, job)" in FLOOR
 assert "prepared ? redis_observability_now_usec() : 0" in FLOOR
 assert FLOOR.index("prepare_batch(job)") < FLOOR.index("execute_batch(context, job)")
 
-print("schema-11 little-endian recovery codec golden vectors passed")
+print("schema-12 little-endian recovery codec golden vectors passed")

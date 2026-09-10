@@ -7,10 +7,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 11;
+constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 12;
 constexpr uint32_t WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED = 1U << 0;
 constexpr size_t WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024;
-constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024;
+constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 512 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_ITEM_TREE = 512;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768;
@@ -57,6 +57,29 @@ struct world_recovery_item_snapshot
 	char name[80];
 	char short_description[80];
 	char description[160];
+	char action_description[160];
+	uint32_t wear_flags;
+	uint32_t extra_flags;
+	uint32_t anti_flags;
+	uint32_t anti2_flags;
+	uint32_t extra2_flags;
+	int32_t weight;
+	int32_t material;
+	int32_t cost;
+	int32_t trap_eff;
+	int32_t trap_dam;
+	int32_t trap_charge;
+	int32_t trap_level;
+	int32_t condition;
+	int32_t craftsmanship;
+	int32_t z_cord;
+	uint64_t bitvector;
+	uint64_t bitvector2;
+	uint64_t bitvector3;
+	uint64_t bitvector4;
+	uint64_t bitvector5;
+	int32_t affect_locations[MAX_OBJ_AFFECT];
+	int32_t affect_modifiers[MAX_OBJ_AFFECT];
 };
 
 struct world_recovery_object_record
@@ -131,6 +154,10 @@ bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, i
 				       const size_t *floor_record_sizes, size_t floor_record_count,
 				       world_recovery_header *header_out);
 int world_recovery_write_object_to_buffer(P_obj obj, int room_vnum, char *buf, size_t max_len);
+
+int world_recovery_write_copyover_object_to_buffer(P_obj obj, int room_vnum, char *buf,
+						   size_t max_len);
+P_obj world_recovery_restore_copyover_object_from_buffer(const char *buf, size_t len);
 
 void world_recovery_capture_forget_character(P_char ch);
 void world_recovery_capture_forget_object(P_obj obj);
