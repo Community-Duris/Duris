@@ -10,7 +10,7 @@
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 11 // complete, nested world recovery object records
+#define COPYOVER_VERSION 12 // nested object trees plus live custody handoff
 
 // copyover file header
 struct copyover_header

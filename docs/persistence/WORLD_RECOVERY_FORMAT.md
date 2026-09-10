@@ -105,7 +105,7 @@ The golden-vector and round-trip contract is:
 python3 tests/async/test_world_recovery_codec.py
 ```
 
-## Corpse and generated item state (schema 12 / file copyover 11)
+## Corpse and generated item state (schema 12 / file copyover 12)
 
 Each schema-12 item is 728 wire bytes. In addition to UID/tree identity, type,
 values, timers, and display strings, it records action/owner text, wear flags,
@@ -128,14 +128,28 @@ The per-record ceiling is 512 KiB, retaining the 512-item tree limit. Floor
 records use the same increased ceiling; generation and total floor budgets
 remain unchanged.
 
-File copyover version 11 stores each ground object as a native uint32 byte
-length followed by the bounded native world-recovery object tree. It uses the
-same capture, semantic validation, materialization, and custody reconciliation
-as Redis. File copyover remains an ABI-local process handoff format, unlike the
-portable Redis wire format. Mob inventory encoding is unchanged. Invalid or
-truncated object trees fail recovery instead of restoring a partial corpse.
+File copyover version 12 stores each ground object as a native uint32 byte
+length followed by the bounded native world-recovery object tree and its live
+custody entries. One native `item_ownership_runtime_entry` follows for each item
+marked `WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED`, in tree traversal order; no
+entry is emitted for an item absent from the runtime ledger. The byte length
+covers both the tree and custody entries, within the same 512 KiB ceiling.
 
-Version-10 copyover files, schema-11 generations, and `WRF4:` floor records are
+Copyover captures the live ledger after persistence workers have quiesced and
+drained. It preserves owner type, owner ID/context, logical root/parent UIDs,
+item/owner revisions, vnum and active state. Logical custody topology can differ
+from the physical tree (for example, items owned by a corpse); it must not be
+replaced with room ownership. Recovery validates the physical tree and the
+corresponding custody entries, materializes the objects, then atomically hydrates
+the runtime ledger. A hydration conflict rolls back newly created objects.
+This path does not call SQL room reconciliation, including in flatfile-primary
+or no-MySQL builds. Redis retains its room-only capture and SQL reconciliation
+rules. Copyover remains an ABI-local process handoff, unlike the portable Redis
+wire format; its custody entries are not a replacement for durable persistence.
+Mob inventory encoding is unchanged. Invalid or truncated object trees or
+custody records fail recovery instead of restoring a partial corpse.
+
+Version-10/11 copyover files, schema-11 generations, and `WRF4:` floor records are
 incompatible and rejected. Do not hotboot from an older executable into this
 version expecting the old handoff file to load: schedule the upgrade as a cold
 restart and account for the existing policy of normal zone boot when recovery
@@ -152,3 +166,13 @@ gloves and a non-takeable control through file copyover and Redis, then verifies
 UIDs, runtime gear fields, mortal takeability, and mixed fresh/restored
 `N.corpse` selection. Database services and visibility/name parsing are fixture
 stubs; this is not a live server restart or an end-to-end loot transaction test.
+
+`tests/async/test_copyover_custody.py` additionally compiles the complete production
+`copyover.c` in no-MySQL mode with the real runtime ownership ledger. It calls
+`copyover_save`, replaces the process with `execv`, and calls `copyover_recover`
+in the new process. It verifies a ledger-backed ground corpse with a nested
+container and generated gloves, including both physical and logical custody
+topology. SQL reconciliation aborts if called. Idle worker drains and unrelated
+player/NPC/network services are fixture boundaries; no live game or production
+state is involved. The same fixture fails on the previous room-only copyover
+implementation before reaching process replacement.

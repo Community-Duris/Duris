@@ -1214,7 +1214,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 	}
 
-	// Version 11 stores bounded trees, including nested corpse contents.
+	// Version 12 stores bounded trees and their live custody handoff.
 	for (i = 0; i < header.num_objects; ++i)
 		if (!read_obj_entry(fp))
 		{
@@ -1506,8 +1506,8 @@ int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
 {
 	if (!obj || obj->loc_p != LOC_ROOM || obj->loc.room < 0 || obj->loc.room > top_of_world)
 		return -1;
-	return world_recovery_write_object_to_buffer(obj, world[obj->loc.room].number, buf,
-						     max_len);
+	return world_recovery_write_copyover_object_to_buffer(obj, world[obj->loc.room].number, buf,
+							      max_len);
 }
 
 int copyover_write_door_to_buffer(int room_rnum, int dir, char *buf, size_t max_len)
@@ -1683,7 +1683,7 @@ P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *byte
 	if (!bytes_read)
 		return nullptr;
 	*bytes_read = 0;
-	P_obj object = world_recovery_restore_object_from_buffer(buf, len);
+	P_obj object = world_recovery_restore_copyover_object_from_buffer(buf, len);
 	if (object)
 		*bytes_read = len;
 	return object;

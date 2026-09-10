@@ -256,7 +256,8 @@ bool submit_capture()
 }
 
 bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t parent_uid,
-		       world_recovery_item_snapshot *items, uint32_t *count, bool *skip)
+		       world_recovery_item_snapshot *items, uint32_t *count, bool *skip,
+		       std::vector<item_ownership_runtime_entry> *copyover_custody)
 {
 	if (!object || room_vnum <= 0 || !items || !count || !skip ||
 	    *count >= WORLD_RECOVERY_MAX_ITEM_TREE || !object->obj_uid || OBJ_VNUM(object) <= 0)
@@ -274,15 +275,31 @@ bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t 
 	item_ownership_runtime_entry authority = {};
 	if (item_ownership_runtime_lookup(item_uid, &authority))
 	{
-		const item_owner_identity expected_owner = { item_owner_type::room,
-							     static_cast<uint64_t>(room_vnum), 0 };
-		if (!item_owner_identity_equal(authority.owner, expected_owner) ||
-		    authority.root_item_uid != root_uid ||
-		    authority.parent_item_uid != parent_uid || authority.vnum != entry.vnum ||
-		    authority.state != item_custody_state::active)
+		if (copyover_custody)
 		{
-			*skip = true;
-			return true;
+			// A synchronous hotboot hands off the live ledger. Its logical custody
+			// roots (for example, corpse contents) need not match the physical tree.
+			if (authority.item_uid != item_uid || !authority.root_item_uid ||
+			    !item_owner_identity_valid(authority.owner) ||
+			    authority.vnum != entry.vnum ||
+			    authority.state != item_custody_state::active)
+				return false;
+			copyover_custody->push_back(authority);
+		}
+		else
+		{
+			const item_owner_identity expected_owner = {
+				item_owner_type::room, static_cast<uint64_t>(room_vnum), 0
+			};
+			if (!item_owner_identity_equal(authority.owner, expected_owner) ||
+			    authority.root_item_uid != root_uid ||
+			    authority.parent_item_uid != parent_uid ||
+			    authority.vnum != entry.vnum ||
+			    authority.state != item_custody_state::active)
+			{
+				*skip = true;
+				return true;
+			}
 		}
 		entry.flags |= WORLD_RECOVERY_ITEM_AUTHORITY_REQUIRED;
 	}
@@ -326,12 +343,14 @@ bool capture_item_tree(P_obj object, int room_vnum, uint64_t root_uid, uint64_t 
 		entry.affect_modifiers[index] = object->affected[index].modifier;
 	}
 	for (P_obj child = object->contains; child; child = child->next_content)
-		if (!capture_item_tree(child, room_vnum, root_uid, item_uid, items, count, skip))
+		if (!capture_item_tree(child, room_vnum, root_uid, item_uid, items, count, skip,
+				       copyover_custody))
 			return false;
 	return true;
 }
 
-int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximum)
+int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximum,
+			std::vector<item_ownership_runtime_entry> *copyover_custody = nullptr)
 {
 	if (!object || !buffer || room_vnum <= 0 || maximum < sizeof(world_recovery_object_record))
 		return -1;
@@ -339,7 +358,9 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items;
 	uint32_t count = 0;
 	bool skip = false;
-	if (!capture_item_tree(object, room_vnum, 0, 0, items.data(), &count, &skip) || !count)
+	if (!capture_item_tree(object, room_vnum, 0, 0, items.data(), &count, &skip,
+			       copyover_custody) ||
+	    !count)
 	{
 		logit(LOG_SYS,
 		      "redis: world recovery object tree rejected vnum=%d captured_items=%u root_uid=%s",
@@ -1388,7 +1409,8 @@ bool materialize_plan(const recovery_plan &plan,
 		rollback_materialized(&created_mobs, &created_objects);
 		return false;
 	}
-	if (!world_recovery_rehydrate_npc_items(created_mobs.data(), created_mobs.size()))
+	if (!created_mobs.empty() &&
+	    !world_recovery_rehydrate_npc_items(created_mobs.data(), created_mobs.size()))
 	{
 		rollback_materialized(&created_mobs, &created_objects);
 		return false;
@@ -1486,17 +1508,58 @@ int world_recovery_write_object_to_buffer(P_obj obj, int room_vnum, char *buf, s
 	return write_object_record(obj, room_vnum, buf, max_len);
 }
 
-// File copyover shares Redis tree validation and custody restoration.
-P_obj world_recovery_restore_object_from_buffer(const char *buf, size_t len)
+int world_recovery_write_copyover_object_to_buffer(P_obj obj, int room_vnum, char *buf,
+						   size_t max_len)
 {
+	std::vector<item_ownership_runtime_entry> custody;
+	static_assert(sizeof(world_recovery_object_record) +
+			      WORLD_RECOVERY_MAX_ITEM_TREE *
+				      (sizeof(world_recovery_item_snapshot) +
+				       sizeof(item_ownership_runtime_entry)) <=
+		      WORLD_RECOVERY_MAX_RECORD_BYTES);
+	const int tree_size = write_object_record(obj, room_vnum, buf, max_len, &custody);
+	if (tree_size <= 0)
+		return -1;
+	const size_t custody_bytes = custody.size() * sizeof(item_ownership_runtime_entry);
+	if (custody_bytes > max_len - tree_size)
+		return -1;
+	if (custody_bytes)
+		memcpy(buf + tree_size, custody.data(), custody_bytes);
+	return static_cast<int>(tree_size + custody_bytes);
+}
+
+// File copyover is a quiesced process handoff, not replay of a Redis room snapshot.
+// Keep physical-tree validation, but restore the captured live ledger without SQL.
+P_obj world_recovery_restore_copyover_object_from_buffer(const char *buf, size_t len)
+{
+	world_recovery_object_record record = {};
+	if (!buf || len < sizeof(record) || len > WORLD_RECOVERY_MAX_RECORD_BYTES)
+		return nullptr;
+	memcpy(&record, buf, sizeof(record));
+	if (!record.item_count || record.item_count > WORLD_RECOVERY_MAX_ITEM_TREE)
+		return nullptr;
+	const size_t tree_size = sizeof(record) + static_cast<size_t>(record.item_count) *
+							  sizeof(world_recovery_item_snapshot);
+	if (tree_size > len)
+		return nullptr;
 	recovery_plan plan;
-	if (!add_object_record(&plan, reinterpret_cast<const unsigned char *>(buf), len))
+	if (!add_object_record(&plan, reinterpret_cast<const unsigned char *>(buf), tree_size))
 		return nullptr;
 	std::vector<item_ownership_runtime_entry> authoritative(plan.authority_items.size());
-	if (!sql_persistence_reconcile_world_recovery_items(
-		    plan.authority_items.data(), plan.authority_items.size(), authoritative.data(),
-		    authoritative.size()))
+	const size_t custody_bytes = authoritative.size() * sizeof(item_ownership_runtime_entry);
+	if (len - tree_size != custody_bytes)
 		return nullptr;
+	if (custody_bytes)
+		memcpy(authoritative.data(), buf + tree_size, custody_bytes);
+	for (size_t index = 0; index < authoritative.size(); ++index)
+	{
+		const auto &entry = authoritative[index];
+		const auto &item = plan.authority_items[index];
+		if (entry.item_uid != item.item_uid || entry.vnum != item.vnum ||
+		    !entry.root_item_uid || !item_owner_identity_valid(entry.owner) ||
+		    entry.state != item_custody_state::active)
+			return nullptr;
+	}
 	redis_floor_runtime_set_materializing(true);
 	const bool restored = materialize_plan(plan, authoritative);
 	redis_floor_runtime_set_materializing(false);

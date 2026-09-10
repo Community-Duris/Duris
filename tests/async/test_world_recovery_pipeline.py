@@ -68,6 +68,7 @@ int objects_extracted = 0;
 bool lookup_succeeds = false;
 bool fallback_fixture = false;
 item_ownership_runtime_entry lookup_entry = {};
+std::vector<item_ownership_runtime_entry> hydrated_entries;
 
 void logit(const char *, const char *, ...)
 {
@@ -191,8 +192,11 @@ bool sql_persistence_reconcile_world_recovery_items(
     return true;
 }
 
-bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_entry *, size_t)
+bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_entry *entries, size_t count)
 {
+    hydrated_entries.clear();
+    if (hydrate_succeeds && count)
+        hydrated_entries.assign(entries, entries + count);
     return hydrate_succeeds;
 }
 
@@ -214,6 +218,15 @@ bool item_owner_identity_equal(const item_owner_identity &left,
 {
     return left.type == right.type && left.id == right.id &&
            left.context_id == right.context_id;
+}
+
+bool item_owner_identity_valid(const item_owner_identity &owner)
+{
+    if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
+        return false;
+    if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
+        return owner.id == 0 && owner.context_id == 0;
+    return owner.id != 0;
 }
 
 void redis_floor_runtime_set_materializing(bool active)
@@ -572,7 +585,7 @@ int main()
     assert(object_list && !object_list->next && IS_ARTIFACT(object_list));
     extract_obj(object_list, FALSE);
 
-    // File copyover must reject stale custody and roll back failed hydration too.
+    // File copyover rejects a flagged tree with missing custody records.
     {
         auto owned = item(990, 990, 0);
         world_recovery_object_record record = {100, 1};
@@ -649,19 +662,56 @@ int main()
     char_data mortal = {}; mortal.player.level = 20;
     auto buffer = std::vector<char>(WORLD_RECOVERY_MAX_RECORD_BYTES, static_cast<char>(0xa5));
     const char *scratch_address = buffer.data();
-    for (int mode = 0; mode != 3; ++mode) {
+    for (int mode = 0; mode != 6; ++mode) {
         // 0=file copyover; 1=clean restart; 2=crash recovery (same Redis codec).
         assert(buffer.data() == scratch_address);
-        int size = copyover_write_obj_to_buffer(&corpse, buffer.data(), buffer.size());
+        const bool file_copyover = mode == 0 || mode >= 3;
+        // Exercise both a ground root and nested loot with non-room custody.
+        lookup_succeeds = mode >= 3;
+        lookup_entry = {};
+        lookup_entry.item_uid = mode == 3 ? 900 : 902;
+        lookup_entry.root_item_uid = mode == 3 ? 900 : 901;
+        lookup_entry.parent_item_uid = mode == 3 ? 0 : 901;
+        lookup_entry.vnum = OBJ_VNUM(&corpse);
+        lookup_entry.owner = {mode == 5 ? item_owner_type::room : item_owner_type::corpse,
+                              mode == 5 ? 100U : 77U, 12};
+        lookup_entry.state = item_custody_state::active;
+        lookup_entry.item_revision = 29; lookup_entry.owner_revision = 31;
+        reconcile_succeeds = !file_copyover; // Models unavailable SQL/flatfile-primary.
+        if (lookup_succeeds) {
+            assert(world_recovery_write_object_to_buffer(&corpse, 100, buffer.data(), buffer.size()) == 0);
+        }
+        int size = file_copyover ? copyover_write_obj_to_buffer(&corpse, buffer.data(), buffer.size()) :
+            world_recovery_write_object_to_buffer(&corpse, 100, buffer.data(), buffer.size());
         assert(size > 0);
         P_obj restored = nullptr;
-        if (mode == 0) {
+        if (file_copyover) {
             FILE *file = std::tmpfile(); assert(file);
             assert(write_obj_entry(file, &corpse, buffer)); std::rewind(file);
             size_t consumed = 99;
             assert(!copyover_restore_obj_from_buffer(buffer.data(), size - 1, &consumed));
             assert(consumed == 0 && object_list == nullptr);
+            hydrate_succeeds = false;
+            assert(!copyover_restore_obj_from_buffer(buffer.data(), size, &consumed));
+            assert(consumed == 0 && object_list == nullptr);
+            hydrate_succeeds = true;
+            if (lookup_succeeds) {
+                auto bad = lookup_entry;
+                bad.item_uid++;
+                std::memcpy(buffer.data() + size - sizeof(bad), &bad, sizeof(bad));
+                assert(!copyover_restore_obj_from_buffer(buffer.data(), size, &consumed));
+                assert(consumed == 0 && object_list == nullptr);
+            }
             restored = read_obj_entry(file);
+            assert(hydrated_entries.size() == (lookup_succeeds ? 1U : 0U));
+            if (lookup_succeeds) {
+                const auto &entry = hydrated_entries.front();
+                assert(entry.item_uid == lookup_entry.item_uid);
+                assert(entry.root_item_uid == lookup_entry.root_item_uid);
+                assert(entry.parent_item_uid == lookup_entry.parent_item_uid);
+                assert(item_owner_identity_equal(entry.owner, lookup_entry.owner));
+                assert(entry.item_revision == 29 && entry.owner_revision == 31);
+            }
             assert(std::fgetc(file) == EOF); std::fclose(file);
             FILE *truncated = std::tmpfile(); assert(truncated);
             uint32_t length = size;
