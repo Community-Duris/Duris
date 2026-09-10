@@ -2792,7 +2792,7 @@ void close_socket(struct descriptor_data *d)
 		FREE(d->storage);
 
 #endif
-		/* I really don't wanna crash it  */
+	/* I really don't wanna crash it  */
 #ifdef USE_ACCOUNT
 	if (d->account)
 		d->account = free_account(d->account);

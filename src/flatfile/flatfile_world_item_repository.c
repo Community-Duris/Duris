@@ -236,8 +236,9 @@ bool valid_catalog(const world_item_catalog &catalog)
 								 corpse.owner_pid;
 			if (!corpse.owner_pid || !corpse.save_id || !corpse.revision ||
 			    corpse.room_vnum < 0 ||
-			    !std::all_of(corpse.money.begin(), corpse.money.end(),
-					 [](int32_t value) { return value >= 0; }) ||
+			    !std::all_of(
+				    corpse.money.begin(), corpse.money.end(),
+				    [](int32_t value) { return value >= 0; }) ||
 			    !valid_printable(corpse.owner_name, name_maximum, true) ||
 			    corpse.owner_name != canonical_name(corpse.owner_name) ||
 			    !valid_printable(corpse.short_description, short_description_maximum,
@@ -918,7 +919,8 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
 		    (payload.expected_corpse_revision && !found))
 			return flatfile_world_item_result::conflict;
 		if ((!found && std::any_of(catalog.corpses.begin(), catalog.corpses.end(),
-					   [&](const auto &candidate) {
+					   [&](const auto &candidate)
+					   {
 						   return candidate.owner_pid !=
 								  payload.owner_pid &&
 							  candidate.owner_name == canonical_owner;

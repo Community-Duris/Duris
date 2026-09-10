@@ -58,13 +58,13 @@ unimap::unimap(const char16_t conv[256])
 		set(conv[c], c);
 }
 
-#define CP437_PRINTABLE                                                                                    \
-	" !\"#$%&'()*+,-./0123456789:;<=>?"                                                                \
-	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"                                                                \
-	"`abcdefghijklmnopqrstuvwxyz{|}~⌂"                                                               \
-	"ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒ"                                \
-	"áíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"                \
-	"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀" \
+#define CP437_PRINTABLE                     \
+	" !\"#$%&'()*+,-./0123456789:;<=>?" \
+	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_" \
+	"`abcdefghijklmnopqrstuvwxyz{|}~⌂"  \
+	"ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒ"  \
+	"áíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"  \
+	"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"  \
 	"αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ "
 
 // superfluous entry because dumb ISO C++ thinks all char arrays are strings

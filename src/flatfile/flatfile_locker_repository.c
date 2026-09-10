@@ -752,7 +752,8 @@ flatfile_locker_prepare_account_remove(const std::string &root, const flatfile_a
 		}
 		catalog.lockers.erase(
 			std::remove_if(catalog.lockers.begin(), catalog.lockers.end(),
-				       [&](const auto &locker) {
+				       [&](const auto &locker)
+				       {
 					       return locker.account_owner &&
 						      locker.account_owner->account_name ==
 							      canonical_account;
@@ -761,7 +762,8 @@ flatfile_locker_prepare_account_remove(const std::string &root, const flatfile_a
 		const size_t old_access_size = catalog.access.size();
 		catalog.access.erase(
 			std::remove_if(catalog.access.begin(), catalog.access.end(),
-				       [&](const auto &entry) {
+				       [&](const auto &entry)
+				       {
 					       return entry.visitor_name == canonical_account ||
 						      removed_names.contains(entry.owner_name);
 				       }),

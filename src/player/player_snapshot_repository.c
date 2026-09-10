@@ -241,7 +241,8 @@ query_result apply_replacement_rows(MYSQL *connection, const player_snapshot &sn
 	if (result.ok && (snapshot.components & PLAYER_COMPONENT_INTRODUCTIONS))
 		result = replace_rows(connection, snapshot.pid, "player_intros",
 				      "intro_index,intro_pid,intro_time", snapshot.introductions,
-				      [](auto &sql, const auto &row) {
+				      [](auto &sql, const auto &row)
+				      {
 					      sql << row.index << ',' << row.value
 						  << ",FROM_UNIXTIME(NULLIF(" << row.auxiliary
 						  << ",0))";

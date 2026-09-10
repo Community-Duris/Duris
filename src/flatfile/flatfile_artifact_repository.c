@@ -1079,7 +1079,8 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
 			 {
 				 return std::any_of(payload.items.begin(),
 						    payload.items.begin() + payload.item_count,
-						    [&](const auto &entry) {
+						    [&](const auto &entry)
+						    {
 							    return entry.item_uid ==
 									   item.object_uid &&
 								   entry.vnum == item.vnum;
@@ -1089,7 +1090,8 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
 			 [&](const auto &entry)
 			 {
 				 return std::count_if(exact_items.begin(), exact_items.end(),
-						      [&](const auto &item) {
+						      [&](const auto &item)
+						      {
 							      return entry.item_uid ==
 									     item.object_uid &&
 								     entry.vnum == item.vnum;
@@ -1233,7 +1235,8 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 			 {
 				 return std::count_if(payload.items.begin(),
 						      payload.items.begin() + payload.item_count,
-						      [&](const auto &entry) {
+						      [&](const auto &entry)
+						      {
 							      return entry.item_uid ==
 									     item.object_uid &&
 								     entry.vnum == item.vnum;
@@ -1243,7 +1246,8 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 			 [&](const auto &entry)
 			 {
 				 return std::count_if(exact_items.begin(), exact_items.end(),
-						      [&](const auto &item) {
+						      [&](const auto &item)
+						      {
 							      return entry.item_uid ==
 									     item.object_uid &&
 								     entry.vnum == item.vnum;
@@ -1267,7 +1271,8 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 		if (!(item.extra_flags & artifact_extra_flag))
 			continue;
 		if (std::any_of(exact_items.begin(), exact_items.begin() + index,
-				[&](const auto &prior) {
+				[&](const auto &prior)
+				{
 					return (prior.extra_flags & artifact_extra_flag) &&
 					       prior.vnum == item.vnum;
 				}))
@@ -1291,7 +1296,8 @@ flatfile_artifact_result flatfile_artifact_prepare_room_transfer(
 	{
 		const bool selected =
 			std::any_of(exact_items.begin(), exact_items.end(),
-				    [&](const auto &item) {
+				    [&](const auto &item)
+				    {
 					    return (item.extra_flags & artifact_extra_flag) &&
 						   item.vnum == record.vnum;
 				    });
@@ -1351,7 +1357,8 @@ static flatfile_artifact_result flatfile_artifact_prepare_corpse_disposition(
 		if (!(item.extra_flags & artifact_extra_flag))
 			continue;
 		if (std::any_of(items.begin(), items.begin() + index,
-				[&](const auto &prior) {
+				[&](const auto &prior)
+				{
 					return (prior.extra_flags & artifact_extra_flag) &&
 					       prior.vnum == item.vnum;
 				}))

@@ -244,7 +244,8 @@ flatfile_shop_trophy_result flatfile_shop_trophy_record(const char *root, int it
 	try
 	{
 		history.erase(std::remove_if(history.begin(), history.end(),
-					     [occurred_at](const history_entry &entry) {
+					     [occurred_at](const history_entry &entry)
+					     {
 						     return !in_trophy_window(entry.occurred_at,
 									      occurred_at);
 					     }),

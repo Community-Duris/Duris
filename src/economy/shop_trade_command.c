@@ -168,7 +168,8 @@ bool matching_fences(const critical_command &left, const critical_command &right
 	       left.expected_revisions.size() == right.expected_revisions.size() &&
 	       std::equal(left.expected_revisions.begin(), left.expected_revisions.end(),
 			  right.expected_revisions.begin(),
-			  [](const auto &first, const auto &second) {
+			  [](const auto &first, const auto &second)
+			  {
 				  return critical_entity_key_equal(first.key, second.key) &&
 					 first.revision == second.revision;
 			  });

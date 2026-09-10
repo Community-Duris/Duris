@@ -453,7 +453,8 @@ int count_boons(int active, int random)
 		    flatfile_boon_result::ok)
 			return 0;
 		return static_cast<int>(std::count_if(definitions.begin(), definitions.end(),
-						      [&](const auto &definition) {
+						      [&](const auto &definition)
+						      {
 							      return (!active ||
 								      definition.active) &&
 								     (!random || definition.random);

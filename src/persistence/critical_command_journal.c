@@ -404,12 +404,11 @@ critical_command_journal_checkpoint(const critical_operation_id &operation_id)
 		record_result(result);
 		return result;
 	}
-	frames.erase(std::remove_if(frames.begin(), frames.end(),
-				    [&](const journal_frame &frame) {
-					    return critical_operation_id_equal(frame.operation_id,
-									       operation_id);
-				    }),
-		     frames.end());
+	frames.erase(
+		std::remove_if(
+			frames.begin(), frames.end(), [&](const journal_frame &frame)
+			{ return critical_operation_id_equal(frame.operation_id, operation_id); }),
+		frames.end());
 	result = rewrite(frames);
 	if (result == critical_command_journal_result::ok)
 	{

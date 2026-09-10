@@ -391,7 +391,8 @@ bool corpse_lifecycle_command_decode_payload(const critical_command &command,
 			  critical_entity_key_equal) &&
 	       std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
 			  expected.expected_revisions.begin(),
-			  [](const auto &left, const auto &right) {
+			  [](const auto &left, const auto &right)
+			  {
 				  return critical_entity_key_equal(left.key, right.key) &&
 					 left.revision == right.revision;
 			  });

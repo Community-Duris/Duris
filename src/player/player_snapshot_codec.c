@@ -150,7 +150,8 @@ void encode_index_rows(encoder &out, const std::vector<player_index_value_snapsh
 bool decode_index_rows(decoder &in, std::vector<player_index_value_snapshot> &rows)
 {
 	return in.vector(rows,
-			 [&](auto &row) {
+			 [&](auto &row)
+			 {
 				 return in.number(row.index) && in.number(row.value) &&
 					in.number(row.auxiliary);
 			 });
@@ -244,7 +245,8 @@ bool decode_items(decoder &in, std::vector<player_item_snapshot> &items)
 					if (!in.number(value))
 						return false;
 			if (!in.vector(row.dynamic_affects,
-				       [&](auto &affect) {
+				       [&](auto &affect)
+				       {
 					       return in.number(affect.type) &&
 						      in.number(affect.data) &&
 						      in.number(affect.extra2);
@@ -798,7 +800,8 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		    !in.vector(snapshot.granted_commands,
 			       [&](int32_t &command) { return in.number(command); }) ||
 		    !in.vector(snapshot.skills,
-			       [&](auto &row) {
+			       [&](auto &row)
+			       {
 				       return in.number(row.skill_id) && in.number(row.learned) &&
 					      in.number(row.taught);
 			       }) ||
