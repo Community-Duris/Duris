@@ -335,7 +335,8 @@ int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximu
 {
 	if (!object || !buffer || room_vnum <= 0 || maximum < sizeof(world_recovery_object_record))
 		return -1;
-	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items = {};
+	// capture_item_tree initializes each emitted entry; do not clear unused capacity.
+	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items;
 	uint32_t count = 0;
 	bool skip = false;
 	if (!capture_item_tree(object, room_vnum, 0, 0, items.data(), &count, &skip) || !count)
@@ -981,22 +982,21 @@ bool add_object_record(recovery_plan *plan, const unsigned char *data, size_t si
 			    item.timers[timer_index])
 				return false;
 		for (int affect_index = 0; affect_index < MAX_OBJ_AFFECT; ++affect_index)
-			if (item.affect_locations[affect_index] < SCHAR_MIN ||
+			if (item.affect_locations[affect_index] < 0 ||
 			    item.affect_locations[affect_index] > SCHAR_MAX ||
 			    item.affect_modifiers[affect_index] < SCHAR_MIN ||
 			    item.affect_modifiers[affect_index] > SCHAR_MAX)
 				return false;
-		if (item.material < SCHAR_MIN || item.material > SCHAR_MAX ||
-		    item.trap_eff < SHRT_MIN || item.trap_eff > SHRT_MAX ||
-		    item.trap_dam < SHRT_MIN || item.trap_dam > SHRT_MAX ||
-		    item.trap_charge < SHRT_MIN || item.trap_charge > SHRT_MAX ||
-		    item.trap_level < SHRT_MIN || item.trap_level > SHRT_MAX ||
-		    item.condition < SHRT_MIN || item.condition > SHRT_MAX ||
-		    item.craftsmanship < SHRT_MIN || item.craftsmanship > SHRT_MAX ||
-		    item.z_cord < SHRT_MIN || item.z_cord > SHRT_MAX ||
-		    item.bitvector > ULONG_MAX || item.bitvector2 > ULONG_MAX ||
-		    item.bitvector3 > ULONG_MAX || item.bitvector4 > ULONG_MAX ||
-		    item.bitvector5 > ULONG_MAX)
+		if (item.material < 0 || item.material > SCHAR_MAX || item.trap_eff < SHRT_MIN ||
+		    item.trap_eff > SHRT_MAX || item.trap_dam < SHRT_MIN ||
+		    item.trap_dam > SHRT_MAX || item.trap_charge < SHRT_MIN ||
+		    item.trap_charge > SHRT_MAX || item.trap_level < SHRT_MIN ||
+		    item.trap_level > SHRT_MAX || item.condition < SHRT_MIN ||
+		    item.condition > SHRT_MAX || item.craftsmanship < SHRT_MIN ||
+		    item.craftsmanship > SHRT_MAX || item.z_cord < SHRT_MIN ||
+		    item.z_cord > SHRT_MAX || item.bitvector > ULONG_MAX ||
+		    item.bitvector2 > ULONG_MAX || item.bitvector3 > ULONG_MAX ||
+		    item.bitvector4 > ULONG_MAX || item.bitvector5 > ULONG_MAX)
 			return false;
 		if (!item.item_uid || item.item_uid > ULONG_MAX || !item.root_item_uid ||
 		    item.root_item_uid != root_uid || item.vnum <= 0 || item.type < 0 ||
@@ -1216,11 +1216,13 @@ void replace_object_text(P_obj object, const world_recovery_item_snapshot &item)
 		object->description = str_dup(item.description);
 		object->str_mask |= STRUNG_DESC1;
 	}
-	if ((object->str_mask & STRUNG_DESC3) && object->action_description)
-		str_free(object->action_description);
-	object->action_description = item.action_description[0] ? str_dup(item.action_description) :
-								  nullptr;
-	object->str_mask |= STRUNG_DESC3;
+	if (item.action_description[0])
+	{
+		if ((object->str_mask & STRUNG_DESC3) && object->action_description)
+			str_free(object->action_description);
+		object->action_description = str_dup(item.action_description);
+		object->str_mask |= STRUNG_DESC3;
+	}
 }
 
 P_obj materialize_object(const planned_object &planned)

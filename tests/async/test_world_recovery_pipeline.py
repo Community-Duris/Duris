@@ -590,6 +590,37 @@ int main()
         hydrate_succeeds = true;
     }
 
+    // Empty snapshots retain prototype text and never claim string ownership.
+    {
+        obj_data plain = {};
+        world_recovery_item_snapshot snapshot = {};
+        replace_object_text(&plain, snapshot);
+        assert(!plain.action_description && !(plain.str_mask & STRUNG_DESC3));
+        plain.action_description = const_cast<char *>("prototype text");
+        plain.str_mask = STRUNG_KEYS;
+        char *borrowed = plain.action_description;
+        replace_object_text(&plain, snapshot);
+        assert(plain.action_description == borrowed && plain.str_mask == STRUNG_KEYS);
+        std::strcpy(snapshot.action_description, "a cavern snake");
+        replace_object_text(&plain, snapshot);
+        assert(!std::strcmp(plain.action_description, "a cavern snake"));
+        assert((plain.str_mask & (STRUNG_KEYS | STRUNG_DESC3)) == (STRUNG_KEYS | STRUNG_DESC3));
+        std::strcpy(snapshot.action_description, "another snake");
+        replace_object_text(&plain, snapshot);
+        assert(!std::strcmp(plain.action_description, "another snake"));
+        str_free(plain.action_description);
+    }
+    for (int invalid : {-1, 128, 255}) {
+        auto snapshot = item(991, 991, 0);
+        snapshot.material = invalid;
+        auto generation = object_generation({{snapshot}});
+        assert(!world_recovery_restore(generation.data(), generation.size(), 300, 77, nullptr));
+        snapshot.material = 0;
+        snapshot.affect_locations[0] = invalid;
+        generation = object_generation({{snapshot}});
+        assert(!world_recovery_restore(generation.data(), generation.size(), 300, 77, nullptr));
+        assert(!object_list);
+    }
     // Issue #198: capture actual runtime overrides, then exercise both adapters.
     fallback_fixture = false;
     hydrate_succeeds = true;
@@ -616,15 +647,17 @@ int main()
     fixed.obj_uid = 903; fixed.type = ITEM_OTHER; fixed.wear_flags = 0;
     corpse.contains = &bag; bag.contains = &gloves; bag.next_content = &fixed;
     char_data mortal = {}; mortal.player.level = 20;
+    auto buffer = std::vector<char>(WORLD_RECOVERY_MAX_RECORD_BYTES, static_cast<char>(0xa5));
+    const char *scratch_address = buffer.data();
     for (int mode = 0; mode != 3; ++mode) {
         // 0=file copyover; 1=clean restart; 2=crash recovery (same Redis codec).
-        auto buffer = std::vector<char>(WORLD_RECOVERY_MAX_RECORD_BYTES);
+        assert(buffer.data() == scratch_address);
         int size = copyover_write_obj_to_buffer(&corpse, buffer.data(), buffer.size());
         assert(size > 0);
         P_obj restored = nullptr;
         if (mode == 0) {
             FILE *file = std::tmpfile(); assert(file);
-            assert(write_obj_entry(file, &corpse)); std::rewind(file);
+            assert(write_obj_entry(file, &corpse, buffer)); std::rewind(file);
             size_t consumed = 99;
             assert(!copyover_restore_obj_from_buffer(buffer.data(), size - 1, &consumed));
             assert(consumed == 0 && object_list == nullptr);
@@ -805,7 +838,8 @@ int get_number(char **name) {
     return ordinal;
 }
 '''
-HARNESS = HARNESS.replace("int main()", COPYOVER_HELPERS + TAKEABILITY + SELECTOR_STUBS + SELECTOR + "\nint main()", 1)
+TEXT_RESTORE = section(PIPELINE, "void replace_object_text", "P_obj materialize_object")
+HARNESS = HARNESS.replace("int main()", TEXT_RESTORE + COPYOVER_HELPERS + TAKEABILITY + SELECTOR_STUBS + SELECTOR + "\nint main()", 1)
 
 with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
     source = Path(temp_dir) / "world_recovery_test.cpp"

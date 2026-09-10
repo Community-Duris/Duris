@@ -305,9 +305,8 @@ static int write_room_door(FILE *fp, int room_rnum, int dir)
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
 }
 
-static int write_obj_entry(FILE *fp, P_obj obj)
+static int write_obj_entry(FILE *fp, P_obj obj, std::vector<char> &buffer)
 {
-	std::vector<char> buffer(WORLD_RECOVERY_MAX_RECORD_BYTES);
 	const int size = copyover_write_obj_to_buffer(obj, buffer.data(), buffer.size());
 	if (size <= 0)
 		return 0;
@@ -322,13 +321,34 @@ static P_obj read_obj_entry(FILE *fp)
 	if (fread(&record_size, sizeof(record_size), 1, fp) != 1 ||
 	    record_size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
 	    record_size < sizeof(world_recovery_object_record))
+	{
+		logit(LOG_STATUS, "copyover_recover: invalid or truncated ground object length=%u",
+		      record_size);
 		return nullptr;
+	}
 	std::vector<char> buffer(record_size);
 	if (fread(buffer.data(), record_size, 1, fp) != 1)
+	{
+		logit(LOG_STATUS, "copyover_recover: truncated ground object payload bytes=%u",
+		      record_size);
 		return nullptr;
+	}
 	size_t consumed = 0;
 	P_obj object = copyover_restore_obj_from_buffer(buffer.data(), buffer.size(), &consumed);
-	return consumed == buffer.size() ? object : nullptr;
+	if (!object || consumed != buffer.size())
+	{
+		world_recovery_object_record record = {};
+		memcpy(&record, buffer.data(), sizeof(record));
+		uint64_t root_uid = 0;
+		if (buffer.size() >= sizeof(record) + sizeof(world_recovery_item_snapshot))
+			memcpy(&root_uid, buffer.data() + sizeof(record), sizeof(root_uid));
+		logit(LOG_STATUS,
+		      "copyover_recover: ground object validation/materialization failed room=%d root_uid=%llu items=%u bytes=%u",
+		      record.room_vnum, (unsigned long long)root_uid, record.item_count,
+		      record_size);
+		return nullptr;
+	}
+	return object;
 }
 
 // raw write to socket fd
@@ -640,6 +660,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 	}
 
+	std::vector<char> object_buffer(WORLD_RECOVERY_MAX_RECORD_BYTES);
 	// write objects on ground, skip ship stuff - already loaded
 	// also skip objects in ship rooms (dynamic vnums 60000-64999)
 	for (obj = object_list; obj; obj = obj->next)
@@ -652,7 +673,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				continue;
 			if (IS_SHIP_ROOM(obj->loc.room))
 				continue;
-			if (!write_obj_entry(fp, obj))
+			if (!write_obj_entry(fp, obj, object_buffer))
 			{
 				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d",
 				      OBJ_VNUM(obj));
@@ -1196,7 +1217,12 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// Version 11 stores bounded trees, including nested corpse contents.
 	for (i = 0; i < header.num_objects; ++i)
 		if (!read_obj_entry(fp))
+		{
+			logit(LOG_STATUS,
+			      "copyover_recover: failed ground object record %d/%d; aborting copyover",
+			      i + 1, header.num_objects);
 			goto copyover_recover_fail;
+		}
 
 	// restore door states
 	for (i = 0; i < header.num_rooms; i++)
