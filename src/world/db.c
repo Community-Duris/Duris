@@ -4128,6 +4128,7 @@ void free_char(P_char ch)
 		logit(LOG_DEBUG, "free_char called with no char!");
 		return;
 	}
+	++character_removal_generation;
 	if ((GET_OPPONENT(ch)))
 	{
 		logit(LOG_EXIT, "free_char: called with a non-extracted char");

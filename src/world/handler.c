@@ -63,6 +63,9 @@ extern P_char character_list;
 extern P_char combat_list;
 extern P_char dead_guys;
 extern P_desc descriptor_list;
+
+/* Game-thread invalidation for post-movement liveness checks. */
+uint64_t character_removal_generation = 0;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_obj object_list;
@@ -4860,6 +4863,7 @@ void extract_char(P_char ch)
 		logit(LOG_EXIT, "No ch in extract_char");
 		return;
 	}
+	++character_removal_generation;
 	world_recovery_capture_forget_character(ch);
 	if (!(*ch->player.name))
 	{

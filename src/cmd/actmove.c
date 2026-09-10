@@ -2224,11 +2224,12 @@ void do_move(P_char ch, char *argument, int cmd)
 		}
 	}
 
+	const auto removal_before = character_removal_generation;
 	const bool moved = do_simple_move(ch, cmd, MVFLG_DRAG_FOLLOWERS);
 
-	/* A destination room proc may extract (or kill) the mover. Do not inspect
-	 * the character after do_simple_move() unless it is still live. */
-	if (!char_in_list(ch) || !IS_ALIVE(ch))
+	/* Scripts may extract (or kill) the mover. Skip the global list scan only
+	 * when no extraction or free occurred during this synchronous movement. */
+	if ((removal_before != character_removal_generation && !char_in_list(ch)) || !IS_ALIVE(ch))
 		return;
 
 	if (moved)

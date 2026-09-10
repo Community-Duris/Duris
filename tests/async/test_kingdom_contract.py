@@ -1667,11 +1667,30 @@ def test_garrison_identity_and_hunts_survive_extraction() -> None:
     check(len(move) == 1, "do_move is defined once", f"{len(move)}")
     if move:
         code = strip_comments(move[0])
+        snapshot = code.find("const auto removal_before = character_removal_generation;")
         moved = code.find("do_simple_move(ch")
         live = code.find("char_in_list(ch)", moved)
         after = code.find("affected_by_spell(ch, SPELL_PATH_OF_FROST)", moved)
-        check(-1 < moved < live < after,
+        check(-1 < snapshot < moved < live < after,
               "do_move revalidates a character after a destination proc before dereferencing it")
+        check(re.search(
+            r"if\s*\(\(removal_before != character_removal_generation && !char_in_list\(ch\)\)"
+            r"\s*\|\|\s*!IS_ALIVE\(ch\)\)\s*return;", code) is not None,
+              "movement skips membership only without removal and checks death after membership")
+
+    for path, signature, next_work in (
+        ("src/world/handler.c", r"\bvoid\s+extract_char\s*\(",
+         "world_recovery_capture_forget_character(ch)"),
+        ("src/world/db.c", r"\bvoid\s+free_char\s*\(", "GET_OPPONENT(ch)"),
+    ):
+        bodies = function_bodies(read(path), signature)
+        check(len(bodies) == 1, f"{signature} has one invalidation hook owner")
+        if bodies:
+            code = strip_comments(bodies[0])
+            check(re.search(r"if\s*\(!ch\)\s*\{[^{}]*return;\s*\}"
+                            r"\s*\+\+character_removal_generation;", code) is not None
+                  and code.find("++character_removal_generation;") < code.find(next_work),
+                  f"{path} invalidates immediately after its null guard before nested work")
 
     hunt_check = function_bodies(read("src/mob/mobact.c"), r"\bvoid\s+MobHuntCheck\s*\(")
     check(len(hunt_check) == 1, "MobHuntCheck is defined once", f"{len(hunt_check)}")
