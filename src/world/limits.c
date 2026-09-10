@@ -261,10 +261,22 @@ int hit_regen(P_char ch, bool display_only)
 		gain += GET_LEVEL(ch) * 2;
 	}
 
-	if (ch->points.hit_reg > 16)
-		gain += (int)(2. * sqrt(4 * ch->points.hit_reg));
-	else
-		gain += ch->points.hit_reg;
+	// Keep both timers, but compare their actual bonuses after hit_reg scaling.
+	int hit_reg = ch->points.hit_reg;
+	const bool competing_healing = affected_by_spell(ch, SPELL_REGENERATION) &&
+				       affected_by_spell(ch, SPELL_ACCEL_HEALING);
+	if (competing_healing)
+		for (af = ch->affected; af; af = af->next)
+			if (af->type == SPELL_ACCEL_HEALING && af->location == APPLY_HIT_REG)
+				hit_reg -= af->modifier;
+
+	const auto scaled_hit_reg = [](int value)
+	{ return value > 16 ? (int)(2. * sqrt(4 * value)) : value; };
+	gain += scaled_hit_reg(hit_reg);
+	const int accelerated_gain =
+		competing_healing && !IS_FIGHTING(ch) ?
+			scaled_hit_reg(ch->points.hit_reg) - scaled_hit_reg(hit_reg) :
+			0;
 
 	gain += EPIC_HEALTH_REGEN_MOD * get_epic_bonus(ch, EPIC_BONUS_HEALTH_REG);
 
@@ -273,18 +285,20 @@ int hit_regen(P_char ch, bool display_only)
 	     (world[ch->in_room].sector_type == SECT_FOREST)) ||
 	    has_innate(ch, INNATE_ELEMENTAL_BODY))
 	{
+		int regeneration_gain;
 		switch (GET_STAT(ch))
 		{
 		case STAT_SLEEPING:
-			gain += 3 * get_innate_regeneration(ch);
+			regeneration_gain = 3 * get_innate_regeneration(ch);
 			break;
 		case STAT_RESTING:
-			gain += 2 * get_innate_regeneration(ch);
+			regeneration_gain = 2 * get_innate_regeneration(ch);
 			break;
 		default:
-			gain += get_innate_regeneration(ch);
+			regeneration_gain = get_innate_regeneration(ch);
 			break;
 		}
+		gain += MAX(regeneration_gain, accelerated_gain);
 	}
 
 	if (IS_AFFECTED4(ch, AFF4_TUPOR))

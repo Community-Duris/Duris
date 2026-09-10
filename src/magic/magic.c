@@ -12480,9 +12480,7 @@ void spell_regeneration(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
 
-	if (affected_by_spell(victim, SPELL_ACCEL_HEALING) ||
-	    affected_by_spell(victim, SKILL_REGENERATE) ||
-	    affected_by_spell(victim, SPELL_REGENERATION) ||
+	if (affected_by_spell(victim, SKILL_REGENERATE) ||
 	    affected_by_spell(victim, SPELL_PACTUM_SERPENTIS))
 	{
 		send_to_char("You can't possibly heal any faster.\n", victim);
@@ -12490,6 +12488,16 @@ void spell_regeneration(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	}
 
 	skl_lvl = MAX(4, (level / 10));
+
+	for (struct affected_type *existing = victim->affected; existing; existing = existing->next)
+	{
+		if (existing->type == SPELL_REGENERATION)
+		{
+			existing->duration = skl_lvl;
+			send_to_char("Your regeneration magic is refreshed!\r\n", victim);
+			return;
+		}
+	}
 
 	snprintf(Gbuf1, 100, "You begin to regenerate rapidly.\n");
 
@@ -19391,7 +19399,6 @@ void spell_accel_healing(int level, P_char ch, char * /*arg*/, [[maybe_unused]] 
 		return;
 
 	if (affected_by_spell(victim, SKILL_REGENERATE) ||
-	    affected_by_spell(victim, SPELL_REGENERATION) ||
 	    affected_by_spell(victim, SPELL_PACTUM_SERPENTIS))
 	{
 		act("$N can't possibly heal any faster.", TRUE, ch, 0, victim, TO_CHAR);
@@ -19401,7 +19408,7 @@ void spell_accel_healing(int level, P_char ch, char * /*arg*/, [[maybe_unused]] 
 	if (affected_by_spell(victim, SPELL_ACCEL_HEALING))
 	{
 		struct affected_type *af1;
-		bool found;
+		bool found = false;
 
 		for (af1 = victim->affected; af1; af1 = af1->next)
 		{
