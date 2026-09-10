@@ -1320,6 +1320,14 @@ static int input_command_number(const char *input)
 	return old_search_block(word, 0, len, command, 2);
 }
 
+/** Only table-owned names cross the diagnostic boundary. Unknown input is never retained. */
+const char *input_command_label(const char *input)
+{
+	const int cmd = input_command_number(input);
+	return cmd > CMD_NONE && cmd < MAX_CMD ? command[(cmd == CMD_SAY2 ? CMD_SAY : cmd) - 1] :
+						 "unknown";
+}
+
 /**
  * comm.c pumps a casting player's input queue so 'abort' can reach the
  * interpreter, and peeks at the head of that queue with this first: anything

@@ -131,6 +131,7 @@ void do_debug(P_char ch, char *argument, int /*cmd*/)
 			{
 				if (!do_profile)
 				{
+					PROFILES(REBASE);
 					do_profile = true;
 					send_to_char("Profiling mode is now ON.\r\n", ch);
 				}

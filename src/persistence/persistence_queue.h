@@ -89,16 +89,6 @@ void persistence_item_event_worker_heartbeat_set(time_t timestamp);
 void persistence_scalar_event_worker_heartbeat_set(time_t timestamp);
 void persistence_large_event_worker_heartbeat_set(time_t timestamp);
 
-/* Cross-TU latency-trace dump: if latency_trace.h is included in multiple
- * translation units, each has its own static ring buffer.  Call this from
- * the main-thread periodic path (e.g. persistence_worker_heartbeat_check)
- * to dump the scalar-event-queue's trace data to the shared log file. */
-void persistence_queue_latency_dump(void);
-
-/* Cross-TU latency-trace reset: resets the persistence_queue.c static ring
- * buffer.  Call before boot-time tests to get clean trace data. */
-void persistence_queue_latency_reset(void);
-
 /* SQL string escaping: doubles apostrophes/backslashes, replaces
  * pipes/newlines/carriage-returns with spaces. Returns the output buffer.
  * Returns empty string if buf is NULL or buf_size <= 0.

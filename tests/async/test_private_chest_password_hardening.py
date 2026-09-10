@@ -6,6 +6,7 @@ import ctypes
 import hashlib
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -44,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix="duris-chest-hash-") as temp_dir:
             str(library_path),
             "-lcrypt",
             "-lcrypto",
+            "-pthread",
         ],
         check=True,
         cwd=ROOT,
@@ -79,6 +81,77 @@ with tempfile.TemporaryDirectory(prefix="duris-chest-hash-") as temp_dir:
     assert library.password_verify_legacy_sha256(secret, legacy.upper()) == 1
     assert library.password_verify_legacy_sha256(b"incorrect", legacy) == 0
     assert library.password_verify_legacy_sha256(secret, b"not-a-sha256-value") == 0
+
+    library.password_login_submit.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+    library.password_login_submit.restype = ctypes.c_void_p
+    library.password_login_poll.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_void_p),
+    ]
+    library.password_login_poll.restype = ctypes.c_int
+    library.password_login_release.argtypes = [ctypes.c_void_p]
+    library.password_login_shutdown.argtypes = []
+
+    def finish_login(job, current_hash):
+        assert job
+        valid = ctypes.c_int()
+        upgraded = ctypes.c_void_p()
+        deadline = time.monotonic() + 10
+        while not library.password_login_poll(
+            job, current_hash, ctypes.byref(valid), ctypes.byref(upgraded)
+        ):
+            assert time.monotonic() < deadline, "password worker failed to complete"
+            time.sleep(0.001)
+        result = ctypes.string_at(upgraded) if upgraded.value else None
+        libc.free(upgraded)
+        library.password_login_release(job)
+        return valid.value, result
+
+    started = time.monotonic()
+    job = library.password_login_submit(secret, hashes[0], 1)
+    assert time.monotonic() - started < 0.05, "submission ran bcrypt on the caller"
+    valid = ctypes.c_int()
+    upgraded = ctypes.c_void_p()
+    # The caller can continue doing work while cost-12 bcrypt is in flight.
+    for _ in range(10):
+        assert library.password_login_poll(
+            job, hashes[0], ctypes.byref(valid), ctypes.byref(upgraded)
+        ) == 0
+    assert finish_login(job, hashes[0]) == (1, None)
+    assert finish_login(library.password_login_submit(b"incorrect", hashes[0], 1), hashes[0]) == (0, None)
+    assert finish_login(library.password_login_submit(secret, hashes[0], 1), hashes[1]) == (0, None)
+
+    crypt = ctypes.CDLL("libcrypt.so.1")
+    crypt.crypt.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    crypt.crypt.restype = ctypes.c_char_p
+    md5_hash = crypt.crypt(secret, b"$1$login$")
+    assert md5_hash.startswith(b"$1$")
+    valid, upgrade = finish_login(library.password_login_submit(secret, md5_hash, 1), md5_hash)
+    assert valid == 1 and upgrade.startswith(b"$2b$12$")
+    assert library.bcrypt_verify_password(secret, upgrade) == 1
+    assert finish_login(library.password_login_submit(b"incorrect", md5_hash, 1), md5_hash) == (0, None)
+    assert finish_login(library.password_login_submit(secret, md5_hash, 0), md5_hash) == (1, None)
+
+    # Capacity includes results until consumed; queued/running cancellation must
+    # not wait for bcrypt or leave a completion attached to a freed descriptor.
+    jobs = [library.password_login_submit(secret, hashes[0], 1) for _ in range(16)]
+    assert all(jobs)
+    assert not library.password_login_submit(secret, hashes[0], 1)
+    started = time.monotonic()
+    for job in jobs:
+        library.password_login_release(job)
+    assert time.monotonic() - started < 0.05, "disconnect waited for bcrypt"
+    assert finish_login(library.password_login_submit(secret, hashes[0], 1), hashes[0]) == (1, None)
+    for _ in range(64):
+        job = library.password_login_submit(secret, hashes[0], 1)
+        assert job
+        library.password_login_release(job)
+    assert not library.password_login_submit(b"x" * 4096, hashes[0], 1)
+    assert not library.password_login_submit(secret, b"x" * 128, 1)
+    assert not library.password_login_submit(secret, None, 1)
+    library.password_login_shutdown()
+    assert not library.password_login_submit(secret, hashes[0], 1)
+    print("[PASS] login verification is nonblocking, bounded, cancellable, and rejects stale hashes")
 print("[PASS] bcrypt salts, cost, verification, and legacy SHA-256 runtime behavior")
 
 assert 'crypt_gensalt_rn("$2b$", 12' in password_hash

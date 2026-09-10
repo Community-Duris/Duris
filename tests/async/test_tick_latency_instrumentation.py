@@ -34,8 +34,9 @@ checks = []
 
 checks.append((
     "a monotonic clock helper exists",
-    contains(comm, "static double loop_monotonic_seconds(void)") and
-    contains(comm, "clock_gettime(CLOCK_MONOTONIC, &now)")
+    contains(comm, "static uint64_t loop_monotonic_us(void)") and
+    contains(comm, "latency_trace_monotonic_us()") and
+    contains(comm, "LATENCY CLOCK FAILURE:")
 ))
 
 match = re.search(r"void game_loop\(int port, int sslport\)\s*\{.*?\n\}", comm, re.S)
@@ -52,10 +53,12 @@ if loop:
     ))
     checks.append((
         "every reported section is timed with the monotonic helper",
-        all(contains(loop, f"double {name}_begin = loop_monotonic_seconds();")
-            for name in ("loop_time", "connections", "commands", "prompts",
+        all(contains(loop, f"const uint64_t {name}_begin_us = loop_monotonic_us();")
+            for name in ("connections", "prompts",
                          "activities", "combat", "ne_events",
-                         "affect_and_points"))
+                         "affect_and_points")) and
+        contains(loop, "const uint64_t loop_time_begin_us = loop_monotonic_us();") and
+        contains(loop, "const uint64_t command_sweep_started_us =")
     ))
     checks.append((
         "section timings no longer come from the do_profile accumulators",
@@ -65,13 +68,13 @@ if loop:
     ))
     checks.append((
         "the stall report still names every measured section",
-        all(contains(loop, f'"  - {label} time - %f"')
+        all(contains(loop, f'{label}_us=%')
             for label in ("connections", "activities", "combat", "commands",
-                          "ne_events", "prompts", "aff/pts"))
+                          "ne_events", "prompts", "affect_and_points"))
     ))
     checks.append((
         "the stall report splits aff/pts into affect_update and point_update",
-        all(contains(loop, f'"    - {label} time - %f"')
+        all(contains(loop, f'{label}_us=%')
             for label in ("affect_update", "point_update"))
     ))
     checks.append((
@@ -83,6 +86,34 @@ if loop:
         "the latency trace dump targets the repository's logs directory",
         contains(loop, 'fopen("logs/latency_trace.log", "a")') and
         not contains(loop, "/durismud/logs")
+    ))
+    checks.append((
+        "one absolute scheduler tick correlates the whole loop",
+        contains(loop, "const uint64_t loop_tick = (uint64_t)ne_event_tick;") and
+        all(contains(loop, f'latency_trace_record("{name}"')
+            for name in ("connections", "commands", "prompts", "ne_events",
+                         "activities", "combat", "affect_and_points",
+                         "total_tick")) and
+        not re.search(r'latency_trace_record\([^;]+,\s*pulse\);', loop, re.S)
+    ))
+    checks.append((
+        "periodic outputs reuse one captured reporting window",
+        contains(loop, "latency_trace_snapshot_take_and_reset(&snapshot);") and
+        loop.count("latency_trace_snapshot_dump(") == 2
+    ))
+    checks.append((
+        "trace timing uses guarded integer microseconds throughout",
+        contains(loop, "latency_trace_elapsed_us(") and
+        not contains(comm, "loop_monotonic_seconds") and
+        not contains(comm, "latency_us_from_seconds") and
+        not contains(comm, "quiet_NaN") and
+        not re.search(r"\(uint64_t\)\([^;\n]*1000000\.0", loop) and
+        contains(loop, "MIN(loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec)")
+    ))
+    checks.append((
+        "command trace timing excludes command-report emission",
+        loop.index('latency_trace_record("commands", command_sweep_us') <
+        loop.index("command_latency_report_throttled(")
     ))
 
 failed = [name for name, ok in checks if not ok]

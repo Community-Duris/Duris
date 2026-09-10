@@ -93,6 +93,8 @@ bool is_email_taken(const char *email);
 
 /* Login password prompt (enabled/disabled recovery variant); sets CON_GET_ACCT_PASSWD. */
 void send_account_password_prompt(struct descriptor_data *d);
+/* True while a login check is pending, including the pulse that completes it. */
+bool account_login_password_pulse(struct descriptor_data *d);
 /* Close every session on acct_name except one, sending notice (may be NULL) first. */
 void close_account_sessions_named(const char *acct_name, struct descriptor_data *except,
 				  const char *notice);

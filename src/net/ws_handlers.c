@@ -1168,7 +1168,6 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 	cJSON *account_item, *password_item;
 	const char *account_name, *password;
 	char tmp_name[256];
-	int password_valid = 0;
 
 	if (d && (d->durisweb_verified || d->durisweb_backend))
 	{
@@ -1246,24 +1245,25 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 
-	/* verify password */
-	if (is_bcrypt_hash(d->account->acct_password))
+	/* Password work must not block the game loop, including native web logins. */
+	d->login_password_websocket = true;
+	d->login_password_job = password_login_submit(password, d->account->acct_password, 0);
+	if (!d->login_password_job)
 	{
-		password_valid = bcrypt_verify_password(password, d->account->acct_password);
+		ws_send_auth_failed(d, "Login is busy; try again later");
+		d->account = free_account(d->account);
 	}
-	else
-	{
-		/* legacy md5 hash */
-		password_valid = (strcmp(CRYPT2((char *)password, d->account->acct_password),
-					 d->account->acct_password) == 0);
-	}
+}
 
+void ws_finish_login(struct descriptor_data *d, int password_valid)
+{
 	if (!password_valid)
 	{
 		ws_send_auth_failed(d, "Invalid account or password");
 		d->account = free_account(d->account);
 		return;
 	}
+	const char *tmp_name = d->account->acct_name;
 
 	/* reconnect check: look for in-game characters from this account */
 	{
@@ -3901,6 +3901,9 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 /* dispatch */
 void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 {
+	/* No account mutation or entry may overtake password verification. */
+	if (d && d->login_password_job)
+		return;
 	static const struct
 	{
 		const char *name;

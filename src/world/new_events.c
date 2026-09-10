@@ -42,6 +42,7 @@
 #include "item/objmisc.h"
 #include "world/outposts.h"
 #include "persistence/persistence_checkpoint.h"
+#include "persistence/latency_trace.h"
 #include "core/profile.h"
 #include "redis/redis_donation_runtime.h"
 #include "redis/redis_lifecycle.h"
@@ -214,7 +215,6 @@ extern struct sector_data *sector_table;
 extern const struct racial_data_type racial_data[LAST_RACE + 1];
 void interaction_to_new_wrapper(P_char, P_char, char *);
 void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data);
-void register_func_call(void *func, double time);
 const char *get_function_name(void *func);
 void release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
 extern void event_mob_mundane(P_char, P_char, P_obj, void *);
@@ -1465,6 +1465,7 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 	if (!deferred_head)
 		return 0;
 
+	PROFILE_START(nevent_defer_collect);
 	next_bucket = nevent_bucket_for_tick(nevent_add_ticks(ne_event_tick, 1));
 
 	/* Finish all allocation before unlinking anything so allocation failure
@@ -1474,6 +1475,8 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 	     event = event->next_sched)
 		batch.push_back(event);
 
+	PROFILE_END(nevent_defer_collect);
+	PROFILE_START(nevent_defer_unlink);
 	for (P_nevent event : batch)
 	{
 		nevent_unlink_schedule(event);
@@ -1487,13 +1490,18 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
 	}
+	PROFILE_END(nevent_defer_unlink);
 
 	/* Aging can change effective priority as the deferral count advances, so
 	 * sort once under the new state and merge the batch into the already-sorted
 	 * destination bucket.  This keeps budget enforcement O(n log n), avoiding
 	 * quadratic head scans when boot schedules tens of thousands of callbacks. */
+	PROFILE_START(nevent_defer_sort);
 	std::sort(batch.begin(), batch.end(), nevent_sorts_before);
+	PROFILE_END(nevent_defer_sort);
+	PROFILE_START(nevent_defer_merge);
 	nevent_merge_sorted_batch(batch, next_bucket);
+	PROFILE_END(nevent_defer_merge);
 
 	return static_cast<long>(batch.size());
 }
@@ -1617,8 +1625,7 @@ void ne_events(void)
 			if (periodic_callback)
 				nevent_periodic_complete(current_nevent);
 			PROFILE_END(event_func);
-			PROFILE_REGISTER_CALL(callback_func,
-					      event_func_profile_end - event_func_profile_beg)
+			PROFILE_REGISTER_CALL(callback_func, event_func)
 #else
 			(callback_func)(current_nevent->ch, current_nevent->victim,
 					current_nevent->obj, current_nevent->data);
@@ -1657,7 +1664,9 @@ void ne_events(void)
 
 		if (current_nevent->deferral_count > 0)
 			catchup_executed++;
-		nevent_destroy(current_nevent);
+		// Cancellation during a callback queues destruction for the end of this pass.
+		if (current_nevent->lifecycle_state != NEVENT_LIFECYCLE_CANCEL_PENDING)
+			nevent_destroy(current_nevent);
 
 		if (max_callbacks > 0 && executed >= max_callbacks)
 			budget_exhausted = TRUE;
@@ -1682,23 +1691,36 @@ void ne_events(void)
 	long loop_us = nevent_elapsed_us(&loop_started, &loop_finished);
 	if (deferred > 0)
 	{
+		char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		const char *trace_tick =
+			latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+		const char *trace_boot_id = latency_trace_boot_id();
+		const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 		logit(LOG_STATUS,
-		      "NEVENT BUDGET: pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      pulse, loop_us, scanned, executed, deferred, nevent_catchup_debt,
-		      nevent_catchup_debt_estimated_us, nevent_oldest_deferred_due_tick(),
-		      nevent_catchup_quota, catchup_executed, max_deferral_seen, max_late_ticks,
-		      max_late_name, max_late_due, max_late_deferral, nevent_catchup_extension_us,
-		      nevent_avg_callback_us, slowest_name ? slowest_name : "unknown", slowest_us,
-		      ne_event_counter);
+		      "NEVENT BUDGET: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
+		      " pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld slowest=%s slowest_us=%ld scheduled=%ld",
+		      trace_boot_id, trace_tick, trace_pulse_start_us, pulse, loop_us, scanned,
+		      executed, deferred, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
+		      nevent_oldest_deferred_due_tick(), nevent_catchup_quota, catchup_executed,
+		      max_deferral_seen, max_late_ticks, max_late_name, max_late_due,
+		      max_late_deferral, nevent_catchup_extension_us, nevent_avg_callback_us,
+		      slowest_name ? slowest_name : "unknown", slowest_us, ne_event_counter);
 	}
 	if (nevent_catchup_quota > 0 || new_debt > 0)
 	{
+		char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		const char *trace_tick =
+			latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+		const char *trace_boot_id = latency_trace_boot_id();
+		const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 		logit(LOG_STATUS,
-		      "NEVENT CATCHUP: pulse=%d debt=%ld debt_estimated_us=%llu oldest_due=%llu remaining_pulses=%d quota=%ld extra_callbacks=%ld executed=%ld extension_us=%ld avg_callback_us=%ld new_debt=%ld",
-		      pulse, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
-		      nevent_oldest_deferred_due_tick(), nevent_catchup_remaining,
-		      nevent_catchup_quota, nevent_catchup_extra_callbacks, catchup_executed,
-		      nevent_catchup_extension_us, nevent_avg_callback_us, new_debt);
+		      "NEVENT CATCHUP: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
+		      " pulse=%d debt=%ld debt_estimated_us=%llu oldest_due=%llu remaining_pulses=%d quota=%ld extra_callbacks=%ld executed=%ld extension_us=%ld avg_callback_us=%ld new_debt=%ld",
+		      trace_boot_id, trace_tick, trace_pulse_start_us, pulse, nevent_catchup_debt,
+		      nevent_catchup_debt_estimated_us, nevent_oldest_deferred_due_tick(),
+		      nevent_catchup_remaining, nevent_catchup_quota,
+		      nevent_catchup_extra_callbacks, catchup_executed, nevent_catchup_extension_us,
+		      nevent_avg_callback_us, new_debt);
 	}
 	nevent_finish_catchup_pulse();
 	/* Include scheduler preparation, cleanup, and diagnostics already emitted
@@ -1721,9 +1743,16 @@ void ne_events(void)
 	nevent_last_pulse_total_us = nevent_elapsed_us(&loop_started, &loop_finished);
 	if (nevent_last_pulse_total_us >= 50000)
 	{
+		char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		const char *trace_tick =
+			latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+		const char *trace_boot_id = latency_trace_boot_id();
+		const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 		logit(LOG_STATUS,
-		      "NEVENT SLOW: pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      pulse, nevent_last_pulse_total_us, scanned, executed,
+		      "NEVENT SLOW: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
+		      " pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",
+		      trace_boot_id, trace_tick, trace_pulse_start_us, pulse,
+		      nevent_last_pulse_total_us, scanned, executed,
 		      slowest_name ? slowest_name : "unknown", slowest_us, ne_event_counter);
 	}
 	nevent_assert_pool_accounting("ne_events");
@@ -2628,31 +2657,28 @@ void show_world_events(P_char ch, const char *arg)
 PROFILES(DEFINE);
 bool do_profile = FALSE;
 
-void save_profile_data(const char *name, double total_inside, double total_outside, unsigned total)
+void save_profile_data(const char *name, uint64_t total_inside_us, uint64_t total_outside_us,
+		       uint64_t total)
 {
+	const double average_us = total ? (double)total_inside_us / (double)total : 0.0;
+	const double elapsed_us = (double)total_inside_us + (double)total_outside_us;
+	const double share = elapsed_us > 0.0 ? (double)total_inside_us / elapsed_us * 100.0 : 0.0;
 	logit(LOG_FILE,
-	      "Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
-	      name, total_inside, total_outside, total,
-	      (total != 0) ? (total_inside / (double)total) : 0,
-	      (total_inside + total_outside != 0) ?
-		      (total_inside / (total_inside + total_outside) * 100.0) :
-		      0);
-	statuslog(
-		56,
-		"Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
-		name, total_inside, total_outside, total,
-		(total != 0) ? (total_inside / (double)total) : 0,
-		(total_inside + total_outside != 0) ?
-			(total_inside / (total_inside + total_outside) * 100.0) :
-			0);
+	      "Profile info for \"%s\": inside_us=%" PRIu64 " outside_us=%" PRIu64
+	      " total_calls=%" PRIu64 " average_us=%.0f share=%6.3f%%",
+	      name, total_inside_us, total_outside_us, total, average_us, share);
+	statuslog(56,
+		  "Profile info for \"%s\": inside_us=%" PRIu64 " outside_us=%" PRIu64
+		  " total_calls=%" PRIu64 " average_us=%.0f share=%6.3f%%",
+		  name, total_inside_us, total_outside_us, total, average_us, share);
 }
 
 struct FuncCallInfo
 {
 	const char *name;
 	const void *addr;
-	unsigned calls;
-	double time;
+	uint64_t calls;
+	uint64_t total_us;
 	FuncCallInfo *next;
 	FuncCallInfo *prev;
 };
@@ -2673,7 +2699,7 @@ void reset_func_call_info()
 	do
 	{
 		curr->calls = 0;
-		curr->time = 0;
+		curr->total_us = 0;
 		curr = curr->next;
 	} while (curr != func_call_info.data());
 }
@@ -2697,8 +2723,8 @@ void init_func_call_info()
 
 void save_func_call_info()
 {
-	unsigned total_calls = 0;
-	double total_time = 0;
+	uint64_t total_calls = 0;
+	uint64_t total_us = 0;
 
 	if (func_call_info.empty())
 		return;
@@ -2706,7 +2732,7 @@ void save_func_call_info()
 	do
 	{
 		total_calls += curr->calls;
-		total_time += curr->time;
+		total_us += curr->total_us;
 		curr = curr->next;
 	} while (curr != func_call_info.data());
 
@@ -2714,28 +2740,31 @@ void save_func_call_info()
 	do
 	{
 		logit(LOG_FILE,
-		      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
+		      "Profile info for function \"%-30s\": total_calls=%9" PRIu64
+		      " (%7.3f%%) total_us=%12" PRIu64 " (%7.3f%%)",
 		      curr->name, curr->calls,
 		      (total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) : 0,
-		      curr->time / 1000.,
-		      (total_time != 0) ? (curr->time / total_time * 100.0) : 0);
-		statuslog(
-			56,
-			"Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
-			curr->name, curr->calls,
-			(total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) :
-					     0,
-			curr->time / 1000.,
-			(total_time != 0) ? (curr->time / total_time * 100.0) : 0);
+		      curr->total_us,
+		      (total_us != 0) ? ((double)curr->total_us / (double)total_us * 100.0) : 0);
+		statuslog(56,
+			  "Profile info for function \"%-30s\": total_calls=%9" PRIu64
+			  " (%7.3f%%) total_us=%12" PRIu64 " (%7.3f%%)",
+			  curr->name, curr->calls,
+			  (total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) :
+					       0,
+			  curr->total_us,
+			  (total_us != 0) ? ((double)curr->total_us / (double)total_us * 100.0) :
+					    0);
 		curr = curr->next;
 	} while (curr != func_call_info.data() && curr->calls != 0);
 
 	logit(LOG_FILE,
-	      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
-	      "TOTAL", total_calls, 100.0, total_time / 1000., 100.0);
+	      "Profile info for function \"%-30s\": total_calls=%9" PRIu64
+	      " (%7.3f%%) total_us=%12" PRIu64 " (%7.3f%%)",
+	      "TOTAL", total_calls, 100.0, total_us, 100.0);
 }
 
-void register_func_call(void *func, double time)
+void register_func_call(void *func, uint64_t duration_us)
 {
 	if (func_call_info.empty())
 		return;
@@ -2744,14 +2773,19 @@ void register_func_call(void *func, double time)
 	{
 		if (curr->addr == func)
 		{
-			double wallClockInSec = time / (double)CLOCKS_PER_SEC;
-			if (wallClockInSec > 0.05)
+			if (duration_us >= 50000)
 			{
-				statuslog(56, "LONG EVENT \"%-30s\": took %f seconds", curr->name,
-					  wallClockInSec);
+				char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+				statuslog(56,
+					  "LONG EVENT \"%-30s\": boot=%s tick=%s"
+					  " pulse_start_mono_us=%" PRIu64 " duration_us=%" PRIu64,
+					  curr->name, latency_trace_boot_id(),
+					  latency_trace_format_tick(latency_trace_current_tick(),
+								    tick_buffer),
+					  latency_trace_pulse_start_monotonic_us(), duration_us);
 			}
 			curr->calls++;
-			curr->time += time;
+			curr->total_us += duration_us;
 			FuncCallInfo *prev = curr->prev;
 			if (prev != unknown && curr->calls > prev->calls)
 			{
@@ -2768,7 +2802,7 @@ void register_func_call(void *func, double time)
 		}
 	}
 	unknown->calls++;
-	unknown->time += time;
+	unknown->total_us += duration_us;
 }
 
 #endif
