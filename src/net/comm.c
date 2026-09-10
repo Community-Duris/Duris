@@ -3716,13 +3716,6 @@ int process_output(P_desc t)
 	bool text = t->output.head;
 	bool output_prompt_mode = t->prompt_mode;
 
-	if (text && !t->connected && t->character &&
-	    (IS_PC(t->character) || IS_MORPH(t->character)) &&
-	    !IS_SET(GET_PLYR(t->character)->specials.act, PLR_COMPACT))
-	{
-		write_to_q("\r\n", &t->output, 1);
-	}
-
 #ifdef SMART_PROMPT
 	if (t->character && (IS_PC(t->character) || IS_MORPH(t->character)))
 	{
@@ -3750,7 +3743,14 @@ int process_output(P_desc t)
 	if (defer_prompt)
 		output_prompt_mode = FALSE;
 
-	if (text && STATE(t) == CON_PLAYING && IS_PC(realChar) &&
+	if (text && !defer_prompt && !t->connected && t->character &&
+	    (IS_PC(t->character) || IS_MORPH(t->character)) &&
+	    !IS_SET(GET_PLYR(t->character)->specials.act, PLR_COMPACT))
+	{
+		write_to_q("\r\n", &t->output, 1);
+	}
+
+	if (text && !defer_prompt && STATE(t) == CON_PLAYING && IS_PC(realChar) &&
 	    ((output_prompt_mode == (PLR_FLAGGED(realChar, PLR_SMARTPROMPT)) ||
 	      (output_prompt_mode != PLR_FLAGGED(realChar, PLR_OLDSMARTP)))))
 	{

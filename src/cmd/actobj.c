@@ -201,6 +201,7 @@ struct bulk_get_state
 	item_owner_identity source;
 	item_transfer_reason reason;
 	int total;
+	bool got_coins;
 	bool failed;
 	bool corpse;
 };
@@ -1649,7 +1650,7 @@ static void report_bulk_get(P_char actor, const bulk_get_state &state)
 		snprintf(summary, sizeof(summary), "You got %d items.\r\n", state.total);
 		send_to_char(summary, actor);
 	}
-	else if (!state.total && !state.failed)
+	else if (!state.total && !state.got_coins && !state.failed)
 	{
 		send_to_char(state.container_uid ? "You find nothing in it.\r\n" :
 						   "You see nothing here.\r\n",
@@ -1997,6 +1998,7 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 				 {},
 				 item_transfer_reason::unknown,
 				 0,
+				 false,
 				 false,
 				 corpse };
 	try
@@ -3792,7 +3794,11 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 		return true;
 	}
 	if (committed && !publish_coin_pile(payload.source, result.piles[0], context.container_uid))
+	{
+		if (context.bulk)
+			bulk_gets.erase(context.actor_pid);
 		return false;
+	}
 	P_obj container = find_live_item_uid(context.container_uid);
 	if (actor)
 	{
@@ -3825,6 +3831,7 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 							     PLAYER_COMPONENT_INVENTORY);
 			if (container && container->type == ITEM_CORPSE &&
 			    IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE))
+				// The item phase saved the old pile; persist its new amount/removal.
 				writeCorpse(container);
 		}
 		else
@@ -3841,7 +3848,7 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 			else
 			{
 				if (committed)
-					++found->second.total;
+					found->second.got_coins = true;
 				else
 					found->second.failed = true;
 				if (finish_bulk_get_after_commit(actor, found->second, container))

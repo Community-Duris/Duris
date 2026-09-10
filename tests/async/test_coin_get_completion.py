@@ -84,6 +84,8 @@ struct coin_transfer_result
 struct bulk_get_state
 {
 	int total = 0;
+	bool got_coins = false;
+	uint64_t container_uid = 0;
 	bool failed = false;
 };
 
@@ -95,6 +97,8 @@ static P_obj room_container = nullptr;
 static std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 static std::unordered_map<uint64_t, obj_data> live_items;
 static uint64_t next_uid = 1;
+static bool publish_ok = true;
+static int corpse_writes = 0;
 
 void send_to_char(const char *txt, P_char)
 {
@@ -127,14 +131,18 @@ static P_obj make_container(int type = 0)
 }
 static bool publish_coin_pile(const coin_transfer_endpoint &, const item_transfer_result &, uint64_t)
 {
-	return true;
+	return publish_ok;
 }
 void mark_player_dirty_components(int, player_component_mask_t) {}
-void writeCorpse(P_obj) {}
+void writeCorpse(P_obj) { ++corpse_writes; }
 static bool finish_bulk_get_after_commit(P_char, bulk_get_state &, P_obj) { return true; }
-static void finish_bulk_get(P_char, uint32_t) {}
+static void report_bulk_get(P_char actor, const bulk_get_state &state);
+static void finish_bulk_get(P_char actor, uint32_t pid) {
+    report_bulk_get(actor, bulk_gets.at(pid));
+    bulk_gets.erase(pid);
+}
 void debug(const char *, ...) {}
-''' + extract_function("utility.c", "char *coins_to_string(int platinum, int gold, int silver, int copper, const char *color_string)") + "\n" + extract_function("actobj.c", "struct coin_pickup_context") + ";\n" + extract_function("actobj.c", "static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,") + r'''
+''' + extract_function("utility.c", "char *coins_to_string(int platinum, int gold, int silver, int copper, const char *color_string)") + "\n" + extract_function("actobj.c", "static void report_bulk_get(P_char actor, const bulk_get_state &state)") + "\n" + extract_function("actobj.c", "struct coin_pickup_context") + ";\n" + extract_function("actobj.c", "static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,") + r'''
 
 // A zero-denomination omission failure must name the denomination token
 // itself (e.g. "0g" as a standalone count), not a trailing digit of a
@@ -333,7 +341,57 @@ int main()
 		assert(actor_text == want);
 		assert(actor_text.find("nothing") != std::string::npos);
 	}
-	return 0;
+    // Coins never inflate equipment counts or produce a false empty-container message.
+    for (int items : {0, 1, 2})
+    for (bool committed : {false, true})
+    {
+        pc_only_data player{42};
+        char_data actor{&player};
+        coin_pickup_context context{};
+        context.actor_pid = 42;
+        context.bulk = true;
+        bulk_gets[42] = {};
+        bulk_gets[42].total = items;
+        actor_text.clear();
+        assert(coin_get_completion(&actor, committed, gold_only, {}, 0,
+            reinterpret_cast<const uint8_t *>(&context), sizeof(context)));
+        assert(bulk_gets.empty());
+        assert(actor_text.find("nothing here") == std::string::npos);
+        assert(actor_text.find("nothing in it") == std::string::npos);
+        if (items == 2)
+            assert(actor_text.find("You got 2 items.") != std::string::npos);
+        else
+            assert(actor_text.find("You got ") == std::string::npos);
+    }
+    // Publication failures, detached actors, and fenced completions release bulk state.
+    for (int failure : {0, 1, 2})
+    {
+        pc_only_data player{42};
+        char_data actor{&player};
+        coin_pickup_context context{};
+        context.actor_pid = 42;
+        context.bulk = true;
+        bulk_gets[42] = {};
+        publish_ok = failure != 0;
+        assert(coin_get_completion(failure == 1 ? nullptr : &actor, true, gold_only,
+            {}, failure == 2 ? EOWNERDEAD : 0,
+            reinterpret_cast<const uint8_t *>(&context), sizeof(context)) == publish_ok);
+        assert(bulk_gets.empty());
+    }
+    publish_ok = true;
+    // A coin commit changes the pile after any earlier equipment-phase corpse save.
+    {
+        pc_only_data player{42};
+        char_data actor{&player};
+        P_obj corpse = make_container(ITEM_CORPSE);
+        corpse->value[CORPSE_FLAGS] = PC_CORPSE;
+        corpse_writes = 0;
+        run_completion(&actor, true, gold_only, corpse, 0);
+        assert(corpse_writes == 1);
+        run_completion(&actor, false, gold_only, corpse, 0);
+        assert(corpse_writes == 1);
+    }
+    return 0;
 }
 '''
 
