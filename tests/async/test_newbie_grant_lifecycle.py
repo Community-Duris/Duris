@@ -251,7 +251,8 @@ int main()
         }
     }
     // A failed transient grant never publishes the object. A refused queue
-    // submission and a failed commit both clean up once at the existing boundary.
+    // submission is retained for retry, while a terminal commit failure cleans
+    // up once at the existing boundary.
     for (bool refuse_submission : {false, true})
     {
         fixture f;
@@ -262,9 +263,20 @@ int main()
         {
             const auto failed = next_completion(critical_apply_outcome::terminal_failure);
             deliver(failed); deliver(failed);
+            assert(publications.empty() && f.actor.carrying == nullptr);
+            assert(extractions[100] == 1 && submitted.empty());
+            assert(!item_movement_transaction_player_busy(&f.actor));
+            continue;
         }
+
         assert(publications.empty() && f.actor.carrying == nullptr);
-        assert(extractions[100] == 1 && submitted.empty());
+        assert(extractions.empty() && submitted.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        const auto retried = next_completion(critical_apply_outcome::applied);
+        deliver(retried);
+        assert(publications[100] == 1 && extractions.empty());
         assert(!item_movement_transaction_player_busy(&f.actor));
     }
     // A held grant does not publish early or hold an unrelated player's dispatch.
@@ -316,15 +328,17 @@ int main()
         assert(!item_creation_grant_blocks_commands(&f.actor) && f.desc.prompt_mode);
         assert(fixture_messages.find("starter kit is ready") == std::string::npos);
     }
-    // Refused submission releases its queue; the caller still owns cleanup.
+    // A transiently refused submission remains queued; the caller does not
+    // destroy the object before the coordinator becomes available.
     {
         fixture f;
         submit_result = critical_submit_result::unavailable;
-        assert(!item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
-        assert(!item_movement_transaction_player_busy(&f.actor));
-        assert(OBJ_NOWHERE(&f.bag) && extractions.empty());
-        submit_result = critical_submit_result::accepted;
         assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(OBJ_NOWHERE(&f.bag) && extractions.empty() && submitted.empty());
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.size() == 1);
         deliver(next_completion(critical_apply_outcome::applied));
         assert(publications[100] == 1 && !item_movement_transaction_player_busy(&f.actor));
     }
