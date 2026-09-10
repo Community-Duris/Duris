@@ -850,7 +850,7 @@ int main()
 	pile_ack(true);
 	assert(submission_count == before_bulk + 2 && bulk_gets.size() == 1);
 	pile_ack(true);
-	assert(bulk_gets.empty() && bulk_total == 2 && bag.contains == nullptr);
+	assert(bulk_gets.empty() && bulk_total == 0 && bag.contains == nullptr);
 	assert(GET_COPPER(&actor) + 10 * GET_SILVER(&actor) + 100 * GET_GOLD(&actor) + 1000 * GET_PLATINUM(&actor) == 1060);
 
 	// Partial pickup keeps exact denominations and UID, including at INT32 limits.
@@ -943,7 +943,7 @@ int main()
 	const int before_leaving = submission_count;
 	actor.in_room = 1;
 	pile_ack(true);
-	assert(submission_count == before_leaving && bulk_gets.empty() && bulk_total == 1);
+	assert(submission_count == before_leaving && bulk_gets.empty() && bulk_total == 0);
 	assert(bag.contains && bag.contains->value[0] == 35);
 	extract_obj(bag.contains, false);
     // Death conversion preserves every denomination and creates custody only on commit.

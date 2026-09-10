@@ -17,6 +17,7 @@ PRELUDE = r'''
 #include "net/comm.h"
 #include "net/mccp.h"
 #include "net/websocket.h"
+#include "core/json_utils.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
@@ -30,6 +31,7 @@ PRELUDE = r'''
 static critical_command submitted;
 static const char *publication_message;
 static bool publication_success;
+static bool publication_starts_currency;
 P_char character_list = nullptr;
 P_obj object_list = nullptr;
 static index_data indexes[1]{};
@@ -61,6 +63,7 @@ static void publish(P_char actor, bool committed, const item_transfer_result &, 
     assert(committed == publication_success);
     assert(!item_movement_transaction_player_busy(actor));
     write_to_q(publication_message, &actor->desc->output, 1);
+    currency_busy = publication_starts_currency;
 }
 static std::string delivered;
 static std::vector<std::string> frames;
@@ -109,9 +112,21 @@ static std::string output_bytes(bool websocket)
     for (const auto &frame : frames) bytes += frame;
     return bytes;
 }
+static std::string text_bytes(bool websocket, const char *text)
+{
+    if (!websocket) return text;
+    char *escaped = json_escape_ansi_string(text);
+    assert(escaped);
+    std::string bytes = "{\"type\":\"text\",\"category\":\"info\",\"data\":\"";
+    bytes += escaped;
+    bytes += "\"}";
+    free(escaped);
+    return bytes;
+}
 static std::string run(bool delayed, bool websocket, int flags, bool two_line,
                        bool fighting, const char *message, bool ambient = false,
-                       bool currency = false, bool switched = false, int auxiliary = 0)
+                       bool currency = false, bool switched = false, int auxiliary = 0,
+                       bool chained = false)
 {
     descriptor_data d{};
     char_data actor{}, body{}, enemy{};
@@ -144,6 +159,7 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
     d.websocket = websocket;
     delivered.clear(); frames.clear(); ambient_bytes.clear(); ga_count = 0;
     currency_busy = false;
+    publication_starts_currency = chained;
     item_movement_transaction_reset_for_tests();
     item_ownership_runtime_reset();
     pc.pid = 42;
@@ -264,6 +280,18 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
         }
         write_to_q(message, &d.output, 1);
     }
+    if (chained)
+    {
+        // The item callback starts coin work before this pulse flushes its text.
+        assert(currency_busy);
+        assert(process_output(&d) == 1);
+        assert(output_bytes(websocket) == text_bytes(websocket, message));
+        assert(ga_count == 0 && d.prompt_mode && !d.output.head);
+        delivered.clear(); frames.clear();
+        currency_busy = false;
+        message = "You get 12 gold coins.\r\n";
+        write_to_q(message, &d.output, 1);
+    }
     assert(process_output(&d) == 1);
     assert(!d.output.head);
     const auto bytes = output_bytes(websocket);
@@ -275,25 +303,6 @@ static std::string run(bool delayed, bool websocket, int flags, bool two_line,
     assert(process_output(&d) == 1);
     assert(output_bytes(websocket) == bytes); // no duplicate completion prompt
     return bytes;
-}
-static std::string ambient_reference(bool websocket, int flags)
-{
-    descriptor_data d{};
-    char_data actor{};
-    pc_only_data pc{};
-    actor.only.pc = &pc;
-    actor.desc = &d;
-    actor.specials.act = flags;
-    actor.specials.position = POS_STANDING | STAT_NORMAL;
-    pc.pid = 42;
-    d.character = &actor;
-    d.websocket = websocket;
-    delivered.clear(); frames.clear(); ga_count = 0;
-    d.prompt_mode = FALSE;
-    write_to_q("Someone says hello.\r\n", &d.output, 1);
-    assert(process_output(&d) == 1);
-    assert(ga_count == 0 && !d.output.head);
-    return output_bytes(websocket);
 }
 int main()
 {
@@ -313,7 +322,18 @@ int main()
         assert(run(true, ws, flags, two, fighting, message) == synchronous);
         run(true, ws, flags, two, fighting, message, true);
         if (smart == PLR_SMARTPROMPT)
-            assert(ambient_bytes == ambient_reference(ws, flags));
+            assert(ambient_bytes == text_bytes(ws, "Someone says hello.\r\n"));
+    }
+    for (bool ws : {false, true})
+    for (bool compact : {false, true})
+    for (unsigned smart : {0u, PLR_SMARTPROMPT})
+    for (bool two : {false, true})
+    {
+        const int flags = smart | (compact ? PLR_COMPACT : 0);
+        const auto coins = run(false, ws, flags, two, false, "You get 12 gold coins.\r\n");
+        assert(run(true, ws, flags, two, false,
+            "You get sword from corpse.\r\nYou get shield from corpse.\r\n",
+            false, false, false, 0, true) == coins);
     }
     const auto synchronous = run(false, false, 0, false, false, "You get coins.\r\n");
     assert(run(true, false, 0, false, false, "You get coins.\r\n", false, true) ==
