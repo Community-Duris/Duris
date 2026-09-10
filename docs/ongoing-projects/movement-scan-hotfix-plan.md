@@ -1,7 +1,7 @@
 # Movement scan hotfix: shortest implementation plan
 
-Date: 2026-09-10. Status: **implemented; focused tests and server build passed;
-not deployed**.
+Date: 2026-09-10. Status: **implemented, pushed to master, clean-built, and
+deployed to the configured local MUD; live movement/casting smoke passed**.
 
 ## Outcome and scope
 
@@ -201,7 +201,110 @@ Commands run:
 | `git diff --check` | Passed. |
 | `git diff --no-index --check /dev/null <new-file>` | No whitespace errors for this document or the new runtime test; exit 1 indicates the new-file diff. |
 
-No deployment, live smoke test, or before/after production profile has been
-performed. The build uses the Makefile's default MariaDB/development profile;
-it is not a production-profile release qualification. The measured scan-count
-reduction does not establish a production latency improvement.
+The initial implementation build used the Makefile's default MariaDB/development
+profile. The later authorized local deployment is recorded below; no remote
+production-profile release qualification was performed.
+
+## Authorized rollout and live verification
+
+The owner subsequently requested commit/push to `master`, a clean rebuild,
+restart, and live testing. Code and regression tests were pushed as
+`c535f2497d756a3c9f48911bf33a9a4bbe0ab234`.
+
+Runtime discovery superseded the earlier production assumption: this checkout
+has `ENVIRONMENT=local`, a `mariadb/development` runtime, loopback Telnet on
+7777, and a foreground `cycle_mud.sh` supervisor rather than an installed
+systemd production service. The rollout preserved that configuration.
+
+Both the matching-profile clean server build and all focused gates passed.
+Concurrent work subsequently replaced the shared staged binary with profiling
+changes. Those unrelated source edits were preserved. To remove build ambiguity,
+the final binary was built from a fresh detached checkout of `c535f2497`:
+
+```bash
+make -C src -j2 PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=development
+```
+
+The isolated checkout started without compiled artifacts. Its build completed
+388 compiler/link invocations with zero warning/error diagnostics, and its
+22-case ASan/UBSan movement regression passed. The final runtime executable
+and isolated build matched SHA-256:
+
+```text
+679497aaa2bae2c4f1fcc9edac730f7cba1fb53028929f94f311691642bded04
+```
+
+The pre-rollout executable was preserved outside the clean-build tree with
+SHA-256 `3509b3a95bf934b7a5178bafefaef63bf5b5df869f7dda25a35ecf01f6413c6c`.
+Its owner-only recovery directory is
+`/home/aiwithapex/.local/state/duris/movement-hotfix-20260910T121909Z/`.
+
+The first ordinary `shutdown reboot` restarted the existing binary: that cycle
+path does not promote staged code. A subsequent `shutdown copyover` performed
+code promotion. After detecting the concurrent staged build, the isolated
+candidate was explicitly staged and loaded with the same code-reload command.
+The generated `lib/misc/event_names` file was then refreshed using the launcher's
+`nm --demangle` recipe, and the same verified executable was reloaded to refresh
+in-memory callback labels. No scheduler tuning or gameplay configuration changed.
+
+Live Telnet checks with the configured staff character passed:
+
+- Authenticated through the account and character menus.
+- `west` with no exit produced the expected blocked-movement response.
+- `up` entered the adjacent room; `down` returned to the original room. Repeated
+  those movement checks after refreshing runtime event labels.
+- `look` remained responsive before and after movement.
+- `cast 'armor' self` started, completed, and applied armor; a subsequent `look`
+  ran normally. This does not claim a fix for the separate type-ahead defect.
+- Nearby NPCs continued wandering between the rooms.
+- HTTP health reported `healthy` / `ready`, and the running executable checksum
+  matched the isolated build. Copyover preserved the game process PID.
+
+No live extraction/deletion scenario was injected. Extraction, death, nested
+movement, and address-reuse safety are covered by the focused synthetic runtime
+test and production source contracts described above.
+
+### Short live timing comparison
+
+The pre-hotfix capture was saved at 12:23:11 UTC and the final capture at
+12:35:20 UTC, each with approximately 35 seconds of profiling. Profiling was
+explicitly turned off before each save and verified off afterward. The final
+capture uses the regenerated event-name map; the intermediate capture with
+stale callback labels was excluded from the comparison.
+
+| Scope | Before calls | Before elapsed work | After calls | After elapsed work |
+| --- | ---: | ---: | ---: | ---: |
+| Wandering section | 44,458 | 3.583092 s | 64,466 | 0.077594 s |
+| Mundane NPC callbacks | 49,829 | 3.901354 s | 67,296 | 0.410144 s |
+| Patrol movement callbacks | 74 | 0.089945 s | 859 | 0.007388 s |
+| All callbacks | 86,194 | 4.221179 s | 147,353 | 0.815235 s |
+
+These timers measure elapsed work inside the profiled scopes, not operating
+system CPU accounting. Wandering is nested inside mundane NPC callbacks;
+the rows must not be added. Average wandering-section cost fell from 80.59 us
+to 1.20 us per call (about 98.5% lower). Total callback work fell about 80.7%
+while callback count increased about 71%. One final callback was unnamed
+(15 us), rather than the nearly all-unknown intermediate sample.
+
+For approximate corresponding 37-second status-log windows, pre-hotfix NEVENT
+budget records numbered 145 with 40,110–50,818 deferred events and reported
+maximum lateness of 79–84 ticks. The final window had 16 budget records,
+1,490–13,442 deferred events, and reported maximum lateness of 0–2 ticks.
+These are ranges within emitted budget records, not all-pulse percentiles;
+the remaining records show that occasional deferral was not eliminated.
+
+This is a short before/after observation on the local world, including profiler
+overhead and intervening restarts. World activity and callback mix differed,
+so the results are strong evidence of relief for this instance, not a controlled
+estimate for every workload or a production-wide latency guarantee.
+
+Final checks found the same supervisor/game PIDs, the verified executable
+checksum, and healthy/ready HTTP status. No new panic, corruption, segfault,
+sanitizer, or scheduling-failure matches appeared in the final observation's
+new log content. The staff character returned to its original room, exited
+with `quit`, and the server closed the test connection; the temporary client
+then exited. The self-cast armor was left to expire normally. The normal
+shutdown/copyover path also performs its built-in player restoration.
+
+Unrelated profiling source edits and the other investigation document remain
+in the main worktree, untouched and uncommitted by this rollout.
