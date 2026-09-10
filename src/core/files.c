@@ -12,6 +12,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "core/files.h"
+#include <algorithm>
 #include <dirent.h>
 #include <iostream>
 #include <netinet/in.h>
@@ -24,6 +25,7 @@
 #include "flatfile/flatfile_character_delete.h"
 #include "flatfile/flatfile_corpse_restore.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_shopkeeper_restore.h"
 #include "item/item_ownership_runtime.h"
 #include "combat/justice.h"
@@ -1715,6 +1717,22 @@ int writeCharacter(P_char ch, int type, int room)
 			return 0;
 		if (establishing_baseline)
 		{
+			flatfile_player_domain_record domains;
+			std::string domain_error;
+			const char *account = get_account_name_safe(ch);
+			if (flatfile_player_domain_load(persistence_mode_flatfile_root(),
+							GET_PID(ch), account, GET_RACEWAR(ch),
+							&domains, &domain_error) !=
+				    flatfile_player_domain_result::ok ||
+			    !domains.domains.bank_revision ||
+			    std::any_of(domains.domains.bank.begin(), domains.domains.bank.end(),
+					[](uint64_t amount) { return amount > INT_MAX; }))
+			{
+				statuslog(56, "&+RALERT&n: new-player bank revision sync failed");
+				persistence_alert(AVATAR, "player", "redacted", "none", "none",
+						  "bank_revision_sync_failed", NULL);
+				return 0;
+			}
 			const item_owner_identity owner = { item_owner_type::player,
 							    static_cast<uint64_t>(GET_PID(ch)), 0 };
 			uint64_t owner_revision = 0;
@@ -1733,6 +1751,21 @@ int writeCharacter(P_char ch, int type, int room)
 						  "ownership_revision_sync_failed", NULL);
 				return 0;
 			}
+			// Creation can precede CON_PLAYING, so hydrate this character explicitly.
+			// Publish only after every required authority read/validation succeeded.
+			const AccountBankBalances balances = {
+				static_cast<int>(domains.domains.bank[0]),
+				static_cast<int>(domains.domains.bank[1]),
+				static_cast<int>(domains.domains.bank[2]),
+				static_cast<int>(domains.domains.bank[3])
+			};
+			GET_BALANCE_COPPER(ch) = balances.copper;
+			GET_BALANCE_SILVER(ch) = balances.silver;
+			GET_BALANCE_GOLD(ch) = balances.gold;
+			GET_BALANCE_PLATINUM(ch) = balances.platinum;
+			ch->only.pc->bank_revision = domains.domains.bank_revision;
+			publish_account_bank_balances_revision(account, GET_RACEWAR(ch), &balances,
+							       domains.domains.bank_revision);
 		}
 		if (!sync_account_character_projection(ch, room, TRUE))
 		{

@@ -568,7 +568,8 @@ def build_flatfile_server(build_root: pathlib.Path) -> pathlib.Path:
     return binary
 
 
-def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
+def run_journey(binary: pathlib.Path, reset_coins: bool = False,
+                first_session_only: bool = False, populated_bank: bool = False) -> None:
     with tempfile.TemporaryDirectory(prefix="duris-combat-state-") as state_tmp:
         with tempfile.TemporaryDirectory(prefix="duris-combat-run-") as run_tmp:
             state_root = pathlib.Path(state_tmp)
@@ -576,9 +577,17 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
             state_root.chmod(0o700)
             (state_root / "domains").mkdir(mode=0o700)
             subprocess.run([str(INSPECTOR), str(state_root), "seed-combat"], check=True)
+            if populated_bank:
+                subprocess.run([str(INSPECTOR), str(state_root), "seed-creation-bank"],
+                               check=True)
             (run_root / "logs/log").mkdir(parents=True)
             (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
             make_fixture(run_root, reset_coins)
+            if first_session_only:
+                zone = run_root / "areas_mini/mini.zon"
+                # This fixture needs no combatants (or NPC scavengers).
+                zone.write_text(re.sub(r"^[MG] .*\n", "", zone.read_text(), flags=re.M).replace(
+                    "\nS\n", "\nO 0 3 10 22800 100 0 0 0 * first-session coins\nS\n"))
             generate_certificate(run_root)
 
             journal_root = run_root / "journals"
@@ -632,15 +641,12 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False) -> None:
 
                     client = MudClient(plain_port)
                     create_character(client)
+                    if first_session_only:
+                        from test_flatfile_first_session_currency import verify_first_session
+                        verify_first_session(client, plain_port, state_root, populated_bank)
+                        return
                     client.send("toggle boon")
                     client.expect("You will no longer be affected by boons.")
-                    # Enter with the durable account-bank revision. Fresh character
-                    # creation currently leaves its live bank revision at zero.
-                    client.send("quit")
-                    client.expect("ACCOUNT MENU", timeout=30)
-                    client.send("0")
-                    client.close()
-                    client = reconnect_character(plain_port)
                     complete_npc_combat_journey(client, reset_coins)
                     client.close()
                     client = None

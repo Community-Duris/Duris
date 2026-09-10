@@ -478,6 +478,13 @@ int main()
 	currency_transaction_reset_for_tests();
 
 	assert(!currency_transaction_player_busy(NULL));
+	SET_BIT(actor.runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+#ifdef __NO_MYSQL__
+	assert(!currency_transaction_can_submit(&actor));
+#else
+	assert(currency_transaction_can_submit(&actor));
+#endif
+	REMOVE_BIT(actor.runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 	assert(currency_transaction_submit_wallet_value(
 		&actor, 1000, currency_reason_type::wallet_reward, 100,
 		critical_source_site::command, critical_deadline_class::interactive,
@@ -1049,7 +1056,7 @@ int main()
 '''
 
 
-def main() -> int:
+def main(flatfile: bool = False) -> int:
     """Compile and execute the held-currency queue regression."""
     harness = "\n".join([
         PRELUDE,
@@ -1082,6 +1089,7 @@ def main() -> int:
         subprocess.run(
             [
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
+                *(["-D__NO_MYSQL__", "-Isrc/no_mysql"] if flatfile else []),
                 "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
                 "-Isrc", *mysql_cflags, str(source), rel("currency_transaction.c"),
                 rel("currency_command.c"), rel("critical_command.c"),
@@ -1098,4 +1106,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    for flatfile in (False, True):
+        main(flatfile)
