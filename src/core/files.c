@@ -1720,15 +1720,32 @@ int writeCharacter(P_char ch, int type, int room)
 			flatfile_player_domain_record domains;
 			std::string domain_error;
 			const char *account = get_account_name_safe(ch);
-			if (flatfile_player_domain_load(persistence_mode_flatfile_root(),
-							GET_PID(ch), account, GET_RACEWAR(ch),
-							&domains, &domain_error) !=
-				    flatfile_player_domain_result::ok ||
+			if (!account || !*account || !strcmp(account, "Unknown"))
+			{
+				statuslog(
+					56,
+					"&+RALERT&n: new-player bank revision sync failed: missing account context");
+				return 0;
+			}
+			const auto domain_result = flatfile_player_domain_load(
+				persistence_mode_flatfile_root(), GET_PID(ch), account,
+				GET_RACEWAR(ch), &domains, &domain_error);
+			if (domain_result != flatfile_player_domain_result::ok ||
 			    !domains.domains.bank_revision ||
 			    std::any_of(domains.domains.bank.begin(), domains.domains.bank.end(),
+					[](uint64_t amount) { return amount > INT_MAX; }) ||
+			    std::any_of(domains.domains.wallet.begin(),
+					domains.domains.wallet.end(),
 					[](uint64_t amount) { return amount > INT_MAX; }))
 			{
-				statuslog(56, "&+RALERT&n: new-player bank revision sync failed");
+				statuslog(
+					56,
+					"&+RALERT&n: new-player bank revision sync failed (domain result %d): %s",
+					static_cast<int>(domain_result),
+					domain_result == flatfile_player_domain_result::ok ?
+						"invalid bank revision or currency balance overflow" :
+					domain_error.empty() ? "authority load failed" :
+							       domain_error.c_str());
 				persistence_alert(AVATAR, "player", "redacted", "none", "none",
 						  "bank_revision_sync_failed", NULL);
 				return 0;
@@ -1764,6 +1781,11 @@ int writeCharacter(P_char ch, int type, int room)
 			GET_BALANCE_GOLD(ch) = balances.gold;
 			GET_BALANCE_PLATINUM(ch) = balances.platinum;
 			ch->only.pc->bank_revision = domains.domains.bank_revision;
+			GET_COPPER(ch) = domains.domains.wallet[0];
+			GET_SILVER(ch) = domains.domains.wallet[1];
+			GET_GOLD(ch) = domains.domains.wallet[2];
+			GET_PLATINUM(ch) = domains.domains.wallet[3];
+			ch->only.pc->wallet_revision = domains.domains.wallet_revision;
 			publish_account_bank_balances_revision(account, GET_RACEWAR(ch), &balances,
 							       domains.domains.bank_revision);
 		}

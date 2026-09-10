@@ -39,17 +39,27 @@ PRELUDE = r'''
 #include <algorithm>
 #include <cassert>
 #include <climits>
+#include <cstdarg>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
 P_desc descriptor_list = nullptr;
 static std::string root;
+static std::string last_status;
 static bool item_read_ok = true, item_hydrate_ok = true;
 const char *persistence_mode_flatfile_root() { return root.c_str(); }
 const char *get_account_name_safe(P_char ch) { return ch->desc->account->acct_name; }
 void gmcp_char_vitals(P_char) {}
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
-void statuslog(int, const char *, ...) {}
+void statuslog(int, const char *format, ...) {
+    char message[2048];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(message, sizeof(message), format, args);
+    va_end(args);
+    last_status = message;
+}
 void persistence_alert(int, const char *, const char *, const char *, const char *,
                        const char *, const char *, ...) {}
 flatfile_item_repository_result flatfile_item_repository_load_owner(
@@ -76,6 +86,7 @@ int main(int argc, char **argv)
         std::string error;
         flatfile_player_domain_record initial;
         initial.pid = 1; initial.account_name = "Shared"; initial.racewar = 1;
+        initial.domains.wallet = {2, 3, 4, 5};
         if (populated) {
             auto seed = initial; seed.pid = 2; seed.domains.bank = {19, 23, 31, 47};
             assert(flatfile_player_domain_establish(root, seed, &error) ==
@@ -99,17 +110,34 @@ int main(int argc, char **argv)
         other_side.connected = CON_PLAYING;
         descriptor_list = &creating;
         GET_BALANCE_COPPER(&actor) = 77; GET_BALANCE_COPPER(&sibling) = 88;
+        GET_COPPER(&actor) = 99;
+        char empty_account[] = "", unknown_account[] = "Unknown";
+        for (char *missing : {static_cast<char *>(nullptr), empty_account, unknown_account}) {
+            account.acct_name = missing;
+            assert(!hydrate(&actor));
+            assert(last_status.find("missing account context") != std::string::npos);
+        }
+        account.acct_name = account_name;
         // Neither failed domain read nor failed item initialization publishes a bank.
         pc.pid = 404; assert(!hydrate(&actor)); pc.pid = 1;
+        assert(last_status.find("domain result") != std::string::npos);
         const auto bank_path = root + "/domains/bank-shared-1.domain";
         std::filesystem::rename(bank_path, bank_path + ".held");
         assert(!hydrate(&actor));
         std::filesystem::rename(bank_path + ".held", bank_path);
+        const auto bank_permissions = std::filesystem::status(bank_path).permissions();
+        std::filesystem::permissions(bank_path, bank_permissions | std::filesystem::perms::group_read);
+        assert(!hydrate(&actor));
+        assert(last_status.find("invalid authority file metadata or size") != std::string::npos);
+        std::filesystem::permissions(bank_path, bank_permissions);
         item_read_ok = false; assert(!hydrate(&actor)); item_read_ok = true;
         item_hydrate_ok = false; assert(!hydrate(&actor)); item_hydrate_ok = true;
         assert(pc.bank_revision == 0 && GET_BALANCE_COPPER(&actor) == 77);
         assert(sibling_pc.bank_revision == 0 && GET_BALANCE_COPPER(&sibling) == 88);
+        assert(pc.wallet_revision == 0 && GET_COPPER(&actor) == 99);
         assert(hydrate(&actor));
+        assert(pc.wallet_revision == 0 && GET_COPPER(&actor) == 2);
+        assert(GET_SILVER(&actor) == 3 && GET_GOLD(&actor) == 4 && GET_PLATINUM(&actor) == 5);
         assert(pc.bank_revision == 1 && sibling_pc.bank_revision == 1);
         assert(GET_BALANCE_COPPER(&actor) == (populated ? 19 : 0));
         assert(GET_BALANCE_SILVER(&actor) == (populated ? 23 : 0));
@@ -131,14 +159,15 @@ int main(int argc, char **argv)
         flatfile_player_domain_record loaded;
         assert(flatfile_player_domain_load(root, 1, account_name, 1, &loaded, &error) ==
                flatfile_player_domain_result::ok);
-        assert(loaded.domains.wallet[0] == 7 && loaded.domains.wallet_revision == 1);
+        assert(loaded.domains.wallet[0] == 9 && loaded.domains.wallet_revision == 1);
         assert(loaded.domains.bank_revision == 2);
         assert(loaded.domains.bank[0] == static_cast<uint64_t>(populated ? 19 : 0));
         // Hydration retry reads revision two, preserves authority, and refreshes the sibling.
         assert(hydrate(&actor) && pc.bank_revision == 2 && sibling_pc.bank_revision == 2);
+        assert(pc.wallet_revision == 1 && GET_COPPER(&actor) == 9);
         assert(flatfile_player_domain_apply(root, command).outcome == critical_apply_outcome::already_applied);
         assert(flatfile_player_domain_load(root, 1, account_name, 1, &loaded, &error) ==
-               flatfile_player_domain_result::ok && loaded.domains.wallet[0] == 7 &&
+               flatfile_player_domain_result::ok && loaded.domains.wallet[0] == 9 &&
                loaded.domains.bank_revision == 2);
         sibling_pc.bank_revision = 3; GET_BALANCE_COPPER(&sibling) = 99;
         assert(hydrate(&actor) && sibling_pc.bank_revision == 3 && GET_BALANCE_COPPER(&sibling) == 99);
@@ -149,6 +178,17 @@ int main(int argc, char **argv)
         pc.pid = 3; actor.player.racewar = 2;
         const int before = GET_BALANCE_COPPER(&actor);
         assert(!hydrate(&actor) && pc.bank_revision == 2 && GET_BALANCE_COPPER(&actor) == before);
+        assert(last_status.find("currency balance overflow") != std::string::npos);
+        oversized.pid = 4; oversized.domains.bank = {};
+        oversized.domains.wallet[3] = static_cast<uint64_t>(INT_MAX) + 1;
+        // Use a different side so this case has a valid bank and an invalid wallet.
+        oversized.racewar = 0;
+        assert(flatfile_player_domain_establish(root, oversized, &error) ==
+               flatfile_player_domain_result::ok);
+        pc.pid = 4; actor.player.racewar = 0;
+        assert(!hydrate(&actor) && pc.wallet_revision == 1 && GET_COPPER(&actor) == 9);
+        assert(pc.bank_revision == 2 && GET_BALANCE_COPPER(&actor) == before);
+        assert(last_status.find("currency balance overflow") != std::string::npos);
     }
     std::cout << "new-player bank hydration, failure, online siblings and replay passed\n";
 }
