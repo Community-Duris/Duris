@@ -81,6 +81,10 @@ int main() {
                     remove_spell(&ch, SPELL_REGENERATION);
                     spell_accel_healing(50, &ch, nullptr, 0, &ch, nullptr);
                     int accel = hit_regen(&ch, true);
+                    ch.specials.fighting = &ch;
+                    assert(hit_regen(&ch, true) == 0);
+                    assert(hit_regen(&ch, false) == 0);
+                    ch.specials.fighting = nullptr;
                     remove_spell(&ch, SPELL_ACCEL_HEALING);
                     if (order == 0) spell_regeneration(50, &ch, nullptr, 0, &ch, nullptr);
                     spell_accel_healing(50, &ch, nullptr, 0, &ch, nullptr);
@@ -105,7 +109,14 @@ int main() {
                     ch.specials.affected_by3 &= ~AFF3_SWIMMING;
                     ch.specials.fighting = &ch;
                     assert(hit_regen(&ch, true) == combat);
+                    assert(hit_regen(&ch, false) == combat);
                     ch.specials.fighting = nullptr;
+                    // Combat only suppresses the accelerated contribution;
+                    // leaving combat restores precedence without recasting.
+                    assert(hit_regen(&ch, false) == std::max(regen, accel));
+                    assert(ch.points.hit_reg == modifier);
+                    for (auto *af = ch.affected; af; af = af->next)
+                        assert(af->duration == (af->type == SPELL_REGENERATION ? 5 : 42));
                     if (order == 0) {
                         remove_spell(&ch, SPELL_REGENERATION);
                         assert(hit_regen(&ch, true) == accel);
