@@ -67,6 +67,38 @@ static critical_command creation(uint8_t discriminator, int64_t reason_id = 7)
 	return command;
 }
 
+static critical_command creation_batch(uint8_t discriminator)
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::system, 0, 0 };
+	payload.to_owner = { item_owner_type::player, 44, 0 };
+	payload.reason = item_transfer_reason::creation;
+	payload.reason_id = 181;
+	payload.expected_from_revision = 0;
+	payload.expected_to_revision = 0;
+	payload.multi_root = true;
+	payload.item_count = 4;
+	payload.items[0] = { 200, 200,
+			     0,	  ITEM_TRANSFER_ABSENT_REVISION,
+			     700, item_custody_state::absent };
+	payload.items[1] = { 201, 200,
+			     200, ITEM_TRANSFER_ABSENT_REVISION,
+			     701, item_custody_state::absent };
+	payload.items[2] = { 202, 202,
+			     0,	  ITEM_TRANSFER_ABSENT_REVISION,
+			     702, item_custody_state::absent };
+	payload.items[3] = { 203, 202,
+			     202, ITEM_TRANSFER_ABSENT_REVISION,
+			     703, item_custody_state::absent };
+	critical_command command = {};
+	require(item_transfer_command_build(&command, operation(discriminator), payload,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build multi-root creation command");
+	command.accepted_at_usec = discriminator;
+	return command;
+}
+
 static critical_command single_creation(uint8_t discriminator, uint64_t item_uid,
 					uint64_t player_pid, uint64_t system_revision)
 {
@@ -943,6 +975,45 @@ int main(int argc, char **argv)
 			nested_items[1].item_uid == 111 && nested_items[1].root_item_uid == 110 &&
 			nested_items[1].parent_item_uid == 110,
 		"nested item creation topology did not round trip: " + error);
+
+	const fs::path creation_batch_root = root / "multi-root-creation";
+	fs::create_directories(creation_batch_root / "domains");
+	fs::permissions(creation_batch_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(creation_batch_root / "domains", fs::perms::owner_all,
+			fs::perm_options::replace);
+	const critical_command batch_create = creation_batch(16);
+	critical_apply_result batch_applied =
+		flatfile_item_repository_apply(creation_batch_root.string(), batch_create);
+	require(batch_applied.outcome == critical_apply_outcome::applied &&
+			batch_applied.error_code == 0,
+		"multi-root item creation did not apply: outcome=" +
+			std::to_string(static_cast<unsigned int>(batch_applied.outcome)) +
+			" error=" + std::to_string(batch_applied.error_code));
+	const item_transfer_result batch_result = result_of(batch_applied);
+	require(batch_result.root_item_uid == 200 && batch_result.item_count == 4 &&
+			batch_result.from_owner_revision == 1 &&
+			batch_result.to_owner_revision == 1 && batch_result.max_item_revision == 1,
+		"multi-root item creation returned incorrect revisions");
+	uint64_t batch_owner_revision = 0;
+	std::vector<flatfile_item_ownership_record> batch_items;
+	require(flatfile_item_repository_load_owner(creation_batch_root.string(),
+						    { item_owner_type::player, 44, 0 },
+						    &batch_owner_revision, &batch_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			batch_owner_revision == 1 && batch_items.size() == 4 &&
+			batch_items[0].item_uid == 200 && batch_items[0].root_item_uid == 200 &&
+			batch_items[0].parent_item_uid == 0 && batch_items[1].item_uid == 201 &&
+			batch_items[1].root_item_uid == 200 &&
+			batch_items[1].parent_item_uid == 200 && batch_items[2].item_uid == 202 &&
+			batch_items[2].root_item_uid == 202 &&
+			batch_items[2].parent_item_uid == 0 && batch_items[3].item_uid == 203 &&
+			batch_items[3].root_item_uid == 202 &&
+			batch_items[3].parent_item_uid == 202,
+		"multi-root item creation topology did not round trip: " + error);
+	batch_applied = flatfile_item_repository_apply(creation_batch_root.string(), batch_create);
+	require(batch_applied.outcome == critical_apply_outcome::already_applied &&
+			result_of(batch_applied).to_owner_revision == 1,
+		"multi-root item creation replay was not idempotent");
 
 	const critical_command create = creation(1);
 	critical_apply_result applied = flatfile_item_repository_apply(root.string(), create);

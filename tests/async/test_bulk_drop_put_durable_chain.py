@@ -96,8 +96,8 @@ ok &= check(
 ok &= check(
     "the adapter captures every root and rebases snapshot parents",
     "ordered_roots.assign(roots, roots + root_count);" in batch_submit
-    and "capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items)"
-    in batch_submit
+    and normalize_cxx("capture(root, runtime.root_item_uid, runtime.parent_item_uid, &items)")
+    in normalize_cxx(batch_submit)
     and "snapshot.parent_index += static_cast<int32_t>(offset);" in batch_submit,
 )
 ok &= check(

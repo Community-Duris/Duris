@@ -338,8 +338,13 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 					  payload.reason == item_transfer_reason::locker_withdraw ||
 					  payload.reason == item_transfer_reason::corpse_loot ||
 					  payload.reason == item_transfer_reason::destruction;
+		const bool creation_batch = creation &&
+					    payload.reason == item_transfer_reason::creation;
 		if (payload_version != ITEM_TRANSFER_PAYLOAD_VERSION || payload.selected_item_uid ||
-		    creation || !batch_reason ||
+		    (!creation_batch && !batch_reason) ||
+		    (creation_batch &&
+		     (payload.to_owner.type != item_owner_type::player ||
+		      payload.target_root_item_uid || payload.target_parent_item_uid)) ||
 		    (payload.target_parent_item_uid ? !payload.target_root_item_uid :
 						      payload.target_root_item_uid != 0))
 			return false;
@@ -347,10 +352,30 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		{
 			const item_transfer_entry &entry = payload.items[index];
 			if (!entry.item_uid || !entry.root_item_uid || entry.vnum <= 0 ||
-			    entry.expected_state != item_custody_state::active ||
+			    (creation_batch ? (entry.expected_item_revision !=
+						       ITEM_TRANSFER_ABSENT_REVISION ||
+					       entry.expected_state != item_custody_state::absent) :
+					      entry.expected_state != item_custody_state::active) ||
 			    (index && payload.items[index - 1].item_uid >= entry.item_uid) ||
 			    entry.item_uid == payload.target_parent_item_uid)
 				return false;
+			if (creation_batch)
+			{
+				const uint64_t selected_root =
+					selected_root_for(payload, entry.item_uid);
+				const item_transfer_entry *root =
+					find_payload_item(payload, selected_root);
+				uint64_t target_root = 0, target_parent = 0;
+				if (!root || selected_root != entry.root_item_uid ||
+				    root->root_item_uid != root->item_uid ||
+				    root->parent_item_uid ||
+				    !target_topology_for(payload, entry.item_uid, &target_root,
+							 &target_parent) ||
+				    target_root != entry.root_item_uid ||
+				    target_parent != entry.parent_item_uid)
+					return false;
+				continue;
+			}
 			const uint64_t selected_root = selected_root_for(payload, entry.item_uid);
 			const item_transfer_entry *selected =
 				find_payload_item(payload, selected_root);

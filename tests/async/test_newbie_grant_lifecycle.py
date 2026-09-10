@@ -20,6 +20,7 @@ PRELUDE = r'''
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_load_items.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -43,7 +44,29 @@ static critical_submit_result submit_result = critical_submit_result::accepted;
 static std::map<uint64_t, int> publications, extractions;
 static std::map<int, int> dirty, commands;
 static std::string fixture_messages;
+static bool recover_creation = false;
+static obj_data recovered_creation = {};
 void logit(const char *, const char *, ...) {}
+void statuslog(int, const char *, ...) {}
+void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
+                       const char *, ...) {}
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
+                                                 const item_transfer_result &,
+                                                 std::vector<P_obj> *roots)
+{
+    if (!recover_creation || !roots)
+        return false;
+    recovered_creation = {};
+    recovered_creation.obj_uid = 100;
+    recovered_creation.R_num = 0;
+    recovered_creation.type = ITEM_CONTAINER;
+    recovered_creation.loc_p = LOC_NOWHERE;
+    recovered_creation.next = nullptr;
+    object_list = &recovered_creation;
+    roots->clear();
+    roots->push_back(&recovered_creation);
+    return true;
+}
 void __free(void *p, const char *, int) { free(p); }
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 bool currency_transaction_coin_item_busy(uint64_t) { return false; }
@@ -242,7 +265,8 @@ int main()
         }
     }
     // A failed transient grant never publishes the object. A refused queue
-    // submission and a failed commit both clean up once at the existing boundary.
+    // submission is retained for retry, while a terminal commit failure cleans
+    // up once at the existing boundary.
     for (bool refuse_submission : {false, true})
     {
         fixture f;
@@ -253,10 +277,37 @@ int main()
         {
             const auto failed = next_completion(critical_apply_outcome::terminal_failure);
             deliver(failed); deliver(failed);
+            assert(publications.empty() && f.actor.carrying == nullptr);
+            assert(extractions[100] == 1 && submitted.empty());
+            assert(!item_movement_transaction_player_busy(&f.actor));
+            continue;
         }
+
         assert(publications.empty() && f.actor.carrying == nullptr);
-        assert(extractions[100] == 1 && submitted.empty());
+        assert(extractions.empty() && submitted.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        const auto retried = next_completion(critical_apply_outcome::applied);
+        deliver(retried);
+        assert(publications[100] == 1 && extractions.empty());
         assert(!item_movement_transaction_player_busy(&f.actor));
+    }
+    // A committed normal grant with a missing live object is rebuilt from its
+    // single-root payload before publication, without losing durability.
+    {
+        fixture f;
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
+        const auto completed = next_completion(critical_apply_outcome::applied);
+        object_list = &f.extra;
+        f.extra.next = &f.food;
+        f.food.next = nullptr; // Remove the original grant from the live index.
+        recover_creation = true;
+        deliver(completed);
+        assert(OBJ_CARRIED_BY(&recovered_creation, &f.actor));
+        assert(publications[100] == 1 && extractions.empty());
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        recover_creation = false;
     }
     // A held grant does not publish early or hold an unrelated player's dispatch.
     // After disconnect, publish to the retained character and continue its queue.
@@ -307,15 +358,17 @@ int main()
         assert(!item_creation_grant_blocks_commands(&f.actor) && f.desc.prompt_mode);
         assert(fixture_messages.find("starter kit is ready") == std::string::npos);
     }
-    // Refused submission releases its queue; the caller still owns cleanup.
+    // A transiently refused submission remains queued; the caller does not
+    // destroy the object before the coordinator becomes available.
     {
         fixture f;
         submit_result = critical_submit_result::unavailable;
-        assert(!item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
-        assert(!item_movement_transaction_player_busy(&f.actor));
-        assert(OBJ_NOWHERE(&f.bag) && extractions.empty());
-        submit_result = critical_submit_result::accepted;
         assert(item_creation_grant_submit_to_player(&f.actor, &f.bag, &f.actor));
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(OBJ_NOWHERE(&f.bag) && extractions.empty() && submitted.empty());
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.size() == 1);
         deliver(next_completion(critical_apply_outcome::applied));
         assert(publications[100] == 1 && !item_movement_transaction_player_busy(&f.actor));
     }

@@ -21,6 +21,7 @@ PRELUDE = r'''
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
+#include "player/player_load_items.h"
 #include <algorithm>
 #include <cassert>
 #include <string>
@@ -72,6 +73,15 @@ static int ga_count;
 P_index mob_index = nullptr;
 long sentbytes = 0;
 void logit(const char *, const char *, ...) {}
+void statuslog(int, const char *, ...) {}
+void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
+                       const char *, ...) {}
+bool player_load_item_graph_materialize_creation(const item_transfer_payload &,
+                                                 const item_transfer_result &,
+                                                 std::vector<P_obj> *)
+{
+    return false;
+}
 void debug(const char *, ...) {}
 int IS_MORPH(P_char) { return false; }
 bool ac_can_see(P_char, P_char, bool) { return true; }

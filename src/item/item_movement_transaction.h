@@ -10,6 +10,12 @@
 
 constexpr size_t ITEM_MOVEMENT_PENDING_MAX = 1024;
 constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 128;
+// Creation batches are held in the same bounded admission queue as movement
+// transactions, so admission must never promise more roots than submission can carry.
+constexpr size_t ITEM_CREATION_GRANT_MAX_ROOTS =
+	ITEM_MOVEMENT_PENDING_MAX < ITEM_TRANSFER_MAX_ITEMS ? ITEM_MOVEMENT_PENDING_MAX :
+							      ITEM_TRANSFER_MAX_ITEMS;
+static_assert(ITEM_CREATION_GRANT_MAX_ROOTS <= ITEM_TRANSFER_MAX_ITEMS);
 
 using item_movement_completion_fn = void (*)(P_char actor, bool committed,
 					     const item_transfer_result &result,

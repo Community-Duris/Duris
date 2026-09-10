@@ -26,6 +26,36 @@ int main()
 					   ITEM_TRANSFER_LEGACY_RESULT_BYTES, &decoded));
 	assert(decoded.corpse_revision == 0 && decoded.max_item_revision == 6);
 	item_ownership_runtime_reset();
+	{
+		const item_owner_identity batch_player = { item_owner_type::player, 900, 0 };
+		const item_owner_identity system = { item_owner_type::system, 0, 0 };
+		assert(item_ownership_runtime_hydrate_owner(system, 0));
+		assert(item_ownership_runtime_hydrate_owner(batch_player, 0));
+		item_transfer_payload batch = {};
+		batch.from_owner = system;
+		batch.to_owner = batch_player;
+		batch.reason = item_transfer_reason::creation;
+		batch.multi_root = true;
+		batch.item_count = 2;
+		batch.items[0] = { 603, 603, 0, ITEM_TRANSFER_ABSENT_REVISION, 1603,
+					   item_custody_state::absent };
+		batch.items[1] = { 604, 604, 0, ITEM_TRANSFER_ABSENT_REVISION, 1604,
+					   item_custody_state::absent };
+		assert(item_ownership_runtime_apply(batch, { 603, 2, 1, 1, 1, 0 }));
+
+		// The second root conflicts with the already-published 603 root. A failed
+		// batch must not leave the new 602 root or advance the owner revision.
+		item_transfer_payload conflicting = batch;
+		conflicting.items[0] = { 602, 602, 0, ITEM_TRANSFER_ABSENT_REVISION, 1602,
+						 item_custody_state::absent };
+		conflicting.items[1] = batch.items[0];
+		assert(!item_ownership_runtime_apply(conflicting, { 602, 2, 2, 2, 1, 0 }));
+		item_ownership_runtime_entry absent = {};
+		assert(!item_ownership_runtime_lookup(602, &absent));
+		uint64_t owner_revision = 0;
+		assert(item_ownership_runtime_owner_revision(batch_player, &owner_revision) &&
+		       owner_revision == 1);
+	}
 	const item_owner_identity player = { item_owner_type::player, 42, 0 };
 	const item_owner_identity room = { item_owner_type::room, 1200, 0 };
 	const item_ownership_runtime_entry inventory[] = {

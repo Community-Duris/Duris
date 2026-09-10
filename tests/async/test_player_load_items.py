@@ -17,6 +17,7 @@ COPYOVER = (SRC / "copyover.c").read_text()
 HARNESS = r'''
 #include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
+#include "player/player_snapshot_codec.h"
 #include "player/player_load_pets.h"
 #include "core/prototypes.h"
 #include "magic/spells.h"
@@ -354,6 +355,68 @@ void act(const char *, int, P_char, P_obj, void *, int)
 
 int main()
 {
+    {
+        reset_test_state();
+        std::vector<player_item_snapshot> snapshots(3);
+        snapshots[0].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+        snapshots[0].equipment_slot = -1;
+        snapshots[0].object_uid = 40;
+        snapshots[0].vnum = 100;
+        snapshots[0].type = ITEM_CONTAINER;
+        snapshots[0].weight = 2;
+        snapshots[0].condition = 100;
+        snapshots[1].parent_index = 0;
+        snapshots[1].equipment_slot = 0;
+        snapshots[1].object_uid = 41;
+        snapshots[1].vnum = 101;
+        snapshots[1].type = ITEM_OTHER;
+        snapshots[1].weight = 3;
+        snapshots[1].condition = 100;
+        snapshots[2].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+        snapshots[2].equipment_slot = -1;
+        snapshots[2].object_uid = 42;
+        snapshots[2].vnum = 101;
+        snapshots[2].type = ITEM_OTHER;
+        snapshots[2].weight = 3;
+        snapshots[2].condition = 100;
+        std::vector<uint8_t> encoded;
+        assert(player_item_snapshot_list_encode(snapshots, &encoded) ==
+               player_snapshot_codec_result::ok);
+        item_transfer_payload payload = {};
+        payload.from_owner = { item_owner_type::system, 0, 0 };
+        payload.to_owner = { item_owner_type::player, 42, 0 };
+        payload.reason = item_transfer_reason::creation;
+        payload.multi_root = true;
+        payload.item_count = 3;
+        payload.items[0] = { 40, 40, 0, ITEM_TRANSFER_ABSENT_REVISION, 100,
+                             item_custody_state::absent };
+        payload.items[1] = { 41, 40, 40, ITEM_TRANSFER_ABSENT_REVISION, 101,
+                             item_custody_state::absent };
+        payload.items[2] = { 42, 42, 0, ITEM_TRANSFER_ABSENT_REVISION, 101,
+                             item_custody_state::absent };
+        payload.item_blob_size = encoded.size();
+        std::copy(encoded.begin(), encoded.end(), payload.item_blob.begin());
+        const item_transfer_result committed = { 40, 3, 1, 1, 1, 0 };
+        std::vector<P_obj> roots;
+        assert(player_load_item_graph_materialize_creation(payload, committed, &roots));
+        assert(roots.size() == 2 && roots[0]->obj_uid == 40 && roots[1]->obj_uid == 42);
+        assert(roots[0]->contains && roots[0]->contains->obj_uid == 41);
+        for (P_obj root : roots)
+            extract_obj(root, FALSE);
+
+        auto invalid_payload = payload;
+        auto invalid_snapshots = snapshots;
+        invalid_payload.items[1].vnum = 0;
+        invalid_snapshots[1].vnum = 0;
+        std::vector<uint8_t> invalid_blob;
+        assert(player_item_snapshot_list_encode(invalid_snapshots, &invalid_blob) ==
+               player_snapshot_codec_result::ok);
+        invalid_payload.item_blob_size = invalid_blob.size();
+        std::copy(invalid_blob.begin(), invalid_blob.end(), invalid_payload.item_blob.begin());
+        std::vector<P_obj> invalid_roots;
+        assert(!player_load_item_graph_materialize_creation(invalid_payload, committed,
+                                                            &invalid_roots));
+    }
     {
         reset_test_state();
         test_character owner(42);
@@ -906,6 +969,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-items-") as temp_dir:
             str(source),
             rel("player_load_items.c"),
             rel("player_load_pets.c"),
+            rel("player_snapshot_codec.c"),
             rel("item_transfer_command.c"),
             rel("item_ownership_runtime.c"),
             rel("critical_command.c"),
@@ -927,6 +991,7 @@ for contract in (
     "item_ownership_runtime_hydrate_batch",
     "staged.published = true",
     "already_present",
+    "player_load_item_graph_materialize_creation",
 ):
     assert contract in ITEMS
 for contract in (
