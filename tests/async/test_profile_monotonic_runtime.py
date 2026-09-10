@@ -90,6 +90,18 @@ int main()
 	assert(probe_profile.total_outside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 10000);
 
+	const fake_sample rebase_during_outer_command[] = {
+		{ 0, 55, 0 },
+	};
+	set_samples(rebase_during_outer_command,
+		    sizeof rebase_during_outer_command / sizeof rebase_during_outer_command[0]);
+	PROFILE_REBASE(probe);
+	PROFILE_END(probe);
+	assert(sample_index == 1);
+	assert(probe_profile.calls == 3);
+	assert(probe_profile.total_inside_us == 90000);
+	assert(PROFILE_LAST_US(probe) == 0);
+
 	const fake_sample failed_start[] = {
 		{ -1, 0, 0 },
 		{ 0, 60, 0 },
@@ -174,8 +186,9 @@ assert not contains(profile, "clock()")
 assert not contains(events, "CLOCKS_PER_SEC")
 assert contains(events, "duration_us >= 50000")
 assert contains(events, '" duration_us=%" PRIu64')
-assert contains(events, '" total_calls=%u average_us=%.0f')
+assert contains(events, '" total_calls=%" PRIu64 " average_us=%.0f')
 assert contains(debug, "PROFILES(REBASE);")
+assert contains(profile, "skip_next_end")
 
 with tempfile.TemporaryDirectory(prefix="duris-profile-") as directory:
     temporary = Path(directory)

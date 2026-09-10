@@ -1,18 +1,18 @@
 #include "persistence/latency_trace.h"
 
+#include <pthread.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 
-latency_entry _latency_buf[LATENCY_TRACE_MAX_SAMPLES];
-int _latency_head = 0;
-int _latency_count = 0;
-pthread_mutex_t _latency_mutex = PTHREAD_MUTEX_INITIALIZER;
-latency_section _latency_sections[LATENCY_MAX_SECTIONS];
-int _latency_nsections = 0;
+static pthread_mutex_t latency_mutex = PTHREAD_MUTEX_INITIALIZER;
+static latency_section latency_sections[LATENCY_MAX_SECTIONS];
+static int latency_section_count = 0;
 
 static latency_entry latency_window_top[LATENCY_TRACE_TOP_COUNT];
 static int latency_window_top_count = 0;
 static uint64_t latency_window_sample_count = 0;
+static uint64_t latency_window_dropped_section_samples = 0;
 static uint64_t latency_window_start_utc_us = 0;
 static uint64_t latency_window_start_mono_us = 0;
 static char latency_boot_id[LATENCY_TRACE_BOOT_ID_LENGTH] = "uninitialized";
@@ -34,6 +34,11 @@ uint64_t latency_trace_monotonic_us(void)
 	return latency_clock_us(CLOCK_MONOTONIC);
 }
 
+uint64_t latency_trace_elapsed_us(uint64_t started_us, uint64_t finished_us)
+{
+	return started_us && finished_us >= started_us ? finished_us - started_us : 0;
+}
+
 static void latency_trace_initialize_locked(void)
 {
 	if (latency_initialized)
@@ -52,9 +57,9 @@ static void latency_trace_initialize_locked(void)
 
 void latency_trace_init(void)
 {
-	pthread_mutex_lock(&_latency_mutex);
+	pthread_mutex_lock(&latency_mutex);
 	latency_trace_initialize_locked();
-	pthread_mutex_unlock(&_latency_mutex);
+	pthread_mutex_unlock(&latency_mutex);
 }
 
 const char *latency_trace_boot_id(void)
@@ -65,24 +70,32 @@ const char *latency_trace_boot_id(void)
 
 void latency_trace_begin_pulse(uint64_t tick, uint64_t monotonic_us)
 {
+	pthread_mutex_lock(&latency_mutex);
 	latency_current_tick = tick;
 	latency_pulse_start_mono_us = monotonic_us;
+	pthread_mutex_unlock(&latency_mutex);
 }
 
 uint64_t latency_trace_current_tick(void)
 {
-	return latency_current_tick;
+	pthread_mutex_lock(&latency_mutex);
+	const uint64_t tick = latency_current_tick;
+	pthread_mutex_unlock(&latency_mutex);
+	return tick;
 }
 
 uint64_t latency_trace_pulse_start_monotonic_us(void)
 {
-	return latency_pulse_start_mono_us;
+	pthread_mutex_lock(&latency_mutex);
+	const uint64_t monotonic_us = latency_pulse_start_mono_us;
+	pthread_mutex_unlock(&latency_mutex);
+	return monotonic_us;
 }
 
 static int latency_find_section(const char *name)
 {
-	for (int index = 0; index < _latency_nsections; ++index)
-		if (_latency_sections[index].name == name)
+	for (int index = 0; index < latency_section_count; ++index)
+		if (!strcmp(latency_sections[index].name, name))
 			return index;
 	return -1;
 }
@@ -90,16 +103,19 @@ static int latency_find_section(const char *name)
 static void latency_update_section(const char *name, uint64_t duration_us)
 {
 	int index = latency_find_section(name);
-	if (index < 0 && _latency_nsections < LATENCY_MAX_SECTIONS)
+	if (index < 0 && latency_section_count < LATENCY_MAX_SECTIONS)
 	{
-		index = _latency_nsections++;
-		_latency_sections[index] = { name, duration_us, duration_us, duration_us, 1 };
+		index = latency_section_count++;
+		latency_sections[index] = { name, duration_us, duration_us, duration_us, 1 };
 		return;
 	}
 	if (index < 0)
+	{
+		latency_window_dropped_section_samples++;
 		return;
+	}
 
-	latency_section *section = &_latency_sections[index];
+	latency_section *section = &latency_sections[index];
 	if (duration_us < section->min_us)
 		section->min_us = duration_us;
 	if (duration_us > section->max_us)
@@ -136,17 +152,12 @@ void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick)
 #if LATENCY_TRACE_ENABLED
 	if (!name)
 		return;
-	pthread_mutex_lock(&_latency_mutex);
+	pthread_mutex_lock(&latency_mutex);
 	latency_trace_initialize_locked();
-	const int index = _latency_head;
-	_latency_buf[index] = { name, duration_us, tick };
-	_latency_head = (index + 1) % LATENCY_TRACE_MAX_SAMPLES;
-	if (_latency_count < LATENCY_TRACE_MAX_SAMPLES)
-		_latency_count++;
 	latency_window_sample_count++;
 	latency_update_section(name, duration_us);
 	latency_update_top(name, duration_us, tick);
-	pthread_mutex_unlock(&_latency_mutex);
+	pthread_mutex_unlock(&latency_mutex);
 #else
 	(void)name;
 	(void)duration_us;
@@ -156,11 +167,10 @@ void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick)
 
 static void latency_reset_locked(uint64_t utc_us, uint64_t mono_us)
 {
-	_latency_head = 0;
-	_latency_count = 0;
-	_latency_nsections = 0;
+	latency_section_count = 0;
 	latency_window_top_count = 0;
 	latency_window_sample_count = 0;
+	latency_window_dropped_section_samples = 0;
 	latency_window_start_utc_us = utc_us;
 	latency_window_start_mono_us = mono_us;
 }
@@ -168,12 +178,12 @@ static void latency_reset_locked(uint64_t utc_us, uint64_t mono_us)
 void latency_trace_reset(void)
 {
 #if LATENCY_TRACE_ENABLED
-	pthread_mutex_lock(&_latency_mutex);
+	pthread_mutex_lock(&latency_mutex);
 	latency_trace_initialize_locked();
 	const uint64_t utc_us = latency_clock_us(CLOCK_REALTIME);
 	const uint64_t mono_us = latency_clock_us(CLOCK_MONOTONIC);
 	latency_reset_locked(utc_us, mono_us);
-	pthread_mutex_unlock(&_latency_mutex);
+	pthread_mutex_unlock(&latency_mutex);
 #endif
 }
 
@@ -182,25 +192,26 @@ void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot)
 #if LATENCY_TRACE_ENABLED
 	if (!snapshot)
 		return;
-	pthread_mutex_lock(&_latency_mutex);
+	pthread_mutex_lock(&latency_mutex);
 	latency_trace_initialize_locked();
 	const uint64_t utc_us = latency_clock_us(CLOCK_REALTIME);
 	const uint64_t mono_us = latency_clock_us(CLOCK_MONOTONIC);
 	memset(snapshot, 0, sizeof *snapshot);
-	memcpy(snapshot->sections, _latency_sections,
-	       (size_t)_latency_nsections * sizeof snapshot->sections[0]);
-	snapshot->section_count = _latency_nsections;
+	memcpy(snapshot->sections, latency_sections,
+	       (size_t)latency_section_count * sizeof snapshot->sections[0]);
+	snapshot->section_count = latency_section_count;
 	memcpy(snapshot->top, latency_window_top,
 	       (size_t)latency_window_top_count * sizeof snapshot->top[0]);
 	snapshot->top_count = latency_window_top_count;
 	snapshot->sample_count = latency_window_sample_count;
+	snapshot->dropped_section_samples = latency_window_dropped_section_samples;
 	snapshot->window_start_utc_us = latency_window_start_utc_us;
 	snapshot->window_end_utc_us = utc_us;
 	snapshot->window_start_mono_us = latency_window_start_mono_us;
 	snapshot->window_end_mono_us = mono_us;
 	snprintf(snapshot->boot_id, sizeof snapshot->boot_id, "%s", latency_boot_id);
 	latency_reset_locked(utc_us, mono_us);
-	pthread_mutex_unlock(&_latency_mutex);
+	pthread_mutex_unlock(&latency_mutex);
 #else
 	if (snapshot)
 		memset(snapshot, 0, sizeof *snapshot);
@@ -232,10 +243,10 @@ void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *sna
 	fprintf(output,
 		"boot=%s window_start_utc_us=%" PRIu64 " window_end_utc_us=%" PRIu64
 		" window_start_mono_us=%" PRIu64 " window_end_mono_us=%" PRIu64 " samples=%" PRIu64
-		"\n",
+		" dropped_section_samples=%" PRIu64 "\n",
 		snapshot->boot_id, snapshot->window_start_utc_us, snapshot->window_end_utc_us,
 		snapshot->window_start_mono_us, snapshot->window_end_mono_us,
-		snapshot->sample_count);
+		snapshot->sample_count, snapshot->dropped_section_samples);
 	fprintf(output, "%-30s %12s %12s %12s %12s\n", "Section", "min(us)", "max(us)", "avg(us)",
 		"samples");
 	for (int index = 0; index < snapshot->section_count; ++index)
@@ -251,12 +262,9 @@ void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *sna
 	for (int index = 0; index < snapshot->top_count; ++index)
 	{
 		const latency_entry *entry = &snapshot->top[index];
-		if (entry->tick == LATENCY_TRACE_TICK_UNAVAILABLE)
-			fprintf(output, "%-30s %12" PRIu64 " %20s\n", entry->name,
-				entry->duration_us, "-");
-		else
-			fprintf(output, "%-30s %12" PRIu64 " %20" PRIu64 "\n", entry->name,
-				entry->duration_us, entry->tick);
+		char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		fprintf(output, "%-30s %12" PRIu64 " %20s\n", entry->name, entry->duration_us,
+			latency_trace_format_tick(entry->tick, tick_buffer));
 	}
 	fprintf(output, "===== END LATENCY TRACE =====\n\n");
 #else

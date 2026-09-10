@@ -18,7 +18,9 @@ atomic snapshot-and-reset API. Each 300-pulse report captures one immutable
 window and renders that same snapshot to `logs/latency_trace.log` and stderr,
 outside the producer mutex. The snapshot contains boot identity, UTC and
 monotonic boundaries, 64-bit counts/durations, per-section aggregates, and an
-exact bounded top ten maintained independently of the 4096-entry recent ring.
+exact bounded top ten maintained directly for the reporting window. The former
+4096-entry recent ring was removed because no consumer remained after the
+windowed top-ten path was introduced.
 Records produced while output is written belong to the next window. A file-open
 failure is reported while stderr still receives the captured snapshot.
 
@@ -35,6 +37,7 @@ time while its producer was being audited.
 A native ASan/UBSan regression exercises bounded window reset, 64-bit ticks,
 unavailable worker ticks, distinct process identities, identical dual rendering,
 empty windows, file-open fallback, exact top ten after more than 4096 records,
+section-name equality across translation units, visible section-table saturation,
 and concurrent producers/snapshots with no summary-count loss or duplication.
 The maintained server build and relevant existing tests pass; commands and
 legacy profiler behavior are unchanged at this checkpoint.
@@ -46,7 +49,9 @@ use explicit microseconds. Failed or retrograde clock reads produce a zero
 duration rather than an underflow while preserving call counts. Enabling the
 debug profiler rebases timer endpoints without clearing accumulated results,
 so time spent while profiling is disabled does not enter the next outside-time
-sample. Existing scheduler callback/pass analytics were already monotonic and
+sample. If profiling is enabled or reset from inside an otherwise unprofiled
+outer command, that unmatched outer end is discarded rather than counted as a
+partial sample. Existing scheduler callback/pass analytics were already monotonic and
 remain unchanged. `LONG EVENT` now carries the same boot/tick/pulse correlation
 fields as the other event diagnostics.
 
@@ -63,16 +68,22 @@ of debug profiling. At 50,000 us it emits a correlated slow-operation record;
 at the same sweep threshold it emits operation counts/totals/maxima plus the
 unmeasured descriptor-maintenance residual. Labels are copied before dispatch,
 so commands that extract a character or close a descriptor cannot invalidate
-diagnostic data. Playing records contain only a bounded sanitized first token;
+diagnostic data. Playing records contain only a bounded sanitized first token
+(the command verb); arbitrary arguments are never retained. A secret entered as
+the first playing-state token cannot be distinguished from a command verb, so
+the privacy guarantee does not claim to redact that token itself.
 nanny, pager, and editor records never retain their input. Player identity is
 bounded and sanitized as well.
 
-Output is capped at the eight slowest operations plus one summary and at most
-five fixed kind summaries per pulse. The slowest operation is always retained,
-and the summary discloses how many additional slow operations were suppressed.
-Fast sweeps emit nothing. The tracker lives in one small module used by all five
-descriptor call sites; the surrounding dequeue and dispatch selection is
-unchanged.
+Each detailed report is capped at the eight slowest operations plus one summary
+and at most five fixed kind summaries. The lines are collected into one bounded
+buffer and written with one status-log call, without walking the descriptor list.
+During a sustained incident, full reports are limited to one per four pulses;
+the next emitted report discloses the number suppressed by that throttle. The
+slowest operation is always retained, and the summary separately discloses how
+many operations were suppressed by the per-pulse cap. Fast sweeps emit nothing.
+The tracker lives in one small module used by all five descriptor call sites;
+the surrounding dequeue and dispatch selection is unchanged.
 
 ## Verification and limits
 
@@ -109,6 +120,8 @@ Additional corrections to the issue's reasoning:
   sample survives to a dump. See [persistence_queue.c](../../src/persistence/persistence_queue.c)
   (`scalar_enq_ok/drop`) and [utility.c](../../src/core/utility.c)
   (`fallback_file_write`).
+  The implementation removed that ring once the independent window top ten made
+  it write-only.
 - Scheduler budgets are cooperative. `new_events.c`:1615–1631 executes a whole
   callback before checking limits at 1662–1673. Defaults are 25,000 us and 4,000
   callbacks, with configurable catch-up extensions (default up to 5,000 us and
@@ -175,9 +188,11 @@ remain hypotheses until dispatch measurements support them.
 Acceptance: execute controlled 49 ms/50 ms/200 ms cases with profiling off;
 verify thresholds and operation labels, aggregate many short calls, delayed SSL
 and maintenance, and disconnect/extraction during dispatch under sanitizers.
-Assert no credentials or free-text bodies enter output. Verify pager/editor and
-casting/transaction queue selection remain unchanged. A busy pulse must produce
-bounded diagnostics and disclose suppression.
+Assert that nanny/editor/free-text bodies and playing-command arguments never
+enter output; the sanitized first playing token is intentionally the operation
+label. Verify pager/editor and casting/transaction queue selection remain
+unchanged. Busy pulses must produce bounded, throttled diagnostics and disclose
+both per-pulse and cross-pulse suppression.
 
 ### 2. Make trace and status records joinable — complete
 
@@ -223,11 +238,11 @@ clocks where exact boundaries matter; avoid timing-sensitive equality tests.
   captured data to both the file and stderr outside the producer lock. Do not
   reset inside each `latency_trace_dump`: the current caller dumps twice and
   would otherwise empty the second destination.
-- Retain min/max/count/total and the window's exact top ten independently of
-  ring eviction, using bounded storage. This addresses additional persistence
-  records displacing a worst sample before the 300-pulse dump. Use sufficiently
-  wide duration totals/counts and document that the ring is a recent sample
-  buffer, not a complete window archive.
+- Retain min/max/count/total and the window's exact top ten using bounded
+  storage. This prevents additional persistence records from displacing a worst
+  sample before the 300-pulse dump. Remove the unconsumed recent ring, compare
+  process-global section labels by content, and disclose samples dropped when
+  the bounded section table saturates.
 - Handle file-open/write failures explicitly while still delivering the same
   snapshot to stderr. New records arriving during output belong to the next
   window and must not be cleared by a later reset.
@@ -369,6 +384,26 @@ git diff --check
 The command-attribution, trace-window, profiler, and scheduler runtime suites
 ran under ASan/UBSan. The maintained MariaDB/development server build completed
 with its warning-as-error profile.
+
+### PR review hardening
+
+The adversarial PR review follow-up was validated with the focused regression
+matrix above and the complete maintained non-database gate:
+
+```bash
+make test-all
+./scripts/format.sh --check
+git diff --check
+```
+
+All 437 Python regressions and the native signal-handler gate passed. The build
+covered the server, area editor, area generators, migration tools, and flatfile
+targets. The focused sanitizer tests additionally cover command-report bounds
+and correlation, failed and retrograde clock reads, second-boundary-safe scope
+timing, unavailable tick rendering, content-equal section labels, visible
+section-table saturation, concurrent trace snapshots, and the profiler rebase
+inside an unmatched outer command scope. Database-container tests were not run;
+this review hardening changes no schema or database behavior.
 
 ### Local correlated runtime smoke
 

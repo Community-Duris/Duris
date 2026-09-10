@@ -6,14 +6,8 @@
 #define __LATENCY_TRACE_H__
 
 #include <inttypes.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <time.h>
-
-#ifndef LATENCY_TRACE_MAX_SAMPLES
-#define LATENCY_TRACE_MAX_SAMPLES 4096
-#endif
 
 #ifndef LATENCY_TRACE_ENABLED
 #define LATENCY_TRACE_ENABLED 1
@@ -22,10 +16,11 @@
 #define LATENCY_TRACE_TOP_COUNT 10
 #define LATENCY_TRACE_BOOT_ID_LENGTH 64
 #define LATENCY_TRACE_TICK_UNAVAILABLE UINT64_MAX
+#define LATENCY_TRACE_TICK_STRING_LENGTH 21
 
 typedef struct
 {
-	const char *name; /* section name (pointer to string literal) */
+	const char *name; /* long-lived section label */
 	uint64_t duration_us;
 	uint64_t tick;
 } latency_entry;
@@ -48,6 +43,7 @@ typedef struct
 	latency_entry top[LATENCY_TRACE_TOP_COUNT];
 	int top_count;
 	uint64_t sample_count;
+	uint64_t dropped_section_samples;
 	uint64_t window_start_utc_us;
 	uint64_t window_end_utc_us;
 	uint64_t window_start_mono_us;
@@ -55,37 +51,39 @@ typedef struct
 	char boot_id[LATENCY_TRACE_BOOT_ID_LENGTH];
 } latency_trace_snapshot;
 
-extern latency_entry _latency_buf[LATENCY_TRACE_MAX_SAMPLES];
-extern int _latency_head;
-extern int _latency_count;
-extern pthread_mutex_t _latency_mutex;
-extern latency_section _latency_sections[LATENCY_MAX_SECTIONS];
-extern int _latency_nsections;
-
 void latency_trace_init(void);
 void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick);
 void latency_trace_reset(void);
 void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot);
 void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *snapshot);
 uint64_t latency_trace_monotonic_us(void);
+uint64_t latency_trace_elapsed_us(uint64_t started_us, uint64_t finished_us);
 const char *latency_trace_boot_id(void);
 void latency_trace_begin_pulse(uint64_t tick, uint64_t monotonic_us);
 uint64_t latency_trace_current_tick(void);
 uint64_t latency_trace_pulse_start_monotonic_us(void);
+
+static inline const char *latency_trace_format_tick(uint64_t tick,
+						    char buffer[LATENCY_TRACE_TICK_STRING_LENGTH])
+{
+	if (tick == LATENCY_TRACE_TICK_UNAVAILABLE || !buffer)
+		return "-";
+	snprintf(buffer, LATENCY_TRACE_TICK_STRING_LENGTH, "%" PRIu64, tick);
+	return buffer;
+}
 
 /*
  * Convenience form for game-thread scopes. Call sites outside the game loop
  * should call latency_trace_record with LATENCY_TRACE_TICK_UNAVAILABLE instead
  * of borrowing mutable loop state from another thread.
  */
-#define LATENCY_TRACE(name)                                                                      \
-	for (struct timespec _lt_start, _lt_end = { 0 };                                         \
-	     !_lt_end.tv_sec && (clock_gettime(CLOCK_MONOTONIC, &_lt_start), 1);                 \
-	     clock_gettime(CLOCK_MONOTONIC, &_lt_end), ({                                        \
-		     uint64_t _us = (uint64_t)(_lt_end.tv_sec - _lt_start.tv_sec) * 1000000ULL + \
-				    (uint64_t)(_lt_end.tv_nsec - _lt_start.tv_nsec) / 1000ULL;   \
-		     extern unsigned long long ne_event_tick;                                    \
-		     latency_trace_record(name, _us, (uint64_t)ne_event_tick);                   \
+#define LATENCY_TRACE(name)                                                                   \
+	for (uint64_t _lt_start_us = latency_trace_monotonic_us(), _lt_once = 1; _lt_once;    \
+	     _lt_once = 0, ({                                                                 \
+		     const uint64_t _lt_end_us = latency_trace_monotonic_us();                \
+		     latency_trace_record(name,                                               \
+					  latency_trace_elapsed_us(_lt_start_us, _lt_end_us), \
+					  latency_trace_current_tick());                      \
 	     }))
 
 #endif /* __LATENCY_TRACE_H__ */

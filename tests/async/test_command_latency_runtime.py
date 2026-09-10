@@ -11,6 +11,7 @@ from contract_text import contains, index
 
 HARNESS = r'''
 #include "net/command_latency.h"
+#include "persistence/latency_trace.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -52,6 +53,7 @@ int main()
 {
 	assert(command_latency_elapsed_us(100, 149) == 49);
 	assert(command_latency_elapsed_us(100, 99) == 0);
+	assert(command_latency_elapsed_us(0, 149) == 0);
 	assert(!strcmp(command_latency_kind_name(COMMAND_LATENCY_SSL), "ssl"));
 
 	command_latency_tracker thresholds = {};
@@ -85,6 +87,15 @@ int main()
 	assert(!any_contains(threshold_output, "password"));
 	for (const std::string &line : threshold_output.lines)
 		assert(line.find('\n') == std::string::npos);
+	for (const std::string &line : threshold_output.lines)
+		if (line.find("COMMAND SWEEP KIND:") != std::string::npos)
+			assert(line.find("pulse_start_mono_us=998877") != std::string::npos);
+
+	captured_lines unavailable_output;
+	command_latency_report(&thresholds, 260000, "boot-a", LATENCY_TRACE_TICK_UNAVAILABLE,
+			       998877, capture, &unavailable_output);
+	assert(any_contains(unavailable_output, "tick=-"));
+	assert(!any_contains(unavailable_output, "18446744073709551615"));
 
 	command_latency_event nanny = {};
 	command_latency_event_prepare(&nanny, COMMAND_LATENCY_NANNY, 3, -1, nullptr,
@@ -181,6 +192,13 @@ assert contains(
     "command_latency_report(&command_latency, command_sweep_us, "
     "latency_trace_boot_id(), loop_tick, loop_start_mono_us",
 )
+reporting_start = index(comm, "command_latency_log_buffer command_report")
+reporting_end = index(comm, "PROFILE_START(prompts)", reporting_start)
+reporting = comm[reporting_start:reporting_end]
+assert contains(reporting, 'logit(LOG_STATUS, "%s", command_report.text);')
+assert not contains(reporting, "statuslog(")
+assert contains(comm, "COMMAND_LATENCY_REPORT_INTERVAL_PULSES")
+assert index(comm, 'latency_trace_record("commands", command_sweep_us') < reporting_start
 assert contains(makefile, "net/command_latency.o")
 assert not contains((SRC / "net" / "command_latency.c").read_text(), "do_profile")
 

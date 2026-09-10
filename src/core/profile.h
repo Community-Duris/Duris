@@ -19,9 +19,10 @@ typedef struct
 	uint64_t last_us;
 	uint64_t total_inside_us;
 	uint64_t total_outside_us;
-	unsigned calls;
+	uint64_t calls;
 	bool start_valid;
 	bool end_valid;
+	bool skip_next_end;
 } profile_timer;
 
 static inline bool profile_monotonic_us(uint64_t *result)
@@ -45,6 +46,7 @@ static inline void profile_timer_rebase(profile_timer *timer)
 	timer->last_us = 0;
 	timer->start_valid = valid;
 	timer->end_valid = valid;
+	timer->skip_next_end = true;
 }
 
 static inline void profile_timer_reset(profile_timer *timer)
@@ -58,6 +60,7 @@ static inline void profile_timer_reset(profile_timer *timer)
 static inline void profile_timer_start(profile_timer *timer)
 {
 	uint64_t now_us = 0;
+	timer->skip_next_end = false;
 	timer->start_valid = profile_monotonic_us(&now_us);
 	if (!timer->start_valid)
 		return;
@@ -68,6 +71,12 @@ static inline void profile_timer_start(profile_timer *timer)
 
 static inline void profile_timer_end(profile_timer *timer)
 {
+	if (timer->skip_next_end)
+	{
+		timer->skip_next_end = false;
+		timer->last_us = 0;
+		return;
+	}
 	uint64_t now_us = 0;
 	const bool valid = profile_monotonic_us(&now_us);
 	timer->last_us = 0;
@@ -144,7 +153,7 @@ static inline void profile_timer_end(profile_timer *timer)
 	}
 
 extern void save_profile_data(const char *name, uint64_t total_inside_us, uint64_t total_outside_us,
-			      unsigned total);
+			      uint64_t total);
 extern void register_func_call(void *func, uint64_t duration_us);
 extern bool do_profile;
 

@@ -1,7 +1,7 @@
 #ifndef __COMMAND_LATENCY_H__
 #define __COMMAND_LATENCY_H__
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #define COMMAND_LATENCY_SLOW_US 50000ULL
 #define COMMAND_LATENCY_MAX_REPORTS 8

@@ -8,14 +8,17 @@ header = (SRC / "latency_trace.h").read_text()
 makefile = (SRC / "Makefile").read_text()
 impl = (SRC / "latency_trace.c").read_text()
 
-assert "extern latency_entry _latency_buf" in header
-assert "extern pthread_mutex_t _latency_mutex" in header
-assert "extern latency_section _latency_sections" in header
-assert "latency_entry _latency_buf" in impl
-assert "pthread_mutex_t _latency_mutex" in impl
+assert "_latency_buf" not in header
+assert "_latency_buf" not in impl
+assert "_latency_head" not in header
+assert "_latency_count" not in header
+assert "static pthread_mutex_t latency_mutex" in impl
+assert "static latency_section latency_sections" in impl
+assert "strcmp(latency_sections[index].name, name)" in impl
 assert "latency_trace.o" in makefile
 assert "LATENCY_TRACE_TICK_UNAVAILABLE" in header
 assert "latency_trace_snapshot_capture" in header
 assert "latency_trace_snapshot_dump" in header
+assert "dropped_section_samples" in header
 
 print("process-global latency trace checks passed")

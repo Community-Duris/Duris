@@ -1,12 +1,14 @@
 #include "net/command_latency.h"
+#include "persistence/latency_trace.h"
 
 #include <ctype.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
-static void command_latency_sanitize(char *destination, size_t destination_size,
-				     const char *source, bool first_word_only)
+static void command_latency_sanitize(char *destination, size_t destination_size, const char *source,
+				     bool first_word_only)
 {
 	if (!destination || !destination_size)
 		return;
@@ -57,7 +59,7 @@ const char *command_latency_kind_name(command_latency_kind kind)
 
 uint64_t command_latency_elapsed_us(uint64_t started_us, uint64_t finished_us)
 {
-	return finished_us >= started_us ? finished_us - started_us : 0;
+	return started_us && finished_us >= started_us ? finished_us - started_us : 0;
 }
 
 void command_latency_event_prepare(command_latency_event *event, command_latency_kind kind,
@@ -72,7 +74,8 @@ void command_latency_event_prepare(command_latency_event *event, command_latency
 	event->player_id = player_id;
 	command_latency_sanitize(event->player_name, sizeof event->player_name, player_name, false);
 	if (kind == COMMAND_LATENCY_PLAYING)
-		command_latency_sanitize(event->operation, sizeof event->operation, playing_input, true);
+		command_latency_sanitize(event->operation, sizeof event->operation, playing_input,
+					 true);
 	else
 		snprintf(event->operation, sizeof event->operation, "%s",
 			 command_latency_kind_name(kind));
@@ -131,36 +134,37 @@ void command_latency_report(const command_latency_tracker *tracker, uint64_t swe
 			    const char *boot_id, uint64_t tick, uint64_t pulse_start_mono_us,
 			    command_latency_emit_fn emit, void *context)
 {
-	if (!tracker || !emit ||
-	    (sweep_us < COMMAND_LATENCY_SLOW_US && tracker->slow_count == 0))
+	if (!tracker || !emit || (sweep_us < COMMAND_LATENCY_SLOW_US && tracker->slow_count == 0))
 		return;
 	char line[1024];
+	char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
 	const char *safe_boot_id = boot_id && *boot_id ? boot_id : "-";
+	const char *formatted_tick = latency_trace_format_tick(tick, tick_buffer);
 	for (int index = 0; index < tracker->retained_slow_count; ++index)
 	{
 		const command_latency_event *event = &tracker->slowest[index];
-		snprintf(line, sizeof line,
-			 "COMMAND OP SLOW: boot=%s tick=%" PRIu64
-			 " pulse_start_mono_us=%" PRIu64
-			 " kind=%s state=%d player_id=%ld player=%s operation=%s duration_us=%" PRIu64,
-			 safe_boot_id, tick, pulse_start_mono_us,
-			 command_latency_kind_name(event->kind), event->connection_state,
-			 event->player_id, event->player_name, event->operation, event->duration_us);
+		snprintf(
+			line, sizeof line,
+			"COMMAND OP SLOW: boot=%s tick=%s"
+			" pulse_start_mono_us=%" PRIu64
+			" kind=%s state=%d player_id=%ld player=%s operation=%s duration_us=%" PRIu64,
+			safe_boot_id, formatted_tick, pulse_start_mono_us,
+			command_latency_kind_name(event->kind), event->connection_state,
+			event->player_id, event->player_name, event->operation, event->duration_us);
 		command_latency_emit(line, emit, context);
 	}
 
 	const uint64_t residual_us =
 		sweep_us >= tracker->measured_us ? sweep_us - tracker->measured_us : 0;
-	const uint64_t suppressed =
-		tracker->slow_count - (uint64_t)tracker->retained_slow_count;
+	const uint64_t suppressed = tracker->slow_count - (uint64_t)tracker->retained_slow_count;
 	snprintf(line, sizeof line,
-		 "%s: boot=%s tick=%" PRIu64 " pulse_start_mono_us=%" PRIu64
-		 " total_us=%" PRIu64 " measured_operation_us=%" PRIu64
-		 " maintenance_residual_us=%" PRIu64 " slow=%" PRIu64 " reported=%d"
+		 "%s: boot=%s tick=%s pulse_start_mono_us=%" PRIu64 " total_us=%" PRIu64
+		 " measured_operation_us=%" PRIu64 " maintenance_residual_us=%" PRIu64
+		 " slow=%" PRIu64 " reported=%d"
 		 " suppressed=%" PRIu64,
 		 sweep_us >= COMMAND_LATENCY_SLOW_US ? "COMMAND SWEEP SLOW" :
-						      "COMMAND SLOW SUMMARY",
-		 safe_boot_id, tick, pulse_start_mono_us, sweep_us, tracker->measured_us,
+						       "COMMAND SLOW SUMMARY",
+		 safe_boot_id, formatted_tick, pulse_start_mono_us, sweep_us, tracker->measured_us,
 		 residual_us, tracker->slow_count, tracker->retained_slow_count, suppressed);
 	command_latency_emit(line, emit, context);
 
@@ -170,9 +174,9 @@ void command_latency_report(const command_latency_tracker *tracker, uint64_t swe
 		if (!stats->count)
 			continue;
 		snprintf(line, sizeof line,
-			 "COMMAND SWEEP KIND: boot=%s tick=%" PRIu64
+			 "COMMAND SWEEP KIND: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 			 " kind=%s count=%" PRIu64 " total_us=%" PRIu64 " max_us=%" PRIu64,
-			 safe_boot_id, tick,
+			 safe_boot_id, formatted_tick, pulse_start_mono_us,
 			 command_latency_kind_name((command_latency_kind)kind), stats->count,
 			 stats->total_us, stats->max_us);
 		command_latency_emit(line, emit, context);
