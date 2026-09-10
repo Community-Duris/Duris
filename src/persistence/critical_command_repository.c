@@ -1550,8 +1550,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				for (size_t i = 0; i < zone_payload.group_size; ++i)
 					order.push_back(i);
 				std::sort(order.begin(), order.end(),
-					  [&](size_t a, size_t b)
-					  {
+					  [&](size_t a, size_t b) {
 						  return zone_payload.participant_pids[a] <
 							 zone_payload.participant_pids[b];
 					  });

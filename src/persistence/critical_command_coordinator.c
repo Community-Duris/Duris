@@ -338,8 +338,7 @@ void worker_main()
 						   .result_payload = applied.result_payload };
 		std::unique_lock<std::mutex> lock(coordinator_mutex);
 		result_available.wait(lock,
-				      []
-				      {
+				      [] {
 					      return stop_requested ||
 						     raw_results.size() <
 							     CRITICAL_COORDINATOR_MAX_RESULTS;

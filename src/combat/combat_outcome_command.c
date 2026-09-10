@@ -162,8 +162,7 @@ bool combat_outcome_command_decode_payload(const critical_command &command,
 	       expected.expected_revisions.size() == command.expected_revisions.size() &&
 	       std::equal(expected.expected_revisions.begin(), expected.expected_revisions.end(),
 			  command.expected_revisions.begin(),
-			  [](const auto &left, const auto &right)
-			  {
+			  [](const auto &left, const auto &right) {
 				  return critical_entity_key_equal(left.key, right.key) &&
 					 left.revision == right.revision;
 			  });

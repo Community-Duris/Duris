@@ -752,8 +752,7 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 	       std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
 			  expected.expected_revisions.begin(),
 			  [](const critical_expected_revision &left,
-			     const critical_expected_revision &right)
-			  {
+			     const critical_expected_revision &right) {
 				  return critical_entity_key_equal(left.key, right.key) &&
 					 left.revision == right.revision;
 			  });

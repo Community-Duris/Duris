@@ -8759,7 +8759,7 @@ void do_rearkick(P_char ch, char *argument, int /*cmd*/)
 
 	// Rear kick does similar damage to kick, and is no longer level based.  Bad idea.
 	dam = (int)(MAX(GET_C_STR(ch) / 2,
-			(GET_CHAR_SKILL(ch, SKILL_KICK))*get_property("skill.rearkick.dam", 2)));
+			(GET_CHAR_SKILL(ch, SKILL_KICK)) * get_property("skill.rearkick.dam", 2)));
 
 	// Randomize damage same as in kick.
 	dam = number(dam / 2, dam);

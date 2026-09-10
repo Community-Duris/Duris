@@ -275,8 +275,7 @@ void worker_main()
 		{
 			std::unique_lock<std::mutex> lock(scheduler_mutex);
 			work_available.wait(lock,
-					    []
-					    {
+					    [] {
 						    return stop_requested || durable_state_dirty ||
 							   !queue.empty();
 					    });

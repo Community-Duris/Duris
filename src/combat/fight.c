@@ -8293,7 +8293,7 @@ int dodgeSucceed(P_char char_dodger, P_char attacker, P_obj wpn)
 		   learned = (int) ((GET_CHAR_SKILL(char_dodger, SKILL_DODGE)) * 1.25) -
 		   (WeaponSkill(attacker, wpn));
 		   */
-	learned = (int)((GET_C_AGI(char_dodger))*dam_factor[DF_DODGE_AGI_MODIFIER]) -
+	learned = (int)((GET_C_AGI(char_dodger)) * dam_factor[DF_DODGE_AGI_MODIFIER]) -
 		  (WeaponSkill(attacker, wpn));
 
 	// Dwarves now get the DnD 3.5 dodgeroll bonus vs giant races

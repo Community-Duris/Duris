@@ -231,14 +231,12 @@ int main()
 	MYSQL *money_connections[2] = { connect_database(), connect_database() };
 	std::thread money_workers[2] = {
 		std::thread(
-			[&]
-			{
+			[&] {
 				money_results[0] = critical_command_repository_apply(
 					money_connections[0], money_commands[0]);
 			}),
 		std::thread(
-			[&]
-			{
+			[&] {
 				money_results[1] = critical_command_repository_apply(
 					money_connections[1], money_commands[1]);
 			})

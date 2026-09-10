@@ -192,8 +192,7 @@ void worker_main()
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
 			result_available.wait(lock,
-					      []
-					      {
+					      [] {
 						      return stop_requested ||
 							     results.size() <
 								     PLAYER_SAVE_WORKER_MAX_RESULTS;

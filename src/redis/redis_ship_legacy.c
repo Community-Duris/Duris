@@ -204,8 +204,7 @@ bool enqueue_delete(const char *key, size_t key_size)
 			return false;
 		const auto duplicate =
 			std::find_if(pending_jobs.cbegin(), pending_jobs.cend(),
-				     [key, key_size](const ship_delete_job &job)
-				     {
+				     [key, key_size](const ship_delete_job &job) {
 					     return job.key.size() == key_size &&
 						    !memcmp(job.key.data(), key, key_size);
 				     });

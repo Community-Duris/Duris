@@ -216,8 +216,7 @@ void worker_main()
 		{
 			std::unique_lock<std::mutex> lock(store_mutex);
 			work_available.wait(lock,
-					    []
-					    {
+					    [] {
 						    return stop_requested ||
 							   (!health.paused &&
 							    !pending_jobs.empty());
