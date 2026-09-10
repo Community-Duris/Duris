@@ -1736,19 +1736,19 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 }
 
 // This is used for when a character is deleted.
-void remove_all_artifacts_sql(P_char ch)
+bool remove_all_artifacts_sql(P_char ch)
 {
 	int pid;
 
 	if (!updateArtis)
 	{
-		return;
+		return true;
 	}
 
 	// If no ch / ch isn't a PC / or ch doesn't have PC data.
 	if (!ch || !IS_PC(ch) || !ch->only.pc)
 	{
-		return;
+		return false;
 	}
 	pid = GET_PID(ch);
 
@@ -1761,14 +1761,16 @@ void remove_all_artifacts_sql(P_char ch)
 	{
 		logit(LOG_ARTIFACT, "remove_all_artifacts_sql: flat artifact release failed: %s",
 		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
-		return;
+		return false;
 	}
 #else
 	// Nullify arti timers on all ch's equipment.
-	qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d",
-	    pid, ARTIFACT_ON_PC);
+	if (!qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d",
+		 pid, ARTIFACT_ON_PC))
+		return false;
 #endif
 	arti_cache_invalidate();
+	return true;
 }
 
 // This is a wrapper function for artifact_update_sql.

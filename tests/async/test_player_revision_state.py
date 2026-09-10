@@ -176,7 +176,7 @@ pid_assignment = save_body.index("mysql_insert_id")
 initialization = save_body.index("player_revision_hydrate(pid, 0)")
 assert pid_assignment < initialization
 
-delete_start = SQL_PLAYER.rindex("bool sql_delete_player(int pid)")
+delete_start = SQL_PLAYER.rindex("bool sql_delete_player(int pid, bool forget_revision)")
 delete_end = SQL_PLAYER.index("bool sql_delete_player_by_name", delete_start)
 delete_body = SQL_PLAYER[delete_start:delete_end]
 assert delete_body.index("sql_run_query") < delete_body.index("player_revision_forget")

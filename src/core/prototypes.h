@@ -114,7 +114,7 @@ void display_character_list_to_char(P_char ch, P_acct account);
 void display_delete_character_list(P_desc);
 void add_char_to_account(P_desc);
 int sync_account_character_projection(P_char, int, int);
-void remove_char_from_list(P_acct, char *);
+void remove_char_from_list(P_acct, char *, bool persist = true);
 int write_account(P_acct);
 int read_account(P_acct);
 const char *get_account_name_safe(P_char);
@@ -701,7 +701,7 @@ void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 void event_artifact_wars_sql(P_char, P_char, P_obj, void *);
 bool get_artifact_data_sql(int vnum, P_arti artidata);
 bool remove_owned_artifact_sql(P_obj arti, int pid = -1);
-void remove_all_artifacts_sql(P_char ch);
+bool remove_all_artifacts_sql(P_char ch);
 void setupMortArtiList_sql(void);
 
 /* artifact_old.c */
@@ -1107,6 +1107,14 @@ int confiscate_item(P_char, int);
 int convert_stat(int);
 int countEquip(P_char);
 int countInven(P_obj);
+enum class character_delete_result
+{
+	deleted,
+	refused,
+	reconciliation_required
+};
+// Never consumes ch. Legacy callers receive TRUE only for confirmed completion.
+character_delete_result delete_character_result(P_char ch, bool bDeleteLocker = true);
 int deleteCharacter(P_char, bool bDeleteLocker = true);
 int deletePet(char *);
 int deleteShopKeeper(int);

@@ -91,7 +91,8 @@ bool sql_load_player_pets(P_char ch);
 // ============================================================================
 
 // delete player from db (for pwipe, etc)
-bool sql_delete_player(int pid);
+// Transaction owners defer revision eviction until their commit is confirmed.
+bool sql_delete_player(int pid, bool forget_revision = true);
 bool sql_delete_player_by_name(const char *name);
 
 // ============================================================================

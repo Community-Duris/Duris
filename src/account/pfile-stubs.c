@@ -125,6 +125,28 @@ int real_room(const int room)
 void clear_title(P_char) {}
 void create_epic_skills() {}
 void delete_ship(char *) {}
+void delete_ship_runtime(const char *) {}
+void player_revision_forget(int) {}
+bool sql_in_transaction()
+{
+	return false;
+}
+bool sql_begin_transaction()
+{
+	return false;
+}
+bool sql_commit()
+{
+	return false;
+}
+bool sql_rollback()
+{
+	return false;
+}
+bool sql_delete_ship(const char *)
+{
+	return false;
+}
 void event_short_affect(P_char, P_char, P_obj, void *) {}
 struct extra_descr_data *find_spell_description(P_obj)
 {
@@ -135,17 +157,25 @@ P_Guild get_guild_from_id(int)
 	return NULL;
 }
 void Guild::kick(P_char) {}
+bool Guild::save_without_member(P_char)
+{
+	return false;
+}
+void Guild::forget_deleted_member(P_char) {}
 void load_zone_trophy(P_char) {}
 int ne_event_time(P_nevent)
 {
 	return 0;
 }
-void remove_all_artifacts_sql(P_char) {}
+bool remove_all_artifacts_sql(P_char)
+{
+	return true;
+}
 bool remove_all_locker_access(P_char)
 {
 	return true;
 }
-void remove_char_from_list(P_acct, char *) {}
+void remove_char_from_list(P_acct, char *, bool) {}
 
 enum persistence_mode persistence_mode_get(void)
 {
@@ -169,7 +199,7 @@ bool sql_delete_locker(int, int)
 {
 	return true;
 }
-bool sql_delete_player(int)
+bool sql_delete_player(int, bool)
 {
 	return true;
 }

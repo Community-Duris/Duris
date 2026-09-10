@@ -1296,6 +1296,51 @@ void Guild::update_member(P_char ch)
 	}
 }
 
+bool Guild::save_without_member(P_char ch)
+{
+	P_member *link = &members;
+	while (*link && strcasecmp((*link)->name, GET_NAME(ch)))
+		link = &(*link)->next;
+	if (!*link)
+		return false;
+	P_member member = *link;
+	const auto old_frags = frags;
+	*link = member->next;
+	if (!strcasecmp(GET_NAME(ch), frags.topfragger))
+	{
+		frags.topfragger[0] = '\0';
+		frags.top_frags = 0;
+	}
+	frags.frags -= GET_FRAGS(ch);
+	const bool saved = save();
+	frags = old_frags;
+	*link = member;
+	return saved;
+}
+
+void Guild::forget_deleted_member(P_char ch)
+{
+	P_member *link = &members;
+	while (*link && strcasecmp((*link)->name, GET_NAME(ch)))
+		link = &(*link)->next;
+	if (*link)
+	{
+		P_member member = *link;
+		*link = member->next;
+		member->next = NULL;
+		delete member;
+		if (member_count > 0)
+			--member_count;
+		if (!strcasecmp(GET_NAME(ch), frags.topfragger))
+		{
+			frags.topfragger[0] = '\0';
+			frags.top_frags = 0;
+		}
+		frags.frags -= GET_FRAGS(ch);
+	}
+	GET_ASSOC(ch) = NULL;
+}
+
 void Guild::kick(P_char ch)
 {
 	Guildhall *gh;

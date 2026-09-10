@@ -2172,6 +2172,12 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		request.request_id = player_load_pipeline_next_request_id();
 		request.pid = c->pid;
 		request.account_name = d->account->acct_name;
+		if (STATE(d) == CON_ACCT_DELETE_CHAR)
+		{
+			// Confirmation only needs character metadata, not live items or pets.
+			request.include_items = false;
+			request.include_pets = false;
+		}
 		request.deadline_usec =
 			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 		if (STATE(d) == CON_ACCT_CONFIRM_CHAR)
@@ -2471,6 +2477,18 @@ int sync_account_character_projection(P_char player, int room, int persist)
 	return !persist || write_account(player->desc->account) == 1;
 }
 
+static void release_delete_character(P_desc d)
+{
+	P_char ch = d->character;
+	d->character = NULL;
+	d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+	if (ch)
+	{
+		ch->desc = NULL;
+		free_char(ch);
+	}
+}
+
 void account_delete_char(P_desc d, char *arg)
 {
 	P_char ch = NULL;
@@ -2498,15 +2516,32 @@ void account_delete_char(P_desc d, char *arg)
 			return;
 		}
 		SEND_TO_Q("\r\n&+RDeleting character...&n\r\n\r\n", d);
-		statuslog(d->character->player.level, "%s deleted %sself (%s).",
-			  GET_NAME(d->character), GET_SEX(d->character) == SEX_MALE ? "him" : "her",
-			  d->host);
-		logit(LOG_PLAYER, "%s deleted %sself (%s).", GET_NAME(d->character),
-		      GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
-		deleteCharacter(d->character);
-		d->character = NULL; // Clear dangling pointer
-		d->term_type = TERM_ANSI; // Preserve ANSI terminal mode
-		SEND_TO_Q("&+GCharacter deleted successfully.&n\r\n\r\n", d);
+		const auto result = delete_character_result(d->character);
+		if (result == character_delete_result::deleted)
+		{
+			statuslog(GET_LEVEL(d->character), "%s deleted %sself (%s).",
+				  GET_NAME(d->character),
+				  GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
+			logit(LOG_PLAYER, "%s deleted %sself (%s).", GET_NAME(d->character),
+			      GET_SEX(d->character) == SEX_MALE ? "him" : "her", d->host);
+			SEND_TO_Q("&+GCharacter deleted successfully.&n\r\n\r\n", d);
+		}
+		else if (result == character_delete_result::reconciliation_required)
+		{
+			SEND_TO_Q(
+				"&+RDeletion could not be confirmed. Some cleanup may have completed. "
+				"Please contact an immortal before retrying.&n\r\n\r\n",
+				d);
+		}
+		else
+			SEND_TO_Q(
+				"&+RCharacter deletion did not complete. Please try again later.&n\r\n\r\n",
+				d);
+		release_delete_character(d);
+		if (read_account(d->account) == -1)
+			SEND_TO_Q(
+				"&+RThe character list could not be refreshed. Please reconnect before trying again.&n\r\n",
+				d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
 		return;
@@ -2514,6 +2549,7 @@ void account_delete_char(P_desc d, char *arg)
 	else if (!strcasecmp(arg, "n") || !strcasecmp(arg, "no"))
 	{
 		SEND_TO_Q("\r\n&+GDeletion cancelled.&n\r\n", d);
+		release_delete_character(d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
 		return;
@@ -2522,6 +2558,7 @@ void account_delete_char(P_desc d, char *arg)
 	// Check if user wants to go back (0 or "back")
 	if (!strcasecmp(arg, "0") || !strcasecmp(arg, "back"))
 	{
+		release_delete_character(d);
 		STATE(d) = CON_DISPLAY_ACCT_MENU;
 		display_account_menu(d, NULL);
 		return;
@@ -2571,6 +2608,7 @@ void account_delete_char(P_desc d, char *arg)
 
 	// Get the selected character (adjust for 0-based indexing)
 	c = sorted_chars[selection - 1];
+	release_delete_character(d);
 	ch = load_char_into_game(c, d);
 
 	if (!ch)
@@ -2600,7 +2638,7 @@ void account_delete_char(P_desc d, char *arg)
 	return;
 }
 
-void remove_char_from_list(P_acct acct, char *ch)
+void remove_char_from_list(P_acct acct, char *ch, bool persist)
 {
 	struct acct_chars *c = NULL;
 	struct acct_chars *prev = NULL;
@@ -2616,7 +2654,7 @@ void remove_char_from_list(P_acct acct, char *ch)
 		FREE(c->charname);
 		FREE(c);
 		acct->num_chars--;
-		if (-1 == write_account(acct))
+		if (persist && -1 == write_account(acct))
 		{
 			statuslog(56, "&+RALERT&n: account character-removal save failed");
 			persistence_alert(AVATAR, "account", "redacted", "none", "none",
@@ -2635,7 +2673,7 @@ void remove_char_from_list(P_acct acct, char *ch)
 			FREE(c->charname);
 			FREE(c);
 			acct->num_chars--;
-			if (-1 == write_account(acct))
+			if (persist && -1 == write_account(acct))
 			{
 				statuslog(56, "&+RALERT&n: account character-removal save failed");
 				persistence_alert(AVATAR, "account", "redacted", "none", "none",
