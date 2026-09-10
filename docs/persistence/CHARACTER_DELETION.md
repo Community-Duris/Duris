@@ -59,6 +59,21 @@ these are runtime control-flow tests, not a live database or Telnet journey.
 The existing flat-file character-deletion harness separately exercises the real
 journal and repository coordinator.
 
+`python3 tests/async/test_soft_delete_statement_runtime.py` executes the production
+SQL soft-delete body under ASan/UBSan. It checks successful non-result statements,
+zero-row retries, failure of either UPDATE, and owned versus enclosing transaction
+boundaries. Soft deletion uses `sql_trace_exec()`'s statement status: the absence
+of a result set from `db_query()` cannot distinguish a successful UPDATE from an
+error.
+
+The optional `--mariadb-fixture` mode uses an isolated disposable MariaDB server
+at `127.0.0.1:3306`, with passwordless root and database `pr204_fixture`. It creates
+connection-local temporary InnoDB tables, verifies both tombstones and untouched
+sibling rows, and checks rollback after a real SQL error. Never point this fixture
+at a shared server. This adapter regression does not cover the full server's
+account-menu/Telnet journey, player-row cascades, or historical cleanup; those
+remain separate integration/operator checks.
+
 ## Protected operator follow-up for issue 200
 
 The historical disposable identity was deliberately omitted from the public
