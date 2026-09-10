@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "core/profile.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1791,37 +1792,42 @@ char affect_total(P_char ch, int kill_ch)
 //=================================================================================
 //=== AFFECTS - CHAR
 //=================================================================================
-void event_short_affect([[maybe_unused]] P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
+void event_short_affect(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct event_short_affect_data *event_data = (struct event_short_affect_data *)data;
 	struct affected_type *af;
 
-	// The affect was already removed.
-	if (data == NULL)
+	if (!event_data || !ch || event_data->ch != ch)
 	{
 		return;
 	}
 
-	// sanity check: verify event_data->ch is still in character_list (not freed)
-	P_char c;
-	for (c = character_list; c; c = c->next)
-		if (c == event_data->ch)
-			break;
-	if (!c)
+	// NPC extraction/freeing cancels owned events before releasing the character.
+	// PCs can have restored affects before entering the world; keep their list check.
+	PROFILE_START(short_affect_liveness);
+	if (IS_PC(ch))
 	{
-		// character was freed, skip this event
-		return;
+		P_char c;
+		for (c = character_list; c; c = c->next)
+			if (c == ch)
+				break;
+		if (!c)
+		{
+			PROFILE_END(short_affect_liveness);
+			return;
+		}
 	}
+	PROFILE_END(short_affect_liveness);
 
-	for (af = event_data->ch->affected; af; af = af->next)
+	for (af = ch->affected; af; af = af->next)
 		if (af == event_data->af)
 			break;
 
 	if (!af)
 		return;
 
-	wear_off_message(event_data->ch, af);
-	affect_remove(event_data->ch, af);
+	wear_off_message(ch, af);
+	affect_remove(ch, af);
 }
 
 /*

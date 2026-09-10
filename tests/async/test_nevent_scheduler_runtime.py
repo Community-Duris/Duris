@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic absolute-due scheduler behavior under ASan/UBSan."""
 
-from _paths import SRC
+from _paths import SRC, extract_function
 import os
 import subprocess
 import tempfile
@@ -1060,6 +1060,189 @@ static void test_mass_same_tick_insert()
 		257);
 }
 
+static size_t short_affect_visits = 0;
+static std::vector<std::pair<int, int>> short_affect_actions;
+
+void wear_off_message(P_char ch, affected_type *af)
+{
+	require(ch && af, 300);
+	short_affect_actions.emplace_back(af->type, 1);
+}
+
+void affect_remove(P_char ch, affected_type *af)
+{
+	affected_type **link = &ch->affected;
+	while (*link && *link != af)
+		link = &(*link)->next;
+	require(*link == af, 301);
+	*link = af->next;
+	for (P_nevent e = ch->nevents; e; e = e->next_char_nev)
+		if (e->func == event_short_affect && e->data &&
+		    static_cast<event_short_affect_data *>(e->data)->af == af)
+		{
+			nevent_cancel(nevent_handle_from_event(e));
+			break;
+		}
+	short_affect_actions.emplace_back(af->type, 2);
+}
+
+// Production callback, with only a list-visit counter injected by Python.
+/* SHORT_AFFECT_CALLBACK */
+
+static void short_affect_schedule(P_char ch, affected_type *af, int delay = 1)
+{
+	event_short_affect_data payload = { ch, af };
+	require(static_cast<bool>(add_event(event_short_affect, delay, ch, nullptr, nullptr, 0,
+					  &payload, sizeof(payload))), 302);
+}
+
+static void short_affect_delete_owner(P_char, P_char, P_obj, void *data)
+{
+	P_char owner = *static_cast<P_char *>(data);
+	disarm_char_nevents(owner, nullptr);
+	character_list = nullptr;
+	delete owner;
+}
+
+static void test_short_affect()
+{
+	reset_scheduler();
+	char_data owner = {}, other = {};
+	owner.specials.act = ACT_ISNPC;
+	owner.runtime_id = 31000;
+	owner.specials.position = STAT_NORMAL | POS_STANDING;
+	affected_type first = {}, second = {};
+	first.type = 1;
+	second.type = 2;
+	first.next = &second;
+	owner.affected = &first;
+	character_list = &owner;
+	short_affect_schedule(&owner, &first);
+	short_affect_schedule(&owner, &second, 2);
+	run_one_heartbeat();
+	run_one_heartbeat();
+	require(owner.affected == &second, 303);
+	run_one_heartbeat();
+	require(owner.affected == nullptr && short_affect_visits == 0, 304);
+	require((short_affect_actions == std::vector<std::pair<int, int>>{
+		{ 1, 1 }, { 1, 2 }, { 2, 1 }, { 2, 2 } }), 305);
+	require_balanced(306);
+
+	// The same production callback must retain PC membership semantics.
+	owner.specials.act = 0;
+	first.next = nullptr;
+	owner.affected = &first;
+	short_affect_actions.clear();
+	character_list = &other;
+	event_short_affect_data payload = { &owner, &first };
+	event_short_affect(&owner, nullptr, nullptr, &payload);
+	require(short_affect_actions.empty() && owner.affected == &first, 307);
+	other.next = &owner;
+	short_affect_schedule(&owner, &first);
+	run_one_heartbeat();
+	run_one_heartbeat();
+	require(owner.affected == nullptr && short_affect_actions.size() == 2, 308);
+
+	// Invalid payloads must not access the mismatched payload character.
+	short_affect_actions.clear();
+	event_short_affect(&owner, nullptr, nullptr, nullptr);
+	event_short_affect(nullptr, nullptr, nullptr, &payload);
+	payload.ch = reinterpret_cast<P_char>(uintptr_t{1});
+	event_short_affect(&owner, nullptr, nullptr, &payload);
+	payload.ch = &owner;
+	event_short_affect(&owner, nullptr, nullptr, &payload); // missing affect
+	require(short_affect_actions.empty(), 309);
+
+	// Prior removal cancels expiry; the fixture uses real scheduler cancellation.
+	owner.specials.act = ACT_ISNPC;
+	owner.affected = &first;
+	character_list = &owner;
+	short_affect_schedule(&owner, &first);
+	affect_remove(&owner, &first);
+	short_affect_actions.clear();
+	run_one_heartbeat();
+	run_one_heartbeat();
+	require(short_affect_actions.empty(), 310);
+	require_balanced(311);
+
+	// Heap deletion both outside dispatch and earlier in the same event pass.
+	for (bool during_dispatch : { false, true })
+	{
+		reset_scheduler();
+		auto *heap_owner = new char_data{};
+		heap_owner->specials.act = ACT_ISNPC;
+		heap_owner->specials.position = STAT_NORMAL | POS_STANDING;
+		heap_owner->affected = &first;
+		character_list = heap_owner;
+		if (during_dispatch)
+			require(static_cast<bool>(add_event(short_affect_delete_owner, 1, nullptr,
+				nullptr, nullptr, 0, &heap_owner, sizeof(heap_owner))), 312);
+		short_affect_schedule(heap_owner, &first);
+		if (!during_dispatch)
+			short_affect_delete_owner(nullptr, nullptr, nullptr, &heap_owner);
+		run_one_heartbeat();
+		run_one_heartbeat();
+		require(short_affect_actions.empty(), 313);
+		require_balanced(314);
+	}
+
+	// Reuse both addresses: only the new event may expire the new affect.
+	reset_scheduler();
+	alignas(char_data) unsigned char owner_storage[sizeof(char_data)];
+	alignas(affected_type) unsigned char affect_storage[sizeof(affected_type)];
+	auto *reused_owner = new (owner_storage) char_data{};
+	auto *reused_affect = new (affect_storage) affected_type{};
+	reused_owner->specials.act = ACT_ISNPC;
+	reused_owner->specials.position = STAT_NORMAL | POS_STANDING;
+	reused_owner->runtime_id = 1;
+	reused_owner->affected = reused_affect;
+	character_list = reused_owner;
+	short_affect_schedule(reused_owner, reused_affect, 2);
+	disarm_char_nevents(reused_owner, nullptr);
+	reused_owner->~char_data();
+	reused_affect->~affected_type();
+	reused_owner = new (owner_storage) char_data{};
+	reused_affect = new (affect_storage) affected_type{};
+	reused_owner->specials.act = ACT_ISNPC;
+	reused_owner->specials.position = STAT_NORMAL | POS_STANDING;
+	reused_owner->runtime_id = 2;
+	reused_owner->affected = reused_affect;
+	reused_affect->type = 3;
+	short_affect_schedule(reused_owner, reused_affect, 3);
+	for (int i = 0; i < 3; ++i)
+		run_one_heartbeat();
+	require(short_affect_actions.empty() && reused_owner->affected == reused_affect, 315);
+	run_one_heartbeat();
+	require((short_affect_actions == std::vector<std::pair<int, int>>{
+		{ 3, 1 }, { 3, 2 } }), 316);
+	reused_owner->~char_data();
+	reused_affect->~affected_type();
+	character_list = nullptr;
+	require_balanced(317);
+
+	// Count actual loop visits, not elapsed time, for a long world list.
+	std::vector<char_data> world_chars(4096);
+	for (size_t i = 0; i + 1 < world_chars.size(); ++i)
+		world_chars[i].next = &world_chars[i + 1];
+	world_chars.back().next = &owner;
+	owner.next = nullptr;
+	character_list = world_chars.data();
+	for (bool npc : { true, false })
+	{
+		owner.specials.act = npc ? ACT_ISNPC : 0;
+		owner.affected = &first;
+		short_affect_visits = 0;
+		short_affect_schedule(&owner, &first);
+		run_one_heartbeat();
+		run_one_heartbeat();
+		require(short_affect_visits == (npc ? 0 : world_chars.size() + 1), 318);
+		require(owner.affected == nullptr, 319);
+	}
+	character_list = nullptr;
+	require_balanced(320);
+	std::puts("short-affect expiry, PC fallback, cancellation, reuse, and zero NPC scans passed");
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, 160);
@@ -1072,6 +1255,8 @@ int main(int argc, char **argv)
 		test_callback_reschedule();
 		test_randomized_oracle();
 	}
+	else if (std::strcmp(argv[1], "short-affect") == 0)
+		test_short_affect();
 	else if (std::strcmp(argv[1], "priority-off") == 0)
 		test_priority_order(false);
 	else if (std::strcmp(argv[1], "priority-on") == 0)
@@ -1101,6 +1286,26 @@ int main(int argc, char **argv)
 	return failure_code;
 }
 '''
+
+# Exercise the actual production callback; count only world-list visits.
+short_affect = extract_function("affects.c", "void event_short_affect(")
+assert short_affect.count("if (c == ch)") == 1
+short_affect = short_affect.replace("if (c == ch)", "if ((++short_affect_visits, c == ch))")
+HARNESS = HARNESS.replace("/* SHORT_AFFECT_CALLBACK */", short_affect)
+
+# Tie lifecycle fixtures to production owner/cancellation hooks.
+for signature in ("struct affected_type *affect_to_char(", "void set_short_affected_by("):
+    producer = extract_function("affects.c", signature)
+    assert "data.ch = ch;" in producer and "data.af = affected_alloc;" in producer
+    assert "add_event(event_short_affect," in producer
+    assert ", ch, 0, 0, 0, &data, sizeof(data))" in producer
+extract = extract_function("handler.c", "void extract_char(")
+assert extract.index("disarm_char_nevents(ch, NULL)") < extract.index("character_list = ch->next")
+free = extract_function("db.c", "void free_char(")
+assert free.index("disarm_char_nevents(ch, NULL)") < free.index("add_event(release_mob_mem,")
+remove = extract_function("affects.c", "void affect_remove(")
+assert "pnev->func == event_short_affect" in remove
+assert "nevent_cancel(nevent_handle_from_event(pnev))" in remove
 
 with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
     temp = Path(directory)
@@ -1170,6 +1375,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
     )
     run_mode("unbounded")
     run_mode("invalid-config", DURIS_NEVENT_BUDGET_USEC="9" * 100)
+    run_mode("short-affect")
     run_mode("api")
     run_mode("integrity-thread")
 

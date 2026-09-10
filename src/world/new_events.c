@@ -1465,6 +1465,7 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 	if (!deferred_head)
 		return 0;
 
+	PROFILE_START(nevent_defer_collect);
 	next_bucket = nevent_bucket_for_tick(nevent_add_ticks(ne_event_tick, 1));
 
 	/* Finish all allocation before unlinking anything so allocation failure
@@ -1474,6 +1475,8 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 	     event = event->next_sched)
 		batch.push_back(event);
 
+	PROFILE_END(nevent_defer_collect);
+	PROFILE_START(nevent_defer_unlink);
 	for (P_nevent event : batch)
 	{
 		nevent_unlink_schedule(event);
@@ -1487,13 +1490,18 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
 	}
+	PROFILE_END(nevent_defer_unlink);
 
 	/* Aging can change effective priority as the deferral count advances, so
 	 * sort once under the new state and merge the batch into the already-sorted
 	 * destination bucket.  This keeps budget enforcement O(n log n), avoiding
 	 * quadratic head scans when boot schedules tens of thousands of callbacks. */
+	PROFILE_START(nevent_defer_sort);
 	std::sort(batch.begin(), batch.end(), nevent_sorts_before);
+	PROFILE_END(nevent_defer_sort);
+	PROFILE_START(nevent_defer_merge);
 	nevent_merge_sorted_batch(batch, next_bucket);
+	PROFILE_END(nevent_defer_merge);
 
 	return static_cast<long>(batch.size());
 }
@@ -1656,7 +1664,9 @@ void ne_events(void)
 
 		if (current_nevent->deferral_count > 0)
 			catchup_executed++;
-		nevent_destroy(current_nevent);
+		// Cancellation during a callback queues destruction for the end of this pass.
+		if (current_nevent->lifecycle_state != NEVENT_LIFECYCLE_CANCEL_PENDING)
+			nevent_destroy(current_nevent);
 
 		if (max_callbacks > 0 && executed >= max_callbacks)
 			budget_exhausted = TRUE;
