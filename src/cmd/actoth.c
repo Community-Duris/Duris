@@ -4722,7 +4722,7 @@ void show_toggles(P_char ch)
 		 "&+r     GMCP        :&+g %-3s    &+y|&n\r\n"
 		 "&+r   Heal        :&+g %-3s    &+y|"
 		 "&+r     Jchat       :&+g %-3s    &+y|"
-		 "&+r                 :&+g        &+y|&n\r\n"
+		 "&+r     Abort Cast  :&+g %-3s    &+y|&n\r\n"
 		 "&+y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 		 "-=-=-=-=-=-=-=-=-=-=-=-=-=-&N\r\n",
 		 ONOFF(!PLR_FLAGGED(ch, PLR_NOTELL)), ONOFF(PLR_FLAGGED(ch, PLR_BRIEF)),
@@ -4745,7 +4745,8 @@ void show_toggles(P_char ch)
 		 ONOFF(PLR2_FLAGGED(ch, PLR2_DAMAGE)), ONOFF(PLR3_FLAGGED(ch, PLR3_NOLEVEL)),
 		 ONOFF(PLR3_FLAGGED(ch, PLR3_PET_DAMAGE)), ONOFF(PLR3_FLAGGED(ch, PLR3_GUILDNAME)),
 		 ONOFF(!PLR3_FLAGGED(ch, PLR3_NOGMCP)), ONOFF(PLR2_FLAGGED(ch, PLR2_HEAL)),
-		 ONOFF(!PLR3_FLAGGED(ch, PLR3_JESTROS)));
+		 ONOFF(!PLR3_FLAGGED(ch, PLR3_JESTROS)),
+		 ONOFF(PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)));
 	send_to_char(Gbuf1, send_ch);
 
 	if (GET_LEVEL(ch) >= AVATAR)
@@ -4843,6 +4844,7 @@ static const char *toggles_list[] = { "?", // 0
 				      "guildname",
 				      "gmcp",
 				      "jchat", // 65
+				      "abort", // 66
 				      "\n" };
 
 static const char *tog_messages[][2] = {
@@ -4935,7 +4937,8 @@ static const char *tog_messages[][2] = {
 	{ "You turn off the display of your guild name.\r\n",
 	  "You turn on the display of your guild name.\r\n" },
 	{ "&+WGMCP&N data streaming enabled.\r\n", "&+WGMCP&N data streaming disabled.\r\n" },
-	{ "Jchat channel: -=&+ROFF&n=-\r\n", "Jchat channel: -=&+GON&n=-\r\n" }
+	{ "Jchat channel: -=&+ROFF&n=-\r\n", "Jchat channel: -=&+GON&n=-\r\n" },
+	{ "Spell abort is disabled.\r\n", "Spell abort is enabled.\r\n" }
 };
 
 void do_more(P_char ch, char *arg, int /*cmd*/)
@@ -5484,6 +5487,9 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 		break;
 	case 65: // jchat
 		result = plr_tog(PLR3_FLAGS(ch), PLR3_JESTROS, arg, 1);
+		break;
+	case 66: // abort
+		result = PLR3_TOG(PLR3_ABORT_CASTING);
 		break;
 	default:
 		break;

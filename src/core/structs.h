@@ -904,6 +904,7 @@ struct room_data
 #define PLR3_JESTROS BIT_13 // jestros ai channel toggle
 #define PLR3_CHAOS_STARTER_EPIC_PENDING BIT_14 /* persisted retry intent */
 #define PLR3_CHAOS_STARTER_BANK_PENDING BIT_15 /* persisted retry intent */
+#define PLR3_ABORT_CASTING BIT_16 /* allow this player to abort spells */
 
 #define SET_SURNAME(ch, number) (SET_BIT(ch->specials.act3, number))
 #define SURNAME_MASK (BIT_12 | BIT_11 | BIT_10 | BIT_9 | BIT_8 | BIT_7 | BIT_6 | BIT_5)
