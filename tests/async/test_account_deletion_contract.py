@@ -32,6 +32,7 @@ def function_body(source: str, signature: str, *, last: bool = False) -> str:
 
 
 password = function_body(ACCOUNT, "void get_account_password(")
+password_completion = function_body(ACCOUNT, "static void finish_account_password(")
 begin_delete = function_body(ACCOUNT, "void delete_account(")
 confirm_delete = function_body(ACCOUNT, "void verify_delete_account(")
 drain_guard = ACCOUNT[
@@ -50,8 +51,8 @@ format_account_lockers = function_body(
     SQL_PLAYER, "static bool sql_format_account_locker_name_list("
 )
 
-# The destructive flow reuses login's bcrypt/legacy verifier and protects password input.
-assert "account_password_matches(d->account, arg)" in password
+# Login defers bcrypt/legacy verification; deletion still verifies before its confirmation.
+assert "password_login_submit(" in password
 assert "account_password_matches(d->account, arg)" in begin_delete
 assert begin_delete.index("echo_off(d)") < begin_delete.index("account_password_matches")
 
@@ -66,8 +67,11 @@ disconnect = confirm_delete.index("close_other_account_sessions(d)")
 backend = confirm_delete.index("sql_delete_account(")
 assert fence < fence_write < disconnect < backend
 assert "if (fenced)" in confirm_delete and "cannot be cancelled" in confirm_delete
-assert "acct_blocked == ACCOUNT_BLOCK_DELETION" in password
-assert "display_account_deletion_confirmation(d, true)" in password
+assert "acct_blocked == ACCOUNT_BLOCK_DELETION" in password_completion
+assert "display_account_deletion_confirmation(d, true)" in password_completion
+assert password_completion.index("if (!password_valid)") < password_completion.index(
+    "display_account_deletion_confirmation(d, true)"
+)
 assert "account_deletion_locker_runtime_active(account_name, identities)" in confirm_delete
 
 # Every asynchronous writer that can republish live account/character state is drained.

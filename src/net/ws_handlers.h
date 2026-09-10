@@ -22,6 +22,7 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data);
 
 /* command handlers */
 void ws_cmd_login(struct descriptor_data *d, cJSON *data);
+void ws_finish_login(struct descriptor_data *d, int password_valid);
 void ws_cmd_register(struct descriptor_data *d, cJSON *data);
 void ws_cmd_durisweb_challenge(struct descriptor_data *d, cJSON *data);
 void ws_cmd_enter(struct descriptor_data *d, cJSON *data);

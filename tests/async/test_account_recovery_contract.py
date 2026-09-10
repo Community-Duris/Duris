@@ -653,16 +653,17 @@ def test_account_c() -> None:
     )
     password = body_of(account, r"\bvoid\s+get_account_password\s*\(", "get_account_password")
     check(
-        "arg[0] == '?'" in password and ordered(password, "strspn(", "account_password_matches"),
+        "arg[0] == '?'" in password and ordered(password, "strspn(", "password_login_submit"),
         "the '?' intercept tolerates trailing whitespace and precedes the password check (C8)",
     )
     check(
-        ordered(password, "account_recovery_begin_from_password_prompt(d)", "account_password_matches"),
+        ordered(password, "account_recovery_begin_from_password_prompt(d)", "password_login_submit"),
         "the intercept hands off to account_recovery_begin_from_password_prompt before matching",
     )
+    completion = body_of(account, r"\bvoid\s+finish_account_password\s*\(", "finish_account_password")
     check(
-        password.count("display_account_login_pages(d);") == 2,
-        "get_account_password still shows the login pages exactly twice",
+        completion.count("display_account_login_pages(d);") == 2,
+        "password completion preserves both email-verification login-page paths",
     )
     select = body_of(account, r"\bvoid\s+select_accountname\s*\(", "select_accountname")
     check("send_account_password_prompt(d)" in select, "select_accountname uses the prompt helper")

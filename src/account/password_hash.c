@@ -6,6 +6,14 @@
 #include <openssl/sha.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
+#include <algorithm>
+#include <condition_variable>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <thread>
 
 static char *password_hash_copy(const char *value)
 {
@@ -83,4 +91,173 @@ int password_verify_legacy_sha256(const char *password, const char *hash)
 	OPENSSL_cleanse(encoded, sizeof(encoded));
 	OPENSSL_cleanse(normalized, sizeof(normalized));
 	return valid;
+}
+
+struct password_login_job
+{
+	char password[4096] = {};
+	char hash[128] = {};
+	char *new_hash = nullptr;
+	bool upgrade_legacy = false;
+	bool started = false;
+	bool done = false;
+	bool cancelled = false;
+	int valid = 0;
+
+	~password_login_job()
+	{
+		OPENSSL_cleanse(password, sizeof(password));
+		OPENSSL_cleanse(hash, sizeof(hash));
+		if (new_hash)
+		{
+			OPENSSL_cleanse(new_hash, strlen(new_hash));
+			free(new_hash);
+		}
+	}
+};
+
+namespace
+{
+struct login_password_worker
+{
+	std::mutex mutex;
+	std::condition_variable available;
+	std::deque<std::unique_ptr<password_login_job>> jobs;
+	std::thread thread;
+	bool stopping = false;
+
+	~login_password_worker() { shutdown(); }
+
+	password_login_job *next_job()
+	{
+		for (const auto &job : jobs)
+			if (!job->started)
+				return job.get();
+		return nullptr;
+	}
+
+	void erase(password_login_job *job)
+	{
+		const auto found = std::find_if(jobs.begin(), jobs.end(), [job](const auto &entry)
+						{ return entry.get() == job; });
+		if (found != jobs.end())
+			jobs.erase(found);
+	}
+
+	void run()
+	{
+		std::unique_lock<std::mutex> lock(mutex);
+		for (;;)
+		{
+			available.wait(lock, [this] { return stopping || next_job(); });
+			if (stopping)
+				return;
+			password_login_job *job = next_job();
+			job->started = true;
+			lock.unlock();
+			const bool bcrypt = is_bcrypt_hash(job->hash);
+			if (bcrypt)
+				job->valid = bcrypt_verify_password(job->password, job->hash);
+			else
+			{
+				/* Match CRYPT2's legacy setting, using thread-local crypt state. */
+				char setting[40];
+				if (job->hash[0] == '$')
+					snprintf(setting, sizeof(setting), "%.*s", 39, job->hash);
+				else
+					snprintf(setting, sizeof(setting), "$1$%.8s$", job->hash);
+				crypt_data data = {};
+				const char *result = crypt_r(job->password, setting, &data);
+				job->valid = result && strlen(result) == strlen(job->hash) &&
+					     CRYPTO_memcmp(result, job->hash, strlen(job->hash)) ==
+						     0;
+				OPENSSL_cleanse(&data, sizeof(data));
+				OPENSSL_cleanse(setting, sizeof(setting));
+			}
+			if (job->valid && !bcrypt && job->upgrade_legacy)
+				job->new_hash = bcrypt_hash_password(job->password);
+			OPENSSL_cleanse(job->password, sizeof(job->password));
+			lock.lock();
+			job->done = true;
+			if (job->cancelled)
+				erase(job);
+		}
+	}
+
+	void shutdown()
+	{
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			stopping = true;
+			available.notify_one();
+		}
+		if (thread.joinable())
+			thread.join();
+		std::lock_guard<std::mutex> lock(mutex);
+		jobs.clear();
+	}
+};
+
+login_password_worker login_worker;
+} // namespace
+
+password_login_job *password_login_submit(const char *password, const char *hash,
+					  int upgrade_legacy)
+{
+	if (!password || !hash || !*hash || strnlen(password, 4096) >= 4096 ||
+	    strnlen(hash, 128) >= 128)
+		return nullptr;
+	std::lock_guard<std::mutex> lock(login_worker.mutex);
+	/* Includes queued, running, and unconsumed results, not just the queue. */
+	if (login_worker.stopping || login_worker.jobs.size() >= 16)
+		return nullptr;
+	try
+	{
+		if (!login_worker.thread.joinable())
+			login_worker.thread = std::thread([] { login_worker.run(); });
+		auto job = std::make_unique<password_login_job>();
+		memcpy(job->password, password, strlen(password) + 1);
+		memcpy(job->hash, hash, strlen(hash) + 1);
+		job->upgrade_legacy = upgrade_legacy != 0;
+		password_login_job *handle = job.get();
+		login_worker.jobs.push_back(std::move(job));
+		login_worker.available.notify_one();
+		return handle;
+	}
+	catch (...)
+	{
+		return nullptr;
+	}
+}
+
+int password_login_poll(password_login_job *job, const char *current_hash, int *valid,
+			char **new_hash)
+{
+	std::lock_guard<std::mutex> lock(login_worker.mutex);
+	if (!job || !job->done)
+		return 0;
+	*valid = current_hash && !strcmp(current_hash, job->hash) && job->valid;
+	*new_hash = nullptr;
+	if (*valid)
+	{
+		*new_hash = job->new_hash;
+		job->new_hash = nullptr;
+	}
+	return 1;
+}
+
+void password_login_release(password_login_job *job)
+{
+	if (!job)
+		return;
+	std::lock_guard<std::mutex> lock(login_worker.mutex);
+	if (!job->started || job->done)
+		login_worker.erase(job);
+	else
+		job->cancelled = true;
+}
+
+void password_login_shutdown(void)
+{
+	login_worker.shutdown();
 }

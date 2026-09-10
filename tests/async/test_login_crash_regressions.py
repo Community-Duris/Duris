@@ -29,6 +29,7 @@ import re
 
 root = Path(__file__).resolve().parents[2]
 account = (SRC / "account.c").read_text()
+ws_handlers = (SRC / "ws_handlers.c").read_text()
 comm = (SRC / "comm.c").read_text()
 websocket = (SRC / "websocket.c").read_text()
 prompt = (SRC / "prompt.c").read_text()
@@ -49,6 +50,21 @@ menu = account[account.index("void display_account_menu("):]
 menu = menu[:menu.index("\n}\n")]
 check("account menu preserves its NULL display sentinel",
       re.search(r"void display_account_menu\([^)]*\)\s*\{\s*if \(!arg\)", menu) is not None)
+
+login = account[account.index("void get_account_password("):account.index("static void finish_account_password(")]
+ws_login = ws_handlers[ws_handlers.index("void ws_cmd_login("):ws_handlers.index("void ws_finish_login(")]
+check("telnet and websocket logins defer expensive password work without a blocking fallback",
+      all("password_login_submit(" in handler and
+          not any(call in handler for call in ("bcrypt_verify_password(", "bcrypt_hash_password(", "CRYPT2("))
+          for handler in (login, ws_login)))
+check("pending login keeps telnet type-ahead queued",
+      comm.index("if (account_login_password_pulse(point))") < comm.index("get_casting_cmd_from_q(&point->input"))
+dispatch = ws_handlers[ws_handlers.index("void ws_handle_command("):]
+check("pending login blocks websocket commands before dispatch",
+      dispatch.index("d->login_password_job") < dispatch.index("entry.handler(d, data)"))
+close = comm[comm.index("void close_socket("):]
+check("disconnect cancels verification before releasing the account",
+      close.index("password_login_release(d->login_password_job)") < close.index("free_account("))
 
 # Once NULL has been handled, an empty or whitespace-only new password must be
 # rejected by inspecting the pointed-to character, not the pointer again.

@@ -70,6 +70,7 @@
 #include "item/enhance.h"
 #include "economy/crafting.h"
 #include "account/account_recovery.h"
+#include "account/password_hash.h"
 #include "account/account_reward_config.h"
 #include "combat/frag_cap_config.h"
 #include "world/hardcore_config.h"
@@ -887,6 +888,7 @@ void run_the_game(int port, int sslport)
 	redis_cleanup();
 	player_load_pipeline_shutdown();
 	account_recovery_shutdown();
+	password_login_shutdown();
 	critical_command_coordinator_shutdown();
 	critical_outbox_shutdown();
 	if (!_pwipe)
@@ -1613,6 +1615,10 @@ resume_game_loop:
 				 (pulse % (int)get_property("ctf.slowness", 3)))
 				continue;
 
+			/* Keep type-ahead queued until the worker's result has been applied
+			 * on this thread. Completion never retains a descriptor pointer. */
+			if (account_login_password_pulse(point))
+				continue;
 			descriptor_latency.finish();
 
 			/* check for hella long wait time here..  bandaid solution but it should (sort of) work */
@@ -2778,6 +2784,8 @@ void close_socket(struct descriptor_data *d)
 	if (d && d->player_load_request_id)
 		player_load_pipeline_cancel(d->player_load_request_id);
 	account_recovery_descriptor_closed(d);
+	password_login_release(d->login_password_job);
+	d->login_password_job = nullptr;
 
 	compress_end(d, TRUE); /* does flushing out all output break anything ? */
 

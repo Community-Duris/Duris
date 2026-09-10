@@ -15,6 +15,19 @@ extern "C"
 	int is_bcrypt_hash(const char *hash);
 	int password_verify_legacy_sha256(const char *password, const char *hash);
 
+	/* Login-only worker. Handles belong to the game thread; no account/descriptor
+	 * pointer crosses the worker boundary. A full queue fails closed. */
+	struct password_login_job;
+	struct password_login_job *password_login_submit(const char *password, const char *hash,
+							 int upgrade_legacy);
+	/* Returns zero while pending. A changed account hash invalidates the result.
+	 * On completion the caller owns *new_hash (free), then releases the handle. */
+	int password_login_poll(struct password_login_job *job, const char *current_hash,
+				int *valid, char **new_hash);
+	void password_login_release(struct password_login_job *job);
+	/* After descriptors are closed; also invoked automatically on process exit. */
+	void password_login_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

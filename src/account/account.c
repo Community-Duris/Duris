@@ -556,10 +556,20 @@ void get_account_password(P_desc d, char *arg)
 		return;
 	}
 
-	// Check password - support both bcrypt (new) and MD5 (legacy)
-	const int password_valid = account_password_matches(d->account, arg);
-	const int needs_upgrade = password_valid && !is_bcrypt_hash(d->account->acct_password);
+	if (d->login_password_job)
+		return;
+	d->login_password_websocket = false;
+	d->login_password_job = password_login_submit(
+		arg, d->account->acct_password, d->account->acct_blocked != ACCOUNT_BLOCK_DELETION);
+	if (!d->login_password_job)
+	{
+		SEND_TO_Q("Login is busy; please reconnect in a moment.\r\n", d);
+		STATE(d) = CON_FLUSH;
+	}
+}
 
+static void finish_account_password(P_desc d, int password_valid, const char *new_hash)
+{
 	if (!password_valid)
 	{
 		SEND_TO_Q("Invalid Password ... disconnecting\r\n", d);
@@ -577,20 +587,15 @@ void get_account_password(P_desc d, char *arg)
 	}
 
 	// Auto-upgrade MD5 passwords to bcrypt
-	if (needs_upgrade)
+	if (new_hash)
 	{
-		char *new_hash = bcrypt_hash_password(arg);
-		if (new_hash)
+		FREE(d->account->acct_password);
+		d->account->acct_password = str_dup(new_hash);
+		if (-1 == write_account(d->account))
 		{
-			FREE(d->account->acct_password);
-			d->account->acct_password = str_dup(new_hash);
-			free(new_hash);
-			if (-1 == write_account(d->account))
-			{
-				statuslog(56, "&+RALERT&n: account password upgrade save failed");
-				persistence_alert(AVATAR, "account", "redacted", "none", "none",
-						  "write_failed", "password upgrade save failed");
-			}
+			statuslog(56, "&+RALERT&n: account password upgrade save failed");
+			persistence_alert(AVATAR, "account", "redacted", "none", "none",
+					  "write_failed", "password upgrade save failed");
 		}
 	}
 
@@ -635,6 +640,26 @@ void get_account_password(P_desc d, char *arg)
 	STATE(d) = CON_ACCT_RMOTD;
 	return;
 #endif
+}
+
+bool account_login_password_pulse(P_desc d)
+{
+	if (!d->login_password_job)
+		return false;
+	int valid = 0;
+	char *new_hash = nullptr;
+	if (!password_login_poll(d->login_password_job,
+				 d->account ? d->account->acct_password : nullptr, &valid,
+				 &new_hash))
+		return true;
+	password_login_release(d->login_password_job);
+	d->login_password_job = nullptr;
+	if (d->login_password_websocket)
+		ws_finish_login(d, valid);
+	else
+		finish_account_password(d, valid, new_hash);
+	free(new_hash);
+	return true;
 }
 
 void display_account_menu(P_desc d, char *arg)

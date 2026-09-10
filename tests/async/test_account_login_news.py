@@ -25,7 +25,7 @@ def function_body(source, signature):
 
 
 pages = function_body(ACCOUNT, "void display_account_login_pages(")
-password = function_body(ACCOUNT, "void get_account_password(")
+password = function_body(ACCOUNT, "static void finish_account_password(")
 new_account = function_body(ACCOUNT, "void verify_new_account_information(")
 
 notice = "Type 'news' in game to read the latest updates."
