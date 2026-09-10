@@ -1,4 +1,5 @@
 #include "persistence/latency_trace.h"
+#include "core/clock_utils.h"
 
 #include <pthread.h>
 #include <stdbool.h>
@@ -13,6 +14,7 @@ static latency_entry latency_window_top[LATENCY_TRACE_TOP_COUNT];
 static int latency_window_top_count = 0;
 static uint64_t latency_window_sample_count = 0;
 static uint64_t latency_window_dropped_section_samples = 0;
+static uint64_t latency_window_dropped_contended_samples = 0;
 static uint64_t latency_window_start_utc_us = 0;
 static uint64_t latency_window_start_mono_us = 0;
 static char latency_boot_id[LATENCY_TRACE_BOOT_ID_LENGTH] = "uninitialized";
@@ -22,11 +24,11 @@ static uint64_t latency_pulse_start_mono_us = 0;
 
 static uint64_t latency_clock_us(clockid_t clock_id)
 {
-	struct timespec now = {};
+	uint64_t result = 0;
 
-	if (clock_gettime(clock_id, &now) != 0 || now.tv_sec < 0)
+	if (!clock_read_microseconds(clock_id, &result, clock_gettime))
 		return 0;
-	return (uint64_t)now.tv_sec * 1000000ULL + (uint64_t)now.tv_nsec / 1000ULL;
+	return result;
 }
 
 uint64_t latency_trace_monotonic_us(void)
@@ -147,21 +149,47 @@ static void latency_update_top(const char *name, uint64_t duration_us, uint64_t 
 	}
 }
 
+static void latency_trace_record_locked(const char *name, uint64_t duration_us, uint64_t tick)
+{
+	latency_trace_initialize_locked();
+	latency_window_sample_count++;
+	latency_update_section(name, duration_us);
+	latency_update_top(name, duration_us, tick);
+}
+
 void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick)
 {
 #if LATENCY_TRACE_ENABLED
 	if (!name)
 		return;
 	pthread_mutex_lock(&latency_mutex);
-	latency_trace_initialize_locked();
-	latency_window_sample_count++;
-	latency_update_section(name, duration_us);
-	latency_update_top(name, duration_us, tick);
+	latency_trace_record_locked(name, duration_us, tick);
 	pthread_mutex_unlock(&latency_mutex);
 #else
 	(void)name;
 	(void)duration_us;
 	(void)tick;
+#endif
+}
+
+bool latency_trace_record_nonblocking(const char *name, uint64_t duration_us, uint64_t tick)
+{
+#if LATENCY_TRACE_ENABLED
+	if (!name)
+		return false;
+	if (pthread_mutex_trylock(&latency_mutex) != 0)
+	{
+		__atomic_fetch_add(&latency_window_dropped_contended_samples, 1, __ATOMIC_RELAXED);
+		return false;
+	}
+	latency_trace_record_locked(name, duration_us, tick);
+	pthread_mutex_unlock(&latency_mutex);
+	return true;
+#else
+	(void)name;
+	(void)duration_us;
+	(void)tick;
+	return false;
 #endif
 }
 
@@ -183,6 +211,7 @@ void latency_trace_reset(void)
 	const uint64_t utc_us = latency_clock_us(CLOCK_REALTIME);
 	const uint64_t mono_us = latency_clock_us(CLOCK_MONOTONIC);
 	latency_reset_locked(utc_us, mono_us);
+	__atomic_exchange_n(&latency_window_dropped_contended_samples, 0, __ATOMIC_RELAXED);
 	pthread_mutex_unlock(&latency_mutex);
 #endif
 }
@@ -205,6 +234,8 @@ void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot)
 	snapshot->top_count = latency_window_top_count;
 	snapshot->sample_count = latency_window_sample_count;
 	snapshot->dropped_section_samples = latency_window_dropped_section_samples;
+	snapshot->dropped_contended_samples =
+		__atomic_exchange_n(&latency_window_dropped_contended_samples, 0, __ATOMIC_RELAXED);
 	snapshot->window_start_utc_us = latency_window_start_utc_us;
 	snapshot->window_end_utc_us = utc_us;
 	snapshot->window_start_mono_us = latency_window_start_mono_us;
@@ -243,10 +274,11 @@ void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *sna
 	fprintf(output,
 		"boot=%s window_start_utc_us=%" PRIu64 " window_end_utc_us=%" PRIu64
 		" window_start_mono_us=%" PRIu64 " window_end_mono_us=%" PRIu64 " samples=%" PRIu64
-		" dropped_section_samples=%" PRIu64 "\n",
+		" dropped_section_samples=%" PRIu64 " dropped_contended_samples=%" PRIu64 "\n",
 		snapshot->boot_id, snapshot->window_start_utc_us, snapshot->window_end_utc_us,
 		snapshot->window_start_mono_us, snapshot->window_end_mono_us,
-		snapshot->sample_count, snapshot->dropped_section_samples);
+		snapshot->sample_count, snapshot->dropped_section_samples,
+		snapshot->dropped_contended_samples);
 	fprintf(output, "%-30s %12s %12s %12s %12s\n", "Section", "min(us)", "max(us)", "avg(us)",
 		"samples");
 	for (int index = 0; index < snapshot->section_count; ++index)

@@ -7,6 +7,7 @@ root = Path(__file__).resolve().parents[2]
 header = (SRC / "latency_trace.h").read_text()
 makefile = (SRC / "Makefile").read_text()
 impl = (SRC / "latency_trace.c").read_text()
+persistence_queue = (SRC / "persistence_queue.c").read_text()
 
 assert "_latency_buf" not in header
 assert "_latency_buf" not in impl
@@ -20,5 +21,15 @@ assert "LATENCY_TRACE_TICK_UNAVAILABLE" in header
 assert "latency_trace_snapshot_capture" in header
 assert "latency_trace_snapshot_dump" in header
 assert "dropped_section_samples" in header
+assert "dropped_contended_samples" in header
+assert "latency_trace_record_nonblocking" in header
+assert "pthread_mutex_trylock(&latency_mutex)" in impl
+enqueue = persistence_queue[
+    persistence_queue.index("int persistence_scalar_event_queue_enqueue") :
+    persistence_queue.index("int persistence_scalar_event_queue_dequeue")
+]
+unlock = enqueue.index("pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);")
+for call in ("scalar_enq_drop", "scalar_enq_ok"):
+    assert enqueue.index(f'latency_trace_record_nonblocking("{call}"') > unlock
 
 print("process-global latency trace checks passed")

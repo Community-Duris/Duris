@@ -113,6 +113,18 @@ int main()
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
 
+	const fake_sample invalid_nanoseconds[] = {
+		{ 0, 65, 1000000000L },
+		{ 0, 66, 0 },
+	};
+	set_samples(invalid_nanoseconds,
+		    sizeof invalid_nanoseconds / sizeof invalid_nanoseconds[0]);
+	PROFILE_START(probe);
+	PROFILE_END(probe);
+	assert(probe_profile.calls == 5);
+	assert(probe_profile.total_inside_us == 90000);
+	assert(PROFILE_LAST_US(probe) == 0);
+
 	const fake_sample backwards[] = {
 		{ 0, 70, 0 },
 		{ 0, 69, 0 },
@@ -120,7 +132,7 @@ int main()
 	set_samples(backwards, sizeof backwards / sizeof backwards[0]);
 	PROFILE_START(probe);
 	PROFILE_END(probe);
-	assert(probe_profile.calls == 5);
+	assert(probe_profile.calls == 6);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
 
@@ -129,7 +141,7 @@ int main()
 	PROFILE_START(probe);
 	PROFILE_END(probe);
 	assert(sample_index == 0);
-	assert(probe_profile.calls == 5);
+	assert(probe_profile.calls == 6);
 
 	puts("monotonic profile timer runtime checks passed");
 	return 0;
@@ -178,10 +190,15 @@ int main()
 
 
 profile = (SRC / "core" / "profile.h").read_text()
+clock_utils = (SRC / "core" / "clock_utils.h").read_text()
 events = (SRC / "world" / "new_events.c").read_text()
 debug = (SRC / "core" / "debug.c").read_text()
 
-assert contains(profile, "PROFILE_CLOCK_GETTIME(CLOCK_MONOTONIC, &now)")
+assert contains(
+    profile,
+    "clock_read_microseconds(CLOCK_MONOTONIC, result, PROFILE_CLOCK_GETTIME)",
+)
+assert contains(clock_utils, "seconds > (UINT64_MAX - fractional_us) / 1000000ULL")
 assert not contains(profile, "clock()")
 assert not contains(events, "CLOCKS_PER_SEC")
 assert contains(events, "duration_us >= 50000")

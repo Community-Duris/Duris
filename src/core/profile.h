@@ -1,8 +1,9 @@
 #ifndef __PROFILE_H__
 #define __PROFILE_H__
 
+#include "core/clock_utils.h"
+
 #include <stdint.h>
-#include <time.h>
 
 #define DO_PROFILE
 
@@ -27,13 +28,7 @@ typedef struct
 
 static inline bool profile_monotonic_us(uint64_t *result)
 {
-	struct timespec now = {};
-
-	if (!result || PROFILE_CLOCK_GETTIME(CLOCK_MONOTONIC, &now) != 0 || now.tv_sec < 0 ||
-	    now.tv_nsec < 0 || now.tv_nsec >= 1000000000L)
-		return false;
-	*result = (uint64_t)now.tv_sec * 1000000ULL + (uint64_t)now.tv_nsec / 1000ULL;
-	return true;
+	return clock_read_microseconds(CLOCK_MONOTONIC, result, PROFILE_CLOCK_GETTIME);
 }
 
 static inline void profile_timer_rebase(profile_timer *timer)

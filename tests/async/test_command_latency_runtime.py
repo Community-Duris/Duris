@@ -51,10 +51,8 @@ static int count_contains(const captured_lines &captured, const char *needle)
 
 int main()
 {
-	assert(command_latency_elapsed_us(100, 149) == 49);
-	assert(command_latency_elapsed_us(100, 99) == 0);
-	assert(command_latency_elapsed_us(0, 149) == 0);
 	assert(!strcmp(command_latency_kind_name(COMMAND_LATENCY_SSL), "ssl"));
+	assert(!strcmp(command_latency_kind_name(COMMAND_LATENCY_DESCRIPTOR), "descriptor"));
 
 	command_latency_tracker thresholds = {};
 	command_latency_event playing = {};
@@ -108,6 +106,7 @@ int main()
 		COMMAND_LATENCY_PAGER,
 		COMMAND_LATENCY_EDITOR,
 		COMMAND_LATENCY_SSL,
+		COMMAND_LATENCY_DESCRIPTOR,
 	};
 	for (command_latency_kind kind : kinds)
 	{
@@ -120,9 +119,9 @@ int main()
 	command_latency_report(&aggregate, 200000, "boot-b", 77, 123, capture,
 			       &aggregate_output);
 	assert(aggregate.slow_count == 0);
-	assert(aggregate.measured_us == 50000);
-	assert(any_contains(aggregate_output, "maintenance_residual_us=150000"));
-	assert(count_contains(aggregate_output, "COMMAND SWEEP KIND:") == 5);
+	assert(aggregate.measured_us == 60000);
+	assert(any_contains(aggregate_output, "unattributed_sweep_us=140000"));
+	assert(count_contains(aggregate_output, "COMMAND SWEEP KIND:") == 6);
 	for (command_latency_kind kind : kinds)
 	{
 		const std::string expected =
@@ -160,6 +159,66 @@ int main()
 	assert(any_contains(capped_output, "suppressed=4"));
 	assert(capped_output.lines.size() <= COMMAND_LATENCY_MAX_REPORTS + 2);
 
+	command_latency_report_state report_state = {};
+	captured_lines first_full;
+	command_latency_report_throttled(&report_state, &thresholds, 260000, "boot-f", 1000,
+					  100000, capture, &first_full);
+	assert(any_contains(first_full, "COMMAND OP SLOW:"));
+	assert(!any_contains(first_full, "COMMAND REPORT THROTTLED:"));
+
+	captured_lines first_throttled;
+	command_latency_report_throttled(&report_state, &capped, 700000, "boot-f", 1001,
+					  101000, capture, &first_throttled);
+	assert(first_throttled.lines.size() == 1);
+	assert(any_contains(first_throttled, "COMMAND REPORT THROTTLED:"));
+	assert(any_contains(first_throttled, "slow_operations=12"));
+	assert(any_contains(first_throttled, "worst_operation=command11"));
+	assert(any_contains(first_throttled, "worst_duration_us=50011"));
+
+	captured_lines second_throttled;
+	command_latency_report_throttled(&report_state, &delayed_ssl, 50000, "boot-f", 1002,
+					  102000, capture, &second_throttled);
+	assert(second_throttled.lines.size() == 1);
+	assert(any_contains(second_throttled, "worst_kind=ssl"));
+
+	captured_lines next_full;
+	command_latency_report_throttled(&report_state, &thresholds, 260000, "boot-f", 1004,
+					  104000, capture, &next_full);
+	assert(any_contains(next_full, "COMMAND REPORT THROTTLE:"));
+	assert(any_contains(next_full, "suppressed_reports=2"));
+	assert(any_contains(next_full, "suppressed_slow_operations=13"));
+	assert(any_contains(next_full, "suppressed_worst_tick=1001"));
+	assert(any_contains(next_full, "suppressed_worst_pulse_start_mono_us=101000"));
+	assert(any_contains(next_full, "suppressed_worst_operation=command11"));
+	assert(any_contains(next_full, "suppressed_worst_duration_us=50011"));
+	assert(any_contains(next_full, "COMMAND OP SLOW:"));
+
+	command_latency_log_buffer report_buffer;
+	command_latency_log_buffer_reset(&report_buffer, "stamp::");
+	command_latency_log_buffer_collect("first", &report_buffer);
+	command_latency_log_buffer_collect("second", &report_buffer);
+	assert(!strcmp(report_buffer.text, "first\nstamp::second"));
+
+	command_latency_log_buffer_reset(&report_buffer, nullptr);
+	assert(report_buffer.length == 0);
+	assert(report_buffer.text[0] == '\0');
+	assert(!strcmp(report_buffer.continuation_prefix, "timestamp-unavailable::"));
+
+	const std::string nearly_full(COMMAND_LATENCY_REPORT_BUFFER_SIZE - 3, 'x');
+	command_latency_log_buffer_collect(nearly_full.c_str(), &report_buffer);
+	const size_t nearly_full_length = report_buffer.length;
+	command_latency_log_buffer_collect("cannot-fit-after-prefix", &report_buffer);
+	assert(report_buffer.length == nearly_full_length);
+	assert(report_buffer.text[report_buffer.length] == '\0');
+
+	command_latency_log_buffer_reset(&report_buffer, "stamp::");
+	const std::string oversized(COMMAND_LATENCY_REPORT_BUFFER_SIZE + 100, 'y');
+	command_latency_log_buffer_collect(oversized.c_str(), &report_buffer);
+	assert(report_buffer.length == COMMAND_LATENCY_REPORT_BUFFER_SIZE - 1);
+	assert(report_buffer.text[report_buffer.length] == '\0');
+	command_latency_log_buffer_collect("ignored", &report_buffer);
+	assert(report_buffer.length == COMMAND_LATENCY_REPORT_BUFFER_SIZE - 1);
+
 	command_latency_tracker quiet = {};
 	command_latency_record(&quiet, &playing, 49999);
 	captured_lines quiet_output;
@@ -186,18 +245,29 @@ assert contains(dispatch, "COMMAND_LATENCY_PAGER")
 assert contains(dispatch, "COMMAND_LATENCY_EDITOR")
 assert contains(dispatch, "COMMAND_LATENCY_PLAYING")
 assert contains(dispatch, "COMMAND_LATENCY_NANNY")
+assert contains(dispatch, "descriptor_latency.finish();")
 assert contains(comm, "COMMAND_LATENCY_SSL")
+assert contains(comm, "COMMAND_LATENCY_DESCRIPTOR")
 assert contains(
     comm,
-    "command_latency_report(&command_latency, command_sweep_us, "
-    "latency_trace_boot_id(), loop_tick, loop_start_mono_us",
+    "command_latency_report_throttled(\n"
+    "\t\t\t&command_report_state, &command_latency, command_sweep_us",
 )
 reporting_start = index(comm, "command_latency_log_buffer command_report")
 reporting_end = index(comm, "PROFILE_START(prompts)", reporting_start)
 reporting = comm[reporting_start:reporting_end]
 assert contains(reporting, 'logit(LOG_STATUS, "%s", command_report.text);')
 assert not contains(reporting, "statuslog(")
-assert contains(comm, "COMMAND_LATENCY_REPORT_INTERVAL_PULSES")
+assert contains(reporting, "command_latency_log_buffer command_report;")
+assert not contains(reporting, "command_latency_log_buffer command_report = {}")
+assert contains(comm, "prepare_command_latency_log_buffer(&command_report);")
+assert contains(comm, "command_latency_log_buffer_collect, &command_report")
+assert contains(comm, "continuation_prefix")
+assert contains(comm, "timestamp-unavailable::")
+assert contains(
+    (SRC / "net" / "command_latency.h").read_text(),
+    "COMMAND_LATENCY_REPORT_INTERVAL_PULSES",
+)
 assert index(comm, 'latency_trace_record("commands", command_sweep_us') < reporting_start
 assert contains(makefile, "net/command_latency.o")
 assert not contains((SRC / "net" / "command_latency.c").read_text(), "do_profile")

@@ -29,8 +29,11 @@ of the pass, including samples written after `nevent_advance_tick`. Slow tick,
 event-budget, event-catch-up, and slow-event records include the same boot ID,
 absolute tick, and monotonic pulse-start value. Persistence-worker samples use
 an explicit unavailable-tick sentinel, rendered as `-`. The unused scope macro
-uses the absolute scheduler tick. The process-global trace made the old utility
-and persistence dump/reset wrappers redundant, so they were removed. The
+was removed because it had no call sites and depended on a non-standard GNU
+statement expression. The process-global trace made the old utility and
+persistence dump/reset wrappers redundant, so they were removed. Scalar queue
+producers use a nonblocking trace path after releasing their queue mutex;
+snapshots disclose samples dropped because the trace mutex was contended. The
 fallback file-write sample also moved from process CPU time to monotonic elapsed
 time while its producer was being audited.
 
@@ -38,12 +41,14 @@ A native ASan/UBSan regression exercises bounded window reset, 64-bit ticks,
 unavailable worker ticks, distinct process identities, identical dual rendering,
 empty windows, file-open fallback, exact top ten after more than 4096 records,
 section-name equality across translation units, visible section-table saturation,
-and concurrent producers/snapshots with no summary-count loss or duplication.
-The maintained server build and relevant existing tests pass; commands and
-legacy profiler behavior are unchanged at this checkpoint.
+nonblocking producers, and concurrent producers/snapshots with no summary-count
+loss or duplication. The maintained server build and relevant existing tests
+pass; commands and legacy profiler behavior are unchanged at this checkpoint.
 
 The second implementation increment replaces `clock_t` profiler state with a
-shared monotonic microsecond timer. All section and per-event accumulators,
+shared monotonic microsecond timer. One checked `timespec` conversion helper is
+used by both the profiler and trace clocks, while the game loop and command
+tracker use the trace clock and elapsed helper directly. All section and per-event accumulators,
 function signatures, saves, averages, and the 50 ms `LONG EVENT` threshold now
 use explicit microseconds. Failed or retrograde clock reads produce a zero
 duration rather than an underflow while preserving call counts. Enabling the
@@ -63,10 +68,11 @@ contracts verify explicit microsecond output and the inclusive 50,000 us event
 threshold.
 
 The third implementation increment adds a fixed-size command-sweep tracker. It
-times playing dispatch, nanny, pager, editor, and SSL negotiation independently
-of debug profiling. At 50,000 us it emits a correlated slow-operation record;
-at the same sweep threshold it emits operation counts/totals/maxima plus the
-unmeasured descriptor-maintenance residual. Labels are copied before dispatch,
+times playing dispatch, nanny, pager, editor, SSL negotiation, and the remaining
+per-descriptor sweep work independently of debug profiling. At 50,000 us it
+emits a correlated slow-operation record; at the same sweep threshold it emits
+operation counts/totals/maxima plus explicitly labeled `unattributed_sweep_us`
+for instrumentation and enclosing-loop overhead. Labels are copied before dispatch,
 so commands that extract a character or close a descriptor cannot invalidate
 diagnostic data. Playing records contain only a bounded sanitized first token
 (the command verb); arbitrary arguments are never retained. A secret entered as
@@ -76,14 +82,18 @@ nanny, pager, and editor records never retain their input. Player identity is
 bounded and sanitized as well.
 
 Each detailed report is capped at the eight slowest operations plus one summary
-and at most five fixed kind summaries. The lines are collected into one bounded
-buffer and written with one status-log call, without walking the descriptor list.
-During a sustained incident, full reports are limited to one per four pulses;
-the next emitted report discloses the number suppressed by that throttle. The
-slowest operation is always retained, and the summary separately discloses how
-many operations were suppressed by the per-pulse cap. Fast sweeps emit nothing.
-The tracker lives in one small module used by all five descriptor call sites;
-the surrounding dequeue and dispatch selection is unchanged.
+and at most six fixed kind summaries. The lines are collected into one bounded
+buffer and written with one status-log call, without walking the descriptor list;
+each continuation line receives the same wall-clock prefix. During a sustained
+incident, full reports are limited to one per four pulses, while every intervening
+slow pulse emits one compact line containing its totals and worst operation. The
+next full report discloses the number of throttled reports, their slow-operation
+count, and the worst suppressed operation with its original tick and pulse start.
+The per-pulse summary separately discloses operations suppressed by the eight-item
+cap. Fast sweeps emit nothing. SSL counts include negotiation attempts that round
+to zero microseconds; their totals and maxima, rather than count alone, indicate
+cost. The tracker lives in one small module shared by all dispatch paths and the
+descriptor-maintenance scope; dequeue and dispatch selection are unchanged.
 
 ## Verification and limits
 
@@ -204,7 +214,7 @@ both per-pulse and cross-pulse suppression.
   diagnostic headers, plus monotonic pulse-start time, so records can be joined
   within a run and distinguished across restarts. A modulo-to-tick replacement
   alone does not supply that mapping.
-- Update the unused `LATENCY_TRACE` convenience path consistently. Audit all
+- Remove the unused, non-standard `LATENCY_TRACE` convenience path. Audit all
   producers: persistence records currently pass zero. Represent their tick as
   unavailable unless a safe explicit context is supplied; do not read mutable
   loop state from workers or silently imply that those records belong to tick 0.
@@ -263,8 +273,9 @@ attribution, correlation, wrong elapsed units, or inconsistent reporting windows
 Reuse existing status logging and timing rather than introduce a metrics backend.
 Do not rewrite `cmd.debug`, tune scheduler budgets, optimize DB/DNS/world scans,
 or duplicate the casting queue repair without measurements establishing need.
-A wholesale descriptor-loop refactor is optional and deferred; residual sweep
-measurement covers the immediate attribution requirement.
+A wholesale descriptor-loop refactor remains unnecessary; a bounded scope timer
+attributes the existing descriptor-maintenance path without changing its control
+flow, while the remaining sweep residual covers instrumentation overhead.
 
 For implementation, add focused behavioral regressions under `tests/async/`
 covering the acceptance cases above; source-string checks alone cannot establish
@@ -350,8 +361,8 @@ git diff --check
 ```
 
 The new native test runs under ASan/UBSan. It covers 49,999/50,000/200,000 us
-durations with no profiler dependency, all five kinds, aggregate short work,
-maintenance residual, pre-dispatch copied identity, argument and nanny-input
+durations with no profiler dependency, all six kinds, aggregate short work,
+descriptor maintenance and unattributed sweep time, pre-dispatch copied identity, argument and nanny-input
 redaction, control-character sanitization, exact 64-bit correlation fields,
 SSL attribution, output capping, suppression counts, and slowest retention.
 Existing source contracts confirm pager/editor/playing/nanny selection and the
@@ -399,11 +410,13 @@ git diff --check
 All 437 Python regressions and the native signal-handler gate passed. The build
 covered the server, area editor, area generators, migration tools, and flatfile
 targets. The focused sanitizer tests additionally cover command-report bounds
-and correlation, failed and retrograde clock reads, second-boundary-safe scope
-timing, unavailable tick rendering, content-equal section labels, visible
-section-table saturation, concurrent trace snapshots, and the profiler rebase
-inside an unmatched outer command scope. Database-container tests were not run;
-this review hardening changes no schema or database behavior.
+and correlation, full/throttled report sequencing, cross-pulse worst-event
+retention, bounded multi-line collection, failed and retrograde clock reads,
+unavailable tick rendering, content-equal section labels, visible section-table
+saturation, concurrent trace snapshots, nonblocking producer accounting, and
+the profiler rebase inside an unmatched outer command scope.
+Database-container tests were not run; this review hardening changes no schema
+or database behavior.
 
 ### Local correlated runtime smoke
 
@@ -438,7 +451,7 @@ next immutable trace window retained `commands=430575 us` and
 The slow-operation output was exactly one operation, one sweep summary, and one
 kind summary. It identified `kind=nanny`, numeric connection state, and no
 player or input (`player_id=-1`, `player=-`, `operation=nanny`), with
-`suppressed=0` and a 4 us maintenance residual. An automated post-run check
+`suppressed=0` and 4 us of unattributed sweep time. An automated post-run check
 joined the operation, sweep, slow tick, and trace window using emitted fields
 alone and confirmed that none of the configured account, password, or character
 values appeared in any command diagnostic. No production system was contacted.

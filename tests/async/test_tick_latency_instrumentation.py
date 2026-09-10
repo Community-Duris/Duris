@@ -34,8 +34,9 @@ checks = []
 
 checks.append((
     "a monotonic clock helper exists",
-    contains(comm, "static double loop_monotonic_seconds(void)") and
-    contains(comm, "clock_gettime(CLOCK_MONOTONIC, &now)")
+    contains(comm, "static uint64_t loop_monotonic_us(void)") and
+    contains(comm, "latency_trace_monotonic_us()") and
+    contains(comm, "LATENCY CLOCK FAILURE:")
 ))
 
 match = re.search(r"void game_loop\(int port, int sslport\)\s*\{.*?\n\}", comm, re.S)
@@ -52,10 +53,11 @@ if loop:
     ))
     checks.append((
         "every reported section is timed with the monotonic helper",
-        all(contains(loop, f"double {name}_begin = loop_monotonic_seconds();")
-            for name in ("loop_time", "connections", "prompts",
+        all(contains(loop, f"const uint64_t {name}_begin_us = loop_monotonic_us();")
+            for name in ("connections", "prompts",
                          "activities", "combat", "ne_events",
                          "affect_and_points")) and
+        contains(loop, "const uint64_t loop_time_begin_us = loop_monotonic_us();") and
         contains(loop, "const uint64_t command_sweep_started_us =")
     ))
     checks.append((
@@ -100,16 +102,18 @@ if loop:
         loop.count("latency_trace_snapshot_dump(") == 2
     ))
     checks.append((
-        "trace conversions reject failed or non-finite elapsed samples",
-        contains(comm, "static uint64_t latency_us_from_seconds(double seconds)") and
-        contains(comm, "!std::isfinite(seconds) || seconds <= 0.0") and
-        contains(comm, "std::numeric_limits<double>::quiet_NaN()") and
-        not re.search(r"\(uint64_t\)\([^;\n]*1000000\.0", loop)
+        "trace timing uses guarded integer microseconds throughout",
+        contains(loop, "latency_trace_elapsed_us(") and
+        not contains(comm, "loop_monotonic_seconds") and
+        not contains(comm, "latency_us_from_seconds") and
+        not contains(comm, "quiet_NaN") and
+        not re.search(r"\(uint64_t\)\([^;\n]*1000000\.0", loop) and
+        contains(loop, "MIN(loop_us, (uint64_t)timeout.tv_usec)")
     ))
     checks.append((
         "command trace timing excludes command-report emission",
         loop.index('latency_trace_record("commands", command_sweep_us') <
-        loop.index("command_latency_report(&command_latency")
+        loop.index("command_latency_report_throttled(")
     ))
 
 failed = [name for name, ok in checks if not ok]

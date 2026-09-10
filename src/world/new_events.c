@@ -1682,29 +1682,30 @@ void ne_events(void)
 	char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
 	const char *trace_tick =
 		latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+	const char *trace_boot_id = latency_trace_boot_id();
+	const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 	if (deferred > 0)
 	{
 		logit(LOG_STATUS,
 		      "NEVENT BUDGET: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 		      " pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      latency_trace_boot_id(), trace_tick, latency_trace_pulse_start_monotonic_us(),
-		      pulse, loop_us, scanned, executed, deferred, nevent_catchup_debt,
-		      nevent_catchup_debt_estimated_us, nevent_oldest_deferred_due_tick(),
-		      nevent_catchup_quota, catchup_executed, max_deferral_seen, max_late_ticks,
-		      max_late_name, max_late_due, max_late_deferral, nevent_catchup_extension_us,
-		      nevent_avg_callback_us, slowest_name ? slowest_name : "unknown", slowest_us,
-		      ne_event_counter);
+		      trace_boot_id, trace_tick, trace_pulse_start_us, pulse, loop_us, scanned,
+		      executed, deferred, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
+		      nevent_oldest_deferred_due_tick(), nevent_catchup_quota, catchup_executed,
+		      max_deferral_seen, max_late_ticks, max_late_name, max_late_due,
+		      max_late_deferral, nevent_catchup_extension_us, nevent_avg_callback_us,
+		      slowest_name ? slowest_name : "unknown", slowest_us, ne_event_counter);
 	}
 	if (nevent_catchup_quota > 0 || new_debt > 0)
 	{
 		logit(LOG_STATUS,
 		      "NEVENT CATCHUP: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 		      " pulse=%d debt=%ld debt_estimated_us=%llu oldest_due=%llu remaining_pulses=%d quota=%ld extra_callbacks=%ld executed=%ld extension_us=%ld avg_callback_us=%ld new_debt=%ld",
-		      latency_trace_boot_id(), trace_tick, latency_trace_pulse_start_monotonic_us(),
-		      pulse, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
-		      nevent_oldest_deferred_due_tick(), nevent_catchup_remaining,
-		      nevent_catchup_quota, nevent_catchup_extra_callbacks, catchup_executed,
-		      nevent_catchup_extension_us, nevent_avg_callback_us, new_debt);
+		      trace_boot_id, trace_tick, trace_pulse_start_us, pulse, nevent_catchup_debt,
+		      nevent_catchup_debt_estimated_us, nevent_oldest_deferred_due_tick(),
+		      nevent_catchup_remaining, nevent_catchup_quota,
+		      nevent_catchup_extra_callbacks, catchup_executed, nevent_catchup_extension_us,
+		      nevent_avg_callback_us, new_debt);
 	}
 	nevent_finish_catchup_pulse();
 	/* Include scheduler preparation, cleanup, and diagnostics already emitted
@@ -1730,8 +1731,8 @@ void ne_events(void)
 		logit(LOG_STATUS,
 		      "NEVENT SLOW: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 		      " pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      latency_trace_boot_id(), trace_tick, latency_trace_pulse_start_monotonic_us(),
-		      pulse, nevent_last_pulse_total_us, scanned, executed,
+		      trace_boot_id, trace_tick, trace_pulse_start_us, pulse,
+		      nevent_last_pulse_total_us, scanned, executed,
 		      slowest_name ? slowest_name : "unknown", slowest_us, ne_event_counter);
 	}
 	nevent_assert_pool_accounting("ne_events");

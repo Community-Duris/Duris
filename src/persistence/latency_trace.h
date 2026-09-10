@@ -6,6 +6,7 @@
 #define __LATENCY_TRACE_H__
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -44,6 +45,7 @@ typedef struct
 	int top_count;
 	uint64_t sample_count;
 	uint64_t dropped_section_samples;
+	uint64_t dropped_contended_samples;
 	uint64_t window_start_utc_us;
 	uint64_t window_end_utc_us;
 	uint64_t window_start_mono_us;
@@ -53,6 +55,7 @@ typedef struct
 
 void latency_trace_init(void);
 void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick);
+bool latency_trace_record_nonblocking(const char *name, uint64_t duration_us, uint64_t tick);
 void latency_trace_reset(void);
 void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot);
 void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *snapshot);
@@ -71,19 +74,5 @@ static inline const char *latency_trace_format_tick(uint64_t tick,
 	snprintf(buffer, LATENCY_TRACE_TICK_STRING_LENGTH, "%" PRIu64, tick);
 	return buffer;
 }
-
-/*
- * Convenience form for game-thread scopes. Call sites outside the game loop
- * should call latency_trace_record with LATENCY_TRACE_TICK_UNAVAILABLE instead
- * of borrowing mutable loop state from another thread.
- */
-#define LATENCY_TRACE(name)                                                                   \
-	for (uint64_t _lt_start_us = latency_trace_monotonic_us(), _lt_once = 1; _lt_once;    \
-	     _lt_once = 0, ({                                                                 \
-		     const uint64_t _lt_end_us = latency_trace_monotonic_us();                \
-		     latency_trace_record(name,                                               \
-					  latency_trace_elapsed_us(_lt_start_us, _lt_end_us), \
-					  latency_trace_current_tick());                      \
-	     }))
 
 #endif /* __LATENCY_TRACE_H__ */

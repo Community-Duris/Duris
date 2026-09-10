@@ -19,12 +19,21 @@ HARNESS = r'''
 
 static constexpr uint64_t CONCURRENT_RECORDS = 50000;
 static bool producer_done = false;
+static bool nonblocking_producer_done = false;
 
 static void *record_concurrently(void *)
 {
 	for (uint64_t index = 0; index < CONCURRENT_RECORDS; ++index)
 		latency_trace_record("concurrent", index, index);
 	__atomic_store_n(&producer_done, true, __ATOMIC_RELEASE);
+	return nullptr;
+}
+
+static void *record_nonblocking_concurrently(void *)
+{
+	for (uint64_t index = 0; index < CONCURRENT_RECORDS; ++index)
+		latency_trace_record_nonblocking("nonblocking-concurrent", index, index);
+	__atomic_store_n(&nonblocking_producer_done, true, __ATOMIC_RELEASE);
 	return nullptr;
 }
 
@@ -78,7 +87,16 @@ int main(int argc, char **argv)
 	latency_trace_snapshot_capture(&first);
 	assert(first.sample_count == 1);
 	assert(first.dropped_section_samples == 0);
+	assert(first.dropped_contended_samples == 0);
 	assert(max_for(&first, "spike") == 900);
+
+	latency_trace_reset();
+	assert(latency_trace_record_nonblocking("nonblocking", 25, 8));
+	latency_trace_snapshot nonblocking = {};
+	latency_trace_snapshot_capture(&nonblocking);
+	assert(nonblocking.sample_count == 1);
+	assert(nonblocking.dropped_contended_samples == 0);
+	assert(max_for(&nonblocking, "nonblocking") == 25);
 
 	latency_trace_record("spike", 100, UINT64_C(1) << 40);
 	latency_trace_record("worker", 50, LATENCY_TRACE_TICK_UNAVAILABLE);
@@ -142,6 +160,7 @@ int main(int argc, char **argv)
 	assert(empty.section_count == 0);
 	assert(empty.top_count == 0);
 	assert(empty.dropped_section_samples == 0);
+	assert(empty.dropped_contended_samples == 0);
 
 	latency_trace_reset();
 	producer_done = false;
@@ -160,20 +179,26 @@ int main(int argc, char **argv)
 	captured += remainder.sample_count;
 	assert(captured == CONCURRENT_RECORDS);
 
+	latency_trace_reset();
+	nonblocking_producer_done = false;
+	assert(!pthread_create(&producer, nullptr, record_nonblocking_concurrently, nullptr));
+	uint64_t accounted = 0;
+	while (!__atomic_load_n(&nonblocking_producer_done, __ATOMIC_ACQUIRE))
+	{
+		latency_trace_snapshot concurrent = {};
+		latency_trace_snapshot_capture(&concurrent);
+		accounted += concurrent.sample_count + concurrent.dropped_contended_samples;
+	}
+	assert(!pthread_join(producer, nullptr));
+	latency_trace_snapshot nonblocking_remainder = {};
+	latency_trace_snapshot_capture(&nonblocking_remainder);
+	accounted += nonblocking_remainder.sample_count +
+		     nonblocking_remainder.dropped_contended_samples;
+	assert(accounted == CONCURRENT_RECORDS);
+
 	latency_trace_begin_pulse(UINT64_C(1) << 42, 123456789);
 	assert(latency_trace_current_tick() == (UINT64_C(1) << 42));
 	assert(latency_trace_pulse_start_monotonic_us() == 123456789);
-	latency_trace_reset();
-	LATENCY_TRACE("macro-scope")
-	{
-		uint64_t value = 0;
-		value++;
-		assert(value == 1);
-	}
-	latency_trace_snapshot macro = {};
-	latency_trace_snapshot_capture(&macro);
-	assert(macro.sample_count == 1);
-	assert(macro.top[0].tick == (UINT64_C(1) << 42));
 
 	FILE *missing = fopen("/definitely/missing/duris/latency.log", "a");
 	assert(!missing);
@@ -188,7 +213,7 @@ int main(int argc, char **argv)
 
 header = (SRC / "latency_trace.h").read_text()
 assert "_lt_end.tv_nsec - _lt_start.tv_nsec" not in header
-assert "latency_trace_current_tick()" in header
+assert "#define LATENCY_TRACE(" not in header
 assert "extern unsigned long long ne_event_tick" not in header
 
 
