@@ -579,7 +579,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		shape = &(*shape)->next;
 	}
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
-	GET_HIT(ch) = GET_MAX_HIT(ch) - hit_difference;
+	// With max HP still zero, apply_affs() expects GET_HIT to carry the saved
+	// max-minus-current difference until enter_game() calculates derived stats.
+	GET_HIT(ch) = hit_difference;
+	const int loaded_mana = GET_MANA(ch);
+	const int loaded_vitality = GET_VITALITY(ch);
 	if (!player_revision_hydrate(result.pid, result.snapshot.revision))
 		return false;
 	if (result.snapshot.components == PLAYER_LOAD_SESSION02_COMPONENTS)
@@ -683,5 +687,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		}
 		player_load_pets_commit(ch, &pets, result);
 	}
+	// Resolve the saved HP difference after all base stats, affects and equipment
+	// have been materialized. enter_game() can then safely apply offline regen
+	// against initialized maxima; its later affect_total() handles expired affects.
+	affect_total(ch, FALSE);
+	GET_MANA(ch) = BOUNDED(1, loaded_mana, GET_MAX_MANA(ch));
+	GET_VITALITY(ch) = BOUNDED(1, loaded_vitality, GET_MAX_VITALITY(ch));
 	return true;
 }
