@@ -403,6 +403,19 @@ int main()
         assert(roots[0]->contains && roots[0]->contains->obj_uid == 41);
         for (P_obj root : roots)
             extract_obj(root, FALSE);
+
+        auto invalid_payload = payload;
+        auto invalid_snapshots = snapshots;
+        invalid_payload.items[1].vnum = 0;
+        invalid_snapshots[1].vnum = 0;
+        std::vector<uint8_t> invalid_blob;
+        assert(player_item_snapshot_list_encode(invalid_snapshots, &invalid_blob) ==
+               player_snapshot_codec_result::ok);
+        invalid_payload.item_blob_size = invalid_blob.size();
+        std::copy(invalid_blob.begin(), invalid_blob.end(), invalid_payload.item_blob.begin());
+        std::vector<P_obj> invalid_roots;
+        assert(!player_load_item_graph_materialize_creation(invalid_payload, committed,
+                                                            &invalid_roots));
     }
     {
         reset_test_state();

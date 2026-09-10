@@ -852,6 +852,63 @@ int main()
     assert(announced != std::string::npos);
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!", announced + 1) == std::string::npos);
 
+    // A normal gameplay creation must wait behind a system-owned starter
+    // transaction instead of being discarded as a terminal failure.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    command_submitted = false;
+    submitted_command = {};
+    actor.carrying = nullptr;
+    obj_data system_created = {};
+    system_created.obj_uid = 350;
+    system_created.R_num = 0;
+    system_created.loc_p = LOC_NOWHERE;
+    obj_data gameplay_created = {};
+    gameplay_created.obj_uid = 351;
+    gameplay_created.R_num = 1;
+    gameplay_created.loc_p = LOC_NOWHERE;
+    system_created.next = &gameplay_created;
+    gameplay_created.next = nullptr;
+    object_list = &system_created;
+    const item_owner_identity system_creation_owner = { item_owner_type::system, 0, 0 };
+    P_obj system_roots[] = {&system_created};
+    item_movement_reject system_reject = item_movement_reject::none;
+    assert(item_movement_transaction_submit_batch(
+        &actor, system_roots, 1, NULL, system_creation_owner, player_owner,
+        item_transfer_reason::creation, 0, NULL, NULL, 0, NULL, &system_reject));
+    assert(command_submitted);
+    assert(item_creation_grant_submit_to_player(&actor, &gameplay_created, &actor, NULL));
+    assert(item_movement_transaction_player_busy(&actor));
+    assert(OBJ_NOWHERE(&gameplay_created));
+
+    critical_completion system_creation_completion = {};
+    system_creation_completion.operation_id = submitted_command.operation_id;
+    system_creation_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result system_creation_result = {350, 1, 1, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> system_creation_encoded = {};
+    assert(item_transfer_command_encode_result(system_creation_result, &system_creation_encoded));
+    system_creation_completion.result_size = system_creation_encoded.size();
+    std::copy(system_creation_encoded.begin(), system_creation_encoded.end(),
+              system_creation_completion.result_payload.begin());
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&system_creation_completion, 1);
+    assert(command_submitted && OBJ_NOWHERE(&gameplay_created));
+
+    critical_completion gameplay_creation_completion = {};
+    gameplay_creation_completion.operation_id = submitted_command.operation_id;
+    gameplay_creation_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result gameplay_creation_result = {351, 1, 1, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> gameplay_creation_encoded = {};
+    assert(item_transfer_command_encode_result(gameplay_creation_result,
+                                               &gameplay_creation_encoded));
+    gameplay_creation_completion.result_size = gameplay_creation_encoded.size();
+    std::copy(gameplay_creation_encoded.begin(), gameplay_creation_encoded.end(),
+              gameplay_creation_completion.result_payload.begin());
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&gameplay_creation_completion, 1);
+    assert(OBJ_CARRIED_BY(&gameplay_created, &actor));
+    assert(!item_movement_transaction_player_busy(&actor));
+
     // A stale live root retains the committed operation instead of publishing
     // a partial kit. Restoring the live registry lets player_ready() reconcile it.
     item_movement_transaction_reset_for_tests();
@@ -932,6 +989,56 @@ int main()
     assert(grant_messages.find("publication repair") == std::string::npos);
     assert(grant_messages.find("Your Chaos Equipment has been prepared!!") != std::string::npos);
     recover_creation_batch = false;
+    // The production extractor frees the displaced grant roots. The harness
+    // retains their storage for later scenarios, so restore fresh fixture UIDs.
+    grant_first.obj_uid = 301;
+    grant_second.obj_uid = 302;
+    object_list = &grant_first;
+    grant_first.next = &grant_second;
+
+    // A partially carried committed root is reconciled as one complete graph;
+    // it must not make the queue permanently refuse repair.
+    item_movement_transaction_reset_for_tests();
+    item_ownership_runtime_reset();
+    command_submitted = false;
+    submitted_command = {};
+    actor.carrying = nullptr;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
+    grant_first.next = &grant_second;
+    object_list = &grant_first;
+    recovered_grant_first.obj_uid = 301;
+    recovered_grant_second.obj_uid = 302;
+    grant_messages.clear();
+    extracted_count = 0;
+    recover_creation_batch = true;
+    assert(item_creation_grant_submit_batch_to_player_before_entry(&actor, grants, 2, &actor));
+    grant_first.loc_p = LOC_CARRIED;
+    grant_first.loc.carrying = &actor;
+    actor.carrying = &grant_first;
+    grant_first.next = nullptr; // The second root disappeared from the live list.
+    critical_completion carried_partial_completion = {};
+    carried_partial_completion.operation_id = submitted_command.operation_id;
+    carried_partial_completion.outcome = critical_apply_outcome::applied;
+    item_transfer_result carried_partial_result = {301, 2, 1, 1, 1, 0};
+    std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> carried_partial_encoded = {};
+    assert(item_transfer_command_encode_result(carried_partial_result,
+                                               &carried_partial_encoded));
+    carried_partial_completion.result_size = carried_partial_encoded.size();
+    std::copy(carried_partial_encoded.begin(), carried_partial_encoded.end(),
+              carried_partial_completion.result_payload.begin());
+    command_submitted = false;
+    item_movement_transaction_handle_completions(&carried_partial_completion, 1);
+    assert(OBJ_CARRIED_BY(&recovered_grant_first, &actor) &&
+           OBJ_CARRIED_BY(&recovered_grant_second, &actor));
+    assert(!item_creation_grant_batches_pending() &&
+           !item_movement_transaction_player_busy(&actor));
+    recover_creation_batch = false;
+    actor.carrying = nullptr;
+    grant_first.obj_uid = 301;
+    grant_second.obj_uid = 302;
+    grant_first.loc_p = grant_second.loc_p = LOC_NOWHERE;
+    grant_first.next_content = grant_second.next_content = nullptr;
     object_list = &grant_first;
     grant_first.next = &grant_second;
 

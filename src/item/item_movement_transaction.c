@@ -72,6 +72,13 @@ struct creation_grant_queue
 	bool publication_failed = false;
 };
 
+struct displaced_creation_object
+{
+	P_obj object;
+	uint64_t item_uid;
+	size_t depth;
+};
+
 std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
 const item_owner_identity system_owner_identity = { item_owner_type::system, 0, 0 };
 
@@ -304,6 +311,91 @@ bool creation_grant_batch_live_ready(P_char actor, const creation_grant_queue &q
 	return true;
 }
 
+bool creation_grant_batch_published(P_char actor, const creation_grant_queue &queue)
+{
+	for (const pending_creation_grant &request : queue.requests)
+	{
+		P_obj object = find_item(request.item_uid);
+		if (!object || !OBJ_CARRIED_BY(object, actor) ||
+		    !creation_grant_tree_available(object))
+			return false;
+	}
+	return true;
+}
+
+size_t creation_payload_depth(const item_transfer_payload &payload, size_t index)
+{
+	size_t depth = 0;
+	uint64_t parent_uid = payload.items[index].parent_item_uid;
+	for (size_t step = 0; parent_uid && step < payload.item_count; ++step)
+	{
+		++depth;
+		auto parent = std::find_if(payload.items.begin(),
+					   payload.items.begin() + payload.item_count,
+					   [&](const item_transfer_entry &entry)
+					   { return entry.item_uid == parent_uid; });
+		if (parent == payload.items.begin() + payload.item_count)
+			break;
+		parent_uid = parent->parent_item_uid;
+	}
+	return depth;
+}
+
+bool stage_displaced_creation_objects(const item_transfer_payload &payload,
+				      std::vector<displaced_creation_object> *displaced)
+{
+	if (!displaced)
+		return false;
+	try
+	{
+		displaced->clear();
+		displaced->reserve(payload.item_count);
+		for (P_obj object = object_list; object; object = object->next)
+			for (size_t index = 0; index < payload.item_count; ++index)
+				if (object->obj_uid == payload.items[index].item_uid)
+				{
+					displaced->push_back(
+						{ object, object->obj_uid,
+						  creation_payload_depth(payload, index) });
+					break;
+				}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (displaced_creation_object &entry : *displaced)
+		entry.object->obj_uid = 0;
+	return true;
+}
+
+void restore_displaced_creation_objects(const std::vector<displaced_creation_object> &displaced)
+{
+	for (const displaced_creation_object &entry : displaced)
+		if (entry.object)
+			entry.object->obj_uid = static_cast<unsigned long>(entry.item_uid);
+}
+
+void extract_creation_roots(const std::vector<P_obj> &roots)
+{
+	for (P_obj root : roots)
+		if (root && find_item(root->obj_uid) == root)
+			extract_obj(root, FALSE);
+}
+
+void extract_displaced_creation_objects(std::vector<displaced_creation_object> *displaced)
+{
+	if (!displaced)
+		return;
+	std::stable_sort(displaced->begin(), displaced->end(),
+			 [](const displaced_creation_object &left,
+			    const displaced_creation_object &right)
+			 { return left.depth > right.depth; });
+	for (const displaced_creation_object &entry : *displaced)
+		if (entry.object)
+			extract_obj(entry.object, FALSE);
+}
+
 void note_creation_grant_publication_failure(P_char actor, creation_grant_queue &queue,
 					     uint32_t actor_pid)
 {
@@ -326,32 +418,33 @@ bool reconcile_creation_grant_batch(P_char actor, pending_movement &entry,
 	for (const pending_creation_grant &request : queue.requests)
 	{
 		P_obj object = find_item(request.item_uid);
-		if (object && !OBJ_NOWHERE(object))
-			return false;
 		if (!object || !creation_grant_tree_available(object))
 			needs_reconciliation = true;
 	}
 	if (!needs_reconciliation)
 		return true;
 
-	for (size_t index = 0; index < entry.payload.item_count; ++index)
-	{
-		P_obj object = find_item(entry.payload.items[index].item_uid);
-		if (object && OBJ_NOWHERE(object))
-			extract_obj(object, FALSE);
-	}
+	std::vector<displaced_creation_object> displaced;
+	if (!stage_displaced_creation_objects(entry.payload, &displaced))
+		return false;
+
 	std::vector<P_obj> roots;
 	if (!player_load_item_graph_materialize_creation(entry.payload, result, &roots) ||
 	    roots.size() != queue.requests.size())
 	{
-		for (P_obj root : roots)
-			if (root && OBJ_NOWHERE(root))
-				extract_obj(root, FALSE);
+		extract_creation_roots(roots);
+		restore_displaced_creation_objects(displaced);
 		return false;
 	}
 	for (P_obj root : roots)
 		if (!root || !OBJ_NOWHERE(root))
+		{
+			extract_creation_roots(roots);
+			restore_displaced_creation_objects(displaced);
 			return false;
+		}
+
+	extract_displaced_creation_objects(&displaced);
 	for (P_obj root : roots)
 		obj_to_char(root, actor);
 	return true;
@@ -612,17 +705,19 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 		return;
 	}
 	queue.publication_failed = false;
-	size_t published = 0;
 	for (const pending_creation_grant &request : queue.requests)
 	{
 		P_obj object = find_item(request.item_uid);
 		if (!OBJ_CARRIED_BY(object, actor))
 			obj_to_char(object, actor);
-		++published;
 	}
-	if (published)
-		mark_player_dirty_components(actor_pid, PLAYER_COMPONENT_EQUIPMENT |
-								PLAYER_COMPONENT_INVENTORY);
+	if (!creation_grant_batch_published(actor, queue))
+	{
+		note_creation_grant_publication_failure(actor, queue, actor_pid);
+		return;
+	}
+	mark_player_dirty_components(actor_pid,
+				     PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY);
 	queue.requests.clear();
 	queue.active = false;
 	creation_grants.erase(queue_found);
@@ -758,6 +853,8 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 		return true;
 	item_movement_reject reject = item_movement_reject::none;
 	if (start_creation_grant(actor, queue, &reject))
+		return true;
+	if (item_movement_reject_is_transient(reject))
 		return true;
 	queue.requests.pop_back();
 	if (queue.requests.empty())

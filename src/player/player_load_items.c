@@ -772,7 +772,7 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &pa
 				[&](const item_transfer_entry &candidate)
 				{ return candidate.item_uid == item.object_uid; });
 			if (entry == payload.items.begin() + payload.item_count ||
-			    entry->vnum != item.vnum ||
+			    entry->vnum <= 0 || entry->vnum != item.vnum ||
 			    entry->expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION ||
 			    entry->expected_state != item_custody_state::absent)
 				return false;
