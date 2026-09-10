@@ -37,12 +37,9 @@ def extract(source: Path, signature: str) -> str:
     raise AssertionError(f"unbalanced braces reading {signature}")
 
 
-GET_CASTING = extract(SRC / "comm.c", "int get_casting_cmd_from_q(struct txt_q *queue, char *dest)")
-GET_FILTERED = extract(
-    SRC / "comm.c",
-    "static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest,",
-)
-ALLOWED = extract(SRC / "interp.c", "bool input_allowed_while_casting(const char *input)")
+GET_CASTING = extract(SRC / "comm.c", "int get_casting_cmd_from_q(P_char ch, struct txt_q *queue, char *dest)")
+CMD_ALLOWED = extract(SRC / "interp.c", "bool cmd_allowed_while_casting(P_char ch, int cmd)")
+ALLOWED = extract(SRC / "interp.c", "bool input_allowed_while_casting(P_char ch, const char *input)")
 COMMAND_NUMBER = extract(SRC / "interp.c", "static int input_command_number(const char *input)")
 SEARCH_BLOCK = extract(SRC / "interp.c", "int old_search_block(const char *argument")
 
@@ -65,6 +62,18 @@ PRELUDE = r'''
 	}
 
 typedef unsigned int uint;
+
+struct char_data
+{
+	struct
+	{
+		unsigned int act3;
+	} specials;
+};
+
+typedef struct char_data *P_char;
+#define PLR3_ABORT_CASTING 1u
+#define PLR3_FLAGGED(ch, flag) (((ch)->specials.act3 & (flag)) != 0)
 
 struct txt_block
 {
@@ -89,14 +98,11 @@ static void logit(int, const char *, ...) {}
 #define CMD_ABORT 3
 static const char *command[] = { "petition", "return", "abort", "kill", "look", "\n" };
 
-bool cmd_allowed_while_casting(int cmd)
-{
-	return (cmd == CMD_PETITION || cmd == CMD_RETURN || cmd == CMD_ABORT);
-}
+bool cmd_allowed_while_casting(P_char ch, int cmd);
 
 int old_search_block(const char *argument, const uint begin, uint length, const char **list,
 		     const int mode);
-bool input_allowed_while_casting(const char *input);
+bool input_allowed_while_casting(P_char, const char *input);
 '''
 
 # write_to_q() appends through queue->tail, so a stale tail after extraction is
@@ -170,30 +176,41 @@ int main()
 {
 	char dest[MAX_INPUT_LENGTH];
 	struct txt_q q;
+	struct char_data caster = {};
+
+	/* The default-off player policy blocks abort without changing
+	   petition/return. */
+	caster.specials.act3 = 0;
+	assert(!input_allowed_while_casting(&caster, "abort"));
+	assert(input_allowed_while_casting(&caster, "petition help"));
+	assert(input_allowed_while_casting(&caster, "return"));
+
+	/* Enable the optional escape for the extraction cases below. */
+	caster.specials.act3 |= PLR3_ABORT_CASTING;
 
 	/* The word filter itself. */
-	assert(input_allowed_while_casting("abort"));
-	assert(input_allowed_while_casting("ABORT"));
-	assert(input_allowed_while_casting("  abort"));
-	assert(input_allowed_while_casting("abort now"));
-	assert(input_allowed_while_casting("petition help"));
-	assert(input_allowed_while_casting("return"));
-	assert(!input_allowed_while_casting("kill orc"));
-	assert(!input_allowed_while_casting(""));
-	assert(!input_allowed_while_casting("   "));
-	assert(!input_allowed_while_casting(NULL));
+	assert(input_allowed_while_casting(&caster, "abort"));
+	assert(input_allowed_while_casting(&caster, "ABORT"));
+	assert(input_allowed_while_casting(&caster, "  abort"));
+	assert(input_allowed_while_casting(&caster, "abort now"));
+	assert(input_allowed_while_casting(&caster, "petition help"));
+	assert(input_allowed_while_casting(&caster, "return"));
+	assert(!input_allowed_while_casting(&caster, "kill orc"));
+	assert(!input_allowed_while_casting(&caster, ""));
+	assert(!input_allowed_while_casting(&caster, "   "));
+	assert(!input_allowed_while_casting(&caster, NULL));
 	/* mode 2 falls back to a left-side match, so abbreviations resolve --
 	   and resolve through the same table command_interpreter() uses, which
 	   is why the gate and comm.c cannot disagree about a given input. */
-	assert(input_allowed_while_casting("ab"));
-	assert(!input_allowed_while_casting("l"));
-	assert(!input_allowed_while_casting("ki"));
+	assert(input_allowed_while_casting(&caster, "ab"));
+	assert(!input_allowed_while_casting(&caster, "l"));
+	assert(!input_allowed_while_casting(&caster, "ki"));
 
 	/* 1. Allowed command sitting at the head. */
 	memset(&q, 0, sizeof(q));
 	push(&q, "abort");
 	push(&q, "kill orc");
-	expect(get_casting_cmd_from_q(&q, dest), 1, "head extract");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 1, "head extract");
 	expect_str(dest, "abort", "head extract text");
 	check_intact(&q, "head extract");
 	expect_str(q.head->text, "kill orc", "head extract remainder");
@@ -206,7 +223,7 @@ int main()
 	push(&q, "look");
 	push(&q, "abort");
 	push(&q, "look");
-	expect(get_casting_cmd_from_q(&q, dest), 1, "middle extract");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 1, "middle extract");
 	expect_str(dest, "abort", "middle extract text");
 	check_intact(&q, "middle extract");
 	expect_str(q.head->text, "kill orc", "middle extract keeps type-ahead");
@@ -216,7 +233,7 @@ int main()
 	memset(&q, 0, sizeof(q));
 	push(&q, "kill orc");
 	push(&q, "abort");
-	expect(get_casting_cmd_from_q(&q, dest), 1, "tail extract");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 1, "tail extract");
 	check_intact(&q, "tail extract");
 	expect_str(q.tail->text, "kill orc", "tail extract new tail");
 	/* A following write_to_q() appends through that tail. */
@@ -228,7 +245,7 @@ int main()
 	/* 4. Sole entry -- head and tail both have to clear. */
 	memset(&q, 0, sizeof(q));
 	push(&q, "abort");
-	expect(get_casting_cmd_from_q(&q, dest), 1, "sole extract");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 1, "sole extract");
 	assert(q.head == NULL && q.tail == NULL);
 	push(&q, "abort");
 	check_intact(&q, "sole extract then append");
@@ -240,7 +257,7 @@ int main()
 	push(&q, "kill orc");
 	push(&q, "look");
 	strcpy(dest, "sentinel");
-	expect(get_casting_cmd_from_q(&q, dest), 0, "no allowed command");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 0, "no allowed command");
 	expect_str(dest, "sentinel", "dest untouched when nothing matches");
 	check_intact(&q, "no allowed command");
 	expect_str(q.head->text, "kill orc", "queue preserved");
@@ -249,9 +266,9 @@ int main()
 
 	/* 6. Empty queue and bogus arguments. */
 	memset(&q, 0, sizeof(q));
-	expect(get_casting_cmd_from_q(&q, dest), 0, "empty queue");
-	expect(get_casting_cmd_from_q(NULL, dest), 0, "null queue");
-	expect(get_casting_cmd_from_q(&q, NULL), 0, "null dest");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 0, "empty queue");
+	expect(get_casting_cmd_from_q(&caster, NULL, dest), 0, "null queue");
+	expect(get_casting_cmd_from_q(&caster, &q, NULL), 0, "null dest");
 
 	/* 7. Repeated extraction drains only the allowed entries. */
 	memset(&q, 0, sizeof(q));
@@ -259,13 +276,13 @@ int main()
 	push(&q, "abort");
 	push(&q, "petition help");
 	push(&q, "kill orc");
-	expect(get_casting_cmd_from_q(&q, dest), 1, "drain 1");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 1, "drain 1");
 	expect_str(dest, "abort", "drain 1 text");
 	check_intact(&q, "drain 1");
-	expect(get_casting_cmd_from_q(&q, dest), 1, "drain 2");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 1, "drain 2");
 	expect_str(dest, "petition help", "drain 2 text");
 	check_intact(&q, "drain 2");
-	expect(get_casting_cmd_from_q(&q, dest), 0, "drain 3");
+	expect(get_casting_cmd_from_q(&caster, &q, dest), 0, "drain 3");
 	check_intact(&q, "drain 3");
 	expect_str(q.head->text, "look", "drain leaves type-ahead");
 	expect_str(q.tail->text, "kill orc", "drain leaves tail");
@@ -283,8 +300,8 @@ def main() -> int:
         PRELUDE,
         SEARCH_BLOCK,
         COMMAND_NUMBER,
+        CMD_ALLOWED,
         ALLOWED,
-        GET_FILTERED,
         GET_CASTING,
         DRIVER,
     ])

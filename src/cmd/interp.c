@@ -1222,9 +1222,10 @@ int old_search_block(const char *argument, const uint begin, uint length, const 
  * Commands the casting gate in command_interpreter() lets through while
  * AFF2_CASTING is set.  Kept in one place so comm.c and the gate cannot drift.
  */
-bool cmd_allowed_while_casting(int cmd)
+bool cmd_allowed_while_casting(P_char ch, int cmd)
 {
-	return (cmd == CMD_PETITION || cmd == CMD_RETURN || cmd == CMD_ABORT);
+	return cmd == CMD_PETITION || cmd == CMD_RETURN ||
+	       (cmd == CMD_ABORT && ch && PLR3_FLAGGED(ch, PLR3_ABORT_CASTING));
 }
 
 /** Commands whose result depends on the player's live inventory or equipment.
@@ -1330,16 +1331,15 @@ const char *input_command_label(const char *input)
 
 /**
  * comm.c pumps a casting player's input queue so 'abort' can reach the
- * interpreter, and peeks at the head of that queue with this first: anything
- * the gate would only reject stays queued as type-ahead and runs when the cast
- * finishes, the way it did before 'abort' existed.
+ * interpreter, and peeks at the queue with this first: anything the gate would
+ * reject stays queued as type-ahead and runs when the cast finishes.
  */
-bool input_allowed_while_casting(const char *input)
+bool input_allowed_while_casting(P_char ch, const char *input)
 {
 	if (!input)
 		return FALSE;
 
-	return cmd_allowed_while_casting(input_command_number(input));
+	return cmd_allowed_while_casting(ch, input_command_number(input));
 }
 
 /** Allow only commands independent of unpublished item movement state. */
@@ -1563,17 +1563,26 @@ void command_interpreter(P_char ch, char *argument)
 	 * falling and water-current checks below would otherwise roll the dice --
 	 * and even move the character out of the room -- on a command that is about
 	 * to be rejected anyway. */
-	if (IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd))
+	if (IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(ch, cmd))
 	{
 		send_to_char("You're busy spellcasting!\r\n", ch);
 		if (IS_TRUSTED(ch))
-			send_to_char(
-				"&+YTry 'abort' to stop casting. If you're stuck, try 'return' or petition other gods for help.&n\r\n",
-				ch);
-		else
+		{
+			if (PLR3_FLAGGED(ch, PLR3_ABORT_CASTING))
+				send_to_char(
+					"&+YTry 'abort' to stop casting. If you're stuck, try 'return' or petition other gods for help.&n\r\n",
+					ch);
+			else
+				send_to_char(
+					"&+YTry 'return' or petition other gods for help if you're stuck.&n\r\n",
+					ch);
+		}
+		else if (PLR3_FLAGGED(ch, PLR3_ABORT_CASTING))
 			send_to_char(
 				"Try 'abort' to stop casting. If you think you're stuck, you can still petition.\r\n",
 				ch);
+		else
+			send_to_char("If you think you're stuck, you can still petition.\r\n", ch);
 		return;
 	}
 

@@ -1077,6 +1077,14 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 						  currency_transaction_player_busy(character));
 }
 
+/** Select the casting queue for the complete AFF2_CASTING lifetime. */
+static bool casting_input_for_descriptor(P_desc descriptor, P_char character)
+{
+	return character && descriptor && IS_AFFECTED2(character, AFF2_CASTING) &&
+	       descriptor->connected == CON_PLAYING && !descriptor->showstr_count &&
+	       !descriptor->str;
+}
+
 /** Send a dequeued playing-state command through the normal command dispatcher. */
 static void dispatch_playing_command(P_char character, char *input)
 {
@@ -1641,17 +1649,12 @@ resume_game_loop:
 				}
 			}
 
-			/* A casting character is gated by PLR2_WAIT for the whole chant.
-			 * Read their queue only for a command the casting gate in
-			 * command_interpreter() will actually run ('abort', 'petition',
-			 * 'return'); everything else stays queued as type-ahead instead
-			 * of being drained one line per pulse and rejected.  Pending item
-			 * movements use the same queue preservation below, while still
-			 * allowing unrelated commands to run. */
-			casting_input =
-				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
-				 point->connected == CON_PLAYING && !point->showstr_count &&
-				 !point->str);
+			/* Keep ordinary type-ahead queued for the complete chant.  The
+			 * separate PLR2_WAIT/event_wait deadline may expire before the
+			 * spell continuation does, and trusted characters intentionally
+			 * bypass PLR2_WAIT entirely.  Only commands accepted by the
+			 * casting interpreter gate are selectively removed. */
+			casting_input = casting_input_for_descriptor(point, t_ch);
 			// Pre-entry input must still advance through RMOTD/enter_game;
 			// only playing commands wait for the complete durable kit.
 			creation_grant_input = point->connected == CON_PLAYING && t_ch &&
@@ -1661,7 +1664,7 @@ resume_game_loop:
 			     (t_ch && !creation_grant_input && (CAN_ACT(t_ch) || casting_input) &&
 			      (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
 			       point->original))) &&
-			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :
+			    (casting_input ? get_casting_cmd_from_q(t_ch, &point->input, comm) :
 			     point->connected == CON_PLAYING && !point->showstr_count &&
 					     !point->str ?
 					     get_playing_cmd_from_q(t_ch, &point->input, comm) :
@@ -2362,10 +2365,40 @@ static int get_filtered_cmd_from_q(struct txt_q *queue, char *dest, bool (*allow
 	return (0);
 }
 
-/** Dequeue the first command that may run while the character is casting. */
-int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
+/** Dequeue the first command this character may run while casting. */
+int get_casting_cmd_from_q(P_char ch, struct txt_q *queue, char *dest)
 {
-	return get_filtered_cmd_from_q(queue, dest, input_allowed_while_casting);
+	struct txt_block *prev = NULL;
+	struct txt_block *tmp;
+
+	if (!ch || !queue || !dest)
+	{
+		logit(LOG_COMM, "call to get_casting_cmd_from_q with bogus arguments");
+		return (0);
+	}
+
+	for (tmp = queue->head; tmp; prev = tmp, tmp = tmp->next)
+	{
+		if (!input_allowed_while_casting(ch, tmp->text))
+			continue;
+
+		strcpy(dest, tmp->text);
+
+		if (prev)
+			prev->next = tmp->next;
+		else
+			queue->head = tmp->next;
+
+		if (queue->tail == tmp)
+			queue->tail = prev;
+
+		FREE(tmp->text);
+		FREE(tmp);
+
+		return (1);
+	}
+
+	return (0);
 }
 
 /**

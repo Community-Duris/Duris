@@ -11,7 +11,7 @@ Verifies:
 7. do_abort implemented in sparser.c handling StopCasting, wait reset, PULSE_VIOLENCE lag, and camp abort.
 8. command_attributes.txt coverage for abort.
 9. help_index contains ABORT command documentation.
-10. Casting-blocked command hints lead players to the abort command.
+10. Default-off spell-abort policy and casting-blocked hint behavior.
 """
 
 from _paths import SRC
@@ -54,22 +54,26 @@ if cmd_block:
                         cmd_abort_num == abort_idx)
     all_ok &= check("MAX_CMD matches size of command array", len(cmds) == max_cmd_num)
 
-# 3. Verify casting whitelist in interp.c
-whitelist = re.search(r"bool cmd_allowed_while_casting\(int cmd\)\s*\{(.*?)\n\}", interp_c, re.S)
+# 3. Verify the per-player casting whitelist in interp.c
+whitelist = re.search(r"bool cmd_allowed_while_casting\(P_char ch, int cmd\)\s*\{(.*?)\n\}", interp_c, re.S)
 all_ok &= check("cmd_allowed_while_casting() defined in interp.c", whitelist is not None)
 if whitelist:
-    for name in ("CMD_ABORT", "CMD_PETITION", "CMD_RETURN"):
-        all_ok &= check(f"cmd_allowed_while_casting() whitelists {name}", name in whitelist.group(1))
+    for name in ("CMD_PETITION", "CMD_RETURN", "CMD_ABORT", "PLR3_ABORT_CASTING"):
+        all_ok &= check(f"cmd_allowed_while_casting() mentions {name}", name in whitelist.group(1))
 
-all_ok &= check("casting guard in interp.c uses cmd_allowed_while_casting()",
-                "IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd)" in interp_c)
-all_ok &= check("casting-blocked command hints lead with abort",
+all_ok &= check("casting guard in interp.c uses the character-aware whitelist",
+                "IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(ch, cmd)" in interp_c)
+all_ok &= check("casting-blocked command hints lead with abort when the player toggle is on",
                 interp_c.count("Try 'abort' to stop casting.") == 2)
+all_ok &= check("casting-blocked hints honor the per-player abort toggle",
+                interp_c.count("PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)") >= 3 and
+                "Try 'return' or petition other gods for help if you're stuck." in interp_c and
+                "If you think you're stuck, you can still petition." in interp_c)
 
 # 3b. The casting guard must run before the falling / water-current checks, which
 #     have side effects (falling_char, do_move) and would otherwise fire on a
 #     command that is about to be rejected -- including moving a casting player.
-gate_pos = interp_c.find("IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd)")
+gate_pos = interp_c.find("IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(ch, cmd)")
 fall_pos = interp_c.find("if (world[ch->in_room].chance_fall")
 current_pos = interp_c.find("The current sweeps you away!")
 all_ok &= check("casting guard precedes the falling check",
@@ -81,22 +85,38 @@ all_ok &= check("casting guard precedes the water-current sweep",
 all_ok &= check("assign_command_pointers registers CMD_ABORT",
                 "CMD_Y(CMD_ABORT, STAT_RESTING + POS_PRONE, do_abort, 0, TRUE);" in interp_c)
 
-# 5. Verify comm.c input queue pump for casting characters
+# 5. Verify comm.c keeps the selective casting queue active for the complete
+#    AFF2_CASTING lifetime, including after PLR2_WAIT clears.
 comm_c = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
-all_ok &= check("comm.c pumps input when IS_AFFECTED2(t_ch, AFF2_CASTING)",
-                re.search(r"casting_input =\s*\(t_ch && !CAN_ACT\(t_ch\) &&\s*IS_AFFECTED2\(t_ch, AFF2_CASTING\)",
-                          comm_c) is not None)
-all_ok &= check("comm.c only reads a casting character's queue through the casting path",
-                re.search(r"casting_input\s*\? get_casting_cmd_from_q\(&point->input, comm\)",
+casting_predicate = re.search(
+    r"static bool casting_input_for_descriptor\(P_desc descriptor, P_char character\)\s*\{(.*?)\n\}",
+    comm_c,
+    re.S,
+)
+all_ok &= check("comm.c defines a casting-state queue predicate", casting_predicate is not None)
+if casting_predicate:
+    body = casting_predicate.group(1)
+    all_ok &= check("casting predicate is driven by AFF2_CASTING", "IS_AFFECTED2(character, AFF2_CASTING)" in body)
+    all_ok &= check("casting predicate is independent of CAN_ACT", "CAN_ACT" not in body)
+    all_ok &= check("casting predicate limits itself to playing descriptors",
+                    "descriptor->connected == CON_PLAYING" in body and
+                    "!descriptor->showstr_count" in body and
+                    "!descriptor->str" in body)
+all_ok &= check("comm.c assigns casting_input from the casting-state predicate",
+                "casting_input = casting_input_for_descriptor(point, t_ch);" in comm_c)
+all_ok &= check("comm.c still admits the casting path when CAN_ACT is true",
+                "(CAN_ACT(t_ch) || casting_input)" in comm_c)
+all_ok &= check("comm.c only reads a casting character's queue through the character-aware casting path",
+                re.search(r"casting_input\s*\? get_casting_cmd_from_q\(t_ch, &point->input, comm\)",
                           comm_c) is not None)
 # Type-ahead must survive: only a command the casting gate will actually run is
 # dequeued, so everything else stays queued instead of being drained and rejected.
-q = re.search(r"int get_casting_cmd_from_q\(struct txt_q \*queue, char \*dest\)\s*\{(.*?)\n\}", comm_c, re.S)
+q = re.search(r"int get_casting_cmd_from_q\(P_char ch, struct txt_q \*queue, char \*dest\)\s*\{(.*?)\n\}", comm_c, re.S)
 all_ok &= check("get_casting_cmd_from_q() defined in comm.c", q is not None)
 if q:
     body = q.group(1)
-    all_ok &= check("get_casting_cmd_from_q() filters with input_allowed_while_casting()",
-                    "input_allowed_while_casting" in body)
+    all_ok &= check("get_casting_cmd_from_q() applies the player-aware casting filter",
+                    "input_allowed_while_casting(ch, tmp->text)" in body)
 filtered = re.search(
     r"static int get_filtered_cmd_from_q\(.*?\)\s*\{(.*?)\n\}", comm_c, re.S)
 all_ok &= check("filtered queue extraction helper is defined in comm.c", filtered is not None)
@@ -109,13 +129,16 @@ if filtered:
     all_ok &= check("filtered queue helper keeps queue->tail valid",
                     "queue->tail == tmp" in body and "queue->tail = prev;" in body)
 all_ok &= check("get_casting_cmd_from_q declared in prototypes.h",
-                "int get_casting_cmd_from_q(struct txt_q *, char *);" in
+                "int get_casting_cmd_from_q(P_char, struct txt_q *, char *);" in
+                (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace"))
+all_ok &= check("input_allowed_while_casting() is character-aware",
+                "bool input_allowed_while_casting(P_char, const char *);" in
+                (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace"))
+all_ok &= check("cmd_allowed_while_casting() is character-aware",
+                "bool cmd_allowed_while_casting(P_char, int);" in
                 (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace"))
 all_ok &= check("input_allowed_while_casting() defined in interp.c",
-                "bool input_allowed_while_casting(const char *input)" in interp_c)
-all_ok &= check("input_allowed_while_casting() declared in prototypes.h",
-                "bool input_allowed_while_casting(const char *);" in
-                (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace"))
+                "bool input_allowed_while_casting(P_char ch, const char *input)" in interp_c)
 
 # 6. Verify prototypes.h declaration
 proto_h = (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace")
@@ -137,9 +160,18 @@ if do_abort_m:
     all_ok &= check("do_abort supports camping abort fallback", "AFF_CAMPING" in body and "TAG_CAMP" in body)
     all_ok &= check("do_abort reports non-casting feedback", "You are not casting a spell to abort!" in body)
 
-# 8. Verify command_attributes.txt
+# 8. Verify the player-facing `tog abort` policy and persisted bit.
 cmd_attrs = (ROOT / "docs/lib/information/command_attributes.txt").read_text(encoding="utf-8", errors="replace")
 all_ok &= check("command_attributes.txt includes abort entry", "abort\n~" in cmd_attrs)
+structs_h = (SRC / "structs.h").read_text(encoding="utf-8", errors="replace")
+all_ok &= check("PLR3_ABORT_CASTING is a persisted player bit", "#define PLR3_ABORT_CASTING BIT_16" in structs_h)
+actoth_c = (SRC / "actoth.c").read_text(encoding="utf-8", errors="replace")
+all_ok &= check("toggles list exposes abort", '"abort", // 66' in actoth_c)
+all_ok &= check("tog abort toggles PLR3_ABORT_CASTING",
+                "case 66" in actoth_c and "PLR3_TOG(PLR3_ABORT_CASTING)" in actoth_c)
+all_ok &= check("tog abort has player-facing on/off messages",
+                "Spell abort is disabled." in actoth_c and "Spell abort is enabled." in actoth_c)
+all_ok &= check("toggle status displays abort state", "PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)" in actoth_c)
 
 # 9. Verify help_index
 help_idx = (ROOT / "lib/information/help_index").read_text(encoding="utf-8", errors="replace")
