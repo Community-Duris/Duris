@@ -1,3 +1,5 @@
+#include "account/password_async.h"
+#include <string>
 //
 // C Implementation: storage_lockers
 //
@@ -3807,6 +3809,8 @@ static void locker_access_transferAccess(P_char chLocker, P_char ch)
 
 static int locker_chestcmd(P_char ch, char *arg)
 {
+	if (!ch || !ch->desc)
+		return FALSE;
 	StorageLocker *pLocker = locker_current_or_error(ch, "Error: no locker found.\r\n");
 	if (!pLocker)
 	{
@@ -3874,36 +3878,68 @@ static int locker_chestcmd(P_char ch, char *arg)
 			return TRUE;
 		}
 
-		int chest_cost = 500000;
-		int result = sql_create_private_chest(locker_id, arg2, arg3[0] ? arg3 : NULL);
-		if (result == -1)
+		auto finish = [locker_id, name = std::string(arg2)](P_desc completed_desc, int,
+								    const char *hash)
 		{
-			send_to_char("You already have the maximum of 5 private chests.\r\n", ch);
-			return TRUE;
-		}
-		if (result == 0)
-		{
-			send_to_char("Failed to create chest. Name may already be in use.\r\n", ch);
-			return TRUE;
-		}
-
-		if (GET_MONEY(ch) < chest_cost)
-		{
-			if (SUB_BALANCE(ch, chest_cost, 0) != 0)
+			P_char actor = completed_desc->character;
+			StorageLocker *locker = locker_current(actor);
+			if (!locker || locker->GetLockerId() != locker_id ||
+			    !locker_require_owner(locker, actor,
+						  "Only the locker owner can manage chests.\r\n"))
+				return;
+			int chest_cost = 500000;
+			int result = sql_create_private_chest_hashed(locker_id, name.c_str(), hash);
+			if (result == -1)
 			{
-				if (!sql_delete_private_chest(result))
-					logit(LOG_DEBUG,
-					      "Failed to remove unpaid private chest id %d",
-					      result);
-				send_to_char("The bank could not complete the chest payment.\r\n",
-					     ch);
-				return TRUE;
+				send_to_char(
+					"You already have the maximum of 5 private chests.\r\n",
+					actor);
+				return;
 			}
-		}
-		else
-			SUB_MONEY(ch, chest_cost, 0);
-		send_to_char_f(ch, "Private chest '%s' created for 500 platinum.%s\r\n", arg2,
-			       arg3[0] ? " Password set." : "");
+			if (result == 0)
+			{
+				send_to_char(
+					"Failed to create chest. Name may already be in use.\r\n",
+					actor);
+				return;
+			}
+
+			if (GET_MONEY(actor) < chest_cost)
+			{
+				if (SUB_BALANCE(actor, chest_cost, 0) != 0)
+				{
+					if (!sql_delete_private_chest(result))
+						logit(LOG_DEBUG,
+						      "Failed to remove unpaid private chest id %d",
+						      result);
+					send_to_char(
+						"The bank could not complete the chest payment.\r\n",
+						actor);
+					return;
+				}
+			}
+			else
+				SUB_MONEY(actor, chest_cost, 0);
+			send_to_char_f(actor, "Private chest '%s' created for 500 platinum.%s\r\n",
+				       name.c_str(), hash ? " Password set." : "");
+			return;
+		};
+		if (!arg3[0])
+			finish(ch->desc, 1, nullptr);
+		else if (!password_async_start(
+				 ch->desc, password_work_submit(arg3, nullptr, nullptr, 0, 0),
+				 nullptr,
+				 [finish](P_desc completed_desc, int valid, const char *hash)
+				 {
+					 if (!hash)
+					 {
+						 send_to_char("Failed to hash chest password.\r\n",
+							      completed_desc->character);
+						 return;
+					 }
+					 finish(completed_desc, valid, hash);
+				 }))
+			send_to_char("Password service is busy; try again later.\r\n", ch);
 		return TRUE;
 	}
 
@@ -3953,7 +3989,7 @@ static int locker_chestcmd(P_char ch, char *arg)
 
 		if (!arg3[0] || !strcasecmp(arg3, "none"))
 		{
-			if (!sql_set_chest_password(chest_id, NULL))
+			if (!sql_set_chest_password_hash(chest_id, NULL))
 			{
 				send_to_char("Failed to remove chest password.\r\n", ch);
 				return TRUE;
@@ -3967,12 +4003,34 @@ static int locker_chestcmd(P_char ch, char *arg)
 				send_to_char("Chest passwords must be at most 72 bytes.\r\n", ch);
 				return TRUE;
 			}
-			if (!sql_set_chest_password(chest_id, arg3))
-			{
-				send_to_char("Failed to set chest password.\r\n", ch);
-				return TRUE;
-			}
-			send_to_char_f(ch, "Password set for chest '%s'.\r\n", arg2);
+			if (!password_async_start(
+				    ch->desc, password_work_submit(arg3, nullptr, nullptr, 0, 0),
+				    nullptr,
+				    [locker_id, chest_id, name = std::string(arg2)](
+					    P_desc completed_desc, int, const char *hash)
+				    {
+					    P_char actor = completed_desc->character;
+					    StorageLocker *locker = locker_current(actor);
+					    if (!locker || locker->GetLockerId() != locker_id ||
+						sql_get_chest_id(locker_id, name.c_str()) !=
+							chest_id ||
+						!locker_require_owner(
+							locker, actor,
+							"Only the locker owner can manage chests.\r\n"))
+						    return;
+					    if (!hash ||
+						!sql_set_chest_password_hash(chest_id, hash))
+					    {
+						    send_to_char(
+							    "Failed to set chest password.\r\n",
+							    actor);
+						    return;
+					    }
+					    send_to_char_f(actor,
+							   "Password set for chest '%s'.\r\n",
+							   name.c_str());
+				    }))
+				send_to_char("Password service is busy; try again later.\r\n", ch);
 		}
 		return TRUE;
 	}
@@ -3986,6 +4044,8 @@ static int locker_chestcmd(P_char ch, char *arg)
 
 static int locker_opencmd(P_char ch, char *arg)
 {
+	if (!ch || !ch->desc)
+		return FALSE;
 	StorageLocker *pLocker = locker_current(ch);
 	if (!pLocker)
 		return FALSE;
@@ -4007,20 +4067,61 @@ static int locker_opencmd(P_char ch, char *arg)
 
 	P_char locker_char = pLocker->GetLockerChar();
 	bool is_owner = locker_char && esc_locker_name_matches_player(GET_NAME(locker_char), ch);
-	if (!is_owner)
+	auto finish = [locker_id, chest_id, name = std::string(arg1)](P_desc completed_desc,
+								      int valid, const char *)
 	{
-		if (!sql_verify_chest_password(chest_id, arg2))
+		P_char actor = completed_desc->character;
+		StorageLocker *locker = locker_current(actor);
+		if (!locker || locker->GetLockerId() != locker_id ||
+		    sql_get_chest_id(locker_id, name.c_str()) != chest_id)
+			return;
+		if (!valid)
 		{
-			send_to_char("Wrong password.\r\n", ch);
-			sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), CHEST_ACTION_FAIL,
-					       NULL);
-			return TRUE;
+			send_to_char("Wrong password.\r\n", actor);
+			sql_log_chest_activity(locker_id, chest_id, GET_NAME(actor),
+					       CHEST_ACTION_FAIL, NULL);
+			return;
 		}
+		locker->SetCurrentChestId(chest_id);
+		send_to_char_f(actor, "You open the '%s' chest.\r\n", name.c_str());
+		sql_log_chest_activity(locker_id, chest_id, GET_NAME(actor), CHEST_ACTION_OPEN,
+				       NULL);
+	};
+	if (is_owner)
+	{
+		finish(ch->desc, 1, nullptr);
+		return TRUE;
 	}
-
-	pLocker->SetCurrentChestId(chest_id);
-	send_to_char_f(ch, "You open the '%s' chest.\r\n", arg1);
-	sql_log_chest_activity(locker_id, chest_id, GET_NAME(ch), CHEST_ACTION_OPEN, NULL);
+	if (strlen(arg2) > BCRYPT_PASSWORD_MAX_BYTES)
+	{
+		finish(ch->desc, 0, nullptr);
+		return TRUE;
+	}
+	char *hash = nullptr;
+	if (!sql_get_chest_password_hash(chest_id, &hash))
+	{
+		finish(ch->desc, 0, nullptr);
+		return TRUE;
+	}
+	if (!hash || !arg2[0])
+	{
+		finish(ch->desc, !hash && !arg2[0], nullptr);
+		free(hash);
+		return TRUE;
+	}
+	bool submitted = password_async_start(
+		ch->desc, password_work_submit(arg2, hash, nullptr, 1, 1), hash,
+		[finish, chest_id, expected = std::string(hash)](P_desc completed_desc, int valid,
+								 const char *upgrade)
+		{
+			finish(completed_desc,
+			       valid && sql_finish_chest_password(chest_id, expected.c_str(),
+								  upgrade),
+			       nullptr);
+		});
+	free(hash);
+	if (!submitted)
+		send_to_char("Password service is busy; try again later.\r\n", ch);
 	return TRUE;
 }
 

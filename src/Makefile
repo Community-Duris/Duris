@@ -98,6 +98,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/achievements.o \
 				 account/account.o \
 				 account/password_hash.o \
+				 account/password_async.o \
 				 account/account_recovery.o \
 				 account/account_recovery_nanny.o \
 				 account/account_reward.o \

@@ -2,6 +2,7 @@
 """Runtime and source contracts for private-chest password hardening."""
 
 from _paths import SRC
+from contract_text import contains
 import ctypes
 import hashlib
 import subprocess
@@ -164,39 +165,26 @@ assert '#include "account/password_hash.h"' in ws
 assert "char *bcrypt_hash_password" not in account
 assert "FREE(new_hash)" not in account
 assert "FREE(hash)" not in account + ws
-assert account.count("free(new_hash);") == 1
-assert account.count("free(hash);") == 1
-# register, change_password and the account-recovery complete_reset each free one hash.
-assert ws.count("free(hash);") == 3
-print("[PASS] shared hashing is reentrant, bounded, and consumed by account callers")
+assert "password_async_start(" in account and "password_async_start(" in ws
+assert "bcrypt_hash_password(" not in account + ws + storage + sql_player
+assert "bcrypt_verify_password(" not in account + ws + storage + sql_player
+print("[PASS] game-thread callers use the shared worker without synchronous bcrypt fallbacks")
 
-create = section(sql_player, "int sql_create_private_chest", "bool sql_delete_private_chest")
-setter = section(sql_player, "bool sql_set_chest_password", "static bool sql_verify_chest_password_internal")
-verify = section(sql_player, "static bool sql_verify_chest_password_internal", "int sql_count_private_chests")
+create = section(sql_player, "int sql_create_private_chest_hashed", "bool sql_delete_private_chest")
+setter = section(sql_player, "bool sql_set_chest_password_hash", "bool sql_get_chest_password_hash")
+verify = section(sql_player, "bool sql_get_chest_password_hash", "int sql_count_private_chests")
 assert "SHA2(" not in create + setter + verify
-assert "sql_escape_string(password)" not in create + setter + verify
-assert "bcrypt_hash_password(password)" in create
-assert "bcrypt_hash_password(password)" in setter
-assert create.index("bcrypt_hash_password(password)") < create.index("sql_escape_string(hash)")
-assert setter.index("bcrypt_hash_password(password)") < setter.index("sql_escape_string(hash)")
-assert create.count("BCRYPT_PASSWORD_MAX_BYTES") == 1
-assert setter.count("BCRYPT_PASSWORD_MAX_BYTES") == 1
-assert verify.count("BCRYPT_PASSWORD_MAX_BYTES") == 1
-assert "sql_set_chest_password(chest_id, NULL)" in storage
-assert "sql_set_chest_password(chest_id, arg3)" in storage
+assert "is_bcrypt_hash(hash)" in create and "is_bcrypt_hash(hash)" in setter
+assert "sql_escape_string(hash)" in create and "sql_escape_string(hash)" in setter
+assert "sql_set_chest_password_hash(chest_id, NULL)" in storage
+assert "sql_set_chest_password_hash(chest_id, hash)" in storage
 assert "Chest passwords must be at most 72 bytes." in storage
-print("[PASS] create and reset hash before SQL and reject bcrypt-truncated inputs")
-
-assert 'SELECT password_hash FROM private_chests WHERE id=%d' in verify
-assert "row[0] == NULL" in verify
-assert "bcrypt_verify_password(password, row[0])" in verify
-assert "password_verify_legacy_sha256(password, row[0])" in verify
+assert "SELECT password_hash FROM private_chests WHERE id=%d" in verify
 assert "WHERE id=%d AND password_hash='%s'" in verify
 assert "mysql_affected_rows(DB) == 1" in verify
-assert "sql_verify_chest_password_internal(chest_id, password, false)" in verify
-assert "return true;" in verify
+assert contains(storage, "sql_finish_chest_password(chest_id, expected.c_str(), upgrade)")
 assert "SHA2(" not in storage
-print("[PASS] opens verify in process and conditionally upgrade valid legacy hashes")
+print("[PASS] chest writes accept only hashes; opens recheck credentials and upgrades use compare-and-swap")
 
 for relative in (
     "migrations/bootstrap_multithread_safe.sql",

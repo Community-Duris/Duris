@@ -1,3 +1,6 @@
+#include "account/password_async.h"
+#include <string>
+#include <memory>
 /*
  * ws_handlers.c - websocket command handlers for durismud
  *
@@ -1510,7 +1513,6 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 {
 	cJSON *account_json, *password_json, *email_json;
 	char tmp_name[MAX_INPUT_LENGTH];
-	char *hash;
 	int i;
 
 	if (!d || d->account || d->durisweb_verified || d->durisweb_backend)
@@ -1621,32 +1623,50 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 	d->account->acct_name = str_dup(tmp_name);
 	d->account->acct_email = str_dup(email_json->valuestring);
 
-	/* hash password with bcrypt */
-	hash = bcrypt_hash_password(password_json->valuestring);
-	if (!hash)
+	if (!password_async_start(
+		    d, password_work_submit(password_json->valuestring, nullptr, nullptr, 0, 0),
+		    nullptr,
+		    [](P_desc completed_desc, int, const char *hash)
+		    {
+			    if (account_exists("Accounts", completed_desc->account->acct_name) ||
+				is_email_taken(completed_desc->account->acct_email))
+			    {
+				    ws_send_auth_failed(
+					    completed_desc,
+					    "Unable to create account with those details");
+				    completed_desc->account = free_account(completed_desc->account);
+				    return;
+			    }
+			    if (!hash)
+			    {
+				    ws_send_auth_failed(completed_desc,
+							"Failed to hash password - server error");
+				    completed_desc->account = free_account(completed_desc->account);
+				    return;
+			    }
+			    completed_desc->account->acct_password = str_dup(hash);
+
+			    /* mark account as confirmed (skip email verification for web clients) */
+			    completed_desc->account->acct_confirmed = 1;
+
+			    /* save account to disk */
+			    if (write_account(completed_desc->account) == -1)
+			    {
+				    ws_send_auth_failed(completed_desc,
+							"Failed to save account - server error");
+				    statuslog(56, "&+RALERT&n: WebSocket account write failed");
+				    completed_desc->account = free_account(completed_desc->account);
+				    return;
+			    }
+
+			    statuslog(56, "WebSocket: New account created");
+
+			    ws_send_auth_success(completed_desc, "registered");
+		    }))
 	{
-		ws_send_auth_failed(d, "Failed to hash password - server error");
+		ws_send_auth_failed(d, "Password service is busy; try again later");
 		d->account = free_account(d->account);
-		return;
 	}
-	d->account->acct_password = str_dup(hash);
-	free(hash);
-
-	/* mark account as confirmed (skip email verification for web clients) */
-	d->account->acct_confirmed = 1;
-
-	/* save account to disk */
-	if (write_account(d->account) == -1)
-	{
-		ws_send_auth_failed(d, "Failed to save account - server error");
-		statuslog(56, "&+RALERT&n: WebSocket account write failed");
-		d->account = free_account(d->account);
-		return;
-	}
-
-	statuslog(56, "WebSocket: New account created");
-
-	ws_send_auth_success(d, "registered");
 }
 
 /* adds one race, with its available classes, to a chargen_options race array.
@@ -2761,7 +2781,6 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data)
 {
 	cJSON *current_json, *new_json;
 	const char *current_password, *new_password;
-	char *hash;
 
 	if (!d->account)
 	{
@@ -2788,50 +2807,57 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data)
 	current_password = current_json->valuestring;
 	new_password = new_json->valuestring;
 
-	/* verify current password */
-	if (!bcrypt_verify_password(current_password, d->account->acct_password))
-	{
-		ws_send_account_message(d, "error", NULL, "Current password incorrect");
-		return;
-	}
-
-	/* validate new password */
 	if (strlen(new_password) < 6)
 	{
 		ws_send_account_message(d, "error", NULL, "Password must be at least 6 characters");
 		return;
 	}
+	if (!password_async_start(
+		    d,
+		    password_work_submit(current_password, d->account->acct_password, new_password,
+					 0, 0),
+		    d->account->acct_password,
+		    [](P_desc completed_desc, int valid, const char *hash)
+		    {
+			    if (!valid)
+			    {
+				    ws_send_account_message(completed_desc, "error", NULL,
+							    "Current password incorrect");
+				    return;
+			    }
+			    if (!hash)
+			    {
+				    ws_send_account_message(completed_desc, "error", NULL,
+							    "Failed to hash password");
+				    return;
+			    }
 
-	/* hash new password */
-	hash = bcrypt_hash_password(new_password);
-	if (!hash)
-	{
-		ws_send_account_message(d, "error", NULL, "Failed to hash password");
-		return;
-	}
+			    /* update password */
+			    if (completed_desc->account->acct_password)
+			    {
+				    FREE(completed_desc->account->acct_password);
+			    }
+			    completed_desc->account->acct_password = str_dup(hash);
+			    if (-1 == write_account(completed_desc->account))
+			    {
+				    ws_send_account_message(completed_desc, "error", NULL,
+							    "Failed to save password change");
+				    statuslog(56,
+					      "&+RALERT&n: account password-change save failed");
+				    persistence_alert(AVATAR, "account", "redacted", "none", "none",
+						      "write_failed", NULL);
+				    return;
+			    }
 
-	/* update password */
-	if (d->account->acct_password)
-	{
-		FREE(d->account->acct_password);
-	}
-	d->account->acct_password = str_dup(hash);
-	free(hash);
-	if (-1 == write_account(d->account))
-	{
-		ws_send_account_message(d, "error", NULL, "Failed to save password change");
-		statuslog(56, "&+RALERT&n: account password-change save failed");
-		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
-				  NULL);
-		return;
-	}
+			    /* A reset code issued against the old password must never complete. */
+			    account_recovery_invalidate(completed_desc->account->acct_name);
 
-	/* A reset code issued against the old password must never complete. */
-	account_recovery_invalidate(d->account->acct_name);
+			    statuslog(56, "Account password changed");
 
-	statuslog(56, "Account password changed");
-
-	ws_send_account_message(d, "password_changed", NULL, NULL);
+			    ws_send_account_message(completed_desc, "password_changed", NULL, NULL);
+		    }))
+		ws_send_account_message(d, "error", NULL,
+					"Password service is busy; try again later");
 }
 
 /* === account password recovery by email === */
@@ -2969,8 +2995,6 @@ void ws_cmd_complete_reset(struct descriptor_data *d, cJSON *data)
 	const char *account_name, *new_password;
 	char lower_name[ACCOUNT_RECOVERY_NAME_BUF];
 	char normalized[ACCOUNT_RECOVERY_CODE_BUF] = "";
-	account_recovery_complete_outcome outcome;
-	char *hash;
 
 	if (d && (d->durisweb_verified || d->durisweb_backend))
 	{
@@ -3029,36 +3053,55 @@ void ws_cmd_complete_reset(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 
-	hash = bcrypt_hash_password(new_password);
-	if (!hash)
-	{
-		OPENSSL_cleanse(normalized, sizeof normalized);
-		ws_send_account_message(d, "error", NULL, "Failed to hash password");
-		return;
-	}
+	if (!password_async_start(
+		    d, password_work_submit(new_password, nullptr, nullptr, 0, 0), nullptr,
+		    [name = std::string(lower_name),
+		     code = std::shared_ptr<char>(strdup(normalized),
+						  [](char *secret)
+						  {
+							  if (secret)
+							  {
+								  OPENSSL_cleanse(secret,
+										  strlen(secret));
+								  free(secret);
+							  }
+						  })](P_desc completed_desc, int, const char *hash)
+		    {
+			    if (!hash)
+			    {
+				    ws_send_account_message(completed_desc, "error", NULL,
+							    "Failed to hash password");
+				    return;
+			    }
 
-	outcome = account_recovery_complete(lower_name, normalized, hash, d);
-	free(hash);
+			    auto outcome = account_recovery_complete(name.c_str(), code.get(), hash,
+								     completed_desc);
+
+			    switch (outcome)
+			    {
+			    case account_recovery_complete_outcome::ok:
+				    completed_desc->account_recovery_attempts = 0;
+				    /* Not logged in here: the client follows up with an ordinary login. */
+				    ws_send_account_message(completed_desc, "reset_completed", NULL,
+							    NULL);
+				    break;
+			    case account_recovery_complete_outcome::load_failed:
+			    case account_recovery_complete_outcome::write_failed:
+				    ws_send_account_message(completed_desc, "error", NULL,
+							    "Failed to save password change");
+				    break;
+			    case account_recovery_complete_outcome::rejected:
+			    case account_recovery_complete_outcome::fenced:
+			    case account_recovery_complete_outcome::superseded:
+			    case account_recovery_complete_outcome::bad_hash:
+				    ws_send_account_message(completed_desc, "error", NULL,
+							    "Invalid or expired reset code");
+				    break;
+			    }
+		    }))
+		ws_send_account_message(d, "error", NULL,
+					"Password service is busy; try again later");
 	OPENSSL_cleanse(normalized, sizeof normalized);
-
-	switch (outcome)
-	{
-	case account_recovery_complete_outcome::ok:
-		d->account_recovery_attempts = 0;
-		/* Not logged in here: the client follows up with an ordinary login. */
-		ws_send_account_message(d, "reset_completed", NULL, NULL);
-		break;
-	case account_recovery_complete_outcome::load_failed:
-	case account_recovery_complete_outcome::write_failed:
-		ws_send_account_message(d, "error", NULL, "Failed to save password change");
-		break;
-	case account_recovery_complete_outcome::rejected:
-	case account_recovery_complete_outcome::fenced:
-	case account_recovery_complete_outcome::superseded:
-	case account_recovery_complete_outcome::bad_hash:
-		ws_send_account_message(d, "error", NULL, "Invalid or expired reset code");
-		break;
-	}
 }
 
 /* delete a character */
@@ -3902,7 +3945,7 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 {
 	/* No account mutation or entry may overtake password verification. */
-	if (d && d->login_password_job)
+	if (d && (d->login_password_job || d->password_request))
 		return;
 	static const struct
 	{

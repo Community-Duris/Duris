@@ -53,8 +53,8 @@ format_account_lockers = function_body(
 
 # Login defers bcrypt/legacy verification; deletion still verifies before its confirmation.
 assert "password_login_submit(" in password
-assert "account_password_matches(d->account, arg)" in begin_delete
-assert begin_delete.index("echo_off(d)") < begin_delete.index("account_password_matches")
+assert "password_login_submit(arg, d->account->acct_password, 0)" in begin_delete
+assert begin_delete.index("echo_off(d)") < begin_delete.index("password_login_submit")
 
 # A matching password alone is insufficient: the account name must match byte-for-byte.
 assert "strcmp(arg, d->account->acct_name)" in confirm_delete
