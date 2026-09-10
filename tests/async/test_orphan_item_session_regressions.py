@@ -181,8 +181,9 @@ check("creation grants publish only after the ownership commit",
       "struct creation_grant_queue" in movement
       and "creation_grant_completion" in movement
       and movement.index("if (!committed)", movement.index("creation_grant_completion"))
-      < movement.index("obj_to_char(object, recipient)",
-                       movement.index("creation_grant_completion")))
+      < movement.index("else if (!publish_creation_grant(actor, request))",
+                       movement.index("creation_grant_completion"))
+      and "item_ownership_runtime_apply(entry.payload, result)" in movement)
 check("multi-item creation rewards serialize owner revisions",
       "std::deque<pending_creation_grant> requests" in movement
       and "queue.requests.pop_front()" in movement
@@ -195,12 +196,15 @@ check("container placement waits before advancing a multi-item grant queue",
       and "queue.requests.pop_front()" in movement)
 grant_start = movement[movement.index("bool start_creation_grant("):]
 grant_start = grant_start[:grant_start.index("bool queue_creation_grant(")]
+grant_publication = movement[movement.index("bool publish_creation_grant("):]
+grant_publication = grant_publication[:grant_publication.index("void creation_grant_completion(")]
 grant_completion = movement[movement.index("void creation_grant_completion("):]
-grant_completion = grant_completion[:grant_completion.index("bool start_creation_grant(")]
+grant_completion = grant_completion[:grant_completion.index("void creation_grant_batch_completion(")]
 check("container grants commit their durable parent before live publication",
       "actor, object, target_container, source, owner" in grant_start
-      and "obj_from_char(object);" in grant_completion
-      and "obj_to_obj(object, container);" in grant_completion
+      and "obj_from_char(object);" in grant_publication
+      and "obj_to_obj(object, container);" in grant_publication
+      and "publish_creation_grant(actor, request)" in grant_completion
       and "put(recipient, object, container" not in grant_completion)
 newbie = nanny[nanny.index("void load_obj_to_newbies(P_char ch)"):]
 newbie = newbie[:newbie.index("/* check for a legal player name")]
