@@ -1679,13 +1679,13 @@ void ne_events(void)
 	PROFILE_END(event_loop);
 	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
 	long loop_us = nevent_elapsed_us(&loop_started, &loop_finished);
-	char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
-	const char *trace_tick =
-		latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
-	const char *trace_boot_id = latency_trace_boot_id();
-	const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 	if (deferred > 0)
 	{
+		char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		const char *trace_tick =
+			latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+		const char *trace_boot_id = latency_trace_boot_id();
+		const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 		logit(LOG_STATUS,
 		      "NEVENT BUDGET: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 		      " pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld slowest=%s slowest_us=%ld scheduled=%ld",
@@ -1698,6 +1698,11 @@ void ne_events(void)
 	}
 	if (nevent_catchup_quota > 0 || new_debt > 0)
 	{
+		char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		const char *trace_tick =
+			latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+		const char *trace_boot_id = latency_trace_boot_id();
+		const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 		logit(LOG_STATUS,
 		      "NEVENT CATCHUP: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 		      " pulse=%d debt=%ld debt_estimated_us=%llu oldest_due=%llu remaining_pulses=%d quota=%ld extra_callbacks=%ld executed=%ld extension_us=%ld avg_callback_us=%ld new_debt=%ld",
@@ -1728,6 +1733,11 @@ void ne_events(void)
 	nevent_last_pulse_total_us = nevent_elapsed_us(&loop_started, &loop_finished);
 	if (nevent_last_pulse_total_us >= 50000)
 	{
+		char trace_tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
+		const char *trace_tick =
+			latency_trace_format_tick(latency_trace_current_tick(), trace_tick_buffer);
+		const char *trace_boot_id = latency_trace_boot_id();
+		const uint64_t trace_pulse_start_us = latency_trace_pulse_start_monotonic_us();
 		logit(LOG_STATUS,
 		      "NEVENT SLOW: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
 		      " pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",

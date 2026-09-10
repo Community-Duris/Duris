@@ -983,7 +983,7 @@ static uint64_t loop_monotonic_us(void)
 	{
 		clock_failure_reported = true;
 		logit(LOG_STATUS,
-		      "LATENCY CLOCK FAILURE: CLOCK_MONOTONIC unavailable; elapsed samples are zero until recovery");
+		      "LATENCY CLOCK FAILURE: CLOCK_MONOTONIC unavailable; invalid elapsed samples are omitted until recovery");
 	}
 	return now_us;
 }
@@ -1010,6 +1010,14 @@ static void prepare_command_latency_log_buffer(command_latency_log_buffer *repor
 	command_latency_log_buffer_reset(report, continuation_prefix);
 }
 
+static void collect_command_latency_log(const char *line, void *context)
+{
+	command_latency_log_buffer *report = (command_latency_log_buffer *)context;
+	if (!report->length)
+		prepare_command_latency_log_buffer(report);
+	command_latency_log_buffer_collect(line, context);
+}
+
 static void prepare_descriptor_latency_event(command_latency_event *event,
 					     command_latency_kind kind, P_desc descriptor,
 					     const char *playing_input)
@@ -1018,9 +1026,11 @@ static void prepare_descriptor_latency_event(command_latency_event *event,
 		descriptor ? (descriptor->original ? descriptor->original : descriptor->character) :
 			     NULL;
 	const bool identified_player = player && IS_PC(player);
-	command_latency_event_prepare(event, kind, descriptor ? descriptor->connected : -1,
-				      identified_player ? (long)GET_ID(player) : -1L,
-				      identified_player ? GET_NAME(player) : NULL, playing_input);
+	command_latency_event_prepare(
+		event, kind, descriptor ? descriptor->connected : -1,
+		identified_player ? (long)GET_ID(player) : -1L,
+		identified_player ? GET_NAME(player) : NULL,
+		kind == COMMAND_LATENCY_PLAYING ? input_command_label(playing_input) : NULL);
 }
 
 class scoped_command_latency
@@ -1603,6 +1613,8 @@ resume_game_loop:
 				 (pulse % (int)get_property("ctf.slowness", 3)))
 				continue;
 
+			descriptor_latency.finish();
+
 			/* check for hella long wait time here..  bandaid solution but it should (sort of) work */
 
 			/* Self-heal a stuck command gate: PLR2_WAIT is only ever cleared by
@@ -1657,7 +1669,6 @@ resume_game_loop:
 
 				if (point->showstr_count) /* pager for text */
 				{
-					descriptor_latency.finish();
 					command_latency_event pager_event = {};
 					prepare_descriptor_latency_event(
 						&pager_event, COMMAND_LATENCY_PAGER, point, NULL);
@@ -1670,7 +1681,6 @@ resume_game_loop:
 				}
 				else if (point->str) /* mail, boards */
 				{
-					descriptor_latency.finish();
 					command_latency_event editor_event = {};
 					prepare_descriptor_latency_event(
 						&editor_event, COMMAND_LATENCY_EDITOR, point, NULL);
@@ -1683,7 +1693,6 @@ resume_game_loop:
 				}
 				else if (point->connected == CON_PLAYING)
 				{
-					descriptor_latency.finish();
 					command_latency_event playing_event = {};
 					prepare_descriptor_latency_event(&playing_event,
 									 COMMAND_LATENCY_PLAYING,
@@ -1697,7 +1706,6 @@ resume_game_loop:
 				}
 				else
 				{
-					descriptor_latency.finish();
 					command_latency_event nanny_event = {};
 					prepare_descriptor_latency_event(
 						&nanny_event, COMMAND_LATENCY_NANNY, point, NULL);
@@ -1716,12 +1724,11 @@ resume_game_loop:
 		PROFILE_END(commands);
 		latency_trace_record("commands", command_sweep_us, loop_tick);
 		command_latency_log_buffer command_report;
-		prepare_command_latency_log_buffer(&command_report);
+		command_report.length = 0;
 		command_latency_report_throttled(&command_report_state, &command_latency,
 						 command_sweep_us, latency_trace_boot_id(),
 						 loop_tick, loop_start_mono_us,
-						 command_latency_log_buffer_collect,
-						 &command_report);
+						 collect_command_latency_log, &command_report);
 		if (command_report.length)
 			logit(LOG_STATUS, "%s", command_report.text);
 
@@ -2016,35 +2023,42 @@ resume_game_loop:
 		/* check out the time */
 		const uint64_t loop_us =
 			latency_trace_elapsed_us(loop_time_begin_us, loop_monotonic_us());
-		if (loop_us >= 250000) // 4 ticks a sec
+		if (loop_us != LATENCY_TRACE_DURATION_INVALID && loop_us >= 250000) // 4 ticks a sec
 		{
 			char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
-			statuslog(56,
-				  "MUD TICK TOOK TOO LONG - loop time - %f: boot=%s tick=%s"
-				  " pulse_start_mono_us=%" PRIu64,
-				  (double)loop_us / 1000000.0, latency_trace_boot_id(),
-				  latency_trace_format_tick(loop_tick, tick_buffer),
-				  loop_start_mono_us);
-			statuslog(56, "  - connections time - %f",
-				  (double)connections_us / 1000000.0);
-			statuslog(56, "  - activities time - %f",
-				  (double)activities_us / 1000000.0);
-			statuslog(56, "  - combat time - %f", (double)combat_us / 1000000.0);
-			statuslog(56, "  - commands time - %f",
-				  (double)command_sweep_us / 1000000.0);
-			statuslog(56, "  - ne_events time - %f", (double)ne_events_us / 1000000.0);
-			statuslog(56, "  - prompts time - %f", (double)prompts_us / 1000000.0);
-			statuslog(56, "  - aff/pts time - %f",
-				  (double)affect_and_points_us / 1000000.0);
-			statuslog(56, "    - affect_update time - %f",
-				  (double)affect_us / 1000000.0);
-			statuslog(56, "    - point_update time - %f", (double)point_us / 1000000.0);
+			char duration_buffers[9][LATENCY_TRACE_TICK_STRING_LENGTH];
+			statuslog(
+				56,
+				"MUD TICK TOOK TOO LONG - loop time - %f: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
+				" connections_us=%s"
+				" activities_us=%s"
+				" combat_us=%s"
+				" commands_us=%s"
+				" ne_events_us=%s"
+				" prompts_us=%s"
+				" affect_and_points_us=%s"
+				" affect_update_us=%s"
+				" point_update_us=%s",
+				(double)loop_us / 1000000.0, latency_trace_boot_id(),
+				latency_trace_format_tick(loop_tick, tick_buffer),
+				loop_start_mono_us,
+				latency_trace_format_duration(connections_us, duration_buffers[0]),
+				latency_trace_format_duration(activities_us, duration_buffers[1]),
+				latency_trace_format_duration(combat_us, duration_buffers[2]),
+				latency_trace_format_duration(command_sweep_us,
+							      duration_buffers[3]),
+				latency_trace_format_duration(ne_events_us, duration_buffers[4]),
+				latency_trace_format_duration(prompts_us, duration_buffers[5]),
+				latency_trace_format_duration(affect_and_points_us,
+							      duration_buffers[6]),
+				latency_trace_format_duration(affect_us, duration_buffers[7]),
+				latency_trace_format_duration(point_us, duration_buffers[8]));
 		}
 		latency_trace_record("total_tick", loop_us, loop_tick);
 		if (!(tics % 300))
 		{
 			latency_trace_snapshot snapshot = {};
-			latency_trace_snapshot_capture(&snapshot);
+			latency_trace_snapshot_take_and_reset(&snapshot);
 			FILE *_ltf = fopen("logs/latency_trace.log", "a");
 			if (_ltf)
 			{
@@ -2060,7 +2074,9 @@ resume_game_loop:
 			fflush(stderr);
 		}
 		memcpy(&timeout, &opt_time, sizeof(timeout));
-		const suseconds_t usec_spent = (suseconds_t)MIN(loop_us, (uint64_t)timeout.tv_usec);
+		const suseconds_t usec_spent =
+			(suseconds_t)MIN(loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us,
+					 (uint64_t)timeout.tv_usec);
 		timeout.tv_usec = MAX(0, timeout.tv_usec - usec_spent);
 
 		if (timeout.tv_sec || timeout.tv_usec)

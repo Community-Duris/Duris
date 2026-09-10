@@ -1015,13 +1015,12 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	if (fclose(log_f))
 		ok = 0;
 	const uint64_t fallback_finished_us = latency_trace_monotonic_us();
-	latency_trace_record("fallback_file_write",
-			     fallback_finished_us >= fallback_started_us ?
-				     fallback_finished_us - fallback_started_us :
-				     0,
-			     LATENCY_TRACE_TICK_UNAVAILABLE);
 	persistence_fallback_count++;
 	pthread_mutex_unlock(&persistence_fallback_log_mutex);
+	latency_trace_record_nonblocking("fallback_file_write",
+					 latency_trace_elapsed_us(fallback_started_us,
+								  fallback_finished_us),
+					 LATENCY_TRACE_TICK_UNAVAILABLE);
 
 	fallback_count++;
 	if (!ok)

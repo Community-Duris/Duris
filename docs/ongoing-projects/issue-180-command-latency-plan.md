@@ -34,8 +34,11 @@ statement expression. The process-global trace made the old utility and
 persistence dump/reset wrappers redundant, so they were removed. Scalar queue
 producers use a nonblocking trace path after releasing their queue mutex;
 snapshots disclose samples dropped because the trace mutex was contended. The
-fallback file-write sample also moved from process CPU time to monotonic elapsed
-time while its producer was being audited.
+fallback file-write sample also uses nonblocking recording after releasing its
+application mutex. Section names are copied into fixed 64-byte storage; overlong
+names and table saturation increment the dropped-section counter and are excluded
+from both section statistics and the top ten. `latency_trace_snapshot_take_and_reset`
+makes the consuming window boundary explicit; each snapshot owns its labels.
 
 A native ASan/UBSan regression exercises bounded window reset, 64-bit ticks,
 unavailable worker ticks, distinct process identities, identical dual rendering,
@@ -50,8 +53,9 @@ shared monotonic microsecond timer. One checked `timespec` conversion helper is
 used by both the profiler and trace clocks, while the game loop and command
 tracker use the trace clock and elapsed helper directly. All section and per-event accumulators,
 function signatures, saves, averages, and the 50 ms `LONG EVENT` threshold now
-use explicit microseconds. Failed or retrograde clock reads produce a zero
-duration rather than an underflow while preserving call counts. Enabling the
+use explicit microseconds. Failed or retrograde clock reads are excluded from
+profile call counts and trace statistics. Trace windows disclose
+`invalid_clock_samples`; genuine zero-microsecond measurements remain valid. Enabling the
 debug profiler rebases timer endpoints without clearing accumulated results,
 so time spent while profiling is disabled does not enter the next outside-time
 sample. If profiling is enabled or reset from inside an otherwise unprofiled
@@ -69,28 +73,32 @@ threshold.
 
 The third implementation increment adds a fixed-size command-sweep tracker. It
 times playing dispatch, nanny, pager, editor, SSL negotiation, and the remaining
-per-descriptor sweep work independently of debug profiling. At 50,000 us it
+per-descriptor prologue independently of debug profiling. At 50,000 us it
 emits a correlated slow-operation record; at the same sweep threshold it emits
 operation counts/totals/maxima plus explicitly labeled `unattributed_sweep_us`
-for instrumentation and enclosing-loop overhead. Labels are copied before dispatch,
+for command gates, queue selection, instrumentation, and enclosing-loop work
+outside the explicit operation/prologue scopes. Labels are copied before dispatch,
 so commands that extract a character or close a descriptor cannot invalidate
-diagnostic data. Playing records contain only a bounded sanitized first token
-(the command verb); arbitrary arguments are never retained. A secret entered as
-the first playing-state token cannot be distinguished from a command verb, so
-the privacy guarantee does not claim to redact that token itself.
-nanny, pager, and editor records never retain their input. Player identity is
+diagnostic data. Playing records contain a canonical command-table label selected by the existing
+queued-input lookup, or `unknown` for unrecognized input. Neither arbitrary
+first tokens nor arguments are retained. Abbreviations and case variants map to
+the table spelling. This labels the input command, not every nested command or
+context-specific input handler it may invoke. Nanny, pager, and editor records
+never retain their input. Player identity is
 bounded and sanitized as well.
 
 Each detailed report is capped at the eight slowest operations plus one summary
 and at most six fixed kind summaries. The lines are collected into one bounded
 buffer and written with one status-log call, without walking the descriptor list;
 each continuation line receives the same wall-clock prefix. During a sustained
-incident, full reports are limited to one per four pulses, while every intervening
-slow pulse emits one compact line containing its totals and worst operation. The
-next full report discloses the number of throttled reports, their slow-operation
-count, and the worst suppressed operation with its original tick and pulse start.
-The per-pulse summary separately discloses operations suppressed by the eight-item
-cap. Fast sweeps emit nothing. SSL counts include negotiation attempts that round
+incident, writes are limited to one per four pulses. Intervening slow pulses
+retain counters and exactly one worst slow operation without rendering or I/O.
+The next due pulse, even if healthy, flushes that summary with the original worst
+operation tick and pulse start. Unavailable ticks fall back to invocation counts
+(one call per pulse). Per-kind totals from suppressed pulses are not retained.
+`unreported_slow_operations` denotes operations omitted by the eight-item cap;
+`suppressed_reports` denotes whole reports deferred by the throttle. Fast sweeps
+without a pending summary emit nothing and do not format a wall-clock timestamp. SSL counts include negotiation attempts that round
 to zero microseconds; their totals and maxima, rather than count alone, indicate
 cost. The tracker lives in one small module shared by all dispatch paths and the
 descriptor-maintenance scope; dequeue and dispatch selection are unchanged.
@@ -178,8 +186,8 @@ remain hypotheses until dispatch measurements support them.
   at elapsed time >= 50,000 us even when the whole pulse is below 250 ms.
 - Record operation kind, elapsed microseconds, pre-dispatch connection state,
   copied player identity when present, and the pulse correlation fields from
-  Step 2. For playing commands, record a bounded, sanitized command verb;
-  optionally retain only explicitly safe diagnostic arguments. Never record
+  Step 2. For playing commands, record a bounded canonical command-table label
+  or `unknown`; retain no input arguments. Never record
   nanny input, passwords, editor/mail bodies, or arbitrary command arguments.
   Raw command text from the suggestion is unnecessary to identify a handler.
 - Capture required identity/labels before dispatch and use owned values after
@@ -199,8 +207,8 @@ Acceptance: execute controlled 49 ms/50 ms/200 ms cases with profiling off;
 verify thresholds and operation labels, aggregate many short calls, delayed SSL
 and maintenance, and disconnect/extraction during dispatch under sanitizers.
 Assert that nanny/editor/free-text bodies and playing-command arguments never
-enter output; the sanitized first playing token is intentionally the operation
-label. Verify pager/editor and casting/transaction queue selection remain
+enter output; unrecognized playing tokens must become `unknown`, while
+recognized input uses the command-table spelling. Verify pager/editor and casting/transaction queue selection remain
 unchanged. Busy pulses must produce bounded, throttled diagnostics and disclose
 both per-pulse and cross-pulse suppression.
 
@@ -455,3 +463,41 @@ player or input (`player_id=-1`, `player=-`, `operation=nanny`), with
 joined the operation, sweep, slow tick, and trace window using emitted fields
 alone and confirmed that none of the configured account, password, or character
 values appeared in any command diagnostic. No production system was contacted.
+
+
+### Outstanding PR review follow-up (2026-09-10)
+
+The latest adversarial review was checked against PR head `42cc2bd56`.
+
+1. Removed all emitter calls on throttled pulses. Pending evidence flushes on a
+   due healthy pulse as well as during sustained incidents.
+2. Ended descriptor timing before command gates and dequeue selection, leaving
+   a real residual for that otherwise unmeasured sweep work.
+3. Reused queued-input resolution for table-owned playing labels and `unknown`;
+   raw input tokens no longer cross the logging boundary.
+4. Copied trace section/top labels into owned bounded arrays. Rejected section
+   samples cannot appear only in the top ten.
+5. Renamed the consuming snapshot operation to `take_and_reset` everywhere.
+6. Invalid clock intervals are skipped and counted separately from real zero
+   samples; slow-tick diagnostics render unavailable durations as `-`.
+7. Fallback tracing is nonblocking and runs after the fallback mutex is released.
+8. Slow-tick breakdowns now share one correlated line.
+9. Timestamp preparation happens only on the first emitted command-report line;
+   event correlation lookups happen only in reporting branches. Boot-ID storage
+   is explicitly immutable for the process lifetime.
+10. Verified that `contract_text.contains` already ignores code whitespace.
+    Simplified the call assertion and removed the initialization micro-optimization
+    assertion; retained behavior and ordering contracts.
+11. Failed profiler intervals no longer increment measured call counts; skipped
+    rebase ends refresh the outside-time baseline. Suppression names and retention
+    limits are documented, and missing ticks cannot bypass throttling.
+
+Focused sanitizer harnesses cover the changed behavior, including actual
+command-table resolution, secret-like unknown tokens, silent emitter counts,
+recovery flush, missing ticks, freed/mutated label storage, invalid clocks versus
+real zero samples, and snapshot isolation. Queue/casting/gate, scheduler, latency,
+documentation, and minimal-boot contracts also pass.
+
+The local player-data limitation documented above remains: live playing, pager,
+editor, and debug-profile command execution is not claimed by these harnesses.
+No player data or credentials were repaired for this review.

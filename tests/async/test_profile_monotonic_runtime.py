@@ -92,12 +92,14 @@ int main()
 
 	const fake_sample rebase_during_outer_command[] = {
 		{ 0, 55, 0 },
+ { 0, 55, 50000000 },
 	};
 	set_samples(rebase_during_outer_command,
 		    sizeof rebase_during_outer_command / sizeof rebase_during_outer_command[0]);
 	PROFILE_REBASE(probe);
 	PROFILE_END(probe);
-	assert(sample_index == 1);
+	assert(sample_index == 2);
+ assert(probe_profile.ended_us == 55050000);
 	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
@@ -109,7 +111,7 @@ int main()
 	set_samples(failed_start, sizeof failed_start / sizeof failed_start[0]);
 	PROFILE_START(probe);
 	PROFILE_END(probe);
-	assert(probe_profile.calls == 4);
+	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
 
@@ -121,18 +123,24 @@ int main()
 		    sizeof invalid_nanoseconds / sizeof invalid_nanoseconds[0]);
 	PROFILE_START(probe);
 	PROFILE_END(probe);
-	assert(probe_profile.calls == 5);
+	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
 
-	const fake_sample backwards[] = {
+	const fake_sample failed_end[] = { { 0, 67, 0 }, { -1, 0, 0 } };
+ set_samples(failed_end, 2);
+ PROFILE_START(probe);
+ PROFILE_END(probe);
+ assert(probe_profile.calls == 3 && PROFILE_LAST_US(probe) == 0);
+
+ const fake_sample backwards[] = {
 		{ 0, 70, 0 },
 		{ 0, 69, 0 },
 	};
 	set_samples(backwards, sizeof backwards / sizeof backwards[0]);
 	PROFILE_START(probe);
 	PROFILE_END(probe);
-	assert(probe_profile.calls == 6);
+	assert(probe_profile.calls == 3);
 	assert(probe_profile.total_inside_us == 90000);
 	assert(PROFILE_LAST_US(probe) == 0);
 
@@ -141,7 +149,7 @@ int main()
 	PROFILE_START(probe);
 	PROFILE_END(probe);
 	assert(sample_index == 0);
-	assert(probe_profile.calls == 6);
+	assert(probe_profile.calls == 3);
 
 	puts("monotonic profile timer runtime checks passed");
 	return 0;

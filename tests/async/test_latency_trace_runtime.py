@@ -74,17 +74,19 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	assert(latency_trace_elapsed_us(100, 149) == 49);
-	assert(latency_trace_elapsed_us(100, 99) == 0);
-	assert(latency_trace_elapsed_us(0, 149) == 0);
+	assert(latency_trace_elapsed_us(100, 99) == LATENCY_TRACE_DURATION_INVALID);
+	assert(latency_trace_elapsed_us(0, 149) == LATENCY_TRACE_DURATION_INVALID);
 	char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
 	assert(!strcmp(latency_trace_format_tick(LATENCY_TRACE_TICK_UNAVAILABLE, tick_buffer), "-"));
+ assert(!strcmp(latency_trace_format_duration(LATENCY_TRACE_DURATION_INVALID, tick_buffer), "-"));
+ assert(!strcmp(latency_trace_format_duration(0, tick_buffer), "0"));
 	assert(!strcmp(latency_trace_format_tick(UINT64_C(1) << 40, tick_buffer),
 		       "1099511627776"));
 
 	latency_trace_reset();
 	latency_trace_record("spike", 900, 7);
 	latency_trace_snapshot first = {};
-	latency_trace_snapshot_capture(&first);
+	latency_trace_snapshot_take_and_reset(&first);
 	assert(first.sample_count == 1);
 	assert(first.dropped_section_samples == 0);
 	assert(first.dropped_contended_samples == 0);
@@ -93,7 +95,7 @@ int main(int argc, char **argv)
 	latency_trace_reset();
 	assert(latency_trace_record_nonblocking("nonblocking", 25, 8));
 	latency_trace_snapshot nonblocking = {};
-	latency_trace_snapshot_capture(&nonblocking);
+	latency_trace_snapshot_take_and_reset(&nonblocking);
 	assert(nonblocking.sample_count == 1);
 	assert(nonblocking.dropped_contended_samples == 0);
 	assert(max_for(&nonblocking, "nonblocking") == 25);
@@ -101,7 +103,7 @@ int main(int argc, char **argv)
 	latency_trace_record("spike", 100, UINT64_C(1) << 40);
 	latency_trace_record("worker", 50, LATENCY_TRACE_TICK_UNAVAILABLE);
 	latency_trace_snapshot second = {};
-	latency_trace_snapshot_capture(&second);
+	latency_trace_snapshot_take_and_reset(&second);
 	assert(second.sample_count == 2);
 	assert(max_for(&second, "spike") == 100);
 	assert(second.top[0].tick == (UINT64_C(1) << 40));
@@ -122,8 +124,10 @@ int main(int argc, char **argv)
 	char duplicate_b[] = "duplicate";
 	latency_trace_record(duplicate_a, 10, 1);
 	latency_trace_record(duplicate_b, 20, 2);
-	latency_trace_snapshot duplicate = {};
-	latency_trace_snapshot_capture(&duplicate);
+	memset(duplicate_a, 'x', sizeof duplicate_a);
+ memset(duplicate_b, 'y', sizeof duplicate_b);
+ latency_trace_snapshot duplicate = {};
+	latency_trace_snapshot_take_and_reset(&duplicate);
 	assert(duplicate.section_count == 1);
 	assert(count_for(&duplicate, "duplicate") == 2);
 
@@ -132,7 +136,7 @@ int main(int argc, char **argv)
 	for (uint64_t index = 0; index < OVERFLOW_RECORDS; ++index)
 		latency_trace_record("overflow", index, index);
 	latency_trace_snapshot overflow = {};
-	latency_trace_snapshot_capture(&overflow);
+	latency_trace_snapshot_take_and_reset(&overflow);
 	assert(overflow.sample_count == OVERFLOW_RECORDS);
 	assert(overflow.top_count == LATENCY_TRACE_TOP_COUNT);
 	assert(overflow.top[0].duration_us == OVERFLOW_RECORDS - 1);
@@ -146,16 +150,18 @@ int main(int argc, char **argv)
 	}
 	latency_trace_record(section_names[LATENCY_MAX_SECTIONS], 100, 100);
 	latency_trace_snapshot saturated = {};
-	latency_trace_snapshot_capture(&saturated);
+	latency_trace_snapshot_take_and_reset(&saturated);
 	assert(saturated.section_count == LATENCY_MAX_SECTIONS);
 	assert(saturated.sample_count == LATENCY_MAX_SECTIONS + 2);
 	assert(saturated.dropped_section_samples == 2);
+ for (int i = 0; i < saturated.top_count; ++i)
+  assert(count_for(&saturated, saturated.top[i].name) > 0);
 	char *saturated_dump = dump_to_string(&saturated);
 	assert(strstr(saturated_dump, "dropped_section_samples=2"));
 	free(saturated_dump);
 
 	latency_trace_snapshot empty = {};
-	latency_trace_snapshot_capture(&empty);
+	latency_trace_snapshot_take_and_reset(&empty);
 	assert(empty.sample_count == 0);
 	assert(empty.section_count == 0);
 	assert(empty.top_count == 0);
@@ -170,12 +176,12 @@ int main(int argc, char **argv)
 	while (!__atomic_load_n(&producer_done, __ATOMIC_ACQUIRE))
 	{
 		latency_trace_snapshot concurrent = {};
-		latency_trace_snapshot_capture(&concurrent);
+		latency_trace_snapshot_take_and_reset(&concurrent);
 		captured += concurrent.sample_count;
 	}
 	assert(!pthread_join(producer, nullptr));
 	latency_trace_snapshot remainder = {};
-	latency_trace_snapshot_capture(&remainder);
+	latency_trace_snapshot_take_and_reset(&remainder);
 	captured += remainder.sample_count;
 	assert(captured == CONCURRENT_RECORDS);
 
@@ -186,12 +192,12 @@ int main(int argc, char **argv)
 	while (!__atomic_load_n(&nonblocking_producer_done, __ATOMIC_ACQUIRE))
 	{
 		latency_trace_snapshot concurrent = {};
-		latency_trace_snapshot_capture(&concurrent);
+		latency_trace_snapshot_take_and_reset(&concurrent);
 		accounted += concurrent.sample_count + concurrent.dropped_contended_samples;
 	}
 	assert(!pthread_join(producer, nullptr));
 	latency_trace_snapshot nonblocking_remainder = {};
-	latency_trace_snapshot_capture(&nonblocking_remainder);
+	latency_trace_snapshot_take_and_reset(&nonblocking_remainder);
 	accounted += nonblocking_remainder.sample_count +
 		     nonblocking_remainder.dropped_contended_samples;
 	assert(accounted == CONCURRENT_RECORDS);
@@ -206,7 +212,34 @@ int main(int argc, char **argv)
 	assert(strstr(fallback, "samples=0"));
 	free(fallback);
 
-	puts("latency trace runtime checks passed");
+
+ latency_trace_reset();
+ char *temporary_name = strdup("owned-name");
+ latency_trace_record(temporary_name, 15, 1);
+ free(temporary_name);
+ latency_trace_record("owned-name", latency_trace_elapsed_us(0, 100), 2);
+ latency_trace_record("owned-name", latency_trace_elapsed_us(100, 0), 3);
+ latency_trace_record_nonblocking("owned-name", latency_trace_elapsed_us(100, 99), 4);
+ latency_trace_record("owned-name", 0, 5); // Valid sub-microsecond sample survives.
+ latency_trace_snapshot owned = {};
+ latency_trace_snapshot_take_and_reset(&owned);
+ assert(owned.sample_count == 2 && owned.invalid_clock_samples == 3);
+ assert(count_for(&owned, "owned-name") == 2);
+ latency_trace_record("replacement", 999, 6);
+ assert(!strcmp(owned.top[0].name, "owned-name"));
+ char *owned_dump = dump_to_string(&owned);
+ assert(strstr(owned_dump, "invalid_clock_samples=3"));
+ free(owned_dump);
+ latency_trace_snapshot next = {};
+ latency_trace_snapshot_take_and_reset(&next);
+ assert(next.invalid_clock_samples == 0);
+ char overlong[LATENCY_TRACE_NAME_LENGTH + 1];
+ memset(overlong, 'x', sizeof overlong); overlong[sizeof overlong - 1] = 0;
+ latency_trace_record(overlong, 10, 1);
+ latency_trace_snapshot rejected = {};
+ latency_trace_snapshot_take_and_reset(&rejected);
+ assert(rejected.dropped_section_samples == 1 && rejected.top_count == 0);
+ puts("latency trace runtime checks passed");
 	return 0;
 }
 '''

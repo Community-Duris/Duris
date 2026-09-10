@@ -70,12 +70,12 @@ static inline void profile_timer_end(profile_timer *timer)
 	{
 		timer->skip_next_end = false;
 		timer->last_us = 0;
+		timer->end_valid = profile_monotonic_us(&timer->ended_us);
 		return;
 	}
 	uint64_t now_us = 0;
 	const bool valid = profile_monotonic_us(&now_us);
 	timer->last_us = 0;
-	timer->calls++;
 	if (!valid)
 	{
 		timer->end_valid = false;
@@ -85,6 +85,7 @@ static inline void profile_timer_end(profile_timer *timer)
 	timer->end_valid = true;
 	if (timer->start_valid && now_us >= timer->started_us)
 	{
+		timer->calls++;
 		timer->last_us = now_us - timer->started_us;
 		timer->total_inside_us += timer->last_us;
 	}

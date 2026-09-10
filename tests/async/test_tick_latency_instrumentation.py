@@ -68,13 +68,13 @@ if loop:
     ))
     checks.append((
         "the stall report still names every measured section",
-        all(contains(loop, f'"  - {label} time - %f"')
+        all(contains(loop, f'{label}_us=%')
             for label in ("connections", "activities", "combat", "commands",
-                          "ne_events", "prompts", "aff/pts"))
+                          "ne_events", "prompts", "affect_and_points"))
     ))
     checks.append((
         "the stall report splits aff/pts into affect_update and point_update",
-        all(contains(loop, f'"    - {label} time - %f"')
+        all(contains(loop, f'{label}_us=%')
             for label in ("affect_update", "point_update"))
     ))
     checks.append((
@@ -98,7 +98,7 @@ if loop:
     ))
     checks.append((
         "periodic outputs reuse one captured reporting window",
-        contains(loop, "latency_trace_snapshot_capture(&snapshot);") and
+        contains(loop, "latency_trace_snapshot_take_and_reset(&snapshot);") and
         loop.count("latency_trace_snapshot_dump(") == 2
     ))
     checks.append((
@@ -108,7 +108,7 @@ if loop:
         not contains(comm, "latency_us_from_seconds") and
         not contains(comm, "quiet_NaN") and
         not re.search(r"\(uint64_t\)\([^;\n]*1000000\.0", loop) and
-        contains(loop, "MIN(loop_us, (uint64_t)timeout.tv_usec)")
+        contains(loop, "MIN(loop_us == LATENCY_TRACE_DURATION_INVALID ? 0 : loop_us, (uint64_t)timeout.tv_usec)")
     ))
     checks.append((
         "command trace timing excludes command-report emission",

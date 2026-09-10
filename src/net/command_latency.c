@@ -7,8 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static void command_latency_sanitize(char *destination, size_t destination_size, const char *source,
-				     bool first_word_only)
+static void command_latency_sanitize(char *destination, size_t destination_size, const char *source)
 {
 	if (!destination || !destination_size)
 		return;
@@ -20,8 +19,6 @@ static void command_latency_sanitize(char *destination, size_t destination_size,
 		while (*source && written + 1 < destination_size)
 		{
 			const unsigned char character = (unsigned char)*source++;
-			if (first_word_only && isspace(character))
-				break;
 			if (isalnum(character) || character == '_' || character == '-' ||
 			    character == '\'' || character == '?')
 				destination[written++] = (char)character;
@@ -61,7 +58,7 @@ const char *command_latency_kind_name(command_latency_kind kind)
 
 void command_latency_event_prepare(command_latency_event *event, command_latency_kind kind,
 				   int connection_state, long player_id, const char *player_name,
-				   const char *playing_input)
+				   const char *canonical_command)
 {
 	if (!event)
 		return;
@@ -69,10 +66,10 @@ void command_latency_event_prepare(command_latency_event *event, command_latency
 	event->kind = kind;
 	event->connection_state = connection_state;
 	event->player_id = player_id;
-	command_latency_sanitize(event->player_name, sizeof event->player_name, player_name, false);
+	command_latency_sanitize(event->player_name, sizeof event->player_name, player_name);
 	if (kind == COMMAND_LATENCY_PLAYING)
-		command_latency_sanitize(event->operation, sizeof event->operation, playing_input,
-					 true);
+		snprintf(event->operation, sizeof event->operation, "%s",
+			 canonical_command ? canonical_command : "unknown");
 	else
 		snprintf(event->operation, sizeof event->operation, "%s",
 			 command_latency_kind_name(kind));
@@ -104,7 +101,7 @@ static void command_latency_retain_slow(command_latency_tracker *tracker,
 void command_latency_record(command_latency_tracker *tracker, const command_latency_event *event,
 			    uint64_t duration_us)
 {
-	if (!tracker || !event ||
+	if (duration_us == LATENCY_TRACE_DURATION_INVALID || !tracker || !event ||
 	    (unsigned int)event->kind >= (unsigned int)COMMAND_LATENCY_KIND_COUNT)
 		return;
 	command_latency_event completed = *event;
@@ -132,7 +129,8 @@ void command_latency_report(const command_latency_tracker *tracker, uint64_t swe
 			    const char *boot_id, uint64_t tick, uint64_t pulse_start_mono_us,
 			    command_latency_emit_fn emit, void *context)
 {
-	if (!tracker || !emit || (sweep_us < COMMAND_LATENCY_SLOW_US && tracker->slow_count == 0))
+	if (sweep_us == LATENCY_TRACE_DURATION_INVALID || !tracker || !emit ||
+	    (sweep_us < COMMAND_LATENCY_SLOW_US && tracker->slow_count == 0))
 		return;
 	char line[1024];
 	char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
@@ -159,7 +157,7 @@ void command_latency_report(const command_latency_tracker *tracker, uint64_t swe
 		 "%s: boot=%s tick=%s pulse_start_mono_us=%" PRIu64 " total_us=%" PRIu64
 		 " measured_operation_us=%" PRIu64 " unattributed_sweep_us=%" PRIu64
 		 " slow=%" PRIu64 " reported=%d"
-		 " suppressed=%" PRIu64,
+		 " unreported_slow_operations=%" PRIu64,
 		 sweep_us >= COMMAND_LATENCY_SLOW_US ? "COMMAND SWEEP SLOW" :
 						       "COMMAND SLOW SUMMARY",
 		 safe_boot_id, formatted_tick, pulse_start_mono_us, sweep_us, tracker->measured_us,
@@ -188,10 +186,12 @@ static uint64_t command_latency_saturating_add(uint64_t left, uint64_t right)
 
 static bool command_latency_report_due(const command_latency_report_state *state, uint64_t tick)
 {
-	if (!state->has_reported || tick == LATENCY_TRACE_TICK_UNAVAILABLE ||
+	if (!state->has_reported)
+		return true;
+	if (tick == LATENCY_TRACE_TICK_UNAVAILABLE ||
 	    state->last_report_tick == LATENCY_TRACE_TICK_UNAVAILABLE ||
 	    tick < state->last_report_tick)
-		return true;
+		return state->pulses_since_report >= COMMAND_LATENCY_REPORT_INTERVAL_PULSES;
 	return tick - state->last_report_tick >= COMMAND_LATENCY_REPORT_INTERVAL_PULSES;
 }
 
@@ -211,33 +211,6 @@ static void command_latency_retain_suppressed(command_latency_report_state *stat
 		state->suppressed_worst_pulse_start_mono_us = pulse_start_mono_us;
 		state->has_suppressed_worst = true;
 	}
-}
-
-static void command_latency_emit_throttled_pulse(const command_latency_tracker *tracker,
-						 uint64_t sweep_us, const char *boot_id,
-						 uint64_t tick, uint64_t pulse_start_mono_us,
-						 command_latency_emit_fn emit, void *context)
-{
-	char line[1024];
-	char tick_buffer[LATENCY_TRACE_TICK_STRING_LENGTH];
-	const char *safe_boot_id = boot_id && *boot_id ? boot_id : "-";
-	const command_latency_event *worst =
-		tracker->retained_slow_count > 0 ? &tracker->slowest[0] : NULL;
-	const uint64_t unattributed_us =
-		sweep_us >= tracker->measured_us ? sweep_us - tracker->measured_us : 0;
-	snprintf(line, sizeof line,
-		 "COMMAND REPORT THROTTLED: boot=%s tick=%s pulse_start_mono_us=%" PRIu64
-		 " total_us=%" PRIu64 " measured_operation_us=%" PRIu64
-		 " unattributed_sweep_us=%" PRIu64 " slow_operations=%" PRIu64
-		 " worst_kind=%s worst_state=%d worst_player_id=%ld worst_player=%s"
-		 " worst_operation=%s worst_duration_us=%" PRIu64,
-		 safe_boot_id, latency_trace_format_tick(tick, tick_buffer), pulse_start_mono_us,
-		 sweep_us, tracker->measured_us, unattributed_us, tracker->slow_count,
-		 worst ? command_latency_kind_name(worst->kind) : "-",
-		 worst ? worst->connection_state : -1, worst ? worst->player_id : -1L,
-		 worst ? worst->player_name : "-", worst ? worst->operation : "-",
-		 worst ? worst->duration_us : 0);
-	command_latency_emit(line, emit, context);
 }
 
 static void command_latency_emit_suppressed_summary(command_latency_report_state *state,
@@ -285,16 +258,21 @@ void command_latency_report_throttled(command_latency_report_state *state,
 				      uint64_t pulse_start_mono_us, command_latency_emit_fn emit,
 				      void *context)
 {
-	if (!state || !tracker || !emit ||
-	    (sweep_us < COMMAND_LATENCY_SLOW_US && tracker->slow_count == 0))
+	if (!state || !tracker || !emit)
 		return;
+	state->pulses_since_report = command_latency_saturating_add(state->pulses_since_report, 1);
+	const bool slow = sweep_us != LATENCY_TRACE_DURATION_INVALID &&
+			  (sweep_us >= COMMAND_LATENCY_SLOW_US || tracker->slow_count != 0);
 	if (!command_latency_report_due(state, tick))
 	{
-		command_latency_retain_suppressed(state, tracker, tick, pulse_start_mono_us);
-		command_latency_emit_throttled_pulse(tracker, sweep_us, boot_id, tick,
-						     pulse_start_mono_us, emit, context);
+		if (slow)
+			command_latency_retain_suppressed(state, tracker, tick,
+							  pulse_start_mono_us);
 		return;
 	}
+	if (!slow && !state->suppressed_reports)
+		return;
+	state->pulses_since_report = 0;
 
 	state->has_reported = true;
 	state->last_report_tick = tick;

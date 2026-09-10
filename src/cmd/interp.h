@@ -16,6 +16,8 @@
 #define LOCK_MAX_PLAYERS BIT_3
 #define LOCK_LEVEL BIT_4
 
+const char *input_command_label(const char *input);
+
 extern unsigned int game_locked;
 extern unsigned int game_locked_players;
 extern unsigned int game_locked_level;

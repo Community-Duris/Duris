@@ -63,6 +63,7 @@ typedef struct
 {
 	bool has_reported;
 	uint64_t last_report_tick;
+	uint64_t pulses_since_report;
 	uint64_t suppressed_reports;
 	uint64_t suppressed_slow_operations;
 	bool has_suppressed_worst;
@@ -71,9 +72,10 @@ typedef struct
 	uint64_t suppressed_worst_pulse_start_mono_us;
 } command_latency_report_state;
 
+/* Playing labels must come from the command table, never raw input. */
 void command_latency_event_prepare(command_latency_event *event, command_latency_kind kind,
 				   int connection_state, long player_id, const char *player_name,
-				   const char *playing_input);
+				   const char *canonical_command);
 void command_latency_record(command_latency_tracker *tracker, const command_latency_event *event,
 			    uint64_t duration_us);
 void command_latency_report(const command_latency_tracker *tracker, uint64_t sweep_us,

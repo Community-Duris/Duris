@@ -9,6 +9,25 @@ from _paths import SRC
 from contract_text import contains, index
 
 
+interp = (SRC / "cmd" / "interp.c").read_text()
+def function(name):
+    start = interp.index(name)
+    opening = interp.index("{", start)
+    depth = 1
+    end = opening + 1
+    while depth:
+        depth += (interp[end] == "{") - (interp[end] == "}")
+        end += 1
+    return interp[start:end]
+lookup = "\n".join([
+    '#include <ctype.h>\n#include <string.h>\n#include <sys/types.h>\n#include "cmd/interp.h"',
+    '#define MAX_INPUT_LENGTH 1024\n#define MAX_CMD 1024\n#define LOWER(c) tolower((unsigned char)(c))',
+    interp[interp.index("const char *command[MAX_CMD]"):interp.index("};", interp.index("const char *command[MAX_CMD]")) + 2],
+    function("int old_search_block("),
+    function("static int input_command_number("),
+    function("const char *input_command_label("),
+])
+
 HARNESS = r'''
 #include "net/command_latency.h"
 #include "persistence/latency_trace.h"
@@ -59,11 +78,11 @@ int main()
 	char *player = strdup("PlayerOne\nInjected");
 	char *input = strdup("  Ca$t ultra_secret password");
 	assert(player && input);
-	command_latency_event_prepare(&playing, COMMAND_LATENCY_PLAYING, 0, 4242, player, input);
+	command_latency_event_prepare(&playing, COMMAND_LATENCY_PLAYING, 0, 4242, player, input_command_label(input));
 	free(player);
 	free(input);
 	assert(!strcmp(playing.player_name, "PlayerOne?Injected"));
-	assert(!strcmp(playing.operation, "Ca?t"));
+	assert(!strcmp(playing.operation, "unknown"));
 	command_latency_record(&thresholds, &playing, 49999);
 	assert(thresholds.slow_count == 0);
 	command_latency_record(&thresholds, &playing, 50000);
@@ -80,7 +99,7 @@ int main()
 	assert(any_contains(threshold_output, "tick=1099511627776"));
 	assert(any_contains(threshold_output, "pulse_start_mono_us=998877"));
 	assert(any_contains(threshold_output, "player=PlayerOne?Injected"));
-	assert(any_contains(threshold_output, "operation=Ca?t"));
+	assert(any_contains(threshold_output, "operation=unknown"));
 	assert(!any_contains(threshold_output, "ultra_secret"));
 	assert(!any_contains(threshold_output, "password"));
 	for (const std::string &line : threshold_output.lines)
@@ -111,7 +130,7 @@ int main()
 	for (command_latency_kind kind : kinds)
 	{
 		command_latency_event event = {};
-		command_latency_event_prepare(&event, kind, (int)kind, -1, nullptr, "look ignored");
+		command_latency_event_prepare(&event, kind, (int)kind, -1, nullptr, "look");
 		for (int count = 0; count < 10; ++count)
 			command_latency_record(&aggregate, &event, 1000);
 	}
@@ -146,7 +165,7 @@ int main()
 		char command[32];
 		snprintf(command, sizeof command, "command%" PRIu64 " secret", index);
 		command_latency_event_prepare(&event, COMMAND_LATENCY_PLAYING, 0, (long)index,
-					      "Tester", command);
+					      "Tester", input_command_label(command));
 		command_latency_record(&capped, &event, 50000 + index);
 	}
 	assert(capped.slow_count == 12);
@@ -156,7 +175,7 @@ int main()
 	command_latency_report(&capped, 700000, "boot-d", 99, 789, capture, &capped_output);
 	assert(count_contains(capped_output, "COMMAND OP SLOW:") == COMMAND_LATENCY_MAX_REPORTS);
 	assert(any_contains(capped_output, "duration_us=50011"));
-	assert(any_contains(capped_output, "suppressed=4"));
+	assert(any_contains(capped_output, "unreported_slow_operations=4"));
 	assert(capped_output.lines.size() <= COMMAND_LATENCY_MAX_REPORTS + 2);
 
 	command_latency_report_state report_state = {};
@@ -169,17 +188,12 @@ int main()
 	captured_lines first_throttled;
 	command_latency_report_throttled(&report_state, &capped, 700000, "boot-f", 1001,
 					  101000, capture, &first_throttled);
-	assert(first_throttled.lines.size() == 1);
-	assert(any_contains(first_throttled, "COMMAND REPORT THROTTLED:"));
-	assert(any_contains(first_throttled, "slow_operations=12"));
-	assert(any_contains(first_throttled, "worst_operation=command11"));
-	assert(any_contains(first_throttled, "worst_duration_us=50011"));
+	assert(first_throttled.lines.empty());
 
 	captured_lines second_throttled;
 	command_latency_report_throttled(&report_state, &delayed_ssl, 50000, "boot-f", 1002,
 					  102000, capture, &second_throttled);
-	assert(second_throttled.lines.size() == 1);
-	assert(any_contains(second_throttled, "worst_kind=ssl"));
+	assert(second_throttled.lines.empty());
 
 	captured_lines next_full;
 	command_latency_report_throttled(&report_state, &thresholds, 260000, "boot-f", 1004,
@@ -189,7 +203,7 @@ int main()
 	assert(any_contains(next_full, "suppressed_slow_operations=13"));
 	assert(any_contains(next_full, "suppressed_worst_tick=1001"));
 	assert(any_contains(next_full, "suppressed_worst_pulse_start_mono_us=101000"));
-	assert(any_contains(next_full, "suppressed_worst_operation=command11"));
+	assert(any_contains(next_full, "suppressed_worst_operation=unknown"));
 	assert(any_contains(next_full, "suppressed_worst_duration_us=50011"));
 	assert(any_contains(next_full, "COMMAND OP SLOW:"));
 
@@ -225,7 +239,60 @@ int main()
 	command_latency_report(&quiet, 49999, "boot-e", 100, 900, capture, &quiet_output);
 	assert(quiet_output.lines.empty());
 
-	puts("command latency runtime checks passed");
+
+ assert(!strcmp(input_command_label("  LoO secret"), "look"));
+ assert(!strcmp(input_command_label("PASSWORD-typed-at-wrong-prompt"), "unknown"));
+ assert(!strcmp(input_command_label("Ca?t"), "unknown"));
+ assert(!strcmp(input_command_label(""), "unknown"));
+ assert(!strcmp(input_command_label(nullptr), "unknown"));
+ assert(!strcmp(input_command_label("' hello"), "say"));
+
+ // Even after recovery, flush pending incident evidence on the next due pulse.
+ command_latency_report_state recovered = {};
+ captured_lines recovery_output;
+ command_latency_report_throttled(&recovered, &thresholds, 260000, "boot", 1, 1, capture, &recovery_output);
+ recovery_output.lines.clear();
+ command_latency_report_throttled(&recovered, &capped, 700000, "boot", 2, 2, capture, &recovery_output);
+ assert(recovery_output.lines.empty());
+ command_latency_report_throttled(&recovered, &quiet, 1, "boot", 5, 5, capture, &recovery_output);
+ assert(any_contains(recovery_output, "suppressed_reports=1"));
+ assert(!any_contains(recovery_output, "COMMAND OP SLOW:"));
+
+ // Missing ticks must still bound the number of emitter calls.
+ command_latency_report_state unavailable = {};
+ for (int pulse = 0; pulse < 12; ++pulse)
+ {
+  captured_lines out;
+  command_latency_report_throttled(&unavailable, &thresholds, 260000, "boot",
+    LATENCY_TRACE_TICK_UNAVAILABLE, pulse, capture, &out);
+  assert(out.lines.empty() == (pulse % 4 != 0));
+ }
+ command_latency_tracker invalid = {};
+ command_latency_record(&invalid, &playing, LATENCY_TRACE_DURATION_INVALID);
+ assert(invalid.measured_us == 0 && invalid.slow_count == 0);
+ captured_lines invalid_output;
+ command_latency_report(&invalid, LATENCY_TRACE_DURATION_INVALID, "boot", 1, 1, capture, &invalid_output);
+ assert(invalid_output.lines.empty());
+
+ // Actual descriptor timer ends at the prologue; queue/gate work remains residual.
+ command_latency_tracker prologue = {};
+ command_latency_event descriptor = {};
+ command_latency_event_prepare(&descriptor, COMMAND_LATENCY_DESCRIPTOR, 0, -1, nullptr, nullptr);
+ test_now_us = 1;
+ {
+  scoped_command_latency measured(&prologue, &descriptor);
+  test_now_us += 1000;
+  measured.finish();
+  test_now_us += 80000; // queue/gate work after the explicit prologue boundary
+ }
+ assert(prologue.measured_us == 1000);
+ assert(prologue.kinds[COMMAND_LATENCY_DESCRIPTOR].count == 1);
+ captured_lines residual;
+ command_latency_report(&prologue, 81000, "boot", 5, 1, capture, &residual);
+ assert(any_contains(residual, "unattributed_sweep_us=80000"));
+ for (int i = 0; command[i][0] != '\n'; ++i)
+  assert(strlen(command[i]) < COMMAND_LATENCY_OPERATION_LENGTH);
+ puts("command latency runtime checks passed");
 	return 0;
 }
 '''
@@ -245,23 +312,18 @@ assert contains(dispatch, "COMMAND_LATENCY_PAGER")
 assert contains(dispatch, "COMMAND_LATENCY_EDITOR")
 assert contains(dispatch, "COMMAND_LATENCY_PLAYING")
 assert contains(dispatch, "COMMAND_LATENCY_NANNY")
-assert contains(dispatch, "descriptor_latency.finish();")
+assert not contains(dispatch, "descriptor_latency.finish();")
+assert index(comm, "descriptor_latency.finish();") < index(comm, "casting_input =", index(comm, "/* process_commands */"))
 assert contains(comm, "COMMAND_LATENCY_SSL")
 assert contains(comm, "COMMAND_LATENCY_DESCRIPTOR")
-assert contains(
-    comm,
-    "command_latency_report_throttled(\n"
-    "\t\t\t&command_report_state, &command_latency, command_sweep_us",
-)
+assert contains(comm, "command_latency_report_throttled(&command_report_state, &command_latency,")
 reporting_start = index(comm, "command_latency_log_buffer command_report")
 reporting_end = index(comm, "PROFILE_START(prompts)", reporting_start)
 reporting = comm[reporting_start:reporting_end]
 assert contains(reporting, 'logit(LOG_STATUS, "%s", command_report.text);')
 assert not contains(reporting, "statuslog(")
-assert contains(reporting, "command_latency_log_buffer command_report;")
-assert not contains(reporting, "command_latency_log_buffer command_report = {}")
-assert contains(comm, "prepare_command_latency_log_buffer(&command_report);")
-assert contains(comm, "command_latency_log_buffer_collect, &command_report")
+assert contains(comm, "if (!report->length) prepare_command_latency_log_buffer(report);")
+assert contains(comm, "collect_command_latency_log, &command_report")
 assert contains(comm, "continuation_prefix")
 assert contains(comm, "timestamp-unavailable::")
 assert contains(
@@ -276,7 +338,10 @@ with tempfile.TemporaryDirectory(prefix="duris-command-latency-") as directory:
     temporary = Path(directory)
     harness = temporary / "command_latency_test.c"
     binary = temporary / "command_latency_test"
-    harness.write_text(HARNESS)
+    scoped = comm[comm.index("class scoped_command_latency"):comm.index("/** Select normal", comm.index("class scoped_command_latency"))]
+    clock_stub = "static uint64_t test_now_us = 1; static uint64_t loop_monotonic_us() { return test_now_us; }\n"
+    source = HARNESS.replace("int main()", clock_stub + scoped + "\nint main()")
+    harness.write_text(lookup + source)
     subprocess.run(
         [
             "g++",
@@ -291,6 +356,8 @@ with tempfile.TemporaryDirectory(prefix="duris-command-latency-") as directory:
             str(SRC),
             str(harness),
             str(SRC / "net" / "command_latency.c"),
+            str(SRC / "persistence" / "latency_trace.c"),
+            "-pthread",
             "-o",
             str(binary),
         ],

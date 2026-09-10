@@ -14,6 +14,7 @@ static latency_entry latency_window_top[LATENCY_TRACE_TOP_COUNT];
 static int latency_window_top_count = 0;
 static uint64_t latency_window_sample_count = 0;
 static uint64_t latency_window_dropped_section_samples = 0;
+static uint64_t latency_window_invalid_clock_samples = 0;
 static uint64_t latency_window_dropped_contended_samples = 0;
 static uint64_t latency_window_start_utc_us = 0;
 static uint64_t latency_window_start_mono_us = 0;
@@ -38,7 +39,8 @@ uint64_t latency_trace_monotonic_us(void)
 
 uint64_t latency_trace_elapsed_us(uint64_t started_us, uint64_t finished_us)
 {
-	return started_us && finished_us >= started_us ? finished_us - started_us : 0;
+	return started_us && finished_us >= started_us ? finished_us - started_us :
+							 LATENCY_TRACE_DURATION_INVALID;
 }
 
 static void latency_trace_initialize_locked(void)
@@ -102,19 +104,21 @@ static int latency_find_section(const char *name)
 	return -1;
 }
 
-static void latency_update_section(const char *name, uint64_t duration_us)
+static bool latency_update_section(const char *name, uint64_t duration_us)
 {
 	int index = latency_find_section(name);
 	if (index < 0 && latency_section_count < LATENCY_MAX_SECTIONS)
 	{
 		index = latency_section_count++;
-		latency_sections[index] = { name, duration_us, duration_us, duration_us, 1 };
-		return;
+		latency_sections[index] = { {}, duration_us, duration_us, duration_us, 1 };
+		snprintf(latency_sections[index].name, sizeof latency_sections[index].name, "%s",
+			 name);
+		return true;
 	}
 	if (index < 0)
 	{
 		latency_window_dropped_section_samples++;
-		return;
+		return false;
 	}
 
 	latency_section *section = &latency_sections[index];
@@ -124,6 +128,7 @@ static void latency_update_section(const char *name, uint64_t duration_us)
 		section->max_us = duration_us;
 	section->total_us += duration_us;
 	section->count++;
+	return true;
 }
 
 static void latency_update_top(const char *name, uint64_t duration_us, uint64_t tick)
@@ -138,7 +143,8 @@ static void latency_update_top(const char *name, uint64_t duration_us, uint64_t 
 			return;
 	}
 
-	latency_window_top[index] = { name, duration_us, tick };
+	latency_window_top[index] = { {}, duration_us, tick };
+	snprintf(latency_window_top[index].name, sizeof latency_window_top[index].name, "%s", name);
 	while (index > 0 &&
 	       latency_window_top[index].duration_us > latency_window_top[index - 1].duration_us)
 	{
@@ -152,9 +158,19 @@ static void latency_update_top(const char *name, uint64_t duration_us, uint64_t 
 static void latency_trace_record_locked(const char *name, uint64_t duration_us, uint64_t tick)
 {
 	latency_trace_initialize_locked();
+	if (duration_us == LATENCY_TRACE_DURATION_INVALID)
+	{
+		latency_window_invalid_clock_samples++;
+		return;
+	}
 	latency_window_sample_count++;
-	latency_update_section(name, duration_us);
-	latency_update_top(name, duration_us, tick);
+	if (strnlen(name, LATENCY_TRACE_NAME_LENGTH) >= LATENCY_TRACE_NAME_LENGTH)
+	{
+		latency_window_dropped_section_samples++;
+		return;
+	}
+	if (latency_update_section(name, duration_us))
+		latency_update_top(name, duration_us, tick);
 }
 
 void latency_trace_record(const char *name, uint64_t duration_us, uint64_t tick)
@@ -199,6 +215,7 @@ static void latency_reset_locked(uint64_t utc_us, uint64_t mono_us)
 	latency_window_top_count = 0;
 	latency_window_sample_count = 0;
 	latency_window_dropped_section_samples = 0;
+	latency_window_invalid_clock_samples = 0;
 	latency_window_start_utc_us = utc_us;
 	latency_window_start_mono_us = mono_us;
 }
@@ -216,7 +233,7 @@ void latency_trace_reset(void)
 #endif
 }
 
-void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot)
+void latency_trace_snapshot_take_and_reset(latency_trace_snapshot *snapshot)
 {
 #if LATENCY_TRACE_ENABLED
 	if (!snapshot)
@@ -234,6 +251,7 @@ void latency_trace_snapshot_capture(latency_trace_snapshot *snapshot)
 	snapshot->top_count = latency_window_top_count;
 	snapshot->sample_count = latency_window_sample_count;
 	snapshot->dropped_section_samples = latency_window_dropped_section_samples;
+	snapshot->invalid_clock_samples = latency_window_invalid_clock_samples;
 	snapshot->dropped_contended_samples =
 		__atomic_exchange_n(&latency_window_dropped_contended_samples, 0, __ATOMIC_RELAXED);
 	snapshot->window_start_utc_us = latency_window_start_utc_us;
@@ -274,11 +292,12 @@ void latency_trace_snapshot_dump(FILE *output, const latency_trace_snapshot *sna
 	fprintf(output,
 		"boot=%s window_start_utc_us=%" PRIu64 " window_end_utc_us=%" PRIu64
 		" window_start_mono_us=%" PRIu64 " window_end_mono_us=%" PRIu64 " samples=%" PRIu64
-		" dropped_section_samples=%" PRIu64 " dropped_contended_samples=%" PRIu64 "\n",
+		" dropped_section_samples=%" PRIu64 " dropped_contended_samples=%" PRIu64
+		" invalid_clock_samples=%" PRIu64 "\n",
 		snapshot->boot_id, snapshot->window_start_utc_us, snapshot->window_end_utc_us,
 		snapshot->window_start_mono_us, snapshot->window_end_mono_us,
 		snapshot->sample_count, snapshot->dropped_section_samples,
-		snapshot->dropped_contended_samples);
+		snapshot->dropped_contended_samples, snapshot->invalid_clock_samples);
 	fprintf(output, "%-30s %12s %12s %12s %12s\n", "Section", "min(us)", "max(us)", "avg(us)",
 		"samples");
 	for (int index = 0; index < snapshot->section_count; ++index)
