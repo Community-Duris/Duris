@@ -101,12 +101,12 @@ for database_call in (
         raise SystemExit(f"client-free ship runtime retained database call: {database_call}")
 
 files_source = (SRC / "files.c").read_text()
-delete_start = files_source.index("int deleteCharacter(")
+delete_start = files_source.index("character_delete_result delete_character_result(")
 flat_start = files_source.index(
     "if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)", delete_start
 )
 flat_delete = files_source[
-    flat_start : files_source.index("char *tmp;", flat_start)
+    flat_start : files_source.index("void PurgeCorpseFile", flat_start)
 ]
-if "delete_ship(GET_NAME(ch));" not in flat_delete:
+if "delete_ship_runtime(GET_NAME(ch));" not in flat_delete:
     raise SystemExit("flat character deletion does not remove the committed live ship")

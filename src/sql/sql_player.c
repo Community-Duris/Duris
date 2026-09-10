@@ -238,7 +238,7 @@ bool sql_load_player_pets(P_char ch)
 	return false;
 }
 
-bool sql_delete_player(int pid)
+bool sql_delete_player(int pid, bool forget_revision)
 {
 	return false;
 }
@@ -1158,7 +1158,7 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 
 // player delete
 
-bool sql_delete_player(int pid)
+bool sql_delete_player(int pid, bool forget_revision)
 {
 	if (!DB || pid <= 0)
 		return false;
@@ -1168,7 +1168,8 @@ bool sql_delete_player(int pid)
 
 	if (!sql_run_query(query))
 		return false;
-	player_revision_forget(pid);
+	if (forget_revision)
+		player_revision_forget(pid);
 	return true;
 }
 

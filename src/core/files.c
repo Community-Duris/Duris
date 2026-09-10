@@ -32,6 +32,7 @@
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
 #include "world/random.zone.h"
 #include "ships/ships.h"
@@ -1958,14 +1959,17 @@ int writeCharacter(P_char ch, int type, int room)
 
 int deleteCharacter(P_char ch, bool bDeleteLocker)
 {
+	return delete_character_result(ch, bDeleteLocker) == character_delete_result::deleted;
+}
+
+character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)
+{
+	if (!ch || !GET_NAME(ch) || GET_PID(ch) <= 0)
+		return character_delete_result::refused;
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
-		if (!ch || !GET_NAME(ch) || GET_PID(ch) <= 0 || !bDeleteLocker)
-		{
-			logit(LOG_DEBUG,
-			      "deleteCharacter(): unsupported partial or invalid flat deletion request");
-			return FALSE;
-		}
+		if (!bDeleteLocker)
+			return character_delete_result::refused;
 		std::string error;
 		const auto result = flatfile_character_delete(persistence_mode_flatfile_root(),
 							      GET_PID(ch), GET_NAME(ch), &error);
@@ -1975,73 +1979,50 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 			logit(LOG_DEBUG, "deleteCharacter(): flat deletion failed for pid %d: %s",
 			      GET_PID(ch),
 			      error.empty() ? "unspecified authority failure" : error.c_str());
-			return FALSE;
+			return character_delete_result::refused;
 		}
-#ifdef USE_ACCOUNT
-		if (ch->desc && ch->desc->account)
-			remove_char_from_list(ch->desc->account, ch->player.name);
-#endif
-		delete_ship(GET_NAME(ch));
-		return TRUE;
 	}
-
-	char *tmp;
-	char name[MAX_STRING_LENGTH];
-	bool ok = TRUE;
-
-	strcpy(name, GET_NAME(ch));
-	for (tmp = name; *tmp; tmp++)
+	else
 	{
-		*tmp = LOWER(*tmp);
-	}
-
-	// Remove all artis from char.
-	remove_all_artifacts_sql(ch);
-	if (!remove_all_locker_access(ch))
-	{
-		logit(LOG_DEBUG, "deleteCharacter(): locker access cleanup failed");
-		ok = FALSE;
-	}
-	if (GET_ASSOC(ch) != NULL)
-	{
-		GET_ASSOC(ch)->kick(ch);
-	}
-
-	if (!sql_soft_delete_character(GET_PID(ch)))
-	{
-		logit(LOG_DEBUG, "deleteCharacter(): failed to soft-delete pid %d", GET_PID(ch));
-		return FALSE;
-	}
-
-#ifdef USE_ACCOUNT
-	// Only remove from account list if descriptor and account exist
-	if (ch->desc && ch->desc->account)
-		remove_char_from_list(ch->desc->account, ch->player.name);
-#endif
-
-	if (bDeleteLocker)
-	{
-		if (!sql_delete_locker(GET_PID(ch), 0))
+		// Own the transaction: a later cleanup failure must leave the mapping and
+		// player loadable for retry. Never publish or kick/save the live character
+		// while this transaction can still roll back.
+		if (sql_in_transaction() || !sql_begin_transaction())
+			return character_delete_result::refused;
+		const bool prepared =
+			sql_soft_delete_character(GET_PID(ch)) && remove_all_artifacts_sql(ch) &&
+			remove_all_locker_access(ch) &&
+			(!GET_ASSOC(ch) || GET_ASSOC(ch)->save_without_member(ch)) &&
+			(!bDeleteLocker || sql_delete_locker(GET_PID(ch), 0)) &&
+			sql_delete_ship(GET_NAME(ch)) && sql_delete_player(GET_PID(ch), false);
+		if (!prepared)
 		{
-			logit(LOG_DEBUG,
-			      "deleteCharacter(): failed to delete locker data for pid %d",
+			const bool rolled_back = sql_rollback();
+			logit(LOG_DEBUG, "deleteCharacter(): cleanup failed pid=%d rollback=%s",
+			      GET_PID(ch), rolled_back ? "confirmed" : "uncertain");
+			return rolled_back ? character_delete_result::refused :
+					     character_delete_result::reconciliation_required;
+		}
+		if (!sql_commit())
+		{
+			// COMMIT may have reached the server even when its reply was lost.
+			sql_rollback();
+			logit(LOG_DEBUG, "deleteCharacter(): commit outcome uncertain pid=%d",
 			      GET_PID(ch));
-			ok = FALSE;
+			return character_delete_result::reconciliation_required;
 		}
 	}
 
-	// delete the player_data
-	if (!sql_delete_player(GET_PID(ch)))
-	{
-		logit(LOG_DEBUG, "deleteCharacter(): failed to delete player_data for pid %d",
-		      GET_PID(ch));
-		ok = FALSE;
-	}
-
-	// Delete ship.
-	delete_ship(GET_NAME(ch));
-
-	return ok;
+	// Durable cleanup has completed. These operations only release runtime state.
+	player_revision_forget(GET_PID(ch));
+	if (GET_ASSOC(ch))
+		GET_ASSOC(ch)->forget_deleted_member(ch);
+#ifdef USE_ACCOUNT
+	if (ch->desc && ch->desc->account)
+		remove_char_from_list(ch->desc->account, ch->player.name, false);
+#endif
+	delete_ship_runtime(GET_NAME(ch));
+	return character_delete_result::deleted;
 }
 
 void PurgeCorpseFile(P_obj corpse)

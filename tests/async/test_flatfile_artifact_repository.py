@@ -168,12 +168,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("binding maintenance does not persist every binding outcome")
 
     remove_start = artifact_source.index("bool remove_owned_artifact_sql(")
-    remove_end = artifact_source.index("\nvoid remove_all_artifacts_sql(", remove_start)
+    remove_end = artifact_source.index("\nbool remove_all_artifacts_sql(", remove_start)
     remove_body = artifact_source[remove_start:remove_end]
     if "flatfile_artifact_remove_owned(" not in remove_body:
         raise AssertionError("client-free owned artifact removal bypasses flat authority")
 
-    remove_all_start = artifact_source.index("void remove_all_artifacts_sql(P_char ch)\n{")
+    remove_all_start = artifact_source.index("bool remove_all_artifacts_sql(P_char ch)\n{")
     remove_all_end = artifact_source.index("\n// This is a wrapper function", remove_all_start)
     if "flatfile_artifact_release_player(" not in artifact_source[remove_all_start:remove_all_end]:
         raise AssertionError("client-free bulk artifact removal bypasses flat authority")

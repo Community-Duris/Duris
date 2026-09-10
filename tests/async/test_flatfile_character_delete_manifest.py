@@ -73,21 +73,23 @@ if not blockers and manifest.get("runtime_exposure") not in {"fenced", "enabled"
     raise SystemExit("complete character deletion has an invalid exposure state")
 
 files_source = (SRC / "files.c").read_text()
-start = files_source.index("int deleteCharacter(P_char ch, bool bDeleteLocker)")
+start = files_source.index("character_delete_result delete_character_result(P_char ch, bool bDeleteLocker)")
 end = files_source.index("void PurgeCorpseFile", start)
 delete_body = files_source[start:end]
 runtime_calls = [
+    "sql_soft_delete_character(GET_PID(ch))",
     "remove_all_artifacts_sql(ch)",
     "remove_all_locker_access(ch)",
-    "GET_ASSOC(ch)->kick(ch)",
-    "sql_soft_delete_character(GET_PID(ch))",
-    "remove_char_from_list(ch->desc->account",
+    "GET_ASSOC(ch)->save_without_member(ch)",
     "sql_delete_locker(GET_PID(ch), 0)",
-    "sql_delete_player(GET_PID(ch))",
-    "delete_ship(GET_NAME(ch))",
+    "sql_delete_ship(GET_NAME(ch))",
+    "sql_delete_player(GET_PID(ch), false)",
+    "sql_commit()",
+    "GET_ASSOC(ch)->forget_deleted_member(ch)",
+    "remove_char_from_list(ch->desc->account",
+    "delete_ship_runtime(GET_NAME(ch))",
 ]
-legacy_start = delete_body.index("char *tmp;")
-positions = [delete_body.find(call, legacy_start) for call in runtime_calls]
+positions = [delete_body.find(call) for call in runtime_calls]
 if any(position < 0 for position in positions) or positions != sorted(positions):
     raise SystemExit("live character-delete call graph drifted from the manifest")
 exposure = manifest.get("runtime_exposure")
@@ -99,7 +101,7 @@ if exposure == "enabled":
         "!bDeleteLocker",
         "flatfile_character_delete(persistence_mode_flatfile_root()",
         "remove_char_from_list(ch->desc->account",
-        "return TRUE;",
+        "return character_delete_result::deleted;",
     ]
     route_positions = [delete_body.find(token) for token in route_tokens]
     if any(position < 0 for position in route_positions) or route_positions != sorted(route_positions):

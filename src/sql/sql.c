@@ -2610,19 +2610,24 @@ bool sql_soft_delete_character(long pid)
 		own_txn = true;
 	}
 
-	// Set deleted_at timestamp to NOW() for this character
-	if (!db_query(
-		    "UPDATE account_characters SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL",
-		    pid))
+	// UPDATE has no result set, including when a retry changes zero rows.
+	char query[256];
+	checked_snprintf(
+		query, sizeof(query),
+		"UPDATE account_characters SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL",
+		pid);
+	if (!sql_trace_exec("sql_soft_delete_character", query, strlen(query), true, false))
 	{
 		if (own_txn)
 			sql_rollback();
 		return false;
 	}
 
-	if (!db_query(
-		    "UPDATE frag_leaderboard SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL",
-		    pid))
+	checked_snprintf(
+		query, sizeof(query),
+		"UPDATE frag_leaderboard SET deleted_at = NOW() WHERE pid = %ld AND deleted_at IS NULL",
+		pid);
+	if (!sql_trace_exec("sql_soft_delete_character", query, strlen(query), true, false))
 	{
 		if (own_txn)
 			sql_rollback();

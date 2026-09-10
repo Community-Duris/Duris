@@ -306,6 +306,10 @@ class Guild
 	 * declaration was removed with the retired kingdom surfaces; this is the
 	 * new module's, not a survivor of the old one. */
 	bool is_kingdom();
+	// Stage a deletion projection without changing the live guild. Caller owns SQL transaction.
+	bool save_without_member(P_char ch);
+	// Publish an already durable deletion; never saves the player or guild.
+	void forget_deleted_member(P_char ch);
 	void kick(P_char victim);
 	void kick(P_char kicker, char *char_name);
 	bool sub_money(int p, int g, int s, int c);
