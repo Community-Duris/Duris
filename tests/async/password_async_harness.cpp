@@ -13,7 +13,18 @@
 #include <type_traits>
 #include <openssl/sha.h>
 
-void write_to_q(const char *, struct txt_q *, const int) {}
+P_acct account_list = nullptr;
+static std::string output;
+static int auth_failures = 0;
+void write_to_q(const char *text, struct txt_q *, const int)
+{
+	output += text;
+}
+void ws_send_auth_failed(P_desc d, const char *)
+{
+	assert(!d->account && !d->password_request);
+	++auth_failures;
+}
 void echo_on(P_desc) {}
 void echo_off(P_desc) {}
 bool valid_password(P_desc, char *arg)
@@ -39,6 +50,10 @@ int write_account(P_acct)
 	return 1;
 }
 void statuslog(int, const char *, ...) {}
+[[noreturn]] int panic_corruption_int(const char *, const char *, ...)
+{
+	abort();
+}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
 		       const char *, ...)
 {
@@ -121,6 +136,58 @@ int main(int argc, char **)
 	assert(STATE(d) == CON_DISPLAY_ACCT_MENU && saves == 1);
 	FREE(d->account->acct_password);
 	d->account->acct_password = nullptr;
+	// Reproduce read_account's in-place credential injection while a same-name
+	// registration hashes. Exercise both protocols, including a finished worker
+	// whose completion has not yet been applied. Use real account cleanup.
+	for (int websocket = 0; websocket < 2; ++websocket)
+	{
+		for (int finished = 0; finished < 2; ++finished)
+		{
+			d->account = allocate_account();
+			d->account->acct_name = str_dup("Race");
+			d->account->acct_email = str_dup("loser@example.invalid");
+			d->websocket = websocket;
+			STATE(d) = websocket ? CON_GET_ACCT_NAME : CON_GET_NEW_ACCT_PASSWD;
+			auto *job = password_work_submit("loser-password", nullptr, nullptr, 0, 0);
+			assert(password_async_start(d, job, nullptr, [](P_desc, int, const char *)
+						    { assert(false); }));
+			if (finished)
+			{
+				int valid = 0;
+				char *result = nullptr;
+				auto deadline = Clock::now() + std::chrono::seconds(15);
+				while (!password_login_poll(job, "", &valid, &result))
+				{
+					assert(Clock::now() < deadline);
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				}
+				free(result);
+			}
+			d->account->acct_password = str_dup("winner-credential");
+			FREE(d->account->acct_email);
+			d->account->acct_email = str_dup("winner@example.invalid");
+			d->account->acct_confirmed = 1;
+			output.clear();
+			int previous_failures = auth_failures;
+			assert(password_async_pulse(d));
+			assert(!d->password_request && !d->account && !account_list);
+			assert(STATE(d) == CON_GET_ACCT_NAME && saves == 1);
+			assert(auth_failures == previous_failures + websocket);
+			assert(websocket ? output.empty() :
+					   output.find("Account Name:") != std::string::npos);
+		}
+	}
+	// An empty-credential request may be superseded by a different account.
+	// Cancelling it must not free that replacement session's account.
+	d->account = allocate_account();
+	P_acct original = d->account;
+	assert(password_async_start(d, password_work_submit("password-one", nullptr, nullptr, 0, 0),
+				    nullptr, [](P_desc, int, const char *) { assert(false); }));
+	d->account = acct.get();
+	assert(password_async_pulse(d));
+	assert(d->account == acct.get() && !d->password_request);
+	free_account(original);
+	d->websocket = 0;
 	std::string hash;
 	int calls = 0;
 	STATE(d) = CON_GET_NEW_ACCT_PASSWD;

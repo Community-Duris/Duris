@@ -21,8 +21,8 @@ ws = (SRC / "net/ws_handlers.c").read_text()
 assert "d->login_password_job || d->password_request" in ws
 
 account = (SRC / "account/account.c").read_text()
-def function(name):
-    start = account.index("void " + name + "(")
+def function(name, result="void"):
+    start = account.index(result + ("" if result.endswith("*") else " ") + name + "(")
     opening = account.index("{", start)
     depth, end = 1, opening + 1
     while depth:
@@ -35,7 +35,12 @@ with tempfile.TemporaryDirectory(prefix="duris-password-async-") as tmp:
     harness = Path(tmp) / "harness.cpp"
     harness.write_text((ROOT / "tests/async/password_async_harness.cpp").read_text() +
                        function("get_new_account_password") + "\n" +
-                       function("verify_new_account_password"))
+                       function("verify_new_account_password") + "\n" +
+                       "\n".join(function(name, result) for name, result in (
+                           ("clear_account", "void"), ("check_and_clear", "char *"),
+                           ("free_account", "P_acct"), ("allocate_account", "P_acct"),
+                           ("add_account_to_list", "void"),
+                           ("remove_account_from_list", "void"))))
     subprocess.run([
         "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
         "-fsanitize=address,undefined", "-I", str(SRC), "-I/usr/include/mysql",

@@ -2,6 +2,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "net/comm.h"
+#include "net/ws_handlers.h"
 #include "account/password_async.h"
 #include <string>
 #include <memory>
@@ -61,7 +62,26 @@ bool password_async_pulse(P_desc d)
 	    (d->character && (d->character->in_room != r->room ||
 			      (r->state == CON_PLAYING && !IS_ALIVE(d->character)))))
 	{
+		// An unfinished registration must never inherit a saved same-name account.
+		// Only detach the original account; a replacement belongs to the new session.
+		const bool failed_registration = r->account && r->credential.empty() &&
+						 d->account == r->account;
 		password_async_cancel(d);
+		if (failed_registration)
+		{
+			d->account = free_account(d->account);
+			STATE(d) = CON_GET_ACCT_NAME;
+			if (d->websocket)
+				ws_send_auth_failed(d, "Registration cancelled; please try again");
+			else
+			{
+				echo_on(d);
+				SEND_TO_Q(
+					"Registration cancelled; please try again.\r\nAccount Name: ",
+					d);
+			}
+			return true;
+		}
 		SEND_TO_Q("Password operation cancelled because your session changed.\r\n", d);
 		return true;
 	}

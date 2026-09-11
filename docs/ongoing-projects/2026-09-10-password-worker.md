@@ -82,3 +82,41 @@ Follow-up validation passed:
 No live Telnet, MariaDB chest, or full WebSocket journey was run for this
 follow-up. The account-creation regression uses the actual account handlers,
 worker, descriptor adapter, and allocator, with UI and persistence stubs.
+
+## PR #211 registration-race review
+
+Integrated master `7321a402e` before validating the review fix. When a password
+request is invalidated, an originally empty-credential account is freed if it is
+still the descriptor's original account. This prevents a competing same-name
+save from turning a cancelled registration into an authenticated session.
+Cancellation resets the descriptor to the account-name state and sends either
+WebSocket auth-failed or a Telnet retry prompt with echo restored. A different
+account attached by a replacement session is preserved. The existing WebSocket
+registration uniqueness check remains intact.
+
+The sanitizer harness reproduces the credential/email/confirmed-state mutation
+performed by the same-name account refresh. Both protocols are tested with the
+worker still outstanding and with its result already ready. It links the real
+account allocation, list management, cleanup, and memory allocator routines;
+only protocol output is captured by stubs. It also checks preservation of a
+replacement account. Running the new harness against the previous adapter fails
+at the assertion that the losing descriptor has no account; the fixed adapter
+passes under ASan/UBSan.
+
+Validation passed on the integrated source:
+
+- Full MariaDB development `make -C src -j8`, with warnings as errors.
+- Password async runtime, private-chest hardening, login-crash, and locker
+  failure regressions.
+- Account deletion and deletion-menu contracts, character-deletion runtime,
+  account-recovery contracts and core runtime, casting input gate runtime, and
+  command-latency runtime.
+- Changed-line formatting in an isolated Linux Git snapshot and `git diff --check`.
+
+The previous hosted aggregate run `34551551246` reported 446 passing tests and
+six failing journeys. All six failed in `server_build_artifacts.toolchain_key`
+when `shutil.which` returned no executable and was passed to `Path`; this is not
+evidence of a completed live journey. The helper resolves successfully in the
+isolated review container. A new hosted run is still required for the updated
+head. The real-character MariaDB chest/password journey requested in the earlier
+review has not been completed; focused harnesses do not replace that merge gate.
