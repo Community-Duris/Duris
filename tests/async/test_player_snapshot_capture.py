@@ -204,16 +204,23 @@ DEATH_HARNESS = r"""
 
 index_data indexes[3] = {};
 P_index obj_index = indexes;
-P_index mob_index = nullptr;
+index_data mob_indexes[2] = {};
+P_index mob_index = mob_indexes;
 room_data rooms[1] = {};
 P_room world = rooms;
 int top_of_objt = 2;
-int top_of_mobt = 0;
+int top_of_mobt = 1;
 extern const int top_of_world = 0;
 Skill skills[MAX_SKILLS] = {};
 bool has_innate(P_char, int) { return false; }
 void logit(const char *, const char *, ...) {}
 int panic_corruption_int(const char *, const char *, ...) { std::abort(); }
+P_char get_linked_char(P_char ch, ush_int type)
+{
+    for (char_link_data *link = ch->linking; link; link = link->next_linking)
+        if (link->type == type) return link->linked;
+    return nullptr;
+}
 
 int main()
 {
@@ -290,6 +297,42 @@ int main()
     assert(player_snapshot_decode(encoded.data(), encoded.size(), &decoded) ==
            player_snapshot_codec_result::ok);
     assert(decoded.death->corpse.size() == 4 && decoded.death->custody.size() == 3);
+    mob_indexes[0].virtual_number = 1201;
+    mob_indexes[1].virtual_number = 1202;
+    char_data pet = {}, unrelated = {};
+    npc_only_data pet_npc = {}, unrelated_npc = {};
+    pet.only.npc = &pet_npc;
+    unrelated.only.npc = &unrelated_npc;
+    SET_BIT(pet.specials.act, ACT_ISNPC);
+    SET_BIT(unrelated.specials.act, ACT_ISNPC);
+    pet_npc.R_num = 0;
+    unrelated_npc.R_num = 1;
+    pet.in_room = unrelated.in_room = ch.in_room = 0;
+    GET_HIT(&pet) = GET_MAX_HIT(&pet) = 100;
+    GET_HIT(&unrelated) = GET_MAX_HIT(&unrelated) = 100;
+    obj_data pet_item = {};
+    pet_item.obj_uid = 500;
+    pet_item.R_num = 2;
+    pet_item.loc_p = LOC_WORN;
+    pet_item.loc.wearing = &pet;
+    pet.equipment[0] = &pet_item;
+    char_link_data pet_link = {};
+    pet_link.type = LNK_PET;
+    pet_link.linking = &pet;
+    pet_link.linked = &ch;
+    pet.linking = &pet_link;
+    follow_type unrelated_follow{&unrelated, nullptr};
+    follow_type pet_follow{&pet, &unrelated_follow};
+    ch.followers = &pet_follow;
+    player_snapshot pets;
+    assert(player_snapshot_capture(&ch, 11, PLAYER_COMPONENT_PETS, RENT_CRASH,
+                                   22800, &pets) == player_snapshot_capture_result::ok);
+    assert(pets.pets.size() == 1);
+    assert(pets.pets[0].mob_vnum == 1201);
+    assert(pets.pets[0].items.size() == 1);
+    assert(pets.pets[0].items[0].object_uid == 500);
+    assert(pets.pets[0].items[0].equipment_slot == 1);
+    ch.followers = nullptr;
     auto reject = [&] {
         output.pid = 987;
         assert(capture() == player_snapshot_capture_result::limit_exceeded);

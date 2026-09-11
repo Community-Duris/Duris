@@ -472,7 +472,7 @@ player_snapshot_capture_result capture_pets(P_char ch, int save_intent, player_s
 		if (!followers_seen.insert(follow).second)
 			return player_snapshot_capture_result::object_cycle;
 		P_char pet = follow->follower;
-		if (!pet || !IS_NPC(pet) || pet->in_room != ch->in_room)
+		if (!pet || !IS_NPC(pet) || pet->in_room != ch->in_room || GET_MASTER(pet) != ch)
 			continue;
 		const int rnum = GET_RNUM(pet);
 		if (rnum < 0 || rnum > top_of_mobt)

@@ -19,6 +19,9 @@ COPYOVER = (SRC / "copyover.c").read_text()
 HANDLER = (SRC / "handler.c").read_text()
 DB = (SRC / "db.c").read_text()
 ARTIFACT = (SRC / "artifact.c").read_text()
+WORLD_MOB_CAPTURE = PIPELINE[PIPELINE.index("case capture_stage::mobs:"):
+                             PIPELINE.index("case capture_stage::objects:")]
+assert "GET_MASTER(ch)" in WORLD_MOB_CAPTURE
 
 
 def section(text: str, start: str, end: str) -> str:
@@ -53,6 +56,8 @@ zone_data *zone_table = zones;
 room_data rooms[2] = {};
 room_data *world = rooms;
 P_char character_list = nullptr;
+P_char linked_pet = nullptr;
+P_char linked_master = nullptr;
 P_obj object_list = nullptr;
 index_data mob_indexes[1] = {};
 index_data object_indexes[1] = {};
@@ -74,9 +79,9 @@ void logit(const char *, const char *, ...)
 {
 }
 
-P_char get_linked_char(P_char, ush_int)
+P_char get_linked_char(P_char ch, ush_int type)
 {
-    return nullptr;
+    return ch == linked_pet && type == LNK_PET ? linked_master : nullptr;
 }
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
@@ -250,14 +255,16 @@ struct publish_gate
     std::condition_variable changed;
     bool entered = false;
     bool release = false;
+    world_recovery_header header = {};
 };
 
 static bool blocked_publish(const unsigned char *, size_t,
-                            const world_recovery_header *,
+                            const world_recovery_header *header,
                             redis_shared_command_outcome *outcome, void *raw)
 {
     auto &gate = *static_cast<publish_gate *>(raw);
     std::unique_lock<std::mutex> lock(gate.mutex);
+    gate.header = *header;
     gate.entered = true;
     gate.changed.notify_all();
     gate.changed.wait(lock, [&] { return gate.release; });
@@ -382,6 +389,19 @@ int main()
                capture_buffer.size()) == 0);
     lookup_succeeds = false;
 
+    char_data master = {}, pet = {}, ordinary = {};
+    npc_only_data pet_npc = {}, ordinary_npc = {};
+    pet.only.npc = &pet_npc;
+    ordinary.only.npc = &ordinary_npc;
+    SET_BIT(pet.specials.act, ACT_ISNPC);
+    SET_BIT(ordinary.specials.act, ACT_ISNPC);
+    pet_npc.R_num = ordinary_npc.R_num = 0;
+    pet.in_room = ordinary.in_room = 0;
+    pet.next = &ordinary;
+    linked_pet = &pet;
+    linked_master = &master;
+    character_list = &pet;
+
     world_recovery_header header = {};
     memcpy(header.magic, "WR12", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
@@ -452,12 +472,16 @@ int main()
     publish_gate gate;
     assert(world_recovery_pipeline_init(blocked_publish, &gate));
     assert(world_recovery_pipeline_request());
-    world_recovery_pipeline_pulse();
+    for (int pulse = 0; pulse < 8; ++pulse)
+        world_recovery_pipeline_pulse();
     {
         std::unique_lock<std::mutex> lock(gate.mutex);
         assert(gate.changed.wait_for(lock, std::chrono::seconds(2),
                                      [&] { return gate.entered; }));
+        assert(gate.header.mob_count == 1);
     }
+    character_list = nullptr;
+    linked_pet = linked_master = nullptr;
     std::atomic<bool> cancel_started = false;
     std::atomic<bool> cancel_returned = false;
     std::thread canceler([&] {

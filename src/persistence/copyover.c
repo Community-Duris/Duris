@@ -36,6 +36,7 @@
 #include "persistence/critical_outbox.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_load_materialize.h"
+#include "player/player_load_pets.h"
 #include "player/player_load_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "redis/redis_world_runtime.h"
@@ -160,7 +161,8 @@ static int write_desc_entry(FILE *fp, P_desc d)
 		entry.num_pets = 0;
 		for (f = ch->followers; f && entry.num_pets < 10; f = f->next)
 		{
-			if (IS_NPC(f->follower) && f->follower->in_room == ch->in_room)
+			if (IS_NPC(f->follower) && f->follower->in_room == ch->in_room &&
+			    GET_MASTER(f->follower) == ch)
 			{
 				int idx = entry.num_pets++;
 				entry.pet_vnums[idx] =
@@ -422,10 +424,10 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 		}
 	}
 
-	// count living mobs (skip pc pets - saved per-descriptor)
+	// count living mobs (skip linked pets; player-owned pets are saved per descriptor)
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch))
+		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch))
 		{
 			(*num_mobs)++;
 		}
@@ -542,7 +544,8 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 
 		logit(LOG_STATUS, "copyover: saving %s with RENT_CRASH", GET_NAME(d->character));
-		if (!persistence_save_character_terminal(d->character, RENT_CRASH))
+		if (!persistence_save_character_terminal_database_acknowledged(d->character,
+									       RENT_CRASH))
 		{
 			logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover",
 			      GET_NAME(d->character));
@@ -641,10 +644,10 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 	}
 
-	// write mobs (skip pc pets - saved per-descriptor)
+	// write mobs (skip linked pets; player-owned pets are saved per descriptor)
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch))
+		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch))
 		{
 			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) ||
 			    !write_mob_inventory(fp, ch))
@@ -834,7 +837,7 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.player_name = name ? name : "";
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
 	request.include_items = true;
-	request.include_pets = false;
+	request.include_pets = true;
 	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
 	    result.request_id != request.request_id ||
 	    result.outcome != player_load_outcome::applied)
@@ -1012,36 +1015,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				}
 				ch->in_room = NOWHERE;
 				char_to_room(ch, save_room, FALSE);
-
-				// restore pets/followers with hp
-				for (int p = 0; p < desc_entry.num_pets && p < 10; p++)
-				{
-					int pet_vnum = desc_entry.pet_vnums[p];
-					if (pet_vnum > 0)
-					{
-						int pet_rnum = real_mobile(pet_vnum);
-						if (pet_rnum >= 0)
-						{
-							P_char pet = read_mobile(pet_rnum, REAL);
-							if (pet)
-							{
-								char_to_room(pet, save_room, FALSE);
-								setup_pet(pet, ch, -1, PET_NOAGGRO);
-								add_follower(pet, ch);
-								// restore hp from before copyover
-								GET_HIT(pet) =
-									desc_entry.pet_hit[p];
-								GET_MAX_HIT(pet) =
-									desc_entry.pet_max_hit[p];
-								logit(LOG_STATUS,
-								      "copyover: restored pet %s for %s (%d/%d hp)",
-								      GET_NAME(pet), GET_NAME(ch),
-								      GET_HIT(pet),
-								      GET_MAX_HIT(pet));
-							}
-						}
-					}
-				}
+				player_load_pets_place(ch);
 
 				// stash fighting info for later restoration
 				ch->specials.copyover_fighting_type = desc_entry.fighting_type;
@@ -1347,7 +1321,7 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch))
+		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch))
 		{
 			(*num_mobs)++;
 		}

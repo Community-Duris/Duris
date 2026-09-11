@@ -3576,7 +3576,7 @@ bool sql_save_player_pets(P_char ch, int save_type)
 	for (struct follow_type *f = ch->followers; f; f = f->next)
 	{
 		P_char pet = f->follower;
-		if (!pet || !IS_NPC(pet))
+		if (!pet || !IS_NPC(pet) || GET_MASTER(pet) != ch)
 			continue;
 
 		// only save pets in same room
