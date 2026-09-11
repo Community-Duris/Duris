@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise owned spellbook visibility using production lookup and bitmap functions."""
 from pathlib import Path
+import os
 import subprocess
 import tempfile
 
@@ -28,5 +29,7 @@ with tempfile.TemporaryDirectory(dir=build) as td:
         "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
         "-I" + str(SRC), str(source), "-o", str(binary),
     ], check=True)
-    subprocess.run([str(binary)], check=True)
+    subprocess.run([str(binary)], check=True, env={
+        **os.environ, "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+    })
 print("Owned spellbook visibility regression passed (ASan/UBSan).")
