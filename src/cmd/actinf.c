@@ -8,6 +8,7 @@
  * ***************************************************************************
  */
 
+#include "persistence/persistence_log.h"
 #include <ctype.h>
 #include <fnmatch.h>
 #include <iostream>
@@ -4043,6 +4044,16 @@ static void show_world_redis_operation(P_char ch, const char *name, const char *
 
 static void show_world_persistence(P_char ch)
 {
+	const auto reporting = persistence_log_snapshot();
+	char reporting_line[256];
+	snprintf(
+		reporting_line, sizeof(reporting_line),
+		"reporting accepted=%llu completed=%llu rejected=%llu file_failures=%llu wiz_failures=%llu\n",
+		(unsigned long long)reporting.accepted, (unsigned long long)reporting.completed,
+		(unsigned long long)reporting.rejected, (unsigned long long)reporting.file_failures,
+		(unsigned long long)reporting.wiz_failures);
+	send_to_char(reporting_line, ch);
+
 	static const size_t top_site_limit = 8;
 	struct persistence_query_metric metrics[PERSISTENCE_QUERY_SITE_CAPACITY];
 	const struct persistence_query_snapshot query =

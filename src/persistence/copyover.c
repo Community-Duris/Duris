@@ -3,6 +3,7 @@
  * keeps player connections alive across process replacement
  */
 
+#include "persistence/persistence_log.h"
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -765,6 +766,11 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	copyover_prepare_socket(mother_desc_ssl);
 	if (ws_desc > 0)
 		copyover_prepare_socket(ws_desc);
+
+	// Best-effort diagnostics only; authoritative persistence has separate gates.
+	if (!persistence_log_drain(3000))
+		fprintf(stderr,
+			"PERSISTENCE: copyover log drain timed out; diagnostic records may be lost.\n");
 
 	// exec new binary
 	snprintf(exec_buf, sizeof(exec_buf), "%d", RUNNING_PORT);

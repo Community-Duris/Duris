@@ -446,6 +446,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/transport.o \
 				 item/trophy.o \
 				 net/unicode.o \
+				 persistence/persistence_log.o \
 				 core/utility.o \
 				 world/weather.o \
 				 world/ferry.o \

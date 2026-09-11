@@ -7,6 +7,7 @@
  */
 
 #include "core/prototypes.h"
+#include "persistence/persistence_log.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/command_latency.h"
@@ -549,6 +550,9 @@ int main(int argc, char **argv)
 		fatal_boot_error("comm", "%s", persistence_error);
 	logit(LOG_STATUS, "Persistence mode: %s.", persistence_mode_name());
 
+	if (!persistence_log_start(LOG_FILE, LOG_WIZ))
+		fatal_boot_error("comm", "Could not start persistence log worker");
+
 	if (persistence_mode_requires_mysql() && initialize_mysql() < 0)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
@@ -924,6 +928,17 @@ void run_the_game(int port, int sslport)
 	}
 #endif
 
+	if (!persistence_log_drain(3000))
+		fprintf(stderr,
+			"PERSISTENCE: log drain timed out; unwritten diagnostic records may be lost.\n");
+	const auto log_metrics = persistence_log_snapshot();
+	if (log_metrics.rejected || log_metrics.file_failures || log_metrics.wiz_failures)
+		fprintf(stderr,
+			"PERSISTENCE: log delivery rejected=%llu file_failures=%llu wiz_failures=%llu\n",
+			(unsigned long long)log_metrics.rejected,
+			(unsigned long long)log_metrics.file_failures,
+			(unsigned long long)log_metrics.wiz_failures);
+
 	if (_reboot)
 	{
 		logit(LOG_EXIT, "Rebooting.");
@@ -1274,6 +1289,7 @@ resume_game_loop:
 			request_shutdown(type, "Launcher", "signal from launcher");
 		}
 		//PROFILE_END(process_signal_shutdown_pending);
+		persistence_log_poll();
 		checkpointing();
 
 		if ((last_desc_per_hour_reset + 3600) <= time(0))

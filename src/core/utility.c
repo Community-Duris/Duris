@@ -45,6 +45,8 @@ using namespace std;
 #include "world/map.h"
 #include "core/mm.h"
 #include "persistence/persistence_queue.h"
+#include "persistence/persistence_log.h"
+#include <chrono>
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/latency_trace.h"
 #include "classes/specializations.h"
@@ -839,6 +841,37 @@ void wizlog(int level, const char *format, ...)
 	free(lbuf);
 }
 
+void persistence_log_poll()
+{
+	using clock = std::chrono::steady_clock;
+	static auto next_notice = clock::now();
+	static auto last_progress = clock::now();
+	static persistence_log_metrics previous{};
+	static uint64_t completed = 0;
+	const auto now = clock::now();
+	const auto current = persistence_log_snapshot();
+	if (current.completed != completed || current.accepted == current.completed)
+		last_progress = now;
+	completed = current.completed;
+	if (now < next_notice)
+		return;
+	if (current.rejected != previous.rejected ||
+	    current.file_failures != previous.file_failures ||
+	    current.wiz_failures != previous.wiz_failures ||
+	    now - last_progress >= std::chrono::seconds(30))
+	{
+		wizlog(AVATAR,
+		       "&+R&-LPERSISTENCE:&n domain=reporting action=log_delivery outcome=alert "
+		       "accepted=%llu completed=%llu rejected=%llu file_failures=%llu wiz_failures=%llu",
+		       (unsigned long long)current.accepted, (unsigned long long)current.completed,
+		       (unsigned long long)current.rejected,
+		       (unsigned long long)current.file_failures,
+		       (unsigned long long)current.wiz_failures);
+		previous = current;
+		next_notice = now + std::chrono::seconds(30);
+	}
+}
+
 static int persistence_alert_format_is_numeric(const char *format)
 {
 	if (!format)
@@ -878,8 +911,8 @@ static const char *persistence_alert_category(const char *value, char *out, size
 static void persistence_vreport(persistence_severity severity, int level, const char *domain,
 				const char *action, const char *format, va_list args)
 {
-	char details[MAX_STRING_LENGTH];
-	char alert[MAX_STRING_LENGTH * 2];
+	char details[1024];
+	char alert[2048];
 	char safe_domain[64];
 	char safe_action[64];
 
@@ -901,8 +934,7 @@ static void persistence_vreport(persistence_severity severity, int level, const 
 			 persistence_alert_category(action, safe_action, sizeof(safe_action)),
 			 outcome, details[0] ? " detail=" : "", details);
 
-	logit(LOG_FILE, "PERSISTENCE: %s", alert);
-	logit(LOG_WIZ, "PERSISTENCE: %s", alert);
+	persistence_log_submit(alert);
 	if (severity != persistence_severity::ok && severity != persistence_severity::info)
 		wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
 }

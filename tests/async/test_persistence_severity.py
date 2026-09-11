@@ -28,10 +28,10 @@ struct record { std::string sink, text; };
 std::vector<record> logs;
 std::vector<std::string> broadcasts;
 int audience = 0;
-void logit(const char *sink, const char *format, ...) {
-    char text[2048]; va_list args; va_start(args, format);
-    vsnprintf(text, sizeof(text), format, args); va_end(args);
-    logs.push_back({sink, text});
+bool persistence_log_submit(const char *text) {
+    logs.push_back({LOG_FILE, text});
+    logs.push_back({LOG_WIZ, text});
+    return true;
 }
 void wizlog(int level, const char *format, ...) {
     char text[2048]; va_list args; va_start(args, format);
