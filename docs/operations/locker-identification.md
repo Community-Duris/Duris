@@ -27,3 +27,18 @@ Keep the receipt subdirectory in recursive backups of the critical journal root,
 With `TEST_DB_HOST`, `TEST_DB_USER` and `TEST_DB_PASSWORD` set to a disposable test server, the same runner creates a unique temporary schema, applies the existing schema and runs the identical crash matrix using the real MariaDB repository. It drops only that schema and never reads `.env`.
 
 `test_locker_identify.py` checks the actual lore renderer for weapons, armor, totems, potions and wands. `test_currency_input_queue.py` checks prepared-command encoding and existing currency gates under ASan/UBSan on both builds; `test_currency_transaction_contract.py` retains schema and source contracts. These controlled tests do not constitute a live multiplayer latency benchmark.
+
+## Backup and restore qualification
+
+The backup journal inventory preserves `locker-identification/<pid>.receipt` and
+its empty `.service-lock` under the critical journal root. Receipt filenames must
+contain a positive signed 32-bit player ID and files must fit the native codec's
+size bound. Existing ownership, permissions, symlink, hardlink and capture
+consistency checks still apply. Transient or unexpected files fail capture.
+
+The restore verifier recognizes this directory before and after service boot.
+It accepts only an empty service lock and receipts that pass the production
+bounded decoder, including checksum, payment validity and matching player ID.
+It does not treat the presence of a receipt as proof that the critical WAL has
+drained: both player and critical journal drain checks still run. Receipts remain
+available for the player to claim after recovery on either persistence backend.

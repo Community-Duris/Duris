@@ -7,6 +7,7 @@
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_store.h"
 #include "player/player_save_journal.h"
+#include "item/locker_receipt.h"
 #include "persistence/critical_command_journal.h"
 
 // Native fixture output must not expose repository log details.
@@ -76,6 +77,31 @@ int main(int argc, char **argv)
 	const std::string mode = argv[1];
 	const fs::path root = argv[2];
 	std::string error;
+	if (mode == "seed-receipt")
+	{
+		currency_command_payload payload = {};
+		payload.pid = 42;
+		payload.reason = currency_reason_type::wallet_spend;
+		std::strcpy(payload.account_name.data(), "Account-One");
+		payload.wallet_delta.amount[0] = -5;
+		critical_operation_id operation = {};
+		operation.bytes[0] = 0xb5;
+		locker_receipt receipt;
+		require(currency_command_build(&receipt.payment, operation, payload, 0, 1,
+					       critical_source_site::command,
+					       critical_deadline_class::interactive),
+			"synthetic receipt payment encoding failed");
+		receipt.payment.accepted_at_usec = 1;
+		require(critical_command_normalize(&receipt.payment),
+			"synthetic receipt normalization failed");
+		receipt.text = "Synthetic locker identification result.";
+		receipt.state = locker_receipt_state::paid;
+		fs::create_directories(root);
+		fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+		require(locker_receipt_write(root.string(), receipt),
+			"synthetic receipt write failed");
+		return 0;
+	}
 	if (mode == "seed-bank-interrupted" || mode == "seed-legacy-bank-interrupted")
 	{
 		const auto player = root / "domains/player-42.domain";

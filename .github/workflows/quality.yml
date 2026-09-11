@@ -2,11 +2,17 @@ name: code quality
 
 on:
   push:
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
 permissions:
   contents: read
+
+# Replace obsolete PR runs while retaining every master/scheduled run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   flatfile-build:
@@ -138,7 +144,7 @@ jobs:
           make build-deps-package
           sudo apt-get install --yes ./bin/packages/duris-build-deps_1.0_all.deb
       - name: Check formatting
-        run: ./scripts/format.sh --check
+        run: ./scripts/format.sh --all --check
       - name: Check strict warning profile
         run: python3 tests/async/test_compiler_warning_profile.py
       - name: Verify deferred legacy starter grants
