@@ -40,10 +40,10 @@ production port 7777; the default remains 4000.
   `PERSISTENCE_BACKEND=mariadb BUILD_PROFILE=production` build.
 - On each restart it snapshots logs into `logs/old-logs/<timestamp>/`, writes
   the stop reason, runs `scripts/backup_pfiles.sh`, and optionally emails an alert.
-  Database-backed modes create and validate an atomic MySQL backup and record
-  boot/shutdown times plus the reason in the database. `flatfile-primary` instead
-  snapshots `FLATFILE_STATE_DIR` beneath `FLATFILE_BACKUP_DIR` (default
-  `backups/flatfile`). A backup failure in either mode stops the cycle before restart.
+  Both modes publish verified full generations under the approved backup policy,
+  including journal evidence. A backup failure stops the cycle before restart.
+  Configure policy, scheduling, retention and isolated drills using
+  [BACKUPS.md](BACKUPS.md) before deploying this launcher.
 
 ### Exit codes interpreted by the cycle loop
 
@@ -473,8 +473,8 @@ These are investigated and understood; they are not signs of a failed boot.
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
-| `scripts/restore_flatfile_backup.sh` | Verify one flat-file backup generation against its manifest and restore it into an empty state root. |
+| `scripts/backup_pfiles.sh` | Publish verified full generations under the approved policy; also gates each cycle iteration. |
+| `scripts/restore_flatfile_backup.sh` | Qualify a flat-file generation in a fresh isolated candidate with current erasure evidence. |
 | `scripts/delete_corpses.sh` | Retired safety stub; exits nonzero without reading or changing MySQL or Redis. |
 | `scripts/clear-redis.sh` | With the game stopped, use the scoped maintenance ACL identity to delete only the configured `REDIS_NAMESPACE`, legacy `mud:*`, and retired `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
@@ -484,25 +484,11 @@ These are investigated and understood; they are not signs of a failed boot.
 Schema operations follow the safety rules in [DATABASE.md](../reference/DATABASE.md):
 back up, clone, validate replay on the clone -- never against live data.
 
-In `flatfile-primary`, `scripts/backup_pfiles.sh` snapshots the complete selected
-`FLATFILE_STATE_DIR` instead of inferring database use from `REDIS`. Its backup root
-must be absolute and outside the state root. A missing state root on first boot is a
-clean no-op; an unsafe target or failed copy stops the supervised launch.
-
-The flat-file snapshot is a point-in-time generation, not a rolling copy. It holds the
-same publication locks the server writes under (`identities/names/.identity.lock`,
-`domains/.critical-authority.lock`, `identities/accounts/.accounts.lock`) for the whole
-copy, waiting at most `FLATFILE_LOCK_WAIT` seconds (default 120) before failing rather
-than publishing a mixed-generation backup. Each generation directory carries a
-`MANIFEST.sha256` recording the generation id, capture time, source root, whether a
-pending authority transaction was captured, and the digest of every file; the backup is
-discarded if the state changed mid-copy or the copy does not match the source.
-
-Restore with `scripts/restore_flatfile_backup.sh <generation-dir> <empty-state-dir>`. It
-verifies the generation against its manifest, refuses a non-empty target root, restores
-with owner-only modes, and re-verifies afterwards. If the manifest reports a pending
-authority transaction, the server replays it on the next boot -- boot the restored root
-before comparing domain state.
+Full backup policy, generation format, journal consistency, retention,
+separate/off-host custody, erasure preflight, isolated restore qualification and
+operator cutover/rollback are maintained in [BACKUPS.md](BACKUPS.md).
+BACKUP_POLICY_FILE is mandatory; legacy per-mode backup-root variables and the
+old raw-copy restore interface no longer select or bypass the policy.
 
 ### Migration procedure
 
@@ -776,13 +762,9 @@ gameplay if any count is nonzero, preserve the inbox/outbox/ledger rows, and inv
 the operation history. Do not edit the ledger, invent historical operation IDs, or
 rerun the baseline against an active ledger.
 
-`backup_pfiles.sh` always backs up the authoritative MySQL database; Redis
-configuration does not select the backup mode. It requires the same explicit,
-allow-listed database identity and transport safety used by the cycle. Dumps
-are compressed into an owner-only temporary file, checked for the core Duris
-schema, synced, and atomically published under `db/Backup/`. A dump,
-compression, validation, or publication failure exits nonzero and leaves no
-new backup. `DATABASE_BACKUP_DIR` may select another owner-only directory.
+The backup command selects the explicit persistence mode and applies the
+operator-approved shared policy. See [BACKUPS.md](BACKUPS.md) for independent
+scheduling, full generations, bounded retention and verified isolated restores.
 
 ## Phase 03 final readiness gate
 

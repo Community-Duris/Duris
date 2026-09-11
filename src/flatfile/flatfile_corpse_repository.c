@@ -305,6 +305,13 @@ unsigned int result_code(flatfile_world_item_result result)
 }
 } // namespace
 
+bool flatfile_corpse_repository_validate(const std::string &root, std::string *error)
+{
+	operation_catalog catalog;
+	const auto result = load_catalog(root, &catalog, error);
+	return result == load_result::ok || result == load_result::not_found;
+}
+
 critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 						       const critical_command &command)
 {

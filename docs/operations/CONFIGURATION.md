@@ -32,7 +32,7 @@ per-operation authority transfer is not supported.
 | --- | --- | --- |
 | `PERSISTENCE_MODE` | Optional; defaults to `mariadb-primary` | Select the complete persistence authority; mixed per-write failover is not supported. |
 | `FLATFILE_STATE_DIR` | Required by `flatfile-primary` | Absolute server-user-owned directory with mode `0700` or stricter. |
-| `FLATFILE_BACKUP_DIR` | Optional in `flatfile-primary`; defaults to `backups/flatfile` | Absolute backup root outside `FLATFILE_STATE_DIR`; each pre-boot snapshot is owner-only. |
+| BACKUP_POLICY_FILE | Required for pre-cycle and scheduled backups | Absolute owner-only approved JSON policy; see [BACKUPS.md](BACKUPS.md). |
 | `ENVIRONMENT` | Required: `local` or `production` | Runtime trust role. |
 | `DB_HOST` | Required by `mariadb-primary` | MySQL/MariaDB host. |
 | `DB_PORT` | Optional; `1`-`65535` | Database TCP port; the client default applies when omitted. |

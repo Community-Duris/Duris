@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import json
 import pathlib
 import shutil
 import subprocess
@@ -42,12 +43,24 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     shutil.copy2(SOURCE, script)
     shutil.copy2(ROOT / "scripts/backup_pfiles.sh", scripts / "backup_pfiles.sh")
 
+    shutil.copy2(ROOT / "scripts/persistence_backup.py", scripts / "persistence_backup.py")
+    (project / "migrations").mkdir()
+    shutil.copy2(ROOT / "migrations/runtime_compatibility_manifest.json",
+                 project / "migrations/runtime_compatibility_manifest.json")
+    policy = json.loads((ROOT / "scripts/backup_policy.example.json").read_text())
+    policy.update(approved=True, custodian="synthetic-launcher", root=str(project / "backups"),
+                  restore_root=str(project / "restore"), live_roots=[str(project / "state")],
+                  journal_roots={}, replica_root=None, min_free_bytes=0)
+    config = project / "backup-policy.json"
+    config.write_text(json.dumps(policy))
+    config.chmod(0o600)
+
     flat_env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "ENVIRONMENT": "local",
         "PERSISTENCE_MODE": "flatfile-primary",
         "FLATFILE_STATE_DIR": str(project / "state"),
-        "FLATFILE_BACKUP_DIR": str(project / "backups"),
+        "BACKUP_POLICY_FILE": str(config),
         "REDIS": "1",
     }
     checked = run(script, flat_env, "--check-config")
@@ -159,7 +172,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     (project / "lib/misc").mkdir(parents=True)
     (project / "logs").mkdir()
     state_record = project / "state/metadata/timer.test"
-    state_record.parent.mkdir(parents=True)
+    state_record.parent.mkdir(parents=True, mode=0o700)
     (project / "state").chmod(0o700)
     state_record.write_text("durable state\n")
     state_record.chmod(0o600)
@@ -168,7 +181,10 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     server.chmod(0o755)
 
     nested_backup_env = dict(flat_env)
-    nested_backup_env["FLATFILE_BACKUP_DIR"] = str(project / "state/backups")
+    nested_config = project / "nested-policy.json"
+    nested_config.write_text(json.dumps(dict(policy, root=str(project / "state/backups"))))
+    nested_config.chmod(0o600)
+    nested_backup_env["BACKUP_POLICY_FILE"] = str(nested_config)
     rejected = run(script, nested_backup_env, "--minimal")
     if rejected.returncode == 0 or "refusing to boot" not in rejected.stdout:
         raise AssertionError("flat-file launcher ignored an unsafe backup target:\n" + rejected.stdout)
@@ -185,7 +201,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     )
     if any(message in launched.stdout for message in forbidden):
         raise AssertionError("flat-file launcher entered a database-only path:\n" + launched.stdout)
-    backups = list((project / "backups").glob("*/metadata/timer.test"))
+    backups = list((project / "backups").glob("*/state/metadata/timer.test"))
     if len(backups) != 1 or backups[0].read_text() != "durable state\n":
         raise AssertionError("flat-file launcher did not back up its selected state root")
     if backups[0].stat().st_mode & 0o077 or backups[0].parents[1].stat().st_mode & 0o077:

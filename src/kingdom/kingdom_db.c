@@ -37,6 +37,7 @@
  */
 
 #include "kingdom/kingdom_internal.h"
+#include "kingdom/kingdom_restore.h"
 
 #include "core/structs.h"
 
@@ -920,7 +921,8 @@ bool encode_catalog(const kingdom_catalog &catalog, std::vector<uint8_t> *bytes)
  * decoded catalogue, so the dropped record is erased from disk permanently,
  * whereas the MariaDB loader leaves its rejected row in the table for
  * forensics and hand repair. See the record_is_sane() banner. */
-bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
+bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog,
+		    bool strict = false)
 {
 	constexpr size_t header_size = 8 + 4 + 4 + 8 + SHA256_DIGEST_LENGTH;
 	if (!catalog || bytes.size() < header_size ||
@@ -1014,6 +1016,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, kingdom_catalog *catalog)
 
 			if (!record_is_sane(record))
 			{
+				if (strict)
+					return false;
 				logit(LOG_KINGDOM,
 				      "kingdom_db: dropping a corrupt realm record for "
 				      "association %d (claim %d, arrears %d); the next write "
@@ -1142,6 +1146,17 @@ bool upsert_record(std::vector<kingdom_realm> *records, const kingdom_realm &rea
 	return true;
 }
 } /* namespace */
+
+bool kingdom_flatfile_restore_validate(const std::string &root, std::string *error)
+{
+	std::vector<uint8_t> bytes;
+	const auto result = flatfile_read(metadata_directory(root), kingdom_filename,
+					  kingdom_file_maximum_bytes, &bytes, error);
+	if (result == flatfile_read_result::not_found)
+		return true;
+	kingdom_catalog catalog;
+	return result == flatfile_read_result::ok && decode_catalog(bytes, &catalog, true);
+}
 
 /* Replace kingdom_realms with the records of the realm authority file,
  * anchors unresolved and flags clear. True for an absent file (an empty

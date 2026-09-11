@@ -53,6 +53,25 @@ def input_key(environment):
     return digest.hexdigest()
 
 
+def compiler_configuration(environment):
+    # Read the effective compiler, including command-line overrides inherited
+    # through MAKEFLAGS. A no-op target avoids compiling or updating outputs.
+    configuration = subprocess.check_output(
+        ["make", "-s", "--no-print-directory", "-C", "src", "PERSISTENCE_BACKEND=flatfile",
+         "--eval=.PHONY: artifact-config",
+         "--eval=artifact-config:;@echo DURIS_ARTIFACT_CC=$(CC); echo DURIS_ARTIFACT_FLAGS=$(CFLAGS) $(INCLUDES) $(LDFLAGS) $(LIBS)",
+         "artifact-config"], cwd=ROOT, env=environment, text=True).strip()
+    # Inherited MAKEFLAGS can print directory banners even with the command-line
+    # --no-print-directory above. Never interpret those banners as the compiler.
+    values = []
+    for prefix in ("DURIS_ARTIFACT_CC=", "DURIS_ARTIFACT_FLAGS="):
+        matches = [line[len(prefix):] for line in configuration.splitlines() if line.startswith(prefix)]
+        if len(matches) != 1:
+            raise RuntimeError("make did not report an unambiguous compiler configuration")
+        values.append(matches[0])
+    return "\n".join(values)
+
+
 def toolchain_key(environment):
     """Fingerprint installed compiler, headers and link libraries by content."""
     digest = hashlib.sha256()
@@ -63,13 +82,7 @@ def toolchain_key(environment):
     def source_path(value):
         return (ROOT / "src" / value).resolve()
 
-    # Read the effective compiler, including command-line overrides inherited
-    # through MAKEFLAGS. A no-op target avoids compiling or updating outputs.
-    configuration = subprocess.check_output(
-        ["make", "-s", "--no-print-directory", "-C", "src", "PERSISTENCE_BACKEND=flatfile",
-         "--eval=.PHONY: artifact-config",
-         "--eval=artifact-config:;@echo $(CC); echo $(CFLAGS) $(INCLUDES) $(LDFLAGS) $(LIBS)",
-         "artifact-config"], cwd=ROOT, env=environment, text=True).strip()
+    configuration = compiler_configuration(environment)
     lines = configuration.splitlines()
     compiler = shlex.split(lines[0])
     for command in sorted({compiler[0], "g++", "make", "ld", "as"}):

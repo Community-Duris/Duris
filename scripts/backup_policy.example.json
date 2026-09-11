@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "approved": false,
+  "custodian": "SET_BY_OPERATOR",
+  "schedule_seconds": 3600,
+  "rpo_seconds": 7200,
+  "hourly": 48,
+  "daily": 14,
+  "weekly": 8,
+  "max_bytes": 21474836480,
+  "min_free_bytes": 1073741824,
+  "drill_seconds": 604800,
+  "root": "/var/lib/duris/backups",
+  "restore_root": "/var/lib/duris/restore-drills",
+  "live_roots": [
+    "/var/lib/duris/state",
+    "/var/lib/duris/mysql"
+  ],
+  "replica_root": null,
+  "journal_roots": {
+    "players": "/var/lib/duris/player-journal",
+    "critical": "/var/lib/duris/critical-command-journal"
+  }
+}

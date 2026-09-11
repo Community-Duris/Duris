@@ -1,140 +1,76 @@
 #!/usr/bin/env python3
+"""Shell entry point with synthetic dump processes; no database is contacted."""
 import gzip
+import json
 import os
 from pathlib import Path
-import stat
 import subprocess
 import tempfile
+import unittest
+from test_persistence_backup import ROOT, policy, provision
 
 
-ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "scripts" / "backup_pfiles.sh"
-CYCLE = (ROOT / "scripts" / "cycle_mud.sh").read_text(encoding="ascii")
+class BackupWrapperTests(unittest.TestCase):
+    def test_managed_database_dump_success_and_failure(self):
+        for advertised in (False, True):
+            for mode in ("success", "failure", "invalid"):
+                with self.subTest(advertised=advertised, mode=mode), tempfile.TemporaryDirectory(prefix="duris-wrapper-") as temp:
+                    base = Path(temp)
+                    p = policy(base)
+                    provision(base / "live")
+                    config = base / "policy.json"
+                    config.write_text(json.dumps(p, default=str))
+                    config.chmod(0o600)
+                    stubs = base / "stubs"
+                    stubs.mkdir(mode=0o700)
+                    tables = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())["runtime_table_sql_list"].replace("'", "").split(",")
+                    dump = "".join(f"CREATE TABLE `{name}` (synthetic INT);\n" for name in tables)
+                    program = '''#!/usr/bin/env python3
+import os, sys
+from pathlib import Path
+if '--help' in sys.argv:
+    print('--no-tablespaces' if os.environ['ADVERTISE'] == '1' else '--single-transaction')
+    raise SystemExit(0)
+assert '--no-defaults' in sys.argv
+assert '--single-transaction' in sys.argv
+assert '--routines' in sys.argv and '--events' in sys.argv and '--triggers' in sys.argv
+assert ('--no-tablespaces' in sys.argv) == (os.environ['ADVERTISE'] == '1')
+assert not any('password' in arg.lower() for arg in sys.argv)
+if os.environ['DUMP_MODE'] == 'failure':
+    raise SystemExit(23)
+print(Path(os.environ['SYNTHETIC_DUMP']).read_text() if os.environ['DUMP_MODE'] == 'success' else '-- incomplete dump')
+'''
+                    (stubs / "mysqldump").write_text(program)
+                    (stubs / "mysqldump").chmod(0o700)
+                    (stubs / "mysql").write_text("#!/bin/sh\nprintf '0\\n'\n")
+                    (stubs / "mysql").chmod(0o700)
+                    payload = base / "synthetic.sql"
+                    payload.write_text(dump)
+                    env = dict(os.environ, PATH=str(stubs) + ":/usr/local/bin:/usr/bin:/bin",
+                               BACKUP_ENV_FILE=str(base / "absent.env"), BACKUP_POLICY_FILE=str(config),
+                               PERSISTENCE_MODE="mariadb-primary", ENVIRONMENT="local", DB_HOST="localhost",
+                               DB_USER="synthetic", DB_PASSWD="synthetic-fixture-only", DB_NAME="synthetic",
+                               DB_ALLOWED_TARGETS="localhost/synthetic", DB_PORT="3306", DB_SOCKET="",
+                               DUMP_MODE=mode, ADVERTISE="1" if advertised else "0", SYNTHETIC_DUMP=str(payload))
+                    result = subprocess.run(["bash", str(ROOT / "scripts/backup_pfiles.sh")], env=env,
+                                            capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode == 0, mode == "success", result.stderr)
+                    self.assertNotIn("synthetic-fixture-only", result.stdout + result.stderr)
+                    generations = list(p["root"].glob("[0-9]*"))
+                    self.assertEqual(len(generations), 1 if mode == "success" else 0)
+                    self.assertFalse(list(p["root"].glob(".staging-*")))
+                    if mode == "success":
+                        meta = json.loads((generations[0] / "manifest.json").read_text())
+                        self.assertEqual(meta["mode"], "mariadb-primary")
+                        self.assertIn("database.sql.gz", meta["files"])
+                        with gzip.open(generations[0] / "database.sql.gz", "rt") as stream:
+                            self.assertIn("CREATE TABLE `player_data`", stream.read())
+
+    def test_cycle_refuses_boot_on_backup_failure(self):
+        cycle = (ROOT / "scripts/cycle_mud.sh").read_text()
+        self.assertIn("if ! ./scripts/backup_pfiles.sh; then", cycle)
+        self.assertIn('echo "Required $PERSISTENCE_MODE backup failed; refusing to boot"', cycle)
 
 
-def write_executable(path: Path, text: str) -> None:
-    path.write_text(text, encoding="ascii")
-    path.chmod(path.stat().st_mode | stat.S_IXUSR)
-
-
-def run_backup(
-    base: Path,
-    mode: str,
-    fail_gzip: bool = False,
-    advertise_no_tablespaces: bool = False,
-) -> subprocess.CompletedProcess[str]:
-    base.mkdir()
-    env_file = base / "backup.env"
-    env_file.write_text(
-        "ENVIRONMENT=local\n"
-        "DB_HOST=127.0.0.1\n"
-        "DB_PORT=3306\n"
-        "DB_USER=tester\n"
-        "DB_PASSWD=secret\n"
-        "DB_NAME=duris_test\n"
-        "DB_ALLOWED_TARGETS=127.0.0.1/duris_test\n"
-        "DB_TLS=FALSE\n"
-        "DB_SSL_CA=\n"
-        "DB_SOCKET=\n"
-        "REDIS=TRUE\n",
-        encoding="ascii",
-    )
-    env_file.chmod(0o600)
-
-    stubs = base / "stubs"
-    stubs.mkdir()
-    # Mirror MariaDB's mysqldump: advertise only the options it really has and
-    # reject anything else, so an unsupported flag fails the test instead of the
-    # next boot.
-    write_executable(
-        stubs / "mysqldump",
-        "#!/usr/bin/env bash\n"
-        "supported=' --user --single-transaction --quick --hex-blob"
-        " --protocol --socket --host --port --ssl-ca --ssl-verify-server-cert"
-        " --databases '\n"
-        "if [[ \"${ADVERTISE_NO_TABLESPACES:-0}\" == 1 ]]; then\n"
-        "  supported+='--no-tablespaces '\n"
-        "fi\n"
-        "for arg; do\n"
-        "  case \"$arg\" in\n"
-        "    --help) printf '%s\\n' $supported; exit 0 ;;\n"
-        "    --*) name=${arg%%=*}\n"
-        "      case \"$supported\" in\n"
-        "        *\" $name \"*) ;;\n"
-        "        *) echo \"mysqldump: unknown variable '${arg#--}'\" >&2; exit 7 ;;\n"
-        "      esac ;;\n"
-        "  esac\n"
-        "done\n"
-        "if [[ \"${ADVERTISE_NO_TABLESPACES:-0}\" == 1 ]]; then\n"
-        "  case \" $* \" in\n"
-        "    *' --no-tablespaces '*) ;;\n"
-        "    *) echo 'mysqldump: expected --no-tablespaces' >&2; exit 8 ;;\n"
-        "  esac\n"
-        "fi\n"
-        "case \"${DUMP_MODE:?}\" in\n"
-        "  success)\n"
-        "    printf '%s\\n' 'CREATE TABLE `accounts` (' 'CREATE TABLE `player_data` (' 'CREATE TABLE `ships` ('\n"
-        "    ;;\n"
-        "  invalid) printf '%s\\n' '-- incomplete dump' ;;\n"
-        "  failure) exit 23 ;;\n"
-        "esac\n",
-    )
-    if fail_gzip:
-        write_executable(stubs / "gzip", "#!/usr/bin/env bash\nexit 24\n")
-
-    backup_dir = base / "backups"
-    env = os.environ.copy()
-    env.update(
-        {
-            "BACKUP_ENV_FILE": str(env_file),
-            "DATABASE_BACKUP_DIR": str(backup_dir),
-            "DUMP_MODE": mode,
-            "ADVERTISE_NO_TABLESPACES": "1" if advertise_no_tablespaces else "0",
-            "PATH": f"{stubs}:/usr/bin:/bin",
-        }
-    )
-    return subprocess.run(
-        [str(SCRIPT)],
-        cwd=ROOT,
-        env=env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-
-
-with tempfile.TemporaryDirectory(prefix="duris-backup-test-") as temp:
-    base = Path(temp)
-
-    success = run_backup(base / "success", "success")
-    assert success.returncode == 0, success.stdout
-    published = list((base / "success" / "backups").glob("*.sql.gz"))
-    assert len(published) == 1, success.stdout
-    with gzip.open(published[0], "rt", encoding="ascii") as stream:
-        dump = stream.read()
-    assert "CREATE TABLE `accounts`" in dump
-    assert "CREATE TABLE `player_data`" in dump
-    assert "CREATE TABLE `ships`" in dump
-    assert not list((base / "success" / "backups").glob("*.tmp.*"))
-
-    mysql_success = run_backup(
-        base / "mysql-success", "success", advertise_no_tablespaces=True
-    )
-    assert mysql_success.returncode == 0, mysql_success.stdout
-    assert len(list((base / "mysql-success" / "backups").glob("*.sql.gz"))) == 1
-
-    for case, mode, fail_gzip in (
-        ("dump-failure", "failure", False),
-        ("invalid-dump", "invalid", False),
-        ("gzip-failure", "success", True),
-    ):
-        result = run_backup(base / case, mode, fail_gzip)
-        assert result.returncode != 0, result.stdout
-        backup_dir = base / case / "backups"
-        assert not list(backup_dir.glob("*.sql.gz")), result.stdout
-        assert not list(backup_dir.glob("*.tmp.*")), result.stdout
-
-assert "if ! ./scripts/backup_pfiles.sh; then" in CYCLE
-assert 'echo "Required $PERSISTENCE_MODE backup failed; refusing to boot"' in CYCLE
-print("backend-selected backup atomicity and failure-propagation checks passed")
+if __name__ == "__main__":
+    unittest.main()

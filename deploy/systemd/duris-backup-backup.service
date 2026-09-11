@@ -1,0 +1,17 @@
+[Unit]
+Description=Duris persistence backup
+# Add an OnFailure= unit connected to the custodian's existing alerting service.
+
+[Service]
+Type=oneshot
+User=duris
+Group=duris
+UMask=0077
+WorkingDirectory=/opt/duris
+Environment=BACKUP_ENV_FILE=/etc/duris/backup.env
+ExecStart=/opt/duris/scripts/backup_pfiles.sh schedule
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/duris
+TimeoutStartSec=1h

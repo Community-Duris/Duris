@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate Duris backup policy
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+RandomizedDelaySec=5
+Unit=duris-backup-backup.service
+
+[Install]
+WantedBy=timers.target

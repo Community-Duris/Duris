@@ -13,6 +13,19 @@ from unittest.mock import patch
 import server_build_artifacts as artifacts
 
 
+# Exercise real GNU Make, including recursive invocation banners and inherited
+# command-line overrides; mocking toolchain_key alone missed the CI failure.
+with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    (root / "src").mkdir()
+    (root / "src/Makefile").write_text("CC = g++\nCFLAGS = -O1\n")
+    with patch.object(artifacts, "ROOT", root):
+        environment = dict(os.environ, MAKEFLAGS="w -- CC=clang++ CFLAGS=-O2")
+        assert artifacts.compiler_configuration(environment).splitlines() == ["clang++", "-O2"]
+        environment["MAKEFLAGS"] = ""
+        assert artifacts.compiler_configuration(environment).splitlines() == ["g++", "-O1"]
+
+
 with tempfile.TemporaryDirectory() as tmp, redirect_stdout(io.StringIO()):
     root = Path(tmp)
     (root / "src").mkdir()

@@ -1,0 +1,36 @@
+name: backup recovery
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install build and isolated database dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes equivs mariadb-server mariadb-client iproute2
+          make build-deps-package
+          sudo apt-get install --yes ./bin/packages/duris-build-deps_1.0_all.deb
+      - name: Build both persistence backends
+        run: make build-server build-restore-tools -j2
+      - name: Policy and filesystem regression tests
+        run: |
+          python3 tests/async/test_persistence_backup.py
+          python3 tests/async/test_backup_pfiles.py
+          python3 tests/async/test_flatfile_backup_manifest.py
+          python3 tests/async/test_flatfile_launcher.py
+      - name: Synthetic backup, isolated restore, replay and runtime qualification
+        run: sudo env DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py
