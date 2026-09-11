@@ -169,6 +169,9 @@ def run(binary, chaos, class_name="Warrior"):
                         while not stop.is_set():
                             started = time.monotonic()
                             observer.send("score")
+                            # Room notifications can also produce prompts. Match
+                            # this command's output before consuming its prompt.
+                            observer.expect("Level:", timeout=10)
                             observer.expect("Pos: standing >", timeout=10)
                             latencies.append(time.monotonic() - started)
                             stop.wait(0.05)
