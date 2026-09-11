@@ -9608,7 +9608,8 @@ void sql_restore_shopkeepers(void)
 		bool duplicate = false;
 		for (struct shopkeeper_temp *existing = keepers; existing;
 		     existing = existing->next)
-			if (existing->mob_vnum == mob_vnum && existing->room_vnum == room_vnum)
+			if (existing->shop_nr == shop_nr ||
+			    (existing->mob_vnum == mob_vnum && existing->room_vnum == room_vnum))
 			{
 				duplicate = true;
 				break;

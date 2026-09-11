@@ -315,12 +315,15 @@ int main(int argc, char **argv)
 	else if (scenario == "duplicate")
 	{
 		// DB orders newest snapshot first; only its stock should materialize.
-		saved_keepers = { { "1", "11", "100", "200" }, { "0", "10", "100", "200" } };
+		saved_keepers = { { "1", "11", "100", "200" }, { "0", "10", "100", "200" },
+				  { "1", "12", "100", "201" } };
 		add_item(11, 71);
 		add_item(10, 70);
+		add_item(12, 72);
 		sql_restore_shopkeepers();
 		assert(births == 1 && objects.size() == 1 && !world[0].people->next_in_room);
-		assert(has_item(world[0].people, 71) && !has_item(world[0].people, 70));
+		assert(has_item(world[0].people, 71) && !has_item(world[0].people, 70) &&
+		       !has_item(world[0].people, 72));
 		assert(shop_index[1].dirty && !shop_index[0].dirty);
 	}
 	else if (scenario == "invalid")
