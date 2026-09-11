@@ -1546,9 +1546,9 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 			      "Could not delete backup pfile after fallback save errno=%d", errno);
 		[[fallthrough]];
 	case 0:
-		persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none", "none",
-				  "fallback_saved", "type=%d size=%d", type,
-				  (int)(buf - fallback_buff));
+		persistence_report(persistence_severity::ok, AVATAR, "player_flat_fallback",
+				   "redacted", "none", "none", "fallback_saved", "type=%d size=%d",
+				   type, (int)(buf - fallback_buff));
 		return 1;
 
 	case -1:

@@ -8,7 +8,7 @@ broadcasts to every immortal online: a death that was draining correctly, and
 finished with extract_refused=0, read on the channel as a database stall.
 
 The wait is expected bounded work -- the branch's own comment said so -- so the
-routine poll now goes to the log at LOG_DEBUG with outcome=expected. The channel
+routine poll now goes to the log with outcome=info. The channel
 hears about it only when the wait passes DEATH_RECOVERY_STALL_SECONDS, and then
 once per stall window rather than once per poll, so a genuine stall is still
 visible without being a flood.
@@ -108,9 +108,9 @@ busy_start = index(retry, "if (items_busy || currency_busy)")
 busy_end = retry.index("return;", busy_start)
 busy = retry[busy_start:busy_end]
 
-assert contains(busy, "logit(LOG_DEBUG,"), (
+assert contains(busy, "persistence_report(persistence_severity::info,"), (
     "the routine custody wait must be logged, not broadcast to every immortal")
-assert "outcome=expected" in busy, (
+assert "persistence_severity::info" in busy, (
     "the logged wait must be marked expected so it is not read as a failure")
 assert contains(busy, "schedule_death_extract_retry(ch, context.corpse_uid, "
                       "DEATH_EXTRACT_RETRY_INITIAL)"), (
@@ -152,7 +152,7 @@ assert contains(busy, "persistence_alert(AVATAR"), (
 assert contains(busy, "ch->only.pc->death_custody_wait_alerts++"), (
     "each alert must be counted, or the stall re-alerts on every poll")
 alert = index(busy, "persistence_alert(AVATAR")
-debug = index(busy, "logit(LOG_DEBUG,")
+debug = index(busy, "persistence_report(persistence_severity::info,")
 assert index(busy, "death_custody_wait_should_alert") < alert < debug, (
     "the alert must be the gated branch and the log the fallback, not the reverse")
 
@@ -175,9 +175,7 @@ for action in ("death_recovery_abandoned",
                "death_disposition_retry",
                "death_recovery_corpse_missing",
                "death_recovery_retry",
-               "death_recovery_restarting_corpse_items",
-               "corpse_items_in_flight",
-               "corpse_items_restart"):
+               "terminal_save_failed"):
     where = fight.index(action)
     opened = fight.rfind("persistence_alert(", 0, where)
     assert opened >= 0 and "AVATAR" in fight[opened:where], (
@@ -266,13 +264,10 @@ print("[PASS] one alert per elapsed window, however the polls happen to fall")
 validator = body(utility, "static int persistence_alert_format_is_numeric(const char *format)")
 
 formats = []
-offset = 0
-while True:
-    offset = fight.find("persistence_alert(", offset)
-    if offset < 0:
-        break
-    arguments = call_arguments(fight, offset)
-    offset += len("persistence_alert(")
+for match in re.finditer(r"persistence_(alert|report)\(", fight):
+    arguments = call_arguments(fight, match.start())
+    if match[1] == "report":
+        arguments = arguments[1:]
     if len(arguments) < 7:
         continue
     detail = arguments[6]

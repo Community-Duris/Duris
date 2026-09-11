@@ -21,6 +21,73 @@ reports bounded coordinator depth/bytes, high-water marks, captures, coalescing,
 unchanged checkpoints, append failures, overload, dispatch, completion, and replay
 state. Output contains no player identity or snapshot value.
 
+## Persistence reporting severity
+
+`persistence_report(severity, level, domain, owner, item_uid, event_id, action, format, ...)`
+separates event severity from the immortal audience selected by `level`:
+
+| Severity | Structured outcome | Routing |
+| --- | --- | --- |
+| `persistence_severity::ok` | `outcome=ok` | `LOG_FILE` and `LOG_WIZ` file records |
+| `persistence_severity::info` | `outcome=info` | `LOG_FILE` and `LOG_WIZ` file records |
+| `persistence_severity::alert` | `outcome=alert` | Both file records and the existing red immortal broadcast |
+
+`persistence_alert(...)` remains an alert-only compatibility entry point. Unknown
+severity values also alert. Both entry points use the same category sanitization
+and numeric-only detail filtering; owner, item UID and event ID arguments are
+omitted from the output at every severity.
+
+Use `ok` after a successful durable operation and `info` for expected progress.
+Death recovery/disposition completion and durable disposition recording are `ok`.
+Ordinary custody waits, undisputed in-flight transfers and successfully submitted
+corpse-item restarts are `info`. Automatic raising skipped while corpse ownership
+is pending is also informational. Failed restart submissions, disputes, missing
+corpses, abandoned recovery, event scheduling failures and failed saves remain
+alerts. A custody wait still escalates after 30 seconds and once per subsequent
+30-second window; normal polls now use `outcome=info` in the file records.
+
+Successful deferred-save flushes, flat fallback writes and complete legacy replays
+also use `ok`; failed flushes and partial replays retain alerts. Retired raw-worker
+and raw-replay status reports use `info`. Failed I/O, rejected mutations, dropped
+or undrained work, unavailable workers and automatic restarts after worker failure
+continue to alert even when a recovery path is available.
+
+File delivery runs on a dedicated worker started during boot. Admission uses a fixed
+128-record queue and a try-lock: the game loop never opens, writes, closes, or waits
+for a reporting file. Each record is bounded to 4095 bytes; the reporter bounds
+numeric details to 1023 bytes and the formatted event to 2047 bytes. Formatting may
+truncate long numeric details. The worker receives only copied text and enqueue
+time; it never accesses characters, descriptors, or the legacy `logit` formatter.
+
+A full or contended queue rejects the new file record and increments `rejected`;
+there is no synchronous fallback. Alert broadcasts still run immediately even if
+file admission fails. `world persistence` exposes cumulative accepted/completed,
+rejected, and independent file/wiz failure counters. The game pulse broadcasts a
+reporting-delivery alert when failures increase or pending delivery makes no progress
+for 30 seconds, at most once per 30 seconds. These notices do not re-enter the queue.
+Counters remain inspectable when no immortal was online for the notice.
+
+The worker creates missing parent directories, opens each sink with append and
+close-on-exec, and accepts only regular files. Open, short-write, write, and close
+failures are counted per sink; the other sink is still attempted. No ambiguous write
+is replayed, so a partial write may leave a truncated record. Rename/create rotation
+is supported: a record goes to the file opened for that append and subsequent opens
+follow the new path. Use rename/create rotation; concurrent copytruncate cannot
+promise lossless records. The two sinks are independent, not an atomic transaction.
+
+Shutdown and copyover wait up to three seconds for queued and in-flight attempts.
+A timeout reports possible diagnostic loss to stderr and does not veto authoritative
+save/recovery gates. A failed exec leaves the worker available. Worker storage lives
+until process exit, avoiding an unbounded destructor join if filesystem I/O hangs.
+These diagnostic records are not a durable gameplay journal: no fsync or crash replay
+is promised. Failure counts are also printed on ordinary shutdown.
+
+Validate bounded admission, blocked I/O, independent sink failures, rotation, and
+drain behavior with `python3 tests/async/test_persistence_log.py`.
+
+Validate routing and privacy with `python3 tests/async/test_persistence_severity.py`;
+`test_death_recovery_alert_level.py` also verifies the timed stall escalation.
+
 ## Terminal Saves And Process Drain
 
 Destructive player transitions mark and capture a fresh full revision with the

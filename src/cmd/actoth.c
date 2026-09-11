@@ -2057,10 +2057,11 @@ bool persistence_flush_character_saves(P_char ch)
 		logit(LOG_DEBUG, "Deferred player save flush failed");
 	}
 
-	persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
-			  saved ? "deferred_save_flushed" : "deferred_save_flush_failed",
-			  "attempts=%llu failures=%llu", (unsigned long long)attempts,
-			  (unsigned long long)(saved ? pending.failures : slot->failures));
+	persistence_report(saved ? persistence_severity::ok : persistence_severity::alert, AVATAR,
+			   "player_save", "redacted", "none", "none",
+			   saved ? "deferred_save_flushed" : "deferred_save_flush_failed",
+			   "attempts=%llu failures=%llu", (unsigned long long)attempts,
+			   (unsigned long long)(saved ? pending.failures : slot->failures));
 	return saved;
 }
 

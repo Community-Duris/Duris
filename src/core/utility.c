@@ -45,6 +45,8 @@ using namespace std;
 #include "world/map.h"
 #include "core/mm.h"
 #include "persistence/persistence_queue.h"
+#include "persistence/persistence_log.h"
+#include <chrono>
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/latency_trace.h"
 #include "classes/specializations.h"
@@ -839,6 +841,37 @@ void wizlog(int level, const char *format, ...)
 	free(lbuf);
 }
 
+void persistence_log_poll()
+{
+	using clock = std::chrono::steady_clock;
+	static auto next_notice = clock::now();
+	static auto last_progress = clock::now();
+	static persistence_log_metrics previous{};
+	static uint64_t completed = 0;
+	const auto now = clock::now();
+	const auto current = persistence_log_snapshot();
+	if (current.completed != completed || current.accepted == current.completed)
+		last_progress = now;
+	completed = current.completed;
+	if (now < next_notice)
+		return;
+	if (current.rejected != previous.rejected ||
+	    current.file_failures != previous.file_failures ||
+	    current.wiz_failures != previous.wiz_failures ||
+	    now - last_progress >= std::chrono::seconds(30))
+	{
+		wizlog(AVATAR,
+		       "&+R&-LPERSISTENCE:&n domain=reporting action=log_delivery outcome=alert "
+		       "accepted=%llu completed=%llu rejected=%llu file_failures=%llu wiz_failures=%llu",
+		       (unsigned long long)current.accepted, (unsigned long long)current.completed,
+		       (unsigned long long)current.rejected,
+		       (unsigned long long)current.file_failures,
+		       (unsigned long long)current.wiz_failures);
+		previous = current;
+		next_notice = now + std::chrono::seconds(30);
+	}
+}
+
 static int persistence_alert_format_is_numeric(const char *format)
 {
 	if (!format)
@@ -875,35 +908,60 @@ static const char *persistence_alert_category(const char *value, char *out, size
 	return used ? out : "unknown";
 }
 
-void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
-		       const char *event_id, const char *action, const char *format, ...)
+static void persistence_vreport(persistence_severity severity, int level, const char *domain,
+				const char *action, const char *format, va_list args)
 {
-	va_list args;
-	char details[MAX_STRING_LENGTH];
-	char alert[MAX_STRING_LENGTH * 2];
+	char details[1024];
+	char alert[2048];
 	char safe_domain[64];
 	char safe_action[64];
 
-	(void)owner;
-	(void)item_uid;
-	(void)event_id;
+	// Treat unknown values as alerts so malformed callers cannot suppress failures.
+	const char *outcome = "alert";
+	if (severity == persistence_severity::ok)
+		outcome = "ok";
+	else if (severity == persistence_severity::info)
+		outcome = "info";
 
 	details[0] = '\0';
 	if (format && *format && persistence_alert_format_is_numeric(format))
 	{
-		va_start(args, format);
 		vsnprintf(details, sizeof(details), format, args);
-		va_end(args);
 	}
 
-	checked_snprintf(alert, sizeof(alert), "domain=%s action=%s outcome=alert%s%s",
+	checked_snprintf(alert, sizeof(alert), "domain=%s action=%s outcome=%s%s%s",
 			 persistence_alert_category(domain, safe_domain, sizeof(safe_domain)),
 			 persistence_alert_category(action, safe_action, sizeof(safe_action)),
-			 details[0] ? " detail=" : "", details);
+			 outcome, details[0] ? " detail=" : "", details);
 
-	logit(LOG_FILE, "PERSISTENCE: %s", alert);
-	logit(LOG_WIZ, "PERSISTENCE: %s", alert);
-	wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
+	persistence_log_submit(alert);
+	if (severity != persistence_severity::ok && severity != persistence_severity::info)
+		wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
+}
+
+void persistence_report(persistence_severity severity, int level, const char *domain,
+			const char *owner, const char *item_uid, const char *event_id,
+			const char *action, const char *format, ...)
+{
+	(void)owner;
+	(void)item_uid;
+	(void)event_id;
+	va_list args;
+	va_start(args, format);
+	persistence_vreport(severity, level, domain, action, format, args);
+	va_end(args);
+}
+
+void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
+		       const char *event_id, const char *action, const char *format, ...)
+{
+	(void)owner;
+	(void)item_uid;
+	(void)event_id;
+	va_list args;
+	va_start(args, format);
+	persistence_vreport(persistence_severity::alert, level, domain, action, format, args);
+	va_end(args);
 }
 
 unsigned long long persistence_next_item_uid(void)
@@ -1483,9 +1541,9 @@ int persistence_quarantine_fallback_events(void)
 
 int persistence_replay_fallback_events(void)
 {
-	persistence_alert(AVATAR, "persistence_replay", "retired", "none", "none",
-			  "raw_execution_disabled",
-			  "legacy fallback records are quarantined without execution");
+	persistence_report(persistence_severity::info, AVATAR, "persistence_replay", "retired",
+			   "none", "none", "raw_execution_disabled",
+			   "legacy fallback records are quarantined without execution");
 	return persistence_quarantine_fallback_events();
 #if 0
 	FILE *in_f;
@@ -1613,9 +1671,10 @@ int persistence_replay_fallback_events(void)
 		return replayed;
 	}
 
-	persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-			  failed ? "partial_replay" : "replayed", "replayed=%d failed=%d", replayed,
-			  failed);
+	persistence_report(failed ? persistence_severity::alert : persistence_severity::ok, AVATAR,
+			   "persistence_replay", "boot", "none", "none",
+			   failed ? "partial_replay" : "replayed", "replayed=%d failed=%d", replayed,
+			   failed);
 
 	if (replayed > 0 || failed > 0)
 	{
@@ -1663,8 +1722,8 @@ int persistence_replay_fallback_events(void)
 
 int persistence_start_item_event_worker(void)
 {
-	persistence_alert(AVATAR, "item_event", "retired", "none", "none", "raw_execution_disabled",
-			  "legacy raw event worker is retired");
+	persistence_report(persistence_severity::info, AVATAR, "item_event", "retired", "none",
+			   "none", "raw_execution_disabled", "legacy raw event worker is retired");
 	return 0;
 #if 0
 	if (!sql_pool_is_active())
@@ -1717,8 +1776,8 @@ int persistence_start_item_event_worker(void)
 
 int persistence_start_scalar_event_worker(void)
 {
-	persistence_alert(AVATAR, "scalar_event", "retired", "none", "none",
-			  "raw_execution_disabled", "legacy raw event worker is retired");
+	persistence_report(persistence_severity::info, AVATAR, "scalar_event", "retired", "none",
+			   "none", "raw_execution_disabled", "legacy raw event worker is retired");
 	return 0;
 #if 0
 	if (!sql_pool_is_active())
@@ -7952,8 +8011,8 @@ int yes_no(const char *str)
 
 int persistence_start_large_event_worker(void)
 {
-	persistence_alert(AVATAR, "large_event", "retired", "none", "none",
-			  "raw_execution_disabled", "legacy raw event worker is retired");
+	persistence_report(persistence_severity::info, AVATAR, "large_event", "retired", "none",
+			   "none", "raw_execution_disabled", "legacy raw event worker is retired");
 	return 0;
 #if 0
 	if (!persistence_large_event_worker_start(persistence_large_event_log_writer, NULL))

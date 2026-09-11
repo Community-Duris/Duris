@@ -81,6 +81,7 @@ void player_save_pipeline_resume() {}
 bool player_save_pipeline_drain(uint64_t) { return true; }
 bool redis_world_recovery_drain(uint64_t) { return true; }
 bool persistence_flush_all_character_saves() { return true; }
+bool persistence_log_drain(unsigned timeout_ms) { assert(timeout_ms == 3000); return true; }
 
 // Empty-world boundaries: reaching these would make the fixture invalid.
 bool persistence_save_character_terminal(P_char, int) { std::abort(); }

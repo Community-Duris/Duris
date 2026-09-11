@@ -83,7 +83,7 @@ die = body(fight, "void die(P_char ch, P_char killer)")
 checks.append((
     "die() defers the death while corpse item transfers are in flight",
     contains(die, "item_movement_transaction_player_busy(ch)") and
-    contains(die, 'persistence_alert(AVATAR, "player_save", "death", "none", "none",'
+    contains(die, 'persistence_report(corpse_transfer_disputed(ch) ? persistence_severity::alert : persistence_severity::info, AVATAR, "player_save", "death", "none", "none",'
                   '"corpse_items_in_flight",') and
     contains(die, "schedule_death_extract_retry(ch, death_corpse_uid,")
 ))
