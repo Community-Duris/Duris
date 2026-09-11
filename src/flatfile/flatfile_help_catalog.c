@@ -1,6 +1,11 @@
 #include "flatfile/flatfile_help_catalog.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstdint>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <fstream>
 #include <iterator>
 #include <new>
@@ -90,29 +95,50 @@ enum class read_result
 	invalid,
 };
 
-read_result read_source(const std::string &path, std::string *contents)
+read_result read_source(const std::string &path, std::string *contents,
+			size_t maximum_bytes = source_maximum_bytes)
 {
 	if (!contents)
 		return read_result::invalid;
-	std::ifstream file(path, std::ios::binary);
-	if (!file)
-		return read_result::not_found;
-	file.seekg(0, std::ios::end);
-	const std::streamoff size = file.tellg();
-	if (size < 0 || size > static_cast<std::streamoff>(source_maximum_bytes))
+	const int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (fd < 0)
+		return errno == ENOENT ? read_result::not_found : read_result::invalid;
+	struct file_guard
+	{
+		int value;
+		~file_guard() { close(value); }
+	} file{ fd };
+	struct stat status = {};
+	if (fstat(fd, &status) || !S_ISREG(status.st_mode) || status.st_size < 0 ||
+	    static_cast<std::uintmax_t>(status.st_size) > maximum_bytes)
 		return read_result::invalid;
-	file.seekg(0, std::ios::beg);
 	try
 	{
-		contents->assign(std::istreambuf_iterator<char>(file),
-				 std::istreambuf_iterator<char>());
+		contents->clear();
+		contents->reserve(static_cast<size_t>(status.st_size));
+		char buffer[4096];
+		for (;;)
+		{
+			const ssize_t count = read(fd, buffer, sizeof(buffer));
+			if (count < 0)
+			{
+				if (errno == EINTR)
+					continue;
+				return read_result::invalid;
+			}
+			if (!count)
+				break;
+			// Bound growth even if a writer extends the file after fstat.
+			if (static_cast<size_t>(count) > maximum_bytes - contents->size())
+				return read_result::invalid;
+			contents->append(buffer, static_cast<size_t>(count));
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
 		return read_result::invalid;
 	}
-	return file.bad() || contents->find('\0') != std::string::npos ? read_result::invalid :
-									 read_result::ok;
+	return contents->find('\0') == std::string::npos ? read_result::ok : read_result::invalid;
 }
 
 std::vector<std::string> lines(const std::string &contents)
@@ -313,7 +339,7 @@ bool flatfile_help_catalog_load(const std::string &project_root, flatfile_help_c
 }
 
 bool flatfile_information_read(const std::string &project_root, const std::string &name,
-			       std::string *contents, std::string *error)
+			       std::string *contents, std::string *error, size_t maximum_bytes)
 {
 	if (project_root.empty() || name.empty() || !contents)
 		return false;
@@ -324,8 +350,8 @@ bool flatfile_information_read(const std::string &project_root, const std::strin
 	for (const auto &source : mud_information_sources)
 		if (requested == source.title)
 		{
-			const read_result read =
-				read_source(project_root + "/" + source.path, contents);
+			const read_result read = read_source(project_root + "/" + source.path,
+							     contents, maximum_bytes);
 			if (read == read_result::ok)
 				return true;
 			if (error)

@@ -70,6 +70,7 @@
 #include "item/enhance.h"
 #include "economy/crafting.h"
 #include "account/account_recovery.h"
+#include "cmd/information_cache.h"
 #include "cmd/help_cache.h"
 #include "account/password_hash.h"
 #include "account/account_reward_config.h"
@@ -807,6 +808,7 @@ void run_the_game(int port, int sslport)
 		logit(LOG_STATUS,
 		      "Account recovery unavailable; password reset by email disabled.");
 
+	information_cache_refresh();
 #ifndef __NO_MYSQL__
 	help_cache_refresh();
 #endif
@@ -891,6 +893,7 @@ void run_the_game(int port, int sslport)
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
+	information_cache_shutdown();
 	help_cache_shutdown();
 	account_recovery_shutdown();
 	password_login_shutdown();
@@ -1887,6 +1890,7 @@ resume_game_loop:
 				if (!delivered)
 					player_load_pipeline_note_stale();
 			}
+			information_cache_pulse();
 			help_cache_pulse();
 			account_recovery_pulse();
 			redis_world_recovery_pulse();

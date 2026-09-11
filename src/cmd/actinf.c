@@ -22,6 +22,7 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -8589,16 +8590,24 @@ void do_equipment(P_char ch, char *argument, int /*cmd*/)
 		send_to_char(buf, ch);
 }
 
-void do_credits(P_char ch, char * /*argument*/, int /*cmd*/)
+static void show_information_page(P_char ch, const char *name)
 {
-	int cooldown = (int)get_property("info.cooldown.secs", 2);
-	if (!affect_timer(ch, cooldown, TAG_INFO_COOLDOWN))
+	const auto *cached = information_cache_get(name);
+	if (!cached)
 	{
-		send_to_char("&+RYou must wait a moment.&n\n", ch);
+		send_to_char(
+			"That information is temporarily unavailable. Please try again shortly.\r\n",
+			ch);
 		return;
 	}
-	string content = get_mud_info("credits");
-	page_string(ch->desc, (char *)content.c_str(), 0);
+	// page_string owns a copy. Never let a pager retain catalog storage.
+	std::string content = *cached;
+	page_string(ch->desc, content.data(), TRUE);
+}
+
+void do_credits(P_char ch, char * /*argument*/, int /*cmd*/)
+{
+	show_information_page(ch, "credits");
 }
 
 void do_map(P_char ch, char *arg, int /*cmd*/)
@@ -8656,26 +8665,12 @@ void do_projects(P_char ch, char * /*argument*/, int /*cmd*/)
 
 void do_faq(P_char ch, char * /*argument*/, int /*cmd*/)
 {
-	int cooldown = (int)get_property("info.cooldown.secs", 2);
-	if (!affect_timer(ch, cooldown, TAG_INFO_COOLDOWN))
-	{
-		send_to_char("&+RYou must wait a moment.&n\n", ch);
-		return;
-	}
-	string content = get_mud_info("faq");
-	page_string(ch->desc, (char *)content.c_str(), 0);
+	show_information_page(ch, "faq");
 }
 
 void do_wizlist(P_char ch, char * /*argument*/, int /*cmd*/)
 {
-	int cooldown = (int)get_property("info.cooldown.secs", 2);
-	if (!affect_timer(ch, cooldown, TAG_INFO_COOLDOWN))
-	{
-		send_to_char("&+RYou must wait a moment.&n\n", ch);
-		return;
-	}
-	string content = get_mud_info("wizlist");
-	page_string(ch->desc, (char *)content.c_str(), 0);
+	show_information_page(ch, "wizlist");
 }
 
 void do_rules(P_char ch, char * /*argument*/, int /*cmd*/)
