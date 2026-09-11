@@ -55,6 +55,7 @@ Additional focused checks:
 
 ```sh
 python3 tests/async/test_coin_custody_lifecycle.py
+python3 tests/async/test_currency_input_queue.py
 python3 tests/async/test_flatfile_item_repository.py
 bash tests/async/run_currency_transaction_schema_mysql.sh
 python3 tests/async/test_creation_grant_reconciliation.py
@@ -66,3 +67,8 @@ The flat-file repository runs its full coin matrix with both vnum 3 and #402013.
 The SQL coin matrix uses #402013, including legacy player, room, corpse, and
 locker custody, partial pickup, replay, rollback, and reload. The command codec
 tests also reject non-money and mismatched-vnum snapshots and verify diagnostics.
+The currency input-queue harness backs `OBJ_VNUM` with real fixture index entries
+and preserves the prototype in captured and materialized snapshots. Its area-coin
+case holds a second pickup behind a pending transaction while allowing `score`,
+then checks rejection/retry, detached restoration of a partial remainder, and
+final consumption under ASan/UBSan in both backend configurations.
