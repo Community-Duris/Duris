@@ -204,6 +204,7 @@ struct bulk_get_state
 	bool got_coins;
 	bool failed;
 	bool corpse;
+	std::vector<std::string> rejections;
 };
 
 struct drop_movement_context
@@ -1656,6 +1657,8 @@ static void report_bulk_get(P_char actor, const bulk_get_state &state)
 						   "You see nothing here.\r\n",
 			     actor);
 	}
+	for (const std::string &rejection : state.rejections)
+		send_to_char(rejection.c_str(), actor);
 }
 
 static void finish_bulk_get(P_char actor, uint32_t actor_pid)
@@ -1900,6 +1903,18 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 	}
 }
 
+/** Snapshot rejection text now; rejected objects can disappear before publication. */
+static void reject_bulk_get_object(bulk_get_state &state, P_obj object, const char *reason)
+{
+	char description[MAX_STRING_LENGTH], message[MAX_STRING_LENGTH];
+	snprintf(description, sizeof(description), "%s",
+		 object->short_description ? object->short_description : "(null)");
+	CAP(description);
+	checked_snprintf(message, sizeof(message), "%s %s\r\n", description, reason);
+	state.rejections.emplace_back(message);
+	state.failed = true;
+}
+
 /** Add an eligible pickup to its batch while accounting for cumulative carry limits. */
 static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, const char *filter,
 				 bool container_local, int &carried_count, int64_t &carried_weight,
@@ -1912,31 +1927,28 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 					OBJ_VNUM(object) <= HIGHEST_MAT_VNUM;
 	if (carried_count >= CAN_CARRY_N(actor) && !material_exception)
 	{
-		send_to_char(container ? "You can't carry any more.\r\n" :
-					 "You can't carry anything more.\r\n",
-			     actor);
+		state.rejections.emplace_back(container ? "You can't carry any more.\r\n" :
+							  "You can't carry anything more.\r\n");
 		state.failed = true;
 		stop = true;
 		return false;
 	}
 	if (!container_local && carried_weight + GET_OBJ_WEIGHT(object) > CAN_CARRY_W(actor))
 	{
-		do_get_reject_object(actor, object,
-				     container ? "is too heavy." : "is too heavy to lift.",
-				     state.failed);
+		reject_bulk_get_object(state, object,
+				       container ? "is too heavy." : "is too heavy to lift.");
 		stop = container != NULL;
 		return false;
 	}
 	if (!container_local && !do_get_obj_is_takeable(actor, object))
 	{
-		do_get_reject_not_takeable(actor, object, state.failed);
+		reject_bulk_get_object(state, object, "isn't takeable.");
 		return false;
 	}
 	if (!account_bound_reward_owner(actor, object) && IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND))
 	{
-		send_to_char(
-			"You may not take that account-bound reward; it belongs to another account.\r\n",
-			actor);
+		state.rejections.emplace_back(
+			"You may not take that account-bound reward; it belongs to another account.\r\n");
 		state.failed = true;
 		return false;
 	}
@@ -1948,15 +1960,17 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 	}
 	if (!scrap && object->hitched_to)
 	{
-		act("You can't, $p is hitched to $N.", FALSE, actor, object, object->hitched_to,
-		    TO_CHAR);
+		char message[MAX_STRING_LENGTH];
+		checked_snprintf(message, sizeof(message), "You can't, %s is hitched to %s.\r\n",
+				 OBJS(object, actor), PERS(object->hitched_to, actor, FALSE));
+		state.rejections.emplace_back(message);
 		state.failed = true;
 		return false;
 	}
 	if (!scrap && GET_ITEM_TYPE(object) != ITEM_MONEY && IS_OBJ_STAT2(object, ITEM2_NOLOOT) &&
 	    !IS_TRUSTED(actor) && !account_bound_reward_owner(actor, object))
 	{
-		send_to_char("&+LYou cannot take that.&n\n\r", actor);
+		state.rejections.emplace_back("&+LYou cannot take that.&n\n\r");
 		state.failed = true;
 		return false;
 	}
@@ -2000,7 +2014,8 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 				 0,
 				 false,
 				 false,
-				 corpse };
+				 corpse,
+				 {} };
 	try
 	{
 		const bool container_local = container && (OBJ_CARRIED_BY(container, actor) ||
@@ -2101,6 +2116,12 @@ static void start_container_bulk_get(P_char actor, P_obj container, const char *
 {
 	start_bulk_get(actor, container, filter, corpse);
 }
+}
+
+/** Keep dependent input queued through item adoption, movement and every coin pickup. */
+bool bulk_get_player_busy(P_char actor)
+{
+	return actor && IS_PC(actor) && bulk_gets.count(static_cast<uint32_t>(GET_PID(actor)));
 }
 
 void do_get(P_char ch, char *argument, int cmd)

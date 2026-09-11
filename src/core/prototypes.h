@@ -2371,6 +2371,7 @@ bool cmd_allowed_while_casting(P_char, int);
 bool input_allowed_while_casting(P_char, const char *);
 int get_casting_cmd_from_q(P_char, struct txt_q *, char *);
 bool cmd_depends_on_item_movement(int);
+bool bulk_get_player_busy(P_char);
 bool input_allowed_while_item_moving(const char *);
 int get_item_movement_cmd_from_q(struct txt_q *, char *);
 bool cmd_depends_on_currency_transaction(int);

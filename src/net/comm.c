@@ -1072,9 +1072,10 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 {
 	if (!character)
 		return get_from_q(queue, dest);
-	return get_pending_transaction_cmd_from_q(queue, dest,
-						  item_movement_transaction_player_busy(character),
-						  currency_transaction_player_busy(character));
+	return get_pending_transaction_cmd_from_q(
+		queue, dest,
+		item_movement_transaction_player_busy(character) || bulk_get_player_busy(character),
+		currency_transaction_player_busy(character));
 }
 
 /** Select the casting queue for the complete AFF2_CASTING lifetime. */

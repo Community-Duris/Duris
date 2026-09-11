@@ -87,6 +87,7 @@ struct bulk_get_state
 	bool got_coins = false;
 	uint64_t container_uid = 0;
 	bool failed = false;
+	std::vector<std::string> rejections;
 };
 
 static std::string actor_text;
@@ -352,10 +353,15 @@ int main()
         context.bulk = true;
         bulk_gets[42] = {};
         bulk_gets[42].total = items;
+        bulk_gets[42].failed = true;
+        bulk_gets[42].rejections.emplace_back("A boulder is too heavy.\r\n");
         actor_text.clear();
         assert(coin_get_completion(&actor, committed, gold_only, {}, 0,
             reinterpret_cast<const uint8_t *>(&context), sizeof(context)));
         assert(bulk_gets.empty());
+        const std::string rejection = "A boulder is too heavy.\r\n";
+        assert(actor_text.size() > rejection.size());
+        assert(actor_text.substr(actor_text.size() - rejection.size()) == rejection);
         assert(actor_text.find("nothing here") == std::string::npos);
         assert(actor_text.find("nothing in it") == std::string::npos);
         if (items == 2)
@@ -372,11 +378,14 @@ int main()
         context.actor_pid = 42;
         context.bulk = true;
         bulk_gets[42] = {};
+        bulk_gets[42].rejections.emplace_back("A boulder is too heavy.\r\n");
+        actor_text.clear();
         publish_ok = failure != 0;
         assert(coin_get_completion(failure == 1 ? nullptr : &actor, true, gold_only,
             {}, failure == 2 ? EOWNERDEAD : 0,
             reinterpret_cast<const uint8_t *>(&context), sizeof(context)) == publish_ok);
         assert(bulk_gets.empty());
+        assert(actor_text.empty());
     }
     publish_ok = true;
     // A coin commit changes the pile after any earlier equipment-phase corpse save.
