@@ -179,6 +179,8 @@ bool item_movement_transaction_player_busy(P_char)
 	return item_pending;
 }
 
+bool bulk_get_player_busy(P_char) { return false; }
+
 bool input_allowed_while_item_moving(const char *input)
 {
 	return input && strcmp(input, "inventory");

@@ -215,6 +215,8 @@ critical_submit_result critical_command_coordinator_submit(critical_command queu
 
 void command_interpreter(P_char character, char *input);
 void process_with_paging(P_char character, char *input);
+static bool bulk_get_pending = false;
+bool bulk_get_player_busy(P_char) { return bulk_get_pending; }
 bool currency_transaction_player_busy(P_char) { return false; }
 bool input_allowed_while_item_moving(const char *input);
 bool input_allowed_while_currency_pending(const char *) { return true; }
@@ -1229,6 +1231,28 @@ int main()
     actor.next = nullptr;
     character_list = nullptr;
     actor.desc = nullptr;
+
+	/* The item fence has cleared, but a bulk get still has coin publication
+	   pending. Keep every dependent command ordered until the final callback. */
+	assert(!item_movement_transaction_player_busy(&actor));
+	bulk_get_pending = true;
+	struct txt_q loot_queue = {};
+	push(&loot_queue, "wear roast");
+	push(&loot_queue, "get all corpse");
+	push(&loot_queue, "put all bp");
+	push(&loot_queue, "inventory");
+	push(&loot_queue, "look");
+	assert(get_playing_cmd_from_q(&actor, &loot_queue, dest));
+	expect_text(dest, "look", "look bypasses pending bulk loot");
+	assert(!get_playing_cmd_from_q(&actor, &loot_queue, dest));
+	check_intact(&loot_queue);
+	bulk_get_pending = false;
+	for (const char *expected : { "wear roast", "get all corpse", "put all bp", "inventory" })
+	{
+		assert(get_playing_cmd_from_q(&actor, &loot_queue, dest));
+		expect_text(dest, expected, "bulk loot preserves dependent command order");
+	}
+	assert(!get_playing_cmd_from_q(&actor, &loot_queue, dest));
 
 	printf("item movement input queue runtime: ok\n");
 	return 0;
