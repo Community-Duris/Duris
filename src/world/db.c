@@ -3195,6 +3195,16 @@ void no_reset_zone_reset(int zone_number)
 
 #define ZCMD zone_table[zone].cmd[cmd_no]
 
+static bool room_has_shopkeeper(int mobile_rnum, int room_rnum)
+{
+	if (room_rnum < 0 || room_rnum > top_of_world)
+		return false;
+	for (P_char keeper = world[room_rnum].people; keeper; keeper = keeper->next_in_room)
+		if (IS_SHOPKEEPER(keeper) && GET_RNUM(keeper) == mobile_rnum)
+			return true;
+	return false;
+}
+
 /* execute the reset command table of a given zone */
 /* force_item_repop : 2 means this is a boot-time initial reset of zone. */
 void reset_zone(int zone, int force_item_repop)
@@ -3449,6 +3459,15 @@ void reset_zone(int zone, int force_item_repop)
 			case 'M': /* read a mobile */
 				mob_index[ZCMD.arg1].limit =
 					ZCMD.arg2; // set the limit from zone file
+
+				// Forced resets bypass population limits, but must not duplicate a
+				// keeper or apply this M command's stock/followers to an earlier mob.
+				if (room_has_shopkeeper(ZCMD.arg1, ZCMD.arg3))
+				{
+					mob = last_mob = tmp_mob = last_mob_followable = NULL;
+					last_cmd = last_mob_load = 0;
+					break;
+				}
 
 				if ((mob_index[ZCMD.arg1].number < ZCMD.arg2 && ZCMD.arg4 == 100) ||
 				    force_item_repop)
