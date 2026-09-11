@@ -8,6 +8,7 @@ covers the real queue implementation.
 from _paths import ROOT, extract_function
 from pathlib import Path
 import os
+import re
 import subprocess
 import tempfile
 
@@ -63,7 +64,7 @@ struct character {
 };
 using P_char = character *;
 using P_obj = void *;
-constexpr int PULSE_VIOLENCE = 12, WAIT_SEC = 4, PULSES_IN_TICK = 240;
+/* TIMING_CONSTANTS */
 constexpr int PLR2_WAIT = 1, LOG_EXIT = 0, LOG_DEBUG = 1, NOWHERE = -1;
 constexpr int POS_SITTING = 2, POS_KNEELING = 3, TO_NOTVICT = 0, TO_CHAR = 1, TO_VICT = 2;
 constexpr bool FALSE = false;
@@ -111,6 +112,10 @@ nevent_schedule_result nevent_replace(nevent_handle, callback fn, int delay, P_c
     return add_event(fn, delay, ch, victim, obj, value, data, size);
 }
 ''' + extract_function('events.c', 'void event_wait(') + '\n' + extract_function('events.c', 'void CharWait(')
+config = (ROOT / 'src/core/config.h').read_text()
+timing = [re.search(r'^#define ' + name + r'\s+[^\n]+', config, re.M).group(0)
+          for name in ('PULSE_VIOLENCE', 'WAIT_SEC', 'PULSES_IN_TICK')]
+harness = harness.replace('/* TIMING_CONSTANTS */', '\n'.join(timing))
 for name, branch in branches.items():
     # Both names occur in the original branch text. Unused locals are intentional.
     harness += '\nvoid ' + name + '(P_char ch) { [[maybe_unused]] P_char vict = ch, victim = ch;\n'
