@@ -49,3 +49,36 @@ These are isolated build/harness checks. Live MariaDB chest journeys and complet
 WebSocket wire journeys were not run. The latency harness does not measure SQL,
 account-file writes, or a production tick; those operations remain on the game
 thread and are outside this bcrypt change.
+
+## PR #211 merge-blocker follow-up
+
+Updated the branch with master `ca0822b8` and corrected both password/login
+ordering assertions for `get_casting_cmd_from_q(t_ch, &point->input, comm)`.
+The first-password completion now frees an existing account password only when
+non-null. The runtime harness links `src/core/memory.c`, allocates password
+strings through `__malloc`, and releases them through `FREE`; it no longer
+substitutes libc `free` for the production allocator. A separate invocation
+asserts that the production allocator rejects null with its expected fatal
+message. Removing the new guard in a temporary harness reproduces the reported
+account-creation failure; the corrected handler passes under ASan/UBSan.
+
+The locker failure contract now follows asynchronous non-owner opens: failed
+credential reads, absent credentials, worker submission, conditional credential
+revalidation/upgrades, stale chest identity, and rejection before opening.
+
+Follow-up validation passed:
+
+- Full MariaDB development build: `make -C src -j8` (warnings as errors).
+- `test_password_async_runtime.py`, including new account creation,
+  mismatch/retry, confirmed-account password replacement, and allocator probe.
+- `test_login_crash_regressions.py`, `test_locker_result_failures.py`, and
+  `test_private_chest_password_hardening.py`.
+- Both account-deletion contracts and `test_account_character_delete_runtime.py`.
+- `test_account_recovery_contract.py` and `test_account_recovery.py`.
+- `test_casting_input_gate_runtime.py` and `test_command_latency_runtime.py`.
+- Repository changed-line formatting check in an isolated Linux Git snapshot,
+  plus `git diff --check`.
+
+No live Telnet, MariaDB chest, or full WebSocket journey was run for this
+follow-up. The account-creation regression uses the actual account handlers,
+worker, descriptor adapter, and allocator, with UI and persistence stubs.

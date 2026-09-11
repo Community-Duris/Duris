@@ -22,11 +22,13 @@ bool valid_password(P_desc, char *arg)
 }
 char *str_dup(const char *text)
 {
-	return strdup(text);
+	char *copy =
+		static_cast<char *>(__malloc(strlen(text) + 1, MEM_TAG_STRING, __FILE__, __LINE__));
+	return strcpy(copy, text);
 }
-void __free(void *p, const char *, int)
+void logit(const char *, const char *message, ...)
 {
-	free(p);
+	fprintf(stderr, "%s\n", message);
 }
 void verify_new_account_information(P_desc, char *) {}
 void display_account_menu(P_desc, char *) {}
@@ -69,8 +71,14 @@ static void no_slow(const char *line, void *)
 {
 	assert(!strstr(line, "COMMAND OP SLOW"));
 }
-int main()
+int main(int argc, char **)
 {
+	// Verify the linked production allocator rejects NULL, unlike libc free.
+	if (argc > 1)
+	{
+		__free(nullptr, __FILE__, __LINE__);
+		return 0;
+	}
 	auto desc = std::make_unique<descriptor_data>();
 	P_desc d = desc.get();
 	auto acct = std::make_unique<std::remove_pointer_t<P_acct>>();
@@ -111,7 +119,7 @@ int main()
 	verify_new_account_password(d, entered);
 	drain(d, COMMAND_LATENCY_NANNY);
 	assert(STATE(d) == CON_DISPLAY_ACCT_MENU && saves == 1);
-	free(d->account->acct_password);
+	FREE(d->account->acct_password);
 	d->account->acct_password = nullptr;
 	std::string hash;
 	int calls = 0;

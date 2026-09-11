@@ -973,7 +973,8 @@ void get_new_account_password(P_desc d, char *arg)
 				    get_new_account_password(completed_desc, NULL);
 				    return;
 			    }
-			    FREE(completed_desc->account->acct_password);
+			    if (completed_desc->account->acct_password)
+				    FREE(completed_desc->account->acct_password);
 			    completed_desc->account->acct_password = str_dup(hash);
 			    STATE(completed_desc) = CON_VERIFY_NEW_ACCT_PASSWD;
 			    verify_new_account_password(completed_desc, NULL);

@@ -58,7 +58,7 @@ check("telnet and websocket logins defer expensive password work without a block
           not any(call in handler for call in ("bcrypt_verify_password(", "bcrypt_hash_password(", "CRYPT2("))
           for handler in (login, ws_login)))
 check("pending login keeps telnet type-ahead queued",
-      comm.index("if (password_async_pulse(point) || account_login_password_pulse(point))") < comm.index("get_casting_cmd_from_q(t_ch, &point->input"))
+      comm.index("if (password_async_pulse(point) || account_login_password_pulse(point))") < comm.index("get_casting_cmd_from_q(t_ch, &point->input, comm)"))
 dispatch = ws_handlers[ws_handlers.index("void ws_handle_command("):]
 check("pending login blocks websocket commands before dispatch",
       dispatch.index("d->login_password_job") < dispatch.index("entry.handler(d, data)"))

@@ -15,7 +15,7 @@ for path in ("account/account.c", "account/account_recovery_nanny.c",
     assert "bcrypt_hash_password(" not in text, path
     assert "bcrypt_verify_password(" not in text, path
 comm = (SRC / "net/comm.c").read_text()
-assert comm.index("password_async_pulse(point)") < comm.index("get_casting_cmd_from_q(&point->input")
+assert comm.index("password_async_pulse(point)") < comm.index("get_casting_cmd_from_q(t_ch, &point->input, comm)")
 assert "password_async_cancel(d);" in comm
 ws = (SRC / "net/ws_handlers.c").read_text()
 assert "d->login_password_job || d->password_request" in ws
@@ -41,8 +41,11 @@ with tempfile.TemporaryDirectory(prefix="duris-password-async-") as tmp:
         "-fsanitize=address,undefined", "-I", str(SRC), "-I/usr/include/mysql",
         str(harness),
         str(SRC / "account/password_hash.c"), str(SRC / "account/password_async.c"),
-        str(SRC / "net/command_latency.c"), "-lcrypt", "-lcrypto", "-pthread",
+        str(SRC / "core/memory.c"), str(SRC / "net/command_latency.c"), "-lcrypt", "-lcrypto", "-pthread",
         "-o", str(binary),
     ], check=True)
+    allocator = subprocess.run([str(binary), "--free-null"], capture_output=True, text=True)
+    assert allocator.returncode == 1, allocator.stderr
+    assert "FREE called, but memory not in allocation list!" in allocator.stderr
     subprocess.run([str(binary)], check=True)
 print("password async runtime and interactive-path contracts passed")
