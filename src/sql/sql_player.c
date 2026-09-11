@@ -9580,7 +9580,8 @@ void sql_restore_shopkeepers(void)
 		return;
 
 	// query 1: load all shopkeepers
-	MYSQL_RES *result = db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers");
+	MYSQL_RES *result = db_query("SELECT shop_id, id, mob_vnum, room_vnum FROM shopkeepers "
+				     "ORDER BY save_time DESC, id DESC");
 	if (!result)
 		return;
 
@@ -9594,6 +9595,32 @@ void sql_restore_shopkeepers(void)
 		int shopkeeper_id = atoi(row[1]);
 		int mob_vnum = atoi(row[2]);
 		int room_vnum = atoi(row[3]);
+
+		const int mob_rnum = real_mobile(mob_vnum);
+		if (shop_nr < 0 || shop_nr >= number_of_shops || mob_rnum < 0 ||
+		    shop_index[shop_nr].keeper != mob_rnum || real_room(room_vnum) == NOWHERE)
+		{
+			logit(LOG_DEBUG,
+			      "sql_restore_shopkeepers: skipping invalid shop %d vnum %d room %d",
+			      shop_nr, mob_vnum, room_vnum);
+			continue;
+		}
+		bool duplicate = false;
+		for (struct shopkeeper_temp *existing = keepers; existing;
+		     existing = existing->next)
+			if (existing->shop_nr == shop_nr ||
+			    (existing->mob_vnum == mob_vnum && existing->room_vnum == room_vnum))
+			{
+				duplicate = true;
+				break;
+			}
+		if (duplicate)
+		{
+			logit(LOG_DEBUG,
+			      "sql_restore_shopkeepers: skipping duplicate shop %d vnum %d room %d",
+			      shop_nr, mob_vnum, room_vnum);
+			continue;
+		}
 
 		P_char mob = read_mobile(mob_vnum, VIRTUAL);
 		if (!mob)
@@ -9674,6 +9701,15 @@ void sql_restore_shopkeepers(void)
 		{
 			int item_id = atoi(row[0]);
 			int shopkeeper_id = atoi(row[1]);
+			bool accepted_keeper = false;
+			for (struct shopkeeper_temp *k = keepers; k; k = k->next)
+				if (k->shopkeeper_id == shopkeeper_id)
+				{
+					accepted_keeper = true;
+					break;
+				}
+			if (!accepted_keeper)
+				continue;
 			int vnum = atoi(row[2]);
 			int rnum = real_object(vnum);
 			if (rnum < 0)
@@ -9861,20 +9897,15 @@ void sql_restore_shopkeepers(void)
 			obj->loc.carrying = k->mob;
 		}
 
-		// find shop index
-		int shop_idx;
-		for (shop_idx = 0; shop_idx < number_of_shops; shop_idx++)
-		{
-			if (shop_index[shop_idx].keeper == GET_RNUM(k->mob))
-				break;
-		}
+		const int shop_idx = k->shop_nr;
 
-		// remove existing keepers with same vnum
+		// Replace only incumbents in this room. Other rooms and the unplaced
+		// mobs in this restore batch may legitimately share the keeper vnum.
 		int extracted = 0;
 		for (P_char keeper2 = character_list; keeper2;)
 		{
 			P_char next = keeper2->next;
-			if (IS_NPC(keeper2) && keeper2 != k->mob &&
+			if (IS_NPC(keeper2) && keeper2 != k->mob && keeper2->in_room == load_room &&
 			    mob_index[GET_RNUM(keeper2)].virtual_number == k->mob_vnum)
 			{
 				extract_char(keeper2);
