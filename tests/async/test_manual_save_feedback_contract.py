@@ -58,6 +58,8 @@ P_char find_character_by_runtime_id(uint64_t id) {
     return player.runtime_id == id ? &player : nullptr;
 }
 void persistence_counter_saturating_add(uint64_t *value, uint64_t amount) { *value += amount; }
+enum class persistence_severity { ok, info, alert };
+void persistence_report(persistence_severity, int, const char *, const char *, const char *, const char *, const char *, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *, ...) {}
 void logit(int, const char *, ...) {}
 void sql_update_level(P_char) {}

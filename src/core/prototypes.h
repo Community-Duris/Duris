@@ -3035,6 +3035,17 @@ void CAP(char *);
 void DECAP(char *);
 void InitGrantFastLookup(void);
 void logit(const char *, const char *, ...) __attribute__((format(printf, 2, 3)));
+// Severity controls routing; level only selects the immortal audience for alerts.
+enum class persistence_severity
+{
+	ok,
+	info,
+	alert
+};
+void persistence_report(persistence_severity severity, int level, const char *domain,
+			const char *owner, const char *item_uid, const char *event_id,
+			const char *action, const char *format, ...);
+// Compatibility entry point for failures: always emits alert severity.
 void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
 		       const char *event_id, const char *action, const char *format, ...);
 unsigned long long persistence_next_item_uid(void);

@@ -2511,8 +2511,8 @@ static void death_custody_wait_reset(P_char ch)
 /** Finish a death whose record is durable: report it, then release to the account menu. */
 static void release_after_terminal_death(P_char ch, const char *outcome)
 {
-	persistence_alert(AVATAR, "player_save", "death", "none", "none", outcome,
-			  "extract_refused=0");
+	persistence_report(persistence_severity::ok, AVATAR, "player_save", "death", "none", "none",
+			   outcome, "extract_refused=0");
 	send_to_char("Your death has been recorded; the world lets go of you.\r\n", ch);
 	ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	add_track(ch, NUM_EXITS);
@@ -2550,9 +2550,10 @@ static bool save_disputed_death_disposition(P_char ch, uint64_t corpse_uid)
 		extract_obj(wallet_pile, FALSE);
 	const bool durable = saved == player_save_terminal_result::database_acknowledged ||
 			     saved == player_save_terminal_result::journal_durable;
-	persistence_alert(AVATAR, "player_save", "death", "none", "none",
-			  durable ? "death_disposition_recorded" : "death_disposition_failed",
-			  "outcome=%u wallet=%d", (unsigned)saved, wallet_pile ? 1 : 0);
+	persistence_report(durable ? persistence_severity::ok : persistence_severity::alert, AVATAR,
+			   "player_save", "death", "none", "none",
+			   durable ? "death_disposition_recorded" : "death_disposition_failed",
+			   "outcome=%u wallet=%d", (unsigned)saved, wallet_pile ? 1 : 0);
 	return durable;
 }
 
@@ -2696,12 +2697,13 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 					  waited_sec, DEATH_EXTRACT_RETRY_INITIAL);
 		}
 		else
-			logit(LOG_DEBUG,
-			      "PERSISTENCE: domain=player_save action=death_recovery_awaiting_custody "
-			      "outcome=expected detail=items=%d currency=%d polls=%d "
-			      "waited_sec=%d delay=%d",
-			      items_busy ? 1 : 0, currency_busy ? 1 : 0, polls, waited_sec,
-			      DEATH_EXTRACT_RETRY_INITIAL);
+			persistence_report(persistence_severity::info, AVATAR, "player_save",
+					   "death", "none", "none",
+					   "death_recovery_awaiting_custody",
+					   "items=%d currency=%d polls=%d "
+					   "waited_sec=%d delay=%d",
+					   items_busy ? 1 : 0, currency_busy ? 1 : 0, polls,
+					   waited_sec, DEATH_EXTRACT_RETRY_INITIAL);
 
 		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL);
 		return;
@@ -2733,9 +2735,11 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	if (corpse && ch->carrying)
 	{
 		const bool submitted = submit_next_corpse_item(ch, corpse);
-		persistence_alert(AVATAR, "player_save", "death", "none", "none",
-				  "death_recovery_restarting_corpse_items", "submitted=%d delay=%d",
-				  submitted ? 1 : 0, DEATH_EXTRACT_RETRY_INITIAL);
+		persistence_report(
+			submitted ? persistence_severity::info : persistence_severity::alert,
+			AVATAR, "player_save", "death", "none", "none",
+			"death_recovery_restarting_corpse_items", "submitted=%d delay=%d",
+			submitted ? 1 : 0, DEATH_EXTRACT_RETRY_INITIAL);
 		// Publication removes the item from the character. Until that happens the
 		// terminal snapshot must not capture it and extraction must not drop it.
 		schedule_death_extract_retry(ch, context.corpse_uid, DEATH_EXTRACT_RETRY_INITIAL);
@@ -3168,11 +3172,11 @@ void die(P_char ch, P_char killer)
 				}
 				else if (IS_PC(ch) && (item_movement_transaction_player_busy(ch) ||
 						       ch->carrying))
-					persistence_alert(AVATAR, "player_save", "death", "none",
-							  "none",
-							  "spawn_raise_skipped_ownership_pending",
-							  "corpse_uid=%llu",
-							  (unsigned long long)corpse->obj_uid);
+					persistence_report(persistence_severity::info, AVATAR,
+							   "player_save", "death", "none", "none",
+							   "spawn_raise_skipped_ownership_pending",
+							   "corpse_uid=%llu",
+							   (unsigned long long)corpse->obj_uid);
 				else
 					spawn_raise_undead(killer, ch, corpse);
 			}
@@ -3334,10 +3338,13 @@ void die(P_char ch, P_char killer)
 		    (item_movement_transaction_player_busy(ch) ||
 		     currency_transaction_player_busy(ch) || corpse_transfer_disputed(ch)))
 		{
-			persistence_alert(AVATAR, "player_save", "death", "none", "none",
-					  "corpse_items_in_flight",
-					  "extract_refused=1 recovery_scheduled=1 disputed=%d",
-					  corpse_transfer_disputed(ch) ? 1 : 0);
+			persistence_report(corpse_transfer_disputed(ch) ?
+						   persistence_severity::alert :
+						   persistence_severity::info,
+					   AVATAR, "player_save", "death", "none", "none",
+					   "corpse_items_in_flight",
+					   "extract_refused=1 recovery_scheduled=1 disputed=%d",
+					   corpse_transfer_disputed(ch) ? 1 : 0);
 			schedule_death_extract_retry(ch, death_corpse_uid,
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;
@@ -3346,10 +3353,12 @@ void die(P_char ch, P_char killer)
 		if (!CHAR_IN_ARENA(ch) && death_corpse && ch->carrying)
 		{
 			const bool submitted = submit_next_corpse_item(ch, death_corpse);
-			persistence_alert(AVATAR, "player_save", "death", "none", "none",
-					  "corpse_items_restart",
-					  "submitted=%d extract_refused=1 recovery_scheduled=1",
-					  submitted ? 1 : 0);
+			persistence_report(submitted ? persistence_severity::info :
+						       persistence_severity::alert,
+					   AVATAR, "player_save", "death", "none", "none",
+					   "corpse_items_restart",
+					   "submitted=%d extract_refused=1 recovery_scheduled=1",
+					   submitted ? 1 : 0);
 			schedule_death_extract_retry(ch, death_corpse_uid,
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;

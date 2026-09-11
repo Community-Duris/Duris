@@ -21,6 +21,40 @@ reports bounded coordinator depth/bytes, high-water marks, captures, coalescing,
 unchanged checkpoints, append failures, overload, dispatch, completion, and replay
 state. Output contains no player identity or snapshot value.
 
+## Persistence reporting severity
+
+`persistence_report(severity, level, domain, owner, item_uid, event_id, action, format, ...)`
+separates event severity from the immortal audience selected by `level`:
+
+| Severity | Structured outcome | Routing |
+| --- | --- | --- |
+| `persistence_severity::ok` | `outcome=ok` | `LOG_FILE` and `LOG_WIZ` file records |
+| `persistence_severity::info` | `outcome=info` | `LOG_FILE` and `LOG_WIZ` file records |
+| `persistence_severity::alert` | `outcome=alert` | Both file records and the existing red immortal broadcast |
+
+`persistence_alert(...)` remains an alert-only compatibility entry point. Unknown
+severity values also alert. Both entry points use the same category sanitization
+and numeric-only detail filtering; owner, item UID and event ID arguments are
+omitted from the output at every severity.
+
+Use `ok` after a successful durable operation and `info` for expected progress.
+Death recovery/disposition completion and durable disposition recording are `ok`.
+Ordinary custody waits, undisputed in-flight transfers and successfully submitted
+corpse-item restarts are `info`. Automatic raising skipped while corpse ownership
+is pending is also informational. Failed restart submissions, disputes, missing
+corpses, abandoned recovery, event scheduling failures and failed saves remain
+alerts. A custody wait still escalates after 30 seconds and once per subsequent
+30-second window; normal polls now use `outcome=info` in the file records.
+
+Successful deferred-save flushes, flat fallback writes and complete legacy replays
+also use `ok`; failed flushes and partial replays retain alerts. Retired raw-worker
+and raw-replay status reports use `info`. Failed I/O, rejected mutations, dropped
+or undrained work, unavailable workers and automatic restarts after worker failure
+continue to alert even when a recovery path is available.
+
+Validate routing and privacy with `python3 tests/async/test_persistence_severity.py`;
+`test_death_recovery_alert_level.py` also verifies the timed stall escalation.
+
 ## Terminal Saves And Process Drain
 
 Destructive player transitions mark and capture a fresh full revision with the
