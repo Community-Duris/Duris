@@ -1,0 +1,106 @@
+Duris MUD Theme Song
+Title: Land of Bloodlust
+Model: sonic-v6
+task_type: create_music
+custom_mode: true
+make_instrumental: false
+auto_lyrics: false
+tags: epic cinematic dark-fantasy theme song, massive orchestra, war drums, grim male vocals, male choir, battle anthem, heavy percussion, brass fanfare, gothic metal, no pop, no lo-fi, no comedy
+negative_tags: pop, lo-fi, comedy, cute, dance, upbeat bubblegum, electronic dance
+vocal_gender: m
+duration: 180
+task_id: f1b9c7e7-0170-45bb-9182-8146e2cdfbde
+
+Pair from one create_music job (same lyrics, two arrangements):
+- A  duris-theme-song.mp3    clip_id a118d30e-b477-4995-9476-14d27565fb86  ~2:59
+- B  duris-theme-song-b.mp3  clip_id 0d648bc3-4e19-499c-a892-7021544bba43  ~1:29
+
+The prompt field sent to the API is the structured lyrics below.
+
+===== PROMPT / LYRICS =====
+
+[Intro]
+Welcome to Duris
+Land of Bloodlust
+Where death waits around every corner
+We warned you
+
+[Verse]
+Moonlight on the citadel
+A dragon wheels through ash and fire
+Good and evil take the field
+The racewar never tires
+Grey elves stand with dwarven steel
+Drow and orc come howling through
+Every blade is player-killing
+Every night a reckoning due
+
+[Pre-Chorus]
+Frags and loot and bragging rights
+Corpses cooling in the dust
+Pick a side or die unknown
+In the Land of Bloodlust
+
+[Chorus]
+This is Duris
+Land of Bloodlust
+Death is waiting around every corner
+This is Duris
+Good versus evil
+Full player-killing till the world is over
+Raise the banners, take the stone
+You were warned, you walk alone
+This is Duris
+Land of Bloodlust
+Where death waits around every corner
+
+[Verse]
+Ships on black water, guilds in the dark
+Artifacts burning like captured stars
+Paladin, lich, and shadowbeast
+All of them marching to war
+Neutral souls still choose a side
+Vampire, shade, and minotaur
+There is no peace on this frontier
+Only the endless racewar
+
+[Pre-Chorus]
+Frags and loot and bragging rights
+Corpses cooling in the dust
+Pick a side or die unknown
+In the Land of Bloodlust
+
+[Chorus]
+This is Duris
+Land of Bloodlust
+Death is waiting around every corner
+This is Duris
+Good versus evil
+Full player-killing till the world is over
+Raise the banners, take the stone
+You were warned, you walk alone
+This is Duris
+Land of Bloodlust
+Where death waits around every corner
+
+[Bridge]
+Volcanic fortress, moonlit ruins
+The citadel will not fall
+Kill or be killed, the law of the land
+Hear the war drums call
+We warned you
+We warned you
+
+[Chorus]
+This is Duris
+Land of Bloodlust
+Death is waiting around every corner
+This is Duris
+Good versus evil
+Full player-killing till the world is over
+
+[Outro]
+Welcome to Duris
+Land of Bloodlust
+Where death waits around every corner
+We warned you
