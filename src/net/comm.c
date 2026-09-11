@@ -70,6 +70,7 @@
 #include "item/enhance.h"
 #include "economy/crafting.h"
 #include "account/account_recovery.h"
+#include "item/locker_identify.h"
 #include "cmd/information_cache.h"
 #include "cmd/help_cache.h"
 #include "account/password_hash.h"
@@ -246,6 +247,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 {
 	epic_transaction_handle_completions(completions, count);
 	currency_transaction_handle_completions(completions, count);
+	locker_identify_pulse();
 	corpse_lifecycle_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
@@ -848,6 +850,9 @@ void run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
+	if (!locker_identify_init(critical_journal_directory))
+		logit(LOG_STATUS,
+		      "Locker identification unavailable: receipt storage could not initialize.");
 	critical_command_coordinator_set_drain_observer(critical_gameplay_handle_completions);
 	if (!mini_mode)
 	{
@@ -898,6 +903,7 @@ void run_the_game(int port, int sslport)
 	account_recovery_shutdown();
 	password_login_shutdown();
 	critical_command_coordinator_shutdown();
+	locker_identify_shutdown();
 	critical_outbox_shutdown();
 	if (!_pwipe)
 	{
@@ -1246,6 +1252,9 @@ void game_loop(int port, int sslport)
 	ws_desc = WS;
 	copyover_boot = 0;
 	copyover_clear_boot();
+	for (P_desc receipt_desc = descriptor_list; receipt_desc; receipt_desc = receipt_desc->next)
+		if (receipt_desc->character && receipt_desc->connected == CON_PLAYING)
+			locker_identify_replay(receipt_desc->character);
 
 	long last_desc_per_hour_reset = time(0);
 	/* Main loop */

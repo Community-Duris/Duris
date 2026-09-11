@@ -498,6 +498,13 @@ int main()
 	assert(currency_transaction_can_submit(&actor));
 #endif
 	REMOVE_BIT(actor.runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+	critical_command receipt_payment;
+	assert(currency_transaction_prepare_identify(&actor, 1, &receipt_payment));
+	assert(critical_command_valid(receipt_payment) && receipt_payment.accepted_at_usec);
+	std::vector<uint8_t> receipt_bytes;
+	assert(critical_command_encode(receipt_payment, &receipt_bytes) == critical_command_codec_result::ok);
+	assert(submission_count == 0 && !currency_transaction_player_busy(&actor));
+	assert(!currency_transaction_prepare_identify(&actor, 0, &receipt_payment));
 	assert(currency_transaction_submit_wallet_value(
 		&actor, 1000, currency_reason_type::wallet_reward, 100,
 		critical_source_site::command, critical_deadline_class::interactive,

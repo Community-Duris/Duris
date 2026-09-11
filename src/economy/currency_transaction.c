@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <climits>
 #include <cstring>
 #include <new>
@@ -546,6 +547,38 @@ bool currency_transaction_submit_identified(
 				    character->only.pc->wallet_revision, expected_bank_revision,
 				    source_site, deadline_class))
 		return false;
+	return currency_transaction_submit_prepared(character, command, completion, context,
+						    context_size);
+}
+
+bool currency_transaction_submit_prepared(P_char character, const critical_command &command,
+					  currency_completion_fn completion, const void *context,
+					  size_t context_size)
+{
+	currency_command_payload payload = {};
+	if (!character || IS_NPC(character) || !character->only.pc ||
+	    context_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES || (context_size && !context) ||
+	    !currency_command_decode_payload(command, &payload) ||
+	    payload.pid != static_cast<uint32_t>(GET_PID(character)) ||
+	    payload.racewar != static_cast<uint8_t>(GET_RACEWAR(character)))
+		return false;
+	const char *account = get_account_name_safe(character);
+	if (!account || strcasecmp(account, payload.account_name.data()))
+		return false;
+	const auto &operation_id = command.operation_id;
+	const auto existing = pending.find(operation_key(operation_id));
+	if (existing != pending.end())
+		return true;
+	if (pending.size() >= CURRENCY_PENDING_MAX)
+		return false;
+	if (!currency_command_is_rebasable_reward(payload))
+		for (const auto &entity : command.keys)
+		{
+			critical_operation_id fence = {};
+			if (critical_command_coordinator_is_fenced(entity, &fence) &&
+			    !critical_operation_id_equal(fence, operation_id))
+				return false;
+		}
 	pending_currency entry = { .pid = static_cast<uint32_t>(GET_PID(character)),
 				   .account_name = payload.account_name,
 				   .racewar = payload.racewar,
@@ -565,8 +598,16 @@ bool currency_transaction_submit_identified(
 	{
 		return false;
 	}
-	const critical_submit_result submitted =
-		critical_command_coordinator_submit(std::move(command));
+	critical_submit_result submitted;
+	try
+	{
+		submitted = critical_command_coordinator_submit(command);
+	}
+	catch (const std::bad_alloc &)
+	{
+		pending.erase(key);
+		return false;
+	}
 	if (submitted != critical_submit_result::accepted &&
 	    submitted != critical_submit_result::attached)
 	{
@@ -610,12 +651,8 @@ bool currency_transaction_submit_bank_reward(P_char character, int64_t value,
 					   context_size);
 }
 
-bool currency_transaction_submit_bank_payment(P_char character, int64_t value,
-					      currency_reason_type reason, int64_t reason_id,
-					      critical_source_site source_site,
-					      critical_deadline_class deadline_class,
-					      currency_completion_fn completion,
-					      const void *context, size_t context_size)
+static bool bank_payment_deltas(P_char character, int64_t value, currency_vector *wallet,
+				currency_vector *bank)
 {
 	if (!character || IS_NPC(character) || value <= 0)
 		return false;
@@ -646,6 +683,57 @@ bool currency_transaction_submit_bank_payment(P_char character, int64_t value,
 	currency_vector wallet_delta = {};
 	if (remaining < 0)
 		wallet_delta = canonical_value(-remaining);
+	*wallet = wallet_delta;
+	*bank = bank_delta;
+	return true;
+}
+
+bool currency_transaction_prepare_identify(P_char character, int64_t cost,
+					   critical_command *command)
+{
+	if (!command || cost <= 0 || !currency_transaction_can_submit(character) ||
+	    currency_transaction_player_busy(character))
+		return false;
+	currency_vector wallet_delta = {}, bank_delta = {};
+	const bool use_bank = GET_MONEY(character) < cost;
+	if (use_bank ? !bank_payment_deltas(character, cost, &wallet_delta, &bank_delta) :
+		       !wallet_value_delta(character, -cost, &wallet_delta))
+		return false;
+	currency_command_payload payload = {};
+	payload.pid = static_cast<uint32_t>(GET_PID(character));
+	payload.racewar = static_cast<uint8_t>(GET_RACEWAR(character));
+	payload.reason = use_bank ? currency_reason_type::bank_payment :
+				    currency_reason_type::wallet_spend;
+	const char *account = get_account_name_safe(character);
+	if (!account || strlen(account) > CURRENCY_ACCOUNT_NAME_MAX_BYTES ||
+	    !strcmp(account, "Unknown"))
+		return false;
+	memcpy(payload.account_name.data(), account, strlen(account));
+	payload.wallet_delta = wallet_delta;
+	payload.bank_delta = bank_delta;
+	critical_operation_id id = {};
+	if (!critical_operation_id_generate(&id) ||
+	    !currency_command_build(command, id, payload, character->only.pc->wallet_revision,
+				    character->only.pc->bank_revision,
+				    critical_source_site::command,
+				    critical_deadline_class::interactive))
+		return false;
+	command->accepted_at_usec = std::chrono::duration_cast<std::chrono::microseconds>(
+					    std::chrono::system_clock::now().time_since_epoch())
+					    .count();
+	return critical_command_normalize(command);
+}
+
+bool currency_transaction_submit_bank_payment(P_char character, int64_t value,
+					      currency_reason_type reason, int64_t reason_id,
+					      critical_source_site source_site,
+					      critical_deadline_class deadline_class,
+					      currency_completion_fn completion,
+					      const void *context, size_t context_size)
+{
+	currency_vector wallet_delta = {}, bank_delta = {};
+	if (!bank_payment_deltas(character, value, &wallet_delta, &bank_delta))
+		return false;
 	return currency_transaction_submit(character, wallet_delta, bank_delta, reason, reason_id,
 					   source_site, deadline_class, completion, context,
 					   context_size);

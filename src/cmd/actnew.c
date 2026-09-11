@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/item_lore.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -2683,8 +2684,15 @@ void do_lore(P_char ch, char *arg, int cmd)
 	}
 }
 
-void lore_item(P_char ch, P_obj obj)
+static void render_item_lore(P_char ch, P_obj obj, std::string *captured)
 {
+	const auto emit = [ch, captured](const char *text)
+	{
+		if (captured)
+			captured->append(text);
+		else
+			send_to_char(text, ch);
+	};
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[256];
 	int percent, i;
 	bool found;
@@ -2696,9 +2704,7 @@ void lore_item(P_char ch, P_obj obj)
 	{
 		if (GET_LEVEL(ch) < 50)
 		{
-			send_to_char(
-				"You can't recall any legends or stories ever told about this item.\n\r",
-				ch);
+			emit("You can't recall any legends or stories ever told about this item.\n\r");
 			return;
 		}
 	}
@@ -2707,14 +2713,14 @@ void lore_item(P_char ch, P_obj obj)
 	sprinttype(GET_ITEM_TYPE(obj), item_types, Gbuf2);
 	strcat(Gbuf1, Gbuf2);
 	strcat(Gbuf1, "\r\n");
-	send_to_char(Gbuf1, ch);
+	emit(Gbuf1);
 
 	if (obj->bitvector || obj->bitvector2 || obj->bitvector3 || obj->bitvector4 ||
 	    obj->bitvector5)
 	{
 		*Gbuf2 = '\0';
 
-		send_to_char("Item will give you following abilities:  ", ch);
+		emit("Item will give you following abilities:  ");
 
 		if (obj->bitvector)
 			sprintbitde(obj->bitvector, affected1_bits, Gbuf2);
@@ -2744,39 +2750,39 @@ void lore_item(P_char ch, P_obj obj)
 		}
 
 		strcat(Gbuf2, "\n");
-		send_to_char(Gbuf2, ch);
+		emit(Gbuf2);
 	}
 
-	send_to_char("Item is: ", ch);
+	emit("Item is: ");
 	sprintbitde(obj->extra_flags, extra_bits, Gbuf1);
 	strcat(Gbuf1, "\r\n");
-	send_to_char(Gbuf1, ch);
+	emit(Gbuf1);
 
 	switch (GET_ITEM_TYPE(obj))
 	{
 	case ITEM_SCROLL:
 	case ITEM_POTION:
-		send_to_char("Contains spells of: ", ch);
+		emit("Contains spells of: ");
 
 		if (obj->value[1] >= 1)
 		{
 			sprinttype(obj->value[1], spells, Gbuf1);
 			strcat(Gbuf1, "\r\n");
-			send_to_char(Gbuf1, ch);
+			emit(Gbuf1);
 		}
 
 		if (obj->value[2] >= 1)
 		{
 			sprinttype(obj->value[2], spells, Gbuf1);
 			strcat(Gbuf1, "\r\n");
-			send_to_char(Gbuf1, ch);
+			emit(Gbuf1);
 		}
 
 		if (obj->value[3] >= 1)
 		{
 			sprinttype(obj->value[3], spells, Gbuf1);
 			strcat(Gbuf1, "\r\n");
-			send_to_char(Gbuf1, ch);
+			emit(Gbuf1);
 		}
 		break;
 
@@ -2789,30 +2795,30 @@ void lore_item(P_char ch, P_obj obj)
 
 		snprintf(Gbuf1, MAX_STRING_LENGTH,
 			 "%d%% of its charges remain, and it contains the spell of: ", percent);
-		send_to_char(Gbuf1, ch);
+		emit(Gbuf1);
 
 		if (obj->value[3] >= 1)
 		{
 			sprinttype(obj->value[3], spells, Gbuf1);
 			strcat(Gbuf1, "\r\n");
-			send_to_char(Gbuf1, ch);
+			emit(Gbuf1);
 		}
 		break;
 
 	case ITEM_WEAPON:
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "Damage Dice is '%dD%d'\r\n", obj->value[1],
 			 obj->value[2]);
-		send_to_char(Gbuf1, ch);
+		emit(Gbuf1);
 		break;
 	case ITEM_INSTRUMENT:
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "This instrument has level %d.\r\n",
 			 obj->value[1]);
-		send_to_char(Gbuf1, ch);
+		emit(Gbuf1);
 		break;
 
 	case ITEM_ARMOR:
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "AC-apply is %d\r\n", obj->value[0]);
-		send_to_char(Gbuf1, ch);
+		emit(Gbuf1);
 		break;
 	}
 
@@ -2822,10 +2828,10 @@ void lore_item(P_char ch, P_obj obj)
 		if ((obj->affected[i].location != APPLY_NONE) && (obj->affected[i].modifier != 0))
 		{
 			if (found)
-				send_to_char(" and", ch);
+				emit(" and");
 			else
 			{
-				send_to_char("This item will also affect your", ch);
+				emit("This item will also affect your");
 				found = TRUE;
 			}
 			sprinttype(obj->affected[i].location, apply_types, Gbuf2);
@@ -2853,60 +2859,90 @@ void lore_item(P_char ch, P_obj obj)
 				Gbuf3[0] = 0;
 
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, " %s %s", Gbuf2, Gbuf3);
-			send_to_char(Gbuf1, ch);
+			emit(Gbuf1);
 		}
 	}
 	if (found)
-		send_to_char(".\n\r", ch);
+		emit(".\n\r");
 
 	if (GET_ITEM_TYPE(obj) == ITEM_TOTEM)
 	{
-		send_to_char("This totem grants:", ch);
+		emit("This totem grants:");
 		int val0 = obj->value[0];
 		bool bFound = FALSE;
 
 		if (IS_SET(val0, TOTEM_LESS_ANIM))
 		{
-			send_to_char_f(ch, "%s&+yLesser Animal&n", bFound ? ", " : " ");
+			emit(bFound ? ", " : " ");
+			emit("&+yLesser Animal&n");
 			bFound = TRUE;
 		}
 		if (IS_SET(val0, TOTEM_GR_ANIM))
 		{
-			send_to_char_f(ch, "%s&+yGreater Animal&n", bFound ? ", " : " ");
+			emit(bFound ? ", " : " ");
+			emit("&+yGreater Animal&n");
 			bFound = TRUE;
 		}
 		if (IS_SET(val0, TOTEM_LESS_ELEM))
 		{
-			send_to_char_f(ch, "%s&+rLesser Elemental&n", bFound ? ", " : " ");
+			emit(bFound ? ", " : " ");
+			emit("&+rLesser Elemental&n");
 			bFound = TRUE;
 		}
 		if (IS_SET(val0, TOTEM_GR_ELEM))
 		{
-			send_to_char_f(ch, "%s&+rGreater Elemental&n", bFound ? ", " : " ");
+			emit(bFound ? ", " : " ");
+			emit("&+rGreater Elemental&n");
 			bFound = TRUE;
 		}
 		if (IS_SET(val0, TOTEM_LESS_SPIR))
 		{
-			send_to_char_f(ch, "%s&+WLesser Spiritual&n", bFound ? ", " : " ");
+			emit(bFound ? ", " : " ");
+			emit("&+WLesser Spiritual&n");
 			bFound = TRUE;
 		}
 		if (IS_SET(val0, TOTEM_GR_SPIR))
 		{
-			send_to_char_f(ch, "%s&+WGreater Spiritual&n", bFound ? ", " : " ");
+			emit(bFound ? ", " : " ");
+			emit("&+WGreater Spiritual&n");
 			bFound = TRUE;
 		}
 		if (bFound)
 		{
-			send_to_char(".\n", ch);
+			emit(".\n");
 		}
 		else
 		{
-			send_to_char(" No spheres?!\n", ch);
+			emit(" No spheres?!\n");
 		}
 	}
 
 	snprintf(Gbuf2, MAX_STRING_LENGTH, "$p &nhas an item value of &+W%d&n.", itemvalue(obj));
-	act(Gbuf2, FALSE, ch, obj, 0, TO_CHAR);
+	if (captured)
+	{
+		captured->append(OBJS(obj, ch));
+		snprintf(Gbuf2, MAX_STRING_LENGTH, " &nhas an item value of &+W%d&n.\r\n",
+			 itemvalue(obj));
+		emit(Gbuf2);
+	}
+	else
+		act(Gbuf2, FALSE, ch, obj, 0, TO_CHAR);
+}
+
+void lore_item(P_char ch, P_obj obj)
+{
+	render_item_lore(ch, obj, nullptr);
+}
+
+std::string item_lore_description(P_char ch, P_obj obj)
+{
+	if (!ch || !obj)
+		return {};
+	std::string captured = "This item is from the zone: ";
+	captured += get_str_zone(obj);
+	captured += "\n";
+	render_item_lore(ch, obj, &captured);
+	return captured;
 }
 
 const char *MAKE_FORMAT =

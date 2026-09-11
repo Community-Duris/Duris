@@ -1,3 +1,4 @@
+#include "item/locker_identify.h"
 #include "world/zone_touch_transaction.h"
 /*****************************************************************************
  *  File: nanny.c                                            Part of Duris   *
@@ -1732,6 +1733,7 @@ void enter_game(P_desc d)
 	epic_transaction_player_ready(ch);
 	zone_touch_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
+	locker_identify_replay(ch);
 	item_movement_transaction_player_ready(ch);
 	shop_trade_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
@@ -2349,6 +2351,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	epic_transaction_player_ready(tmp_ch);
 	zone_touch_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
+	locker_identify_replay(tmp_ch);
 	item_movement_transaction_player_ready(tmp_ch);
 	shop_trade_transaction_player_ready(tmp_ch);
 	auction_transaction_player_ready(tmp_ch);

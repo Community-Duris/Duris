@@ -19,6 +19,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "item/storage_lockers.h"
+#include "item/locker_identify.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -2180,6 +2181,11 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_STAT && !IS_TRUSTED(ch))
 	{
+		if (!strcasecmp(name, "receipt"))
+		{
+			locker_identify_replay(ch);
+			return TRUE;
+		}
 		if (!*name)
 		{
 			send_to_char(
@@ -2196,29 +2202,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 		// check legend lore
 		if (tmp_object)
 		{
-			CharWait(ch, (int)(PULSE_VIOLENCE * 1.5));
-			if (GET_MONEY(ch) < cost)
-			{
-				if (SUB_BALANCE(ch, cost, 0) != 0)
-				{
-					send_to_char(
-						"The member of the &+YStorage Locker Safety Commission&n says 'Bring me 1 &+Ygold&n and ill give you the stats.'\r\n",
-						ch);
-					return (TRUE);
-				}
-			}
-			else
-			{
-				SUB_MONEY(ch, cost, 0);
-			}
-			send_to_char(
-				"The member of the &+YStorage Locker Safety Commission&n takes 1 &+Ygold.&n\r\n",
-				ch);
-			send_to_char(
-				"The member of the &+YStorage Locker Safety Commission&n says 'This is:'\r\n",
-				ch);
-
-			do_lore(ch, arg, 999);
+			locker_identify(ch, tmp_object, cost);
 			return TRUE;
 		}
 		else
