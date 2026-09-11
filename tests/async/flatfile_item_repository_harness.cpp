@@ -331,7 +331,7 @@ static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid
 	return payload;
 }
 
-static void coin_matrix(const fs::path &path)
+static void coin_matrix(const fs::path &path, int coin_vnum)
 {
 	const std::string root = path.string();
 	std::string error;
@@ -423,14 +423,14 @@ static void coin_matrix(const fs::path &path)
 				     before && parent_uid ? parent_uid : uid,
 				     before ? parent_uid : 0,
 				     item_revision,
-				     VOBJ_COINS,
+				     coin_vnum,
 				     before ? item_custody_state::active :
 					      item_custody_state::absent };
 		player_item_snapshot snapshot = {};
 		snapshot.object_uid = uid;
 		snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 		snapshot.equipment_slot = -1;
-		snapshot.vnum = VOBJ_COINS;
+		snapshot.vnum = coin_vnum;
 		snapshot.type = ITEM_MONEY;
 		snapshot.values[0] = after ? after : before;
 		snapshot.name = "coins";
@@ -493,7 +493,7 @@ static void coin_matrix(const fs::path &path)
 		{
 			player_item_snapshot old;
 			old.object_uid = uid;
-			old.vnum = VOBJ_COINS;
+			old.vnum = coin_vnum;
 			old.type = ITEM_MONEY;
 			old.values[0] = 1;
 			old.parent_index = 0;
@@ -598,7 +598,7 @@ static void coin_matrix(const fs::path &path)
 	legacy.object_uid = 80001;
 	legacy.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 	legacy.equipment_slot = -1;
-	legacy.vnum = VOBJ_COINS;
+	legacy.vnum = coin_vnum;
 	legacy.type = ITEM_MONEY;
 	legacy.values[0] = 50;
 	legacy.name = "legacy coins";
@@ -630,8 +630,7 @@ static void coin_matrix(const fs::path &path)
 		const uint64_t uid = 80001 + index;
 		require(flatfile_item_repository_establish_owner(
 				root, owner,
-				{ { uid, uid, 0, owner, 1, VOBJ_COINS,
-				    item_custody_state::active } },
+				{ { uid, uid, 0, owner, 1, coin_vnum, item_custody_state::active } },
 				&error) == flatfile_item_baseline_result::applied,
 			"legacy coin custody baseline: " + error);
 		const uint64_t cash = domain(42).domains.wallet[0];
@@ -652,7 +651,7 @@ static void coin_matrix(const fs::path &path)
 	const item_owner_identity missing_owner = { item_owner_type::room, 601, 0 };
 	require(flatfile_item_repository_establish_owner(
 			root, missing_owner,
-			{ { 80004, 80004, 0, missing_owner, 1, VOBJ_COINS,
+			{ { 80004, 80004, 0, missing_owner, 1, coin_vnum,
 			    item_custody_state::active } },
 			&error) == flatfile_item_baseline_result::applied,
 		"missing payload custody baseline");
@@ -841,7 +840,8 @@ int main(int argc, char **argv)
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	const fs::path domains = root / "domains";
-	coin_matrix(root / "coin-matrix");
+	coin_matrix(root / "coin-matrix", VOBJ_COINS);
+	coin_matrix(root / "area-coin-matrix", 402013);
 	fs::create_directories(domains);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);

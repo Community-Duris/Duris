@@ -431,10 +431,16 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 		return false;
 	critical_operation_id id;
 	critical_command command;
-	if (!critical_operation_id_generate(&id) ||
-	    !coin_transfer_command_build(&command, id, payload, critical_source_site::command,
-					 critical_deadline_class::interactive))
+	const char *error = nullptr;
+	if (!critical_operation_id_generate(&id))
 		return false;
+	if (!coin_transfer_command_build(&command, id, payload, critical_source_site::command,
+					 critical_deadline_class::interactive, &error))
+	{
+		logit(LOG_DEBUG, "Coin transfer rejected for player %d: %s", GET_PID(actor),
+		      error ? error : "unknown build failure");
+		return false;
+	}
 	for (const auto &key : command.keys)
 		if (critical_command_coordinator_is_fenced(key, nullptr))
 			return false;

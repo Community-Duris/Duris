@@ -43,11 +43,17 @@ int64_t value(const std::array<int32_t, 4> &amounts)
 }
 
 bool validate_endpoint(const coin_transfer_endpoint &endpoint, bool source,
-		       critical_entity_key *identity)
+		       critical_entity_key *identity, const char **error)
 {
+	auto reject = [&](const char *reason)
+	{
+		if (error)
+			*error = reason;
+		return false;
+	};
 	const auto before = value(endpoint.before), after = value(endpoint.after);
 	if (before < 0 || after < 0 || (source ? before <= after : after <= before))
-		return false;
+		return reject("invalid coin amounts");
 	if (endpoint.change.type == critical_command_type::account_bank)
 	{
 		currency_command_payload wallet = {};
@@ -55,59 +61,65 @@ bool validate_endpoint(const coin_transfer_endpoint &endpoint, bool source,
 		    wallet.reason != currency_reason_type::coin_transfer ||
 		    endpoint.change.expected_revisions[0].revision == UINT64_MAX ||
 		    endpoint.change.expected_revisions[1].revision == UINT64_MAX)
-			return false;
+			return reject("invalid wallet endpoint");
 		for (size_t index = 0; index < endpoint.before.size(); ++index)
 			if (wallet.bank_delta.amount[index] ||
 			    wallet.wallet_delta.amount[index] !=
 				    static_cast<int64_t>(endpoint.after[index]) -
 					    endpoint.before[index])
-				return false;
+				return reject("wallet delta does not match amounts");
 		*identity = { critical_entity_type::player, wallet.pid };
 		return true;
 	}
 	if (endpoint.change.type != critical_command_type::item_transfer)
-		return false;
+		return reject("unsupported endpoint type");
 	item_transfer_payload pile = {};
 	if (!item_transfer_command_decode_payload(endpoint.change, &pile) || pile.item_count != 1 ||
-	    pile.multi_root || pile.items[0].vnum != VOBJ_COINS ||
-	    pile.items[0].item_uid != pile.selected_item_uid)
-		return false;
+	    pile.multi_root || pile.items[0].item_uid != pile.selected_item_uid)
+		return reject("invalid pile identity");
 	const bool creation = pile.from_owner.type == item_owner_type::system;
 	const bool consumed = pile.to_owner.type == item_owner_type::destruction;
 	if (creation ? (source || before != 0 || consumed) :
 		       (!before ||
 			(!consumed && !item_owner_identity_equal(pile.from_owner, pile.to_owner))))
-		return false;
+		return reject("invalid pile ownership transition");
 	if (consumed != (after == 0) ||
 	    (!creation && !consumed &&
 	     (pile.target_root_item_uid != pile.items[0].root_item_uid ||
 	      pile.target_parent_item_uid != pile.items[0].parent_item_uid)))
-		return false;
+		return reject("invalid pile topology");
 	std::vector<player_item_snapshot> snapshots;
 	if (player_item_snapshot_list_decode(pile.item_blob.data(), pile.item_blob_size,
 					     &snapshots) != player_snapshot_codec_result::ok ||
 	    snapshots.size() != 1 || snapshots[0].object_uid != pile.selected_item_uid ||
-	    snapshots[0].vnum != VOBJ_COINS || snapshots[0].type != ITEM_MONEY ||
+	    snapshots[0].vnum != pile.items[0].vnum || snapshots[0].type != ITEM_MONEY ||
 	    snapshots[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
-		return false;
+		return reject("pile snapshot identity or type mismatch");
 	for (size_t index = 0; index < endpoint.before.size(); ++index)
 		if ((source ? endpoint.after[index] > endpoint.before[index] :
 			      endpoint.after[index] < endpoint.before[index]) ||
 		    snapshots[0].values[index] !=
 			    (consumed ? endpoint.before[index] : endpoint.after[index]))
-			return false;
+			return reject("pile snapshot amount mismatch");
 	*identity = { critical_entity_type::item, pile.selected_item_uid };
 	return true;
 }
 
-bool validate_payload(const coin_transfer_payload &payload)
+bool validate_payload(const coin_transfer_payload &payload, const char **error)
 {
 	critical_entity_key source = {}, destination = {};
-	return validate_endpoint(payload.source, true, &source) &&
-	       validate_endpoint(payload.destination, false, &destination) &&
-	       !critical_entity_key_equal(source, destination) &&
-	       value(payload.source.before) - value(payload.source.after) ==
-		       value(payload.destination.after) - value(payload.destination.before);
+	if (!validate_endpoint(payload.source, true, &source, error) ||
+	    !validate_endpoint(payload.destination, false, &destination, error))
+		return false;
+	if (critical_entity_key_equal(source, destination) ||
+	    value(payload.source.before) - value(payload.source.after) !=
+		    value(payload.destination.after) - value(payload.destination.before))
+	{
+		if (error)
+			*error = "duplicate endpoints or nonconserving transfer";
+		return false;
+	}
+	return true;
 }
 
 bool append_endpoint(critical_command *command, const coin_transfer_endpoint &endpoint,
@@ -167,10 +179,15 @@ bool coin_transfer_command_build(critical_command *command,
 				 const critical_operation_id &operation_id,
 				 const coin_transfer_payload &payload,
 				 critical_source_site source_site,
-				 critical_deadline_class deadline_class)
+				 critical_deadline_class deadline_class, const char **error)
 {
-	if (!command || critical_operation_id_is_zero(operation_id) || !validate_payload(payload))
+	if (error)
+		*error = "invalid command identity";
+	if (!command || critical_operation_id_is_zero(operation_id) ||
+	    !validate_payload(payload, error))
 		return false;
+	if (error)
+		*error = "coin command encoding failed";
 	try
 	{
 		critical_command built = {};
@@ -194,6 +211,8 @@ bool coin_transfer_command_build(critical_command *command,
 			return false;
 		built.accepted_at_usec = 0;
 		*command = std::move(built);
+		if (error)
+			*error = nullptr;
 		return true;
 	}
 	catch (const std::bad_alloc &)

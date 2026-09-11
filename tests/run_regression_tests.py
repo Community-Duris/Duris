@@ -20,6 +20,7 @@ MAX_AUTOMATIC_JOBS = 8
 RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
     {
         "test_account_recovery_journey.py",
+        "test_area_coin_pickup.py",
         "test_flatfile_boot_preflight.py",
         "test_flatfile_chaos_new_character_kit.py",
         "test_flatfile_combat_journey.py",

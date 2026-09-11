@@ -3524,7 +3524,7 @@ static bool prepare_coin_pile(P_obj money, const item_owner_identity &owner, P_o
 			  creation ? money->obj_uid : current.root_item_uid,
 			  creation ? 0 : current.parent_item_uid,
 			  creation ? ITEM_TRANSFER_ABSENT_REVISION : current.item_revision,
-			  VOBJ_COINS,
+			  OBJ_VNUM(money),
 			  creation ? item_custody_state::absent : item_custody_state::active };
 	std::vector<player_item_snapshot> snapshots;
 	if (player_item_snapshot_tree_capture(money, &snapshots, nullptr) !=
@@ -3615,7 +3615,7 @@ static bool publish_coin_pile(const coin_transfer_endpoint &endpoint,
 						   pile.to_owner,
 						   result.max_item_revision,
 						   std::max(to_revision, result.to_owner_revision),
-						   VOBJ_COINS,
+						   pile.items[0].vnum,
 						   consumed ? item_custody_state::destroyed :
 							      item_custody_state::active };
 	if (!item_ownership_runtime_hydrate(committed) ||

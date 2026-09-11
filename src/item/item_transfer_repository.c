@@ -1,6 +1,6 @@
 #include "item/item_transfer_repository.h"
 #include "player/player_snapshot_codec.h"
-#include "world/vnum.obj.h"
+#include "core/structs.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -564,7 +564,8 @@ bool update_coin_payload(MYSQL *connection, const item_transfer_payload &payload
 	std::vector<player_item_snapshot> items;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &items) != player_snapshot_codec_result::ok ||
-	    items.size() != 1 || items[0].object_uid != uid || items[0].vnum != VOBJ_COINS ||
+	    items.size() != 1 || items[0].object_uid != uid ||
+	    items[0].vnum != payload.items[0].vnum || items[0].type != ITEM_MONEY ||
 	    std::any_of(items[0].values.begin(), items[0].values.begin() + 4,
 			[](int32_t value) { return value < 0; }))
 	{
@@ -828,10 +829,17 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		return false;
 	result->from_owner_revision = from_revision + 1;
 	result->to_owner_revision = same_owner ? from_revision + 1 : to_revision + 1;
-	if (creation && payload.item_count == 1 && payload.items[0].vnum == VOBJ_COINS &&
-	    payload.item_blob_size &&
-	    !update_coin_payload(connection, payload, result->max_item_revision))
-		return false;
+	if (creation && payload.item_count == 1 && payload.item_blob_size)
+	{
+		std::vector<player_item_snapshot> snapshots;
+		if (player_item_snapshot_list_decode(payload.item_blob.data(),
+						     payload.item_blob_size, &snapshots) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		if (snapshots.size() == 1 && snapshots[0].type == ITEM_MONEY &&
+		    !update_coin_payload(connection, payload, result->max_item_revision))
+			return false;
+	}
 	*mutation_applied = true;
 	return true;
 }
@@ -844,7 +852,7 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 	item_transfer_payload payload = {};
 	if (!connection || !result || !result_code || !mutation_applied ||
 	    !item_transfer_command_decode_payload(command, &payload) || payload.item_count != 1 ||
-	    payload.items[0].vnum != VOBJ_COINS || !payload.item_blob_size)
+	    !payload.item_blob_size)
 	{
 		errno = EINVAL;
 		return false;
@@ -880,7 +888,8 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 				    reinterpret_cast<const uint8_t *>(row[0]), lengths[0],
 				    &snapshots) != player_snapshot_codec_result::ok ||
 			    snapshots.size() != 1 || snapshots[0].object_uid != uid ||
-			    snapshots[0].vnum != VOBJ_COINS)
+			    snapshots[0].vnum != payload.items[0].vnum ||
+			    snapshots[0].type != ITEM_MONEY)
 				*result_code = EBADMSG;
 			else if (!std::equal(before.begin(), before.end(),
 					     snapshots[0].values.begin()))
@@ -924,7 +933,7 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 			}
 			const std::string baseline =
 				"SELECT p.value0,p.value1,p.value2,p.value3 FROM " + source +
-				" AND p.vnum=" + std::to_string(VOBJ_COINS) +
+				" AND p.vnum=" + std::to_string(payload.items[0].vnum) +
 				" AND p.obj_uid=" + std::to_string(uid) + " FOR UPDATE";
 			if (mysql_real_query(connection, baseline.data(), baseline.size()) != 0)
 			{

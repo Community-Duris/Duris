@@ -170,7 +170,8 @@ coin_transfer_endpoint wallet(uint32_t pid, std::array<int32_t,4> before,
     return endpoint;
 }
 coin_transfer_endpoint pile(std::array<int32_t,4> before,
-                            std::array<int32_t,4> after, bool stale_snapshot = false) {
+                            std::array<int32_t,4> after, bool stale_snapshot = false, int vnum = VOBJ_COINS,
+                            int type = ITEM_MONEY, int snapshot_vnum = 0) {
     coin_transfer_endpoint endpoint;
     endpoint.before = before;
     endpoint.after = after;
@@ -190,13 +191,13 @@ coin_transfer_endpoint pile(std::array<int32_t,4> before,
     transfer.item_count = 1;
     transfer.items[0] = {100, created ? 100u : 90u, created ? 0u : 90u,
                         created ? ITEM_TRANSFER_ABSENT_REVISION : 3,
-                        VOBJ_COINS, created ? item_custody_state::absent : item_custody_state::active};
+                        vnum, created ? item_custody_state::absent : item_custody_state::active};
     player_item_snapshot snapshot = {};
     snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
     snapshot.equipment_slot = -1;
     snapshot.object_uid = 100;
-    snapshot.vnum = VOBJ_COINS;
-    snapshot.type = ITEM_MONEY;
+    snapshot.vnum = snapshot_vnum ? snapshot_vnum : vnum;
+    snapshot.type = type;
     const auto &amount = consumed || stale_snapshot ? before : after;
     std::copy(amount.begin(), amount.end(), snapshot.values.begin());
     std::vector<uint8_t> bytes;
@@ -249,7 +250,18 @@ int main() {
     roundtrip({pile({1,2,3,4}, zero), wallet(1, zero, {1,2,3,4})});
     roundtrip({pile({1,2,3,4}, {1,2,3,2}), wallet(1, zero, {0,0,0,2})});
     roundtrip({wallet(1, {0,0,0,1}, {0,0,9,0}), wallet(2, zero, {0,0,1,0})});
+    // Area-authored money retains its prototype through every endpoint.
+    roundtrip({pile({0,0,0,10}, zero, false, 402013), wallet(1, zero, {0,0,0,10})});
+    roundtrip({pile({0,0,0,10}, {0,0,0,3}, false, 402013), wallet(1, zero, {0,0,0,7})});
+    roundtrip({wallet(1, {1,2,3,4}, zero), pile(zero, {1,2,3,4}, false, 402013)});
     critical_command rejected;
+    const char *error = nullptr;
+    assert(!coin_transfer_command_build(&rejected, operation(),
+        {pile({0,0,0,10}, zero, false, 402013, ITEM_CONTAINER), wallet(1, zero, {0,0,0,10})},
+        critical_source_site::command, critical_deadline_class::interactive, &error));
+    assert(error && !strcmp(error, "pile snapshot identity or type mismatch"));
+    assert(!build({pile({0,0,0,10}, zero, false, 402013, ITEM_MONEY, VOBJ_COINS),
+                   wallet(1, zero, {0,0,0,10})}, &rejected));
     assert(!build({wallet(1, {1,2,3,4}, zero), pile({5,6,7,8}, {6,8,10,12}, true)}, &rejected));
     assert(!build({wallet(1, {1,2,3,4}, zero), pile(zero, {1,2,3,5})}, &rejected));
     assert(!build({wallet(1, {0,0,0,1}, zero), wallet(1, zero, {0,0,0,1})}, &rejected));

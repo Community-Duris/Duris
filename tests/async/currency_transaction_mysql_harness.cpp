@@ -155,13 +155,13 @@ coin_transfer_endpoint coin_pile(item_owner_identity owner, uint64_t uid, uint64
 			  static_cast<uint64_t>(scalar(
 				  "SELECT item_revision FROM item_current_owner WHERE item_uid=" +
 				  std::to_string(uid))),
-		VOBJ_COINS,
+		402013,
 		created ? item_custody_state::absent : item_custody_state::active
 	};
 	player_item_snapshot snapshot = {};
 	snapshot.object_uid = uid;
 	snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-	snapshot.vnum = VOBJ_COINS;
+	snapshot.vnum = 402013;
 	snapshot.type = ITEM_MONEY;
 	snapshot.string_mask = 7;
 	snapshot.name = "coins";
@@ -220,6 +220,7 @@ coins pile_amount(uint64_t uid)
 	return amounts;
 }
 
+// Run the custody/crash matrix with a real area-authored money prototype (#213).
 void coin_failure_matrix()
 {
 	constexpr uint64_t bag = 900000001, pile = 900000002;
@@ -309,8 +310,8 @@ void coin_failure_matrix()
 	// A crash before the inventory snapshot leaves no player_items coin row.
 	verify_reload(900, 100);
 	// A later stale projection must not replace the committed amount or metadata.
-	execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0,name) VALUES(" +
-		pid_text + ",3,900000002," + std::to_string(bag_row) + ",1,'stale coins')");
+	execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0,name,item_type) VALUES(" +
+		pid_text + ",402013,900000002," + std::to_string(bag_row) + ",1,'stale coins',20)");
 
 	critical_command merge = make_put(900, 100, 200);
 	assert(critical_command_repository_apply(connection, merge).outcome ==
@@ -417,9 +418,9 @@ void coin_failure_matrix()
 				     coin_pile(pid, uid, bag, {}, { 1, 0, 0, 0 }));
 		assert(critical_command_repository_apply(connection, small_put).outcome ==
 		       critical_apply_outcome::applied);
-		execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0) VALUES(" +
-			pid_text + ",3," + std::to_string(uid) + "," + std::to_string(bag_row) +
-			",1)");
+		execute("INSERT INTO player_items(pid,vnum,obj_uid,container_id,value0,item_type) VALUES(" +
+			pid_text + ",402013," + std::to_string(uid) + "," +
+			std::to_string(bag_row) + ",1,20)");
 		auto small_get = coin_command(coin_pile(pid, uid, bag, { 1, 0, 0, 0 }, {}),
 					      coin_wallet(pid, account, { 999, 0, 0, 0 },
 							  { 1000, 0, 0, 0 }));
@@ -490,25 +491,25 @@ void coin_failure_matrix()
 		execute("INSERT INTO item_current_owner(item_uid,root_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state) VALUES(" +
 			uid_text + "," + uid_text + "," + std::to_string(unsigned(owner.type)) +
 			"," + std::to_string(owner.id) + "," + std::to_string(owner.context_id) +
-			",1,3,1)");
+			",1,402013,1)");
 		switch (owner.type)
 		{
 		case item_owner_type::player:
 			execute("INSERT INTO player_items(pid,vnum,obj_uid,value0) VALUES(" +
-				pid_text + ",3," + uid_text + ",30)");
+				pid_text + ",402013," + uid_text + ",30)");
 			break;
 		case item_owner_type::room:
-			execute("INSERT INTO saved_items(item_key,room_vnum,vnum,obj_uid,value0) VALUES('coin_fixture',100,3," +
+			execute("INSERT INTO saved_items(item_key,room_vnum,vnum,obj_uid,value0) VALUES('coin_fixture',100,402013," +
 				uid_text + ",30)");
 			break;
 		case item_owner_type::corpse:
 			execute("INSERT INTO corpse_items(corpse_id,vnum,obj_uid,value0) VALUES(" +
-				std::to_string(corpse_id) + ",3," + uid_text + ",30)");
+				std::to_string(corpse_id) + ",402013," + uid_text + ",30)");
 			break;
 		case item_owner_type::locker:
 			execute("INSERT INTO locker_items(locker_id,chest_id,vnum,obj_uid,value0) VALUES(" +
-				std::to_string(locker_id) + "," + std::to_string(chest_id) + ",3," +
-				uid_text + ",30)");
+				std::to_string(locker_id) + "," + std::to_string(chest_id) +
+				",402013," + uid_text + ",30)");
 			break;
 		default:
 			assert(false);

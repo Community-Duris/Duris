@@ -38,7 +38,8 @@ bool coin_transfer_command_build(critical_command *command,
 				 const critical_operation_id &operation_id,
 				 const coin_transfer_payload &payload,
 				 critical_source_site source_site,
-				 critical_deadline_class deadline_class);
+				 critical_deadline_class deadline_class,
+				 const char **error = nullptr);
 bool coin_transfer_command_decode_payload(const critical_command &command,
 					  coin_transfer_payload *payload);
 bool coin_transfer_command_encode_result(const coin_transfer_payload &payload,

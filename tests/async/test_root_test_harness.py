@@ -45,6 +45,7 @@ sys.modules[runner_spec.name] = runner
 runner_spec.loader.exec_module(runner)
 expected_resource_intensive = {
     "test_account_recovery_journey.py",
+    "test_area_coin_pickup.py",
     "test_flatfile_boot_preflight.py",
     "test_flatfile_chaos_new_character_kit.py",
     "test_flatfile_combat_journey.py",

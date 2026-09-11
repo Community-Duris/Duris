@@ -197,6 +197,15 @@ int get_pending_transaction_cmd_from_q(struct txt_q *queue, char *dest, bool ite
 
 COIN_PILES = r'''
 static std::vector<P_obj> live_items;
+static index_data coin_prototypes[2] = {};
+P_index obj_index = coin_prototypes;
+constexpr int AREA_COIN_VNUM = 402013;
+static void set_coin_prototype(P_obj item, int vnum)
+{
+    assert(vnum == VOBJ_COINS || vnum == AREA_COIN_VNUM);
+    item->R_num = vnum == VOBJ_COINS ? 0 : 1;
+    obj_index[item->R_num].virtual_number = vnum;
+}
 int top_of_objt = 10000;
 P_obj object_list = nullptr;
 void obj_to_char(P_obj, P_char);
@@ -242,7 +251,7 @@ player_snapshot_capture_result player_item_snapshot_tree_capture(P_obj item,
     snapshot.object_uid = item->obj_uid;
     snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
     snapshot.equipment_slot = -1;
-    snapshot.vnum = VOBJ_COINS;
+    snapshot.vnum = OBJ_VNUM(item);
     snapshot.type = item->type;
     snapshot.name = "coins";
     snapshot.string_mask = 1;
@@ -256,6 +265,7 @@ void finish_coin_put_publication(P_char, P_obj, const coin_debit_context &) { ++
 P_obj create_money(int copper, int silver, int gold, int platinum)
 {
     P_obj item = new obj_data{};
+    set_coin_prototype(item, VOBJ_COINS);
     item->obj_uid = next_coin_uid++;
     item->type = ITEM_MONEY;
     item->loc_p = LOC_NOWHERE;
@@ -271,6 +281,7 @@ bool player_load_item_graph_materialize_detached(const std::vector<player_item_s
 {
     assert(items.size() == 1);
     P_obj item = create_money(items[0].values[0], items[0].values[1], items[0].values[2], items[0].values[3]);
+    set_coin_prototype(item, items[0].vnum);
     item->obj_uid = items[0].object_uid;
     roots->push_back(item);
     return true;
@@ -911,6 +922,57 @@ int main()
 	assert(submit_coin_get(&actor, ground, nullptr, 1));
 	pile_ack(true);
 	assert(!find_live_item_uid(ground_uid));
+
+	// Area-authored money uses its real prototype through queued input, a
+	// rejected attempt, retry, and detached publication of a partial remainder.
+	P_obj area = create_money(0, 0, 0, 10);
+	set_coin_prototype(area, AREA_COIN_VNUM);
+	const uint64_t area_uid = area->obj_uid;
+	obj_to_obj(area, &bag);
+	assert(item_ownership_runtime_owner_revision(owner, &owner_revision));
+	assert(item_ownership_runtime_hydrate({area_uid, bag.obj_uid, bag.obj_uid,
+		owner, 1, owner_revision, AREA_COIN_VNUM, item_custody_state::active}));
+	GET_PLATINUM(&actor) -= 7;
+	struct txt_q area_queue = {};
+	push(&area_queue, "get coins satchel");
+	assert(get_playing_cmd_from_q(&actor, &area_queue, dest));
+	expect_text(dest, "get coins satchel");
+	assert(submit_coin_get(&actor, area, &bag, 1));
+	coin_transfer_payload area_payload;
+	item_transfer_payload area_transfer;
+	std::vector<player_item_snapshot> area_snapshots;
+	assert(coin_transfer_command_decode_payload(submitted_command, &area_payload));
+	assert(item_transfer_command_decode_payload(area_payload.source.change, &area_transfer));
+	assert(area_transfer.items[0].vnum == AREA_COIN_VNUM);
+	assert(player_item_snapshot_list_decode(area_transfer.item_blob.data(),
+		area_transfer.item_blob_size, &area_snapshots) == player_snapshot_codec_result::ok);
+	assert(area_snapshots.size() == 1 && area_snapshots[0].vnum == AREA_COIN_VNUM);
+	assert(area_snapshots[0].object_uid == area_uid && area_snapshots[0].values[3] == 3);
+	push(&area_queue, "get coins satchel");
+	push(&area_queue, "score");
+	assert(get_playing_cmd_from_q(&actor, &area_queue, dest));
+	expect_text(dest, "score");
+	assert(!get_playing_cmd_from_q(&actor, &area_queue, dest));
+	pile_ack(false);
+	assert(area->value[3] == 10 && GET_PLATINUM(&actor) == INT32_MAX - 7);
+	assert(get_playing_cmd_from_q(&actor, &area_queue, dest));
+	expect_text(dest, "get coins satchel");
+	assert(area_queue.head == nullptr && area_queue.tail == nullptr);
+	assert(submit_coin_get(&actor, area, &bag, 1));
+	extract_obj(area, false);
+	pile_ack(true);
+	area = find_live_item_uid(area_uid);
+	assert(area && area == bag.contains && OBJ_VNUM(area) == AREA_COIN_VNUM);
+	assert(area->value[3] == 3 && GET_PLATINUM(&actor) == INT32_MAX);
+	assert(item_ownership_runtime_lookup(area_uid, &retired) &&
+		retired.vnum == AREA_COIN_VNUM && retired.state == item_custody_state::active);
+	GET_PLATINUM(&actor) -= 3;
+	assert(submit_coin_get(&actor, area, &bag, 1));
+	pile_ack(true);
+	assert(!find_live_item_uid(area_uid) && bag.contains == nullptr);
+	assert(GET_PLATINUM(&actor) == INT32_MAX);
+	assert(item_ownership_runtime_lookup(area_uid, &retired) &&
+		retired.vnum == AREA_COIN_VNUM && retired.state == item_custody_state::destroyed);
 
 	// Large mixed-denomination piles must not overflow while selecting a credit.
 	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
