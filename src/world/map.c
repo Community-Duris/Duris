@@ -287,12 +287,18 @@ unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
 		return 0;
 
 	int zone_start_vnum = world[zone->real_bottom].number;
+	int offset = vroom - zone_start_vnum;
+
+	// Tail/dispersement rooms belong to the zone, but not its coordinate grid.
+	// Keep their center without inventing neighbors by folding into the grid.
+	if (zone->mapx <= 0 || zone->mapy <= 0 || offset < 0 || offset / zone->mapx >= zone->mapy)
+		return (x == 0 && y == 0) ? rroom : 0;
 
 	// how far are we from the northern local map edge
-	local_y = ((vroom - zone_start_vnum) / zone->mapx) % zone->mapy;
+	local_y = offset / zone->mapx;
 
 	// how far are we from the western local map edge
-	local_x = (vroom - zone_start_vnum) % zone->mapx;
+	local_x = offset % zone->mapx;
 
 	if (local_x + x < 0)
 		local_x += zone->mapx;
@@ -877,6 +883,8 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 			if (x == 0 && y == 0 && ship && !SHIP_DOCKED(ship) &&
 			    ship->location == from_room)
 				whats_in = CONTAINS_YOUR_SHIP;
+			else if (x == 0 && y == 0 && !ship && from_room == ch->in_room)
+				whats_in = CONTAINS_CH;
 			else
 				whats_in = whats_in_maproom(ch, where_rnum, distance,
 							    show_map_regardless);
