@@ -2137,6 +2137,7 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 	char wizBookName[512];
 	snprintf(wizBookName, 512, "bookof%s", ch->player.name);
 
+	// Personal spellbooks are available by possession, regardless of visibility.
 	if (IS_SET(mode, SBOOK_MODE_AT_HAND))
 		if (!IS_SET(mode, SBOOK_MODE_NO_BOOK))
 			if ((foo2 = SpellBookAtHand(ch)))
@@ -2145,7 +2146,7 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 	if (IS_SET(mode, SBOOK_MODE_IN_INV))
 		for (foo = ch->carrying; foo; foo = foo->next_content)
 		{
-			if ((foo->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, foo))
+			if (foo->type == ITEM_SPELLBOOK)
 			{
 				if (foo->R_num == real_object(31) && isname(wizBookName, foo->name))
 					return foo;
@@ -2174,8 +2175,7 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 				continue;
 			if (foo->R_num == real_object(31) && isname(wizBookName, foo->name))
 				return foo;
-			if ((foo->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, foo) &&
-			    !IS_SET(mode, SBOOK_MODE_NO_BOOK) &&
+			if ((foo->type == ITEM_SPELLBOOK) && !IS_SET(mode, SBOOK_MODE_NO_BOOK) &&
 			    (foo2 = Find_process_entry(ch, foo, spl)))
 				return foo2;
 		}
@@ -2376,14 +2376,12 @@ void add_scribing(P_char ch, int spl, P_obj book, int flag, P_obj obj, P_char te
 
 // Hand slots are storage roles: four-handed scribers may also carry other gear.
 // During an event, require the original destination book, not a replacement.
-static P_obj scribing_implement(P_char ch, int type, P_obj required = nullptr,
-				bool visible_only = false)
+static P_obj scribing_implement(P_char ch, int type, P_obj required = nullptr)
 {
 	for (int slot : { WIELD, HOLD, WIELD2, WIELD3, WIELD4 })
 	{
 		P_obj obj = ch->equipment[slot];
-		if (obj && obj->type == type && (!required || obj == required) &&
-		    (!visible_only || CAN_SEE_OBJ(ch, obj)))
+		if (obj && obj->type == type && (!required || obj == required))
 			return obj;
 	}
 	return nullptr;
@@ -2453,9 +2451,8 @@ int ScriberSillyChecks(P_char ch, int spl)
 
 P_obj SpellBookAtHand(P_char ch)
 {
-	// Guild scribing and memorization share hand storage, but still require
-	// visibility. Continue past an unseen book to a visible one in a later slot.
-	return scribing_implement(ch, ITEM_SPELLBOOK, nullptr, true);
+	// Owned spellbooks remain usable when hidden, invisible, or the owner is blind.
+	return scribing_implement(ch, ITEM_SPELLBOOK);
 }
 
 void do_teach(P_char ch, char *arg, int cmd)

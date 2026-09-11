@@ -468,7 +468,7 @@ int main()
 	assert(!wear(&actor, &book, 12, false));
 	assert(!wear(&actor, &book, 14, false));
 	// At-hand lookup used by guild scribing and memorization accepts every hand
-	// slot, while retaining visibility and the legacy WIELD-before-HOLD order.
+	// slot, retaining the legacy WIELD-before-HOLD order regardless of visibility.
 	for (int slot : { WIELD, HOLD, WIELD2, WIELD3, WIELD4 })
 	{
 		reset(RACE_THRIKREEN);
@@ -484,8 +484,8 @@ int main()
 		event_scribe(&actor, nullptr, nullptr, &pending);
 		assert(pending.book == &destination && pending.page == 1 && !cancelled);
 		SET_BIT(destination.extra_flags, ITEM_INVISIBLE);
-		assert(!SpellBookAtHand(&actor));
-		assert(!FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND));
+		assert(SpellBookAtHand(&actor) == &destination);
+		assert(FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND) == &destination);
 	}
 	reset(RACE_THRIKREEN);
 	auto unseen = item(ITEM_SPELLBOOK, ITEM_HOLD);
@@ -493,8 +493,8 @@ int main()
 	SET_BIT(unseen.extra_flags, ITEM_INVISIBLE);
 	actor.equipment[WIELD] = &unseen;
 	actor.equipment[WIELD4] = &seen;
-	assert(SpellBookAtHand(&actor) == &seen);
-	assert(FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND) == &seen);
+	assert(SpellBookAtHand(&actor) == &unseen);
+	assert(FindSpellBookWithSpell(&actor, 1, SBOOK_MODE_AT_HAND) == &unseen);
 	REMOVE_BIT(unseen.extra_flags, ITEM_INVISIBLE);
 	assert(SpellBookAtHand(&actor) == &unseen);
 	actor.equipment[WIELD] = nullptr;

@@ -106,6 +106,7 @@ jobs:
         run: |
           python3 tests/async/test_flatfile_spellbook_repository.py
           python3 tests/async/test_flatfile_spellbook_runtime_contract.py
+          python3 tests/async/test_spellbook_visibility.py
       - name: Verify flat-file global timers
         run: python3 tests/async/test_flatfile_timers.py
       - name: Verify flat-file polls
