@@ -11,9 +11,12 @@ import argparse
 import hashlib
 import hmac
 import json
+import os
 import re
 import secrets
 import sys
+import tempfile
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -262,6 +265,61 @@ class TombstoneLedger:
             raise ErasureContractError("conflicting tombstone identity")
         request.status = Status.TOMBSTONED
         return existing
+
+    def write_current(self, path: Path, policy_path: Path = DEFAULT_MANIFEST,
+                      captured_at: int | None = None) -> None:
+        """Atomically publish current external restore evidence."""
+        path = Path(path)
+        if not path.is_absolute() or ".." in path.parts:
+            raise ErasureContractError("invalid tombstone evidence path")
+        parent = path.parent
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        parent_info = parent.stat()
+        if parent_info.st_uid != os.getuid() or parent_info.st_mode & 0o077:
+            raise ErasureContractError("unsafe tombstone evidence directory")
+        if path.exists() or path.is_symlink():
+            info = path.lstat()
+            if (not path.is_file() or info.st_uid != os.getuid() or info.st_nlink != 1 or
+                    info.st_mode & 0o077):
+                raise ErasureContractError("unsafe tombstone evidence file")
+        if captured_at is None:
+            captured_at = int(time.time())
+        if type(captured_at) is not int or captured_at < 0:
+            raise ErasureContractError("invalid tombstone evidence timestamp")
+        policy_path = Path(policy_path)
+        if not policy_path.is_file():
+            raise ErasureContractError("erasure policy is unavailable")
+        with policy_path.open("rb") as stream:
+            policy_digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        records = [
+            {
+                "account_scope_hash": item.account_scope_hash,
+                "completed_at": item.completed_at,
+                "manifest_checksum": item.manifest_checksum,
+                "request_id": item.request_id,
+                "subject_token": item.subject_token,
+            }
+            for item in sorted(self._by_scope.values(), key=lambda value: value.account_scope_hash)
+        ]
+        value = {"version": 1, "captured_at": captured_at,
+                 "policy_sha256": policy_digest, "tombstones": records}
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=parent, prefix=".erasure-", delete=False) as stream:
+                temporary = Path(stream.name)
+                os.fchmod(stream.fileno(), 0o600)
+                stream.write((json.dumps(value, sort_keys=True) + "\n").encode())
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, path)
+            directory = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
     def restore_preflight(self, source: str, generation: str,
                           records: list[dict]) -> list[dict]:

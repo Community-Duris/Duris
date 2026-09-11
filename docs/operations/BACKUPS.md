@@ -23,18 +23,20 @@ The example values approved for this PR are:
 The newest generation in each UTC epoch-aligned bucket is retained. Overlapping
 tiers share a generation. Always preserve the two newest valid generations.
 Rotation happens only after complete publication, fsync, checksum verification,
-and configured replica readback. Failed capture/verification never prunes prior
-generations. Expiry is evaluated only after a newer verified generation exists;
-missed backups never trigger deletion of the last recovery points. This is a
+and the local generation's replica attempt. Failed capture/verification never
+prunes prior generations. Before a new capture, generations outside the current
+retention tiers may be pruned, but the two newest valid generations are always
+preserved. Missed backups never trigger deletion of the last recovery points. This is a
 nominal eight-week recovery window with hourly and daily detail, conditional on
 successful jobs and sufficient capacity, not a promise that every historical
 hour is retained.
 
-Budget for one complete new generation *in addition* to retained data. The
-controller refuses capture/publication at the budget and requires operator
-action; it does not sacrifice required generations to make space. Capacity
-failures, orphan staging directories, invalid generations, failed rotation,
-and an exceeded RPO are errors. Provision measured headroom before activation.
+Budget for one complete new generation after retaining the required data. The
+controller may first remove generations outside the current retention tiers, but
+it refuses capture/publication when retained data plus the new generation still
+exceeds the budget; it does not sacrifice required generations to make space.
+Capacity failures, orphan staging directories, invalid generations, failed
+rotation, and an exceeded RPO are errors. Provision measured headroom before activation.
 
 Only the custodian UID may own or access managed roots, generations, policy,
 and environment files (0700 directories, 0600 files). Declared forbidden live DB datadirs may belong to the database service UID. Parent directories must
@@ -77,8 +79,11 @@ connects to a game session or promotes a candidate.
 
 The no-argument command remains the pre-cycle safety gate. A not-yet-created flatfile authority on its first boot reports authority_not_initialized and allows initial provisioning; scheduled jobs treat that state as an error, and no verified generation is claimed. The schedule command
 uses a separate persisted deadline, so pre-cycle runs do not defer independent
-captures. It is safe to invoke once per minute. All capture, rotation, restore,
-and status operations use an exclusive job lock and report contention.
+snapshot. It is safe to invoke once per minute. All capture, rotation, restore,
+and status operations use an exclusive job lock with a bounded wait; a remaining
+busy condition is reported as a fixed error. The systemd backup, health, and drill
+units declare mutual conflicts, and the pre-cycle launcher retries a busy backup
+before refusing to boot.
 
 Sample inactive systemd units are in deploy/systemd/duris-backup-*. Copy them,
 adapt User, WorkingDirectory, ReadWritePaths, paths, and permissions, and connect
@@ -115,8 +120,9 @@ with the same retention budget and sufficient publication headroom.
 
 The controller copies an immutable generation, syncs it, renames it, re-reads
 every checksum, and applies the same retention policy remotely. Any remote
-failure is reported and prevents local pruning. Local generation publication
-may still have succeeded. transport_and_readback_verified means encrypted
+failure is recorded in status.json as a retryable pending result; the verified
+local generation remains published, but local rotation waits until replication
+succeeds. transport_and_readback_verified means encrypted
 transport plus successful remote readback/fsync; it does not prove the remote
 operator's media replication, physical custody, or survival of host/storage
 loss. Verify those separately with an independent restore from remote media.
@@ -146,13 +152,15 @@ Supply independently current erasure evidence, held outside backups/candidates:
      "tombstones":[]}
 
 The erasure custodian must establish this snapshot from the current authoritative
-ledger and approved policy, never from the selected historical generation.
-Missing, stale, changed, or policy-mismatched evidence blocks restore. The
-current project has no durable source-wide erasure propagation adapter.
+ledger and approved policy, never from the selected historical generation. The
+ledger must be freshly captured (no more than five minutes old), and missing,
+stale, changed, or policy-mismatched evidence blocks restore. The current project
+has no durable source-wide erasure propagation adapter.
 Accordingly **any nonempty tombstone ledger blocks the whole restore** rather
 than risk resurrecting an erased identity or its indirect references. A
-database generation containing tombstones is also rejected. No erasure policy
-is enabled by the backup policy. Do not manufacture an empty ledger to pass.
+historical tombstone row inside the database dump is not used as a substitute for
+that current external evidence. No erasure policy is enabled by the backup policy.
+Do not manufacture an empty ledger to pass.
 
     BACKUP_ENV_FILE=/etc/duris/backup.env scripts/backup_pfiles.sh restore \
       --generation <generation-id> --tombstones /var/lib/duris/erasure-current.json

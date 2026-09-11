@@ -15,9 +15,15 @@ import uuid
 import persistence_backup as backup
 
 
+TOMBSTONE_MAX_AGE_SECONDS = 300
+
+
 def clean_environment(candidate):
+    tmp = Path(candidate) / "tmp"
+    tmp.mkdir(mode=0o700, parents=True, exist_ok=True)
     return {"PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", "HOME": str(candidate),
             "ENVIRONMENT": "local", "REDIS": "FALSE",
+            "TMPDIR": str(tmp),
             "PLAYER_SAVE_JOURNAL_DIR": str(candidate / "journals/players"),
             "CRITICAL_COMMAND_JOURNAL_DIR": str(candidate / "journals/critical"),
             "LISTEN_ADDRESS": "127.0.0.1", "DURIS_WEBSOCKET_LISTEN_ADDRESS": "127.0.0.1",
@@ -34,6 +40,9 @@ def tombstone_preflight(path, p, captured):
                    "invalid_tombstone_evidence")
     now = int(time.time())
     backup.require(max(captured, now - p["rpo_seconds"]) <= ledger["captured_at"] <= now,
+                   "tombstone_evidence_stale")
+    backup.require(now - ledger["captured_at"] <= min(TOMBSTONE_MAX_AGE_SECONDS,
+                                                       p["rpo_seconds"]),
                    "tombstone_evidence_stale")
     policy = backup.ROOT / "migrations/data_lifecycle_manifest.json"
     backup.require(ledger["policy_sha256"] == backup.digest(policy), "erasure_policy_mismatch")
@@ -60,7 +69,8 @@ def private_database(candidate):
     args = ["mariadbd", "--no-defaults", "--datadir=" + str(datadir),
             "--socket=" + str(socket), "--pid-file=" + str(candidate / "mysql.pid"),
             "--skip-networking", "--skip-log-bin", "--event-scheduler=OFF",
-            "--local-infile=0", "--secure-file-priv=" + str(exports), "--user=" + user]
+            "--local-infile=0", "--secure-file-priv=" + str(exports),
+            "--tmpdir=" + env["TMPDIR"], "--user=" + user]
     with (candidate / "database.log").open("wb") as log:
         process = subprocess.Popen(args, env=env, stdout=log, stderr=log)
         try:
@@ -174,7 +184,8 @@ def restore_capacity(p):
 def restore(p, generation_name, tombstones, drill=False):
     backup.mkdir(p["root"])
     restore_capacity(p)
-    with backup.lock(p["root"] / ".job.lock"), backup.lock(p["restore_root"] / ".restore.lock"):
+    with backup.lock(p["root"] / ".job.lock", wait=backup.LOCK_WAIT_SECONDS), \
+            backup.lock(p["restore_root"] / ".restore.lock", wait=backup.LOCK_WAIT_SECONDS):
         if drill and (p["root"] / "drill.json").exists():
             receipt = backup.read_json(p["root"] / "drill.json")
             if time.time() - receipt.get("completed", 0) < p["drill_seconds"]:

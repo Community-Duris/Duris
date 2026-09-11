@@ -85,6 +85,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.base = Path(self.temp.name)
         self.p = policy(self.base)
+        self.p["journal_roots"] = {}
         self.p["restore_root"].mkdir(mode=0o700)
         subprocess.run(["mount", "-t", "tmpfs", "-o", "size=512M,mode=0700", "tmpfs",
                         str(self.p["restore_root"])], check=True)

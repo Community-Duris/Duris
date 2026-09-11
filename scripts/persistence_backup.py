@@ -33,6 +33,9 @@ ROOT = Path(__file__).resolve().parents[1]
 MODES = {"flatfile-primary", "mariadb-primary"}
 GENERATION = re.compile(r"[0-9]{20}-[0-9a-f]{32}")
 LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock"}
+JOURNAL_FILES = {"players": "player-save.journal", "critical": "critical-command.journal"}
+LOCK_WAIT_SECONDS = 120
+CAPACITY_CHECK_INTERVAL = 32 * 1024 * 1024
 
 
 class BackupError(Exception):
@@ -153,7 +156,7 @@ def policy_load(path):
     # A DB datadir may belong to the database service UID; it is only a
     # forbidden destination, never a file source. Flatfile/journal sources
     # independently require custodian ownership before reading.
-    require(isinstance(p["journal_roots"], dict) and set(p["journal_roots"]) <= {"players", "critical"},
+    require(isinstance(p["journal_roots"], dict) and set(p["journal_roots"]) == set(JOURNAL_FILES),
             "invalid_journal_roots")
     p["journal_roots"] = {key: secure_path(Path(value), True) for key, value in p["journal_roots"].items()}
     p["live_roots"] += list(p["journal_roots"].values())
@@ -211,7 +214,7 @@ def sync_tree(root):
         sync_dir(base)
 
 
-def journal_capture(stage, p):
+def journal_capture(stage, p, capacity_base=None):
     target = stage / "journals"
     target.mkdir(mode=0o700)
     snapshots = {}
@@ -219,8 +222,17 @@ def journal_capture(stage, p):
         secure_path(source, True)
         require(source.is_dir(), "journal_source_missing")
         snapshots[name] = inventory(source)
+        require(name in JOURNAL_FILES, "invalid_journal_roots")
+        allowed = {JOURNAL_FILES[name]}
+        if name == "players":
+            allowed.add("player-save.journal.quarantine")
+        for relative, metadata in snapshots[name].items():
+            require(relative in allowed, "journal_filename")
+            if relative == "player-save.journal.quarantine":
+                require(metadata["bytes"] == 0, "journal_quarantine_nonempty")
         needed = sum(x["bytes"] for x in snapshots[name].values())
-        require(total_size(p["root"]) + needed < p["max_bytes"], "capacity_headroom_required")
+        existing = total_size(p["root"]) if capacity_base is None else capacity_base
+        require(existing + total_size(stage) + needed < p["max_bytes"], "capacity_headroom_required")
         require(shutil.disk_usage(stage).free >= needed + p["min_free_bytes"], "low_free_capacity")
         shutil.copytree(source, target / name)
         require(inventory(target / name) == snapshots[name], "journal_changed_during_capture")
@@ -230,7 +242,7 @@ def journal_capture(stage, p):
     return snapshots
 
 
-def flatfile_capture(stage, p):
+def flatfile_capture(stage, p, capacity_base=None):
     source = secure_path(Path(os.environ.get("FLATFILE_STATE_DIR", "")), True)
     require(source.is_dir() and source in p["live_roots"], "flatfile_authority_not_configured")
     target = stage / "state"
@@ -243,7 +255,8 @@ def flatfile_capture(stage, p):
         before = inventory(source, exclude_locks=True)
         require(before, "empty_flatfile_authority")
         needed = sum(x["bytes"] for x in before.values())
-        require(needed + total_size(p["root"]) < p["max_bytes"], "capacity_headroom_required")
+        existing = total_size(p["root"]) if capacity_base is None else capacity_base
+        require(needed + existing + total_size(stage) < p["max_bytes"], "capacity_headroom_required")
         require(shutil.disk_usage(stage).free >= needed + p["min_free_bytes"], "low_free_capacity")
         shutil.copytree(source, target)
         for base, dirs, files in os.walk(target):
@@ -331,7 +344,30 @@ def validate_dump(path):
     require(expected <= found, "dump_missing_required_tables")
 
 
-def mariadb_capture(stage, p):
+class BoundedOutput:
+    def __init__(self, stream, capacity_path, remaining, min_free_bytes):
+        self.stream = stream
+        self.capacity_path = capacity_path
+        self.remaining = remaining
+        self.min_free_bytes = min_free_bytes
+        self.written = 0
+        self.next_capacity_check = 0
+
+    def write(self, data):
+        self.written += len(data)
+        require(self.written <= self.remaining, "generation_exceeds_capacity")
+        if self.written >= self.next_capacity_check:
+            require(shutil.disk_usage(self.capacity_path).free >=
+                    self.min_free_bytes + len(data),
+                    "low_free_capacity")
+            self.next_capacity_check = self.written + CAPACITY_CHECK_INTERVAL
+        return self.stream.write(data)
+
+    def flush(self):
+        self.stream.flush()
+
+
+def mariadb_capture(stage, p, capacity_base=None):
     args, env, database = db_connection()
     engines = run(["mysql", *args, "-N", "-B", database, "-e",
                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
@@ -343,20 +379,10 @@ def mariadb_capture(stage, p):
                "--triggers", "--databases", database]
     if b"--no-tablespaces" in help_text:
         options.insert(0, "--no-tablespaces")
-    remaining = p["max_bytes"] - total_size(p["root"])
-    class BoundedOutput:
-        def __init__(self, stream):
-            self.stream = stream
-            self.written = 0
-        def write(self, data):
-            self.written += len(data)
-            require(self.written <= remaining, "generation_exceeds_capacity")
-            require(shutil.disk_usage(stage).free >= len(data) + p["min_free_bytes"], "low_free_capacity")
-            return self.stream.write(data)
-        def flush(self):
-            self.stream.flush()
+    existing = total_size(p["root"]) if capacity_base is None else capacity_base
+    remaining = p["max_bytes"] - existing - total_size(stage)
     with path.open("xb") as raw:
-        output = BoundedOutput(raw)
+        output = BoundedOutput(raw, stage, remaining, p["min_free_bytes"])
         with gzip.GzipFile(fileobj=output, mode="wb", mtime=0) as zipped:
             with streaming_process(["mysqldump", *args, *options], env=env) as process:
                 shutil.copyfileobj(process.stdout, zipped)
@@ -420,13 +446,7 @@ def remove_owned(root, path):
     sync_dir(root)
 
 
-def rotate(root, p, newest):
-    checkpoint("before_rotation")
-    items = generations(root)  # Any invalid generation blocks all pruning.
-    require(items and items[0][0] == newest, "new_generation_not_newest")
-    keep = retained(items, p, int(time.time()))
-    require(sum(total_size(path) for path, _ in items if path.name in keep) <= p["max_bytes"],
-            "retention_exceeds_capacity")
+def prune_unretained(root, p, items, keep, newest):
     for path, _ in items:
         if path.name not in keep:
             checkpoint("before_prune")
@@ -441,6 +461,16 @@ def rotate(root, p, newest):
             checkpoint("prune_complete")
 
 
+def rotate(root, p, newest):
+    checkpoint("before_rotation")
+    items = generations(root)  # Any invalid generation blocks all pruning.
+    require(items and items[0][0] == newest, "new_generation_not_newest")
+    keep = retained(items, p, int(time.time()))
+    require(sum(total_size(path) for path, _ in items if path.name in keep) <= p["max_bytes"],
+            "retention_exceeds_capacity")
+    prune_unretained(root, p, items, keep, newest)
+
+
 def replicate(source, p):
     root = p["replica_root"]
     if root is None:
@@ -451,7 +481,7 @@ def replicate(source, p):
     require(root.is_dir(), "replica_mount_missing")
     fs = run(["findmnt", "-n", "-o", "FSTYPE", "--target", str(root)]).strip()
     require(fs == b"fuse.sshfs", "replica_requires_sshfs_transport")
-    with lock(root / ".job.lock"):
+    with lock(root / ".job.lock", wait=LOCK_WAIT_SECONDS):
         generations(root)
         destination = root / source.name
         if destination.exists():
@@ -462,15 +492,46 @@ def replicate(source, p):
         require(total_size(root) + needed <= p["max_bytes"], "replica_capacity_headroom_required")
         require(shutil.disk_usage(root).free >= needed + p["min_free_bytes"], "replica_low_free_capacity")
         stage = root / (".staging-" + uuid.uuid4().hex)
-        shutil.copytree(source, stage)
-        sync_tree(stage)
-        destination = root / source.name
-        require(not destination.exists(), "replica_generation_exists")
-        os.rename(stage, destination)
-        sync_dir(root)
-        require(verify(source) == verify(destination), "replica_verification_failed")
-        rotate(root, p, destination)
+        try:
+            shutil.copytree(source, stage)
+            sync_tree(stage)
+            destination = root / source.name
+            require(not destination.exists(), "replica_generation_exists")
+            os.rename(stage, destination)
+            sync_dir(root)
+            require(verify(source) == verify(destination), "replica_verification_failed")
+            rotate(root, p, destination)
+        finally:
+            if stage.exists():
+                remove_owned(root, stage)
     return "transport_and_readback_verified"
+
+
+def replication_result(source, p):
+    try:
+        return replicate(source, p), None
+    except (BackupError, OSError, ValueError, KeyError, subprocess.SubprocessError):
+        return "pending", "replication_failed"
+
+
+def write_generation_status(root, generation, replica, result, replica_error=None):
+    value = {"version": 1, "generation": generation, "completed": int(time.time()),
+             "replica": replica, "result": result}
+    if replica_error:
+        value["replica_error"] = replica_error
+    write_json(root / "status.json", value)
+
+
+def complete_generation(root, p, destination, event):
+    replica, replica_error = replication_result(destination, p)
+    if replica_error:
+        write_generation_status(root, destination.name, replica, "replication_pending", replica_error)
+        return {"event": event, "result": "replication_pending",
+                "generation": destination.name, "replica": replica}
+    rotate(root, p, destination)
+    write_generation_status(root, destination.name, replica, "ok")
+    return {"event": event, "result": "ok", "generation": destination.name,
+            "replica": replica}
 
 
 def backup(p, mode):
@@ -479,7 +540,7 @@ def backup(p, mode):
     require(mode in MODES, "invalid_persistence_mode")
     root = p["root"]
     mkdir(root)
-    with lock(root / ".job.lock"):
+    with lock(root / ".job.lock", wait=LOCK_WAIT_SECONDS):
         items = generations(root)
         if mode == "flatfile-primary":
             source = secure_path(Path(os.environ.get("FLATFILE_STATE_DIR", "")), True)
@@ -490,9 +551,14 @@ def backup(p, mode):
                 "interrupted_job_requires_inspection")
         if items:
             receipt = read_json(root / "status.json")
-            require(receipt.get("generation") == items[0][0].name and receipt.get("result") == "ok",
+            require(receipt.get("generation") == items[0][0].name,
                     "prior_backup_requires_finalization")
-        require(total_size(root) < p["max_bytes"], "capacity_headroom_required")
+            if receipt.get("result") == "replication_pending":
+                return complete_generation(root, p, items[0][0], "backup")
+            require(receipt.get("result") == "ok", "prior_backup_requires_finalization")
+        keep = retained(items, p, int(time.time())) if items else set()
+        capacity_base = sum(total_size(path) for path, _ in items if path.name in keep)
+        require(capacity_base <= p["max_bytes"], "capacity_headroom_required")
         require(shutil.disk_usage(root).free >= p["min_free_bytes"], "low_free_capacity")
         name = f"{time.time_ns():020d}-{uuid.uuid4().hex}"
         stage = root / (".staging-" + uuid.uuid4().hex)
@@ -501,8 +567,9 @@ def backup(p, mode):
         try:
             checkpoint("before_capture")
             capture_started = int(time.time())
-            journals = journal_capture(stage, p)
-            detail = flatfile_capture(stage, p) if mode == "flatfile-primary" else mariadb_capture(stage, p)
+            journals = journal_capture(stage, p, capacity_base)
+            detail = (flatfile_capture(stage, p, capacity_base) if mode == "flatfile-primary"
+                      else mariadb_capture(stage, p, capacity_base))
             require(all(inventory(p["journal_roots"][name]) == files for name, files in journals.items()),
                     "journal_changed_during_authority_capture")
             checkpoint("after_capture")
@@ -512,7 +579,7 @@ def backup(p, mode):
                     "runtime_schema_sha256": digest(stage / "runtime-schema.json"),
                     "files": inventory(stage), **detail}
             write_json(stage / "manifest.json", meta)
-            require(total_size(root) <= p["max_bytes"], "generation_exceeds_capacity")
+            require(capacity_base + total_size(stage) <= p["max_bytes"], "generation_exceeds_capacity")
             checkpoint("before_sync")
             sync_tree(stage)
             checkpoint("before_publish")
@@ -524,12 +591,7 @@ def backup(p, mode):
             checkpoint("after_publish")
             verify(destination)
             checkpoint("after_verify")
-            # Separate-destination failure preserves prior local generations too.
-            replica = replicate(destination, p)
-            rotate(root, p, destination)
-            write_json(root / "status.json", {"version": 1, "generation": name,
-                       "completed": int(time.time()), "replica": replica, "result": "ok"})
-            return {"event": "backup", "result": "ok", "generation": name, "replica": replica}
+            return complete_generation(root, p, destination, "backup")
         finally:
             if not published and stage.exists():
                 remove_owned(root, stage)
@@ -539,7 +601,7 @@ def status(p, require_drill=False):
     root = p["root"]
     secure_path(root, True)
     require(root.is_dir(), "no_verified_generation")
-    with lock(root / ".job.lock"):
+    with lock(root / ".job.lock", wait=LOCK_WAIT_SECONDS):
         items = generations(root)
         require(items, "no_verified_generation")
         age = int(time.time()) - items[0][1]["created"]
@@ -616,20 +678,16 @@ def main():
         elif args.command == "status":
             result = status(p, args.require_drill)
         elif args.command == "finalize":
-            with lock(p["root"] / ".job.lock"):
+            with lock(p["root"] / ".job.lock", wait=LOCK_WAIT_SECONDS):
                 items = generations(p["root"])
                 require(items, "no_verified_generation")
                 destination = items[0][0]
-                replica = replicate(destination, p)
-                rotate(p["root"], p, destination)
-                write_json(p["root"] / "status.json", {"version": 1, "generation": destination.name,
-                           "completed": int(time.time()), "replica": replica, "result": "ok"})
-                result = {"event": "finalize", "result": "ok", "generation": destination.name}
+                result = complete_generation(p["root"], p, destination, "finalize")
         elif args.command == "schedule":
             # A minute timer evaluates the approved cadence; pre-cycle backups do not
             # move the independently scheduled deadline.
             mkdir(p["root"])
-            with lock(p["root"] / ".schedule.lock"):
+            with lock(p["root"] / ".schedule.lock", wait=LOCK_WAIT_SECONDS):
                 receipt_path = p["root"] / "schedule.json"
                 last = read_json(receipt_path).get("completed", 0) if receipt_path.exists() else 0
                 if time.time() - last >= p["schedule_seconds"]:
@@ -642,7 +700,7 @@ def main():
             from persistence_restore import restore
             result = restore(p, args.generation, args.tombstones, args.command == "drill")
         print(json.dumps(result, sort_keys=True))
-        return 0
+        return 1 if result.get("result") == "replication_pending" else 0
     except (BackupError, OSError, ValueError, KeyError, TypeError,
             subprocess.SubprocessError, EOFError) as error:
         code = str(error) if isinstance(error, BackupError) else "operation_failed"

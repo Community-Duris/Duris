@@ -51,7 +51,9 @@ print(Path(os.environ['SYNTHETIC_DUMP']).read_text() if os.environ['DUMP_MODE'] 
                                PERSISTENCE_MODE="mariadb-primary", ENVIRONMENT="local", DB_HOST="localhost",
                                DB_USER="synthetic", DB_PASSWD="synthetic-fixture-only", DB_NAME="synthetic",
                                DB_ALLOWED_TARGETS="localhost/synthetic", DB_PORT="3306", DB_SOCKET="",
-                               DUMP_MODE=mode, ADVERTISE="1" if advertised else "0", SYNTHETIC_DUMP=str(payload))
+                               DUMP_MODE=mode, ADVERTISE="1" if advertised else "0", SYNTHETIC_DUMP=str(payload),
+                               PLAYER_SAVE_JOURNAL_DIR=str(base / "journals/players"),
+                               CRITICAL_COMMAND_JOURNAL_DIR=str(base / "journals/critical"))
                     result = subprocess.run(["bash", str(ROOT / "scripts/backup_pfiles.sh")], env=env,
                                             capture_output=True, text=True, timeout=30)
                     self.assertEqual(result.returncode == 0, mode == "success", result.stderr)
@@ -68,7 +70,8 @@ print(Path(os.environ['SYNTHETIC_DUMP']).read_text() if os.environ['DUMP_MODE'] 
 
     def test_cycle_refuses_boot_on_backup_failure(self):
         cycle = (ROOT / "scripts/cycle_mud.sh").read_text()
-        self.assertIn("if ! ./scripts/backup_pfiles.sh; then", cycle)
+        self.assertIn("./scripts/backup_pfiles.sh", cycle)
+        self.assertIn("job_overlap_or_authority_busy", cycle)
         self.assertIn('echo "Required $PERSISTENCE_MODE backup failed; refusing to boot"', cycle)
 
 
