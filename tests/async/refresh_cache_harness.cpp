@@ -31,7 +31,9 @@ int main()
 	refresh_cache<std::string> cache;
 	assert(!cache.get());
 	assert(cache.request(held_load));
-	assert(!cache.request(next_load));
+	assert(cache.request(next_load));
+	assert(cache.request(next_load));
+	assert(cache.status().find("follow-up queued") != std::string::npos);
 	// Simulate a second player's work while a read is held indefinitely.
 	for (int commands = 0; commands < 10000; ++commands)
 	{
@@ -40,15 +42,15 @@ int main()
 	}
 	release_load = true;
 	cache.shutdown();
-	assert(*cache.get() == "first");
+	assert(*cache.get() == "second");
 	assert(cache.request(fail_load));
-	assert(*cache.get() == "first");
+	assert(*cache.get() == "second");
 	cache.shutdown();
-	assert(*cache.get() == "first");
+	assert(*cache.get() == "second");
 	assert(cache.status().find("offline") != std::string::npos);
 	assert(cache.request(throw_load));
 	cache.shutdown();
-	assert(*cache.get() == "first");
+	assert(*cache.get() == "second");
 	assert(cache.request(next_load));
 	cache.shutdown();
 	assert(*cache.get() == "second");

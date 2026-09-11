@@ -42,8 +42,19 @@ bool load_help(help_catalog &catalog, std::string &error)
 		MYSQL *value;
 		~connection_guard() { sql_pool_release(value); }
 	} borrowed{ connection };
-	const char *query = "SELECT title, text, category_id, last_update, last_update_by "
-			    "FROM pages ORDER BY title ASC LIMIT 20001";
+	// Bound the transmitted row before libmysql allocates its receive buffer.
+	// The importer commits one InnoDB transaction; this one statement observes
+	// either the previous complete catalog or the new complete catalog.
+	const char *query =
+		"SELECT IF(page_bytes<=131072 AND catalog_bytes<=33554432 AND catalog_count<=20000,title,NULL), IF(page_bytes<=131072 AND catalog_bytes<=33554432 AND catalog_count<=20000,text,NULL), "
+		"IF(page_bytes<=131072 AND catalog_bytes<=33554432 AND catalog_count<=20000,category_id,NULL), IF(page_bytes<=131072 AND catalog_bytes<=33554432 AND catalog_count<=20000,last_update,NULL), "
+		"IF(page_bytes<=131072 AND catalog_bytes<=33554432 AND catalog_count<=20000,last_update_by,NULL) FROM "
+		"(SELECT sized.*,SUM(page_bytes) OVER () AS catalog_bytes,COUNT(*) OVER () AS catalog_count "
+		"FROM (SELECT title,text,category_id,last_update,last_update_by, "
+		"COALESCE(OCTET_LENGTH(title),0)+COALESCE(OCTET_LENGTH(text),0)+"
+		"COALESCE(OCTET_LENGTH(category_id),0)+COALESCE(OCTET_LENGTH(last_update),0)+"
+		"COALESCE(OCTET_LENGTH(last_update_by),0) AS page_bytes "
+		"FROM pages ORDER BY title ASC LIMIT 20001) AS sized) AS bounded ORDER BY title ASC";
 	if (mysql_real_query(connection, query, strlen(query)))
 	{
 		error = "help catalog query failed";
@@ -99,6 +110,16 @@ bool help_cache_refresh()
 void help_cache_pulse()
 {
 	cache.poll();
+#ifndef __NO_MYSQL__
+	using clock = std::chrono::steady_clock;
+	static auto next_refresh = clock::now() + std::chrono::seconds(60);
+	const auto now = clock::now();
+	if (now >= next_refresh && !cache.busy())
+	{
+		cache.request(load_help);
+		next_refresh = now + std::chrono::seconds(60);
+	}
+#endif
 }
 void help_cache_shutdown()
 {

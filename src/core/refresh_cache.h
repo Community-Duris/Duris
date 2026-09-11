@@ -15,7 +15,10 @@ template <class T> class refresh_cache
 	bool request(loader load)
 	{
 		if (pending.valid())
-			return false;
+		{
+			followup = load;
+			return true;
+		}
 		try
 		{
 			pending = std::async(std::launch::async,
@@ -49,6 +52,14 @@ template <class T> class refresh_cache
 		    pending.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
 			return false;
 		auto next = pending.get();
+		if (followup)
+		{
+			const auto load = followup;
+			followup = nullptr;
+			// A refresh requested after this load started supersedes its result.
+			request(load);
+			return true;
+		}
 		error = std::move(next.error);
 		if (next.value)
 		{
@@ -59,7 +70,7 @@ template <class T> class refresh_cache
 	}
 	void shutdown()
 	{
-		if (pending.valid())
+		while (pending.valid())
 		{
 			pending.wait();
 			poll();
@@ -71,7 +82,7 @@ template <class T> class refresh_cache
 	{
 		return std::string(current ? "ready" : "unavailable") + ", generation " +
 		       std::to_string(generation) + (busy() ? ", refreshing" : "") +
-		       (error.empty() ? "" : ", " + error);
+		       (followup ? ", follow-up queued" : "") + (error.empty() ? "" : ", " + error);
 	}
 
     private:
@@ -82,6 +93,7 @@ template <class T> class refresh_cache
 	};
 	std::unique_ptr<T> current;
 	std::future<result> pending;
+	loader followup = nullptr;
 	std::string error;
 	unsigned long generation = 0;
 };
