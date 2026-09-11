@@ -17,24 +17,29 @@ before the community fork. It is still active today. The mechanism is:
 1. A corpse carries a decay timer when it is created at death.
 2. Raising an undead reads the remaining decay time off the corpse and uses it as the
    charm duration of the new pet.
-3. The undead is scheduled to die shortly after that charm duration ends.
+3. A separate real-time suicide event is scheduled from the same decay-derived value.
+   Because charm duration is stored in ticks while the suicide delay is expressed in
+   minutes, the event can fire before the charm affect ends.
 4. Preserve and embalm extend the corpse decay timer, so casting them before raising
    gives a longer-lived undead. Nothing extends the lifetime after the undead is raised.
 5. Two things make an undead permanent instead: the caster carries a necromancer globe,
    or has the Unholy Alliance innate. Either sets the charm duration to unlimited and no
    suicide event is scheduled.
 
-No commit in the last three months changed the design. The recent commits touching this
-area only added tracing, moved the code between files, and made raising survive the
-asynchronous corpse persistence layer without changing the lifetime rules.
+The reviewed recent commits do not change the decay-to-lifetime formula, the
+preserve/embalm timer behavior, or the globe/innate permanence exceptions. Some recent
+commits do change adjacent aggro and restore behavior, so this conclusion is limited to
+the lifetime rule itself.
 
 ## Current mechanics (as of master, 2026-09-10)
 
 ### Corpse decay at death
 
 - `src/combat/fight.c:1668` and `:1680` set the decay timer on a fresh corpse from the
-  `timer.decay.corpse.npc` / `timer.decay.corpse.pc` properties. Default is 120 real
-  minutes for both.
+  `timer.decay.corpse.npc` / `timer.decay.corpse.pc` properties. The configured defaults
+  are 20 real minutes for NPC corpses and 120 real minutes for PC corpses. The 120-minute
+  example below therefore applies to a PC corpse or to a deployment that explicitly
+  configures the NPC value to 120.
 - The timer is an object affect tagged `TAG_OBJ_DECAY` (`src/magic/spells.h:1128`) backed
   by a scheduled event.
 
@@ -46,8 +51,8 @@ asynchronous corpse persistence layer without changing the lifetime rules.
   text calls it the more powerful version of preserve.
 - Both spells refuse a corpse that has no decay affect and both persist a PC corpse after
   the change. Mass versions exist for whole-room casting.
-- `mummify` (`src/classes/necromancy.c:794`) is an NPC-side helper that calls embalm at
-  max level on a corpse.
+- `mummify` (`src/classes/necromancy.c:794`) is a death-trigger helper that calls embalm
+  at max level on a corpse; it is not restricted to an NPC-only condition.
 
 ### Raising
 
@@ -64,16 +69,19 @@ raise-X spells, and the theurgist call-X spells. The lifetime section is at
 
 Dracolich, greater dracolich, titan, avatar, and golem use the same pattern with a
 different formula: `timeToDecay / 2 + 6000 / STAT_INDEX(INT)` (for example
-`src/classes/necromancy.c:1926`). Golem-style raises skip the random 1-10 minute pad.
+`src/classes/necromancy.c:1926`). The golem path adds `number(1, 10)` at
+`src/classes/necromancy.c:1936-1940`; the dracolich/greater-dracolich paths are the
+ones that must not be described as having that random pad.
 
 ### What makes an undead permanent
 
 `setup_pet` (`src/classes/necromancy.c:178`):
 
-- Duration is `-1` (never expires) when the caster is an NPC that is not itself a pet.
+- Duration is `-1` (never expires) when the caster is an ordinary NPC that is not itself
+  a pet.
 - Duration is forced to `-1` when the caster has the Unholy Alliance innate or is holding
-  a necromancer globe (`get_globe`). In that case `raise_undead` gets `-1` back and
-  schedules no death event.
+  or wielding a necromancer globe (`get_globe` checks those two equipment locations). In
+  that case `raise_undead` gets `-1` back and schedules no death event.
 
 So the "permanent undead" path is globe or innate, not preserve or embalm. Preserve and
 embalm only stretch the timer.
@@ -102,26 +110,27 @@ and PR search on the community repo. History goes back to the 2005 initial impor
 | Date | Commit | Author | What it did |
 | --- | --- | --- | --- |
 | 2009-08-12 | `be8dd5166` | torgal | Earliest surviving copy of `raise_undead` with the decay-timer-to-charm-duration rule and `event_pet_death`. Moved the tree under `mud/`. |
-| 2010-08-02 | `fc70a295a` | Venthix | Theurgist class added. Dracolich and titan gained the `timeToDecay / 2 + 6000 / INT` formula and the same 1-10 minute suicide pad, with the comment "if the undead will stop being charmed after a bit, also make it suicide 1-10 minutes later". |
+| 2010-08-02 | `fc70a295a` | Venthix | Theurgist class added. The branch retained the dracolich/titan `timeToDecay / 2 + 6000 / INT` formula and the suicide-pad behavior already present in its parent; the comment says "if the undead will stop being charmed after a bit, also make it suicide 1-10 minutes later". |
 | 2010-09-04 | `2cb141675` | Venthix | "Necro pets die after 1 min when charm link drops." Added the necropet vnum table to `charm_broken`. |
 | 2013-11-05 | `8157949c5` | Kitana | wipe2013 merge. `MAX(4, timeToDecay)` floor is present for animate dead by this point. Comment style edits only around the timer. |
 | 2015-06-25 | `6469a7716` | Lohrr | "Pets now poof if they get conjured aggro." Hostile-on-raise undead now die in 5-10 seconds instead of lingering. |
-| 2026-04-06 | `0bae49b7c` | Xanadin | Whole-tree clang-format refactor. No logic change here. |
+| 2026-04-06 | `0bae49b7c` | Xanadin | Whole-tree clang-format refactor plus an Unholy Alliance aggro-condition change. It did not change the decay-to-lifetime formula. |
 | 2026-06-19 | `1c8f392a2` | xander-l | Replaced fatal guards in necromancy with graceful checks. No lifetime change. |
 | 2026-08-04 | `1c1aa9129` | xander-l | Added `DURIS_CORPSE_TRACE` logging around dracolich creation that reports `charm_minutes` and `corpse_remaining_minutes`. Diagnostic only. |
 | 2026-08-29 | `ff1d19920` | moshehbenavraham | "Restore recoverable follower raising." Added the deferred-raise path that survives the async corpse handoff. Copies the existing lifetime formulas verbatim. |
 | 2026-08-31 | `ea62f2ccd` et al. | moshehbenavraham | Moved sources into `src/classes/`, `src/magic/`, etc. |
 
-No commit between 2026-06-10 and today changed the decay-to-lifetime rule, the preserve
-or embalm spells, or the globe/innate permanence exceptions.
+No reviewed commit between 2026-06-10 and 2026-09-10 changed the decay-to-lifetime
+formula, the preserve or embalm spells, or the globe/innate permanence exceptions.
 
 ### GitHub issues and PRs
 
-No open or closed issue on the community repo mentions undead, necromancer, animate,
-embalm, or pet expiry. The PR search surfaced only corpse persistence work. The one
-design-relevant note is in `docs/records/pr-23-post-merge-review.md`: automatic raising
-was changed so a player corpse is not raised while its item ownership handoff is still
-pending. That gates *when* a raise can happen, not how long the undead lives.
+The search found related terms in issues #63, #69, and #89, but no earlier issue covering
+the specific restored-pet lifetime/identity/cap defect described here. The PR search
+surfaced only corpse persistence work. The one design-relevant note is in
+`docs/records/pr-23-post-merge-review.md`: automatic raising was changed so a player
+corpse is not raised while its item ownership handoff is still pending. That gates *when*
+a raise can happen, not how long the undead lives.
 
 ## Observation: timer units do not line up
 
@@ -180,31 +189,36 @@ therefore roughly doubles the undead's lifetime if cast before the raise.
 
 Reported room state: an `undead corpse` (vnum 1201) with the generic prototype description
 plus twelve dracoliches (vnums 3-6), all idle in L'srillizzin with no visible owner. No
-existing GitHub issue covered this. Filed as
+earlier GitHub issue covered this specific defect. Filed as
 [Community-Duris/Duris#212](https://github.com/Community-Duris/Duris/issues/212).
 
 ### Root cause found in code
 
-Pet persistence rebuilds pets from the area prototype and re-charms them, bypassing every
-rule in the sections above.
+Pet persistence rebuilds pets from the area prototype and re-charms them, so it does not
+preserve every runtime property or every creation-time rule in the sections above.
 
 - Crash-save restore on login: `src/player/player_load_pets.c:106` re-reads the prototype
-  by `mob_vnum`; `player_load_pets_commit` re-charms with the saved duration and never
-  schedules `event_pet_death`.
+  by `mob_vnum`; `player_load_pets_commit` re-applies the saved charm duration and does
+  not itself schedule `event_pet_death`. A finite restored charm can still expire through
+  normal affect processing and invoke `charm_broken`.
 - Copyover restore: `src/persistence/copyover.c:1009-1040` re-reads the prototype and
   calls `setup_pet(..., -1, ...)`, so the charm is permanent.
 - Autosave checkpoints are `RENT_CRASH` (`src/persistence/persistence_checkpoint.c`), so
   the crash restore path runs after any link loss, reboot, or copyover.
 
-Effects:
+Effects differ by restore path:
 
-1. Raised undead lose name, descriptions, level, spell slots, alignment, rolls, size,
-   affects, and `ACT_SENTINEL`. Prototype 1201 has act flags `0`, so restored undead
-   wander. This matches the report exactly.
-2. The corpse-decay lifetime is erased. Preserve and embalm stop mattering after a relog.
-3. No `count_undead` or `can_raise_draco` check on restore. A restored 1201 is named
-   `undead corpse`, which matches no `undead_data` name, so it counts as cost 0 and the
-   caster can raise a full new set on top of it.
+1. Prototype-based restoration can lose name, descriptions, level, spell slots,
+   alignment, rolls, size, affects, and `ACT_SENTINEL`; the exact fields depend on the
+   restore path. Prototype 1201 has act flags `0`, so a copyover-restored undead can
+   wander. This matches the report's visible behavior.
+2. Crash-save restore preserves and reapplies the current finite charm duration, so the
+   lifetime can still expire after relog. Copyover instead calls `setup_pet(..., -1, ...)`,
+   making that restored copy permanent and bypassing the original finite lifetime input.
+3. Restore lacks the undead-specific `count_undead` / `can_raise_draco` accounting. A
+   restored 1201 named `undead corpse` matches no `undead_data` name and may therefore
+   be counted incorrectly, but generic restore caps still apply (64 snapshot pets and
+   10 copyover pets); this is not literally unbounded.
 4. Capture takes every NPC follower in the room, not only `LNK_PET` links.
 
 ### Still open
