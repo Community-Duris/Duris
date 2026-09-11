@@ -296,7 +296,7 @@ if [ $CLEAN_DB -eq 1 ]; then
     if [ $DRY_RUN -eq 1 ]; then
         echo "WOULD CLEAN:"
         echo "  - DELETE FROM pages (all help entries)"
-        echo "  - DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits')"
+        echo "  - DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits', 'faq', 'wizlist')"
         echo ""
     else
         echo "WARNING: This will DELETE ALL existing help entries!"
@@ -315,7 +315,7 @@ if [ $CLEAN_DB -eq 1 ]; then
         fi
 
         echo "Cleaning mud_info entries..."
-        if printf '%s\n' "DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits');" >> "$IMPORT_SQL_FILE"; then
+        if printf '%s\n' "DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits', 'faq', 'wizlist');" >> "$IMPORT_SQL_FILE"; then
             echo "  ✓ mud_info deletion staged"
         else
             echo "  ERROR: Failed to stage mud_info deletion"
@@ -339,6 +339,9 @@ declare -A MUD_INFO_FILES=(
     ["motd"]="motd"
     ["news"]="news"
     ["wizmotd"]="wizmotd"
+    ["credits"]="credits"
+    ["faq"]="faq"
+    ["wizlist"]="wizlist"
 )
 
 # Files to import to pages table

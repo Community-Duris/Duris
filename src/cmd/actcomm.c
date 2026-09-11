@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/information_cache.h"
 #include "cmd/help_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -870,6 +871,18 @@ void do_page(P_char ch, char *argument, int /*cmd*/)
 	if (GET_LEVEL(ch) < GREATER_G)
 	{
 		send_to_char("No, dammit, you can't!\r\n", ch);
+		return;
+	}
+	if (!strcasecmp(argument, "info") || !strcasecmp(argument, "info status"))
+	{
+		if (!strcasecmp(argument, "info"))
+			send_to_char(
+				information_cache_refresh() ?
+					"Information refresh queued.\r\n" :
+					"Information refresh already pending or unavailable.\r\n",
+				ch);
+		send_to_char(("Information cache: " + information_cache_status() + "\r\n").c_str(),
+			     ch);
 		return;
 	}
 	if (!strcasecmp(argument, "help") || !strcasecmp(argument, "help status"))
