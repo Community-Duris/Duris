@@ -2,6 +2,7 @@
 
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
+#include "sql/item_extra_descr_codec.h"
 #include "world/vnum.obj.h"
 #include "core/structs.h"
 
@@ -663,6 +664,47 @@ bool duplicate_description(const std::vector<player_item_extra_description_snaps
 	return false;
 }
 
+bool append_loaded_extra_description(
+	std::vector<player_item_extra_description_snapshot> &descriptions, const char *keyword,
+	const char *description, player_load_result *result)
+{
+	if (!keyword)
+	{
+		result->outcome = player_load_outcome::limit_exceeded;
+		return false;
+	}
+
+	const bool legacy_raw = sql_item_extra_descr_is_spellbook_marker(keyword);
+	const char *normalized_keyword = legacy_raw ? "SPELLBOOK" : keyword;
+	const char *normalized_description = legacy_raw ? "[]" : (description ? description : "");
+	if (strlen(normalized_keyword) > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+	    strlen(normalized_description) > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+	{
+		result->outcome = player_load_outcome::limit_exceeded;
+		return false;
+	}
+	if (duplicate_description(descriptions, normalized_keyword, normalized_description))
+		return true;
+	if (descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+	{
+		result->outcome = player_load_outcome::limit_exceeded;
+		return false;
+	}
+	try
+	{
+		descriptions.push_back({ normalized_keyword,
+					 normalized_description,
+					 normalized_keyword == std::string("SPELLBOOK"),
+					 {} });
+	}
+	catch (const std::bad_alloc &)
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		return false;
+	}
+	return true;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
@@ -948,35 +990,10 @@ bool load_items(MYSQL *connection, player_load_result *result)
 				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS;
 				    return true;
 			    }
-			    if (!row[5] || strlen(row[5]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES))
-			    {
-				    result->outcome = player_load_outcome::limit_exceeded;
-				    return false;
-			    }
-			    // Exact duplicates are semantically identical, so drop them here
-			    // rather than letting the materialize step refuse the character.
-			    if (duplicate_description(item.extra_descriptions, row[5], row[6]))
-				    return true;
-			    if (item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
-			    {
-				    result->outcome = player_load_outcome::limit_exceeded;
-				    return false;
-			    }
-			    try
-			    {
-				    player_item_extra_description_snapshot description = {};
-				    description.keyword = row[5];
-				    description.description = row[6] ? row[6] : "";
-				    description.spellbook = description.keyword == "SPELLBOOK";
-				    item.extra_descriptions.push_back(std::move(description));
-			    }
-			    catch (const std::bad_alloc &)
-			    {
-				    result->outcome = player_load_outcome::retryable_failure;
-				    return false;
-			    }
-			    return true;
+			    // Exact duplicates are semantically identical, and legacy raw
+			    // spellbook rows are normalized without reading their truncated bitmap.
+			    return append_loaded_extra_description(item.extra_descriptions, row[5],
+								   row[6], result);
 		    }))
 		return false;
 	return result->snapshot.items.size() == result->item_identities.size();
@@ -1245,33 +1262,8 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS;
 				    return true;
 			    }
-			    if (!row[5] || strlen(row[5]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES))
-			    {
-				    result->outcome = player_load_outcome::limit_exceeded;
-				    return false;
-			    }
-			    if (duplicate_description(item.extra_descriptions, row[5], row[6]))
-				    return true;
-			    if (item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
-			    {
-				    result->outcome = player_load_outcome::limit_exceeded;
-				    return false;
-			    }
-			    try
-			    {
-				    item.extra_descriptions.push_back(
-					    { row[5],
-					      row[6] ? row[6] : "",
-					      row[5] == std::string("SPELLBOOK"),
-					      {} });
-			    }
-			    catch (const std::bad_alloc &)
-			    {
-				    result->outcome = player_load_outcome::retryable_failure;
-				    return false;
-			    }
-			    return true;
+			    return append_loaded_extra_description(item.extra_descriptions, row[5],
+								   row[6], result);
 		    }))
 		return false;
 	return result->snapshot.pets.size() == result->pet_identities.size() &&

@@ -23,6 +23,7 @@
 #include "sql/sql.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_player.h"
+#include "sql/item_extra_descr_codec.h"
 #include "item/storage_lockers.h"
 #include "persistence/locker_async.h"
 #include "net/comm.h"
@@ -462,19 +463,28 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 
 	for (ed = obj->ex_description; ed; ed = ed->next)
 	{
-		char *ek = la_esc(ed->keyword ? ed->keyword : "");
-		char *edesc = la_esc(ed->description ? ed->description : "");
-		if (!ek || !edesc)
+		char *ek = NULL;
+		char *edesc = NULL;
+		int emitted;
+		if (!sql_encode_item_extra_descr(ed->keyword, ed->description, &ek, &edesc))
 		{
 			free(ek);
 			free(edesc);
 			return 0;
 		}
-		if (!la_buf_printf(
-			    b,
-			    "INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
-			    "VALUES (@la_i%d, '%s', '%s');\n",
-			    tmp, ek, edesc))
+		if (edesc)
+			emitted = la_buf_printf(
+				b,
+				"INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
+				"VALUES (@la_i%d, '%s', '%s');\n",
+				tmp, ek, edesc);
+		else
+			emitted = la_buf_printf(
+				b,
+				"INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
+				"VALUES (@la_i%d, '%s', NULL);\n",
+				tmp, ek);
+		if (!emitted)
 		{
 			free(ek);
 			free(edesc);

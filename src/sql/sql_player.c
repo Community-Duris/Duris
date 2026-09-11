@@ -8,6 +8,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "sql/sql_player.h"
+#include "sql/item_extra_descr_codec.h"
 #include <errno.h>
 #include <limits.h>
 #include <dirent.h>
@@ -983,62 +984,38 @@ static bool sql_delete_player_subtable(int pid, const char *table_name)
 	return sql_run_query(query);
 }
 
-// converts spellbook binary bits to json array string "[101,203,456]"
-static char *spellbook_to_json(const char *bits)
+static void sql_load_item_extra_descr_values(const char *db_keyword, const char *db_description,
+					     struct extra_descr_data *ed, const char *table,
+					     int item_id)
 {
-	if (!bits)
-		return NULL;
+	const bool stored_spellbook = (db_keyword && strcmp(db_keyword, "SPELLBOOK") == 0) ||
+				      sql_item_extra_descr_is_spellbook_marker(db_keyword);
 
-	char *buf = (char *)malloc(MAX_SKILLS * 6);
-	if (!buf)
-		return NULL;
-
-	buf[0] = '[';
-	buf[1] = '\0';
-
-	int first = 1;
-	for (int i = 0; i < MAX_SKILLS; i++)
+	if (stored_spellbook)
 	{
-		if (bits[i / 8] & (1 << (i % 8)))
+		CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
+		ed->keyword[0] = 3;
+		ed->keyword[1] = 1;
+		ed->keyword[2] = 3;
+		ed->keyword[3] = '\0';
+
+		const size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
+		CREATE(ed->description, char, buflen, MEM_TAG_STRING);
+		const sql_spellbook_decode_status status = sql_decode_stored_spellbook(
+			db_keyword, db_description, ed->description, buflen);
+		if (status == sql_spellbook_decode_status::legacy_corrupt)
 		{
-			checked_appendf(buf, MAX_SKILLS * 6, "%s%d", first ? "" : ",", i);
-			first = 0;
+			persistence_alert(
+				AVATAR, "item_extra_descr", table ? table : "unknown", "none",
+				"none", "legacy_spellbook_corrupt",
+				"item_id=%d had a raw truncated spellbook marker; loaded an empty safe bitmap",
+				item_id);
 		}
-	}
-	checked_appendf(buf, MAX_SKILLS * 6, "]");
-
-	return buf;
-}
-
-// parses "[101,203,456]" and sets bits in output buffer
-static void json_to_spellbook(const char *json, char *output)
-{
-	if (!json || !output)
 		return;
-
-	size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
-	memset(output, 0, buflen);
-
-	const char *p = json;
-	while (*p && *p != '[')
-		p++;
-	if (*p == '[')
-		p++;
-
-	while (*p)
-	{
-		while (*p && (*p == ' ' || *p == ','))
-			p++;
-		if (*p == ']' || !*p)
-			break;
-
-		int spell_id = atoi(p);
-		if (spell_id >= 0 && spell_id < MAX_SKILLS)
-			output[spell_id / 8] |= (1 << (spell_id % 8));
-
-		while (*p && *p != ',' && *p != ']')
-			p++;
 	}
+
+	ed->keyword = db_keyword ? str_dup(db_keyword) : str_dup("");
+	ed->description = db_description ? str_dup(db_description) : NULL;
 }
 
 // for forked child process - needs its own db connection
@@ -2370,23 +2347,7 @@ static bool sql_load_item_extra_descr_from_table(int item_id, P_obj obj, const c
 			struct extra_descr_data *ed;
 			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-			if (row[0] && strcmp(row[0], "SPELLBOOK") == 0)
-			{
-				CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
-				ed->keyword[0] = 3;
-				ed->keyword[1] = 1;
-				ed->keyword[2] = 3;
-				ed->keyword[3] = '\0';
-
-				size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
-				CREATE(ed->description, char, buflen, MEM_TAG_STRING);
-				json_to_spellbook(row[1], ed->description);
-			}
-			else
-			{
-				ed->keyword = row[0] ? str_dup(row[0]) : str_dup("");
-				ed->description = row[1] ? str_dup(row[1]) : NULL;
-			}
+			sql_load_item_extra_descr_values(row[0], row[1], ed, table, item_id);
 
 			ed->next = obj->ex_description;
 			obj->ex_description = ed;
@@ -2475,27 +2436,12 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 		if (!ed->keyword)
 			continue;
 
-		size_t kw_len = strlen(ed->keyword);
 		char *db_keyword = NULL;
 		char *db_desc = NULL;
 
-		// spellbook: magic marker \03\01\03
-		if (kw_len == 3 && ed->keyword[0] == 3 && ed->keyword[1] == 1 &&
-		    ed->keyword[2] == 3)
-		{
-			db_keyword = (char *)malloc(10);
-			if (db_keyword)
-				strcpy(db_keyword, "SPELLBOOK");
-			db_desc = spellbook_to_json(ed->description);
-		}
-		else
-		{
-			db_keyword = sql_escape_string(ed->keyword);
-			db_desc = ed->description ? sql_escape_string(ed->description) : NULL;
-		}
-
-		if (!db_keyword)
-			continue;
+		if (!sql_encode_item_extra_descr(ed->keyword, ed->description, &db_keyword,
+						 &db_desc))
+			return false;
 		std::string description_key = db_keyword;
 		description_key.push_back('\0');
 		if (db_desc)
@@ -3866,31 +3812,10 @@ bool sql_load_player_pets(P_char ch)
 						struct extra_descr_data *ed;
 						CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-						if (ed_row[0] &&
-						    strcmp(ed_row[0], "SPELLBOOK") == 0)
-						{
-							CREATE(ed->keyword, char, 4,
-							       MEM_TAG_STRING);
-							ed->keyword[0] = 3;
-							ed->keyword[1] = 1;
-							ed->keyword[2] = 3;
-							ed->keyword[3] = '\0';
-
-							size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
-							CREATE(ed->description, char, buflen,
-							       MEM_TAG_STRING);
-							json_to_spellbook(ed_row[1],
-									  ed->description);
-						}
-						else
-						{
-							ed->keyword = ed_row[0] ?
-									      str_dup(ed_row[0]) :
-									      str_dup("");
-							ed->description =
-								ed_row[1] ? str_dup(ed_row[1]) :
-									    NULL;
-						}
+						sql_load_item_extra_descr_values(ed_row[0],
+										 ed_row[1], ed,
+										 "player_pet_item",
+										 item_db_id);
 
 						ed->next = obj->ex_description;
 						obj->ex_description = ed;
@@ -4915,23 +4840,7 @@ bool sql_load_player_items(P_char ch)
 			struct extra_descr_data *ed;
 			CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-			if (row[1] && strcmp(row[1], "SPELLBOOK") == 0)
-			{
-				CREATE(ed->keyword, char, 4, MEM_TAG_STRING);
-				ed->keyword[0] = 3;
-				ed->keyword[1] = 1;
-				ed->keyword[2] = 3;
-				ed->keyword[3] = '\0';
-
-				size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
-				CREATE(ed->description, char, buflen, MEM_TAG_STRING);
-				json_to_spellbook(row[2], ed->description);
-			}
-			else
-			{
-				ed->keyword = row[1] ? str_dup(row[1]) : str_dup("");
-				ed->description = row[2] ? str_dup(row[2]) : NULL;
-			}
+			sql_load_item_extra_descr_values(row[1], row[2], ed, "player_item", db_id);
 
 			ed->next = obj->ex_description;
 			obj->ex_description = ed;

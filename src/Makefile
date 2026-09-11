@@ -423,6 +423,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/wizredis.o \
 				 sql/sql.o \
 				 sql/sql_player.o \
+				 sql/item_extra_descr_codec.o \
 				 net/ssl.o \
 				 world/statistics.o \
 				 item/storage_lockers.o \
