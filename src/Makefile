@@ -456,6 +456,7 @@ OBJS =  $(SHIP_OBJS) \
 				 core/test_async.o \
 				 cmd/testcmd.o \
 				 cmd/wikihelp.o \
+				 cmd/help_cache.o \
 				 classes/reavers.o \
 				 classes/avengers.o \
 				 specs/specs.lucrot.o \

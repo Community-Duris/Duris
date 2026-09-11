@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/help_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -864,11 +865,25 @@ void do_project(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
-void do_page(P_char ch, char * /*argument*/, int /*cmd*/)
+void do_page(P_char ch, char *argument, int /*cmd*/)
 {
 	if (GET_LEVEL(ch) < GREATER_G)
 	{
 		send_to_char("No, dammit, you can't!\r\n", ch);
+		return;
+	}
+	if (!strcasecmp(argument, "help") || !strcasecmp(argument, "help status"))
+	{
+#ifdef __NO_MYSQL__
+		send_to_char("Flat-file help is loaded once from the local catalog.\r\n", ch);
+#else
+		if (!strcasecmp(argument, "help"))
+			send_to_char(help_cache_refresh() ?
+					     "Help refresh queued.\r\n" :
+					     "Help refresh already pending or unavailable.\r\n",
+				     ch);
+		send_to_char(("Help cache: " + help_cache_status() + "\r\n").c_str(), ch);
+#endif
 		return;
 	}
 	send_to_char("Re-reading news file...\r\n", ch);

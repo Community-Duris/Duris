@@ -2,6 +2,7 @@
 #include "core/utility.h"
 #include "core/utils.h"
 #include "cmd/wikihelp.h"
+#include "cmd/help_cache.h"
 #ifdef __NO_MYSQL__
 #include "flatfile/flatfile_help_catalog.h"
 #endif
@@ -169,87 +170,43 @@ string wiki_help(string str)
 
 string wiki_help(string str)
 {
-	string return_str;
-
-	// send the default help message
-	if (str.length() < 1)
+	const auto *catalog = help_cache_get();
+	if (!catalog)
+		return "&+GHelp is temporarily unavailable while its catalog loads. Please try again shortly.";
+	if (str.empty())
+		return wiki_help_single("help");
+	std::vector<const help_page *> matches;
+	for (const auto &page : *catalog)
+		if (help_title_matches(page.fields[0], str))
+		{
+			matches.push_back(&page);
+			if (matches.size() == WIKIHELP_RESULTS_LIMIT + 1)
+				break;
+		}
+	if (matches.empty())
 	{
-		return wiki_help_single(string("help"));
-	}
-
-	// first, find the list of help topics that match the search string
-	// Arih: Security fix - Escape user input to prevent SQL injection.
-	// Using escape_str() wraps mysql_real_escape_string() to sanitize special chars like quotes.
-	if (!qry("select title from pages where title like '%%%s%%' order by title asc limit %d",
-		 escape_str(str.c_str()).c_str(), WIKIHELP_RESULTS_LIMIT + 1))
-	{
-		return string("&+GSorry, but there was an error with the help system.");
-	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return string();
-	}
-	MYSQL_ROW row;
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		// Log bad help file requests.
 		logit(LOG_HELP, "%s", str.c_str());
-		return string("&+GSorry, but there are no help topics that match your search.");
+		return "&+GSorry, but there are no help topics that match your search.";
 	}
-
-	// if there is only one that matches, go ahead and display it
-	if (mysql_num_rows(res) == 1)
-	{
-		row = mysql_fetch_row(res);
-		return_str = row[0];
-		mysql_free_result(res);
-		return wiki_help_single(return_str);
-	}
-
-	// scan through the results to see if the search string matches one exactly.
-	// if so, display that one first and then the rest as "see also" links
-	vector<string> matching_topics;
-
-	bool exact_match = false;
-	while ((row = mysql_fetch_row(res)))
-	{
-		string match(row[0]);
-		if (tolower(match) == tolower(str))
+	if (matches.size() == 1)
+		return wiki_help_single(matches.front()->fields[0]);
+	std::string result;
+	const help_page *exact = nullptr;
+	for (const auto *page : matches)
+		if (help_title_equal(page->fields[0], str))
 		{
-			exact_match = true;
+			exact = page;
+			break;
 		}
-		else
-		{
-			matching_topics.push_back(match);
-		}
-	}
-
-	mysql_free_result(res);
-
-	if (exact_match)
-	{
-		return_str += wiki_help_single(str);
-		return_str += "\n\n&+GThe following help topics also matched your search:\n";
-	}
+	if (exact)
+		result = wiki_help_single(exact->fields[0]) +
+			 "\n\n&+GThe following help topics also matched your search:\n";
 	else
-	{
-		return_str += "&+GThe following help topics matched your search:\n";
-	}
-
-	// list the topics
-	for (size_t i = 0; i < matching_topics.size(); i++)
-	{
-		return_str += " &+c";
-		return_str += matching_topics[i];
-		return_str += "\n";
-	}
-
-	return return_str;
+		result = "&+GThe following help topics matched your search:\n";
+	for (const auto *page : matches)
+		if (page != exact)
+			result += " &+c" + page->fields[0] + "\n";
+	return result;
 }
 
 // display racial stats for a race category help file
@@ -608,45 +565,37 @@ string wiki_races(string title, int type)
 	return return_str;
 }
 
-// Display a single help topic
+// Display a single help topic. Resolve redirects without recursion or I/O.
 string wiki_help_single(string str)
 {
+	const auto *catalog = help_cache_get();
+	if (!catalog)
+		return "&+GHelp is temporarily unavailable while its catalog loads. Please try again shortly.";
+	const help_page *selected = nullptr;
+	for (unsigned depth = 0; depth < 8; ++depth)
+	{
+		selected = nullptr;
+		for (const auto &page : *catalog)
+			if (help_title_equal(page.fields[0], str))
+			{
+				selected = &page;
+				break;
+			}
+		if (!selected)
+			return "&+GHelp topic not found.";
+		const auto &fields = selected->fields;
+		if (fields[2] != "1" || fields[1].rfind("Redirect: ", 0) != 0)
+			break;
+		str = trim(fields[1].substr(10), " \t\r\n");
+		selected = nullptr;
+	}
+	if (!selected)
+		return "&+GHelp redirect limit exceeded.";
+	const char *row[5];
+	for (size_t i = 0; i < 5; ++i)
+		row[i] = selected->fields[i].c_str();
 	string return_str, title;
 	int dashes;
-
-	// Arih: Security fix - Escape user input to prevent SQL injection.
-	// Using escape_str() wraps mysql_real_escape_string() to sanitize special chars like quotes.
-	if (!qry("select title, text, category_id, last_update, last_update_by from pages where title = '%s' limit 1",
-		 escape_str(str.c_str()).c_str()))
-	{
-		return string("&+GSorry, but there was an error with the help system.");
-	}
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return string();
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return string("&+GHelp topic not found.");
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-
-	// If category undefined and we have a redirect entry..
-	if (atoi(row[2]) == 1)
-	{
-		char redirect[MAX_STRING_LENGTH];
-		if (sscanf(row[1], "Redirect: %s", redirect) == 1)
-		{
-			mysql_free_result(res);
-			return wiki_help_single(redirect);
-		}
-	}
 
 	return_str = "&+c";
 	return_str += row[0];
@@ -725,8 +674,6 @@ string wiki_help_single(string str)
 	{
 		return_str += wiki_pcraces(row[0]);
 	}
-
-	mysql_free_result(res);
 
 	return return_str;
 }
