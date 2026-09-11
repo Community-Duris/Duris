@@ -40,6 +40,8 @@ class AtomicImport(unittest.TestCase):
                 script.write_text((ROOT / 'scripts/import_help_to_prod.sh').read_text())
                 (root / 'lib/information/help').write_text('new help')
                 (root / 'lib/information/news').write_text('new news')
+                for name in ('credits', 'faq', 'wizlist'):
+                    (root / ('lib/information/' + name)).write_text('new ' + name)
                 index = root / 'lib/information/help_index'
                 index.write_text('#\n"broken"\nrejected test entry\n')
                 (root / 'help/duris_help_parsed.hlp').write_text(
@@ -65,10 +67,12 @@ class AtomicImport(unittest.TestCase):
                         time.sleep(0.03)
                     self.assertEqual(process.returncode, 0, process.stderr.read())
                     final = query('SELECT GROUP_CONCAT(title ORDER BY title) FROM pages')
-                    self.assertEqual(final, 'Alias,Fresh,help')
+                    self.assertEqual(final, 'Alias,credits,faq,Fresh,help,wizlist')
                     self.assertIn('help,sentinel', snapshots)
                     self.assertTrue(set(snapshots) <= {'help,sentinel', final}, snapshots)
                     self.assertEqual(query("SELECT content FROM mud_info WHERE name='news'"), 'new news')
+                    for name in ('credits', 'faq', 'wizlist'):
+                        self.assertEqual(query(f"SELECT content FROM mud_info WHERE name='{name}'"), 'new ' + name)
                 finally:
                     if process.poll() is None:
                         process.kill()
