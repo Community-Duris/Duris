@@ -31,7 +31,9 @@ def main():
                     with urllib.request.urlopen("http://127.0.0.1:4050/health", timeout=1) as response:
                         ready = response.status == 200 and json.load(response) == {
                             "status": "healthy", "persistence": "ready"}
-                    if ready:
+                    journal_files = (candidate / "journals/players/player-save.journal",
+                                     candidate / "journals/critical/critical-command.journal")
+                    if ready and all(path.is_file() and path.stat().st_size == 0 for path in journal_files):
                         break
                 except (urllib.error.URLError, TimeoutError, ConnectionError):
                     pass

@@ -187,21 +187,27 @@ def restore(p, generation_name, tombstones, drill=False):
         try:
             env = clean_environment(candidate)
             shutil.copytree(generation / "journals", candidate / "journals")
+            qualifier = str(backup.ROOT / "bin/tools/qualify_flatfile_restore")
+            backup.run([qualifier, "--journals-preflight", str(candidate)], env=env)
             if meta["mode"] == "flatfile-primary":
                 shutil.copytree(generation / "state", candidate / "state")
                 backup.require(backup.inventory(generation / "state") == backup.inventory(candidate / "state"),
                                "restore_copy_checksum_mismatch")
                 env["FLATFILE_STATE_DIR"] = str(candidate / "state")
                 result = backup.run([str(backup.ROOT / "bin/tools/qualify_flatfile_restore"),
-                                     str(candidate / "state")], env=env)
+                                     "--state-preflight", str(candidate / "state")], env=env)
                 aggregates = json.loads(result)
                 service_load(candidate, meta["mode"], env)
+                backup.run([qualifier, "--journals-drained", str(candidate)], env=env)
+                aggregates = json.loads(backup.run([qualifier, str(candidate / "state")], env=env))
             else:
                 with private_database(candidate) as env:
                     database_import(generation, env)
                     database_qualify(env)
                     aggregates = {"schema_history_and_value_reconciliation": "ok"}
                     service_load(candidate, meta["mode"], env)
+                    backup.run([qualifier, "--journals-drained", str(candidate)], env=env)
+                    database_qualify(env)
             backup.require(ledger_hash == tombstone_preflight(tombstones, p, meta["created"]),
                            "erasure_evidence_changed_during_restore")
             backup.verify(generation)

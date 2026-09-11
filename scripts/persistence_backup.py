@@ -472,6 +472,8 @@ def replicate(source, p):
 
 
 def backup(p, mode):
+    if mode == "mariadb-primary-flatfile-fallback":
+        mode = "mariadb-primary"
     require(mode in MODES, "invalid_persistence_mode")
     root = p["root"]
     mkdir(root)
@@ -496,6 +498,7 @@ def backup(p, mode):
         published = False
         try:
             checkpoint("before_capture")
+            capture_started = int(time.time())
             journals = journal_capture(stage, p)
             detail = flatfile_capture(stage, p) if mode == "flatfile-primary" else mariadb_capture(stage, p)
             require(all(inventory(p["journal_roots"][name]) == files for name, files in journals.items()),
@@ -503,7 +506,7 @@ def backup(p, mode):
             checkpoint("after_capture")
             shutil.copyfile(ROOT / "migrations/runtime_compatibility_manifest.json", stage / "runtime-schema.json")
             (stage / "runtime-schema.json").chmod(0o600)
-            meta = {"version": 1, "generation": name, "created": int(time.time()), "mode": mode,
+            meta = {"version": 1, "generation": name, "created": capture_started, "mode": mode,
                     "runtime_schema_sha256": digest(stage / "runtime-schema.json"),
                     "files": inventory(stage), **detail}
             write_json(stage / "manifest.json", meta)

@@ -17,7 +17,7 @@ def main():
     queries = [
         "SELECT COUNT(*) FROM account_characters c LEFT JOIN accounts a ON a.account_name=c.account_name "
         "LEFT JOIN player_data p ON p.pid=c.pid WHERE c.deleted_at IS NULL AND "
-        "(a.account_name IS NULL OR p.pid IS NULL);",
+        "(a.account_name IS NULL OR p.pid IS NULL OR (p.account_name IS NOT NULL AND p.account_name<>c.account_name));",
         "SELECT COUNT(*) FROM player_data p LEFT JOIN currency_wallet_baseline b ON b.pid=p.pid WHERE b.pid IS NULL;",
         "SELECT COUNT(*) FROM account_banks a LEFT JOIN currency_bank_baseline b ON b.bank_id=a.id WHERE b.bank_id IS NULL;",
         "SELECT COUNT(*) FROM player_data p JOIN currency_wallet_baseline b ON b.pid=p.pid "

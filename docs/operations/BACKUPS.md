@@ -55,7 +55,7 @@ MariaDB uses one full transactional dump, including schema, migration history,
 lifecycle tables, and all runtime tables. Nontransactional tables are rejected.
 Coordinate schema migrations/DDL with the backup window; a transactional data
 snapshot does not make concurrent DDL safe. Flatfile capture preserves identity
-→ critical authority → account locking, pending-transaction evidence, and the
+ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ critical authority ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ account locking, pending-transaction evidence, and the
 complete durable file tree.
 
 Journal trees are copied before the authority snapshot and compared again after
@@ -89,7 +89,8 @@ catches missed invocations after host downtime. Test a deliberate invalid
 policy and verify that the failure reaches the responsible operator.
 
 stdout/stderr contain JSON with fixed result/error codes, generation IDs,
-aggregate age/bytes/counts, and separate replica status. No credentials, account
+aggregate age/bytes/counts, and separate replica status. Recovery-point age starts
+before journal and authority capture, so dump duration cannot hide an RPO breach. No credentials, account
 names, hosts, or player values are telemetry. Alert on any nonzero job result,
 rpo_exceeded, capacity failures, interrupted work, or missing/overdue drill
 receipts. Monitor timer/unit availability too: a stopped scheduler cannot
@@ -174,11 +175,16 @@ imports through a schema-only account with no global/FILE privileges, validates
 the runtime schema, recomputes the complete migration history, and reconciles
 account/character, wallet, bank, and epic evidence. Runtime boot uses only the
 new socket. Flatfile restore verifies copied bytes before mutation, runs native
-authority replay, validates account/player and persistent world catalogs,
-rejects lossy player topology repair, and loads representative value domains.
-Both modes then boot the matching server against copied mini-world assets in a
-new user/network namespace, exercise HTTP readiness, reject persistence startup
-failure messages, and require clean shutdown. Namespaces must be available;
+authority replay, and validates existing account, snapshot, and world catalog bytes.
+Full player/domain loads run after WAL replay, allowing a durable first snapshot
+to materialize its missing projection. These loads reject lossy topology repair.
+Before boot, both journal types are scanned with the production codecs. Any
+corrupt/unsupported frame, quarantine evidence, or interrupted temporary journal
+blocks qualification. Both modes then boot the matching server against copied mini-world assets in a
+new user/network/PID namespace, exercise HTTP readiness, reject persistence startup
+failure messages, wait for both journals to drain, and require clean shutdown.
+Native postflight requires zero remaining records and no corruption/quarantine;
+authority reconciliation runs again after replay. Namespaces must be available;
 there is no fallback to a host-network boot.
 
 QUALIFIED.json is written last and is evidence about this isolated candidate,
@@ -219,6 +225,7 @@ recovery as a gameplay feature.
     python3 tests/async/test_persistence_backup.py
     python3 tests/async/test_backup_pfiles.py
     python3 tests/async/test_flatfile_backup_manifest.py
+    python3 tests/async/test_flatfile_launcher.py
     DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py
 
 The integration test uses synthetic identities, private MariaDB daemons, a

@@ -178,6 +178,39 @@ class PolicyTests(Fixture):
                 self.assertEqual(backup.retained(items, p, now), {"latest", "second", "previous"})
 
 class GenerationTests(Fixture):
+    def test_fallback_mode_captures_database_authority(self):
+        generation = self.create("mariadb-primary-flatfile-fallback")
+        self.assertEqual(backup.verify(generation)["mode"], "mariadb-primary")
+        self.assertTrue((generation / "database.sql.gz").is_file())
+        self.assertFalse((generation / "state").exists())
+
+    def test_rpo_measures_from_capture_start(self):
+        started = int(time.time())
+        clock = [started]
+        def delayed_capture(stage, p):
+            clock[0] += 300
+            return fake_database_capture(stage, p)
+        with mock.patch.object(backup.time, "time", side_effect=lambda: clock[0]), \
+             mock.patch.object(backup, "mariadb_capture", delayed_capture):
+            self.create("mariadb-primary")
+            self.assertEqual(backup.status(self.p)["age_seconds"], 300)
+            clock[0] = started + self.p["rpo_seconds"] + 1
+            with self.assertRaisesRegex(backup.BackupError, "rpo_exceeded"):
+                backup.status(self.p)
+
+    def test_required_drill_receipt_is_current_and_qualified(self):
+        self.create()
+        with self.assertRaisesRegex(backup.BackupError, "restore_drill_missing_or_overdue"):
+            backup.status(self.p, require_drill=True)
+        receipt = self.p["root"] / "drill.json"
+        for result, age in (("failed", 0), ("qualified", self.p["drill_seconds"] + 1)):
+            backup.write_json(receipt, {"result": result, "completed": int(time.time()) - age})
+            with self.assertRaisesRegex(backup.BackupError, "restore_drill_missing_or_overdue"):
+                backup.status(self.p, require_drill=True)
+        backup.write_json(receipt, {"result": "qualified", "completed": int(time.time())})
+        self.assertEqual(backup.status(self.p, require_drill=True)["result"], "ok")
+
+
     def test_full_manifest_and_checksum_tamper_both_modes(self):
         for mode in sorted(backup.MODES):
             with self.subTest(mode=mode):

@@ -11,7 +11,7 @@ flatfile_player_snapshot_file flatfile_corpse_repository flatfile_locker_reposit
 flatfile_world_item_repository flatfile_artifact_repository flatfile_shop_trade_repository
 flatfile_shop_trade_materialization flatfile_shopkeeper_repository flatfile_auction_repository
 flatfile_boon_repository flatfile_player_domain_repository flatfile_authority_transaction
-player_snapshot_codec flatfile_store item_transfer_command corpse_lifecycle_command
+player_save_journal critical_command_journal player_snapshot_codec flatfile_store item_transfer_command corpse_lifecycle_command
 shop_trade_command critical_command epic_command currency_command auction_command
 combat_outcome_command boon_reward_command boon_shop_command persistence_observability
 persistence_mode flatfile_ip_activity_repository flatfile_ship_repository
@@ -30,7 +30,7 @@ def build(destination=None):
         sources.append(str(matches[0]))
     subprocess.run(["g++", "-std=c++20", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-D__NO_MYSQL__", "-Isrc", "-Isrc/no_mysql",
-                    "scripts/qualify_flatfile_restore.cpp", *sources, "-lcrypto", "-pthread",
+                    "scripts/qualify_flatfile_restore.cpp", *sources, "-lcrypto", "-lz", "-pthread",
                     "-o", str(destination)], cwd=ROOT, check=True)
     return destination
 
