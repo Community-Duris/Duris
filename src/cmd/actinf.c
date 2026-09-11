@@ -11,11 +11,13 @@
 #include <ctype.h>
 #include <fnmatch.h>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <string>
 #include <time.h>
+#include <unordered_set>
 #include <vector>
 using namespace std;
 
@@ -5425,6 +5427,55 @@ void do_attributes(P_char ch, char * /*argument*/, int /*cmd*/)
 	send_to_char(buf, ch);
 }
 
+// Count only visible physical money below carried/equipped containers. As with
+// look-in, closed transparent containers expose their contents; opaque ones do not.
+static void score_container_coins(P_char ch, unsigned long long (&coins)[4])
+{
+	std::vector<P_obj> containers;
+	std::unordered_set<P_obj> seen;
+	for (P_obj obj = ch->carrying; obj && seen.insert(obj).second; obj = obj->next_content)
+		containers.push_back(obj);
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (ch->equipment[slot])
+			containers.push_back(ch->equipment[slot]);
+	seen.clear();
+
+	while (!containers.empty())
+	{
+		P_obj container = containers.back();
+		containers.pop_back();
+		if (!seen.insert(container).second || !CAN_SEE_OBJ(ch, container) ||
+		    GET_ITEM_TYPE(container) != ITEM_CONTAINER ||
+		    (IS_SET(container->value[1], CONT_CLOSED) &&
+		     !IS_SET(container->extra2_flags, ITEM2_TRANSPARENT)))
+			continue;
+
+		std::unordered_set<P_obj> siblings;
+		for (P_obj obj = container->contains; obj && siblings.insert(obj).second;
+		     obj = obj->next_content)
+		{
+			if (GET_ITEM_TYPE(obj) == ITEM_CONTAINER)
+				containers.push_back(obj);
+			else if (GET_ITEM_TYPE(obj) == ITEM_MONEY && seen.insert(obj).second &&
+				 CAN_SEE_OBJ(ch, obj))
+			{
+				for (int denomination = 0; denomination < 4; ++denomination)
+				{
+					if (obj->value[denomination] <= 0)
+						continue;
+					unsigned long long amount = obj->value[denomination];
+					const auto maximum =
+						std::numeric_limits<unsigned long long>::max();
+					coins[denomination] =
+						amount > maximum - coins[denomination] ?
+							maximum :
+							coins[denomination] + amount;
+				}
+			}
+		}
+	}
+}
+
 void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct time_info_data playing_time;
@@ -5498,6 +5549,15 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 			"Coins in bank: &+W%4d platinum&N  &+Y%4d gold&N  &n%4d silver&N  &+y%4d copper&N\n",
 			GET_BALANCE_PLATINUM(ch), GET_BALANCE_GOLD(ch), GET_BALANCE_SILVER(ch),
 			GET_BALANCE_COPPER(ch));
+		send_to_char(buf, ch);
+
+		unsigned long long container_coins[4] = {};
+		score_container_coins(ch, container_coins);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"Coins in container(s): &+W%4llu platinum&N  &+Y%4llu gold&N  &n%4llu silver&N  &+y%4llu copper&N\n",
+			container_coins[3], container_coins[2], container_coins[1],
+			container_coins[0]);
 		send_to_char(buf, ch);
 
 		{
