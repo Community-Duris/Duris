@@ -234,7 +234,8 @@ flatfile_read_result flatfile_read(const std::string &directory, const std::stri
 		close(directory_fd);
 		return flatfile_read_result::invalid;
 	}
-	const int file_fd = openat(directory_fd, name.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	const int file_fd =
+		openat(directory_fd, name.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC | O_NOFOLLOW);
 	if (file_fd < 0)
 	{
 		const int saved_errno = errno;

@@ -425,6 +425,8 @@ OBJS =  $(SHIP_OBJS) \
 				 net/ssl.o \
 				 world/statistics.o \
 				 item/storage_lockers.o \
+				 item/locker_identify.o \
+				 item/locker_receipt.o \
 				 persistence/locker_async.o \
 				 world/timers.o \
 				 cmd/track.o \

@@ -5344,7 +5344,7 @@
       "locator": "CRITICAL_COMMAND_JOURNAL_DIR",
       "data_category": "personal_or_mixed_durable_store",
       "data_subject_key": "operation_id_with_domain_subject",
-      "technical_purpose": "critical command replay and reconciliation",
+      "technical_purpose": "critical command replay and reconciliation, including durable locker identification receipts in locker-identification/<pid>.receipt",
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
@@ -5357,7 +5357,8 @@
           "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
         },
         "excluded_fields": [
-          "command_payload"
+          "command_payload",
+          "locker_identification_receipt_text"
         ],
         "shared_fields": []
       },
