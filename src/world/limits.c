@@ -263,7 +263,15 @@ int hit_regen(P_char ch, bool display_only)
 
 	// Keep both timers, but compare their actual bonuses after hit_reg scaling.
 	int hit_reg = ch->points.hit_reg;
-	const bool competing_healing = affected_by_spell(ch, SPELL_REGENERATION) &&
+	bool has_spell_regeneration = false;
+	for (af = ch->affected; af; af = af->next)
+		if (af->type == SPELL_REGENERATION &&
+		    !IS_SET(af->flags, AFFTYPE_ARAMUS_CROWN_REGENERATION))
+		{
+			has_spell_regeneration = true;
+			break;
+		}
+	const bool competing_healing = has_spell_regeneration &&
 				       affected_by_spell(ch, SPELL_ACCEL_HEALING);
 	if (competing_healing)
 		for (af = ch->affected; af; af = af->next)

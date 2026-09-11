@@ -43,6 +43,27 @@ affected_type *affect_to_char(P_char ch, affected_type *af) {
     ch->specials.affected_by4 |= copy->bitvector4;
     return copy;
 }
+void affect_remove(P_char ch, affected_type *target) {
+    for (auto **p = &ch->affected; *p; p = &(*p)->next) {
+        if (*p != target) continue;
+        *p = target->next;
+        if (target->location == APPLY_HIT_REG) ch->points.hit_reg -= target->modifier;
+        delete target;
+        ch->specials.affected_by4 = 0;
+        for (auto *af = ch->affected; af; af = af->next)
+            ch->specials.affected_by4 |= af->bitvector4;
+        return;
+    }
+}
+void affect_from_char(P_char ch, int type) {
+    for (auto *af = ch->affected; af;) {
+        auto *next = af->next;
+        if (af->type == type) affect_remove(ch, af);
+        af = next;
+    }
+}
+nevent_schedule_result add_event(event_func, int, P_char, P_char, P_obj, int,
+                                 const void *, int) { return {}; }
 static void remove_spell(P_char ch, int type) {
     for (auto **p = &ch->affected; *p;) {
         auto *af = *p;
@@ -131,6 +152,81 @@ int main() {
             }
         }
     }
+    // The Aramus Crown historically reuses SPELL_REGENERATION for a distinct
+    // APPLY_HIT_REG sleep proc. It must not participate in normal-spell
+    // precedence, refresh, or wake cleanup.
+    {
+        char_data ch{};
+        ch.player.level = 50;
+        ch.specials.position = STAT_NORMAL;
+        ch.specials.conditions[FULL] = ch.specials.conditions[THIRST] = 24;
+        ch.points.hit = 10; ch.points.max_hit = 1000;
+        affected_type crown{};
+        crown.type = SPELL_REGENERATION;
+        crown.duration = 10;
+        crown.flags = AFFTYPE_ARAMUS_CROWN_REGENERATION;
+        crown.location = APPLY_HIT_REG;
+        crown.modifier = 150;
+        affect_to_char(&ch, &crown);
+        const int crown_only = hit_regen(&ch, true);
+        spell_accel_healing(50, &ch, nullptr, 0, &ch, nullptr);
+        const int accelerated_modifier = ch.points.hit_reg - crown.modifier;
+        assert(hit_regen(&ch, true) > crown_only);
+        spell_regeneration(50, &ch, nullptr, 0, &ch, nullptr);
+        int normal_regeneration = 0;
+        for (auto *af = ch.affected; af; af = af->next) {
+            if (af->type == SPELL_REGENERATION && (af->bitvector4 & AFF4_REGENERATION))
+                ++normal_regeneration;
+            if (af->type == SPELL_REGENERATION && af->location == APPLY_HIT_REG)
+                assert(af->duration == 10);
+        }
+        assert(normal_regeneration == 1);
+        event_aramus_crown_sleep_check(&ch, nullptr, nullptr, nullptr);
+        assert(count(&ch, SPELL_REGENERATION) == 1);
+        assert(IS_AFFECTED4(&ch, AFF4_REGENERATION));
+        assert(ch.points.hit_reg == accelerated_modifier);
+        remove_spell(&ch, SPELL_REGENERATION);
+        remove_spell(&ch, SPELL_ACCEL_HEALING);
+    }
+    {
+        char_data ch{};
+        ch.player.level = 50;
+        ch.specials.position = STAT_NORMAL;
+        ch.points.hit = 10;
+        ch.points.max_hit = 1000;
+        spell_regeneration(50, &ch, nullptr, 0, &ch, nullptr);
+        assert(find_aramus_crown_regeneration(&ch) == nullptr);
+        affected_type crown{};
+        crown.type = SPELL_REGENERATION;
+        crown.duration = 10;
+        crown.flags = AFFTYPE_ARAMUS_CROWN_REGENERATION;
+        crown.location = APPLY_HIT_REG;
+        crown.modifier = 150;
+        affect_to_char(&ch, &crown);
+        assert(find_aramus_crown_regeneration(&ch) != nullptr);
+        assert(count(&ch, SPELL_REGENERATION) == 2);
+        remove_spell(&ch, SPELL_REGENERATION);
+    }
+    {
+        char_data ch{};
+        ch.player.level = 50;
+        ch.specials.position = STAT_NORMAL;
+        ch.points.hit = 10;
+        ch.points.max_hit = 1000;
+        affected_type legacy{};
+        legacy.type = SPELL_REGENERATION;
+        legacy.duration = 3;
+        legacy.location = APPLY_HIT_REG;
+        legacy.modifier = 150;
+        affect_to_char(&ch, &legacy);
+        assert(find_aramus_crown_regeneration(&ch) == nullptr);
+        spell_regeneration(50, &ch, nullptr, 0, &ch, nullptr);
+        assert(count(&ch, SPELL_REGENERATION) == 1);
+        assert(ch.affected->duration == 5);
+        event_aramus_crown_sleep_check(&ch, nullptr, nullptr, nullptr);
+        assert(count(&ch, SPELL_REGENERATION) == 1);
+        remove_spell(&ch, SPELL_REGENERATION);
+    }
     for (int blocker : {SKILL_REGENERATE, SPELL_PACTUM_SERPENTIS}) {
         char_data ch{};
         ch.specials.position = STAT_NORMAL;
@@ -150,9 +246,11 @@ output = ROOT / 'bin' / 'tests' / 'healing-spell-precedence'
 output.mkdir(parents=True, exist_ok=True)
 harness = output / 'harness.cpp'
 harness.write_text(PRELUDE + '\n'.join([
+    extract_function('specs.eth2.c', 'static affected_type *find_aramus_crown_regeneration('),
     extract_function('magic.c', 'void spell_regeneration('),
     extract_function('magic.c', 'void spell_accel_healing('),
     extract_function('limits.c', 'int hit_regen('),
+    extract_function('specs.eth2.c', 'void event_aramus_crown_sleep_check('),
 ]) + DRIVER)
 binary = output / 'harness'
 subprocess.run(['g++', '-std=c++20', '-Wall', '-Wextra', '-Werror',

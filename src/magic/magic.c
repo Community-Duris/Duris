@@ -12491,7 +12491,8 @@ void spell_regeneration(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 
 	for (struct affected_type *existing = victim->affected; existing; existing = existing->next)
 	{
-		if (existing->type == SPELL_REGENERATION)
+		if (existing->type == SPELL_REGENERATION &&
+		    !IS_SET(existing->flags, AFFTYPE_ARAMUS_CROWN_REGENERATION))
 		{
 			existing->duration = skl_lvl;
 			send_to_char("Your regeneration magic is refreshed!\r\n", victim);

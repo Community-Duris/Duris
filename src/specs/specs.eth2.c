@@ -383,6 +383,15 @@ int eth2_godsfury(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
+static affected_type *find_aramus_crown_regeneration(P_char ch)
+{
+	for (affected_type *af = ch->affected; af; af = af->next)
+		if (af->type == SPELL_REGENERATION &&
+		    IS_SET(af->flags, AFFTYPE_ARAMUS_CROWN_REGENERATION))
+			return af;
+	return nullptr;
+}
+
 int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time;
@@ -410,11 +419,16 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			obj->timer[0] = curr_time;
 			if (!IS_AWAKE(ch))
 			{
-				if (!affected_by_spell(ch, SPELL_REGENERATION))
+				// Keep the Crown independent from normal regeneration so behavior does not
+				// depend on which effect arrived first. To restore historical mutual
+				// exclusion, use affected_by_spell() here and reject Crown-style affects
+				// explicitly in spell_regeneration().
+				if (!find_aramus_crown_regeneration(ch))
 				{
 					bzero(&af, sizeof(af));
 					af.type = SPELL_REGENERATION;
 					af.duration = 10;
+					af.flags = AFFTYPE_ARAMUS_CROWN_REGENERATION;
 					af.location = APPLY_HIT_REG;
 					af.modifier = 3 * GET_LEVEL(ch);
 					affect_to_char(ch, &af);
@@ -552,7 +566,8 @@ void event_aramus_crown_sleep_check(P_char ch, P_char /*vict*/, P_obj /*obj*/, v
 	if (IS_AWAKE(ch))
 	{
 		send_to_char("Your body slows down as you blink the sleep from your eyes.\r\n", ch);
-		affect_from_char(ch, SPELL_REGENERATION);
+		if (affected_type *af = find_aramus_crown_regeneration(ch))
+			affect_remove(ch, af);
 	}
 	else
 	{
