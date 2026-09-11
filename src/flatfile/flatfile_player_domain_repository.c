@@ -846,6 +846,16 @@ flatfile_player_domain_result flatfile_player_domain_establish_initial_player(
 	return establish(root, record, false, error);
 }
 
+flatfile_player_domain_result flatfile_player_domain_restore_recover(const std::string &root,
+								     std::string *error)
+{
+	std::lock_guard<std::mutex> guard(domain_mutex);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return flatfile_player_domain_result::io_error;
+	return recover_authority(root, authority, error);
+}
+
 flatfile_player_domain_result flatfile_player_domain_load(const std::string &root, int32_t pid,
 							  const std::string &account_name,
 							  int8_t racewar,

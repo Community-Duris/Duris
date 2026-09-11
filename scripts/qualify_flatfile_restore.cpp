@@ -1,3 +1,4 @@
+#include "flatfile/flatfile_player_domain_repository.h"
 #include "player/player_save_journal.h"
 #include "persistence/critical_command_journal.h"
 #include "flatfile/flatfile_account_repository.h"
@@ -130,14 +131,8 @@ int main(int argc, char **argv)
 		char mode_error[256] = {};
 		require(persistence_mode_configure(mode_error, sizeof(mode_error)));
 		std::string error;
-		{
-			flatfile_authority_lock lock;
-			require(lock.acquire(root, &error));
-			const auto result =
-				flatfile_authority_transaction_recover(root, lock, &error);
-			require(result == flatfile_authority_transaction_result::ok ||
-				result == flatfile_authority_transaction_result::not_found);
-		}
+		require(flatfile_player_domain_restore_recover(root, &error) ==
+			flatfile_player_domain_result::ok);
 		// Mini-world boot does not materialize every persistent world domain.
 		// Exercise their native decoders before any qualification receipt.
 		require(flatfile_corpse_repository_validate(root, &error));

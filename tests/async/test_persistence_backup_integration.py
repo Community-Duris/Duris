@@ -69,7 +69,8 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 raise RuntimeError("ambiguous fixture source")
             sources.append(str(found[0]))
         subprocess.run(["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-                        "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST", "-Isrc", "-Isrc/no_mysql",
+                        "-D__NO_MYSQL__", "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
+                        "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST", "-Isrc", "-Isrc/no_mysql",
                         "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                         "tests/async/persistence_restore_fixture.cpp", *sources, "-lcrypto", "-lz", "-pthread",
                         "-o", str(cls.fixture)], cwd=ROOT, check=True)
@@ -135,6 +136,39 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(backup.inventory(generation), captured)
         self.assertIn(b"Entering game loop.", (candidate / "service.log").read_bytes())
 
+    def test_interrupted_bank_domain_and_legacy_transactions_restore_exactly_once(self):
+        self.build_native_fixture()
+        for legacy, intent in ((False, ".player-domain-transaction"), (True, ".currency-transaction")):
+            with self.subTest(intent=intent):
+                case_root = self.base / ("legacy-bank" if legacy else "domain-bank")
+                case_root.mkdir(mode=0o700)
+                live = case_root / "live"
+                backup.run([str(self.fixture), "seed", str(live)])
+                player_before = (live / "domains/player-42.domain").read_bytes()
+                bank_before = (live / "domains/bank-account-one-0.domain").read_bytes()
+                backup.run([str(self.fixture), "seed-legacy-bank-interrupted" if legacy else "seed-bank-interrupted", str(live)])
+                self.assertEqual((live / "domains/player-42.domain").read_bytes(), player_before)
+                self.assertNotEqual((live / "domains/bank-account-one-0.domain").read_bytes(), bank_before)
+                self.assertTrue((live / "domains" / intent).is_file())
+                self.p["root"] = case_root / "backups"
+                self.p["live_roots"] = [live]
+                self.p["journal_roots"] = {}
+                before = backup.inventory(live, exclude_locks=True)
+                with mock.patch.dict(os.environ, {"FLATFILE_STATE_DIR": str(live)}):
+                    result = backup.backup(self.p, "flatfile-primary")
+                generation = self.p["root"] / result["generation"]
+                manifest = backup.verify(generation)
+                self.assertIn("state/domains/" + intent, manifest["files"])
+                self.assertTrue(manifest["pending_transaction"])
+                captured = backup.inventory(generation)
+                receipt = restore.restore(self.p, result["generation"], self.ledger())
+                self.assertEqual(receipt["result"], "qualified")
+                candidate = self.p["restore_root"] / receipt["candidate"]
+                recovered = backup.inventory(candidate / "state", exclude_locks=True)
+                backup.run([str(self.fixture), "verify-bank", str(candidate / "state")])
+                self.assertEqual(backup.inventory(candidate / "state", exclude_locks=True), recovered)
+                self.assertEqual(backup.inventory(live, exclude_locks=True), before)
+                self.assertEqual(backup.inventory(generation), captured)
     def test_first_player_snapshot_recovers_from_wal_without_persisted_baseline(self):
         self.build_native_fixture()
         live = self.base / "live"
