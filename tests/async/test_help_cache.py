@@ -83,6 +83,19 @@ int main() {
 '''
 with tempfile.TemporaryDirectory(dir=ROOT / 'bin') as temp:
     temp = Path(temp)
+    replacement = temp / 'replacement.cpp'
+    replacement.write_text('#include <string>\n#include <cassert>\nusing namespace std;\n' +
+                           function('string str_replace(') + r'''
+int main() {
+ string text; for(int i=0;i<20000;++i) text += "[[x]]";
+ auto converted=str_replace(text,"[[","&+c");
+ assert(converted.size()==120000);
+ assert(str_replace("aaaa","a","aa")=="aaaaaaaa");
+ assert(str_replace("abc","", "x")=="abc");
+}
+''')
+    subprocess.run(['g++','-std=c++20',str(replacement),'-o',str(temp/'replacement')],check=True)
+    subprocess.run([str(temp/'replacement')],check=True,timeout=30)
     for name, files in [('refresh', [ROOT / 'tests/async/refresh_cache_harness.cpp']),
                         ('help', [temp / 'help.cpp'])]:
         if name == 'help':

@@ -37,16 +37,21 @@ string trim(string const &str, char const *sep_chars)
 /* replace a string with another string in a string */
 string str_replace(string haystack_, const char *needle_, const char *replace_)
 {
-	string haystack(haystack_);
-	string needle(needle_);
-	string replace(replace_);
-	string::size_type pos = haystack.find(needle);
-
-	if (pos == string::npos)
-		return haystack;
-
-	haystack.replace(pos, needle.length(), replace);
-	return str_replace(haystack, needle_, replace_);
+	const string needle(needle_);
+	if (needle.empty())
+		return haystack_;
+	string result;
+	result.reserve(haystack_.size());
+	size_t begin = 0;
+	for (size_t pos = haystack_.find(needle); pos != string::npos;
+	     pos = haystack_.find(needle, begin))
+	{
+		result.append(haystack_, begin, pos - begin);
+		result += replace_;
+		begin = pos + needle.size();
+	}
+	result.append(haystack_, begin, string::npos);
+	return result;
 }
 
 /* clean up some of the wiki formatting */
