@@ -124,6 +124,16 @@ def service_load(candidate, mode, env):
     backup.require(binary.is_file(), "server_build_required")
     runtime = candidate / "runtime"
     runtime.mkdir(mode=0o700)
+    # Namespace root cannot use the caller's host DAC override to traverse a
+    # checkout in another user's private home (including hosted CI checkouts).
+    # Stage all executed project code under the operator-owned candidate before
+    # entering the namespace, just as we already do with the runtime data.
+    staged_binary = runtime / "server"
+    staged_qualifier = runtime / "qualify_service_restore.py"
+    shutil.copyfile(binary, staged_binary)
+    staged_binary.chmod(0o700)
+    shutil.copyfile(backup.ROOT / "scripts/qualify_service_restore.py", staged_qualifier)
+    staged_qualifier.chmod(0o600)
     (runtime / "logs/log").mkdir(mode=0o700, parents=True)
     for name in ("areas_mini", "lib"):
         shutil.copytree(backup.ROOT / name, runtime / name, symlinks=False)
@@ -136,8 +146,8 @@ def service_load(candidate, mode, env):
                 "-out", str(runtime / "duris.crt")], env=env)
     env = dict(env, PERSISTENCE_MODE=mode)
     backup.run(["unshare", "--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child=KILL",
-                "python3", str(backup.ROOT / "scripts/qualify_service_restore.py"),
-                str(candidate), str(binary)], env=env, timeout=120)
+                "python3", str(staged_qualifier),
+                str(candidate), str(staged_binary)], env=env, timeout=120)
 
 
 def remove_candidate(root, candidate):

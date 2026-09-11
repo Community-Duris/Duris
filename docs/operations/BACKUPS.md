@@ -186,6 +186,10 @@ failure messages, wait for both journals to drain, and require clean shutdown.
 Native postflight requires zero remaining records and no corruption/quarantine;
 authority reconciliation runs again after replay. Namespaces must be available;
 there is no fallback to a host-network boot.
+The server executable and qualification script are copied into the private
+candidate before entering the namespace, so recovery also works from a checkout
+under another user's private home. Include one server executable per retained
+candidate in the recovery filesystem's capacity budget.
 
 QUALIFIED.json is written last and is evidence about this isolated candidate,
 not deployment approval or a full-world gameplay/balance certification.

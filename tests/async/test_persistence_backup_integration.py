@@ -96,6 +96,32 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                                     policy_sha256=backup.digest(ROOT / "migrations/data_lifecycle_manifest.json")))
         return path
 
+    @unittest.skipUnless(os.geteuid() == 0, "requires root to model a foreign-owned checkout")
+    def test_isolated_service_boot_from_private_foreign_owned_checkout(self):
+        self.build_native_fixture()
+        candidate = self.p["restore_root"] / "candidate-private-checkout"
+        candidate.mkdir(mode=0o700)
+        backup.write_json(candidate / "ISOLATED_RESTORE", {"generation": "synthetic"})
+        backup.run([str(self.fixture), "seed", str(candidate / "state")])
+        checkout = self.base / "private-checkout"
+        checkout.mkdir(mode=0o700)
+        for name in ("areas_mini", "lib"):
+            shutil.copytree(ROOT / name, checkout / name)
+        for name in ("bin/server/dms_restore_flatfile", "scripts/qualify_service_restore.py"):
+            destination = checkout / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / name, destination)
+        # Outer root can read this checkout, but mapped namespace root has no
+        # host CAP_DAC_OVERRIDE and cannot traverse it. Do not relax its mode.
+        os.chown(checkout, 65534, 65534)
+        env = dict(restore.clean_environment(candidate), FLATFILE_STATE_DIR=str(candidate / "state"))
+        with mock.patch.object(backup, "ROOT", checkout):
+            restore.service_load(candidate, "flatfile-primary", env)
+        self.assertEqual(checkout.stat().st_uid, 65534)
+        self.assertEqual(checkout.stat().st_mode & 0o777, 0o700)
+        for journal in ("players/player-save.journal", "critical/critical-command.journal"):
+            self.assertEqual((candidate / "journals" / journal).stat().st_size, 0)
+
     def seed_wal(self, live, blocked=False):
         backup.run([str(self.fixture), "seed-wal-blocked" if blocked else "seed-wal", str(live)])
         journals = live.parent / "journals"
