@@ -189,3 +189,7 @@ publication code under ASan/UBSan with nested 1/15/100-root fixtures, refusals,
 pending coin work, stale topology, and duplicate completions. The combat journey
 also runs with boons enabled and checks ordinary recovery, conservation, disputed
 custody evidence before release, and exactly-once death consequences on restart.
+
+The [corpse batch verification guide](../operations/corpse-creation-batches.md)
+documents the real MariaDB character journey, isolated database setup, and the
+minimal-world restart coverage limits.
