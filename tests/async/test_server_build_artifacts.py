@@ -12,6 +12,21 @@ from unittest.mock import patch
 
 import server_build_artifacts as artifacts
 
+# Recursive/parallel Make may prepend directory or progress lines. They are
+# not compiler names, and must not reach shutil.which / Path(None).
+with patch.object(artifacts.subprocess, 'check_output', return_value=
+                  "make[2]: Entering directory '/tmp/build'\n"
+                  "DURIS_ARTIFACT_CC=g++\nDURIS_ARTIFACT_FLAGS=-O1 -pthread\n"
+                  "make[2]: Leaving directory '/tmp/build'\n"):
+    assert artifacts.effective_configuration({}) == 'g++\n-O1 -pthread'
+with patch.object(artifacts.subprocess, 'check_output', return_value='g++\n'):
+    try:
+        artifacts.effective_configuration({})
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError('incomplete artifact configuration was accepted')
+
 
 # Exercise real GNU Make, including recursive invocation banners and inherited
 # command-line overrides; mocking toolchain_key alone missed the CI failure.

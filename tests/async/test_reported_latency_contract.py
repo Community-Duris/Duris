@@ -10,7 +10,7 @@ properties = (ROOT / "lib" / "duris.properties").read_text(encoding="utf-8", err
 
 help_body = re.search(r"void do_help\(.*?\n}\n\nvoid do_wizhelp", actinf, re.S)
 assert help_body, "do_help body not found"
-assert 'help.cooldown.secs' in help_body.group(0)
+assert 'help.cooldown.secs' not in help_body.group(0)
 assert 'CharWait(' not in help_body.group(0), "help must not impose command lag"
 assert 'help.lag.pulses' not in properties, "obsolete help lag property remains active"
 

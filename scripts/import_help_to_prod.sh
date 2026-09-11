@@ -26,7 +26,7 @@
 #   ./scripts/import_help_to_prod.sh --remote myserver.com --user admin
 #   ./scripts/import_help_to_prod.sh --remote 10.0.0.5 --user duris --dry-run
 
-set -e
+set -e -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_DIR"
@@ -188,14 +188,14 @@ execute_sql() {
         # The remote account supplies credentials through its protected MySQL
         # client configuration (for example ~/.my.cnf).
         printf '%s\n' "$sql" |
-            ssh "$REMOTE_USER@$REMOTE_HOST" mysql --user="$MYSQL_USER" "$MYSQL_DB"
+            ssh "$REMOTE_USER@$REMOTE_HOST" mysql --skip-force --user="$MYSQL_USER" "$MYSQL_DB"
     else
         # Local mode: execute directly using MYSQL_PWD from the environment.
         if [ -n "$MYSQL_SOCKET" ]; then
-            echo "$sql" | mysql --protocol=socket --socket="$MYSQL_SOCKET" \
+            echo "$sql" | mysql --skip-force --protocol=socket --socket="$MYSQL_SOCKET" \
                 -u"$MYSQL_USER" "$MYSQL_DB"
         else
-            echo "$sql" | mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" \
+            echo "$sql" | mysql --skip-force -h"$MYSQL_HOST" -P"$MYSQL_PORT" \
                 -u"$MYSQL_USER" "$MYSQL_DB"
         fi
     fi
@@ -206,17 +206,28 @@ execute_sql_file() {
     local sqlfile="$1"
     if [ $USE_SSH -eq 1 ]; then
         # Stream the SQL over SSH instead of creating a predictable remote file.
-        ssh "$REMOTE_USER@$REMOTE_HOST" mysql --user="$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
+        ssh "$REMOTE_USER@$REMOTE_HOST" mysql --skip-force --user="$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
     else
         # Local mode: execute directly using MYSQL_PWD from the environment.
         if [ -n "$MYSQL_SOCKET" ]; then
-            mysql --protocol=socket --socket="$MYSQL_SOCKET" \
+            mysql --skip-force --protocol=socket --socket="$MYSQL_SOCKET" \
                 -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
         else
-            mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" \
+            mysql --skip-force -h"$MYSQL_HOST" -P"$MYSQL_PORT" \
                 -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
         fi
     fi
+}
+
+# Build every change before sending one transaction to the server. A generation
+# failure or SQL error must leave both help tables unchanged.
+IMPORT_SQL_FILE="$TEMP_DIR/catalog.sql"
+export IMPORT_SQL_FILE
+printf '%s\n' "SET SESSION sql_mode=CONCAT_WS(',',@@sql_mode,'STRICT_ALL_TABLES','NO_BACKSLASH_ESCAPES');" 'START TRANSACTION;' > "$IMPORT_SQL_FILE"
+
+stage_sql_file() {
+    cat "$1" >> "$IMPORT_SQL_FILE" &&
+    printf '\n' >> "$IMPORT_SQL_FILE"
 }
 
 # ============================================================================
@@ -266,6 +277,11 @@ if [ $DRY_RUN -eq 0 ]; then
         fi
         exit 1
     fi
+    engines=$(execute_sql "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name IN ('pages','mud_info') AND engine='InnoDB';" | tail -n 1)
+    if [ "$engines" != "2" ]; then
+        echo "ERROR: atomic import requires existing InnoDB pages and mud_info tables."
+        exit 1
+    fi
     echo "Connected successfully!"
     echo ""
 fi
@@ -279,7 +295,7 @@ if [ $CLEAN_DB -eq 1 ]; then
 
     if [ $DRY_RUN -eq 1 ]; then
         echo "WOULD CLEAN:"
-        echo "  - TRUNCATE TABLE pages (all help entries)"
+        echo "  - DELETE FROM pages (all help entries)"
         echo "  - DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits')"
         echo ""
     else
@@ -291,23 +307,23 @@ if [ $CLEAN_DB -eq 1 ]; then
         fi
 
         echo "Cleaning pages table..."
-        if execute_sql "TRUNCATE TABLE pages;" 2>&1; then
-            echo "  ✓ pages table cleared"
+        if printf '%s\n' "DELETE FROM pages;" >> "$IMPORT_SQL_FILE"; then
+            echo "  ✓ pages deletion staged"
         else
-            echo "  ERROR: Failed to truncate pages table"
+            echo "  ERROR: Failed to stage pages deletion"
             exit 1
         fi
 
         echo "Cleaning mud_info entries..."
-        if execute_sql "DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits');" 2>&1; then
-            echo "  ✓ mud_info entries cleared"
+        if printf '%s\n' "DELETE FROM mud_info WHERE name IN ('news', 'motd', 'wizmotd', 'credits');" >> "$IMPORT_SQL_FILE"; then
+            echo "  ✓ mud_info deletion staged"
         else
-            echo "  ERROR: Failed to clear mud_info entries"
+            echo "  ERROR: Failed to stage mud_info deletion"
             exit 1
         fi
 
         echo ""
-        echo "Database cleaned successfully!"
+        echo "Database cleanup staged; no changes committed yet."
         echo ""
     fi
 fi
@@ -351,20 +367,20 @@ for filename in "${!MUD_INFO_FILES[@]}"; do
         continue
     fi
 
-    tmpfile=$(mktemp)
+    tmpfile=$(mktemp "$TEMP_DIR/content.XXXXXX")
 
     # Create SQL with hex encoding
     {
-        echo -n "REPLACE INTO mud_info (name, content) VALUES ('$name', 0x"
-        xxd -p "$filepath" | tr -d '\n'
-        echo ");"
+        echo -n "REPLACE INTO mud_info (name, content) VALUES ('$name', X'"
+        od -An -v -tx1 "$filepath" | tr -d ' \n'
+        echo "');"
     } > "$tmpfile"
 
     if [ $DRY_RUN -eq 1 ]; then
         echo "  WOULD IMPORT: $name ($(wc -c < "$filepath") bytes)"
     else
-        if execute_sql_file "$tmpfile" 2>&1; then
-            echo "  IMPORTED: $name ($(wc -c < "$filepath") bytes)"
+        if stage_sql_file "$tmpfile"; then
+            echo "  STAGED: $name ($(wc -c < "$filepath") bytes)"
         else
             echo "  ERROR importing $name"
             exit 1
@@ -394,22 +410,22 @@ for filename in "${!HELP_FILES[@]}"; do
 
     PAGE_TITLES_WRITTEN+=("$title")
 
-    tmpfile=$(mktemp)
+    tmpfile=$(mktemp "$TEMP_DIR/content.XXXXXX")
     now=$(date '+%Y-%m-%d %H:%M:%S')
 
     # Use hex encoding for content with DELETE then INSERT
     {
         echo "DELETE FROM pages WHERE title = '$title';"
-        echo -n "INSERT INTO pages (title, text, last_update, last_update_by, category_id) VALUES ('$title', 0x"
-        xxd -p "$filepath" | tr -d '\n'
-        echo ", '$now', 'Arih_importDB', 0);"
+        echo -n "INSERT INTO pages (title, text, last_update, last_update_by, category_id) VALUES ('$title', X'"
+        od -An -v -tx1 "$filepath" | tr -d ' \n'
+        echo "', '$now', 'Arih_importDB', 0);"
     } > "$tmpfile"
 
     if [ $DRY_RUN -eq 1 ]; then
         echo "  WOULD IMPORT: '$title' from $filename ($(wc -c < "$filepath") bytes)"
     else
-        if execute_sql_file "$tmpfile" 2>&1; then
-            echo "  IMPORTED: '$title' from $filename ($(wc -c < "$filepath") bytes)"
+        if stage_sql_file "$tmpfile"; then
+            echo "  STAGED: '$title' from $filename ($(wc -c < "$filepath") bytes)"
         else
             echo "  ERROR importing '$title'"
             exit 1
@@ -713,29 +729,11 @@ for title, content in entries:
 INSERT INTO pages (title, text, last_update, last_update_by, category_id)
 VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
 
-    # Execute based on mode (SSH or local)
-    if USE_SSH == 1:
-        mysql_result = subprocess.run(
-            ['ssh', f'{REMOTE_USER}@{REMOTE_HOST}',
-             'mysql', f'--user={MYSQL_USER}', MYSQL_DB],
-            input=sql, capture_output=True, text=True
-        )
-    else:
-        # Local mode inherits MYSQL_PWD from the parent environment.
-        connection = (["--protocol=socket", f"--socket={MYSQL_SOCKET}"]
-                      if MYSQL_SOCKET else [f"-h{MYSQL_HOST}", f"-P{MYSQL_PORT}"])
-        mysql_result = subprocess.run(
-            ['mysql', *connection, f'-u{MYSQL_USER}', MYSQL_DB],
-            input=sql, capture_output=True, text=True
-        )
-
-    if mysql_result.returncode == 0:
-        success_count += 1
-        if success_count % 50 == 0:
-            print(f"  Imported {success_count}/{len(entries)} entries...")
-    else:
-        print(f"  ERROR importing '{title}': {mysql_result.stderr}", file=sys.stderr)
-        error_count += 1
+    with open(os.environ["IMPORT_SQL_FILE"], "a", encoding="utf-8") as staged:
+        staged.write(sql + "\n")
+    success_count += 1
+    if success_count % 50 == 0:
+        print(f"  Staged {success_count}/{len(entries)} entries...")
 
 print(f"")
 print(f"Help Index Import Complete:")
@@ -896,29 +894,11 @@ for title, content in entries:
 INSERT INTO pages (title, text, last_update, last_update_by, category_id)
 VALUES ('{safe_title}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
 
-    # Execute based on mode (SSH or local)
-    if USE_SSH == 1:
-        mysql_result = subprocess.run(
-            ['ssh', f'{REMOTE_USER}@{REMOTE_HOST}',
-             'mysql', f'--user={MYSQL_USER}', MYSQL_DB],
-            input=sql, capture_output=True, text=True
-        )
-    else:
-        # Local mode inherits MYSQL_PWD from the parent environment.
-        connection = (["--protocol=socket", f"--socket={MYSQL_SOCKET}"]
-                      if MYSQL_SOCKET else [f"-h{MYSQL_HOST}", f"-P{MYSQL_PORT}"])
-        mysql_result = subprocess.run(
-            ['mysql', *connection, f'-u{MYSQL_USER}', MYSQL_DB],
-            input=sql, capture_output=True, text=True
-        )
-
-    if mysql_result.returncode == 0:
-        success_count += 1
-        if success_count % 50 == 0:
-            print(f"  Imported {success_count}/{len(entries)} entries...")
-    else:
-        print(f"  ERROR importing '{title}': {mysql_result.stderr}", file=sys.stderr)
-        error_count += 1
+    with open(os.environ["IMPORT_SQL_FILE"], "a", encoding="utf-8") as staged:
+        staged.write(sql + "\n")
+    success_count += 1
+    if success_count % 50 == 0:
+        print(f"  Staged {success_count}/{len(entries)} entries...")
 
 print(f"")
 print(f"Parsed Help Import Complete:")
@@ -937,5 +917,12 @@ echo ""
 if [ $DRY_RUN -eq 1 ]; then
     echo "=== Dry run complete. Run without --dry-run to apply to the selected database ==="
 else
-    echo "=== All Import Operations Complete! ==="
+    printf '%s\n' 'COMMIT;' >> "$IMPORT_SQL_FILE"
+    if ! execute_sql_file "$IMPORT_SQL_FILE"; then
+        echo "ERROR: import failed; transaction rolled back on disconnect."
+        exit 1
+    fi
+    echo "=== All Import Operations Committed Atomically! ==="
+    echo "Help refreshes in the background within 60 seconds after an idle refresh slot is available."
+    echo "Use page help for an immediate refresh and page help status to confirm publication."
 fi

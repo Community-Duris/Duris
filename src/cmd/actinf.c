@@ -7064,19 +7064,7 @@ void do_weather(P_char ch, char * /*argument*/, int /*cmd*/)
 void do_help(P_char ch, char *argument, int /*cmd*/)
 {
 	char *attribs;
-	int help_cooldown;
-
-	// Get configurable rate limit values
-	help_cooldown = (int)get_property("help.cooldown.secs", 2);
-
-	// Check cooldown timer (prevent rapid spam)
-	if (!affect_timer(ch, help_cooldown, TAG_HELP_COOLDOWN))
-	{
-		send_to_char("&+RYou must wait a moment before requesting more help.&n\n", ch);
-		return;
-	}
-
-	// Execute help lookup (database queries)
+	// Catalog reads do not impose a character wait or a browsing cooldown.
 	send_to_char(wiki_help(string(argument)).c_str(), ch);
 	send_to_char("\n", ch);
 

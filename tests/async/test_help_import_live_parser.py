@@ -55,7 +55,12 @@ for block in (import_block_2, import_block_3):
 assert "selected database" in source
 assert 'MYSQL_SOCKET="${DB_SOCKET:-}"' in source
 assert source.count('--protocol=socket --socket="$MYSQL_SOCKET"') == 2
-assert source.count('f"--socket={MYSQL_SOCKET}"') == 2
+assert 'f"--socket={MYSQL_SOCKET}"' not in source
+for block in (import_block_2, import_block_3):
+    assert 'os.environ["IMPORT_SQL_FILE"]' in block
+    assert "subprocess.run(" not in block
+assert "TRUNCATE TABLE" not in source
+assert "START TRANSACTION;" in source and "COMMIT;" in source
 assert "~535" not in source
 for missing_source in ("helpguild1", "helpguild2", '["info"]'):
     assert missing_source not in source
