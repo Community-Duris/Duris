@@ -232,7 +232,8 @@ bool capture_batch_corpse_metadata(P_char actor, P_obj const *roots, size_t root
 				   item_corpse_metadata *metadata)
 {
 	if (!actor || !roots || !root_count || !corpse || !metadata ||
-	    reason != item_transfer_reason::corpse_loot)
+	    (reason != item_transfer_reason::corpse_loot &&
+	     reason != item_transfer_reason::corpse_create))
 		return false;
 	int64_t selected_weight = 0;
 	for (size_t index = 0; index < root_count; ++index)
@@ -243,13 +244,17 @@ bool capture_batch_corpse_metadata(P_char actor, P_obj const *roots, size_t root
 		P_obj outer = root;
 		while (OBJ_INSIDE(outer) && outer->loc.inside)
 			outer = outer->loc.inside;
-		if (outer != corpse)
+		if (reason == item_transfer_reason::corpse_create ? !OBJ_CARRIED_BY(root, actor) :
+								    outer != corpse)
 			return false;
 		selected_weight += GET_OBJ_WEIGHT(root);
 	}
 	if (!capture_corpse_metadata(actor, roots[0], corpse, reason, metadata))
 		return false;
-	const int64_t post_weight = static_cast<int64_t>(corpse->weight) - selected_weight;
+	const int64_t post_weight = static_cast<int64_t>(corpse->weight) +
+				    (reason == item_transfer_reason::corpse_create ?
+					     selected_weight :
+					     -selected_weight);
 	if (post_weight < INT32_MIN || post_weight > INT32_MAX)
 		return false;
 	metadata->weight = static_cast<int32_t>(post_weight);
@@ -905,6 +910,52 @@ void account_health()
 	}
 }
 
+/** Validate the complete captured topology before publishing a corpse batch. */
+bool corpse_batch_live_ready(P_char actor, const pending_movement &entry)
+{
+	P_obj corpse = find_item(entry.requested_corpse_uid);
+	if (!actor || !corpse || GET_ITEM_TYPE(corpse) != ITEM_CORPSE ||
+	    item_corpse_owner_id(corpse->value[CORPSE_PID], corpse->value[CORPSE_SAVEID]) !=
+		    entry.payload.to_owner.id)
+		return false;
+	size_t live_children = 0, captured_children = 0;
+	for (size_t index = 0; index < entry.payload.item_count; ++index)
+	{
+		const auto &captured = entry.payload.items[index];
+		P_obj object = find_item(captured.item_uid);
+		if (!object ||
+		    (captured.parent_item_uid ?
+			     !OBJ_INSIDE(object) || !object->loc.inside ||
+				     object->loc.inside->obj_uid != captured.parent_item_uid :
+			     !OBJ_CARRIED_BY(object, actor)))
+			return false;
+		P_obj linked = captured.parent_item_uid ? object->loc.inside->contains :
+							  actor->carrying;
+		size_t traversed = 0;
+		while (linked && linked != object && traversed++ < ITEM_TRANSFER_MAX_ITEMS)
+			linked = linked->next_content;
+		if (linked != object)
+			return false;
+		captured_children += captured.parent_item_uid != 0;
+		for (P_obj child = object->contains; child; child = child->next_content)
+			if (++live_children > entry.payload.item_count)
+				return false;
+	}
+	return live_children == captured_children;
+}
+
+void publish_corpse_batch(const pending_movement &entry)
+{
+	P_obj corpse = find_item(entry.requested_corpse_uid);
+	for (size_t index = 0; index < entry.payload.item_count; ++index)
+		if (!entry.payload.items[index].parent_item_uid)
+		{
+			P_obj root = find_item(entry.payload.items[index].item_uid);
+			obj_from_char(root);
+			obj_to_obj(root, corpse);
+		}
+}
+
 /** Publish a completion, retaining committed work if the live registry cannot advance. */
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
@@ -915,6 +966,20 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
+	const bool corpse_batch = entry.payload.multi_root &&
+				  entry.payload.reason == item_transfer_reason::corpse_create;
+	if (committed && corpse_batch && !corpse_batch_live_ready(actor, entry))
+	{
+		if (!entry.publication_failed)
+		{
+			entry.publication_failed = true;
+			++health.stale_publications;
+			logit(LOG_FILE, "corpse batch publication retained (pid=%u)",
+			      entry.actor_pid);
+		}
+		account_health();
+		return;
+	}
 	bool registry_applied = entry.registry_applied;
 	if (committed && !registry_applied)
 	{
@@ -1051,6 +1116,8 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
+	if (committed && corpse_batch)
+		publish_corpse_batch(entry);
 	const item_movement_completion_fn completion_fn = entry.completion;
 	const auto context = entry.context;
 	const size_t context_size = entry.context_size;
@@ -1237,7 +1304,8 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 	if (!reject)
 		reject = &discarded;
 	*reject = item_movement_reject::none;
-	const bool corpse_transfer = reason == item_transfer_reason::corpse_loot;
+	const bool corpse_transfer = reason == item_transfer_reason::corpse_loot ||
+				     reason == item_transfer_reason::corpse_create;
 	const bool creation = from_owner.type == item_owner_type::system &&
 			      to_owner.type == item_owner_type::player &&
 			      reason == item_transfer_reason::creation;

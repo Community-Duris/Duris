@@ -62,6 +62,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      item_movement_completion_fn completion, const void *context,
 				      size_t context_size, P_obj corpse_context = NULL,
 				      item_movement_reject *reject = NULL);
+// A corpse_create batch validates and publishes all captured live roots before
+// invoking completion. Its callback persists/finalizes the corpse, not the moves.
+// Stale topology retains the movement and busy fence without calling completion.
 bool item_movement_transaction_submit_batch(
 	P_char actor, P_obj const *roots, size_t root_count, P_obj target_container,
 	const item_owner_identity &from_owner, const item_owner_identity &to_owner,

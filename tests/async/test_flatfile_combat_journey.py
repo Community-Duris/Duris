@@ -253,6 +253,24 @@ def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
     return ghost_uid
 
 
+def attack_until_death(client: MudClient) -> None:
+    """A fumbled initial hit can leave both combatants standing; try again."""
+    deadline = time.monotonic() + 45
+    client.send("hit executioner")
+    while True:
+        remaining = deadline - time.monotonic()
+        require(remaining > 0, "executioner did not kill the fixture player")
+        outcome, _ = client.expect_any((
+            "Your wounds claim you at last",
+            "You stumble, but recover in time!",
+            "You stumble in your attack, and jab at",
+            "You stumble in your attack, and hit yourself!",
+        ), timeout=remaining)
+        if outcome == "Your wounds claim you at last":
+            return
+        client.send("hit executioner")
+
+
 def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) -> dict:
     client = reconnect_character(port)
     try:
@@ -265,8 +283,7 @@ def disputed_death(port: int, state_root: pathlib.Path, run_root: pathlib.Path) 
                     for item in inspect_authority(state_root)["player_items"]),
                 "conflicting durable custody was not installed")
         # Wait for the real repository refusal while the character remains live.
-        client.send("hit executioner")
-        client.expect("Your wounds claim you at last", timeout=30)
+        attack_until_death(client)
         deadline = time.monotonic() + 15
         while f"error={errno.EMSGSIZE} disputed=1" not in runtime_logs(run_root):
             require(time.monotonic() < deadline, "death did not reach EMSGSIZE refusal")
@@ -503,8 +520,7 @@ def verify_npc_loot_and_die(port: int) -> None:
     try:
         client.send("inventory")
         client.expect("a banana", timeout=15)
-        client.send("hit executioner")
-        client.expect("Your wounds claim you at last", timeout=30)
+        attack_until_death(client)
         client.expect("ACCOUNT MENU", timeout=45)
         client.send("0")
     finally:
@@ -551,7 +567,9 @@ def build_flatfile_server(build_root: pathlib.Path) -> pathlib.Path:
 
 
 def run_journey(binary: pathlib.Path, reset_coins: bool = False,
-                first_session_only: bool = False, populated_bank: bool = False) -> None:
+                first_session_only: bool = False, populated_bank: bool = False,
+                boons_enabled: bool = False) -> None:
+    print(f"combat journey: reset_coins={reset_coins} boons_enabled={boons_enabled}", flush=True)
     with tempfile.TemporaryDirectory(prefix="duris-combat-state-") as state_tmp:
         with tempfile.TemporaryDirectory(prefix="duris-combat-run-") as run_tmp:
             state_root = pathlib.Path(state_tmp)
@@ -627,8 +645,9 @@ def run_journey(binary: pathlib.Path, reset_coins: bool = False,
                         from test_flatfile_first_session_currency import verify_first_session
                         verify_first_session(client, plain_port, state_root, populated_bank)
                         return
-                    client.send("toggle boon")
-                    client.expect("You will no longer be affected by boons.")
+                    if not boons_enabled:
+                        client.send("toggle boon")
+                        client.expect("You will no longer be affected by boons.")
                     complete_npc_combat_journey(client, reset_coins)
                     client.close()
                     client = None
@@ -725,4 +744,5 @@ if __name__ == "__main__":
         binary = build_flatfile_server(pathlib.Path(build_tmp))
         run_journey(binary)
         run_journey(binary, reset_coins=True)
+        run_journey(binary, boons_enabled=True)
     print("flat-file combat, player death, corpse recovery, save, and reconnect journey passed")

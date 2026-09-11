@@ -337,6 +337,7 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 					  payload.reason == item_transfer_reason::locker_deposit ||
 					  payload.reason == item_transfer_reason::locker_withdraw ||
 					  payload.reason == item_transfer_reason::corpse_loot ||
+					  payload.reason == item_transfer_reason::corpse_create ||
 					  payload.reason == item_transfer_reason::destruction;
 		const bool creation_batch = creation &&
 					    payload.reason == item_transfer_reason::creation;

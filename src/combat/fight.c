@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <math.h>
 #include <set>
+#include <vector>
 #include <stdio.h>
 #include <string.h>
 #include "account/account_reward.h"
@@ -1460,6 +1461,8 @@ bool AdjacentInRoom(P_char ch, P_char ch2)
 	return FALSE;
 }
 
+static void wake_death_extract_retry(P_char ch);
+
 namespace
 {
 struct corpse_transfer_context
@@ -1506,7 +1509,7 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 	corpse_transfer_context context = {};
 	memcpy(&context, encoded, sizeof(context));
 	P_obj corpse = corpse_live_item(context.corpse_uid);
-	P_obj item = corpse_live_item(context.item_uid);
+	P_obj item = context.item_uid ? corpse_live_item(context.item_uid) : NULL;
 	if (!committed)
 	{
 		// Resubmitting reproduces the refusal. The death is finalized through the
@@ -1517,7 +1520,7 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 				  context.item_uid, error_code);
 		return;
 	}
-	if (!corpse || !item || !OBJ_CARRIED_BY(item, character) ||
+	if (!corpse || (context.item_uid && (!item || !OBJ_CARRIED_BY(item, character))) ||
 	    corpse->value[CORPSE_SAVEID] != static_cast<int>(context.corpse_save_id))
 	{
 		persistence_alert(AVATAR, "corpse", "ownership_publish", "none", "none",
@@ -1530,13 +1533,23 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 		    static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]), result.corpse_revision))
 		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
 				  "runtime_rejected", "save_id=%d", corpse->value[CORPSE_SAVEID]);
-	obj_from_char(item);
-	obj_to_obj(item, corpse);
+	if (item)
+	{
+		obj_from_char(item);
+		obj_to_obj(item, corpse);
+	}
 	mark_player_dirty_components(GET_PID(character), PLAYER_COMPONENT_STATUS |
 								 PLAYER_COMPONENT_EQUIPMENT |
 								 PLAYER_COMPONENT_INVENTORY);
-	writeCorpse(corpse);
-	(void)submit_next_corpse_item(character, corpse);
+	// Batch publication has already installed every captured root. Legacy roots
+	// without registry entries are adopted through the single-root path first.
+	if (character->carrying)
+		(void)submit_next_corpse_item(character, corpse);
+	else
+	{
+		writeCorpse(corpse);
+		wake_death_extract_retry(character);
+	}
 }
 
 bool submit_next_corpse_item(P_char character, P_obj corpse)
@@ -1545,17 +1558,23 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 		return false;
 	const item_owner_identity source = { item_owner_type::player,
 					     static_cast<uint64_t>(GET_PID(character)), 0 };
-	P_obj item = NULL;
+	std::vector<P_obj> roots;
+	P_obj unregistered = NULL;
 	item_ownership_runtime_entry runtime = {};
 	for (P_obj candidate = character->carrying; candidate; candidate = candidate->next_content)
-		if (candidate->obj_uid &&
-		    (!item_ownership_runtime_lookup(candidate->obj_uid, &runtime) ||
-		     item_owner_identity_equal(runtime.owner, source)))
+	{
+		if (!candidate->obj_uid ||
+		    (item_ownership_runtime_lookup(candidate->obj_uid, &runtime) &&
+		     !item_owner_identity_equal(runtime.owner, source)))
 		{
-			item = candidate;
-			break;
+			note_corpse_transfer_dispute(character);
+			return false;
 		}
-	if (!item)
+		if (!item_ownership_runtime_lookup(candidate->obj_uid, &runtime))
+			unregistered = candidate;
+		roots.push_back(candidate);
+	}
+	if (roots.empty())
 	{
 		writeCorpse(corpse);
 		return true;
@@ -1567,15 +1586,28 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 		0
 	};
 	const corpse_transfer_context context = {
-		corpse->obj_uid, item->obj_uid, static_cast<uint64_t>(corpse->value[CORPSE_SAVEID])
+		corpse->obj_uid, unregistered ? unregistered->obj_uid : 0,
+		static_cast<uint64_t>(corpse->value[CORPSE_SAVEID])
 	};
-	if (!item_movement_transaction_submit(character, item, NULL, source, destination,
-					      item_transfer_reason::corpse_create,
-					      corpse->value[CORPSE_SAVEID], corpse_item_completion,
-					      &context, sizeof(context), corpse))
+	item_movement_reject reject = item_movement_reject::none;
+	const bool submitted = unregistered ?
+				       item_movement_transaction_submit(
+					       character, unregistered, NULL, source, destination,
+					       item_transfer_reason::corpse_create,
+					       corpse->value[CORPSE_SAVEID], corpse_item_completion,
+					       &context, sizeof(context), corpse, &reject) :
+				       item_movement_transaction_submit_batch(
+					       character, roots.data(), roots.size(), NULL, source,
+					       destination, item_transfer_reason::corpse_create,
+					       corpse->value[CORPSE_SAVEID], corpse_item_completion,
+					       &context, sizeof(context), corpse, &reject);
+	if (!submitted)
 	{
+		if (!item_movement_reject_is_transient(reject))
+			note_corpse_transfer_dispute(character);
 		persistence_alert(AVATAR, "corpse", "ownership_submit", "none", "none",
-				  "failed_preserved", "item_uid=%llu", item->obj_uid);
+				  "failed_preserved", "roots=%zu reason=%d", roots.size(),
+				  static_cast<int>(reject));
 		return false;
 	}
 	return true;
@@ -2444,7 +2476,7 @@ void kill_gain(P_char ch, P_char victim);
  * re-attempt the save and finish the death the moment it lands.
  *
  * The same deferral covers make_corpse()'s asynchronous ownership handoff.
- * submit_next_corpse_item() moves the corpse's items one transaction at a time
+ * submit_next_corpse_item() moves registered corpse roots in one transaction
  * and each completion is only published while the owner is still live, so
  * extracting the character mid-chain stranded the remaining items as active
  * rows in item_current_owner while the terminal save wrote an empty
@@ -2602,6 +2634,19 @@ static void schedule_death_extract_retry(P_char ch, uint64_t corpse_uid, int del
 	}
 }
 
+/** Run the existing guarded finalizer on the next pulse after publication. */
+static void wake_death_extract_retry(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || GET_STAT(ch) != STAT_DEAD)
+		return;
+	// Reschedule the existing event, preserving its corpse identity and avoiding
+	// extraction inside the coordinator's completion dispatch.
+	if (P_nevent event = get_scheduled(ch, event_death_extract_retry))
+		(void)nevent_reschedule_after(nevent_handle_from_event(event), 0);
+	if (ch->only.pc->death_retry_due_usec)
+		ch->only.pc->death_retry_due_usec = persistence_observability_now_usec();
+}
+
 /** Retry failed event admission from the game thread without extracting unsaved state. */
 void death_extract_retry_pulse(void)
 {
@@ -2662,9 +2707,9 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		// Poll them steadily so the account menu follows the final handoff
 		// promptly; reserve exponential backoff for an actual save failure.
 		//
-		// THE POLL ITSELF IS NOT NEWS (issue #174). Every carried item costs
-		// its own transaction, so a well-equipped death spends a poll per
-		// item, and each one was broadcasting at AVATAR to every immortal
+		// THE POLL ITSELF IS NOT NEWS (issue #174). The old single-item
+		// transfer chain spent multiple polls draining, each broadcasting
+		// at AVATAR to every immortal
 		// online -- a death that was draining correctly read as a database
 		// stall. The routine wait belongs in the log. The channel hears about
 		// it only once the wait is long enough that someone should look, and
