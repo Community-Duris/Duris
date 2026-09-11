@@ -3065,6 +3065,7 @@ void persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const
 bool persistence_flush_character_saves(P_char ch);
 bool persistence_flush_all_character_saves(void);
 bool persistence_save_character_terminal(P_char ch, int type);
+bool persistence_save_character_terminal_database_acknowledged(P_char ch, int type);
 bool persistence_save_all_characters_terminal(int type);
 void sprint64bit(ulong *, const char **, char *);
 void sprintbit(ulong, const char **, char *);

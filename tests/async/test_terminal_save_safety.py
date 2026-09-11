@@ -45,6 +45,8 @@ checks = {
     "ghost extraction gate": actoth.count("persistence_save_character_terminal(vict, RENT_LINKDEAD)") == 0,
     "copyover returns failure": "bool copyover_save(" in copyover and copyover.count("return false;") >= 10,
     "copyover saves before close": copyover.index("persistence_save_character_terminal") < copyover.index("close(d->descriptor)"),
+    "copyover requires database-acknowledged terminal saves":
+        "persistence_save_character_terminal_database_acknowledged(" in copyover,
     "shutdown resumes": "goto resume_game_loop;" in comm and "shutdown_cancelled=1" in comm,
     "artifact dummy retention": artifact.count("extract_refused=1") >= 2,
     "legacy locker retention": "terminal_not_durable" in lockers and
@@ -71,6 +73,21 @@ checks["terminal helper uses typed coordinator outcome"] = all(
         "terminal-save-retry",
     )
 ) and "do_save_silent" not in terminal_helper and "writeCharacter" not in terminal_helper
+
+database_terminal_start = actoth.find(
+    "bool persistence_save_character_terminal_database_acknowledged"
+)
+database_terminal_helper = (
+    actoth[database_terminal_start:
+           actoth.index("bool persistence_save_all_characters_terminal", database_terminal_start)]
+    if database_terminal_start >= 0 else ""
+)
+checks["database terminal helper rejects journal-only durability"] = (
+    database_terminal_start >= 0 and
+    "persistence_save_character_terminal_with_policy(ch, type, 5000, false)" in
+        database_terminal_helper and
+    "player_save_terminal_result::journal_durable" not in database_terminal_helper
+)
 
 player_sql_start = files.index("if (!sql_save_player(ch, type, room))")
 player_sql_failure = files[

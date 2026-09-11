@@ -143,10 +143,12 @@ assert flat_fence.index("database_acknowledged") < flat_fence.index(
 )
 terminal_save = section(
     ACTOTH,
-    "bool persistence_save_character_terminal(P_char ch, int type)",
+    "static bool persistence_save_character_terminal_with_policy",
     "bool persistence_save_all_characters_terminal",
 )
 assert "allow_journal_handoff = false" in terminal_save
+assert "persistence_save_character_terminal_with_policy(ch, type, 2000, true)" in terminal_save
+assert "persistence_save_character_terminal_with_policy(ch, type, 5000, false)" in terminal_save
 init_char = section(NANNY, "void init_char(P_char ch)", "int approve_mode")
 assert "player_revision_hydrate(ch->only.pc->pid, 0)" in init_char
 print("[PASS] flat baselines and terminal extraction wait for materialized authority")
@@ -354,6 +356,8 @@ int main() {
         assert(player_save_pipeline_terminal(&player, 4, 22804, 20, true) ==
                player_save_terminal_result::journal_durable);
         assert(captured_intent == 4 && captured_room == 22804);
+        assert(player_save_pipeline_terminal(&player, 4, 22804, 1, false) ==
+               player_save_terminal_result::timed_out);
 
         // A death with no live corpse has nothing to record, and must not reserve
         // a fence or mark a revision on the way to finding that out.

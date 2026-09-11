@@ -84,12 +84,14 @@ bool persistence_flush_all_character_saves() { return true; }
 
 // Empty-world boundaries: reaching these would make the fixture invalid.
 bool persistence_save_character_terminal(P_char, int) { std::abort(); }
+bool persistence_save_character_terminal_database_acknowledged(P_char, int) { std::abort(); }
 int websocket_send_text(P_desc, const char *) { std::abort(); }
 int compress_end(P_desc, int) { std::abort(); }
 uint64_t persistence_observability_now_usec() { std::abort(); }
 uint64_t player_load_pipeline_next_request_id() { std::abort(); }
 bool player_load_pipeline_wait(player_load_request, player_load_result *, uint64_t) { std::abort(); }
 bool player_load_materialize(P_char, const player_load_result &) { std::abort(); }
+void player_load_pets_place(P_char) { std::abort(); }
 void *_mm_get(mm_ds *, const char *, int) { std::abort(); }
 unsigned mm_find_best_chunk(int, int, int) { std::abort(); }
 mm_ds *mm_create(const char *, size_t, size_t, unsigned) { std::abort(); }

@@ -12,6 +12,7 @@ MATERIALIZE = (SRC / "player_load_materialize.c").read_text()
 PETS = (SRC / "player_load_pets.c").read_text()
 NANNY = (SRC / "nanny.c").read_text()
 COPYOVER = (SRC / "copyover.c").read_text()
+SQL_PLAYER = (SRC / "sql_player.c").read_text()
 
 subprocess.run(
     ["python3", "tests/async/test_player_load_items.py"],
@@ -47,7 +48,14 @@ for contract in (
 ):
     assert contract in PETS
 
-assert "request.include_pets = false" in COPYOVER
+assert "request.include_pets = true" in COPYOVER
+assert "player_load_pets_place(ch);" in COPYOVER
+assert "setup_pet(pet, ch, -1" not in COPYOVER
+direct_pet_save = SQL_PLAYER[SQL_PLAYER.index("bool sql_save_player_pets(P_char ch, int save_type)",
+                                             SQL_PLAYER.index("#else")):
+                                SQL_PLAYER.index("bool sql_load_player_pets(P_char ch)",
+                                                 SQL_PLAYER.index("#else"))]
+assert "GET_MASTER(pet) != ch" in direct_pet_save
 assert "player_load_pets_place(ch)" in NANNY
 assert "sql_load_player_pets(ch)" not in NANNY
 assert "DELETE FROM player_pets WHERE owner_pid" not in REPOSITORY
