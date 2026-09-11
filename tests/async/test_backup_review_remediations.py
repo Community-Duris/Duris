@@ -79,6 +79,37 @@ class BackupReviewRemediationTests(Fixture):
         with self.assertRaisesRegex(backup.BackupError, "journal_filename"):
             backup.journal_capture(stage, value)
 
+    def test_journal_capture_preserves_locker_receipts_and_empty_service_lock(self):
+        critical = self.p["journal_roots"]["critical"]
+        store = critical / "locker-identification"
+        store.mkdir(mode=0o700)
+        (store / ".service-lock").touch(mode=0o600)
+        (store / "42.receipt").write_bytes(b"synthetic bounded receipt; native validation is separate")
+        stage = self.base / "stage"
+        stage.mkdir(mode=0o700)
+        captured = backup.journal_capture(stage, self.p)
+        self.assertEqual(backup.inventory(critical), captured["critical"])
+        self.assertEqual(backup.inventory(stage / "journals/critical"), captured["critical"])
+
+    def test_journal_capture_rejects_invalid_locker_entries(self):
+        store = self.p["journal_roots"]["critical"] / "locker-identification"
+        store.mkdir(mode=0o700)
+        for index, (name, payload, code) in enumerate((
+                (".service-lock", b"data", "journal_service_lock_nonempty"),
+                ("0.receipt", b"data", "journal_filename"),
+                ("2147483648.receipt", b"data", "journal_receipt_pid"),
+                ("42.receipt", b"", "journal_receipt_size"),
+                ("42.receipt", b"x" * (70 * 1024), "journal_receipt_size"),
+                ("unexpected", b"data", "journal_filename"))):
+            with self.subTest(name=name, code=code):
+                entry = store / name
+                entry.write_bytes(payload)
+                stage = self.base / f"stage-{index}"
+                stage.mkdir(mode=0o700)
+                with self.assertRaisesRegex(backup.BackupError, code):
+                    backup.journal_capture(stage, self.p)
+                entry.unlink()
+
     def test_expired_generations_are_pruned_only_after_successful_capture(self):
         now = int(time.time())
         old = [self.create("flatfile-primary", now - 90 * 86400 + offset)

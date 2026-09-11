@@ -315,7 +315,8 @@ int main(int argc, char **argv)
 	else if (scenario == "duplicate")
 	{
 		// DB orders newest snapshot first; only its stock should materialize.
-		saved_keepers = { { "1", "11", "100", "200" }, { "0", "10", "100", "200" },
+		saved_keepers = { { "1", "11", "100", "200" },
+				  { "0", "10", "100", "200" },
 				  { "1", "12", "100", "201" } };
 		add_item(11, 71);
 		add_item(10, 70);

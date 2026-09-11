@@ -1,6 +1,6 @@
 # CI reliability analysis
 
-Analyzed 2026-09-11 against master `a12a67cbb`, with a snapshot of the latest 150 GitHub Actions runs. Proposed changes are local on `codex/ci-reliability`; no workflow or repository settings have been published.
+Analyzed 2026-09-11 against master `a12a67cbb`, with a snapshot of the latest 150 GitHub Actions runs. The baseline repair is developed on `codex/ci-reliability`. Repository protection settings are outside its scope.
 
 ## What the run history establishes
 
@@ -73,8 +73,10 @@ Retries should be bounded to identified transient infrastructure operations, not
 - Changed the quality formatter invocation to `./scripts/format.sh --all --check`.
 - Updated two stale helper test calls to `compiler_configuration`.
 - Ran `test_server_build_artifacts.py` successfully in a Linux container with GNU Make. It covers parsing, inherited overrides, invalidation, corruption, isolation, concurrent publication and failed publication.
-- Reproduced the existing harness formatting failure with Ubuntu clang-format 18.1.3. The local patch intentionally leaves the unrelated harness content for its owning change; the full gate will remain red until that defect and backup qualification errors are repaired.
+- Reproduced and repaired the harness formatting failure with Ubuntu clang-format 18.1.3. The whole tracked formatting gate passed locally.
 - Parsed all four workflow YAML files and checked trigger/concurrency/formatting configuration; `git diff --check` passed. This is not a hosted Actions execution.
-- Full CI, native compilation, runtime journeys and backup integration were not rerun. The pipeline restructuring and fingerprint optimization above are recommendations, not implemented changes.
+- Both server backends compiled locally. The artifact test, shopkeeper population scenarios, backup policy tests and backup review tests passed.
+- Reproduced all five restore errors: `locker_identify_init()` creates `critical/locker-identification/.service-lock`, but the native journal verifier rejected all subdirectories. The repair captures bounded receipts and the empty lock, then validates receipts with the production decoder during preflight and final drain verification. Regression coverage includes receipt preservation on both backends and rejection of corrupt, mismatched, oversized, public, linked and unexpected entries.
+- The pipeline restructuring and fingerprint optimization above remain recommendations, not implemented changes. Hosted CI results belong to the repair PR; local validation does not substitute for those checks.
 
 GitHub references: [workflow syntax and default deadlines](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax), [workflow concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
