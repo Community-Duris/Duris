@@ -11,6 +11,11 @@ permissions:
   contents: read
   security-events: write
 
+# Replace obsolete PR runs while retaining every master/scheduled run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   analyze:
     runs-on: ubuntu-24.04

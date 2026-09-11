@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# Replace obsolete PR runs while retaining every master/scheduled run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   disposable-recovery:
     runs-on: ubuntu-24.04
@@ -33,4 +38,4 @@ jobs:
           python3 tests/async/test_flatfile_backup_manifest.py
           python3 tests/async/test_flatfile_launcher.py
       - name: Synthetic backup, isolated restore, replay and runtime qualification
-        run: sudo env DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py
+        run: sudo env DURIS_RUN_BACKUP_INTEGRATION=1 python3 -u tests/async/test_persistence_backup_integration.py -v

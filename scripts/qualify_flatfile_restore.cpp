@@ -1,5 +1,6 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "player/player_save_journal.h"
+#include "item/locker_receipt.h"
 #include "persistence/critical_command_journal.h"
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
@@ -29,6 +30,8 @@ void logit(const char *, const char *, ...) {}
 #include <iostream>
 #include <set>
 #include <stdexcept>
+#include <sys/stat.h>
+#include <unistd.h>
 
 // Same admission contract as the asynchronous player loader. This standalone
 // process links the native repositories without game sockets or SQL clients.
@@ -71,6 +74,37 @@ static std::string account_name(const std::string &stem)
 	return name;
 }
 
+// Locker identification stores durable payment receipts alongside the critical
+// WAL. The service lock is empty runtime metadata; receipts must survive restore
+// and pass the same bounded decoder used when a player claims their result.
+static void qualify_locker_receipts(const std::filesystem::path &directory)
+{
+	struct stat status = {};
+	require(lstat(directory.c_str(), &status) == 0 && S_ISDIR(status.st_mode) &&
+		status.st_uid == geteuid() && !(status.st_mode & 0077));
+	for (const auto &entry : std::filesystem::directory_iterator(directory))
+	{
+		require(lstat(entry.path().c_str(), &status) == 0 && S_ISREG(status.st_mode) &&
+			status.st_uid == geteuid() && status.st_nlink == 1 &&
+			!(status.st_mode & 0077));
+		const auto name = entry.path().filename().string();
+		if (name == ".service-lock")
+		{
+			require(status.st_size == 0);
+			continue;
+		}
+		require(entry.path().extension() == ".receipt");
+		const auto stem = entry.path().stem().string();
+		require(!stem.empty() && stem.size() <= 10 && stem[0] != '0' &&
+			stem.find_first_not_of("0123456789") == std::string::npos);
+		const auto pid = std::stoull(stem);
+		require(pid > 0 && pid <= INT32_MAX);
+		locker_receipt receipt;
+		require(locker_receipt_read(directory.string(), static_cast<uint32_t>(pid),
+					    &receipt) == flatfile_read_result::ok);
+	}
+}
+
 // Init uses the production codecs and may quarantine a corrupt player frame.
 // This runs only on copied candidate journals; any quarantine is a hard failure.
 static void qualify_journals(const std::filesystem::path &candidate, bool drained)
@@ -86,6 +120,12 @@ static void qualify_journals(const std::filesystem::path &candidate, bool draine
 						     "critical-command.journal";
 		for (const auto &entry : std::filesystem::directory_iterator(directory))
 		{
+			if (std::string(name) == "critical" &&
+			    entry.path().filename() == "locker-identification")
+			{
+				qualify_locker_receipts(entry.path());
+				continue;
+			}
 			require(entry.is_regular_file() && !entry.is_symlink());
 			require(entry.path().filename() == filename ||
 				(entry.path().filename() == "player-save.journal.quarantine" &&

@@ -18,10 +18,10 @@ with patch.object(artifacts.subprocess, 'check_output', return_value=
                   "make[2]: Entering directory '/tmp/build'\n"
                   "DURIS_ARTIFACT_CC=g++\nDURIS_ARTIFACT_FLAGS=-O1 -pthread\n"
                   "make[2]: Leaving directory '/tmp/build'\n"):
-    assert artifacts.effective_configuration({}) == 'g++\n-O1 -pthread'
+    assert artifacts.compiler_configuration({}) == 'g++\n-O1 -pthread'
 with patch.object(artifacts.subprocess, 'check_output', return_value='g++\n'):
     try:
-        artifacts.effective_configuration({})
+        artifacts.compiler_configuration({})
     except RuntimeError:
         pass
     else:

@@ -136,6 +136,9 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         live = self.base / "live"
         backup.run([str(self.fixture), "seed", str(live)])
         journals = self.seed_wal(live)
+        receipt_relative = "critical/locker-identification/42.receipt"
+        backup.run([str(self.fixture), "seed-receipt", str(journals / "critical/locker-identification")])
+        receipt_bytes = (journals / receipt_relative).read_bytes()
         journal_before = backup.inventory(journals)
         self.assertTrue((live / "domains/.critical-authority-transaction").exists())
         before = backup.inventory(live, exclude_locks=True)
@@ -148,6 +151,8 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(receipt["result"], "qualified")
         self.assertEqual(receipt["checks"], {"accounts": 1, "identities": 1, "players_loaded": 1, "snapshots": 1})
         candidate = self.p["restore_root"] / receipt["candidate"]
+        self.assertEqual((candidate / "journals" / receipt_relative).read_bytes(), receipt_bytes)
+        self.assertEqual((generation / "journals" / receipt_relative).read_bytes(), receipt_bytes)
         recovered_before_verify = backup.inventory(candidate / "state", exclude_locks=True)
         backup.run([str(self.fixture), "verify-wal", str(candidate / "state")])
         self.assertEqual(backup.inventory(candidate / "state", exclude_locks=True), recovered_before_verify)
@@ -162,6 +167,54 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         self.assertEqual(backup.inventory(live, exclude_locks=True), before)
         self.assertEqual(backup.inventory(generation), captured)
         self.assertIn(b"Entering game loop.", (candidate / "service.log").read_bytes())
+
+    def test_locker_receipt_qualification_rejects_corruption_and_unexpected_entries(self):
+        self.build_native_fixture()
+        for case in ("valid", "corrupt", "wrong-pid", "zero-pid", "oversized", "extra-file",
+                     "nested-directory", "nonempty-lock", "public-file", "public-directory",
+                     "symlink-file", "symlink-directory", "hardlink-file"):
+            with self.subTest(case=case):
+                candidate = self.p["restore_root"] / case
+                candidate.mkdir(mode=0o700)
+                backup.write_json(candidate / "ISOLATED_RESTORE", {"synthetic": True})
+                store = candidate / "journals/critical/locker-identification"
+                backup.run([str(self.fixture), "seed-receipt", str(store)])
+                receipt = store / "42.receipt"
+                lock = store / ".service-lock"
+                lock.touch(mode=0o600)
+                if case == "corrupt":
+                    receipt.write_bytes(b"corrupt")
+                elif case in ("wrong-pid", "zero-pid"):
+                    receipt.rename(store / ("43.receipt" if case == "wrong-pid" else "0.receipt"))
+                elif case == "oversized":
+                    receipt.write_bytes(b"x" * (70 * 1024))
+                elif case == "extra-file":
+                    (store / "unexpected").touch(mode=0o600)
+                elif case == "nested-directory":
+                    (store / "unexpected").mkdir(mode=0o700)
+                elif case == "nonempty-lock":
+                    lock.write_bytes(b"not lock metadata")
+                elif case == "public-file":
+                    receipt.chmod(0o644)
+                elif case == "public-directory":
+                    store.chmod(0o755)
+                elif case == "symlink-file":
+                    target = candidate / "target"
+                    receipt.rename(target)
+                    receipt.symlink_to(target)
+                elif case == "symlink-directory":
+                    target = candidate / "target"
+                    store.rename(target)
+                    store.symlink_to(target, target_is_directory=True)
+                elif case == "hardlink-file":
+                    os.link(receipt, candidate / "alias")
+                for phase in ("--journals-preflight", "--journals-drained"):
+                    command = [str(ROOT / "bin/tools/qualify_flatfile_restore"), phase, str(candidate)]
+                    if case == "valid":
+                        backup.run(command)
+                    else:
+                        with self.assertRaises(backup.BackupError):
+                            backup.run(command)
 
     def test_interrupted_bank_domain_and_legacy_transactions_restore_exactly_once(self):
         self.build_native_fixture()
@@ -303,6 +356,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 else:
                     corrupt.write_bytes(original)
     def test_mariadb_full_dump_schema_history_values_and_isolated_service_boot(self):
+        self.build_native_fixture()
         source = self.base / "live"
         source.mkdir(mode=0o700)
         with restore.private_database(source) as env:
@@ -333,6 +387,9 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                      "JOIN account_banks b ON b.account_name=a.account_name WHERE p.pid=42;")
             expected = sql(env, query)
             self.assertEqual(expected, "SyntheticRestore:42:11:15:23")
+            store = self.p["journal_roots"]["critical"] / "locker-identification"
+            backup.run([str(self.fixture), "seed-receipt", str(store)])
+            receipt_bytes = (store / "42.receipt").read_bytes()
             with mock.patch.dict(os.environ, env, clear=True):
                 result = backup.backup(self.p, "mariadb-primary")
             generation = self.p["root"] / result["generation"]
@@ -351,6 +408,8 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             self.assertEqual(sql(env, query), expected)
             self.assertEqual(backup.inventory(generation), captured)
             candidate = self.p["restore_root"] / receipt["candidate"]
+            self.assertEqual((candidate / "journals/critical/locker-identification/42.receipt").read_bytes(),
+                             receipt_bytes)
             self.assertIn(b"Entering game loop.", (candidate / "service.log").read_bytes())
             sql(env, "INSERT INTO accounts(account_name,confirmed) VALUES('OtherSynthetic',1);"
                      "UPDATE player_data SET account_name='OtherSynthetic' WHERE pid=42;")

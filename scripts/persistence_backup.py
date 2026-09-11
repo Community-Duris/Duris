@@ -227,7 +227,18 @@ def journal_capture(stage, p, capacity_base=None):
         if name == "players":
             allowed.add("player-save.journal.quarantine")
         for relative, metadata in snapshots[name].items():
-            require(relative in allowed, "journal_filename")
+            receipt = re.fullmatch(r"locker-identification/([1-9][0-9]{0,9})\.receipt", relative)
+            service_lock = name == "critical" and relative == "locker-identification/.service-lock"
+            if name == "critical" and receipt:
+                require(int(receipt[1]) <= 2147483647, "journal_receipt_pid")
+                # Match the native format's bound before copying. The restore
+                # qualifier validates the checksum, payment and filename identity.
+                require(0 < metadata["bytes"] <= 16 + 1024 + 64 * 1024 + 32,
+                        "journal_receipt_size")
+            else:
+                require(relative in allowed or service_lock, "journal_filename")
+            if service_lock:
+                require(metadata["bytes"] == 0, "journal_service_lock_nonempty")
             if relative == "player-save.journal.quarantine":
                 require(metadata["bytes"] == 0, "journal_quarantine_nonempty")
         needed = sum(x["bytes"] for x in snapshots[name].values())
