@@ -7,6 +7,19 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+
+enum class item_creation_prepare_result
+{
+	more,
+	ready,
+	failed
+};
+// Each invocation creates at most one detached root. Captures must own their
+// data and must not retain a character pointer across pulses.
+using item_creation_prepare_fn = std::function<item_creation_prepare_result(P_char, P_obj *)>;
+bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare);
+void item_creation_grant_prepare_pulse(void);
 
 constexpr size_t ITEM_MOVEMENT_PENDING_MAX = 1024;
 constexpr size_t ITEM_MOVEMENT_CONTEXT_MAX_BYTES = 128;

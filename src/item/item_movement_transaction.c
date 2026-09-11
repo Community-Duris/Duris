@@ -63,7 +63,9 @@ struct pending_creation_grant
 
 struct creation_grant_queue
 {
+	item_creation_prepare_fn prepare;
 	std::deque<pending_creation_grant> requests;
+	std::deque<pending_creation_grant> following_requests;
 	bool active = false;
 	bool batch_submission = false;
 	bool blocks_actor_commands = false;
@@ -80,7 +82,24 @@ struct displaced_creation_object
 };
 
 std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
+std::deque<uint32_t> preparation_order;
 const item_owner_identity system_owner_identity = { item_owner_type::system, 0, 0 };
+
+/** Release a finished kit while preserving independent creations queued behind it. */
+void finish_creation_queue(uint32_t pid)
+{
+	auto found = creation_grants.find(pid);
+	if (found == creation_grants.end())
+		return;
+	auto following = std::move(found->second.following_requests);
+	if (following.empty())
+		creation_grants.erase(found);
+	else
+	{
+		found->second = {};
+		found->second.requests = std::move(following);
+	}
+}
 
 std::string operation_key(const critical_operation_id &operation_id)
 {
@@ -502,13 +521,15 @@ bool creation_grant_target_available(const creation_grant_queue &queue, P_obj co
 	if (!OBJ_NOWHERE(container))
 		return false;
 	const uint32_t recipient_pid = static_cast<uint32_t>(GET_PID(recipient));
-	return std::any_of(queue.requests.begin(), queue.requests.end(),
-			   [&](const pending_creation_grant &request)
-			   {
-				   return !request.to_room && !request.target_container_uid &&
-					  request.item_uid == container->obj_uid &&
-					  request.recipient_pid == recipient_pid;
-			   });
+	const auto matches = [&](const pending_creation_grant &request)
+	{
+		return !request.to_room && !request.target_container_uid &&
+		       request.item_uid == container->obj_uid &&
+		       request.recipient_pid == recipient_pid;
+	};
+	return std::any_of(queue.requests.begin(), queue.requests.end(), matches) ||
+	       std::any_of(queue.following_requests.begin(), queue.following_requests.end(),
+			   matches);
 }
 
 void discard_creation_queue(P_char actor, creation_grant_queue &queue)
@@ -537,7 +558,7 @@ void pump_creation_grants()
 	{
 		auto current = found++;
 		creation_grant_queue &queue = current->second;
-		if (queue.active || queue.requests.empty())
+		if (queue.prepare || queue.active || queue.requests.empty())
 			continue;
 		const pending_creation_grant &request = queue.requests.front();
 		P_char actor = find_live_player(current->first);
@@ -546,7 +567,7 @@ void pump_creation_grants()
 		if (!creation_grant_request_valid(request))
 		{
 			discard_creation_queue(actor, queue);
-			creation_grants.erase(current);
+			finish_creation_queue(current->first);
 			continue;
 		}
 		if (creation_grant_conflicts(request))
@@ -557,7 +578,7 @@ void pump_creation_grants()
 			if (item_movement_reject_is_transient(reject))
 				continue;
 			discard_creation_queue(actor, queue);
-			creation_grants.erase(current);
+			finish_creation_queue(current->first);
 		}
 	}
 }
@@ -731,7 +752,7 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 		logit(LOG_FILE, "item creation grant batch did not commit (pid=%u error=%u)",
 		      actor_pid, error_code);
 		discard_creation_queue(actor, queue);
-		creation_grants.erase(queue_found);
+		finish_creation_queue(actor_pid);
 		return;
 	}
 
@@ -756,7 +777,7 @@ void creation_grant_batch_completion(P_char actor, bool committed, const item_tr
 				     PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY);
 	queue.requests.clear();
 	queue.active = false;
-	creation_grants.erase(queue_found);
+	finish_creation_queue(actor_pid);
 	if (blocks_actor_commands && actor->desc)
 	{
 		send_to_char(announce_on_completion ?
@@ -858,13 +879,15 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 			creation_grants.erase(found);
 		return false;
 	}
-	if (queue.requests.size() >= ITEM_CREATION_GRANT_MAX_ROOTS)
+	if (queue.requests.size() + queue.following_requests.size() >=
+	    ITEM_CREATION_GRANT_MAX_ROOTS)
 	{
 		if (inserted)
 			creation_grants.erase(found);
 		return false;
 	}
-	if (allow_pre_entry && (!queue.requests.empty() || queue.active))
+	if (allow_pre_entry &&
+	    (queue.prepare || queue.batch_submission || !queue.requests.empty() || queue.active))
 	{
 		if (inserted)
 			creation_grants.erase(found);
@@ -874,10 +897,12 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 		queue.announce_on_completion = true;
 	try
 	{
-		queue.requests.push_back(
-			{ object->obj_uid, target_container ? target_container->obj_uid : 0,
-			  recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0, room, to_room,
-			  allow_pre_entry });
+		auto &destination = queue.batch_submission ? queue.following_requests :
+							     queue.requests;
+		destination.push_back({ object->obj_uid,
+					target_container ? target_container->obj_uid : 0,
+					recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0,
+					room, to_room, allow_pre_entry });
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -885,7 +910,7 @@ bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room
 			creation_grants.erase(found);
 		return false;
 	}
-	if (queue.active || queue.requests.size() > 1)
+	if (queue.batch_submission || queue.active || queue.requests.size() > 1)
 		return true;
 	item_movement_reject reject = item_movement_reject::none;
 	if (start_creation_grant(actor, queue, &reject))
@@ -1530,6 +1555,113 @@ bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char rec
 				    false);
 }
 
+/** Reserve the player before any legacy kit objects or persistence work exist. */
+bool item_creation_grant_defer(P_char actor, item_creation_prepare_fn prepare)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !prepare ||
+	    item_movement_transaction_player_busy(actor) ||
+	    creation_grants.size() >= ITEM_MOVEMENT_PENDING_MAX)
+		return false;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
+	try
+	{
+		creation_grant_queue queue;
+		queue.prepare = std::move(prepare);
+		queue.batch_submission = true;
+		queue.blocks_actor_commands = true;
+		queue.stop_on_failure = true;
+		preparation_order.push_back(pid);
+		try
+		{
+			creation_grants.emplace(pid, std::move(queue));
+		}
+		catch (...)
+		{
+			preparation_order.pop_back();
+			throw;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+/** Round-robin preparation: at most eight roots per player and 32 steps per pulse. */
+void item_creation_grant_prepare_pulse(void)
+{
+	size_t budget = 32;
+	size_t players = preparation_order.size();
+	while (players-- && budget && !preparation_order.empty())
+	{
+		const uint32_t pid = preparation_order.front();
+		preparation_order.pop_front();
+		auto found = creation_grants.find(pid);
+		if (found == creation_grants.end() || !found->second.prepare)
+		{
+			--budget;
+			continue;
+		}
+		P_char actor = find_live_player(pid);
+		if (!actor)
+		{
+			--budget;
+			preparation_order.push_back(pid);
+			continue;
+		}
+		creation_grant_queue &queue = found->second;
+		bool failed = false;
+		for (size_t step = 0; step < 8 && budget && queue.prepare; ++step)
+		{
+			--budget;
+			P_obj object = nullptr;
+			item_creation_prepare_result result = item_creation_prepare_result::failed;
+			try
+			{
+				result = queue.prepare(actor, &object);
+				if (object)
+				{
+					if (!object->obj_uid || !OBJ_NOWHERE(object) ||
+					    queue.requests.size() +
+							    queue.following_requests.size() >=
+						    ITEM_CREATION_GRANT_MAX_ROOTS)
+						result = item_creation_prepare_result::failed;
+					else
+					{
+						queue.requests.push_back({ object->obj_uid, 0, pid,
+									   NOWHERE, false, true });
+						object = nullptr;
+					}
+				}
+			}
+			catch (const std::bad_alloc &)
+			{
+				result = item_creation_prepare_result::failed;
+			}
+			if (object && OBJ_NOWHERE(object))
+				extract_obj(object, FALSE);
+			if (result == item_creation_prepare_result::failed ||
+			    (result == item_creation_prepare_result::ready &&
+			     queue.requests.empty()))
+			{
+				failed = true;
+				break;
+			}
+			if (result == item_creation_prepare_result::ready)
+				queue.prepare = {};
+		}
+		if (failed)
+		{
+			discard_creation_queue(actor, queue);
+			finish_creation_queue(pid);
+		}
+		else if (queue.prepare)
+			preparation_order.push_back(pid);
+	}
+	pump_creation_grants();
+}
+
 bool item_creation_grant_submit_to_player_before_entry(P_char actor, P_obj object, P_char recipient)
 {
 	return queue_creation_grant(actor, object, recipient, NOWHERE, NULL, false, true);
@@ -1644,7 +1776,13 @@ void item_creation_grant_cancel_batch_before_entry(P_char actor)
 	queue.blocks_actor_commands = false;
 	queue.announce_on_completion = false;
 	if (queue.requests.empty())
-		creation_grants.erase(found);
+	{
+		preparation_order.erase(std::remove(preparation_order.begin(),
+						    preparation_order.end(),
+						    static_cast<uint32_t>(GET_PID(actor))),
+					preparation_order.end());
+		finish_creation_queue(static_cast<uint32_t>(GET_PID(actor)));
+	}
 }
 
 void item_movement_transaction_handle_completions(const critical_completion *completions,
@@ -1711,6 +1849,9 @@ bool item_movement_transaction_player_busy(P_char actor)
 		for (const pending_creation_grant &request : queue.requests)
 			if (!request.to_room && request.recipient_pid == pid)
 				return true;
+		for (const pending_creation_grant &request : queue.following_requests)
+			if (!request.to_room && request.recipient_pid == pid)
+				return true;
 	}
 	const item_owner_identity owner = { item_owner_type::player, pid, 0 };
 	return std::any_of(
@@ -1728,5 +1869,6 @@ void item_movement_transaction_reset_for_tests(void)
 {
 	pending.clear();
 	creation_grants.clear();
+	preparation_order.clear();
 	health = {};
 }

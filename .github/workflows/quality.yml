@@ -141,6 +141,13 @@ jobs:
         run: ./scripts/format.sh --check
       - name: Check strict warning profile
         run: python3 tests/async/test_compiler_warning_profile.py
+      - name: Verify deferred legacy starter grants
+        run: |
+          python3 tests/async/test_newbie_grant_lifecycle.py
+          python3 tests/async/test_newbie_kit_plan.py
+          python3 tests/async/test_newbie_kit_readiness_contract.py
+          python3 tests/async/test_creation_grant_batch_submission.py
+          python3 tests/async/test_creation_grant_reconciliation.py
       - name: Compile C++20 with warnings as errors
         run: make -C src -j"$(nproc)"
       - name: Check Session 14 Python and shell entry points

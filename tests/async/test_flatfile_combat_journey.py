@@ -359,7 +359,8 @@ def runtime_logs(run_root: pathlib.Path) -> str:
     return "\n".join(sections)[-30000:]
 
 
-def create_character(client: MudClient, expected_room: str | None = "The Regression Arena") -> None:
+def create_character(client: MudClient, expected_room: str | None = "The Regression Arena",
+                     class_name: str = "w") -> None:
     entry, _ = client.expect_any(("term type", "account name"))
     if entry == "term type":
         client.send("9")
@@ -394,7 +395,7 @@ def create_character(client: MudClient, expected_room: str | None = "The Regress
     client.expect("Hardcore")
     client.send("n")
     client.expect("Class Selection")
-    client.send("w")
+    client.send(class_name)
     client.expect("Alignment only affects")
     client.send("g")
     client.expect("Your selection")
