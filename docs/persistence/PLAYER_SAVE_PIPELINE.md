@@ -160,3 +160,32 @@ continues until recovery is resolved and the controller approves a purge horizon
 Do not treat these files as rotating logs. See `test_death_item_custody_contract.py`,
 `test_player_snapshot_capture.py`, `test_player_save_pipeline.py`, and the isolated
 `run_player_death_disposition_mysql.sh` suite for the relevant boundaries.
+
+### Corpse creation batches (#174)
+
+Registered carried roots and their nested contents are captured in one immutable
+`corpse_create` command, within the existing item count and payload size bounds.
+The command advances player/corpse custody revisions together. Publication checks
+every captured node and live containment link before advancing the registry or
+moving any root. A stale live topology retains the committed movement and its
+busy fence; it does not release the player or publish a partial corpse.
+
+After publication, the death callback writes the complete corpse once and advances
+the existing retry event to the next game pulse. The retry still checks currency
+and item work, disputes, and terminal-save durability before extraction. This
+avoids extracting the actor inside the coordinator completion dispatcher. Pending
+currency/reward work remains fenced, and event-admission failure retains the
+existing allocation-free pulse fallback.
+
+Legacy roots without runtime ownership entries retain the existing single-root
+adoption path before the remaining registered roots are batched. Non-transient
+admission refusal enters disputed-death disposition; transient admission conflicts
+remain retryable. Disposition is durable evidence, not automatic restitution.
+No absolute production latency guarantee follows from the batch change: database
+latency, pending currency, and the final corpse snapshot still contribute.
+
+`test_corpse_creation_batch.py` runs production admission, codec, registry, and
+publication code under ASan/UBSan with nested 1/15/100-root fixtures, refusals,
+pending coin work, stale topology, and duplicate completions. The combat journey
+also runs with boons enabled and checks ordinary recovery, conservation, disputed
+custody evidence before release, and exactly-once death consequences on restart.

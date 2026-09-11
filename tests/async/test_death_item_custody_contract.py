@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 """Regression test for item custody across a player death.
 
-make_corpse() hands the corpse's items over one asynchronous transaction at a
-time: submit_next_corpse_item() submits a single item and corpse_item_completion()
-submits the next when that one commits. The completion must publish while the
-owner remains in the world even if their descriptor dropped during combat;
-otherwise the first committed transfer stalls the chain. Extracting the
-character mid-chain also stranded the remaining items as active rows in
-item_current_owner while
-persistence_save_character_terminal() wrote an empty player_items.
+make_corpse() hands registered roots to the corpse in one asynchronous batch.
+Completions must publish while the owner remains in the world even if their
+descriptor dropped during combat. Extracting before publication would strand
+active item_current_owner rows while the terminal save writes empty player_items.
 
 load_items() then compared the two on the next login, saw owned_count !=
 payload_count, and refused the character with "Sorry, I couldn't load that
@@ -70,9 +66,8 @@ checks.append((
     contains(movement, "if (P_char actor = find_live_player(found->second.actor_pid))")
 ))
 checks.append((
-    "the corpse handoff is still a one-item-at-a-time chain",
-    contains(body(fight, "void corpse_item_completion("),
-             "(void)submit_next_corpse_item(character, corpse);")
+    "the corpse handoff batches registered roots",
+    contains(fight, "item_movement_transaction_submit_batch(character, roots.data(), roots.size(), NULL,")
 ))
 checks.append((
     "the login invariant that rejected the desynchronised character still holds",
