@@ -1,3 +1,4 @@
+#include "account/password_async.h"
 /*************************************************************
  * account.c
  *************************************************************/
@@ -73,15 +74,6 @@ struct account_deletion_identity
 	int pid = 0;
 	std::string name;
 };
-
-bool account_password_matches(P_acct account, char *password)
-{
-	if (!account || !account->acct_password || !password)
-		return false;
-	if (is_bcrypt_hash(account->acct_password))
-		return bcrypt_verify_password(password, account->acct_password) != 0;
-	return !strcmp(CRYPT2(password, account->acct_password), account->acct_password);
-}
 
 void display_account_deletion_confirmation(P_desc d, bool retry)
 {
@@ -970,20 +962,28 @@ void get_new_account_password(P_desc d, char *arg)
 		return;
 	}
 
-	// Use bcrypt for account passwords
-	char *hash = bcrypt_hash_password(arg);
-	if (!hash)
+	if (!password_async_start(
+		    d, password_work_submit(arg, nullptr, nullptr, 0, 0), nullptr,
+		    [](P_desc completed_desc, int, const char *hash)
+		    {
+			    if (!hash)
+			    {
+				    SEND_TO_Q("Error hashing password, please try again.\r\n",
+					      completed_desc);
+				    get_new_account_password(completed_desc, NULL);
+				    return;
+			    }
+			    if (completed_desc->account->acct_password)
+				    FREE(completed_desc->account->acct_password);
+			    completed_desc->account->acct_password = str_dup(hash);
+			    STATE(completed_desc) = CON_VERIFY_NEW_ACCT_PASSWD;
+			    verify_new_account_password(completed_desc, NULL);
+		    }))
 	{
-		SEND_TO_Q("Error hashing password, please try again.\r\n", d);
+		SEND_TO_Q("Password service is busy; please try again.\r\n", d);
 		get_new_account_password(d, NULL);
-		return;
 	}
-
-	d->account->acct_password = str_dup(hash);
-	free(hash);
-	STATE(d) = CON_VERIFY_NEW_ACCT_PASSWD;
-	verify_new_account_password(d, NULL);
-	return;
+	OPENSSL_cleanse(arg, strlen(arg));
 }
 
 void verify_new_account_password(P_desc d, char *arg)
@@ -997,36 +997,50 @@ void verify_new_account_password(P_desc d, char *arg)
 	}
 	echo_on(d);
 
-	// Use bcrypt to verify the password
-	if (!bcrypt_verify_password(arg, d->account->acct_password))
-	{
-		SEND_TO_Q("Passwords do not match!\r\n", d);
-		get_new_account_password(d, NULL);
-		FREE(d->account->acct_password);
-		d->account->acct_password = NULL;
-		STATE(d) = CON_GET_NEW_ACCT_PASSWD;
-		return;
-	}
+	if (!password_async_start(
+		    d, password_login_submit(arg, d->account->acct_password, 0),
+		    d->account->acct_password,
+		    [](P_desc completed_desc, int valid, const char *)
+		    {
+			    if (!valid)
+			    {
+				    SEND_TO_Q("Passwords do not match!\r\n", completed_desc);
+				    get_new_account_password(completed_desc, NULL);
+				    FREE(completed_desc->account->acct_password);
+				    completed_desc->account->acct_password = NULL;
+				    STATE(completed_desc) = CON_GET_NEW_ACCT_PASSWD;
+				    return;
+			    }
 
-	if (d->account->acct_confirmed == 0)
+			    if (completed_desc->account->acct_confirmed == 0)
+			    {
+				    STATE(completed_desc) = CON_VERIFY_NEW_ACCT_INFO;
+				    verify_new_account_information(completed_desc, NULL);
+			    }
+			    else
+			    {
+				    STATE(completed_desc) = CON_DISPLAY_ACCT_MENU;
+				    display_account_menu(completed_desc, NULL);
+				    if (-1 == write_account(completed_desc->account))
+				    {
+					    statuslog(
+						    56,
+						    "&+RALERT&n: auto-confirmed account save failed");
+					    persistence_alert(AVATAR, "account", "redacted", "none",
+							      "none", "write_failed",
+							      "auto-confirm save failed");
+				    }
+				    else
+					    account_recovery_invalidate(
+						    completed_desc->account->acct_name);
+			    }
+			    return;
+		    }))
 	{
-		STATE(d) = CON_VERIFY_NEW_ACCT_INFO;
-		verify_new_account_information(d, NULL);
+		SEND_TO_Q("Password service is busy; please try again.\r\n", d);
+		verify_new_account_password(d, NULL);
 	}
-	else
-	{
-		STATE(d) = CON_DISPLAY_ACCT_MENU;
-		display_account_menu(d, NULL);
-		if (-1 == write_account(d->account))
-		{
-			statuslog(56, "&+RALERT&n: auto-confirmed account save failed");
-			persistence_alert(AVATAR, "account", "redacted", "none", "none",
-					  "write_failed", "auto-confirm save failed");
-		}
-		else
-			account_recovery_invalidate(d->account->acct_name);
-	}
-	return;
+	OPENSSL_cleanse(arg, strlen(arg));
 }
 
 void verify_new_account_information(P_desc d, char *arg)
@@ -2717,17 +2731,30 @@ void delete_account(P_desc d, char *arg)
 		display_account_menu(d, NULL);
 		return;
 	}
-	if (!account_password_matches(d->account, arg))
+	if (!password_async_start(
+		    d, password_login_submit(arg, d->account->acct_password, 0),
+		    d->account->acct_password,
+		    [](P_desc completed_desc, int valid, const char *)
+		    {
+			    if (!valid)
+			    {
+				    echo_on(completed_desc);
+				    SEND_TO_Q(
+					    "\r\nInvalid password. Account deletion cancelled.\r\n",
+					    completed_desc);
+				    STATE(completed_desc) = CON_DISPLAY_ACCT_MENU;
+				    display_account_menu(completed_desc, NULL);
+				    return;
+			    }
+			    echo_on(completed_desc);
+			    STATE(completed_desc) = CON_ACCT_VERIFY_DELETE_ACCT;
+			    display_account_deletion_confirmation(completed_desc, false);
+		    }))
 	{
-		echo_on(d);
-		SEND_TO_Q("\r\nInvalid password. Account deletion cancelled.\r\n", d);
-		STATE(d) = CON_DISPLAY_ACCT_MENU;
-		display_account_menu(d, NULL);
-		return;
+		SEND_TO_Q("Password service is busy; please try again.\r\n", d);
+		delete_account(d, NULL);
 	}
-	echo_on(d);
-	STATE(d) = CON_ACCT_VERIFY_DELETE_ACCT;
-	display_account_deletion_confirmation(d, false);
+	OPENSSL_cleanse(arg, strlen(arg));
 }
 
 void verify_delete_account(P_desc d, char *arg)

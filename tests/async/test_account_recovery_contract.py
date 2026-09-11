@@ -343,8 +343,8 @@ def test_code_entry_texts() -> None:
     )
     check(
         ordered(complete, "strlen(new_password) < 6", "account_recovery_attempts >=",
-                "account_recovery_check(", "bcrypt_hash_password(", "account_recovery_complete("),
-        "WS order: password length -> descriptor cap -> code check -> bcrypt -> apply",
+                "account_recovery_check(", "password_work_submit(", "account_recovery_complete("),
+        "WS order: password length -> descriptor cap -> code check -> worker submission -> apply",
     )
     check(
         "Too many incorrect" not in complete and "remain" not in complete,

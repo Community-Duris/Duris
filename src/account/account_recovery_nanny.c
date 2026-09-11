@@ -1,3 +1,4 @@
+#include "account/password_async.h"
 /*************************************************************
  * account_recovery_nanny.c
  *
@@ -238,25 +239,30 @@ void account_recovery_new_password(P_desc d, char *arg)
 		return;
 	}
 
-	char *hash = bcrypt_hash_password(arg);
+	if (!password_async_start(
+		    d, password_work_submit(arg, nullptr, nullptr, 0, 0), nullptr,
+		    [](P_desc completed_desc, int, const char *hash)
+		    {
+			    if (!hash)
+			    {
+				    SEND_TO_Q("Error hashing password, please try again.\r\n",
+					      completed_desc);
+				    account_recovery_new_password(completed_desc, NULL);
+				    return;
+			    }
 
-	/* Last read of the plaintext: scrub the input buffer before either exit. */
-	OPENSSL_cleanse(arg, strlen(arg));
-
-	if (!hash)
-	{
-		SEND_TO_Q("Error hashing password, please try again.\r\n", d);
-		account_recovery_new_password(d, NULL);
-		return;
-	}
-
-	/* Parked on the descriptor, never in acct_entry: write_account's re-read loop
+			    /* Parked on the descriptor, never in acct_entry: write_account's re-read loop
 	 * would clobber anything parked there. */
-	release_pending_hash(d);
-	d->account_recovery_pending_hash = str_dup(hash);
-	free(hash);
-	STATE(d) = CON_ACCT_RESET_NEWPW2;
-	account_recovery_verify_new_password(d, NULL);
+			    release_pending_hash(completed_desc);
+			    completed_desc->account_recovery_pending_hash = str_dup(hash);
+			    STATE(completed_desc) = CON_ACCT_RESET_NEWPW2;
+			    account_recovery_verify_new_password(completed_desc, NULL);
+		    }))
+	{
+		SEND_TO_Q("Password service is busy; please try again.\r\n", d);
+		account_recovery_new_password(d, NULL);
+	}
+	OPENSSL_cleanse(arg, strlen(arg));
 }
 
 /* S4 CON_ACCT_RESET_NEWPW2. */
@@ -288,68 +294,78 @@ void account_recovery_verify_new_password(P_desc d, char *arg)
 		return;
 	}
 
-	const bool matches = d->account_recovery_pending_hash &&
-			     bcrypt_verify_password(arg, d->account_recovery_pending_hash);
+	if (!password_async_start(
+		    d, password_login_submit(arg, d->account_recovery_pending_hash, 0),
+		    d->account_recovery_pending_hash,
+		    [](P_desc completed_desc, int matches, const char *)
+		    {
+			    if (!matches)
+			    {
+				    SEND_TO_Q("\r\nPasswords do not match!\r\n", completed_desc);
+				    /* Only the hash goes: the flow returns to S3 and completion still needs the
+		 * accepted code, so completed_desc->account_recovery_code is kept until an exit path. */
+				    release_pending_hash(completed_desc);
+				    STATE(completed_desc) = CON_ACCT_RESET_NEWPW;
+				    account_recovery_new_password(completed_desc, NULL);
+				    return;
+			    }
 
-	/* Last read of the confirmation: scrub the input buffer whichever way it
-	 * went, so the plaintext is not left sitting in the descriptor's queue. */
-	OPENSSL_cleanse(arg, strlen(arg));
+			    const account_recovery_complete_outcome outcome =
+				    account_recovery_complete(
+					    completed_desc->account->acct_name,
+					    completed_desc->account_recovery_code,
+					    completed_desc->account_recovery_pending_hash,
+					    completed_desc);
 
-	if (!matches)
-	{
-		SEND_TO_Q("\r\nPasswords do not match!\r\n", d);
-		/* Only the hash goes: the flow returns to S3 and completion still needs the
-		 * accepted code, so d->account_recovery_code is kept until an exit path. */
-		release_pending_hash(d);
-		STATE(d) = CON_ACCT_RESET_NEWPW;
-		account_recovery_new_password(d, NULL);
-		return;
-	}
-
-	const account_recovery_complete_outcome outcome =
-		account_recovery_complete(d->account->acct_name, d->account_recovery_code,
-					  d->account_recovery_pending_hash, d);
-
-	/* On success write_account re-read d->account and reallocated its strings; the
+			    /* On success write_account re-read completed_desc->account and reallocated its strings; the
 	 * acct_entry itself is still ours.  Only descriptor-owned state is touched now. */
-	account_recovery_descriptor_cleanse(d);
+			    account_recovery_descriptor_cleanse(completed_desc);
 
-	switch (outcome)
-	{
-	case account_recovery_complete_outcome::ok:
-		d->account_recovery_attempts = 0;
-		SEND_TO_Q(
-			"\r\n&+GYour password has been changed.&n Any other connection using this "
-			"account has been disconnected.\r\n",
-			d);
-		send_account_password_prompt(d);
-		return;
-	case account_recovery_complete_outcome::rejected:
-	case account_recovery_complete_outcome::fenced:
-	case account_recovery_complete_outcome::superseded:
-		/* fenced and superseded share the text on purpose: no disclosure to a code
+			    switch (outcome)
+			    {
+			    case account_recovery_complete_outcome::ok:
+				    completed_desc->account_recovery_attempts = 0;
+				    SEND_TO_Q(
+					    "\r\n&+GYour password has been changed.&n Any other connection using this "
+					    "account has been disconnected.\r\n",
+					    completed_desc);
+				    send_account_password_prompt(completed_desc);
+				    return;
+			    case account_recovery_complete_outcome::rejected:
+			    case account_recovery_complete_outcome::fenced:
+			    case account_recovery_complete_outcome::superseded:
+				    /* fenced and superseded share the text on purpose: no disclosure to a code
 		 * holder; the token is dead either way. */
-		SEND_TO_Q("\r\nYour reset code stopped being valid while you were typing (it "
-			  "expired, was cancelled, or a newer code was requested). Press ? at the "
-			  "password prompt to start again.\r\n",
-			  d);
-		send_account_password_prompt(d);
-		return;
-	case account_recovery_complete_outcome::write_failed:
-		/* Token kept by the core: '?' -> suppressed -> the same code still works. */
-		SEND_TO_Q(
-			"\r\nYour new password could not be saved. Nothing has changed and your "
-			"code is still valid: press ? at the password prompt to try again, or ask "
-			"an immortal.\r\n",
-			d);
-		send_account_password_prompt(d);
-		return;
-	case account_recovery_complete_outcome::load_failed:
-	case account_recovery_complete_outcome::bad_hash:
-		break;
-	}
+				    SEND_TO_Q(
+					    "\r\nYour reset code stopped being valid while you were typing (it "
+					    "expired, was cancelled, or a newer code was requested). Press ? at the "
+					    "password prompt to start again.\r\n",
+					    completed_desc);
+				    send_account_password_prompt(completed_desc);
+				    return;
+			    case account_recovery_complete_outcome::write_failed:
+				    /* Token kept by the core: '?' -> suppressed -> the same code still works. */
+				    SEND_TO_Q(
+					    "\r\nYour new password could not be saved. Nothing has changed and your "
+					    "code is still valid: press ? at the password prompt to try again, or ask "
+					    "an immortal.\r\n",
+					    completed_desc);
+				    send_account_password_prompt(completed_desc);
+				    return;
+			    case account_recovery_complete_outcome::load_failed:
+			    case account_recovery_complete_outcome::bad_hash:
+				    break;
+			    }
 
-	SEND_TO_Q("\r\nThere is an error with your account, please notify an immortal!\r\n", d);
-	d->account = free_account(d->account);
-	STATE(d) = CON_FLUSH;
+			    SEND_TO_Q(
+				    "\r\nThere is an error with your account, please notify an immortal!\r\n",
+				    completed_desc);
+			    completed_desc->account = free_account(completed_desc->account);
+			    STATE(completed_desc) = CON_FLUSH;
+		    }))
+	{
+		SEND_TO_Q("Password service is busy; please try again.\r\n", d);
+		account_recovery_verify_new_password(d, NULL);
+	}
+	OPENSSL_cleanse(arg, strlen(arg));
 }

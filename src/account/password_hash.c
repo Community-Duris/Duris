@@ -97,6 +97,10 @@ struct password_login_job
 {
 	char password[4096] = {};
 	char hash[128] = {};
+	char replacement[4096] = {};
+	bool hash_only = false;
+	bool replace = false;
+	bool sha256 = false;
 	char *new_hash = nullptr;
 	bool upgrade_legacy = false;
 	bool started = false;
@@ -107,6 +111,7 @@ struct password_login_job
 	~password_login_job()
 	{
 		OPENSSL_cleanse(password, sizeof(password));
+		OPENSSL_cleanse(replacement, sizeof(replacement));
 		OPENSSL_cleanse(hash, sizeof(hash));
 		if (new_hash)
 		{
@@ -156,7 +161,12 @@ struct login_password_worker
 			job->started = true;
 			lock.unlock();
 			const bool bcrypt = is_bcrypt_hash(job->hash);
-			if (bcrypt)
+			if (job->hash_only)
+				job->valid = 1;
+			else if (job->sha256 && !bcrypt)
+				job->valid =
+					password_verify_legacy_sha256(job->password, job->hash);
+			else if (bcrypt)
 				job->valid = bcrypt_verify_password(job->password, job->hash);
 			else
 			{
@@ -174,8 +184,11 @@ struct login_password_worker
 				OPENSSL_cleanse(&data, sizeof(data));
 				OPENSSL_cleanse(setting, sizeof(setting));
 			}
-			if (job->valid && !bcrypt && job->upgrade_legacy)
-				job->new_hash = bcrypt_hash_password(job->password);
+			if (job->valid &&
+			    (job->hash_only || job->replace || (!bcrypt && job->upgrade_legacy)))
+				job->new_hash = bcrypt_hash_password(
+					job->replace ? job->replacement : job->password);
+			OPENSSL_cleanse(job->replacement, sizeof(job->replacement));
 			OPENSSL_cleanse(job->password, sizeof(job->password));
 			lock.lock();
 			job->done = true;
@@ -204,8 +217,17 @@ login_password_worker login_worker;
 password_login_job *password_login_submit(const char *password, const char *hash,
 					  int upgrade_legacy)
 {
-	if (!password || !hash || !*hash || strnlen(password, 4096) >= 4096 ||
-	    strnlen(hash, 128) >= 128)
+	if (!hash || !*hash)
+		return nullptr;
+	return password_work_submit(password, hash, nullptr, upgrade_legacy, 0);
+}
+
+password_login_job *password_work_submit(const char *password, const char *hash,
+					 const char *replacement, int upgrade_legacy, int sha256)
+{
+	if (!password || strnlen(password, 4096) >= 4096 ||
+	    (hash && (!*hash || strnlen(hash, 128) >= 128)) ||
+	    (replacement && strnlen(replacement, 4096) >= 4096))
 		return nullptr;
 	std::lock_guard<std::mutex> lock(login_worker.mutex);
 	/* Includes queued, running, and unconsumed results, not just the queue. */
@@ -217,7 +239,13 @@ password_login_job *password_login_submit(const char *password, const char *hash
 			login_worker.thread = std::thread([] { login_worker.run(); });
 		auto job = std::make_unique<password_login_job>();
 		memcpy(job->password, password, strlen(password) + 1);
-		memcpy(job->hash, hash, strlen(hash) + 1);
+		job->hash_only = !hash;
+		job->sha256 = sha256 != 0;
+		if (hash)
+			memcpy(job->hash, hash, strlen(hash) + 1);
+		job->replace = replacement != nullptr;
+		if (replacement)
+			memcpy(job->replacement, replacement, strlen(replacement) + 1);
 		job->upgrade_legacy = upgrade_legacy != 0;
 		password_login_job *handle = job.get();
 		login_worker.jobs.push_back(std::move(job));
@@ -236,7 +264,8 @@ int password_login_poll(password_login_job *job, const char *current_hash, int *
 	std::lock_guard<std::mutex> lock(login_worker.mutex);
 	if (!job || !job->done)
 		return 0;
-	*valid = current_hash && !strcmp(current_hash, job->hash) && job->valid;
+	*valid = (job->hash_only || (current_hash && !strcmp(current_hash, job->hash))) &&
+		 job->valid;
 	*new_hash = nullptr;
 	if (*valid)
 	{

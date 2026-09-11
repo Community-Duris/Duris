@@ -1,3 +1,4 @@
+#include "account/password_async.h"
 /*
  **************************************************************************
  *  File: comm.c                                             Part of Duris
@@ -1659,7 +1660,7 @@ resume_game_loop:
 
 			/* Keep type-ahead queued until the worker's result has been applied
 			 * on this thread. Completion never retains a descriptor pointer. */
-			if (account_login_password_pulse(point))
+			if (password_async_pulse(point) || account_login_password_pulse(point))
 				continue;
 			descriptor_latency.finish();
 
@@ -2853,6 +2854,7 @@ void close_socket(struct descriptor_data *d)
 	if (d && d->player_load_request_id)
 		player_load_pipeline_cancel(d->player_load_request_id);
 	account_recovery_descriptor_closed(d);
+	password_async_cancel(d);
 	password_login_release(d->login_password_job);
 	d->login_password_job = nullptr;
 

@@ -148,11 +148,12 @@ bool sql_delete_locker_by_name(const char *locker_name);
 // private chest functions
 int sql_get_locker_id_by_name(const char *locker_name);
 int sql_get_or_create_public_chest(int locker_id);
-int sql_create_private_chest(int locker_id, const char *chest_name, const char *password);
+int sql_create_private_chest_hashed(int locker_id, const char *chest_name, const char *hash);
 bool sql_delete_private_chest(int chest_id);
 int sql_get_chest_id(int locker_id, const char *chest_name);
-bool sql_set_chest_password(int chest_id, const char *password);
-bool sql_verify_chest_password(int chest_id, const char *password);
+bool sql_set_chest_password_hash(int chest_id, const char *hash);
+bool sql_get_chest_password_hash(int chest_id, char **hash);
+bool sql_finish_chest_password(int chest_id, const char *expected, const char *upgrade);
 int sql_count_private_chests(int locker_id);
 // private_chest_log action_type values
 #define CHEST_ACTION_OPEN 1

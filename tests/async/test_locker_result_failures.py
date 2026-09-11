@@ -11,7 +11,24 @@ assert "locker_require_owner" in source
 assert "locker_require_active_user" not in source
 assert "Only the locker owner can manage access." in source
 assert "bool is_owner = locker_char && esc_locker_name_matches_player" in source
-assert "if (!is_owner)\n\t{\n\t\tif (!sql_verify_chest_password" in source
+# Non-owner opens must pass the async verification and credential recheck.
+opening = source[source.index("static int locker_opencmd(P_char ch, char *arg)\n{"):source.index("static int locker_closecmd(P_char ch, char * /*arg*/)\n{")]
+assert "sql_verify_chest_password" not in opening
+assert "if (is_owner)" in opening
+assert "if (!sql_get_chest_password_hash(chest_id, &hash))" in opening
+lookup_failure = opening[opening.index("if (!sql_get_chest_password_hash"):opening.index("if (!hash || !arg2[0])")]
+assert "finish(ch->desc, 0, nullptr);" in lookup_failure
+assert "return TRUE;" in lookup_failure
+assert "finish(ch->desc, !hash && !arg2[0], nullptr);" in opening
+assert "password_async_start(" in opening
+assert "password_work_submit(arg2, hash, nullptr, 1, 1)" in opening
+assert "valid && sql_finish_chest_password(chest_id, expected.c_str()," in opening
+assert "sql_get_chest_id(locker_id, name.c_str()) != chest_id" in opening
+assert opening.index("if (!valid)") < opening.index("locker->SetCurrentChestId(chest_id)")
+failed = opening[opening.index("if (!valid)"):opening.index("locker->SetCurrentChestId(chest_id)")]
+assert "CHEST_ACTION_FAIL" in failed and "return;" in failed
+assert "if (!submitted)" in opening
+assert "Password service is busy; try again later." in opening
 assert "strcpy(name, esc_locker_name);" not in source
 # locker_access_canAccess now uses db_query() instead of qry() + mysql_store_result
 assert "MYSQL_RES *res = db_query(\"%s\", query);" in source

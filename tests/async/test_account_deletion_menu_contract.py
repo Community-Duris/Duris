@@ -32,8 +32,8 @@ assert "case 7:" in menu
 assert "Account deletion is not available" not in menu
 assert contains(case_7, "STATE(d) = CON_ACCT_DELETE_ACCT;")
 assert contains(case_7, "delete_account(d, NULL);")
-assert contains(delete, "account_password_matches(d->account, arg)")
-assert contains(delete, "STATE(d) = CON_ACCT_VERIFY_DELETE_ACCT;")
+assert contains(delete, "password_login_submit(arg, d->account->acct_password, 0)")
+assert contains(delete, "STATE(completed_desc) = CON_ACCT_VERIFY_DELETE_ACCT;")
 assert contains(verify, "d->account->acct_blocked = ACCOUNT_BLOCK_DELETION")
 assert contains(verify, "sql_delete_account(account_name.c_str())")
 
