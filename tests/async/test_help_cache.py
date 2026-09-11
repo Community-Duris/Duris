@@ -81,6 +81,7 @@ int main() {
  cout << "help matching, redirects, dynamic content, metadata and repeated reads passed\n";
 }
 '''
+(ROOT / 'bin').mkdir(exist_ok=True)
 with tempfile.TemporaryDirectory(dir=ROOT / 'bin') as temp:
     temp = Path(temp)
     replacement = temp / 'replacement.cpp'
