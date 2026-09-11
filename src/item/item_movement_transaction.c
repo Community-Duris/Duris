@@ -998,17 +998,27 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 			const item_movement_completion_fn completion_fn = entry.completion;
 			const auto context = entry.context;
 			const size_t context_size = entry.context_size;
+			const bool retain_creation_grant = completion_fn ==
+							   creation_grant_completion;
 			const std::string pending_key = found->first;
+			// Admission has published custody. Ordinary continuations (including
+			// coin pickup) must be able to submit without conflicting with it.
+			if (!retain_creation_grant)
+				pending.erase(found);
 			if (completion_fn)
 				completion_fn(actor, true, result, 0, context.data(), context_size);
-			auto queue_found = creation_grants.find(entry.actor_pid);
-			if (queue_found != creation_grants.end() && queue_found->second.active &&
-			    queue_found->second.publication_failed)
+			if (retain_creation_grant)
 			{
-				account_health();
-				return;
+				auto queue_found = creation_grants.find(entry.actor_pid);
+				if (queue_found != creation_grants.end() &&
+				    queue_found->second.active &&
+				    queue_found->second.publication_failed)
+				{
+					account_health();
+					return;
+				}
+				pending.erase(pending_key);
 			}
-			pending.erase(pending_key);
 			++health.committed;
 			account_health();
 			return;

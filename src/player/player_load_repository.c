@@ -690,7 +690,8 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		"pi.obj_uid,pi.item_condition,own.item_uid,own.root_item_uid,"
 		"own.parent_item_uid,own.owner_type,own.owner_id,own.owner_context_id,"
 		"own.item_revision,own.vnum,own.state,owner_revision.revision,"
-		"(own.coin_payload IS NOT NULL OR (own.vnum=3 AND own.state=2 AND "
+		"(own.coin_payload IS NOT NULL OR ((own.vnum=3 OR "
+		"(pi.item_type=20 AND own.vnum=pi.vnum)) AND own.state=2 AND "
 		"own.owner_type=8 AND own.owner_id=0 AND own.owner_context_id=0)) FROM player_items pi "
 		"LEFT JOIN item_current_owner own ON own.item_uid=pi.obj_uid LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=own.owner_type "
@@ -766,7 +767,7 @@ bool load_items(MYSQL *connection, player_load_result *result)
 	// snapshot could publish them. Placement comes from the same custody row.
 	const std::string coin_sql =
 		"SELECT own.item_uid,own.root_item_uid,COALESCE(own.parent_item_uid,0),"
-		"own.item_revision,revision.revision,own.coin_payload FROM item_current_owner own "
+		"own.item_revision,revision.revision,own.coin_payload,own.vnum FROM item_current_owner own "
 		"JOIN item_owner_revision revision ON revision.owner_type=own.owner_type "
 		"AND revision.owner_id=own.owner_id AND revision.owner_context_id=own.owner_context_id "
 		"WHERE own.owner_type=1 AND own.owner_id=" +
@@ -807,8 +808,8 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		    player_item_snapshot_list_decode(reinterpret_cast<const uint8_t *>(row[5]),
 						     lengths[5],
 						     &items) != player_snapshot_codec_result::ok ||
-		    items.size() != 1 || items[0].object_uid != identity.item_uid ||
-		    items[0].vnum != VOBJ_COINS || items[0].type != ITEM_MONEY ||
+		    items.size() != 1 || items[0].object_uid != identity.item_uid || !row[6] ||
+		    std::to_string(items[0].vnum) != row[6] || items[0].type != ITEM_MONEY ||
 		    item_by_uid.count(identity.item_uid))
 			return false;
 		const size_t index = result->snapshot.items.size();

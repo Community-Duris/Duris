@@ -315,13 +315,12 @@ bool valid_catalog(const ownership_catalog &catalog)
 		if (!entry.coin_payload.empty())
 		{
 			std::vector<player_item_snapshot> items;
-			if (entry.vnum != VOBJ_COINS ||
-			    entry.coin_payload.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES ||
+			if (entry.coin_payload.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES ||
 			    player_item_snapshot_list_decode(entry.coin_payload.data(),
 							     entry.coin_payload.size(), &items) !=
 				    player_snapshot_codec_result::ok ||
 			    items.size() != 1 || items[0].object_uid != entry.item_uid ||
-			    items[0].vnum != VOBJ_COINS || items[0].type != ITEM_MONEY)
+			    items[0].vnum != entry.vnum || items[0].type != ITEM_MONEY)
 				return false;
 		}
 	}
@@ -877,7 +876,8 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	return flatfile_item_repository_result::ok;
 }
 
-// Look up the original snapshot's coin identities, including proven tombstones.
+// The caller selects ITEM_MONEY identities from the original snapshot. Include
+// their tombstones even though consumed records no longer have a coin payload.
 flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<uint64_t> &uids, std::vector<flatfile_item_ownership_record> *coins,
@@ -893,8 +893,7 @@ flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
 	{
 		coins->clear();
 		for (uint64_t uid : uids)
-			if (const auto *item = find_item(&catalog, uid);
-			    item && item->vnum == VOBJ_COINS)
+			if (const auto *item = find_item(&catalog, uid); item)
 				coins->push_back(*item);
 	}
 	catch (const std::bad_alloc &)
@@ -2172,7 +2171,8 @@ static critical_apply_result flatfile_coin_apply(const std::string &root,
 				}
 				if (result_code)
 					break;
-				if (baseline.object_uid != uid || baseline.vnum != VOBJ_COINS ||
+				if (baseline.object_uid != uid ||
+				    baseline.vnum != transfer.items[0].vnum ||
 				    baseline.type != ITEM_MONEY)
 				{
 					result_code = EBADMSG;

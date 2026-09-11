@@ -2,7 +2,7 @@
 
 #include "flatfile/flatfile_store.h"
 #include "player/player_snapshot_codec.h"
-#include "world/vnum.obj.h"
+#include "core/structs.h"
 
 #include <algorithm>
 #include <array>
@@ -804,7 +804,7 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 		auto collect_coins = [&](const std::vector<player_item_snapshot> &items)
 		{
 			for (const auto &item : items)
-				if (item.vnum == VOBJ_COINS)
+				if (item.type == ITEM_MONEY)
 					saved_coins.push_back(item.object_uid);
 		};
 		collect_coins(snapshot->items);
