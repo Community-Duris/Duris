@@ -58,6 +58,7 @@ typedef signed char sbyte;
 typedef signed short int sh_int;
 typedef struct AC_Memory Memory;
 typedef struct char_data *P_char;
+struct player_held_pet_state;
 typedef struct Guild *P_Guild;
 typedef struct Alliance *P_Alliance;
 typedef struct descriptor_data *P_desc;
@@ -263,6 +264,7 @@ struct edit_data
 #define PET_NOCASH BIT_1
 #define PET_NOORDER BIT_2
 #define PET_NOAGGRO BIT_3
+#define PET_RESTORE BIT_4 // retain saved lifetime and already-owned name
 
 #define INNATE_HORSE_BODY 0
 #define INNATE_LEVITATE 1
@@ -1230,6 +1232,7 @@ struct char_shapechange_data
 
 struct pc_only_data
 { /* values only used by PCs        */
+	player_held_pet_state *held_pets; // owned snapshots; never active followers
 	int pid; // replacement for PC's ->nr
 
 	char *poofIn;
@@ -1338,6 +1341,11 @@ struct npc_only_data
 	int R_num; // replacement for NPC's ->nr
 
 	int idnum; /* Given only to pets, used for crashsave */
+	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
+	bool summoned_instance; // survives loss of charm/ownership until extraction
+	int64_t pet_charm_expires_at;
+	int64_t pet_death_expires_at;
+	uint64_t summon_intrinsic_affects[5];
 	ulong aggro_flags; /* Err..  aggro flags */
 	ulong aggro2_flags; /* aggro2 flags, more aggro goodness */
 	ulong aggro3_flags;

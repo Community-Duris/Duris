@@ -602,6 +602,9 @@ bool sql_delete_spellbook_mobs(int pid)
 
 #else
 
+#include "player/player_snapshot_capture.h"
+#include "player/player_snapshot_repository.h"
+
 // globals
 
 extern MYSQL *DB;
@@ -3519,441 +3522,37 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 // pet save - save all player's pets with equipment
 bool sql_save_player_pets(P_char ch, int save_type)
 {
-	if (!ch || !IS_PC(ch) || !DB)
+	if (!ch || !IS_PC(ch) || !DB || ch->in_room < 0)
 		return false;
-
-	// Start own transaction if not already in one
-	bool own_txn = false;
-	if (!sql_in_transaction())
+	player_snapshot snapshot = {};
+	if (player_snapshot_capture(ch, 1, PLAYER_COMPONENT_PETS, save_type,
+				    world[ch->in_room].number,
+				    &snapshot) != player_snapshot_capture_result::ok)
+		return false;
+	const bool own_transaction = !sql_in_transaction();
+	if (own_transaction && !sql_begin_transaction())
+		return false;
+	if (!player_snapshot_repository_write_pets(DB, snapshot))
 	{
-		if (!sql_begin_transaction())
-			return false;
-		own_txn = true;
-	}
-
-	// only save pets on crash-type saves
-	if (save_type != RENT_CRASH && save_type != RENT_CRASH2)
-	{
-		// clear any existing saved pets on normal logout
-		int pid = GET_PID(ch);
-		if (pid > 0)
-		{
-			char del_query[128];
-			snprintf(del_query, sizeof(del_query),
-				 "DELETE FROM player_pets WHERE owner_pid=%d", pid);
-			if (!sql_run_query(del_query))
-			{
-				if (own_txn)
-					sql_rollback();
-				return false;
-			}
-		}
-		if (own_txn)
-		{
-			if (!sql_commit())
-			{
-				sql_rollback();
-				return false;
-			}
-		}
-		return true;
-	}
-
-	int pid = GET_PID(ch);
-	if (pid <= 0)
-	{
-		if (own_txn)
+		if (own_transaction)
 			sql_rollback();
 		return false;
 	}
-
-	// delete existing pets for this player (cascade deletes items/affects)
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
-	if (!sql_run_query(del_query))
+	if (own_transaction && !sql_commit())
 	{
-		if (own_txn)
-			sql_rollback();
+		sql_rollback();
 		return false;
-	}
-
-	// iterate through followers and save npc pets
-	int pet_order = 0;
-	for (struct follow_type *f = ch->followers; f; f = f->next)
-	{
-		P_char pet = f->follower;
-		if (!pet || !IS_NPC(pet) || GET_MASTER(pet) != ch)
-			continue;
-
-		// only save pets in same room
-		if (pet->in_room != ch->in_room)
-			continue;
-
-		int mob_vnum = mob_index[GET_RNUM(pet)].virtual_number;
-		int room_vnum = (pet->in_room >= 0) ? world[pet->in_room].number : 0;
-
-		// get charm duration from affect if exists
-		int charm_duration = -1;
-		for (struct affected_type *af = pet->affected; af; af = af->next)
-		{
-			if (af->type == SPELL_CHARM_PERSON)
-			{
-				charm_duration = af->duration;
-				break;
-			}
-		}
-
-		char ins_query[512];
-		snprintf(
-			ins_query, sizeof(ins_query),
-			"INSERT INTO player_pets (owner_pid, mob_vnum, pet_order, hit, max_hit, mana, max_mana, "
-			"vitality, max_vitality, charm_duration, room_vnum, saved_at) "
-			"VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, FROM_UNIXTIME(NULLIF(%ld,0)))",
-			pid, mob_vnum, pet_order, GET_HIT(pet), GET_MAX_HIT(pet), GET_MANA(pet),
-			GET_MAX_MANA(pet), GET_VITALITY(pet), GET_MAX_VITALITY(pet), charm_duration,
-			room_vnum, (long)time(0));
-
-		if (!sql_run_query(ins_query))
-		{
-			logit(LOG_DEBUG, "sql_save_player_pets: component=pet outcome=failure");
-			if (own_txn)
-				sql_rollback();
-			return false;
-		}
-
-		int pet_id = (int)mysql_insert_id(DB);
-
-		// save pet equipment
-		for (int i = 0; i < MAX_WEAR; i++)
-		{
-			if (pet->equipment[i] &&
-			    !IS_SET(pet->equipment[i]->extra_flags, ITEM_NORENT))
-			{
-				if (sql_save_single_pet_item(pet_id, pet->equipment[i], i + 1, 0) <=
-				    0)
-				{
-					if (own_txn)
-						sql_rollback();
-					return false;
-				}
-			}
-		}
-
-		// save pet inventory
-		for (P_obj obj = pet->carrying; obj; obj = obj->next_content)
-		{
-			if (!IS_SET(obj->extra_flags, ITEM_NORENT))
-			{
-				if (sql_save_single_pet_item(pet_id, obj, 0, 0) <= 0)
-				{
-					if (own_txn)
-						sql_rollback();
-					return false;
-				}
-			}
-		}
-
-		pet_order++;
-	}
-
-	if (own_txn)
-	{
-		if (!sql_commit())
-		{
-			sql_rollback();
-			return false;
-		}
 	}
 	return true;
 }
 
-// pet load - restore all player's pets with equipment
-bool sql_load_player_pets(P_char ch)
+// All runtime callers use player_load_pets_stage/commit with authoritative item
+// identities. Refuse the retired prototype-only loader rather than bypassing
+// held-record policy and hydrating equipment without custody validation.
+bool sql_load_player_pets(P_char /*ch*/)
 {
-	if (!ch || !IS_PC(ch) || !DB)
-		return false;
-
-	int pid = GET_PID(ch);
-	if (pid <= 0)
-		return false;
-
-	char query[256];
-	snprintf(
-		query, sizeof(query),
-		"SELECT id, mob_vnum, hit, max_hit, mana, max_mana, vitality, max_vitality, charm_duration "
-		"FROM player_pets WHERE owner_pid=%d ORDER BY pet_order",
-		pid);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return false;
-
-	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(result)))
-	{
-		int pet_db_id = atoi(row[0]);
-		int mob_vnum = atoi(row[1]);
-		int hit = atoi(row[2]);
-		int max_hit = atoi(row[3]);
-		int mana = atoi(row[4]);
-		int max_mana = atoi(row[5]);
-		int vitality = atoi(row[6]);
-		int max_vitality = atoi(row[7]);
-		int charm_duration = atoi(row[8]);
-
-		int pet_rnum = real_mobile(mob_vnum);
-		if (pet_rnum < 0)
-		{
-			logit(LOG_DEBUG,
-			      "sql_load_player_pets: component=prototype outcome=invalid");
-			continue;
-		}
-
-		P_char pet = read_mobile(pet_rnum, REAL);
-		if (!pet)
-		{
-			logit(LOG_DEBUG,
-			      "sql_load_player_pets: component=prototype outcome=create_failure");
-			continue;
-		}
-
-		// place pet in player's room
-		char_to_room(pet, ch->in_room, FALSE);
-
-		// setup as pet with charm
-		setup_pet(pet, ch, charm_duration, PET_NOAGGRO);
-		add_follower(pet, ch);
-
-		// restore stats
-		GET_HIT(pet) = hit;
-		GET_MAX_HIT(pet) = max_hit;
-		GET_MANA(pet) = mana;
-		GET_MAX_MANA(pet) = max_mana;
-		GET_VITALITY(pet) = vitality;
-		GET_MAX_VITALITY(pet) = max_vitality;
-
-		// load pet equipment and inventory
-		char item_query[512];
-		snprintf(
-			item_query, sizeof(item_query),
-			"SELECT id, vnum, equip_slot, container_id, weight, cost, timer, extra_flags, "
-			"value0, value1, value2, value3, value4, value5, value6, value7, "
-			"name, short_descr, description, action_descr, "
-			"wear_flags, item_type, item_material, "
-			"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
-			"FROM player_pet_items WHERE pet_id=%d ORDER BY id",
-			pet_db_id);
-
-		MYSQL_RES *item_result = db_query("%s", item_query);
-		if (item_result)
-		{
-			// two-pass: first create all items, then place them
-			// need to handle containers properly
-			struct
-			{
-				int db_id;
-				int container_id;
-				int equip_slot;
-				P_obj obj;
-			} items[256];
-			int item_count = 0;
-
-			MYSQL_ROW item_row;
-			while ((item_row = mysql_fetch_row(item_result)) && item_count < 256)
-			{
-				int item_db_id = atoi(item_row[0]);
-				int obj_vnum = atoi(item_row[1]);
-				int equip_slot = atoi(item_row[2]);
-				int container_id = item_row[3] ? atoi(item_row[3]) : 0;
-
-				int obj_rnum = real_object(obj_vnum);
-				if (obj_rnum < 0)
-					continue;
-
-				P_obj obj = read_object(obj_rnum, REAL);
-				if (!obj)
-					continue;
-
-				// restore item properties
-				obj->weight = atoi(item_row[4]);
-				obj->cost = atoi(item_row[5]);
-				obj->timer[0] = atol(item_row[6]);
-				obj->extra_flags = strtoul(item_row[7], NULL, 10);
-				obj->value[0] = atoi(item_row[8]);
-				obj->value[1] = atoi(item_row[9]);
-				obj->value[2] = atoi(item_row[10]);
-				obj->value[3] = atoi(item_row[11]);
-				obj->value[4] = atoi(item_row[12]);
-				obj->value[5] = atoi(item_row[13]);
-				obj->value[6] = atoi(item_row[14]);
-				obj->value[7] = atoi(item_row[15]);
-
-				// restore strung strings if present
-				if (item_row[16] && strlen(item_row[16]) > 0)
-				{
-					obj->name = str_dup(item_row[16]);
-					obj->str_mask |= STRUNG_KEYS;
-				}
-				if (item_row[17] && strlen(item_row[17]) > 0)
-				{
-					obj->short_description = str_dup(item_row[17]);
-					obj->str_mask |= STRUNG_DESC2;
-				}
-				if (item_row[18] && strlen(item_row[18]) > 0)
-				{
-					obj->description = str_dup(item_row[18]);
-					obj->str_mask |= STRUNG_DESC1;
-				}
-				if (item_row[19] && strlen(item_row[19]) > 0)
-				{
-					obj->action_description = str_dup(item_row[19]);
-					obj->str_mask |= STRUNG_DESC3;
-				}
-
-				if (item_row[20])
-					obj->wear_flags = atoi(item_row[20]);
-				if (item_row[21])
-					obj->type = sql_validate_loaded_item_type(
-						obj, atoi(item_row[21]),
-						"sql_load_player_pet_items");
-				if (item_row[22])
-					obj->material = atoi(item_row[22]);
-				if (item_row[23])
-					obj->bitvector = strtoul(item_row[23], NULL, 10);
-				if (item_row[24])
-					obj->bitvector2 = strtoul(item_row[24], NULL, 10);
-				if (item_row[25])
-					obj->bitvector3 = strtoul(item_row[25], NULL, 10);
-				if (item_row[26])
-					obj->bitvector4 = strtoul(item_row[26], NULL, 10);
-				if (item_row[27])
-					obj->bitvector5 = strtoul(item_row[27], NULL, 10);
-
-				// load item affects
-				char affect_query[256];
-				snprintf(
-					affect_query, sizeof(affect_query),
-					"SELECT location, modifier FROM player_pet_item_affects WHERE item_id=%d",
-					item_db_id);
-				MYSQL_RES *affect_result = db_query("%s", affect_query);
-				if (affect_result)
-				{
-					int aff_idx = 0;
-					MYSQL_ROW affect_row;
-					while ((affect_row = mysql_fetch_row(affect_result)) &&
-					       aff_idx < MAX_OBJ_AFFECT)
-					{
-						obj->affected[aff_idx].location =
-							atoi(affect_row[0]);
-						obj->affected[aff_idx].modifier =
-							atoi(affect_row[1]);
-						aff_idx++;
-					}
-					mysql_free_result(affect_result);
-				}
-
-				// load extra descriptions
-				snprintf(
-					affect_query, sizeof(affect_query),
-					"SELECT keyword, description FROM player_pet_item_extra_descr WHERE item_id=%d",
-					item_db_id);
-				MYSQL_RES *ed_result = db_query("%s", affect_query);
-				if (ed_result)
-				{
-					MYSQL_ROW ed_row;
-					while ((ed_row = mysql_fetch_row(ed_result)))
-					{
-						struct extra_descr_data *ed;
-						CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-
-						if (ed_row[0] &&
-						    strcmp(ed_row[0], "SPELLBOOK") == 0)
-						{
-							CREATE(ed->keyword, char, 4,
-							       MEM_TAG_STRING);
-							ed->keyword[0] = 3;
-							ed->keyword[1] = 1;
-							ed->keyword[2] = 3;
-							ed->keyword[3] = '\0';
-
-							size_t buflen = (MAX_SKILLS + 1) / 8 + 1;
-							CREATE(ed->description, char, buflen,
-							       MEM_TAG_STRING);
-							json_to_spellbook(ed_row[1],
-									  ed->description);
-						}
-						else
-						{
-							ed->keyword = ed_row[0] ?
-									      str_dup(ed_row[0]) :
-									      str_dup("");
-							ed->description =
-								ed_row[1] ? str_dup(ed_row[1]) :
-									    NULL;
-						}
-
-						ed->next = obj->ex_description;
-						obj->ex_description = ed;
-						obj->str_mask |= STRUNG_EDESC;
-					}
-					mysql_free_result(ed_result);
-				}
-
-				items[item_count].db_id = item_db_id;
-				items[item_count].container_id = container_id;
-				items[item_count].equip_slot = equip_slot;
-				items[item_count].obj = obj;
-				item_count++;
-			}
-			mysql_free_result(item_result);
-
-			// place items - containers first, then equip/inventory
-			for (int i = 0; i < item_count; i++)
-			{
-				if (items[i].container_id > 0)
-				{
-					// find container and put item in it
-					for (int j = 0; j < item_count; j++)
-					{
-						if (items[j].db_id == items[i].container_id &&
-						    items[j].obj)
-						{
-							obj_to_obj(items[i].obj, items[j].obj);
-							break;
-						}
-					}
-				}
-				else if (items[i].equip_slot > 0 && items[i].equip_slot <= MAX_WEAR)
-				{
-					equip_char(pet, items[i].obj, items[i].equip_slot - 1, 9);
-				}
-				else
-				{
-					obj_to_char(items[i].obj, pet);
-				}
-			}
-
-			for (int k = 0; k < item_count; k++)
-			{
-				if (items[k].obj)
-				{
-					recalc_container_weight(items[k].obj);
-				}
-			}
-		}
-	}
-
-	mysql_free_result(result);
-
-	// delete the saved pets after successful load
-	char del_query[128];
-	snprintf(del_query, sizeof(del_query), "DELETE FROM player_pets WHERE owner_pid=%d", pid);
-	if (!sql_run_query(del_query))
-	{
-		return false;
-	}
-
-	return true;
+	logit(LOG_FILE, "pet load refused: use ownership-aware player materialization");
+	return false;
 }
 
 // shapechange save/load
