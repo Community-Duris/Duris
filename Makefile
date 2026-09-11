@@ -199,3 +199,15 @@ clean-all: clean
 		-o -name .coverage -o -name '.coverage.*' -o -name coverage.xml \
 		-o -name gmon.out -o -name cscope.out \) \
 		-exec rm -f {} +
+
+
+.PHONY: build-restore-tools test-backup-recovery
+build-restore-tools:
+	python3 scripts/build_restore_qualifier.py
+	+$(MAKE) -C src PERSISTENCE_BACKEND=flatfile DMS_BINARY=$(abspath bin/server/dms_restore_flatfile)
+
+test-backup-recovery: build-server build-restore-tools
+	python3 tests/async/test_persistence_backup.py
+	python3 tests/async/test_backup_pfiles.py
+	python3 tests/async/test_flatfile_backup_manifest.py
+	DURIS_RUN_BACKUP_INTEGRATION=1 python3 tests/async/test_persistence_backup_integration.py

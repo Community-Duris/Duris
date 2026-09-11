@@ -252,6 +252,13 @@ critical_apply_result repository_failure(bool io_error, unsigned int terminal_co
 }
 } // namespace
 
+bool flatfile_shop_trade_repository_validate(const std::string &root, std::string *error)
+{
+	operation_catalog catalog;
+	const auto result = load_catalog(root, &catalog, error);
+	return result == flatfile_read_result::ok || result == flatfile_read_result::not_found;
+}
+
 critical_apply_result flatfile_shop_trade_repository_apply(const std::string &root,
 							   const critical_command &command)
 {

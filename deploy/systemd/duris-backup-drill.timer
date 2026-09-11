@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate Duris drill policy
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=5
+Unit=duris-backup-drill.service
+
+[Install]
+WantedBy=timers.target

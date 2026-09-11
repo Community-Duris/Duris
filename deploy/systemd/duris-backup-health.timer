@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate Duris health policy
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+RandomizedDelaySec=5
+Unit=duris-backup-health.service
+
+[Install]
+WantedBy=timers.target
