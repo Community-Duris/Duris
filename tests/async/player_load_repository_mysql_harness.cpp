@@ -308,7 +308,8 @@ int main()
 				"(1002,1,2),(1002,2,-3)");
 	execute_sql(connection,
 		    "INSERT INTO player_item_extra_descr(item_id,keyword,description) VALUES"
-		    "(1002,'SPELLBOOK','[1,7,31]'),(1003,'detail','fixture')");
+		    "(1002,'SPELLBOOK','[1,7,31]'),(1003,'detail','fixture'),"
+		    "(1003,CONVERT(0x030103 USING utf8mb4),CONVERT(0x02 USING utf8mb4))");
 
 	player_load_result fixture = execute_load(connection, request, 81);
 	if (fixture.outcome != player_load_outcome::applied)
@@ -327,6 +328,11 @@ int main()
 	assert(fixture.item_identities[1].root_item_uid == 900001);
 	assert(fixture.item_identities[1].parent_item_uid == 900001);
 	assert(fixture.snapshot.items[1].extra_descriptions.size() == 1);
+	assert(fixture.snapshot.items[2].extra_descriptions.size() == 2);
+	const auto &legacy_player_book = fixture.snapshot.items[2].extra_descriptions[1];
+	assert(legacy_player_book.keyword == "SPELLBOOK" &&
+	       legacy_player_book.description == "[]" && legacy_player_book.spellbook &&
+	       legacy_player_book.spell_ids.empty());
 	assert(fixture.snapshot.items[1].affects[0][0] == 1);
 	assert(fixture.stale_item_rows == 0);
 
@@ -423,7 +429,8 @@ int main()
 		    "(3102,1,2)");
 	execute_sql(connection,
 		    "INSERT INTO player_pet_item_extra_descr(item_id,keyword,description) VALUES"
-		    "(3101,'detail','pet fixture')");
+		    "(3101,'detail','pet fixture'),"
+		    "(3102,CONVERT(0x030103 USING utf8mb4),CONVERT(0x02 USING utf8mb4))");
 	player_load_result pet_fixture = execute_load(connection, request, 88);
 	assert(pet_fixture.outcome == player_load_outcome::applied);
 	assert(pet_fixture.metrics.query_count == PLAYER_LOAD_QUERY_MAX &&
@@ -433,6 +440,10 @@ int main()
 	assert(pet_fixture.snapshot.pets[0].items.size() == 2 &&
 	       pet_fixture.pet_identities[0].item_identities.size() == 2);
 	assert(pet_fixture.snapshot.pets[0].items[0].extra_descriptions.size() == 1);
+	assert(pet_fixture.snapshot.pets[0].items[1].extra_descriptions.size() == 1);
+	const auto &legacy_pet_book = pet_fixture.snapshot.pets[0].items[1].extra_descriptions[0];
+	assert(legacy_pet_book.keyword == "SPELLBOOK" && legacy_pet_book.description == "[]" &&
+	       legacy_pet_book.spellbook && legacy_pet_book.spell_ids.empty());
 	assert(pet_fixture.snapshot.pets[0].items[1].affects[0][0] == 1);
 	assert(pet_fixture.authoritative_item_count == 5);
 

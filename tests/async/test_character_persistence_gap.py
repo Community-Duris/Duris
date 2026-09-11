@@ -203,12 +203,15 @@ require(
 
 # load tolerates the duplicates that already exist
 require(
-    "bool duplicate_description(" in LOAD_REPOSITORY,
-    "the load path must recognise an exact duplicate description",
+    "bool append_loaded_extra_description(" in LOAD_REPOSITORY
+    and "if (duplicate_description(descriptions, normalized_keyword, normalized_description))"
+    in LOAD_REPOSITORY,
+    "the load path must centralize exact duplicate description handling",
 )
 require(
-    LOAD_REPOSITORY.count("if (duplicate_description(item.extra_descriptions, row[5], row[6]))") == 2,
-    "player and pet item loads must both drop exact duplicate descriptions",
+    LOAD_REPOSITORY.count("return append_loaded_extra_description(item.extra_descriptions, row[5],")
+    == 2,
+    "player and pet item loads must both use duplicate-tolerant description loading",
 )
 
 # --- 5. load diagnostics ----------------------------------------------------------
