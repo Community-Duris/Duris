@@ -9354,7 +9354,8 @@ void bodyslam(P_char ch, P_char victim)
 	}
 	else if (percent_chance == TAKEDOWN_PENALTY)
 	{
-		// should be here, otherwise we might get double messages
+		// The helper already printed the failure; apply recovery without repeating it.
+		CharWait(ch, 2 * PULSE_VIOLENCE);
 	}
 	else if (GET_POS(victim) != POS_STANDING)
 	{
@@ -9583,6 +9584,7 @@ void do_springleap(P_char ch, char *argument, int /*cmd*/)
 		    vict, TO_CHAR);
 
 		SET_POS(ch, POS_SITTING + GET_STAT(ch));
+		CharWait(ch, 2 * PULSE_VIOLENCE);
 		return;
 	}
 
@@ -9901,6 +9903,7 @@ void do_trip(P_char ch, char *argument, int /*cmd*/)
 		    TO_CHAR);
 
 		SET_POS(ch, POS_SITTING + GET_STAT(ch));
+		CharWait(ch, 2 * PULSE_VIOLENCE);
 		return;
 	}
 
@@ -9941,6 +9944,7 @@ void do_trip(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("Tripping creatures of this minute size is hopeless at best.\n", ch);
 		stop_singing(ch);
 		SET_POS(ch, POS_SITTING + GET_STAT(ch));
+		CharWait(ch, 2 * PULSE_VIOLENCE);
 		return;
 	}
 	else if (get_takedown_size(vict) > (get_takedown_size(ch) + 1))
@@ -9948,6 +9952,7 @@ void do_trip(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("You try to trip, but your opponent is too massive!\n", ch);
 		stop_singing(ch);
 		SET_POS(ch, POS_SITTING + GET_STAT(ch));
+		CharWait(ch, 2 * PULSE_VIOLENCE);
 		return;
 	}
 
