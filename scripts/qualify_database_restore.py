@@ -38,6 +38,9 @@ def main():
         "WHERE b.opening_balance+COALESCE(l.delta,0)<>p.epics;",
         "SELECT COUNT(*) FROM epic_ledger l JOIN player_data p ON p.pid=l.pid "
         "WHERE l.epic_revision=p.epic_revision AND l.balance_after<>p.epics;",
+        # This is a conservative generation invariant. It is deliberately
+        # separate from persistence_restore.tombstone_preflight(), which
+        # validates fresh external evidence and its authority.
         "SELECT COUNT(*) FROM account_erasure_tombstones;",
     ]
     for query in queries:

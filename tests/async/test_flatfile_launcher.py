@@ -50,7 +50,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-launcher-") as temporary
     policy = json.loads((ROOT / "scripts/backup_policy.example.json").read_text())
     policy.update(approved=True, custodian="synthetic-launcher", root=str(project / "backups"),
                   restore_root=str(project / "restore"), live_roots=[str(project / "state")],
-                  journal_roots={}, replica_root=None, min_free_bytes=0)
+                  journal_roots={"players": str(project / "player-journal"),
+                                 "critical": str(project / "critical-command-journal")},
+                  replica_root=None, min_free_bytes=0)
+    (project / "player-journal").mkdir(mode=0o700)
+    (project / "critical-command-journal").mkdir(mode=0o700)
     config = project / "backup-policy.json"
     config.write_text(json.dumps(policy))
     config.chmod(0o600)

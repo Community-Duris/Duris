@@ -1,6 +1,7 @@
 [Unit]
 Description=Duris persistence drill
 # Add an OnFailure= unit connected to the custodian's existing alerting service.
+Conflicts=duris-backup-backup.service duris-backup-health.service
 
 [Service]
 Type=oneshot
@@ -11,6 +12,7 @@ WorkingDirectory=/opt/duris
 Environment=BACKUP_ENV_FILE=/etc/duris/backup.env
 ExecStart=/opt/duris/scripts/backup_pfiles.sh drill --tombstones /var/lib/duris/erasure-current.json
 NoNewPrivileges=true
+PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/lib/duris

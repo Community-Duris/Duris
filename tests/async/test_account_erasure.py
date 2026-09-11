@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import copy
+import json
 import sys
+import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -164,6 +167,17 @@ class AccountErasureTest(unittest.TestCase):
             ledger.finalize(request, credentials_remaining=1, login_loadable=False)
         with self.assertRaisesRegex(erasure.ErasureContractError, "blocks completion"):
             ledger.finalize(request, credentials_remaining=0, login_loadable=True)
+
+    def test_current_restore_evidence_is_written_atomically(self) -> None:
+        ledger = erasure.TombstoneLedger()
+        with tempfile.TemporaryDirectory(prefix="erasure-evidence-") as temporary:
+            path = Path(temporary) / "erasure-current.json"
+            ledger.write_current(path, captured_at=int(time.time()))
+            value = json.loads(path.read_text())
+            self.assertEqual(value["version"], 1)
+            self.assertEqual(value["tombstones"], [])
+            self.assertEqual(path.stat().st_mode & 0o077, 0)
+            self.assertFalse(list(Path(temporary).glob(".erasure-*")))
 
 
 if __name__ == "__main__":

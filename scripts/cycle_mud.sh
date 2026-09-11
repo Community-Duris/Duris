@@ -282,7 +282,27 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   mkdir -p logs/log
 
   echo "Backing up authoritative persistence state..."
-  if ! ./scripts/backup_pfiles.sh; then
+  BACKUP_OK=0
+  for BACKUP_ATTEMPT in 1 2 3; do
+    BACKUP_OUTPUT=$(mktemp)
+    if ./scripts/backup_pfiles.sh >"$BACKUP_OUTPUT" 2>&1; then
+      cat "$BACKUP_OUTPUT"
+      rm -f "$BACKUP_OUTPUT"
+      BACKUP_OK=1
+      break
+    fi
+    cat "$BACKUP_OUTPUT"
+    if grep -q "job_overlap_or_authority_busy" "$BACKUP_OUTPUT" && (( BACKUP_ATTEMPT < 3 )); then
+      echo "Backup authority is busy; retrying (attempt $((BACKUP_ATTEMPT + 1)) of 3)" >&2
+      rm -f "$BACKUP_OUTPUT"
+      sleep 1
+      continue
+    fi
+    rm -f "$BACKUP_OUTPUT"
+    echo "Required $PERSISTENCE_MODE backup failed; refusing to boot" >&2
+    exit 1
+  done
+  if (( BACKUP_OK != 1 )); then
     echo "Required $PERSISTENCE_MODE backup failed; refusing to boot" >&2
     exit 1
   fi

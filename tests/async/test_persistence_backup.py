@@ -28,20 +28,25 @@ def policy(base):
     return dict(version=1, approved=True, custodian="synthetic-test", schedule_seconds=3600,
                 rpo_seconds=7200, hourly=48, daily=14, weekly=8, max_bytes=20 * 1024**3,
                 min_free_bytes=0, drill_seconds=604800, root=base / "backups",
-                restore_root=base / "restore", live_roots=[base / "live"], replica_root=None, journal_roots={})
+                restore_root=base / "restore", live_roots=[base / "live"], replica_root=None,
+                journal_roots={"players": base / "journals/players",
+                               "critical": base / "journals/critical"})
 
 
 def provision(root):
     for directory in ("identities/names", "identities/accounts", "players", "domains"):
         (root / directory).mkdir(parents=True, mode=0o700, exist_ok=True)
+    journal_root = root.parent / "journals"
+    for directory in ("players", "critical"):
+        (journal_root / directory).mkdir(parents=True, mode=0o700, exist_ok=True)
     for relative in ("identities/names/catalog.identity", "identities/accounts/synthetic.acct",
                      "players/42", "domains/player_42", "domains/locker_catalog"):
         (root / relative).write_bytes(("synthetic:" + relative).encode())
-    for path in [root, *root.rglob("*")]:
+    for path in [root, *root.rglob("*"), journal_root, *journal_root.rglob("*")]:
         path.chmod(0o700 if path.is_dir() else 0o600)
 
 
-def fake_database_capture(stage, unused):
+def fake_database_capture(stage, unused, capacity_base=None):
     tables = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
     with gzip.open(stage / "database.sql.gz", "wb") as stream:
         for table in tables["runtime_table_sql_list"].replace("'", "").split(","):
@@ -58,7 +63,11 @@ class Fixture(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.p = policy(self.base)
         provision(self.base / "live")
-        self.env = mock.patch.dict(os.environ, {"FLATFILE_STATE_DIR": str(self.base / "live")})
+        self.env = mock.patch.dict(os.environ, {
+            "FLATFILE_STATE_DIR": str(self.base / "live"),
+            "PLAYER_SAVE_JOURNAL_DIR": str(self.base / "journals/players"),
+            "CRITICAL_COMMAND_JOURNAL_DIR": str(self.base / "journals/critical"),
+        })
         self.env.start()
         self.addCleanup(self.env.stop)
         self.capture = mock.patch.object(backup, "mariadb_capture", fake_database_capture)
@@ -104,7 +113,10 @@ class PolicyTests(Fixture):
         return backup.policy_load(path)
 
     def test_approved_defaults(self):
-        self.assertEqual(self.load(), self.p)
+        loaded = self.load()
+        expected = dict(self.p,
+                        live_roots=self.p["live_roots"] + list(self.p["journal_roots"].values()))
+        self.assertEqual(loaded, expected)
 
     def test_invalid_policy_values(self):
         for changes in ({"approved": False}, {"custodian": "SET_BY_OPERATOR"},
@@ -187,9 +199,9 @@ class GenerationTests(Fixture):
     def test_rpo_measures_from_capture_start(self):
         started = int(time.time())
         clock = [started]
-        def delayed_capture(stage, p):
+        def delayed_capture(stage, p, capacity_base=None):
             clock[0] += 300
-            return fake_database_capture(stage, p)
+            return fake_database_capture(stage, p, capacity_base)
         with mock.patch.object(backup.time, "time", side_effect=lambda: clock[0]), \
              mock.patch.object(backup, "mariadb_capture", delayed_capture):
             self.create("mariadb-primary")
@@ -266,8 +278,9 @@ class GenerationTests(Fixture):
     def test_overlap_fails_promptly(self):
         backup.mkdir(self.p["root"])
         with backup.lock(self.p["root"] / ".job.lock"):
-            with self.assertRaisesRegex(backup.BackupError, "job_overlap"):
-                self.create()
+            with mock.patch.object(backup, "LOCK_WAIT_SECONDS", 0):
+                with self.assertRaisesRegex(backup.BackupError, "job_overlap"):
+                    self.create()
         self.assertFalse(backup.generations(self.p["root"]))
 
     def test_hard_capacity_does_not_publish_or_remove_prior(self):
@@ -402,16 +415,22 @@ class CapacityAndInputTests(Fixture):
     def test_journals_are_complete_and_churn_blocks_publication(self):
         journal = self.base / "synthetic-player-wal"
         journal.mkdir(mode=0o700)
-        (journal / "segment.wal").write_bytes(b"synthetic-journal-bytes")
+        (journal / "player-save.journal").write_bytes(b"synthetic-journal-bytes")
         self.p["journal_roots"] = {"players": journal}
-        with mock.patch.dict(os.environ, {"PLAYER_SAVE_JOURNAL_DIR": str(journal)}):
+        critical = self.base / "critical-journal"
+        critical.mkdir(mode=0o700)
+        with mock.patch.dict(os.environ, {
+            "PLAYER_SAVE_JOURNAL_DIR": str(journal),
+            "CRITICAL_COMMAND_JOURNAL_DIR": str(critical),
+        }):
+            self.p["journal_roots"] = {"players": journal, "critical": critical}
             generation = self.create()
             self.assertEqual(backup.inventory(journal), backup.inventory(generation / "journals/players"))
             captured = backup.inventory(generation)
             original = backup.flatfile_capture
-            def changed_capture(stage, p):
-                result = original(stage, p)
-                (journal / "segment.wal").write_bytes(b"synthetic-new-journal-bytes")
+            def changed_capture(stage, p, capacity_base=None):
+                result = original(stage, p, capacity_base)
+                (journal / "player-save.journal").write_bytes(b"synthetic-new-journal-bytes")
                 return result
             with mock.patch.object(backup, "flatfile_capture", changed_capture):
                 with self.assertRaisesRegex(backup.BackupError, "journal_changed"):

@@ -1,6 +1,7 @@
 [Unit]
 Description=Duris persistence health
 # Add an OnFailure= unit connected to the custodian's existing alerting service.
+Conflicts=duris-backup-backup.service duris-backup-drill.service
 
 [Service]
 Type=oneshot
