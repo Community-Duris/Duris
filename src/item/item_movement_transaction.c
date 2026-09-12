@@ -146,8 +146,7 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry)
-			   {
+			   [&](const auto &entry) {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
