@@ -158,7 +158,13 @@ def run(binary, chaos, class_name="Warrior"):
                     if chaos:
                         chaos_kit.create_chaos_character(observer)
                     else:
-                        journey.create_character(observer, expected_room=None)
+                        journey.create_character(
+                            observer,
+                            expected_room=None,
+                            account="Observeacct",
+                            character="Valerek",
+                            email="observeacct@example.invalid",
+                        )
                 finally:
                     journey.ACCOUNT, journey.CHARACTER, chaos_kit.ACCOUNT, chaos_kit.CHARACTER = original
                 observer.expect("Pos: standing >")
