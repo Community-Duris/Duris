@@ -38,6 +38,7 @@ using namespace std;
 #include "combat/justice.h"
 #include "world/map.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
 #include "persistence/persistence_checkpoint.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -218,6 +219,17 @@ P_obj quest_item_reward(P_char ch)
 	return reward;
 }
 
+static bool grant_world_quest_reward(P_char ch, P_obj reward)
+{
+	if (!reward)
+		return false;
+	if (item_creation_grant_submit_to_player(ch, reward, ch))
+		return true;
+	extract_obj(reward, FALSE);
+	send_to_char("The ownership authority is busy; your quest reward was not created.\r\n", ch);
+	return false;
+}
+
 void quest_full_reward(P_char ch, P_char quest_mob, int type)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -228,11 +240,11 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	}
 
 	P_obj reward = quest_item_reward(ch);
-	if (reward)
+	const bool reward_granted = grant_world_quest_reward(ch, reward);
+	if (reward_granted)
 	{
 		act("$n gives you $q ", TRUE, quest_mob, reward, ch, TO_VICT);
 		act("$n gives $N $q.", FALSE, quest_mob, reward, ch, TO_NOTVICT);
-		obj_to_char(reward, ch);
 	}
 
 	if (GET_CLASS(ch, CLASS_MERCENARY))
@@ -261,7 +273,7 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou gain some experience.&n");
 	act(Gbuf1, FALSE, quest_mob, 0, ch, TO_VICT);
 
-	sql_world_quest_finished(ch, reward);
+	sql_world_quest_finished(ch, reward_granted ? reward : NULL);
 	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 
 	resetQuest(ch);
@@ -336,11 +348,11 @@ void quest_kill(P_char ch, P_char quest_mob)
 		// One reward per completed quest, handed to the player who completed it rather
 		// than rolled onto the corpse of each kill.
 		P_obj reward = quest_item_reward(ch);
-		if (reward)
+		const bool reward_granted = grant_world_quest_reward(ch, reward);
+		if (reward_granted)
 		{
 			send_to_char_f(ch, "For completing your quest you receive %s&n.\r\n",
 				       reward->short_description);
-			obj_to_char(reward, ch);
 		}
 
 		if (GET_CLASS(ch, CLASS_MERCENARY) && GET_LEVEL(ch) > 24)
@@ -356,7 +368,7 @@ void quest_kill(P_char ch, P_char quest_mob)
 		}
 
 		quest_epic_reward(ch, FIND_AND_KILL);
-		sql_world_quest_finished(ch, reward);
+		sql_world_quest_finished(ch, reward_granted ? reward : NULL);
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		resetQuest(ch);
 		gmcp_quest_status(ch);

@@ -109,12 +109,24 @@ def test_nofear_block_reads_the_fourth_affect_field() -> None:
 def test_kill_quests_pay_one_reward_on_completion() -> None:
     kill = extract_function("world_quest.c", "void quest_kill(")
     assert "obj_to_char(reward, quest_mob)" not in kill
+    assert "obj_to_char(reward, ch)" not in kill
     assert "quest_kill_original + 1) <= 2" not in kill
     assert kill.count("quest_item_reward(ch)") == 1
     done = kill[kill.index("quest_kill_how_many - ch->only.pc->quest_kill_original == 0"):]
-    assert (done.index("quest_item_reward(ch)") < done.index("obj_to_char(reward, ch)")
-            < done.index("resetQuest(ch)"))
-    assert "sql_world_quest_finished(ch, reward)" in done
+    assert done.index("quest_item_reward(ch)") < done.index("grant_world_quest_reward(ch, reward)")
+    assert done.index("grant_world_quest_reward(ch, reward)") < done.index("resetQuest(ch)")
+    assert "sql_world_quest_finished(ch, reward_granted ? reward : NULL)" in done
+
+
+def test_reward_grant_rejection_does_not_publish_a_stale_object() -> None:
+    grant = extract_function("world_quest.c", "static bool grant_world_quest_reward(")
+    assert "item_creation_grant_submit_to_player(ch, reward, ch)" in grant
+    rejected = grant.index("extract_obj(reward, FALSE)")
+    assert rejected < grant.index("return false;", rejected)
+    assert "your quest reward was not created" in grant
+    full = extract_function("world_quest.c", "void quest_full_reward(")
+    assert "grant_world_quest_reward(ch, reward)" in full
+    assert "sql_world_quest_finished(ch, reward_granted ? reward : NULL)" in full
 
 
 def test_quests_are_unshareable_by_default() -> None:
