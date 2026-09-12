@@ -767,6 +767,11 @@ def object_class_allowed(obj: AreaObject | None, class_id: int, constants: dict[
         return False
     bit = class_bit(class_id)
     allowed_flag = constants.get("ITEM_ALLOWED_CLASSES", 1 << 10)
+    # Match can_char_use_item() for the unspecialized Dragoons receiving kits:
+    # denial lists check Warrior, while allowance lists check Sorcerer.
+    if bit == constants.get("CLASS_DRAGOON", 1 << 29):
+        bit = (constants.get("CLASS_SORCERER", 1 << 9) if obj.extra_flags & allowed_flag
+               else constants.get("CLASS_WARRIOR", 1))
     if obj.extra_flags & allowed_flag:
         return bool(obj.anti_flags & bit)
     return not bool(obj.anti_flags & bit)

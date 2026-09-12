@@ -17,11 +17,14 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "core/utility.h"
 #include "account/chaos_eq_data.h"
+#include "combat/chaos_config.h"
 #include "item/item_movement_transaction.h"
+#include "net/comm.h"
 #include <array>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 static index_data indexes[1]{};
 P_index obj_index = indexes;
@@ -44,6 +47,19 @@ void extract_obj(P_obj, int) { ++extracts; }
 bool obj_can_nest(P_obj, P_obj) { return nesting; }
 void obj_to_obj(P_obj object, P_obj bag) { object->loc_p = LOC_INSIDE; object->loc.inside = bag; bag->contains = object; }
 void logit(const char *, const char *, ...) {}
+static P_char restore_target = nullptr;
+static bool chaos_enabled = true, restore_busy = false, restore_queued = false, restore_refused = false;
+static int restore_calls = 0;
+static std::string restore_message;
+bool chaos_mud_enabled() { return chaos_enabled; }
+P_char get_char_vis(P_char, const char *) { return restore_target; }
+bool item_movement_transaction_player_busy(P_char) { return restore_busy; }
+bool item_creation_grant_blocks_commands(P_char) { return restore_queued; }
+void send_to_char(const char *message, P_char) { restore_message = message; }
+static void load_chaos_new_character_kit(P_char) {
+    ++restore_calls;
+    restore_busy = restore_queued = !restore_refused;
+}
 '''
 DRIVER = r'''
 int main()
@@ -148,6 +164,50 @@ int main()
     { chaos_kit_objects kit; assert(!append_chaos_kit_item(&actor, &bag, &support, kit)); assert(!kit.count); }
     nesting = true;
     { chaos_kit_objects kit; assert(append_chaos_kit_item(&actor, &bag, &support, kit)); assert(!kit.count && bag.contains == &loaded); }
+
+    // Staff recovery must use the normal grant once, and leave occupied or
+    // nonplaying characters alone. Mortal callers and Chaos-off also refuse.
+    char_data staff{};
+    staff.only.pc = &pc;
+    staff.player.level = MAXLVLMORTAL + 1;
+    descriptor_data descriptor{};
+    descriptor.connected = CON_PLAYING;
+    actor.player.level = MAXLVLMORTAL;
+    actor.desc = &descriptor;
+    restore_target = &actor;
+    restore_chaos_character_kit(nullptr, "target");
+    restore_chaos_character_kit(&actor, "target");
+    chaos_enabled = false;
+    restore_chaos_character_kit(&staff, "target");
+    chaos_enabled = true;
+    restore_chaos_character_kit(&staff, "");
+    restore_target = nullptr;
+    restore_chaos_character_kit(&staff, "missing");
+    restore_target = &actor;
+    actor.desc = nullptr;
+    restore_chaos_character_kit(&staff, "target");
+    actor.desc = &descriptor;
+    descriptor.connected = CON_RMOTD;
+    restore_chaos_character_kit(&staff, "target");
+    descriptor.connected = CON_PLAYING;
+    actor.carrying = &loaded;
+    restore_chaos_character_kit(&staff, "target");
+    actor.carrying = nullptr;
+    actor.equipment[MAX_WEAR - 1] = &loaded;
+    restore_chaos_character_kit(&staff, "target");
+    actor.equipment[MAX_WEAR - 1] = nullptr;
+    restore_busy = true;
+    restore_chaos_character_kit(&staff, "target");
+    assert(restore_calls == 0);
+    restore_busy = false;
+    restore_refused = true;
+    restore_chaos_character_kit(&staff, "target");
+    assert(restore_calls == 1 && restore_message.find("could not be restored") != std::string::npos);
+    restore_refused = false;
+    restore_chaos_character_kit(&staff, "target");
+    assert(restore_calls == 2 && restore_queued && restore_message.find("queued") != std::string::npos);
+    restore_chaos_character_kit(&staff, "target");
+    assert(restore_calls == 2);
     puts("CHAOS preparation/role/placement runtime passed");
 }
 '''
@@ -156,7 +216,7 @@ int main()
 def main():
     functions = ["static void prepare_chaos_kit_item", "static bool chaos_kit_skill_available",
                  "static bool chaos_kit_weapon_slot", "static bool chaos_kit_fits_slot",
-                 "static bool append_chaos_kit_item"]
+                 "static bool append_chaos_kit_item", "void restore_chaos_character_kit"]
     harness = "\n".join([PRELUDE, BUILDER, *[extract_function("nanny.c", sig) for sig in functions], DRIVER])
     with tempfile.TemporaryDirectory(prefix="chaos-kit-unit-") as directory:
         source, binary = Path(directory) / "kit.cpp", Path(directory) / "kit"
