@@ -38,7 +38,9 @@ inline bool world_quest_item_passes_floor(int quest_level, int itemvalue)
 // ceil(count * withheld_percent / 100) items by itemvalue are withheld, and any item worth
 // as much as the cheapest of those is withheld with it, so the rule acts as a ceiling: an
 // item is offered only when its value is below the returned figure. Returns INT_MAX when
-// nothing is withheld.
+// nothing is withheld. If the tie reaches the zone's cheapest item while fewer than all
+// items were due to be withheld, the zone has no top tier (every item is worth the same)
+// and nothing is withheld rather than emptying it; a zone's only item is still withheld.
 inline int world_quest_reward_value_ceiling(std::vector<int> values, int withheld_percent)
 {
 	if (values.empty() || withheld_percent <= 0)
@@ -47,7 +49,10 @@ inline int world_quest_reward_value_ceiling(std::vector<int> values, int withhel
 	const long long count = static_cast<long long>(values.size());
 	const long long withheld = (count * percent + 99) / 100;
 	std::sort(values.begin(), values.end(), std::greater<int>());
-	return values[static_cast<size_t>(withheld - 1)];
+	const int ceiling = values[static_cast<size_t>(withheld - 1)];
+	if (withheld < count && ceiling == values.back())
+		return std::numeric_limits<int>::max();
+	return ceiling;
 }
 
 inline double world_quest_zone_level_fit(int quest_level, double average_level)

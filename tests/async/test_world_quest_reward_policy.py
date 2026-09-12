@@ -8,6 +8,7 @@ quests are unshareable by default; and the fee is a property.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -50,6 +51,12 @@ int main() {
     // 100 percent or more withholds everything: nothing is below the cheapest item.
     if (world_quest_reward_value_ceiling({7, 3, 9}, 100) != 3) return 7;
     if (world_quest_reward_value_ceiling({7, 3, 9}, 250) != 3) return 8;
+    // A zone whose items are all worth the same has no top tier: nothing is withheld,
+    // rather than the tie emptying the zone.
+    if (world_quest_reward_value_ceiling({100, 100, 100, 100, 100}, 20) != INT_MAX) return 9;
+    if (world_quest_reward_value_ceiling({50, 50}, 20) != INT_MAX) return 10;
+    // A cheaper item keeps the zone stocked, so the tied top tier is withheld as usual.
+    if (world_quest_reward_value_ceiling({10, 100, 100, 100, 100}, 20) != 100) return 11;
     return 0;
 }
 ''', "duris-world-quest-ceiling-")
@@ -87,6 +94,16 @@ def test_nofear_block_reads_the_fourth_affect_field() -> None:
     eligible = extract_function("world/world_quest_policy.c", "bool source_eligible_reward(")
     assert "IS_SET(obj->bitvector4, AFF4_NOFEAR)" in eligible
     assert "IS_SET(obj->bitvector, AFF4_NOFEAR)" not in eligible
+    # The same copied blocklist lives in crafting's has_affect(); no affect flag anywhere
+    # may be tested against a different affect word.
+    wrong_word = re.compile(
+        r"IS_SET\([^,]*->bitvector, AFF[234]_|IS_SET\([^,]*->bitvector2, AFF[34]?_[A-Z]|"
+        r"IS_SET\([^,]*->bitvector3, AFF[24]?_[A-Z]|IS_SET\([^,]*->bitvector4, AFF[23]?_[A-Z]")
+    offenders = [f"{path.relative_to(ROOT)}:{number}"
+                 for path in sorted((ROOT / "src").rglob("*.[ch]"))
+                 for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1)
+                 if wrong_word.search(line)]
+    assert not offenders, offenders
 
 
 def test_kill_quests_pay_one_reward_on_completion() -> None:

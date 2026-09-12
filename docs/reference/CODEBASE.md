@@ -274,8 +274,10 @@ hand-built quest pays out or asks players to hand in (the item goals of
 `quest_index`) are never rewards, flagged `ITEM2_QUESTITEM` or not. Each zone
 also withholds its most valuable `world.quest.reward.top.withheld.percent`
 (default 20) percent of source-eligible items, rounded up and including value
-ties; per-level pools and scores are built from what remains, and the boot log
-reports both withheld counts.
+ties. A zone whose items are all worth the same has no top tier, so nothing is
+withheld there; a zone's only item is. Per-level pools and scores are built from
+what remains, and the boot log reports both withheld counts. The setting is read
+when the catalog is built, so a change applies at the next boot.
 
 For eligible zones, the relative selection weight is
 `exp(-abs(average_level - L) / 6) * (average_ivalue / L) * eligible_item_count`.
