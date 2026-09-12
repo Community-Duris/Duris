@@ -211,7 +211,7 @@ def test_every_dial_reaches_its_hook() -> None:
 
     epic = _flat(source("world/epic.c").read_text())
     assert _flat("if (type != EPIC_PVP && type != EPIC_SHIP_PVP) amount = "
-                 "difficulty_scale_int(amount, difficulty_multiplier(DIFFICULTY_EPIC_GAIN));") in epic
+                 "MAX(1, difficulty_scale_int(amount, difficulty_multiplier(DIFFICULTY_EPIC_GAIN)));") in epic
 
 
 def test_mob_dials_skip_player_pets_and_morphs() -> None:
