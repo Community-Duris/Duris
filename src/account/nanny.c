@@ -718,6 +718,37 @@ void schedule_chaos_new_character_kit_before_entry(P_char ch)
 	load_chaos_new_character_kit(ch);
 }
 
+void restore_chaos_character_kit(P_char staff, const char *name)
+{
+	if (!staff || !IS_TRUSTED(staff) || !chaos_mud_enabled())
+		return;
+	if (!name || !*name)
+		return send_to_char("Usage: chaos kit <character>\r\n", staff);
+	P_char victim = get_char_vis(staff, name);
+	if (!victim || !IS_PC(victim) || !victim->desc || victim->desc->connected != CON_PLAYING ||
+	    GET_LEVEL(victim) < 1 || GET_LEVEL(victim) > MAXLVLMORTAL)
+		return send_to_char("Choose an online mortal character.\r\n", staff);
+	if (victim->carrying || item_movement_transaction_player_busy(victim))
+		return send_to_char("That character has items or an item grant pending.\r\n",
+				    staff);
+	for (P_obj equipped : victim->equipment)
+		if (equipped)
+			return send_to_char("That character already has equipment.\r\n", staff);
+
+	// Restore equipment through the normal ownership coordinator. Currency and
+	// epic starter rewards already have independent durable completion records.
+	load_chaos_new_character_kit(victim);
+	if (item_creation_grant_blocks_commands(victim))
+	{
+		logit(LOG_WIZ, "%s requested CHAOS kit restoration for pid %d", GET_NAME(staff),
+		      GET_PID(victim));
+		send_to_char("Chaos equipment restoration queued.\r\n", staff);
+	}
+	else
+		send_to_char("Chaos equipment could not be restored; check the server log.\r\n",
+			     staff);
+}
+
 // Main-thread capture adapter. This value-only view is never registered, given
 // an identity or passed to publication/worker code. Reuse the authoritative
 // weapon predicates instead of maintaining a second race/class policy.

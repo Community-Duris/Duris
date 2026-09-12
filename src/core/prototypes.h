@@ -2072,6 +2072,7 @@ void nanny(P_desc, char *);
 void newby_announce(P_desc);
 void print_recommended_action(P_desc);
 void schedule_chaos_new_character_kit_before_entry(P_char);
+void restore_chaos_character_kit(P_char, const char *);
 void select_alignment(P_desc, char *);
 void select_bonus(P_desc, char *);
 void select_class(P_desc, char *);

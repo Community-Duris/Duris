@@ -32,14 +32,15 @@ Other `get_mud_info` callers were intentionally audited separately:
 
 - Boot reads for news/MOTD/wizmotd remain existing boot behavior.
 - The legacy plain `page` news/MOTD/wizmotd refresh remains unchanged.
-- The account-creation `lock` read remains direct; this PR does not change its
+- The account-creation `lock` read remains direct and keeps its existing
   authorization freshness.
 - Generic `send_mud_info` also remains direct rather than silently changing
   unknown callers' freshness requirements.
 
 This uses the same `refresh_cache` state machine introduced for help in #221.
-This PR is stacked on the help PR so the helper is reviewed once. Both cache
-lifecycle and staff-command integrations remain present.
+Both help and information caches, including their staff refresh commands, are
+part of the maintained server. The information commands add no burst limiter,
+shared cooldown, or character wait; ordinary command scheduling still applies.
 
 Validation: `python3 tests/async/test_information_cache.py` runs held-worker,
 publication, command navigation, empty/missing/oversized flat-file content, and
@@ -50,7 +51,7 @@ and `-lmysqlclient`.
 Use only a disposable `cache_test` database without a `mud_info` table, with
 root / cache-test and `TEST_DB_HOST`; the harness creates and drops its table.
 It verifies failures and that 10,000 cached reads acquire no new connection.
-These deterministic tests are not a live two-player latency benchmark.
+These deterministic tests complement the live two-player journey below.
 
 The SQL query replaces oversized content with NULL before transmission, so an
 8 MiB source value cannot cause an 8 MiB client receive allocation. The flat-file
@@ -66,3 +67,65 @@ The MariaDB harness additionally verifies wire-byte bounds and the actual period
 refresh interval. The importer test covers atomic publication of the information
 rows alongside help pages. Flat-file tests cover missing files, empty pages,
 128 KiB boundaries, oversize rejection, FIFO rejection, and owned pager output.
+
+## Live acceptance journey
+
+Run the real server with two independently created mortal accounts:
+
+```sh
+python3 tests/async/test_information_cache_journey.py
+```
+
+The default builds an isolated flat-file executable using the shared regression
+artifact helper. `--server /absolute/path/to/server` uses an already built binary
+of the selected backend. The normal regression runner discovers this journey and
+runs it in the resource-intensive partition, outside the parallel test batch.
+
+For the SQL backend, explicitly select a disposable loopback database server:
+
+```sh
+TEST_DB_HOST=127.0.0.1 TEST_DB_USER=root TEST_DB_PASSWORD='<disposable-password>' \
+  python3 tests/async/test_information_cache_journey.py --backend mariadb
+```
+
+The SQL journey creates a unique `information_journey_test_*` schema, applies the
+normal fresh-bootstrap migrations, and drops that schema on exit. Both backends
+use temporary world data, independent loopback client addresses, local listeners,
+and private journals. The test never reads the checkout `.env` or existing player
+state. Use LF line endings for the immutable migration files so their recorded
+checksums match the repository manifest.
+
+The journey checks all of the following through real command dispatch and output:
+
+- Twelve credits/FAQ/wizlist sequences (36 information commands), each completing
+  in less than two seconds and displaying the expected distinct content.
+- A second player repeatedly requests `score`; timing starts at command submission
+  and ends after the score-specific response and its prompt, preventing a stale
+  prompt from producing a false latency measurement. Every response must complete
+  within two seconds, with at least twelve samples.
+- The first player opens `more credits` and leaves the real pager active while
+  content changes and the normal 60-second automatic refresh publishes. The second
+  player continues requesting scores and checks FAQ for the new generation.
+- Continuing the first player's pager still displays the original generation.
+  Quitting it and requesting each information command displays the new content.
+
+The JSON result reports navigation and observer timing, sample counts, refresh
+delay, and pager continuity. The observed refresh delay depends on where editing
+falls within the periodic interval. These are local regression measurements with
+two players and synthetic pages, not production-load guarantees. Deterministic
+cache/SQL tests separately establish failure retention, bounds, and zero database
+connection acquisitions for 10,000 cached reads; socket timings alone do not prove
+the absence of synchronous I/O.
+
+Closeout validation for #222 on master `ea16e31d7` plus the journey tests, in an
+isolated Linux container (2026-09-11):
+
+| Backend | Three-page sequence maximum | Observer score maximum | Observer samples | Pager survives refresh |
+| --- | --- | --- | --- | --- |
+| Flat-file | 0.751 s | 0.250 s | 62 | Yes |
+| MariaDB 10.11 | 0.751 s | 0.251 s | 60 | Yes |
+
+Both runs completed twelve navigation sequences, observed automatic publication,
+and shut down normally. They used built server executables with the maintained
+warning-as-error profile. No production deployment or data changes were part of
+this validation.

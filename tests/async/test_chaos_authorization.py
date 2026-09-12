@@ -103,6 +103,7 @@ def assert_gate(source: str, variant: str, trusted_expression: str | None = None
     )
     assert "chaos_test_commands_enabled()" in body
     assert body.index("chaos_test_commands_enabled()") > gate_index
+    assert body.index("restore_chaos_character_kit(ch, arg)") > gate_index
     assert "#ifndef TEST_MUD" not in body
 
 

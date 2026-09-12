@@ -38,6 +38,7 @@ using namespace std;
 #include "combat/justice.h"
 #include "world/map.h"
 #include "item/objmisc.h"
+#include "item/item_movement_transaction.h"
 #include "persistence/persistence_checkpoint.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
@@ -126,6 +127,14 @@ void resetQuest(P_char ch)
 	ch->only.pc->quest_map_bought = 0;
 }
 
+// How many other players a quest's receiver may share it with. world.quest.share.max
+// defaults to 0, so every player takes, pays for and completes their own quest. The
+// ceiling of 4 is the historical share limit.
+static int world_quest_share_limit()
+{
+	return BOUNDED(0, static_cast<int>(get_property("world.quest.share.max", 0.000)), 4);
+}
+
 void quest_epic_reward(P_char ch, int /*type*/)
 {
 	if (GET_LEVEL(ch) > 45 && ch->only.pc->quest_level > 45)
@@ -210,6 +219,17 @@ P_obj quest_item_reward(P_char ch)
 	return reward;
 }
 
+static bool grant_world_quest_reward(P_char ch, P_obj reward)
+{
+	if (!reward)
+		return false;
+	if (item_creation_grant_submit_to_player(ch, reward, ch))
+		return true;
+	extract_obj(reward, FALSE);
+	send_to_char("The ownership authority is busy; your quest reward was not created.\r\n", ch);
+	return false;
+}
+
 void quest_full_reward(P_char ch, P_char quest_mob, int type)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -220,11 +240,11 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	}
 
 	P_obj reward = quest_item_reward(ch);
-	if (reward)
+	const bool reward_granted = grant_world_quest_reward(ch, reward);
+	if (reward_granted)
 	{
 		act("$n gives you $q ", TRUE, quest_mob, reward, ch, TO_VICT);
 		act("$n gives $N $q.", FALSE, quest_mob, reward, ch, TO_NOTVICT);
-		obj_to_char(reward, ch);
 	}
 
 	if (GET_CLASS(ch, CLASS_MERCENARY))
@@ -253,7 +273,7 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou gain some experience.&n");
 	act(Gbuf1, FALSE, quest_mob, 0, ch, TO_VICT);
 
-	sql_world_quest_finished(ch, reward);
+	sql_world_quest_finished(ch, reward_granted ? reward : NULL);
 	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 
 	resetQuest(ch);
@@ -318,18 +338,22 @@ void quest_kill(P_char ch, P_char quest_mob)
 	}
 
 	gain_exp(ch, NULL, exp_gain / ch->only.pc->quest_kill_original, EXP_WORLD_QUEST);
-	if (number(1, ch->only.pc->quest_kill_original + 1) <= 2)
-	{
-		P_obj reward = quest_item_reward(ch);
-		if (reward)
-			obj_to_char(reward, quest_mob);
-	}
 
 	if (ch->only.pc->quest_kill_how_many - ch->only.pc->quest_kill_original == 0)
 	{
 		send_to_char("&+WCongratulations&n&n&+W, you finished your quest!&n\r\n", ch);
 		wizlog(56, "%s finished quest @%s (kill quest)", GET_NAME(ch),
 		       quest_mob->player.short_descr);
+
+		// One reward per completed quest, handed to the player who completed it rather
+		// than rolled onto the corpse of each kill.
+		P_obj reward = quest_item_reward(ch);
+		const bool reward_granted = grant_world_quest_reward(ch, reward);
+		if (reward_granted)
+		{
+			send_to_char_f(ch, "For completing your quest you receive %s&n.\r\n",
+				       reward->short_description);
+		}
 
 		if (GET_CLASS(ch, CLASS_MERCENARY) && GET_LEVEL(ch) > 24)
 		{
@@ -344,7 +368,7 @@ void quest_kill(P_char ch, P_char quest_mob)
 		}
 
 		quest_epic_reward(ch, FIND_AND_KILL);
-		sql_world_quest_finished(ch, 0);
+		sql_world_quest_finished(ch, reward_granted ? reward : NULL);
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		resetQuest(ch);
 		gmcp_quest_status(ch);
@@ -509,6 +533,14 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 	if (*name)
 		if (isname(name, "share"))
 		{
+			if (world_quest_share_limit() == 0)
+			{
+				send_to_char(
+					"Quests can't be shared. Each adventurer takes their own from a bartender.\r\n",
+					ch);
+				return;
+			}
+
 			if (ch->only.pc->quest_receiver != GET_PID(ch))
 			{
 				send_to_char("Only the quest receiver can share the quest.\r\n",
@@ -521,6 +553,9 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 			  send_to_char("You already started the quest alone, so finish it alone!\r\n", ch);
 			  return;
 			}*/
+			// A quest granted under a higher limit keeps no more shares than the current one.
+			ch->only.pc->quest_shares_left =
+				MIN(ch->only.pc->quest_shares_left, world_quest_share_limit());
 			if (ch->only.pc->quest_shares_left == 0)
 			{
 				send_to_char("You cant share this quest with more people.\r\n", ch);
@@ -711,10 +746,13 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 	else
 	{
 		send_to_char("&+RThis quest was given to you&n.\r\n", ch);
-		snprintf(buf, MAX_STRING_LENGTH,
-			 "You can share this quest with %d more people.\r\n",
-			 ch->only.pc->quest_shares_left);
-		send_to_char(buf, ch);
+		if (world_quest_share_limit() > 0)
+		{
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "You can share this quest with %d more people.\r\n",
+				 MIN(ch->only.pc->quest_shares_left, world_quest_share_limit()));
+			send_to_char(buf, ch);
+		}
 	}
 
 	send_to_char(
@@ -842,7 +880,7 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 	}
 
 	const int quest_kill_original = MIN(number(7, 9), mob_index[rnum].number - 1);
-	ch->only.pc->quest_shares_left = 4;
+	ch->only.pc->quest_shares_left = world_quest_share_limit();
 	ch->only.pc->quest_active = 1;
 	ch->only.pc->quest_mob_vnum = quest_mob;
 	ch->only.pc->quest_type = quest_type;

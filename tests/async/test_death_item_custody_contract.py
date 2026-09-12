@@ -176,6 +176,12 @@ checks.append((
     retry.index("persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 checks.append((
+    "a deferred wallet admission is retried before fallback death evidence",
+    contains(retry, "money_to_inventory(ch)") and
+    retry.index("money_to_inventory(ch)") <
+    retry.index("save_disputed_death_disposition(ch, context.corpse_uid)")
+))
+checks.append((
     "a missing corpse cannot let an ordinary empty save discard the refused assets",
     contains(retry, "if (!corpse || !save_disputed_death_disposition(ch, context.corpse_uid))")
     and contains(retry, '"death_recovery_corpse_missing"')

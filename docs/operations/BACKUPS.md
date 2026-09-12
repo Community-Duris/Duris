@@ -56,7 +56,19 @@ such as a synthetic fixture.
 MariaDB uses one full transactional dump, including schema, migration history,
 lifecycle tables, and all runtime tables. Nontransactional tables are rejected.
 Coordinate schema migrations/DDL with the backup window; a transactional data
-snapshot does not make concurrent DDL safe. Flatfile capture preserves identity
+snapshot does not make concurrent DDL safe. Database capture checks runtime
+compatibility before and after the dump against the manifest frozen in the
+generation. Before an upgrade, set `RUNTIME_COMPATIBILITY_MANIFEST` to an absolute,
+owner-only copy of the deployed version's manifest when the checkout already
+requires a newer schema. Verify historical generations against their recorded
+manifest; do not relabel them with the checkout's current contract.
+Ownership validation requires the host UID identities of every path ancestor.
+A namespaced per-user systemd service can map root-owned ancestors to `nobody`;
+the guard correctly rejects that execution context. The root-managed production
+service template preserves the expected root mapping. Custom user services must
+qualify the backup under their actual service restrictions before cutover.
+
+Flatfile capture preserves identity
 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ critical authority ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ account locking, pending-transaction evidence, and the
 complete durable file tree.
 
@@ -245,4 +257,3 @@ bounded temporary restore mount, and isolated service namespaces. It requires
 mount/unshare privileges; run on a disposable Linux host/container (for Docker,
 CAP_SYS_ADMIN and an appropriate seccomp profile). No production environment,
 credentials, existing database, or live game connection is used.
-

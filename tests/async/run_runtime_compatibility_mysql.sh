@@ -24,10 +24,20 @@ for _ in $(seq 1 90); do
 done
 [[ "$ready" == 1 ]]
 docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-for file in bootstrap_multithread_safe.sql immutable/0001_lookup_dataset_state.sql immutable/0001_lookup_dataset_state.sh immutable/0002_player_item_metadata_uniqueness.sql immutable/0002_player_item_metadata_uniqueness.sh immutable/0003_season_reset_state.sql immutable/0003_season_reset_state.sh immutable/0004_server_reboots.sql immutable/0004_server_reboots.sh immutable/0005_level_cap_singleton.sql immutable/0005_level_cap_singleton.sh immutable/0006_kingdom_realms.sql immutable/0006_kingdom_realms.sh immutable/0007_pkill_event_stamp_contract.sql immutable/0007_pkill_event_stamp_contract.sh immutable/0008_statistics_date_index.sql immutable/0008_statistics_date_index.sh immutable/0009_kingdom_garrison.sql immutable/0009_kingdom_garrison.sh immutable/0010_coin_custody_payload.sql immutable/0010_coin_custody_payload.sh immutable/0011_player_death_disposition.sql immutable/0011_player_death_disposition.sh runtime_compatibility_manifest.json verify_runtime_compatibility.sh; do
+migration_files=$(PYTHONPATH="$ROOT/scripts" python3 - <<'PYTHON'
+import migration_runner as m
+for step in m.load_manifest().migrations:
+    print(step.apply_path.relative_to(m.ROOT / "migrations"))
+    print(step.verify_path.relative_to(m.ROOT / "migrations"))
+PYTHON
+)
+mapfile -t MIGRATION_FILES <<< "$migration_files"
+for file in bootstrap_multithread_safe.sql "${MIGRATION_FILES[@]}" runtime_compatibility_manifest.json verify_runtime_compatibility.sh; do
     docker cp "$ROOT/migrations/$file" "$NAME:/tmp/$(basename "$file")" >/dev/null
+    if [[ "$file" == *.sh ]]; then
+        docker exec "$NAME" chmod +x "/tmp/$(basename "$file")"
+    fi
 done
-docker exec "$NAME" chmod +x /tmp/0001_lookup_dataset_state.sh /tmp/0002_player_item_metadata_uniqueness.sh /tmp/0003_season_reset_state.sh /tmp/0004_server_reboots.sh /tmp/0005_level_cap_singleton.sh /tmp/0006_kingdom_realms.sh /tmp/0007_pkill_event_stamp_contract.sh /tmp/0008_statistics_date_index.sh /tmp/0009_kingdom_garrison.sh /tmp/0010_coin_custody_payload.sh /tmp/0011_player_death_disposition.sh /tmp/verify_runtime_compatibility.sh
 
 # The pre-b029 launcher created server_reboots outside the migration system.
 # Prove that 0004 converts that exact shape, preserves every row, removes its
@@ -149,46 +159,52 @@ SELECT GROUP_CONCAT(CONCAT_WS(':',assoc_id,slot,guard_class,level)
                     ORDER BY assoc_id,slot SEPARATOR '|') FROM kingdom_garrison;")
 [[ "$legacy_garrison_rows" == "3:0:1:12|3:16:2:20" ]]
 
-docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/bootstrap_multithread_safe.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0001_lookup_dataset_state.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0002_player_item_metadata_uniqueness.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0003_season_reset_state.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0004_server_reboots.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0005_level_cap_singleton.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0006_kingdom_realms.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0007_pkill_event_stamp_contract.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0008_statistics_date_index.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0009_kingdom_garrison.sql && mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0010_coin_custody_payload.sql"
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0001_lookup_dataset_state.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0002_player_item_metadata_uniqueness.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0003_season_reset_state.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0004_server_reboots.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0005_level_cap_singleton.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0006_kingdom_realms.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0007_pkill_event_stamp_contract.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0008_statistics_date_index.sh >/dev/null
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0009_kingdom_garrison.sh >/dev/null
-# Apply and verify the current coin/death contracts, including replay of 0011.
-docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" "$NAME" /tmp/0010_coin_custody_payload.sh >/dev/null
-for _ in 1 2; do
-    docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/0011_player_death_disposition.sql"
-    docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
-        -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" \
-        "$NAME" /tmp/0011_player_death_disposition.sh >/dev/null
+docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/bootstrap_multithread_safe.sql"
+# Apply every registered step and its verifier, including an exact replay.
+for replay in 1 2; do
+    for file in "${MIGRATION_FILES[@]}"; do
+        if [[ "$file" == *.sql ]]; then
+            docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
+                "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/$(basename "$file")"
+        else
+            docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+                -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" \
+                "$NAME" "/tmp/$(basename "$file")" >/dev/null
+        fi
+    done
 done
-history_checksum=$(PYTHONPATH="$ROOT/scripts" python3 - <<'PY'
+history_sql=$(PYTHONPATH="$ROOT/scripts" python3 - <<'PYTHON'
 import migration_runner as m
-x=m.load_manifest()
-rows=[m.AppliedMigration(a.migration_id,a.sequence,a.description,a.apply_checksum,a.verify_checksum,a.compatibility,x.runner_version) for a in x.migrations]
-print(m.history_checksum(rows))
-PY
+manifest = m.load_manifest()
+def quote(value):
+    # Hex literals keep fixture descriptions independent of SQL escaping modes.
+    return "CONVERT(UNHEX('" + value.encode().hex() + "') USING utf8mb4)"
+print("INSERT INTO mud_schema_baselines(baseline_id,baseline_kind,schema_fingerprint,manifest_version,runner_version) VALUES(" +
+      quote(manifest.baseline_id) + ",'fresh_bootstrap',UNHEX('" + manifest.required_table_fingerprint +
+      "')," + str(manifest.version) + "," + str(manifest.runner_version) + ");")
+rows = []
+for step in manifest.migrations:
+    rows.append(m.AppliedMigration(step.migration_id, step.sequence, step.description,
+                                  step.apply_checksum, step.verify_checksum,
+                                  step.compatibility, manifest.runner_version))
+    values = [quote(step.migration_id), str(step.sequence), quote(step.description),
+              "UNHEX('" + step.apply_checksum + "')", "UNHEX('" + step.verify_checksum + "')",
+              quote(step.compatibility), str(manifest.runner_version)]
+    print("INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES(" +
+          ",".join(values) + ");")
+print("UPDATE mud_schema_migration_state SET applied_count=" + str(len(rows)) +
+      ",history_checksum=UNHEX('" + m.history_checksum(rows) + "') WHERE state_id=1;")
+PYTHON
 )
 MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -B "$DB_NAME")
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_baselines(baseline_id,baseline_kind,schema_fingerprint,manifest_version,runner_version) VALUES('duris-schema-2026-08-27-session11','fresh_bootstrap',UNHEX('db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd'),1,1); INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0001_lookup_dataset_state',1,'Add atomic race and class lookup dataset state',UNHEX('e39db8df5bd7a8d71d5cc9c177919b8117d6fed77a9318f79610ed9413de4ccb'),UNHEX('90fc6de3aa449ef9b5b77fc96032314e129dfdd631e9760af86dc40329d7f0ca'),'mysql8-mariadb10',1),('0002_player_item_metadata_uniqueness',2,'Deduplicate and guard player item descriptions and affects',UNHEX('00e86dc65e6d5e935a50cd731d010675ade6da7fbbfdd18c4fe6fb17f88addba'),UNHEX('312aa0aa354439e15bcef68403f00b7158c96627518d8be0bf85f59890ea1a90'),'mysql8-mariadb10',1),('0003_season_reset_state',3,'Add durable season reset epoch and fence state',UNHEX('82390d1302e9a0bec3a0111fc22fd428b83ef3c0954a0904cfb9215a8ea14cc7'),UNHEX('75aeeae3f6bbfd486f4c596b33c742d23cff85d319f1a833c8503587f7d751a9'),'mysql8-mariadb10',1),('0004_server_reboots',4,'Add durable server reboot lifecycle records',UNHEX('4756002529e0e55eedf8de2391c333f37a579e30415da28c340162e1b030834f'),UNHEX('15c4e45ce796d854df1e0d6e1257023969829e8e17322c41d081c0a3e27f1e1b'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=4,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
+"${MYSQL[@]}" -e "$history_sql"
+history_checksum=$("${MYSQL[@]}" -e "SELECT LOWER(HEX(history_checksum)) FROM mud_schema_migration_state WHERE state_id=1;")
 "${MYSQL[@]}" -e "CREATE TABLE imported_extension_probe (id INT PRIMARY KEY, note VARCHAR(32)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; INSERT INTO imported_extension_probe VALUES (1, 'preserved');"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0005_level_cap_singleton',5,'Restore the required level cap singleton state',UNHEX('a83264e2f9241e328bcf76eefa192a0d10b0b4122917e56ef12ad39a35bc6132'),UNHEX('4974eb5bf494251d83fc9c3f0c381a61f3afbd80e4eae6f9f291ea5b5c77b77f'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=5,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0006_kingdom_realms',6,'Add the guild kingdom realm territory and upkeep table',UNHEX('f146b2236b7c982bc909ec981f2d2d06831f21fc224824f670607811506e5c93'),UNHEX('c9d3ac9c6f4c43fc85940c6f012fbe6c29aa6fbb3d6daf80652aee5363599697'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=6,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0007_pkill_event_stamp_contract',7,'Replace the pkill_event stamp zero-date default with a portable contract',UNHEX('90b47fbc6fa39090ad542d87365b54650f2d62c8b0dc37deb84d1e1ebafae70b'),UNHEX('a777ce57d3e9bd4135ef23a5f361fef24705f9953dc6235ef6de5fa1887c14f2'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=7,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0008_statistics_date_index',8,'Index the statistics population time series on its epoch date column',UNHEX('19b11144dd55241d624de95eb5f1648049823ab5e40ab6029ce7ea5535b5cb60'),UNHEX('d3901d367cf8f63986d836efb5792bdb31707259b0393f06afb59b76577e1e90'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=8,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0009_kingdom_garrison',9,'Add the kingdom garrison roster of purchased guards',UNHEX('e295446be0ae22bb48989db87166641b8f8f599fa711133a3fd3f8370db9d8b3'),UNHEX('79a099d088ef091026ce63114c560c52d158377971c4dfab80b0785bd62f46c9'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=9,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0010_coin_custody_payload',10,'Preserve committed coin pile payloads with item custody',UNHEX('45f27f593f60041d6591654ec9f48ff3ebe74fe4f0402041cd48114353913057'),UNHEX('4e5b3c5f04da93345c08a1d9cc4a145ea747a73d4d5a8e8a4407a47f5a506c07'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=10,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
-"${MYSQL[@]}" -e "INSERT INTO mud_schema_history(migration_id,sequence_number,description,apply_checksum,verify_checksum,compatibility,runner_version) VALUES('0011_player_death_disposition',11,'Record durable death disposition and disputed item custody',UNHEX('209a3156bc163e756dbf9f5edd025445ab3ee180fa75fc63d0d4685e5e1d8057'),UNHEX('cfeba2cc7cd8f07b1b24e490d2d05167231e76cbdcb96ced21b98671612f12e3'),'mysql8-mariadb10',1); UPDATE mud_schema_migration_state SET applied_count=11,history_checksum=UNHEX('$history_checksum') WHERE state_id=1;"
+
 verify() { docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/runtime_compatibility_manifest.json "$NAME" /tmp/verify_runtime_compatibility.sh; }
 expect_reject() { if verify >/dev/null 2>&1; then echo "runtime drift was accepted: $1" >&2; exit 1; fi; }
 verify >/dev/null
-for table in player_death_disposition player_death_custody kingdom_garrison; do
+for table in player_death_disposition player_death_custody kingdom_garrison epic_stone_claim; do
     "${MYSQL[@]}" -e "RENAME TABLE $table TO ${table}_drift;"
     expect_reject "missing-$table"
     "${MYSQL[@]}" -e "RENAME TABLE ${table}_drift TO $table;"

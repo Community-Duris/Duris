@@ -33,7 +33,7 @@ from test_flatfile_combat_journey import (
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA_HEADER = ROOT / "src/account/chaos_eq_data.h"
 STARTER_BAG_VNUM = 96443
-JOURNEY_CLASSES = ("Warrior", "Monk", "Thief", "Sorcerer")
+JOURNEY_CLASSES = ("Warrior", "Monk", "Thief", "Sorcerer", "Dragoon")
 
 
 @cache
@@ -138,11 +138,11 @@ def assert_kit_ownership(state_root: pathlib.Path, class_name: str) -> dict[int,
     """Assert direct wearables and support-only bag contents at grant completion."""
     ownership = read_item_ownership(state_root)
     bag = one_owned_item(state_root, STARTER_BAG_VNUM)
-    # Human Sorcerer and standalone Thief have no dual-wield skill.
+    # Human Sorcerer, standalone Thief and unspecialized Dragoon have no dual wield.
     # Monk profiles omit weapon slots entirely; Warrior has dual wield at level 1.
     equipment = {vnum for slot, vnum in kit_entries(class_name)
-                 if slot >= 0 and not (class_name in ("Sorcerer", "Thief") and slot == 17)}
-    if class_name in ("Sorcerer", "Thief"):
+                 if slot >= 0 and not (class_name in ("Sorcerer", "Thief", "Dragoon") and slot == 17)}
+    if class_name in ("Sorcerer", "Thief", "Dragoon"):
         unavailable = {vnum for slot, vnum in kit_entries(class_name) if slot == 17} - equipment
         require(not any(ownership.get(vnum) for vnum in unavailable),
                 f"{class_name} received secondary gear without dual-wield capability")

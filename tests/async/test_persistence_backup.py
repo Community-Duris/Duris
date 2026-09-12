@@ -47,7 +47,7 @@ def provision(root):
 
 
 def fake_database_capture(stage, unused, capacity_base=None):
-    tables = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
+    tables = json.loads((stage / "runtime-schema.json").read_text())
     with gzip.open(stage / "database.sql.gz", "wb") as stream:
         for table in tables["runtime_table_sql_list"].replace("'", "").split(","):
             stream.write(f"CREATE TABLE `{table}` (synthetic INT);\n".encode())
@@ -73,6 +73,9 @@ class Fixture(unittest.TestCase):
         self.capture = mock.patch.object(backup, "mariadb_capture", fake_database_capture)
         self.capture.start()
         self.addCleanup(self.capture.stop)
+        self.schema_check = mock.patch.object(backup, "verify_database_schema")
+        self.schema_check.start()
+        self.addCleanup(self.schema_check.stop)
 
     def create(self, mode="flatfile-primary", created=None):
         with contextlib.ExitStack() as stack:
@@ -190,6 +193,29 @@ class PolicyTests(Fixture):
                 self.assertEqual(backup.retained(items, p, now), {"latest", "second", "previous"})
 
 class GenerationTests(Fixture):
+    def test_explicit_deployed_schema_survives_checkout_schema_change(self):
+        schema = json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
+        schema["runtime_table_sql_list"] = "'accounts','player_data','ships'"
+        selected = self.base / "deployed-schema.json"
+        backup.write_json(selected, schema)
+        with mock.patch.dict(os.environ, RUNTIME_COMPATIBILITY_MANIFEST=str(selected)):
+            generation = self.create("mariadb-primary")
+        selected.unlink()
+        self.assertEqual(json.loads((generation / "runtime-schema.json").read_text()), schema)
+        self.assertEqual(backup.verify(generation)["mode"], "mariadb-primary")
+
+    def test_schema_mismatch_before_or_after_capture_preserves_generations(self):
+        before = self.baseline("mariadb-primary")
+        for checks in ([backup.BackupError("schema_mismatch")],
+                       [None, backup.BackupError("schema_mismatch")]):
+            with self.subTest(checks=len(checks)), \
+                 mock.patch.object(backup, "verify_database_schema", side_effect=checks), \
+                 self.assertRaisesRegex(backup.BackupError, "schema_mismatch"):
+                self.create("mariadb-primary")
+            self.assert_preserved(before)
+            self.assertEqual(set(self.p["root"].glob("[0-9]*")), set(before))
+            self.assertFalse(list(self.p["root"].glob(".staging-*")))
+
     def test_fallback_mode_captures_database_authority(self):
         generation = self.create("mariadb-primary-flatfile-fallback")
         self.assertEqual(backup.verify(generation)["mode"], "mariadb-primary")

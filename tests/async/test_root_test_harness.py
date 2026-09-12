@@ -53,6 +53,7 @@ expected_resource_intensive = {
     "test_flatfile_first_session_currency.py",
     "test_flatfile_full_world_boot.py",
     "test_item_movement_prompt_runtime.py",
+    "test_information_cache_journey.py",
     "test_mysql_combat_journey.py",
 }
 assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
@@ -61,6 +62,7 @@ sample_tests = [
     Path("test_flatfile_combat_journey.py"),
     Path("test_account_recovery_journey.py"),
     Path("test_mysql_combat_journey.py"),
+    Path("test_information_cache_journey.py"),
 ]
 parallel_tests, resource_intensive_tests = runner.partition_tests(sample_tests)
 assert parallel_tests == [Path("test_fast.py")]
