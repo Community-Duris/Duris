@@ -248,6 +248,9 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 	if (!*buff)
 		goto noarg;
 
+	if (is_abbrev(buff, "kit"))
+		return restore_chaos_character_kit(ch, arg);
+
 	if (chaos_test_commands_enabled())
 	{
 		if (is_abbrev(buff, "pouchseed"))
@@ -331,6 +334,6 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 
 noarg:
 	send_to_char(
-		"Nuh uh. Can give only &+Wplat&n, &+Wlevel&n, &+Wshipfrags&n, &+Wcrewexp&n, &+Wportal&n, &+Wside&n.\n",
+		"Nuh uh. Can give only &+Wplat&n, &+Wlevel&n, &+Wshipfrags&n, &+Wcrewexp&n, &+Wportal&n, &+Wside&n, &+Wkit <character>&n.\n",
 		ch);
 }

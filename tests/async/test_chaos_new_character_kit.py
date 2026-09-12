@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from _paths import ROOT, SRC
@@ -59,6 +60,19 @@ objects, area_diagnostics = reconcile_area_objects(area_paths, {}, DEFINES)
 assert not area_diagnostics["parse_errors"], area_diagnostics["parse_errors"]
 assert 96443 in active_vnums
 assert 7 in active_vnums
+
+# Unspecialized Dragoons use Warrior denial and Sorcerer allowance rules in
+# can_char_use_item(). Testing only CLASS_DRAGOON admitted this quill and caused
+# the entire pre-entry kit to be rejected by the running server.
+dragoon_id = CLASS_IDS["Dragoon"]
+quill = objects[402052]
+assert not object_class_allowed(quill, dragoon_id, DEFINES)
+assert object_class_allowed(quill, CLASS_IDS["Necromancer"], DEFINES)
+for flag in ("CLASS_WARRIOR", "CLASS_SORCERER", "CLASS_DRAGOON"):
+    denied = replace(quill, extra_flags=0, anti_flags=DEFINES[flag])
+    allowed = replace(denied, extra_flags=DEFINES["ITEM_ALLOWED_CLASSES"])
+    assert object_class_allowed(denied, dragoon_id, DEFINES) == (flag != "CLASS_WARRIOR")
+    assert object_class_allowed(allowed, dragoon_id, DEFINES) == (flag == "CLASS_SORCERER")
 
 array_matches = [
     (name, body)

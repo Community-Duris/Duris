@@ -343,8 +343,9 @@ def run(args, *, env=None, input=None, timeout=300):
     return result.stdout
 
 
-def validate_dump(path):
-    expected = set(json.loads((ROOT / "migrations/runtime_compatibility_manifest.json").read_text())
+def validate_dump(path, schema=None):
+    schema = schema or ROOT / "migrations/runtime_compatibility_manifest.json"
+    expected = set(json.loads(schema.read_text())
                    ["runtime_table_sql_list"].replace("'", "").split(","))
     found = set()
     with gzip.open(path, "rb") as stream:
@@ -353,6 +354,14 @@ def validate_dump(path):
             if match:
                 found.add(match[1].decode())
     require(expected <= found, "dump_missing_required_tables")
+
+
+def verify_database_schema(schema):
+    # Freeze the selected contract in the generation before checking the live
+    # database. Upgrades can explicitly select the deployed, older contract.
+    _, env, _ = db_connection()
+    env["RUNTIME_COMPATIBILITY_MANIFEST"] = str(schema)
+    run([str(ROOT / "migrations/verify_runtime_compatibility.sh")], env=env)
 
 
 class BoundedOutput:
@@ -397,7 +406,7 @@ def mariadb_capture(stage, p, capacity_base=None):
         with gzip.GzipFile(fileobj=output, mode="wb", mtime=0) as zipped:
             with streaming_process(["mysqldump", *args, *options], env=env) as process:
                 shutil.copyfileobj(process.stdout, zipped)
-    validate_dump(path)
+    validate_dump(path, stage / "runtime-schema.json")
     return {"database": database}
 
 
@@ -415,7 +424,7 @@ def verify(generation):
     require(digest(generation / "runtime-schema.json") == manifest.get("runtime_schema_sha256"),
             "schema_manifest_mismatch")
     if manifest["mode"] == "mariadb-primary":
-        validate_dump(generation / "database.sql.gz")
+        validate_dump(generation / "database.sql.gz", generation / "runtime-schema.json")
     return manifest
 
 
@@ -578,14 +587,21 @@ def backup(p, mode):
         try:
             checkpoint("before_capture")
             capture_started = int(time.time())
+            schema = ROOT / "migrations/runtime_compatibility_manifest.json"
+            if os.environ.get("RUNTIME_COMPATIBILITY_MANIFEST"):
+                schema = secure_path(Path(os.environ["RUNTIME_COMPATIBILITY_MANIFEST"]), False)
+            shutil.copyfile(schema, stage / "runtime-schema.json")
+            (stage / "runtime-schema.json").chmod(0o600)
+            if mode == "mariadb-primary":
+                verify_database_schema(stage / "runtime-schema.json")
             journals = journal_capture(stage, p, capacity_base)
             detail = (flatfile_capture(stage, p, capacity_base) if mode == "flatfile-primary"
                       else mariadb_capture(stage, p, capacity_base))
             require(all(inventory(p["journal_roots"][name]) == files for name, files in journals.items()),
                     "journal_changed_during_authority_capture")
+            if mode == "mariadb-primary":
+                verify_database_schema(stage / "runtime-schema.json")
             checkpoint("after_capture")
-            shutil.copyfile(ROOT / "migrations/runtime_compatibility_manifest.json", stage / "runtime-schema.json")
-            (stage / "runtime-schema.json").chmod(0o600)
             meta = {"version": 1, "generation": name, "created": capture_started, "mode": mode,
                     "runtime_schema_sha256": digest(stage / "runtime-schema.json"),
                     "files": inventory(stage), **detail}

@@ -1490,7 +1490,8 @@ static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj
 		return FALSE;
 	}
 
-	if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch))
+	// Money is converted to wallet currency without occupying an inventory slot.
+	if (GET_ITEM_TYPE(o_obj) == ITEM_MONEY || IS_CARRYING_N(ch) < CAN_CARRY_N(ch))
 	{
 		if (((total_carried_weight(ch) + GET_OBJ_WEIGHT(o_obj)) <= CAN_CARRY_W(ch)) ||
 		    local_container)
@@ -1925,12 +1926,14 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 		return false;
 	const bool material_exception = !container && OBJ_VNUM(object) > LOWEST_MAT_VNUM &&
 					OBJ_VNUM(object) <= HIGHEST_MAT_VNUM;
-	if (carried_count >= CAN_CARRY_N(actor) && !material_exception)
+	if (carried_count >= CAN_CARRY_N(actor) && !material_exception &&
+	    GET_ITEM_TYPE(object) != ITEM_MONEY)
 	{
 		state.rejections.emplace_back(container ? "You can't carry any more.\r\n" :
 							  "You can't carry anything more.\r\n");
 		state.failed = true;
-		stop = true;
+		// Keep scanning containers for money even when an ordinary item cannot fit.
+		stop = container == NULL;
 		return false;
 	}
 	if (!container_local && carried_weight + GET_OBJ_WEIGHT(object) > CAN_CARRY_W(actor))

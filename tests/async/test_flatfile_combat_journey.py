@@ -62,12 +62,13 @@ def available_ports() -> tuple[int, int, int]:
 
 
 class MudClient:
-    def __init__(self, port: int) -> None:
+    def __init__(self, port: int, *, source_host: str | None = None) -> None:
         deadline = time.monotonic() + 30
         while True:
             try:
                 self.socket = socket.create_connection(
-                    ("127.0.0.1", port), timeout=1
+                    ("127.0.0.1", port), timeout=1,
+                    source_address=(source_host, 0) if source_host else None,
                 )
                 break
             except OSError:
@@ -359,16 +360,18 @@ def runtime_logs(run_root: pathlib.Path) -> str:
     return "\n".join(sections)[-30000:]
 
 
-def create_character(client: MudClient, expected_room: str | None = "The Regression Arena") -> None:
+def create_character(client: MudClient, expected_room: str | None = "The Regression Arena",
+                     *, account: str = ACCOUNT, character: str = CHARACTER,
+                     email: str = EMAIL) -> None:
     entry, _ = client.expect_any(("term type", "account name"))
     if entry == "term type":
         client.send("9")
         client.expect("account name")
-    client.send(ACCOUNT)
+    client.send(account)
     client.expect("is this correct?")
     client.send("y")
     client.expect("email address")
-    client.send(EMAIL)
+    client.send(email)
     client.expect("is this correct?")
     client.send("y")
     client.expect("enter your password")
@@ -382,7 +385,7 @@ def create_character(client: MudClient, expected_room: str | None = "The Regress
     client.expect("Please select an option")
     client.send("2")
     client.expect("Enter your new name")
-    client.send(CHARACTER)
+    client.send(character)
     client.expect("Is this correct?")
     client.send("y")
     client.expect("meet these criteria?")

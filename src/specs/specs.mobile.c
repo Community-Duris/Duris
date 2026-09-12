@@ -11016,7 +11016,8 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			return -1;
 		}
 
-		temp = 20 * GET_LEVEL(pl);
+		temp = MAX(0, static_cast<int>(get_property("world.quest.cost.per.level", 20.000) *
+					       GET_LEVEL(pl)));
 
 		snprintf(
 			money_string, sizeof money_string,

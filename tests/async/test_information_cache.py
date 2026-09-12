@@ -18,6 +18,9 @@ bodies = '\n'.join(extract(signature) for signature in [
 assert 'get_mud_info' not in bodies and 'affect_timer' not in bodies and 'CharWait' not in bodies
 sql_source = (ROOT / 'src/sql/sql.c').read_text()
 assert 'SELECT content FROM mud_info' in sql_source  # unrelated freshness-sensitive reads remain direct
+nanny_source = (ROOT / 'src/account/nanny.c').read_text()
+assert 'get_mud_info("lock")' in nanny_source
+assert 'information_cache_get' not in nanny_source  # creation authorization stays fresh
 prefix = r'''
 #include <string>
 #include <cassert>

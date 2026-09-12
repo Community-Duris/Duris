@@ -21,7 +21,7 @@ assert "grab a few levels and come back" in feedback
 assert "You need to reach level 11" in world_quest
 level_gate = world_quest.index("if (GET_LEVEL(pl) < WORLD_QUEST_MIN_LEVEL)")
 quota_check = world_quest.index("if (sql_world_quest_can_do_another(pl) < 1)")
-fee_calculation = world_quest.index("temp = 20 * GET_LEVEL(pl);")
+fee_calculation = world_quest.index('get_property("world.quest.cost.per.level", 20.000)')
 fee_deduction = world_quest.index("SUB_MONEY(pl, temp, 0);", fee_calculation)
 assert level_gate < quota_check < fee_calculation < fee_deduction
 

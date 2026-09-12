@@ -28,6 +28,8 @@ constexpr int ACT_SPEC = 1;
 #define GET_VNUM(ch) 16553
 #define GET_PID(ch) 1
 #define REMOVE_BIT(value, bits) ((value) &= ~(bits))
+#define BOUNDED(low, value, high) std::max((low), std::min((value), (high)))
+float get_property(const char *, double fallback) { return static_cast<float>(fallback); }
 struct pc_data {
     int quest_shares_left = 0, quest_active = 0, quest_mob_vnum = 0, quest_type = 0;
     int quest_accomplished = 0, quest_zone_number = 0, quest_giver = 0, quest_level = 0;
@@ -171,6 +173,8 @@ int main() {
     assert(createQuest(&player, &giver, &failure));
     assert(history_reads.size() == WORLD_QUEST_MAX_HISTORY_CHECKS);
     assert(pc.quest_mob_vnum == fresh_target);
+    // Quests are unshareable by default: a granted quest carries no shares.
+    assert(pc.quest_shares_left == 0);
 }
 '''
 
@@ -180,6 +184,7 @@ def main() -> None:
         PRELUDE
         + extract_function("world/world_quest_policy.c", "int select_cached_mob(")
         + ADAPTER
+        + extract_function("world_quest.c", "static int world_quest_share_limit(")
         + extract_function("world_quest.c", "bool createQuest(")
         + SCENARIOS
     )
