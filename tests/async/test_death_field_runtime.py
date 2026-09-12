@@ -86,6 +86,10 @@ float get_property(const char *name, double fallback)
     return fallback;
 }
 int IS_MORPH(P_char) { return 0; }
+#include "world/difficulty.h"
+// The difficulty module is not linked; neutral dials leave spell damage untouched.
+double difficulty_multiplier(difficulty_dial) { return 1.0; }
+bool difficulty_world_npc(P_char) { return false; }
 bool ac_can_see(P_char, P_char, bool) { return true; }
 void send_to_char(const char *s, P_char ch) { transcript[ch] += s; }
 void send_to_char(const char *s, P_char ch, int) { transcript[ch] += s; }
