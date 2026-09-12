@@ -12,6 +12,7 @@
 #include "persistence/copyover.h"
 #include "item/item_movement_transaction.h"
 #include "sql/sql_player.h"
+#include "player/pet_restore_state.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <gnutls/gnutls.h>
@@ -428,7 +429,8 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 	// count living mobs (skip linked pets; player-owned pets are saved per descriptor)
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch))
+		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
+		    !ch->only.npc->summoned_instance)
 		{
 			(*num_mobs)++;
 		}
@@ -648,7 +650,8 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// write mobs (skip linked pets; player-owned pets are saved per descriptor)
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch))
+		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
+		    !ch->only.npc->summoned_instance)
 		{
 			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) ||
 			    !write_mob_inventory(fp, ch))
@@ -1100,6 +1103,10 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			continue;
 
 		// spawn mob from vnum
+		if (legacy_summon_prototype(mob_entry.vnum))
+			logit(LOG_STATUS,
+			      "pet recovery review: legacy world candidate vnum=%d room=%d id=%ld; provenance unknown, retained",
+			      mob_entry.vnum, mob_entry.room, static_cast<long>(mob_entry.idnum));
 		P_char mob = read_mobile(mob_rnum, REAL);
 		if (!mob)
 		{
@@ -1327,7 +1334,8 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 
 	for (ch = character_list; ch; ch = ch->next)
 	{
-		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch))
+		if (IS_NPC(ch) && ch->in_room >= 0 && !GET_MASTER(ch) &&
+		    !ch->only.npc->summoned_instance)
 		{
 			(*num_mobs)++;
 		}
@@ -1561,6 +1569,10 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 		return NULL;
 	}
 
+	if (legacy_summon_prototype(mob_entry.vnum))
+		logit(LOG_STATUS,
+		      "pet recovery review: legacy world candidate vnum=%d room=%d id=%ld; provenance unknown, retained",
+		      mob_entry.vnum, mob_entry.room, static_cast<long>(mob_entry.idnum));
 	mob = read_mobile(mob_rnum, REAL);
 	if (!mob)
 	{

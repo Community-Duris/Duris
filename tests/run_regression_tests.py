@@ -33,6 +33,11 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
     }
 )
 
+# This journey requires an explicitly supplied flat-file server artifact. It is
+# run explicitly by the disposable-runtime/manual verification gate, not by the
+# generic test-all runner, which invokes every discovered script with no arguments.
+MANUAL_ONLY_TEST_NAMES = frozenset({"test_pet_restart_journey.py"})
+
 
 @dataclass(frozen=True)
 class TestResult:
@@ -43,7 +48,10 @@ class TestResult:
 
 
 def discover_tests(match: str | None) -> list[Path]:
-    tests = sorted(TEST_DIRECTORY.glob("test_*.py"))
+    tests = sorted(
+        path for path in TEST_DIRECTORY.glob("test_*.py")
+        if path.name not in MANUAL_ONLY_TEST_NAMES
+    )
     if match:
         tests = [path for path in tests if match in path.name]
     return tests

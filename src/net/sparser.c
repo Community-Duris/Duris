@@ -736,11 +736,16 @@ void add_follower(P_char ch, P_char leader)
 	k->next = leader->followers;
 	leader->followers = k;
 
-	act("You now follow $N.", FALSE, ch, 0, leader, TO_CHAR);
-	if (IS_PC(ch) || (GET_VNUM(ch) != 4010 && GET_VNUM(ch) != 250))
+	// Login stages pet links before placing either character in the world.
+	// Visibility and room broadcasts are only valid after placement.
+	if (ch->in_room != NOWHERE && leader->in_room != NOWHERE)
 	{
-		act("$n starts following you.", TRUE, ch, 0, leader, TO_VICT);
-		act("$n now follows $N.", TRUE, ch, 0, leader, TO_NOTVICT);
+		act("You now follow $N.", FALSE, ch, 0, leader, TO_CHAR);
+		if (IS_PC(ch) || (GET_VNUM(ch) != 4010 && GET_VNUM(ch) != 250))
+		{
+			act("$n starts following you.", TRUE, ch, 0, leader, TO_VICT);
+			act("$n now follows $N.", TRUE, ch, 0, leader, TO_NOTVICT);
+		}
 	}
 
 	if (IS_NPC(ch) && IS_PC(leader))

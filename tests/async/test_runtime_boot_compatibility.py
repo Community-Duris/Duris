@@ -53,7 +53,7 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         for table in ("player_death_disposition", "player_death_custody"):
             self.assertIn("'" + table + "'", self.header)
         self.assertEqual(report["migration_head"],
-                         "0012_epic_stone_claim")
+                         "0013_pet_restore_state")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
