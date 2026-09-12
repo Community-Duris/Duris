@@ -16,7 +16,7 @@ if not fn_match:
 else:
     fn = fn_match.group(0)
     checks.append(("container get helper can defer carry-limit messages", contains(fn, "bool        report_carry_limit")))
-    checks.append(("container get helper enforces item-count cap without material exemption", contains(fn, "if (IS_CARRYING_N(ch) < CAN_CARRY_N(ch))") and not contains(fn, "LOWEST_MAT_VNUM") and not contains(fn, "HIGHEST_MAT_VNUM")))
+    checks.append(("container get helper exempts only money from the item-count cap", contains(fn, "if (GET_ITEM_TYPE(o_obj) == ITEM_MONEY || IS_CARRYING_N(ch) < CAN_CARRY_N(ch))") and not contains(fn, "LOWEST_MAT_VNUM") and not contains(fn, "HIGHEST_MAT_VNUM")))
     checks.append(("container get helper stops bulk on item-count cap", re.search(r"carry_n=.*?stop_bulk = TRUE;", fn, re.S) is not None))
     checks.append(("container get helper only prints carry-limit when requested", contains(fn, "if (report_carry_limit)") and fn.count("send_to_char(\"You can't carry any more.") == 2))
 
