@@ -304,3 +304,30 @@ player-controlled pruning policy.
 `test_death_field_runtime.py` runs the production casting/selection/damage
 chain with controlled world and defense fixtures. Its group-target cases
 verify the pruning policy; they do not reproduce every reported encounter.
+
+## Server difficulty dials
+
+`src/world/difficulty.c` reads seventeen server-wide dials from the `[difficulty]`
+section of `lib/duris.properties`. Each runs from 1 to 10. Setting 5 is always an exact
+multiplier of 1.0 and every hook skips its arithmetic at 1.0, so a dial left at 5 is the
+game as it was; `difficulty.curve.NN` maps the other settings to multipliers. Dials on
+something players want (experience earned, loot drops and quality, mob gold, player
+regeneration, epic points, artefact feeding) use the reciprocal, so a higher setting is
+always harder. The dials stack on top of per-zone difficulty, and the mob dials apply
+only to NPCs that are not a player's pet or morph.
+
+The `difficulty` command lists the dials for gods; Forgers can `set`, `preset` and
+`save`. It routes through `properties set`, which re-applies every property at once but
+changes memory only until `difficulty save`. Mob hitpoints and mob gold apply to mobs
+loaded afterwards, zone repop at each zone's next reset, and the rest immediately.
+
+Hooks: mob hitpoints in `apply_zone_modifier()`; melee after `damage_mod` in `hit()`;
+spell damage after the modifier profile in `spell_damage()`, outside its 2.0 cap; hit
+chance in `chance_to_hit()`; breath through `breath_damage_mod()`; saving throws in
+`NewSaves()`; memorisation in `get_circle_memtime()`; mob coins in `read_mobile()`; the
+experience table in `update_exp_table()`; earned experience (not PvP) and the death loss
+in `gain_exp()`; PC corpse decay through `difficulty_pc_corpse_decay_minutes()`; player
+regeneration in `hit_regen()`, `mana_regen()` and `move_regen()`; loot in
+`check_random_drop()` and `create_random_eq_new()`; zone lifespan in `reset_zone()`;
+epic points (not PvP) in `prepare_epic_award()`; artefact feeding in
+`artifact_feed_seconds()`.

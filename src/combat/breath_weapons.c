@@ -4,12 +4,22 @@
  ***************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "net/comm.h"
 #include "core/utils.h"
 #include "combat/damage.h"
 #include "magic/spells.h"
 
 float breath_dam_mod;
+
+// dragon.Breath.DamageMod, with the server-wide mob breath dial on top for world mobs.
+static float breath_damage_mod(P_char ch)
+{
+	const double dial = difficulty_multiplier(DIFFICULTY_MOB_BREATH);
+	if (dial == 1.0 || !difficulty_world_npc(ch))
+		return breath_dam_mod;
+	return static_cast<float>(breath_dam_mod * dial);
+}
 float breath_saved_multiplier;
 int breath_save_modifier;
 
@@ -34,7 +44,7 @@ void breath_weapon_fire(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 	}
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 6) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 6) + 2 * level));
 
 	if (IS_PC_PET(ch))
 	{
@@ -126,7 +136,7 @@ void breath_weapon_lightning(int level, P_char ch, char * /*arg*/, int /*type*/,
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 6) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 6) + 2 * level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -166,7 +176,7 @@ void breath_weapon_frost(int level, P_char ch, char * /*arg*/, [[maybe_unused]] 
 	}
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 6) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 6) + 2 * level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -254,7 +264,7 @@ void breath_weapon_acid(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 6) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 6) + 2 * level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -312,7 +322,7 @@ void breath_weapon_poison(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 2) + dice(level, 4) + level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 2) + dice(level, 4) + level));
 
 	if (IS_PC_PET(ch))
 	{
@@ -368,7 +378,7 @@ void breath_weapon_shadow_1(int level, P_char ch, char * /*arg*/, int /*type*/, 
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 5) + level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 5) + level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -401,7 +411,7 @@ void breath_weapon_shadow_2(int level, P_char ch, char * /*arg*/, int /*type*/, 
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 5) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 5) + 2 * level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -437,7 +447,7 @@ void breath_weapon_blind(int level, P_char ch, char * /*arg*/, int /*type*/, P_c
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (((7 * level) / 2) + dice(4, 10)));
+	dam = (int)(breath_damage_mod(ch) * (((7 * level) / 2) + dice(4, 10)));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -483,7 +493,7 @@ void breath_weapon_crimson(int level, P_char ch, char * /*arg*/, [[maybe_unused]
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 5) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 5) + 2 * level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -570,7 +580,7 @@ void breath_weapon_jasper(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 5) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 5) + 2 * level));
 	if (IS_PC_PET(ch))
 	{
 		dam /= 3;
@@ -605,7 +615,7 @@ void breath_weapon_azure(int level, P_char ch, char * /*arg*/, int /*type*/, P_c
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 6) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 6) + 2 * level));
 
 	if (IS_PC_PET(ch))
 	{
@@ -644,7 +654,7 @@ void breath_weapon_basalt(int level, P_char ch, char * /*arg*/, int /*type*/, P_
 		return;
 
 	save = BREATH_WEAPON_SAVE(ch, victim);
-	dam = (int)(breath_dam_mod * (dice(level, 6) + 2 * level));
+	dam = (int)(breath_damage_mod(ch) * (dice(level, 6) + 2 * level));
 
 	if (IS_PC_PET(ch))
 	{

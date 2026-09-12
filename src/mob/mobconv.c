@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "core/utils.h"
@@ -591,6 +592,13 @@ void convertMob(P_char ch)
 // intended to be called only once, right after mob is loaded and has birthplace set
 void apply_zone_modifier(P_char ch)
 {
+	// Server-wide mob hitpoint dial, applied to every zone-loaded mob before the zone's
+	// own difficulty so the two stack.
+	const double hitpoint_dial = difficulty_multiplier(DIFFICULTY_MOB_HITPOINTS);
+	if (hitpoint_dial != 1.0)
+		GET_MAX_HIT(ch) = GET_HIT(ch) = ch->points.base_hit =
+			MAX(1, difficulty_scale_int(ch->points.base_hit, hitpoint_dial));
+
 	int difficulty =
 		BOUNDED(1, zone_table[world[real_room0(GET_BIRTHPLACE(ch))].zone].difficulty, 10);
 

@@ -2910,6 +2910,7 @@ void trapdamage(P_char ch, P_obj obj);
 /* properties.c */
 void initialize_properties();
 void do_properties(P_char, char *, int);
+void do_difficulty(P_char, char *, int);
 float get_property(const char *, double);
 int get_property(const char *, int);
 float get_property(const char *, double, bool);

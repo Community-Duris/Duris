@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -2245,6 +2246,7 @@ P_char read_mobile(int nr, int type)
 		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
 		{
+			difficulty_scale_coins(&tmp1, &tmp2, &tmp3, &tmp4);
 			GET_PLATINUM(mob) = tmp4; /* * (number(50, 200) / 100); */
 			GET_GOLD(mob) = tmp3; /* * (number(50, 200) / 100); */
 			GET_SILVER(mob) = tmp2; /* * (number(50, 200) / 100); */
@@ -2268,7 +2270,7 @@ P_char read_mobile(int nr, int type)
 			tmp = 0;
 			if (sscanf(buf, " %ld %ld", &tmp1, &tmp) == 2)
 			{
-				ADD_MONEY(mob, tmp1);
+				ADD_MONEY(mob, difficulty_scale_money(tmp1));
 				GET_EXP(mob) = tmp * exp_mods[EXPMOD_GLOBAL];
 			}
 			else
@@ -2636,6 +2638,7 @@ P_char read_mobile(int nr, int type)
 		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
 		{
+			difficulty_scale_coins(&tmp1, &tmp2, &tmp3, &tmp4);
 			GET_COPPER(mob) = tmp1;
 			GET_SILVER(mob) = tmp2;
 			GET_GOLD(mob) = tmp3;
@@ -2648,7 +2651,7 @@ P_char read_mobile(int nr, int type)
 			tmp = 0;
 			if (sscanf(buf, " %ld %ld", &tmp1, &tmp) == 2)
 			{
-				ADD_MONEY(mob, tmp1);
+				ADD_MONEY(mob, difficulty_scale_money(tmp1));
 				GET_EXP(mob) = tmp * exp_mods[EXPMOD_GLOBAL];
 			}
 			else
@@ -4001,6 +4004,12 @@ void reset_zone(int zone, int force_item_repop)
 			number(zone_table[zone].lifespan_min, zone_table[zone].lifespan_max);
 	else
 		zone_table[zone].lifespan = zone_table[zone].lifespan_min;
+
+	// Server-wide repop dial: a harder setting shortens every zone's lifespan.
+	const double repop_dial = difficulty_multiplier(DIFFICULTY_ZONE_REPOP);
+	if (repop_dial != 1.0)
+		zone_table[zone].lifespan =
+			MAX(1, difficulty_scale_int(zone_table[zone].lifespan, 1.0 / repop_dial));
 
 	zone_table[zone].age = 0;
 }
