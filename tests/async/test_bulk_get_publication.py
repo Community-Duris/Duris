@@ -133,7 +133,9 @@ int main()
     count = actor.count_limit; weight = 0; stop = false;
     assert(!select_bulk_get_item(&actor, &container, &dagger, nullptr, false,
                                 count, weight, state, stop));
-    assert(output.empty() && stop);
+    // Container scans continue after an ordinary count-cap rejection so a
+    // later money object can still be selected.
+    assert(output.empty() && !stop);
     bulk_gets.emplace(actor.pid, std::move(state));
     finish_bulk_get(&actor, actor.pid);
     assert(output == "You can't carry any more.\r\n");
