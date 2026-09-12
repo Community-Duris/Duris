@@ -44,12 +44,40 @@ playable. Orderly maintenance sees the pending batch fence; a pre-entry
 disconnect cancels only unsubmitted work and preserves an already journaled
 batch. This does not make `toggle newbie` one-time or exempt Chaos characters.
 
+## Admission failure and uncertain durability
+
+Admission results must not be collapsed into one retryable rejection. Invalid
+commands, identity conflicts, and definite journal non-admission terminate the
+staged kit and restore its prompt. Unavailable/overloaded admission retains the
+kit for retry.
+
+An append error does not by itself prove non-admission: a complete frame may
+remain after a failed `fsync()` or `close()`. The journal attempts a durable
+rollback under its mutex. If rollback cannot be confirmed, it closes admission
+with an uncertainty gate. The coordinator and transaction caller retain the
+original operation identity, pending state, and ownership fences. Disconnect
+must not cancel these roots as if they were unsubmitted.
+
+Production pulse recovery validates the journal, synchronizes it, refreshes
+journal health, and resumes the same operation identity. Failed recovery backs
+off from one to thirty seconds. Corrupt journals remain fail-closed; this is not
+a promise of automatic recovery from permanent storage damage. Recovery still
+performs synchronous journal I/O, so backoff limits frequency, not worst-case
+I/O latency. Normal shutdown/copyover must honor failed drain; forced process
+exit or a direct shutdown that bypasses drain cannot preserve RAM-only state.
+
+All coordinator callers use the same retained-operation predicate for uncertain
+admission. This means responsibility is retained, not that durable success has
+already occurred; publication still waits for completion.
+
 ## Verification
 
 Run the focused queue and policy regressions with:
 
 ```sh
 python3 tests/async/test_newbie_grant_lifecycle.py
+python3 tests/async/test_critical_command_journal_faults.py
+python3 tests/async/test_critical_command_journal_uncertain.py
 python3 tests/async/test_newbie_kit_plan.py
 python3 tests/async/test_newbie_kit_readiness_contract.py
 python3 tests/async/test_creation_grant_batch_submission.py

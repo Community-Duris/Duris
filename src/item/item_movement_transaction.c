@@ -113,6 +113,29 @@ bool reject_with(item_movement_reject *reject, item_movement_reject reason)
 	return false;
 }
 
+item_movement_reject coordinator_reject_reason(critical_submit_result result)
+{
+	switch (result)
+	{
+	case critical_submit_result::unavailable:
+		return item_movement_reject::coordinator_unavailable;
+	case critical_submit_result::overloaded:
+		return item_movement_reject::coordinator_overloaded;
+	case critical_submit_result::invalid:
+		return item_movement_reject::coordinator_invalid;
+	case critical_submit_result::identity_conflict:
+		return item_movement_reject::coordinator_identity_conflict;
+	case critical_submit_result::journal_failure:
+		return item_movement_reject::coordinator_journal_failure;
+	case critical_submit_result::journal_uncertain:
+		return item_movement_reject::coordinator_journal_uncertain;
+	case critical_submit_result::accepted:
+	case critical_submit_result::attached:
+		break;
+	}
+	return item_movement_reject::coordinator_rejected;
+}
+
 bool owner_conflicts(const pending_movement &entry, const item_owner_identity &owner)
 {
 	return item_owner_identity_equal(entry.payload.from_owner, owner) ||
@@ -123,7 +146,8 @@ bool owner_conflicts(const pending_movement &entry, const item_owner_identity &o
 bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
 {
 	return std::any_of(pending.begin(), pending.end(),
-			   [&](const auto &entry) {
+			   [&](const auto &entry)
+			   {
 				   return owner_conflicts(entry.second, from_owner) ||
 					  owner_conflicts(entry.second, to_owner);
 			   });
@@ -1304,12 +1328,22 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	}
 	const critical_submit_result submitted =
 		critical_command_coordinator_submit(std::move(command));
+	if (submitted == critical_submit_result::journal_uncertain)
+	{
+		++health.submission_failures;
+		*reject = coordinator_reject_reason(submitted);
+		account_health();
+		// The coordinator retained the original operation ID and fence because
+		// the journal rollback itself was uncertain. Keep the live pending entry
+		// and let the recovery/shutdown path resolve it; never mint a new ID.
+		return true;
+	}
 	if (submitted != critical_submit_result::accepted &&
 	    submitted != critical_submit_result::attached)
 	{
 		pending.erase(key);
 		++health.submission_failures;
-		return reject_with(reject, item_movement_reject::coordinator_rejected);
+		return reject_with(reject, coordinator_reject_reason(submitted));
 	}
 	++health.submitted;
 	account_health();
@@ -1495,12 +1529,22 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 	}
 	const critical_submit_result submitted =
 		critical_command_coordinator_submit(std::move(command));
+	if (submitted == critical_submit_result::journal_uncertain)
+	{
+		++health.submission_failures;
+		*reject = coordinator_reject_reason(submitted);
+		account_health();
+		// The coordinator retained the original operation ID and fence because
+		// the journal rollback itself was uncertain. Keep the live pending entry
+		// and let the recovery/shutdown path resolve it; never mint a new ID.
+		return true;
+	}
 	if (submitted != critical_submit_result::accepted &&
 	    submitted != critical_submit_result::attached)
 	{
 		pending.erase(key);
 		++health.submission_failures;
-		return reject_with(reject, item_movement_reject::coordinator_rejected);
+		return reject_with(reject, coordinator_reject_reason(submitted));
 	}
 	++health.submitted;
 	account_health();
@@ -1531,6 +1575,18 @@ const char *item_movement_reject_name(item_movement_reject reason)
 		return "allocation_failure";
 	case item_movement_reject::command_build_failure:
 		return "command_build_failure";
+	case item_movement_reject::coordinator_unavailable:
+		return "coordinator_unavailable";
+	case item_movement_reject::coordinator_overloaded:
+		return "coordinator_overloaded";
+	case item_movement_reject::coordinator_invalid:
+		return "coordinator_invalid";
+	case item_movement_reject::coordinator_identity_conflict:
+		return "coordinator_identity_conflict";
+	case item_movement_reject::coordinator_journal_failure:
+		return "coordinator_journal_failure";
+	case item_movement_reject::coordinator_journal_uncertain:
+		return "coordinator_journal_uncertain";
 	case item_movement_reject::coordinator_rejected:
 		return "coordinator_rejected";
 	}
@@ -1545,7 +1601,8 @@ bool item_movement_reject_is_transient(item_movement_reject reason)
 	return reason == item_movement_reject::pending_conflict ||
 	       reason == item_movement_reject::queue_saturated ||
 	       reason == item_movement_reject::allocation_failure ||
-	       reason == item_movement_reject::coordinator_rejected;
+	       reason == item_movement_reject::coordinator_unavailable ||
+	       reason == item_movement_reject::coordinator_overloaded;
 }
 
 bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,

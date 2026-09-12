@@ -152,7 +152,7 @@ struct fixture
     char_data actor{}, other{};
     pc_only_data pc{}, other_pc{};
     descriptor_data desc{}, other_desc{};
-    obj_data bag{}, food{}, extra{};
+    obj_data bag{}, food{}, extra{}, child{};
     fixture()
     {
         item_movement_transaction_reset_for_tests();
@@ -167,7 +167,7 @@ struct fixture
         actor.next = &other; character_list = &actor;
         indexes[0].virtual_number = 100;
         int id = 100;
-        for (P_obj obj : {&bag, &food, &extra})
+        for (P_obj obj : {&bag, &food, &extra, &child})
         {
             obj->obj_uid = id++; obj->R_num = 0; obj->loc_p = LOC_NOWHERE;
             obj->next = object_list; object_list = obj;
@@ -521,6 +521,110 @@ int main()
         assert(submitted.size() == 1);
         deliver(next_completion(critical_apply_outcome::applied));
         assert(publications[100] == 1 && !item_movement_transaction_player_busy(&f.actor));
+    }
+    // Capacity and coordinator availability are admission back-pressure: retain the
+    // detached kit, keep the player gated, and retry once the coordinator recovers.
+    for (const critical_submit_result transient_admission :
+         {critical_submit_result::unavailable, critical_submit_result::overloaded})
+    {
+        fixture f;
+        assert(item_creation_grant_defer(&f.actor, [&](P_char, P_obj *root) {
+            *root = &f.bag;
+            return item_creation_prepare_result::ready;
+        }));
+        submit_result = transient_admission;
+        item_creation_grant_prepare_pulse();
+        assert(submitted.empty() && extractions.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(item_creation_grant_blocks_commands(&f.actor));
+        assert(item_creation_grant_batches_pending());
+        assert(!f.desc.prompt_mode);
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.size() == 1);
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(publications[100] == 1 && extractions.empty());
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        assert(!item_creation_grant_blocks_commands(&f.actor));
+        assert(!item_creation_grant_batches_pending() && f.desc.prompt_mode);
+    }
+    // A post-write journal ambiguity is not a normal retry or terminal failure.
+    // Retain the original staged roots and gate until journal recovery resolves it.
+    {
+        fixture f;
+        assert(item_creation_grant_defer(&f.actor, [&](P_char, P_obj *root) {
+            *root = &f.bag;
+            return item_creation_prepare_result::ready;
+        }));
+        submit_result = critical_submit_result::journal_uncertain;
+        item_creation_grant_prepare_pulse();
+        assert(submitted.empty() && extractions.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(item_creation_grant_blocks_commands(&f.actor));
+        assert(item_creation_grant_batches_pending());
+        assert(!f.desc.prompt_mode);
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.empty() && extractions.empty());
+        assert(item_movement_transaction_player_busy(&f.actor));
+    }
+    // Invalid identity, identity conflicts, and journal failures are terminal
+    // admission results. They must release every staged kit root and the command
+    // gate, but a separately queued reward must survive and make progress.
+    for (const critical_submit_result terminal_admission :
+         {critical_submit_result::invalid, critical_submit_result::identity_conflict,
+          critical_submit_result::journal_failure})
+    {
+        fixture f;
+        int calls = 0;
+        assert(item_creation_grant_defer(&f.actor, [&](P_char, P_obj *root) {
+            ++calls;
+            if (calls == 1) *root = &f.bag;
+            if (calls == 9) *root = &f.food;
+            return calls == 9 ? item_creation_prepare_result::ready :
+                                item_creation_prepare_result::more;
+        }));
+        item_creation_grant_prepare_pulse();
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.extra, &f.actor));
+        submit_result = terminal_admission;
+        item_creation_grant_prepare_pulse();
+        assert(submitted.empty());
+        assert(extractions[100] == 1 && extractions[101] == 1 && extractions[102] == 0);
+        assert(!item_creation_grant_blocks_commands(&f.actor));
+        assert(!item_creation_grant_batches_pending() && f.desc.prompt_mode);
+        assert(item_movement_transaction_player_busy(&f.actor));
+        assert(fixture_messages.find("could not continue the item grant") != std::string::npos);
+
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.size() == 1);
+        deliver(next_completion(critical_apply_outcome::applied));
+        assert(publications[102] == 1 && extractions[102] == 0);
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        assert(!item_creation_grant_batches_pending());
+    }
+    // A dependent request queued behind a failed kit must be discarded after
+    // the failed container is gone, without leaving a dangling target or busy PID.
+    {
+        fixture f;
+        int calls = 0;
+        assert(item_creation_grant_defer(&f.actor, [&](P_char, P_obj *root) {
+            ++calls;
+            if (calls == 1) *root = &f.bag;
+            if (calls == 9) *root = &f.food;
+            return calls == 9 ? item_creation_prepare_result::ready :
+                                item_creation_prepare_result::more;
+        }));
+        item_creation_grant_prepare_pulse();
+        assert(item_creation_grant_submit_to_player(&f.actor, &f.child, &f.actor, &f.bag));
+        submit_result = critical_submit_result::journal_failure;
+        item_creation_grant_prepare_pulse();
+        assert(extractions[100] == 1 && extractions[101] == 1 && extractions[103] == 0);
+        assert(item_movement_transaction_player_busy(&f.actor));
+        submit_result = critical_submit_result::accepted;
+        item_movement_transaction_handle_completions(nullptr, 0);
+        assert(submitted.empty() && extractions[103] == 1);
+        assert(!item_movement_transaction_player_busy(&f.actor));
+        assert(!item_creation_grant_batches_pending());
     }
     // Offline retention resolves against the current character with the same PID,
     // without keeping the original descriptor or character pointer in the queue.

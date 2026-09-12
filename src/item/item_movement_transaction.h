@@ -51,6 +51,12 @@ enum class item_movement_reject
 	snapshot_failure,
 	allocation_failure,
 	command_build_failure,
+	coordinator_unavailable,
+	coordinator_overloaded,
+	coordinator_invalid,
+	coordinator_identity_conflict,
+	coordinator_journal_failure,
+	coordinator_journal_uncertain,
 	coordinator_rejected,
 };
 

@@ -225,8 +225,7 @@ submit_outcome submit(uint64_t key, corpse_state *state)
 		return submit_outcome::failed;
 	}
 	const auto submitted = critical_command_coordinator_submit(std::move(command));
-	if (submitted != critical_submit_result::accepted &&
-	    submitted != critical_submit_result::attached)
+	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		operations.erase(operation);
 		++health.submission_failures;

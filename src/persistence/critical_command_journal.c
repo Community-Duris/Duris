@@ -227,7 +227,8 @@ void record_result(critical_command_journal_result result)
 	health.last_result = result;
 	if (result == critical_command_journal_result::corrupt_data)
 		++health.corrupt_records;
-	else if (result == critical_command_journal_result::io_failure)
+	else if (result == critical_command_journal_result::io_failure ||
+		 result == critical_command_journal_result::append_uncertain)
 		++health.io_failures;
 	else if (result == critical_command_journal_result::quota_exceeded)
 		health.quota_exceeded = true;
@@ -278,6 +279,19 @@ void update_health(const std::vector<journal_frame> &frames)
 	}
 	health.oldest_age_msec = oldest && now_msec() > oldest ? now_msec() - oldest : 0;
 	health.quota_exceeded = health.bytes >= journal_quota;
+}
+
+bool rollback_append(off_t original_size)
+{
+	const int fd = open(journal_path.c_str(), O_WRONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+		return false;
+	bool ok = ftruncate(fd, original_size) == 0;
+	if (ok && fsync(fd) != 0)
+		ok = false;
+	if (close(fd) != 0)
+		ok = false;
+	return ok;
 }
 } // namespace
 
@@ -345,6 +359,11 @@ critical_command_journal_result critical_command_journal_append(const critical_c
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return critical_command_journal_result::not_initialized;
+	if (health.append_uncertain)
+	{
+		health.last_result = critical_command_journal_result::append_uncertain;
+		return critical_command_journal_result::append_uncertain;
+	}
 	journal_frame frame;
 	if (!build_frame(command, &frame))
 	{
@@ -365,16 +384,49 @@ critical_command_journal_result critical_command_journal_append(const critical_c
 		record_result(critical_command_journal_result::io_failure);
 		return critical_command_journal_result::io_failure;
 	}
+	const off_t original_size = status.st_size;
 	if (frame.bytes.size() > journal_quota ||
-	    static_cast<uint64_t>(status.st_size) > journal_quota - frame.bytes.size())
+	    static_cast<uint64_t>(original_size) > journal_quota - frame.bytes.size())
 	{
 		close(fd);
 		record_result(critical_command_journal_result::quota_exceeded);
 		return critical_command_journal_result::quota_exceeded;
 	}
-	bool ok = write_all(fd, frame.bytes.data(), frame.bytes.size());
-	if (ok && fsync(fd) != 0)
-		ok = false;
+	const bool wrote = write_all(fd, frame.bytes.data(), frame.bytes.size());
+	const bool synced = wrote && fsync(fd) == 0;
+	const bool closed = close(fd) == 0;
+	if (!wrote || !synced || !closed)
+	{
+		// A failed append may already have written a complete frame. Roll it back
+		// while the journal mutex is held; only an unsuccessful rollback is
+		// admission-uncertain and must not be treated as a clean rejection.
+		const bool rolled_back = rollback_append(original_size);
+		const auto result = rolled_back ? critical_command_journal_result::io_failure :
+						  critical_command_journal_result::append_uncertain;
+		if (result == critical_command_journal_result::append_uncertain)
+			health.append_uncertain = true;
+		record_result(result);
+		return result;
+	}
+	++health.appends;
+	++health.records;
+	health.bytes += frame.bytes.size();
+	health.last_result = critical_command_journal_result::ok;
+	return critical_command_journal_result::ok;
+}
+
+critical_command_journal_result critical_command_journal_sync(void)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized)
+		return critical_command_journal_result::not_initialized;
+	const int fd = open(journal_path.c_str(), O_WRONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+	{
+		record_result(critical_command_journal_result::io_failure);
+		return critical_command_journal_result::io_failure;
+	}
+	bool ok = fsync(fd) == 0;
 	if (close(fd) != 0)
 		ok = false;
 	if (!ok)
@@ -382,9 +434,15 @@ critical_command_journal_result critical_command_journal_append(const critical_c
 		record_result(critical_command_journal_result::io_failure);
 		return critical_command_journal_result::io_failure;
 	}
-	++health.appends;
-	++health.records;
-	health.bytes += frame.bytes.size();
+	std::vector<journal_frame> frames;
+	const auto scan_result = scan_bounded(&frames);
+	if (scan_result != critical_command_journal_result::ok)
+	{
+		record_result(scan_result);
+		return scan_result;
+	}
+	update_health(frames);
+	health.append_uncertain = false;
 	health.last_result = critical_command_journal_result::ok;
 	return critical_command_journal_result::ok;
 }
@@ -404,12 +462,11 @@ critical_command_journal_checkpoint(const critical_operation_id &operation_id)
 		record_result(result);
 		return result;
 	}
-	frames.erase(std::remove_if(frames.begin(), frames.end(),
-				    [&](const journal_frame &frame) {
-					    return critical_operation_id_equal(frame.operation_id,
-									       operation_id);
-				    }),
-		     frames.end());
+	frames.erase(
+		std::remove_if(
+			frames.begin(), frames.end(), [&](const journal_frame &frame)
+			{ return critical_operation_id_equal(frame.operation_id, operation_id); }),
+		frames.end());
 	result = rewrite(frames);
 	if (result == critical_command_journal_result::ok)
 	{
@@ -480,6 +537,8 @@ const char *critical_command_journal_result_name(critical_command_journal_result
 		return "corrupt";
 	case critical_command_journal_result::replay_blocked:
 		return "replay_blocked";
+	case critical_command_journal_result::append_uncertain:
+		return "append_uncertain";
 	}
 	return "unknown";
 }
