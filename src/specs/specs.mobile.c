@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -11018,6 +11019,7 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 
 		temp = MAX(0, static_cast<int>(get_property("world.quest.cost.per.level", 20.000) *
 					       GET_LEVEL(pl)));
+		temp = difficulty_scale_world_quest_fee(temp);
 
 		snprintf(
 			money_string, sizeof money_string,

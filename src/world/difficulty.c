@@ -49,6 +49,7 @@ constexpr difficulty_dial_info DIFFICULTY_DIALS[DIFFICULTY_DIAL_COUNT] = {
 	{ "zone.repop", "Zone repop speed", false, "each zone's next reset" },
 	{ "epic.gain", "Epic points earned", true, "immediately" },
 	{ "artifact.feeding", "Artefact feeding", true, "immediately" },
+	{ "world.quest", "Bartender quests", false, "the next quest" },
 };
 
 std::array<double, DIFFICULTY_MAX> difficulty_curve = []
@@ -195,6 +196,30 @@ int difficulty_pc_corpse_decay_minutes()
 	if (dial == 1.0)
 		return minutes;
 	return std::max(1, difficulty_scale_int(minutes, 1.0 / dial));
+}
+
+int difficulty_scale_world_quest_fee(int fee)
+{
+	const double dial = difficulty_multiplier(DIFFICULTY_WORLD_QUEST);
+	if (dial == 1.0)
+		return fee;
+	return std::max(0, difficulty_scale_int(fee, dial));
+}
+
+int difficulty_scale_world_quest_allowance(int allowance)
+{
+	const double dial = difficulty_multiplier(DIFFICULTY_WORLD_QUEST);
+	if (dial == 1.0)
+		return allowance;
+	return std::max(1, difficulty_scale_int(allowance, 1.0 / dial));
+}
+
+int difficulty_scale_world_quest_kills(int kills)
+{
+	const double dial = difficulty_multiplier(DIFFICULTY_WORLD_QUEST);
+	if (dial == 1.0)
+		return kills;
+	return std::max(1, difficulty_scale_int(kills, dial));
 }
 
 // difficulty                      show every dial, its multiplier and when it applies

@@ -27,6 +27,7 @@ enum difficulty_dial
 	DIFFICULTY_ZONE_REPOP,
 	DIFFICULTY_EPIC_GAIN,
 	DIFFICULTY_ARTIFACT_FEEDING,
+	DIFFICULTY_WORLD_QUEST,
 	DIFFICULTY_DIAL_COUNT
 };
 
@@ -48,5 +49,11 @@ int difficulty_scale_player_regen(P_char ch, int gain);
 
 // timer.decay.corpse.pc, shortened by the death penalty dial.
 int difficulty_pc_corpse_decay_minutes();
+
+// Bartender quests under the world quest dial: a dearer fee, fewer quests a day (never
+// fewer than one) and more kills per kill quest.
+int difficulty_scale_world_quest_fee(int fee);
+int difficulty_scale_world_quest_allowance(int allowance);
+int difficulty_scale_world_quest_kills(int kills);
 
 #endif // DURIS_DIFFICULTY_H

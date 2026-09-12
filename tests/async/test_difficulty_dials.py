@@ -117,7 +117,7 @@ def test_table_enum_and_properties_agree() -> None:
     keys = _dial_keys()
     enum = HEADER[HEADER.index("enum difficulty_dial"):HEADER.index("DIFFICULTY_DIAL_COUNT")]
     members = re.findall(r"\bDIFFICULTY_[A-Z_]+\b", enum)
-    assert len(keys) == len(members) == 17, (keys, members)
+    assert len(keys) == len(members) == 18, (keys, members)
     for key, member in zip(keys, members):
         assert member == "DIFFICULTY_" + key.upper().replace(".", "_"), (key, member)
     section = PROPERTIES[PROPERTIES.index("[difficulty]"):].splitlines()
@@ -173,7 +173,25 @@ def test_every_dial_reaches_its_hook() -> None:
         ("guild/artifact_guild_state.c", "int artifact_feed_seconds(",
          "seconds = difficulty_scale_int(seconds, "
          "difficulty_multiplier(DIFFICULTY_ARTIFACT_FEEDING));"),
+        ("world_quest.c", "bool createQuest(",
+         "MIN(difficulty_scale_world_quest_kills(number(7, 9)), mob_index[rnum].number - 1);"),
     ]
+    for name, signature, expression in hooks:
+        assert _flat(expression) in _flat(_body(name, signature)), (name, expression)
+
+    # The bartender fee is scaled after it is priced and before it is taken or refunded.
+    bartender = _flat(source("specs.mobile.c").read_text())
+    priced = bartender.index(_flat('get_property("world.quest.cost.per.level", 20.000)'))
+    scaled = bartender.index(_flat("temp = difficulty_scale_world_quest_fee(temp);"), priced)
+    assert scaled < bartender.index(_flat("SUB_MONEY(pl, temp, 0);"), priced)
+
+    # Both backends' daily allowance takes the dial before today's quests are counted off.
+    sql = _flat(source("sql/sql.c").read_text())
+    assert _flat("maximum = difficulty_scale_world_quest_allowance(maximum); "
+                 "return std::max(maximum - completed_today, 0);") in sql
+    assert _flat("returning_value = difficulty_scale_world_quest_allowance(returning_value); "
+                 "returning_value -= atoi(row[0]);") in sql
+    hooks = []
     for name, signature, expression in hooks:
         assert _flat(expression) in _flat(_body(name, signature)), (name, expression)
 
@@ -339,6 +357,20 @@ int main() {
     if (requests[0] != "set difficulty.dial.mob.melee 7") return 18;
     if (requests[1] != "set difficulty.dial.* 3") return 19;
     if (requests[2] != "save") return 20;
+
+    // Bartender quests at 10: double the fee, half the daily allowance (never below one)
+    // and double the kills.
+    props["difficulty.dial.world.quest"] = 10;
+    update_difficulty_dials();
+    if (difficulty_scale_world_quest_fee(1000) != 2000) return 21;
+    if (difficulty_scale_world_quest_allowance(8) != 4) return 22;
+    if (difficulty_scale_world_quest_allowance(1) != 1) return 23;
+    if (difficulty_scale_world_quest_kills(7) != 14) return 24;
+    props["difficulty.dial.world.quest"] = 5;
+    update_difficulty_dials();
+    if (difficulty_scale_world_quest_fee(1000) != 1000) return 25;
+    if (difficulty_scale_world_quest_allowance(8) != 8) return 26;
+    if (difficulty_scale_world_quest_kills(7) != 7) return 27;
     return 0;
 }
 """, "duris-difficulty-runtime-")

@@ -21,6 +21,7 @@ Version 2
 using namespace std;
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -879,7 +880,8 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 		return FALSE;
 	}
 
-	const int quest_kill_original = MIN(number(7, 9), mob_index[rnum].number - 1);
+	const int quest_kill_original =
+		MIN(difficulty_scale_world_quest_kills(number(7, 9)), mob_index[rnum].number - 1);
 	ch->only.pc->quest_shares_left = world_quest_share_limit();
 	ch->only.pc->quest_active = 1;
 	ch->only.pc->quest_mob_vnum = quest_mob;

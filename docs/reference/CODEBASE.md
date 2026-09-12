@@ -320,7 +320,7 @@ verify the pruning policy; they do not reproduce every reported encounter.
 
 ## Server difficulty dials
 
-`src/world/difficulty.c` reads seventeen server-wide dials from the `[difficulty]`
+`src/world/difficulty.c` reads eighteen server-wide dials from the `[difficulty]`
 section of `lib/duris.properties`. Each runs from 1 to 10. Setting 5 is always an exact
 multiplier of 1.0 and every hook skips its arithmetic at 1.0, so a dial left at 5 is the
 game as it was; `difficulty.curve.NN` maps the other settings to multipliers. Dials on
@@ -348,4 +348,6 @@ in `gain_exp()`; PC corpse decay through `difficulty_pc_corpse_decay_minutes()`;
 regeneration in `hit_regen()`, `mana_regen()` and `move_regen()`; loot in
 `check_random_drop()` and `create_random_eq_new()`; zone lifespan in `reset_zone()`;
 epic points (not PvP) in `prepare_epic_award()`; artefact feeding in
-`artifact_feed_seconds()`.
+`artifact_feed_seconds()`; bartender quests in the bartender fee, both backends'
+`sql_world_quest_can_do_another()` (never fewer than one a day) and the kill count in
+`createQuest()`.
