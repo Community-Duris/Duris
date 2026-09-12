@@ -366,6 +366,11 @@ int main() {
     if (difficulty_scale_world_quest_allowance(8) != 4) return 22;
     if (difficulty_scale_world_quest_allowance(1) != 1) return 23;
     if (difficulty_scale_world_quest_kills(7) != 14) return 24;
+    // A steeper curve cannot take the daily allowance below one quest.
+    props["difficulty.curve.10"] = 4.0;
+    update_difficulty_dials();
+    if (difficulty_scale_world_quest_allowance(1) != 1) return 28;
+    props.erase("difficulty.curve.10");
     props["difficulty.dial.world.quest"] = 5;
     update_difficulty_dials();
     if (difficulty_scale_world_quest_fee(1000) != 1000) return 25;
