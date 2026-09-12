@@ -1863,6 +1863,8 @@ resume_game_loop:
 			latency_trace_elapsed_us(ne_events_begin_us, loop_monotonic_us());
 		latency_trace_record("ne_events", ne_events_us, loop_tick);
 
+		item_creation_grant_prepare_pulse();
+
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))
 		{

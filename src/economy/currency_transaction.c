@@ -475,8 +475,7 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 		return false;
 	}
 	const auto submitted = critical_command_coordinator_submit(std::move(command));
-	if (submitted != critical_submit_result::accepted &&
-	    submitted != critical_submit_result::attached)
+	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
 		++health.submission_failures;
@@ -608,8 +607,7 @@ bool currency_transaction_submit_prepared(P_char character, const critical_comma
 		pending.erase(key);
 		return false;
 	}
-	if (submitted != critical_submit_result::accepted &&
-	    submitted != critical_submit_result::attached)
+	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
 		++health.submission_failures;

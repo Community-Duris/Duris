@@ -19,6 +19,7 @@ enum class critical_command_journal_result : uint8_t
 	quota_exceeded,
 	corrupt_data,
 	replay_blocked,
+	append_uncertain,
 };
 
 struct critical_command_journal_health
@@ -34,6 +35,7 @@ struct critical_command_journal_health
 	uint64_t io_failures;
 	critical_command_journal_result last_result;
 	bool quota_exceeded;
+	bool append_uncertain;
 	bool initialized;
 };
 
@@ -43,6 +45,7 @@ bool critical_command_journal_init(const char *directory,
 				   size_t quota_bytes = CRITICAL_COMMAND_JOURNAL_DEFAULT_QUOTA);
 void critical_command_journal_shutdown(void);
 critical_command_journal_result critical_command_journal_append(const critical_command &command);
+critical_command_journal_result critical_command_journal_sync(void);
 critical_command_journal_result
 critical_command_journal_checkpoint(const critical_operation_id &operation_id);
 critical_command_journal_result critical_command_journal_replay(critical_command_replay_fn replay,

@@ -144,11 +144,12 @@ int main() {
 
 # Integration boundaries: bounded main-thread capture/publication, no cold fallback.
 nanny = (ROOT / 'src/account/nanny.c').read_text()
-loader = nanny.split('void load_obj_to_newbies(P_char ch)', 1)[1].split('/* check for a legal player name', 1)[0]
+loader = nanny.split('static std::vector<prepared_newbie_item> prepare_legacy_newbie_plan', 1)[1].split('/* check for a legal player name', 1)[0]
 room_assignment = re.search(r'input\.ailvio\s*=[^;]+;', loader).group(0)
 HARNESS = HARNESS.replace('ROOM_ASSIGNMENT', room_assignment)
 assert 'read_object(' not in loader
-assert loader.index('item_movement_transaction_player_busy(ch)') < loader.index('make_newbie_kit_plan(input)')
+entry = loader.split('void load_obj_to_newbies(P_char ch)', 1)[1]
+assert entry.index('item_movement_transaction_player_busy(ch)') < entry.index('item_creation_grant_defer(')
 assert loader.index('prepare_newbie_kit_items(') < loader.index('instantiate_object_template(')
 # A transient starter container bypasses the ownership grant in obj_to_char(),
 # leaving put/put all unable to establish durable child topology.
@@ -160,7 +161,7 @@ transient_policy = re.search(
 assert 'obj->type != ITEM_CONTAINER' in transient_policy
 assert 'obj->type != ITEM_QUIVER' in transient_policy
 assert loader.index('add_newbie_keyword(obj)') < loader.index('obj_to_char(obj, ch)')
-assert loader.index('obj_to_char(obj, ch)') < loader.index('item_creation_grant_mark_blocking(ch)')
+assert 'item_creation_grant_defer(' in entry
 assert 'P_char' not in text and 'P_obj' not in text and 'object_list' not in text
 boot = (ROOT / 'src/world/db.c').read_text().split('void boot_db(', 1)[1]
 assert boot.index('cache_object_template(vnum)') > boot.index('dead_obj_pool = mm_create')
