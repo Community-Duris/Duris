@@ -572,6 +572,21 @@ void group_gain_epic(P_char ch, int type, int data, int amount)
 	}
 }
 
+int epic_gain_min_level()
+{
+	return BOUNDED(1, static_cast<int>(get_property("epic.gain.minLevel", 50.000)), MAXLVL);
+}
+
+bool epic_level_can_gain(P_char ch)
+{
+	return ch && GET_LEVEL(ch) >= epic_gain_min_level();
+}
+
+int epic_skills_min_level()
+{
+	return BOUNDED(1, static_cast<int>(get_property("epic.skills.minLevel", 56.000)), MAXLVL);
+}
+
 static bool prepare_epic_award(P_char ch, int type, int data, int amount, bool completing_task,
 			       epic_award_context *prepared)
 {
@@ -588,6 +603,10 @@ static bool prepare_epic_award(P_char ch, int type, int data, int amount, bool c
 	{
 		return false;
 	}
+
+	// No epic points below epic.gain.minLevel, whatever their source.
+	if (!epic_level_can_gain(ch))
+		return false;
 
 	// Epic bonus from witch potion.
 	bool blessing = IS_AFFECTED4(ch, AFF4_EPIC_INCREASE) && type != EPIC_BOTTLE;
@@ -700,7 +719,7 @@ void epic_frag(P_char ch, int victim_pid, int amount)
 
 int epic_calculate_pvp_award(P_char ch, int amount)
 {
-	if (!ch || IS_NPC(ch) || amount < 1 || errand_notch < 1)
+	if (!ch || IS_NPC(ch) || amount < 1 || errand_notch < 1 || !epic_level_can_gain(ch))
 		return 0;
 	if (IS_AFFECTED4(ch, AFF4_EPIC_INCREASE))
 		amount = static_cast<int>(amount * get_property("epic.witch.multiplier", 1.5));
@@ -1186,6 +1205,17 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		} this mitigation is no longer necessary for wipe2011, as exp must be gained in zone before touch
 		  can reward player - Jexni */
 
+		// Only characters who can earn epic points draw on the stone; the touch-stone level
+		// costs themselves are unchanged. Group members below the level are left out of the
+		// award, because every award recipient must receive a positive amount.
+		if (!epic_level_can_gain(ch))
+		{
+			send_to_char_f(
+				ch, "The stone's power is beyond you until you reach level %d.\r\n",
+				epic_gain_min_level());
+			return TRUE;
+		}
+
 		/* calculate epic value */
 		int epic_value = epic_stone_payout(obj, ch);
 
@@ -1205,7 +1235,7 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			for (struct group_list *gl = ch->group; gl; gl = gl->next)
 				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) &&
-				    gl->ch->in_room == ch->in_room)
+				    gl->ch->in_room == ch->in_room && epic_level_can_gain(gl->ch))
 					participants.push_back(gl->ch);
 		}
 		if (participants.size() > ZONE_TOUCH_MAX_PARTICIPANTS)

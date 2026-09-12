@@ -77,6 +77,11 @@ vector<string> get_epic_players(int racewar);
 vector<epic_trophy_data> get_epic_zone_trophy(P_char ch);
 int modify_by_epic_trophy(P_char ch, int amount, int zone_number);
 void gain_epic(P_char, int type, int data, int amount);
+// Epic points are earned from epic.gain.minLevel (default 50) upward, and epic skills are
+// learned from epic.skills.minLevel (default 56) upward.
+int epic_gain_min_level();
+bool epic_level_can_gain(P_char ch);
+int epic_skills_min_level();
 void group_gain_epic(P_char, int type, int data, int amount);
 void epic_frag(P_char, int victim_pid, int amount);
 int epic_calculate_pvp_award(P_char ch, int amount);
