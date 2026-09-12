@@ -61,8 +61,7 @@ bool boon_shop_transaction_submit(P_char character, uint8_t stat_index)
 		return false;
 	}
 	const auto submitted = critical_command_coordinator_submit(std::move(command));
-	if (submitted != critical_submit_result::accepted &&
-	    submitted != critical_submit_result::attached)
+	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
 		return false;

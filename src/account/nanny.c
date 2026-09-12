@@ -776,12 +776,9 @@ static newbie_item_facts capture_newbie_item_facts(P_char ch, const newbie_kit_i
 	return facts;
 }
 
-void load_obj_to_newbies(P_char ch)
+/** Capture the finite legacy selection and spell decisions without live objects. */
+static std::vector<prepared_newbie_item> prepare_legacy_newbie_plan(P_char ch)
 {
-	// Queued grants are not yet in carrying. Reject another request until the
-	// authoritative coordinator has published or discarded the existing kit.
-	if (!ch || item_movement_transaction_player_busy(ch) || (ch->carrying && IS_PC(ch)))
-		return;
 	newbie_kit_input input;
 	input.race = GET_RACE(ch);
 	input.alignment = GET_ALIGNMENT(ch);
@@ -802,40 +799,82 @@ void load_obj_to_newbies(P_char ch)
 	for (int spell = FIRST_SPELL; spell <= LAST_SPELL; ++spell)
 		if (get_spell_circle(ch, spell) == 1)
 			first_circle.push_back(spell);
-	const auto plan = prepare_newbie_kit_items(selection, facts, first_circle);
-	for (const auto &prepared : plan)
+	return prepare_newbie_kit_items(selection, facts, first_circle);
+}
+
+/** Materialize one detached legacy root; publication belongs to the grant coordinator. */
+static P_obj materialize_legacy_newbie_item(P_char ch, const prepared_newbie_item &prepared)
+{
+	const auto &item = prepared.item;
+	const auto *prototype = find_object_template(item.vnum);
+	if (!prototype)
 	{
-		const auto &item = prepared.item;
-		const auto *prototype = find_object_template(item.vnum);
-		if (!prototype)
-		{
-			logit(LOG_DEBUG, "Cannot load cached init item with virtual number: %d",
-			      item.vnum);
-			continue;
-		}
-		P_obj obj = instantiate_object_template(*prototype);
-		if (item.regular)
-		{
-			obj->cost = 1;
-			if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON &&
-			    obj->type != ITEM_CONTAINER && obj->type != ITEM_QUIVER &&
-			    obj->type != ITEM_SPELLBOOK && obj->type != ITEM_LIGHT &&
-			    obj->type != ITEM_TOTEM && IS_PC(ch))
-				SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
-			if (obj->type == ITEM_SPELLBOOK)
-				for (int spell : prepared.spells)
-				{
-					AddSpellToSpellBook(ch, obj, spell);
-					obj->value[3]++;
-				}
-		}
-		add_newbie_keyword(obj);
-		obj_to_char(obj, ch);
-		if (item.regular && !IS_PC(ch))
-			CheckEqWorthUsing(ch, obj);
+		logit(LOG_DEBUG, "Cannot load cached init item with virtual number: %d", item.vnum);
+		return nullptr;
 	}
-	if (item_creation_grant_mark_blocking(ch))
+	P_obj obj = instantiate_object_template(*prototype);
+	if (!obj)
+		return nullptr;
+	if (item.regular)
+	{
+		obj->cost = 1;
+		if (obj->type != ITEM_FOOD && obj->type != ITEM_WEAPON &&
+		    obj->type != ITEM_CONTAINER && obj->type != ITEM_QUIVER &&
+		    obj->type != ITEM_SPELLBOOK && obj->type != ITEM_LIGHT &&
+		    obj->type != ITEM_TOTEM && IS_PC(ch))
+			SET_BIT(obj->extra_flags, ITEM_TRANSIENT);
+		if (obj->type == ITEM_SPELLBOOK)
+			for (int spell : prepared.spells)
+			{
+				AddSpellToSpellBook(ch, obj, spell);
+				obj->value[3]++;
+			}
+	}
+	add_newbie_keyword(obj);
+	return obj;
+}
+
+/** Reserve a PC kit now and prepare it in bounded slices on later game pulses. */
+void load_obj_to_newbies(P_char ch)
+{
+	if (!ch || item_movement_transaction_player_busy(ch) || (ch->carrying && IS_PC(ch)))
+		return;
+	if (IS_NPC(ch))
+	{
+		for (const auto &prepared : prepare_legacy_newbie_plan(ch))
+			if (P_obj obj = materialize_legacy_newbie_item(ch, prepared))
+			{
+				obj_to_char(obj, ch);
+				if (prepared.item.regular)
+					CheckEqWorthUsing(ch, obj);
+			}
+		return;
+	}
+	if (item_creation_grant_defer(
+		    ch,
+		    [plan = std::vector<prepared_newbie_item>{}, index = size_t{ 0 },
+		     planned = false](P_char actor, P_obj *object) mutable
+		    {
+			    if (!planned)
+			    {
+				    plan = prepare_legacy_newbie_plan(actor);
+				    planned = true;
+				    return plan.empty() || plan.size() >
+								   ITEM_CREATION_GRANT_MAX_ROOTS ?
+						   item_creation_prepare_result::failed :
+						   item_creation_prepare_result::more;
+			    }
+			    *object = materialize_legacy_newbie_item(actor, plan[index]);
+			    if (!*object)
+				    return item_creation_prepare_result::failed;
+			    return ++index == plan.size() ? item_creation_prepare_result::ready :
+							    item_creation_prepare_result::more;
+		    }))
 		send_to_char("Your starter kit is being prepared...\r\n", ch);
+	else
+		send_to_char(
+			"Your starter kit could not be prepared safely; please contact staff.\r\n",
+			ch);
 }
 
 /* check for a legal player name, since it's only called when a new character

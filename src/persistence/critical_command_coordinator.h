@@ -57,8 +57,18 @@ enum class critical_submit_result : uint8_t
 	identity_conflict,
 	overloaded,
 	journal_failure,
+	journal_uncertain,
 	unavailable,
 };
+
+// journal_uncertain retains the original coordinator operation and the caller's pending
+// state; it is not a durability success, but callers must not erase or retry it.
+inline bool critical_submit_result_keeps_operation(critical_submit_result result)
+{
+	return result == critical_submit_result::accepted ||
+	       result == critical_submit_result::attached ||
+	       result == critical_submit_result::journal_uncertain;
+}
 
 struct critical_coordinator_health
 {
@@ -92,6 +102,7 @@ bool critical_command_coordinator_init(const char *journal_directory, critical_a
 				       unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS);
 void critical_command_coordinator_shutdown(void);
 critical_submit_result critical_command_coordinator_submit(critical_command command);
+bool critical_command_coordinator_recover_uncertain(void);
 bool critical_command_coordinator_get_completed(const critical_operation_id &operation_id,
 						critical_completion *completion);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);

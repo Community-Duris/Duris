@@ -2761,6 +2761,28 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	P_obj corpse = context.corpse_uid ? corpse_live_item(context.corpse_uid) : NULL;
 	if (corpse_transfer_disputed(ch))
 	{
+		// A deferred starter-kit admission can transiently fence the player before
+		// money_to_inventory() gets a chance to submit. Give the normal currency
+		// transaction another admission attempt after the fence drains. It owns the
+		// wallet revision/ledger and publishes the zero wallet before the death
+		// snapshot captures any money object, so fallback evidence cannot duplicate
+		// an uncleared authoritative wallet.
+		if (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || GET_PLATINUM(ch))
+		{
+			const bool submitted = money_to_inventory(ch);
+			const persistence_severity wallet_severity =
+				submitted ? persistence_severity::info :
+					    persistence_severity::alert;
+			persistence_report(wallet_severity, AVATAR, "player_save", "death", "none",
+					   "none", "death_recovery_restarting_wallet",
+					   "submitted=%d delay=%d", submitted ? 1 : 0,
+					   submitted ? DEATH_EXTRACT_RETRY_INITIAL :
+						       previous_delay * 2);
+			schedule_death_extract_retry(ch, context.corpse_uid,
+						     submitted ? DEATH_EXTRACT_RETRY_INITIAL :
+								 previous_delay * 2);
+			return;
+		}
 		// The refused assets only exist on the live character and in the ledger.
 		// Never fall through to the ordinary save, which would record an empty
 		// character while a missing corpse still owed them their payload.

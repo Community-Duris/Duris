@@ -4399,7 +4399,9 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)critical.overloads,
 		 (unsigned long long)critical.oldest_age_msec,
 		 critical_journal.initialized ?
-			 (critical_journal.quota_exceeded ? "full" : "ready") :
+			 (critical_journal.append_uncertain ?
+				  "uncertain" :
+				  (critical_journal.quota_exceeded ? "full" : "ready")) :
 			 (critical_journal.last_result == critical_command_journal_result::ok ?
 				  "stopped" :
 				  critical_command_journal_result_name(
