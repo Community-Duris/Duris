@@ -16,7 +16,7 @@ sql = (SRC / "sql.c").read_text(encoding="utf-8", errors="replace")
 sql_player = (SRC / "sql_player.c").read_text(
     encoding="utf-8", errors="replace"
 )
-mysql_sql_player = sql_player[sql_player.index("\n#else\n\n// globals") :]
+mysql_sql_player = sql_player[sql_player.index("\n#else\n") :]
 
 
 def body(text, signature):
