@@ -33,6 +33,10 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
     }
 )
 
+# These real-runtime probes require explicit built-artifact/helper arguments;
+# the generic test-all runner invokes discovered scripts without arguments.
+MANUAL_ONLY_TEST_NAMES = frozenset({"test_mob_gold_dial_runtime.py"})
+
 
 @dataclass(frozen=True)
 class TestResult:
@@ -43,7 +47,10 @@ class TestResult:
 
 
 def discover_tests(match: str | None) -> list[Path]:
-    tests = sorted(TEST_DIRECTORY.glob("test_*.py"))
+    tests = sorted(
+        path for path in TEST_DIRECTORY.glob("test_*.py")
+        if path.name not in MANUAL_ONLY_TEST_NAMES
+    )
     if match:
         tests = [path for path in tests if match in path.name]
     return tests

@@ -266,7 +266,7 @@ int real_mobile(int vnum)
     return vnum == 999 ? -1 : vnum;
 }
 
-P_char read_mobile(int rnum, int)
+P_char read_mobile(int rnum, int, bool)
 {
     P_char pet = static_cast<P_char>(std::calloc(1, sizeof(char_data)));
     assert(pet);
@@ -276,6 +276,11 @@ P_char read_mobile(int rnum, int)
     SET_BIT(pet->specials.act, ACT_ISNPC);
     pet->in_room = NOWHERE;
     return pet;
+}
+
+P_char read_mobile(int rnum, int type)
+{
+    return read_mobile(rnum, type, true);
 }
 
 void extract_char(P_char pet)
