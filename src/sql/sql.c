@@ -7,6 +7,7 @@
  ************************************************************************/
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -277,6 +278,7 @@ int sql_world_quest_can_do_another(P_char ch)
 		maximum = get_property("world.quest.max.level.55.andUnder", 6.000);
 	else
 		maximum = get_property("world.quest.max.level.other", 6.000);
+	maximum = difficulty_scale_world_quest_allowance(maximum);
 	return std::max(maximum - completed_today, 0);
 }
 
@@ -2998,6 +3000,7 @@ int sql_world_quest_can_do_another(P_char ch)
 		logit(LOG_DEBUG, "sql_world_quest_can_do_another: count row missing");
 		return -1;
 	}
+	returning_value = difficulty_scale_world_quest_allowance(returning_value);
 	returning_value -= atoi(row[0]);
 
 	while ((row = mysql_fetch_row(db)))

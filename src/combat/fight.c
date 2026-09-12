@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "core/files.h"
 #include "net/comm.h"
@@ -1709,7 +1710,7 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	else
 	{
-		e_time = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
+		e_time = difficulty_pc_corpse_decay_minutes() * WAIT_MIN;
 		corpse->weight = GET_WEIGHT(ch);
 		corpse->value[CORPSE_WEIGHT] = 0;
 		corpse->value[CORPSE_FLAGS] = PC_CORPSE;
@@ -4834,6 +4835,15 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	      BOUNDEDF(0.05, damProf.increasedMod, 4.0) * BOUNDEDF(0.1, damProf.moreMod, 2.0);
 	dam = MAX(1, dam);
 
+	// Server-wide mob spell dial. It sits outside the modifier profile so the profile's
+	// 2.0 cap on "more" multipliers cannot absorb it.
+	if (difficulty_world_npc(ch))
+	{
+		const double spell_dial = difficulty_multiplier(DIFFICULTY_MOB_SPELL);
+		if (spell_dial != 1.0)
+			dam = MAX(1, dam * spell_dial);
+	}
+
 	// debug("spell_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f, type=%d)!",
 	//       GET_NAME(ch),
 	//       dam,
@@ -6671,7 +6681,11 @@ int chance_to_hit(P_char ch, P_char victim, int skill, P_obj weapon)
 	if (GET_POS(ch) < POS_STANDING)
 		to_hit -= (POS_STANDING - GET_POS(ch)) * 15;
 
-	return BOUNDED(1, (to_hit + (victim_ac * 85 / 100)), 100);
+	const int hit_chance = BOUNDED(1, (to_hit + (victim_ac * 85 / 100)), 100);
+	if (difficulty_world_npc(ch))
+		return difficulty_scale_percent(hit_chance,
+						difficulty_multiplier(DIFFICULTY_MOB_ACCURACY));
+	return hit_chance;
 }
 
 bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
@@ -7826,6 +7840,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	}
 
 	dam *= ch->specials.damage_mod;
+	if (difficulty_world_npc(ch))
+		dam *= difficulty_multiplier(DIFFICULTY_MOB_MELEE);
 
 	if (GET_RACE(ch) == RACE_ORC)
 		dam = orc_horde_dam_modifier(ch, dam, TRUE);
@@ -8369,7 +8385,7 @@ int dodgeSucceed(P_char char_dodger, P_char attacker, P_obj wpn)
 		   learned = (int) ((GET_CHAR_SKILL(char_dodger, SKILL_DODGE)) * 1.25) -
 		   (WeaponSkill(attacker, wpn));
 		   */
-	learned = (int)((GET_C_AGI(char_dodger)) * dam_factor[DF_DODGE_AGI_MODIFIER]) -
+	learned = (int)((GET_C_AGI(char_dodger))*dam_factor[DF_DODGE_AGI_MODIFIER]) -
 		  (WeaponSkill(attacker, wpn));
 
 	// Dwarves now get the DnD 3.5 dodgeroll bonus vs giant races

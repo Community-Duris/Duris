@@ -30,6 +30,8 @@ float get_property(const char *, double) { return 9.0f; }
 bool has_innate(P_char, int) { return false; }
 int get_innate_regeneration(P_char) { return innate_gain; }
 float get_epic_bonus(P_char, int) { return 0; }
+// The difficulty module is not linked; a neutral player recovery dial returns its input.
+int difficulty_scale_player_regen(P_char, int gain) { return gain; }
 room_affect *get_spell_from_room(P_room, int) { return nullptr; }
 bool IS_TWILIGHT_ROOM(int) { return false; }
 bool IS_OUTDOORS(int) { return false; }

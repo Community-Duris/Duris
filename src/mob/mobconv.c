@@ -1,4 +1,5 @@
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "world/db.h"
 #include "core/utils.h"
@@ -75,7 +76,7 @@ void refresh_npc_spell_slots(P_char ch)
 		ch->specials.undead_spell_slots[circle] = spl_table[level][circle - 1];
 }
 
-void convertMob(P_char ch)
+void convertMob(P_char ch, bool apply_mob_gold)
 {
 	float xp, copp, silv, gold, plat;
 	int damN, damS, damA, hits, level;
@@ -271,7 +272,17 @@ void convertMob(P_char ch)
 	    (GET_RACE(ch) == RACE_CARNIVORE) || (GET_RACE(ch) == RACE_PARASITE) ||
 	    (GET_RACE(ch) == RACE_SLIME) || (GET_RACE(ch) == RACE_CONSTRUCT) ||
 	    (GET_RACE(ch) == RACE_GOLEM) || (isname("_nomoney_", GET_NAME(ch))))
+	{
 		GET_PLATINUM(ch) = GET_GOLD(ch) = GET_SILVER(ch) = GET_COPPER(ch) = 0;
+	}
+	else if (apply_mob_gold && difficulty_world_npc(ch) && GET_MONEY(ch))
+	{
+		const bool had_money = GET_MONEY(ch) > 0;
+		difficulty_scale_coins(&GET_COPPER(ch), &GET_SILVER(ch), &GET_GOLD(ch),
+				       &GET_PLATINUM(ch));
+		if (had_money && !GET_MONEY(ch))
+			GET_COPPER(ch) = 1;
+	}
 
 	/* adjust for mana */
 	if (GET_CLASS(ch, CLASS_PSIONICIST))
@@ -587,10 +598,22 @@ void convertMob(P_char ch)
 	affect_total(ch, FALSE);
 }
 
+void convertMob(P_char ch)
+{
+	convertMob(ch, true);
+}
+
 // apply zone difficulty modifiers
 // intended to be called only once, right after mob is loaded and has birthplace set
 void apply_zone_modifier(P_char ch)
 {
+	// Server-wide mob hitpoint dial, applied to every zone-loaded mob before the zone's
+	// own difficulty so the two stack.
+	const double hitpoint_dial = difficulty_multiplier(DIFFICULTY_MOB_HITPOINTS);
+	if (hitpoint_dial != 1.0)
+		GET_MAX_HIT(ch) = GET_HIT(ch) = ch->points.base_hit =
+			MAX(1, difficulty_scale_int(ch->points.base_hit, hitpoint_dial));
+
 	int difficulty =
 		BOUNDED(1, zone_table[world[real_room0(GET_BIRTHPLACE(ch))].zone].difficulty, 10);
 

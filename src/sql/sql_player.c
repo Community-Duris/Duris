@@ -3655,7 +3655,7 @@ bool sql_load_player_pets(P_char ch)
 			continue;
 		}
 
-		P_char pet = read_mobile(pet_rnum, REAL);
+		P_char pet = read_mobile(pet_rnum, REAL, false);
 		if (!pet)
 		{
 			logit(LOG_DEBUG,

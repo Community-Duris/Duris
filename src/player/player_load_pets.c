@@ -104,7 +104,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 			return fail(metrics,
 				    player_load_pet_materialize_outcome::unknown_prototype);
 		}
-		P_char pet = read_mobile(mobile_number, REAL);
+		P_char pet = read_mobile(mobile_number, REAL, false);
 		if (!pet)
 		{
 			player_load_pets_discard(pets);

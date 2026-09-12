@@ -817,6 +817,7 @@ void DestroyStuff(P_char, int);
 /* db.c */
 
 P_char read_mobile(int, int);
+P_char read_mobile(int, int, bool apply_mob_gold);
 P_char read_mobile_probe(int, int);
 P_obj read_object(int, int);
 char *file_to_string(const char *);
@@ -1983,6 +1984,7 @@ void startPvP(P_char ch, bool racewar);
 
 void set_npc_multi(P_char);
 void convertMob(P_char);
+void convertMob(P_char, bool apply_mob_gold);
 /* Re-stamp an NPC's castable circles from its CURRENT level (mob/mobconv.c).
  * Call after anything that raises a mob's level once it is in the world. */
 void refresh_npc_spell_slots(P_char);
@@ -2911,6 +2913,7 @@ void trapdamage(P_char ch, P_obj obj);
 /* properties.c */
 void initialize_properties();
 void do_properties(P_char, char *, int);
+void do_difficulty(P_char, char *, int);
 float get_property(const char *, double);
 int get_property(const char *, int);
 float get_property(const char *, double, bool);

@@ -110,6 +110,8 @@ GET_C_INT(ch
 ~
 craft
 ~
+difficulty
+~
 dig
 GET_C_LUK(ch
 ~
