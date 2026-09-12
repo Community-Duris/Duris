@@ -10,7 +10,9 @@
  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
+#include "player/pet_restore_runtime.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -1922,8 +1924,9 @@ int get_obj_table(int tnum)
 	return 0;
 }
 
-/* read a mobile from MOB_FILE */
-P_char read_mobile(int nr, int type)
+// read a mobile from MOB_FILE. `apply_mob_gold` is false for callers that will
+// link the new NPC as a player's pet after loading it.
+P_char read_mobile(int nr, int type, bool apply_mob_gold)
 {
 	P_char mob = NULL;
 	char Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH], letter = 0;
@@ -2245,6 +2248,9 @@ P_char read_mobile(int nr, int type)
 		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
 		{
+			// The legacy 20-platinum bonus is decided on the file's value; the final
+			// converted wallet is scaled once in convertMob().
+			const bool platinum_bonus = tmp4 > 20;
 			GET_PLATINUM(mob) = tmp4; /* * (number(50, 200) / 100); */
 			GET_GOLD(mob) = tmp3; /* * (number(50, 200) / 100); */
 			GET_SILVER(mob) = tmp2; /* * (number(50, 200) / 100); */
@@ -2255,7 +2261,7 @@ P_char read_mobile(int nr, int type)
 				      mob_index[nr].virtual_number, comma_string(tmp));
 			}
 			GET_EXP(mob) = tmp * exp_mods[EXPMOD_GLOBAL];
-			if (GET_PLATINUM(mob) > 20)
+			if (platinum_bonus)
 			{
 				tmp = ((GET_PLATINUM(mob) * 1000) + (GET_GOLD(mob) * 100) +
 				       (GET_SILVER(mob) * 10) + GET_COPPER(mob));
@@ -2735,12 +2741,17 @@ P_char read_mobile(int nr, int type)
 			add_event(event_patrol_move, WAIT_SEC, mob, 0, 0, 0, 0, 0);
 	}
 
-	convertMob(mob);
+	convertMob(mob, apply_mob_gold);
 
 	if (!mobile_probe_mode && IS_AFFECTED(mob, AFF_STONE_SKIN | AFF_BIOFEEDBACK))
 		add_event(event_mob_skin_spell, number(1, 5), mob, 0, 0, 0, 0, 0);
 
 	return (mob);
+}
+
+P_char read_mobile(int nr, int type)
+{
+	return read_mobile(nr, type, true);
 }
 
 P_char read_mobile_probe(int nr, int type)
@@ -4002,6 +4013,12 @@ void reset_zone(int zone, int force_item_repop)
 	else
 		zone_table[zone].lifespan = zone_table[zone].lifespan_min;
 
+	// Server-wide repop dial: a harder setting shortens every zone's lifespan.
+	const double repop_dial = difficulty_multiplier(DIFFICULTY_ZONE_REPOP);
+	if (repop_dial != 1.0)
+		zone_table[zone].lifespan =
+			MAX(1, difficulty_scale_int(zone_table[zone].lifespan, 1.0 / repop_dial));
+
 	zone_table[zone].age = 0;
 }
 
@@ -4185,6 +4202,8 @@ void free_char(P_char ch)
 	if (IS_PC(ch) && ch->only.pc)
 	{
 		delete_knownShapes(ch);
+		delete ch->only.pc->held_pets;
+		ch->only.pc->held_pets = nullptr;
 		delete ch->only.pc->zone_trophy;
 		ch->only.pc->zone_trophy = nullptr;
 	}

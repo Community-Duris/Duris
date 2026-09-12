@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "core/files.h"
 #include "net/comm.h"
@@ -1709,7 +1710,7 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	else
 	{
-		e_time = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
+		e_time = difficulty_pc_corpse_decay_minutes() * WAIT_MIN;
 		corpse->weight = GET_WEIGHT(ch);
 		corpse->value[CORPSE_WEIGHT] = 0;
 		corpse->value[CORPSE_FLAGS] = PC_CORPSE;
@@ -2761,6 +2762,28 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	P_obj corpse = context.corpse_uid ? corpse_live_item(context.corpse_uid) : NULL;
 	if (corpse_transfer_disputed(ch))
 	{
+		// A deferred starter-kit admission can transiently fence the player before
+		// money_to_inventory() gets a chance to submit. Give the normal currency
+		// transaction another admission attempt after the fence drains. It owns the
+		// wallet revision/ledger and publishes the zero wallet before the death
+		// snapshot captures any money object, so fallback evidence cannot duplicate
+		// an uncleared authoritative wallet.
+		if (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || GET_PLATINUM(ch))
+		{
+			const bool submitted = money_to_inventory(ch);
+			const persistence_severity wallet_severity =
+				submitted ? persistence_severity::info :
+					    persistence_severity::alert;
+			persistence_report(wallet_severity, AVATAR, "player_save", "death", "none",
+					   "none", "death_recovery_restarting_wallet",
+					   "submitted=%d delay=%d", submitted ? 1 : 0,
+					   submitted ? DEATH_EXTRACT_RETRY_INITIAL :
+						       previous_delay * 2);
+			schedule_death_extract_retry(ch, context.corpse_uid,
+						     submitted ? DEATH_EXTRACT_RETRY_INITIAL :
+								 previous_delay * 2);
+			return;
+		}
 		// The refused assets only exist on the live character and in the ledger.
 		// Never fall through to the ordinary save, which would record an empty
 		// character while a missing corpse still owed them their payload.
@@ -4812,6 +4835,15 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	      BOUNDEDF(0.05, damProf.increasedMod, 4.0) * BOUNDEDF(0.1, damProf.moreMod, 2.0);
 	dam = MAX(1, dam);
 
+	// Server-wide mob spell dial. It sits outside the modifier profile so the profile's
+	// 2.0 cap on "more" multipliers cannot absorb it.
+	if (difficulty_world_npc(ch))
+	{
+		const double spell_dial = difficulty_multiplier(DIFFICULTY_MOB_SPELL);
+		if (spell_dial != 1.0)
+			dam = MAX(1, dam * spell_dial);
+	}
+
 	// debug("spell_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f, type=%d)!",
 	//       GET_NAME(ch),
 	//       dam,
@@ -6649,7 +6681,11 @@ int chance_to_hit(P_char ch, P_char victim, int skill, P_obj weapon)
 	if (GET_POS(ch) < POS_STANDING)
 		to_hit -= (POS_STANDING - GET_POS(ch)) * 15;
 
-	return BOUNDED(1, (to_hit + (victim_ac * 85 / 100)), 100);
+	const int hit_chance = BOUNDED(1, (to_hit + (victim_ac * 85 / 100)), 100);
+	if (difficulty_world_npc(ch))
+		return difficulty_scale_percent(hit_chance,
+						difficulty_multiplier(DIFFICULTY_MOB_ACCURACY));
+	return hit_chance;
 }
 
 bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
@@ -7804,6 +7840,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	}
 
 	dam *= ch->specials.damage_mod;
+	if (difficulty_world_npc(ch))
+		dam *= difficulty_multiplier(DIFFICULTY_MOB_MELEE);
 
 	if (GET_RACE(ch) == RACE_ORC)
 		dam = orc_horde_dam_modifier(ch, dam, TRUE);

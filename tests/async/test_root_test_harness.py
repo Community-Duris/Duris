@@ -49,6 +49,7 @@ expected_resource_intensive = {
     "test_flatfile_boot_preflight.py",
     "test_flatfile_chaos_new_character_kit.py",
     "test_flatfile_combat_journey.py",
+    "test_flatfile_newbie_regrant_journey.py",
     "test_flatfile_first_session_currency.py",
     "test_flatfile_full_world_boot.py",
     "test_item_movement_prompt_runtime.py",
@@ -56,6 +57,8 @@ expected_resource_intensive = {
     "test_mysql_combat_journey.py",
 }
 assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
+assert runner.MANUAL_ONLY_TEST_NAMES == {
+    "test_mob_gold_dial_runtime.py", "test_pet_restart_journey.py"}
 sample_tests = [
     Path("test_fast.py"),
     Path("test_flatfile_combat_journey.py"),

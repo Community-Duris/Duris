@@ -28,7 +28,7 @@ int main()
 {
     static_assert(std::is_move_constructible_v<player_snapshot>);
     static_assert(std::is_move_assignable_v<player_snapshot>);
-    static_assert(PLAYER_SNAPSHOT_SCHEMA_VERSION == 1);
+    static_assert(PLAYER_SNAPSHOT_SCHEMA_VERSION == 3);
     static_assert(PLAYER_SNAPSHOT_MAX_BYTES == 4 * 1024 * 1024);
     static_assert(PLAYER_SNAPSHOT_MAX_OBJECTS < PLAYER_SNAPSHOT_MAX_ROWS);
     static_assert(PLAYER_SNAPSHOT_MAX_DEPTH > 0);
@@ -197,6 +197,7 @@ DEATH_HARNESS = r"""
 #include "world/vnum.obj.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/pet_restore_runtime.h"
 #include "item/item_ownership_runtime.h"
 #include <cassert>
 #include <cstring>
@@ -416,6 +417,33 @@ int main()
     assert(capture() == player_snapshot_capture_result::ok);
     live_intact();
     std::cout << "[PASS] real death capture: combined record, row/object/byte/depth/string limits, atomic publication and live asset retention\n";
+    player_held_pet_state held;
+    player_pet_snapshot retained = {};
+    retained.mob_vnum = 1201; retained.hit = retained.max_hit = 10;
+    retained.hold_reason = pet_hold_reason::legacy_summon;
+    retained.restore_state = "unknown historical state";
+    retained.items.push_back({});
+    retained.items[0].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+    retained.items[0].object_uid = 700;
+    retained.items[0].vnum = 100;
+    held.pets.push_back(retained);
+    pc.held_pets = &held;
+    for (int intent : {RENT_CRASH, RENT_QUIT, RENT_DEATH}) {
+        player_snapshot saved;
+        assert(player_snapshot_capture(&ch, 99, PLAYER_COMPONENT_PETS, intent, 22800, &saved) == player_snapshot_capture_result::ok);
+        assert(saved.pets[0].hold_reason == pet_hold_reason::legacy_summon);
+        assert(saved.pets[0].items[0].object_uid == 700);
+        assert(saved.pets[0].restore_state == retained.restore_state);
+        std::vector<uint8_t> encoded;
+        assert(player_snapshot_encode(saved, &encoded) == player_snapshot_codec_result::ok);
+        player_snapshot restored;
+        assert(player_snapshot_decode(encoded.data(), encoded.size(), &restored) == player_snapshot_codec_result::ok);
+        assert(restored.pets[0].items[0].object_uid == 700);
+    }
+    assert(capture() == player_snapshot_capture_result::ok);
+    assert(output.pets[0].hold_reason == pet_hold_reason::legacy_summon);
+    pc.held_pets = nullptr;
+    std::cout << "[PASS] held pet assets survive crash, logout and atomic death snapshots\n";
 }
 """
 
@@ -427,7 +455,8 @@ source.write_text(DEATH_HARNESS)
 subprocess.run([
     "g++", "-std=c++20", "-g", "-O1", "-ffunction-sections", "-fdata-sections",
     "-Isrc", str(source), "src/player/player_snapshot_capture.c",
-    "src/player/player_snapshot_codec.c", "src/item/item_ownership_runtime.c",
+    "src/player/player_snapshot_codec.c", "src/player/pet_restore_state.c",
+    "src/player/pet_restore_runtime.c", "src/item/item_ownership_runtime.c",
     "src/item/item_transfer_command.c", "src/persistence/critical_command.c",
     "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
 ], cwd=ROOT, check=True)

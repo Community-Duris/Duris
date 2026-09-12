@@ -1016,7 +1016,7 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 	}
 	const std::string pet_sql =
 		"SELECT id,mob_vnum,pet_order,hit,max_hit,mana,max_mana,vitality,max_vitality,"
-		"charm_duration,room_vnum FROM player_pets WHERE owner_pid=" +
+		"charm_duration,room_vnum,restore_state,hold_reason FROM player_pets WHERE owner_pid=" +
 		pid + " ORDER BY pet_order,id";
 	if (!load_rows(
 		    connection, pet_sql, result,
@@ -1056,6 +1056,18 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				    pet.max_vitality = static_cast<int32_t>(values[7]);
 				    pet.charm_duration = static_cast<int32_t>(values[8]);
 				    pet.room_vnum = static_cast<int32_t>(values[9]);
+				    if (row[11])
+				    {
+					    const size_t length = strnlen(
+						    row[11], PET_RESTORE_STATE_MAX_BYTES + 1);
+					    if (length > PET_RESTORE_STATE_MAX_BYTES)
+						    return false;
+					    pet.restore_state.assign(row[11], length);
+				    }
+				    uint64_t reason = 0;
+				    if (!parse_unsigned(row[12], UINT32_MAX, &reason))
+					    return false;
+				    pet.hold_reason = static_cast<pet_hold_reason>(reason);
 				    result->snapshot.pets.push_back(std::move(pet));
 				    result->pet_identities.push_back({ database_id, {} });
 			    }

@@ -91,8 +91,7 @@ bool boon_reward_transaction_submit(P_char character, P_char victim, double data
 	}
 	const critical_submit_result submitted =
 		critical_command_coordinator_submit(std::move(command));
-	if (submitted != critical_submit_result::accepted &&
-	    submitted != critical_submit_result::attached)
+	if (!critical_submit_result_keeps_operation(submitted))
 	{
 		pending.erase(key);
 		++health.submission_failures;

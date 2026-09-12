@@ -157,6 +157,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/db.o \
 				 account/character_identity.o \
 				 core/debug.o \
+				 world/difficulty.o \
 				 classes/disguise.o \
 				 classes/drannak.o \
 				 item/enhance.o \
@@ -322,6 +323,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_load_pipeline.o \
 				 player/player_load_items.o \
 				 player/player_load_pets.o \
+				 player/pet_restore_state.o \
+				 player/pet_restore_runtime.o \
 				 persistence/gameplay_read_state.o \
 				 world/epic_task_catalog.o \
 				 persistence/maintenance_scheduler.o \

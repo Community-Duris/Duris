@@ -86,6 +86,8 @@ enum class corpse_raise_kind : uint8_t
 	greater_dracolich,
 };
 
+void schedule_pet_death(P_char pet, int delay);
+
 void spell_corpseform(int, P_char, char *, int, P_char, P_obj);
 void event_corpseform_wearoff(P_char, P_char, P_obj, void *);
 void check_saved_corpse(P_char);

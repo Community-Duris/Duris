@@ -8,6 +8,7 @@
 */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -736,11 +737,16 @@ void add_follower(P_char ch, P_char leader)
 	k->next = leader->followers;
 	leader->followers = k;
 
-	act("You now follow $N.", FALSE, ch, 0, leader, TO_CHAR);
-	if (IS_PC(ch) || (GET_VNUM(ch) != 4010 && GET_VNUM(ch) != 250))
+	// Login stages pet links before placing either character in the world.
+	// Visibility and room broadcasts are only valid after placement.
+	if (ch->in_room != NOWHERE && leader->in_room != NOWHERE)
 	{
-		act("$n starts following you.", TRUE, ch, 0, leader, TO_VICT);
-		act("$n now follows $N.", TRUE, ch, 0, leader, TO_NOTVICT);
+		act("You now follow $N.", FALSE, ch, 0, leader, TO_CHAR);
+		if (IS_PC(ch) || (GET_VNUM(ch) != 4010 && GET_VNUM(ch) != 250))
+		{
+			act("$n starts following you.", TRUE, ch, 0, leader, TO_VICT);
+			act("$n now follows $N.", TRUE, ch, 0, leader, TO_NOTVICT);
+		}
 	}
 
 	if (IS_NPC(ch) && IS_PC(leader))
@@ -1121,6 +1127,14 @@ bool NewSaves(P_char ch, int save_type, int mod)
 	  For now, we just multiply the mod by 5.
 	*/
 	save += (ch->specials.apply_saving_throw[save_type] + mod) * 5;
+
+	// Server-wide mob saving throw dial: a lower threshold means the mob saves more often.
+	if (difficulty_world_npc(ch))
+	{
+		const double resistance_dial = difficulty_multiplier(DIFFICULTY_MOB_RESISTANCE);
+		if (resistance_dial != 1.0)
+			save = difficulty_scale_int(save, 1.0 / resistance_dial);
+	}
 
 	// debug( "NewSaves: apply_sv_throw[%d] = %d", save_type, ch->specials.apply_saving_throw[save_type] );
 	// debug( "NewSaves: final save = %d", save );

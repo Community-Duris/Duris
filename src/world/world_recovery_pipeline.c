@@ -529,7 +529,8 @@ bool capture_one_record()
 		{
 			P_char ch = active_capture.next_character;
 			active_capture.next_character = ch->next;
-			if (!IS_NPC(ch) || ch->in_room < 0 || GET_MASTER(ch))
+			if (!IS_NPC(ch) || ch->in_room < 0 || GET_MASTER(ch) ||
+			    ch->only.npc->summoned_instance)
 				return true;
 			const int size = write_mob_record(
 				ch, reinterpret_cast<char *>(capture_buffer.data()),

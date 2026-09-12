@@ -19,6 +19,5 @@ bool session_audit_transaction_submit(P_char character, session_audit_event even
 		return false;
 	const critical_submit_result submitted =
 		critical_command_coordinator_submit(std::move(command));
-	return submitted == critical_submit_result::accepted ||
-	       submitted == critical_submit_result::attached;
+	return critical_submit_result_keeps_operation(submitted);
 }

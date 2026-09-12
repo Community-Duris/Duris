@@ -1,5 +1,6 @@
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
+#include "player/pet_restore_runtime.h"
 #include "classes/necromancy.h"
 
 #include "core/prototypes.h"
@@ -463,10 +464,34 @@ player_snapshot_capture_result capture_items(P_char owner,
 player_snapshot_capture_result capture_pets(P_char ch, int save_intent, player_snapshot &snapshot,
 					    capture_budget &budget)
 {
+	int order = 0;
+	// Held assets are deliberately independent of active-pet logout/death rules.
+	// They stay in every pet component update until an explicit staff disposition.
+	if (ch->only.pc->held_pets)
+		for (const auto &held : ch->only.pc->held_pets->pets)
+		{
+			player_snapshot measure = {};
+			measure.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+			measure.pid = GET_PID(ch);
+			measure.revision = 1;
+			measure.components = PLAYER_COMPONENT_PETS;
+			measure.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+			measure.pets.push_back(held);
+			std::vector<uint8_t> bytes;
+			if (player_snapshot_encode(measure, &bytes) !=
+				    player_snapshot_codec_result::ok ||
+			    !budget.add(bytes.size() + sizeof(player_pet_snapshot),
+					1 + held.items.size()) ||
+			    held.items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - budget.objects)
+				return player_snapshot_capture_result::limit_exceeded;
+			budget.objects += held.items.size();
+			snapshot.pets.push_back(held);
+			snapshot.pets.back().order = order++;
+			snapshot.pets.back().room_vnum = snapshot.room_vnum;
+		}
 	if (save_intent != RENT_CRASH && save_intent != RENT_CRASH2)
 		return player_snapshot_capture_result::ok;
 	std::unordered_set<const follow_type *> followers_seen;
-	int order = 0;
 	for (const follow_type *follow = ch->followers; follow; follow = follow->next)
 	{
 		if (!followers_seen.insert(follow).second)
@@ -492,6 +517,9 @@ player_snapshot_capture_result capture_pets(P_char ch, int save_intent, player_s
 		if (pet->in_room < 0 || pet->in_room > top_of_world)
 			return player_snapshot_capture_result::malformed_source;
 		row.room_vnum = world[pet->in_room].number;
+		if (!summoned_pet_capture(pet, &row.restore_state) ||
+		    !budget.add(row.restore_state.size()))
+			return player_snapshot_capture_result::malformed_source;
 		std::unordered_set<const affected_type *> pet_affects_seen;
 		for (const affected_type *affect = pet->affected; affect; affect = affect->next)
 		{

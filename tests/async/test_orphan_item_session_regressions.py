@@ -206,10 +206,11 @@ check("container grants commit their durable parent before live publication",
       and "obj_to_obj(object, container);" in grant_publication
       and "publish_creation_grant(actor, request)" in grant_completion
       and "put(recipient, object, container" not in grant_completion)
-newbie = nanny[nanny.index("void load_obj_to_newbies(P_char ch)"):]
+newbie = nanny[nanny.index("static P_obj materialize_legacy_newbie_item("):]
 newbie = newbie[:newbie.index("/* check for a legal player name")]
 check("newbie item keywords are captured before asynchronous grants",
       newbie.count("add_newbie_keyword(") == 1
+      and newbie.index("add_newbie_keyword(obj);") < newbie.index("return obj;")
       and newbie.index("add_newbie_keyword(obj);") < newbie.index("obj_to_char(obj, ch);"))
 soulbind = magic[magic.index("void load_soulbind("):]
 soulbind = soulbind[:soulbind.index("void spell_contain_being(")]

@@ -1185,7 +1185,7 @@ int summon_new_demon(P_char ch, int /*subtype*/)
 	if (!ch || !IS_ALIVE(ch))
 		return FALSE;
 
-	if (!(tmp = read_mobile(1006, VIRTUAL)))
+	if (!(tmp = read_mobile(1006, VIRTUAL, false)))
 	{
 		logit(LOG_EXIT, "summon_new_demon: mob #1006 unavailable");
 		return FALSE;
@@ -1193,7 +1193,7 @@ int summon_new_demon(P_char ch, int /*subtype*/)
 	else
 	{
 		tmp->player.level = BOUNDED(1, GET_LEVEL(ch) - number(0, 5), 62);
-		convertMob(tmp);
+		convertMob(tmp, false);
 		mob_index[GET_RNUM(tmp)].func.mob = dummy_function;
 		act("$n &+rmakes a strange gesture, and a &+Lportal &+rto another plane opens!\r\n"
 		    "$N &+rsteps out of the portal.&n",

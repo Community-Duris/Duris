@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -791,6 +792,8 @@ bool check_random_drop(P_char ch, P_char mob, bool piece)
 	  if (chance >= number(1, 100 + (trophy_mod * 2)))
 	*/
 	// Add .5 for rounding fix to floor-function type-casting.
+	chance *= static_cast<float>(difficulty_multiplier(DIFFICULTY_LOOT_DROPS));
+
 	if ((int)(chance + .5) >= number(1, 100))
 		return TRUE;
 
@@ -852,6 +855,7 @@ P_obj create_random_eq_new(P_char killer, P_char mob, int object_type, int mater
 	howgood = (int)((GET_LEVEL(killer) + GET_LEVEL(mob)) / 2.0);
 	// howgood is then changed by the configured seasonal multiplier.
 	howgood = (int)(howgood * config->quality_level_multiplier);
+	howgood = difficulty_scale_int(howgood, difficulty_multiplier(DIFFICULTY_LOOT_QUALITY));
 
 	if (material_type == -1)
 	{

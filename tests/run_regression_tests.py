@@ -24,12 +24,21 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
         "test_flatfile_boot_preflight.py",
         "test_flatfile_chaos_new_character_kit.py",
         "test_flatfile_combat_journey.py",
+        "test_flatfile_newbie_regrant_journey.py",
         "test_flatfile_first_session_currency.py",
         "test_flatfile_full_world_boot.py",
         "test_item_movement_prompt_runtime.py",
         "test_information_cache_journey.py",
         "test_mysql_combat_journey.py",
     }
+)
+
+# These real-runtime probes require explicitly supplied artifacts or helpers
+# (test_pet_restart_journey.py a flat-file server; test_mob_gold_dial_runtime.py a
+# server and a level promotion helper). They are run explicitly, not by the generic
+# test-all runner, which invokes every discovered script with no arguments.
+MANUAL_ONLY_TEST_NAMES = frozenset(
+    {"test_mob_gold_dial_runtime.py", "test_pet_restart_journey.py"}
 )
 
 
@@ -42,7 +51,10 @@ class TestResult:
 
 
 def discover_tests(match: str | None) -> list[Path]:
-    tests = sorted(TEST_DIRECTORY.glob("test_*.py"))
+    tests = sorted(
+        path for path in TEST_DIRECTORY.glob("test_*.py")
+        if path.name not in MANUAL_ONLY_TEST_NAMES
+    )
     if match:
         tests = [path for path in tests if match in path.name]
     return tests

@@ -298,6 +298,16 @@
       "verify": "immutable/0012_epic_stone_claim.sh",
       "verify_checksum": "8e159b95bf80b1484c60bc4a9f983a4aa9c0fb0523e85b4c48db7d798c556e16",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0013_pet_restore_state",
+      "sequence": 13,
+      "description": "Preserve generated pet state and retain ambiguous pet equipment",
+      "apply": "immutable/0013_pet_restore_state.sql",
+      "verify": "immutable/0013_pet_restore_state.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "9c2d5c99b2c9cefa3a3fae9ff63cdf20c8ba1503065a94d62c92c5d406cd5264",
+      "verify_checksum": "6d37acd001d32ba637d5da441c0ec476d50d5170c9c893061ad0c7fc235453b1"
     }
   ]
 }

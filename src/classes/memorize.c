@@ -7,6 +7,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/events.h"
@@ -768,6 +769,9 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 	if (IS_NPC(ch))
 	{
 		time = time * get_property("memorize.factor.npc", 1.0);
+		const double recovery_dial = difficulty_multiplier(DIFFICULTY_MOB_RECOVERY);
+		if (recovery_dial != 1.0 && difficulty_world_npc(ch))
+			time = static_cast<float>(time / recovery_dial);
 	}
 	else if (ch->player.m_class &&
 		 (GET_PRIME_CLASS(ch, CLASS_DRUID) || GET_PRIME_CLASS(ch, CLASS_RANGER)))

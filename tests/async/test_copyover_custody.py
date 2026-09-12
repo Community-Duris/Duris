@@ -236,7 +236,8 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
     subprocess.run(common + ["-Dexecl=fixture_execl", "-c", "src/persistence/copyover.c",
                             "-o", str(temp / "copyover.o")], cwd=ROOT, check=True)
     subprocess.run(common + [str(source), str(temp / "copyover.o"),
-                            "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c",
+                   "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c",
+                   "src/player/pet_restore_state.c",
                             "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",
                             "-lz", "-pthread", "-lgnutls", "-o", str(temp / "fixture")],
