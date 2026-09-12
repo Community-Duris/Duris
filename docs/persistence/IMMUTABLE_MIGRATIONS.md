@@ -39,9 +39,9 @@ passed on a disposable clone, an owner-authorized production `run` additionally 
 `--production-backup /absolute/path.sql.gz`. Production baseline adoption remains prohibited, and
 the runner refuses to apply while another connection is using the configured database.
 
-The current immutable head is `0008_statistics_date_index`. After it is applied,
-the database contains the 174-table runtime boot contract, and the history
-singleton records applied count 8 plus the exact history checksum. If a pre-b029
+The current immutable head is `0012_epic_stone_claim`. After it is applied,
+the database contains the 178-table runtime boot contract, and the history
+singleton records applied count 12 plus the exact history checksum. If a pre-b029
 launcher already created the legacy `server_reboots`
 shape, 0004 copies every lifecycle row into the canonical table and atomically
 swaps it into place; an interrupted conversion can be retried without making the
@@ -79,7 +79,7 @@ correction; its latency benefit is not yet measured on a representative clone,
 which remains the open half of that backlog item.
 
 `kingdom_realms` is part of the boot contract's *table list*:
-`runtime_compatibility_manifest.json` counts 174 runtime tables and both
+`runtime_compatibility_manifest.json` counts 178 runtime tables and both
 normalized metadata fingerprints are sealed over an inventory that includes it,
 so on the database backend the gate proves the table's engine, collation,
 columns and indexes before gameplay publishes. `kingdom_initialize()` still
@@ -87,16 +87,23 @@ disables kingdoms for the boot when it cannot read the table, which remains
 reachable on the flat-file build, where no boot gate stands in front of it. The
 *ledger* is fail-closed too, exactly as it is for every other immutable
 migration: `src/core/runtime_compatibility_contract.h` compiles
-`RUNTIME_MIGRATION_HEAD_ID = "0008_statistics_date_index"` with sequence 8, and
+`RUNTIME_MIGRATION_HEAD_ID = "0012_epic_stone_claim"` with sequence 12, and
 `sql_verify_boot_database()` in `src/sql/sql.c` requires the matching
-`mud_schema_history` row, its two checksums, and `applied_count=8` in
+`mud_schema_history` row, its two checksums, and `applied_count=12` in
 `mud_schema_migration_state`. On the MariaDB/MySQL backend a database left at
-head `0007_pkill_event_stamp_contract` therefore refuses to boot, aborting with
+head `0011_player_death_disposition` therefore refuses to boot, aborting with
 `COMPAT-E002`. An operator upgrading an existing database must apply the pending
 migrations with
 `python3 scripts/migration_runner.py run`, which applies the SQL, runs the
 verifier, and only then writes the history row and advances the head, before
 starting the server.
+
+The remaining registered steps add the kingdom garrison roster (0009),
+committed coin-pile custody payloads (0010), player death disposition and custody
+evidence (0011), and atomic epic-stone reward claims (0012). Migration 0012 adds
+one InnoDB table keyed by the stone's globally allocated UID, with a foreign
+key to the critical-operation inbox. An existing database at head 0011 must
+apply that step before deploying the current server.
 
 ## Post-baseline migration contract
 

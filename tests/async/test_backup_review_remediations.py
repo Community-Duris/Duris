@@ -230,7 +230,8 @@ class BackupReviewRemediationTests(Fixture):
         tombstones.write_text("{}")
         result = subprocess.run(
             ["bash", str(ROOT / "scripts/restore_flatfile_backup.sh"), "generation", str(tombstones)],
-            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
+            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                 "BACKUP_ENV_FILE": str(self.base / "absent.env")},
             text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30,
         )
         self.assertNotEqual(result.returncode, 0)
