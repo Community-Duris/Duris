@@ -57,7 +57,8 @@ expected_resource_intensive = {
     "test_mysql_combat_journey.py",
 }
 assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
-assert runner.MANUAL_ONLY_TEST_NAMES == {"test_mob_gold_dial_runtime.py"}
+assert runner.MANUAL_ONLY_TEST_NAMES == {
+    "test_mob_gold_dial_runtime.py", "test_pet_restart_journey.py"}
 sample_tests = [
     Path("test_fast.py"),
     Path("test_flatfile_combat_journey.py"),

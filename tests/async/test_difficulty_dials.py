@@ -233,7 +233,6 @@ def test_mob_dials_skip_player_pets_and_morphs() -> None:
 def test_pet_loaders_do_not_apply_pre_link_gold() -> None:
     checks = {
         "player/player_load_pets.c": "read_mobile(mobile_number, REAL, false)",
-        "sql/sql_player.c": "read_mobile(pet_rnum, REAL, false)",
         "classes/innates.c": "read_mobile(DEVIL_IMP, VIRTUAL, false)",
         "specs/specs.mobile.c": "read_mobile(real_mobile(mobnumb), REAL, false)",
         "combat/mobcombat.c": "read_mobile(1006, VIRTUAL, false)",
@@ -241,6 +240,10 @@ def test_pet_loaders_do_not_apply_pre_link_gold() -> None:
     }
     for name, expression in checks.items():
         assert expression in source(name).read_text(), (name, expression)
+    # The legacy SQL pet loader no longer loads pets at all; ownership-aware
+    # materialization in player_load_pets.c is the only restore path.
+    assert "pet load refused: use ownership-aware player materialization" in source(
+        "sql/sql_player.c").read_text()
 
 
 def test_breath_money_regen_and_corpse_hooks_are_complete() -> None:

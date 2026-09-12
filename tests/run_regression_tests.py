@@ -33,9 +33,13 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
     }
 )
 
-# These real-runtime probes require explicit built-artifact/helper arguments;
-# the generic test-all runner invokes discovered scripts without arguments.
-MANUAL_ONLY_TEST_NAMES = frozenset({"test_mob_gold_dial_runtime.py"})
+# These real-runtime probes require explicitly supplied artifacts or helpers
+# (test_pet_restart_journey.py a flat-file server; test_mob_gold_dial_runtime.py a
+# server and a level promotion helper). They are run explicitly, not by the generic
+# test-all runner, which invokes every discovered script with no arguments.
+MANUAL_ONLY_TEST_NAMES = frozenset(
+    {"test_mob_gold_dial_runtime.py", "test_pet_restart_journey.py"}
+)
 
 
 @dataclass(frozen=True)

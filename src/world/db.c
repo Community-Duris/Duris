@@ -12,6 +12,7 @@
 #include "core/prototypes.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
+#include "player/pet_restore_runtime.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -4201,6 +4202,8 @@ void free_char(P_char ch)
 	if (IS_PC(ch) && ch->only.pc)
 	{
 		delete_knownShapes(ch);
+		delete ch->only.pc->held_pets;
+		ch->only.pc->held_pets = nullptr;
 		delete ch->only.pc->zone_trophy;
 		ch->only.pc->zone_trophy = nullptr;
 	}

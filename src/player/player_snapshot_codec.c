@@ -30,9 +30,9 @@ struct encoder
 
 	void boolean(bool value) { number<uint8_t>(value ? 1 : 0); }
 
-	void string(const std::string &value)
+	void string(const std::string &value, size_t maximum = PLAYER_SNAPSHOT_MAX_STRING_BYTES)
 	{
-		if (value.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+		if (value.size() > maximum)
 		{
 			valid = false;
 			return;
@@ -92,12 +92,12 @@ struct decoder
 		return true;
 	}
 
-	bool string(std::string &value)
+	bool string(std::string &value, size_t maximum = PLAYER_SNAPSHOT_MAX_STRING_BYTES)
 	{
 		uint32_t length = 0;
 		if (!number(length))
 			return false;
-		if (length > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+		if (length > maximum)
 		{
 			result = player_snapshot_codec_result::limit_exceeded;
 			return false;
@@ -304,7 +304,8 @@ bool valid_death(const player_snapshot &snapshot)
 		return !snapshot.death;
 	if (!snapshot.death || snapshot.save_intent != RENT_DEATH ||
 	    snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL || !snapshot.items.empty() ||
-	    !snapshot.pets.empty())
+	    std::any_of(snapshot.pets.begin(), snapshot.pets.end(),
+			[](const auto &pet) { return pet.hold_reason == pet_hold_reason::none; }))
 		return false;
 	const auto &death = *snapshot.death;
 	if (!nonzero_operation(death.operation_id) || death.corpse_room_vnum <= 0 ||
@@ -699,6 +700,8 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				   out.number<int32_t>(pet.charm_duration);
 				   out.number<int32_t>(pet.room_vnum);
 				   encode_items(out, pet.items);
+				   out.string(pet.restore_state, PET_RESTORE_STATE_MAX_BYTES);
+				   out.number<uint32_t>(static_cast<uint32_t>(pet.hold_reason));
 			   });
 		out.vector(snapshot.shapes,
 			   [&](const auto &row)
@@ -747,6 +750,11 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		uint64_t encoded_bound = 0;
 		if (!in.number(snapshot.schema_version))
 			return in.result;
+		const uint32_t wire_version = snapshot.schema_version;
+		if (wire_version == 1)
+			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+		if (wire_version == 2)
+			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
 			return player_snapshot_codec_result::unsupported_version;
@@ -819,14 +827,24 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		    !in.vector(snapshot.pets,
 			       [&](auto &pet)
 			       {
-				       return in.number(pet.mob_vnum) && in.number(pet.order) &&
-					      in.number(pet.hit) && in.number(pet.max_hit) &&
-					      in.number(pet.mana) && in.number(pet.max_mana) &&
-					      in.number(pet.vitality) &&
-					      in.number(pet.max_vitality) &&
-					      in.number(pet.charm_duration) &&
-					      in.number(pet.room_vnum) &&
-					      decode_items(in, pet.items);
+				       const bool base =
+					       in.number(pet.mob_vnum) && in.number(pet.order) &&
+					       in.number(pet.hit) && in.number(pet.max_hit) &&
+					       in.number(pet.mana) && in.number(pet.max_mana) &&
+					       in.number(pet.vitality) &&
+					       in.number(pet.max_vitality) &&
+					       in.number(pet.charm_duration) &&
+					       in.number(pet.room_vnum) &&
+					       decode_items(in, pet.items);
+				       if (!base || wire_version < 3)
+					       return base;
+				       uint32_t reason = 0;
+				       if (!in.string(pet.restore_state,
+						      PET_RESTORE_STATE_MAX_BYTES) ||
+					   !in.number(reason))
+					       return false;
+				       pet.hold_reason = static_cast<pet_hold_reason>(reason);
+				       return true;
 			       }) ||
 		    !in.vector(snapshot.shapes,
 			       [&](auto &row)

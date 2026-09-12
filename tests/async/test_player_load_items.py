@@ -19,6 +19,8 @@ HARNESS = r'''
 #include "player/player_load_items.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_pets.h"
+#include "player/pet_restore_runtime.h"
+#include <ctime>
 #include "core/prototypes.h"
 #include "magic/spells.h"
 #include "core/structs.h"
@@ -77,6 +79,8 @@ struct test_character
 {
     char_data character = {};
     pc_only_data pc = {};
+
+    ~test_character() { delete pc.held_pets; }
 
     explicit test_character(int pid)
     {
@@ -286,12 +290,30 @@ P_char read_mobile(int rnum, int type)
 void extract_char(P_char pet)
 {
     ++pet_extracts;
+    if (pet->only.npc->str_mask & STRUNG_KEYS) std::free(pet->player.name);
+    if (pet->only.npc->str_mask & STRUNG_DESC1) std::free(pet->player.long_descr);
+    if (pet->only.npc->str_mask & STRUNG_DESC2) std::free(pet->player.short_descr);
     std::free(pet->only.npc);
     std::free(pet);
 }
 
-int setup_pet(P_char, P_char, int duration, int)
+int last_pet_flags = 0;
+int GET_CLASS(P_char ch, uint cls) { return (ch->player.m_class & cls) != 0; }
+int last_death_delay = 0;
+void schedule_pet_death(P_char, int delay) { last_death_delay = delay; }
+void str_free(const char *s) { std::free(const_cast<char *>(s)); }
+void logit(const char *, const char *, ...) {}
+void send_to_char(const char *, P_char) {}
+char affect_total(P_char ch, int)
 {
+    GET_MAX_HIT(ch) = ch->points.base_hit;
+    GET_MAX_MANA(ch) = ch->points.base_mana;
+    GET_MAX_VITALITY(ch) = ch->points.base_vitality;
+    return 0;
+}
+int setup_pet(P_char, P_char, int duration, int flags)
+{
+    last_pet_flags = flags;
     return duration;
 }
 
@@ -921,8 +943,11 @@ int main()
         add_pet(result, 3002, 999, 1);
         std::vector<P_char> pets;
         player_load_pet_materialize_metrics metrics = {};
-        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
-        assert(pets.empty() && pet_extracts == 1 && !owner.character.followers);
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 2 && pets[0] && !pets[1]);
+        assert(owner.pc.held_pets && owner.pc.held_pets->pets[0].hold_reason == pet_hold_reason::missing_prototype);
+        player_load_pets_discard(&pets);
+        assert(pet_extracts == 1 && !owner.character.followers);
     }
     {
         reset_test_state();
@@ -954,6 +979,90 @@ int main()
         assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
         assert(pets.empty() && pet_extracts == 1);
     }
+
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 1201);
+        add_pet_item(result, 0, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 1);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && !pets[0] && allocations == 0);
+        assert(owner.pc.held_pets->pets[0].hold_reason == pet_hold_reason::legacy_summon);
+        assert(owner.pc.held_pets->pets[0].items[0].object_uid == 20);
+        player_load_pets_commit(&owner.character, &pets, result);
+        assert(!owner.character.followers);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        owner.character.player.level = 56;
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        pet_restore_state state;
+        state.kind = summoned_pet_kind::dracolich;
+        state.name = "dragon _owner_";
+        state.short_description = "a particular dragon";
+        state.long_description = "A particular dragon waits here.\r\n";
+        state.level = 52; state.race = RACE_DRACOLICH; state.size = SIZE_HUGE;
+        state.base_stats.fill(95); state.base_points = {1234, 55, 150, -123, 33, 41, 0};
+        state.damage_dice = {3, 8}; state.spell_slots[2] = 7;
+        state.act = ACT_ISNPC | ACT_SENTINEL;
+        state.charm_expires_at = time(nullptr) + 600;
+        state.death_expires_at = time(nullptr) + 660;
+        std::string encoded;
+        assert(pet_restore_state_encode(state, &encoded));
+        for (int i = 0; i < 4; ++i) {
+            add_pet(result, 3001 + i, 3, i);
+            result.snapshot.pets.back().restore_state = encoded;
+        }
+        add_pet_item(result, 3, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 1);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 4 && pets[0] && pets[1] && pets[2] && !pets[3]);
+        assert(pets[0]->points.base_hit == 1234 && GET_MAX_HIT(pets[0]) == 1234);
+        assert(pets[0]->points.base_armor == -123 && pets[0]->specials.undead_spell_slots[2] == 7);
+        assert(owner.pc.held_pets->pets[0].hold_reason == pet_hold_reason::over_capacity);
+        assert(owner.pc.held_pets->pets[0].items[0].object_uid == 20);
+        std::string recaptured;
+        assert(summoned_pet_capture(pets[0], &recaptured) && recaptured == encoded);
+        summoned_pet_restore_lifetime(pets[0], &owner.character, state);
+        assert(last_pet_flags & PET_RESTORE);
+        assert(last_death_delay > 0 && last_death_delay <= 660 * WAIT_SEC);
+        assert(pets[0]->only.npc->pet_death_expires_at == state.death_expires_at);
+        player_load_pets_discard(&pets);
+    }
+    for (int malformed : {0, 1, 2, 3}) {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 1201);
+        pet_restore_state state;
+        state.kind = summoned_pet_kind::undead_first;
+        state.name = "skeleton"; state.short_description = "a skeleton";
+        state.long_description = "A skeleton waits.";
+        state.act = ACT_ISNPC;
+        state.level = 20; state.base_points = {100, 10, 20, 0, 3, 4, 0};
+        state.charm_expires_at = time(nullptr) - 1;
+        if (malformed == 2) state.act = 0;
+        if (malformed == 3) state.race = LAST_RACE + 1;
+        assert(pet_restore_state_encode(state, &result.snapshot.pets[0].restore_state));
+        if (malformed == 1) result.snapshot.pets[0].restore_state[0] = '2';
+        add_pet_item(result, 0, 3101, 20, 101, PLAYER_SNAPSHOT_NO_PARENT, 1);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(!pets[0] && allocations == 0);
+        const auto &held = owner.pc.held_pets->pets[0];
+        assert(held.hold_reason == (malformed ? pet_hold_reason::invalid_state : pet_hold_reason::expired));
+        assert(held.restore_state == result.snapshot.pets[0].restore_state);
+        assert(held.items[0].object_uid == 20);
+    }
     return 0;
 }
 '''
@@ -974,6 +1083,8 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-items-") as temp_dir:
             str(source),
             rel("player_load_items.c"),
             rel("player_load_pets.c"),
+            "src/player/pet_restore_state.c",
+            "src/player/pet_restore_runtime.c",
             rel("player_snapshot_codec.c"),
             rel("item_transfer_command.c"),
             rel("item_ownership_runtime.c"),

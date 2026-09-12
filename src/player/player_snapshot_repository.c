@@ -450,11 +450,12 @@ query_result apply_pets(MYSQL *connection, const player_snapshot &snapshot)
 	{
 		std::ostringstream sql;
 		sql << "INSERT INTO player_pets (owner_pid,mob_vnum,pet_order,hit,max_hit,mana,"
-		       "max_mana,vitality,max_vitality,charm_duration,room_vnum,saved_at) VALUES ("
+		       "max_mana,vitality,max_vitality,charm_duration,room_vnum,saved_at,restore_state,hold_reason) VALUES ("
 		    << snapshot.pid << ',' << pet.mob_vnum << ',' << pet.order << ',' << pet.hit
 		    << ',' << pet.max_hit << ',' << pet.mana << ',' << pet.max_mana << ','
 		    << pet.vitality << ',' << pet.max_vitality << ',' << pet.charm_duration << ','
-		    << pet.room_vnum << ",NOW())";
+		    << pet.room_vnum << ",NOW()," << quote(connection, pet.restore_state) << ','
+		    << static_cast<uint32_t>(pet.hold_reason) << ')';
 		result = execute(connection, sql.str());
 		if (!result.ok)
 			return result;
@@ -628,6 +629,11 @@ player_save_apply_result read_durable_revision(MYSQL *connection, int pid)
 	return { player_save_apply_outcome::already_applied, revision, 0 };
 }
 } // namespace
+
+bool player_snapshot_repository_write_pets(MYSQL *connection, const player_snapshot &snapshot)
+{
+	return connection && snapshot.pid > 0 && apply_pets(connection, snapshot).ok;
+}
 
 player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 							  const player_snapshot &snapshot)
