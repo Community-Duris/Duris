@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     assert(decoded.items[1].parent_index == 0);
     assert(decoded.items[0].extra_descriptions[0].spell_ids[1] == 12);
     assert(decoded.pets[0].items[0].vnum == 501);
-    assert(encoded[0] == 1 && !decoded.death); // Existing records keep their format.
+    assert(encoded[0] == PLAYER_SNAPSHOT_SCHEMA_VERSION && !decoded.death); // Base format, not death.
     auto truncated = encoded;
     truncated.pop_back();
     assert(player_snapshot_decode(truncated.data(), truncated.size(), &decoded) ==
