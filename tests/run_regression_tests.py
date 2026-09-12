@@ -27,6 +27,7 @@ RESOURCE_INTENSIVE_TEST_NAMES = frozenset(
         "test_flatfile_first_session_currency.py",
         "test_flatfile_full_world_boot.py",
         "test_item_movement_prompt_runtime.py",
+        "test_information_cache_journey.py",
         "test_mysql_combat_journey.py",
     }
 )
