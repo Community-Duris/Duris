@@ -6,6 +6,9 @@
 #include "core/files.h"
 #include "core/utils.h"
 #include "classes/necromancy.h"
+#include "player/pet_restore_runtime.h"
+#include <ctime>
+#include <algorithm>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -163,11 +166,24 @@ void charm_broken(struct char_link_data *cld)
 		     (mob_index[GET_RNUM(cld->linking)].virtual_number == NECROPET)))
 		{
 			// Add pet death in 1 minute.
-			add_event(event_pet_death, 1 * WAIT_MIN, cld->linking, NULL, NULL, 0, NULL,
-				  0);
+			schedule_pet_death(cld->linking, 1 * WAIT_MIN);
 			break;
 		}
 	}
+}
+
+void schedule_pet_death(P_char pet, int delay)
+{
+	if (!pet || !IS_NPC(pet))
+		return;
+	auto &npc = *pet->only.npc;
+	npc.summoned_instance = true;
+	const int64_t deadline =
+		time(nullptr) +
+		(static_cast<int64_t>(std::max(1, delay)) + WAIT_SEC - 1) / WAIT_SEC;
+	if (!npc.pet_death_expires_at || deadline < npc.pet_death_expires_at)
+		npc.pet_death_expires_at = deadline;
+	add_event(event_pet_death, delay, pet, NULL, NULL, 0, NULL, 0);
 }
 
 void event_pet_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
@@ -192,12 +208,15 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 
 	globe = get_globe(ch);
 
-	if (has_innate(ch, INNATE_UNHOLY_ALLIANCE) || globe)
+	if (!(flag & PET_RESTORE) && (has_innate(ch, INNATE_UNHOLY_ALLIANCE) || globe))
 	{
 		af.duration = -1;
 	}
 
 	duration = af.duration;
+	if (IS_NPC(mob) && !(flag & PET_RESTORE))
+		mob->only.npc->pet_charm_expires_at =
+			duration < 0 ? 0 : time(nullptr) + static_cast<int64_t>(duration) * 60;
 	/* the higher the level of the mob, the more likely it'll be aggro to the caster after charm*/
 	if (IS_NPC(mob) && !IS_SET(flag, PET_NOAGGRO) && (GET_LEVEL(mob) > number(30, 62)) &&
 	    !has_innate(ch, INNATE_UNHOLY_ALLIANCE))
@@ -223,7 +242,7 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	}
 	remove_plushit_bits(mob);
 
-	if (IS_PC(ch))
+	if (IS_PC(ch) && (!(flag & PET_RESTORE) || (IS_NPC(mob) && !mob->only.npc->summon_kind)))
 	{
 		name = string(mob->player.name) + " _" + string(ch->player.name) + "_";
 		mob->player.name = str_dup(name.c_str());
@@ -259,6 +278,12 @@ int count_undead(P_char ch)
 
 		if (cld->type != LNK_PET)
 		{
+			continue;
+		}
+		else if (IS_NPC(follower) && follower->only.npc->summon_kind)
+		{
+			sum += summoned_pet_cost(
+				static_cast<summoned_pet_kind>(follower->only.npc->summon_kind));
 			continue;
 		}
 		else if (IS_GREATER_DRACO(follower) || IS_GREATER_AVATAR(follower))
@@ -649,6 +674,7 @@ void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 		undead->player.long_descr = str_dup(Gbuf1);
 	}
 
+	summoned_pet_mark(undead, static_cast<summoned_pet_kind>(typ + 1));
 	if (persistence_defer_corpse_raise(obj, ch, undead, corpse_raise_kind::undead, level, typ,
 					   globe != nullptr, nullptr))
 		return;
@@ -716,7 +742,7 @@ void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 	if (duration >= 0)
 	{
 		duration += number(1, 10);
-		add_event(event_pet_death, (duration + 1) * 60 * 4, undead, NULL, NULL, 0, NULL, 0);
+		schedule_pet_death(undead, (duration + 1) * 60 * 4);
 	}
 }
 
@@ -1109,6 +1135,7 @@ void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 		}
 	}
 
+	summoned_pet_mark(mob, summoned_pet_kind::titan);
 	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::titan, level, sum,
 					   globe != nullptr, summons[sum].message))
 		return;
@@ -1166,8 +1193,7 @@ void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
-			  0);
+		schedule_pet_death(mob, (4 + number(1, 6)) * WAIT_SEC);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -1190,8 +1216,7 @@ void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 		if (duration >= 0)
 		{
 			duration += number(1, 10);
-			add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0,
-				  NULL, 0);
+			schedule_pet_death(mob, (duration + 1) * 60 * 4);
 		}
 	}
 }
@@ -1377,8 +1402,7 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		act("$N is NOT pleased at being returned to life!", TRUE, caster, 0, follower,
 		    TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, caster, 0, follower, TO_CHAR);
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, follower, NULL, NULL, 0,
-			  NULL, 0);
+		schedule_pet_death(follower, (4 + number(1, 6)) * WAIT_SEC);
 		MobStartFight(follower, caster);
 	}
 	else if (kind == corpse_raise_kind::undead)
@@ -1429,13 +1453,11 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 	{
 		if (kind == corpse_raise_kind::greater_dracolich ||
 		    kind == corpse_raise_kind::dracolich)
-			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, follower, NULL,
-				  NULL, 0, NULL, 0);
+			schedule_pet_death(follower, (duration + 1) * 60 * WAIT_SEC);
 		else
 		{
 			duration += number(1, 10);
-			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, follower, NULL,
-				  NULL, 0, NULL, 0);
+			schedule_pet_death(follower, (duration + 1) * 60 * WAIT_SEC);
 		}
 	}
 	if (!writeCharacter(caster, RENT_CRASH, caster->in_room))
@@ -1608,6 +1630,7 @@ void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		mob->points.base_damroll = mob->points.damroll = level + number(4, 24);
 	}
 
+	summoned_pet_mark(mob, summoned_pet_kind::dracolich);
 	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::dracolich, level, sum,
 					   globe != nullptr, summons[sum].message))
 		return;
@@ -1669,8 +1692,7 @@ void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
-			  0);
+		schedule_pet_death(mob, (4 + number(1, 6)) * WAIT_SEC);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -1696,8 +1718,7 @@ void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		// if the undead will stop being charmed after a bit, also make it suicide 1 minute later.
 		if (duration >= 0)
 		{
-			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, mob, NULL, NULL,
-				  0, NULL, 0);
+			schedule_pet_death(mob, (duration + 1) * 60 * WAIT_SEC);
 		}
 	}
 }
@@ -1887,6 +1908,7 @@ void create_golem(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 	mob->points.base_damroll = mob->points.damroll = (int)(0.70 * GET_LEVEL(mob));
 	mob->points.damnodice = (mob->points.damnodice / 2 + 2);
 
+	summoned_pet_mark(mob, static_cast<summoned_pet_kind>(which_type + 15));
 	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::golem, level,
 					   which_type, globe != nullptr, nullptr))
 		return;
@@ -1937,7 +1959,7 @@ void create_golem(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 	if (duration >= 0)
 	{
 		duration += number(1, 10);
-		add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0, NULL, 0);
+		schedule_pet_death(mob, (duration + 1) * 60 * 4);
 	}
 }
 
@@ -2097,6 +2119,7 @@ void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		mob->base_stats.Dex = 100;
 	}
 
+	summoned_pet_mark(mob, summoned_pet_kind::avatar);
 	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::avatar, level, sum,
 					   globe != nullptr, summons[sum].message))
 		return;
@@ -2153,8 +2176,7 @@ void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
-			  0);
+		schedule_pet_death(mob, (4 + number(1, 6)) * WAIT_SEC);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -2169,8 +2191,7 @@ void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 		if (duration >= 0)
 		{
 			duration += number(1, 10);
-			add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0,
-				  NULL, 0);
+			schedule_pet_death(mob, (duration + 1) * 60 * 4);
 		}
 	}
 }
@@ -2345,6 +2366,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[mayb
 		mob->base_stats.Dex = 100;
 	}
 
+	summoned_pet_mark(mob, summoned_pet_kind::greater_dracolich);
 	if (persistence_defer_corpse_raise(obj, ch, mob, corpse_raise_kind::greater_dracolich,
 					   level, sum, globe != nullptr, summons[sum].message))
 		return;
@@ -2404,8 +2426,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[mayb
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
-			  0);
+		schedule_pet_death(mob, (4 + number(1, 6)) * WAIT_SEC);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -2420,8 +2441,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[mayb
 		// if the undead will stop being charmed after a bit, also make it suicide 1 minute later
 		if (duration >= 0)
 		{
-			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, mob, NULL, NULL,
-				  0, NULL, 0);
+			schedule_pet_death(mob, (duration + 1) * 60 * WAIT_SEC);
 		}
 	}
 }

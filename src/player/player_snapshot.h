@@ -3,6 +3,7 @@
 
 #include "player/player_revision_state.h"
 #include "item/item_transfer_command.h"
+#include "player/pet_restore_state.h"
 
 #include <array>
 #include <cstdint>
@@ -10,8 +11,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 1;
-constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 2;
+constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 3;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 4;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -207,6 +208,8 @@ struct player_pet_snapshot
 	int32_t charm_duration;
 	int32_t room_vnum;
 	std::vector<player_item_snapshot> items;
+	std::string restore_state;
+	pet_hold_reason hold_reason = pet_hold_reason::none;
 };
 
 struct player_shape_snapshot

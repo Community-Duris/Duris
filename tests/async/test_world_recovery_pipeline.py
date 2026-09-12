@@ -389,8 +389,8 @@ int main()
                capture_buffer.size()) == 0);
     lookup_succeeds = false;
 
-    char_data master = {}, pet = {}, ordinary = {};
-    npc_only_data pet_npc = {}, ordinary_npc = {};
+    char_data master = {}, pet = {}, ordinary = {}, unlinked_summon = {};
+    npc_only_data pet_npc = {}, ordinary_npc = {}, summon_npc = {};
     pet.only.npc = &pet_npc;
     ordinary.only.npc = &ordinary_npc;
     SET_BIT(pet.specials.act, ACT_ISNPC);
@@ -398,6 +398,13 @@ int main()
     pet_npc.R_num = ordinary_npc.R_num = 0;
     pet.in_room = ordinary.in_room = 0;
     pet.next = &ordinary;
+    // Provenance survives charm unlinking. Only the ordinary area NPC is saved.
+    ordinary.next = &unlinked_summon;
+    unlinked_summon.only.npc = &summon_npc;
+    SET_BIT(unlinked_summon.specials.act, ACT_ISNPC);
+    unlinked_summon.in_room = 0;
+    summon_npc.R_num = 0;
+    summon_npc.summoned_instance = true;
     linked_pet = &pet;
     linked_master = &master;
     character_list = &pet;
