@@ -16,6 +16,7 @@
 #include <exception>
 #include <cstdio>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 extern P_index mob_index;
@@ -26,6 +27,8 @@ extern int top_of_mobt;
 extern int top_of_objt;
 extern int top_of_zone_table;
 extern int top_of_world;
+extern int number_of_quests;
+extern struct quest_data quest_index[];
 
 extern int get_map_room(int zone_id);
 
@@ -160,7 +163,7 @@ bool source_eligible_reward(P_obj obj)
 		return false;
 	if (IS_SET(obj->bitvector, AFF_STONE_SKIN) || IS_SET(obj->bitvector, AFF_HIDE) ||
 	    IS_SET(obj->bitvector, AFF_SNEAK) || IS_SET(obj->bitvector, AFF_FLY) ||
-	    IS_SET(obj->bitvector, AFF4_NOFEAR) || IS_SET(obj->bitvector2, AFF2_AIR_AURA) ||
+	    IS_SET(obj->bitvector4, AFF4_NOFEAR) || IS_SET(obj->bitvector2, AFF2_AIR_AURA) ||
 	    IS_SET(obj->bitvector2, AFF2_EARTH_AURA) ||
 	    IS_SET(obj->bitvector3, AFF3_INERTIAL_BARRIER) ||
 	    IS_SET(obj->bitvector3, AFF3_REDUCE) || IS_SET(obj->bitvector2, AFF2_GLOBE) ||
@@ -171,6 +174,37 @@ bool source_eligible_reward(P_obj obj)
 	    isname("_noquest_", obj->name) || IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
 		return false;
 	return true;
+}
+
+struct reward_withholding
+{
+	size_t quest_items = 0;
+	size_t top_value = 0;
+};
+
+// Every item a hand-built quest pays out or asks players to hand in. Bartender rewards
+// never include these, whether or not a builder flagged them ITEM2_QUESTITEM.
+std::unordered_set<int> collect_quest_item_vnums()
+{
+	std::unordered_set<int> vnums;
+	for (int quest = 0; quest < number_of_quests; ++quest)
+	{
+		for (const quest_complete_data *complete = quest_index[quest].quest_complete;
+		     complete; complete = complete->next)
+		{
+			for (const goal_data *goal = complete->receive; goal; goal = goal->next)
+			{
+				if (goal->goal_type == QUEST_GOAL_ITEM)
+					vnums.insert(goal->number);
+			}
+			for (const goal_data *goal = complete->give; goal; goal = goal->next)
+			{
+				if (goal->goal_type == QUEST_GOAL_ITEM)
+					vnums.insert(goal->number);
+			}
+		}
+	}
+	return vnums;
 }
 
 void build_intervals()
@@ -227,8 +261,9 @@ void load_mobile_profiles()
 	}
 }
 
-void load_reward_profiles()
+void load_reward_profiles(reward_withholding &withheld)
 {
+	const std::unordered_set<int> quest_items = collect_quest_item_vnums();
 	for (int rnum = 0; rnum <= top_of_objt; ++rnum)
 	{
 		const int zone = zone_for_vnum(obj_index[rnum].virtual_number);
@@ -238,18 +273,48 @@ void load_reward_profiles()
 		object_probe_guard probe{ read_object(obj_index[rnum].virtual_number, VIRTUAL) };
 		if (!probe.value)
 			continue;
-		if (source_eligible_reward(probe.value))
+		if (!source_eligible_reward(probe.value))
+			continue;
+		if (quest_items.count(obj_index[rnum].virtual_number))
 		{
-			quest_reward_profile profile;
-			profile.vnum = obj_index[rnum].virtual_number;
-			profile.ivalue = itemvalue(probe.value);
-			quest_zones[zone].rewards.push_back(profile);
-			quest_zones[zone].reward_vnums.push_back(profile.vnum);
+			++withheld.quest_items;
+			continue;
 		}
+		quest_reward_profile profile;
+		profile.vnum = obj_index[rnum].virtual_number;
+		profile.ivalue = itemvalue(probe.value);
+		quest_zones[zone].rewards.push_back(profile);
 	}
 
+	// A zone's most valuable items are earned in the zone, not bought from a bartender.
+	// They are withheld before the per-level lists and zone scores are built, so both
+	// describe only what a quest can actually pay.
+	const int withheld_percent = BOUNDED(
+		0,
+		static_cast<int>(get_property("world.quest.reward.top.withheld.percent", 20.000)),
+		100);
 	for (quest_zone_profile &zone : quest_zones)
 	{
+		std::vector<int> values;
+		values.reserve(zone.rewards.size());
+		for (const quest_reward_profile &reward : zone.rewards)
+			values.push_back(reward.ivalue);
+		const int ceiling = world_quest_reward_value_ceiling(values, withheld_percent);
+
+		std::vector<quest_reward_profile> offered;
+		offered.reserve(zone.rewards.size());
+		for (const quest_reward_profile &reward : zone.rewards)
+		{
+			if (reward.ivalue >= ceiling)
+			{
+				++withheld.top_value;
+				continue;
+			}
+			offered.push_back(reward);
+			zone.reward_vnums.push_back(reward.vnum);
+		}
+		zone.rewards.swap(offered);
+
 		for (const quest_reward_profile &reward : zone.rewards)
 		{
 			for (int level = 1; level < TOTALLVLS; ++level)
@@ -399,7 +464,8 @@ bool world_quest_policy_bootstrap()
 				continue;
 			quest_zones[zone].map_room = get_map_room(zone);
 		}
-		load_reward_profiles();
+		reward_withholding withheld;
+		load_reward_profiles(withheld);
 		load_zone_scores();
 		quest_catalog_ready = true;
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -416,14 +482,18 @@ bool world_quest_policy_bootstrap()
 		}
 		logit(LOG_STATUS,
 		      "World quest catalog ready: zones=%d mobile_profiles=%zu reward_profiles=%zu "
-		      "mapless_zones=%d elapsed_ms=%lld",
+		      "mapless_zones=%d elapsed_ms=%lld withheld_quest_items=%zu "
+		      "withheld_top_value=%zu",
 		      top_of_zone_table + 1, mob_profiles, reward_profiles, mapless_zones,
-		      static_cast<long long>(elapsed.count()));
+		      static_cast<long long>(elapsed.count()), withheld.quest_items,
+		      withheld.top_value);
 		fprintf(stderr,
 			"World quest catalog ready: zones=%d mobile_profiles=%zu reward_profiles=%zu "
-			"mapless_zones=%d elapsed_ms=%lld\n",
+			"mapless_zones=%d elapsed_ms=%lld withheld_quest_items=%zu "
+			"withheld_top_value=%zu\n",
 			top_of_zone_table + 1, mob_profiles, reward_profiles, mapless_zones,
-			static_cast<long long>(elapsed.count()));
+			static_cast<long long>(elapsed.count()), withheld.quest_items,
+			withheld.top_value);
 	}
 	catch (const std::exception &error)
 	{

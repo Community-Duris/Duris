@@ -269,7 +269,13 @@ Policy excludes sentinel/non-normal zones, explicit zones 0/292/536, towns and
 hometowns, and zones without eligible local rewards. The truncated average
 prototype level must lie strictly inside `(L - 7, L + 5)`. Mapless zones require
 level 41 or higher. Source-eligible rewards pass the floor `2 * itemvalue >= L`;
-reward counts and means are calculated after that filter.
+reward counts and means are calculated after that filter. Items that any
+hand-built quest pays out or asks players to hand in (the item goals of
+`quest_index`) are never rewards, flagged `ITEM2_QUESTITEM` or not. Each zone
+also withholds its most valuable `world.quest.reward.top.withheld.percent`
+(default 20) percent of source-eligible items, rounded up and including value
+ties; per-level pools and scores are built from what remains, and the boot log
+reports both withheld counts.
 
 For eligible zones, the relative selection weight is
 `exp(-abs(average_level - L) / 6) * (average_ivalue / L) * eligible_item_count`.
@@ -290,6 +296,11 @@ cached pool, with the existing logged random-equipment fallback if unavailable.
 `tests/async/run_world_quest_dual_backend.py` exercises real quest grant and
 persistence in disposable MariaDB and flat-file instances; focused
 `test_world_quest_*` tests cover policy and failure boundaries.
+
+Quests cannot be shared unless `world.quest.share.max` (default 0, at most 4)
+allows it. Every completed quest pays one item reward to the player who
+completed it; kill quests pay at completion instead of rolling rewards onto
+corpses. The fee is `world.quest.cost.per.level` copper per level (default 20).
 
 ## Shared NPC area-target pruning
 

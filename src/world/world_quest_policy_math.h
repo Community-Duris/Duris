@@ -1,9 +1,12 @@
 #ifndef DURIS_WORLD_QUEST_POLICY_MATH_H
 #define DURIS_WORLD_QUEST_POLICY_MATH_H
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <vector>
 
 constexpr int WORLD_QUEST_MIN_LEVEL = 11;
 constexpr int WORLD_QUEST_MAPLESS_MIN_LEVEL = 41;
@@ -29,6 +32,22 @@ inline bool world_quest_item_passes_floor(int quest_level, int itemvalue)
 {
 	return quest_level > 0 && itemvalue > 0 &&
 	       (static_cast<long long>(itemvalue) * 2) >= quest_level;
+}
+
+// Bartenders never hand out the most valuable share of a zone's reward items. The top
+// ceil(count * withheld_percent / 100) items by itemvalue are withheld, and any item worth
+// as much as the cheapest of those is withheld with it, so the rule acts as a ceiling: an
+// item is offered only when its value is below the returned figure. Returns INT_MAX when
+// nothing is withheld.
+inline int world_quest_reward_value_ceiling(std::vector<int> values, int withheld_percent)
+{
+	if (values.empty() || withheld_percent <= 0)
+		return std::numeric_limits<int>::max();
+	const long long percent = withheld_percent > 100 ? 100 : withheld_percent;
+	const long long count = static_cast<long long>(values.size());
+	const long long withheld = (count * percent + 99) / 100;
+	std::sort(values.begin(), values.end(), std::greater<int>());
+	return values[static_cast<size_t>(withheld - 1)];
 }
 
 inline double world_quest_zone_level_fit(int quest_level, double average_level)
