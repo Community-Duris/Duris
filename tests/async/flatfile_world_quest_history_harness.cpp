@@ -28,6 +28,11 @@ const char *persistence_mode_flatfile_root()
 	return state_root.c_str();
 }
 
+// The difficulty module is not linked; a neutral world quest dial leaves the allowance alone.
+int difficulty_scale_world_quest_allowance(int allowance)
+{
+	return allowance;
+}
 float get_property(const char *, double)
 {
 	return 2.0F;
