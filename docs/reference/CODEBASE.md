@@ -320,6 +320,11 @@ The `difficulty` command lists the dials for gods; Forgers can `set`, `preset` a
 `save`. It routes through `properties set`, which re-applies every property at once but
 changes memory only until `difficulty save`. Mob hitpoints and mob gold apply to mobs
 loaded afterwards, zone repop at each zone's next reset, and the rest immediately.
+The dials multiply with zone difficulty: with the shipped zone factors, a
+difficulty-10 zone under dial 10 gives mobs 9x hitpoints (2.0 x 4.5), 6x melee
+damage (2.0 x 3.0) and 3x spell damage (2.0 x 1.5); no zone ships above 9. The
+legacy 20-platinum coin bonus in `read_mobile()` is decided on the file's value,
+so the mob gold dial scales the payout linearly.
 
 Hooks: mob hitpoints in `apply_zone_modifier()`; melee after `damage_mod` in `hit()`;
 spell damage after the modifier profile in `spell_damage()`, outside its 2.0 cap; hit

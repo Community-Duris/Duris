@@ -213,6 +213,13 @@ def test_breath_money_regen_and_corpse_hooks_are_complete() -> None:
     db = source("world/db.c").read_text()
     assert db.count("difficulty_scale_coins(&tmp1, &tmp2, &tmp3, &tmp4);") == 2
     assert db.count("ADD_MONEY(mob, difficulty_scale_money(tmp1));") == 2
+    # The legacy 20-platinum bonus is decided before the dial scales the coins, so the
+    # payout scales linearly rather than jumping when a mob crosses the cut-off.
+    flat_db = _flat(db)
+    assert _flat("const bool platinum_bonus = tmp4 > 20; "
+                 "difficulty_scale_coins(&tmp1, &tmp2, &tmp3, &tmp4);") in flat_db
+    assert _flat("if (platinum_bonus)") in flat_db
+    assert _flat("if (GET_PLATINUM(mob) > 20)") not in flat_db
     limits = source("world/limits.c").read_text()
     for signature in ("int hit_regen(", "int mana_regen(", "int move_regen("):
         assert "difficulty_scale_player_regen(ch," in _body("world/limits.c", signature)

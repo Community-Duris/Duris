@@ -2246,6 +2246,9 @@ P_char read_mobile(int nr, int type)
 		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
 		{
+			// The legacy 20-platinum bonus below is decided on the file's value, so the mob
+			// gold dial scales the payout linearly instead of moving mobs across the cut-off.
+			const bool platinum_bonus = tmp4 > 20;
 			difficulty_scale_coins(&tmp1, &tmp2, &tmp3, &tmp4);
 			GET_PLATINUM(mob) = tmp4; /* * (number(50, 200) / 100); */
 			GET_GOLD(mob) = tmp3; /* * (number(50, 200) / 100); */
@@ -2257,7 +2260,7 @@ P_char read_mobile(int nr, int type)
 				      mob_index[nr].virtual_number, comma_string(tmp));
 			}
 			GET_EXP(mob) = tmp * exp_mods[EXPMOD_GLOBAL];
-			if (GET_PLATINUM(mob) > 20)
+			if (platinum_bonus)
 			{
 				tmp = ((GET_PLATINUM(mob) * 1000) + (GET_GOLD(mob) * 100) +
 				       (GET_SILVER(mob) * 10) + GET_COPPER(mob));
