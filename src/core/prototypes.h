@@ -2925,6 +2925,7 @@ void trapdamage(P_char ch, P_obj obj);
 void initialize_properties();
 void do_properties(P_char, char *, int);
 void do_difficulty(P_char, char *, int);
+void do_pulse(P_char, char *, int);
 float get_property(const char *, double);
 int get_property(const char *, int);
 float get_property(const char *, double, bool);

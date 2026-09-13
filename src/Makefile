@@ -168,6 +168,7 @@ OBJS =  $(SHIP_OBJS) \
 				 account/character_identity.o \
 				 core/debug.o \
 				 world/difficulty.o \
+				 world/racial_pulse.o \
 				 classes/disguise.o \
 				 classes/drannak.o \
 				 item/enhance.o \
