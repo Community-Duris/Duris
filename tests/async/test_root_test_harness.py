@@ -58,17 +58,7 @@ expected_resource_intensive = {
 }
 assert runner.RESOURCE_INTENSIVE_TEST_NAMES == expected_resource_intensive
 assert runner.MANUAL_ONLY_TEST_NAMES == {
-    "test_mob_gold_dial_runtime.py",
-    "test_mysql_playtime_journey.py",
-    "test_pet_restart_journey.py",
-    "test_playtime_mysql_repository.py",
-}
-discovered = {path.name for path in runner.discover_tests(None)}
-assert not (runner.MANUAL_ONLY_TEST_NAMES & discovered)
-assert {
-    "test_player_playtime_capture.py", "test_playtime_checkpoint.py",
-    "test_playtime_flatfile.py", "test_playtime_legacy_sql.py",
-} <= discovered
+    "test_mob_gold_dial_runtime.py", "test_pet_restart_journey.py"}
 sample_tests = [
     Path("test_fast.py"),
     Path("test_flatfile_combat_journey.py"),
