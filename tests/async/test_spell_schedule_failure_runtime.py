@@ -63,6 +63,7 @@ static event_func submitted;
 static int submitted_delay;
 static bool room_link, world_link;
 void event_spellcast(P_char, P_char, P_obj, void *) {}
+bool abort_item_action(P_char) { return false; }
 void event_abort_spell(P_char, P_char, P_obj, void *) {}
 void event_wait(P_char, P_char, P_obj, void *) {}
 void event_memorize(P_char, P_char, P_obj, void *) {}

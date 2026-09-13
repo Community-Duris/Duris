@@ -66,7 +66,7 @@ assert "production role requires the production port" in runtime
 
 constructor = section(
     sql,
-    "MYSQL *sql_open_configured_connection(unsigned long client_flags)",
+    "static MYSQL *sql_open_verified_connection(",
     "/* Escapes a string.",
 )
 assert constructor.index("sql_runtime_config_valid") < constructor.index("mysql_real_connect")
@@ -95,7 +95,7 @@ for option in (
 assert "DB_TLS" in runtime and "DB_SSL_CA" in runtime
 print("[PASS] connection deadlines, reconnect policy, and verified remote TLS are canonical")
 
-session = section(sql, "static bool sql_apply_session_contract", "MYSQL *sql_open_configured_connection")
+session = section(sql, "static bool sql_apply_session_contract", "static MYSQL *sql_open_verified_connection")
 verify = section(sql, "static bool sql_verify_session_contract", "static bool sql_apply_session_contract")
 assert "mysql_set_character_set(conn, RUNTIME_DB_CHARACTER_SET)" in session
 assert "SET SESSION time_zone='+00:00'" in session
