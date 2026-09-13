@@ -1,4 +1,5 @@
 #include "player/player_snapshot_capture.h"
+#include "player/player_playtime.h"
 #include "player/player_snapshot_codec.h"
 #include "player/pet_restore_runtime.h"
 #include "classes/necromancy.h"
@@ -121,7 +122,12 @@ bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget
 	ADD_STATUS(birthplace, GET_BIRTHPLACE(ch));
 	ADD_STATUS(original_birthplace, GET_ORIG_BIRTHPLACE(ch));
 	ADD_STATUS(birth_time, ch->player.time.birth);
-	ADD_STATUS(played_time, ch->player.time.played);
+	// played is the loaded baseline; score adds the active session to it.
+	// Capture that same total without advancing logon or mutating the baseline:
+	// retries and repeated checkpoints must not count the session twice.
+	const auto played =
+		player_playtime_total(ch->player.time.played, ch->player.time.logon, time(nullptr));
+	ADD_STATUS(played_time, played);
 	ADD_STATUS(base_strength, ch->base_stats.Str);
 	ADD_STATUS(base_dexterity, ch->base_stats.Dex);
 	ADD_STATUS(base_agility, ch->base_stats.Agi);
