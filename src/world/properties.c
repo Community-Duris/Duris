@@ -9,6 +9,7 @@
 
 #include "core/prototypes.h"
 #include "item/item_actions.h"
+#include "item/weapon_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -135,6 +136,7 @@ int get_property(const char *key, int default_value, bool fuss)
 void apply_properties()
 {
 	update_item_action_properties();
+	update_weapon_action_properties();
 	// First, so the tables rebuilt below (the experience table) see the current dials.
 	update_difficulty_dials();
 	update_stat_data();

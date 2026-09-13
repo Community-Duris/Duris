@@ -2,9 +2,10 @@
 
 This is the default-off shared runtime for [#291](https://github.com/Community-Duris/Duris/issues/291),
 the first workstream in [#290](https://github.com/Community-Duris/Duris/issues/290).
-It does not register a gameplay ability or change any existing item activation or
-weapon proc route. Artifact mana, Avernus, device activation, Studio integration,
-artifact migration, and in-game rollout evidence remain subsequent workstreams.
+The core registers no gameplay abilities by itself. Optional
+[weapon adapters](WEAPON_ACTIONS.md) and [artifact mana](ARTIFACT_MANA.md) use it;
+device activation, Studio integration, and further artifact migrations are
+separate workstreams.
 
 ## Routing and admission
 
@@ -15,7 +16,7 @@ registration owns its adapter and survives until all payloads using it are gone.
 No API accepts a raw special-procedure function, borrowed callback payload, or
 the character's mutable ordinary spellcast state.
 
-A future pilot registers a reviewed adapter using `item_actions_publish`, then
+A pilot registers a reviewed adapter using `item_actions_publish`, then
 calls `start_item_action` only from the selected migration route. Interpret the
 result explicitly:
 
@@ -31,6 +32,13 @@ actions require equipment. There is one pending action per physical item, a
 configurable bound per wielder, and a global bound. A single actor can have only
 one active device action. Initial active admission also rejects ordinary casting
 or an existing wait. No random rolls occur in the framework.
+
+Definitions with `selected_effects=true` accept a copied invocation-specific
+selection through `start_selected_item_action`. Fixed definitions reject this
+override. Typed effects may capture an original-target/self policy and bounded
+adapter data; they do not retain pointers. An optional presentation-only
+`progress` callback uses the same owned scheduler payload and monotonic floor.
+See [weapon pilots](WEAPON_ACTIONS.md) for the first production adapters.
 
 ## Lifecycle and adapter responsibilities
 

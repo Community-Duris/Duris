@@ -25,7 +25,14 @@ enum class item_action_call
 	weapon,
 	wand,
 	staff,
-	scroll
+	scroll,
+	spell
+};
+
+enum class item_action_effect_target
+{
+	original,
+	actor
 };
 enum class item_action_consumption
 {
@@ -54,6 +61,9 @@ struct item_action_effect
 	uint32_t id = 0; // Typed adapter's effect id, never a raw special-proc address.
 	int power = 0;
 	item_action_call call = item_action_call::weapon;
+	item_action_effect_target target = item_action_effect_target::original;
+	int auxiliary =
+		0; // Typed adapter data, copied at selection (for example a drain's heal cap).
 };
 
 struct item_action_definition
@@ -63,6 +73,16 @@ struct item_action_definition
 	item_action_mode mode = item_action_mode::passive;
 	item_action_source source = item_action_source::equipped;
 	int windup_pulses = 0;
+	std::array<item_action_effect, ITEM_ACTION_MAX_EFFECTS> effects = {};
+	size_t effect_count = 0;
+	bool selected_effects = false;
+	int progress_pulses = 0; // Optional single progress beat within the windup.
+};
+
+// Selected once by the original trigger/RNG path, before admission. Only an
+// explicitly opted-in definition accepts invocation-specific effect parameters.
+struct item_action_selection
+{
 	std::array<item_action_effect, ITEM_ACTION_MAX_EFFECTS> effects = {};
 	size_t effect_count = 0;
 };
@@ -103,6 +123,8 @@ class item_action_adapter
 	// means no cost/cooldown was changed. No gameplay callbacks or transitions here.
 	virtual item_action_consumption commit(const item_action_context &) const noexcept = 0;
 	virtual void announce(const item_action_context &) const noexcept = 0;
+	// Presentation only; no world mutations, resource changes or new actions.
+	virtual void progress(const item_action_context &) const noexcept {}
 	virtual void resolve(const item_action_context &,
 			     const item_action_effect &) const noexcept = 0;
 	// Exactly once after an accepted cost operation, including cancellation. Only
@@ -121,10 +143,14 @@ bool item_actions_publish(const item_action_definition &, std::unique_ptr<item_a
 void item_actions_disable(uint32_t ability_id);
 void item_actions_reload(); // Data reload barrier: cancel all and discard definitions.
 void update_item_action_properties();
+bool item_actions_enabled();
+uint64_t item_actions_definition_revision(uint32_t ability_id);
 
 // Only `legacy` permits a caller to use its original instant path. A selected
 // new action that cannot start (including caps/rejection) is always suppressed.
 item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char target, P_obj source);
+item_action_start start_selected_item_action(uint32_t ability_id, P_char actor, P_char target,
+					     P_obj source, const item_action_selection &);
 bool item_action_active(P_char actor);
 bool abort_item_action(P_char actor);
 size_t item_actions_pending();
