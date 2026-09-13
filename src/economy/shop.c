@@ -6,6 +6,7 @@
  *************************************************************************** */
 
 #include "core/prototypes.h"
+#include "world/world_singletons.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1690,8 +1691,9 @@ int shop_keeper(P_char keeper, P_char ch, int cmd, char *arg)
 		}
 		return TRUE;
 	}
-	for (shop_nr = 0; shop_index[shop_nr].keeper != GET_RNUM(keeper); shop_nr++)
-		;
+	shop_nr = singleton_shop_id(keeper);
+	if (shop_nr < 0)
+		return FALSE;
 
 	if (SHOP_FUNC(shop_nr)) /* Check secondary function  */
 		if ((SHOP_FUNC(shop_nr))(keeper, ch, cmd, arg))

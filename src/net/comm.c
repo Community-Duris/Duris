@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/world_singletons.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
 #include "persistence/persistence_log.h"
@@ -777,8 +778,6 @@ void run_the_game(int port, int sslport)
 		else
 			fprintf(stderr, "Starting without ferries.\r\n");
 
-		initialize_transport();
-
 		update_breath_weapon_properties();
 		update_regen_properties();
 
@@ -1279,6 +1278,14 @@ void game_loop(int port, int sslport)
 			logit(LOG_EXIT,
 			      "NEVENT PERIODIC: could not enable world-state-save after recovery (status=%u)",
 			      static_cast<unsigned int>(world_state_job));
+	}
+
+	// Materialize missing transports only after recovery (or its cold-boot
+	// fallback). Reconcile legacy duplicated generations before world ticks.
+	if (!mini_mode)
+	{
+		reconcile_shopkeepers(copyover_boot != 0);
+		initialize_transport();
 	}
 
 	PROFILES(RESET);

@@ -10,7 +10,7 @@ SOURCE = (SRC / "flatfile_shopkeeper_restore.c").read_text()
 
 for token in (
     "flatfile_shopkeeper_list(root, &records, error)",
-    "mobile_vnums.insert(record.mob_vnum)",
+    "mobile_rooms.insert(identity)",
     "shop_index[record.shop_id].keeper != mobile_rnum",
     "number_items_produced",
     "PLAYER_SNAPSHOT_NO_PARENT",
