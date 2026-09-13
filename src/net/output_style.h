@@ -18,6 +18,21 @@ enum class OutputPolicy
 	Animated
 };
 
+// Semantic roles are supplied by game-state branches, never inferred from words.
+enum class OutputRole
+{
+	None,
+	Healthy,
+	Caution,
+	Low,
+	Critical,
+	Success,
+	Failure,
+	Hit,
+	Miss,
+	Count
+};
+
 enum class StyleOrigin
 {
 	ChannelBase,
@@ -94,6 +109,7 @@ struct OutputContext
 	// Optional original template for logging and serializer/pager fallback. Borrowed
 	// only until send_to_char returns; queues always own their frozen byte copies.
 	const char *original_message = nullptr;
+	OutputRole role = OutputRole::None;
 };
 
 inline OutputContext recipient_output_context(OutputChannel channel,
@@ -122,3 +138,10 @@ bool render_output_message(const char *message, const OutputContext &context, st
 // Recheck a frozen page after accumulation, using its actual markup byte length
 // as well as terminal expansion and snoop overhead. This does not apply styling.
 bool output_message_fits_serializers(std::string_view message);
+
+inline OutputContext recipient_role_context(OutputChannel channel, OutputRole role)
+{
+	auto context = recipient_output_context(channel);
+	context.role = role;
+	return context;
+}

@@ -16,3 +16,5 @@ OutputPreferenceUpdate
 update_player_output_preferences(char_data *recipient, const OutputProfilePreferences &preferences);
 ResolvedOutputProfile player_output_profile(char_data *recipient, OutputChannel channel,
 					    OutputPolicy caller_policy);
+
+ResolvedOutputProfile player_output_profile(char_data *recipient, const OutputContext &context);

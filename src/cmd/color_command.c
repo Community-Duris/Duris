@@ -28,6 +28,22 @@ constexpr ColorCommandChannel commands[] = {
 	{ OutputChannel::ChatPetition, "petition", "",
 	  "Petitions you are permitted to receive and your own echo.",
 	  "Someone petitions 'May I have assistance?'\r\n", false },
+
+	{ OutputChannel::CombatIncoming, "incoming", "combat.incoming",
+	  "Damage messages received by you; other combat emitters retain their presentation.",
+	  "Someone strikes you.\r\n", false, false },
+	{ OutputChannel::CombatOutgoing, "outgoing", "combat.outgoing",
+	  "Your damage messages; existing attack accents remain protected.",
+	  "You strike someone.\r\n", false, false },
+	{ OutputChannel::CombatObserved, "observed", "combat.observed",
+	  "Damage messages observed in your room.", "Someone strikes a traveler.\r\n", false,
+	  false },
+	{ OutputChannel::Prompt, "prompt", "",
+	  "Standard prompt frame and healthy resources; low-resource warnings and authored names remain distinct.",
+	  "< 100h &+y40m &+R10v&n> \r\n", false, false },
+	{ OutputChannel::SystemFeedback, "feedback", "system.feedback",
+	  "Manual-save completion and failure feedback after the result is known.",
+	  "Save complete for someone.\r\n", false, false },
 	{ OutputChannel::RoomTitle, "title", "room.title",
 	  "Room headings; authored colors remain protected.", "A woodland clearing.\r\n", false,
 	  false },
@@ -150,6 +166,28 @@ std::string preview(const ColorCommandChannel &channel, const OutputProfilePrefe
 		AnsiString(source.c_str()).plain(plain);
 		source = plain;
 	}
+
+	if (channel.channel == OutputChannel::Prompt)
+	{
+		// A synthetic resource sample uses the same threshold and role selection
+		// as make_prompt, including original warnings when no role is configured.
+		source = std::string(output_role_markup(resolved, OutputRole::None, "&+g", true)) +
+			 "< " +
+			 output_role_markup(resolved, prompt_resource_role(100), "&+g", true) +
+			 "100h " + output_role_markup(resolved, prompt_resource_role(40), "&+y") +
+			 "40m " + output_role_markup(resolved, prompt_resource_role(10), "&+r") +
+			 "10v" + output_role_markup(resolved, OutputRole::None, "&+g", true) +
+			 "> &n\r\n";
+	}
+	const OutputRole sample_role = channel.channel == OutputChannel::SystemFeedback ?
+					       OutputRole::Success :
+				       (channel.channel == OutputChannel::CombatIncoming ||
+					channel.channel == OutputChannel::CombatOutgoing ||
+					channel.channel == OutputChannel::CombatObserved) ?
+					       OutputRole::Hit :
+					       OutputRole::None;
+	if (int attr = output_role_attribute(resolved, sample_role))
+		resolved.context.base_attr = attr;
 	std::string styled;
 	if (!render_output_message(source.c_str(), resolved.context, styled))
 		styled = source;

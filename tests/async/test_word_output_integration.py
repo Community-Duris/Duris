@@ -13,7 +13,7 @@ globals_start = comm.index("#define MAX_COMMAND_OUTPUT")
 globals_end = comm.index("#define MIN_SOCKET_BUFFER_SIZE", globals_start)
 functions = [comm[globals_start:globals_end]]
 for filename, signatures in [
-    ("utility.c", ["bool is_ansi_char(", "void CAP(char *str)"]),
+    ("utility.c", ["bool is_ansi_char(", "void CAP(char *str)", "int BOUNDED(int a, int b, int c)"]),
     ("comm.c", ["int get_from_q(", "void write_to_q(",
                 "static void finalize_styled_command(", "void process_with_paging(",
                 "void send_to_char_f(P_char ch, const char *fmt, ...)",
@@ -32,7 +32,9 @@ for filename, signatures in [
                   "void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)",
                   "void list_obj_to_char(P_obj list, P_char ch, int mode, bool show,",
                   "void show_exits_to_char(", "void display_room_auras("]),
-    ("weather.c", ["void send_to_weather_sector("])
+    ("weather.c", ["void send_to_weather_sector("]),
+    ("fight.c", ["void dam_message("]),
+    ("prompt.c", ["void make_prompt("])
 ]:
     functions.extend(extract_function(filename, signature) for signature in signatures)
 

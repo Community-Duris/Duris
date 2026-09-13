@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "player/output_message.h"
 #include "cmd/color_command.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1813,7 +1814,11 @@ static void begin_manual_save_status_wait(P_char ch)
 		return;
 	if (!player_revision_snapshot_copy(status->pid, &revision))
 	{
-		send_to_char_f(ch, "Save failed for %s; please try again.\r\n", GET_NAME(ch));
+		PlayerOutputMessage(ch, OutputChannel::SystemFeedback, OutputRole::Failure)
+			.literal("Save failed for ")
+			.entity(GET_NAME(ch))
+			.literal("; please try again.\r\n")
+			.send(LOG_PUBLIC);
 		clear_manual_save_status(status->pid);
 		return;
 	}
@@ -1835,14 +1840,22 @@ static void check_manual_character_save_status(struct manual_save_status_slot *s
 	if (status->revision && player_revision_snapshot_copy(pid, &revision) &&
 	    revision.acknowledged_revision >= status->revision)
 	{
-		send_to_char_f(ch, "Save complete for %s.\r\n", GET_NAME(ch));
+		PlayerOutputMessage(ch, OutputChannel::SystemFeedback, OutputRole::Success)
+			.literal("Save complete for ")
+			.entity(GET_NAME(ch))
+			.literal(".\r\n")
+			.send(LOG_PUBLIC);
 		clear_manual_save_status(pid);
 		return;
 	}
 	if (persistence_observability_now_usec() - status->started_usec >=
 	    PERSISTENCE_MANUAL_SAVE_TIMEOUT_USEC)
 	{
-		send_to_char_f(ch, "Save failed for %s; please try again.\r\n", GET_NAME(ch));
+		PlayerOutputMessage(ch, OutputChannel::SystemFeedback, OutputRole::Failure)
+			.literal("Save failed for ")
+			.entity(GET_NAME(ch))
+			.literal("; please try again.\r\n")
+			.send(LOG_PUBLIC);
 		clear_manual_save_status(pid);
 		return;
 	}
