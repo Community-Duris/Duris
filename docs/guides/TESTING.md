@@ -78,6 +78,14 @@ the three scripts at the root of `tests/` require explicitly named disposable
 or read-only databases and are manual migration-verification tools. Never point
 them at production.
 
+The MariaDB playtime journey also runs explicitly. Supply `TEST_DB_HOST=127.0.0.1`,
+`TEST_DB_USER`, and `TEST_DB_PASSWORD` for a disposable local database server,
+then run `python3 tests/async/test_mysql_playtime_journey.py --server bin/server/dms_new`
+after a MariaDB server build. The journey creates and removes its own schema and
+invokes `test_playtime_mysql_repository.py` with that schema's environment. Both
+scripts are excluded from argument-free discovery; the database-independent
+playtime capture, checkpoint, legacy SQL, and flat-file tests remain in `make test-all`.
+
 MySQL fixtures that reuse a table within a statement must account for MySQL's
 `Can't reopen table` restriction on connection-local temporary tables; MariaDB
 may accept the same fixture. Use isolated ordinary tables with explicit cleanup
