@@ -27,3 +27,8 @@ class PlayerOutputMessage
 // Only for fixed, known command template wrappers. Use after recipient selection.
 const char *player_output_template(char_data *recipient, OutputChannel channel, const char *legacy,
 				   const char *selected);
+
+// World descriptions can include authored layout. Conservative layout detection
+// is a presentation veto, never a source of gameplay or visibility information.
+OutputContext preserve_authored_layout(const char *message, const OutputContext &context);
+void send_authored_output(const char *message, char_data *recipient, const OutputContext &context);

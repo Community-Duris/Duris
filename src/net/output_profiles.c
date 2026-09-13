@@ -46,6 +46,7 @@ constexpr OutputChannelChoice channels[] = {
 	{ OutputChannel::ChatNchat, "chat.nchat" },
 	{ OutputChannel::ChatJchat, "chat.jchat" },
 	{ OutputChannel::ChatWizmsg, "chat.wizmsg" },
+	{ OutputChannel::RoomItems, "room.items" },
 };
 constexpr OutputPaletteChoice colors[] = {
 	{ "blue", ATTR_FG(17) },	   { "green", ATTR_FG(18) },
@@ -378,6 +379,23 @@ ResolvedOutputProfile resolve_output_profile(std::shared_ptr<const OutputProfile
 	result.sender_attr = profile->sender_attr;
 	result.entity_attr = profile->entity_attr;
 	result.context.snapshot_owner = std::move(snapshot);
+	// Dense semantic fields never acquire word-based meaning or motion. Their
+	// visible state accents are supplied by the caller's existing metadata.
+	switch (channel)
+	{
+	case OutputChannel::RoomTitle:
+	case OutputChannel::RoomExits:
+	case OutputChannel::RoomAuras:
+	case OutputChannel::RoomOccupants:
+	case OutputChannel::ItemsList:
+	case OutputChannel::RoomItems:
+		result.context.policy = OutputPolicy::Static;
+		result.context.words = nullptr;
+		result.context.recipes = nullptr;
+		break;
+	default:
+		break;
+	}
 	return result;
 }
 

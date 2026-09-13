@@ -13,6 +13,7 @@ struct ColorCommandChannel
 	std::string_view description;
 	std::string_view sample;
 	bool modes;
+	bool template_wrappers = true;
 };
 
 std::span<const ColorCommandChannel> color_command_channels();

@@ -23,7 +23,7 @@ The written labels stay readable even when a sample uses a different foreground.
 
 Chat choices are say, tell, guild, shout, yell, whisper, ask, and petition. `reply`
 is an alias for tell; `gcc` is an alias for guild. Channel abbreviations must be
-unambiguous: `t` selects tell, while `s` lists say and shout. Case and repeated
+unambiguous: `tel` selects tell, while `t` lists tell and title and `s` lists the matching speech/social channels. Case and repeated
 whitespace do not matter. Color names must be complete; `purple` suggests magenta
 without applying it. Trailing text such as `tell bright cyan extra` changes nothing.
 
@@ -38,8 +38,11 @@ See [persistence behavior](OUTPUT_PREFERENCES.md) for recovery and durability.
 Room animation requires a configured room profile. If configuration is absent,
 the command says so and retains authored output. Static output and motion-off do
 not change over time. The `room` setting concerns long prose; it does not alter
-the room title or maps. Other presentation branches are added as their output
-paths are adopted. Channel definitions, aliases, choices, and previews are shared
+the room title or maps. World choices also include `title`, `inspect`, `exits`, `auras`, `occupants`,
+`roomitems`, `inventory`, `social`, and `weather`. Weather accepts default/static/animated;
+the other world choices accept the shared color names. Room items and inventory
+are independent. Existing state accents, gradients and artwork stay protected.
+See [world output scope](WORLD_COLORIZATION.md). Channel definitions, aliases, choices, and previews are shared
 by the parser and its discovery text.
 
 The compiled command walkthrough is maintained in

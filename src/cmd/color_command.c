@@ -28,6 +28,32 @@ constexpr ColorCommandChannel commands[] = {
 	{ OutputChannel::ChatPetition, "petition", "",
 	  "Petitions you are permitted to receive and your own echo.",
 	  "Someone petitions 'May I have assistance?'\r\n", false },
+	{ OutputChannel::RoomTitle, "title", "room.title",
+	  "Room headings; authored colors remain protected.", "A woodland clearing.\r\n", false,
+	  false },
+	{ OutputChannel::RoomInspect, "inspect", "room.inspect",
+	  "Inspection prose; artwork retains its authored layout.",
+	  "A stream flows beneath the roots.\r\n", false, false },
+	{ OutputChannel::RoomExits, "exits", "room.exits",
+	  "Visible exits; existing state markers retain their colors.",
+	  "Obvious exits: &+c-North&n &+g#&n\r\n", false, false },
+	{ OutputChannel::RoomAuras, "auras", "room.auras",
+	  "Visible room auras; authored semantic accents remain protected.",
+	  "A &+Bsoothing&n aura fills the area.\r\n", false, false },
+	{ OutputChannel::RoomOccupants, "occupants", "room.occupants",
+	  "Visible room occupants; authored names and status accents are retained.",
+	  "A traveler is standing here.\r\n", false, false },
+	{ OutputChannel::RoomItems, "roomitems", "room.items",
+	  "Items visible in the room; existing flags retain their colors.",
+	  "A chest lies here. (&+bmagic&n)\r\n", false, false },
+	{ OutputChannel::ItemsList, "inventory", "items.list",
+	  "Your inventory; independent from items in the room.", "A silver ring (&+Mglowing&n)\r\n",
+	  false, false },
+	{ OutputChannel::Social, "social", "", "Social actions visible to you and your own echo.",
+	  "Someone smiles at you.\r\n", false, false },
+	{ OutputChannel::Weather, "weather", "",
+	  "Weather visible to you; authored colors remain protected.",
+	  "Rain falls beneath the clouds.\r\n", true, false },
 	{ OutputChannel::RoomDescription, "room", "room.description",
 	  "Long room prose; titles and maps have separate presentation. Animated moves only on new eligible output.",
 	  "A stream winds through the forest beneath the stars.\r\n", true },
@@ -118,7 +144,7 @@ std::string preview(const ColorCommandChannel &channel, const OutputProfilePrefe
 	// These fixed samples contain only known template wrappers. Authored player
 	// text is never passed through this template conversion.
 	std::string source(channel.sample);
-	if (resolved.context.policy != OutputPolicy::Preserve)
+	if (channel.template_wrappers && resolved.context.policy != OutputPolicy::Preserve)
 	{
 		char plain[MAX_STRING_LENGTH];
 		AnsiString(source.c_str()).plain(plain);
