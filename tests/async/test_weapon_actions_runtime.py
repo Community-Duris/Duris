@@ -51,6 +51,8 @@ callbacks = "\n".join([
 
 DOUBLES = r'''
 #include "item/weapon_actions.c"
+#include "item/native_artifact_actions.h"
+bool native_artifact_owns(int) { return false; }
 #include "item/artifact_mana_model.c"
 #include "combat/damage.h"
 #include <deque>

@@ -12,6 +12,7 @@
 #include "item/weapon_actions.h"
 #include "item/device_actions.h"
 #include "item/studio_abilities.h"
+#include "item/native_artifact_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -141,6 +142,7 @@ void apply_properties()
 	update_weapon_action_properties();
 	update_device_action_properties();
 	update_studio_ability_properties();
+	update_native_artifact_properties();
 	// First, so the tables rebuilt below (the experience table) see the current dials.
 	update_difficulty_dials();
 	update_stat_data();

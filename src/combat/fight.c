@@ -14,6 +14,7 @@
 #include "net/output_style.h"
 #include "item/item_actions.h"
 #include "item/weapon_actions.h"
+#include "item/native_artifact_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "core/files.h"
@@ -7956,6 +7957,15 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 	int spells[3];
 	int room;
 	int count;
+	// These native state machines use values[5..7] for state, not packed spells.
+	// A retained positive legacy energy value must not select the generic path.
+	if ((OBJ_VNUM(obj) == 21 || OBJ_VNUM(obj) == 22) && native_artifact_owns(OBJ_VNUM(obj)))
+	{
+		if (obj_index[obj->R_num].func.obj)
+			return (*obj_index[obj->R_num].func.obj)(obj, ch, CMD_MELEE_HIT,
+								 (char *)victim);
+		return FALSE;
+	}
 
 	if (!obj->value[5] || obj->value[7] <= 0)
 	{

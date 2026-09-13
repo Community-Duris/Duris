@@ -141,7 +141,7 @@ must not be used as a substitute for durable mana or a durable economy limit.
 | --- | --- |
 | Object HIT / `CMD_MELEE_HIT` | Existing hit callback; observes the original struck character and schedules future selected effects. It does not intercept the damage that already triggered it. |
 | Object `CMD use` | Existing command callback before the ordinary wrapper; captures addressed source and original activator. |
-| Existing GOT_HIT / GOT_NUKED | Remain legacy post-resolution callbacks with `proc_data`; no pretend pre-damage reflection via this delayed action. |
+| Existing GOT_HIT / GOT_NUKED | Remain native callbacks with `proc_data`. Timing belongs to each combat call site: equipped GOT_NUKED interception runs before incoming damage, and returning true suppresses that damage. Version 1 JSON cannot implement a synchronous intercept through a delayed action. |
 | Extraction, departure, unequip, transfer | Shared cancellation hooks; never retained-pointer callbacks. |
 | Reactive interception / stateful form changes | Require the narrow native adapters in #296, with explicit pre/post-resolution semantics and shared mana identity. Not accepted by version 1 JSON. |
 

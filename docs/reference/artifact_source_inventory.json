@@ -1,0 +1,5039 @@
+{
+  "corpus": "Tracked areas/AREA in file order; artifact flag in object template extra_flags",
+  "liveAvailabilityVerified": false,
+  "configuration": "Compiler defaults; THARKUN_ARTIS enabled",
+  "counts": {
+    "templates": 169,
+    "literalBindings": 78,
+    "callbacks": 67,
+    "withoutLiteralBinding": 91,
+    "goldenTokenPlaceholders": 29
+  },
+  "templates": [
+    {
+      "vnum": 17,
+      "source": "areas/obj/heavens.obj",
+      "line": 115,
+      "name": "a mystical warhammer",
+      "keywords": "hammer warhammer mystical kelrarin",
+      "type": 5,
+      "extraFlags": 285484817,
+      "wearFlags": 8193,
+      "extra2Flags": 65,
+      "values": [
+        4,
+        5,
+        5,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "barb",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 21,
+      "source": "areas/obj/heavens.obj",
+      "line": 180,
+      "name": "'Mayhem', chaotic sword of the night",
+      "keywords": "mayhem sword chaotic",
+      "type": 5,
+      "extraFlags": 306257920,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        8,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "good_evil_sword",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "default-off pilot: Mayhem"
+    },
+    {
+      "vnum": 22,
+      "source": "areas/obj/heavens.obj",
+      "line": 192,
+      "name": "'Symmetry', the uniform sword of light",
+      "keywords": "symmetry light sword uniform",
+      "type": 5,
+      "extraFlags": 306257920,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        8,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "good_evil_sword",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "default-off pilot: Symmetry"
+    },
+    {
+      "vnum": 30,
+      "source": "areas/obj/heavens.obj",
+      "line": 333,
+      "name": "a skull headed staff of power",
+      "keywords": "staff power",
+      "type": 4,
+      "extraFlags": 305538049,
+      "wearFlags": 24577,
+      "extra2Flags": 64,
+      "values": [
+        60,
+        100,
+        100,
+        166,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "staff_of_power",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "do_recite/do_use: native scroll/wand/staff dispatch",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 58,
+      "source": "areas/obj/heavens.obj",
+      "line": 836,
+      "name": "The Holy Relic of the True Gods",
+      "keywords": "relic true holy divine",
+      "type": 13,
+      "extraFlags": 302030848,
+      "wearFlags": 536772607,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "relic_proc",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 59,
+      "source": "areas/obj/heavens.obj",
+      "line": 846,
+      "name": "The blood-splattered Relic of the Undead Kings",
+      "keywords": "relic undead kings blood",
+      "type": 12,
+      "extraFlags": 302030856,
+      "wearFlags": 532578303,
+      "extra2Flags": 66,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "relic_proc",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 68,
+      "source": "areas/obj/heavens.obj",
+      "line": 952,
+      "name": "The ancient Relic of the Spider Queen LLoth",
+      "keywords": "relic evil ancient spider lloth",
+      "type": 13,
+      "extraFlags": 302030849,
+      "wearFlags": 532578303,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "relic_proc",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 69,
+      "source": "areas/obj/heavens.obj",
+      "line": 962,
+      "name": "the hammer of earthen creation",
+      "keywords": "hammer creation unique",
+      "type": 5,
+      "extraFlags": 275784961,
+      "wearFlags": 8193,
+      "extra2Flags": 66,
+      "values": [
+        4,
+        2,
+        15,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "cold_hammer",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 401,
+      "source": "areas/obj/heavens.obj",
+      "line": 4187,
+      "name": "a dark brown ioun stone",
+      "keywords": "white ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 424,
+      "source": "areas/obj/heavens.obj",
+      "line": 4472,
+      "name": "a wispy astral-twined mindstone ring",
+      "keywords": "ring wispy astral unique",
+      "type": 9,
+      "extraFlags": 271589896,
+      "wearFlags": 540675,
+      "extra2Flags": 0,
+      "values": [
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "lucrot_mindstone",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 425,
+      "source": "areas/obj/heavens.obj",
+      "line": 4495,
+      "name": "the holy avenger of Ambran",
+      "keywords": "holy sword avenger ambran unique",
+      "type": 5,
+      "extraFlags": 272901121,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        6,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "holy_weapon",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 430,
+      "source": "areas/obj/heavens.obj",
+      "line": 4554,
+      "name": "the holy flamberge of the efreeti",
+      "keywords": "holy flamberge efreeti sword",
+      "type": 5,
+      "extraFlags": 272900361,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        8,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "flamberge",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 790,
+      "source": "areas/obj/heavens.obj",
+      "line": 7419,
+      "name": "the standard of the Good Races of Duris",
+      "keywords": "flag standard good",
+      "type": 8,
+      "extraFlags": 469884936,
+      "wearFlags": 0,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 791,
+      "source": "areas/obj/heavens.obj",
+      "line": 7427,
+      "name": "the standard of the Evil Races of Duris",
+      "keywords": "flag standard evil",
+      "type": 8,
+      "extraFlags": 469884936,
+      "wearFlags": 0,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 900,
+      "source": "areas/obj/heavens.obj",
+      "line": 8246,
+      "name": "a bright purple ioun stone",
+      "keywords": "blue ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 901,
+      "source": "areas/obj/heavens.obj",
+      "line": 8258,
+      "name": "a bright red ioun stone",
+      "keywords": "red ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 902,
+      "source": "areas/obj/heavens.obj",
+      "line": 8268,
+      "name": "a bright blue ioun stone",
+      "keywords": "green ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 903,
+      "source": "areas/obj/heavens.obj",
+      "line": 8280,
+      "name": "a dark yellow ioun stone",
+      "keywords": "yellow ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 904,
+      "source": "areas/obj/heavens.obj",
+      "line": 8290,
+      "name": "a dark red ioun stone",
+      "keywords": "red ioun stone",
+      "type": 9,
+      "extraFlags": 268439552,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 905,
+      "source": "areas/obj/heavens.obj",
+      "line": 8300,
+      "name": "a dark green ioun stone",
+      "keywords": "green ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 906,
+      "source": "areas/obj/heavens.obj",
+      "line": 8310,
+      "name": "a dark purple ioun stone",
+      "keywords": "purple ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 907,
+      "source": "areas/obj/heavens.obj",
+      "line": 8320,
+      "name": "a dark cyan ioun stone",
+      "keywords": "cyan ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 908,
+      "source": "areas/obj/heavens.obj",
+      "line": 8330,
+      "name": "a dark blue ioun stone",
+      "keywords": "blue ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 909,
+      "source": "areas/obj/heavens.obj",
+      "line": 8340,
+      "name": "a soft white ioun stone",
+      "keywords": "white ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 910,
+      "source": "areas/obj/heavens.obj",
+      "line": 8352,
+      "name": "a bright green ioun stone",
+      "keywords": "green ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "artifact_biofeedback",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 911,
+      "source": "areas/obj/heavens.obj",
+      "line": 8360,
+      "name": "a dark ioun stone",
+      "keywords": "dark ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "artifact_stone",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 912,
+      "source": "areas/obj/heavens.obj",
+      "line": 8368,
+      "name": "a rainbow colored ioun stone",
+      "keywords": "rainbow ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 913,
+      "source": "areas/obj/heavens.obj",
+      "line": 8376,
+      "name": "a swirling ioun stone",
+      "keywords": "swirling blue ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 914,
+      "source": "areas/obj/heavens.obj",
+      "line": 8384,
+      "name": "a BRIGHT blue ioun stone",
+      "keywords": "bright blue ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 915,
+      "source": "areas/obj/heavens.obj",
+      "line": 8394,
+      "name": "a LARGE blue ioun stone",
+      "keywords": "large blue ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 916,
+      "source": "areas/obj/heavens.obj",
+      "line": 8404,
+      "name": "a glowing white ioun stone",
+      "keywords": "glowing white ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 917,
+      "source": "areas/obj/heavens.obj",
+      "line": 8412,
+      "name": "a flaming ioun stone",
+      "keywords": "flaming ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 918,
+      "source": "areas/obj/heavens.obj",
+      "line": 8420,
+      "name": "an icy ioun stone",
+      "keywords": "chilly ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 919,
+      "source": "areas/obj/heavens.obj",
+      "line": 8428,
+      "name": "a deep blue ioun stone",
+      "keywords": "deep blue ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "ioun_sustenance",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 920,
+      "source": "areas/obj/heavens.obj",
+      "line": 8436,
+      "name": "a phased ioun stone",
+      "keywords": "phased ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "ioun_warp",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 921,
+      "source": "areas/obj/heavens.obj",
+      "line": 8444,
+      "name": "a LARGE green ioun stone",
+      "keywords": "large green ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 922,
+      "source": "areas/obj/heavens.obj",
+      "line": 8456,
+      "name": "a mirrored ioun stone",
+      "keywords": "mirrored ioun stone",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "deflect_ioun",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "default-off pilot: mirrored ioun"
+    },
+    {
+      "vnum": 923,
+      "source": "areas/obj/heavens.obj",
+      "line": 8464,
+      "name": "Orcus' Left Testicle",
+      "keywords": "left testicle orcus",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "ioun_testicle",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 924,
+      "source": "areas/obj/heavens.obj",
+      "line": 8472,
+      "name": "Orcus' Left Testicle",
+      "keywords": "left testicle orcus",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "ioun_testicle",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 925,
+      "source": "areas/obj/heavens.obj",
+      "line": 8480,
+      "name": "Orcus' Left Testicle",
+      "keywords": "left testicle orcus",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "ioun_testicle",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 926,
+      "source": "areas/obj/heavens.obj",
+      "line": 8488,
+      "name": "Orcus' Left Testicle",
+      "keywords": "left testicle orcus",
+      "type": 9,
+      "extraFlags": 268435456,
+      "wearFlags": 268435457,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "ioun_testicle",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 1210,
+      "source": "areas/obj/heavens.obj",
+      "line": 9368,
+      "name": "tendrils of shadowy mist",
+      "keywords": "tendrils shadowy mist",
+      "type": 9,
+      "extraFlags": 268444681,
+      "wearFlags": 129,
+      "extra2Flags": 65,
+      "values": [
+        15,
+        0,
+        0,
+        5,
+        1,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "tendrils",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 1220,
+      "source": "areas/obj/heavens.obj",
+      "line": 9475,
+      "name": "Lyrical Instrument of Time",
+      "keywords": "lyrical instrument time",
+      "type": 32,
+      "extraFlags": 271721473,
+      "wearFlags": 8404993,
+      "extra2Flags": 65,
+      "values": [
+        184,
+        56,
+        0,
+        20,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "lyrical_instrument_of_time",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 1222,
+      "source": "areas/obj/heavens.obj",
+      "line": 9493,
+      "name": "the God Stone",
+      "keywords": "god stone nobody",
+      "type": 13,
+      "extraFlags": 302096392,
+      "wearFlags": 16385,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "gfstone",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 1230,
+      "source": "areas/obj/heavens.obj",
+      "line": 9638,
+      "name": "the Totem of Mastery",
+      "keywords": "totem mastery",
+      "type": 34,
+      "extraFlags": 268444673,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        63,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "totem_of_mastery",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 6818,
+      "source": "areas/obj/dragonnia.obj",
+      "line": 299,
+      "name": "the totem of the ancient dragon riders",
+      "keywords": "totem ancient",
+      "type": 34,
+      "extraFlags": 268436480,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        63,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "resurrect_totem",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 6826,
+      "source": "areas/obj/dragonnia.obj",
+      "line": 437,
+      "name": "the mystic axe of the dragonkind",
+      "keywords": "axe mystic dragonkind",
+      "type": 5,
+      "extraFlags": 369107224,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        1,
+        5,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "dragonkind",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 16242,
+      "source": "areas/obj/trnsptow.obj",
+      "line": 674,
+      "name": "the mace of light and darkness",
+      "keywords": "mace light darkness",
+      "type": 5,
+      "extraFlags": 268607488,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        6,
+        5,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "zion_light_dark",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 16262,
+      "source": "areas/obj/trnsptow.obj",
+      "line": 994,
+      "name": "the globe of shadows",
+      "keywords": "globe shadows",
+      "type": 11,
+      "extraFlags": 268543008,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "trans_tower_shadow_globe",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 19730,
+      "source": "areas/obj/astral_main.obj",
+      "line": 285,
+      "name": "Avernus the life stealer",
+      "keywords": "avernus sword life stealing",
+      "type": 5,
+      "extraFlags": 272637953,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        6,
+        8,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "avernus",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "default-off pilot: Avernus"
+    },
+    {
+      "vnum": 22070,
+      "source": "areas/obj/cerebusp.obj",
+      "line": 1109,
+      "name": "the icecrown of the frost revenants",
+      "keywords": "icecrown crown icy revenant",
+      "type": 9,
+      "extraFlags": 268436481,
+      "wearFlags": 17,
+      "extra2Flags": 64,
+      "values": [
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "revenant_helm",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 23206,
+      "source": "areas/obj/plane_water_one.obj",
+      "line": 71,
+      "name": "the orb of the sea",
+      "keywords": "orb sea unique",
+      "type": 5,
+      "extraFlags": 268444673,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        3,
+        4,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "orb_of_the_sea",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 23805,
+      "source": "areas/obj/plane_earth_one.obj",
+      "line": 56,
+      "name": "the mace of the earth",
+      "keywords": "mace earth unique",
+      "type": 5,
+      "extraFlags": 272638977,
+      "wearFlags": 8193,
+      "extra2Flags": 65,
+      "values": [
+        6,
+        7,
+        6,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "zion_mace_of_earth",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 24406,
+      "source": "areas/obj/plane_air_one.obj",
+      "line": 81,
+      "name": "the sphere of wind",
+      "keywords": "sphere wind",
+      "type": 5,
+      "extraFlags": 285222161,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        5,
+        5,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "lightning",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 25710,
+      "source": "areas/obj/bahamut.obj",
+      "line": 177,
+      "name": "the granite dagger 'BloodFeast'",
+      "keywords": "dagger bloodfeast granite unique",
+      "type": 5,
+      "extraFlags": 285222160,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        2,
+        4,
+        4,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "bloodfeast",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 25723,
+      "source": "areas/obj/bahamut.obj",
+      "line": 398,
+      "name": "the platemail of the DragonLord",
+      "keywords": "plate platemail dragonlord",
+      "type": 9,
+      "extraFlags": 268443648,
+      "wearFlags": 9,
+      "extra2Flags": 64,
+      "values": [
+        50,
+        3,
+        1,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "dragonlord_plate",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 25745,
+      "source": "areas/obj/bahamut.obj",
+      "line": 733,
+      "name": "Sunblade, longsword of Justice",
+      "keywords": "sunblade longsword sword justice",
+      "type": 5,
+      "extraFlags": 271720456,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        5,
+        4,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "sunblade",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 26665,
+      "source": "areas/obj/negplane.obj",
+      "line": 1015,
+      "name": "a cloak of Elvenkind",
+      "keywords": "cloak elvenkind",
+      "type": 9,
+      "extraFlags": 305275905,
+      "wearFlags": 17409,
+      "extra2Flags": 2,
+      "values": [
+        20,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "elvenkind_cloak",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 26666,
+      "source": "areas/obj/negplane.obj",
+      "line": 1035,
+      "name": "a pair of pale, misty gloves",
+      "keywords": "pale misty gloves",
+      "type": 9,
+      "extraFlags": 271623168,
+      "wearFlags": 16513,
+      "extra2Flags": 2,
+      "values": [
+        15,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "transp_tow_misty_gloves",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 28973,
+      "source": "areas/obj/torg.obj",
+      "line": 1123,
+      "name": "an obsidian buckle named \"Rage\"",
+      "keywords": "obsidian buckle rage unique",
+      "type": 9,
+      "extraFlags": 302096393,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        1,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 31514,
+      "source": "areas/obj/seakngdm.obj",
+      "line": 221,
+      "name": "Tsunami, the trident of storms",
+      "keywords": "tsunami trident sea unique",
+      "type": 5,
+      "extraFlags": 352331032,
+      "wearFlags": 8193,
+      "extra2Flags": 66,
+      "values": [
+        12,
+        4,
+        8,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "SeaKingdom_Tsunami",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "default-off pilot: Tsunami"
+    },
+    {
+      "vnum": 32619,
+      "source": "areas/obj/eth2.obj",
+      "line": 238,
+      "name": "the stone mace 'Godsfury'",
+      "keywords": "mace godsfury unique",
+      "type": 5,
+      "extraFlags": 268444672,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        6,
+        3,
+        8,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "eth2_godsfury",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 32621,
+      "source": "areas/obj/eth2.obj",
+      "line": 271,
+      "name": "the crown of Aramus",
+      "keywords": "crown aramus unique",
+      "type": 9,
+      "extraFlags": 301990913,
+      "wearFlags": 17,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "eth2_aramus_crown",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 32817,
+      "source": "areas/obj/shabo.obj",
+      "line": 210,
+      "name": "the staff of the magi",
+      "keywords": "staff magi _artifact_",
+      "type": 5,
+      "extraFlags": 271746048,
+      "wearFlags": 24577,
+      "extra2Flags": 64,
+      "values": [
+        12,
+        8,
+        8,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 32822,
+      "source": "areas/obj/shabo.obj",
+      "line": 258,
+      "name": "Chaos, The Unholy Avenger",
+      "keywords": "chaos unholy avenger sword _artifact_",
+      "type": 5,
+      "extraFlags": 275940352,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        5,
+        8,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "holy_weapon",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 32827,
+      "source": "areas/obj/shabo.obj",
+      "line": 312,
+      "name": "the cloak of the stalker",
+      "keywords": "cloak stalker _unique_",
+      "type": 11,
+      "extraFlags": 268607520,
+      "wearFlags": 1025,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 32836,
+      "source": "areas/obj/shabo.obj",
+      "line": 404,
+      "name": "the totem of Mox",
+      "keywords": "totem mox unique",
+      "type": 34,
+      "extraFlags": 305312768,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        63,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "mox_totem",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 41203,
+      "source": "areas/obj/shadamehr_keep.obj",
+      "line": 17,
+      "name": "the unholy avenger named 'Bloodlust'",
+      "keywords": "sword unholy avenger bloodlust unique",
+      "type": 5,
+      "extraFlags": 268443649,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        5,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "unholy_avenger_bloodlust",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 43569,
+      "source": "areas/obj/earth.obj",
+      "line": 1200,
+      "name": "a ball of negative energy",
+      "keywords": "ball negative energy",
+      "type": 11,
+      "extraFlags": 268500992,
+      "wearFlags": 268435457,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 45525,
+      "source": "areas/obj/celestia.obj",
+      "line": 361,
+      "name": "'Einjar' the titan shield of purity",
+      "keywords": "shield purity einjar unique",
+      "type": 37,
+      "extraFlags": 271754241,
+      "wearFlags": 513,
+      "extra2Flags": 64,
+      "values": [
+        1,
+        2,
+        5,
+        200,
+        5,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "Einjar",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 51005,
+      "source": "areas/obj/hell_one_avernus.obj",
+      "line": 45,
+      "name": "a blood red sword named 'Death Rider'",
+      "keywords": "sword death rider deathrider blood red unique",
+      "type": 5,
+      "extraFlags": 272638977,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        6,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "holy_weapon",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 51006,
+      "source": "areas/obj/hell_one_avernus.obj",
+      "line": 64,
+      "name": "Tiamat's poison tail stinger",
+      "keywords": "tiamat stinger tail poison",
+      "type": 5,
+      "extraFlags": 271594496,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        2,
+        7,
+        3,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "tiamat_stinger",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 51401,
+      "source": "areas/obj/hell_two_dis.obj",
+      "line": 1,
+      "name": "the rod of Dispator",
+      "keywords": "rod dispator",
+      "type": 5,
+      "extraFlags": 303178001,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        6,
+        6,
+        6,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "dispator",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 55306,
+      "source": "areas/obj/wh.obj",
+      "line": 3779,
+      "name": "the mystical longsword of Volo the Traveler",
+      "keywords": "mystical longsword volo traveler _noquest_",
+      "type": 5,
+      "extraFlags": 268444744,
+      "wearFlags": 8193,
+      "extra2Flags": 66,
+      "values": [
+        5,
+        5,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "volo_longsword",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 55377,
+      "source": "areas/obj/wh.obj",
+      "line": 4552,
+      "name": "a gladius called 'Backstabber'",
+      "keywords": "gladius backstabber _noquest_",
+      "type": 5,
+      "extraFlags": 268444737,
+      "wearFlags": 8193,
+      "extra2Flags": 72,
+      "values": [
+        2,
+        6,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "gladius_backstabber",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67200,
+      "source": "areas/obj/unique.obj",
+      "line": 1,
+      "name": "Bahamut's mask of vigor",
+      "keywords": "mask bahamut vigor unique",
+      "type": 8,
+      "extraFlags": 335651849,
+      "wearFlags": 278529,
+      "extra2Flags": 65,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "vigor_mask",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67201,
+      "source": "areas/obj/unique.obj",
+      "line": 32,
+      "name": "the platemail of the Dragon Horde",
+      "keywords": "platemail dragon horde unique",
+      "type": 9,
+      "extraFlags": 268443657,
+      "wearFlags": 16393,
+      "extra2Flags": 64,
+      "values": [
+        50,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67202,
+      "source": "areas/obj/unique.obj",
+      "line": 44,
+      "name": "the boots of inertia",
+      "keywords": "boots inertia",
+      "type": 9,
+      "extraFlags": 335586305,
+      "wearFlags": 16449,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67203,
+      "source": "areas/obj/unique.obj",
+      "line": 60,
+      "name": "a haze of swirling green vapor",
+      "keywords": "unique vapor swirling haze green",
+      "type": 9,
+      "extraFlags": 335655049,
+      "wearFlags": 33,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "vapor",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67204,
+      "source": "areas/obj/unique.obj",
+      "line": 87,
+      "name": "misty tendrils of shadow",
+      "keywords": "tendrils shadow misty wisps darkness unique",
+      "type": 9,
+      "extraFlags": 268443649,
+      "wearFlags": 16393,
+      "extra2Flags": 64,
+      "values": [
+        40,
+        0,
+        0,
+        5,
+        1,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67205,
+      "source": "areas/obj/unique.obj",
+      "line": 103,
+      "name": "the ethereal blade",
+      "keywords": "blade ether ethereal unique",
+      "type": 5,
+      "extraFlags": 268443904,
+      "wearFlags": 8396801,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        5,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67206,
+      "source": "areas/obj/unique.obj",
+      "line": 120,
+      "name": "the wicked-looking scimitar of Demogorgon",
+      "keywords": "scimitar wicked unique",
+      "type": 5,
+      "extraFlags": 285222144,
+      "wearFlags": 8413185,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        3,
+        8,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "demo_scimitar",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67207,
+      "source": "areas/obj/unique.obj",
+      "line": 132,
+      "name": "a swirling staff of air conjuration",
+      "keywords": "staff air swirling magic unique",
+      "type": 4,
+      "extraFlags": 286401793,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        56,
+        0,
+        1,
+        264,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "staff_of_air_conjuration",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "do_recite/do_use: native scroll/wand/staff dispatch",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67208,
+      "source": "areas/obj/unique.obj",
+      "line": 151,
+      "name": "the three-pronged totem of the Naga Queen",
+      "keywords": "totem three pronged three-pronged naga queen unique",
+      "type": 34,
+      "extraFlags": 268444672,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        63,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67209,
+      "source": "areas/obj/unique.obj",
+      "line": 163,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67210,
+      "source": "areas/obj/unique.obj",
+      "line": 176,
+      "name": "the orb of elemental fire",
+      "keywords": "orb fire flame elemental unique",
+      "type": 11,
+      "extraFlags": 268444673,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67211,
+      "source": "areas/obj/unique.obj",
+      "line": 192,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 13,
+      "extraFlags": 268541953,
+      "wearFlags": 8404993,
+      "extra2Flags": 64,
+      "values": [
+        15,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67212,
+      "source": "areas/obj/unique.obj",
+      "line": 205,
+      "name": "a carved dragonbone longbow called \"Eternity\"",
+      "keywords": "dragonbone eternity bow longbow carved unique",
+      "type": 6,
+      "extraFlags": 272900097,
+      "wearFlags": 8193,
+      "extra2Flags": 66,
+      "values": [
+        140,
+        140,
+        40,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67213,
+      "source": "areas/obj/unique.obj",
+      "line": 225,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67214,
+      "source": "areas/obj/unique.obj",
+      "line": 238,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67215,
+      "source": "areas/obj/unique.obj",
+      "line": 251,
+      "name": "a belt of iron solidarity",
+      "keywords": "belt iron solidarity unique",
+      "type": 9,
+      "extraFlags": 268443648,
+      "wearFlags": 18433,
+      "extra2Flags": 64,
+      "values": [
+        7,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "artifact_biofeedback",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67216,
+      "source": "areas/obj/unique.obj",
+      "line": 259,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67217,
+      "source": "areas/obj/unique.obj",
+      "line": 272,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67218,
+      "source": "areas/obj/unique.obj",
+      "line": 285,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67219,
+      "source": "areas/obj/unique.obj",
+      "line": 298,
+      "name": "the dark heart of Dreggan Wood",
+      "keywords": "heart dark black unique",
+      "type": 37,
+      "extraFlags": 268444161,
+      "wearFlags": 16897,
+      "extra2Flags": 64,
+      "values": [
+        1,
+        5,
+        3,
+        5,
+        4,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67220,
+      "source": "areas/obj/unique.obj",
+      "line": 316,
+      "name": "a shaped chunk from a golem",
+      "keywords": "chunk shaped golem unique",
+      "type": 9,
+      "extraFlags": 268443649,
+      "wearFlags": 16393,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "golem_chunk",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67222,
+      "source": "areas/obj/unique.obj",
+      "line": 339,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67223,
+      "source": "areas/obj/unique.obj",
+      "line": 352,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67224,
+      "source": "areas/obj/unique.obj",
+      "line": 365,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67225,
+      "source": "areas/obj/unique.obj",
+      "line": 378,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67226,
+      "source": "areas/obj/unique.obj",
+      "line": 391,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67227,
+      "source": "areas/obj/unique.obj",
+      "line": 404,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67228,
+      "source": "areas/obj/unique.obj",
+      "line": 417,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67229,
+      "source": "areas/obj/unique.obj",
+      "line": 430,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67230,
+      "source": "areas/obj/unique.obj",
+      "line": 443,
+      "name": "the eyes of the mindflayer",
+      "keywords": "eyes mindflayer unique",
+      "type": 11,
+      "extraFlags": 268443649,
+      "wearFlags": 147457,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67231,
+      "source": "areas/obj/unique.obj",
+      "line": 459,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67232,
+      "source": "areas/obj/unique.obj",
+      "line": 472,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67233,
+      "source": "areas/obj/unique.obj",
+      "line": 485,
+      "name": "some platemail of colorless salamander scales",
+      "keywords": "platemail salamander scales unique",
+      "type": 9,
+      "extraFlags": 268443648,
+      "wearFlags": 16393,
+      "extra2Flags": 64,
+      "values": [
+        20,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67234,
+      "source": "areas/obj/unique.obj",
+      "line": 497,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67235,
+      "source": "areas/obj/unique.obj",
+      "line": 510,
+      "name": "the robe of Lost Souls",
+      "keywords": "robe lost souls unique",
+      "type": 9,
+      "extraFlags": 268444672,
+      "wearFlags": 17417,
+      "extra2Flags": 64,
+      "values": [
+        15,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67236,
+      "source": "areas/obj/unique.obj",
+      "line": 529,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67237,
+      "source": "areas/obj/unique.obj",
+      "line": 542,
+      "name": "the blade of the entwined dark serpent",
+      "keywords": "blade serpent unique",
+      "type": 5,
+      "extraFlags": 285222144,
+      "wearFlags": 8396801,
+      "extra2Flags": 64,
+      "values": [
+        2,
+        4,
+        4,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "serpent_blade",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67238,
+      "source": "areas/obj/unique.obj",
+      "line": 554,
+      "name": "some platinum linked sleeves of life",
+      "keywords": "sleeves platinum life unique",
+      "type": 9,
+      "extraFlags": 268443648,
+      "wearFlags": 16641,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67239,
+      "source": "areas/obj/unique.obj",
+      "line": 566,
+      "name": "a large gold-rimmed church door",
+      "keywords": "door large gold rimmed gold-rimmed church unique",
+      "type": 37,
+      "extraFlags": 268443648,
+      "wearFlags": 16897,
+      "extra2Flags": 64,
+      "values": [
+        1,
+        3,
+        5,
+        250,
+        5,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "church_door",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67240,
+      "source": "areas/obj/unique.obj",
+      "line": 605,
+      "name": "the black skull of Sakaslan, the destroyer",
+      "keywords": "dragon sakaslan skull unique",
+      "type": 9,
+      "extraFlags": 268447744,
+      "wearFlags": 17,
+      "extra2Flags": 64,
+      "values": [
+        -40,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67241,
+      "source": "areas/obj/unique.obj",
+      "line": 624,
+      "name": "Utgard-Loki's crystal ball",
+      "keywords": "ball ice crystal unique",
+      "type": 11,
+      "extraFlags": 268477440,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67242,
+      "source": "areas/obj/unique.obj",
+      "line": 638,
+      "name": "the twisted spine and skull of the Lich Lord",
+      "keywords": "spine twisted staff lich lord unique",
+      "type": 5,
+      "extraFlags": 268477440,
+      "wearFlags": 24577,
+      "extra2Flags": 64,
+      "values": [
+        12,
+        5,
+        5,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "lich_spine",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67243,
+      "source": "areas/obj/unique.obj",
+      "line": 660,
+      "name": "the Living Necroplasm",
+      "keywords": "necroplasm plasm blob",
+      "type": 9,
+      "extraFlags": 268444704,
+      "wearFlags": 1,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "living_necroplasm",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "default-off pilot: living necroplasm"
+    },
+    {
+      "vnum": 67244,
+      "source": "areas/obj/unique.obj",
+      "line": 676,
+      "name": "the band of emerald flames",
+      "keywords": "band emerald flames unique",
+      "type": 9,
+      "extraFlags": 268444672,
+      "wearFlags": 20481,
+      "extra2Flags": 64,
+      "values": [
+        11,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "artifact_stone",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67245,
+      "source": "areas/obj/unique.obj",
+      "line": 686,
+      "name": "a lightning rod composed of pure magic",
+      "keywords": "lightning rod unique",
+      "type": 5,
+      "extraFlags": 335586313,
+      "wearFlags": 24577,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        4,
+        4,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "rod_of_magic",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67246,
+      "source": "areas/obj/unique.obj",
+      "line": 704,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67247,
+      "source": "areas/obj/unique.obj",
+      "line": 717,
+      "name": "a shimmering golden Ttken",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67248,
+      "source": "areas/obj/unique.obj",
+      "line": 730,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67249,
+      "source": "areas/obj/unique.obj",
+      "line": 743,
+      "name": "the dirk of vigor",
+      "keywords": "dirk vigor unique",
+      "type": 5,
+      "extraFlags": 285222152,
+      "wearFlags": 8413185,
+      "extra2Flags": 64,
+      "values": [
+        2,
+        4,
+        4,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67250,
+      "source": "areas/obj/unique.obj",
+      "line": 761,
+      "name": "a gilded Songbird charm",
+      "keywords": "songbird charm gilded unique",
+      "type": 9,
+      "extraFlags": 335590409,
+      "wearFlags": 20481,
+      "extra2Flags": 64,
+      "values": [
+        15,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67251,
+      "source": "areas/obj/unique.obj",
+      "line": 788,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67252,
+      "source": "areas/obj/unique.obj",
+      "line": 801,
+      "name": "a frost-covered braided necklace",
+      "keywords": "necklace braided frost ice unique",
+      "type": 11,
+      "extraFlags": 268443656,
+      "wearFlags": 16389,
+      "extra2Flags": 65,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67253,
+      "source": "areas/obj/unique.obj",
+      "line": 818,
+      "name": "the instrument of lyrical mastery",
+      "keywords": "instrument lyrical mastery box unique",
+      "type": 32,
+      "extraFlags": 268444680,
+      "wearFlags": 8404993,
+      "extra2Flags": 64,
+      "values": [
+        184,
+        56,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67254,
+      "source": "areas/obj/unique.obj",
+      "line": 840,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67255,
+      "source": "areas/obj/unique.obj",
+      "line": 853,
+      "name": "a set of gartham hide sleeves",
+      "keywords": "sleeves gartham unique",
+      "type": 9,
+      "extraFlags": 268443656,
+      "wearFlags": 16641,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67256,
+      "source": "areas/obj/unique.obj",
+      "line": 871,
+      "name": "the glittering cloak of the sprite queen, Faelarae",
+      "keywords": "cloak unique",
+      "type": 9,
+      "extraFlags": 268443657,
+      "wearFlags": 16389,
+      "extra2Flags": 65,
+      "values": [
+        15,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67257,
+      "source": "areas/obj/unique.obj",
+      "line": 891,
+      "name": "the sacred totem of 'Minthka'",
+      "keywords": "totem sacred minthka unique",
+      "type": 34,
+      "extraFlags": 268477449,
+      "wearFlags": 16385,
+      "extra2Flags": 66,
+      "values": [
+        63,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67258,
+      "source": "areas/obj/unique.obj",
+      "line": 911,
+      "name": "a cold saber called 'icicle'",
+      "keywords": "saber unique icicle sword",
+      "type": 5,
+      "extraFlags": 285352200,
+      "wearFlags": 8193,
+      "extra2Flags": 65,
+      "values": [
+        5,
+        5,
+        4,
+        3,
+        0,
+        8,
+        40,
+        20
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67259,
+      "source": "areas/obj/unique.obj",
+      "line": 940,
+      "name": "some fingerless gloves of su-monster skin",
+      "keywords": "gloves unique fingerless su monster su-monster skin",
+      "type": 9,
+      "extraFlags": 268476424,
+      "wearFlags": 16513,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67260,
+      "source": "areas/obj/unique.obj",
+      "line": 952,
+      "name": "a glowing wagon splinter",
+      "keywords": "splinter wagon unique",
+      "type": 11,
+      "extraFlags": 268443657,
+      "wearFlags": 16385,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "splinter",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67261,
+      "source": "areas/obj/unique.obj",
+      "line": 962,
+      "name": "some spiked crabshell armor",
+      "keywords": "armor crabshell unique",
+      "type": 9,
+      "extraFlags": 268444680,
+      "wearFlags": 16393,
+      "extra2Flags": 64,
+      "values": [
+        15,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67262,
+      "source": "areas/obj/unique.obj",
+      "line": 974,
+      "name": "the wondrous mace of the Sea",
+      "keywords": "mace wonderous watery unique",
+      "type": 5,
+      "extraFlags": 268706824,
+      "wearFlags": 24577,
+      "extra2Flags": 64,
+      "values": [
+        6,
+        4,
+        5,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "mace_of_sea",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67263,
+      "source": "areas/obj/unique.obj",
+      "line": 986,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67264,
+      "source": "areas/obj/unique.obj",
+      "line": 999,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67265,
+      "source": "areas/obj/unique.obj",
+      "line": 1012,
+      "name": "a raven skull ring",
+      "keywords": "ring skull raven unique",
+      "type": 11,
+      "extraFlags": 268444680,
+      "wearFlags": 16387,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67266,
+      "source": "areas/obj/unique.obj",
+      "line": 1034,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67267,
+      "source": "areas/obj/unique.obj",
+      "line": 1047,
+      "name": "a tormented zarbon face, twisted in agony",
+      "keywords": "face zarbon twisted tormented unique",
+      "type": 11,
+      "extraFlags": 268443656,
+      "wearFlags": 278529,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67268,
+      "source": "areas/obj/unique.obj",
+      "line": 1059,
+      "name": "an umbilical cord from a pregnant duergar",
+      "keywords": "cord umbilical pregnant unique",
+      "type": 11,
+      "extraFlags": 268443656,
+      "wearFlags": 20481,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67269,
+      "source": "areas/obj/unique.obj",
+      "line": 1076,
+      "name": "the severed tentacle of a carrion crawler",
+      "keywords": "unique tentacle earring severed",
+      "type": 9,
+      "extraFlags": 335589385,
+      "wearFlags": 524289,
+      "extra2Flags": 64,
+      "values": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67270,
+      "source": "areas/obj/unique.obj",
+      "line": 1095,
+      "name": "a bracelet of poisonous snake scales",
+      "keywords": "bracelet snake scales poisonous unique",
+      "type": 11,
+      "extraFlags": 268443656,
+      "wearFlags": 20481,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67271,
+      "source": "areas/obj/unique.obj",
+      "line": 1107,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67272,
+      "source": "areas/obj/unique.obj",
+      "line": 1120,
+      "name": "the terrifying visage of the great wraith Dranum",
+      "keywords": "visage face dranum unique",
+      "type": 9,
+      "extraFlags": 268443648,
+      "wearFlags": 278529,
+      "extra2Flags": 64,
+      "values": [
+        15,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "dranum_mask",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67273,
+      "source": "areas/obj/unique.obj",
+      "line": 1136,
+      "name": "the wailing face of a drow banshee",
+      "keywords": "face wailing drow banshee unique",
+      "type": 11,
+      "extraFlags": 268444672,
+      "wearFlags": 278529,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67274,
+      "source": "areas/obj/unique.obj",
+      "line": 1155,
+      "name": "the blackened staff of Netheril",
+      "keywords": "staff blackened netheril",
+      "type": 5,
+      "extraFlags": 268444673,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        12,
+        4,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "zion_netheril",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67275,
+      "source": "areas/obj/unique.obj",
+      "line": 1188,
+      "name": "a petrified roper corpse",
+      "keywords": "corpse roper petrified unique",
+      "type": 5,
+      "extraFlags": 272639232,
+      "wearFlags": 24577,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        3,
+        25,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67276,
+      "source": "areas/obj/unique.obj",
+      "line": 1200,
+      "name": "a sword of the whirlwinds",
+      "keywords": "sword whirl whirlwinds winds unique",
+      "type": 5,
+      "extraFlags": 285213953,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        5,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "sword_whirlwinds",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67277,
+      "source": "areas/obj/unique.obj",
+      "line": 1214,
+      "name": "a shimmering golden token",
+      "keywords": "token token unique",
+      "type": 8,
+      "extraFlags": 335646729,
+      "wearFlags": 8388609,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": true,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "placeholder; preserve source record; no invented ability"
+    },
+    {
+      "vnum": 67280,
+      "source": "areas/obj/unique.obj",
+      "line": 1265,
+      "name": "a death ring of Tezcatlipoca",
+      "keywords": "death ring tezcatlipoca unique",
+      "type": 9,
+      "extraFlags": 268443656,
+      "wearFlags": 100663299,
+      "extra2Flags": 64,
+      "values": [
+        8,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "artifact_stone",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67281,
+      "source": "areas/obj/unique.obj",
+      "line": 1289,
+      "name": "the cloak of the stalker",
+      "keywords": "cloak stalker unique",
+      "type": 11,
+      "extraFlags": 268443680,
+      "wearFlags": 1025,
+      "extra2Flags": 64,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "stalker_cloak",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 67283,
+      "source": "areas/obj/unique.obj",
+      "line": 1319,
+      "name": "Obe's portable force field",
+      "keywords": "obe force field portable",
+      "type": 8,
+      "extraFlags": 301998088,
+      "wearFlags": 8388609,
+      "extra2Flags": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 71215,
+      "source": "areas/obj/scorchvalley.obj",
+      "line": 207,
+      "name": "the rod of seven parts",
+      "keywords": "rod seven parts artifact",
+      "type": 5,
+      "extraFlags": 272662801,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        10,
+        4,
+        4,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 77738,
+      "source": "areas/obj/hall.obj",
+      "line": 652,
+      "name": "Illesarus, the Sword of Sharpness",
+      "keywords": "sword blade giant humming",
+      "type": 5,
+      "extraFlags": 272704513,
+      "wearFlags": 8193,
+      "extra2Flags": 66,
+      "values": [
+        13,
+        5,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "illesarus",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 87546,
+      "source": "areas/obj/juiblex.obj",
+      "line": 668,
+      "name": "the mask of wildmagic",
+      "keywords": "mask wildmagic wild unique",
+      "type": 9,
+      "extraFlags": 268436480,
+      "wearFlags": 262145,
+      "extra2Flags": 0,
+      "values": [
+        5,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "mask_of_wildmagic",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 87612,
+      "source": "areas/obj/juiblex.obj",
+      "line": 1646,
+      "name": "Doombringer, the sword of chaos",
+      "keywords": "doombringer sword chaos",
+      "type": 5,
+      "extraFlags": 272637953,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        13,
+        6,
+        8,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "doombringer",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 87701,
+      "source": "areas/obj/snogres.obj",
+      "line": 19,
+      "name": "a pair of skin leggings with bleached skull kneepads",
+      "keywords": "skin skull leggings flayed _noquest_ unique",
+      "type": 9,
+      "extraFlags": 268435976,
+      "wearFlags": 33,
+      "extra2Flags": 0,
+      "values": [
+        12,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "skull_leggings",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 88327,
+      "source": "areas/obj/firep.obj",
+      "line": 305,
+      "name": "the sword of fire and flame",
+      "keywords": "sword fire flames flame",
+      "type": 5,
+      "extraFlags": 268444673,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        5,
+        5,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "zion_fnf",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 98904,
+      "source": "areas/obj/tezcat.obj",
+      "line": 85,
+      "name": "a death ring of Tezcatlipoca",
+      "keywords": "death ring tezcatlipoca unique",
+      "type": 9,
+      "extraFlags": 271593480,
+      "wearFlags": 3,
+      "extra2Flags": 66,
+      "values": [
+        8,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 99446,
+      "source": "areas/obj/kastle.obj",
+      "line": 746,
+      "name": "the devil eyes of Elishia",
+      "keywords": "devil eyes elishia unique",
+      "type": 9,
+      "extraFlags": 271720448,
+      "wearFlags": 131073,
+      "extra2Flags": 0,
+      "values": [
+        9,
+        0,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 130027,
+      "source": "areas/obj/vecna.obj",
+      "line": 302,
+      "name": "the oaken staff of the woodlands",
+      "keywords": "staff oaken woodlands unique",
+      "type": 5,
+      "extraFlags": 268436480,
+      "wearFlags": 8193,
+      "extra2Flags": 576,
+      "values": [
+        12,
+        3,
+        3,
+        7,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "vecna_staffoaken",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 130028,
+      "source": "areas/obj/vecna.obj",
+      "line": 314,
+      "name": "Krindors Incredible Device",
+      "keywords": "krindor krindors incredible device _artifact_",
+      "type": 8,
+      "extraFlags": 268500992,
+      "wearFlags": 1,
+      "extra2Flags": 512,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "vecna_krindor_main",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 131616,
+      "source": "areas/obj/airp.obj",
+      "line": 179,
+      "name": "the dagger of Wind",
+      "keywords": "dagger wind _artifact_",
+      "type": 5,
+      "extraFlags": 335553568,
+      "wearFlags": 8193,
+      "extra2Flags": 576,
+      "values": [
+        2,
+        6,
+        4,
+        11,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "dagger_of_wind",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 139002,
+      "source": "areas/obj/brass.obj",
+      "line": 36,
+      "name": "the staff of blue flames",
+      "keywords": "staff blue flames unique",
+      "type": 5,
+      "extraFlags": 271983617,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        12,
+        4,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 139004,
+      "source": "areas/obj/brass.obj",
+      "line": 68,
+      "name": "the holy mace of the efreeti",
+      "keywords": "holy mace efreeti",
+      "type": 5,
+      "extraFlags": 268575745,
+      "wearFlags": 8193,
+      "extra2Flags": 64,
+      "values": [
+        6,
+        5,
+        7,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": "holy_mace",
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path",
+        "effective native callback and helper continuations"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    },
+    {
+      "vnum": 142249,
+      "source": "areas/obj/blackpearl.obj",
+      "line": 502,
+      "name": "a thick broadsword named 'dragonslayer'",
+      "keywords": "sword broadsword dragonslayer godquest unique",
+      "type": 5,
+      "extraFlags": 323100928,
+      "wearFlags": 24577,
+      "extra2Flags": 32834,
+      "values": [
+        13,
+        6,
+        4,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "literalCallback": null,
+      "placeholder": false,
+      "reviewPaths": [
+        "base stats/affect bitvectors",
+        "equipment enchantments",
+        "Studio trigger/proc-library dynamic assignment",
+        "weapon_proc: positive value[5] and value[7] select packed spell path"
+      ],
+      "disposition": "retain legacy; outside initial migration wave; requires individual contract and measured budget"
+    }
+  ]
+}

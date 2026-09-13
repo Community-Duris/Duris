@@ -4379,7 +4379,13 @@ void event_nova(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 		add_event(event_nova, PULSE_VIOLENCE * 2, ch, 0, 0, 0, &room, sizeof(room));
 		return;
 	}
+	resolve_nova(ch);
+}
 
+// Immediate native payload. Item-owned windups call this only after their
+// source, original target and room have passed the completion checks.
+void resolve_nova(P_char ch)
+{
 	act("&+LYour immense &+Wgathering of light&+w comes to fruition, &+Yexploding with violent force!",
 	    FALSE, ch, 0, 0, TO_CHAR);
 	act("&+L$n's&+L immense &+Wgathering of light&+w comes to fruition, &+Yexploding with violent force!",
