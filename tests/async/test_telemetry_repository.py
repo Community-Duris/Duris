@@ -132,7 +132,7 @@ def main():
         no_sql = tmp / "no_mysql"
         subprocess.run(common + ["-D__NO_MYSQL__", source, harness, "-o", str(no_sql)], check=True)
         subprocess.run([str(no_sql)], check=True, timeout=30)
-        mysql = shlex.split(subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True))
+        mysql = shlex.split(subprocess.check_output(["mysql_config", "--cflags", "--libs"], text=True)) + ["-lcrypto"]
         sql = tmp / "sql"
         subprocess.run(common + [source, harness, "-Wl,--wrap=mysql_real_query", "-Wl,--wrap=mysql_errno", "-Wl,--wrap=_Znwm",
                                   "-o", str(sql)] + mysql, check=True)
