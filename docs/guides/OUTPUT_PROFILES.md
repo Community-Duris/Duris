@@ -12,8 +12,10 @@ Preserve fallback. Both MariaDB and flatfile builds support the same registry.
 
 The [versioned sample](../examples/output-profiles-v1.json) demonstrates all six
 recipe kinds, an explicit word dictionary, base/role colors, and channel defaults.
-It is an example, not an automatic migration of existing output. Callers must opt
-in; a configured channel never causes the queue to classify or recolor messages.
+The long room-description caller now opts in explicitly (#282); other callers
+still require adoption. The complete [scenery sample](../examples/scenery-profiles-v1.json)
+and [animation guide](SCENERY_COLORIZATION.md) describe that route. A configured
+channel never causes the queue to classify or recolor messages.
 
 ## Schema and publication
 
@@ -69,20 +71,21 @@ A recipe has `kind` and `palette`, plus these optional bounded parameters:
 
 | Field | Meaning | Default / valid range |
 | --- | --- | --- |
-| `kind` | Solid color or future output-driven effect | `solid`, `flow`, `shimmer`, `flicker`, `pulse`, `glint`; required |
+| `kind` | Solid color or output-driven effect | `solid`, `flow`, `shimmer`, `flicker`, `pulse`, `glint`; required |
 | `palette` | Ordered named foreground colors | Required; 1..16 entries |
 | `stable_index` | Representative palette entry for Static and motion-off | 0; must index the palette |
-| `step_every` | Eligible new outputs per future phase step | 1; integer 1..1024 |
-| `width` | Future band/highlight width in visible characters | 1; integer 1..32, clamped to the word by the effect |
-| `chance_percent` | Future deterministic cosmetic-hash threshold | 20; integer 0..100 |
+| `step_every` | Eligible new outputs per phase step | 1; integer 1..1024 |
+| `width` | Band/highlight width in visible characters | 1; integer 1..32, clamped to the word by the effect |
+| `chance_percent` | Deterministic cosmetic-hash threshold | 20; integer 0..100 |
 
 Solid recipes require exactly one foreground and reject motion parameters.
-Flow, shimmer, flicker, pulse, and glint metadata are validated and exposed to the
-subsequent animation implementation in issue #282. Until that implementation,
-both Static and Animated output use the precomputed representative foreground.
-This registry neither advances sequences nor synthesizes gradients. The sample
-dictionary is intentionally small; #282 owns the full scenery dictionary and its
-output-driven effects.
+Flow, shimmer, flicker, pulse, and glint are implemented by the completed-message
+renderer. Static and motion-off use the precomputed representative foreground;
+Animated uses the supplied recipient/channel sequence. This registry does not
+advance sequences. The sample dictionary remains intentionally small; the
+[scenery guide](SCENERY_COLORIZATION.md) covers the full 64-word palette and exact
+recipe semantics. Immutable snapshots cannot be copied or moved: share them via
+the registry so borrowed recipe pointers remain tied to their owning snapshot.
 
 A profile requires `policy` (`preserve`, `static`, or `animated`) and may specify
 `dictionary`, `base`, and `roles`. Roles accept `sender` and `entity` foregrounds.

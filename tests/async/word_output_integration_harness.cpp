@@ -145,6 +145,86 @@ int main()
 	OutputContext preserve = style;
 	preserve.policy = OutputPolicy::Preserve;
 
+	// The real send boundary owns a separate sequence per receiving connection and
+	// channel. Interleaved sends, protected content, replay, and another recipient
+	// cannot disturb a room's next frame. No room identity participates.
+	OutputStyleRecipe flow;
+	flow.kind = OutputRecipeKind::Flow;
+	flow.palette = { ATTR_FG(25), ATTR_FG(19), ATTR_FG(27) };
+	flow.palette_size = 3;
+	flow.width = 2;
+	WordRecipeDictionary recipes{ { "water", &flow } };
+	OutputContext moving{ OutputChannel::RoomDescription, OutputPolicy::Animated, &words };
+	moving.recipes = &recipes;
+	const size_t room_channel = (size_t)OutputChannel::RoomDescription;
+	send_to_char("water", &actor, LOG_PRIVATE, moving);
+	std::string frame_zero = drain(&desc);
+	assert(desc.output_sequences[room_channel] == 1);
+	for (const char *unchanged : { "stone", "&+rwater&n", "wa&+rte&nr" })
+	{
+		send_to_char(unchanged, &actor, LOG_NONE, moving);
+		assert(drain(&desc) == unchanged);
+		assert(desc.output_sequences[room_channel] == 1);
+	}
+	OutputContext chat_motion = moving;
+	chat_motion.channel = OutputChannel::ChatSay;
+	send_to_char("water", &actor, LOG_NONE, chat_motion);
+	assert(drain(&desc) == frame_zero);
+	assert(desc.output_sequences[(size_t)OutputChannel::ChatSay] == 1);
+	send_to_char("water", &viewer, LOG_NONE, moving);
+	assert(drain(&desc2) == frame_zero && desc2.output_sequences[room_channel] == 1);
+	send_to_char("water", &actor, LOG_NONE, moving);
+	assert(drain(&desc) != frame_zero && desc.output_sequences[room_channel] == 2);
+	OutputContext stationary = moving;
+	stationary.policy = OutputPolicy::Static;
+	send_to_char("water", &actor, LOG_NONE, stationary);
+	assert(drain(&desc) == "&+Bwater&n" && desc.output_sequences[room_channel] == 2);
+	stationary.policy = OutputPolicy::Preserve;
+	send_to_char("water", &actor, LOG_NONE, stationary);
+	assert(drain(&desc) == "water" && desc.output_sequences[room_channel] == 2);
+	// Unsigned wrap is defined; a new connection starts again at frame zero.
+	desc.output_sequences[room_channel] = UINT64_MAX;
+	send_to_char("water", &actor, LOG_NONE, moving);
+	drain(&desc);
+	assert(desc.output_sequences[room_channel] == 0);
+	send_to_char("water", &actor, LOG_NONE, moving);
+	assert(drain(&desc) == frame_zero);
+	descriptor_data reconnected{};
+	reconnected.character = &actor;
+	actor.desc = &reconnected;
+	send_to_char("water", &actor, LOG_NONE, moving);
+	assert(drain(&reconnected) == frame_zero &&
+	       reconnected.output_sequences[room_channel] == 1);
+	actor.desc = &desc;
+
+	pc.screen_length = 12;
+	begin_paging(&actor);
+	std::string animated_pages;
+	for (int i = 0; i < 20; ++i)
+		animated_pages += "water\n";
+	send_to_char(animated_pages.c_str(), &actor, LOG_NONE, moving);
+	auto frozen_sequence = desc.output_sequences[room_channel];
+	assert(frozen_sequence == 2); // one eligible message, not twenty words
+	executing_ch = nullptr;
+	page_string_real(&desc, command_output);
+	std::string animated_page = drain(&desc);
+	show_string(&desc, "r");
+	assert(drain(&desc) == animated_page &&
+	       desc.output_sequences[room_channel] == frozen_sequence);
+	while (desc.showstr_count)
+	{
+		show_string(&desc, "");
+		drain(&desc);
+	}
+	assert(desc.output_sequences[room_channel] == frozen_sequence);
+	REMOVE_BIT(actor.specials.act, PLR_PAGING_ON);
+	std::string oversized_animation;
+	for (int i = 0; i < 8000; ++i)
+		oversized_animation += "water ";
+	send_to_char(oversized_animation.c_str(), &actor, LOG_NONE, moving);
+	assert(drain(&desc) == oversized_animation &&
+	       desc.output_sequences[room_channel] == frozen_sequence);
+
 	// Legacy/default and explicit Preserve retain byte-for-byte messages and logs.
 	const char *raw = "&Nwater &+rforest&n\n\r&&+?";
 	for (int policy : { LOG_PUBLIC, LOG_PRIVATE, LOG_NONE })

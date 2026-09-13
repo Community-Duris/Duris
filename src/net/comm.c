@@ -4198,9 +4198,20 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 		}
 		size_t capacity = paging ? MAX_COMMAND_OUTPUT - output_length - 1 :
 					   MAX_STRING_LENGTH - 1;
+		OutputContext recipient_context = context;
+		size_t channel = (size_t)context.channel;
+		bool sequenced = channel > 0 && channel < (size_t)OutputChannel::Count;
+		if (sequenced)
+			recipient_context.sequence = ch->desc->output_sequences[channel];
+		bool animated_match = false;
 		if ((!paging || (!pager_style_fallback && !bWarningAdded)) &&
-		    render_output_message(messg, context, rendered, capacity))
+		    render_output_message(messg, recipient_context, rendered, capacity,
+					  &animated_match))
+		{
 			messg = rendered.c_str();
+			if (sequenced && animated_match)
+				++ch->desc->output_sequences[channel];
+		}
 		if (paging && !bWarningAdded &&
 		    (!pager_original.empty() || messg != original_message))
 		{
