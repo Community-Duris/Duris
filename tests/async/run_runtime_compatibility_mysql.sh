@@ -69,7 +69,7 @@ VALUES
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
         "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0004_server_reboots.sql"
-    docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+    docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
         "$NAME" /tmp/0004_server_reboots.sh >/dev/null
 done
@@ -125,7 +125,7 @@ WHERE table_schema=DATABASE() AND table_name='kingdom_realms';")
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
         "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0006_kingdom_realms.sql"
-    docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+    docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
         "$NAME" /tmp/0006_kingdom_realms.sh >/dev/null
 done
@@ -150,7 +150,7 @@ INSERT INTO kingdom_garrison VALUES (3,0,1,12),(3,16,2,20);"
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
         "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0009_kingdom_garrison.sql"
-    docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+    docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
         "$NAME" /tmp/0009_kingdom_garrison.sh >/dev/null
 done
@@ -167,7 +167,7 @@ for replay in 1 2; do
             docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
                 "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/$(basename "$file")"
         else
-            docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
+            docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
                 -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" \
                 "$NAME" "/tmp/$(basename "$file")" >/dev/null
         fi
@@ -201,10 +201,10 @@ MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot 
 history_checksum=$("${MYSQL[@]}" -e "SELECT LOWER(HEX(history_checksum)) FROM mud_schema_migration_state WHERE state_id=1;")
 "${MYSQL[@]}" -e "CREATE TABLE imported_extension_probe (id INT PRIMARY KEY, note VARCHAR(32)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; INSERT INTO imported_extension_probe VALUES (1, 'preserved');"
 
-verify() { docker exec -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/runtime_compatibility_manifest.json "$NAME" /tmp/verify_runtime_compatibility.sh; }
+verify() { docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/runtime_compatibility_manifest.json "$NAME" /tmp/verify_runtime_compatibility.sh; }
 expect_reject() { if verify >/dev/null 2>&1; then echo "runtime drift was accepted: $1" >&2; exit 1; fi; }
 verify >/dev/null
-for table in player_death_disposition player_death_custody kingdom_garrison epic_stone_claim; do
+for table in player_death_disposition player_death_custody kingdom_garrison epic_stone_claim telemetry_session telemetry_interval telemetry_config telemetry_player_day telemetry_cohort_day telemetry_rollup_state; do
     "${MYSQL[@]}" -e "RENAME TABLE $table TO ${table}_drift;"
     expect_reject "missing-$table"
     "${MYSQL[@]}" -e "RENAME TABLE ${table}_drift TO $table;"

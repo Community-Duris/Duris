@@ -308,6 +308,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "9c2d5c99b2c9cefa3a3fae9ff63cdf20c8ba1503065a94d62c92c5d406cd5264",
       "verify_checksum": "6d37acd001d32ba637d5da441c0ec476d50d5170c9c893061ad0c7fc235453b1"
+    },
+    {
+      "id": "0014_telemetry_storage",
+      "sequence": 14,
+      "description": "Add isolated typed telemetry facts and projections and rollup stores",
+      "apply": "immutable/0014_telemetry_storage.sql",
+      "verify": "immutable/0014_telemetry_storage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "bb931077ed8e6cd2b62b01ce9316285289195c3b95c4194e2324d35a66b46d01",
+      "verify_checksum": "4dfdf3169cadebe256e63c9363b8cadc4b0473e2ddce8edf249a0892cd78bb88"
     }
   ]
 }
