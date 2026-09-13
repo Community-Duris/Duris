@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 178;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 184;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -52,23 +52,24 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'ship_crew','ship_slots','ships','shop_trophy',"
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
-	"'statistics','timers','towns','world_quest_accomplished',"
+	"'statistics','telemetry_cohort_day','telemetry_config','telemetry_interval',"
+	"'telemetry_player_day','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"0d43d97e3aa67e8880fa4c41255152fc5a61879309b6808b18ca2eec22ddc7ac";
+	"42666971b3eda32f4f817b27c090e62e1c28761e611caab1acb9f61f75b56887";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"dcd8737fc7c4529a3f936087aeace44a487187e9f8ccb9cbe7a427ff18577b41";
-/* Includes the versioned pet state introduced by migration 0013.
+	"a5b56f03da1de88f06f918a289c37472e354e3eeff72d7ab5fafcc9bdf520ed4";
+/* Includes the six telemetry stores introduced by migration 0014.
  * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0013_pet_restore_state";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 13;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0014_telemetry_storage";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 14;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"9c2d5c99b2c9cefa3a3fae9ff63cdf20c8ba1503065a94d62c92c5d406cd5264";
+	"bb931077ed8e6cd2b62b01ce9316285289195c3b95c4194e2324d35a66b46d01";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"6d37acd001d32ba637d5da441c0ec476d50d5170c9c893061ad0c7fc235453b1";
+	"4dfdf3169cadebe256e63c9363b8cadc4b0473e2ddce8edf249a0892cd78bb88";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"7a90c035e1899a6475058023a63013a79a415fa82fdbd1fa79438149151bbddf";
+	"e88b82a14d76060557521849d1f46ddce9f326e0f259d8e0a126bce9411a2626";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
