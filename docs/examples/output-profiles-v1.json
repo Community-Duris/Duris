@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "revision": 1,
+  "recipes": {
+    "river": {
+      "kind": "flow",
+      "palette": ["blue", "bright_blue", "cyan", "bright_cyan"],
+      "stable_index": 1,
+      "step_every": 1,
+      "width": 2
+    },
+    "leaves": {
+      "kind": "shimmer",
+      "palette": ["green", "bright_green"],
+      "step_every": 2,
+      "chance_percent": 20
+    },
+    "flames": {
+      "kind": "flicker",
+      "palette": ["red", "bright_red", "yellow"],
+      "stable_index": 1,
+      "chance_percent": 30
+    },
+    "ice": {
+      "kind": "glint",
+      "palette": ["cyan", "bright_cyan", "bright_white"],
+      "stable_index": 1,
+      "width": 1,
+      "chance_percent": 25
+    },
+    "magic": {
+      "kind": "pulse",
+      "palette": ["magenta", "bright_magenta"],
+      "step_every": 2
+    },
+    "snow": {"kind": "solid", "palette": ["bright_white"]}
+  },
+  "dictionaries": {
+    "terrain": {
+      "water": "river",
+      "waters": "river",
+      "water's": "river",
+      "forest": "leaves",
+      "forests": "leaves",
+      "fire": "flames",
+      "ice": "ice",
+      "magic": "magic",
+      "snow": "snow"
+    }
+  },
+  "profiles": {
+    "scenery": {"policy": "animated", "dictionary": "terrain"},
+    "title": {"policy": "static", "base": "bright_green"},
+    "conversation": {
+      "policy": "preserve",
+      "dictionary": "terrain",
+      "roles": {"sender": "bright_cyan", "entity": "bright_white"}
+    }
+  },
+  "channels": {
+    "room.description": "scenery",
+    "room.title": "title",
+    "chat.say": "conversation"
+  }
+}

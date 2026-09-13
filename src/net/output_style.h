@@ -2,8 +2,11 @@
 
 #include "net/ansi.h"
 #include <map>
+#include <memory>
 #include <span>
 #include <string_view>
+
+class OutputProfileSnapshot;
 
 enum class OutputPolicy
 {
@@ -12,15 +15,46 @@ enum class OutputPolicy
 	Animated
 };
 
+// Stable registry identifiers. Append new entries; never renumber existing ones.
 // Routing only: no channel is automatically adopted by the output queue.
-// The profile registry can extend these identifiers before exposing preferences.
 enum class OutputChannel
 {
-	Unspecified,
-	RoomDescription,
-	Chat,
-	Combat,
-	SystemFeedback
+	Unspecified = 0,
+	RoomDescription = 1,
+	Chat = 2,
+	Combat = 3,
+	SystemFeedback = 4,
+	RoomTitle = 5,
+	RoomInspect = 6,
+	RoomExits = 7,
+	RoomAuras = 8,
+	RoomOccupants = 9,
+	ItemsList = 10,
+	ChatSay = 11,
+	ChatTell = 12,
+	ChatWhisper = 13,
+	ChatAsk = 14,
+	ChatShout = 15,
+	ChatYell = 16,
+	ChatGroup = 17,
+	ChatGuild = 18,
+	ChatAlliance = 19,
+	ChatPetition = 20,
+	ChatProject = 21,
+	ChatPage = 22,
+	ChatRacewar = 23,
+	ChatImmortal = 24,
+	Social = 25,
+	Weather = 26,
+	CombatIncoming = 27,
+	CombatOutgoing = 28,
+	CombatObserved = 29,
+	Prompt = 30,
+	ChatAuction = 31,
+	ChatNchat = 32,
+	ChatJchat = 33,
+	ChatWizmsg = 34,
+	Count = 35
 };
 enum class StyleOrigin
 {
@@ -59,6 +93,9 @@ struct OutputContext
 	const WordColorDictionary *words = nullptr;
 	int base_attr = 0;
 	std::span<const OutputStyleSpan> spans{};
+	// Registry contexts retain the immutable dictionary through copies and reloads.
+	// Hand-built contexts may continue to borrow a caller-owned dictionary.
+	std::shared_ptr<const OutputProfileSnapshot> snapshot_owner{};
 };
 
 // Pure transformation. Existing attributes and protected words are never erased.

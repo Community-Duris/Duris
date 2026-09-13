@@ -12,6 +12,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/output_style.h"
+#include "net/output_profiles.h"
 #include "net/command_latency.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -583,6 +584,19 @@ int main(int argc, char **argv)
 	}
 
 	initialize_properties();
+	// Optional configuration is loaded once before gameplay, never during a send.
+	if (const char *profile_path = getenv("DURIS_OUTPUT_PROFILES_FILE");
+	    profile_path && *profile_path)
+	{
+		auto profiles = output_profile_registry().reload_file(profile_path);
+		if (profiles.ok)
+			logit(LOG_STATUS, "Output profiles loaded: revision %u.",
+			      profiles.revision);
+		else
+			logit(LOG_STATUS,
+			      "Output profiles unavailable: %s; using Preserve fallback.",
+			      profiles.diagnostic.c_str());
+	}
 
 	load_event_names();
 
