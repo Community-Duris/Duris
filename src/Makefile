@@ -123,10 +123,10 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actnew.o \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
-				 cmd/actoth.o \
+				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
-				 net/ansi.o \
+				 net/ansi.o net/chat_presentation.o \
 				 net/output_style.o \
 				 net/output_profiles.o \
 				 specs/specs.ailvio.o \
@@ -364,7 +364,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
-				 player/player_snapshot_capture.o \
+				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \

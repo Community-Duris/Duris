@@ -1,4 +1,5 @@
 #include "player/player_load_materialize.h"
+#include "net/output_preference_codec.h"
 
 #include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
@@ -440,6 +441,8 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      "count=%zu recovery=operator_repair",
 		      result.pid, result.missing_payload_rows);
 	reset_char(ch);
+	ch->only.pc->output_preferences =
+		decode_output_preferences(result.snapshot.output_preferences);
 	int hit_difference = 0;
 	for (const player_snapshot_string &entry : result.snapshot.status_strings)
 		if (!apply_string(ch, entry))

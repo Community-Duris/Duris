@@ -87,7 +87,7 @@ disables kingdoms for the boot when it cannot read the table, which remains
 reachable on the flat-file build, where no boot gate stands in front of it. The
 *ledger* is fail-closed too, exactly as it is for every other immutable
 migration: `src/core/runtime_compatibility_contract.h` compiles
-`RUNTIME_MIGRATION_HEAD_ID = "0015_artifact_mana"` with sequence 15, and
+`RUNTIME_MIGRATION_HEAD_ID = "0016_artifact_mana"` with sequence 16, and
 `sql_verify_boot_database()` in `src/sql/sql.c` requires the matching
 `mud_schema_history` row, its two checksums, and `applied_count=15` in
 `mud_schema_migration_state`. On the MariaDB/MySQL backend a database left at

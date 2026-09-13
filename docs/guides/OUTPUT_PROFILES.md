@@ -12,8 +12,9 @@ Preserve fallback. Both MariaDB and flatfile builds support the same registry.
 
 The [versioned sample](../examples/output-profiles-v1.json) demonstrates all six
 recipe kinds, an explicit word dictionary, base/role colors, and channel defaults.
-The long room-description caller now opts in explicitly (#282); other callers
-still require adoption. The complete [scenery sample](../examples/scenery-profiles-v1.json)
+The long room-description caller opts in explicitly (#282).
+[Chat](CHAT_COLORIZATION.md) and [world](WORLD_COLORIZATION.md) guides identify the
+other adopted delivery boundaries. Unlisted callers retain Preserve. The complete [scenery sample](../examples/scenery-profiles-v1.json)
 and [animation guide](SCENERY_COLORIZATION.md) describe that route. A configured
 channel never causes the queue to classify or recolor messages.
 
@@ -88,7 +89,10 @@ recipe semantics. Immutable snapshots cannot be copied or moved: share them via
 the registry so borrowed recipe pointers remain tied to their owning snapshot.
 
 A profile requires `policy` (`preserve`, `static`, or `animated`) and may specify
-`dictionary`, `base`, and `roles`. Roles accept `sender` and `entity` foregrounds.
+`dictionary`, `base`, and `roles`. Roles accept `sender` and `entity` foregrounds, plus `healthy`, `caution`, `low`,
+`critical`, `success`, `failure`, `hit` and `miss` for explicit semantic callers.
+These optional V1 fields require the semantic-role implementation; older servers
+reject them rather than silently applying partial configuration.
 The resolver exposes those attributes for callers to place in explicit protected
 spans. It does not infer which words are names or change recipient visibility.
 Existing authored attributes and Authored spans continue to outrank added styles.

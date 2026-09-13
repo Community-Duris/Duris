@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 3;
-constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 4;
+constexpr uint32_t PLAYER_SNAPSHOT_SCHEMA_VERSION = 5;
+constexpr uint32_t PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION = 6;
 constexpr size_t PLAYER_SNAPSHOT_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t PLAYER_SNAPSHOT_MAX_ROWS = 8192;
 constexpr size_t PLAYER_SNAPSHOT_MAX_OBJECTS = 4096;
@@ -274,6 +274,7 @@ struct player_snapshot
 	std::vector<player_shape_snapshot> shapes;
 	std::vector<player_trophy_snapshot> trophies;
 	bool recipes_are_external;
+	std::string output_preferences;
 	std::optional<player_death_snapshot> death;
 };
 

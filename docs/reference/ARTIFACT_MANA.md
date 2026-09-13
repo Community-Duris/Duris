@@ -68,7 +68,7 @@ locker, corpse, auction and world item snapshots. Those snapshots already retain
 the physical UID. They never contain or overwrite the authoritative mana reserve.
 A stale owner save therefore cannot replace a newer debit.
 
-MariaDB/MySQL uses the additive `0015_artifact_mana` migration and an InnoDB table
+MariaDB/MySQL uses the additive `0016_artifact_mana` migration and an InnoDB table
 keyed by `item_uid`. Flat-file primary uses a versioned, SHA-256-checked record at
 `FLATFILE_STATE_DIR/domains/artifact-mana-<uid>`. Writes use the existing atomic
 write/fsync/rename helper under `.artifact-mana.lock`. Database modes never fail

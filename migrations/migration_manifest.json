@@ -320,11 +320,21 @@
       "verify_checksum": "4dfdf3169cadebe256e63c9363b8cadc4b0473e2ddce8edf249a0892cd78bb88"
     },
     {
-      "id": "0015_artifact_mana",
+      "id": "0015_output_preferences",
       "sequence": 15,
+      "description": "Persist per-character output colors and reduced motion",
+      "apply": "immutable/0015_output_preferences.sql",
+      "verify": "immutable/0015_output_preferences.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "2e41b6592ad9c96523215d8356d8d324b78388752f12cfa8b532387af5474bba",
+      "verify_checksum": "b910b48bb23e5fb923c4b725f2879453a6244325e2bd47f9eb50bcac283b6f1b"
+    },
+    {
+      "id": "0016_artifact_mana",
+      "sequence": 16,
       "description": "Persist physical artifact mana independently of owner snapshots",
-      "apply": "immutable/0015_artifact_mana.sql",
-      "verify": "immutable/0015_artifact_mana.sh",
+      "apply": "immutable/0016_artifact_mana.sql",
+      "verify": "immutable/0016_artifact_mana.sh",
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "1618e55aacccb7147aa0ae61d3a46dc9e09cef655562ade66ba9a7253872f75a",
       "verify_checksum": "181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376"

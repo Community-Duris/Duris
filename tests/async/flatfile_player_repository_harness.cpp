@@ -113,6 +113,7 @@ static player_snapshot make_full(player_revision_t revision)
 	snapshot.shapes.push_back({ 800, 2, 100, 200 });
 	snapshot.trophies.push_back({ 12, 300 });
 	snapshot.recipes_are_external = true;
+	snapshot.output_preferences = "v1;m=1;12=27";
 	return snapshot;
 }
 
@@ -567,7 +568,8 @@ int main(int argc, char **argv)
 			loaded.items[1].parent_index == 0 &&
 			loaded.items[0].extra_descriptions[0].spell_ids[1] == 12 &&
 			loaded.pets[0].items[0].vnum == 501 && loaded.shapes[0].mob_vnum == 800 &&
-			loaded.trophies[0].experience == 300,
+			loaded.trophies[0].experience == 300 &&
+			loaded.output_preferences == full.output_preferences,
 		"full player snapshot did not round trip: " + error);
 	player_load_request load_request = {};
 	load_request.request_id = 1;
@@ -632,7 +634,7 @@ int main(int argc, char **argv)
 			loaded.status_integers[0].signed_value == 51 && loaded.items.size() == 2 &&
 			loaded.languages[0].value == 90 && loaded.trophies.size() == 2 &&
 			loaded.trophies[0].experience == 645 &&
-			loaded.trophies[1].experience == 678,
+			loaded.trophies[1].experience == 678 && loaded.output_preferences.empty(),
 		"partial status merge discarded an untouched component");
 	applied = flatfile_player_snapshot_apply(root.string(), full, &error);
 	require(applied.outcome == player_save_apply_outcome::stale_revision &&

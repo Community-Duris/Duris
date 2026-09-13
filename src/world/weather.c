@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "net/output_style.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -966,7 +967,9 @@ void send_to_weather_sector(int z, const char *msg)
 		    i->character->specials.z_cord >= 0 && !IS_BLIND(i->character) &&
 		    IS_AWAKE(i->character))
 		{
-			send_to_char(msg, i->character);
+			send_to_char(msg, i->character,
+				     recipient_output_context(OutputChannel::Weather,
+							      OutputPolicy::Animated));
 		}
 	}
 }
