@@ -107,6 +107,7 @@ player_snapshot make_snapshot(int pid, player_revision_t revision)
     snapshot.shapes.push_back({800, 2, 100, 200});
     snapshot.trophies.push_back({12, 300});
     snapshot.recipes_are_external = true;
+    snapshot.output_preferences = "v1;m=1;12=27";
     return snapshot;
 }
 
@@ -130,6 +131,35 @@ void corrupt_first_payload(const std::string &path)
     close(fd);
 }
 
+void downgrade_frame(const std::string &path, uint8_t version, size_t preference_offset, size_t preference_size)
+{
+    const int fd = open(path.c_str(), O_RDWR);
+    struct stat status{};
+    assert(fd >= 0 && fstat(fd, &status) == 0);
+    std::vector<uint8_t> bytes(status.st_size);
+    assert(read(fd, bytes.data(), bytes.size()) == static_cast<ssize_t>(bytes.size()));
+    bytes.erase(bytes.begin() + 72 + preference_offset,
+                bytes.begin() + 72 + preference_offset + preference_size + 4);
+    auto put = [&](size_t offset, uint64_t value, size_t width) {
+        for (size_t i = 0; i < width; ++i) bytes[offset+i] = (value >> (i*8)) & 255;
+    };
+    put(16, bytes.size(), 8);
+    put(44, version, 4);
+    put(64, bytes.size()-72, 4);
+    put(72, version, 4);
+    uint32_t crc = UINT32_MAX;
+    for (size_t i = 0; i < bytes.size(); ++i) {
+        if (i >= 68 && i < 72) continue;
+        crc ^= bytes[i];
+        for (unsigned bit = 0; bit < 8; ++bit)
+            crc = (crc >> 1) ^ (UINT32_C(0xedb88320) & (0U-(crc&1U)));
+    }
+    put(68, ~crc, 4);
+    assert(pwrite(fd, bytes.data(), bytes.size(), 0) == static_cast<ssize_t>(bytes.size()));
+    assert(ftruncate(fd, bytes.size()) == 0 && fsync(fd) == 0);
+    close(fd);
+}
+
 int main(int argc, char **argv)
 {
     assert(argc == 2);
@@ -148,6 +178,7 @@ int main(int argc, char **argv)
     assert(decoded.items[1].parent_index == 0);
     assert(decoded.items[0].extra_descriptions[0].spell_ids[1] == 12);
     assert(decoded.pets[0].items[0].vnum == 501);
+    assert(decoded.output_preferences == original.output_preferences);
     assert(encoded[0] == PLAYER_SNAPSHOT_SCHEMA_VERSION && !decoded.death); // Base format, not death.
     auto truncated = encoded;
     truncated.pop_back();
@@ -211,6 +242,21 @@ int main(int argc, char **argv)
     assert(decoded.death->custody[3].item.item_uid == 1004);
     assert(decoded.death->wallet_before[3] == INT32_MAX && decoded.death->wallet_revision == 12);
     assert(decoded.death->unresolved_operations[0].bytes == unsettled.bytes);
+    assert(decoded.output_preferences == death.output_preferences);
+    auto legacy_base = death;
+    legacy_base.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+    legacy_base.death.reset();
+    std::vector<uint8_t> base_bytes;
+    assert(player_snapshot_encode(legacy_base, &base_bytes) == player_snapshot_codec_result::ok);
+    auto legacy_death = death_bytes;
+    legacy_death.erase(legacy_death.begin() + base_bytes.size() - 4 - death.output_preferences.size(),
+                       legacy_death.begin() + base_bytes.size());
+    for (uint8_t version : {2, 4}) {
+        legacy_death[0] = version;
+        assert(player_snapshot_decode(legacy_death.data(), legacy_death.size(), &decoded) == player_snapshot_codec_result::ok);
+        assert(decoded.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION && decoded.output_preferences.empty());
+        assert(decoded.death->corpse[2].values[0] == 123);
+    }
     auto bad_death = death;
     bad_death.items.push_back(bag); // Cannot also restore these assets to active inventory.
     assert(player_snapshot_encode(bad_death, &encoded) == player_snapshot_codec_result::invalid_value);
@@ -246,6 +292,31 @@ int main(int argc, char **argv)
     assert((replay.applied == std::vector<std::pair<int, player_revision_t>>{{10, 2}, {20, 1}}));
     assert(player_save_journal_health_copy().duplicates == 1);
     assert(player_save_journal_health_copy().records == 0);
+
+    // Existing journal envelopes retain their original schema number while
+    // decoding normalizes their snapshots. Exercise all four previous versions.
+    for (uint8_t version : {1, 2, 3, 4}) {
+        auto legacy = version % 2 ? make_snapshot(90, 1) : death;
+        legacy.pets.clear();
+        auto prefix = legacy;
+        prefix.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+        prefix.death.reset();
+        std::vector<uint8_t> prefix_bytes;
+        assert(player_snapshot_encode(prefix, &prefix_bytes) == player_snapshot_codec_result::ok);
+        assert(player_save_journal_append(legacy) == player_save_journal_result::ok);
+        player_save_journal_shutdown();
+        downgrade_frame(journal, version, prefix_bytes.size()-4-legacy.output_preferences.size(), legacy.output_preferences.size());
+        assert(player_save_journal_init(directory.c_str()));
+        assert(player_save_journal_health_copy().records == 1);
+        replay_state old_replay;
+        if (legacy.death) {
+            legacy.output_preferences.clear();
+            assert(player_snapshot_encode(legacy, &old_replay.expected_death) == player_snapshot_codec_result::ok);
+        }
+        assert(player_save_journal_replay(replay_apply, &old_replay) == player_save_journal_result::ok);
+        assert(old_replay.applied.size() == 1 && old_replay.applied[0].first == legacy.pid);
+        assert(player_save_journal_health_copy().records == 0);
+    }
 
     // A later player checkpoint cannot discard an unresolved death. Restart and
     // replay retain its complete payload until its own disposition is acknowledged.

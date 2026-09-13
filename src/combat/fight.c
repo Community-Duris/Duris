@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "net/output_style.h"
 #include "item/item_actions.h"
 #include "item/weapon_actions.h"
 #include "world/difficulty.h"
@@ -3777,6 +3778,7 @@ void kill_gain(P_char ch, P_char victim)
 void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *messages)
 {
 	int dam = (int)fdam;
+	const auto role = fdam > 0 ? OutputRole::Hit : OutputRole::Miss;
 	char buf_char[160], buf_vict[160], buf_notvict[160];
 	int w_percent, h_percent, max_dam = 0, w_loop, h_loop;
 	int msg_flags = messages->type;
@@ -3890,9 +3892,11 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 	   strcat(buf_char, showdam);*/
 
 #if ENABLE_TERSE
-	act(buf_notvict, FALSE, ch, messages->obj, victim, TO_NOTVICTROOM | ACT_NOTTERSE);
+	act(buf_notvict, FALSE, ch, messages->obj, victim, TO_NOTVICTROOM | ACT_NOTTERSE,
+	    recipient_role_context(OutputChannel::CombatObserved, role));
 #else
-	act(buf_notvict, FALSE, ch, messages->obj, victim, TO_NOTVICTROOM);
+	act(buf_notvict, FALSE, ch, messages->obj, victim, TO_NOTVICTROOM,
+	    recipient_role_context(OutputChannel::CombatObserved, role));
 #endif
 
 	if (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT) &&
@@ -3902,9 +3906,11 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 		send_to_char("&+G-=[&N", ch);
 	}
 #if ENABLE_TERSE
-	act(buf_char, FALSE, ch, messages->obj, victim, TO_CHAR | ACT_NOTTERSE);
+	act(buf_char, FALSE, ch, messages->obj, victim, TO_CHAR | ACT_NOTTERSE,
+	    recipient_role_context(OutputChannel::CombatOutgoing, role));
 #else
-	act(buf_char, FALSE, ch, messages->obj, victim, TO_CHAR);
+	act(buf_char, FALSE, ch, messages->obj, victim, TO_CHAR,
+	    recipient_role_context(OutputChannel::CombatOutgoing, role));
 #endif
 
 	if (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT) &&
@@ -3914,9 +3920,11 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 		send_to_char("&+R-=[&N", victim);
 	}
 #if ENABLE_TERSE
-	act(buf_vict, FALSE, ch, messages->obj, victim, TO_VICT | ACT_NOTTERSE);
+	act(buf_vict, FALSE, ch, messages->obj, victim, TO_VICT | ACT_NOTTERSE,
+	    recipient_role_context(OutputChannel::CombatIncoming, role));
 #else
-	act(buf_vict, FALSE, ch, messages->obj, victim, TO_VICT);
+	act(buf_vict, FALSE, ch, messages->obj, victim, TO_VICT,
+	    recipient_role_context(OutputChannel::CombatIncoming, role));
 #endif
 }
 

@@ -39,5 +39,6 @@ enum class OutputChannel
 	ChatNchat = 32,
 	ChatJchat = 33,
 	ChatWizmsg = 34,
-	Count = 35
+	RoomItems = 35,
+	Count = 36
 };

@@ -28,7 +28,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
     ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
     ROOT / "migrations" / "immutable" / "0014_telemetry_storage.sql",
-    ROOT / "migrations" / "immutable" / "0015_artifact_mana.sql",
+    ROOT / "migrations" / "immutable" / "0016_artifact_mana.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)

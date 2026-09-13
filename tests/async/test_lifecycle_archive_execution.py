@@ -38,7 +38,7 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
     def test_default_loader_includes_post_baseline_schema(self) -> None:
         self.assertEqual(MODULE.DEFAULT_SCHEMA_FILES, MODULE.lifecycle_policy.DEFAULT_SCHEMA_FILES)
         for name in ("0003_season_reset_state.sql", "0004_server_reboots.sql",
-                     "0014_telemetry_storage.sql", "0015_artifact_mana.sql"):
+                     "0014_telemetry_storage.sql", "0016_artifact_mana.sql"):
             self.assertIn(
                 ROOT / "migrations" / "immutable" / name,
                 MODULE.DEFAULT_SCHEMA_FILES,
