@@ -146,9 +146,11 @@ initialization helper. Initialization and apply are single-worker-only APIs.
 The new migration verifier enforces explicit local/production scope and verified
 remote TLS; no remote connection falls back to plaintext or preferred-mode TLS.
 
-Standalone tests are intentionally not registered in the shared runner/Makefile;
-F owns build integration and L owns later shared test registration. From a Linux
-checkout with compiler/database development dependencies:
+No explicit shared runner or Makefile registration changes are made. Generic
+Python test discovery runs offline checks; SQL-only checks skip or compile without
+a disposable-fixture opt-in. F owns server build integration and L owns later
+integration-test registration. From a Linux checkout with compiler/database
+development dependencies:
 
 ```sh
 python3 tests/async/test_telemetry_contract_headers.py
