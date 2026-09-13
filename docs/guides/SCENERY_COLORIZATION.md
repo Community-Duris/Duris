@@ -1,8 +1,8 @@
 # Scenery colors and output-driven animation
 
-Issue #282 adds deterministic recipe frames and explicitly adopts the long room
-description send in `src/cmd/actinf.c`. Titles, exits, maps, auras, occupants, brief
-mode and visibility gates retain their existing behavior. The default registry is
+The long room-description send in `src/cmd/actinf.c` uses deterministic recipe
+frames. Titles, exits, auras and occupants have separate [world channels](WORLD_COLORIZATION.md);
+maps, brief mode and visibility gates retain their existing behavior. The default registry is
 unconfigured, so existing installations keep their existing appearance.
 
 To opt in on a development server, set `DURIS_OUTPUT_PROFILES_FILE` to the absolute
@@ -14,12 +14,12 @@ validates the whole file before publication. No per-message configuration reads
 are added. The earlier small `output-profiles-v1.json` remains a schema example;
 this separate file is the complete scenery palette.
 
-Per-character persistence and the self-guiding player commands are subsequent
-deliverables #283 and #284. The resolver already supports a recipient's global
-`motion_enabled = false`, which demotes Animated to Static. The room caller uses
-server defaults until those preferences are connected; this change does not
-expose a premature `toggle color` command. Setting this sample's policy to Static
-provides an operator-controlled motion-free preview in the meantime.
+Players use `toggle color room static`, `toggle color room animated` and
+`toggle color motion off` to select their own presentation. Motion-off demotes
+Animated to Static across adopted channels. Settings are saved per character;
+see [the command guide](COLOR_COMMAND.md) and [persistence contract](OUTPUT_PREFERENCES.md).
+Selecting animation without a configured dictionary retains authored output and
+explains the missing profile. No sample configuration is enabled by installing the code.
 
 ## Exact palette
 
@@ -62,11 +62,11 @@ probability draw from the game's random generator. Small individual words can
 have more or fewer highlights than the threshold suggests.
 
 `descriptor_data::output_sequences` holds one unsigned 64-bit counter per stable
-channel ID, 280 bytes per connection with the current catalog. It is plain,
+channel ID, 288 bytes per connection with the current 36-entry catalog. It is plain,
 zero-initialized session storage; it is never copied into player snapshots or
 saved. New connections and copyover allocations start at zero. Switched bodies
-use the receiving descriptor, without accessing NPC player storage. The future
-character-preference owner is independent of these decorative counters.
+use the receiving descriptor, without accessing NPC player storage. The controlling
+character owns preferences independently of these decorative counters.
 
 `send_to_char` borrows the receiving channel's sequence to render a candidate,
 then increments it once if a frame containing an eligible non-solid, multi-color

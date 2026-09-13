@@ -16,6 +16,10 @@
 #include <vector>
 #include <tuple>
 
+#ifdef COLORIZATION_BENCHMARK
+#include "colorization_benchmark_support.inc"
+#endif
+
 // Allocation and outside-world visibility/logging boundaries are test doubles;
 // the output/pager logic below is extracted verbatim from production sources.
 #undef CREATE
@@ -165,6 +169,9 @@ static std::string drain(P_desc d)
 #include "world_output_checks.inc"
 #include "combat_prompt_checks.inc"
 #include "chat_presentation_checks.inc"
+#ifdef COLORIZATION_BENCHMARK
+#include "colorization_benchmark.inc"
+#endif
 
 static void tell_command_matrix()
 {
@@ -262,6 +269,10 @@ static size_t visible_terminal_bytes(const std::string &markup)
 
 int main()
 {
+#ifdef COLORIZATION_BENCHMARK
+	colorization_benchmark();
+	return 0;
+#endif
 	chat_presentation_matrix();
 	char_data actor{}, viewer{}, observer{};
 	pc_only_data pc{}, pc2{}, pc3{};
