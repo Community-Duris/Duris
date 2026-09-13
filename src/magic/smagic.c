@@ -15,6 +15,7 @@
 #ifndef _SHAMAN_MAGIC_C_
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -420,8 +421,8 @@ void spell_spirit_walk(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 	unsigned timer = 0;
 	if (a1)
 		timer = (unsigned)obj_affect_time(tobj, a1);
-	if (!timer || (timer >= static_cast<unsigned int>(
-					get_property("timer.decay.corpse.pc", 120) * WAIT_MIN)))
+	if (!timer ||
+	    (timer >= static_cast<unsigned int>(difficulty_pc_corpse_decay_minutes() * WAIT_MIN)))
 	{
 		act("&+L$n quickly becomes dazed and immobile from a sudden shock to the core of his spirit.&N",
 		    TRUE, ch, 0, 0, TO_ROOM);

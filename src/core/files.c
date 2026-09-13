@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "core/utils.h"
 #include "core/files.h"
@@ -1362,7 +1363,7 @@ void persistence_refresh_restored_corpse(P_obj corpse, const char *source)
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return;
 
-	base_decay = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
+	base_decay = difficulty_pc_corpse_decay_minutes() * WAIT_MIN;
 	restored_decay = base_decay * PERSISTENCE_CORPSE_RESTORE_TIMER_MULTIPLIER;
 
 	affect_from_obj(corpse, TAG_OBJ_DECAY);
@@ -4654,7 +4655,7 @@ P_char restorePet(char *id)
 		if (save_equip[tmp] != NULL)
 			wear(ch, save_equip[tmp], restore_wear[tmp], 0);
 
-	convertMob(ch);
+	convertMob(ch, false);
 	return ch;
 }
 

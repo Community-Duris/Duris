@@ -3930,7 +3930,7 @@ void do_summon_imp(P_char ch, char * /*argument*/, int /*cmd*/)
 		}
 	}
 
-	imp = read_mobile(DEVIL_IMP, VIRTUAL);
+	imp = read_mobile(DEVIL_IMP, VIRTUAL, false);
 
 	if (!imp)
 	{

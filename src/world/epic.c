@@ -7,6 +7,7 @@
 using namespace std;
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -621,6 +622,12 @@ static bool prepare_epic_award(P_char ch, int type, int data, int amount, bool c
 		{
 			amount = amount * (float)get_property("epic.gain.modifier.evil", 1.000);
 		}
+		// Server-wide epic dial on everything but PvP awards, never below one epic: a zero
+		// award would fail its transaction and, at an epic stone, the whole group's touch.
+		if (type != EPIC_PVP && type != EPIC_SHIP_PVP)
+			amount =
+				MAX(1, difficulty_scale_int(amount, difficulty_multiplier(
+									    DIFFICULTY_EPIC_GAIN)));
 	}
 
 	*prepared = { type, data, amount, blessing, task_penalty };
