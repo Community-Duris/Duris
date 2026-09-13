@@ -14045,14 +14045,14 @@ Spells
              Vigorize Critic
 5th circle:  Destroy Undead, Heal, Soulshield, Vitality
 6th circle:  Continual Light, Curse, Darkness, Fear, Flame Strike,
-             Harm
-7th circle:  Full Heal, Lesser Resurrect, Water Breathing
+             Harm, Mass Preserve
+7th circle:  Full Heal, Lesser Resurrect, Miracle, Water Breathing
 8th circle:  Dispel Magic, Mass Heal
 9th circle:  Holy Word, Plane Shift, Silence, Unholy Word,  
              Word of Recall,
 10th circle: Accelerated Healing, Full Harm, Resurrect  
-11th circle: Group Recall, Mass Preserve, True Seeing
-12th circle: Miracle
+11th circle: Divine Warding, Group Recall, True Seeing
+12th circle: Mass Purification
 
 Cleric Specializations
 ---------------------------------------------------------------------------
@@ -23720,3 +23720,41 @@ Type of spell:  Enhancement
 "Windstrom blessing" is an old ranger's prayer that called upon Windstrom to hallow the wielder's blade with a faintly crackling aura of wind, a favor that lingered only briefly before the blade's aura dimmed and vanished; an already-blessed blade refused a second blessing. The rite has since fallen out of use and is no longer taught or castable by any calling.
 ===========================================================================
 See also: healing blade, elemental aura, enchant weapon
+
+#
+"DIVINE WARDING" (Spell)
+===========================================================================
+Cleric circle: 11th
+Area of effect: <target>
+Aggressive: No
+Cumulative: No
+Type of spell: Protection
+
+Divine Warding grants one target all seven base cleric protection spells:
+protection from fire, cold, acid, gas, lightning, good, and evil. Each
+protection has its normal strength and duration and can be dispelled
+individually. Recasting refreshes the protections rather than stacking them.
+The target must be in the same room; the caster may target themselves.
+
+Usage: cast 'divine warding' <target>
+
+See also: Protection from Fire, Protection from Cold, Protection from Evil
+
+#
+"MASS PURIFICATION" (Spell)
+===========================================================================
+Cleric circle: 12th
+Area of effect: <caster and group in room>
+Aggressive: No
+Cumulative: No
+Type of spell: Curing
+
+Mass Purification cleanses the caster and living group members in the same
+room of poison, blindness, disease, and contagion, using the normal cure
+mechanics. It works on the caster even when ungrouped. It restores no hit
+points and grants no lasting immunity. It does not remove curses, plague,
+or other ailments outside those handled by these cures.
+
+Usage: cast 'mass purification'
+
+See also: Remove Poison, Cure Blind, Cure Disease

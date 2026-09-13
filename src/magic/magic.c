@@ -9301,6 +9301,53 @@ void spell_channel(int /*level*/, P_char ch, P_char victim, P_obj obj)
 	}
 }
 
+void spell_divine_warding(int level, P_char ch, char * /*arg*/, int type, P_char victim,
+			  P_obj /*obj*/)
+{
+	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || ch->in_room == NOWHERE ||
+	    ch->in_room != victim->in_room)
+		return;
+
+	// Keep the individual protections' duration, refresh, and dispel behavior.
+	spell_protection_from_fire(level, ch, nullptr, type, victim, nullptr);
+	spell_protection_from_cold(level, ch, nullptr, type, victim, nullptr);
+	spell_protection_from_acid(level, ch, nullptr, type, victim, nullptr);
+	spell_protection_from_gas(level, ch, nullptr, type, victim, nullptr);
+	spell_protection_from_lightning(level, ch, nullptr, type, victim, nullptr);
+	spell_protection_from_good(level, ch, nullptr, type, victim, nullptr);
+	spell_protection_from_evil(level, ch, nullptr, type, victim, nullptr);
+}
+
+static void purify_group_member(int level, P_char ch, int type, P_char victim)
+{
+	if (!IS_ALIVE(victim) || victim->in_room != ch->in_room)
+		return;
+
+	if (poison_common_remove(victim))
+		send_to_char("&+WDivine power purges the poison from your body.&n\n", victim);
+	spell_cure_blind(level, ch, nullptr, type, victim, nullptr);
+	if (affected_by_spell(victim, SPELL_DISEASE))
+		spell_cure_disease(level, ch, nullptr, type, victim, nullptr);
+	// Cure Disease removes one ailment per call; cleanse both when they coexist.
+	if (affected_by_spell(victim, SPELL_CONTAGION))
+		spell_cure_disease(level, ch, nullptr, type, victim, nullptr);
+}
+
+void spell_mass_purification(int level, P_char ch, char * /*arg*/, int type, P_char /*victim*/,
+			     P_obj /*obj*/)
+{
+	if (!IS_ALIVE(ch) || ch->in_room == NOWHERE)
+		return;
+
+	send_to_char("&+WA wave of divine purification flows from you.&n\n", ch);
+	purify_group_member(level, ch, type, ch);
+	for (auto *member = ch->group; member; member = member->next)
+	{
+		if (member->ch != ch)
+			purify_group_member(level, ch, type, member->ch);
+	}
+}
+
 void spell_miracle(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
 		   P_obj /*obj*/)
 {

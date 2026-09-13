@@ -2637,6 +2637,8 @@ void spell_group_recall(int, P_char, char *, int, P_char, P_obj);
 void spell_group_stone_skin(int, P_char, char *, int, P_char, P_obj);
 void spell_group_haste(int, P_char, char *, int, P_char, P_obj);
 void spell_miracle(int, P_char, char *, int, P_char, P_obj);
+void spell_divine_warding(int, P_char, char *, int, P_char, P_obj);
+void spell_mass_purification(int, P_char, char *, int, P_char, P_obj);
 void cast_channel(int, P_char, char *, int, P_char, P_obj);
 void spell_elemental_form(int, P_char, char *, int, P_char, P_obj);
 void spell_wall_of_flames(int, P_char, char *, int, P_char, P_obj);

@@ -1695,7 +1695,7 @@ void initialize_skills()
 
 	SPELL_CREATE_MSG("miracle", SPELL_MIRACLE, PULSE_SPELLCAST * 7 / 3, TAR_IGNORE,
 			 spell_miracle, "You feel less vitalized.");
-	SPELL_ADD(CLASS_CLERIC, 12);
+	SPELL_ADD(CLASS_CLERIC, 7);
 
 	SPELL_CREATE("channel", SPELL_CHANNEL, PULSE_SPELLCAST * 3, TAR_IGNORE, cast_channel);
 
@@ -1802,7 +1802,7 @@ void initialize_skills()
 
 	SPELL_CREATE("mass preserve", SPELL_MASS_PRESERVE, PULSE_SPELLCAST * 3,
 		     TAR_IGNORE | TAR_NOCOMBAT, spell_mass_preserve);
-	SPELL_ADD(CLASS_CLERIC, 11);
+	SPELL_ADD(CLASS_CLERIC, 6);
 
 	SPELL_CREATE_MSG("mass invisibility", SPELL_MASS_INVIS, PULSE_SPELLCAST * 3,
 			 TAR_IGNORE | TAR_NOCOMBAT, spell_mass_invisibility,
@@ -5092,6 +5092,14 @@ void initialize_skills()
 			 TAR_CHAR_ROOM | TAR_NOCOMBAT, spell_greater_guardian_ward,
 			 "&+CThe spirits no longer protect you.&n");
 	// SPELL_ADD(CLASS_SHAMAN, 9);
+
+	SPELL_CREATE("divine warding", SPELL_DIVINE_WARDING, PULSE_SPELLCAST * 4, TAR_CHAR_ROOM,
+		     spell_divine_warding);
+	SPELL_ADD(CLASS_CLERIC, 11);
+
+	SPELL_CREATE("mass purification", SPELL_MASS_PURIFICATION, PULSE_SPELLCAST * 4, TAR_IGNORE,
+		     spell_mass_purification);
+	SPELL_ADD(CLASS_CLERIC, 12);
 
 	SPELL_CREATE("divine font", SPELL_DIVINE_FONT, PULSE_SPELLCAST * 10,
 		     TAR_IGNORE | TAR_NOCOMBAT, spell_divine_font);
