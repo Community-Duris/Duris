@@ -310,7 +310,10 @@ ResolvedOutputProfile resolve_output_profile(std::shared_ptr<const OutputProfile
 	result.context.base_attr = profile->base_attr;
 	auto dictionary = snapshot->dictionaries_.find(profile->dictionary);
 	if (dictionary != snapshot->dictionaries_.end())
+	{
 		result.context.words = &dictionary->second.stable_words;
+		result.context.recipes = &dictionary->second.recipes;
+	}
 	result.sender_attr = profile->sender_attr;
 	result.entity_attr = profile->entity_attr;
 	result.context.snapshot_owner = std::move(snapshot);
@@ -434,6 +437,7 @@ class OutputProfileParser
 					invalid(where, "duplicate normalized word");
 				dictionary.stable_words.emplace(
 					word, recipe->palette[recipe->stable_index]);
+				dictionary.recipes.emplace(word, recipe);
 			}
 			if (!result.dictionaries_.emplace(name, std::move(dictionary)).second)
 				invalid(where, "duplicate normalized dictionary");

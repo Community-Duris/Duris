@@ -40,8 +40,10 @@ static void replace(cJSON *object, const char *key, cJSON *value)
 {
 	assert(cJSON_ReplaceItemInObjectCaseSensitive(object, key, value));
 }
-static std::string display(const OutputContext &context, const char *message)
+static std::string static_display(OutputContext context, const char *message)
 {
+	if (context.policy == OutputPolicy::Animated)
+		context.policy = OutputPolicy::Static;
 	std::string result;
 	return render_output_message(message, context, result) ? result : message;
 }
@@ -89,9 +91,9 @@ int main(int argc, char **argv)
 	auto resolve = [&](OutputPolicy caller = OutputPolicy::Static)
 	{ return resolve_output_profile(registry.snapshot(), channel, caller, preferences); };
 	assert(resolve().context.policy == OutputPolicy::Animated);
-	assert(display(resolve().context, "Water waters water's waterfall") ==
+	assert(static_display(resolve().context, "Water waters water's waterfall") ==
 	       "&+BWater&n &+Bwaters&n &+Bwater's&n waterfall");
-	assert(display(resolve().context, "&+rwater&n wa&+wter") == "&+rwater&n wa&+wter");
+	assert(static_display(resolve().context, "&+rwater&n wa&+wter") == "&+rwater&n wa&+wter");
 	assert(resolve(OutputPolicy::Preserve).context.policy == OutputPolicy::Preserve);
 	assert(resolve(static_cast<OutputPolicy>(99)).context.policy == OutputPolicy::Preserve);
 	assert(resolve_output_profile(nullptr, channel, OutputPolicy::Animated).context.policy ==
@@ -130,7 +132,8 @@ int main(int argc, char **argv)
 	OutputStyleSpan spans[] = { { 0, 5, StyleOrigin::Entity, conversation.entity_attr },
 				    { 6, 11, StyleOrigin::Authored, 0 } };
 	conversation.context.spans = spans;
-	assert(display(conversation.context, "water water water") == "&+Wwater&n water &+Bwater&n");
+	assert(static_display(conversation.context, "water water water") ==
+	       "&+Wwater&n water &+Bwater&n");
 	assert(resolve_output_profile(original, OutputChannel::ChatSay, OutputPolicy::Preserve,
 				      preferences)
 		       .context.policy == OutputPolicy::Preserve);
@@ -138,10 +141,10 @@ int main(int argc, char **argv)
 	assert(resolve_output_profile(original, OutputChannel::ChatSay, OutputPolicy::Static,
 				      preferences)
 		       .context.policy == OutputPolicy::Preserve);
-	assert(display(resolve_output_profile(original, OutputChannel::RoomTitle,
-					      OutputPolicy::Static)
-			       .context,
-		       "An old forest") == "&+GAn old forest&n");
+	assert(static_display(resolve_output_profile(original, OutputChannel::RoomTitle,
+						     OutputPolicy::Static)
+				      .context,
+			      "An old forest") == "&+GAn old forest&n");
 
 	std::set<OutputRecipeKind> kinds;
 	for (const char *name : { "river", "leaves", "flames", "ice", "magic", "snow" })
@@ -163,7 +166,7 @@ int main(int argc, char **argv)
 		assert(!result.ok && !result.diagnostic.empty() &&
 		       result.revision == before->revision());
 		assert(registry.snapshot() == before);
-		assert(display(resolve().context, "water") == "&+Bwater&n");
+		assert(static_display(resolve().context, "water") == "&+Bwater&n");
 	};
 	reject("");
 	reject(sample + "garbage");
@@ -374,9 +377,10 @@ int main(int argc, char **argv)
 						     "dictionary", cJSON_CreateString("TERRAIN"));
 				     }))
 		       .ok);
-	assert(display(resolve_output_profile(bounds.snapshot(), channel, OutputPolicy::Static)
-			       .context,
-		       "water") == "&+Bwater&n");
+	assert(static_display(resolve_output_profile(bounds.snapshot(), channel,
+						     OutputPolicy::Static)
+				      .context,
+			      "water") == "&+Bwater&n");
 
 	// Retained OutputContext owns its dictionary even after a registry is destroyed.
 	OutputContext retained;
@@ -387,7 +391,7 @@ int main(int argc, char **argv)
 			resolve_output_profile(temporary.snapshot(), channel, OutputPolicy::Static)
 				.context;
 	}
-	assert(display(retained, "water") == "&+Bwater&n");
+	assert(static_display(retained, "water") == "&+Bwater&n");
 	const auto path = std::filesystem::path(argv[2]) / "profiles.json";
 	assert(!registry.reload_file(path.string()).ok);
 	assert(!registry.reload_file(argv[2]).ok);
@@ -408,7 +412,7 @@ int main(int argc, char **argv)
 	}
 	assert(!registry.reload_file(path.string()).ok && registry.snapshot() == file_snapshot);
 	assert(std::filesystem::remove(path));
-	assert(display(resolve().context, "water") == "&+Bwater&n");
+	assert(static_display(resolve().context, "water") == "&+Bwater&n");
 
 	std::string alternate = changed(
 		sample,
@@ -420,8 +424,8 @@ int main(int argc, char **argv)
 		});
 	auto frozen_before_reload = resolve().context;
 	assert(registry.reload_json(alternate).ok && registry.snapshot()->revision() == 2);
-	assert(display(resolve().context, "water") == "&+rwater&n");
-	assert(display(frozen_before_reload, "water") == "&+Bwater&n");
+	assert(static_display(resolve().context, "water") == "&+rwater&n");
+	assert(static_display(frozen_before_reload, "water") == "&+Bwater&n");
 	// A single publisher and concurrent readers must see coherent revisions/frames.
 	std::atomic<bool> stop{ false };
 	std::atomic<size_t> reads{ 0 };
@@ -433,7 +437,7 @@ int main(int argc, char **argv)
 				auto snapshot = registry.snapshot();
 				auto selection = resolve_output_profile(snapshot, channel,
 									OutputPolicy::Static);
-				assert(display(selection.context, "water") ==
+				assert(static_display(selection.context, "water") ==
 				       (snapshot->revision() == 1 ? "&+Bwater&n" : "&+rwater&n"));
 				++reads;
 			}
