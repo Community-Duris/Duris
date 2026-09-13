@@ -219,6 +219,7 @@ const char *get_function_name(void *func);
 void release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
 extern void event_mob_mundane(P_char, P_char, P_obj, void *);
 extern void event_spellcast(P_char, P_char, P_obj, void *);
+extern void event_item_action_active(P_char, P_char, P_obj, void *);
 extern void event_memorize(P_char, P_char, P_obj, void *);
 extern void event_wait(P_char, P_char, P_obj, void *);
 extern void event_mana_regen(P_char, P_char, P_obj, void *);
@@ -257,6 +258,8 @@ static const char *nevent_callback_label(event_func_type func)
 		return "event_ward_regen";
 	if (func == event_spellcast)
 		return "event_spellcast";
+	if (func == event_item_action_active)
+		return "event_item_action_active";
 	if (func == event_memorize)
 		return "event_memorize";
 	if (func == event_wait)
@@ -274,7 +277,8 @@ static bool nevent_is_player_timed(event_func_type func, P_char ch)
 {
 	if (!ch)
 		return FALSE;
-	if (func == event_spellcast || func == event_memorize || func == event_balance_affects)
+	if (func == event_spellcast || func == event_memorize || func == event_balance_affects ||
+	    func == event_item_action_active)
 		return IS_PC(ch);
 	/* event_wait clears the player's command gate set by CharWait().  If it
 	 * misses its deadline, the player remains unable to issue commands after
