@@ -47,6 +47,7 @@ struct pending_item_action
 	bool terminal = false;
 	bool resolving = false;
 	bool effect_started = false;
+	uint8_t effects_invoked = 0;
 	bool progress_emitted = false;
 	item_action_cancel_reason cleanup_reason = item_action_cancel_reason::runtime_cleanup;
 
@@ -95,7 +96,10 @@ void finish_action(const std::shared_ptr<pending_item_action> &entry, item_actio
 		outcome = item_action_outcome::partially_resolved;
 	if (entry->consumption != item_action_consumption::rejected)
 	{
-		if (outcome == item_action_outcome::completed)
+		// A native final effect can kill/extract its target and synchronously
+		// trigger cleanup. Every captured call was still invoked in that case.
+		if (outcome == item_action_outcome::completed ||
+		    entry->effects_invoked == entry->definition.effect_count)
 			item_actions_note(item_action_metric::completed);
 		else
 		{
@@ -297,6 +301,7 @@ void progress_action(void *data)
 			return;
 		}
 		entry->effect_started = true;
+		++entry->effects_invoked;
 		item_actions_note(item_action_metric::effects_invoked);
 		entry->selected->adapter->resolve({ entry->identity, entry->definition, actor,
 						    target, source },
@@ -545,6 +550,7 @@ static item_action_start start_action(uint32_t ability_id, P_char actor, P_char 
 			return item_action_start::suppressed;
 		}
 		entry->effect_started = true;
+		++entry->effects_invoked;
 		item_actions_note(item_action_metric::effects_invoked);
 		selected->adapter->resolve({ identity, entry->definition, live_actor, live_target,
 					     live_object },

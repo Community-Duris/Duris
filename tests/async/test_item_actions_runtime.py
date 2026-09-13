@@ -547,6 +547,10 @@ static void test_bounded_telemetry() {
     { scene s(false,2); observe(); s.report.mutation=1; s.start(); advance();
       assert(metric(item_action_metric::partial)==1 && metric(item_action_metric::effect_failures)==1);
       assert(metric(item_action_metric::effects_invoked)==1 && cancelled(item_action_cancel_reason::target_departure)==1); }
+    { scene s(false,1); observe(); s.report.mutation=1; s.start(); advance();
+      assert(metric(item_action_metric::completed)==1 && !metric(item_action_metric::effect_failures));
+      assert(!metric(item_action_metric::partial) && !cancelled(item_action_cancel_reason::target_departure));
+      assert(metric(item_action_metric::effects_invoked)==1 && s.report.finishes==1); }
     { scene s; s.start(); observe(); assert(item_actions_pending()==1); advance();
       assert(s.report.effects==1); // Merely enabling observation must not cancel work.
       telemetry.counters[static_cast<size_t>(item_action_metric::selected)]=UINT64_MAX;
