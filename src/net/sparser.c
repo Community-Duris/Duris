@@ -8,6 +8,7 @@
 */
 
 #include "core/prototypes.h"
+#include "item/item_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1214,6 +1215,7 @@ void show_abort_casting(P_char ch)
 
 void StopCasting(P_char ch)
 {
+	abort_item_action(ch);
 	show_abort_casting(ch);
 
 	clear_links(ch, LNK_CAST_ROOM);
@@ -1242,6 +1244,11 @@ void do_abort(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!IS_ALIVE(ch))
 		return;
+	if (abort_item_action(ch))
+	{
+		send_to_char("You stop using the item.\r\n", ch);
+		return; // Do not clear or replace an unrelated event_wait.
+	}
 
 	if (IS_AFFECTED2(ch, AFF2_CASTING))
 	{
