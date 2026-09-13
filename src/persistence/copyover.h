@@ -7,10 +7,11 @@
 #define _COPYOVER_H_
 
 #include "core/structs.h" // for P_char, P_desc, etc
+#include "world/transport.h"
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 12 // nested object trees plus live custody handoff
+#define COPYOVER_VERSION 13 // transport route and rider state; reads version 12 too
 
 // copyover file header
 struct copyover_header
@@ -80,6 +81,7 @@ struct copyover_mob
 	int num_carrying; // carried items saved after affects
 	int gold; // mob's gold
 	int birthplace; // original zone spawn room vnum
+	transport_snapshot transport;
 };
 
 // affect data for copyover - matches affected_type fields
@@ -139,6 +141,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc);
 int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc);
 void copyover_restore_combat(void);
 int is_copyover_boot(void);
+bool copyover_has_durable_shopkeepers();
 void copyover_clear_boot(void);
 
 // helper to clear fd_cloexec on accepted sockets

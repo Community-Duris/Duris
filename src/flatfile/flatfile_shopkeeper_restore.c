@@ -17,6 +17,8 @@ extern P_index obj_index;
 extern struct shop_data *shop_index;
 extern int number_of_shops;
 extern int top_of_objt;
+extern P_room world;
+extern int top_of_world;
 
 namespace
 {
@@ -83,11 +85,11 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 			       flatfile_shopkeeper_restore_result::io_error :
 			       flatfile_shopkeeper_restore_result::invalid;
 
-	std::unordered_set<int32_t> mobile_vnums;
+	std::unordered_set<uint64_t> mobile_rooms;
 	std::vector<flatfile_materialized_shopkeeper> staged;
 	try
 	{
-		mobile_vnums.reserve(records.size());
+		mobile_rooms.reserve(records.size());
 		staged.reserve(records.size());
 	}
 	catch (const std::bad_alloc &)
@@ -98,8 +100,11 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 	{
 		try
 		{
-			if (!mobile_vnums.insert(record.mob_vnum).second ||
-			    !valid_shop_binding(record))
+			const uint64_t identity =
+				(static_cast<uint64_t>(static_cast<uint32_t>(record.mob_vnum))
+				 << 32) |
+				static_cast<uint32_t>(record.room_vnum);
+			if (!mobile_rooms.insert(identity).second || !valid_shop_binding(record))
 			{
 				discard_staged(&staged, records);
 				return flatfile_shopkeeper_restore_result::invalid;
@@ -154,8 +159,11 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 	{
 		P_char next = existing->next;
 		if (IS_NPC(existing) && replacements.find(existing) == replacements.end() &&
-		    mobile_vnums.find(mob_index[GET_RNUM(existing)].virtual_number) !=
-			    mobile_vnums.end())
+		    existing->in_room >= 0 && existing->in_room <= top_of_world &&
+		    mobile_rooms.count((static_cast<uint64_t>(static_cast<uint32_t>(
+						mob_index[GET_RNUM(existing)].virtual_number))
+					<< 32) |
+				       static_cast<uint32_t>(world[existing->in_room].number)))
 			extract_char(existing);
 		existing = next;
 	}

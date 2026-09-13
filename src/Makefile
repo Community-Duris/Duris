@@ -452,6 +452,7 @@ OBJS =  $(SHIP_OBJS) \
 				 kingdom/kingdom_cmds.o \
 				 kingdom/kingdom_db.o \
 				 world/transport.o \
+				 world/world_singletons.o \
 				 item/trophy.o \
 				 net/unicode.o \
 				 persistence/persistence_log.o \

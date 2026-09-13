@@ -9,6 +9,7 @@
 #include "world/transport.h"
 #include <ctype.h>
 #include <list>
+#include <vector>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -24,6 +25,7 @@ extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
 extern P_room world;
+extern int top_of_world;
 extern const char *dirs[];
 extern const char *dirs2[];
 extern const int rev_dir[];
@@ -145,39 +147,228 @@ bool valid_flying_edge(int from_room, int dir)
 	return VALID_FLYING_EDGE(from_room, dir);
 }
 
+static int transport_service(P_char mob)
+{
+	if (!mob || !IS_NPC(mob) || GET_RNUM(mob) < 0 || GET_MASTER(mob))
+		return -1;
+	for (int i = 0; transports[i].mob_vnum; ++i)
+		if (mob_index[GET_RNUM(mob)].virtual_number == transports[i].mob_vnum)
+			return i;
+	return -1;
+}
+
+void transport_capture(P_char mob, transport_snapshot *snapshot)
+{
+	*snapshot = {};
+	const int service = transport_service(mob);
+	if (service < 0)
+		return;
+	snapshot->origin = transports[service].origin_vnum;
+	snapshot->state = TRANSPORT_STATE(mob);
+	snapshot->step = TRANSPORT_STEP(mob);
+	const int route = TRANSPORT_ROUTE(mob);
+	if (route >= 0 && route < static_cast<int>(std::size(transport_routes)) - 1)
+		snapshot->destination = transport_routes[route].destination_vnum;
+	P_char rider = GET_RIDER(mob);
+	if (rider && !IS_NPC(rider))
+		strlcpy(snapshot->rider, GET_NAME(rider), sizeof(snapshot->rider));
+}
+
+void transport_restore(P_char mob, const transport_snapshot &snapshot)
+{
+	const int service = transport_service(mob);
+	if (service < 0)
+		return;
+	TRANSPORT_ROUTE(mob) = -1;
+	TRANSPORT_STATE(mob) = TRANSPORT_STATE_WAITING;
+	TRANSPORT_STEP(mob) = 0;
+	mob->only.npc->transport_recovery_pending = true;
+	mob->only.npc->recovered_transport_rider[0] = '\0';
+	if (snapshot.origin != transports[service].origin_vnum ||
+	    !memchr(snapshot.rider, '\0', sizeof(snapshot.rider)))
+		return;
+	for (int route = 0; transport_routes[route].origin_vnum; ++route)
+		if (transport_routes[route].origin_vnum == snapshot.origin &&
+		    transport_routes[route].destination_vnum == snapshot.destination)
+		{
+			TRANSPORT_ROUTE(mob) = route;
+			TRANSPORT_STATE(mob) = snapshot.state;
+			TRANSPORT_STEP(mob) = snapshot.step;
+			strlcpy(mob->only.npc->recovered_transport_rider, snapshot.rider,
+				sizeof(mob->only.npc->recovered_transport_rider));
+			break;
+		}
+}
+
+static void transport_land_at_home(P_char mob, int origin)
+{
+	// An occupied legacy/duplicate flight is landed with its passenger before
+	// retiring the extra dragon. Extraction must never strand a linked rider.
+	P_char rider = GET_RIDER(mob);
+	if (rider)
+	{
+		unlink_char(rider, mob, LNK_RIDING);
+		rider->specials.z_cord = 0;
+		if (rider->in_room != origin)
+		{
+			char_from_room(rider);
+			char_to_room(rider, origin, -1);
+		}
+	}
+	nevent_cancel(nevent_find_next(mob, event_flying_transport_move));
+	nevent_cancel(nevent_find_next(mob, event_flying_transport_return));
+	if (mob->in_room != origin)
+	{
+		if (mob->in_room != NOWHERE)
+			char_from_room(mob);
+		char_to_room(mob, origin, -1);
+	}
+	mob->specials.z_cord = 0;
+	TRANSPORT_STATE(mob) = TRANSPORT_STATE_WAITING;
+	TRANSPORT_ROUTE(mob) = -1;
+	TRANSPORT_STEP(mob) = 0;
+}
+
 void initialize_transport()
 {
-	for (int i = 0; transport_routes[i].origin_vnum; i++)
+	static bool paths_initialized = false;
+	for (int i = 0; !paths_initialized && transport_routes[i].origin_vnum; i++)
 	{
-		bool found_path = dijkstra(real_room0(transport_routes[i].origin_vnum),
-					   real_room0(transport_routes[i].destination_vnum),
-					   valid_flying_edge, transport_routes[i].path);
+		const int origin = real_room(transport_routes[i].origin_vnum);
+		const int destination = real_room(transport_routes[i].destination_vnum);
+		bool found_path =
+			origin >= 0 && destination >= 0 &&
+			dijkstra(origin, destination, valid_flying_edge, transport_routes[i].path);
 		if (!found_path)
 		{
 			fprintf(stderr, "  - no route found for [%d] -> [%d] %s\n",
 				transport_routes[i].origin_vnum,
 				transport_routes[i].destination_vnum,
 				strip_ansi(transport_routes[i].name).c_str());
-			transport_routes[i].origin_vnum = 0;
+			transport_routes[i].path.clear();
 		}
 	}
+	paths_initialized = true;
 
 	for (int i = 0; transports[i].mob_vnum; i++)
 	{
-		P_obj sign = read_object(TRANSPORT_SIGN_VNUM, VIRTUAL);
-		if (!sign)
+		const int origin = real_room(transports[i].origin_vnum);
+		const int mobile = real_mobile(transports[i].mob_vnum);
+		if (origin < 0 || mobile < 0)
 			continue;
-		P_char mob = read_mobile(transports[i].mob_vnum, VIRTUAL);
+		mob_index[mobile].func.mob = flying_transport;
+		P_obj sign = nullptr;
+		for (P_obj object = world[origin].contents; object;)
+		{
+			P_obj next = object->next_content;
+			if (OBJ_VNUM(object) == TRANSPORT_SIGN_VNUM)
+			{
+				if (!sign)
+					sign = object;
+				else
+				{
+					while (object->contains)
+					{
+						P_obj content = object->contains;
+						obj_from_obj(content);
+						obj_to_room(content, origin);
+					}
+					extract_obj(object);
+				}
+			}
+			object = next;
+		}
+		if (!sign)
+			if ((sign = read_object(TRANSPORT_SIGN_VNUM, VIRTUAL)))
+				obj_to_room(sign, origin);
+
+		std::vector<P_char> candidates;
+		P_char mob = nullptr;
+		for (P_char candidate = character_list; candidate; candidate = candidate->next)
+			if (transport_service(candidate) == i)
+			{
+				candidates.push_back(candidate);
+				// Reconnect only a recovered, co-located, currently unmounted player.
+				if (candidate->only.npc->transport_recovery_pending &&
+				    candidate->only.npc->recovered_transport_rider[0])
+				{
+					P_char rider = find_player_by_name(
+						candidate->only.npc->recovered_transport_rider);
+					if (rider && rider->in_room == candidate->in_room &&
+					    !GET_MOUNT(rider))
+						link_char(rider, candidate, LNK_RIDING);
+				}
+				if (!mob || (GET_RIDER(candidate) && !GET_RIDER(mob)) ||
+				    (!GET_RIDER(mob) && !GET_RIDER(candidate) &&
+				     TRANSPORT_STATE(candidate) == TRANSPORT_STATE_MOVING))
+					mob = candidate;
+			}
+		if (!mob)
+		{
+			mob = read_mobile(mobile, REAL);
+			if (mob)
+				transport_land_at_home(mob, origin);
+		}
 		if (!mob)
 			continue;
-		mob_index[real_mobile0(transports[i].mob_vnum)].func.mob = flying_transport;
+		for (P_char duplicate : candidates)
+			if (duplicate != mob)
+			{
+				transport_land_at_home(duplicate, origin);
+				// Retain any items that players gave an old duplicate.
+				while (duplicate->carrying)
+				{
+					P_obj object = duplicate->carrying;
+					obj_from_char(object);
+					obj_to_char(object, mob);
+				}
+				for (int slot = 0; slot < MAX_WEAR; ++slot)
+					if (duplicate->equipment[slot])
+						obj_to_char(unequip_char(duplicate, slot), mob);
+				extract_char(duplicate);
+			}
 		GET_HOME(mob) = GET_BIRTHPLACE(mob) = GET_ORIG_BIRTHPLACE(mob) =
 			transports[i].origin_vnum;
 		SET_BIT(mob->specials.affected_by, AFF_FLY);
-		TRANSPORT_ROUTE(mob) = -1;
-		TRANSPORT_STATE(mob) = TRANSPORT_STATE_WAITING;
-		char_to_room(mob, real_room0(transports[i].origin_vnum), -1);
-		obj_to_room(sign, real_room0(transports[i].origin_vnum));
+		if (mob->only.npc->transport_recovery_pending)
+		{
+			const int route = TRANSPORT_ROUTE(mob);
+			bool valid = route >= 0 &&
+				     route < static_cast<int>(std::size(transport_routes)) - 1 &&
+				     TRANSPORT_STATE(mob) == TRANSPORT_STATE_MOVING &&
+				     TRANSPORT_STEP(mob) >= 0 &&
+				     TRANSPORT_STEP(mob) <=
+					     static_cast<int>(transport_routes[route].path.size());
+			int expected_room = origin;
+			for (int step = 0; valid && step < TRANSPORT_STEP(mob); ++step)
+			{
+				const int dir = transport_routes[route].path[step];
+				if (expected_room < 0 || expected_room > top_of_world ||
+				    !world[expected_room].dir_option[dir])
+					valid = false;
+				else
+					expected_room = TOROOM(expected_room, dir);
+			}
+			if (valid && expected_room >= 0 && expected_room <= top_of_world &&
+			    expected_room == mob->in_room && !transport_routes[route].path.empty())
+			{
+				P_char rider = GET_RIDER(mob);
+				mob->specials.z_cord = 10;
+				if (rider)
+					rider->specials.z_cord = 10;
+				if (!add_event(rider ? event_flying_transport_move :
+						       event_flying_transport_return,
+					       PULSE_VIOLENCE, mob, rider, 0, 0, 0, 0))
+					transport_land_at_home(mob, origin);
+			}
+			else
+				transport_land_at_home(mob, origin);
+			mob->only.npc->transport_recovery_pending = false;
+			mob->only.npc->recovered_transport_rider[0] = '\0';
+		}
+		if (candidates.size() > 1)
+			logit(LOG_STATUS, "world singleton: transport=%d removed=%zu",
+			      transports[i].mob_vnum, candidates.size() - 1);
 	}
 }
 

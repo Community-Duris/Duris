@@ -5,6 +5,7 @@
 
 #include "persistence/persistence_log.h"
 #include "core/prototypes.h"
+#include "world/world_singletons.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -89,6 +90,19 @@ struct copyover_worker_resume_guard
 	}
 };
 } // namespace
+
+bool copyover_has_durable_shopkeepers()
+{
+	FILE *file = fopen(COPYOVER_FILE, "rb");
+	if (!file)
+		return false;
+	copyover_header header = {};
+	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
+			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
+			     header.version == COPYOVER_VERSION;
+	fclose(file);
+	return current;
+}
 
 int is_copyover_boot(void)
 {
@@ -247,6 +261,7 @@ static int write_mob_entry(FILE *fp, P_char mob)
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	transport_capture(mob, &entry.transport);
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
 }
@@ -593,6 +608,14 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		return false;
 	}
 
+	// Preserve custom shop item state that the basic NPC file record omits.
+	if (!mini_mode && !snapshot_shopkeepers_for_copyover())
+	{
+		logit(LOG_STATUS, "copyover: shopkeeper snapshot failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+
 	// count items to save
 	count_copyover_items(&num_descs, &num_mobs, &num_objs, &num_rooms);
 
@@ -910,7 +933,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 	// read and verify header
 	if (fread(&header, sizeof(header), 1, fp) != 1 ||
-	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 || header.version != COPYOVER_VERSION)
+	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
+	    (header.version != COPYOVER_VERSION && header.version != 12))
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
 		goto copyover_recover_fail;
@@ -1060,12 +1084,14 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// restore mobs directly from saved data (zones were not reset)
 	for (i = 0; i < header.num_mobs; i++)
 	{
-		struct copyover_mob mob_entry;
+		struct copyover_mob mob_entry = {};
 		struct copyover_affect aff_entries[64];
 		copyover_carried_item inv_entries[256];
 		int num_affs, num_inv;
 
-		if (fread(&mob_entry, sizeof(mob_entry), 1, fp) != 1)
+		const size_t mob_bytes = header.version == 12 ? offsetof(copyover_mob, transport) :
+								sizeof(mob_entry);
+		if (fread(&mob_entry, mob_bytes, 1, fp) != 1)
 			goto copyover_recover_fail;
 
 		// read affects into temp array
@@ -1141,6 +1167,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		// restore gold
 		GET_GOLD(mob) = mob_entry.gold;
 		GET_BIRTHPLACE(mob) = mob_entry.birthplace;
+		transport_restore(mob, mob_entry.transport);
 
 		// restore affects
 		for (int a = 0; a < num_affs; a++)
@@ -1445,6 +1472,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 	entry.gold = GET_GOLD(mob);
 	entry.birthplace = GET_BIRTHPLACE(mob);
+	transport_capture(mob, &entry.transport);
 
 	memcpy(buf + offset, &entry, sizeof(entry));
 	offset += sizeof(entry);
@@ -1593,6 +1621,7 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 	SET_POS(mob, POS_STANDING + STAT_NORMAL);
 	GET_GOLD(mob) = mob_entry.gold;
 	GET_BIRTHPLACE(mob) = mob_entry.birthplace;
+	transport_restore(mob, mob_entry.transport);
 
 	// restore affects
 	for (int a = 0; a < mob_entry.num_affects; a++)
