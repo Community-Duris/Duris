@@ -157,6 +157,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/db.o \
 				 account/character_identity.o \
 				 core/debug.o \
+				 world/difficulty.o \
 				 classes/disguise.o \
 				 classes/drannak.o \
 				 item/enhance.o \

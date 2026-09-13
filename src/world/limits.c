@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -186,7 +187,7 @@ int mana_regen(P_char ch, bool display_only)
 	    !IS_TWILIGHT_ROOM(ch->in_room) && !IS_AFFECTED4(ch, AFF4_GLOBE_OF_DARKNESS))
 		gain = 0;
 
-	return gain * gain / 8;
+	return difficulty_scale_player_regen(ch, gain * gain / 8);
 }
 
 /* * calculate ch's hit regeneration rate, return regen/minute */
@@ -366,7 +367,7 @@ int hit_regen(P_char ch, bool display_only)
 		gain = 0;
 	}
 
-	return (gain);
+	return difficulty_scale_player_regen(ch, gain);
 }
 
 /*
@@ -476,7 +477,7 @@ int move_regen(P_char ch, bool display_only)
 	if (GET_RACE(ch) == RACE_QUADRUPED)
 		gain += dice(2, 3);
 
-	return (int)(gain * fabsf(gain) / 5);
+	return difficulty_scale_player_regen(ch, (int)(gain * fabsf(gain) / 5));
 	//  return (int) (gain * gain / 5);
 }
 
@@ -851,6 +852,7 @@ void update_exp_table()
 
 	new_exp_table[0] = 0;
 	global_exp_limit = 0;
+	int configured = 2000;
 
 	debug("Generating exp table.\n");
 	for (i = 1; i <= MAXLVL; i++)
@@ -861,13 +863,16 @@ void update_exp_table()
 		//    sprintf(buf, "exp.required.%d", ((i + 4) / 5) * 5);
 		sprintf(buf, "exp.required.%02d", i);
 		int propVal = get_property(buf, -1);
-		// If exp.required.i not found, set to i-1's value.
+		// If exp.required.i not found, set to i-1's configured value. The table entry
+		// itself carries the difficulty dial, so it is not reused as the fallback.
 		if (propVal == -1)
 		{
 			// Default lvl 1 exp is 2k.  But lvl 1 exp property should be set.
-			propVal = (i == 1) ? 2000 : new_exp_table[i - 1];
+			propVal = (i == 1) ? 2000 : configured;
 		}
-		new_exp_table[i] = propVal;
+		configured = propVal;
+		new_exp_table[i] = difficulty_scale_long(
+			propVal, difficulty_multiplier(DIFFICULTY_EXP_REQUIRED));
 		global_exp_limit += (long)new_exp_table[i];
 		debug("new_exp_table[%d]=%d, global_exp_limit=%ld", i, propVal, global_exp_limit);
 	}
@@ -1322,6 +1327,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		// So, .4 -> 80% modifier, .3 -> 60% modifier, .15 -> 30% modifier, etc.
 		if (exp_mods[EXPMOD_GLOBAL] < .5)
 			XP *= 2 * exp_mods[EXPMOD_GLOBAL];
+		XP *= difficulty_multiplier(DIFFICULTY_DEATH_PENALTY);
 		// debug("death 1 exp gain (%d)", (int)XP);
 	}
 	else if (type == EXP_KILL)
@@ -1437,6 +1443,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		}
 		// debug("quest 1 (%d)", (int)XP);
 	}
+
+	// Server-wide experience dial on everything earned outside PvP.
+	if (XP > 0 && !pvp && type != EXP_RESURRECT)
+		XP *= difficulty_multiplier(DIFFICULTY_EXP_EARNED);
 
 	int XP_final = (int)XP;
 	// debug("check 3 xp (%d)", XP_final);

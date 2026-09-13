@@ -5,6 +5,7 @@
 #include "world/epic.h"
 #include "economy/nexus_stones.h"
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "sql/sql.h"
 #include "magic/spells.h"
 #include "core/utils.h"
@@ -101,6 +102,7 @@ int artifact_feed_seconds(P_char character, int epics, int epic_type)
 		seconds = 0;
 		break;
 	}
+	seconds = difficulty_scale_int(seconds, difficulty_multiplier(DIFFICULTY_ARTIFACT_FEEDING));
 	if (affected_by_spell(character, TAG_PLR_RECENT_FRAG))
 		seconds = (seconds * 3) / 2;
 	return seconds;

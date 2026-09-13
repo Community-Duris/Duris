@@ -153,7 +153,7 @@ bool player_load_pets_stage(P_char owner, const player_load_result &result,
 		remaining_power -= cost;
 		if (golem)
 			remaining_golem_power -= cost;
-		P_char pet = read_mobile(mobile_number, REAL);
+		P_char pet = read_mobile(mobile_number, REAL, false);
 		if (!pet)
 		{
 			player_load_pets_discard(pets);

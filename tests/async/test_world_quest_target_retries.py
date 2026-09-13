@@ -30,6 +30,8 @@ constexpr int ACT_SPEC = 1;
 #define REMOVE_BIT(value, bits) ((value) &= ~(bits))
 #define BOUNDED(low, value, high) std::max((low), std::min((value), (high)))
 float get_property(const char *, double fallback) { return static_cast<float>(fallback); }
+// The difficulty module is not linked; a neutral world quest dial leaves the kill count alone.
+int difficulty_scale_world_quest_kills(int kills) { return kills; }
 struct pc_data {
     int quest_shares_left = 0, quest_active = 0, quest_mob_vnum = 0, quest_type = 0;
     int quest_accomplished = 0, quest_zone_number = 0, quest_giver = 0, quest_level = 0;

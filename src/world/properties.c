@@ -8,6 +8,7 @@
  *  */
 
 #include "core/prototypes.h"
+#include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/ws_handlers.h"
@@ -132,6 +133,8 @@ int get_property(const char *key, int default_value, bool fuss)
 
 void apply_properties()
 {
+	// First, so the tables rebuilt below (the experience table) see the current dials.
+	update_difficulty_dials();
 	update_stat_data();
 	update_damage_data();
 	update_spellpulse_data();
