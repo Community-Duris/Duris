@@ -129,6 +129,7 @@
 #include "core/utils.h"
 #include "core/utility.h"
 #include "mob/studioproc.h"
+#include "item/studio_abilities.h"
 
 extern int mini_mode;
 
@@ -424,6 +425,9 @@ struct sp_ctx
 	P_obj self_obj;
 	int self_room;
 	P_char actor;
+	uint64_t original_activator_id; // Independent of legacy object HIT actor/$n.
+	uint64_t struck_victim_id;
+	const char *item_arguments; // Borrowed only for synchronous admission.
 	P_obj given; /* GIVE: the object handed over        */
 	int self_dead_ok;
 	int blocked; /* a 'block' action ran                */
@@ -938,6 +942,20 @@ static int sp_do_command(P_char ch, const char *line)
 /* execution                                                          */
 /* ------------------------------------------------------------------ */
 
+static void sp_execute_item_ability(struct sp_trig *t, struct sp_ctx *cx, struct sp_action *a)
+{
+	const auto event = t->event == SP_EV_HIT ? studio_ability_trigger::hit :
+						   studio_ability_trigger::use;
+	const auto started = begin_studio_ability(
+		a->num, event, cx->self_obj,
+		find_character_by_runtime_id(cx->original_activator_id),
+		find_character_by_runtime_id(cx->struck_victim_id), cx->item_arguments);
+	// A selected active action owns this use even when admission fails.
+	// Low mana/caps may never drop into an ordinary instant device wrapper.
+	if (event == studio_ability_trigger::use && started != item_action_start::legacy)
+		cx->blocked = TRUE;
+}
+
 static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 {
 	int i, room, rr, dam, cap, pick, n;
@@ -999,6 +1017,9 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 
 		switch (a->op)
 		{
+		case SP_A_ITEM_ABILITY:
+			sp_execute_item_ability(t, cx, a);
+			break;
 		case SP_A_SAY:
 			sp_expand(a->text, cx, buf, sizeof(buf));
 			if (self)
@@ -1590,6 +1611,7 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 	struct sp_rec *rec;
 	struct sp_ctx cx;
 	char *targ = arg;
+	const uint64_t original_activator_id = actor ? actor->runtime_id : 0;
 
 	if (!obj || obj->R_num < 0 || !sp_on_game_thread())
 		return FALSE;
@@ -1604,6 +1626,8 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 	cx.targ = SP_T_OBJ;
 	cx.self_obj = obj;
 	cx.actor = actor;
+	cx.original_activator_id = original_activator_id;
+	cx.item_arguments = cmd == CMD_USE ? arg : nullptr;
 
 	/* these three do not pass a string in arg */
 	if (cmd == CMD_GOTHIT || cmd == CMD_GOTNUKED)
@@ -1617,7 +1641,10 @@ int studioproc_obj(P_obj obj, P_char actor, int cmd, char *arg)
 
 		targ = NULL;
 		if (vict && IS_ALIVE(vict))
+		{
 			cx.actor = vict;
+			cx.struck_victim_id = vict->runtime_id;
+		}
 	}
 	return sp_dispatch(rec, &cx, cmd, targ);
 }
@@ -2348,7 +2375,8 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 		}
 		if (strcmp(word, "any"))
 		{
-			n = old_search_block(word, 0, (uint)strlen(word), command, 2) - 1;
+			// The interpreter uses the one-based result as its command number.
+			n = old_search_block(word, 0, (uint)strlen(word), command, 2);
 			if (n < 0)
 			{
 				sp_err(vnum, "CMD: no such command verb", line);
@@ -2641,9 +2669,27 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 	sp_strlower(word);
 	while (*p == ' ')
 		p++;
+	if (t->num_actions &&
+	    (t->actions[0].op == SP_A_ITEM_ABILITY || !strcmp(word, "itemability")))
+	{
+		sp_err(vnum, "itemability must be the only action in its trigger", line);
+		return FALSE;
+	}
 
-	if (!strcmp(word, "say") || !strcmp(word, "emote") || !strcmp(word, "echo") ||
-	    !strcmp(word, "zecho"))
+	if (!strcmp(word, "itemability"))
+	{
+		uint32_t id = 0;
+		std::string error;
+		if (!parse_studio_ability_action(targ, vnum, t->event, t->cmdnum, p, id, error))
+		{
+			sp_err(vnum, error.c_str(), line);
+			return FALSE;
+		}
+		a->op = SP_A_ITEM_ABILITY;
+		a->num = static_cast<int>(id);
+	}
+	else if (!strcmp(word, "say") || !strcmp(word, "emote") || !strcmp(word, "echo") ||
+		 !strcmp(word, "zecho"))
 	{
 		if (!*p)
 		{
@@ -3102,6 +3148,15 @@ static int sp_parse_record(FILE *fl, struct sp_rec *rec)
 
 		if (buf[0] == '~' && buf[1] == '\0')
 		{
+			if (t->num_actions && t->actions[0].op == SP_A_ITEM_ABILITY &&
+			    (t->num_conds || t->chance != 100))
+			{
+				sp_err(rec->vnum,
+				       "itemability eligibility belongs in its definition; trigger conditions/chance are unsupported",
+				       buf);
+				sp_skip_record(fl);
+				return FALSE;
+			}
 			if (!t->num_actions)
 			{
 				sp_err(rec->vnum, "trigger has no actions", buf);
@@ -3182,6 +3237,9 @@ static void sp_bind(struct sp_rec *rec)
 
 void studioproc_boot(void)
 {
+	std::string ability_error;
+	if (!studio_abilities_reload_file(ability_error))
+		logit(LOG_STATUS, "STUDIO ABILITIES: %s", ability_error.c_str());
 	if (mini_mode == 1)
 	{
 		logit(LOG_STATUS, "STUDIOPROC: minimal world mode, proc engine idle.");

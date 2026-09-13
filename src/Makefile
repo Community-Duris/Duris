@@ -95,6 +95,8 @@ SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
 				 item/item_actions.o \
+				 item/studio_ability_model.o \
+				 item/studio_abilities.o \
 				 item/weapon_actions.o \
 				 item/device_actions.o \
 				 item/wonder_actions.o \

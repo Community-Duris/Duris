@@ -81,6 +81,7 @@
 #define SP_A_BLOCK 21 /* swallow the triggering command           */
 #define SP_A_RSET 22 /* remote: counter = n on another instance  */
 #define SP_A_RADD 23 /* remote: counter += n on another instance */
+#define SP_A_ITEM_ABILITY 24 /* object-only typed shared item action */
 
 /* ---- conditions --------------------------------------------------- */
 #define SP_C_CARRYING 0
