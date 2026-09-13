@@ -141,6 +141,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc);
 int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc);
 void copyover_restore_combat(void);
 int is_copyover_boot(void);
+bool copyover_has_durable_shopkeepers();
 void copyover_clear_boot(void);
 
 // helper to clear fd_cloexec on accepted sockets

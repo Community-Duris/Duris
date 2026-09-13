@@ -4,6 +4,7 @@
 #include "persistence/copyover.h"
 #include "world/world_recovery_codec.h"
 #include "world/graph.h"
+#include "persistence/persistence_mode.h"
 #include <cassert>
 #include <cstdarg>
 #include <cstring>
@@ -41,6 +42,17 @@ std::unordered_map<P_char, scheduled_event> scheduled;
 int next_id = 1;
 int bfs_cur_marker = 1;
 int players_landed = 0;
+bool shop_save_succeeds = true;
+int shops_saved = 0;
+persistence_mode persistence_mode_get()
+{
+	return PERSISTENCE_MODE_MARIADB_PRIMARY;
+}
+bool sql_save_shopkeeper(P_char, int)
+{
+	++shops_saved;
+	return shop_save_succeeds;
+}
 
 void logit(const char *, const char *, ...) {}
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
@@ -374,6 +386,10 @@ int main()
 	P_char ordinary = mob_at(2, 5);
 	assert(singleton_shop_id(keeper) == 0 && singleton_shop_id(other) == 1 &&
 	       singleton_shop_id(ordinary) < 0);
+	assert(snapshot_shopkeepers_for_copyover() && shops_saved == 2);
+	shop_save_succeeds = false;
+	assert(!snapshot_shopkeepers_for_copyover());
+	shop_save_succeeds = true;
 
 	// Five successful Redis clean/crash generations and fallback reconciliation.
 	for (int cycle = 0; cycle < 5; ++cycle)

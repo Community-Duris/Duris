@@ -77,6 +77,7 @@ std::vector<item_ownership_runtime_entry> hydrated_entries;
 
 void transport_capture(P_char, transport_snapshot *state) { *state = {}; }
 void transport_restore(P_char, const transport_snapshot &) {}
+bool snapshot_shopkeepers_for_copyover() { return true; }
 void logit(const char *, const char *, ...)
 {
 }

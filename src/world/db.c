@@ -725,9 +725,9 @@ void boot_db(int mini_mode)
 
 		fprintf(stderr, "-- Shopkeepers\n");
 		logit(LOG_STATUS, "Reloading Shopkeepers.");
-		// SQL copyover owns the live keeper inventory. Flat-file trade custody
-		// remains authoritative even during copyover; Redis never stores stock.
-		if (!is_copyover_boot() ||
+		// Current copyovers commit full shop stock before handoff. Legacy files
+		// only have their live NPC inventory; Redis never stores shop stock.
+		if (!is_copyover_boot() || copyover_has_durable_shopkeepers() ||
 		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 			restore_shopkeepers();
 		remember_boot_shopkeepers();

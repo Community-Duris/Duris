@@ -5,6 +5,7 @@
 
 #include "persistence/persistence_log.h"
 #include "core/prototypes.h"
+#include "world/world_singletons.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -89,6 +90,19 @@ struct copyover_worker_resume_guard
 	}
 };
 } // namespace
+
+bool copyover_has_durable_shopkeepers()
+{
+	FILE *file = fopen(COPYOVER_FILE, "rb");
+	if (!file)
+		return false;
+	copyover_header header = {};
+	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
+			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
+			     header.version == COPYOVER_VERSION;
+	fclose(file);
+	return current;
+}
 
 int is_copyover_boot(void)
 {
@@ -590,6 +604,14 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		critical_command_coordinator_resume();
 		logit(LOG_STATUS, "copyover: world recovery drain failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+
+	// Preserve custom shop item state that the basic NPC file record omits.
+	if (!mini_mode && !snapshot_shopkeepers_for_copyover())
+	{
+		logit(LOG_STATUS, "copyover: shopkeeper snapshot failed, aborting copyover");
 		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}

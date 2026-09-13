@@ -28,8 +28,12 @@ will reject that Redis generation rather than interpret it incorrectly.
 
 Shop inventory has different authorities in each recovery mode:
 
-- SQL file copyover restores live keepers and stock from the copyover file;
-  startup skips the older SQL keeper snapshot.
+- New SQL copyovers commit each live keeper's complete shop snapshot after
+  persistence drains and before publishing the copyover file. Any save failure
+  cancels the copyover while the server remains live. Startup retains these
+  durable keepers, preserving custom item state omitted by basic NPC records.
+  Legacy version 12 files use their live keeper inventory instead of older SQL
+  snapshots because they did not make this checked shop save.
 - Redis restores NPC location/state without inventory. Its reconciliation
   retains the keeper already restored from the durable shop store and removes
   recovered duplicates and their regenerated template stock.

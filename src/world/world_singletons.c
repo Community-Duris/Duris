@@ -2,6 +2,8 @@
 
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "persistence/persistence_mode.h"
+#include "sql/sql_player.h"
 #include <unordered_set>
 #include <vector>
 
@@ -56,6 +58,27 @@ void remember_boot_shopkeepers()
 	for (P_char keeper = character_list; keeper; keeper = keeper->next)
 		if (singleton_shop_id(keeper) >= 0)
 			boot_shopkeepers.insert(keeper);
+}
+
+bool snapshot_shopkeepers_for_copyover()
+{
+	// Flat-file trades already commit their full stock and custody atomically.
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return true;
+	std::unordered_set<int> saved;
+	for (P_char keeper = character_list; keeper; keeper = keeper->next)
+	{
+		const int shop = singleton_shop_id(keeper);
+		if (shop < 0)
+			continue;
+		if (keeper->in_room < 0 || keeper->in_room > top_of_world)
+			return false;
+		// Never silently choose between duplicate live inventories at handoff.
+		if (!saved.insert(shop).second || !sql_save_shopkeeper(keeper, shop))
+			return false;
+		shop_index[shop].dirty = 0;
+	}
+	return true;
 }
 
 void reconcile_shopkeepers(bool recovered_inventory)

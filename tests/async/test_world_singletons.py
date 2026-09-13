@@ -37,4 +37,7 @@ assert 'header.version != 12' in copyover
 assert 'offsetof(copyover_mob, transport)' in copyover
 assert copyover.count('transport_capture(mob, &entry.transport);') == 2
 assert copyover.count('transport_restore(mob, mob_entry.transport);') == 2
+save = copyover[copyover.index('bool copyover_save('):copyover.index('// find_player_by_name')]
+assert save.index('snapshot_shopkeepers_for_copyover()') < save.index('fopen(copyover_tmp')
+assert 'copyover_has_durable_shopkeepers()' in (ROOT / 'src/world/db.c').read_text()
 print('world singleton lifecycle and recovery compatibility passed')
