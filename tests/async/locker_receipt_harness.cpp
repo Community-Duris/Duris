@@ -284,7 +284,52 @@ int main(int argc, char **argv)
 	object obj{ &ch, 0, "ORIGINAL SWORD STATS" };
 	if (mode == "replay")
 	{
+		hold_writes = true;
 		locker_identify_replay(&ch);
+		until([&] { return requests.at(ch.pid)->stage == phase::delivering; });
+		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		output.clear();
+		// A reread arriving during the delivered-marker write is still honored.
+		locker_identify_receipt(&ch);
+		hold_writes = false;
+		drained();
+		assert(submissions == 0);
+		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		output.clear();
+		// Coalesce an explicit reread with automatic loading, even at capacity.
+		locker_identify_replay(&ch);
+		character another = ch;
+		for (unsigned n = 0; n < 15; ++n)
+		{
+			another.pid = 100 + n;
+			locker_identify_replay(&another);
+		}
+		assert(requests.size() == 16);
+		locker_identify_receipt(&ch);
+		drained();
+		assert(submissions == 0);
+		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		assert(output.find("busy") == std::string::npos);
+		output.clear();
+		for (unsigned n = 0; n < 16; ++n)
+		{
+			another.pid = 100 + n;
+			locker_identify_replay(&another);
+		}
+		locker_identify_replay(&ch);
+		assert(output.empty());
+		locker_identify_receipt(&ch);
+		assert(output.find("busy") != std::string::npos);
+		drained();
+		assert(submissions == 0);
+	}
+	else if (mode == "delivered")
+	{
+		// Login, reconnect and copyover stay silent; stat receipt still repeats it.
+		locker_identify_replay(&ch);
+		drained();
+		assert(output.empty());
+		locker_identify_receipt(&ch);
 		drained();
 		assert(submissions == 0);
 		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
@@ -321,7 +366,7 @@ int main(int argc, char **argv)
 	assert(state.bank.amount[0] == (bank_purchase ? 825 : 1000));
 	locker_receipt saved;
 	assert(locker_receipt_read(receipt_directory, ch.pid, &saved) == flatfile_read_result::ok);
-	assert(saved.state == locker_receipt_state::paid);
+	assert(saved.state == locker_receipt_state::delivered);
 	if (mode == "normal")
 	{
 		// Unknown payment results retain prepared evidence, never publish lore.
@@ -336,12 +381,15 @@ int main(int argc, char **argv)
 		drained();
 		live = &ch;
 		output.clear();
+		// A reread during this recovery is fulfilled by its single display.
 		locker_identify_replay(&ch);
+		locker_identify_receipt(&ch);
 		until([] { return submissions == 3; });
 		assert(applied.outcome == critical_apply_outcome::already_applied);
 		finish();
 		drained();
 		assert(output.find("SECOND") != std::string::npos);
+		assert(output.find("SECOND") == output.rfind("SECOND"));
 		// A receipt belonging to another account cannot be delivered or replaced.
 		output.clear();
 		auto account = ch.account;
@@ -405,6 +453,13 @@ int main(int argc, char **argv)
 		locker_identify_replay(&ch);
 		drained();
 		assert(submissions == 5);
+		assert(output.empty());
+		locker_identify_replay(&ch);
+		locker_identify_receipt(&ch);
+		drained();
+		assert(submissions == 5);
+		assert(output.find("The identification payment failed") != std::string::npos);
+		output.clear();
 		ch.fighting = true;
 		locker_identify(&ch, &obj, 1);
 		ch.fighting = false;

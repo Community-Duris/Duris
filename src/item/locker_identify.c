@@ -26,7 +26,8 @@ enum class phase
 	submitting,
 	payment,
 	recording,
-	showing
+	showing,
+	delivering
 };
 struct io_result
 {
@@ -40,6 +41,7 @@ struct request
 	std::future<io_result> io;
 	phase stage = phase::loading;
 	clock_type::time_point retry{};
+	bool requested = false; // stat receipt: repeat delivered and failed receipts
 	bool warned = false;
 };
 struct payment_context
@@ -121,14 +123,20 @@ void paid(P_char ch, bool committed, const currency_command_result &, unsigned i
 	}
 	write_async(entry, phase::recording);
 }
-void enqueue(P_char ch, std::optional<locker_receipt> candidate)
+void enqueue(P_char ch, std::optional<locker_receipt> candidate, bool requested = false)
 {
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return;
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
-	if (!enabled || requests.size() >= maximum_pending || requests.count(pid))
+	const auto existing = requests.find(pid);
+	if (enabled && requested && existing != requests.end())
 	{
-		if (candidate)
+		existing->second->requested = true;
+		return;
+	}
+	if (!enabled || requests.size() >= maximum_pending || existing != requests.end())
+	{
+		if (candidate || requested)
 			send_to_char("The locker clerk is busy. Please try again shortly.\r\n", ch);
 		return;
 	}
@@ -136,6 +144,7 @@ void enqueue(P_char ch, std::optional<locker_receipt> candidate)
 	{
 		auto entry = std::make_unique<request>();
 		entry->candidate = std::move(candidate);
+		entry->requested = requested;
 		auto &stored = *requests.emplace(pid, std::move(entry)).first->second;
 		stored.io = std::async(std::launch::async,
 				       [directory = receipt_directory, pid]
@@ -189,6 +198,10 @@ void locker_identify_shutdown()
 void locker_identify_replay(P_char ch)
 {
 	enqueue(ch, std::nullopt);
+}
+void locker_identify_receipt(P_char ch)
+{
+	enqueue(ch, std::nullopt, true);
 }
 void locker_identify_pulse()
 {
@@ -250,12 +263,28 @@ void locker_identify_pulse()
 							ch);
 					entry.candidate.reset();
 					entry.value = std::move(result.value);
-					entry.stage =
-						entry.value.state ==
-								locker_receipt_state::prepared ?
-							phase::submitting :
-							phase::showing;
+					if (entry.value.state == locker_receipt_state::prepared)
+						entry.stage = phase::submitting;
+					else if (entry.value.state == locker_receipt_state::paid ||
+						 entry.requested)
+						entry.stage = phase::showing;
+					else
+					{
+						// Only stat receipt repeats these.
+						it = requests.erase(it);
+						continue;
+					}
 				}
+			}
+			else if (entry.stage == phase::delivering)
+			{
+				// If this write failed, the next recovery shows the text again.
+				if (!entry.requested)
+				{
+					it = requests.erase(it);
+					continue;
+				}
+				entry.stage = phase::showing;
 			}
 			else if (result.outcome == flatfile_read_result::ok)
 			{
@@ -276,7 +305,8 @@ void locker_identify_pulse()
 		{
 			if (owner_matches(ch, entry.value))
 			{
-				if (entry.value.state == locker_receipt_state::paid)
+				entry.requested = false; // this display fulfills the pending reread
+				if (entry.value.state != locker_receipt_state::failed)
 				{
 					send_to_char(
 						"Locker identification receipt (already paid):\r\n",
@@ -287,8 +317,16 @@ void locker_identify_pulse()
 					send_to_char(
 						"The identification payment failed; no identification was purchased.\r\n",
 						ch);
+				if (entry.value.state == locker_receipt_state::paid)
+				{
+					entry.value.state = locker_receipt_state::delivered;
+					write_async(entry, phase::delivering);
+				}
 			}
-			it = requests.erase(it);
+			if (entry.io.valid())
+				++it; // destroying the pending future would block on disk
+			else
+				it = requests.erase(it);
 			continue;
 		}
 		if (!entry.io.valid() && clock_type::now() >= entry.retry)

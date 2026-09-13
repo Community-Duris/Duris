@@ -10,6 +10,7 @@ service = re.sub(r'^#include.*\n', '', service, flags=re.M)
 locker = (ROOT / 'src/item/storage_lockers.c').read_text()
 stat = locker.split('if (cmd == CMD_STAT && !IS_TRUSTED(ch))',1)[1].split('StorageLocker *pLocker',1)[0]
 assert 'locker_identify(ch, tmp_object, cost)' in stat
+assert 'locker_identify_receipt(ch)' in stat and 'locker_identify_replay' not in stat
 assert 'CharWait' not in stat and 'do_lore' not in stat and 'SUB_MONEY' not in stat
 lore = (ROOT / 'src/cmd/actnew.c').read_text()
 normal = lore.split('void do_lore(',1)[1].split('static void render_item_lore(',1)[0]

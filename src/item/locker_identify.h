@@ -6,4 +6,5 @@ void locker_identify_pulse();
 bool locker_identify_init(const char *journal_directory);
 void locker_identify_shutdown();
 void locker_identify_replay(P_char ch);
+void locker_identify_receipt(P_char ch);
 #endif

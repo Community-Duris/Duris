@@ -48,7 +48,7 @@ def run_backend(temp, mysql=False):
             result = subprocess.run([str(binary), state, crash, purse], timeout=30)
             assert result.returncode == exit_code, (crash, result.returncode)
             subprocess.run([str(binary), state, 'replay' if crash == 'after-receipt' else 'recover', purse], check=True, timeout=30)
-            subprocess.run([str(binary), state, 'replay', purse], check=True, timeout=30)
+            subprocess.run([str(binary), state, 'delivered', purse], check=True, timeout=30)
 
 
 (ROOT / 'bin/tests').mkdir(parents=True, exist_ok=True)

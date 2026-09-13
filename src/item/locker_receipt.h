@@ -9,7 +9,8 @@ enum class locker_receipt_state : uint8_t
 {
 	prepared,
 	paid,
-	failed
+	failed,
+	delivered // paid and shown; only stat receipt repeats it
 };
 struct locker_receipt
 {

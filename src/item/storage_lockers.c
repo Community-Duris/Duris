@@ -2185,7 +2185,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 	{
 		if (!strcasecmp(name, "receipt"))
 		{
-			locker_identify_replay(ch);
+			locker_identify_receipt(ch);
 			return TRUE;
 		}
 		if (!*name)
