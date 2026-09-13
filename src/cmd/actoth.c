@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/device_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -4346,6 +4347,8 @@ void do_recite(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
+	if (begin_device_action(scroll, ch, argument) != item_action_start::legacy)
+		return;
 	act("You recite $p which turns to dust in your hands.", FALSE, ch, scroll, 0, TO_CHAR);
 	CharWait(ch, PULSE_VIOLENCE);
 
@@ -4482,6 +4485,8 @@ void do_use(P_char ch, char *argument, int /*cmd*/)
 			ch);
 		return;
 	}
+	if (begin_device_action(stick, ch, argument) != item_action_start::legacy)
+		return;
 	if (stick->type == ITEM_STAFF)
 	{
 		act("$n taps $p three times on the ground.", TRUE, ch, stick, 0, TO_ROOM);
@@ -4545,6 +4550,12 @@ void do_use(P_char ch, char *argument, int /*cmd*/)
 		spl = target_data.ttype = stick->value[3];
 		if (skills[spl].spell_pointer)
 		{
+			if (!parse_spell_arguments(ch, &target_data, argument))
+				return;
+			tmp_char = target_data.t_char;
+
+			// The legacy guard must inspect the parsed victim. Charge consumption
+			// still precedes parsing and this permission check on the legacy path.
 			if (IS_AGG_SPELL(spl) && tmp_char && (tmp_char != ch))
 			{
 				if (IS_AFFECTED(ch, AFF_INVISIBLE) ||
@@ -4560,12 +4571,8 @@ void do_use(P_char ch, char *argument, int /*cmd*/)
 			   * * if
 			   */
 
-			if (!parse_spell_arguments(ch, &target_data, argument))
-				return;
-
 			if (target_data.t_char != NULL)
 			{
-				tmp_char = target_data.t_char;
 				act("$n points $p at $N!", TRUE, ch, stick, tmp_char, TO_ROOM);
 				act("You direct $p at $N!", FALSE, ch, stick, tmp_char, TO_CHAR);
 			}

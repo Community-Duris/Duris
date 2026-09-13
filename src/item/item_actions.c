@@ -279,11 +279,10 @@ void update_item_action_properties()
 	}
 }
 
-bool item_actions_publish(const item_action_definition &definition,
-			  std::unique_ptr<item_action_adapter> adapter)
+static bool valid_definition(const item_action_definition &definition)
 {
-	if (!nevent_require_game_thread("item_actions_publish") || !adapter || !definition.id ||
-	    !definition.revision || (!definition.effect_count && !definition.selected_effects) ||
+	if (!definition.id || !definition.revision ||
+	    (!definition.effect_count && !definition.selected_effects) ||
 	    definition.effect_count > ITEM_ACTION_MAX_EFFECTS || definition.windup_pulses < 0 ||
 	    definition.windup_pulses > 600 || definition.progress_pulses < 0 ||
 	    (definition.progress_pulses &&
@@ -308,6 +307,15 @@ bool item_actions_publish(const item_action_definition &definition,
 		     effect.call != item_action_call::spell))
 			return false;
 	}
+	return true;
+}
+
+bool item_actions_publish(const item_action_definition &definition,
+			  std::unique_ptr<item_action_adapter> adapter)
+{
+	if (!nevent_require_game_thread("item_actions_publish") || !adapter ||
+	    !valid_definition(definition))
+		return false;
 	const auto previous = abilities.find(definition.id);
 	if (previous != abilities.end() &&
 	    previous->second->definition.revision >= definition.revision)
@@ -353,14 +361,17 @@ uint64_t item_actions_definition_revision(uint32_t id)
 }
 
 static item_action_start start_action(uint32_t ability_id, P_char actor, P_char target,
-				      P_obj source, const item_action_selection *selection)
+				      P_obj source, const item_action_selection *selection,
+				      std::shared_ptr<ability> instance = {})
 {
 	if (!nevent_require_game_thread("start_item_action"))
 		return item_action_start::suppressed;
 	const auto found = abilities.find(ability_id);
-	if (!config.enabled || found == abilities.end() || !found->second->enabled)
+	const auto selected = instance		       ? std::move(instance) :
+			      found != abilities.end() ? found->second :
+							 nullptr;
+	if (!config.enabled || !selected || !selected->enabled)
 		return item_action_start::legacy;
-	const auto selected = found->second;
 	auto invocation = selected->definition;
 	if (invocation.selected_effects != (selection != nullptr))
 		return item_action_start::suppressed;
@@ -467,6 +478,17 @@ item_action_start start_selected_item_action(uint32_t ability_id, P_char actor, 
 	return start_action(ability_id, actor, target, source, &selection);
 }
 
+item_action_start start_item_action_instance(const item_action_definition &definition,
+					     std::unique_ptr<item_action_adapter> adapter,
+					     P_char actor, P_char target, P_obj source)
+{
+	if (!nevent_require_game_thread("start_item_action_instance") || !adapter ||
+	    !valid_definition(definition) || definition.selected_effects)
+		return item_action_start::suppressed;
+	auto instance = std::make_shared<ability>(ability{ definition, std::move(adapter), true });
+	return start_action(definition.id, actor, target, source, nullptr, std::move(instance));
+}
+
 bool item_action_active(P_char actor)
 {
 	return actor && active_actors.contains(actor->runtime_id);
@@ -491,6 +513,11 @@ size_t item_actions_pending()
 	return pending.size();
 }
 
+bool item_action_pending(uint64_t id)
+{
+	return pending.contains(id);
+}
+
 void item_actions_character_leaving(P_char character)
 {
 	if (!character || pending.empty() ||
@@ -499,7 +526,10 @@ void item_actions_character_leaving(P_char character)
 	const uint64_t id = character->runtime_id;
 	cancel_matching(
 		[id](const pending_item_action &entry)
-		{ return entry.identity.actor_id == id || entry.identity.target_id == id; });
+		{
+			return entry.identity.actor_id == id || entry.identity.target_id == id ||
+			       entry.selected->adapter->references_character(id);
+		});
 }
 
 void item_actions_source_leaving(P_obj source)
@@ -508,8 +538,11 @@ void item_actions_source_leaving(P_obj source)
 	    !nevent_require_game_thread("item_actions_source_leaving"))
 		return;
 	const uint64_t uid = source->obj_uid;
-	cancel_matching([uid](const pending_item_action &entry)
-			{ return entry.identity.source_uid == uid; });
+	cancel_matching(
+		[uid](const pending_item_action &entry) {
+			return entry.identity.source_uid == uid ||
+			       entry.selected->adapter->references_object(uid);
+		});
 }
 
 void event_item_action_active(P_char, P_char, P_obj, void *data)

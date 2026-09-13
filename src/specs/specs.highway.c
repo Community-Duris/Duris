@@ -4,6 +4,7 @@
  ***************************************************************************/
 
 #include "core/prototypes.h"
+#include "item/wonder_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -290,6 +291,8 @@ int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			if (!(vict = get_char_vis(ch, arg)))
 				vict = ch;
+			if (begin_wonder_action(obj, ch, vict, level) != item_action_start::legacy)
+				return TRUE;
 			obj->value[2] -= 1;
 			send_to_char("Magic gathers....\r\n", ch);
 			switch (number(1, 20))
