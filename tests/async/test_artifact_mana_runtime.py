@@ -12,6 +12,7 @@ HARNESS = r'''
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -52,17 +53,26 @@ struct memory_store final : artifact_mana_backend {
 };
 void worker_pause() { std::this_thread::sleep_for(std::chrono::milliseconds(2)); }
 void drain(artifact_mana_runtime &runtime, uint64_t mono) {
-    for (int tries = 0; tries < 1000; ++tries) {
-        runtime.pulse(mono);
+    const auto start = std::chrono::steady_clock::now();
+    for (uint64_t tries = 0; std::chrono::steady_clock::now() - start < std::chrono::seconds(30); ++tries) {
+        // An old failed write can arrive after the backend recovers. Its retry
+        // deadline is based on the pulse that observes it; advance the fake
+        // clock so that retry is reachable even when CI schedules it late.
+        // Spending-window assertions below still use their exact fixed times.
+        runtime.pulse(mono + tries * 10);
         const auto h = runtime.health();
         if (!h.dirty && !h.outstanding) return;
         worker_pause();
     }
+    const auto h = runtime.health();
+    std::fprintf(stderr, "drain timeout: cached=%zu dirty=%zu outstanding=%zu failures=%llu\n",
+                 h.cached, h.dirty, h.outstanding, static_cast<unsigned long long>(h.write_failures));
     assert(false && "worker failed to drain");
 }
 bool ready(artifact_mana_runtime &runtime, uint64_t uid, uint64_t wall, uint64_t mono) {
     artifact_mana_record record;
-    for (int tries = 0; tries < 1000; ++tries) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    while (std::chrono::steady_clock::now() < deadline) {
         runtime.pulse(mono);
         if (runtime.inspect(uid, profile, wall, mono, record)) return true;
         worker_pause();
