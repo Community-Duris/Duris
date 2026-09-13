@@ -1,0 +1,370 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "drop_recovery_no_invented_context",
+  "covers": [
+    "detail_drop",
+    "no_invented_context",
+    "recovered_totals"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 500,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 105,
+            "process_id": 205
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 5000140
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 105,
+                "process_id": 205
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9005,
+            "pid": 46,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 105,
+              "process_id": 205
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 100,
+            "end_monotonic_usec": 140,
+            "start_utc_usec": 5000100,
+            "end_utc_usec": 5000140
+          },
+          "duration_usec": 40,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 103,
+            "group_size": 1
+          },
+          "config_id": 500,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "coverage_gap",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 105,
+            "process_id": 205
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 5000200
+      },
+      "payload": {
+        "coverage_gap": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 105,
+                "process_id": 205
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9005,
+            "pid": 46,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 105,
+              "process_id": 205
+            },
+            "connection_seq": 1
+          },
+          "reason": "detail_queue_drop",
+          "reserved": [
+            0,
+            0,
+            0
+          ],
+          "start_monotonic_usec": 140,
+          "end_monotonic_usec": 200,
+          "start_utc_usec": 5000140,
+          "end_utc_usec": 5000200,
+          "first_missing_record_seq": 3,
+          "last_missing_record_seq": 3,
+          "duration_usec": 60,
+          "dropped_records": 1,
+          "quality_flags": 28
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 105,
+            "process_id": 205
+          },
+          "record_seq": 4
+        },
+        "occurrence_utc_usec": 5000220
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 105,
+                "process_id": 205
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9005,
+            "pid": 46,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 105,
+              "process_id": 205
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 200,
+            "end_monotonic_usec": 220,
+            "start_utc_usec": 5000200,
+            "end_utc_usec": 5000220
+          },
+          "duration_usec": 20,
+          "category": "connected_idle",
+          "context": "none",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 103,
+            "group_size": 1
+          },
+          "config_id": 500,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 105,
+            "process_id": 205
+          },
+          "record_seq": 5
+        },
+        "occurrence_utc_usec": 5000220
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 105,
+                "process_id": 205
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9005,
+            "pid": 46,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 105,
+              "process_id": 205
+            },
+            "connection_seq": 1
+          },
+          "revision": 1,
+          "at_monotonic_usec": 220,
+          "at_utc_usec": 5000220,
+          "cumulative": {
+            "connected_usec": 120,
+            "active_usec": 100,
+            "idle_usec": 20,
+            "unknown_usec": 0,
+            "resident_usec": 120,
+            "linkdead_usec": 0
+          },
+          "config_id": 500,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "admitted_active_detail",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "detail_drop",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "admitted_idle_detail",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "recovered_checkpoint",
+      "record_indexes": [
+        3
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "admitted_active_detail",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "detail_drop",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "admitted_idle_detail",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "recovered_checkpoint",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 60,
+        "connected_usec": 60,
+        "active_usec": 40,
+        "idle_usec": 20,
+        "unknown_usec": 0,
+        "resident_usec": 60,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "coverage": {
+        "detail_gap_count": 1,
+        "gap_duration_usec": 60,
+        "known_context_usec": 60,
+        "recovered_connected_usec": 120,
+        "recovered_cumulative": {
+          "connected_usec": 120,
+          "active_usec": 100,
+          "idle_usec": 20,
+          "unknown_usec": 0,
+          "resident_usec": 120,
+          "linkdead_usec": 0
+        },
+        "unattributed_connected_usec": 60,
+        "invented_context_usec": 0,
+        "coverage_incomplete": true
+      }
+    }
+  }
+}

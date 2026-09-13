@@ -1,0 +1,297 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "replay_identical_conflict",
+  "covers": [
+    "replay_conflict",
+    "replay_identical"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 200,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 102,
+            "process_id": 202
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 2000100
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 102,
+                "process_id": 202
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9002,
+            "pid": 43,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 102,
+              "process_id": 202
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 10,
+            "end_monotonic_usec": 110,
+            "start_utc_usec": 2000000,
+            "end_utc_usec": 2000100
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 101,
+            "group_size": 1
+          },
+          "config_id": 200,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 102,
+            "process_id": 202
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 2000100
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 102,
+                "process_id": 202
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9002,
+            "pid": 43,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 102,
+              "process_id": 202
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 10,
+            "end_monotonic_usec": 110,
+            "start_utc_usec": 2000000,
+            "end_utc_usec": 2000100
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 101,
+            "group_size": 1
+          },
+          "config_id": 200,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 102,
+            "process_id": 202
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 2000110
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 102,
+                "process_id": 202
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9002,
+            "pid": 43,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 102,
+              "process_id": 202
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 10,
+            "end_monotonic_usec": 120,
+            "start_utc_usec": 2000000,
+            "end_utc_usec": 2000110
+          },
+          "duration_usec": 110,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 101,
+            "group_size": 1
+          },
+          "config_id": 200,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "first_write",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "replay_identical",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "replay_conflict",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "first_write",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "replay_identical",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "duplicate_identical"
+        ],
+        "counts": {
+          "duplicate_identical": 1
+        }
+      },
+      {
+        "name": "replay_conflict",
+        "batch_outcome": "committed_with_rejections",
+        "record_outcomes": [
+          "duplicate_conflict"
+        ],
+        "counts": {
+          "duplicate_conflict": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 100,
+        "connected_usec": 100,
+        "active_usec": 100,
+        "idle_usec": 0,
+        "unknown_usec": 0,
+        "resident_usec": 100,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "replay": {
+        "same_key": true,
+        "identical_outcome": "duplicate_identical",
+        "conflict_outcome": "duplicate_conflict",
+        "stored_interval_usec": 100
+      }
+    }
+  }
+}

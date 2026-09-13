@@ -1,0 +1,346 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "checkpoint_revision_conflict",
+  "covers": [
+    "checkpoint_new",
+    "checkpoint_revision_conflict",
+    "checkpoint_stale",
+    "counter_conservation"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 400,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 104,
+            "process_id": 204
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 4000100
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 104,
+                "process_id": 204
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9004,
+            "pid": 45,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 104,
+              "process_id": 204
+            },
+            "connection_seq": 1
+          },
+          "revision": 2,
+          "at_monotonic_usec": 100,
+          "at_utc_usec": 4000100,
+          "cumulative": {
+            "connected_usec": 100,
+            "active_usec": 60,
+            "idle_usec": 30,
+            "unknown_usec": 10,
+            "resident_usec": 130,
+            "linkdead_usec": 30
+          },
+          "config_id": 400,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 104,
+            "process_id": 204
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 4000200
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 104,
+                "process_id": 204
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9004,
+            "pid": 45,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 104,
+              "process_id": 204
+            },
+            "connection_seq": 1
+          },
+          "revision": 1,
+          "at_monotonic_usec": 200,
+          "at_utc_usec": 4000200,
+          "cumulative": {
+            "connected_usec": 80,
+            "active_usec": 50,
+            "idle_usec": 20,
+            "unknown_usec": 10,
+            "resident_usec": 100,
+            "linkdead_usec": 20
+          },
+          "config_id": 400,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 104,
+            "process_id": 204
+          },
+          "record_seq": 3
+        },
+        "occurrence_utc_usec": 4000300
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 104,
+                "process_id": 204
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9004,
+            "pid": 45,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 104,
+              "process_id": 204
+            },
+            "connection_seq": 1
+          },
+          "revision": 3,
+          "at_monotonic_usec": 300,
+          "at_utc_usec": 4000300,
+          "cumulative": {
+            "connected_usec": 150,
+            "active_usec": 90,
+            "idle_usec": 40,
+            "unknown_usec": 20,
+            "resident_usec": 190,
+            "linkdead_usec": 40
+          },
+          "config_id": 400,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 104,
+            "process_id": 204
+          },
+          "record_seq": 4
+        },
+        "occurrence_utc_usec": 4000301
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 104,
+                "process_id": 204
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9004,
+            "pid": 45,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 104,
+              "process_id": 204
+            },
+            "connection_seq": 1
+          },
+          "revision": 3,
+          "at_monotonic_usec": 301,
+          "at_utc_usec": 4000301,
+          "cumulative": {
+            "connected_usec": 151,
+            "active_usec": 91,
+            "idle_usec": 40,
+            "unknown_usec": 20,
+            "resident_usec": 191,
+            "linkdead_usec": 40
+          },
+          "config_id": 400,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "new_revision_2",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "stale_revision_1",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "new_revision_3",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "same_revision_conflict",
+      "record_indexes": [
+        3
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "new_revision_2",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "stale_revision_1",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "checkpoint_older"
+        ],
+        "counts": {
+          "checkpoint_older": 1
+        }
+      },
+      {
+        "name": "new_revision_3",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "same_revision_conflict",
+        "batch_outcome": "committed_with_rejections",
+        "record_outcomes": [
+          "duplicate_conflict"
+        ],
+        "counts": {
+          "duplicate_conflict": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 0,
+        "connected_usec": 0,
+        "active_usec": 0,
+        "idle_usec": 0,
+        "unknown_usec": 0,
+        "resident_usec": 0,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "checkpoint": {
+        "latest_revision": 3,
+        "latest_cumulative": {
+          "connected_usec": 150,
+          "active_usec": 90,
+          "idle_usec": 40,
+          "unknown_usec": 20,
+          "resident_usec": 190,
+          "linkdead_usec": 40
+        },
+        "stale_projection_unchanged": true,
+        "stale_outcome": "checkpoint_older",
+        "conflict_outcome": "duplicate_conflict"
+      }
+    }
+  }
+}

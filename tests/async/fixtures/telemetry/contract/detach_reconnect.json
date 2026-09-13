@@ -1,0 +1,593 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "detach_reconnect",
+  "covers": [
+    "detach",
+    "new_connection",
+    "reconnect",
+    "session_retained"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 800,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "transitions": [
+    {
+      "session": {
+        "id": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "session_seq": 1
+        },
+        "subject_id": 9008,
+        "pid": 49,
+        "season_id": 7,
+        "environment_id": 8
+      },
+      "connection": {
+        "producer": {
+          "boot_id": 108,
+          "process_id": 208
+        },
+        "connection_seq": 1
+      },
+      "at_monotonic_usec": 200,
+      "at_utc_usec": 8000200,
+      "kind": "detached",
+      "reserved": [
+        0,
+        0,
+        0
+      ],
+      "quality_flags": 0
+    },
+    {
+      "session": {
+        "id": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "session_seq": 1
+        },
+        "subject_id": 9008,
+        "pid": 49,
+        "season_id": 7,
+        "environment_id": 8
+      },
+      "connection": {
+        "producer": {
+          "boot_id": 108,
+          "process_id": 208
+        },
+        "connection_seq": 2
+      },
+      "at_monotonic_usec": 300,
+      "at_utc_usec": 8000300,
+      "kind": "attached",
+      "reserved": [
+        0,
+        0,
+        0
+      ],
+      "quality_flags": 0
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_lifecycle",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 8000100
+      },
+      "payload": {
+        "session_lifecycle": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 108,
+                "process_id": 208
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9008,
+            "pid": 49,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 108,
+              "process_id": 208
+            },
+            "connection_seq": 1
+          },
+          "lifecycle": "session_entered",
+          "end_reason": "unknown",
+          "reserved": 0,
+          "at_monotonic_usec": 100,
+          "at_utc_usec": 8000100,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 800,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 8000200
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 108,
+                "process_id": 208
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9008,
+            "pid": 49,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 108,
+              "process_id": 208
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 100,
+            "end_monotonic_usec": 200,
+            "start_utc_usec": 8000100,
+            "end_utc_usec": 8000200
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 105,
+            "group_size": 1
+          },
+          "config_id": 800,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_lifecycle",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "record_seq": 3
+        },
+        "occurrence_utc_usec": 8000200
+      },
+      "payload": {
+        "session_lifecycle": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 108,
+                "process_id": 208
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9008,
+            "pid": 49,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 108,
+              "process_id": 208
+            },
+            "connection_seq": 1
+          },
+          "lifecycle": "connection_detached",
+          "end_reason": "unknown",
+          "reserved": 0,
+          "at_monotonic_usec": 200,
+          "at_utc_usec": 8000200,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 800,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "record_seq": 4
+        },
+        "occurrence_utc_usec": 8000300
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 108,
+                "process_id": 208
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9008,
+            "pid": 49,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 0,
+              "process_id": 0
+            },
+            "connection_seq": 0
+          },
+          "window": {
+            "start_monotonic_usec": 200,
+            "end_monotonic_usec": 300,
+            "start_utc_usec": 8000200,
+            "end_utc_usec": 8000300
+          },
+          "duration_usec": 100,
+          "category": "resident_linkdead",
+          "context": "unknown",
+          "context_quality": "unavailable",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 0,
+            "class_id": 0,
+            "race_id": 0,
+            "faction_id": 0,
+            "zone_vnum": -1,
+            "group_size": 0
+          },
+          "config_id": 800,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 4
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_lifecycle",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "record_seq": 5
+        },
+        "occurrence_utc_usec": 8000300
+      },
+      "payload": {
+        "session_lifecycle": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 108,
+                "process_id": 208
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9008,
+            "pid": 49,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 108,
+              "process_id": 208
+            },
+            "connection_seq": 2
+          },
+          "lifecycle": "connection_attached",
+          "end_reason": "unknown",
+          "reserved": 0,
+          "at_monotonic_usec": 300,
+          "at_utc_usec": 8000300,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 800,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 108,
+            "process_id": 208
+          },
+          "record_seq": 6
+        },
+        "occurrence_utc_usec": 8000350
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 108,
+                "process_id": 208
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9008,
+            "pid": 49,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 108,
+              "process_id": 208
+            },
+            "connection_seq": 2
+          },
+          "window": {
+            "start_monotonic_usec": 300,
+            "end_monotonic_usec": 350,
+            "start_utc_usec": 8000300,
+            "end_utc_usec": 8000350
+          },
+          "duration_usec": 50,
+          "category": "connected_idle",
+          "context": "none",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 105,
+            "group_size": 1
+          },
+          "config_id": 800,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "enter",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "connected_interval",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "detach",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "linkdead_interval",
+      "record_indexes": [
+        3
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "reconnect",
+      "record_indexes": [
+        4
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "reconnected_interval",
+      "record_indexes": [
+        5
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "enter",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "connected_interval",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "detach",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "linkdead_interval",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "reconnect",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "reconnected_interval",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 250,
+        "connected_usec": 150,
+        "active_usec": 100,
+        "idle_usec": 50,
+        "unknown_usec": 0,
+        "resident_usec": 250,
+        "linkdead_usec": 100,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "session": {
+        "session_count": 1,
+        "connection_count": 2,
+        "connection_sequences": [
+          1,
+          2
+        ],
+        "session_retained": true,
+        "new_connection": true,
+        "transition_kinds": [
+          "detached",
+          "attached"
+        ],
+        "connected_usec": 150,
+        "linkdead_usec": 100,
+        "session_exit_count": 0
+      }
+    }
+  }
+}

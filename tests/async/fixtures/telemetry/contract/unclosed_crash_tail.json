@@ -1,0 +1,284 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "unclosed_crash_tail",
+  "covers": [
+    "unclosed_crash_tail"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 1000,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_lifecycle",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 901,
+            "process_id": 1
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 10000100
+      },
+      "payload": {
+        "session_lifecycle": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 901,
+                "process_id": 1
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9010,
+            "pid": 51,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 901,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "lifecycle": "session_entered",
+          "end_reason": "unknown",
+          "reserved": 0,
+          "at_monotonic_usec": 100,
+          "at_utc_usec": 10000100,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 1000,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 901,
+            "process_id": 1
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 10000200
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 901,
+                "process_id": 1
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9010,
+            "pid": 51,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 901,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 100,
+            "end_monotonic_usec": 200,
+            "start_utc_usec": 10000100,
+            "end_utc_usec": 10000200
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 108,
+            "group_size": 1
+          },
+          "config_id": 1000,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "coverage_gap",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 902,
+            "process_id": 1
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 10000300
+      },
+      "payload": {
+        "coverage_gap": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 0,
+                "process_id": 0
+              },
+              "session_seq": 0
+            },
+            "subject_id": 0,
+            "pid": 0,
+            "season_id": 0,
+            "environment_id": 0
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 0,
+              "process_id": 0
+            },
+            "connection_seq": 0
+          },
+          "reason": "unclosed_tail",
+          "reserved": [
+            0,
+            0,
+            0
+          ],
+          "start_monotonic_usec": 0,
+          "end_monotonic_usec": 0,
+          "start_utc_usec": 10000300,
+          "end_utc_usec": 10000300,
+          "first_missing_record_seq": 0,
+          "last_missing_record_seq": 0,
+          "duration_usec": 0,
+          "dropped_records": 0,
+          "quality_flags": 64
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "session_enter",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "last_sealed_interval",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "unclosed_tail_evidence",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "session_enter",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "last_sealed_interval",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "unclosed_tail_evidence",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 100,
+        "connected_usec": 100,
+        "active_usec": 100,
+        "idle_usec": 0,
+        "unknown_usec": 0,
+        "resident_usec": 100,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "tail": {
+        "session_exit_count": 0,
+        "unclosed_tail_gap_count": 1,
+        "tail_duration_known": false,
+        "claimed_tail_usec": 0,
+        "complete": false,
+        "unclosed_quality_flag": true
+      }
+    }
+  }
+}

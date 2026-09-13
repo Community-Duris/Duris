@@ -1,0 +1,382 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "midnight_clock_jump",
+  "covers": [
+    "midnight",
+    "monotonic_duration",
+    "utc_clock_jump"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 700,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 107,
+            "process_id": 207
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 86400000000
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 107,
+                "process_id": 207
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9007,
+            "pid": 48,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 107,
+              "process_id": 207
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 1000,
+            "end_monotonic_usec": 1100,
+            "start_utc_usec": 86399999950,
+            "end_utc_usec": 86400000050
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "travel",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 104,
+            "group_size": 1
+          },
+          "config_id": 700,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 107,
+            "process_id": 207
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 86400000050
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 107,
+                "process_id": 207
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9007,
+            "pid": 48,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 107,
+              "process_id": 207
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 1100,
+            "end_monotonic_usec": 1150,
+            "start_utc_usec": 86400000050,
+            "end_utc_usec": 86400000100
+          },
+          "duration_usec": 50,
+          "category": "connected_active",
+          "context": "travel",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 104,
+            "group_size": 1
+          },
+          "config_id": 700,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 107,
+            "process_id": 207
+          },
+          "record_seq": 3
+        },
+        "occurrence_utc_usec": 86400000100
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 107,
+                "process_id": 207
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9007,
+            "pid": 48,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 107,
+              "process_id": 207
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 1150,
+            "end_monotonic_usec": 1250,
+            "start_utc_usec": 86400000100,
+            "end_utc_usec": 86399999900
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "unknown",
+          "context_quality": "unavailable",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 0,
+            "class_id": 0,
+            "race_id": 0,
+            "faction_id": 0,
+            "zone_vnum": -1,
+            "group_size": 0
+          },
+          "config_id": 700,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 132
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 107,
+            "process_id": 207
+          },
+          "record_seq": 4
+        },
+        "occurrence_utc_usec": 86399999900
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 107,
+                "process_id": 207
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9007,
+            "pid": 48,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 107,
+              "process_id": 207
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 1250,
+            "end_monotonic_usec": 1300,
+            "start_utc_usec": 86399999950,
+            "end_utc_usec": 86400000000
+          },
+          "duration_usec": 50,
+          "category": "connected_active",
+          "context": "social",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 104,
+            "group_size": 1
+          },
+          "config_id": 700,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "midnight_crossing",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "stable_after_midnight",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "utc_clock_jump",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "fresh_clock_anchor",
+      "record_indexes": [
+        3
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "midnight_crossing",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "stable_after_midnight",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "utc_clock_jump",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "fresh_clock_anchor",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 300,
+        "connected_usec": 300,
+        "active_usec": 300,
+        "idle_usec": 0,
+        "unknown_usec": 0,
+        "resident_usec": 300,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "time": {
+        "monotonic_duration_usec": 300,
+        "utc_day_duration_usec": {
+          "0": 100,
+          "1": 100
+        },
+        "ambiguous_clock_jump_usec": 100,
+        "utc_attributed_duration_usec": 200,
+        "negative_elapsed_usec": 0,
+        "duration_conserved": true
+      }
+    }
+  }
+}
