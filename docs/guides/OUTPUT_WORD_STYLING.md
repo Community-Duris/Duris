@@ -3,7 +3,8 @@
 Issue #280 adds an opt-in rendering boundary. Existing callers still use Preserve.
 No player preferences, server palette, animation sequence, prompt routing or GMCP
 adoption is enabled by this change. [Profile loading and channel resolution](OUTPUT_PROFILES.md)
-are provided by #281; animated effects and recipient/channel sequences belong to #282.
+are provided by #281; [animated scenery and recipient/channel sequences](SCENERY_COLORIZATION.md)
+are provided by #282.
 
 ## Calling the renderer
 
@@ -30,11 +31,13 @@ context and an explicit `OutputPolicy::Preserve` both bypass added styling, reta
 the original bytes entering legacy output handling. The integer log policy keeps
 its existing meaning and overloads.
 
-`Static` and `Animated` currently consume the same supplied fixed foreground frame.
-This foundation never advances a sequence, reads time, uses gameplay RNG, or redraws
-output. Subsequent recipe integration must resolve motion-off to a fixed frame and
-advance only on new eligible recipient/channel output. The channel enum is a routing
-tag, not a persisted preference identifier or automatic queue classifier.
+`Static` consumes the supplied fixed foreground dictionary. `Animated` additionally
+uses optional immutable recipes and an explicit sequence to construct each word's
+frame. Contexts without recipes retain the fixed dictionary behavior. The pure
+renderer never advances a sequence, reads time, uses gameplay RNG, or redraws
+output. `send_to_char` advances connection/channel state only for accepted eligible
+animated sends; profile resolution demotes motion-off to Static. Channel IDs are
+stable routing/preference identifiers, not automatic queue classifiers.
 
 The pure `style_dictionary_words` function returns an `AnsiString` without modifying
 its input or the dictionary. Its transformation is idempotent. The completed-message

@@ -12,7 +12,6 @@ inline constexpr size_t OUTPUT_PROFILE_MAX_DICTIONARIES = 32;
 inline constexpr size_t OUTPUT_PROFILE_MAX_PROFILES = 64;
 inline constexpr size_t OUTPUT_PROFILE_MAX_WORDS = 8192;
 inline constexpr size_t OUTPUT_PROFILE_MAX_WORDS_PER_DICTIONARY = 2048;
-inline constexpr size_t OUTPUT_PROFILE_MAX_PALETTE = 16;
 inline constexpr size_t OUTPUT_PROFILE_CHANNEL_COUNT = (size_t)OutputChannel::Count;
 
 struct OutputChannelChoice
@@ -32,28 +31,6 @@ std::span<const OutputChannelChoice> output_channel_choices();
 std::span<const OutputPaletteChoice> output_palette_choices();
 bool parse_output_channel(std::string_view name, OutputChannel &channel);
 bool parse_output_palette(std::string_view name, int &attr);
-
-enum class OutputRecipeKind
-{
-	Solid,
-	Flow,
-	Shimmer,
-	Flicker,
-	Pulse,
-	Glint
-};
-
-struct OutputStyleRecipe
-{
-	OutputRecipeKind kind = OutputRecipeKind::Solid;
-	std::array<int, OUTPUT_PROFILE_MAX_PALETTE> palette{};
-	size_t palette_size = 0;
-	size_t stable_index = 0;
-	// Future output-driven animation advances one step per this many eligible sends.
-	uint16_t step_every = 1; // 1..1024
-	uint16_t width = 1; // 1..32 visible characters, clamped to the word by animation
-	uint8_t chance_percent = 20; // 0..100; cosmetic hash threshold, never gameplay RNG
-};
 
 enum class OutputProfileChoice
 {
@@ -81,6 +58,11 @@ struct ResolvedOutputProfile;
 class OutputProfileSnapshot
 {
     public:
+	OutputProfileSnapshot() = default;
+	// Dictionaries borrow recipe nodes in this immutable snapshot. Share ownership
+	// through the registry; copying/moving nodes would invalidate those pointers.
+	OutputProfileSnapshot(const OutputProfileSnapshot &) = delete;
+	OutputProfileSnapshot &operator=(const OutputProfileSnapshot &) = delete;
 	uint32_t revision() const { return revision_; }
 	const OutputStyleRecipe *recipe(std::string_view name) const;
 	const OutputStyleRecipe *word_recipe(OutputChannel channel, std::string_view word) const;
@@ -100,6 +82,7 @@ class OutputProfileSnapshot
 	{
 		std::map<std::string, std::string, std::less<>> words;
 		WordColorDictionary stable_words;
+		WordRecipeDictionary recipes;
 	};
 	std::map<std::string, Dictionary, std::less<>> dictionaries_;
 	std::map<std::string, Profile, std::less<>> profiles_;
