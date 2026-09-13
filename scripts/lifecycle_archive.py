@@ -25,16 +25,9 @@ import validate_data_lifecycle as lifecycle_policy  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
-DEFAULT_SCHEMA_FILES = (
-    ROOT / "migrations" / "bootstrap_multithread_safe.sql",
-    ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
-    ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
-    ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
-    ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
-    ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
-    ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
-    ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
-)
+# Archive, erasure and export must use the validator's current schema authority.
+# A second list silently fell behind the additive telemetry and mana tables.
+DEFAULT_SCHEMA_FILES = lifecycle_policy.DEFAULT_SCHEMA_FILES
 MAX_ROW_BUDGET = 256
 MAX_BYTE_BUDGET = 1024 * 1024
 MAX_TIME_BUDGET_USEC = 500000

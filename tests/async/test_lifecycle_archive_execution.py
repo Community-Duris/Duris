@@ -36,7 +36,9 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         cls.snapshot = MODULE.load_policy()
 
     def test_default_loader_includes_post_baseline_schema(self) -> None:
-        for name in ("0003_season_reset_state.sql", "0004_server_reboots.sql"):
+        self.assertEqual(MODULE.DEFAULT_SCHEMA_FILES, MODULE.lifecycle_policy.DEFAULT_SCHEMA_FILES)
+        for name in ("0003_season_reset_state.sql", "0004_server_reboots.sql",
+                     "0014_telemetry_storage.sql", "0015_artifact_mana.sql"):
             self.assertIn(
                 ROOT / "migrations" / "immutable" / name,
                 MODULE.DEFAULT_SCHEMA_FILES,
@@ -142,7 +144,7 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["stores"], 200)
+        self.assertEqual(report["stores"], 208)
         self.assertEqual(report["approved_destructive_rules"], 0)
         self.assertFalse(report["destructive_rules_enabled"])
         self.assertEqual(report["scheduler_state"], "blocked_by_policy")
