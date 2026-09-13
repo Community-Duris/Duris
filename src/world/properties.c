@@ -11,6 +11,8 @@
 #include "item/item_actions.h"
 #include "item/weapon_actions.h"
 #include "item/device_actions.h"
+#include "item/studio_abilities.h"
+#include "item/native_artifact_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -139,6 +141,8 @@ void apply_properties()
 	update_item_action_properties();
 	update_weapon_action_properties();
 	update_device_action_properties();
+	update_studio_ability_properties();
+	update_native_artifact_properties();
 	// First, so the tables rebuilt below (the experience table) see the current dials.
 	update_difficulty_dials();
 	update_stat_data();
@@ -481,6 +485,12 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 		else if (!strcmp(command, "reload") && (GET_LEVEL(ch) >= FORGER))
 		{
 			initialize_properties();
+			std::string ability_error;
+			if (!studio_abilities_reload_file(ability_error))
+			{
+				ability_error += "\r\n";
+				send_to_char(ability_error.c_str(), ch);
+			}
 			/* A reload can change many hook keys at once. */
 			ws_broadcast_durisweb_hook_state();
 		}

@@ -51,6 +51,7 @@ enum class item_action_start
 {
 	legacy,
 	scheduled,
+	resolved, // Synchronous incoming-damage interception only.
 	suppressed
 };
 
@@ -162,6 +163,12 @@ item_action_start start_selected_item_action(uint32_t ability_id, P_char actor, 
 item_action_start start_item_action_instance(const item_action_definition &,
 					     std::unique_ptr<item_action_adapter>, P_char actor,
 					     P_char target, P_obj source);
+// Synchronous, single-effect passive interception. Uses the same identities,
+// admission caps, atomic commit and transition hooks, but cannot create a timer.
+// True means resolve was invoked: the caller must suppress the intercepted hit,
+// even if that effect subsequently extracted a participant. False grants no ward.
+bool resolve_item_interception(const item_action_definition &, std::unique_ptr<item_action_adapter>,
+			       P_char defender, P_char redirected_target, P_obj source);
 bool item_action_active(P_char actor);
 bool abort_item_action(P_char actor);
 size_t item_actions_pending();

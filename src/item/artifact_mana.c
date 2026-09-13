@@ -55,7 +55,7 @@ artifact_mana_runtime &service()
 }
 } // namespace
 
-bool artifact_mana_publish(int vnum, const artifact_mana_profile &profile)
+bool artifact_mana_can_publish(int vnum, const artifact_mana_profile &profile)
 {
 	if (!nevent_is_game_thread() || vnum <= 0 || !artifact_mana_valid(profile))
 		return false;
@@ -66,6 +66,13 @@ bool artifact_mana_publish(int vnum, const artifact_mana_profile &profile)
 	if (old != profiles.end() &&
 	    (profile.revision < old->second.revision ||
 	     (profile.revision == old->second.revision && profile != old->second)))
+		return false;
+	return true;
+}
+
+bool artifact_mana_publish(int vnum, const artifact_mana_profile &profile)
+{
+	if (!artifact_mana_can_publish(vnum, profile))
 		return false;
 	profiles[profile.id] = profile;
 	bindings[vnum] = profile.id;

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "abilities": [
+    {
+      "id": 1001,
+      "revision": 1,
+      "vnum": 22802,
+      "trigger": "hit",
+      "mode": "passive",
+      "source": "equipped",
+      "minimumLevel": 0,
+      "windupPulses": 8,
+      "progressPulses": 4,
+      "cooldownMs": 3000,
+      "concurrency": "shared",
+      "ownership": "studio-action",
+      "cost": 2000,
+      "mana": {"id": 22802, "revision": 1, "capacity": 20000, "regeneration": 1000, "passiveFloor": 4000},
+      "effects": [{"type": "spell", "spell": 32, "power": 6, "target": "victim", "call": "spell"}],
+      "presentation": {
+        "begin": "A point of light begins to gather.",
+        "progress": "The point of light grows brighter.",
+        "complete": "A bolt of magic bursts forth!",
+        "cancel": "The unfinished point of light fades."
+      }
+    },
+    {
+      "id": 1002,
+      "revision": 1,
+      "vnum": 22802,
+      "trigger": "use",
+      "mode": "active",
+      "source": "equipped",
+      "minimumLevel": 0,
+      "windupPulses": 8,
+      "progressPulses": 4,
+      "cooldownMs": 3000,
+      "concurrency": "shared",
+      "ownership": "studio-action",
+      "cost": 5000,
+      "mana": {"id": 22802, "revision": 1, "capacity": 20000, "regeneration": 1000, "passiveFloor": 4000},
+      "effects": [{"type": "spell", "spell": 32, "power": 12, "target": "victim", "call": "wand"}],
+      "presentation": {
+        "begin": "A brilliant light gathers along the blade.",
+        "progress": "The brilliant light trembles with power.",
+        "complete": "The brilliant light erupts!",
+        "cancel": "The unfinished light gutters out."
+      }
+    }
+  ]
+}

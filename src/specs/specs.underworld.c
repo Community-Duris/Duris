@@ -9,6 +9,7 @@
 
 #include "core/prototypes.h"
 #include "item/weapon_actions.h"
+#include "item/native_artifact_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -2954,6 +2955,8 @@ int deflect_ioun(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	data = legacy_proc_arg<struct proc_data *>(arg);
+	if (native_artifact_owns(922))
+		return data && intercept_mirrored_ioun(obj, ch, *data);
 
 	if (!data || ch == data->victim || !ch->in_room)
 	{
@@ -4201,6 +4204,25 @@ void event_tsunamiwave(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 int SeaKingdom_Tsunami(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
+	if (native_artifact_owns(31514))
+	{
+		if (cmd == CMD_SET_PERIODIC)
+			return TRUE;
+		if (cmd == CMD_PERIODIC)
+		{
+			if (!ch)
+				hummer(obj);
+			return TRUE;
+		}
+		// Combat callbacks carry typed payloads, not command strings.
+		if ((cmd != CMD_TAP && cmd != CMD_THRUST && cmd != CMD_RAISE) || !ch || !obj ||
+		    !OBJ_WORN_BY(obj, ch) || ch->equipment[WIELD] != obj || !arg ||
+		    !(isname(arg, "trident") || isname(arg, "tsunami")))
+			return FALSE;
+		if (begin_tsunami_action(obj, ch, cmd) != item_action_start::scheduled)
+			send_to_char("Tsunami cannot gather its power now.\r\n", ch);
+		return TRUE;
+	}
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
