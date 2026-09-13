@@ -369,6 +369,8 @@ P_char executing_ch;
 #define PAD_COMMAND_OUTPUT (500) // some space for appending a warning
 char command_output[MAX_COMMAND_OUTPUT + PAD_COMMAND_OUTPUT + 1];
 size_t output_length;
+static std::string pager_original;
+static bool pager_style_fallback = false;
 
 #define MIN_SOCKET_BUFFER_SIZE 20480
 
@@ -593,6 +595,32 @@ int main(int argc, char **argv)
 	return (0);
 }
 
+static void finalize_styled_command(P_desc descriptor)
+{
+	if (pager_original.empty() || pager_style_fallback)
+		return;
+	const bool paged = descriptor && descriptor->character &&
+			   IS_SET(descriptor->character->specials.act, PLR_PAGING_ON) &&
+			   descriptor->connected != CON_MAIN_MENU;
+	char *end = command_output + strlen(command_output);
+	for (char *page = command_output; page < end;)
+	{
+		char *next = paged ? next_page(page, descriptor) : nullptr;
+		char *page_end = next ? next : end;
+		if (!output_message_fits_serializers(
+			    std::string_view(page, (size_t)(page_end - page))))
+		{
+			// Individually safe sends can combine into an unsafe page. Check
+			// before replay starts, while the entire original command is available.
+			strcpy(command_output, pager_original.c_str());
+			output_length = pager_original.size();
+			pager_style_fallback = true;
+			return;
+		}
+		page = page_end;
+	}
+}
+
 // all text meant to go to executing_ch - a player whos command
 // is currently processed is saved into command_output
 // buffer instead of being sent over the network
@@ -602,11 +630,14 @@ void process_with_paging(P_char ch, char *comm)
 	executing_ch = ch;
 	*command_output = '\0';
 	output_length = 0;
+	pager_original.clear();
+	pager_style_fallback = false;
 	command_interpreter(ch, comm);
 	executing_ch = NULL;
 	if (!ch->desc)
 		return;
-	else if (next_page(command_output, ch->desc))
+	finalize_styled_command(ch->desc);
+	if (next_page(command_output, ch->desc))
 		// page_string_real(ch->desc, command_output, 1);
 		page_string_real(ch->desc, command_output);
 	else
@@ -4139,8 +4170,6 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 {
 	static bool bSwitched = FALSE;
 	static bool bWarningAdded = false;
-	static std::string pager_original;
-	static bool pager_style_fallback = false;
 
 	if (ch && ch->desc && messg)
 	{
@@ -4205,9 +4234,11 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 				}
 				else
 				{
-					strncat(command_output,
-						"\r\n\r\n&+W *** ...and the list goes on... ***&n\r\n",
-						PAD_COMMAND_OUTPUT);
+					const char *warning =
+						"\r\n\r\n&+W *** ...and the list goes on... ***&n\r\n";
+					strncat(command_output, warning, PAD_COMMAND_OUTPUT);
+					if (!pager_original.empty())
+						pager_original += warning;
 					bWarningAdded = true;
 				}
 			}

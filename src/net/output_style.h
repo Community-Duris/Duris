@@ -3,6 +3,7 @@
 #include "net/ansi.h"
 #include <map>
 #include <span>
+#include <string_view>
 
 enum class OutputPolicy
 {
@@ -71,3 +72,7 @@ AnsiString style_dictionary_words(const AnsiString &input, const WordColorDictio
 // Animated uses the supplied fixed frame here; recipe/sequence ownership is separate.
 bool render_output_message(const char *message, const OutputContext &context, std::string &rendered,
 			   size_t capacity = MAX_STRING_LENGTH - 1);
+
+// Recheck a frozen page after accumulation, using its actual markup byte length
+// as well as terminal expansion and snoop overhead. This does not apply styling.
+bool output_message_fits_serializers(std::string_view message);

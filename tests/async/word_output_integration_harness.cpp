@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdarg>
 #include <cstring>
+#include <functional>
 #include <vector>
 
 // Allocation and outside-world visibility/logging boundaries are test doubles;
@@ -31,6 +32,11 @@ P_index obj_index = indexes;
 static bool visible = true;
 static P_char hidden_recipient = nullptr;
 static std::vector<std::pair<std::string, int>> logged;
+static std::function<void(P_char)> command_action;
+void command_interpreter(P_char ch, char *)
+{
+	command_action(ch);
+}
 void logit(const char *, const char *, ...) {}
 void panic_corruption(const char *, const char *, ...)
 {
@@ -96,6 +102,23 @@ static void begin_paging(P_char ch)
 	SET_BIT(ch->specials.act, PLR_PAGING_ON);
 	command_output[0] = 0;
 	output_length = 0;
+}
+
+static size_t visible_terminal_bytes(const std::string &markup)
+{
+	char buffer[MAX_STRING_LENGTH];
+	AnsiString(markup.c_str()).term(buffer, TL_UNDERLINE);
+	size_t bytes = 0;
+	for (const char *p = buffer; *p; ++p)
+		if (*p == '\x1b')
+		{
+			while (*p && *p != 'm')
+				++p;
+			assert(*p);
+		}
+		else if (*p != '\r')
+			++bytes;
+	return bytes;
 }
 
 int main()
@@ -245,6 +268,89 @@ int main()
 		drain(&desc);
 	}
 	assert(logged.size() == 1);
+
+	// Literal ampersands do not advance the legacy pager's column counter. Added
+	// markup across several sends must not turn a deliverable page into a rejected one.
+	char command[] = "output-test";
+	for (int count : { 1, 3 })
+		for (OutputPolicy policy : { OutputPolicy::Preserve, OutputPolicy::Static })
+		{
+			OutputContext amp_style{ OutputChannel::Chat, policy, nullptr,
+						 ATTR_FG(25) };
+			std::string amp_chunk(8000, '&');
+			command_action = [&](P_char ch)
+			{
+				for (int i = 0; i < count; ++i)
+					send_to_char(amp_chunk.c_str(), ch, LOG_NONE, amp_style);
+			};
+			process_with_paging(&actor, command);
+			std::string output = drain(&desc);
+			assert(AnsiString(output.c_str()).size() == amp_chunk.size() * count);
+			assert(visible_terminal_bytes(output) == amp_chunk.size() * count);
+			assert(GET_ATTR(AnsiString(output.c_str())[0]) ==
+			       (count == 1 && policy == OutputPolicy::Static ? ATTR_FG(25) : 0));
+		}
+	// The combined markup can fit while its terminal expansion does not. Authored
+	// red ampersands alternate with default ampersands that acquire the base color.
+	std::string terminal_chunk;
+	for (int i = 0; i < 2200; ++i)
+		terminal_chunk += "&+r&&n&";
+	for (OutputPolicy policy : { OutputPolicy::Preserve, OutputPolicy::Static })
+	{
+		OutputContext amp_style{ OutputChannel::Chat, policy, nullptr, ATTR_FG(25) };
+		command_action = [&](P_char ch)
+		{
+			for (int i = 0; i < 2; ++i)
+				send_to_char(terminal_chunk.c_str(), ch, LOG_NONE, amp_style);
+		};
+		process_with_paging(&actor, command);
+		assert(visible_terminal_bytes(drain(&desc)) == 8800);
+	}
+	// Falling back at finalization must retain the legacy accumulation warning.
+	std::string warning_baseline;
+	for (OutputPolicy policy : { OutputPolicy::Preserve, OutputPolicy::Static })
+	{
+		OutputContext amp_style{ OutputChannel::Chat, policy, nullptr, ATTR_FG(25) };
+		command_action = [&](P_char ch)
+		{
+			std::string amp_chunk(8000, '&');
+			for (int i = 0; i < 3; ++i)
+				send_to_char(amp_chunk.c_str(), ch, LOG_NONE, amp_style);
+			std::string excess(MAX_COMMAND_OUTPUT, 'x');
+			send_to_char(excess.c_str(), ch, LOG_NONE, amp_style);
+		};
+		process_with_paging(&actor, command);
+		std::string output = drain(&desc);
+		assert(output.find("the list goes on") != std::string::npos);
+		if (policy == OutputPolicy::Preserve)
+			warning_baseline = output;
+		else
+			assert(output == warning_baseline);
+	}
+	// Main-menu output bypasses paging even when the paging preference is set.
+	// Turning paging off during a command also makes replay send the whole command.
+	for (bool menu : { false, true })
+		for (OutputPolicy policy : { OutputPolicy::Preserve, OutputPolicy::Static })
+		{
+			OutputContext menu_style{ OutputChannel::Chat, policy, &words };
+			std::string menu_chunk;
+			for (int i = 0; i < 1600; ++i)
+				menu_chunk += "water ";
+			SET_BIT(actor.specials.act, PLR_PAGING_ON);
+			desc.connected = menu ? CON_MAIN_MENU : CON_PLAYING;
+			command_action = [&](P_char ch)
+			{
+				for (int i = 0; i < 4; ++i)
+					send_to_char(menu_chunk.c_str(), ch, LOG_NONE, menu_style);
+				if (!menu)
+					REMOVE_BIT(ch->specials.act, PLR_PAGING_ON);
+			};
+			process_with_paging(&actor, command);
+			assert(visible_terminal_bytes(drain(&desc)) == menu_chunk.size() * 4);
+		}
+	desc.connected = CON_PLAYING;
+	SET_BIT(actor.specials.act, PLR_PAGING_ON);
+	command_action = {};
 
 	// Styling may never displace later visible output at the accumulation limit.
 	words["water"] = ATTR_FG(25);
