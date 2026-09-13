@@ -11,6 +11,7 @@ namespace
 {
 constexpr size_t MOB_EQUIPMENT_COUNT = 43;
 constexpr size_t MOB_WIRE_FIXED_BYTES = 286;
+constexpr size_t TRANSPORT_WIRE_BYTES = 70; // marker, four i32 fields, rider name
 constexpr size_t AFFECT_WIRE_BYTES = 60;
 constexpr size_t DOOR_WIRE_BYTES = 12;
 constexpr size_t ZONE_WIRE_BYTES = 20;
@@ -116,8 +117,9 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 	    native_size !=
 		    sizeof(mob) + static_cast<size_t>(mob.num_affects) * sizeof(copyover_affect))
 		return false;
-	const size_t encoded_size =
-		MOB_WIRE_FIXED_BYTES + static_cast<size_t>(mob.num_affects) * AFFECT_WIRE_BYTES;
+	const size_t encoded_size = MOB_WIRE_FIXED_BYTES +
+				    static_cast<size_t>(mob.num_affects) * AFFECT_WIRE_BYTES +
+				    (mob.transport.origin ? TRANSPORT_WIRE_BYTES : 0);
 	if (encoded_size > output_capacity)
 		return false;
 	size_t offset = 0;
@@ -181,6 +183,19 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 			offset += 8;
 		}
 	}
+	if (mob.transport.origin)
+	{
+		memcpy(output + offset, "TRN1", 4);
+		offset += 4;
+		for (int value : { mob.transport.origin, mob.transport.destination,
+				   mob.transport.state, mob.transport.step })
+		{
+			put_i32(output + offset, value);
+			offset += 4;
+		}
+		memcpy(output + offset, mob.transport.rider, sizeof(mob.transport.rider));
+		offset += sizeof(mob.transport.rider);
+	}
 	*output_size = offset;
 	return offset == encoded_size;
 }
@@ -191,11 +206,16 @@ bool mob_native_size(const unsigned char *wire_data, size_t wire_size, size_t *n
 		return false;
 	const uint32_t affect_count = get_u32(wire_data + 98);
 	const uint32_t carrying_count = get_u32(wire_data + 274);
+	const size_t base_size =
+		MOB_WIRE_FIXED_BYTES + static_cast<size_t>(affect_count) * AFFECT_WIRE_BYTES;
+	const bool has_transport = wire_size == base_size + TRANSPORT_WIRE_BYTES;
+	if (has_transport && (memcmp(wire_data + base_size, "TRN1", 4) != 0 ||
+			      !memchr(wire_data + base_size + 20, '\0', 50)))
+		return false;
 	if (!memchr(wire_data + 48, '\0', 50) || carrying_count ||
 	    affect_count > (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(copyover_mob)) /
 				   sizeof(copyover_affect) ||
-	    wire_size !=
-		    MOB_WIRE_FIXED_BYTES + static_cast<size_t>(affect_count) * AFFECT_WIRE_BYTES)
+	    (wire_size != base_size && !has_transport))
 		return false;
 	for (size_t index = 0; index < MOB_EQUIPMENT_COUNT; ++index)
 		if (get_i32(wire_data + 102 + index * 4) > 0)
@@ -284,6 +304,20 @@ bool decode_mob(const unsigned char *wire_data, size_t wire_size,
 		memcpy(native_record->data() + sizeof(mob) +
 			       static_cast<size_t>(index) * sizeof(affect),
 		       &affect, sizeof(affect));
+	}
+	if (offset < wire_size)
+	{
+		offset += 4; // validated TRN1 marker
+		int *fields[] = { &mob.transport.origin, &mob.transport.destination,
+				  &mob.transport.state, &mob.transport.step };
+		for (int *field : fields)
+		{
+			*field = get_i32(wire_data + offset);
+			offset += 4;
+		}
+		memcpy(mob.transport.rider, wire_data + offset, sizeof(mob.transport.rider));
+		offset += sizeof(mob.transport.rider);
+		memcpy(native_record->data(), &mob, sizeof(mob));
 	}
 	return offset == wire_size;
 }
