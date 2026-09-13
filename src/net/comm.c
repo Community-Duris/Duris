@@ -10,6 +10,7 @@
 #include "core/prototypes.h"
 #include "world/world_singletons.h"
 #include "item/item_actions.h"
+#include "item/artifact_mana.h"
 #include "persistence/persistence_log.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -610,6 +611,7 @@ int main(int argc, char **argv)
 	init_cmdlog(); /* init cmd.debug file - DCL */
 
 	run_the_game(port, sslport);
+	artifact_mana_shutdown();
 	shutdown_mysql();
 	close_cmdlog();
 
@@ -1924,6 +1926,7 @@ resume_game_loop:
 		latency_trace_record("ne_events", ne_events_us, loop_tick);
 
 		item_creation_grant_prepare_pulse();
+		artifact_mana_pulse();
 
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))

@@ -25,7 +25,8 @@ import validate_data_lifecycle as lifecycle_policy  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
-# Policy execution and validation must cover the same authoritative schema.
+# Archive, erasure and export must use the validator's current schema authority.
+# A second list silently fell behind the additive telemetry and mana tables.
 DEFAULT_SCHEMA_FILES = lifecycle_policy.DEFAULT_SCHEMA_FILES
 MAX_ROW_BUDGET = 256
 MAX_BYTE_BUDGET = 1024 * 1024

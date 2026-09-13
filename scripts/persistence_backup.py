@@ -32,7 +32,7 @@ if __name__ == "__main__":
 ROOT = Path(__file__).resolve().parents[1]
 MODES = {"flatfile-primary", "mariadb-primary"}
 GENERATION = re.compile(r"[0-9]{20}-[0-9a-f]{32}")
-LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock"}
+LOCKS = {".identity.lock", ".critical-authority.lock", ".accounts.lock", ".artifact-mana.lock"}
 JOURNAL_FILES = {"players": "player-save.journal", "critical": "critical-command.journal"}
 LOCK_WAIT_SECONDS = 120
 CAPACITY_CHECK_INTERVAL = 32 * 1024 * 1024
@@ -259,7 +259,7 @@ def flatfile_capture(stage, p, capacity_base=None):
     target = stage / "state"
     with contextlib.ExitStack() as stack:
         for relative in ("identities/names/.identity.lock", "domains/.critical-authority.lock",
-                         "identities/accounts/.accounts.lock"):
+                         "identities/accounts/.accounts.lock", "domains/.artifact-mana.lock"):
             path = source / relative
             if path.parent.is_dir():
                 stack.enter_context(lock(path, wait=120))

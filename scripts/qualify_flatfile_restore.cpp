@@ -1,6 +1,7 @@
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "player/player_save_journal.h"
 #include "item/locker_receipt.h"
+#include "item/artifact_mana_store.h"
 #include "persistence/critical_command_journal.h"
 #include "flatfile/flatfile_account_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
@@ -25,6 +26,7 @@
 void logit(const char *, const char *, ...) {}
 
 #include <chrono>
+#include <charconv>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -267,6 +269,23 @@ int main(int argc, char **argv)
 							      &snapshot, &error) ==
 				flatfile_player_load_result::ok);
 			++snapshots;
+		}
+		for (const auto &entry : std::filesystem::directory_iterator(root + "/domains"))
+		{
+			const auto name = entry.path().filename().string();
+			const std::string prefix = "artifact-mana-";
+			if (!name.starts_with(prefix))
+				continue;
+			const auto suffix = name.substr(prefix.size());
+			uint64_t uid = 0;
+			const auto parsed =
+				std::from_chars(suffix.data(), suffix.data() + suffix.size(), uid);
+			require(parsed.ec == std::errc() &&
+				parsed.ptr == suffix.data() + suffix.size() && uid &&
+				suffix == std::to_string(uid));
+			artifact_mana_record record;
+			require(artifact_mana_store_read(false, root, uid, record) ==
+				artifact_mana_read::found);
 		}
 		for (const auto *pending :
 		     { ".critical-authority-transaction", ".currency-transaction",

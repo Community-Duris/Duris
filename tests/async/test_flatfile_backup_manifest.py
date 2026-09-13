@@ -12,14 +12,16 @@ class FlatfileManifestTests(Fixture):
     def test_manifest_covers_authority_and_pending_transaction(self):
         live = self.base / "live"
         (live / "domains/.critical-authority-transaction").write_bytes(b"synthetic-pending-transaction")
+        (live / "domains/artifact-mana-81").write_bytes(b"synthetic-resource-authority")
         for relative in ("identities/names/.identity.lock", "identities/accounts/.accounts.lock",
-                         "domains/.critical-authority.lock"):
+                         "domains/.critical-authority.lock", "domains/.artifact-mana.lock"):
             (live / relative).touch(mode=0o600)
         generation = self.create()
         meta = backup.verify(generation)
         self.assertTrue(meta["pending_transaction"])
         self.assertEqual(backup.inventory(live, exclude_locks=True), backup.inventory(generation / "state"))
         self.assertIn("state/domains/locker_catalog", meta["files"])
+        self.assertIn("state/domains/artifact-mana-81", meta["files"])
         self.assertIn("state/domains/.critical-authority-transaction", meta["files"])
         self.assertFalse(any(key.split("/")[-1] in backup.LOCKS for key in meta["files"]))
         (generation / "state/domains/locker_catalog").write_bytes(b"corrupted")
@@ -27,14 +29,14 @@ class FlatfileManifestTests(Fixture):
             backup.verify(generation)
 
     def test_authority_writer_overlap_does_not_publish(self):
-        path = self.base / "live/domains/.critical-authority.lock"
         real_lock = backup.lock
         # Keep real flock exclusion, but eliminate the operational 120-second
         # timeout from this deterministic unit test.
-        with real_lock(path):
-            with mock.patch.object(backup, "lock", lambda path, wait=0: real_lock(path, wait=0)):
-                with self.assertRaisesRegex(backup.BackupError, "authority_busy"):
-                    self.create()
+        for name in (".critical-authority.lock", ".artifact-mana.lock"):
+            with self.subTest(writer=name), real_lock(self.base / "live/domains" / name):
+                with mock.patch.object(backup, "lock", lambda path, wait=0: real_lock(path, wait=0)):
+                    with self.assertRaisesRegex(backup.BackupError, "authority_busy"):
+                        self.create()
         self.assertFalse(backup.generations(self.p["root"]))
 
     def test_writer_change_during_copy_refuses_mixed_generation(self):
