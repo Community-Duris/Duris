@@ -2375,7 +2375,8 @@ static struct sp_trig *sp_parse_event(int targ, int vnum, char *line)
 		}
 		if (strcmp(word, "any"))
 		{
-			n = old_search_block(word, 0, (uint)strlen(word), command, 2) - 1;
+			// The interpreter uses the one-based result as its command number.
+			n = old_search_block(word, 0, (uint)strlen(word), command, 2);
 			if (n < 0)
 			{
 				sp_err(vnum, "CMD: no such command verb", line);

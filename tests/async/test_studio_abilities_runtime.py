@@ -60,6 +60,9 @@ bool artifact_mana_debit(P_obj,uint64_t cost,bool,uint64_t token) {
     assert(token && token!=paid_token); paid_token=token; mana_reserve-=cost; return true;
 }
 // INSERT_STRUCTURES
+static void sp_err(int,const char *,const char *) {}
+char *str_dup(const char *text) { return strdup(text); }
+// INSERT_TRIGGER_PARSER
 static sp_rec record{};
 static sp_trig trigger{};
 static int sp_depth=0;
@@ -208,7 +211,9 @@ static void multi_effect_lifetime() {
     }
 }
 static void parser() {
-    studio_scene s; uint32_t id=0; std::string error;
+    uint32_t id=0; std::string error;
+    {
+    studio_scene s;
     assert(parse_studio_ability_action(SP_T_OBJ,777,SP_EV_HIT,0,"123",id,error) && id==123);
     for(int target:{SP_T_MOB,SP_T_ROOM}) assert(!parse_studio_ability_action(target,777,SP_EV_HIT,0,"123",id,error));
     for(const char *bad:{"", "-1", "+123", "123 garbage", "999", "99999999999999999999"})
@@ -216,6 +221,19 @@ static void parser() {
     assert(!parse_studio_ability_action(SP_T_OBJ,778,SP_EV_HIT,0,"123",id,error));
     assert(!parse_studio_ability_action(SP_T_OBJ,777,SP_EV_DAMAGED,0,"123",id,error));
     assert(!parse_studio_ability_action(SP_T_OBJ,777,SP_EV_CMD,CMD_LOOK,"123",id,error));
+    }
+    // Read the actual authored trigger through the production tokenizer and
+    // interpreter command table before validating its typed item action.
+    studio_scene active(true);
+    for(const auto &[verb,expected]:std::vector<std::pair<const char *,int>>{
+        {"use",CMD_USE},{"look",CMD_LOOK},{"north",CMD_NORTH}}) {
+        std::string line=std::string("T CMD ")+verb;
+        auto parsed=sp_parse_event(SP_T_OBJ,777,line.data());
+        assert(parsed && parsed->event==SP_EV_CMD && parsed->cmdnum==expected);
+        assert(parse_studio_ability_action(SP_T_OBJ,777,parsed->event,parsed->cmdnum,
+            "123",id,error)==(expected==CMD_USE));
+        FREE(parsed);
+    }
 }
 int main() {
     nevent_bind_game_thread(); ne_dead_event_pool=&test_pool; fake_clock_ns=1000000000ULL; ne_events();
@@ -227,6 +245,13 @@ int main() {
 with tempfile.TemporaryDirectory(prefix="duris-studio-runtime-") as directory:
     source = Path(directory) / "harness.cpp"; binary = Path(directory) / "harness"
     harness = HARNESS.replace("// INSERT_STRUCTURES", structures)
+    interpreter = (ROOT / "src/cmd/interp.c").read_text()
+    start = interpreter.index("const char *command[MAX_CMD] = {")
+    command_table = interpreter[start:interpreter.index("};",start)+2]
+    trigger_parser = command_table + "\n" + function(interpreter,"int old_search_block(")
+    for signature in ("static void sp_strlower(","static const char *sp_word(","static struct sp_trig *sp_parse_event("):
+        trigger_parser += "\n" + function(studio,signature)
+    harness = harness.replace("// INSERT_TRIGGER_PARSER",trigger_parser)
     harness = harness.replace("// INSERT_EXECUTOR", function(studio,"static void sp_execute_item_ability("))
     harness = harness.replace("// INSERT_FIRE", function(studio,"static int sp_fire("))
     harness = harness.replace("// INSERT_OBJECT_BRIDGE", function(studio,"int studioproc_obj("))
