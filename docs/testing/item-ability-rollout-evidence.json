@@ -1,0 +1,589 @@
+{
+  "date": "2026-09-13",
+  "environment": "Disposable Linux flatfile-primary servers; no production state",
+  "units": "1000 fixed-point units = 1 mana point",
+  "cases": {
+    "weapons": {
+      "binary_sha256": "4caf919e0dcf47a4b1fcc06a70f8b98f54137cc03333ea3486089e9045ff1d40",
+      "cases": [
+        {
+          "case": "off-hold",
+          "legacy_damage_after_attack_s": 9.259
+        },
+        {
+          "case": "on-hold",
+          "warning_to_damage_s": 2.002
+        },
+        {
+          "case": "on-flee",
+          "reaction_to_room_exit_s": 0.25,
+          "damage_after_warning": false,
+          "fizzle_observed": true
+        }
+      ]
+    },
+    "devices": {
+      "binary_sha256": "4caf919e0dcf47a4b1fcc06a70f8b98f54137cc03333ea3486089e9045ff1d40",
+      "cases": [
+        {
+          "case": "wand-off-complete",
+          "command_to_damage_s": 0.286,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "wand-on-complete",
+          "warning_to_damage_s": 2.253,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "wand-on-abort",
+          "warning_to_abort_s": 0.25,
+          "damage": false,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "staff-off-complete",
+          "command_to_damage_s": 0.263,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "staff-on-complete",
+          "warning_to_damage_s": 2.252,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "staff-on-abort",
+          "warning_to_abort_s": 0.25,
+          "damage": false,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "scroll-off-complete",
+          "command_to_damage_s": 0.014,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "scroll-on-complete",
+          "warning_to_damage_s": 2.252,
+          "resource_stays_consumed": true
+        },
+        {
+          "case": "scroll-on-abort",
+          "warning_to_abort_s": 0.25,
+          "damage": false,
+          "resource_stays_consumed": true
+        }
+      ]
+    },
+    "avernus": {
+      "binary_sha256": "dd49afbce37b60f9a7b402c5ca407518eaa4871d8ade0a55b3d9b7e9af4b5ab6",
+      "family": "avernus",
+      "cases": [
+        {
+          "case": "off-hold",
+          "legacy_damage_after_attack_s": 126.386
+        },
+        {
+          "case": "on-hold",
+          "warning_to_damage_s": 2.002
+        }
+      ]
+    },
+    "avernus_reaction": {
+      "binary_sha256": "dd49afbce37b60f9a7b402c5ca407518eaa4871d8ade0a55b3d9b7e9af4b5ab6",
+      "family": "avernus",
+      "cases": [
+        {
+          "case": "on-flee",
+          "reaction_to_room_exit_s": 0.501,
+          "damage_after_warning": false,
+          "fizzle_observed": true
+        }
+      ]
+    },
+    "tsunami": {
+      "binary_sha256": "0edbd5af4a434db031a55dfb4656aa0d5bf61feee0146f62d54a300cea53c60a",
+      "cases": [
+        {
+          "case": "tsunami-off-complete",
+          "command_to_effect_s": 0.239
+        },
+        {
+          "case": "tsunami-on-complete",
+          "warning_to_result_s": 2.252,
+          "effect": true,
+          "committed_mana_before": {
+            "profile": 31514,
+            "profile_revision": 1,
+            "version": 1,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 0
+          },
+          "committed_mana_after": {
+            "profile": 31514,
+            "profile_revision": 1,
+            "version": 2,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 5000
+          },
+          "cost_units": 2000,
+          "restart": {
+            "same_uid": true,
+            "durable_record_unchanged": true,
+            "observed_reserve_units": 15000,
+            "maximum_from_elapsed_regeneration": 15000,
+            "pending_revived": false
+          },
+          "corpse_loot": {
+            "same_uid": true,
+            "durable_mana_unchanged": true,
+            "real_player_death_and_loot": true
+          }
+        },
+        {
+          "case": "tsunami-on-abort",
+          "warning_to_result_s": 0.25,
+          "effect": false,
+          "committed_mana_before": {
+            "profile": 31514,
+            "profile_revision": 1,
+            "version": 1,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 0
+          },
+          "committed_mana_after": {
+            "profile": 31514,
+            "profile_revision": 1,
+            "version": 2,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 5000
+          },
+          "cost_units": 2000,
+          "restart": {
+            "same_uid": true,
+            "durable_record_unchanged": true,
+            "observed_reserve_units": 16000,
+            "maximum_from_elapsed_regeneration": 16000,
+            "pending_revived": false
+          }
+        }
+      ]
+    },
+    "studio": {
+      "binary_sha256": "0edbd5af4a434db031a55dfb4656aa0d5bf61feee0146f62d54a300cea53c60a",
+      "cases": [
+        {
+          "case": "studio-on-complete",
+          "warning_to_result_s": 2.251,
+          "effect": true,
+          "committed_mana_before": {
+            "profile": 22802,
+            "profile_revision": 1,
+            "version": 1,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 0
+          },
+          "committed_mana_after": {
+            "profile": 22802,
+            "profile_revision": 1,
+            "version": 2,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 5000
+          },
+          "cost_units": 2000,
+          "storage_and_transfer": {
+            "nested_bag_restart": true,
+            "room_drop_get": true
+          },
+          "restart": {
+            "same_uid": true,
+            "durable_record_unchanged": true,
+            "observed_reserve_units": 19000,
+            "maximum_from_elapsed_regeneration": 19000,
+            "pending_revived": false
+          }
+        },
+        {
+          "case": "studio-on-abort",
+          "warning_to_result_s": 0.25,
+          "effect": false,
+          "committed_mana_before": {
+            "profile": 22802,
+            "profile_revision": 1,
+            "version": 1,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 0
+          },
+          "committed_mana_after": {
+            "profile": 22802,
+            "profile_revision": 1,
+            "version": 2,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 5000
+          },
+          "cost_units": 2000,
+          "storage_and_transfer": {
+            "nested_bag_restart": true,
+            "room_drop_get": true
+          },
+          "restart": {
+            "same_uid": true,
+            "durable_record_unchanged": true,
+            "observed_reserve_units": 21000,
+            "maximum_from_elapsed_regeneration": 21000,
+            "pending_revived": false
+          }
+        },
+        {
+          "case": "studio-on-crash",
+          "warning_to_result_s": 6.873,
+          "effect": false,
+          "committed_mana_before": {
+            "profile": 22802,
+            "profile_revision": 1,
+            "version": 1,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 0
+          },
+          "committed_mana_after": {
+            "profile": 22802,
+            "profile_revision": 1,
+            "version": 2,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 5000
+          },
+          "cost_units": 2000,
+          "restart": {
+            "same_uid": true,
+            "durable_record_unchanged": true,
+            "observed_reserve_units": 18000,
+            "maximum_from_elapsed_regeneration": 19000,
+            "pending_revived": false
+          }
+        }
+      ]
+    },
+    "ioun": {
+      "binary_sha256": "dd49afbce37b60f9a7b402c5ca407518eaa4871d8ade0a55b3d9b7e9af4b5ab6",
+      "cases": [
+        {
+          "case": "ioun-on-complete",
+          "attack_to_paid_interception_s": 146.389,
+          "committed_mana": {
+            "profile": 922,
+            "profile_revision": 1,
+            "version": 2,
+            "capacity": 100000,
+            "regeneration": 1000,
+            "reserve": 65000
+          },
+          "real_native_incoming_spell": true,
+          "real_native_deflection": true
+        }
+      ]
+    },
+    "encounter": {
+      "binary_sha256": "dd49afbce37b60f9a7b402c5ca407518eaa4871d8ade0a55b3d9b7e9af4b5ab6",
+      "profile": {
+        "capacity": 10000,
+        "cost": 3000,
+        "regeneration_per_second": 250
+      },
+      "initial_units": 10000,
+      "pve_attempts": 17,
+      "pve_completed": 8,
+      "pve_outcomes": [
+        {
+          "attempt": 1,
+          "starting_units": 10000,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 2,
+          "starting_units": 7750,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 3,
+          "starting_units": 5750,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 4,
+          "starting_units": 3500,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 5,
+          "starting_units": 1500,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 6,
+          "starting_units": 2250,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 7,
+          "starting_units": 3250,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 8,
+          "starting_units": 1000,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 9,
+          "starting_units": 2000,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 10,
+          "starting_units": 2750,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 11,
+          "starting_units": 750,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 12,
+          "starting_units": 1500,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 13,
+          "starting_units": 2500,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 14,
+          "starting_units": 3500,
+          "started": true,
+          "completed": true
+        },
+        {
+          "attempt": 15,
+          "starting_units": 1250,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 16,
+          "starting_units": 2250,
+          "started": false,
+          "completed": false
+        },
+        {
+          "attempt": 17,
+          "starting_units": 3000,
+          "started": true,
+          "completed": true
+        }
+      ],
+      "immediate_player_encounter_units": 1000,
+      "immediate_player_ability_suppressed": true,
+      "recharge_seconds": 7.009,
+      "recovered_units": 3000,
+      "player_spell_after_recharge": true,
+      "warning_to_player_damage_s": 2.33,
+      "final_committed_mana": {
+        "profile": 22802,
+        "profile_revision": 1,
+        "version": 10,
+        "capacity": 10000,
+        "regeneration": 250,
+        "reserve": 0
+      }
+    },
+    "benchmark": {
+      "compiler": "g++ -O2, no sanitizers",
+      "cases": [
+        {
+          "telemetry": 0,
+          "pending": 1,
+          "admission_total_us": 2,
+          "admission_max_us": 2,
+          "release_total_us": 1,
+          "tick_max_us": 0,
+          "callback_max_us": 0
+        },
+        {
+          "telemetry": 0,
+          "pending": 128,
+          "admission_total_us": 105,
+          "admission_max_us": 6,
+          "release_total_us": 93,
+          "tick_max_us": 92,
+          "callback_max_us": 0
+        },
+        {
+          "telemetry": 0,
+          "pending": 1024,
+          "admission_total_us": 4865,
+          "admission_max_us": 21,
+          "release_total_us": 6289,
+          "tick_max_us": 6289,
+          "callback_max_us": 0
+        },
+        {
+          "telemetry": 0,
+          "pending": 4096,
+          "admission_total_us": 153584,
+          "admission_max_us": 368,
+          "release_total_us": 170896,
+          "tick_max_us": 170894,
+          "callback_max_us": 0
+        },
+        {
+          "telemetry": 1,
+          "pending": 1,
+          "admission_total_us": 2,
+          "admission_max_us": 2,
+          "release_total_us": 19,
+          "tick_max_us": 18,
+          "callback_max_us": 0
+        },
+        {
+          "telemetry": 1,
+          "pending": 128,
+          "admission_total_us": 73,
+          "admission_max_us": 0,
+          "release_total_us": 84,
+          "tick_max_us": 83,
+          "callback_max_us": 1
+        },
+        {
+          "telemetry": 1,
+          "pending": 1024,
+          "admission_total_us": 6954,
+          "admission_max_us": 44,
+          "release_total_us": 6717,
+          "tick_max_us": 6716,
+          "callback_max_us": 40
+        },
+        {
+          "telemetry": 1,
+          "pending": 4096,
+          "admission_total_us": 169658,
+          "admission_max_us": 827,
+          "release_total_us": 153973,
+          "tick_max_us": 153971,
+          "callback_max_us": 843
+        },
+        {
+          "studio_cooldowns": 65536,
+          "expired": 0,
+          "sweep_us": 305,
+          "remaining": 65536
+        },
+        {
+          "studio_cooldowns": 65536,
+          "expired": 1,
+          "sweep_us": 887,
+          "remaining": 0
+        }
+      ]
+    },
+    "configuration": {
+      "binary_sha256": "0c986e8563abb1a8465ad63d838e840a6c681b0bf1654ba11b6a5a88d1b3a885",
+      "acceptance": [
+        "invalid target rejected; mortal metrics hidden",
+        "itemActions.enabled: pending cancelled; re-enable did not revive it",
+        "itemActions.studio.enabled: pending cancelled; re-enable did not revive it",
+        "itemActions.mana.enabled: pending cancelled; re-enable did not revive it",
+        "itemActions.enabled: invalid numeric value failed closed",
+        "itemActions.maxPulses: invalid numeric value failed closed",
+        "revision 2 catalog reload cancelled pending and clamped without refill",
+        "invalid catalog retained last valid definitions; reload did not revive pending"
+      ],
+      "metrics": {
+        "pending": 0,
+        "peak": 1,
+        "selected": 7,
+        "started": 7,
+        "completed": 1,
+        "partial": 0,
+        "busy": 0,
+        "invalid": 0,
+        "scheduling_rejected": 0,
+        "consumption_rejected": 0,
+        "insufficient_mana": 0,
+        "mana_unavailable": 0,
+        "effects_invoked": 1,
+        "effect_failures": 0,
+        "cancelled.runtime_cleanup": 0,
+        "cancelled.invalid_context": 0,
+        "cancelled.clock_failure": 0,
+        "cancelled.actor_departure": 0,
+        "cancelled.target_departure": 0,
+        "cancelled.source_departure": 0,
+        "cancelled.definition_change": 1,
+        "cancelled.configuration_change": 2,
+        "cancelled.reload": 2,
+        "cancelled.abort": 1,
+        "cancelled.scheduling_rejected": 0,
+        "callbacks": 2,
+        "total_us": 9047,
+        "max_us": 9031,
+        "invalid_clock": 0
+      },
+      "reserve_after_profile_reload": 31600,
+      "final_committed_mana": {
+        "profile": 22802,
+        "profile_revision": 2,
+        "version": 8,
+        "capacity": 50000,
+        "regeneration": 1000,
+        "reserve": 36300
+      },
+      "telemetry_disable_cleared_window": true
+    },
+    "overlap_dual": {
+      "binary_sha256": "0c986e8563abb1a8465ad63d838e840a6c681b0bf1654ba11b6a5a88d1b3a885",
+      "cases": [
+        {
+          "case": "two_native_weapons",
+          "both_sources_warned_and_released": true,
+          "elapsed_s": 60.566
+        }
+      ]
+    },
+    "overlap_caster": {
+      "binary_sha256": "0c986e8563abb1a8465ad63d838e840a6c681b0bf1654ba11b6a5a88d1b3a885",
+      "cases": [
+        {
+          "case": "ordinary_mortal_cast_with_own_passive_weapon",
+          "normal_cast_completed": true,
+          "passive_native_spell_released_during_cast": true,
+          "cast_seconds": 4.755
+        }
+      ]
+    }
+  }
+}

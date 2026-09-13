@@ -2,6 +2,7 @@
 #include "flatfile/flatfile_boon_repository.h"
 #include "flatfile/flatfile_identity_repository.h"
 #include "flatfile/flatfile_item_repository.h"
+#include "flatfile/flatfile_artifact_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "persistence/persistence_observability.h"
 #include "economy/coin_transfer_command.h"
@@ -11,6 +12,7 @@
 #include "world/vnum.obj.h"
 #include <algorithm>
 #include <cstring>
+#include <ctime>
 
 #include <cstdlib>
 #include <filesystem>
@@ -517,6 +519,108 @@ int main(int argc, char **argv)
 		std::string error;
 		require(flatfile_boon_establish(argv[1], {}, &error) == flatfile_boon_result::ok,
 			"seed empty combat boon catalog: " + error);
+		return 0;
+	}
+	// Offline fixture setup only, against the temporary state owned by the journey.
+	// Use the real creation transaction and checkpoint writer so item UID/custody
+	// agree when the unmodified server restores the item.
+	if (argc == 3 && std::string(argv[2]) == "seed-item-operator")
+	{
+		std::string error;
+		player_snapshot snapshot;
+		require(flatfile_player_snapshot_load(argv[1], 1, &snapshot, &error) ==
+				flatfile_player_load_result::ok,
+			"seed operator: " + error);
+		for (auto &field : snapshot.status_integers)
+			if (field.field == player_status_field::level)
+				field = { player_status_field::level, 61, 0, false };
+		++snapshot.revision;
+		snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+		require(flatfile_player_snapshot_apply(argv[1], snapshot, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"save operator: " + error);
+		return 0;
+	}
+	if (argc == 4 && std::string(argv[2]) == "seed-item")
+	{
+		std::string error;
+		player_snapshot snapshot;
+		require(flatfile_player_snapshot_load(argv[1], 1, &snapshot, &error) ==
+				flatfile_player_load_result::ok,
+			"seed player: " + error);
+		player_item_snapshot item = {};
+		item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+		std::ifstream input(argv[3]);
+		int type, material;
+		input >> item.vnum >> type >> material >> item.craftsmanship >> item.extra_flags >>
+			item.wear_flags >> item.extra2_flags >> item.anti_flags >>
+			item.anti2_flags >> item.weight >> item.cost >> item.condition;
+		item.type = type;
+		item.material = material;
+		for (auto &value : item.values)
+			input >> value;
+		for (auto &value : item.bitvectors)
+			input >> value;
+		for (auto &affect : item.affects)
+			input >> affect[0] >> affect[1];
+		require(input.good(), "read fixture prototype");
+		item.object_uid = 1000000 + item.vnum;
+		item_transfer_payload payload = {};
+		payload.from_owner = { item_owner_type::system, 0, 0 };
+		payload.to_owner = { item_owner_type::player, 1, 0 };
+		std::vector<flatfile_item_ownership_record> owned;
+		require(flatfile_item_repository_load_owner(
+				argv[1], payload.from_owner, &payload.expected_from_revision,
+				&owned, &error) == flatfile_item_repository_result::ok,
+			"seed system owner: " + error);
+		require(flatfile_item_repository_load_owner(
+				argv[1], payload.to_owner, &payload.expected_to_revision, &owned,
+				&error) == flatfile_item_repository_result::ok,
+			"seed player owner: " + error);
+		payload.reason = item_transfer_reason::creation;
+		payload.reason_id = 297;
+		payload.selected_item_uid = payload.target_root_item_uid = item.object_uid;
+		payload.item_count = 1;
+		payload.items[0] = { item.object_uid,
+				     item.object_uid,
+				     0,
+				     ITEM_TRANSFER_ABSENT_REVISION,
+				     item.vnum,
+				     item_custody_state::absent };
+		std::vector<uint8_t> blob;
+		require(player_item_snapshot_list_encode({ item }, &blob) ==
+				player_snapshot_codec_result::ok,
+			"encode fixture item");
+		payload.item_blob_size = blob.size();
+		std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+		critical_operation_id operation;
+		critical_command command;
+		require(critical_operation_id_generate(&operation) &&
+				item_transfer_command_build(&command, operation, payload,
+							    critical_source_site::command,
+							    critical_deadline_class::interactive),
+			"build fixture creation");
+		command.accepted_at_usec = static_cast<uint64_t>(time(nullptr)) * 1000000;
+		const auto created = flatfile_item_repository_apply(argv[1], command);
+		require(created.outcome == critical_apply_outcome::applied,
+			"create fixture item: " + std::to_string(created.error_code));
+		snapshot.items.push_back(item);
+		++snapshot.revision;
+		snapshot.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		snapshot.encoded_size_bound = PLAYER_SNAPSHOT_MAX_BYTES;
+		require(flatfile_player_snapshot_apply(argv[1], snapshot, &error).outcome ==
+				player_save_apply_outcome::applied,
+			"save seeded item: " + error);
+		if (item.extra_flags & (1U << 28))
+		{
+			const auto updated = flatfile_artifact_gameplay_update(
+				argv[1], item.vnum, true, FLATFILE_ARTIFACT_ON_PLAYER, 1,
+				time(nullptr) + 86400, 2, time(nullptr), &error);
+			require(updated == flatfile_artifact_result::ok,
+				"seed artifact catalog: " + error);
+		}
+		std::cout << item.object_uid << '\n';
 		return 0;
 	}
 	if (argc == 4 && std::string(argv[2]) == "inspect")

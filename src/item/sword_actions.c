@@ -439,7 +439,13 @@ void start_sword(P_obj source, P_char actor, P_char target, std::array<sword_sel
 	definition.windup_pulses = settings.windup;
 	for (size_t i = 0; i < count; ++i)
 		if (selected[i].stage == sword_stage::combat && selected[i].choice == 14)
+		{
+			// The global cap must not shorten nova's native minimum preparation.
+			if (get_property("itemActions.maxPulses", 120.0, false) <
+			    PULSE_VIOLENCE * 2)
+				return;
 			definition.windup_pulses = std::max(settings.windup, PULSE_VIOLENCE * 2);
+		}
 	definition.progress_pulses = definition.windup_pulses / 2;
 	definition.effect_count = count;
 	for (size_t i = 0; i < count; ++i)

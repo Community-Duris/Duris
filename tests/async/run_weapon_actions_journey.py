@@ -26,14 +26,16 @@ START = "begins gathering magic toward YOU!"
 HIT = "magic missile from"
 
 
-def configure(run_root: Path, enabled: bool) -> None:
+def configure(run_root: Path, enabled: bool, family: str = "packed") -> None:
     (run_root / "logs/log").mkdir(parents=True)
     journey.make_fixture(run_root)
     props = run_root / "lib/duris.properties"
     text = props.read_text()
     for key, value in {"itemActions.enabled": int(enabled), "itemActions.weapons.enabled": 1,
                        "itemActions.weapons.windupPulses": 8,
-                       "hitpoints.mob.NpcPcRatio": 100, "hitpoints.class.Warrior": 12}.items():
+                       "itemActions.avernus.enabled": 1,
+                       "hitpoints.mob.NpcPcRatio": 100,
+                       "hitpoints.class.Warrior": 5000 if family == "avernus" else 12}.items():
         text, count = re.subn(rf"(?m)^{re.escape(key)}=.*$", f"{key}={value}", text)
         assert count == 1, key
     props.write_text(text)
@@ -52,6 +54,11 @@ A harmless-looking regression wandblade lies here.~
 6 1 1 7 0 32 1 1
 2 0 100
 """
+    if family == "avernus":
+        # Native vnum binding and original 1/25 selection; only fixture melee
+        # dice and player HP are adjusted to permit observing repeated combat.
+        weapon = weapon.replace("#22801", "#19730").replace("regression wandblade", "Avernus sword")
+        weapon = weapon.replace("6 1 1 7 0 32 1 1", "6 1 1 7 0 0 0 0")
     (mini / "mini.obj").write_text(objects.replace("$~", weapon + "$~"))
     sentinel = """#22801
 regression sentinel~
@@ -86,6 +93,8 @@ S
     zone = re.sub(r"^[MGE] .*\n", "", zone, flags=re.M)
     zone = zone.replace("\nS\n", "\nM 0 22801 1 22800 100 0 0 0 * sentinel\n"
                         "E 1 22801 1 16 100 0 0 0 * wandblade\nS\n")
+    if family == "avernus":
+        zone = zone.replace("E 1 22801", "E 1 19730")
     (mini / "mini.zon").write_text(zone)
     journey.generate_certificate(run_root)
 
@@ -99,7 +108,7 @@ def drain(client: journey.MudClient, seconds: float) -> str:
     return result
 
 
-def run_case(binary: Path, inspector: Path, enabled: bool, react: bool) -> dict:
+def run_case(binary: Path, inspector: Path, enabled: bool, react: bool, family: str = "packed") -> dict:
     case = f"{'on' if enabled else 'off'}-{'flee' if react else 'hold'}"
     print(f"weapon journey: {case}", flush=True)
     with tempfile.TemporaryDirectory(prefix="duris-weapon-state-") as state_tmp, \
@@ -108,7 +117,9 @@ def run_case(binary: Path, inspector: Path, enabled: bool, react: bool) -> dict:
         run_root = Path(run_tmp)
         (state / "domains").mkdir(mode=0o700)
         subprocess.run([str(inspector), str(state), "seed-combat"], check=True)
-        configure(run_root, enabled)
+        configure(run_root, enabled, family)
+        warning = "Avernus begins drawing a hungry light toward YOU!" if family == "avernus" else START
+        hit_message = "You feel your life flowing away" if family == "avernus" else HIT
         journal = run_root / "journals"
         (journal / "players").mkdir(parents=True, mode=0o700)
         (journal / "critical").mkdir(mode=0o700)
@@ -126,7 +137,8 @@ def run_case(binary: Path, inspector: Path, enabled: bool, react: bool) -> dict:
             env["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
         output_path = run_root / "server.out"
         with output_path.open("w") as output:
-            process = subprocess.Popen([str(binary), "--minimal", "-s", "-d", str(run_root), str(plain)],
+            command = [str(binary), "--minimal"] + ([] if family == "avernus" else ["-s"])
+            process = subprocess.Popen(command + ["-d", str(run_root), str(plain)],
                                        cwd=run_root, env=env, stdout=output, stderr=subprocess.STDOUT)
             client = None
             try:
@@ -143,34 +155,42 @@ def run_case(binary: Path, inspector: Path, enabled: bool, react: bool) -> dict:
                 drain(client, .3)
                 attacked = time.monotonic()
                 client.send("kill sentinel")
-                first, output_text = client.expect_any((START, HIT, "is dead! R.I.P."), timeout=45)
+                deadline=time.monotonic()+(600 if family=='avernus' else 45)
+                while True:
+                    first,output_text=client.expect_any((warning,hit_message,'is dead! R.I.P.',
+                        'You stumble, but recover in time!','You stumble in your attack, and jab at',
+                        'You stumble in your attack, and hit yourself!'),timeout=max(1,deadline-time.monotonic()))
+                    if not first.startswith('You stumble'): break
+                    assert time.monotonic()<deadline,'combat selection deadline exceeded'
+                    client.send('kill sentinel')
                 assert first != "is dead! R.I.P.", output_text
                 if not enabled:
-                    assert first == HIT and START not in output_text
+                    assert first == hit_message and warning not in output_text
                     result = {"case": case, "legacy_damage_after_attack_s": round(time.monotonic() - attacked, 3)}
                 else:
-                    assert first == START and HIT not in output_text
+                    assert first == warning and hit_message not in output_text
                     warned = time.monotonic()
                     if react:
                         client.send("flee")
                         for attempt in range(8):
-                            outcome, escaped = client.expect_any(("The Regression Refuge", "PANIC!", HIT), timeout=8)
-                            assert outcome != HIT, escaped
+                            outcome, escaped = client.expect_any(("The Regression Refuge", "PANIC!", "You scramble madly to your feet!", hit_message), timeout=8)
+                            assert outcome != hit_message, escaped
                             if outcome == "The Regression Refuge":
                                 break
                             client.send("flee")
                         assert outcome == "The Regression Refuge", escaped
                         escaped_at = time.monotonic()
                         trailing = drain(client, 3)
-                        assert HIT not in escaped + trailing, escaped + trailing
+                        assert hit_message not in escaped + trailing, escaped + trailing
                         assert "fades" in escaped + trailing, escaped + trailing
                         result = {"case": case, "reaction_to_room_exit_s": round(escaped_at - warned, 3),
                                   "damage_after_warning": False, "fizzle_observed": True}
                     else:
-                        complete = client.expect(HIT, timeout=8)
+                        complete = client.expect(hit_message, timeout=8)
                         elapsed = time.monotonic() - warned
                         assert elapsed >= 1.65, (elapsed, complete)
-                        assert "intensifies" in complete and "releases its gathered magic" in complete
+                        assert "intensifies" in complete
+                        assert family == "avernus" or "releases its gathered magic" in complete
                         result = {"case": case, "warning_to_damage_s": round(elapsed, 3)}
                 print(json.dumps(result), flush=True)
                 return result
@@ -192,10 +212,13 @@ if __name__ == "__main__":
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--inspector", type=Path, default=journey.INSPECTOR)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--family", choices=("packed", "avernus"), default="packed")
+    parser.add_argument("--case", choices=("all","off-hold","on-hold","on-flee"), default="all")
     args = parser.parse_args()
-    results = {"binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
-               "cases": [run_case(args.binary.resolve(), args.inspector.resolve(), enabled, react)
-                         for enabled, react in ((False, False), (True, False), (True, True))]}
-    if args.output:
-        args.output.write_text(json.dumps(results, indent=2) + "\n")
+    results = {"binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(), "family": args.family,"cases":[]}
+    for enabled, react in ((False,False),(True,False),(True,True)):
+        case=f"{'on' if enabled else 'off'}-{'flee' if react else 'hold'}"
+        if args.case not in ('all',case): continue
+        results['cases'].append(run_case(args.binary.resolve(),args.inspector.resolve(),enabled,react,args.family))
+        if args.output: args.output.write_text(json.dumps(results,indent=2)+'\n')
     print(json.dumps(results, indent=2))

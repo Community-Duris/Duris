@@ -263,6 +263,8 @@ static void sword_legacy_comparison() {
     }
     { sword_scene s; s.combat(14); advance(12); assert(calls.empty() && item_actions_pending());
       item_actions_source_leaving(s.source); advance(40); assert(calls.empty()); }
+    { sword_scene s; properties["itemActions.maxPulses"]=8; update_item_action_properties();
+      s.combat(14); advance(40); assert(calls.empty() && !debits && !item_actions_pending()); }
 }
 
 static void sword_depletion_recovery() {
