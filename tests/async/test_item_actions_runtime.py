@@ -63,12 +63,14 @@ float get_property(const char *key, double fallback, bool) {
 }
 
 struct evidence {
-    int commits = 0, announces = 0, effects = 0, finishes = 0, destroys = 0;
+    int commits = 0, announces = 0, progress = 0, effects = 0, finishes = 0, destroys = 0;
     int reserve = 0, spent = 0;
     bool permitted = true, reject_cost = false;
     int mutation = 0;
     uint64_t target_id = 0;
     int power = 0;
+    int auxiliary = 0;
+    item_action_effect_target effect_target = item_action_effect_target::original;
     item_action_call call = item_action_call::weapon;
     item_action_consumption cost = item_action_consumption::committed;
     item_action_outcome outcome = item_action_outcome::interrupted;
@@ -117,11 +119,14 @@ struct probe_adapter final : item_action_adapter {
         return report.cost;
     }
     void announce(const item_action_context &) const noexcept override { ++report.announces; }
+    void progress(const item_action_context &) const noexcept override { ++report.progress; }
     void resolve(const item_action_context &context, const item_action_effect &effect) const noexcept override {
         ++report.effects;
         report.target_id = context.target->runtime_id;
         report.power = effect.power;
         report.call = effect.call;
+        report.auxiliary = effect.auxiliary;
+        report.effect_target = effect.target;
         switch (report.mutation) {
         case 1: depart(context.target); break;
         case 2: SET_POS(context.target, STAT_DEAD); break;
@@ -388,6 +393,40 @@ static void test_real_reaction_floor() {
     assert(s.report.effects == 1 && !item_actions_pending());
 }
 
+static void test_selected_effects_and_progress() {
+    scene s;
+    item_action_selection selection;
+    selection.effect_count = 1;
+    selection.effects[0] = { 88, 155, item_action_call::spell,
+                            item_action_effect_target::actor, 277 };
+    assert(start_selected_item_action(1, s.actor, s.target, s.source, selection) ==
+           item_action_start::suppressed); // fixed definitions reject overrides
+    auto def = definition();
+    def.revision = 2; def.selected_effects = true; def.effect_count = 0;
+    def.progress_pulses = 4;
+    assert(!item_actions_publish(def, std::make_unique<probe_adapter>(s.report)));
+    def.progress_pulses = 2;
+    assert(item_actions_publish(def, std::make_unique<probe_adapter>(s.report)));
+    assert(s.start() == item_action_start::suppressed); // dynamic definitions need selection
+    selection.effects[0].auxiliary = -1;
+    assert(start_selected_item_action(1, s.actor, s.target, s.source, selection) ==
+           item_action_start::suppressed);
+    selection.effects[0].auxiliary = 277;
+    assert(start_selected_item_action(1, s.actor, s.target, s.source, selection) ==
+           item_action_start::scheduled);
+    selection.effects[0] = { 99, 999, item_action_call::wand };
+    advance(20, false); // accelerated ticks cannot reveal progress or release early
+    assert(!s.report.progress && !s.report.effects);
+    advance(3);
+    assert(s.report.progress == 1 && !s.report.effects);
+    advance();
+    assert(s.report.effects == 1 && s.report.progress == 1);
+    assert(s.report.power == 155 && s.report.auxiliary == 277);
+    assert(s.report.call == item_action_call::spell);
+    assert(s.report.effect_target == item_action_effect_target::actor);
+    assert(s.report.commits == 1 && s.report.finishes == 1);
+}
+
 static void test_effect_transitions() {
     for (int mutation = 1; mutation <= 8; ++mutation) {
         scene s(false, 3);
@@ -461,6 +500,7 @@ int main() {
     test_abort_and_unrelated_wait();
     test_config_and_reload();
     test_real_reaction_floor();
+    test_selected_effects_and_progress();
     test_effect_transitions();
     test_carry_self_reload_and_rearm_rejection();
     std::puts("Item actions: scheduler, identities, costs, cancellation, timing and effect lifetime passed");

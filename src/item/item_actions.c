@@ -35,19 +35,24 @@ struct pending_item_action
 {
 	const std::shared_ptr<ability> selected;
 	const item_action_identity identity;
+	const item_action_definition definition;
 	P_obj const expected_source;
 	nevent_handle event = {};
 	uint64_t payload_generation = 0;
 	uint64_t deadline_us = 0;
+	uint64_t progress_us = 0;
 	item_action_consumption consumption = item_action_consumption::rejected;
 	bool terminal = false;
 	bool resolving = false;
 	bool effect_started = false;
+	bool progress_emitted = false;
 
 	pending_item_action(std::shared_ptr<ability> selected_ability,
-			    item_action_identity selected_identity, P_obj source)
+			    item_action_identity selected_identity, P_obj source,
+			    item_action_definition invocation)
 		: selected(std::move(selected_ability))
 		, identity(selected_identity)
+		, definition(std::move(invocation))
 		, expected_source(source)
 	{
 	}
@@ -164,7 +169,7 @@ bool live_context(const pending_item_action &entry, P_char &actor, P_char &targe
 	    IS_AFFECTED2(actor, AFF2_CASTING))
 		return false;
 	return entry.selected->adapter->validate(
-		{ entry.identity, entry.selected->definition, actor, target, source });
+		{ entry.identity, entry.definition, actor, target, source });
 }
 
 bool schedule_action(const std::shared_ptr<pending_item_action> &entry, P_char actor, P_char target,
@@ -204,16 +209,27 @@ void progress_action(void *data)
 	}
 	if (now < entry->deadline_us)
 	{
+		if (entry->progress_us && !entry->progress_emitted && now >= entry->progress_us)
+		{
+			entry->progress_emitted = true;
+			entry->selected->adapter->progress(
+				{ entry->identity, entry->definition, actor, target, source });
+			if (entry->terminal)
+				return;
+		}
 		// Scheduler catch-up can advance game ticks without giving the player
 		// real reaction time. Keep a monotonic floor as well as the tick deadline.
-		const uint64_t remaining = entry->deadline_us - now;
+		const uint64_t next = entry->progress_us && !entry->progress_emitted ?
+					      std::min(entry->deadline_us, entry->progress_us) :
+					      entry->deadline_us;
+		const uint64_t remaining = next - now;
 		const int delay = static_cast<int>(std::min<uint64_t>(
 			config.max_pulses, (remaining + OPT_USEC - 1) / OPT_USEC));
 		schedule_action(entry, actor, target, source, std::max(1, delay));
 		return;
 	}
 	entry->resolving = true;
-	for (size_t effect = 0; effect < entry->selected->definition.effect_count; ++effect)
+	for (size_t effect = 0; effect < entry->definition.effect_count; ++effect)
 	{
 		// Even one effect may kill, move, extract, disable or reload. Reacquire
 		// every participant, and never substitute the actor's new opponent.
@@ -223,9 +239,9 @@ void progress_action(void *data)
 			return;
 		}
 		entry->effect_started = true;
-		entry->selected->adapter->resolve({ entry->identity, entry->selected->definition,
-						    actor, target, source },
-						  entry->selected->definition.effects[effect]);
+		entry->selected->adapter->resolve({ entry->identity, entry->definition, actor,
+						    target, source },
+						  entry->definition.effects[effect]);
 	}
 	finish_action(entry, item_action_outcome::completed);
 }
@@ -267,9 +283,11 @@ bool item_actions_publish(const item_action_definition &definition,
 			  std::unique_ptr<item_action_adapter> adapter)
 {
 	if (!nevent_require_game_thread("item_actions_publish") || !adapter || !definition.id ||
-	    !definition.revision || !definition.effect_count ||
+	    !definition.revision || (!definition.effect_count && !definition.selected_effects) ||
 	    definition.effect_count > ITEM_ACTION_MAX_EFFECTS || definition.windup_pulses < 0 ||
-	    definition.windup_pulses > 600 ||
+	    definition.windup_pulses > 600 || definition.progress_pulses < 0 ||
+	    (definition.progress_pulses &&
+	     definition.progress_pulses >= definition.windup_pulses) ||
 	    (definition.mode != item_action_mode::passive &&
 	     definition.mode != item_action_mode::active) ||
 	    (definition.source != item_action_source::equipped &&
@@ -280,11 +298,14 @@ bool item_actions_publish(const item_action_definition &definition,
 	for (size_t i = 0; i < definition.effect_count; ++i)
 	{
 		const auto &effect = definition.effects[i];
-		if (!effect.id || effect.power < 0 ||
+		if (!effect.id || effect.power < 0 || effect.auxiliary < 0 ||
+		    (effect.target != item_action_effect_target::original &&
+		     effect.target != item_action_effect_target::actor) ||
 		    (effect.call != item_action_call::weapon &&
 		     effect.call != item_action_call::wand &&
 		     effect.call != item_action_call::staff &&
-		     effect.call != item_action_call::scroll))
+		     effect.call != item_action_call::scroll &&
+		     effect.call != item_action_call::spell))
 			return false;
 	}
 	const auto previous = abilities.find(definition.id);
@@ -318,7 +339,21 @@ void item_actions_reload()
 	abilities.clear();
 }
 
-item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char target, P_obj source)
+bool item_actions_enabled()
+{
+	return config.enabled;
+}
+
+uint64_t item_actions_definition_revision(uint32_t id)
+{
+	const auto found = abilities.find(id);
+	return found != abilities.end() && found->second->enabled ?
+		       found->second->definition.revision :
+		       0;
+}
+
+static item_action_start start_action(uint32_t ability_id, P_char actor, P_char target,
+				      P_obj source, const item_action_selection *selection)
 {
 	if (!nevent_require_game_thread("start_item_action"))
 		return item_action_start::suppressed;
@@ -326,6 +361,29 @@ item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char ta
 	if (!config.enabled || found == abilities.end() || !found->second->enabled)
 		return item_action_start::legacy;
 	const auto selected = found->second;
+	auto invocation = selected->definition;
+	if (invocation.selected_effects != (selection != nullptr))
+		return item_action_start::suppressed;
+	if (selection)
+	{
+		if (!selection->effect_count || selection->effect_count > ITEM_ACTION_MAX_EFFECTS)
+			return item_action_start::suppressed;
+		invocation.effects = selection->effects;
+		invocation.effect_count = selection->effect_count;
+		for (size_t i = 0; i < invocation.effect_count; ++i)
+		{
+			const auto &effect = invocation.effects[i];
+			if (!effect.id || effect.power < 0 || effect.auxiliary < 0 ||
+			    (effect.target != item_action_effect_target::original &&
+			     effect.target != item_action_effect_target::actor) ||
+			    (effect.call != item_action_call::weapon &&
+			     effect.call != item_action_call::wand &&
+			     effect.call != item_action_call::staff &&
+			     effect.call != item_action_call::scroll &&
+			     effect.call != item_action_call::spell))
+				return item_action_start::suppressed;
+		}
+	}
 	if (!IS_ALIVE(actor) || !IS_ALIVE(target) || !source || !source->obj_uid ||
 	    !actor->runtime_id || !target->runtime_id || actor->in_room == NOWHERE ||
 	    pending.size() >= static_cast<size_t>(config.total) ||
@@ -360,7 +418,7 @@ item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char ta
 				       ability_id,	     selected->definition.revision,
 				       actor->in_room,	     slot,
 				       ne_event_tick + delay };
-	auto entry = std::make_shared<pending_item_action>(selected, identity, source);
+	auto entry = std::make_shared<pending_item_action>(selected, identity, source, invocation);
 	P_char live_actor = nullptr, live_target = nullptr;
 	P_obj live_object = nullptr;
 	if (!live_context(*entry, live_actor, live_target, live_object))
@@ -368,9 +426,13 @@ item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char ta
 	pending.emplace(identity.action_id, entry);
 	if (selected->definition.mode == item_action_mode::active)
 		active_actors.emplace(identity.actor_id, identity.action_id);
-	if (!schedule_action(entry, actor, target, source, delay))
+	const int progress_delay = !invocation.progress_pulses || delay < 2 ? 0 :
+				   invocation.progress_pulses >= delay	    ? delay / 2 :
+									 invocation.progress_pulses;
+	const int first_delay = progress_delay ? progress_delay : delay;
+	if (!schedule_action(entry, actor, target, source, first_delay))
 		return item_action_start::suppressed;
-	const item_action_context context{ identity, selected->definition, actor, target, source };
+	const item_action_context context{ identity, entry->definition, actor, target, source };
 	entry->consumption = selected->adapter->commit(context);
 	if (entry->consumption == item_action_consumption::rejected)
 	{
@@ -384,9 +446,25 @@ item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char ta
 		if (!now)
 			cancel_action(entry);
 		else
+		{
 			entry->deadline_us = now + static_cast<uint64_t>(delay) * OPT_USEC;
+			if (progress_delay)
+				entry->progress_us =
+					now + static_cast<uint64_t>(progress_delay) * OPT_USEC;
+		}
 	}
 	return item_action_start::scheduled;
+}
+
+item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char target, P_obj source)
+{
+	return start_action(ability_id, actor, target, source, nullptr);
+}
+
+item_action_start start_selected_item_action(uint32_t ability_id, P_char actor, P_char target,
+					     P_obj source, const item_action_selection &selection)
+{
+	return start_action(ability_id, actor, target, source, &selection);
 }
 
 bool item_action_active(P_char actor)

@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/weapon_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1378,6 +1379,24 @@ int nightbringer(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
+void resolve_avernus_drain(P_obj obj, P_char ch, P_char vict, int dam, int heal_cap)
+{
+	act("&+LAvernus, the life stealer &+Wglows brightly in your hands as it dives into $N.",
+	    FALSE, ch, obj, vict, TO_CHAR);
+	act("&+L$p draws the life force out of $N, feeding energy to you.", FALSE, ch, obj, vict,
+	    TO_CHAR);
+	act("$n's sword &+Wglows with a bright light as it bites into $N.", FALSE, ch, obj, vict,
+	    TO_NOTVICT);
+	act("$N &+Llooks withered and $n &+Wlooks revitalized.", FALSE, ch, obj, vict, TO_NOTVICT);
+	act("$n's sword &+Wglows with a bright light as it bites into you.", FALSE, ch, obj, vict,
+	    TO_VICT);
+	act("&+LYou feel your life flowing away and $n &+Wlooks revitalized.", FALSE, ch, obj, vict,
+	    TO_VICT);
+	vamp(ch, dam / 2, heal_cap);
+	spell_damage(ch, vict, dam, SPLDAM_NEGATIVE,
+		     SPLDAM_NODEFLECT | SPLDAM_NOSHRUG | PHSDAM_NOREDUCE, 0);
+}
+
 int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time, dam;
@@ -1435,23 +1454,11 @@ int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!number(0,
 		    24)) /*    && (CheckMultiProcTiming(ch) || !number(0, 2)) && !IS_UNDEADRACE(vict) && !IS_CONSTRUCT(vict))*/
 	{
-		act("&+LAvernus, the life stealer &+Wglows brightly in your hands as it dives into $N.",
-		    FALSE, ch, obj, vict, TO_CHAR);
-		act("&+L$p draws the life force out of $N, feeding energy to you.", FALSE, ch, obj,
-		    vict, TO_CHAR);
-		act("$n's sword &+Wglows with a bright light as it bites into $N.", FALSE, ch, obj,
-		    vict, TO_NOTVICT);
-		act("$N &+Llooks withered and $n &+Wlooks revitalized.", FALSE, ch, obj, vict,
-		    TO_NOTVICT);
-		act("$n's sword &+Wglows with a bright light as it bites into you.", FALSE, ch, obj,
-		    vict, TO_VICT);
-		act("&+LYou feel your life flowing away and $n &+Wlooks revitalized.", FALSE, ch,
-		    obj, vict, TO_VICT);
-
-		vamp(ch, dam / 2, (int)(GET_MAX_HIT(ch) * VAMPPERCENT(ch)));
-
-		spell_damage(ch, vict, dam, SPLDAM_NEGATIVE,
-			     SPLDAM_NODEFLECT | SPLDAM_NOSHRUG | PHSDAM_NOREDUCE, 0);
+		const int heal_cap = static_cast<int>(GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		if (selected_avernus_action(obj, ch, vict, dam, heal_cap) !=
+		    item_action_start::legacy)
+			return TRUE;
+		resolve_avernus_drain(obj, ch, vict, dam, heal_cap);
 		return TRUE;
 	}
 	return FALSE;

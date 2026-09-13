@@ -13,6 +13,7 @@
 #include "core/prototypes.h"
 #include "net/output_style.h"
 #include "item/item_actions.h"
+#include "item/weapon_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "core/files.h"
@@ -7973,6 +7974,8 @@ bool weapon_proc(P_obj obj, P_char ch, P_char victim)
 	// debug( "Val7: %d, Val7-1: %d, Test: %d", obj->value[7], obj->value[7]-1, test );
 	if (number(0, obj->value[7] - 1))
 		return FALSE;
+	if (selected_packed_weapon_action(obj, ch, victim) != item_action_start::legacy)
+		return TRUE;
 
 	for (ex = obj->ex_description; ex; ex = ex->next)
 		if (isname("_char_msg", ex->keyword))

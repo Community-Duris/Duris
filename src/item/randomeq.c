@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "item/weapon_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1635,6 +1636,18 @@ int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 		{
 			kala = GET_OPPONENT(ch);
 			;
+			numNamed = obj->value[7];
+			if (cmd == CMD_MELEE_HIT)
+			{
+				const bool valid =
+					numNamed > 0 &&
+					numNamed < static_cast<int>(ARRAY_SIZE(spells_data));
+				if ((!valid || !spells_data[numNamed].self_only) &&
+				    selected_random_weapon_action(
+					    obj, ch, kala, valid ? spells_data[numNamed].spell : 0,
+					    curr_time) != item_action_start::legacy)
+					return FALSE;
+			}
 			act("&+B$n's $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N",
 			    TRUE, ch, obj, kala, TO_NOTVICT);
 			act("&+BYour $q &+rpu&+Rls&+rat&+Res &+Lwith &+be&+Bn&+Wer&+Bg&+by &+Lfor a &+rmoment&+L...&N",
