@@ -3,6 +3,7 @@
 #include "core/utils.h"
 #include "item/artifact_mana.h"
 #include "magic/spells.h"
+#include "persistence/persistence_checkpoint.h"
 #include <array>
 #include <cmath>
 #include <limits>
@@ -124,4 +125,12 @@ bool native_artifact_current(const item_action_identity &identity, P_char &actor
 		return false;
 	source = actor->equipment[identity.source_slot];
 	return source && source->obj_uid == identity.source_uid && OBJ_WORN_BY(source, actor);
+}
+
+void native_artifact_mark_state(P_char actor)
+{
+	if (IS_PC(actor))
+		mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_EQUIPMENT);
+	else if (IS_PC_PET(actor))
+		mark_player_dirty_components(GET_PID(GET_MASTER(actor)), PLAYER_COMPONENT_PETS);
 }

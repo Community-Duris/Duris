@@ -3775,7 +3775,11 @@ void good_evil_configSword(P_char ch, P_obj obj)
 	if (OBJ_WORN(obj) || !ch)
 		return;
 
-	obj->value[6] = 0; //  // which "random" effect
+	// The new cycle belongs to the physical item across custody changes.
+	if (native_artifact_owns(OBJ_VNUM(obj)))
+		obj->value[6] = BOUNDED(0, obj->value[6], 14);
+	else
+		obj->value[6] = 0; // which "random" effect
 	obj->value[5] = FALSE; // currently in noflee fight
 
 	obj->affected[0].location = APPLY_HITROLL;
@@ -3848,6 +3852,8 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		bIsGood = TRUE;
 	else
 		return FALSE;
+	const bool modern = native_artifact_owns(OBJ_VNUM(obj));
+	const bool combat_event = cmd == CMD_MELEE_HIT || cmd == CMD_GOTHIT || cmd == CMD_GOTNUKED;
 
 	// wield - if we might be wielding the sword, configure it
 	// as required and then return FALSE (acting like we didn't do anything)
@@ -3930,13 +3936,26 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 			act("$p shoves itself $n's hands, ready for battle!", TRUE, ch, obj, NULL,
 			    TO_ROOM);
 		}
+		const uint64_t actor_id = ch->runtime_id, source_uid = obj->obj_uid;
 		obj_from_char(obj);
 		equip_char(ch, obj, PRIMARY_WEAPON, 0);
+		if (modern)
+		{
+			ch = find_character_by_runtime_id(actor_id);
+			if (!IS_ALIVE(ch) || !(obj = ch->equipment[PRIMARY_WEAPON]) ||
+			    obj->obj_uid != source_uid)
+				return combat_event ? FALSE : TRUE;
+		}
 	}
 
 	if (!IS_ALIVE(ch))
 	{
 		return FALSE;
+	}
+	if (modern)
+	{
+		const int result = advance_sword_artifact(obj, ch, cmd, arg);
+		return combat_event ? FALSE : result;
 	}
 	if (cmd == CMD_LOOK)
 	{
@@ -3954,6 +3973,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		    ((bIsEvil && IS_RACEWAR_GOOD(ch)) || (bIsGood && IS_RACEWAR_EVIL(ch))))
 		{
 			good_evil_poofSword(ch, obj);
+			return combat_event ? FALSE : TRUE; // The source was extracted.
 		}
 
 		if (killOtherSword(obj, ch, bIsGood))

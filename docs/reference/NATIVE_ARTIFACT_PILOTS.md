@@ -86,6 +86,130 @@ inside the native spell before links can attach, its newly created form is remov
 The link-removal primitive now respects the requested break flag throughout the
 list and emits expiry text before freeing an affect, including middle entries.
 
+## Mayhem / Symmetry: 21 / 22, `good_evil_sword`
+
+The native swords share a bounded, item-owned state machine. Every selected bundle
+contains at most three stages, pays their summed cost once, and remains passive
+alongside ordinary character casting. The source must remain in the primary weapon
+slot. The initial mode is off, independently for each vnum. Positive stale legacy
+energy cannot route an enabled sword through packed weapon spells.
+
+Equipment configuration, automatic primary equipping, NODROP, race-war rejection,
+and class-dependent weapon stats remain native. These are immediate and do not
+consume mana. The normal one-hand configuration remains 5d5, +5 hit/damage, weight
+7; the alternate two-hand configuration remains 6d6, +6 hit/damage, weight 15.
+Wrong-race rejection still costs 100 HP and makes the sword disappear. The callback
+now returns immediately after disappearance, avoiding use of an extracted source.
+
+| State or trigger | Migrated contract |
+| --- | --- |
+| Ordinary periodic combat | Preserve Mayhem's random selection from 15 powers and Symmetry's ordered cursor. Optional missing shield, optional missing stone skin and one combat power form a single paid bundle. |
+| Ordinary periodic defense | Preserve the one-in-fifteen selection, Mayhem's random choice and Symmetry's five-state cursor. A cursor left by combat is reduced into the defense range, fixing the legacy out-of-bounds index. |
+| Shield / skin | Level 55 native fire shield for alignment between -900 and 900, otherwise soul shield; level 55 stone skin with timer 0 and a 10-second interval. Each costs one base unit. |
+| Opposing sword in the room | Legal, non-trusted nemesis is captured. A four-base-cost challenge winds up, prepares level-60 blur and deflect on both participants, then starts the native mutual attacks. Timer 1 limits accepted challenges to one per ten seconds. |
+| Already fighting the nemesis | Preserve the command compulsion against disengagement. Reactive notifications select deflect preparation, an ordinary combat power or a three-to-five-hit flurry. Deflect costs one base unit; a flurry costs four. |
+| Leaving the nemesis state | Clear the item flag and retain the native immediate self-dispel penalty. No reserve credit. |
+
+All preparations normally take eight pulses with a midpoint progress message. Nova
+uses at least 32 pulses (eight seconds), preserving its native minimum preparation
+time while replacing its unbounded random repeat timer with one cancellable owned
+windup. At release it calls the extracted native `resolve_nova` payload, retaining
+sunray, native PC/NPC level scaling, area selection and configured nova hit chances.
+Ordinary `spell_nova` retains its existing event and randomness in legacy mode.
+
+Combat payloads are accounted for individually below. A base cost means the positive
+configured `manaCost`; these multipliers do not prescribe a production budget.
+
+| Cursor | Native effect retained | Cost multiplier |
+| --- | --- | --- |
+| 0 | Visual dazzle, no mechanical payload | 1 |
+| 1 | Blindness 60, spell call, temporary +15 saving-throw adjustment | 1 |
+| 2 | Curse 60, spell call, temporary +15 saving-throw adjustment | 1 |
+| 3 | Bigby's crushing hand 60, spell call | 2 |
+| 4, 9, 13 | Drain redesigned as described below | 1 |
+| 5 | Heal 55 for self/current group, then heal 20 for the actor | 2 |
+| 6 | Bigby's clenched fist 60, spell call | 2 |
+| 7 | Immolate 60, native call type zero | 1 |
+| 8 | Earthquake 60, native spell call and terrain rules | 2 |
+| 10 | Stornog's spheres 56 for self/current group | 2 |
+| 11 | Poison 30, spell call, temporary +15 saving-throw adjustment | 1 |
+| 12 | Holy / unholy word 60, native call type zero and alignment gate | 2 |
+| 14 | Native nova payload after the owned longer preparation | 4 |
+
+Defense cursor 0 costs three base units and uses Stornog's spheres 60 or stone skin
+45 with the original conditional roll. Cursors 1–4 cost one each: native group-heal
+arithmetic, vigorize critical 50, the five elemental protections 50 in native order,
+or armor then bless 50. Heal falls back to vigor when no eligible recipient is
+wounded. Group effects require self or the same non-null group, fixing accidental
+buffs on unrelated ungrouped bystanders. Armor/bless now affect the eligible
+recipient rather than repeatedly targeting the actor. The group helper powers
+also work for the ungrouped wielder; the legacy group-list helpers did nothing
+without a group. Recipient order follows the bounded current-room identity list,
+with the actor first for group healing; legacy group-list traversal order is not
+claimed as identical.
+
+The drain is an explicit retune: replace direct, unguarded HP subtraction and
+uncapped self-healing with native 50-point negative damage, NODEFLECT, and healing
+capped by damage reported, the target's pre-hit remaining life and the actor's
+maximum HP. It never regenerates sword mana. The old combat +100 energy, drain
++100 energy, trusted/nemesis 10,000 refills, periodic three-energy loss and
+negative-energy hunger punishment/refill are retired in enabled mode. Passive
+regeneration is the only recovery mechanism. None of these energy changes apply
+when the pilot is disabled.
+
+Cursor/cooldown changes occur only after successful payment and mark equipment
+dirty. Cancellation retains the payment and those transitions. Shared UID mana
+persists independently of object/player saves; the cursor and native timers use
+ordinary equipment persistence. Native aftermath and base-stat penalties have no
+positive-balance requirement. Flurries capture a bounded hit count in the action,
+recheck identities and opponent state before every hit, and never use the legacy
+global recursion counter. Reactive callback returns remain false: preparing
+deflect or applying aftermath cannot intercept the incoming hit. Deflect's normal
+subsystem may protect later hits after its preparation completes.
+
+## Reproducible balance decision
+
+The test profile is an experimental fixture, not a live setting: 10 MP capacity,
+1 MP base cost, 0.1 MP/second recovery, zero conservation floor, eight-pulse normal
+windup. `test_sword_actions_runtime.py` starts with 10 MP and selects blindness
+every three seconds for sixty seconds. Fifteen of twenty selections release;
+the projected reserve at the immediate hostile encounter is 1 MP. A 2 MP crushing
+hand is suppressed. Ten more seconds recover enough for exactly one hand, leaving
+zero. The fixture uses actual scheduler and resource arithmetic with controlled
+spell/storage boundaries. #297 separately owns disposable-server evidence.
+
+This demonstrates the intended depletion constraint and supports keeping the
+prototype's relative combat costs (50:100:200 becomes 1:2:4). Drain now has a
+positive minimum cost so it cannot finance indefinite activation. Defense retains
+its 30:10 relative cost. Actual kill rate, natural proc throughput, class matchups
+and production budget selection are not inferred from this single sequence.
+
+## Initial migration wave and remaining source dispositions
+
+The public server wave consists of Avernus (#293), ordinary devices and wonder
+(#294), Studio's explicit typed actions (#295), and the five vnums described here.
+The private editor integration is stubbed in #295 and assigned to Faemill in #329.
+No callback is removed, no area record or live loot table is rewritten, and all new
+categories remain off in shipped configuration.
+
+`python3 scripts/artifact_source_inventory.py --check` verifies the checked-in
+[source inventory](artifact_source_inventory.json). It follows tracked `areas/AREA`,
+parses the actual extra-flags field, excludes the index sentinel and resolves
+literal chained callback assignments with the compiler's active configuration.
+It reproduces 169 templates, 78 literal bindings, 67 distinct callbacks and 91
+without literal bindings. There are 29 golden-token placeholders, including the
+short-description typo “Ttken” whose keywords identify a token.
+
+Every record includes native/type/dynamic review paths and a disposition. Genuine
+artifacts outside this initial wave retain legacy behavior and require their own
+complete effect contract and measured budget before migration. A missing literal
+binding does not establish inertness: packed values, device types, affect fields,
+equipment enchantments and dynamic Studio/proc-library assignment remain possible.
+Token placeholders receive no invented power. The inventory is a source boundary,
+not verified live availability or approval to enable all artifacts. Future
+per-artifact issues should be opened only with concrete contracts and balance
+policies, as required by #296.
+
 ## Focused verification
 
 `tests/async/test_native_artifact_runtime.py` compiles the actual Tsunami, ioun and
@@ -97,3 +221,10 @@ leave-and-return, removal, configuration changes, linked forms, save-time versus
 real unequip, theurgist forms, class/body slots and extraction during effects.
 These focused tests do not substitute for the disposable-server rollout evidence
 owned by #297.
+
+`test_sword_actions_runtime.py` compiles the actual old sword helpers, callback,
+weapon dispatcher and new state machine. It exercises all fifteen combat choices
+for both swords, all defense choices, exact cost/floor/cold-storage failures,
+legacy payload comparisons, groups, temporary-save restoration, source/actor/
+target extraction, wrong-race disappearance, native packed-path exclusion,
+nemesis/deflect/flurry behavior, owned nova cancellation and the measured sequence.

@@ -55,6 +55,7 @@ class tsunami_adapter final : public item_action_adapter
 		    !artifact_mana_debit(c.source, settings.cost, false, c.identity.action_id))
 			return item_action_consumption::rejected;
 		c.source->timer[timer] = selected_at;
+		native_artifact_mark_state(c.actor);
 		return item_action_consumption::committed;
 	}
 	void announce(const item_action_context &c) const noexcept override

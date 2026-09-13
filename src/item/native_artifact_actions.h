@@ -21,10 +21,12 @@ bool native_artifact_prepare(int vnum, const native_artifact_config &);
 bool native_artifact_actor(P_char);
 bool native_artifact_hostile(P_char actor, P_char target);
 bool native_artifact_current(const item_action_identity &, P_char &, P_obj &);
+void native_artifact_mark_state(P_char);
 
 item_action_start begin_tsunami_action(P_obj, P_char, int command);
 bool intercept_mirrored_ioun(P_obj, P_char defender, const proc_data &);
 item_action_start begin_necroplasm_form(P_obj, P_char);
 void release_necroplasm_forms();
+int advance_sword_artifact(P_obj, P_char, int command, char *arguments);
 
 #endif

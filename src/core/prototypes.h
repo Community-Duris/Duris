@@ -2471,6 +2471,7 @@ void spell_animate_dead(int, P_char, char *, int, P_char, P_obj);
 void spell_armor(int, P_char, char *, int, P_char, P_obj);
 void spell_virtue(int, P_char, char *, int, P_char, P_obj);
 void spell_nova(int, P_char, char *, int, P_char, P_obj);
+void resolve_nova(P_char);
 void spell_spore_burst(int, P_char, char *, int, P_char, P_obj);
 void spell_siren_song(int, P_char, char *, int, P_char, P_obj);
 void spell_harmonic_resonance(int, P_char, char *, int, P_char, P_obj);

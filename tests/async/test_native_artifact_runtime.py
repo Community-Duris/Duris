@@ -46,6 +46,8 @@ bool affected_by_spell(P_char actor, int spell) {
 
 HARNESS = r'''
 #include "item/artifact_mana.h"
+#include "persistence/persistence_checkpoint.h"
+void mark_player_dirty_components(int, player_component_mask_t) {}
 #include "item/artifact_mana_model.c"
 #include "combat/damage.h"
 #include <deque>
