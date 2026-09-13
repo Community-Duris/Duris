@@ -15,6 +15,9 @@ def main():
     if migrations.validate_applied_prefix(manifest, executor.applied()):
         raise RuntimeError("restore_migration_history_incomplete")
     queries = [
+        "SELECT COUNT(*) FROM artifact_mana WHERE item_uid=0 OR profile_id=0 OR profile_revision=0 "
+        "OR version=0 OR capacity=0 OR capacity>1000000000000 OR regeneration>1000000000 "
+        "OR reserve>capacity;",
         "SELECT COUNT(*) FROM account_characters c LEFT JOIN accounts a ON a.account_name=c.account_name "
         "LEFT JOIN player_data p ON p.pid=c.pid WHERE c.deleted_at IS NULL AND "
         "(a.account_name IS NULL OR p.pid IS NULL OR (p.account_name IS NOT NULL AND p.account_name<>c.account_name));",

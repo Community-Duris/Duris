@@ -308,6 +308,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "9c2d5c99b2c9cefa3a3fae9ff63cdf20c8ba1503065a94d62c92c5d406cd5264",
       "verify_checksum": "6d37acd001d32ba637d5da441c0ec476d50d5170c9c893061ad0c7fc235453b1"
+    },
+    {
+      "id": "0014_artifact_mana",
+      "sequence": 14,
+      "description": "Persist physical artifact mana independently of owner snapshots",
+      "apply": "immutable/0014_artifact_mana.sql",
+      "verify": "immutable/0014_artifact_mana.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "1618e55aacccb7147aa0ae61d3a46dc9e09cef655562ade66ba9a7253872f75a",
+      "verify_checksum": "181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376"
     }
   ]
 }

@@ -95,6 +95,10 @@ SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
 				 item/item_actions.o \
+				 item/artifact_mana.o \
+				 item/artifact_mana_model.o \
+				 item/artifact_mana_runtime.o \
+				 item/artifact_mana_store.o \
 				 magic/magic.o \
 				 world/achievements.o \
 				 account/account.o \

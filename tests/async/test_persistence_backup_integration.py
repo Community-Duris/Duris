@@ -327,13 +327,20 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
             return b"DURKING\0" + struct.pack("<IIQ", 1, len(payload), 1) + hashlib.sha256(payload).digest() + payload
         (live / "metadata").mkdir(mode=0o700, exist_ok=True)
         (live / "metadata/kingdom_realms").write_bytes(kingdom_catalog(0))
+
+        # A retained, depleted UID is an independent authority, including when
+        # its old owner snapshot is no longer present in this restore generation.
+        mana_payload = b"DURMANA\x01" + struct.pack("<8Q", 81, 7, 1, 2, 100000, 1, 2, 100)
+        (live / "domains/artifact-mana-81").write_bytes(
+            mana_payload + hashlib.sha256(mana_payload).digest())
         proof = self.base / "kingdom-format-proof"
         proof.mkdir(mode=0o700)
         backup.write_json(proof / "ISOLATED_RESTORE", {"synthetic": True})
         shutil.copytree(live, proof / "state")
         backup.run([str(ROOT / "bin/tools/qualify_flatfile_restore"), str(proof / "state")])
         for relative in ("domains/corpse_operation_catalog", "domains/shop_trade_operations",
-                         "metadata/kingdom_realms", "domains/locker_catalog"):
+                         "metadata/kingdom_realms", "domains/locker_catalog",
+                         "domains/artifact-mana-81"):
             with self.subTest(catalog=relative):
                 corrupt = live / relative
                 corrupt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

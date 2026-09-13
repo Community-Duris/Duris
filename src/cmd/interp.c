@@ -12,6 +12,7 @@
 
 #include "core/prototypes.h"
 #include "item/item_actions.h"
+#include "item/artifact_mana.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1108,7 +1109,8 @@ const char *command[MAX_CMD] = {
 	"abort",
 	"kingdom",
 	"difficulty",
-	"\n" /* MAX_CMD = 860, MAX_CMD_LIST = 1000 */
+	"itemmana",
+	"\n" /* MAX_CMD = 861, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -3157,6 +3159,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_ABORT, STAT_RESTING + POS_PRONE, do_abort, 0, TRUE);
 	CMD_N(CMD_KINGDOM, STAT_RESTING + POS_PRONE, do_kingdom, 0, FALSE);
 	CMD_GRT(CMD_DIFFICULTY, STAT_DEAD + POS_PRONE, do_difficulty, LESSER_G);
+	CMD_Y(CMD_ITEMMANA, STAT_RESTING + POS_PRONE, do_itemmana, 0, FALSE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 
