@@ -69,6 +69,8 @@ bounded load transaction as the other components. The full query budget increase
 from 23 to 24. Negative totals, invalid zone identifiers, or too many entries
 refuse the load rather than silently truncating saved state. Materialization also
 checks the entry bound, including flatfile loads.
+The trophy query returns at most 1,025 rows: 1,024 allowed entries plus one to
+detect excess history. This bounds MySQL's result buffer before row validation.
 
 The existing SQL snapshot transaction writes XP and replaces that player's trophy
 rows together. It performs one trophy `DELETE` and, for a nonempty collection,

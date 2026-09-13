@@ -461,7 +461,8 @@ bool load_components(MYSQL *connection, const player_load_request &request,
 		       }) ||
 	    !load_rows(connection,
 		       "SELECT zone_number,exp FROM zone_trophy WHERE pid=" + pid +
-			       " ORDER BY zone_number",
+			       " ORDER BY zone_number LIMIT " +
+			       std::to_string(ZONE_TROPHY_MAX_ZONES + 1),
 		       result,
 		       [&](MYSQL_ROW row)
 		       {

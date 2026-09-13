@@ -41,6 +41,18 @@ player_load_result execute_load(MYSQL *connection, player_load_request request, 
 	return player_load_repository_execute(connection, request);
 }
 
+uint64_t session_rows_sent(MYSQL *connection)
+{
+	execute_sql(connection, "SHOW SESSION STATUS LIKE 'Rows_sent'");
+	MYSQL_RES *rows = mysql_store_result(connection);
+	assert(rows && mysql_num_rows(rows) == 1);
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	assert(row && row[1]);
+	const uint64_t count = std::strtoull(row[1], nullptr, 10);
+	mysql_free_result(rows);
+	return count;
+}
+
 /** Read unique owner PIDs from a protected repair manifest without logging them. */
 std::set<int> protected_manifest_pids(const char *path)
 {
@@ -276,12 +288,26 @@ int main()
 	       player_load_outcome::component_failure);
 	execute_sql(connection, "DELETE FROM zone_trophy WHERE pid=" + std::to_string(pid));
 	std::string trophy_rows = "INSERT INTO zone_trophy(pid,zone_number,exp) VALUES ";
-	for (size_t index = 0; index <= ZONE_TROPHY_MAX_ZONES; ++index)
+	for (size_t index = 0; index < ZONE_TROPHY_MAX_ZONES; ++index)
 		trophy_rows += (index ? "," : "") + std::string("(") + std::to_string(pid) + "," +
 			       std::to_string(index + 1) + ",1)";
 	execute_sql(connection, trophy_rows);
-	assert(execute_load(connection, request, 812).outcome ==
-	       player_load_outcome::limit_exceeded);
+	trophy = execute_load(connection, request, 812);
+	assert(trophy.outcome == player_load_outcome::applied &&
+	       trophy.snapshot.trophies.size() == ZONE_TROPHY_MAX_ZONES);
+	trophy_rows = "INSERT INTO zone_trophy(pid,zone_number,exp) VALUES ";
+	for (size_t index = 0; index < ZONE_TROPHY_MAX_ZONES; ++index)
+		trophy_rows += (index ? "," : "") + std::string("(") + std::to_string(pid) + "," +
+			       std::to_string(ZONE_TROPHY_MAX_ZONES + index + 1) + ",1)";
+	execute_sql(connection, trophy_rows);
+	const uint64_t before_rows = session_rows_sent(connection);
+	const auto oversized_trophy = execute_load(connection, request, 814);
+	const uint64_t sent_rows = session_rows_sent(connection) - before_rows;
+	assert(oversized_trophy.outcome == player_load_outcome::limit_exceeded);
+	// Count rows sent by the server, not just rows visited by our callback. The
+	// first status query itself contributes one row. mysql_store_result must not
+	// buffer an unbounded result before the application detects the extra entry.
+	assert(sent_rows <= oversized_trophy.metrics.row_count + 1);
 	execute_sql(connection, "DELETE FROM zone_trophy WHERE pid=" + std::to_string(pid));
 	trophy = execute_load(connection, request, 813);
 	assert(trophy.outcome == player_load_outcome::applied && trophy.snapshot.trophies.empty());
