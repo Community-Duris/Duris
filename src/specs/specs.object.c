@@ -16,6 +16,7 @@
 ;
 
 #include "core/prototypes.h"
+#include "item/native_artifact_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -2816,6 +2817,7 @@ int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 
 	if (!obj || cmd != CMD_PERIODIC)
 		return FALSE;
+	const bool modern = native_artifact_owns(67243);
 
 	if (OBJ_WORN(obj))
 		ch = obj->loc.wearing;
@@ -2854,7 +2856,8 @@ int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			    ch, obj, 0, TO_CHAR);
 			obj_to_char(unequip_char(ch, plasm_slot), ch);
 			// dispel any SPELL_VAMPIRE to prevent cheesing of removing arti, wearing plasm, wearing other arti.
-			affect_from_char(ch, SPELL_VAMPIRE);
+			if (!modern)
+				affect_from_char(ch, SPELL_VAMPIRE);
 			return TRUE;
 		}
 		if (IS_PC(ch) && !number(0, 3) && !NewSaves(ch, SAVING_PARA, 6))
@@ -2880,7 +2883,13 @@ int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 			act("&+rYou howl in pain as your $q &+rglows &+Rred hot!", FALSE, ch, obj,
 			    0, TO_CHAR);
 		}
-		if (!affected_by_spell(ch, SPELL_VAMPIRE))
+		if (modern)
+		{
+			// Equipment, class restrictions and harmful symbiosis stay native.
+			// Only the magical form grant uses the owned, paid passive action.
+			begin_necroplasm_form(obj, ch);
+		}
+		else if (!affected_by_spell(ch, SPELL_VAMPIRE))
 		{
 			act("$p &+Lruns its &+Gtendrils&+L through $n's&+L body, transforming $m!",
 			    FALSE, ch, obj, 0, TO_ROOM);
@@ -2933,24 +2942,35 @@ int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 				}
 			}
 
-			if (GET_RACE(ch) == RACE_CENTAUR)
+			if (modern)
 			{
-				slot = WEAR_HORSE_BODY;
-			}
-			if (GET_RACE(ch) == RACE_DRIDER)
-			{
-				slot = WEAR_SPIDER_BODY;
+				slot = GET_RACE(ch) == RACE_CENTAUR ? WEAR_HORSE_BODY :
+				       GET_RACE(ch) == RACE_DRIDER  ? WEAR_SPIDER_BODY :
+								      WEAR_BODY;
 			}
 			else
 			{
-				slot = WEAR_BODY;
+				if (GET_RACE(ch) == RACE_CENTAUR)
+					slot = WEAR_HORSE_BODY;
+				if (GET_RACE(ch) == RACE_DRIDER)
+					slot = WEAR_SPIDER_BODY;
+				else
+					slot = WEAR_BODY;
 			}
 			if (ch->equipment[slot])
 			{
 				obj_to_char(unequip_char(ch, slot), ch);
 			}
 			obj_from_char(obj);
+			const uint64_t actor_id = ch->runtime_id, source_uid = obj->obj_uid;
 			equip_char(ch, obj, slot, FALSE);
+			if (modern)
+			{
+				ch = find_character_by_runtime_id(actor_id);
+				if (!IS_ALIVE(ch) || !(obj = ch->equipment[slot]) ||
+				    obj->obj_uid != source_uid)
+					return TRUE;
+			}
 			act("$p &+Mbegins to envelop your body!", FALSE, ch, obj, 0, TO_CHAR);
 			act("$p &+Mwraps itself around $n!", FALSE, ch, obj, 0, TO_ROOM);
 			act("&+LThe nausea is too much, and the world passes away...", FALSE, ch,

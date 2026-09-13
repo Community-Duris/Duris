@@ -2999,18 +2999,20 @@ void clear_links(P_char ch, P_obj obj, int flag)
 			cold_next = cold->next;
 
 			// If we have a hit,
-			if (cold->obj == obj)
+			if (cold->obj == obj && IS_SET(link_types[cold->type].flags, flag))
 			{
-				if (IS_SET(link_types[cold->type].flags, LNKFLG_REMOVE_AFF))
-				{
-					REMOVE_BIT(cold->affect->flags, AFFTYPE_LINKED_OBJ);
-					affect_remove(ch, cold->affect);
-				}
 				if (IS_SET(link_types[cold->type].flags, LNKFLG_OBJECT) &&
 				    link_types[cold->type].break_func.obj)
 					link_types[cold->type].break_func.obj(cold);
-				if (IS_SET(link_types[cold->type].flags, LNKFLG_SHOW_REMOVE_MSG))
-					wear_off_message(ch, cold->affect);
+				if (IS_SET(link_types[cold->type].flags, LNKFLG_REMOVE_AFF) &&
+				    cold->affect)
+				{
+					REMOVE_BIT(cold->affect->flags, AFFTYPE_LINKED_OBJ);
+					if (IS_SET(link_types[cold->type].flags,
+						   LNKFLG_SHOW_REMOVE_MSG))
+						wear_off_message(ch, cold->affect);
+					affect_remove(ch, cold->affect);
+				}
 
 				// Remove cold from the list.
 				cold_prev->next = cold_next;

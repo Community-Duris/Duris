@@ -59,6 +59,8 @@ void event_obj_affect(P_char, P_char, P_obj obj, void *af);
 void initialize_links();
 void linked_affect_to_char(P_char ch, struct affected_type *af, P_char source, int type);
 void linked_affect_to_char_obj(P_char ch, struct affected_type *af, P_obj obj, int type);
+struct char_obj_link_data *link_char_obj_with_affect(P_char, P_obj, ush_int,
+						     struct affected_type *);
 void set_short_affected_by(P_char ch, int spell, int duration);
 void set_obj_affected_extra(P_obj obj, int time, sh_int spell, sh_int data, ulong extra2);
 struct obj_affect *get_spell_from_obj(P_obj, int);

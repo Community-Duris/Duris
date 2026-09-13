@@ -362,7 +362,8 @@ uint64_t item_actions_definition_revision(uint32_t id)
 
 static item_action_start start_action(uint32_t ability_id, P_char actor, P_char target,
 				      P_obj source, const item_action_selection *selection,
-				      std::shared_ptr<ability> instance = {})
+				      std::shared_ptr<ability> instance = {},
+				      bool immediate = false)
 {
 	if (!nevent_require_game_thread("start_item_action"))
 		return item_action_start::suppressed;
@@ -441,7 +442,7 @@ static item_action_start start_action(uint32_t ability_id, P_char actor, P_char 
 				   invocation.progress_pulses >= delay	    ? delay / 2 :
 									 invocation.progress_pulses;
 	const int first_delay = progress_delay ? progress_delay : delay;
-	if (!schedule_action(entry, actor, target, source, first_delay))
+	if (!immediate && !schedule_action(entry, actor, target, source, first_delay))
 		return item_action_start::suppressed;
 	const item_action_context context{ identity, entry->definition, actor, target, source };
 	entry->consumption = selected->adapter->commit(context);
@@ -451,6 +452,20 @@ static item_action_start start_action(uint32_t ability_id, P_char actor, P_char 
 		return item_action_start::suppressed;
 	}
 	selected->adapter->announce(context);
+	if (immediate)
+	{
+		if (!live_context(*entry, live_actor, live_target, live_object))
+		{
+			cancel_action(entry);
+			return item_action_start::suppressed;
+		}
+		entry->effect_started = true;
+		selected->adapter->resolve({ identity, entry->definition, live_actor, live_target,
+					     live_object },
+					   entry->definition.effects[0]);
+		finish_action(entry, item_action_outcome::completed);
+		return item_action_start::resolved;
+	}
 	if (!entry->terminal)
 	{
 		const uint64_t now = monotonic_us();
@@ -487,6 +502,21 @@ item_action_start start_item_action_instance(const item_action_definition &defin
 		return item_action_start::suppressed;
 	auto instance = std::make_shared<ability>(ability{ definition, std::move(adapter), true });
 	return start_action(definition.id, actor, target, source, nullptr, std::move(instance));
+}
+
+bool resolve_item_interception(const item_action_definition &definition,
+			       std::unique_ptr<item_action_adapter> adapter, P_char defender,
+			       P_char target, P_obj source)
+{
+	if (!nevent_require_game_thread("resolve_item_interception") || !adapter ||
+	    !valid_definition(definition) || definition.selected_effects ||
+	    definition.mode != item_action_mode::passive ||
+	    definition.source != item_action_source::equipped || definition.effect_count != 1 ||
+	    definition.windup_pulses || definition.progress_pulses)
+		return false;
+	auto instance = std::make_shared<ability>(ability{ definition, std::move(adapter), true });
+	return start_action(definition.id, defender, target, source, nullptr, std::move(instance),
+			    true) == item_action_start::resolved;
 }
 
 bool item_action_active(P_char actor)

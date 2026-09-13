@@ -95,6 +95,10 @@ SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
 				 item/item_actions.o \
+				 item/native_artifact_actions.o \
+				 item/tsunami_actions.o \
+				 item/ioun_actions.o \
+				 item/necroplasm_actions.o \
 				 item/studio_ability_model.o \
 				 item/studio_abilities.o \
 				 item/weapon_actions.o \
