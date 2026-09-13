@@ -45,7 +45,7 @@ HARNESS = r'''
 #include "account/account.h"
 #include "guild/assocs.h"
 #include "player/player_playtime.h"
-#include "net/output_profiles.h"
+#include "net/output_preference_codec.h"
 #include "player/player_revision_state.h"
 #include "sql/sql.h"
 
@@ -318,11 +318,6 @@ with tempfile.TemporaryDirectory(prefix="duris-playtime-sql-") as temporary:
             "-Isrc",
             *cflags,
             str(source),
-            "src/net/output_profiles.c",
-            "src/net/output_style.c",
-            "src/net/ansi.c",
-            "src/net/unicode.c",
-            "-lcjson",
             *libs,
             "-Wl,--wrap=time",
             "-o",
