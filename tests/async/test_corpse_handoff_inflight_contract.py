@@ -85,17 +85,10 @@ checks.append((
     < corpse.index("if (!item_movement_transaction_player_busy(ch) &&")
 ))
 checks.append((
-    "a deferred wallet admission is retried without inventing an item custody dispute",
-    contains(corpse, "(void)money_to_inventory(ch);")
-    and "note_corpse_transfer_dispute" not in corpse[
-        corpse.index("if (!IS_TRUSTED(ch)"):corpse.index("corpse->value[CORPSE_LEVEL]")]
-))
-die = body(fight, "void die(P_char ch, P_char killer)")
-checks.append((
-    "a nonempty mortal wallet prevents terminal extraction until conversion completes",
-    contains(die, "(!IS_TRUSTED(ch) && death_wallet_pending(ch))")
-    and die.index("death_wallet_pending(ch)") <
-    die.index("persistence_save_character_terminal(ch, RENT_DEATH)")
+    "a wallet conversion that cannot be submitted disputes the death instead of "
+    "silently dropping the coins",
+    contains(corpse, "if (!IS_TRUSTED(ch) && !money_to_inventory(ch))")
+    and contains(corpse, "note_corpse_transfer_dispute(ch);")
 ))
 
 blade = body(specs, "int holy_weapon(P_obj obj, P_char ch, int cmd, char *arg)")
