@@ -1,0 +1,481 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "level_zone_config_boundary",
+  "covers": [
+    "config_boundary",
+    "level_boundary",
+    "zone_boundary"
+  ],
+  "configurations": [],
+  "transitions": [],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "configuration",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 106,
+            "process_id": 206
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 6000000
+      },
+      "payload": {
+        "configuration": {
+          "config": {
+            "schema_version": 1,
+            "reserved": 0,
+            "config_id": 600,
+            "revision": 1,
+            "build_version": 100,
+            "content_version": 200,
+            "property_version": 300,
+            "classifier_version": 400,
+            "policy_version": 500,
+            "season_id": 7,
+            "environment_id": 8,
+            "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+            "effective_utc_usec": 1000000,
+            "interval_usec": 60000000,
+            "checkpoint_interval_usec": 60000000,
+            "active_window_usec": 300000000,
+            "context_segments_per_minute": 8,
+            "pulse_slot_count": 8,
+            "backend": "sql",
+            "enabled": 1
+          }
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "configuration",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 106,
+            "process_id": 206
+          },
+          "record_seq": 5
+        },
+        "occurrence_utc_usec": 6000030
+      },
+      "payload": {
+        "configuration": {
+          "config": {
+            "schema_version": 1,
+            "reserved": 0,
+            "config_id": 601,
+            "revision": 2,
+            "build_version": 100,
+            "content_version": 200,
+            "property_version": 301,
+            "classifier_version": 400,
+            "policy_version": 500,
+            "season_id": 7,
+            "environment_id": 8,
+            "fingerprint": "5869b5a40de0b1151b5b9014a3dfdcb47087595277430b3870312dc20dc328b6",
+            "effective_utc_usec": 6000030,
+            "interval_usec": 60000000,
+            "checkpoint_interval_usec": 60000000,
+            "active_window_usec": 300000000,
+            "context_segments_per_minute": 8,
+            "pulse_slot_count": 8,
+            "backend": "sql",
+            "enabled": 1
+          }
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 106,
+            "process_id": 206
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 6000010
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 106,
+                "process_id": 206
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9006,
+            "pid": 47,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 106,
+              "process_id": 206
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 0,
+            "end_monotonic_usec": 10,
+            "start_utc_usec": 6000000,
+            "end_utc_usec": 6000010
+          },
+          "duration_usec": 10,
+          "category": "connected_active",
+          "context": "none",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 600,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 106,
+            "process_id": 206
+          },
+          "record_seq": 3
+        },
+        "occurrence_utc_usec": 6000020
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 106,
+                "process_id": 206
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9006,
+            "pid": 47,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 106,
+              "process_id": 206
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 10,
+            "end_monotonic_usec": 20,
+            "start_utc_usec": 6000010,
+            "end_utc_usec": 6000020
+          },
+          "duration_usec": 10,
+          "category": "connected_active",
+          "context": "none",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 2,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 600,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 106,
+            "process_id": 206
+          },
+          "record_seq": 4
+        },
+        "occurrence_utc_usec": 6000030
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 106,
+                "process_id": 206
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9006,
+            "pid": 47,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 106,
+              "process_id": 206
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 20,
+            "end_monotonic_usec": 30,
+            "start_utc_usec": 6000020,
+            "end_utc_usec": 6000030
+          },
+          "duration_usec": 10,
+          "category": "connected_active",
+          "context": "none",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 2,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 101,
+            "group_size": 1
+          },
+          "config_id": 600,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 106,
+            "process_id": 206
+          },
+          "record_seq": 6
+        },
+        "occurrence_utc_usec": 6000040
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 106,
+                "process_id": 206
+              },
+              "session_seq": 1
+            },
+            "subject_id": 9006,
+            "pid": 47,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 106,
+              "process_id": 206
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 30,
+            "end_monotonic_usec": 40,
+            "start_utc_usec": 6000030,
+            "end_utc_usec": 6000040
+          },
+          "duration_usec": 10,
+          "category": "connected_active",
+          "context": "none",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 2,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 101,
+            "group_size": 1
+          },
+          "config_id": 601,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "publish_config_600",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "interval_level_1",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "interval_level_2",
+      "record_indexes": [
+        3
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "interval_zone_101",
+      "record_indexes": [
+        4
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "publish_config_601",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "interval_config_601",
+      "record_indexes": [
+        5
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "publish_config_600",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "interval_level_1",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "interval_level_2",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "interval_zone_101",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "publish_config_601",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "interval_config_601",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 40,
+        "connected_usec": 40,
+        "active_usec": 40,
+        "idle_usec": 0,
+        "unknown_usec": 0,
+        "resident_usec": 40,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "boundaries": {
+        "sealed_boundaries_monotonic_usec": [
+          10,
+          20,
+          30
+        ],
+        "boundary_reasons": [
+          "level",
+          "zone",
+          "config"
+        ],
+        "level_change_count": 1,
+        "zone_change_count": 1,
+        "config_change_count": 1,
+        "config_publication_before_use": true
+      }
+    }
+  }
+}

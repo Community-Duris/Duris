@@ -1,0 +1,570 @@
+{
+  "fixture_schema": "duris.telemetry.contract",
+  "schema_version": 1,
+  "fixture_id": "copyover_handoff",
+  "covers": [
+    "copyover",
+    "new_connection",
+    "new_producer",
+    "session_retained"
+  ],
+  "configurations": [
+    {
+      "schema_version": 1,
+      "reserved": 0,
+      "config_id": 900,
+      "revision": 1,
+      "build_version": 100,
+      "content_version": 200,
+      "property_version": 300,
+      "classifier_version": 400,
+      "policy_version": 500,
+      "season_id": 7,
+      "environment_id": 8,
+      "fingerprint": "3c8e353f2a5e5d48da31d9f0cc1682b76dff56445d55e5ec8e5a3006ee1f5bb2",
+      "effective_utc_usec": 1000000,
+      "interval_usec": 60000000,
+      "checkpoint_interval_usec": 60000000,
+      "active_window_usec": 300000000,
+      "context_segments_per_minute": 8,
+      "pulse_slot_count": 8,
+      "backend": "sql",
+      "enabled": 1
+    }
+  ],
+  "transitions": [
+    {
+      "session": {
+        "id": {
+          "producer": {
+            "boot_id": 801,
+            "process_id": 1
+          },
+          "session_seq": 9
+        },
+        "subject_id": 9009,
+        "pid": 50,
+        "season_id": 7,
+        "environment_id": 8
+      },
+      "connection": {
+        "producer": {
+          "boot_id": 802,
+          "process_id": 1
+        },
+        "connection_seq": 1
+      },
+      "at_monotonic_usec": 10,
+      "at_utc_usec": 9000210,
+      "kind": "copyover_resumed",
+      "reserved": [
+        0,
+        0,
+        0
+      ],
+      "quality_flags": 0
+    }
+  ],
+  "records": [
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_lifecycle",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 801,
+            "process_id": 1
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 9000100
+      },
+      "payload": {
+        "session_lifecycle": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 801,
+                "process_id": 1
+              },
+              "session_seq": 9
+            },
+            "subject_id": 9009,
+            "pid": 50,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 801,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "lifecycle": "session_entered",
+          "end_reason": "unknown",
+          "reserved": 0,
+          "at_monotonic_usec": 100,
+          "at_utc_usec": 9000100,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 900,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 801,
+            "process_id": 1
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 9000200
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 801,
+                "process_id": 1
+              },
+              "session_seq": 9
+            },
+            "subject_id": 9009,
+            "pid": 50,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 801,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 100,
+            "end_monotonic_usec": 200,
+            "start_utc_usec": 9000100,
+            "end_utc_usec": 9000200
+          },
+          "duration_usec": 100,
+          "category": "connected_active",
+          "context": "combat",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 106,
+            "group_size": 1
+          },
+          "config_id": 900,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 801,
+            "process_id": 1
+          },
+          "record_seq": 3
+        },
+        "occurrence_utc_usec": 9000200
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 801,
+                "process_id": 1
+              },
+              "session_seq": 9
+            },
+            "subject_id": 9009,
+            "pid": 50,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 801,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "revision": 1,
+          "at_monotonic_usec": 200,
+          "at_utc_usec": 9000200,
+          "cumulative": {
+            "connected_usec": 100,
+            "active_usec": 100,
+            "idle_usec": 0,
+            "unknown_usec": 0,
+            "resident_usec": 100,
+            "linkdead_usec": 0
+          },
+          "config_id": 900,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_lifecycle",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 802,
+            "process_id": 1
+          },
+          "record_seq": 1
+        },
+        "occurrence_utc_usec": 9000210
+      },
+      "payload": {
+        "session_lifecycle": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 801,
+                "process_id": 1
+              },
+              "session_seq": 9
+            },
+            "subject_id": 9009,
+            "pid": 50,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 802,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "lifecycle": "connection_attached",
+          "end_reason": "unknown",
+          "reserved": 0,
+          "at_monotonic_usec": 10,
+          "at_utc_usec": 9000210,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 100,
+            "group_size": 1
+          },
+          "config_id": 900,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "interval",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 802,
+            "process_id": 1
+          },
+          "record_seq": 2
+        },
+        "occurrence_utc_usec": 9000260
+      },
+      "payload": {
+        "interval": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 801,
+                "process_id": 1
+              },
+              "session_seq": 9
+            },
+            "subject_id": 9009,
+            "pid": 50,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 802,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "window": {
+            "start_monotonic_usec": 10,
+            "end_monotonic_usec": 60,
+            "start_utc_usec": 9000210,
+            "end_utc_usec": 9000260
+          },
+          "duration_usec": 50,
+          "category": "connected_active",
+          "context": "travel",
+          "context_quality": "observed",
+          "reserved": 0,
+          "dimensions": {
+            "level_band": 1,
+            "class_id": 1,
+            "race_id": 1,
+            "faction_id": 1,
+            "zone_vnum": 107,
+            "group_size": 1
+          },
+          "config_id": 900,
+          "classifier_version": 400,
+          "policy_version": 500,
+          "quality_flags": 0
+        }
+      }
+    },
+    {
+      "header": {
+        "schema_version": 1,
+        "kind": "session_checkpoint",
+        "reserved": 0,
+        "key": {
+          "producer": {
+            "boot_id": 802,
+            "process_id": 1
+          },
+          "record_seq": 3
+        },
+        "occurrence_utc_usec": 9000260
+      },
+      "payload": {
+        "session_checkpoint": {
+          "session": {
+            "id": {
+              "producer": {
+                "boot_id": 801,
+                "process_id": 1
+              },
+              "session_seq": 9
+            },
+            "subject_id": 9009,
+            "pid": 50,
+            "season_id": 7,
+            "environment_id": 8
+          },
+          "connection": {
+            "producer": {
+              "boot_id": 802,
+              "process_id": 1
+            },
+            "connection_seq": 1
+          },
+          "revision": 2,
+          "at_monotonic_usec": 60,
+          "at_utc_usec": 9000260,
+          "cumulative": {
+            "connected_usec": 150,
+            "active_usec": 150,
+            "idle_usec": 0,
+            "unknown_usec": 0,
+            "resident_usec": 150,
+            "linkdead_usec": 0
+          },
+          "config_id": 900,
+          "quality_flags": 0
+        }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "name": "old_session_enter",
+      "record_indexes": [
+        0
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "old_interval",
+      "record_indexes": [
+        1
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "old_checkpoint",
+      "record_indexes": [
+        2
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "copyover_resume",
+      "record_indexes": [
+        3
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "new_process_interval",
+      "record_indexes": [
+        4
+      ],
+      "acknowledgement": "confirmed"
+    },
+    {
+      "name": "post_copyover_checkpoint",
+      "record_indexes": [
+        5
+      ],
+      "acknowledgement": "confirmed"
+    }
+  ],
+  "expected": {
+    "operations": [
+      {
+        "name": "old_session_enter",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "old_interval",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "old_checkpoint",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "copyover_resume",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "new_process_interval",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      },
+      {
+        "name": "post_copyover_checkpoint",
+        "batch_outcome": "committed",
+        "record_outcomes": [
+          "applied"
+        ],
+        "counts": {
+          "applied": 1
+        }
+      }
+    ],
+    "metrics": {
+      "conservation": {
+        "interval_total_usec": 150,
+        "connected_usec": 150,
+        "active_usec": 150,
+        "idle_usec": 0,
+        "unknown_usec": 0,
+        "resident_usec": 150,
+        "linkdead_usec": 0,
+        "connected_identity_holds": true,
+        "resident_identity_holds": true
+      },
+      "copyover": {
+        "session_count": 1,
+        "producer_count": 2,
+        "old_producer": {
+          "boot_id": 801,
+          "process_id": 1
+        },
+        "new_producer": {
+          "boot_id": 802,
+          "process_id": 1
+        },
+        "session_retained": true,
+        "new_connection": true,
+        "observed_interval_usec": 150,
+        "cross_process_duration_usec": 0,
+        "downtime_invented_usec": 0,
+        "transition_kind": "copyover_resumed",
+        "handoff_checkpoint_revision": 1,
+        "handoff_checkpoint_cumulative": {
+          "connected_usec": 100,
+          "active_usec": 100,
+          "idle_usec": 0,
+          "unknown_usec": 0,
+          "resident_usec": 100,
+          "linkdead_usec": 0
+        },
+        "post_copyover_checkpoint_revision": 2,
+        "post_copyover_checkpoint_cumulative": {
+          "connected_usec": 150,
+          "active_usec": 150,
+          "idle_usec": 0,
+          "unknown_usec": 0,
+          "resident_usec": 150,
+          "linkdead_usec": 0
+        },
+        "handoff_quality_flags": 0,
+        "post_copyover_quality_flags": 0,
+        "fresh_monotonic_anchor": true
+      }
+    }
+  }
+}
