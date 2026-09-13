@@ -97,7 +97,7 @@ try {
   await server.listen();
   console.log(`${origin}${previewBase}/index.html`);
   console.log(
-    "Add ?alternate=1, ?recipient=Bob, or ?scenery=1. Synthetic local preview only.",
+    "Add ?alternate=1, ?recipient=Bob, ?scenery=1, or ?examples=1. Synthetic local preview only.",
   );
 } catch (error) {
   await close();

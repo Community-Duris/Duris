@@ -36,7 +36,7 @@ selects cyan/red chat colors, previews a third color, checks invalid/incomplete 
 and verifies independent terminal/GMCP choices and reset-one/all. It uses a 30-line repeated room and a
 12-line screen to force paging: refresh replays the same frame, new looks move water one position,
 unrelated chat does not consume a room step, foliage drifts coherently, and Static/motion-off stay fixed.
-The completed run passed **56 checks and 11 captured room frames**; its
+The completed run passed **65 checks and 15 captured frames**; its
 [synthetic report](../data/colorization/live-journey.json) includes actual ANSI output.
 
 Run from a Linux development checkout with the documented build dependencies:
@@ -196,6 +196,14 @@ The [alternate scenery image](../assets/colorization/scenery-alternate.png) show
 room bytes under the alternate theme. The first two panels differ by one eligible room send even
 though chat occurred between them; the lower panels show the stable fallback palette.
 
+![Independent title/body colors, protected survey artwork, dense combat and low-resource prompt previews](../assets/colorization/semantic-dark.png)
+
+The [alternate semantic preview](../assets/colorization/semantic-alternate.png) repeats these views
+under the alternate palette. These are real in-game preview commands, plus a synthetic survey mural
+read through the adopted inspection path. An explicit red inspection preference leaves its layout,
+plain `water`, authored green `forest` and blue/cyan gradient unchanged. The selected cyan prompt
+frame retains yellow `40m` and red `10v` warnings; combat recipient labels and outcomes remain text.
+
 To reproduce the browser preview, install the supported client's frontend dependencies using its
 documented pnpm workflow, then run these commands from this server checkout (Node 22 supported):
 
@@ -206,7 +214,8 @@ node scripts/preview_colorization_client.mjs /path/to/DurisWebApp/frontend \
 ```
 
 Open the printed loopback URL. Add `?alternate=1`, `?recipient=Bob` to open a single-recipient
-conversation, or `?scenery=1` (and `&alternate=1`) for the real room frames. The launcher uses
+conversation, `?scenery=1` for room frames or `?examples=1` for artwork/combat/prompt examples
+(add `&alternate=1` to either). The launcher uses
 maintained [preview components](../examples/colorization-client-preview), creates a temporary
 directory beneath the explicitly supplied frontend, serves only on loopback, replaces preview API
 requests with synthetic empty responses, and removes its temporary files on Ctrl-C. It does not

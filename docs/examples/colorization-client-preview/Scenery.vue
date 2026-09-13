@@ -5,13 +5,29 @@ import "xterm/css/xterm.css";
 import { chatPalette } from "/src/utils/chatPalette";
 import report from "./room-frames.json";
 
-const selected = [
-  "animated first",
-  "animated after unrelated chat",
-  "motion off first",
-  "static first",
-];
-const frames = report.frames.filter((frame) => selected.includes(frame.label));
+const examples = new URLSearchParams(location.search).has("examples");
+const selected = examples
+  ? [
+      "separate title and room body",
+      "protected survey mural",
+      "dense combat previews",
+      "low-resource prompt preview",
+    ]
+  : [
+      "animated first",
+      "animated after unrelated chat",
+      "motion off first",
+      "static first",
+    ];
+interface Frame {
+  label: string;
+  terminalAnsi: string;
+  water?: number[];
+  forest?: number[];
+}
+const frames: Frame[] = report.frames.filter((frame) =>
+  selected.includes(frame.label),
+);
 onMounted(async () => {
   const css = getComputedStyle(document.body);
   const theme: Record<string, string> = {
@@ -42,7 +58,7 @@ onMounted(async () => {
   for (const [index, frame] of frames.entries()) {
     const terminal = new Terminal({
       cols: 90,
-      rows: 12,
+      rows: examples ? 20 : 12,
       fontSize: 14,
       fontFamily: "Consolas, monospace",
       convertEol: true,
@@ -68,11 +84,14 @@ onMounted(async () => {
     >
       <h2>{{ frame.label }}</h2>
       <p class="caption">
-        Identical prose. Authored text and layout remain intact; only eligible
-        word colors vary.
+        {{
+          examples
+            ? "Authored artwork stays protected; state labels and warning numbers remain readable."
+            : "Identical prose. Authored text and layout remain intact; only eligible word colors vary."
+        }}
       </p>
       <div class="terminal" :id="'room-' + index" />
-      <p class="caption">
+      <p v-if="frame.water && frame.forest" class="caption">
         Water palette IDs: {{ frame.water.join(", ") }} · Forest:
         {{ frame.forest.join(", ") }}
       </p>

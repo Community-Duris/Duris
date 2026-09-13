@@ -218,6 +218,42 @@
       "expected": "Gate 00."
     },
     {
+      "command": "toggle color title bright cyan",
+      "expected": "save pending"
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "toggle paging",
+      "expected": "Paging mode off"
+    },
+    {
+      "command": "toggle color inspect bright red",
+      "expected": "save pending"
+    },
+    {
+      "command": "look mural",
+      "expected": "runes stay authored."
+    },
+    {
+      "command": "toggle color preview incoming bright red",
+      "expected": "Sample (incoming)"
+    },
+    {
+      "command": "toggle color preview outgoing bright cyan",
+      "expected": "Sample (outgoing)"
+    },
+    {
+      "command": "toggle color preview observed yellow",
+      "expected": "Sample (observed)"
+    },
+    {
+      "command": "toggle color preview prompt bright cyan",
+      "expected": "10v"
+    },
+    {
       "command": "save",
       "expected": "Save complete for Taverek."
     },
@@ -443,6 +479,37 @@
         18,
         18
       ]
+    },
+    {
+      "label": "separate title and room body",
+      "terminalAnsi": "\r\n\u001b[0;1;36mThe Regression Arena\u001b[m\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "protected survey mural",
+      "terminalAnsi": "\r\n\u001b[0;1;37mAuthored survey mural\u001b[m\r\n+------------+-------+\r\n| \u001b[0;1;32mforest\u001b[0m     | water |\r\n+------------+-------+\r\n\u001b[0;1;34mBlue\u001b[0;1;36m gradient\u001b[0m, river and runes stay authored.\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m"
+    },
+    {
+      "label": "dense combat previews",
+      "terminalAnsi": "\r\nSample (incoming): \u001b[0;1;31mSomeone strikes you.\u001b[m\r\nPreview only. Apply: toggle color incoming bright red\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m\r\nSample (outgoing): \u001b[0;1;36mYou strike someone.\u001b[m\r\nPreview only. Apply: toggle color outgoing bright cyan\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m\r\nSample (observed): \u001b[0;33mSomeone strikes a traveler.\u001b[m\r\nPreview only. Apply: toggle color observed yellow\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m"
+    },
+    {
+      "label": "low-resource prompt preview",
+      "terminalAnsi": "\r\nSample (prompt): \u001b[0;1;36m< 100h \u001b[0;33m40m \u001b[0;31m10v\u001b[0;1;36m> \u001b[m\r\nPreview only. Apply: toggle color prompt bright cyan\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m"
     }
   ]
 }

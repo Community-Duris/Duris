@@ -53,16 +53,18 @@ if (alt) {
   document.body.style.setProperty("--mud-foreground", "#f2eee2");
 }
 const single = new URLSearchParams(location.search).get("recipient");
-const scenery = new URLSearchParams(location.search).has("scenery");
+const examples = new URLSearchParams(location.search).has("examples");
+const scenery = examples || new URLSearchParams(location.search).has("scenery");
 if (scenery) {
   createApp(Scenery).mount("#alice");
   document.getElementById("bob")!.remove();
   document.querySelector<HTMLElement>(".grid")!.style.gridTemplateColumns =
     "1fr";
-  document.querySelector("header h1")!.textContent =
-    "Duris · coherent scenery frames";
+  document.querySelector("header h1")!.textContent = examples
+    ? "Duris · protected art and semantic previews"
+    : "Duris · coherent scenery frames";
   document.querySelector("header p")!.textContent =
-    "Actual xterm rendering of room output captured from the live two-character server walkthrough.";
+    "Actual xterm rendering of output captured from the live two-character server walkthrough.";
 } else {
   if (!single || single === "Alice")
     createApp(Recipient, { recipient: "Alice", alternate: alt })

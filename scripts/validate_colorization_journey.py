@@ -135,8 +135,15 @@ def run(server: Path, inspector: Path, report_path: Path | None) -> None:
         zone.write_text(re.sub(r"^[MG] .*\n", "", zone.read_text(), flags=re.M))
         world = runtime / "areas_mini/mini.wld"
         prose = "".join(f"Water crosses the forest. Gate {i:02d}.\n" for i in range(30))
-        world.write_text(world.read_text().replace(
-            "This quiet stone arena exists to prove the complete combat journey.\n", prose))
+        mural = ("&+WAuthored survey mural&n\n"
+                 "+------------+-------+\n"
+                 "| &+Gforest&n     | water |\n"
+                 "+------------+-------+\n"
+                 "&+BBlue&+C gradient&n, river and runes stay authored.\n")
+        original = "This quiet stone arena exists to prove the complete combat journey.\n~\n1 0 0\nS\n"
+        require(original in world.read_text(), "release room fixture changed")
+        world.write_text(world.read_text().replace(original,
+            prose + "~\n1 0 0\nE\nmural~\n" + mural + "~\nS\n"))
         (runtime / "logs/log").mkdir(parents=True)
         (runtime / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
         for name in ("players", "critical"):
@@ -312,6 +319,29 @@ def run(server: Path, inspector: Path, report_path: Path | None) -> None:
                 require(room("static repeated") == fixed, "static scenery changed")
                 alice.send("q")
                 alice.drain()
+                command(alice, "toggle color title bright cyan", "save pending")
+                room("separate title and room body")
+                require(foregrounds(frames[-1]["terminalAnsi"].encode(), "The Regression Arena") ==
+                        [27] * len("The Regression Arena"), "title did not remain independent")
+                alice.send("q")
+                alice.drain()
+                command(alice, "toggle paging", "Paging mode off")
+                command(alice, "toggle color inspect bright red", "save pending")
+                art = command(alice, "look mural", "runes stay authored.")
+                require(b"+------------+-------+" in ANSI.sub(b"", art), "mural layout changed")
+                require(foregrounds(art, "water") == [0] * 5, "art acquired the selected base color")
+                require(foregrounds(art, "forest") == [26] * 6, "authored art color changed")
+                frames.append({"label": "protected survey mural", "terminalAnsi": art.decode("utf-8")})
+                dense = bytearray()
+                for channel, color in (("incoming", "bright red"), ("outgoing", "bright cyan"),
+                                       ("observed", "yellow")):
+                    dense.extend(command(alice, f"toggle color preview {channel} {color}",
+                                         f"Sample ({channel})"))
+                frames.append({"label": "dense combat previews", "terminalAnsi": dense.decode("utf-8")})
+                low = command(alice, "toggle color preview prompt bright cyan", "10v")
+                require(foregrounds(low, "40m") == [22] * 3 and foregrounds(low, "10v") == [20] * 3,
+                        "selected prompt base hid the warning colors")
+                frames.append({"label": "low-resource prompt preview", "terminalAnsi": low.decode("utf-8")})
                 for client, (_, character) in zip(clients, accounts):
                     command(client, "save", f"Save complete for {character}.")
                     command(client, "quit", "ACCOUNT MENU")
