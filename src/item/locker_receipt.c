@@ -29,7 +29,7 @@ bool valid(const locker_receipt &receipt, currency_command_payload *payment)
 	if (receipt.text.empty() || receipt.text.size() > LOCKER_RECEIPT_TEXT_MAX ||
 	    receipt.text.find('\0') != std::string::npos ||
 	    static_cast<unsigned>(receipt.state) >
-		    static_cast<unsigned>(locker_receipt_state::failed) ||
+		    static_cast<unsigned>(locker_receipt_state::delivered) ||
 	    !critical_command_valid(receipt.payment) ||
 	    !currency_command_decode_payload(receipt.payment, payment) ||
 	    (payment->reason != currency_reason_type::bank_payment &&

@@ -289,6 +289,17 @@ int main(int argc, char **argv)
 		assert(submissions == 0);
 		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
 	}
+	else if (mode == "delivered")
+	{
+		// Login, reconnect and copyover stay silent; stat receipt still repeats it.
+		locker_identify_replay(&ch);
+		drained();
+		assert(output.empty());
+		locker_identify_receipt(&ch);
+		drained();
+		assert(submissions == 0);
+		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+	}
 	else
 	{
 		if (mode == "recover")
@@ -321,7 +332,7 @@ int main(int argc, char **argv)
 	assert(state.bank.amount[0] == (bank_purchase ? 825 : 1000));
 	locker_receipt saved;
 	assert(locker_receipt_read(receipt_directory, ch.pid, &saved) == flatfile_read_result::ok);
-	assert(saved.state == locker_receipt_state::paid);
+	assert(saved.state == locker_receipt_state::delivered);
 	if (mode == "normal")
 	{
 		// Unknown payment results retain prepared evidence, never publish lore.
@@ -405,6 +416,7 @@ int main(int argc, char **argv)
 		locker_identify_replay(&ch);
 		drained();
 		assert(submissions == 5);
+		assert(output.empty());
 		ch.fighting = true;
 		locker_identify(&ch, &obj, 1);
 		ch.fighting = false;
