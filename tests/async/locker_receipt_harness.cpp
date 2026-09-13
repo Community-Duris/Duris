@@ -381,12 +381,15 @@ int main(int argc, char **argv)
 		drained();
 		live = &ch;
 		output.clear();
+		// A reread during this recovery is fulfilled by its single display.
 		locker_identify_replay(&ch);
+		locker_identify_receipt(&ch);
 		until([] { return submissions == 3; });
 		assert(applied.outcome == critical_apply_outcome::already_applied);
 		finish();
 		drained();
 		assert(output.find("SECOND") != std::string::npos);
+		assert(output.find("SECOND") == output.rfind("SECOND"));
 		// A receipt belonging to another account cannot be delivered or replaced.
 		output.clear();
 		auto account = ch.account;
