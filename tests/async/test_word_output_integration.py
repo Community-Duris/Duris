@@ -14,7 +14,7 @@ globals_end = comm.index("#define MIN_SOCKET_BUFFER_SIZE", globals_start)
 functions = [comm[globals_start:globals_end]]
 for filename, signatures in [
     ("utility.c", ["bool is_ansi_char(", "void CAP(char *str)", "int BOUNDED(int a, int b, int c)"]),
-    ("comm.c", ["int get_from_q(", "void write_to_q(", "void escape_act_dollars(",
+    ("comm.c", ["int get_from_q(", "void write_to_q(", "void escape_act_dollars(", "void delete_doubledollar(",
                 "static void finalize_styled_command(", "void process_with_paging(",
                 "void send_to_char_f(P_char ch, const char *fmt, ...)",
                 "void send_to_char_f(P_char ch, const OutputContext &context, const char *fmt, ...)",

@@ -86,6 +86,9 @@ static void chat_presentation_matrix()
 			cJSON_AddStringToObject(fixture, "case", label);
 			cJSON_AddStringToObject(fixture, "recipient", d == &da ? "Alice" : "Bob");
 			cJSON_AddStringToObject(fixture, "terminalMarkup", terminal.c_str());
+			char terminal_ansi[MAX_STRING_LENGTH];
+			AnsiString(terminal.c_str()).term(terminal_ansi, TL_BLINK);
+			cJSON_AddStringToObject(fixture, "terminalAnsi", terminal_ansi);
 			cJSON_AddItemToObject(fixture, "packet", packet);
 			cJSON_AddItemToArray(fixtures, fixture);
 		}
@@ -212,6 +215,25 @@ static void chat_presentation_matrix()
 	gmcp_comm_channel_output(&alice, chat, animated, "water");
 	assert(chat_packets.empty());
 	REMOVE_BIT(alice.specials.act3, PLR3_NOGMCP);
+
+	OutputChatMessage dollars{ "tell", "Alice", "cost $$5 &+g$$n&n" };
+	OutputContext dollar_context{ OutputChannel::ChatTell, OutputPolicy::Static, nullptr,
+				      ATTR_FG(20) };
+	dollar_context.chat = &dollars;
+	send_to_char(dollars.text.c_str(), &alice, dollar_context);
+	const auto dollar_output = drain(&da);
+	char dollar_terminal[MAX_STRING_LENGTH];
+	AnsiString(dollar_output.c_str()).term(dollar_terminal, TL_BLINK);
+	delete_doubledollar(dollar_terminal);
+	assert(!strstr(dollar_terminal, "$$") && strstr(dollar_terminal, "$5") &&
+	       strstr(dollar_terminal, "$n"));
+	assert(chat_packets.size() == 1);
+	cJSON *dollar_packet = cJSON_Parse(chat_packets[0].second.c_str());
+	assert(std::string(cJSON_GetStringValue(cJSON_GetObjectItem(
+		       cJSON_GetObjectItem(dollar_packet, "presentation"), "text"))) ==
+	       "cost $5 $n");
+	cJSON_Delete(dollar_packet);
+	chat_packets.clear();
 	language_override = nullptr;
 	descriptor_list = nullptr;
 	world[0].people = nullptr;

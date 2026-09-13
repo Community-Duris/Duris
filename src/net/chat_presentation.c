@@ -32,9 +32,22 @@ void gmcp_comm_channel_output(char_data *recipient, const OutputChatMessage &cha
 
 	// Existing packets remain usable if an exceptional input exceeds the
 	// presentation budget or contains a raw terminal control sequence.
-	if (std::strlen(frozen) < MAX_STRING_LENGTH && !std::strchr(frozen, '\x1b'))
+	if (std::strlen(frozen) < MAX_STRING_LENGTH && !std::strchr(frozen, '\x1b') &&
+	    output_message_fits_serializers(frozen))
 	{
 		AnsiString visible(frozen);
+		// process_output collapses adjacent dollars after ANSI serialization.
+		// A color transition separates the bytes, so only equal-attribute pairs
+		// collapse. Apply that same visible normalization before assigning runs.
+		size_t out = 0;
+		for (size_t i = 0; i < visible.size(); ++i)
+		{
+			visible[out++] = visible[i];
+			if (visible.ch(i) == '$' && i + 1 < visible.size() &&
+			    visible.ch(i + 1) == '$' && visible.attr(i) == visible.attr(i + 1))
+				++i;
+		}
+		visible.resize(out);
 		while (!visible.empty() && (visible.ch(visible.size() - 1) == '\n' ||
 					    visible.ch(visible.size() - 1) == '\r'))
 			visible.pop_back();
