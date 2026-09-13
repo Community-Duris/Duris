@@ -1,6 +1,7 @@
 #include "player/output_message.h"
 #include "core/prototypes.h"
 #include <algorithm>
+#include <cstring>
 
 PlayerOutputMessage::PlayerOutputMessage(char_data *recipient, OutputChannel channel)
 	: recipient_(recipient)
@@ -85,4 +86,39 @@ const char *player_output_template(char_data *recipient, OutputChannel channel, 
 			       OutputPolicy::Preserve ?
 		       legacy :
 		       selected;
+}
+
+OutputContext preserve_authored_layout(const char *message, const OutputContext &context)
+{
+	if (context.policy == OutputPolicy::Preserve || !message)
+		return context;
+	auto preserved = context;
+	preserved.policy = OutputPolicy::Preserve;
+	if (strlen(message) >= MAX_STRING_LENGTH)
+		return preserved;
+	AnsiString visible(message);
+	size_t spaces = 0, drawing = 0;
+	for (size_t i = 0; i < visible.size(); ++i)
+	{
+		const auto ch = visible.ch(i);
+		spaces = ch == ' ' ? spaces + 1 : 0;
+		drawing = ch == '|' || ch == '/' || ch == '\\' || ch == '_' || ch == '+' ||
+					  ch == '-' || ch == '*' ?
+				  drawing + 1 :
+				  0;
+		if (ch == '\t' || (ch >= 0x2500 && ch <= 0x259f) || spaces >= 3 || drawing >= 3)
+			return preserved;
+	}
+	return context;
+}
+
+void send_authored_output(const char *message, char_data *recipient, const OutputContext &context)
+{
+	auto resolved =
+		context.resolve_recipient_preferences ?
+			player_output_profile(recipient, context.channel, context.policy).context :
+			context;
+	resolved.spans = context.spans;
+	resolved.original_message = context.original_message;
+	send_to_char(message, recipient, preserve_authored_layout(message, resolved));
 }

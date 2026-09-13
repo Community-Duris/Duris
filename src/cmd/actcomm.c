@@ -1782,35 +1782,54 @@ void do_action(P_char ch, char *argument, int cmd)
 	{
 		/*    send_to_char(act_mesg->char_no_arg, ch);
 		    send_to_char("\r\n", ch);*/
-		act(act_mesg->char_no_arg, FALSE, ch, 0, 0, TO_CHAR);
-		act(act_mesg->others_no_arg, act_mesg->hide, ch, 0, 0, TO_ROOM);
+		act(act_mesg->char_no_arg, FALSE, ch, 0, 0, TO_CHAR,
+		    preserve_authored_layout(act_mesg->char_no_arg,
+					     recipient_output_context(OutputChannel::Social)));
+		act(act_mesg->others_no_arg, act_mesg->hide, ch, 0, 0, TO_ROOM,
+		    preserve_authored_layout(act_mesg->others_no_arg,
+					     recipient_output_context(OutputChannel::Social)));
 		return;
 	}
 	if (!(vict = get_char_room_vis(ch, buf)))
 	{
 		//    send_to_char(act_mesg->not_found, ch);
 		//    send_to_char("\r\n", ch);
-		act(act_mesg->not_found, FALSE, ch, 0, 0, TO_CHAR);
+		act(act_mesg->not_found, FALSE, ch, 0, 0, TO_CHAR,
+		    preserve_authored_layout(act_mesg->not_found,
+					     recipient_output_context(OutputChannel::Social)));
 	}
 	else if (vict == ch)
 	{
 		//    send_to_char(act_mesg->char_auto, ch);
 		//    send_to_char("\r\n", ch);
-		act(act_mesg->char_auto, FALSE, ch, 0, 0, TO_CHAR);
-		act(act_mesg->others_auto, act_mesg->hide, ch, 0, 0, TO_ROOM);
+		act(act_mesg->char_auto, FALSE, ch, 0, 0, TO_CHAR,
+		    preserve_authored_layout(act_mesg->char_auto,
+					     recipient_output_context(OutputChannel::Social)));
+		act(act_mesg->others_auto, act_mesg->hide, ch, 0, 0, TO_ROOM,
+		    preserve_authored_layout(act_mesg->others_auto,
+					     recipient_output_context(OutputChannel::Social)));
 	}
 	else
 	{
 		if (!MIN_POS(vict, act_mesg->min_victim_position))
 		{
-			act("$N is not in a proper position for that.", FALSE, ch, 0, vict,
-			    TO_CHAR);
+			act("$N is not in a proper position for that.", FALSE, ch, 0, vict, TO_CHAR,
+			    recipient_output_context(OutputChannel::Social));
 		}
 		else
 		{
-			act(act_mesg->char_found, 0, ch, 0, vict, TO_CHAR);
-			act(act_mesg->others_found, act_mesg->hide, ch, 0, vict, TO_NOTVICT);
-			act(act_mesg->vict_found, act_mesg->hide, ch, 0, vict, TO_VICT);
+			act(act_mesg->char_found, 0, ch, 0, vict, TO_CHAR,
+			    preserve_authored_layout(
+				    act_mesg->char_found,
+				    recipient_output_context(OutputChannel::Social)));
+			act(act_mesg->others_found, act_mesg->hide, ch, 0, vict, TO_NOTVICT,
+			    preserve_authored_layout(
+				    act_mesg->others_found,
+				    recipient_output_context(OutputChannel::Social)));
+			act(act_mesg->vict_found, act_mesg->hide, ch, 0, vict, TO_VICT,
+			    preserve_authored_layout(
+				    act_mesg->vict_found,
+				    recipient_output_context(OutputChannel::Social)));
 		}
 	}
 }

@@ -30,7 +30,7 @@
 #define PAGE_WIDTH 80
 static char send_to_char_f_buf[MAX_STRING_LENGTH];
 P_char executing_ch = nullptr;
-static room_data rooms[1]{};
+static room_data rooms[3]{};
 P_room world = rooms;
 static index_data indexes[1]{};
 P_index obj_index = indexes;
@@ -140,6 +140,7 @@ float get_property(const char *, double value)
 }
 void gmcp_comm_channel(P_char, const char *, const char *, const char *) {}
 
+#include "world_output_stubs.inc"
 #include "production_output.inc"
 
 static std::string drain(P_desc d)
@@ -150,6 +151,8 @@ static std::string drain(P_desc d)
 		output += buffer;
 	return output;
 }
+
+#include "world_output_checks.inc"
 
 static void tell_command_matrix()
 {
@@ -672,5 +675,6 @@ int main()
 	send_to_char(large.c_str(), &actor, LOG_NONE, style);
 	assert(drain(&desc) == large);
 	tell_command_matrix();
+	world_output_matrix();
 	puts("Output integration: tell/reply, recipient profiles, sends, act, queue merging, privacy, paging and snoop passed");
 }

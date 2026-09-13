@@ -26,7 +26,13 @@ for filename, signatures in [
                 "void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type,",
                 "void format_to_snoopers(char *from_string, char *to_string)\n{"]),
     ("modify.c", ["char *next_page(", "void free_paging_data(", "void show_string(", "void page_string_real("]),
-    ("actcomm.c", ["void do_tell(", "void do_reply("])
+    ("actcomm.c", ["void do_tell(", "void do_reply("]),
+    ("actinf.c", ["char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)",
+                  "char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print,",
+                  "void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)",
+                  "void list_obj_to_char(P_obj list, P_char ch, int mode, bool show,",
+                  "void show_exits_to_char(", "void display_room_auras("]),
+    ("weather.c", ["void send_to_weather_sector("])
 ]:
     functions.extend(extract_function(filename, signature) for signature in signatures)
 

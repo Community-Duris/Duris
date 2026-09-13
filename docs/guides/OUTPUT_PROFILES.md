@@ -12,8 +12,9 @@ Preserve fallback. Both MariaDB and flatfile builds support the same registry.
 
 The [versioned sample](../examples/output-profiles-v1.json) demonstrates all six
 recipe kinds, an explicit word dictionary, base/role colors, and channel defaults.
-The long room-description caller now opts in explicitly (#282); other callers
-still require adoption. The complete [scenery sample](../examples/scenery-profiles-v1.json)
+The long room-description caller opts in explicitly (#282).
+[Chat](CHAT_COLORIZATION.md) and [world](WORLD_COLORIZATION.md) guides identify the
+other adopted delivery boundaries. Unlisted callers retain Preserve. The complete [scenery sample](../examples/scenery-profiles-v1.json)
 and [animation guide](SCENERY_COLORIZATION.md) describe that route. A configured
 channel never causes the queue to classify or recolor messages.
 
