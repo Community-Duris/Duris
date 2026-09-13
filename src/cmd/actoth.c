@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "cmd/color_command.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -4653,6 +4654,7 @@ static const char *term_name(P_char ch)
 
 void show_toggles(P_char ch)
 {
+	send_to_char("Channel colors and motion: toggle color\r\n", ch);
 	char Gbuf1[MAX_STRING_LENGTH];
 	char Gbuf2[MAX_INPUT_LENGTH], Gbuf3[MAX_INPUT_LENGTH];
 	P_char send_ch = ch;
@@ -5000,6 +5002,15 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 	int i, j, tog_nr = -1, result = -1, number;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 	P_char send_ch = ch;
+	// Resolve color ownership through the shared preference service, including
+	// switched bodies, before the legacy toggle handler's NPC restriction.
+	char color_branch[MAX_INPUT_LENGTH];
+	char *color_arguments = one_argument(skip_spaces(arg), color_branch);
+	if (!str_cmp(color_branch, "color"))
+	{
+		do_color_preferences(send_ch, color_arguments);
+		return;
+	}
 
 	if (IS_NPC(ch))
 	{
