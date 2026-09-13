@@ -75,6 +75,8 @@ bool fallback_fixture = false;
 item_ownership_runtime_entry lookup_entry = {};
 std::vector<item_ownership_runtime_entry> hydrated_entries;
 
+void transport_capture(P_char, transport_snapshot *state) { *state = {}; }
+void transport_restore(P_char, const transport_snapshot &) {}
 void logit(const char *, const char *, ...)
 {
 }
@@ -862,6 +864,7 @@ void reset_zone(int zone, int force_item_repop)
     (void)last_cmd;
 }
 @GROUND_LOADER@
+int copyover_boot = 0;
 int is_copyover_boot() { return 0; }
 void addOnMobArtis_sql() {}
 void run_artifact_boot();
@@ -886,6 +889,8 @@ void run_artifact_boot()
 {
 @ARTIFACT_BOOT@
 }
+void reconcile_shopkeepers(bool) {}
+void initialize_transport() {}
 void run_recovery_boot()
 {
 @RECOVERY_BOOT@

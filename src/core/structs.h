@@ -1343,6 +1343,8 @@ struct npc_only_data
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
 	bool summoned_instance; // survives loss of charm/ownership until extraction
+	bool transport_recovery_pending;
+	char recovered_transport_rider[50];
 	int64_t pet_charm_expires_at;
 	int64_t pet_death_expires_at;
 	uint64_t summon_intrinsic_affects[5];

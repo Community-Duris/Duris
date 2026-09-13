@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/world_singletons.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "player/pet_restore_runtime.h"
@@ -724,7 +725,12 @@ void boot_db(int mini_mode)
 
 		fprintf(stderr, "-- Shopkeepers\n");
 		logit(LOG_STATUS, "Reloading Shopkeepers.");
-		restore_shopkeepers();
+		// SQL copyover owns the live keeper inventory. Flat-file trade custody
+		// remains authoritative even during copyover; Redis never stores stock.
+		if (!is_copyover_boot() ||
+		    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+			restore_shopkeepers();
+		remember_boot_shopkeepers();
 
 		fprintf(stderr, "-- Associations\n");
 		logit(LOG_STATUS, "Updating associations table.");
