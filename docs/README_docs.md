@@ -11,6 +11,7 @@ docs/
   content/       builders and world content    gates/        release gates
   records/       standing records              adr/          decision records
   diagrams/      architecture diagrams         assets/       images
+  examples/      versioned configuration samples
   legacy/        inherited upstream text
   lib/           runtime game data (not documentation)
 ```
@@ -58,6 +59,8 @@ docs/
 | [MEMORY_CHECKING.md](guides/MEMORY_CHECKING.md) | Sanitizer and leak-checking workflow. |
 | [valgrind.md](guides/valgrind.md) | Valgrind invocation, suppressions, and interpretation. |
 | [VERSIONING.md](guides/VERSIONING.md) | Semantic versioning and the canonical version marker. |
+| [OUTPUT_WORD_STYLING.md](guides/OUTPUT_WORD_STYLING.md) | Completed-message rendering, authored-style protection, and output boundaries. |
+| [OUTPUT_PROFILES.md](guides/OUTPUT_PROFILES.md) | Versioned channel profiles, recipe validation, recipient resolution, and snapshot lifetime. |
 
 ## operations/ - running and operating it
 

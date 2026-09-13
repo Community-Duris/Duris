@@ -2,8 +2,8 @@
 
 Issue #280 adds an opt-in rendering boundary. Existing callers still use Preserve.
 No player preferences, server palette, animation sequence, prompt routing or GMCP
-adoption is enabled by this change. Profile loading and expanded channel identifiers
-belong to #281; animated recipes and recipient/channel sequences belong to #282.
+adoption is enabled by this change. [Profile loading and channel resolution](OUTPUT_PROFILES.md)
+are provided by #281; animated effects and recipient/channel sequences belong to #282.
 
 ## Calling the renderer
 
@@ -24,8 +24,8 @@ act("$n watches $T.", false, actor, nullptr, body, TO_ROOM, context);
 The dictionary is borrowed, immutable during the call, and should be constructed
 once by a caller/configuration snapshot. Keys are lowercase ASCII exact words;
 values are foreground attributes (`0` or `ATTR_FG(16..31)`). Invalid matched
-attributes are ignored. The future profile loader is responsible for rejecting
-invalid/duplicate keys and enforcing palette policy before publication. A default
+attributes are ignored. The profile loader rejects invalid/duplicate keys and
+enforces palette policy before publication. A default
 context and an explicit `OutputPolicy::Preserve` both bypass added styling, retaining
 the original bytes entering legacy output handling. The integer log policy keeps
 its existing meaning and overloads.

@@ -118,6 +118,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actwiz.o \
 				 net/ansi.o \
 				 net/output_style.o \
+				 net/output_profiles.o \
 				 specs/specs.ailvio.o \
 				 guild/alliances.o \
 				 mob/automatic_rules.o \

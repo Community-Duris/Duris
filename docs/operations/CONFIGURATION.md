@@ -19,6 +19,21 @@ connection details. The server checks metadata before reading: `.env` must be
 a regular file owned by the effective server user and must grant no permission
 beyond owner read/write (`0600`).
 
+## Output profiles
+
+`DURIS_OUTPUT_PROFILES_FILE` optionally names an absolute path to a versioned JSON
+configuration of channel profiles, dictionaries, and foreground recipes. Startup
+loads it once before gameplay; an absent setting uses Preserve, and an invalid
+initial file logs a diagnostic and uses the same fallback. Explicit reload APIs
+publish complete validated snapshots and retain the previous snapshot on failure.
+Message rendering performs no configuration I/O. See the
+[profile guide](../guides/OUTPUT_PROFILES.md) and
+[versioned sample](../examples/output-profiles-v1.json) for the schema and bounds.
+
+Loading a profile does not opt existing callers into styling. Callers still need
+an explicit output context; animation effects and player preference commands are
+separate follow-up work.
+
 ## Persistence
 
 `PERSISTENCE_MODE` selects one whole-server authority. It defaults to
