@@ -19,6 +19,8 @@
 // to get more space; extra memory use hardly matters as we store strings at
 // rest in &+M form.
 
+#pragma once
+
 #include <string>
 #include <vector>
 #include "core/config.h"
@@ -52,6 +54,8 @@ class AnsiString : public std::wstring
 {
     public:
 	void set(const char *txt);
+	// Optional source byte offsets for each visible character (including LF).
+	void set(const char *txt, std::vector<size_t> *source_offsets);
 	AnsiString() {}
 	AnsiString(const char *txt) { set(txt); }
 	void ansi(char *out) const;

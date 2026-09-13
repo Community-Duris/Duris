@@ -11,6 +11,7 @@
 #include "persistence/persistence_log.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/output_style.h"
 #include "net/command_latency.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -4114,12 +4115,69 @@ void send_to_char(const char *messg, P_char ch)
 	send_to_char(messg, ch, LOG_PUBLIC);
 }
 
+void send_to_char_f(P_char ch, const OutputContext &context, const char *fmt, ...)
+{
+	char message[MAX_STRING_LENGTH];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(message, sizeof(message) - 1, fmt, args);
+	va_end(args);
+	send_to_char(message, ch, context);
+}
+
+void send_to_char(const char *messg, P_char ch, const OutputContext &context)
+{
+	send_to_char(messg, ch, LOG_PUBLIC, context);
+}
+
 void send_to_char(const char *messg, P_char ch, int log)
 {
+	send_to_char(messg, ch, log, OutputContext{});
+}
+
+void send_to_char(const char *messg, P_char ch, int log, const OutputContext &context)
+{
 	static bool bSwitched = FALSE;
+	static bool bWarningAdded = false;
+	static std::string pager_original;
+	static bool pager_style_fallback = false;
 
 	if (ch && ch->desc && messg)
 	{
+		const char *original_message = messg;
+		std::string rendered;
+		bool paging = executing_ch == ch && IS_SET(ch->specials.act, PLR_PAGING_ON);
+		if (paging && !output_length)
+		{
+			bWarningAdded = false;
+			pager_original.clear();
+			pager_style_fallback = false;
+		}
+		size_t capacity = paging ? MAX_COMMAND_OUTPUT - output_length - 1 :
+					   MAX_STRING_LENGTH - 1;
+		if ((!paging || (!pager_style_fallback && !bWarningAdded)) &&
+		    render_output_message(messg, context, rendered, capacity))
+			messg = rendered.c_str();
+		if (paging && !bWarningAdded &&
+		    (!pager_original.empty() || messg != original_message))
+		{
+			if (pager_original.empty())
+				pager_original.assign(command_output, output_length);
+			size_t original_length = strlen(original_message);
+			if (original_length < MAX_COMMAND_OUTPUT - pager_original.size())
+			{
+				// Earlier decoration must not displace later visible output. If
+				// necessary, fall back for the whole accumulated command before paging.
+				if (strlen(messg) >= MAX_COMMAND_OUTPUT - output_length)
+				{
+					strcpy(command_output, pager_original.c_str());
+					output_length = pager_original.size();
+					messg = original_message;
+					pager_style_fallback = true;
+				}
+				pager_original += original_message;
+			}
+		}
 		if (executing_ch != ch || !IS_SET(ch->specials.act, PLR_PAGING_ON))
 		{
 			if (SWITCHED(ch) && !bSwitched)
@@ -4134,11 +4192,7 @@ void send_to_char(const char *messg, P_char ch, int log)
 		}
 		else
 		{
-			static bool bWarningAdded = false;
 			size_t len = strlen(messg);
-
-			if (!output_length)
-				bWarningAdded = false;
 
 			// once a 'warning' is appended, no more is added to the pager
 			if (!bWarningAdded)
@@ -4162,7 +4216,7 @@ void send_to_char(const char *messg, P_char ch, int log)
 		if ((!IS_TRUSTED(ch) || log != LOG_PUBLIC) && log != LOG_NONE &&
 		    (ch->desc->connected == CON_PLAYING || ch->desc->connected == CON_MAIN_MENU))
 		{
-			write_to_pc_log(ch, messg, log);
+			write_to_pc_log(ch, original_message, log);
 		}
 	}
 }
@@ -4681,6 +4735,12 @@ void escape_act_dollars(char *dst, size_t dst_size, const char *src)
 // Would need snprintf-style length tracking to harden.
 void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)
 {
+	act(str, hide_invisible, ch, obj, vict_obj, type, OutputContext{});
+}
+
+void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type,
+	 const OutputContext &context)
+{
 	P_char to, vict;
 	// The array buf contains our primary string (final to be sent to target).
 	char buf[MAX_STRING_LENGTH], tbuf[MAX_STRING_LENGTH], tbuf2[MAX_STRING_LENGTH];
@@ -4793,6 +4853,9 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 				continue;
 			}
 
+			const bool style_output = context.policy != OutputPolicy::Preserve &&
+						  context.spans.size() <= MAX_STRING_LENGTH;
+			std::vector<OutputStyleSpan> entity_spans;
 			for (strp = str, point = buf;;)
 			{
 				if (*strp == '$')
@@ -5117,6 +5180,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 
 					if (i)
 					{
+						size_t span_begin = point - buf;
 						// Note: This doesn't handle ansi in the middle of the lower-cased words.
 						// Making it so we don't get 'A', 'An', 'The', or 'Some' in the middle of a sentence (removing caps)!
 						// For each word,
@@ -5245,6 +5309,13 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 						{
 							*(point++) = *(i + j);
 						}
+						// Text substitutions ($T/$F) remain eligible body text;
+						// recipient-resolved names/pronouns/items retain their role.
+						if (style_output && *strp != 'T' && *strp != 'F' &&
+						    *strp != '$')
+							entity_spans.push_back(
+								{ span_begin, (size_t)(point - buf),
+								  StyleOrigin::Entity, 0 });
 					}
 					// Move past the character following the $.
 					++strp;
@@ -5289,7 +5360,17 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 			//      mycheck = strcmp(mybuf, buf);
 
 			CAP(buf);
-			send_to_char(buf, to, (flags & ACT_PRIVATE) ? LOG_PRIVATE : LOG_PUBLIC);
+			OutputContext recipient_context = context;
+			// Caller spans for act must address the final recipient message, never
+			// the template. Added entity spans protect each recipient's expansion.
+			if (style_output)
+				entity_spans.insert(entity_spans.end(), context.spans.begin(),
+						    context.spans.end());
+			else
+				recipient_context.policy = OutputPolicy::Preserve;
+			recipient_context.spans = entity_spans;
+			send_to_char(buf, to, (flags & ACT_PRIVATE) ? LOG_PRIVATE : LOG_PUBLIC,
+				     recipient_context);
 		}
 
 		// If there's only one recipient and we've sent the message to them, go ahead and return.

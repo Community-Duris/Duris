@@ -29,6 +29,7 @@
 using namespace std;
 
 struct AccountBankBalances;
+struct OutputContext;
 enum class regen_resource : uint8_t;
 
 /* Legacy special-procedure callbacks expose their tagged payload as char *.
@@ -778,6 +779,7 @@ void write_to_pc_log(P_char, const char *, int);
 void initialize_logs(P_char ch, bool reset_logs);
 void clear_logs(P_char);
 void act(const char *, int, P_char, P_obj, void *, int);
+void act(const char *, int, P_char, P_obj, void *, int, const OutputContext &);
 void close_socket(P_desc);
 void close_sockets(int);
 int is_desc_valid(P_desc);
@@ -788,8 +790,11 @@ void perform_complex(P_char, P_char, P_obj, P_obj, char *, int, int);
 void perform_to_all(const char *, P_char);
 void send_to_all(const char *);
 void send_to_char_f(P_char ch, const char *fmt, ...);
+void send_to_char_f(P_char ch, const OutputContext &context, const char *fmt, ...);
 void send_to_char(const char *, P_char);
 void send_to_char(const char *, P_char, int);
+void send_to_char(const char *, P_char, const OutputContext &);
+void send_to_char(const char *, P_char, int, const OutputContext &);
 bool send_to_pid(const char *, int);
 void send_to_except(const char *, P_char);
 void send_to_outdoor(const char *);

@@ -1917,7 +1917,9 @@ void show_string(struct descriptor_data *d, const char *input)
 	 */
 	if (d->showstr_page + 1 >= d->showstr_count)
 	{
-		send_to_char(d->showstr_vector[d->showstr_page], d->character);
+		// Original messages were logged at accumulation time with their own
+		// privacy policy. Replay only the frozen display bytes.
+		send_to_char(d->showstr_vector[d->showstr_page], d->character, LOG_NONE);
 		free_paging_data(d);
 	}
 	/* Or if we have more to show.... */
@@ -1931,8 +1933,8 @@ void show_string(struct descriptor_data *d, const char *input)
 			page_length = sizeof buffer - 1;
 		memcpy(buffer, page_start, page_length);
 		buffer[page_length] = '\0';
-		send_to_char(buffer, d->character);
-		send_to_char("&N", d->character);
+		send_to_char(buffer, d->character, LOG_NONE);
+		send_to_char("&N", d->character, LOG_NONE);
 		d->showstr_page++;
 	}
 }

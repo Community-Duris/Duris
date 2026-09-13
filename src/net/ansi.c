@@ -128,7 +128,15 @@ static void put_term(char *&out, int attr, int lastbit)
 
 void AnsiString::set(const char *txt)
 {
+	set(txt, nullptr);
+}
+
+void AnsiString::set(const char *txt, std::vector<size_t> *source_offsets)
+{
 	clear();
+	if (source_offsets)
+		source_offsets->clear();
+	const char *source = txt;
 
 	int attr = 0, a, b;
 
@@ -139,11 +147,17 @@ void AnsiString::set(const char *txt)
 		else if (txt[0] == '\n')
 		{
 			attr = 0;
+			if (source_offsets)
+				source_offsets->push_back(txt - source);
 			push_back('\n');
 			txt++;
 		}
 		else if (txt[0] != '&')
+		{
+			if (source_offsets)
+				source_offsets->push_back(txt - source);
 			push_back(get_utf8(txt) | attr);
+		}
 		else
 			switch (txt[1])
 			{
@@ -175,6 +189,8 @@ void AnsiString::set(const char *txt)
 				break;
 			default:
 bad_ansi:
+				if (source_offsets)
+					source_offsets->push_back(txt - source);
 				push_back('&' | attr);
 				txt++;
 			}
