@@ -429,9 +429,9 @@ dawn-tear dawn tear earring~
 &+Ygiving off a&+R faint glow.
 ~
 A
-57 -1
+34 2
 A
-58 -1
+36 2
 #59030
 silver charm shape maple leaf _id_~
 &+ca silver &+Ccharm&+c in the shape of a &+cm&+Ca&+cp&+Cl&+ce &+Cl&+ce&+Ca&+cf&N~
@@ -1388,9 +1388,9 @@ clockwork music player~
 &+cinscription on the rear of the device reads 'Fritz Von Weerg'
 ~
 A
-57 -1
+38 2
 A
-58 -1
+32 2
 T
 6 0 1 60
 #59094
@@ -2164,7 +2164,7 @@ prefect's prefects vestments knights raven~
 &+Wfaith for the spiritual leaders of the Knights of the Raven.
 ~
 A
-57 -1
+34 2
 A
 35 6
 #59143
@@ -2622,7 +2622,7 @@ band spell enhancement~
 &+Cface and looks to be made of one solid piece. The ring pulses with a magical glow.
 ~
 A
-57 -1
+33 2
 A
 37 5
 #59173
@@ -2897,7 +2897,7 @@ _victim_msg~
 A
 31 40
 A
-58 -5
+32 8
 #59197
 strahd bat proc proc1~
 &+LStrahd (bat form) proc1&N~
@@ -3403,7 +3403,7 @@ _char_msg~
 &NYour $q &+Lf&+Yl&+Yi&+Lc&+Yk&+Le&+Yr&+Ls with &+Cmagical &+Wlight&+L..
 ~
 A
-57 -1
+34 2
 A
 35 5
 #59225
@@ -3487,7 +3487,7 @@ medallion thought~
 A
 33 5
 A
-57 -1
+37 2
 T
 6 9 1 60
 #59232
@@ -4705,7 +4705,7 @@ crimson sigil dread guard~
 A
 55 10
 A
-58 -1
+36 2
 #59292
 corpse~
 &+Lthe corpse of an &+yadventurer&N~
@@ -4740,7 +4740,7 @@ crystal talisman eye aeternum~
 A
 55 10
 A
-57 -1
+33 2
 #59294
 priestly stole dark alliance~
 &+Wthe priestly stole &+Lof the &+W/> &+LDark &+mAlliance &+W<\&n~
@@ -4799,7 +4799,7 @@ lapel pin whispering blade~
 A
 55 10
 A
-58 -1
+32 2
 #59296
 rod immovability~
 &+Lthe &+yrod &+Lof &-w&+limmovability&N~
@@ -4984,9 +4984,9 @@ vaniquisher's motley coat~
 &+Ystitched so that no single faith or order claims the garment.
 ~
 A
-57 -1
+38 2
 A
-58 -1
+36 2
 #59303
 oathbow oath bow~
 &+Ythe &+WOath&+Ybow&N~
@@ -5254,9 +5254,7 @@ _victim_msg~
 &+LYou feel weakened as the overlapping chorus of ghostly screams subsides.
 ~
 A
-58 -1
-A
-32 6
+32 8
 #59314
 holy crozier staff hollow sun~
 &+Wthe crozier of &+Lthe hollow sun&N~
@@ -5292,9 +5290,9 @@ _victim_msg~
 &N$n's $q &+Lsw&+bel&+Lls with &+bda&+Lrkne&+bss&+L as all &+Ylight &+Wsources &+Lseep into its void.
 ~
 A
-57 -1
+34 2
 A
-58 -1
+32 2
 #59315
 vial blood first vampire~
 &+La small &+cvial&+L of &+rbl&+Ro&+ro&+Rd &+rof the &+RFi&+rr&+Rst V&+ra&+Rm&+rp&+Ri&+rr&+Re&N~
@@ -5366,9 +5364,9 @@ _victim_msg~
 As $n swings $N, &+Lnearby shadows bend, engulfing you.
 ~
 A
-57 -2
+34 3
 A
-58 -2
+32 4
 #59317
 tarnished silver phylactery exethanter~
 &+Lthe &+ct&+La&+cr&+Ln&+ci&+Ls&+ch&+Le&+cd&+C silver &+Gph&+Cyla&+Bcte&+mry &+Lof &-m&+lExethanter&N~

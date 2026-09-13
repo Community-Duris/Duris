@@ -1910,8 +1910,9 @@ void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*da
 	/* okay, lets give the totem stats, based on the level of the lil baby goblin */
 	if (GET_LEVEL(ch) >= 56)
 	{
-		totem->affected[2].location = APPLY_SPELL_PULSE;
-		totem->affected[2].modifier = -1;
+		// Wisdom replaced a spell pulse bonus when gear stopped granting pulse.
+		totem->affected[2].location = APPLY_WIS;
+		totem->affected[2].modifier = 3;
 	}
 	if (GET_LEVEL(ch) >= 51)
 	{

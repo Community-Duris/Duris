@@ -1367,7 +1367,7 @@ suit wickedly-barbed wickedly barbed devil hide~
    &+mThis suit of hide is covered in throbbing barbs, jutting out like little razors.
 ~
 A
-58 -2
+36 4
 A
 32 10
 #58385
@@ -1683,7 +1683,7 @@ firey-eyed skull buckled black leather belt~
 &+Llongevity.  A powerful magic &+Mglow &+Lradiates from this &+revil &+Lbelt&+L.
 ~
 A
-58 -1
+36 2
 #58402
 bloated bebilith stomach sack~
 &+La &+mbl&+Moat&+med &+Lb&+re&+Lb&+ri&+Ll&+ri&+Lt&+rh &+Ls&+Bt&+Lom&+Ba&+Lch sack&N~
@@ -1751,7 +1751,7 @@ _room_msg~
 &N$N cries out in pain as an &+Lacidic &+Gs&+Lp&+Gi&+Lk&+Ge &Nbreaks off in the &+rwound&N, &+Rb&N&+ru&+Rr&N&+rn&+Ri&N&+rn&+Rg &Nand &+Ys&Ni&+Yz&nz&+Yl&Ni&+Yn&Ng.
 ~
 A
-58 -1
+32 2
 A
 31 10
 #58406
@@ -2030,9 +2030,7 @@ tome strahd~
 0 0 1000 0 0 0 0 0
 0 149349 100
 A
-33 3
-A
-57 -1
+33 5
 #58425
 elixir moonstalker potion~
 &+Lan &Ne&+Wl&Ni&+Wx&Ni&+Wr &+Lof the &Nmoon&+Lstalker&N~
@@ -2148,7 +2146,7 @@ wisp total utter blackness~
 &+Lanyone's wrist like a loving pet of pure dark hatred.
 ~
 A
-57 -1
+33 2
 #58432
 vial boiling blood~
 &+ra vial of &+Rboiling &+rblood&N~
