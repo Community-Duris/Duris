@@ -43,5 +43,5 @@ end = source.index("display_room_auras(ch, room_no);", start)
 room_prose = source[start:end]
 assert room_prose.count("OutputChannel::RoomDescription") == 1
 assert "send_to_char(world[room_no].description,ch,profile.context)" in re.sub(r"\s+", "", room_prose)
-assert "send_to_char(world[room_no].name, ch)" in source
+assert "send_authored_output(world[room_no].name,ch,recipient_output_context(OutputChannel::RoomTitle))" in re.sub(r"\s+", "", source)
 assert source.count("OutputChannel::RoomDescription") == 1
