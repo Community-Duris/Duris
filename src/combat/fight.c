@@ -1481,6 +1481,12 @@ P_obj corpse_live_item(uint64_t uid)
 	return NULL;
 }
 
+static bool death_wallet_pending(P_char ch)
+{
+	return ch && IS_PC(ch) &&
+	       (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || GET_PLATINUM(ch));
+}
+
 // A refused corpse handoff resubmits into the same refusal forever. The owner is
 // recorded here so the death finalizes through the durable disposition instead.
 bool corpse_transfer_disputed(P_char character)
@@ -1666,10 +1672,10 @@ P_obj make_corpse(P_char ch, int loss)
 	 * things.)
 	 */
 
-	// A wallet that cannot even be submitted for conversion still owes its coins.
-	// Record the dispute so the death finalizes through the durable disposition.
-	if (!IS_TRUSTED(ch) && !money_to_inventory(ch))
-		note_corpse_transfer_dispute(ch);
+	// An admission fence leaves the authoritative wallet intact. The death retry
+	// converts it after that fence drains, then resumes normal corpse custody.
+	if (!IS_TRUSTED(ch))
+		(void)money_to_inventory(ch);
 
 	corpse->value[CORPSE_LEVEL] = GET_LEVEL(ch); /* for animate dead */
 
@@ -2760,7 +2766,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	death_custody_wait_reset(ch);
 
 	P_obj corpse = context.corpse_uid ? corpse_live_item(context.corpse_uid) : NULL;
-	if (corpse_transfer_disputed(ch))
+	if ((!IS_TRUSTED(ch) || corpse_transfer_disputed(ch)) && death_wallet_pending(ch))
 	{
 		// A deferred starter-kit admission can transiently fence the player before
 		// money_to_inventory() gets a chance to submit. Give the normal currency
@@ -2768,22 +2774,20 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		// wallet revision/ledger and publishes the zero wallet before the death
 		// snapshot captures any money object, so fallback evidence cannot duplicate
 		// an uncleared authoritative wallet.
-		if (GET_COPPER(ch) || GET_SILVER(ch) || GET_GOLD(ch) || GET_PLATINUM(ch))
-		{
-			const bool submitted = money_to_inventory(ch);
-			const persistence_severity wallet_severity =
-				submitted ? persistence_severity::info :
-					    persistence_severity::alert;
-			persistence_report(wallet_severity, AVATAR, "player_save", "death", "none",
-					   "none", "death_recovery_restarting_wallet",
-					   "submitted=%d delay=%d", submitted ? 1 : 0,
-					   submitted ? DEATH_EXTRACT_RETRY_INITIAL :
-						       previous_delay * 2);
-			schedule_death_extract_retry(ch, context.corpse_uid,
-						     submitted ? DEATH_EXTRACT_RETRY_INITIAL :
-								 previous_delay * 2);
-			return;
-		}
+		const bool submitted = money_to_inventory(ch);
+		const persistence_severity wallet_severity =
+			submitted ? persistence_severity::info : persistence_severity::alert;
+		persistence_report(wallet_severity, AVATAR, "player_save", "death", "none", "none",
+				   "death_recovery_restarting_wallet", "submitted=%d delay=%d",
+				   submitted ? 1 : 0,
+				   submitted ? DEATH_EXTRACT_RETRY_INITIAL : previous_delay * 2);
+		schedule_death_extract_retry(ch, context.corpse_uid,
+					     submitted ? DEATH_EXTRACT_RETRY_INITIAL :
+							 previous_delay * 2);
+		return;
+	}
+	if (corpse_transfer_disputed(ch))
+	{
 		// The refused assets only exist on the live character and in the ledger.
 		// Never fall through to the ordinary save, which would record an empty
 		// character while a missing corpse still owed them their payload.
@@ -3404,7 +3408,8 @@ void die(P_char ch, P_char killer)
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
 		if (!CHAR_IN_ARENA(ch) &&
 		    (item_movement_transaction_player_busy(ch) ||
-		     currency_transaction_player_busy(ch) || corpse_transfer_disputed(ch)))
+		     currency_transaction_player_busy(ch) || corpse_transfer_disputed(ch) ||
+		     (!IS_TRUSTED(ch) && death_wallet_pending(ch))))
 		{
 			persistence_report(corpse_transfer_disputed(ch) ?
 						   persistence_severity::alert :

@@ -314,93 +314,6 @@ maintenance_result execute_epic_modifiers(MYSQL *connection, const maintenance_r
 	return result;
 }
 
-maintenance_result execute_zone_trophy(MYSQL *connection, const maintenance_request &request)
-{
-	if (request.value_count != 4 || request.values[0] <= 0 || request.values[2] < 0 ||
-	    request.values[3] < 0)
-		return failure(request, maintenance_outcome::permanent_failure, EINVAL);
-	if (!request.values[1])
-		return failure(request, maintenance_outcome::complete, 0);
-	if (!begin_transaction(connection))
-		return sql_failure(connection, request);
-	if (!request.cursor)
-	{
-		int64_t last_run = 0;
-		if (!timer_value(connection, "zone_trophy_reduction", &last_run))
-			return sql_failure(connection, request);
-		if (request.values[0] <= last_run + request.values[2])
-		{
-			if (!execute_sql(connection, "COMMIT"))
-				return sql_failure(connection, request);
-			return failure(request, maintenance_outcome::complete, 0);
-		}
-	}
-	const uint64_t cursor_pid = request.cursor >> 32;
-	const uint32_t cursor_zone = static_cast<uint32_t>(request.cursor);
-	const std::string selection =
-		"SELECT pid,zone_number FROM zone_trophy WHERE (pid,zone_number)>(" +
-		std::to_string(cursor_pid) + ',' + std::to_string(cursor_zone) +
-		") ORDER BY pid,zone_number LIMIT " + limit_sql(request);
-	if (!execute_sql(connection, selection))
-		return sql_failure(connection, request);
-	MYSQL_RES *rows = mysql_store_result(connection);
-	if (!rows)
-		return sql_failure(connection, request);
-	std::string predicates;
-	uint32_t count = 0;
-	uint64_t next_cursor = request.cursor;
-	MYSQL_ROW row = nullptr;
-	while ((row = mysql_fetch_row(rows)))
-	{
-		int64_t pid = 0;
-		int64_t zone = 0;
-		if (!parse_positive(row[0], &pid) || !parse_positive(row[1], &zone) ||
-		    pid > UINT32_MAX || zone > UINT32_MAX || count >= request.row_budget)
-		{
-			mysql_free_result(rows);
-			return sql_failure(connection, request);
-		}
-		if (count)
-			predicates += " OR ";
-		predicates += "(pid=" + std::to_string(pid) +
-			      " AND zone_number=" + std::to_string(zone) + ')';
-		next_cursor = (static_cast<uint64_t>(pid) << 32) | static_cast<uint32_t>(zone);
-		++count;
-	}
-	mysql_free_result(rows);
-	bool applied = false;
-	if (!marker_matches_and_lock(connection, "maintenance_trophy", request.work_id,
-				     request.cursor, &applied))
-		return sql_failure(connection, request);
-	if (!before_deadline(request))
-		return sql_failure(connection, request);
-	if (count && !applied)
-	{
-		const double multiplier = request.values[3] / 1000000.0;
-		if (!execute_sql(connection, "UPDATE zone_trophy SET exp=FLOOR(exp*" +
-						     std::to_string(multiplier) + ") WHERE " +
-						     predicates) ||
-		    !execute_sql(connection,
-				 "DELETE FROM zone_trophy WHERE exp<=0 AND (" + predicates + ')'))
-			return sql_failure(connection, request);
-	}
-	if (count < request.row_budget &&
-	    !execute_sql(connection,
-			 "REPLACE INTO timers(name,date) VALUES('zone_trophy_reduction'," +
-				 std::to_string(request.values[0]) + ')'))
-		return sql_failure(connection, request);
-	if (!before_deadline(request) || !execute_sql(connection, "COMMIT"))
-		return sql_failure(connection, request);
-	maintenance_result result = failure(request,
-					    count == request.row_budget ?
-						    maintenance_outcome::more :
-						    maintenance_outcome::complete,
-					    0);
-	result.next_cursor = next_cursor;
-	result.rows = count;
-	return result;
-}
-
 maintenance_result execute_level_cap(MYSQL *connection, const maintenance_request &request)
 {
 	if (request.value_count != 1 || request.values[0] <= 0)
@@ -1055,6 +968,10 @@ maintenance_result maintenance_repository_execute(const maintenance_request &req
 	    request.time_budget_usec > MAINTENANCE_TIME_BUDGET_USEC_MAX ||
 	    !before_deadline(request))
 		return failure(request, maintenance_outcome::permanent_failure, EINVAL);
+	// Trophy totals are owned by player checkpoints. Retain the retired job ID
+	// as a no-op, without acquiring a database connection on either backend.
+	if (request.job_id == maintenance_job_id::zone_trophy)
+		return failure(request, maintenance_outcome::complete, 0);
 	if (request.job_id == maintenance_job_id::web_status)
 		return execute_web_status(request);
 #ifdef __NO_MYSQL__
@@ -1083,8 +1000,6 @@ maintenance_result maintenance_repository_execute(const maintenance_request &req
 		return execute_epic_balance(connection, request);
 	case maintenance_job_id::level_cap:
 		return execute_level_cap(connection, request);
-	case maintenance_job_id::zone_trophy:
-		return execute_zone_trophy(connection, request);
 	case maintenance_job_id::epic_zone_modifiers:
 		return execute_epic_modifiers(connection, request);
 	case maintenance_job_id::boon_scan:

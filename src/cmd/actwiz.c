@@ -5836,7 +5836,7 @@ static void do_start_impl(P_char ch, int nomsg, bool grant_newbie_kit)
 		}
 	}
 
-	ZONE_TROPHY(ch) = NULL;
+	clear_zone_trophy(ch);
 
 	ch->only.pc->prestige = 0;
 	if (nomsg == CMD_MULTICLASS)

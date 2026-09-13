@@ -48,6 +48,8 @@ bool valid_snapshot(const player_load_result &result)
 	std::unordered_set<unsigned int> integers;
 	std::unordered_set<unsigned int> strings;
 	std::unordered_set<int32_t> trophy_zones;
+	if (result.snapshot.trophies.size() > ZONE_TROPHY_MAX_ZONES)
+		return false;
 	for (const player_snapshot_integer &entry : result.snapshot.status_integers)
 		if (entry.field < player_status_field::class_primary ||
 		    entry.field > player_status_field::last_ip ||

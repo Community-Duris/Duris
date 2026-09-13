@@ -184,12 +184,9 @@ bool maintenance_prepare_request(maintenance_request &request, void *)
 		request.values[4] = scaled(get_property("epic.freqMod.min", 0.40));
 		return request.values[1] >= 0 && request.values[3] >= request.values[4];
 	case maintenance_job_id::zone_trophy:
-		request.value_count = 4;
-		request.values[0] = time(nullptr);
-		request.values[1] = get_property("exp.zoneTrophy.enabled", 0) ? 1 : 0;
-		request.values[2] = get_property("exp.zoneTrophy.update.secs", 3600);
-		request.values[3] = scaled(get_property("exp.zoneTrophy.update.multiplier", 1.0));
-		return request.values[2] >= 0 && request.values[3] >= 0;
+		// Retired database-only decay: no property can enable a second writer.
+		request.value_count = 0;
+		return true;
 	case maintenance_job_id::level_cap:
 		request.value_count = 1;
 		request.values[0] = time(nullptr);

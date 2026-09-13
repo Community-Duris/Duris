@@ -5,6 +5,7 @@
 #include "sql/item_extra_descr_codec.h"
 #include "world/vnum.obj.h"
 #include "core/structs.h"
+#include "item/trophy_state.h"
 
 #include <mysql/mysql.h>
 
@@ -456,6 +457,29 @@ bool load_components(MYSQL *connection, const player_load_request &request,
 				       { static_cast<int32_t>(signed_value(row[0])),
 					 static_cast<int32_t>(signed_value(row[1])),
 					 signed_value(row[2]), signed_value(row[3]) });
+			       return true;
+		       }) ||
+	    !load_rows(connection,
+		       "SELECT zone_number,exp FROM zone_trophy WHERE pid=" + pid +
+			       " ORDER BY zone_number LIMIT " +
+			       std::to_string(ZONE_TROPHY_MAX_ZONES + 1),
+		       result,
+		       [&](MYSQL_ROW row)
+		       {
+			       const int64_t zone = signed_value(row[0]);
+			       const int64_t experience = signed_value(row[1]);
+			       if (zone <= 0 || zone > std::numeric_limits<int32_t>::max() ||
+				   experience < 0 ||
+				   experience > std::numeric_limits<int32_t>::max())
+				       return false;
+			       if (result->snapshot.trophies.size() >= ZONE_TROPHY_MAX_ZONES)
+			       {
+				       result->outcome = player_load_outcome::limit_exceeded;
+				       return false;
+			       }
+			       result->snapshot.trophies.push_back(
+				       { static_cast<int32_t>(zone),
+					 static_cast<int32_t>(experience) });
 			       return true;
 		       }))
 		return false;

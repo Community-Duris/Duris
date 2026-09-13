@@ -168,8 +168,6 @@ void sql_clear_results_on(MYSQL *conn);
 #include <vector>
 using namespace std;
 
-void zone_trophy_update();
-
 #define PLAYERLOG "player"
 #define WIZLOG "wiz"
 #define QUESTLOG "quest"

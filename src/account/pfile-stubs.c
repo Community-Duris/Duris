@@ -162,7 +162,6 @@ bool Guild::save_without_member(P_char)
 	return false;
 }
 void Guild::forget_deleted_member(P_char) {}
-void load_zone_trophy(P_char) {}
 int ne_event_time(P_nevent)
 {
 	return 0;

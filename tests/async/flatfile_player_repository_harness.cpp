@@ -619,7 +619,10 @@ int main(int argc, char **argv)
 			applied.durable_revision == 1,
 		"duplicate revision was not idempotent");
 
-	applied = flatfile_player_snapshot_apply(root.string(), make_status(2, 51, 1202), &error);
+	player_snapshot trophy_checkpoint = make_status(2, 51, 1202);
+	trophy_checkpoint.components |= PLAYER_COMPONENT_TROPHIES;
+	trophy_checkpoint.trophies = { { 12, 645 }, { 34, 678 } };
+	applied = flatfile_player_snapshot_apply(root.string(), trophy_checkpoint, &error);
 	require(applied.outcome == player_save_apply_outcome::applied &&
 			applied.durable_revision == 2,
 		"partial status merge failed: " + error);
@@ -627,7 +630,9 @@ int main(int argc, char **argv)
 				flatfile_player_load_result::ok &&
 			loaded.revision == 2 && loaded.room_vnum == 1202 &&
 			loaded.status_integers[0].signed_value == 51 && loaded.items.size() == 2 &&
-			loaded.languages[0].value == 90,
+			loaded.languages[0].value == 90 && loaded.trophies.size() == 2 &&
+			loaded.trophies[0].experience == 645 &&
+			loaded.trophies[1].experience == 678,
 		"partial status merge discarded an untouched component");
 	applied = flatfile_player_snapshot_apply(root.string(), full, &error);
 	require(applied.outcome == player_save_apply_outcome::stale_revision &&
@@ -644,6 +649,16 @@ int main(int argc, char **argv)
 	require(applied.outcome == player_save_apply_outcome::terminal_failure &&
 			applied.error_code == EINVAL,
 		"one-sided item component replacement was accepted");
+
+	trophy_checkpoint.revision = 3;
+	trophy_checkpoint.trophies.clear();
+	applied = flatfile_player_snapshot_apply(root.string(), trophy_checkpoint, &error);
+	require(applied.outcome == player_save_apply_outcome::applied,
+		"empty trophy checkpoint failed");
+	require(flatfile_player_snapshot_load(root.string(), 42, &loaded, &error) ==
+				flatfile_player_load_result::ok &&
+			loaded.trophies.empty(),
+		"empty trophy checkpoint did not remove previous totals");
 
 	for (player_revision_t revision : { 4U, 5U })
 	{
