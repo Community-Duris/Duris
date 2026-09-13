@@ -284,10 +284,44 @@ int main(int argc, char **argv)
 	object obj{ &ch, 0, "ORIGINAL SWORD STATS" };
 	if (mode == "replay")
 	{
+		hold_writes = true;
 		locker_identify_replay(&ch);
+		until([&] { return requests.at(ch.pid)->stage == phase::delivering; });
+		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		output.clear();
+		// A reread arriving during the delivered-marker write is still honored.
+		locker_identify_receipt(&ch);
+		hold_writes = false;
 		drained();
 		assert(submissions == 0);
 		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		output.clear();
+		// Coalesce an explicit reread with automatic loading, even at capacity.
+		locker_identify_replay(&ch);
+		character another = ch;
+		for (unsigned n = 0; n < 15; ++n)
+		{
+			another.pid = 100 + n;
+			locker_identify_replay(&another);
+		}
+		assert(requests.size() == 16);
+		locker_identify_receipt(&ch);
+		drained();
+		assert(submissions == 0);
+		assert(output.find("ORIGINAL SWORD STATS") != std::string::npos);
+		assert(output.find("busy") == std::string::npos);
+		output.clear();
+		for (unsigned n = 0; n < 16; ++n)
+		{
+			another.pid = 100 + n;
+			locker_identify_replay(&another);
+		}
+		locker_identify_replay(&ch);
+		assert(output.empty());
+		locker_identify_receipt(&ch);
+		assert(output.find("busy") != std::string::npos);
+		drained();
+		assert(submissions == 0);
 	}
 	else if (mode == "delivered")
 	{
@@ -417,6 +451,12 @@ int main(int argc, char **argv)
 		drained();
 		assert(submissions == 5);
 		assert(output.empty());
+		locker_identify_replay(&ch);
+		locker_identify_receipt(&ch);
+		drained();
+		assert(submissions == 5);
+		assert(output.find("The identification payment failed") != std::string::npos);
+		output.clear();
 		ch.fighting = true;
 		locker_identify(&ch, &obj, 1);
 		ch.fighting = false;

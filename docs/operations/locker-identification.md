@@ -14,6 +14,12 @@ The latest receipt is retained after delivery, so `stat receipt` can repeat its 
 
 ## Storage and operational bounds
 
+An explicit `stat receipt` joins a pending recovery for that player instead of
+being dropped. A reread requested while the delivered marker is being written is
+shown after that worker finishes. These requests reuse the existing admission
+slot and never submit another payment for a finished receipt. When all slots are
+occupied by other players, `stat receipt` reports that the clerk is busy.
+
 Receipts live under `CRITICAL_COMMAND_JOURNAL_DIR/locker-identification/<pid>.receipt` on both backends. The directory is private (0700), files are private (0600), and an exclusive service lock prevents two processes from operating the same receipt store. Files contain a bounded binary command, at most 64 KiB of captured text, and a SHA-256 checksum. Reads reject wrong player IDs, corrupt/truncated data, oversized data, public permissions, symlinks and nonregular files. Initialization failure disables the paid service.
 
 At most 16 requests, each with at most one worker operation, are active at once. Busy callers can retry; automatic login replay has the same capacity limit. Failed writes retry at one-second intervals while the owner is online. Disk latency does not block the game pulse; orderly shutdown joins outstanding I/O and therefore can wait for storage. A process crash leaves the last durable prepared or paid state recoverable.

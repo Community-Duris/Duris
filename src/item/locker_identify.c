@@ -128,9 +128,15 @@ void enqueue(P_char ch, std::optional<locker_receipt> candidate, bool requested 
 	if (!ch || IS_NPC(ch) || GET_PID(ch) <= 0)
 		return;
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(ch));
-	if (!enabled || requests.size() >= maximum_pending || requests.count(pid))
+	const auto existing = requests.find(pid);
+	if (enabled && requested && existing != requests.end())
 	{
-		if (candidate)
+		existing->second->requested = true;
+		return;
+	}
+	if (!enabled || requests.size() >= maximum_pending || existing != requests.end())
+	{
+		if (candidate || requested)
 			send_to_char("The locker clerk is busy. Please try again shortly.\r\n", ch);
 		return;
 	}
@@ -273,8 +279,12 @@ void locker_identify_pulse()
 			else if (entry.stage == phase::delivering)
 			{
 				// If this write failed, the next recovery shows the text again.
-				it = requests.erase(it);
-				continue;
+				if (!entry.requested)
+				{
+					it = requests.erase(it);
+					continue;
+				}
+				entry.stage = phase::showing;
 			}
 			else if (result.outcome == flatfile_read_result::ok)
 			{
@@ -295,6 +305,7 @@ void locker_identify_pulse()
 		{
 			if (owner_matches(ch, entry.value))
 			{
+				entry.requested = false; // this display fulfills the pending reread
 				if (entry.value.state != locker_receipt_state::failed)
 				{
 					send_to_char(
