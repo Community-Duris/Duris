@@ -105,6 +105,8 @@ jobs:
         run: |
           python3 tests/async/test_flatfile_auction_repository.py
           python3 tests/async/test_flatfile_offline_message_repository.py
+      - name: Verify auction ownership publication
+        run: python3 tests/async/test_auction_ownership_publication.py
       - name: Verify flat-file recipe authority
         run: |
           python3 tests/async/test_flatfile_recipe_repository.py
