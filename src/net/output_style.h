@@ -88,7 +88,23 @@ struct OutputContext
 	// Pure rendering accepts an explicit frame. send_to_char supplies the receiving
 	// connection's channel sequence; replay never calls the renderer with recipes.
 	uint64_t sequence = 0;
+	// Explicit adoption only. The delivery boundary resolves this recipient's
+	// profile; pure rendering never reads player state.
+	bool resolve_recipient_preferences = false;
+	// Optional original template for logging and serializer/pager fallback. Borrowed
+	// only until send_to_char returns; queues always own their frozen byte copies.
+	const char *original_message = nullptr;
 };
+
+inline OutputContext recipient_output_context(OutputChannel channel,
+					      OutputPolicy policy = OutputPolicy::Static)
+{
+	OutputContext context;
+	context.channel = channel;
+	context.policy = policy;
+	context.resolve_recipient_preferences = true;
+	return context;
+}
 
 // Pure transformation. Existing attributes and protected words are never erased.
 // Invalid bounds/styles leave the entire input unchanged. No per-word match cap.

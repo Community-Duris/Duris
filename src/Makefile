@@ -355,7 +355,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/world_recovery_npc_items.o \
 				 world/world_recovery_pipeline.o \
 				 player/player_snapshot_repository.o \
-				 player/output_preferences.o player/player_snapshot_capture.o \
+				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \
