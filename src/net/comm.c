@@ -13,6 +13,7 @@
 #include "net/comm.h"
 #include "net/output_style.h"
 #include "net/output_profiles.h"
+#include "player/output_preferences.h"
 #include "net/command_latency.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -4187,7 +4188,8 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 
 	if (ch && ch->desc && messg)
 	{
-		const char *original_message = messg;
+		const char *original_message = context.original_message ? context.original_message :
+									  messg;
 		std::string rendered;
 		bool paging = executing_ch == ch && IS_SET(ch->specials.act, PLR_PAGING_ON);
 		if (paging && !output_length)
@@ -4199,6 +4201,12 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 		size_t capacity = paging ? MAX_COMMAND_OUTPUT - output_length - 1 :
 					   MAX_STRING_LENGTH - 1;
 		OutputContext recipient_context = context;
+		if (context.resolve_recipient_preferences)
+		{
+			recipient_context =
+				player_output_profile(ch, context.channel, context.policy).context;
+			recipient_context.spans = context.spans;
+		}
 		size_t channel = (size_t)context.channel;
 		bool sequenced = channel > 0 && channel < (size_t)OutputChannel::Count;
 		if (sequenced)
@@ -4212,6 +4220,8 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 			if (sequenced && animated_match)
 				++ch->desc->output_sequences[channel];
 		}
+		else if (context.original_message)
+			messg = original_message;
 		if (paging && !bWarningAdded &&
 		    (!pager_original.empty() || messg != original_message))
 		{
@@ -4909,8 +4919,20 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 				continue;
 			}
 
-			const bool style_output = context.policy != OutputPolicy::Preserve &&
-						  context.spans.size() <= MAX_STRING_LENGTH;
+			OutputContext selected_context = context;
+			int sender_attr = 0, entity_attr = 0;
+			if (context.resolve_recipient_preferences)
+			{
+				auto profile =
+					player_output_profile(to, context.channel, context.policy);
+				selected_context = profile.context;
+				selected_context.spans = context.spans;
+				sender_attr = profile.sender_attr;
+				entity_attr = profile.entity_attr;
+			}
+			const bool style_output =
+				selected_context.policy != OutputPolicy::Preserve &&
+				selected_context.spans.size() <= MAX_STRING_LENGTH;
 			std::vector<OutputStyleSpan> entity_spans;
 			for (strp = str, point = buf;;)
 			{
@@ -5371,7 +5393,11 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 						    *strp != '$')
 							entity_spans.push_back(
 								{ span_begin, (size_t)(point - buf),
-								  StyleOrigin::Entity, 0 });
+								  *strp == 'n' ?
+									  StyleOrigin::Sender :
+									  StyleOrigin::Entity,
+								  *strp == 'n' ? sender_attr :
+										 entity_attr });
 					}
 					// Move past the character following the $.
 					++strp;
@@ -5416,7 +5442,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 			//      mycheck = strcmp(mybuf, buf);
 
 			CAP(buf);
-			OutputContext recipient_context = context;
+			OutputContext recipient_context = selected_context;
 			// Caller spans for act must address the final recipient message, never
 			// the template. Added entity spans protect each recipient's expansion.
 			if (style_output)

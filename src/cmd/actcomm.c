@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "player/output_message.h"
 #include "cmd/information_cache.h"
 #include "cmd/help_cache.h"
 #include "core/structs.h"
@@ -284,7 +285,9 @@ void do_petition(P_char ch, char *argument, int /*cmd*/)
 				"&+rYou petition '%s'\r\n"
 				"&+RThe petition channel is not for general conversation. Use the idea, typo, or bug commands.&n\r\n",
 				argument);
-			send_to_char(Gbuf1, ch);
+			send_to_char(player_output_template(ch, OutputChannel::ChatPetition, Gbuf1,
+							    Gbuf1 + 3),
+				     ch, recipient_output_context(OutputChannel::ChatPetition));
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
@@ -307,9 +310,17 @@ void do_petition(P_char ch, char *argument, int /*cmd*/)
 			    IS_TRUSTED(i->character))
 			{
 				if (IS_TRUSTED(ch))
-					act(Gbuf1, 0, ch, 0, i->character, TO_VICT | ACT_PRIVATE);
+					act(player_output_template(i->character,
+								   OutputChannel::ChatPetition,
+								   Gbuf1, Gbuf1 + 3),
+					    0, ch, 0, i->character, TO_VICT | ACT_PRIVATE,
+					    recipient_output_context(OutputChannel::ChatPetition));
 				else
-					act(Gbuf2, 0, ch, 0, i->character, TO_VICT | ACT_PRIVATE);
+					act(player_output_template(i->character,
+								   OutputChannel::ChatPetition,
+								   Gbuf2, Gbuf2 + 3),
+					    0, ch, 0, i->character, TO_VICT | ACT_PRIVATE,
+					    recipient_output_context(OutputChannel::ChatPetition));
 
 				/* Send to web client via GMCP */
 				gmcp_comm_channel(i->character, "petition", GET_NAME(ch), argument);
@@ -447,9 +458,11 @@ int say(P_char ch, const char *argument)
 								 escaped_text);
 				}
 				if (mind || IS_TRUSTED(ch))
-					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT);
+					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT,
+					    recipient_output_context(OutputChannel::ChatSay));
 				else
-					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT | ACT_SILENCEABLE);
+					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT | ACT_SILENCEABLE,
+					    recipient_output_context(OutputChannel::ChatSay));
 
 				/* Send to web client via GMCP */
 				gmcp_comm_channel(kala, "say", PERS(ch, kala, FALSE), argument + i);
@@ -468,7 +481,7 @@ int say(P_char ch, const char *argument)
 				snprintf(Gbuf1, MAX_STRING_LENGTH, "You %s %s'%s'\r\n",
 					 IS_THRIKREEN(ch) ? "chitter" : "say",
 					 language_known(ch, ch), argument + i);
-			send_to_char(Gbuf1, ch);
+			send_to_char(Gbuf1, ch, recipient_output_context(OutputChannel::ChatSay));
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
@@ -513,7 +526,6 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 	P_desc i;
 	P_char to_ch;
 	P_Guild from_guild, to_guild;
-	char Gbuf1[MAX_STRING_LENGTH];
 	char guild_name[MAX_INPUT_LENGTH];
 	int guild_number;
 
@@ -604,21 +616,29 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 			{
 				if (IS_NPC(ch) || IS_SET(ch->specials.act3, PLR3_GUILDNAME))
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH,
-						 "&+cYou tell %s &+c'&+C%s&n&+c'\r\n",
-						 from_guild->get_name().c_str(), argument);
-					send_to_char(Gbuf1, ch, LOG_PRIVATE);
+					PlayerOutputMessage(ch, OutputChannel::ChatGuild)
+						.literal("&+cYou tell ")
+						.entity(from_guild->get_name())
+						.literal(" &+c'&+C")
+						.body(argument)
+						.literal("&n&+c'\r\n")
+						.send(LOG_PRIVATE);
 				}
 				else
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH,
-						 "&+cYou tell your &+%cguild&+c '&+C%s&n&+c'\r\n",
+					char accent[16];
+					snprintf(accent, sizeof(accent), "&+%cguild",
 						 IS_TRUSTED(ch) ?
 							 racewar_color[from_guild->get_racewar()]
 								 .color :
-							 'c',
-						 argument);
-					send_to_char(Gbuf1, ch, LOG_PRIVATE);
+							 'c');
+					PlayerOutputMessage(ch, OutputChannel::ChatGuild)
+						.literal("&+cYou tell your ")
+						.entity(accent)
+						.literal("&+c '&+C")
+						.body(argument)
+						.literal("&n&+c'\r\n")
+						.send(LOG_PRIVATE);
 				}
 			}
 			else
@@ -674,22 +694,33 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 			}
 			if (IS_NPC(to_ch) || IS_SET(to_ch->specials.act3, PLR3_GUILDNAME))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "&+c%s&n&+c tells &n%s&+c '&+C%s&n&+c'\r\n",
-					 PERS(ch, to_ch, FALSE), guild_name,
-					 language_CRYPT(ch, to_ch, argument));
+				PlayerOutputMessage(to_ch, OutputChannel::ChatGuild)
+					.literal("&+c")
+					.entity(PERS(ch, to_ch, FALSE), StyleOrigin::Sender)
+					.literal("&n&+c tells &n")
+					.entity(guild_name)
+					.literal("&+c '&+C")
+					.body(language_CRYPT(ch, to_ch, argument))
+					.literal("&n&+c'\r\n")
+					.send(LOG_PRIVATE);
 			}
 			else
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "&+c%s&n&+c tells your &+%cguild&+c '&+C%s&n&+c'\r\n",
-					 PERS(ch, to_ch, FALSE),
+				char accent[16];
+				snprintf(accent, sizeof(accent), "&+%cguild",
 					 IS_TRUSTED(to_ch) ?
 						 racewar_color[from_guild->get_racewar()].color :
-						 'c',
-					 language_CRYPT(ch, to_ch, argument));
+						 'c');
+				PlayerOutputMessage(to_ch, OutputChannel::ChatGuild)
+					.literal("&+c")
+					.entity(PERS(ch, to_ch, FALSE), StyleOrigin::Sender)
+					.literal("&n&+c tells your ")
+					.entity(accent)
+					.literal("&+c '&+C")
+					.body(language_CRYPT(ch, to_ch, argument))
+					.literal("&n&+c'\r\n")
+					.send(LOG_PRIVATE);
 			}
-			send_to_char(Gbuf1, to_ch, LOG_PRIVATE);
 
 			/* Send to web client via GMCP */
 			gmcp_comm_channel(to_ch, "gcc", PERS(ch, to_ch, FALSE), argument);
@@ -954,8 +985,12 @@ void do_shout(P_char ch, char *argument, int /*cmd*/)
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
 				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "&+cYou shout across the world '%s'\r\n", argument);
-				send_to_char(Gbuf1, ch);
+					 "%sYou shout across the world '%s'\r\n",
+					 player_output_template(ch, OutputChannel::ChatShout, "&+c",
+								""),
+					 argument);
+				send_to_char(Gbuf1, ch,
+					     recipient_output_context(OutputChannel::ChatShout));
 			}
 			else
 				send_to_char("Ok.\r\n", ch);
@@ -971,16 +1006,23 @@ void do_shout(P_char ch, char *argument, int /*cmd*/)
 				escape_act_dollars(escaped_text, sizeof(escaped_text),
 						   language_CRYPT(ch, i->character, argument));
 				if (IS_TRUSTED(ch))
-					checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
-							 "&+c$n shouts from the heavens %s'%s'&N",
-							 language_known(ch, i->character),
-							 escaped_text);
+					checked_snprintf(
+						Gbuf1, MAX_STRING_LENGTH,
+						"%s$n shouts from the heavens %s'%s'&N",
+						player_output_template(i->character,
+								       OutputChannel::ChatShout,
+								       "&+c", ""),
+						language_known(ch, i->character), escaped_text);
 				else
-					checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
-							 "&+c$n shouts across the world %s'%s'&N",
-							 language_known(ch, i->character),
-							 escaped_text);
-				act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
+					checked_snprintf(
+						Gbuf1, MAX_STRING_LENGTH,
+						"%s$n shouts across the world %s'%s'&N",
+						player_output_template(i->character,
+								       OutputChannel::ChatShout,
+								       "&+c", ""),
+						language_known(ch, i->character), escaped_text);
+				act(Gbuf1, 0, ch, 0, i->character, TO_VICT,
+				    recipient_output_context(OutputChannel::ChatShout));
 			}
 	}
 	if (ch->desc)
@@ -1010,7 +1052,6 @@ void do_tell(P_char ch, char *argument, int /*cmd*/)
 	P_char vict;
 	P_desc d;
 	char name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH];
 
 	half_chop(argument, name, message);
 
@@ -1116,10 +1157,15 @@ void do_tell(P_char ch, char *argument, int /*cmd*/)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
-				checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
-						 "&+WYou tell %s %s'%s'\r\n", GET_NAME(vict),
-						 language_known(ch, ch), message);
-				send_to_char(Gbuf1, ch, LOG_PRIVATE);
+				PlayerOutputMessage(ch, OutputChannel::ChatTell)
+					.literal("&+WYou tell ")
+					.entity(GET_NAME(vict))
+					.literal(" ")
+					.entity(language_known(ch, ch))
+					.literal("'")
+					.body(message)
+					.literal("'\r\n")
+					.send(LOG_PRIVATE);
 			}
 			else
 			{
@@ -1136,12 +1182,18 @@ void do_tell(P_char ch, char *argument, int /*cmd*/)
 				      message);
 		}
 
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+W%s&+W tells you %s'%s'&N\r\n",
-			 ((CAN_SEE(vict, ch) || racewar(vict, ch)) ?
-				  (IS_PC(ch) ? (ch)->player.name : (ch)->player.short_descr) :
-				  "Someone"),
-			 language_known(ch, vict), language_CRYPT(ch, vict, message));
-		send_to_char(Gbuf1, vict, LOG_PRIVATE);
+		PlayerOutputMessage(vict, OutputChannel::ChatTell)
+			.literal("&+W")
+			.entity((CAN_SEE(vict, ch) || racewar(vict, ch)) ?
+					(IS_PC(ch) ? ch->player.name : ch->player.short_descr) :
+					"Someone",
+				StyleOrigin::Sender)
+			.literal("&+W tells you ")
+			.entity(language_known(ch, vict))
+			.literal("'")
+			.body(language_CRYPT(ch, vict, message))
+			.literal("'&N\r\n")
+			.send(LOG_PRIVATE);
 
 		/* Send to web client via GMCP */
 		gmcp_comm_channel(vict, "tell",
@@ -1237,7 +1289,8 @@ void do_whisper(P_char ch, char *argument, int /*cmd*/)
 			}
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "You whisper '%s' to %s\r\n",
 					 message, dispname);
-			send_to_char(Gbuf1, ch);
+			send_to_char(Gbuf1, ch,
+				     recipient_output_context(OutputChannel::ChatWhisper));
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
@@ -1250,7 +1303,8 @@ void do_whisper(P_char ch, char *argument, int /*cmd*/)
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH,
 					 "A soft voice in your head whispers '%s'", escaped_text);
-			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
+			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT,
+			    recipient_output_context(OutputChannel::ChatWhisper));
 		}
 		else
 		{
@@ -1263,8 +1317,10 @@ void do_whisper(P_char ch, char *argument, int /*cmd*/)
 					   language_CRYPT(ch, vict, message));
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "$n whispers to you, %s'%s'",
 					 language_known(ch, vict), escaped_text);
-			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
-			act("$n whispers something to $N.", FALSE, ch, 0, vict, TO_NOTVICT);
+			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT,
+			    recipient_output_context(OutputChannel::ChatWhisper));
+			act("$n whispers something to $N.", FALSE, ch, 0, vict, TO_NOTVICT,
+			    recipient_output_context(OutputChannel::ChatWhisper));
 			nq_action_check(ch, vict, message);
 		}
 	}
@@ -1325,7 +1381,8 @@ void do_ask(P_char ch, char *argument, int /*cmd*/)
 			*/
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "You ask $N '%s'", escaped_text);
-			act(Gbuf1, FALSE, ch, 0, vict, TO_CHAR);
+			act(Gbuf1, FALSE, ch, 0, vict, TO_CHAR,
+			    recipient_output_context(OutputChannel::ChatAsk));
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
@@ -1338,7 +1395,8 @@ void do_ask(P_char ch, char *argument, int /*cmd*/)
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "A voice in your head asks '%s'",
 					 escaped_text);
-			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
+			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT,
+			    recipient_output_context(OutputChannel::ChatAsk));
 		}
 		else
 		{
@@ -1346,8 +1404,10 @@ void do_ask(P_char ch, char *argument, int /*cmd*/)
 					   language_CRYPT(ch, vict, message));
 			checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "$n asks you %s'%s'",
 					 language_known(ch, vict), escaped_text);
-			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT | ACT_SILENCEABLE);
-			act("$n asks $N a question.", FALSE, ch, 0, vict, TO_NOTVICT);
+			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT | ACT_SILENCEABLE,
+			    recipient_output_context(OutputChannel::ChatAsk));
+			act("$n asks $N a question.", FALSE, ch, 0, vict, TO_NOTVICT,
+			    recipient_output_context(OutputChannel::ChatAsk));
 		}
 
 		quest_ask(ch, vict);
@@ -1992,7 +2052,7 @@ void do_yell(P_char ch, char *argument, int /*cmd*/)
 		if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 		{
 			snprintf(Gbuf4, MAX_STRING_LENGTH, "You shout '%s'\r\n", argument);
-			send_to_char(Gbuf4, ch);
+			send_to_char(Gbuf4, ch, recipient_output_context(OutputChannel::ChatYell));
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
@@ -2029,7 +2089,8 @@ void do_yell(P_char ch, char *argument, int /*cmd*/)
 						   language_CRYPT(ch, i->character, argument));
 				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'",
 						 language_known(ch, i->character), escaped_text);
-				act(Gbuf1, 0, ch, 0, i->character, TO_VICT | ACT_SILENCEABLE);
+				act(Gbuf1, 0, ch, 0, i->character, TO_VICT | ACT_SILENCEABLE,
+				    recipient_output_context(OutputChannel::ChatYell));
 				//}
 				/* zone to zone method */
 			}

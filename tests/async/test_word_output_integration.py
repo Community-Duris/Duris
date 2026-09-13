@@ -25,7 +25,8 @@ for filename, signatures in [
                 "void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)",
                 "void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type,",
                 "void format_to_snoopers(char *from_string, char *to_string)\n{"]),
-    ("modify.c", ["char *next_page(", "void free_paging_data(", "void show_string(", "void page_string_real("])
+    ("modify.c", ["char *next_page(", "void free_paging_data(", "void show_string(", "void page_string_real("]),
+    ("actcomm.c", ["void do_tell(", "void do_reply("])
 ]:
     functions.extend(extract_function(filename, signature) for signature in signatures)
 
@@ -39,6 +40,8 @@ with tempfile.TemporaryDirectory(prefix="word-output-", dir=BUILD) as directory:
         f"-I{ROOT / 'src'}", f"-I{ROOT / 'src/no_mysql'}", f"-I{temp}",
         str(ROOT / "tests/async/word_output_integration_harness.cpp"),
         str(ROOT / "src/net/ansi.c"), str(ROOT / "src/net/unicode.c"),
-        str(ROOT / "src/net/output_style.c"), str(ROOT / "src/core/safe_format.c"), "-o", str(binary)
+        str(ROOT / "src/net/output_style.c"), str(ROOT / "src/core/safe_format.c"),
+        str(ROOT / "src/net/output_profiles.c"), str(ROOT / "src/player/output_preferences.c"),
+        str(ROOT / "src/player/output_message.c"), "-lcjson", "-pthread", "-o", str(binary)
     ], check=True, timeout=120)
     subprocess.run([str(binary)], check=True, timeout=120)
