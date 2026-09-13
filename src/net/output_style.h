@@ -89,6 +89,13 @@ struct OutputStyleRecipe
 // Immutable recipe pointers owned by the same snapshot as the dictionary.
 using WordRecipeDictionary = std::map<std::string, const OutputStyleRecipe *, std::less<>>;
 
+// Owned by the immediate caller. Only adopted chat sends attach this metadata;
+// the delivery boundary borrows it synchronously and queues serialized copies.
+struct OutputChatMessage
+{
+	std::string channel, sender, text;
+};
+
 struct OutputContext
 {
 	OutputChannel channel = OutputChannel::Unspecified;
@@ -110,6 +117,7 @@ struct OutputContext
 	// only until send_to_char returns; queues always own their frozen byte copies.
 	const char *original_message = nullptr;
 	OutputRole role = OutputRole::None;
+	const OutputChatMessage *chat = nullptr;
 };
 
 inline OutputContext recipient_output_context(OutputChannel channel,
