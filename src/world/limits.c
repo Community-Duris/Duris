@@ -1186,7 +1186,6 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		// debug("damage 2 exp gain (%d)", (int)XP);
 		XP *= exp_level_percent_modifier(ch, victim) / 100.;
 		// debug("damage 3 exp gain (%d)", (int)XP);
-		XP = modify_exp_by_zone_trophy(ch, type, XP);
 		// debug("damage 4 exp gain (%d)", (int)XP);
 		XP = gain_exp_modifiers(ch, victim, XP);
 		// debug("damage 5 exp gain (%d)", (int)XP);
@@ -1238,7 +1237,6 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		// debug("healing 4 (%d)", (int)XP);
 		XP *= exp_level_percent_modifier(ch, attacker) / 100.;
 		// debug("healing 5 (%d)", (int)XP);
-		XP = modify_exp_by_zone_trophy(ch, type, XP);
 		// debug("healing 6 (%d)", (int)XP);
 		XP = gain_exp_modifiers(ch, attacker, XP);
 		// debug("healing 7 (%d)", (int)XP);
@@ -1272,7 +1270,6 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		// debug("tanking 2 (%d)", (int)XP);
 		XP *= exp_level_percent_modifier(ch, victim) / 100.;
 		// debug("tanking 3 (%d)", (int)XP);
-		XP = modify_exp_by_zone_trophy(ch, type, XP);
 		// debug("tanking 4 (%d)", (int)XP);
 		XP = gain_exp_modifiers(ch, victim, XP);
 		// debug("tanking 5 (%d)", (int)XP);
@@ -1303,7 +1300,6 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		// debug("melee 3 exp gain (%d)", (int)XP);
 		XP *= exp_level_percent_modifier(ch, victim) / 100.;
 		// debug("melee 4 exp gain (%d)", (int)XP);
-		XP = modify_exp_by_zone_trophy(ch, type, XP);
 		// debug("melee 5 exp gain (%d)", (int)XP);
 		XP = gain_exp_modifiers(ch, victim, XP);
 		// debug("melee 6 exp gain (%d)", (int)XP);
@@ -1391,7 +1387,6 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			// debug("kill 2 exp gain (%d)", (int)XP);
 			XP *= exp_level_percent_modifier(ch, victim) / 100.;
 			// debug("kill 3 exp gain (%d)", (int)XP);
-			XP = modify_exp_by_zone_trophy(ch, type, XP);
 			// debug("kill 4 exp gain (%d)", (int)XP);
 			XP = gain_exp_modifiers(ch, victim, XP);
 			// debug("kill 5 exp gain (%d)", (int)XP);
@@ -1471,7 +1466,10 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			      GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1]))))
 	{
 		GET_EXP(ch) += (int)XP_final;
-		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
+		player_component_mask_t components = PLAYER_COMPONENT_STATUS;
+		if (record_zone_trophy_award(ch, victim, XP_final, type))
+			components |= PLAYER_COMPONENT_TROPHIES;
+		mark_player_dirty_components(GET_PID(ch), components);
 	}
 	display_gain(ch, (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)

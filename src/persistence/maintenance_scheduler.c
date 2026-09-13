@@ -28,7 +28,7 @@ constexpr std::array<maintenance_job_definition, MAINTENANCE_JOB_COUNT> registry
 	{ maintenance_job_id::epic_task_catalog, 14400, 5, 256, 50000, true },
 	{ maintenance_job_id::epic_zone_balance, 480, 2, 64, 25000, true },
 	{ maintenance_job_id::level_cap, 240, 2, 32, 25000, true },
-	{ maintenance_job_id::zone_trophy, 240, 4, 256, 50000, true },
+	{ maintenance_job_id::zone_trophy, 240, 4, 256, 50000, false },
 	{ maintenance_job_id::epic_zone_modifiers, 240, 4, 256, 50000, true },
 	{ maintenance_job_id::boon_scan, 240, 2, 64, 25000, true },
 	{ maintenance_job_id::web_status, 300, 6, 1, 25000, true },

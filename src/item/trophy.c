@@ -1,569 +1,151 @@
-/*
- *  trophy.c
- *  Duris
- *
- *  Created by Torgal on 1/6/08.
- *
- */
-
-#include <cstring>
-#include <vector>
-using namespace std;
-
+/* Experience trophy observation: game-thread state, checkpoint persistence. */
 #include "core/prototypes.h"
 #include "core/structs.h"
-#include "net/comm.h"
 #include "core/utility.h"
 #include "core/utils.h"
-#include "item/objmisc.h"
-#include "sql/sql.h"
-#include "world/timers.h"
 #include "item/trophy.h"
+#include "net/comm.h"
+#include "persistence/persistence_checkpoint.h"
+#include "sql/sql.h"
+
+#include <algorithm>
+#include <climits>
+#include <memory>
+#include <new>
+#include <vector>
 
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
 extern P_room world;
-extern long new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
-extern P_index mob_index;
+extern const int top_of_world;
 
-float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
+bool record_zone_trophy_award(P_char ch, P_char victim, int credited_xp, int type)
 {
-	if (!ch || !IS_PC(ch))
-		return XP;
+	if (!ch || !IS_PC(ch) || !ch->only.pc || credited_xp <= 0 || GET_LEVEL(ch) < 25 ||
+	    GET_LEVEL(ch) > MAXLVLMORTAL || IS_ILLITHID(ch) ||
+	    get_property("exp.zoneTrophy.observe", 0) != 1)
+		return false;
 
-	if (type != EXP_DAMAGE && type != EXP_KILL && type != EXP_QUEST && type != EXP_MELEE &&
-	    type != EXP_HEALING && type != EXP_TANKING)
-		return XP;
+	if (type != EXP_DAMAGE && type != EXP_KILL && type != EXP_MELEE && type != EXP_HEALING &&
+	    type != EXP_TANKING)
+		return false;
 
-	if (IS_ILLITHID(ch))
-		return XP;
+	// Healing's victim is the patient; its opponent identifies PvE versus PvP.
+	P_char opponent = type == EXP_HEALING && victim ? GET_OPPONENT(victim) : victim;
+	if (!opponent || !IS_NPC(opponent) || IS_PC_PET(opponent))
+		return false;
 
-	if (GET_LEVEL(ch) < 25)
-		return XP;
+	if (!world || !zone_table || ch->in_room < 0 || ch->in_room > top_of_world)
+		return false;
+	const int zone_index = world[ch->in_room].zone;
+	if (zone_index < 0 || zone_index > top_of_zone_table)
+		return false;
+	const int zone_number = zone_table[zone_index].number;
+	if (zone_number <= 0)
+		return false;
 
-	int zone_number = zone_table[world[ch->in_room].zone].number;
-
-	int zone_exp = get_zone_exp(ch, zone_number);
-
-	//  debug("%s exp: %d, zone_exp: %d, notch: %d, threshold: %d", GET_NAME(ch), (int)XP, zone_exp, EXP_NOTCH(ch), (3 * EXP_NOTCH(ch)) );
-
-	int reduction_scale = (int)get_property("exp.zoneTrophy.scale.notches", 10);
-	// if more than the threshold, adjust by average zone_exp from group
-	if (zone_exp >= (EXP_NOTCH(ch) * reduction_scale / 5))
+	// Observation covers loaded zones on both backends. Enforcement eligibility
+	// (zones.trophy_zone) is deliberately not consulted or queried here.
+	try
 	{
-		int avg_zone_exp = 0, group_size = 0;
-
-		if (ch->group)
+		if (!ZONE_TROPHY(ch))
 		{
-			for (struct group_list *gl = ch->group; gl; gl = gl->next)
-			{
-				if (!IS_PC(gl->ch) || GET_LEVEL(gl->ch) < 20 ||
-				    ch->in_room != gl->ch->in_room)
-					continue;
-
-				avg_zone_exp += get_zone_exp(gl->ch, zone_number);
-				group_size++;
-			}
-
-			group_size = MAX(group_size, 1); // prevent divide by 0 error
-			avg_zone_exp = (int)avg_zone_exp / group_size;
+			auto entries = std::make_unique<std::vector<zone_trophy_data>>();
+			entries->push_back({ zone_number, credited_xp });
+			ZONE_TROPHY(ch) = entries.release();
+			return true;
 		}
-		else
+		for (zone_trophy_data &entry : *ZONE_TROPHY(ch))
 		{
-			avg_zone_exp = get_zone_exp(ch, zone_number);
+			if (entry.zone_number != zone_number)
+				continue;
+			const int previous = std::max(0, entry.exp);
+			const int next = previous + std::min(credited_xp, INT_MAX - previous);
+			if (entry.exp == next)
+				return false;
+			entry.exp = next;
+			return true;
 		}
-
-		int trophy_notches = (int)(avg_zone_exp / EXP_NOTCH(ch));
-
-		//    debug("XP: %d, avg_zone_exp: %d, reduction scale: %d, trophy_notches: %d", (int)XP, avg_zone_exp, reduction_scale, trophy_notches);
-
-		if (trophy_notches > 0)
-		{
-			float exp_mod = 1.0 - ((float)trophy_notches / (float)reduction_scale);
-
-			//      debug("exp_mod: %f", exp_mod);
-
-			if (exp_mod > 1.0)
-			{
-				exp_mod = 1.0;
-			}
-			else if (exp_mod < 0.05)
-			{
-				exp_mod = 0.05;
-			}
-
-			if (exp_mod < 1.0 && (type == EXP_KILL || type == EXP_QUEST))
-			{
-				if (exp_mod >= 0.50)
-				{
-					send_to_char("&+gThis area feels rather easy.\n", ch);
-				}
-				else if (exp_mod >= 0.30)
-				{
-					send_to_char(
-						"&+yThis area really isn't much of a challenge.\n",
-						ch);
-				}
-				else if (exp_mod >= 0.15)
-				{
-					send_to_char(
-						"&+rWhat's the point? Isn't this area getting boring?\n",
-						ch);
-				}
-				else
-				{
-					send_to_char(
-						"&+YYAWN! You really should find somewhere else to gain experience.\n",
-						ch);
-				}
-			}
-
-			//      debug("XP: %d", (int)XP);
-			XP = XP * exp_mod;
-			//      debug("XP: %d", (int)XP);
-		}
+		if (ZONE_TROPHY(ch)->size() >= ZONE_TROPHY_MAX_ZONES)
+			return false;
+		ZONE_TROPHY(ch)->push_back({ zone_number, credited_xp });
+		return true;
 	}
+	catch (const std::bad_alloc &)
+	{
+		// Optional observation cannot interrupt an already accepted XP award.
+		return false;
+	}
+}
 
-	update_zone_trophy(ch, zone_number, (int)XP);
-
-	return XP;
+void clear_zone_trophy(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc)
+		return;
+	if (ZONE_TROPHY(ch))
+		ZONE_TROPHY(ch)->clear();
+	// Include an empty collection so old durable rows are deleted as well.
+	mark_player_dirty_components(GET_PID(ch),
+				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TROPHIES);
 }
 
 void do_trophy(P_char ch, char *arg, int /*cmd*/)
 {
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char Gbuf3[MAX_STRING_LENGTH];
-	P_char who, rch;
-
-	rch = GET_PLYR(ch);
-
-	if (IS_NPC(rch))
+	P_char rch = GET_PLYR(ch);
+	if (!rch || !IS_PC(rch))
 	{
-		send_to_char("Mobs don't have trophy, duh.\r\n", ch);
+		send_to_char("Mobs don't have trophy.\r\n", ch);
 		return;
 	}
 
-	if (IS_ILLITHID(ch))
+	char target[MAX_STRING_LENGTH], option[MAX_STRING_LENGTH];
+	argument_interpreter(arg, target, option);
+	P_char who = rch;
+	const bool own_frags = isname("frags", target);
+	if (IS_TRUSTED(rch) && *target && !own_frags)
 	{
-		send_to_char("Illithids don't have trophy.\n", ch);
-		return;
-	}
-
-	argument_interpreter(arg, Gbuf2, Gbuf3);
-
-	if (IS_TRUSTED(rch))
-	{
-		if (!(who = get_char_vis(rch, Gbuf2)))
+		who = get_char_vis(rch, target);
+		if (!who)
 		{
 			send_to_char("They don't appear to be in the game.\r\n", ch);
 			return;
 		}
-
-		if (*Gbuf3 && isname("frags", Gbuf3))
-		{
-			show_frag_trophy(ch, who);
-			return;
-		}
 	}
-	else
-	{
-		who = rch;
-	}
-
 	if (!IS_PC(who))
 	{
-		send_to_char("Don't be silly, mobs don't have trophy!\n", ch);
+		send_to_char("Mobs don't have trophy.\r\n", ch);
+		return;
+	}
+	if (own_frags || (IS_TRUSTED(rch) && isname("frags", option)))
+	{
+		show_frag_trophy(ch, who);
 		return;
 	}
 
-	if (isname("frags", Gbuf2))
+	send_to_char("&+WExperience trophy&n (tracking only; no XP penalty)\r\n", ch);
+	if (get_property("exp.zoneTrophy.observe", 0) != 1)
+		send_to_char("Tracking is off. Showing saved totals.\r\n", ch);
+	if (!ZONE_TROPHY(who) || ZONE_TROPHY(who)->empty())
 	{
-		show_frag_trophy(ch, ch);
+		send_to_char("No zone experience recorded.\r\n", ch);
+		return;
 	}
-	else
+	for (const zone_trophy_data &entry : *ZONE_TROPHY(who))
 	{
-		if (!ZONE_TROPHY(who))
-			return;
-
-		send_to_char("&+WTrophy zones:&n\r\n", ch);
-		//    debug("exp notch: %d", EXP_NOTCH(who));
-
-		int reduction_scale = (int)get_property("exp.zoneTrophy.scale.notches", 10);
-		for (zone_trophy_iterator it = ZONE_TROPHY(who)->begin();
-		     it != ZONE_TROPHY(who)->end(); it++)
-		{
-			struct zone_info zone;
-			if (!get_zone_info(it->zone_number, &zone))
-				continue;
-
-			int notches = (int)((float)it->exp / (float)EXP_NOTCH(who));
-
-			if (it->exp <= 0)
-				continue;
-
-			if (!IS_TRUSTED(ch) && notches < reduction_scale / 5)
-				continue;
-
-			if (notches >= reduction_scale / 1.5)
-			{
-				strcpy(Gbuf2, "&+Roverdone");
-			}
-			else if (notches >= reduction_scale / 2.5)
-			{
-				strcpy(Gbuf2, "&+yboring");
-			}
-			else if (notches >= reduction_scale / 5)
-			{
-				strcpy(Gbuf2, "&+gexperienced");
-			}
-			else
-			{
-				strcpy(Gbuf2, "");
-			}
-
-			if (IS_TRUSTED(ch))
-			{
-				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, " %s  &n%s&n(%d:%d)\n",
-						 pad_ansi(zone.name.c_str(), 40).c_str(), Gbuf2,
-						 it->exp, notches);
-			}
-			else
-			{
-				checked_snprintf(Gbuf1, MAX_STRING_LENGTH, " %s  &n%s\n",
-						 pad_ansi(zone.name.c_str(), 40).c_str(), Gbuf2);
-			}
-
-			send_to_char(Gbuf1, ch);
-		}
+		if (entry.exp <= 0)
+			continue;
+		const char *name = "Unknown zone";
+		if (zone_table)
+			for (int index = 0; index <= top_of_zone_table; ++index)
+				if (zone_table[index].number == entry.zone_number)
+				{
+					if (zone_table[index].name)
+						name = zone_table[index].name;
+					break;
+				}
+		char line[MAX_STRING_LENGTH];
+		checked_snprintf(line, sizeof(line), " %s &n[%d]: %d XP\r\n", name,
+				 entry.zone_number, entry.exp);
+		send_to_char(line, ch);
 	}
 }
-
-void update_zone_trophy(P_char ch, int zone_number, int XP)
-{
-	// No more trophy!
-	return;
-
-	if (!ch || !IS_PC(ch))
-		return;
-
-	if (XP <= 0)
-		return;
-
-	struct zone_info zone;
-	if (!get_zone_info(zone_number, &zone) || !zone.trophy_zone)
-		return;
-
-	if (!ZONE_TROPHY(ch))
-	{
-		ZONE_TROPHY(ch) = new vector<struct zone_trophy_data>();
-	}
-
-	bool has_it = false;
-	zone_trophy_iterator it;
-	for (it = ZONE_TROPHY(ch)->begin(); it != ZONE_TROPHY(ch)->end(); it++)
-	{
-		if (it->zone_number == zone_number)
-		{
-			has_it = true;
-			break;
-		}
-	}
-
-	if (has_it)
-	{
-		it->exp += XP;
-		it->exp = MAX(0, it->exp);
-	}
-	else
-	{
-		struct zone_trophy_data z;
-		z.zone_number = zone_number;
-		z.exp = XP;
-		z.exp = MAX(0, z.exp);
-		ZONE_TROPHY(ch)->push_back(z);
-	}
-
-	// lower all other zones a little bit
-	for (it = ZONE_TROPHY(ch)->begin(); it != ZONE_TROPHY(ch)->end(); it++)
-	{
-		if (it->zone_number != zone_number)
-		{
-			it->exp -= (int)(XP * (float)get_property(
-						      "exp.zoneTrophy.others.reductionPct", 0.01));
-			it->exp = MAX(0, it->exp);
-		}
-	}
-}
-
-int get_zone_exp(P_char ch, int zone_number)
-{
-	if (!ch || !IS_PC(ch) || !ZONE_TROPHY(ch) || ZONE_TROPHY(ch)->empty())
-		return 0;
-
-	for (zone_trophy_iterator it = ZONE_TROPHY(ch)->begin(); it != ZONE_TROPHY(ch)->end(); it++)
-	{
-		if (it->zone_number == zone_number)
-			return it->exp;
-	}
-
-	return 0;
-}
-
-#ifdef __NO_MYSQL__
-void load_zone_trophy(P_char /*ch*/) {}
-
-void zone_trophy_update() {}
-
-void save_zone_trophy(P_char /*ch*/) {}
-#else
-void load_zone_trophy(P_char ch)
-{
-	// No more trophy!
-	return;
-
-	if (!ch || !IS_PC(ch))
-		return;
-
-	ZONE_TROPHY(ch) = new vector<struct zone_trophy_data>();
-
-	if (!qry("SELECT zone_number, exp FROM zone_trophy, zones WHERE zone_trophy.zone_number = zones.number AND zones.trophy_zone = 1 "
-		 "AND pid = %d",
-		 GET_PID(ch)))
-		return;
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return;
-	}
-
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return;
-	}
-
-	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(res)))
-	{
-		struct zone_trophy_data data;
-		data.zone_number = atoi(row[0]);
-		data.exp = atoi(row[1]);
-		ZONE_TROPHY(ch)->push_back(data);
-	}
-
-	mysql_free_result(res);
-}
-
-void zone_trophy_update()
-{
-	if (!get_property("exp.zoneTrophy.enabled", 0))
-		return;
-
-	if (!has_elapsed("zone_trophy_reduction",
-			 (int)get_property("exp.zoneTrophy.update.secs", 3600)))
-		return;
-
-	//  debug("zone_trophy_update()");
-
-	qry("UPDATE zone_trophy SET exp = exp * %f",
-	    (float)get_property("exp.zoneTrophy.update.multiplier", 1.0));
-	qry("DELETE FROM zone_trophy WHERE exp <= 0");
-
-	set_timer("zone_trophy_reduction");
-}
-
-void save_zone_trophy(P_char ch)
-{
-	if (!ch || !IS_PC(ch) || !ZONE_TROPHY(ch) || ZONE_TROPHY(ch)->empty())
-		return;
-
-	for (zone_trophy_iterator it = ZONE_TROPHY(ch)->begin(); it != ZONE_TROPHY(ch)->end(); it++)
-	{
-		qry("SELECT exp FROM zone_trophy WHERE pid = %d AND zone_number = %d", GET_PID(ch),
-		    it->zone_number);
-
-		MYSQL_RES *res = mysql_store_result(DB);
-		if (!res)
-		{
-			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-			return;
-		}
-		bool has_row = mysql_num_rows(res) > 0;
-		int old_exp = 0;
-
-		if (has_row)
-		{
-			MYSQL_ROW row = mysql_fetch_row(res);
-			old_exp = atoi(row[0]);
-		}
-
-		mysql_free_result(res);
-
-		if (has_row)
-		{
-			if (it->exp != old_exp)
-			{
-				qry("UPDATE zone_trophy SET exp = %d WHERE pid = %d AND zone_number = %d",
-				    it->exp, GET_PID(ch), it->zone_number);
-			}
-		}
-		else
-		{
-			qry("INSERT INTO zone_trophy (pid, zone_number, exp) VALUES ('%d', '%d', '%d')",
-			    GET_PID(ch), it->zone_number, it->exp);
-		}
-	}
-}
-#endif
-
-/* this macro is used in the code to determine the size of a chars 'a'
- trophy.  If can be used to reduce trophy size based on <whatever> */
-/*
-__attribute__((deprecated)) int GET_TROPHY_SIZE(P_char ch)
-{
-
-    if IS_NPC(ch)
-        return 0;
-
-    if (RACE_GOOD(ch)){
-    if( (GET_LEVEL(ch)) > MAX_TROPHY_SIZE)
-            return MAX_TROPHY_SIZE;
-    else
-            return GET_LEVEL(ch);
-    }
-    else
-    {
-    if( (3 * GET_LEVEL(ch)) > MAX_TROPHY_SIZE)
-            return MAX_TROPHY_SIZE;
-    else
-            return GET_LEVEL(ch) * 3;
-    }
-
-
-
-}
-
-#define GET_TROPHY_SIZE_OLD(a) (IS_NPC(a) ? 0 :  \
-GET_LEVEL(a) < 6 ? 1 : \
-GET_LEVEL(a) > MAX_TROPHY_SIZE ? MAX_TROPHY_SIZE : \
-GET_LEVEL(a))
-
-__attribute__((deprecated)) int modify_exp_by_trophies(P_char ch, P_char victim, int XP, int type)
-{
-  struct trophy_data *tr1;
-  int      group_fact;
-  float    factor;
-
-  if (type == EXP_KILL && IS_PC(ch) && IS_PC(victim))
-  {
-    if (!racewar(ch, victim))   // check for racewar
-      XP = 0;
-    else if (GET_LEVEL(victim) < 20)    //check if victim is higher then 20
-      XP = 0;
-    else if ((GET_LEVEL(ch) - GET_LEVEL(victim)) > 15)  //check if diff is bigger then 15
-      XP = 0;
-    else                        //else give this..
-      XP = 60000 * GET_LEVEL(victim);
-    return XP;
-  }
-  if (IS_PC(victim) || (XP < 10) || (GET_LEVEL(ch) < 6))
-    return XP;
-
-  if ((GET_LEVEL(ch) - 15) > GET_LEVEL(victim))
-    return XP;
-
-  tr1 = ch->only.pc->trophy;
-
-  while ((tr1) && (tr1->vnum != mob_index[GET_RNUM(victim)].virtual_number))
-    tr1 = tr1->next;
-
-  if (type == EXP_KILL && !tr1)
-  {
-    struct trophy_data *temp1, *temp2;
-    int      i, j;
-
-    if (!dead_trophy_pool)
-      dead_trophy_pool =
-      mm_create("TROPHY", sizeof(struct trophy_data),
-                offsetof(struct trophy_data, next), 3);
-
-    tr1 = (struct trophy_data *) mm_get(dead_trophy_pool);
-
-    tr1->next = ch->only.pc->trophy;
-    tr1->kills = 0;
-    tr1->vnum = mob_index[GET_RNUM(victim)].virtual_number;
-    ch->only.pc->trophy = tr1;
-
-    i = 0;
-    j = BOUNDED(1, GET_TROPHY_SIZE(ch), MAX_TROPHY_SIZE);
-    temp1 = ch->only.pc->trophy;
-    while (temp1)
-    {
-      i++;
-      if (i >= j)
-      {
-        while (temp1->next)
-        {
-          temp2 = temp1->next;
-          temp1->next = temp2->next;
-          mm_release(dead_trophy_pool, temp2);
-        }
-      }
-      temp1 = temp1->next;
-    }
-  }
-
-  if (type == EXP_KILL)
-  {
-    group_fact = 1;
-
-    tr1->kills += 100 / MIN(group_fact, 100);
-
-
-    if (tr1->kills > 10000)
-      tr1->kills -= 10000;
-
-    if (tr1->kills > 200)
-    {
-      if (tr1->kills < 1000)
-        send_to_char
-        ("You're beginning to learn your victim's weak spots.\r\n", ch);
-      else if (tr1->kills < 2500)
-        send_to_char
-        ("Not as thrilling as the first few, but fun nonetheless.\r\n", ch);
-      else if (tr1->kills < 5000)
-        send_to_char("Ho hum. This is getting boring.\r\n", ch);
-      else
-        send_to_char
-        ("What's the point anymore?  It just doesn't seem worth it!\r\n",
-         ch);
-    }
-  }
-
-  if (tr1)
-  {
-      if(RACE_GOOD(ch)){
-      factor =
-            (((float) tr1->kills / 500.0) * ((float) tr1->kills / 500.0));
-      }
-      else {
-      factor =
-            (((float) tr1->kills / 100.0) * ((float) tr1->kills / 100.0));
-
-
-
-      }
-    if (factor > 100.0)
-      factor = 100.0;
-
-
-  }
-  else
-    factor = 0;
-
-
-  return (XP - (int) ((float) XP * ((float) factor / 100.0)));
-}
- */

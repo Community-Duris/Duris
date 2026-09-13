@@ -28,6 +28,7 @@
 #include "specs/specs.winterhaven.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "item/trophy.h"
 #include "net/ws_handlers.h"
 
 /*
@@ -126,7 +127,7 @@ int berserker_proc_room(int /*room*/, P_char ch, int cmd, char *arg)
 	ch->player.m_class = CLASS_BERSERKER;
 	ch->player.spec = 0;
 	forget_spells(ch, -1);
-	qry("DELETE FROM zone_trophy WHERE pid = %d", GET_PID(ch));
+	clear_zone_trophy(ch);
 	do_restore(ch, GET_NAME(ch), 0);
 	berserk(ch, 500);
 
@@ -224,7 +225,7 @@ int multiclass_proc(int /*room*/, P_char ch, int cmd, char *arg)
 				do_restore(ch, GET_NAME(ch), 0);
 				forget_spells(ch, -1);
 				refund_epic_skills(ch);
-				qry("DELETE FROM zone_trophy WHERE pid = %d", GET_PID(ch));
+				clear_zone_trophy(ch);
 			}
 			else
 			{

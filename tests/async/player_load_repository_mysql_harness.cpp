@@ -1,4 +1,5 @@
 #include "player/player_load_repository.h"
+#include "item/trophy_state.h"
 #include "persistence/persistence_observability.h"
 
 #include <mysql/mysql.h>
@@ -236,14 +237,15 @@ int main()
 	     { "player_items", "player_item_affects", "player_item_extra_descr", "player_pets",
 	       "player_pet_items", "player_pet_item_affects", "player_pet_item_extra_descr",
 	       "item_current_owner", "item_owner_revision", "pkill_event", "pkill_info",
-	       "epic_gain", "epic_ledger" })
+	       "epic_gain", "epic_ledger", "zone_trophy" })
 	{
 		const std::string temporary = std::string("fixture_") + table;
 		if (std::getenv("PLAYER_LOAD_DISPOSABLE_SCHEMA"))
 		{
 			// Only the wrapper's disposable schema may use real fixtures. MySQL 8
 			// cannot reopen a temporary table in the loader's batched UNION query.
-			assert(std::string(std::getenv("DB_NAME")) == "currency_coin_test");
+			assert(std::string(std::getenv("DB_NAME")) == "currency_coin_test" ||
+			       std::string(std::getenv("DB_NAME")) == "experience_trophy_test");
 			execute_sql(connection,
 				    "RENAME TABLE " + std::string(table) + " TO " + temporary);
 			execute_sql(connection,
@@ -256,6 +258,34 @@ int main()
 			execute_sql(connection, "ALTER TABLE " + temporary + " RENAME TO " + table);
 		}
 	}
+	// The SQL login path must hydrate trophy rows, including archived zones,
+	// without joining live zone policy or narrowing the saturated int counter.
+	execute_sql(connection, "INSERT INTO zone_trophy(pid,zone_number,exp) VALUES(" +
+					std::to_string(pid) + ",12,345),(" + std::to_string(pid) +
+					",999999,2147483647)");
+	auto trophy = execute_load(connection, request, 810);
+	assert(trophy.outcome == player_load_outcome::applied);
+	assert(trophy.snapshot.components & PLAYER_COMPONENT_TROPHIES);
+	assert(trophy.snapshot.trophies.size() == 2);
+	assert(trophy.snapshot.trophies[0].zone_number == 12 &&
+	       trophy.snapshot.trophies[0].experience == 345);
+	assert(trophy.snapshot.trophies[1].experience == INT_MAX);
+	execute_sql(connection, "UPDATE zone_trophy SET exp=-1 WHERE pid=" + std::to_string(pid) +
+					" AND zone_number=12");
+	assert(execute_load(connection, request, 811).outcome ==
+	       player_load_outcome::component_failure);
+	execute_sql(connection, "DELETE FROM zone_trophy WHERE pid=" + std::to_string(pid));
+	std::string trophy_rows = "INSERT INTO zone_trophy(pid,zone_number,exp) VALUES ";
+	for (size_t index = 0; index <= ZONE_TROPHY_MAX_ZONES; ++index)
+		trophy_rows += (index ? "," : "") + std::string("(") + std::to_string(pid) + "," +
+			       std::to_string(index + 1) + ",1)";
+	execute_sql(connection, trophy_rows);
+	assert(execute_load(connection, request, 812).outcome ==
+	       player_load_outcome::limit_exceeded);
+	execute_sql(connection, "DELETE FROM zone_trophy WHERE pid=" + std::to_string(pid));
+	trophy = execute_load(connection, request, 813);
+	assert(trophy.outcome == player_load_outcome::applied && trophy.snapshot.trophies.empty());
+
 	for (int index = 0; index < 25; ++index)
 	{
 		const int event_id = 4001 + index;

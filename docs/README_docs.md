@@ -20,6 +20,7 @@ docs/
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](reference/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery, and networking. |
+| [EXPERIENCE_TROPHIES.md](reference/EXPERIENCE_TROPHIES.md) | In-memory PvE XP observation, checkpoint persistence, and follow-up familiarity policy. |
 | [BATCH_ITEM_COMMANDS.md](reference/BATCH_ITEM_COMMANDS.md) | Batch get, put, drop, wear, and remove syntax plus atomic item-transfer behavior. |
 | [CHAOS_MODE.md](reference/CHAOS_MODE.md) | Chaos configuration, durable new-character grants, equipment catalogs, and craft-pouch behavior. |
 | [CODEBASE.md](reference/CODEBASE.md) | Module-by-module map of the server sources. |

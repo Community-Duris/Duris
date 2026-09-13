@@ -104,6 +104,7 @@ int main(int argc, char **argv)
     assert(registry && count == MAINTENANCE_JOB_COUNT);
     const size_t lifecycle = static_cast<size_t>(maintenance_job_id::lifecycle_archive);
     assert(lifecycle < count && !registry[lifecycle].enabled);
+    assert(!registry[static_cast<size_t>(maintenance_job_id::zone_trophy)].enabled);
     for (size_t index = 0; index < count; ++index)
     {
         assert(registry[index].row_budget <= MAINTENANCE_ROW_BUDGET_MAX);
@@ -268,7 +269,7 @@ for copyover_contract in (
 ):
     assert copyover_contract in COPYOVER
 for repository_contract in (
-    "ORDER BY id LIMIT ", "ORDER BY pid,zone_number LIMIT ", "before_deadline(request)",
+    "ORDER BY id LIMIT ", "before_deadline(request)",
     "maintenance_level_cap", "maintenance_cargo", "maintenance_boon",
     "level_cap_changed", "mysql_affected_rows(connection) == 1",
     "atomic_replace", "sql_pool_acquire()",

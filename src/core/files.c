@@ -1842,7 +1842,6 @@ int writeCharacter(P_char ch, int type, int room)
 		if ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
 			sql_update_playtime(ch);
 		sql_update_epics(ch);
-		save_zone_trophy(ch);
 	}
 	else
 	{
@@ -2238,7 +2237,6 @@ int restoreStatus(char *buf, P_char ch)
 	//                                 sizeof(struct trophy_data),
 	//                                 offsetof(struct trophy_data, next), 3);
 	ZONE_TROPHY(ch) = NULL;
-	load_zone_trophy(ch);
 
 	if (stat_vers < 45)
 	{
