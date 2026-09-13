@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "item/item_actions.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "core/files.h"
@@ -9761,7 +9762,8 @@ void perform_violence(void)
 			continue;
 		}
 
-		if (IS_AFFECTED2(ch, AFF2_CASTING) && !affected_by_spell(ch, SPELL_BATTLEMAGE))
+		if (item_action_active(ch) ||
+		    (IS_AFFECTED2(ch, AFF2_CASTING) && !affected_by_spell(ch, SPELL_BATTLEMAGE)))
 			continue;
 
 		if (IS_AFFECTED5(ch, AFF5_NOT_OFFENSIVE))

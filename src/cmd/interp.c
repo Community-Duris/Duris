@@ -11,6 +11,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/item_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1226,7 +1227,8 @@ int old_search_block(const char *argument, const uint begin, uint length, const 
 bool cmd_allowed_while_casting(P_char ch, int cmd)
 {
 	return cmd == CMD_PETITION || cmd == CMD_RETURN ||
-	       (cmd == CMD_ABORT && ch && PLR3_FLAGGED(ch, PLR3_ABORT_CASTING));
+	       (cmd == CMD_ABORT && ch &&
+		(item_action_active(ch) || PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)));
 }
 
 /** Commands whose result depends on the player's live inventory or equipment.
@@ -1564,6 +1566,11 @@ void command_interpreter(P_char ch, char *argument)
 	 * falling and water-current checks below would otherwise roll the dice --
 	 * and even move the character out of the room -- on a command that is about
 	 * to be rejected anyway. */
+	if (item_action_active(ch) && !cmd_allowed_while_casting(ch, cmd))
+	{
+		send_to_char("You're busy using an item! Try 'abort' to stop.\r\n", ch);
+		return;
+	}
 	if (IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(ch, cmd))
 	{
 		send_to_char("You're busy spellcasting!\r\n", ch);

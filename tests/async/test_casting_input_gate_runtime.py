@@ -72,6 +72,7 @@ PRELUDE = r'''
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 
 #define MAX_INPUT_LENGTH 512
 #define LOG_COMM 0
@@ -134,6 +135,8 @@ static const char *command[] = {
 };
 
 bool cmd_allowed_while_casting(P_char ch, int cmd);
+static bool active_item = false;
+static bool item_action_active(P_char) { return active_item; }
 
 int old_search_block(const char *argument, const uint begin, uint length, const char **list,
 		     const int mode);
@@ -234,6 +237,22 @@ static void ordinary_commands_stay_queued(bool can_act, bool casting, const char
 
 int main()
 {
+	/* Active devices share the exact queue/gate policy, independently of the
+	   optional ordinary-spell abort toggle and of any unrelated wait. */
+	active_item = true;
+	for (bool can_act : {false, true})
+	{
+		struct txt_q queue = {};
+		char output[MAX_INPUT_LENGTH] = {};
+		push(&queue, "rest");
+		push(&queue, "abort");
+		push(&queue, "look");
+		assert(select_one(can_act, false, false, &queue, output) == 1);
+		expect_text(output, "abort", "active item selective abort");
+		expect_queue(&queue, "rest", "look", NULL, "item type-ahead preserved");
+		drain(&queue);
+	}
+	active_item = false;
 	/* The shipped policy disables the interrupt while preserving ordinary
 	   type-ahead and the non-interrupting casting whitelist. */
 	struct txt_q disabled_abort_queue = {};

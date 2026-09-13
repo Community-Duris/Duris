@@ -9,6 +9,7 @@
 
 #include "core/prototypes.h"
 #include "world/world_singletons.h"
+#include "item/item_actions.h"
 #include "persistence/persistence_log.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -584,6 +585,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	// Property hooks now also own main-thread item-action cancellation. Bind
+	// before loading them; the event pool is initialized later during world boot.
+	nevent_bind_game_thread();
 	initialize_properties();
 	// Optional configuration is loaded once before gameplay, never during a send.
 	if (const char *profile_path = getenv("DURIS_OUTPUT_PROFILES_FILE");
@@ -1153,10 +1157,11 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 		currency_transaction_player_busy(character));
 }
 
-/** Select the casting queue for the complete AFF2_CASTING lifetime. */
+/** Select the restricted queue throughout ordinary casting or active item use. */
 static bool casting_input_for_descriptor(P_desc descriptor, P_char character)
 {
-	return character && descriptor && IS_AFFECTED2(character, AFF2_CASTING) &&
+	return character && descriptor &&
+	       (IS_AFFECTED2(character, AFF2_CASTING) || item_action_active(character)) &&
 	       descriptor->connected == CON_PLAYING && !descriptor->showstr_count &&
 	       !descriptor->str;
 }
