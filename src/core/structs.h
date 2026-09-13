@@ -31,6 +31,7 @@
 #include "world/map.h"
 #include "player/player_log.h"
 #include "net/ansi.h"
+#include "net/output_channel.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -1674,6 +1675,9 @@ typedef struct gnutls_session_int *gnutls_session_t;
 
 struct descriptor_data
 {
+	// Session-local cosmetic state, zeroed on allocation/reconnect/copyover.
+	// Plain storage: descriptor allocation does not run C++ constructors.
+	uint64_t output_sequences[(size_t)OutputChannel::Count];
 	sh_int descriptor; /* file descriptor for socket */
 	char host[50]; /* hostname                   */
 	char host2[254];

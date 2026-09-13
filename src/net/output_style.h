@@ -1,6 +1,9 @@
 #pragma once
 
 #include "net/ansi.h"
+#include "net/output_channel.h"
+#include <array>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <span>
@@ -15,47 +18,6 @@ enum class OutputPolicy
 	Animated
 };
 
-// Stable registry identifiers. Append new entries; never renumber existing ones.
-// Routing only: no channel is automatically adopted by the output queue.
-enum class OutputChannel
-{
-	Unspecified = 0,
-	RoomDescription = 1,
-	Chat = 2,
-	Combat = 3,
-	SystemFeedback = 4,
-	RoomTitle = 5,
-	RoomInspect = 6,
-	RoomExits = 7,
-	RoomAuras = 8,
-	RoomOccupants = 9,
-	ItemsList = 10,
-	ChatSay = 11,
-	ChatTell = 12,
-	ChatWhisper = 13,
-	ChatAsk = 14,
-	ChatShout = 15,
-	ChatYell = 16,
-	ChatGroup = 17,
-	ChatGuild = 18,
-	ChatAlliance = 19,
-	ChatPetition = 20,
-	ChatProject = 21,
-	ChatPage = 22,
-	ChatRacewar = 23,
-	ChatImmortal = 24,
-	Social = 25,
-	Weather = 26,
-	CombatIncoming = 27,
-	CombatOutgoing = 28,
-	CombatObserved = 29,
-	Prompt = 30,
-	ChatAuction = 31,
-	ChatNchat = 32,
-	ChatJchat = 33,
-	ChatWizmsg = 34,
-	Count = 35
-};
 enum class StyleOrigin
 {
 	ChannelBase,
@@ -86,6 +48,32 @@ struct OutputStyleSpan
 // in the caller/config snapshot, then borrow for the duration of a send.
 using WordColorDictionary = std::map<std::string, int, std::less<>>;
 
+inline constexpr size_t OUTPUT_PROFILE_MAX_PALETTE = 16;
+
+enum class OutputRecipeKind
+{
+	Solid,
+	Flow,
+	Shimmer,
+	Flicker,
+	Pulse,
+	Glint
+};
+
+struct OutputStyleRecipe
+{
+	OutputRecipeKind kind = OutputRecipeKind::Solid;
+	std::array<int, OUTPUT_PROFILE_MAX_PALETTE> palette{};
+	size_t palette_size = 0;
+	size_t stable_index = 0;
+	uint16_t step_every = 1; // 1..1024 eligible sends per phase step
+	uint16_t width = 1; // 1..32 visible characters, clamped to the word
+	uint8_t chance_percent = 20; // 0..100; cosmetic hash, never gameplay RNG
+};
+
+// Immutable recipe pointers owned by the same snapshot as the dictionary.
+using WordRecipeDictionary = std::map<std::string, const OutputStyleRecipe *, std::less<>>;
+
 struct OutputContext
 {
 	OutputChannel channel = OutputChannel::Unspecified;
@@ -96,6 +84,10 @@ struct OutputContext
 	// Registry contexts retain the immutable dictionary through copies and reloads.
 	// Hand-built contexts may continue to borrow a caller-owned dictionary.
 	std::shared_ptr<const OutputProfileSnapshot> snapshot_owner{};
+	const WordRecipeDictionary *recipes = nullptr;
+	// Pure rendering accepts an explicit frame. send_to_char supplies the receiving
+	// connection's channel sequence; replay never calls the renderer with recipes.
+	uint64_t sequence = 0;
 };
 
 // Pure transformation. Existing attributes and protected words are never erased.
@@ -106,9 +98,10 @@ AnsiString style_dictionary_words(const AnsiString &input, const WordColorDictio
 // Freeze markup only if both legacy serializers can emit every character and
 // the caller's remaining pager capacity admits it. false means use original bytes.
 // The output is assigned only on success, so it can also own the input bytes.
-// Animated uses the supplied fixed frame here; recipe/sequence ownership is separate.
+// animated_match is true only for an accepted frame with an eligible moving recipe.
+// This pure function does not advance sequences, even when a frame is rejected.
 bool render_output_message(const char *message, const OutputContext &context, std::string &rendered,
-			   size_t capacity = MAX_STRING_LENGTH - 1);
+			   size_t capacity = MAX_STRING_LENGTH - 1, bool *animated_match = nullptr);
 
 // Recheck a frozen page after accumulation, using its actual markup byte length
 // as well as terminal expansion and snoop overhead. This does not apply styling.

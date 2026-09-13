@@ -1,0 +1,47 @@
+Forest
+Source: The forest shivers; moss and vines cover the trees.
+Static: The &+cforest&n shivers; &+cmoss&n and &+cvines&n cover the &+ctrees&n.
+Frame 0: The &+cf&+Co&+crest&n shivers; &+cm&+Co&+css&n and &+cvines&n cover the &+Ctr&+cees&n.
+Frame 1: The &+cf&+Co&+crest&n shivers; &+cm&+Co&+css&n and &+cvines&n cover the &+Ctr&+cees&n.
+Frame 2: The &+cfo&+Cr&+cest&n shivers; &+cmo&+Cs&+cs&n and &+cvines&n cover the &+ct&+Cre&+ces&n.
+Frame 3: The &+cfo&+Cr&+cest&n shivers; &+cmo&+Cs&+cs&n and &+cvines&n cover the &+ct&+Cre&+ces&n.
+
+River
+Source: Water from the river flows into the lake and ocean.
+Static: &+CWater&n from the &+Criver&n flows into the &+Clake&n and &+Cocean&n.
+Frame 0: &+bW&+Ba&+Cter&n from the &+Criv&+be&+Br&n flows into the &+Bl&+ca&+Ck&+be&n and &+Co&+bc&+Be&+Ca&+cn&n.
+Frame 1: &+CW&+ba&+Bt&+Cer&n from the &+Br&+Cive&+br&n flows into the &+Bl&+ca&+Ck&+be&n and &+Co&+bc&+Be&+Ca&+cn&n.
+Frame 2: &+CWa&+bt&+Be&+Cr&n from the &+br&+Bi&+Cver&n flows into the &+bl&+Ba&+ck&+Ce&n and &+co&+Cc&+be&+Ba&+Cn&n.
+Frame 3: &+CWat&+be&+Br&n from the &+Cr&+bi&+Bv&+Cer&n flows into the &+bl&+Ba&+ck&+Ce&n and &+co&+Cc&+be&+Ba&+Cn&n.
+
+Volcanic
+Source: Fire and lava surround the arcane portal.
+Static: &+RFire&n and &+Rlava&n surround the &+marcane&n &+mportal&n.
+Frame 0: &+yFire&n and &+rlava&n surround the &+Marcane&n &+Mportal&n.
+Frame 1: &+RFi&+yre&n and &+rla&+yva&n surround the &+Marcane&n &+Mportal&n.
+Frame 2: &+rFire&n and &+rlava&n surround the &+marcane&n &+mportal&n.
+Frame 3: &+rFi&+Rre&n and &+rla&+yva&n surround the &+marcane&n &+mportal&n.
+
+Ice
+Source: Ice and frost cover frozen bones in the snow.
+Static: &+BIce&n and &+Bfrost&n cover &+Bfrozen&n &+Wbones&n in the &+Wsnow&n.
+Frame 0: &+bIce&n and &+bfrost&n cover &+bf&+Wr&+bozen&n &+Wbones&n in the &+Wsnow&n.
+Frame 1: &+bIce&n and &+bfrost&n cover &+bfr&+Wo&+bzen&n &+Wbones&n in the &+Wsnow&n.
+Frame 2: &+bIce&n and &+bfrost&n cover &+bfro&+Wz&+ben&n &+Wbones&n in the &+Wsnow&n.
+Frame 3: &+bIce&n and &+bfrost&n cover &+bfroz&+We&+bn&n &+Wbones&n in the &+Wsnow&n.
+
+Authored
+Source: &+rThe forest and river burn with magic.&n
+Static: &+rThe forest and river burn with magic.&n
+Frame 0: &+rThe forest and river burn with magic.&n
+Frame 1: &+rThe forest and river burn with magic.&n
+Frame 2: &+rThe forest and river burn with magic.&n
+Frame 3: &+rThe forest and river burn with magic.&n
+
+Partial
+Source: Wa&+rte&nr feeds the forest. &+gMoss&n covers bones.
+Static: Wa&+rte&nr feeds the &+cforest&n. &+gMoss&n covers &+Wbones&n.
+Frame 0: Wa&+rte&nr feeds the &+cf&+Co&+crest&n. &+gMoss&n covers &+Wbones&n.
+Frame 1: Wa&+rte&nr feeds the &+cf&+Co&+crest&n. &+gMoss&n covers &+Wbones&n.
+Frame 2: Wa&+rte&nr feeds the &+cfo&+Cr&+cest&n. &+gMoss&n covers &+Wbones&n.
+Frame 3: Wa&+rte&nr feeds the &+cfo&+Cr&+cest&n. &+gMoss&n covers &+Wbones&n.
