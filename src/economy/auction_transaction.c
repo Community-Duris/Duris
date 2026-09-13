@@ -74,6 +74,28 @@ bool publish(std::unordered_map<std::string, pending_auction>::iterator found, P
 	}
 	if (committed && result.item_count)
 	{
+		// Settlement advances both owners. Updating only the destination leaves
+		// the seller's next inventory or coin transfer fenced by a stale revision.
+		const item_owner_identity source_owner = {
+			result.action == auction_action::list ? item_owner_type::player :
+								item_owner_type::auction,
+			result.action == auction_action::list ? entry.actor_pid : result.auction_id,
+			0
+		};
+		const uint64_t source_revision = result.action == auction_action::list ?
+							 result.player_owner_revision :
+							 result.auction_owner_revision;
+		uint64_t current_source_revision = 0;
+		if (!item_ownership_runtime_owner_revision(source_owner,
+							   &current_source_revision) ||
+		    !item_ownership_runtime_hydrate_owner(
+			    source_owner, std::max(current_source_revision, source_revision)))
+		{
+			if (entry.completion)
+				entry.completion(character, false, {}, ESTALE, entry.payload);
+			pending.erase(found);
+			return false;
+		}
 		const item_owner_identity owner = {
 			result.action == auction_action::list ? item_owner_type::auction :
 								item_owner_type::player,
