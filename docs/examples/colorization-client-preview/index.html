@@ -1,0 +1,89 @@
+<!doctype html>
+<html class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Duris colorization release validation</title>
+    <style>
+      html, body {
+        height: auto !important;
+        overflow: auto !important;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #101318;
+        color: #f5f6f8;
+        font: 15px system-ui;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+      header p {
+        color: #bac4d0;
+        margin-bottom: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .recipient {
+        border: 1px solid #485363;
+        border-radius: 10px;
+        overflow: hidden;
+        padding: 18px;
+        background: #1a202a;
+      }
+      h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      h3 {
+        margin: 16px 0 8px;
+        font-size: 15px;
+        color: #d8e1ea;
+      }
+      .terminal {
+        padding: 12px;
+        background: var(--mud-background, #1a1a1a);
+        border-radius: 5px;
+      }
+      .chat {
+        height: 320px;
+        border: 1px solid #657080;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .caption {
+        color: #bac4d0;
+        font-size: 12px;
+        margin: 8px 0;
+      }
+      button {
+        cursor: pointer;
+      }
+      footer {
+        margin-top: 14px;
+        color: #adbccc;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Duris · recipient colorization</h1>
+      <p>
+        Actual xterm terminal renderer and supported Vue chat panel.
+        Production-generated synthetic say, tell and guild packets; authored
+        green text stays green.
+      </p>
+    </header>
+    <div class="grid">
+      <div id="alice"></div>
+      <div id="bob"></div>
+    </div>
+    <footer id="footer"></footer>
+    <script type="module" src="@PREVIEW_BASE@/main.ts"></script>
+  </body>
+</html>

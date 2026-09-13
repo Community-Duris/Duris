@@ -38,7 +38,13 @@ for filename, signatures in [
 ]:
     functions.extend(extract_function(filename, signature) for signature in signatures)
 
+benchmark = os.environ.get("OUTPUT_BENCHMARK") == "1"
+if benchmark:
+    functions.append(extract_function("json_utils.c", "char *json_build_comm_channel("))
+
 flags = ["-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie"] if os.environ.get("SANITIZE") == "1" else []
+if benchmark:
+    flags += ["-DCOLORIZATION_BENCHMARK", "-Wl,--wrap=malloc", "-Wl,--wrap=calloc", "-Wl,--wrap=realloc"]
 with tempfile.TemporaryDirectory(prefix="word-output-", dir=BUILD) as directory:
     temp = Path(directory)
     (temp / "production_output.inc").write_text("\n\n".join(functions))

@@ -1,0 +1,515 @@
+{
+  "transport": "real server TCP Telnet with GMCP",
+  "checks": [
+    {
+      "command": "toggle color",
+      "expected": "Color settings"
+    },
+    {
+      "command": "toggle color say bright cyan",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color tell bright cyan",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color tell bright",
+      "expected": "bright cyan"
+    },
+    {
+      "command": "toggle color tell chartreuse",
+      "expected": "Unknown color"
+    },
+    {
+      "command": "toggle color preview tell yellow",
+      "expected": "Sample (tell)"
+    },
+    {
+      "command": "toggle color tell",
+      "expected": "tell: bright cyan."
+    },
+    {
+      "command": "save",
+      "expected": "Save complete for Taverek."
+    },
+    {
+      "command": "toggle color",
+      "expected": "Color settings"
+    },
+    {
+      "command": "toggle color say bright red",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color tell bright red",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color tell bright",
+      "expected": "bright cyan"
+    },
+    {
+      "command": "toggle color tell chartreuse",
+      "expected": "Unknown color"
+    },
+    {
+      "command": "toggle color preview tell yellow",
+      "expected": "Sample (tell)"
+    },
+    {
+      "command": "toggle color tell",
+      "expected": "tell: bright red."
+    },
+    {
+      "command": "save",
+      "expected": "Save complete for Colorbob."
+    },
+    {
+      "chat": "selected",
+      "recipient": "Colorbob",
+      "foreground": 28,
+      "packets": 1
+    },
+    {
+      "chat": "selected",
+      "recipient": "Taverek",
+      "foreground": 27,
+      "packets": 1
+    },
+    {
+      "command": "quit",
+      "expected": "ACCOUNT MENU"
+    },
+    {
+      "command": "quit",
+      "expected": "ACCOUNT MENU"
+    },
+    {
+      "command": "toggle color say",
+      "expected": "say: bright cyan."
+    },
+    {
+      "command": "toggle color tell",
+      "expected": "tell: bright cyan."
+    },
+    {
+      "command": "toggle color say",
+      "expected": "say: bright red."
+    },
+    {
+      "command": "toggle color tell",
+      "expected": "tell: bright red."
+    },
+    {
+      "chat": "reconnected",
+      "recipient": "Colorbob",
+      "foreground": 28,
+      "packets": 1
+    },
+    {
+      "chat": "reconnected",
+      "recipient": "Taverek",
+      "foreground": 27,
+      "packets": 1
+    },
+    {
+      "command": "toggle color reset tell",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color tell",
+      "expected": "tell: default."
+    },
+    {
+      "command": "toggle color say",
+      "expected": "say: bright cyan."
+    },
+    {
+      "command": "toggle color tell",
+      "expected": "tell: bright red."
+    },
+    {
+      "command": "toggle color reset all",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color say",
+      "expected": "say: default."
+    },
+    {
+      "command": "toggle color say",
+      "expected": "say: bright red."
+    },
+    {
+      "command": "toggle color room animated",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle screensize 12",
+      "expected": "Screen length set to 12 lines."
+    },
+    {
+      "command": "toggle paging",
+      "expected": "Paging"
+    },
+    {
+      "command": "toggle paging",
+      "expected": "Paging"
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "r",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "say unrelated-chat",
+      "expected": "unrelated-chat"
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "toggle color motion off",
+      "expected": "save pending"
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "toggle color motion on",
+      "expected": "save pending"
+    },
+    {
+      "command": "toggle color room static",
+      "expected": "save pending"
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "toggle color title bright cyan",
+      "expected": "save pending"
+    },
+    {
+      "command": "look room",
+      "expected": "Gate 00."
+    },
+    {
+      "command": "toggle paging",
+      "expected": "Paging mode off"
+    },
+    {
+      "command": "toggle color inspect bright red",
+      "expected": "save pending"
+    },
+    {
+      "command": "look mural",
+      "expected": "runes stay authored."
+    },
+    {
+      "command": "toggle color preview incoming bright red",
+      "expected": "Sample (incoming)"
+    },
+    {
+      "command": "toggle color preview outgoing bright cyan",
+      "expected": "Sample (outgoing)"
+    },
+    {
+      "command": "toggle color preview observed yellow",
+      "expected": "Sample (observed)"
+    },
+    {
+      "command": "toggle color preview prompt bright cyan",
+      "expected": "10v"
+    },
+    {
+      "command": "save",
+      "expected": "Save complete for Taverek."
+    },
+    {
+      "command": "quit",
+      "expected": "ACCOUNT MENU"
+    },
+    {
+      "command": "save",
+      "expected": "Save complete for Colorbob."
+    },
+    {
+      "command": "quit",
+      "expected": "ACCOUNT MENU"
+    }
+  ],
+  "frames": [
+    {
+      "label": "animated first",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        19,
+        27,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        26,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "pager refresh",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mf\u001b[0;1;32mo\u001b[0;32mrest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        19,
+        27,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        26,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "animated after unrelated chat",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWa\u001b[0;36mt\u001b[0;1;36me\u001b[0;1;34mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        19,
+        27,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        26,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "animated continuation 1",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWat\u001b[0;36me\u001b[0;1;36mr\u001b[0m crosses the \u001b[0;32mfo\u001b[0;1;32mr\u001b[0;32mest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        19,
+        27
+      ],
+      "forest": [
+        18,
+        18,
+        26,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "animated continuation 2",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 00.\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 01.\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 02.\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 03.\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 04.\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 05.\r\n\u001b[0;1;36mW\u001b[0;1;34mate\u001b[0;36mr\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        27,
+        25,
+        25,
+        25,
+        19
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        26,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "animated continuation 3",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 00.\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 01.\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 02.\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 03.\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 04.\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 05.\r\n\u001b[0;36mW\u001b[0;1;36ma\u001b[0;1;34mter\u001b[0m crosses the \u001b[0;32mfor\u001b[0;1;32me\u001b[0;32mst\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        19,
+        27,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        26,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "animated continuation 4",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 00.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 01.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 02.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 03.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 04.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 05.\r\n\u001b[0;1;34mW\u001b[0;36ma\u001b[0;1;36mt\u001b[0;1;34mer\u001b[0m crosses the \u001b[0;32mfore\u001b[0;1;32ms\u001b[0;32mt\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        19,
+        27,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        26,
+        18
+      ]
+    },
+    {
+      "label": "motion off first",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "motion off repeated",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "static first",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "static repeated",
+      "terminalAnsi": "\r\nThe Regression Arena\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "separate title and room body",
+      "terminalAnsi": "\r\n\u001b[0;1;36mThe Regression Arena\u001b[m\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 00.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 01.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 02.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 03.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 04.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 05.\r\n\u001b[0;1;34mWater\u001b[0m crosses the \u001b[0;32mforest\u001b[0m. Gate 06.\r\n\r\n\r\n[Return to continue, (q)uit, (r)efresh, (b)ack, or page number (1/5)]\r\n",
+      "water": [
+        25,
+        25,
+        25,
+        25,
+        25
+      ],
+      "forest": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "label": "protected survey mural",
+      "terminalAnsi": "\r\n\u001b[0;1;37mAuthored survey mural\u001b[m\r\n+------------+-------+\r\n| \u001b[0;1;32mforest\u001b[0m     | water |\r\n+------------+-------+\r\n\u001b[0;1;34mBlue\u001b[0;1;36m gradient\u001b[0m, river and runes stay authored.\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m"
+    },
+    {
+      "label": "dense combat previews",
+      "terminalAnsi": "\r\nSample (incoming): \u001b[0;1;31mSomeone strikes you.\u001b[m\r\nPreview only. Apply: toggle color incoming bright red\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m\r\nSample (outgoing): \u001b[0;1;36mYou strike someone.\u001b[m\r\nPreview only. Apply: toggle color outgoing bright cyan\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m\r\nSample (observed): \u001b[0;33mSomeone strikes a traveler.\u001b[m\r\nPreview only. Apply: toggle color observed yellow\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m"
+    },
+    {
+      "label": "low-resource prompt preview",
+      "terminalAnsi": "\r\nSample (prompt): \u001b[0;1;36m< 100h \u001b[0;33m40m \u001b[0;31m10v\u001b[0;1;36m> \u001b[m\r\nPreview only. Apply: toggle color prompt bright cyan\r\n\r\n\u001b[0;32m< 35h/35H 120v/120V \u001b[0;36mPos:\u001b[0;1;32m standing\u001b[0;32m >\u001b[m\r\n\u001b[0;32m<> \u001b[m"
+    }
+  ]
+}

@@ -59,7 +59,7 @@ apostrophes, substring patterns, and stemming rules are unsupported. Duplicate
 normalized words are rejected. Matching uses the renderer's existing whole-token
 and authored-style protection rules.
 
-`output_palette_choices()` is the single catalog for validation and future command
+`output_palette_choices()` is the single catalog for validation and command
 parsing/hints. Its foreground names are `blue`, `green`, `cyan`, `red`, `magenta`,
 `yellow`, `white`, `gray`, and the seven `bright_` variants from `bright_blue` through
 `bright_white`. Names are case-insensitive. V1 accepts named foreground colors only;
@@ -104,7 +104,7 @@ retain their values; append new IDs without renumbering old ones. `Unspecified`
 and the `Count` sentinel cannot be configured. The registered routes are:
 
 - `room.description`, `room.title`, `room.inspect`, `room.exits`, `room.auras`,
-  `room.occupants`, `items.list`.
+  `room.occupants`, `room.items`, `items.list`.
 - `chat.say`, `chat.tell`, `chat.whisper`, `chat.ask`, `chat.shout`, `chat.yell`,
   `chat.group`, `chat.guild`, `chat.alliance`, `chat.petition`, `chat.project`,
   `chat.page`, `chat.racewar`, `chat.immortal`, `chat.auction`, `chat.nchat`,
@@ -112,7 +112,8 @@ and the `Count` sentinel cannot be configured. The registered routes are:
 - `social`, `weather`, `combat.incoming`, `combat.outgoing`, `combat.observed`,
   the existing `combat.generic` tag, `prompt`, and `system.feedback`.
 
-Routes map known channels to known profiles. Missing routes resolve to Preserve.
+Routes map known channels to known profiles. Missing routes resolve to Preserve
+unless the recipient chooses an explicit foreground on an adopted channel.
 An unmapped channel cannot acquire a dictionary from a recipient preference.
 Identifiers do not enable or restore gameplay channels, including retired ones.
 
@@ -121,16 +122,21 @@ Resolution is pure and proceeds in this order:
 1. A caller's explicit Preserve is an absolute veto. Invalid caller modes also
    preserve. Passing Static or Animated authorizes profile resolution; those two
    values are not a ceiling on the server profile's chosen policy.
-2. Find the server profile for the channel; absent snapshot/route means Preserve.
-3. Apply that recipient's explicit Preserve/Static/Animated choice, or use the
+2. A supported explicit recipient foreground selects Static without requiring a
+   server profile. Explicit semantic role attributes may still come from that profile.
+3. Otherwise find the server profile; absent snapshot/route means Preserve.
+4. Apply that recipient's explicit Preserve/Static/Animated choice, or use the
    server policy for Default. An explicit recipient choice can override a server
    Preserve default when the caller has opted in and a profile exists.
-4. If recipient motion is disabled, demote any resulting Animated policy to Static.
+5. If recipient motion is disabled, demote any resulting Animated policy to Static.
    Authored-style protection applies independently of all these choices.
+
+Dense world fields, combat, the standard prompt and save feedback always use Static
+and exclude word dictionaries. Their state colors come from explicit semantic roles.
 
 `OutputProfilePreferences::reset(channel)` removes just that channel override.
 It does not clear the global motion restriction or another channel/player's choice.
-Preference persistence and player commands remain owned by issue #283.
+See [saved preferences](OUTPUT_PREFERENCES.md) and [player commands](COLOR_COMMAND.md).
 
 ```cpp
 auto selected = resolve_output_profile(output_profile_registry().snapshot(),
@@ -150,7 +156,7 @@ Profiles share dictionary frames within a snapshot. No per-message dictionary
 construction is required. Snapshots retained by callers intentionally retain their
 own bounded configuration until the last reference is released.
 
-Add channel/color choices to the public catalogs so config parsing and future
+Add channel/color choices to the public catalogs so config parsing and
 command hints agree. Unknown enum/string values must keep the conservative fallback.
 New recipe fields or incompatible semantics require an explicit schema-version
 decision; do not silently reinterpret existing V1 files or bypass strict validation.
