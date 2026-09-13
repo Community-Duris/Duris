@@ -8,6 +8,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "sql/sql_player.h"
+#include "player/player_playtime.h"
 #include "sql/item_extra_descr_codec.h"
 #include <errno.h>
 #include <limits.h>
@@ -1314,6 +1315,8 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	}
 
 	bool is_update = (db_pid > 0);
+	const auto played_time =
+		player_playtime_total(ch->player.time.played, ch->player.time.logon, time(nullptr));
 
 	// for crash saves, preserve the existing last_room (camp/rent location)
 	// don't overwrite with crash location so player returns to safe spot.
@@ -1410,7 +1413,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			ch->player.secondary_class, ch->player.spec, GET_RACE(ch), GET_RACEWAR(ch),
 			GET_LEVEL(ch), GET_SEX(ch), ch->player.weight, ch->player.height,
 			GET_SIZE(ch), GET_HOME(ch), GET_BIRTHPLACE(ch), GET_ORIG_BIRTHPLACE(ch),
-			room, ch->player.time.birth, ch->player.time.played, (long)time(0),
+			room, ch->player.time.birth, static_cast<int>(played_time), (long)time(0),
 			0, //!!! perm_aging
 			ch->base_stats.Str, ch->base_stats.Dex, ch->base_stats.Agi,
 			ch->base_stats.Con, ch->base_stats.Pow, ch->base_stats.Int,
@@ -1489,7 +1492,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			ch->player.secondary_class, ch->player.spec, GET_RACE(ch), GET_RACEWAR(ch),
 			GET_LEVEL(ch), GET_SEX(ch), ch->player.weight, ch->player.height,
 			GET_SIZE(ch), GET_HOME(ch), GET_BIRTHPLACE(ch), GET_ORIG_BIRTHPLACE(ch),
-			room, ch->player.time.birth, ch->player.time.played, (long)time(0),
+			room, ch->player.time.birth, static_cast<int>(played_time), (long)time(0),
 			0, //!!! perm_aging
 			ch->base_stats.Str, ch->base_stats.Dex, ch->base_stats.Agi,
 			ch->base_stats.Con, ch->base_stats.Pow, ch->base_stats.Int,

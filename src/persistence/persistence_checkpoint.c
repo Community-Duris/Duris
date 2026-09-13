@@ -43,8 +43,14 @@ void flush_dirty_players(void)
 {
 	for (P_char character = character_list; character; character = character->next)
 		if (IS_PC(character) && GET_PID(character) > 0)
+		{
+			// Session time advances even when no gameplay component changed.
+			if (character->player.time.logon > 0)
+				mark_player_dirty_components(GET_PID(character),
+							     PLAYER_COMPONENT_STATUS);
 			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
 							      room_vnum(character));
+		}
 }
 
 int get_dirty_player_count(void)
@@ -97,8 +103,14 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 		P_char character = find_character_by_runtime_id(character_ids[cursor++]);
 		processed++;
 		if (character && IS_PC(character) && GET_PID(character) > 0)
+		{
+			// Session time advances even when no gameplay component changed.
+			if (character->player.time.logon > 0)
+				mark_player_dirty_components(GET_PID(character),
+							     PLAYER_COMPONENT_STATUS);
 			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
 							      room_vnum(character));
+		}
 	}
 
 	if (cursor < character_ids.size())

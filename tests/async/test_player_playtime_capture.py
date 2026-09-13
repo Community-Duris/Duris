@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "core/utils.h"
 #include "core/files.h"
+#include "core/config.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include <cassert>
@@ -39,7 +40,7 @@ int main() {
     ch.only.pc = &pc;
     pc.pid = 42;
     ch.player.time.played = 3600;
-    ch.player.time.logon = 9940;
+    ch.player.time.logon = 9400;
     ch.player.time.saved = 9000;
     player_revision_t revision = 0;
     auto capture = [&](int intent = RENT_CRASH) {
@@ -59,30 +60,43 @@ int main() {
                 return row.is_unsigned ? row.unsigned_value : static_cast<uint64_t>(row.signed_value);
         std::abort();
     };
-    assert(capture() == 3660); // The current-session minute must be durable.
-    assert(capture() == 3660); // Repeated capture cannot compound elapsed time.
+    assert(capture() == 4200); // The current-session ten minutes must be durable.
+    assert(capture() == 4200); // Repeated capture cannot compound elapsed time.
     now += 15;
-    assert(capture() == 3675);
-    assert(capture(RENT_DEATH) == 3675); // Terminal/death uses the same clock contract.
+    assert(capture() == 4215);
+    assert(capture(RENT_DEATH) == 4215); // Terminal/death uses the same clock contract.
+    now += 30;
+    assert(capture(RENT_LINKDEAD) == 4245); // Resident linkdead time still counts.
+    now -= 30;
     ch.player.time.played = capture(); // Simulate loading the acknowledged total.
     now += 86400; // Offline time is not played time.
     ch.player.time.logon = now;
-    assert(capture() == 3675);
+    assert(capture() == 4215);
     now += 10;
-    assert(capture() == 3685);
+    assert(capture() == 4225);
     ch.player.time.logon = now + 10; // Backward clock jump must not underflow.
-    assert(capture() == 3675);
+    assert(capture() == 4215);
     ch.player.time.logon = 0; // Uninitialized creation/offline fixture.
-    assert(capture() == 3675);
+    assert(capture() == 4215);
     ch.player.time.logon = -1;
-    assert(capture() == 3675);
+    assert(capture() == 4215);
     ch.player.time.logon = 10;
     now = -1; // time() failure must not grant time or underflow.
-    assert(capture() == 3675);
+    assert(capture() == 4215);
     ch.player.time.played = INT_MAX - 5;
     ch.player.time.logon = 10;
     now = 100;
     assert(capture() == INT_MAX); // Durable SQL column is signed INT.
+    ch.player.time.played = UINT_MAX; // A corrupt unsigned baseline cannot wrap a save.
+    assert(capture() == INT_MAX);
+    now = 10000;
+    ch.player.time.logon = 9400;
+#ifdef EQ_WIPE
+    ch.player.time.played = EQ_WIPE + 3600;
+    assert(capture() - EQ_WIPE == 4200); // Existing display offset remains intact.
+    ch.player.time.played = EQ_WIPE + 2 * 3600; // Staff-set two-hour baseline.
+    assert(capture() - EQ_WIPE == 2 * 3600 + 600);
+#endif
     std::cout << "[PASS] active time, repeat saves, terminal capture, reload, clock guards, SQL range; live fields unchanged\n";
 }
 '''
