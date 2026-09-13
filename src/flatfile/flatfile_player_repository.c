@@ -393,6 +393,7 @@ bool merge_snapshot(const player_snapshot &incoming, player_snapshot *materializ
 		materialized->status_strings = incoming.status_strings;
 		materialized->conditions = incoming.conditions;
 		materialized->quest_values = incoming.quest_values;
+		materialized->output_preferences = incoming.output_preferences;
 	}
 	if (incoming.components & PLAYER_COMPONENT_LANGUAGES)
 		materialized->languages = incoming.languages;
