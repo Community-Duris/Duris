@@ -926,8 +926,8 @@ int SpellCastTime(P_char ch, int spl)
 	// if( IS_PC(ch) ) debug( "SpellCastTime: initial beats: %d, PULSE_SPELLCAST: %d", dura, PULSE_SPELLCAST );
 	dura = (dura * spell_pulse_data[GET_RACE(ch)]);
 	// if( IS_PC(ch) ) debug( "SpellCastTime: beats with racial pulse: %d", dura );
-	// Affects all racial modifiers.
-	dura = (dura + get_property("spellcast.pulse.racial.All", 1.000));
+	// Global racial multiplier: 1.0 is neutral, not a one-beat surcharge.
+	dura = (int)(dura * get_property("spellcast.pulse.racial.All", 1.000));
 	// if( IS_PC(ch) ) debug( "SpellCastTime: beats with racial.All: %d", dura );
 	// SPELL_PULSE is a standard modifier, used here, in do_score, and do_stat char..
 	dura = dura * SPELL_PULSE(ch);
