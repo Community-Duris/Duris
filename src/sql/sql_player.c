@@ -5,6 +5,7 @@
 #include "core/prototypes.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/output_preference_codec.h"
 #include "world/db.h"
 #include "core/utils.h"
 #include "sql/sql_player.h"
@@ -1357,6 +1358,8 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	char *esc_poofout = sql_escape_string(ch->only.pc->poofOut ? ch->only.pc->poofOut : "");
 	char *esc_poofinsnd = sql_escape_string("");
 	char *esc_poofoutsnd = sql_escape_string("");
+	const std::string output_preferences =
+		encode_output_preferences(ch->only.pc->output_preferences);
 
 	// Start own transaction only after all preflight lookups and string escaping succeed.
 	bool own_txn = false;
@@ -1407,7 +1410,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			"quest_started=%d, quest_zone_number=%d, quest_giver=%d, quest_level=%d, "
 			"quest_receiver=%d, quest_shares_left=%d, quest_kill_how_many=%d, "
 			"quest_kill_original=%d, quest_map_room=%d, quest_map_bought=%d, "
-			"last_ip=%lu "
+			"last_ip=%lu, output_preferences='%s' "
 			"WHERE pid=%d",
 			esc_short, esc_long, esc_desc, esc_title, ch->player.m_class,
 			ch->player.secondary_class, ch->player.spec, GET_RACE(ch), GET_RACEWAR(ch),
@@ -1441,7 +1444,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			ch->only.pc->quest_receiver, ch->only.pc->quest_shares_left,
 			ch->only.pc->quest_kill_how_many, ch->only.pc->quest_kill_original,
 			ch->only.pc->quest_map_room, ch->only.pc->quest_map_bought,
-			ch->only.pc->last_ip, pid);
+			ch->only.pc->last_ip, output_preferences.c_str(), pid);
 	}
 	else
 	{
@@ -1467,7 +1470,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			"quest_active, quest_mob_vnum, quest_type, quest_accomplished, "
 			"quest_started, quest_zone_number, quest_giver, quest_level, "
 			"quest_receiver, quest_shares_left, quest_kill_how_many, "
-			"quest_kill_original, quest_map_room, quest_map_bought, last_ip"
+			"quest_kill_original, quest_map_room, quest_map_bought, last_ip, output_preferences"
 			") VALUES ("
 			"'%s', '%s', '%s', '%s', '%s', "
 			"%u, %u, %d, %d, %d, %d, %d, "
@@ -1486,7 +1489,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			"%d, %d, %d, %d, "
 			"%d, %d, %d, %d, "
 			"%d, %d, %d, "
-			"%d, %d, %d, %lu"
+			"%d, %d, %d, %lu, '%s'"
 			")",
 			esc_name, esc_short, esc_long, esc_desc, esc_title, ch->player.m_class,
 			ch->player.secondary_class, ch->player.spec, GET_RACE(ch), GET_RACEWAR(ch),
@@ -1521,7 +1524,8 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			ch->only.pc->quest_level, ch->only.pc->quest_receiver,
 			ch->only.pc->quest_shares_left, ch->only.pc->quest_kill_how_many,
 			ch->only.pc->quest_kill_original, ch->only.pc->quest_map_room,
-			ch->only.pc->quest_map_bought, ch->only.pc->last_ip);
+			ch->only.pc->quest_map_bought, ch->only.pc->last_ip,
+			output_preferences.c_str());
 	}
 
 	// free escaped strings
@@ -3806,7 +3810,7 @@ bool sql_load_player_status(P_char ch, int pid)
 		"quest_active, quest_mob_vnum, quest_type, quest_accomplished, "
 		"quest_started, quest_zone_number, quest_giver, quest_level, "
 		"quest_receiver, quest_shares_left, quest_kill_how_many, "
-		"quest_kill_original, quest_map_room, quest_map_bought, last_ip, save_revision "
+		"quest_kill_original, quest_map_room, quest_map_bought, last_ip, save_revision, output_preferences "
 		"FROM player_data WHERE pid=%d",
 		pid);
 
@@ -3991,6 +3995,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	ch->only.pc->last_ip = sql_row_ulong(row, col++, 0);
 	player_revision_t durable_revision = 0;
 	const bool revision_valid = sql_row_revision(row, col++, &durable_revision);
+	ch->only.pc->output_preferences = decode_output_preferences(row[col] ? row[col] : "");
 
 	mysql_free_result(result);
 	if (!revision_valid || !player_revision_hydrate(pid, durable_revision))

@@ -69,6 +69,8 @@ int main()
     assert(restored.pets[0].hold_reason == pet_hold_reason::over_capacity);
     snapshot.pets[0].restore_state.clear(); snapshot.pets[0].hold_reason = pet_hold_reason::none;
     assert(player_snapshot_encode(snapshot, &bytes) == player_snapshot_codec_result::ok);
+    // v5 adds a trailing empty preferences string. Remove it to recover v3 first.
+    bytes.resize(bytes.size() - 4);
     // v1 ended each pet immediately after its item vector; the trailing shapes,
     // trophies and recipes fields occupy nine bytes in this minimal checkpoint.
     bytes.erase(bytes.end() - 17, bytes.end() - 9);

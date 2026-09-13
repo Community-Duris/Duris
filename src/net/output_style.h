@@ -18,6 +18,21 @@ enum class OutputPolicy
 	Animated
 };
 
+// Semantic roles are supplied by game-state branches, never inferred from words.
+enum class OutputRole
+{
+	None,
+	Healthy,
+	Caution,
+	Low,
+	Critical,
+	Success,
+	Failure,
+	Hit,
+	Miss,
+	Count
+};
+
 enum class StyleOrigin
 {
 	ChannelBase,
@@ -74,6 +89,13 @@ struct OutputStyleRecipe
 // Immutable recipe pointers owned by the same snapshot as the dictionary.
 using WordRecipeDictionary = std::map<std::string, const OutputStyleRecipe *, std::less<>>;
 
+// Owned by the immediate caller. Only adopted chat sends attach this metadata;
+// the delivery boundary borrows it synchronously and queues serialized copies.
+struct OutputChatMessage
+{
+	std::string channel, sender, text;
+};
+
 struct OutputContext
 {
 	OutputChannel channel = OutputChannel::Unspecified;
@@ -88,7 +110,25 @@ struct OutputContext
 	// Pure rendering accepts an explicit frame. send_to_char supplies the receiving
 	// connection's channel sequence; replay never calls the renderer with recipes.
 	uint64_t sequence = 0;
+	// Explicit adoption only. The delivery boundary resolves this recipient's
+	// profile; pure rendering never reads player state.
+	bool resolve_recipient_preferences = false;
+	// Optional original template for logging and serializer/pager fallback. Borrowed
+	// only until send_to_char returns; queues always own their frozen byte copies.
+	const char *original_message = nullptr;
+	OutputRole role = OutputRole::None;
+	const OutputChatMessage *chat = nullptr;
 };
+
+inline OutputContext recipient_output_context(OutputChannel channel,
+					      OutputPolicy policy = OutputPolicy::Static)
+{
+	OutputContext context;
+	context.channel = channel;
+	context.policy = policy;
+	context.resolve_recipient_preferences = true;
+	return context;
+}
 
 // Pure transformation. Existing attributes and protected words are never erased.
 // Invalid bounds/styles leave the entire input unchanged. No per-word match cap.
@@ -106,3 +146,10 @@ bool render_output_message(const char *message, const OutputContext &context, st
 // Recheck a frozen page after accumulation, using its actual markup byte length
 // as well as terminal expansion and snoop overhead. This does not apply styling.
 bool output_message_fits_serializers(std::string_view message);
+
+inline OutputContext recipient_role_context(OutputChannel channel, OutputRole role)
+{
+	auto context = recipient_output_context(channel);
+	context.role = role;
+	return context;
+}

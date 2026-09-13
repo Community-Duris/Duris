@@ -1,4 +1,5 @@
 #include "player/player_snapshot_codec.h"
+#include "net/output_preference_state.h"
 #include "core/files.h"
 #include "classes/necromancy.h"
 #include "world/vnum.obj.h"
@@ -718,6 +719,7 @@ player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snaps
 				   out.number<int32_t>(row.experience);
 			   });
 		out.boolean(snapshot.recipes_are_external);
+		out.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES);
 		if (snapshot.death)
 			encode_death(out, *snapshot.death);
 		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
@@ -751,9 +753,9 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 		if (!in.number(snapshot.schema_version))
 			return in.result;
 		const uint32_t wire_version = snapshot.schema_version;
-		if (wire_version == 1)
+		if (wire_version == 1 || wire_version == 3)
 			snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
-		if (wire_version == 2)
+		if (wire_version == 2 || wire_version == 4)
 			snapshot.schema_version = PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION;
 		if (snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION &&
 		    snapshot.schema_version != PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
@@ -858,6 +860,9 @@ player_snapshot_codec_result player_snapshot_decode(const uint8_t *encoded, size
 			    snapshot.trophies, [&](auto &row)
 			    { return in.number(row.zone_number) && in.number(row.experience); }) ||
 		    !in.boolean(snapshot.recipes_are_external))
+			return in.result;
+		if (wire_version >= 5 &&
+		    !in.string(snapshot.output_preferences, OUTPUT_PREFERENCE_MAX_BYTES))
 			return in.result;
 		if (snapshot.schema_version == PLAYER_SNAPSHOT_DEATH_SCHEMA_VERSION)
 		{

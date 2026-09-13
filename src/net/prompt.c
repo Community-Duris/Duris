@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "player/output_preferences.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -82,10 +83,14 @@ void make_prompt(P_desc point)
 		t_ch_p = orig ? orig->only.pc->prompt : t_ch->only.pc->prompt;
 	}
 
+	const auto prompt_profile = player_output_profile(orig ? orig : t_ch, OutputChannel::Prompt,
+							  OutputPolicy::Static);
 	if (t_ch && t_ch->desc && t_ch->desc->term_type == TERM_MSP)
-		strcpy(promptbuf, "\n<prompt>\n&+g<");
+		snprintf(promptbuf, sizeof promptbuf, "\n<prompt>\n%s<",
+			 output_role_markup(prompt_profile, OutputRole::None, "&+g", true));
 	else
-		strcpy(promptbuf, "&+g<");
+		snprintf(promptbuf, sizeof promptbuf, "%s<",
+			 output_role_markup(prompt_profile, OutputRole::None, "&+g", true));
 
 	/* infobar prompt */
 	if (IS_SET((orig ? orig : t_ch)->specials.act, PLR_SMARTPROMPT))
@@ -135,19 +140,33 @@ void make_prompt(P_desc point)
 
 		// Healthy -> Green.
 		if (percent >= 66)
-			APPENDF(promptbuf, "&+g %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "%s %dh",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+g", percent >= 66),
+				t_ch->points.hit);
 		// Wounded -> Brown.
 		else if (percent >= 33)
-			APPENDF(promptbuf, "&+y %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "%s %dh",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+y", percent >= 66),
+				t_ch->points.hit);
 		// Hurt bad -> Red.
 		else if (percent >= 15)
-			APPENDF(promptbuf, "&+r %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "%s %dh",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+r", percent >= 66),
+				t_ch->points.hit);
 		// Nearing death -> Bright red on grey.
 		else
-			APPENDF(promptbuf, "&+R %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "%s %dh",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+R", percent >= 66),
+				t_ch->points.hit);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_HIT))
-		APPENDF(promptbuf, "&+g/%dH", GET_MAX_HIT(t_ch));
+		APPENDF(promptbuf, "%s/%dH",
+			output_role_markup(prompt_profile, OutputRole::None, "&+g", true),
+			GET_MAX_HIT(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MANA))
 	{
 		if (GET_MAX_MANA(t_ch) > 0)
@@ -160,16 +179,30 @@ void make_prompt(P_desc point)
 			percent = -1;
 		}
 		if (percent >= 66)
-			APPENDF(promptbuf, "&+g %dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "%s %dm",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+g", percent >= 66),
+				GET_MANA(t_ch));
 		else if (percent >= 33)
-			APPENDF(promptbuf, "&+y %dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "%s %dm",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+y", percent >= 66),
+				GET_MANA(t_ch));
 		else if (percent >= 0)
-			APPENDF(promptbuf, "&+r %dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "%s %dm",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+r", percent >= 66),
+				GET_MANA(t_ch));
 		else
-			APPENDF(promptbuf, "&+R%dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "%s%dm",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+R", percent >= 66),
+				GET_MANA(t_ch));
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MANA))
-		APPENDF(promptbuf, "&+g/%dM", GET_MAX_MANA(t_ch));
+		APPENDF(promptbuf, "%s/%dM",
+			output_role_markup(prompt_profile, OutputRole::None, "&+g", true),
+			GET_MAX_MANA(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MOVE))
 	{
 		if (GET_MAX_VITALITY(t_ch) > 0)
@@ -185,14 +218,25 @@ void make_prompt(P_desc point)
 		}
 
 		if (percent >= 66)
-			APPENDF(promptbuf, "&+g %dv", t_ch->points.vitality);
+			APPENDF(promptbuf, "%s %dv",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+g", percent >= 66),
+				t_ch->points.vitality);
 		else if (percent >= 33)
-			APPENDF(promptbuf, "&+y %dv", t_ch->points.vitality);
+			APPENDF(promptbuf, "%s %dv",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+y", percent >= 66),
+				t_ch->points.vitality);
 		else
-			APPENDF(promptbuf, "&+r %dv", t_ch->points.vitality);
+			APPENDF(promptbuf, "%s %dv",
+				output_role_markup(prompt_profile, prompt_resource_role(percent),
+						   "&+r", percent >= 66),
+				t_ch->points.vitality);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MOVE))
-		APPENDF(promptbuf, "&+g/%dV", GET_MAX_VITALITY(t_ch));
+		APPENDF(promptbuf, "%s/%dV",
+			output_role_markup(prompt_profile, OutputRole::None, "&+g", true),
+			GET_MAX_VITALITY(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_STATUS))
 	{
 		strcat(promptbuf, " &+cPos:&n");
@@ -221,8 +265,10 @@ void make_prompt(P_desc point)
 	    (t_ch_p & (PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MANA | PROMPT_MAX_MANA | PROMPT_MOVE |
 		       PROMPT_MAX_MOVE)))
 	{
-		strcat(promptbuf, "&+g >\n");
-		snprintf(promptbuf2, sizeof promptbuf2, "&+g<");
+		APPENDF(promptbuf, "%s >\n",
+			output_role_markup(prompt_profile, OutputRole::None, "&+g", true));
+		snprintf(promptbuf2, sizeof promptbuf2, "%s<",
+			 output_role_markup(prompt_profile, OutputRole::None, "&+g", true));
 		pPrompt = promptbuf2 + strlen(promptbuf2);
 		pPromptCap = sizeof(promptbuf2) - strlen(promptbuf2);
 	}
@@ -349,7 +395,8 @@ void make_prompt(P_desc point)
 	if (IS_SET(t_ch->specials.act, PLR_AFK))
 		strcat(pPrompt, "&n (&+RAFK&n)");
 
-	strcat(pPrompt, "&+g> ");
+	checked_appendf(pPrompt, pPromptCap, "%s> ",
+			output_role_markup(prompt_profile, OutputRole::None, "&+g", true));
 
 	if (t_ch && t_ch->desc && t_ch->desc->term_type == TERM_MSP)
 		strcat(pPrompt, "&n\n</prompt>\n");

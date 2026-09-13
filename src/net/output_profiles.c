@@ -46,6 +46,7 @@ constexpr OutputChannelChoice channels[] = {
 	{ OutputChannel::ChatNchat, "chat.nchat" },
 	{ OutputChannel::ChatJchat, "chat.jchat" },
 	{ OutputChannel::ChatWizmsg, "chat.wizmsg" },
+	{ OutputChannel::RoomItems, "room.items" },
 };
 constexpr OutputPaletteChoice colors[] = {
 	{ "blue", ATTR_FG(17) },	   { "green", ATTR_FG(18) },
@@ -228,7 +229,59 @@ bool OutputProfilePreferences::set(OutputChannel channel, OutputProfileChoice ch
 	    choice > OutputProfileChoice::Animated)
 		return false;
 	choices_[(size_t)channel] = choice;
+	colors_[(size_t)channel] = 0;
 	return true;
+}
+
+bool OutputProfilePreferences::set_color(OutputChannel channel, int attr)
+{
+	if (!valid_channel(channel))
+		return false;
+	for (const auto &choice : output_palette_choices())
+		if (choice.attr == attr)
+		{
+			choices_[(size_t)channel] = OutputProfileChoice::Static;
+			colors_[(size_t)channel] = attr;
+			return true;
+		}
+	return false;
+}
+
+int OutputProfilePreferences::color(OutputChannel channel) const
+{
+	return valid_channel(channel) ? colors_[(size_t)channel] : 0;
+}
+
+void OutputProfilePreferences::reset_all()
+{
+	*this = OutputProfilePreferences{};
+}
+
+OutputPreferenceState OutputProfilePreferences::state() const
+{
+	OutputPreferenceState result{};
+	result.motion_off = !motion_enabled;
+	for (size_t channel = 1; channel < OUTPUT_PROFILE_CHANNEL_COUNT; ++channel)
+		result.choices[channel] = colors_[channel] ?
+						  GET_FG(colors_[channel]) :
+						  static_cast<uint8_t>(choices_[channel]);
+	return result;
+}
+
+OutputProfilePreferences OutputProfilePreferences::from_state(const OutputPreferenceState &state)
+{
+	OutputProfilePreferences result;
+	result.motion_enabled = !state.motion_off;
+	for (size_t channel = 1; channel < OUTPUT_PROFILE_CHANNEL_COUNT; ++channel)
+	{
+		unsigned choice = state.choices[channel];
+		if (choice <= static_cast<unsigned>(OutputProfileChoice::Animated))
+			result.set(static_cast<OutputChannel>(channel),
+				   static_cast<OutputProfileChoice>(choice));
+		else if (choice >= 17 && choice <= 31)
+			result.set_color(static_cast<OutputChannel>(channel), ATTR_FG(choice));
+	}
+	return result;
 }
 
 bool OutputProfilePreferences::reset(OutputChannel channel)
@@ -281,8 +334,20 @@ ResolvedOutputProfile resolve_output_profile(std::shared_ptr<const OutputProfile
 {
 	ResolvedOutputProfile result;
 	result.context.channel = channel;
-	if (!snapshot ||
-	    (caller_policy != OutputPolicy::Static && caller_policy != OutputPolicy::Animated))
+	if (caller_policy != OutputPolicy::Static && caller_policy != OutputPolicy::Animated)
+		return result;
+	// An explicit recipient foreground needs no dictionary/server configuration.
+	// Only an adopted caller can reach this branch; Preserve remains an absolute veto.
+	if (int attr = preferences.color(channel))
+	{
+		result.context.policy = OutputPolicy::Static;
+		result.context.base_attr = attr;
+		if (snapshot)
+			if (auto profile = snapshot->profile(channel))
+				result.role_attrs = profile->role_attrs;
+		return result;
+	}
+	if (!snapshot)
 		return result;
 	auto profile = snapshot->profile(channel);
 	if (!profile)
@@ -316,7 +381,30 @@ ResolvedOutputProfile resolve_output_profile(std::shared_ptr<const OutputProfile
 	}
 	result.sender_attr = profile->sender_attr;
 	result.entity_attr = profile->entity_attr;
+	result.role_attrs = profile->role_attrs;
 	result.context.snapshot_owner = std::move(snapshot);
+	// Dense semantic fields never acquire word-based meaning or motion. Their
+	// visible state accents are supplied by the caller's existing metadata.
+	switch (channel)
+	{
+	case OutputChannel::CombatIncoming:
+	case OutputChannel::CombatOutgoing:
+	case OutputChannel::CombatObserved:
+	case OutputChannel::Prompt:
+	case OutputChannel::SystemFeedback:
+	case OutputChannel::RoomTitle:
+	case OutputChannel::RoomExits:
+	case OutputChannel::RoomAuras:
+	case OutputChannel::RoomOccupants:
+	case OutputChannel::ItemsList:
+	case OutputChannel::RoomItems:
+		result.context.policy = OutputPolicy::Static;
+		result.context.words = nullptr;
+		result.context.recipes = nullptr;
+		break;
+	default:
+		break;
+	}
 	return result;
 }
 
@@ -472,11 +560,22 @@ class OutputProfileParser
 				profile.base_attr = color_value(value, where);
 			if (auto roles = field(item, "roles"))
 			{
-				fields(roles, { "sender", "entity" }, where + ".roles");
+				fields(roles,
+				       { "sender", "entity", "healthy", "caution", "low",
+					 "critical", "success", "failure", "hit", "miss" },
+				       where + ".roles");
 				if (auto value = field(roles, "sender"))
 					profile.sender_attr = color_value(value, where);
 				if (auto value = field(roles, "entity"))
 					profile.entity_attr = color_value(value, where);
+				const char *names[] = { "",	   "healthy",  "caution",
+							"low",	   "critical", "success",
+							"failure", "hit",      "miss" };
+				static_assert(std::size(names) == (size_t)OutputRole::Count);
+				for (size_t role = 1; role < std::size(names); ++role)
+					if (auto value = field(roles, names[role]))
+						profile.role_attrs[role] =
+							color_value(value, where);
 			}
 			if (!result.profiles_.emplace(name, std::move(profile)).second)
 				invalid(where, "duplicate normalized profile");
@@ -545,4 +644,33 @@ OutputProfileLoadResult OutputProfileRegistry::reload_file(const std::string &pa
 		return { false, previous ? previous->revision() : 0,
 			 "configuration allocation failed" };
 	}
+}
+
+int output_role_attribute(const ResolvedOutputProfile &profile, OutputRole role)
+{
+	const size_t index = (size_t)role;
+	return profile.context.policy != OutputPolicy::Preserve &&
+			       index < profile.role_attrs.size() ?
+		       profile.role_attrs[index] :
+		       0;
+}
+
+const char *output_role_markup(const ResolvedOutputProfile &profile, OutputRole role,
+			       const char *original, bool use_base)
+{
+	static const char *colors[] = { "&+b", "&+g", "&+c", "&+r", "&+m", "&+y", "&+w", "&+L",
+					"&+B", "&+G", "&+C", "&+R", "&+M", "&+Y", "&+W" };
+	int attr = output_role_attribute(profile, role);
+	if (!attr && use_base && profile.context.policy != OutputPolicy::Preserve)
+		attr = profile.context.base_attr;
+	const int fg = GET_FG(attr);
+	return fg >= 17 && fg <= 31 ? colors[fg - 17] : original;
+}
+
+OutputRole prompt_resource_role(int percent)
+{
+	return percent >= 66 ? OutputRole::Healthy :
+	       percent >= 33 ? OutputRole::Caution :
+	       percent >= 15 ? OutputRole::Low :
+			       OutputRole::Critical;
 }

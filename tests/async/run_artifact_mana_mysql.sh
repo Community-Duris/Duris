@@ -16,11 +16,11 @@ for _ in $(seq 1 90); do
 done
 [[ "$ready" == 1 ]]
 docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -uroot -e "CREATE DATABASE mana_test; CREATE USER 'mana_test'@'%' IDENTIFIED BY '$PASSWORD'; GRANT SELECT,INSERT,UPDATE ON mana_test.* TO 'mana_test'@'%';"
-docker cp "$ROOT/migrations/immutable/0015_artifact_mana.sql" "$NAME:/tmp/artifact-mana.sql" >/dev/null
+docker cp "$ROOT/migrations/immutable/0016_artifact_mana.sql" "$NAME:/tmp/artifact-mana.sql" >/dev/null
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c 'mysql -uroot mana_test < /tmp/artifact-mana.sql'
 done
-docker cp "$ROOT/migrations/immutable/0015_artifact_mana.sh" "$NAME:/tmp/artifact-mana.sh" >/dev/null
+docker cp "$ROOT/migrations/immutable/0016_artifact_mana.sh" "$NAME:/tmp/artifact-mana.sh" >/dev/null
 docker exec -e DB_HOST=127.0.0.1 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME=mana_test "$NAME" bash /tmp/artifact-mana.sh
 mkdir -p "$ROOT/bin/tests"
 "${CXX:-g++}" -std=c++20 -Wall -Wextra -Werror -g -I"$ROOT/src" -I/usr/include/mysql \

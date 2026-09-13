@@ -1,4 +1,5 @@
 #include "player/player_snapshot_capture.h"
+#include "net/output_preference_codec.h"
 #include "player/player_playtime.h"
 #include "player/player_snapshot_codec.h"
 #include "player/pet_restore_runtime.h"
@@ -106,6 +107,10 @@ bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget
 			       ch->only.pc->poofIn) ||
 	    !add_status_string(snapshot, budget, player_status_string_field::poof_out,
 			       ch->only.pc->poofOut))
+		return false;
+
+	snapshot.output_preferences = encode_output_preferences(ch->only.pc->output_preferences);
+	if (!budget.add(snapshot.output_preferences.size() + sizeof(uint32_t)))
 		return false;
 
 	ADD_STATUS(class_primary, ch->player.m_class);
