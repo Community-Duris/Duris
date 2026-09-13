@@ -555,6 +555,10 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
             install_chaos_objects(run_root, class_name)
             inspector = build_snapshot_inspector(run_root)
             generate_certificate(run_root)
+            # Reproduce a CI timestamp containing the placeholder's digits. Log
+            # metadata must not be confused with an authoritative object VNUM.
+            certificate_time = 1789306238312521183
+            os.utime(run_root / "duris.crt", ns=(certificate_time, certificate_time))
 
             journal_root = run_root / "journals"
             (journal_root / "players").mkdir(parents=True, mode=0o700)
@@ -724,7 +728,8 @@ def run_chaos_kit_journey(binary: pathlib.Path, class_name: str = "Warrior") -> 
                         and "CHAOS starter granted " in logs,
                         "CHAOS kit logged an incomplete or unusable grant:\n" + logs,
                     )
-                    require("1252" not in server_output + logs, "placeholder VNUM reached the runtime journey")
+                    require(1252 not in read_item_ownership(state_root),
+                            "placeholder VNUM reached the runtime ownership catalog")
 
                     if client is not None:
                         client.close()
