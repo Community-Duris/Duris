@@ -26,7 +26,8 @@ using namespace std;
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
-#include "net/output_profiles.h"
+#include "player/output_preferences.h"
+#include "player/output_message.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -739,6 +740,11 @@ int ageCorpse(P_char ch, P_obj obj, char *s)
 
 char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 {
+	return show_obj_to_char(object, ch, mode, print, OutputContext{});
+}
+
+char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print, const OutputContext &context)
+{
 	static char buf[MAX_STRING_LENGTH];
 
 	if (IS_TRUSTED(ch) && IS_SET(ch->specials.act, PLR_VNUM))
@@ -903,13 +909,18 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 
 	strcat(buf, "\n");
 
-	if (print)
-		page_string(ch->desc, buf, 1);
+	if (print && ch->desc)
+		send_authored_output(buf, ch->desc->character, context);
 
 	return buf;
 }
 
 void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)
+{
+	list_obj_to_char(list, ch, mode, show, OutputContext{});
+}
+
+void list_obj_to_char(P_obj list, P_char ch, int mode, bool show, const OutputContext &context)
 {
 	P_obj i;
 	bool found;
@@ -925,7 +936,8 @@ void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)
 			continue; /* strung to the horse */
 		/* thieves notice things are 'odd' */
 		if (IS_OBJ_STAT(i, ITEM_BURIED) && GET_CLASS(ch, CLASS_THIEF))
-			send_to_char("The ground appears recently turned...\n", ch);
+			send_authored_output("The ground appears recently turned...\n", ch,
+					     context);
 		if (CAN_SEE_OBJ(ch, i))
 		{
 			s = show_obj_to_char(i, ch, mode, FALSE);
@@ -940,12 +952,12 @@ void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)
 				if (count)
 				{
 					snprintf(buf2, 20, "[%d] ", count + 1);
-					send_to_char(buf2, ch);
+					send_authored_output(buf2, ch, context);
 					count = 0;
 				}
 				if (buf[0])
 				{
-					send_to_char(buf, ch);
+					send_authored_output(buf, ch, context);
 				}
 				if (s)
 					strcpy(buf, s);
@@ -960,15 +972,15 @@ void list_obj_to_char(P_obj list, P_char ch, int mode, bool show)
 		if (count)
 		{
 			snprintf(buf2, 20, "[%d] ", count + 1);
-			send_to_char(buf2, ch);
+			send_authored_output(buf2, ch, context);
 		}
 		if (buf[0])
 		{
-			send_to_char(buf, ch);
+			send_authored_output(buf, ch, context);
 		}
 	}
 	if ((!found) && (show))
-		send_to_char("Nothing.\n", ch);
+		send_authored_output("Nothing.\n", ch, context);
 }
 
 #define SVS(string) (act(string, FALSE, ch, 0, tar_char, TO_CHAR))
@@ -1318,6 +1330,11 @@ void create_in_room_status(P_char ch, P_char i, char buffer[])
    ch is char looking, i is target */
 void show_char_to_char(P_char i, P_char ch, int mode)
 {
+	show_char_to_char(i, ch, mode, OutputContext{});
+}
+
+void show_char_to_char(P_char i, P_char ch, int mode, const OutputContext &context)
+{
 	char buffer[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	int j, found, lt_lvl;
 	P_obj tmp_obj;
@@ -1382,14 +1399,17 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 			     GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER)))
 			{
 				if (higher)
-					send_to_char("&+LYou sense a hidden lifeform above you.\n",
-						     ch);
+					send_authored_output(
+						"&+LYou sense a hidden lifeform above you.\n", ch,
+						context);
 				else if (lower)
-					send_to_char("&+LYou sense a hidden lifeform below you.\n",
-						     ch);
+					send_authored_output(
+						"&+LYou sense a hidden lifeform below you.\n", ch,
+						context);
 				else
-					send_to_char("&+LYou sense a hidden lifeform nearby.\n",
-						     ch);
+					send_authored_output(
+						"&+LYou sense a hidden lifeform nearby.\n", ch,
+						context);
 			}
 			return;
 		}
@@ -1869,7 +1889,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 					mob_index[GET_RNUM(i)].virtual_number);
 
 			act(buffer, TRUE, ch, i->lobj ? i->lobj->Visible_Object() : 0,
-			    GET_OPPONENT(i), TO_CHAR);
+			    GET_OPPONENT(i), TO_CHAR, preserve_authored_layout(buffer, context));
 		}
 		else
 		{ /* npc with long */
@@ -1927,7 +1947,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 				strcat(buffer, buf2);
 
 			strcat(buffer, "\n");
-			send_to_char(buffer, ch);
+			send_authored_output(buffer, ch, context);
 		}
 
 		/* Obscuring mist (illusionist spec) spell */
@@ -2001,7 +2021,8 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 				strcat(buffer, " globe of darkness floats near $N&+L's head.");
 			}
 
-			act(buffer, TRUE, ch, 0, i, TO_CHAR);
+			act(buffer, TRUE, ch, 0, i, TO_CHAR,
+			    preserve_authored_layout(buffer, context));
 		}
 	}
 	else if (mode == 1)
@@ -2009,7 +2030,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 		*buffer = '\0';
 
 		if (i->player.description)
-			send_to_char(i->player.description, ch);
+			send_authored_output(i->player.description, ch, context);
 		else
 			act("You see nothing special about $m.", FALSE, i, 0, ch, TO_VICT);
 
@@ -2066,7 +2087,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 				}
 				else if (ch == i)
 				{
-					send_to_char("Something.\n", ch);
+					send_authored_output("Something.\n", ch, context);
 				}
 			}
 		}
@@ -2075,7 +2096,8 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 		    !IS_TRUSTED(ch))
 		{
 			found = FALSE;
-			send_to_char("\nYou attempt to peek at the inventory:\n", ch);
+			send_authored_output("\nYou attempt to peek at the inventory:\n", ch,
+					     context);
 			for (tmp_obj = i->carrying; tmp_obj; tmp_obj = tmp_obj->next_content)
 			{
 				if (CAN_SEE_OBJ(ch, tmp_obj) &&
@@ -2087,7 +2109,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 				}
 			}
 			if (!found)
-				send_to_char("You can't see anything.\n", ch);
+				send_authored_output("You can't see anything.\n", ch, context);
 		}
 	}
 	else if ((mode == 2) && IS_TRUSTED(ch))
@@ -2098,7 +2120,12 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 }
 
 // mode argument is unused?
-void list_char_to_char(P_char list, P_char ch, int /*mode*/)
+void list_char_to_char(P_char list, P_char ch, int mode)
+{
+	list_char_to_char(list, ch, mode, OutputContext{});
+}
+
+void list_char_to_char(P_char list, P_char ch, int /*mode*/, const OutputContext &context)
 {
 	P_char i;
 	char buf[MAX_STRING_LENGTH];
@@ -2131,11 +2158,14 @@ void list_char_to_char(P_char list, P_char ch, int /*mode*/)
 			    !IS_UNDEAD(i) && !IS_ANGEL(i) && !IS_AFFECTED3(i, AFF3_NON_DETECTION))
 			{
 				if (higher)
-					send_to_char("&+LYou sense a lifeform above you.\n", ch);
+					send_authored_output("&+LYou sense a lifeform above you.\n",
+							     ch, context);
 				else if (lower)
-					send_to_char("&+LYou sense a lifeform below you.\n", ch);
+					send_authored_output("&+LYou sense a lifeform below you.\n",
+							     ch, context);
 				else
-					send_to_char("&+LYou sense a lifeform nearby.\n", ch);
+					send_authored_output("&+LYou sense a lifeform nearby.\n",
+							     ch, context);
 			}
 			else if ((IS_AFFECTED(ch, AFF_SENSE_LIFE) ||
 				  (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
@@ -2144,7 +2174,8 @@ void list_char_to_char(P_char list, P_char ch, int /*mode*/)
 				  IS_ANGEL(i)) &&
 				 !number(0, 3))
 			{
-				send_to_char("&+rYou barely sense a lifeform nearby.\n", ch);
+				send_authored_output("&+rYou barely sense a lifeform nearby.\n", ch,
+						     context);
 			}
 			continue;
 		}
@@ -2168,11 +2199,11 @@ void list_char_to_char(P_char list, P_char ch, int /*mode*/)
 					 higher ? "above you " :
 					 lower	? "below you " :
 						  "");
-				send_to_char(buf, ch);
+				send_authored_output(buf, ch, context);
 			}
 			else
 			{
-				show_char_to_char(i, ch, 0);
+				show_char_to_char(i, ch, 0, context);
 			}
 			continue;
 		}
@@ -2305,8 +2336,6 @@ void do_look(P_char ch, char *argument, int cmd)
 
 void display_room_auras(P_char ch, int room_no)
 {
-	char buffer[MAX_STRING_LENGTH];
-
 	if (room_no == NOWHERE)
 		return;
 
@@ -2321,9 +2350,11 @@ void display_room_auras(P_char ch, int room_no)
 	    (IS_ROOM(room_no, ROOM_HEAL) ||
 	     get_spell_from_room(&world[room_no], SPELL_CONSECRATE_LAND)))
 	{
-		buffer[0] = 0;
-		snprintf(buffer, MAX_STRING_LENGTH, "&+WA &+Bsoothing&+W aura fills the area.&n\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+WA ")
+			.body("&+Bsoothing")
+			.literal("&+W aura fills the area.&n\n")
+			.send(LOG_PUBLIC);
 	}
 
 	if ((IS_AFFECTED2(ch, AFF2_DETECT_EVIL) || affected_by_spell(ch, SPELL_AURA_SIGHT) ||
@@ -2332,9 +2363,11 @@ void display_room_auras(P_char ch, int room_no)
 	     affected_by_spell(ch, SPELL_FAERIE_SIGHT)) &&
 	    IS_ROOM(room_no, ROOM_NO_HEAL))
 	{
-		buffer[0] = 0;
-		snprintf(buffer, MAX_STRING_LENGTH, "&+LAn &n&+revil&+L aura fills the area.&n\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+LAn &n")
+			.body("&+revil")
+			.literal("&+L aura fills the area.&n\n")
+			.send(LOG_PUBLIC);
 	}
 
 	if ((IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) || affected_by_spell(ch, SPELL_AURA_SIGHT) ||
@@ -2343,39 +2376,47 @@ void display_room_auras(P_char ch, int room_no)
 	     affected_by_spell(ch, SPELL_FAERIE_SIGHT)) &&
 	    IS_ROOM(room_no, ROOM_NO_MAGIC))
 	{
-		buffer[0] = 0;
-		snprintf(buffer, MAX_STRING_LENGTH,
-			 "&+bThis area seems to be &+Ldevoid&n&+b of &+Bmagic&n&+b!&n\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+bThis area seems to be ")
+			.body("&+Ldevoid&n&+b of &+Bmagic")
+			.literal("&n&+b!&n\n")
+			.send(LOG_PUBLIC);
 	}
 
 	if (IS_ROOM(room_no, ROOM_SINGLE_FILE) || IS_ROOM(room_no, ROOM_TUNNEL))
 	{
-		buffer[0] = 0;
-		snprintf(buffer, MAX_STRING_LENGTH,
-			 "&+WThis area seems to be exceptionally &+ynarrow!&n\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+WThis area seems to be exceptionally ")
+			.body("&+ynarrow")
+			.literal("!&n\n")
+			.send(LOG_PUBLIC);
 	}
 
 	if (IS_ROOM(room_no, ROOM_SILENT))
 	{
-		buffer[0] = 0;
-		strcat(buffer, "&+wAn &+yunnatural&+w silence fills this area.&n\r\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+wAn ")
+			.body("&+yunnatural")
+			.literal("&+w silence fills this area.&n\r\n")
+			.send(LOG_PUBLIC);
 	}
 
 	if (IS_ROOM(ch->in_room, ROOM_MAGIC_LIGHT))
 	{
-		buffer[0] = 0;
-		strcat(buffer, "&+wA &+Wbright light&n&+w fills this area.&n\r\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+wA ")
+			.body("&+Wbright light")
+			.literal("&n&+w fills this area.&n\r\n")
+			.send(LOG_PUBLIC);
 	}
 
 	if (IS_ROOM(ch->in_room, ROOM_MAGIC_DARK))
 	{
-		buffer[0] = 0;
-		strcat(buffer, "&+LAn unnatural darkness fills this area.&n\r\n");
-		send_to_char(buffer, ch);
+		PlayerOutputMessage(ch, OutputChannel::RoomAuras)
+			.literal("&+LAn unnatural ")
+			.body("darkness")
+			.literal(" fills this area.&n\r\n")
+			.send(LOG_PUBLIC);
 	}
 }
 
@@ -2651,7 +2692,9 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 		{
 			if (EXIT(ch, keyword_no)->general_description)
 			{
-				send_to_char(EXIT(ch, keyword_no)->general_description, ch);
+				send_authored_output(
+					EXIT(ch, keyword_no)->general_description, ch,
+					recipient_output_context(OutputChannel::RoomInspect));
 			}
 			else
 			{
@@ -2932,7 +2975,9 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 			}
 			if (tmp_char)
 			{
-				show_char_to_char(tmp_char, ch, 1);
+				show_char_to_char(
+					tmp_char, ch, 1,
+					recipient_output_context(OutputChannel::RoomInspect));
 				/* Immortals can also see person's inventory */
 				if (IS_TRUSTED(ch))
 				{
@@ -2957,7 +3002,9 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 				tmp_desc = find_ex_description(arg2, world[room_no].ex_description);
 				if (tmp_desc)
 				{
-					page_string(ch->desc, tmp_desc, 0);
+					send_authored_output(tmp_desc, ch->desc->character,
+							     recipient_output_context(
+								     OutputChannel::RoomInspect));
 					return; /* RETURN SINCE IT WAS A ROOM DESCRIPTION */
 				}
 			}
@@ -2981,7 +3028,12 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 									LISTOBJ_SHORTDESC |
 										LISTOBJ_STATS,
 									TRUE);
-								page_string(ch->desc, tmp_desc, 1);
+								send_authored_output(
+									tmp_desc,
+									ch->desc->character,
+									recipient_output_context(
+										OutputChannel::
+											RoomInspect));
 								return;
 							}
 						}
@@ -3007,7 +3059,12 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 									LISTOBJ_SHORTDESC |
 										LISTOBJ_STATS,
 									TRUE);
-								page_string(ch->desc, tmp_desc, 1);
+								send_authored_output(
+									tmp_desc,
+									ch->desc->character,
+									recipient_output_context(
+										OutputChannel::
+											RoomInspect));
 								return;
 							}
 						}
@@ -3037,8 +3094,12 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 										LISTOBJ_SHORTDESC |
 											LISTOBJ_STATS,
 										TRUE);
-									page_string(ch->desc,
-										    tmp_desc, 1);
+									send_authored_output(
+										tmp_desc,
+										ch->desc->character,
+										recipient_output_context(
+											OutputChannel::
+												RoomInspect));
 									return;
 								}
 							}
@@ -3146,7 +3207,8 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 				send_to_char("Flying high above ", ch);
 			else if (ch->specials.z_cord < 0)
 				send_to_char("Swimming below ", ch);
-			send_to_char(world[room_no].name, ch);
+			send_authored_output(world[room_no].name, ch,
+					     recipient_output_context(OutputChannel::RoomTitle));
 			if (IS_SET(ch->specials.act, PLR_VNUM) && IS_TRUSTED(ch))
 			{
 				snprintf(buffer, MAX_STRING_LENGTH, " [&+R%d&N:&+C%d&N]",
@@ -3160,9 +3222,8 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 			{
 				if (world[room_no].description)
 				{
-					auto profile = resolve_output_profile(
-						output_profile_registry().snapshot(),
-						OutputChannel::RoomDescription,
+					auto profile = player_output_profile(
+						ch, OutputChannel::RoomDescription,
 						OutputPolicy::Animated);
 					send_to_char(world[room_no].description, ch,
 						     profile.context);
@@ -3216,10 +3277,12 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 		    ((cmd == CMD_LOOKOUT) && (vis_mode == 5 || vis_mode == 6)))
 		{
 			list_obj_to_char(world[room_no].contents, ch,
-					 LISTOBJ_LONGDESC | LISTOBJ_STATS, FALSE);
+					 LISTOBJ_LONGDESC | LISTOBJ_STATS, FALSE,
+					 recipient_output_context(OutputChannel::RoomItems));
 		}
 
-		list_char_to_char(world[room_no].people, ch, 0);
+		list_char_to_char(world[room_no].people, ch, 0,
+				  recipient_output_context(OutputChannel::RoomOccupants));
 
 		show_tracks(ch, room_no);
 
@@ -3606,7 +3669,12 @@ void show_exits_to_char(P_char ch, int room_no, int mode)
 		strcat(buffer, "\n");
 	}
 
-	send_to_char(buffer, ch);
+	// Only the fixed heading is a channel wrapper; state markers and destination
+	// names retain their authored attributes and existing visibility decisions.
+	PlayerOutputMessage(ch, OutputChannel::RoomExits)
+		.literal("&+gObvious exits:&n")
+		.body(buffer + strlen("&+gObvious exits:&n"))
+		.send(LOG_PUBLIC);
 }
 
 void do_read(P_char ch, char *argument, int /*cmd*/)
@@ -8253,8 +8321,9 @@ void do_inventory(P_char ch, char * /*argument*/, int /*cmd*/)
 	{
 		snprintf(buf, MAX_STRING_LENGTH, "You are carrying: (%d/%d)\n", IS_CARRYING_N(ch),
 			 CAN_CARRY_N(ch));
-		send_to_char(buf, ch);
-		list_obj_to_char(ch->carrying, ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, TRUE);
+		send_to_char(buf, ch, recipient_output_context(OutputChannel::ItemsList));
+		list_obj_to_char(ch->carrying, ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, TRUE,
+				 recipient_output_context(OutputChannel::ItemsList));
 	}
 }
 

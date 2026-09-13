@@ -11,6 +11,8 @@
 
 #include "core/prototypes.h"
 #include "item/device_actions.h"
+#include "player/output_message.h"
+#include "cmd/color_command.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1813,7 +1815,11 @@ static void begin_manual_save_status_wait(P_char ch)
 		return;
 	if (!player_revision_snapshot_copy(status->pid, &revision))
 	{
-		send_to_char_f(ch, "Save failed for %s; please try again.\r\n", GET_NAME(ch));
+		PlayerOutputMessage(ch, OutputChannel::SystemFeedback, OutputRole::Failure)
+			.literal("Save failed for ")
+			.entity(GET_NAME(ch))
+			.literal("; please try again.\r\n")
+			.send(LOG_PUBLIC);
 		clear_manual_save_status(status->pid);
 		return;
 	}
@@ -1835,14 +1841,22 @@ static void check_manual_character_save_status(struct manual_save_status_slot *s
 	if (status->revision && player_revision_snapshot_copy(pid, &revision) &&
 	    revision.acknowledged_revision >= status->revision)
 	{
-		send_to_char_f(ch, "Save complete for %s.\r\n", GET_NAME(ch));
+		PlayerOutputMessage(ch, OutputChannel::SystemFeedback, OutputRole::Success)
+			.literal("Save complete for ")
+			.entity(GET_NAME(ch))
+			.literal(".\r\n")
+			.send(LOG_PUBLIC);
 		clear_manual_save_status(pid);
 		return;
 	}
 	if (persistence_observability_now_usec() - status->started_usec >=
 	    PERSISTENCE_MANUAL_SAVE_TIMEOUT_USEC)
 	{
-		send_to_char_f(ch, "Save failed for %s; please try again.\r\n", GET_NAME(ch));
+		PlayerOutputMessage(ch, OutputChannel::SystemFeedback, OutputRole::Failure)
+			.literal("Save failed for ")
+			.entity(GET_NAME(ch))
+			.literal("; please try again.\r\n")
+			.send(LOG_PUBLIC);
 		clear_manual_save_status(pid);
 		return;
 	}
@@ -4660,6 +4674,7 @@ static const char *term_name(P_char ch)
 
 void show_toggles(P_char ch)
 {
+	send_to_char("Channel colors and motion: toggle color\r\n", ch);
 	char Gbuf1[MAX_STRING_LENGTH];
 	char Gbuf2[MAX_INPUT_LENGTH], Gbuf3[MAX_INPUT_LENGTH];
 	P_char send_ch = ch;
@@ -5007,6 +5022,15 @@ void do_toggle(P_char ch, char *arg, int /*cmd*/)
 	int i, j, tog_nr = -1, result = -1, number;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 	P_char send_ch = ch;
+	// Resolve color ownership through the shared preference service, including
+	// switched bodies, before the legacy toggle handler's NPC restriction.
+	char color_branch[MAX_INPUT_LENGTH];
+	char *color_arguments = one_argument(skip_spaces(arg), color_branch);
+	if (!str_cmp(color_branch, "color"))
+	{
+		do_color_preferences(send_ch, color_arguments);
+		return;
+	}
 
 	if (IS_NPC(ch))
 	{

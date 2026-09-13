@@ -13,6 +13,7 @@ from _paths import ROOT, SRC, extract_function
 
 PRELUDE = r'''
 #include "core/prototypes.h"
+#include "player/output_preferences.h"
 #include "core/utils.h"
 #include "net/comm.h"
 #include "net/mccp.h"
@@ -29,6 +30,12 @@ PRELUDE = r'''
 #include <cstring>
 #include <gnutls/gnutls.h>
 
+static bool custom_prompt = false;
+ResolvedOutputProfile player_output_profile(P_char, OutputChannel channel, OutputPolicy policy) {
+    OutputProfilePreferences choices;
+    if (custom_prompt) choices.set_color(OutputChannel::Prompt, ATTR_FG(27));
+    return resolve_output_profile({}, channel, policy, choices);
+}
 static critical_command submitted;
 static const char *publication_message;
 static bool publication_success;
@@ -352,6 +359,12 @@ int main()
            run(false, false, 0, false, false, "You get item.\r\n", false, false, true));
     run(true, false, 0, false, false, "You get item.\r\n", false, false, false, 1);
     run(true, false, 0, false, false, "You get item.\r\n", false, false, true, 2);
+    custom_prompt = true;
+    for(bool ws : {false, true})
+    for(bool two : {false, true}) {
+        const auto colored = run(false, ws, 0, two, false, "You get item.\r\n");
+        assert(run(true, ws, 0, two, false, "You get item.\r\n") == colored);
+    }
     puts("Deferred item/currency output, ambient bytes, auxiliary prompts, and switched descriptors passed");
 }
 '''
@@ -368,11 +381,11 @@ def main():
             extract_function('comm.c', 'int process_output(P_desc t)'), DRIVER]))
         subprocess.run(['g++', '-std=c++20', '-g', '-O1', '-ffunction-sections', '-fdata-sections',
                         '-fsanitize=address,undefined', '-Isrc', str(source),
-                        *[str(SRC / name) for name in ['prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',
+                        *[str(SRC / name) for name in ['output_profiles.c', 'output_style.c', 'prompt.c', 'ansi.c', 'mccp.c', 'unicode.c', 'json_utils.c', 'safe_format.c',
                             'item_movement_transaction.c', 'item_ownership_runtime.c',
                             'item_transfer_command.c', 'critical_command.c',
                             'player_snapshot_capture.c', 'player_snapshot_codec.c']],
-                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-o', str(binary)],
+                        '-Wl,--gc-sections', '-Wl,--wrap=write', '-lz', '-lcrypto', '-lcjson', '-o', str(binary)],
                        cwd=ROOT, check=True, timeout=120)
         subprocess.run([str(binary)], check=True, timeout=30)
 

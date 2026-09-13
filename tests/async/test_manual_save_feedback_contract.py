@@ -16,8 +16,8 @@ assert '"Save already queued for %s.\\r\\n"' in manual_save
 assert '"Save queued for %s.\\r\\n"' in manual_save
 assert manual_save.index("find_manual_save_status") < manual_save.index("persistence_schedule_character_save")
 assert "revision.acknowledged_revision >= status->revision" in status_event
-assert '"Save complete for %s.\\r\\n"' in status_event
-assert '"Save failed for %s; please try again.\\r\\n"' in status_event
+assert 'literal("Save complete for ")' in status_event
+assert 'literal("Save failed for ")' in status_event
 
 print("[PASS] manual saves report queued, duplicate, completion, and failure states")
 
@@ -35,6 +35,7 @@ preamble = r'''
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include "net/output_style.h"
 #include "player/player_revision_state.h"
 #include "persistence/deferred_save_policy.h"
 struct character { int pid; uint64_t runtime_id; character *next; };
@@ -47,12 +48,21 @@ P_char character_list = &player;
 #define GET_PID(ch) ((ch)->pid)
 #define GET_NAME(ch) "Synthetic"
 #define WAIT_SEC 4
-#define AVATAR 0
 #define LOG_DEBUG 0
 uint64_t now_usec = 1000000;
 int saves = 0;
 bool fail_save = false;
 std::string messages;
+#define LOG_PUBLIC 0
+OutputRole last_feedback_role = OutputRole::None;
+struct PlayerOutputMessage {
+    PlayerOutputMessage(P_char, OutputChannel channel, OutputRole role) {
+        assert(channel == OutputChannel::SystemFeedback); last_feedback_role = role;
+    }
+    PlayerOutputMessage &literal(std::string_view text) { messages += text; return *this; }
+    PlayerOutputMessage &entity(std::string_view text) { messages += text; return *this; }
+    void send(int) {}
+};
 uint64_t persistence_observability_now_usec() { return now_usec; }
 P_char find_character_by_runtime_id(uint64_t id) {
     return player.runtime_id == id ? &player : nullptr;
@@ -98,6 +108,7 @@ int main() {
     assert(player_revision_acknowledge(1, revision, components));
     persistence_pulse_character_saves();
     assert(messages.find("Save complete") != std::string::npos);
+    assert(last_feedback_role == OutputRole::Success);
     assert(!find_manual_save_status(1));
 
     messages.clear();
@@ -119,6 +130,7 @@ int main() {
     now_usec += 30000000;
     persistence_pulse_character_saves();
     assert(messages.find("Save failed") != std::string::npos);
+    assert(last_feedback_role == OutputRole::Failure);
     assert(messages.find("Save complete") == std::string::npos);
 
     manual_request();

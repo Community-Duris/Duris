@@ -346,7 +346,8 @@ scan_result scan_journal()
 		if (decoded != player_snapshot_codec_result::ok ||
 		    static_cast<uint32_t>(frame.snapshot.pid) !=
 			    get_u32(bytes.data() + offset, 40) ||
-		    frame.snapshot.schema_version != get_u32(bytes.data() + offset, 44) ||
+		    get_u32(bytes.data() + offset + header_size, 0) !=
+			    get_u32(bytes.data() + offset, 44) ||
 		    frame.snapshot.revision != get_u64(bytes.data() + offset, 48) ||
 		    frame.snapshot.components != get_u64(bytes.data() + offset, 56))
 		{
