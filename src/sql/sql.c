@@ -24,12 +24,14 @@
 #include "persistence/persistence_mode.h"
 #include "core/utils.h"
 #include "sql/sql.h"
+#include "sql/sql_telemetry_connection.h"
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
 #include "account/session_audit_transaction.h"
 #include "core/runtime_compatibility_contract.h"
 #include <algorithm>
+#include <memory>
 #include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
@@ -1030,40 +1032,43 @@ static bool sql_apply_session_contract(MYSQL *conn)
 	return sql_verify_session_contract(conn);
 }
 
-MYSQL *sql_open_configured_connection(unsigned long client_flags)
+static MYSQL *sql_open_verified_connection(unsigned long client_flags, const char *user,
+					   const char *password, unsigned int timeout)
 {
-	if (!sql_runtime_config_valid())
+	if (!sql_runtime_config_valid() || !user || !*user || !password || !*password)
 		return NULL;
 
 	MYSQL *conn = mysql_init(NULL);
 	if (!conn)
 		return NULL;
-
-	unsigned int timeout = RUNTIME_DB_TIMEOUT_SECONDS;
-	bool options_failed = mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
-			      mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
-			      mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
-	/* MySQL defaults automatic reconnect off and emits a deprecation warning even
+	std::unique_ptr<MYSQL, decltype(&mysql_close)> owned(conn, mysql_close);
+	try
+	{
+		bool options_failed = mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
+				      mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
+				      mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
+		/* MySQL defaults automatic reconnect off and emits a deprecation warning even
 	 * when MYSQL_OPT_RECONNECT is explicitly set to false. MariaDB still supports
 	 * the option without that warning, so preserve the explicit setting there. */
 #if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)
-	bool reconnect = false;
-	options_failed = options_failed || mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
+		bool reconnect = false;
+		options_failed = options_failed ||
+				 mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
 #endif
-	options_failed = options_failed ||
-			 mysql_options(conn, MYSQL_SET_CHARSET_NAME, RUNTIME_DB_CHARACTER_SET);
-	if (options_failed)
-	{
-		mysql_close(conn);
-		return NULL;
-	}
+		options_failed = options_failed || mysql_options(conn, MYSQL_SET_CHARSET_NAME,
+								 RUNTIME_DB_CHARACTER_SET);
+		if (options_failed)
+		{
+			return NULL;
+		}
 
-	const char *socket_path = getenv("DB_SOCKET");
-	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
-	if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
-	{
-		const char *ca = getenv("DB_SSL_CA");
-		/* Both arms demand the same thing: TLS is mandatory, the server
+		const char *socket_path = getenv("DB_SOCKET");
+		bool protected_local = sql_host_is_loopback(DB_HOST) ||
+				       (socket_path && *socket_path);
+		if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
+		{
+			const char *ca = getenv("DB_SSL_CA");
+			/* Both arms demand the same thing: TLS is mandatory, the server
 		 * certificate must chain to the CA, and the name on it must match the
 		 * host we asked for.  MySQL deprecated MYSQL_OPT_SSL_ENFORCE and
 		 * MYSQL_OPT_SSL_VERIFY_SERVER_CERT in 5.7 and removed them in 8.0,
@@ -1072,35 +1077,57 @@ MYSQL *sql_open_configured_connection(unsigned long client_flags)
 		 * requirement -- a downgrade here is silent until someone is on the
 		 * wrong end of it. */
 #if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)
-		bool enabled = true;
-		if (mysql_options(conn, MYSQL_OPT_SSL_ENFORCE, &enabled) ||
-		    mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &enabled) ||
-		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+			bool enabled = true;
+			if (mysql_options(conn, MYSQL_OPT_SSL_ENFORCE, &enabled) ||
+			    mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &enabled) ||
+			    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
 #else
-		unsigned int ssl_mode = SSL_MODE_VERIFY_IDENTITY;
-		if (mysql_options(conn, MYSQL_OPT_SSL_MODE, &ssl_mode) ||
-		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+			unsigned int ssl_mode = SSL_MODE_VERIFY_IDENTITY;
+			if (mysql_options(conn, MYSQL_OPT_SSL_MODE, &ssl_mode) ||
+			    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
 #endif
+			{
+				return NULL;
+			}
+			client_flags |= CLIENT_SSL;
+		}
+
+		if (!mysql_real_connect(conn, DB_HOST, user, password, sql_persistence_db_name(),
+					DB_PORT, socket_path && *socket_path ? socket_path : NULL,
+					client_flags))
 		{
-			mysql_close(conn);
+			logit(LOG_STATUS, "Database connection failed error_code=%u sqlstate=%.5s",
+			      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
 			return NULL;
 		}
-		client_flags |= CLIENT_SSL;
+		if ((!protected_local && !mysql_get_ssl_cipher(conn)) ||
+		    !sql_apply_session_contract(conn))
+		{
+			logit(LOG_STATUS,
+			      "Database connection rejected: transport or session contract failed");
+			return NULL;
+		}
+		return owned.release();
 	}
-
-	if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(),
-				DB_PORT, socket_path && *socket_path ? socket_path : NULL,
-				client_flags))
+	catch (...)
 	{
-		logit(LOG_STATUS, "Database connection failed error_code=%u sqlstate=%.5s",
-		      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
-		mysql_close(conn);
 		return NULL;
 	}
-	if ((!protected_local && !mysql_get_ssl_cipher(conn)) || !sql_apply_session_contract(conn))
+}
+
+MYSQL *sql_open_configured_connection(unsigned long client_flags)
+{
+	return sql_open_verified_connection(client_flags, DB_USER, DB_PASSWD,
+					    RUNTIME_DB_TIMEOUT_SECONDS);
+}
+
+MYSQL *sql_open_telemetry_connection(void)
+{
+	/* No credential fallback or alternate target; never consult DB/sql_pool. */
+	MYSQL *conn = sql_open_verified_connection(0, getenv("TELEMETRY_DB_USER"),
+						   getenv("TELEMETRY_DB_PASSWD"), 2U);
+	if (conn && !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
 	{
-		logit(LOG_STATUS,
-		      "Database connection rejected: transport or session contract failed");
 		mysql_close(conn);
 		return NULL;
 	}

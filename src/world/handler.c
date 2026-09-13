@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "item/item_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -1109,6 +1110,7 @@ void char_from_room(P_char ch)
 	}
 
 	/* Mark room as dirty for GMCP updates (before removal) */
+	item_actions_character_leaving(ch);
 	gmcp_mark_room_dirty(ch->in_room);
 
 	/*
@@ -1971,6 +1973,7 @@ void obj_from_char(P_obj object)
 	}
 
 	ch = object->loc.carrying;
+	item_actions_source_leaving(object);
 
 	if (IS_SET(object->extra_flags, ITEM_LIT) ||
 	    ((object->type == ITEM_LIGHT) && (object->value[2] == -1)))
@@ -2196,6 +2199,7 @@ P_obj unequip_char(P_char ch, int pos, bool saving)
 		return NULL;
 	}
 	obj = ch->equipment[pos];
+	item_actions_source_leaving(obj);
 
 	if (IS_PC(ch) && GET_ITEM_TYPE(ch->equipment[pos]) == ITEM_ARMOR)
 		ch->only.pc->prestige -= obj->value[2];
@@ -3225,6 +3229,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 		return;
 	}
 	world_recovery_capture_forget_object(obj);
+	item_actions_source_leaving(obj);
 
 	// remove from floor_drops if it was tracked
 	if (obj->obj_uid > 0)
@@ -4864,6 +4869,7 @@ void extract_char(P_char ch)
 		return;
 	}
 	++character_removal_generation;
+	item_actions_character_leaving(ch);
 	world_recovery_capture_forget_character(ch);
 	if (!(*ch->player.name))
 	{

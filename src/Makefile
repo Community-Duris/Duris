@@ -94,6 +94,7 @@ SHIP_SRCS = \
 SHIP_OBJS = $(SHIP_SRCS:%.c=ships/%.o)
 
 OBJS =  $(SHIP_OBJS) \
+				 item/item_actions.o \
 				 magic/magic.o \
 				 world/achievements.o \
 				 account/account.o \

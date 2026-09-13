@@ -32,7 +32,7 @@ decorative motion. The maximum stored representation is 512 bytes. Unknown
 versions or oversized values become defaults; invalid, obsolete, or duplicate
 fields reset only the affected known preference. Stored data cannot inject ANSI.
 
-Migration `0014_output_preferences` adds `player_data.output_preferences`
+Migration `0015_output_preferences` adds `player_data.output_preferences`
 (`VARBINARY(512) NOT NULL DEFAULT ''`) through a guarded, repeatable ALTER. Existing
 characters inherit defaults. The migration manifest, migration history digest,
 runtime schema manifest, and compiled compatibility constants advance together.
