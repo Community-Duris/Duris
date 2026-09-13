@@ -44,11 +44,13 @@ def run_backend(temp, mysql=False):
     for purse in ('wallet', 'bank'):
         subprocess.run([str(binary), str(directory / ('normal-'+purse)), 'normal', purse], check=True, timeout=30)
         for crash, exit_code in [('before-payment', 77), ('after-payment', 78), ('after-receipt', 79)]:
-            state = str(directory / (crash+'-'+purse))
-            result = subprocess.run([str(binary), state, crash, purse], timeout=30)
-            assert result.returncode == exit_code, (crash, result.returncode)
-            subprocess.run([str(binary), state, 'replay' if crash == 'after-receipt' else 'recover', purse], check=True, timeout=30)
-            subprocess.run([str(binary), state, 'delivered', purse], check=True, timeout=30)
+            for prefix in ('', 'saturated-'):
+                state = str(directory / (prefix+crash+'-'+purse))
+                result = subprocess.run([str(binary), state, crash, purse], timeout=30)
+                assert result.returncode == exit_code, (crash, result.returncode)
+                recovery = 'replay' if crash == 'after-receipt' else 'recover'
+                subprocess.run([str(binary), state, prefix+recovery, purse], check=True, timeout=30)
+                subprocess.run([str(binary), state, prefix+'delivered', purse], check=True, timeout=30)
 
 
 (ROOT / 'bin/tests').mkdir(parents=True, exist_ok=True)
