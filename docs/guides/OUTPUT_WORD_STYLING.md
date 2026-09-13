@@ -124,7 +124,13 @@ contains added styling, it retains a bounded copy of its original accumulated
 content. If the added bytes would crowd out a later message that fit originally,
 the entire command falls back to original content before paging starts, and added
 styling stays off for the remainder of that command. This preserves the legacy
-visible-text budget. Original messages exceeding legacy limits still follow the
+visible-text budget. Before replay begins, the completed command also checks each
+actual pager page against queue, markup, terminal and snoop limits. Individually
+safe sends can combine into an unsafe page, especially because the legacy pager
+does not count literal ampersands toward its column limit. Such a command falls
+back to its originals, including any existing accumulation warning, before any
+page is emitted. This final check is linear in the bounded command size.
+Original messages exceeding legacy limits still follow the
 existing truncation/rejection path; this feature does not promise to recover
 content that those paths already discarded.
 

@@ -91,6 +91,17 @@ bool serializers_fit(const AnsiString &text)
 }
 } // namespace
 
+bool output_message_fits_serializers(std::string_view message)
+{
+	if (message.size() >= MAX_STRING_LENGTH || message.find('\0') != std::string_view::npos)
+		return false;
+	// Preserved sends can contain redundant markup, so budget the actual frozen
+	// bytes too, rather than only the canonical markup measured by serializers_fit.
+	size_t lines = 1 + std::count(message.begin(), message.end(), '\n');
+	return message.size() + lines * 7 < MAX_STRING_LENGTH - 11 &&
+	       serializers_fit(AnsiString(std::string(message).c_str()));
+}
+
 AnsiString style_dictionary_words(const AnsiString &input, const WordColorDictionary &words,
 				  std::span<const AnsiStyleSpan> spans, int base_attr)
 {
