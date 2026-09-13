@@ -82,6 +82,7 @@ class OutputProfileSnapshot
 		int base_attr = 0;
 		int sender_attr = 0;
 		int entity_attr = 0;
+		std::array<int, (size_t)OutputRole::Count> role_attrs{};
 	};
 	uint32_t revision_ = 0;
 	std::map<std::string, OutputStyleRecipe, std::less<>> recipes_;
@@ -107,6 +108,7 @@ struct ResolvedOutputProfile
 	OutputContext context;
 	int sender_attr = 0;
 	int entity_attr = 0;
+	std::array<int, (size_t)OutputRole::Count> role_attrs{};
 	// Returned metadata is borrowed from context.snapshot_owner, retained by this value.
 	const OutputStyleRecipe *word_recipe(std::string_view word) const;
 };
@@ -139,3 +141,10 @@ class OutputProfileRegistry
 
 // Boot/reload service owns publication; eligible output only borrows a snapshot.
 OutputProfileRegistry &output_profile_registry();
+
+// Static semantic foregrounds use a validated configured role, then an optional
+// personal/base foreground. Original markup is retained when neither is present.
+int output_role_attribute(const ResolvedOutputProfile &profile, OutputRole role);
+const char *output_role_markup(const ResolvedOutputProfile &profile, OutputRole role,
+			       const char *original, bool use_base = false);
+OutputRole prompt_resource_role(int percent);

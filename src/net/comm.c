@@ -4208,8 +4208,7 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 		OutputContext recipient_context = context;
 		if (context.resolve_recipient_preferences)
 		{
-			recipient_context =
-				player_output_profile(ch, context.channel, context.policy).context;
+			recipient_context = player_output_profile(ch, context).context;
 			recipient_context.spans = context.spans;
 		}
 		size_t channel = (size_t)context.channel;
@@ -4928,8 +4927,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 			int sender_attr = 0, entity_attr = 0;
 			if (context.resolve_recipient_preferences)
 			{
-				auto profile =
-					player_output_profile(to, context.channel, context.policy);
+				auto profile = player_output_profile(to, context);
 				selected_context = profile.context;
 				selected_context.spans = context.spans;
 				sender_attr = profile.sender_attr;

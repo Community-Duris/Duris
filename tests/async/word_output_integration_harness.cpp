@@ -141,6 +141,7 @@ float get_property(const char *, double value)
 void gmcp_comm_channel(P_char, const char *, const char *, const char *) {}
 
 #include "world_output_stubs.inc"
+#include "combat_prompt_stubs.inc"
 #include "production_output.inc"
 
 static std::string drain(P_desc d)
@@ -153,6 +154,7 @@ static std::string drain(P_desc d)
 }
 
 #include "world_output_checks.inc"
+#include "combat_prompt_checks.inc"
 
 static void tell_command_matrix()
 {
@@ -676,5 +678,6 @@ int main()
 	assert(drain(&desc) == large);
 	tell_command_matrix();
 	world_output_matrix();
+	combat_prompt_matrix();
 	puts("Output integration: tell/reply, recipient profiles, sends, act, queue merging, privacy, paging and snoop passed");
 }

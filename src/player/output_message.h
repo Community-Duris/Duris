@@ -8,7 +8,8 @@
 class PlayerOutputMessage
 {
     public:
-	PlayerOutputMessage(char_data *recipient, OutputChannel channel);
+	PlayerOutputMessage(char_data *recipient, OutputChannel channel,
+			    OutputRole role = OutputRole::None);
 	PlayerOutputMessage &literal(std::string_view legacy_template);
 	PlayerOutputMessage &body(std::string_view authored_text);
 	PlayerOutputMessage &entity(std::string_view authored_name,

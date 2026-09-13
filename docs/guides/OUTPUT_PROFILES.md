@@ -89,7 +89,10 @@ recipe semantics. Immutable snapshots cannot be copied or moved: share them via
 the registry so borrowed recipe pointers remain tied to their owning snapshot.
 
 A profile requires `policy` (`preserve`, `static`, or `animated`) and may specify
-`dictionary`, `base`, and `roles`. Roles accept `sender` and `entity` foregrounds.
+`dictionary`, `base`, and `roles`. Roles accept `sender` and `entity` foregrounds, plus `healthy`, `caution`, `low`,
+`critical`, `success`, `failure`, `hit` and `miss` for explicit semantic callers.
+These optional V1 fields require the semantic-role implementation; older servers
+reject them rather than silently applying partial configuration.
 The resolver exposes those attributes for callers to place in explicit protected
 spans. It does not infer which words are names or change recipient visibility.
 Existing authored attributes and Authored spans continue to outrank added styles.

@@ -52,3 +52,12 @@ ResolvedOutputProfile player_output_profile(P_char recipient, OutputChannel chan
 	return resolve_output_profile(output_profile_registry().snapshot(), channel, caller_policy,
 				      player_output_preferences(recipient));
 }
+
+ResolvedOutputProfile player_output_profile(P_char recipient, const OutputContext &context)
+{
+	auto profile = player_output_profile(recipient, context.channel, context.policy);
+	if (int attr = output_role_attribute(profile, context.role))
+		profile.context.base_attr = attr;
+	profile.context.role = context.role;
+	return profile;
+}

@@ -49,3 +49,10 @@ The compiled command walkthrough is maintained in
 `tests/async/color_command_harness.cpp`; run `python3 tests/async/test_color_command.py`.
 It covers every command above, incomplete and invalid input, aliases, ambiguity,
 actual rendered previews, immutability, resets, no-op and failed save admission.
+
+Combat choices are `incoming`, `outgoing`, and `observed` (also accepted as
+`combat.incoming`, `combat.outgoing`, and `combat.observed`). They currently cover
+`dam_message` damage variants. `prompt` changes the standard frame and healthy
+resources while retaining low-resource warnings. `feedback` covers manual-save
+completion/failure after the result is known. These channels always remain Static.
+See [semantic roles and exact adoption boundaries](COMBAT_PROMPT_COLORIZATION.md).

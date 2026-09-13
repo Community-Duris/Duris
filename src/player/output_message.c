@@ -3,9 +3,10 @@
 #include <algorithm>
 #include <cstring>
 
-PlayerOutputMessage::PlayerOutputMessage(char_data *recipient, OutputChannel channel)
+PlayerOutputMessage::PlayerOutputMessage(char_data *recipient, OutputChannel channel,
+					 OutputRole role)
 	: recipient_(recipient)
-	, profile_(player_output_profile(recipient, channel, OutputPolicy::Static))
+	, profile_(player_output_profile(recipient, recipient_role_context(channel, role)))
 {
 }
 
@@ -114,10 +115,9 @@ OutputContext preserve_authored_layout(const char *message, const OutputContext 
 
 void send_authored_output(const char *message, char_data *recipient, const OutputContext &context)
 {
-	auto resolved =
-		context.resolve_recipient_preferences ?
-			player_output_profile(recipient, context.channel, context.policy).context :
-			context;
+	auto resolved = context.resolve_recipient_preferences ?
+				player_output_profile(recipient, context).context :
+				context;
 	resolved.spans = context.spans;
 	resolved.original_message = context.original_message;
 	send_to_char(message, recipient, preserve_authored_layout(message, resolved));
