@@ -122,7 +122,9 @@ It boots isolated flatfile authorities and a miniature world, creates real
 accounts/characters over Telnet, equips an NPC with a synthetic magic-missile
 weapon, and exercises actual combat, spell damage, warning output, and flee.
 The fixture uses the ordinary `value[7]=1` selection rate; it adds no production
-debug endpoint or replacement combat implementation. Its three cases are legacy,
+debug endpoint or replacement combat implementation. It uses increased health
+properties for the synthetic NPC/player and a normal starter mace, because the
+server recalculates NPC hit points after loading raw area dice. Its three cases are legacy,
 enabled completion, and enabled successful reaction. This is a packed-weapon
 combat pilot; Avernus's bespoke drain parity is separately exercised by the
 sanitizer callback test.

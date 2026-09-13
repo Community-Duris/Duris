@@ -32,12 +32,17 @@ def configure(run_root: Path, enabled: bool) -> None:
     props = run_root / "lib/duris.properties"
     text = props.read_text()
     for key, value in {"itemActions.enabled": int(enabled), "itemActions.weapons.enabled": 1,
-                       "itemActions.weapons.windupPulses": 8}.items():
+                       "itemActions.weapons.windupPulses": 8,
+                       "hitpoints.mob.NpcPcRatio": 100, "hitpoints.class.Warrior": 12}.items():
         text, count = re.subn(rf"(?m)^{re.escape(key)}=.*$", f"{key}={value}", text)
         assert count == 1, key
     props.write_text(text)
     mini = run_root / "areas_mini"
     objects = (mini / "mini.obj").read_text()
+    # Undo the borrowed death-journey's 100-damage starter mace. Mob conversion
+    # derives HP from properties, not the raw dice below; keep both combatants
+    # alive long enough to observe a proc even after misses/fumbles.
+    objects = objects.replace("6 100 1 7 0 0 0 0", "6 1 6 7 0 0 0 0")
     weapon = """#22801
 regression wandblade~
 the regression wandblade~
