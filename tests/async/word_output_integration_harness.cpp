@@ -327,6 +327,29 @@ int main()
 		else
 			assert(output == warning_baseline);
 	}
+	// Main-menu output bypasses paging even when the paging preference is set.
+	// Turning paging off during a command also makes replay send the whole command.
+	for (bool menu : { false, true })
+		for (OutputPolicy policy : { OutputPolicy::Preserve, OutputPolicy::Static })
+		{
+			OutputContext menu_style{ OutputChannel::Chat, policy, &words };
+			std::string menu_chunk;
+			for (int i = 0; i < 1600; ++i)
+				menu_chunk += "water ";
+			SET_BIT(actor.specials.act, PLR_PAGING_ON);
+			desc.connected = menu ? CON_MAIN_MENU : CON_PLAYING;
+			command_action = [&](P_char ch)
+			{
+				for (int i = 0; i < 4; ++i)
+					send_to_char(menu_chunk.c_str(), ch, LOG_NONE, menu_style);
+				if (!menu)
+					REMOVE_BIT(ch->specials.act, PLR_PAGING_ON);
+			};
+			process_with_paging(&actor, command);
+			assert(visible_terminal_bytes(drain(&desc)) == menu_chunk.size() * 4);
+		}
+	desc.connected = CON_PLAYING;
+	SET_BIT(actor.specials.act, PLR_PAGING_ON);
 	command_action = {};
 
 	// Styling may never displace later visible output at the accumulation limit.

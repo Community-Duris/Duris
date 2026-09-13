@@ -129,7 +129,9 @@ actual pager page against queue, markup, terminal and snoop limits. Individually
 safe sends can combine into an unsafe page, especially because the legacy pager
 does not count literal ampersands toward its column limit. Such a command falls
 back to its originals, including any existing accumulation warning, before any
-page is emitted. This final check is linear in the bounded command size.
+page is emitted. When main-menu output or a changed paging preference bypasses
+paging, validation budgets the entire command that replay actually sends. This
+final check is linear in the bounded command size.
 Original messages exceeding legacy limits still follow the
 existing truncation/rejection path; this feature does not promise to recover
 content that those paths already discarded.

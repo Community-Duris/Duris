@@ -599,10 +599,13 @@ static void finalize_styled_command(P_desc descriptor)
 {
 	if (pager_original.empty() || pager_style_fallback)
 		return;
+	const bool paged = descriptor && descriptor->character &&
+			   IS_SET(descriptor->character->specials.act, PLR_PAGING_ON) &&
+			   descriptor->connected != CON_MAIN_MENU;
 	char *end = command_output + strlen(command_output);
 	for (char *page = command_output; page < end;)
 	{
-		char *next = next_page(page, descriptor);
+		char *next = paged ? next_page(page, descriptor) : nullptr;
 		char *page_end = next ? next : end;
 		if (!output_message_fits_serializers(
 			    std::string_view(page, (size_t)(page_end - page))))
