@@ -45,6 +45,7 @@ HARNESS = r'''
 #include "account/account.h"
 #include "guild/assocs.h"
 #include "player/player_playtime.h"
+#include "net/output_preference_codec.h"
 #include "player/player_revision_state.h"
 #include "sql/sql.h"
 
