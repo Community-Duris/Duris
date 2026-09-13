@@ -450,6 +450,14 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 
 	skl = pReward->value;
 
+	// Epic skills are learned from epic.skills.minLevel (default 56) upward.
+	if (GET_LEVEL(pl) < epic_skills_min_level())
+	{
+		send_to_char_f(pl, "You must reach level %d before you can learn epic skills.\r\n",
+			       epic_skills_min_level());
+		return TRUE;
+	}
+
 	cost_mod = 1 + GET_CHAR_SKILL(pl, skl) / get_property("epic.progressFactor", 30);
 	// For the 2015-6 wipe, doubling cash cost and tripling the epic point cost.
 	epics_cost = 3 * (int)(cost_mod * pReward->points_cost);
