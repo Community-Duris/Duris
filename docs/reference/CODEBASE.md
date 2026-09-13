@@ -326,7 +326,9 @@ participant pass through, and in `epic_calculate_pvp_award()` for PvP. A zone-to
 payload needs the toucher as its first recipient and a positive award for every
 recipient, so a toucher below the level is refused and group members below it are left
 out of the award. Touch-stone level costs are unchanged. `epic.skills.minLevel` (default
-56) is the lowest level at which an epic teacher will teach.
+56) is the lowest level at which an epic teacher will teach. Epic potions use the same
+gain-level requirement before quaffing, so an ineligible character keeps the potion
+and receives the required level without consuming it or incurring a wait.
 
 ## Server difficulty dials
 

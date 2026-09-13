@@ -4184,10 +4184,10 @@ void do_quaff(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	if (OBJ_VNUM(bottle) == VOBJ_EPIC_BOTTLE_EPICS && GET_LEVEL(ch) < 46)
+	if (OBJ_VNUM(bottle) == VOBJ_EPIC_BOTTLE_EPICS && !epic_level_can_gain(ch))
 	{
-		act("&+CYou suddenly feel.. like doing some exp so you can quaff $p!\r\n", TRUE, ch,
-		    bottle, 0, TO_CHAR);
+		send_to_char_f(ch, "You must reach level %d before you can quaff epic potions.\r\n",
+			       epic_gain_min_level());
 		return;
 	}
 
