@@ -308,6 +308,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "9c2d5c99b2c9cefa3a3fae9ff63cdf20c8ba1503065a94d62c92c5d406cd5264",
       "verify_checksum": "6d37acd001d32ba637d5da441c0ec476d50d5170c9c893061ad0c7fc235453b1"
+    },
+    {
+      "id": "0014_output_preferences",
+      "sequence": 14,
+      "description": "Persist per-character output colors and reduced motion",
+      "apply": "immutable/0014_output_preferences.sql",
+      "verify": "immutable/0014_output_preferences.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "2e41b6592ad9c96523215d8356d8d324b78388752f12cfa8b532387af5474bba",
+      "verify_checksum": "b910b48bb23e5fb923c4b725f2879453a6244325e2bd47f9eb50bcac283b6f1b"
     }
   ]
 }

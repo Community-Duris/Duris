@@ -32,6 +32,7 @@
 #include "player/player_log.h"
 #include "net/ansi.h"
 #include "net/output_channel.h"
+#include "net/output_preference_state.h"
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -1233,6 +1234,7 @@ struct char_shapechange_data
 
 struct pc_only_data
 { /* values only used by PCs        */
+	OutputPreferenceState output_preferences;
 	player_held_pet_state *held_pets; // owned snapshots; never active followers
 	int pid; // replacement for PC's ->nr
 

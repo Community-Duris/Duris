@@ -228,7 +228,59 @@ bool OutputProfilePreferences::set(OutputChannel channel, OutputProfileChoice ch
 	    choice > OutputProfileChoice::Animated)
 		return false;
 	choices_[(size_t)channel] = choice;
+	colors_[(size_t)channel] = 0;
 	return true;
+}
+
+bool OutputProfilePreferences::set_color(OutputChannel channel, int attr)
+{
+	if (!valid_channel(channel))
+		return false;
+	for (const auto &choice : output_palette_choices())
+		if (choice.attr == attr)
+		{
+			choices_[(size_t)channel] = OutputProfileChoice::Static;
+			colors_[(size_t)channel] = attr;
+			return true;
+		}
+	return false;
+}
+
+int OutputProfilePreferences::color(OutputChannel channel) const
+{
+	return valid_channel(channel) ? colors_[(size_t)channel] : 0;
+}
+
+void OutputProfilePreferences::reset_all()
+{
+	*this = OutputProfilePreferences{};
+}
+
+OutputPreferenceState OutputProfilePreferences::state() const
+{
+	OutputPreferenceState result{};
+	result.motion_off = !motion_enabled;
+	for (size_t channel = 1; channel < OUTPUT_PROFILE_CHANNEL_COUNT; ++channel)
+		result.choices[channel] = colors_[channel] ?
+						  GET_FG(colors_[channel]) :
+						  static_cast<uint8_t>(choices_[channel]);
+	return result;
+}
+
+OutputProfilePreferences OutputProfilePreferences::from_state(const OutputPreferenceState &state)
+{
+	OutputProfilePreferences result;
+	result.motion_enabled = !state.motion_off;
+	for (size_t channel = 1; channel < OUTPUT_PROFILE_CHANNEL_COUNT; ++channel)
+	{
+		unsigned choice = state.choices[channel];
+		if (choice <= static_cast<unsigned>(OutputProfileChoice::Animated))
+			result.set(static_cast<OutputChannel>(channel),
+				   static_cast<OutputProfileChoice>(choice));
+		else if (choice >= 17 && choice <= 31)
+			result.set_color(static_cast<OutputChannel>(channel), ATTR_FG(choice));
+	}
+	return result;
 }
 
 bool OutputProfilePreferences::reset(OutputChannel channel)
@@ -281,8 +333,17 @@ ResolvedOutputProfile resolve_output_profile(std::shared_ptr<const OutputProfile
 {
 	ResolvedOutputProfile result;
 	result.context.channel = channel;
-	if (!snapshot ||
-	    (caller_policy != OutputPolicy::Static && caller_policy != OutputPolicy::Animated))
+	if (caller_policy != OutputPolicy::Static && caller_policy != OutputPolicy::Animated)
+		return result;
+	// An explicit recipient foreground needs no dictionary/server configuration.
+	// Only an adopted caller can reach this branch; Preserve remains an absolute veto.
+	if (int attr = preferences.color(channel))
+	{
+		result.context.policy = OutputPolicy::Static;
+		result.context.base_attr = attr;
+		return result;
+	}
+	if (!snapshot)
 		return result;
 	auto profile = snapshot->profile(channel);
 	if (!profile)
