@@ -164,7 +164,7 @@ print("[PASS] additive guarded schema initializes legacy and new rows at revisio
 load_start = SQL_PLAYER.rindex("bool sql_load_player_status(P_char ch, int pid)")
 load_end = SQL_PLAYER.index("bool sql_load_player_skills", load_start)
 load_body = SQL_PLAYER[load_start:load_end]
-assert 'last_ip, save_revision "' in load_body
+assert 'last_ip, save_revision, output_preferences "' in load_body
 assert "sql_row_revision" in load_body
 assert "!revision_valid || !player_revision_hydrate" in load_body
 assert "outcome=hydrate_failure" in load_body
