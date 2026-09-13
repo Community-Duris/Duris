@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Duris object item ability catalog version 1",
+  "description": "Structural editor contract. The server additionally validates field relationships, duplicate keys/IDs, named mana consistency, runtime spell target flags, prototype availability and monotonically increasing revisions. The document limit is one MiB; presentation limits are UTF-8 bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "abilities"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "abilities": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/ability"}}
+  },
+  "$defs": {
+    "id": {"type": "integer", "minimum": 1, "maximum": 1000000000},
+    "amount": {"type": "integer", "minimum": 0, "maximum": 1000000000000},
+    "text": {"type": "string", "minLength": 1, "maxLength": 240, "pattern": "^[^\\u0000-\\u001f\\u007f$]+$"},
+    "mana": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "revision", "capacity", "regeneration", "passiveFloor"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"}, "revision": {"$ref": "#/$defs/id"},
+        "capacity": {"type": "integer", "minimum": 1, "maximum": 1000000000000},
+        "regeneration": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "passiveFloor": {"$ref": "#/$defs/amount"}
+      }
+    },
+    "effect": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "spell", "power", "target", "call"],
+      "properties": {
+        "type": {"const": "spell"},
+        "spell": {"type": "integer", "minimum": 1, "maximum": 1999},
+        "power": {"type": "integer", "minimum": 0, "maximum": 60},
+        "target": {"enum": ["activator", "holder", "victim", "item", "room"]},
+        "call": {"enum": ["spell", "wand"]}
+      }
+    },
+    "ability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "revision", "vnum", "trigger", "mode", "source", "minimumLevel", "windupPulses", "progressPulses", "cooldownMs", "concurrency", "ownership", "cost", "mana", "effects", "presentation"],
+      "properties": {
+        "id": {"type": "integer", "minimum": 1, "maximum": 268435455},
+        "revision": {"$ref": "#/$defs/id"}, "vnum": {"$ref": "#/$defs/id"},
+        "trigger": {"enum": ["hit", "use"]}, "mode": {"enum": ["passive", "active"]},
+        "source": {"enum": ["equipped", "carried"]},
+        "minimumLevel": {"type": "integer", "minimum": 0, "maximum": 60},
+        "windupPulses": {"type": "integer", "minimum": 4, "maximum": 600},
+        "progressPulses": {"type": "integer", "minimum": 0, "maximum": 599},
+        "cooldownMs": {"type": "integer", "minimum": 0, "maximum": 3600000},
+        "concurrency": {"const": "shared"}, "ownership": {"const": "studio-action"},
+        "cost": {"$ref": "#/$defs/amount"},
+        "mana": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/mana"}]},
+        "effects": {"type": "array", "minItems": 1, "maxItems": 3, "items": {"$ref": "#/$defs/effect"}},
+        "presentation": {
+          "type": "object", "additionalProperties": false,
+          "required": ["begin", "progress", "complete", "cancel"],
+          "properties": {
+            "begin": {"$ref": "#/$defs/text"}, "progress": {"$ref": "#/$defs/text"},
+            "complete": {"$ref": "#/$defs/text"}, "cancel": {"$ref": "#/$defs/text"}
+          }
+        }
+      },
+      "allOf": [
+        {"if": {"properties": {"trigger": {"const": "hit"}}}, "then": {"properties": {"mode": {"const": "passive"}, "source": {"const": "equipped"}}}},
+        {"if": {"properties": {"trigger": {"const": "use"}}}, "then": {"properties": {"mode": {"const": "active"}}}},
+        {"if": {"properties": {"mana": {"type": "null"}}}, "then": {"properties": {"cost": {"const": 0}}}}
+      ]
+    }
+  }
+}

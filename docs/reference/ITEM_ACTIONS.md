@@ -4,8 +4,8 @@ This is the default-off shared runtime for [#291](https://github.com/Community-D
 the first workstream in [#290](https://github.com/Community-Duris/Duris/issues/290).
 The core registers no gameplay abilities by itself. Optional
 [weapon adapters](WEAPON_ACTIONS.md), [device activation](DEVICE_ACTIONS.md), and
-[artifact mana](ARTIFACT_MANA.md) use it; Studio integration and further artifact migrations are
-separate workstreams.
+[artifact mana](ARTIFACT_MANA.md) use it. [Typed Studio authoring](STUDIO_ITEM_ABILITIES.md)
+also requests the shared lifecycle; further artifact migrations remain separate workstreams.
 
 ## Routing and admission
 
