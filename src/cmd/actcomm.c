@@ -425,6 +425,7 @@ int say(P_char ch, const char *argument)
 		{
 			if ((kala != ch) && (ch->specials.z_cord == kala->specials.z_cord))
 			{
+				std::string permitted_text = argument + i;
 				if (mind)
 				{
 					escape_act_dollars(escaped_text, sizeof(escaped_text),
@@ -441,8 +442,9 @@ int say(P_char ch, const char *argument)
 				else
 				{
 					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", argument + i);
+					permitted_text = language_CRYPT(ch, kala, Gbuf3);
 					escape_act_dollars(escaped_text, sizeof(escaped_text),
-							   language_CRYPT(ch, kala, Gbuf3));
+							   permitted_text.c_str());
 
 					if (IS_THRIKREEN(ch))
 					{
@@ -457,20 +459,17 @@ int say(P_char ch, const char *argument)
 								 language_known(ch, kala),
 								 escaped_text);
 				}
+				OutputChatMessage chat{ "say", PERS(ch, kala, FALSE),
+							permitted_text };
+				auto output = recipient_output_context(OutputChannel::ChatSay);
+				output.chat = &chat;
 				if (mind || IS_TRUSTED(ch))
-					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT,
-					    recipient_output_context(OutputChannel::ChatSay));
+					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT, output);
 				else
 					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT | ACT_SILENCEABLE,
-					    recipient_output_context(OutputChannel::ChatSay));
-
-				/* Send to web client via GMCP */
-				gmcp_comm_channel(kala, "say", PERS(ch, kala, FALSE), argument + i);
+					    output);
 			}
 		}
-
-		/* Send to sender's web client too */
-		gmcp_comm_channel(ch, "say", GET_NAME(ch), argument + i);
 
 		if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 		{
@@ -481,7 +480,10 @@ int say(P_char ch, const char *argument)
 				snprintf(Gbuf1, MAX_STRING_LENGTH, "You %s %s'%s'\r\n",
 					 IS_THRIKREEN(ch) ? "chitter" : "say",
 					 language_known(ch, ch), argument + i);
-			send_to_char(Gbuf1, ch, recipient_output_context(OutputChannel::ChatSay));
+			OutputChatMessage chat{ "say", GET_NAME(ch), argument + i };
+			auto output = recipient_output_context(OutputChannel::ChatSay);
+			output.chat = &chat;
+			send_to_char(Gbuf1, ch, output);
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
@@ -617,6 +619,7 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 				if (IS_NPC(ch) || IS_SET(ch->specials.act3, PLR3_GUILDNAME))
 				{
 					PlayerOutputMessage(ch, OutputChannel::ChatGuild)
+						.chat("gcc", GET_NAME(ch), argument)
 						.literal("&+cYou tell ")
 						.entity(from_guild->get_name())
 						.literal(" &+c'&+C")
@@ -633,6 +636,7 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 								 .color :
 							 'c');
 					PlayerOutputMessage(ch, OutputChannel::ChatGuild)
+						.chat("gcc", GET_NAME(ch), argument)
 						.literal("&+cYou tell your ")
 						.entity(accent)
 						.literal("&+c '&+C")
@@ -692,15 +696,17 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 			{
 				continue;
 			}
+			const std::string permitted_text = language_CRYPT(ch, to_ch, argument);
 			if (IS_NPC(to_ch) || IS_SET(to_ch->specials.act3, PLR3_GUILDNAME))
 			{
 				PlayerOutputMessage(to_ch, OutputChannel::ChatGuild)
+					.chat("gcc", PERS(ch, to_ch, FALSE), permitted_text.c_str())
 					.literal("&+c")
 					.entity(PERS(ch, to_ch, FALSE), StyleOrigin::Sender)
 					.literal("&n&+c tells &n")
 					.entity(guild_name)
 					.literal("&+c '&+C")
-					.body(language_CRYPT(ch, to_ch, argument))
+					.body(permitted_text)
 					.literal("&n&+c'\r\n")
 					.send(LOG_PRIVATE);
 			}
@@ -712,23 +718,18 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 						 racewar_color[from_guild->get_racewar()].color :
 						 'c');
 				PlayerOutputMessage(to_ch, OutputChannel::ChatGuild)
+					.chat("gcc", PERS(ch, to_ch, FALSE), permitted_text.c_str())
 					.literal("&+c")
 					.entity(PERS(ch, to_ch, FALSE), StyleOrigin::Sender)
 					.literal("&n&+c tells your ")
 					.entity(accent)
 					.literal("&+c '&+C")
-					.body(language_CRYPT(ch, to_ch, argument))
+					.body(permitted_text)
 					.literal("&n&+c'\r\n")
 					.send(LOG_PRIVATE);
 			}
-
-			/* Send to web client via GMCP */
-			gmcp_comm_channel(to_ch, "gcc", PERS(ch, to_ch, FALSE), argument);
 		}
 	}
-
-	/* Send to sender's web client too */
-	gmcp_comm_channel(ch, "gcc", GET_NAME(ch), argument);
 }
 
 // Sends a message to each person in-game and in guild.
@@ -1157,7 +1158,11 @@ void do_tell(P_char ch, char *argument, int /*cmd*/)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
+				char sender_label[MAX_NAME_LENGTH + 8];
+				snprintf(sender_label, sizeof(sender_label), "You -> %s",
+					 GET_NAME(vict));
 				PlayerOutputMessage(ch, OutputChannel::ChatTell)
+					.chat(ch != vict ? "tell" : nullptr, sender_label, message)
 					.literal("&+WYou tell ")
 					.entity(GET_NAME(vict))
 					.literal(" ")
@@ -1182,32 +1187,21 @@ void do_tell(P_char ch, char *argument, int /*cmd*/)
 				      message);
 		}
 
+		const std::string permitted_text = language_CRYPT(ch, vict, message);
+		const char *sender_name =
+			(CAN_SEE(vict, ch) || racewar(vict, ch)) ?
+				(IS_PC(ch) ? ch->player.name : ch->player.short_descr) :
+				"Someone";
 		PlayerOutputMessage(vict, OutputChannel::ChatTell)
+			.chat("tell", sender_name, permitted_text.c_str())
 			.literal("&+W")
-			.entity((CAN_SEE(vict, ch) || racewar(vict, ch)) ?
-					(IS_PC(ch) ? ch->player.name : ch->player.short_descr) :
-					"Someone",
-				StyleOrigin::Sender)
+			.entity(sender_name, StyleOrigin::Sender)
 			.literal("&+W tells you ")
 			.entity(language_known(ch, vict))
 			.literal("'")
-			.body(language_CRYPT(ch, vict, message))
+			.body(permitted_text)
 			.literal("'&N\r\n")
 			.send(LOG_PRIVATE);
-
-		/* Send to web client via GMCP */
-		gmcp_comm_channel(vict, "tell",
-				  (CAN_SEE(vict, ch) || racewar(vict, ch)) ? GET_NAME(ch) :
-									     "Someone",
-				  message);
-
-		/* Also send to sender so they see their own tell in chat panel */
-		if (ch->desc && ch != vict)
-		{
-			char sender_label[MAX_NAME_LENGTH + 8];
-			snprintf(sender_label, sizeof(sender_label), "You -> %s", GET_NAME(vict));
-			gmcp_comm_channel(ch, "tell", sender_label, message);
-		}
 
 		if (IS_SET(vict->specials.act, PLR_AFK))
 			act("$n sent you a tell, and your &+RAFK&N is toggled on!", FALSE, ch, 0,

@@ -7,6 +7,8 @@
 #include "player/output_message.h"
 #include "player/player_save_pipeline.h"
 #include "net/gmcp.h"
+#include "net/chat_presentation.h"
+#include <cjson/cJSON.h>
 #include <cassert>
 #include <cstdarg>
 #include <cstring>
@@ -98,6 +100,7 @@ char *one_argument(const char *input, char *out)
 // are controlled boundaries, so transformation is deterministic in this test.
 P_desc descriptor_list = nullptr;
 static unsigned language_calls = 0;
+static const char *language_override = nullptr;
 bool can_talk(P_char)
 {
 	return true;
@@ -128,7 +131,7 @@ void half_chop(char *input, char *first, char *rest)
 char *language_CRYPT(P_char, P_char, char *message)
 {
 	++language_calls;
-	return message;
+	return language_override ? const_cast<char *>(language_override) : message;
 }
 const char *language_known(P_char, P_char)
 {
@@ -138,10 +141,16 @@ float get_property(const char *, double value)
 {
 	return value;
 }
-void gmcp_comm_channel(P_char, const char *, const char *, const char *) {}
+static std::vector<std::pair<P_desc, std::string>> chat_packets;
+void gmcp_send(P_desc d, const char *package, const char *json)
+{
+	assert(std::string(package) == "Comm.Channel");
+	chat_packets.emplace_back(d, json);
+}
 
 #include "world_output_stubs.inc"
 #include "combat_prompt_stubs.inc"
+#include "chat_presentation_stubs.inc"
 #include "production_output.inc"
 
 static std::string drain(P_desc d)
@@ -155,6 +164,7 @@ static std::string drain(P_desc d)
 
 #include "world_output_checks.inc"
 #include "combat_prompt_checks.inc"
+#include "chat_presentation_checks.inc"
 
 static void tell_command_matrix()
 {
@@ -252,6 +262,7 @@ static size_t visible_terminal_bytes(const std::string &markup)
 
 int main()
 {
+	chat_presentation_matrix();
 	char_data actor{}, viewer{}, observer{};
 	pc_only_data pc{}, pc2{}, pc3{};
 	descriptor_data desc{}, desc2{}, desc3{};

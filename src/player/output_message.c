@@ -25,12 +25,13 @@ PlayerOutputMessage &PlayerOutputMessage::literal(std::string_view legacy_templa
 	char plain[MAX_STRING_LENGTH];
 	AnsiString(std::string(legacy_template).c_str()).plain(plain);
 	selected_ += "&n";
-	// Re-escape literal ampersands before the final markup parser sees them.
+	// A redundant reset defuses a literal ampersand without adding a character.
+	// The legacy parser treats && as two ampersands, not an escape sequence.
 	for (const char *p = plain; *p; ++p)
 	{
 		selected_ += *p;
 		if (*p == '&')
-			selected_ += '&';
+			selected_ += "&n";
 	}
 	return *this;
 }
@@ -59,11 +60,21 @@ PlayerOutputMessage &PlayerOutputMessage::entity(std::string_view authored_name,
 	return *this;
 }
 
+PlayerOutputMessage &PlayerOutputMessage::chat(const char *channel, const char *sender,
+					       const char *text)
+{
+	if (channel && sender && text)
+		chat_ = { channel, sender, text };
+	return *this;
+}
+
 void PlayerOutputMessage::send(int log)
 {
+	profile_.context.chat = chat_.channel.empty() ? nullptr : &chat_;
 	if (profile_.context.policy == OutputPolicy::Preserve || !candidate_valid_)
 	{
-		send_to_char(legacy_.c_str(), recipient_, log);
+		profile_.context.policy = OutputPolicy::Preserve;
+		send_to_char(legacy_.c_str(), recipient_, log, profile_.context);
 		return;
 	}
 	profile_.context.spans = spans_;

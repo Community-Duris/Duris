@@ -12,6 +12,7 @@ class PlayerOutputMessage
 			    OutputRole role = OutputRole::None);
 	PlayerOutputMessage &literal(std::string_view legacy_template);
 	PlayerOutputMessage &body(std::string_view authored_text);
+	PlayerOutputMessage &chat(const char *channel, const char *sender, const char *text);
 	PlayerOutputMessage &entity(std::string_view authored_name,
 				    StyleOrigin origin = StyleOrigin::Entity);
 	void send(int log);
@@ -22,6 +23,7 @@ class PlayerOutputMessage
 	std::string legacy_, selected_;
 	std::vector<OutputStyleSpan> spans_;
 	bool candidate_valid_ = true;
+	OutputChatMessage chat_;
 	void append_legacy(std::string_view text);
 };
 

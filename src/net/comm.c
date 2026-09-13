@@ -14,6 +14,7 @@
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/output_style.h"
+#include "net/chat_presentation.h"
 #include "net/output_profiles.h"
 #include "player/output_preferences.h"
 #include "net/command_latency.h"
@@ -4223,11 +4224,13 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 		if (sequenced)
 			recipient_context.sequence = ch->desc->output_sequences[channel];
 		bool animated_match = false;
+		bool styled_frame = false;
 		if ((!paging || (!pager_style_fallback && !bWarningAdded)) &&
 		    render_output_message(messg, recipient_context, rendered, capacity,
 					  &animated_match))
 		{
 			messg = rendered.c_str();
+			styled_frame = true;
 			if (sequenced && animated_match)
 				++ch->desc->output_sequences[channel];
 		}
@@ -4288,6 +4291,13 @@ void send_to_char(const char *messg, P_char ch, int log, const OutputContext &co
 					bWarningAdded = true;
 				}
 			}
+		}
+
+		if (context.chat && (!paging || !bWarningAdded))
+		{
+			if (!styled_frame || pager_style_fallback)
+				recipient_context.policy = OutputPolicy::Preserve;
+			gmcp_comm_channel_output(ch, *context.chat, recipient_context, messg);
 		}
 
 		if ((!IS_TRUSTED(ch) || log != LOG_PUBLIC) && log != LOG_NONE &&
@@ -4937,6 +4947,7 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 				auto profile = player_output_profile(to, context);
 				selected_context = profile.context;
 				selected_context.spans = context.spans;
+				selected_context.chat = context.chat;
 				sender_attr = profile.sender_attr;
 				entity_attr = profile.entity_attr;
 			}
