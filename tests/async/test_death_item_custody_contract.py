@@ -219,8 +219,8 @@ checks.append((
 ))
 checks.append((
     "die() defers to the recovery event while a dispute is outstanding",
-    contains(die, "corpse_transfer_disputed(ch)))") and
-    die.index("corpse_transfer_disputed(ch)))") <
+    contains(die, "corpse_transfer_disputed(ch) ||") and
+    die.index("corpse_transfer_disputed(ch) ||") <
     die.index("persistence_save_character_terminal(ch, RENT_DEATH)")
 ))
 checks.append((
