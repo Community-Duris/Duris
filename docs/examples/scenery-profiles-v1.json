@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "revision": 1,
+  "recipes": {
+    "water_flow": {"kind": "flow", "palette": ["bright_blue", "cyan", "bright_cyan"], "stable_index": 0, "width": 2},
+    "wide_wave": {"kind": "flow", "palette": ["blue", "bright_blue", "cyan", "bright_cyan"], "stable_index": 1, "step_every": 2, "width": 4},
+    "foliage": {"kind": "shimmer", "palette": ["green", "bright_green"], "step_every": 2, "width": 1, "chance_percent": 20},
+    "fire": {"kind": "flicker", "palette": ["red", "bright_red", "yellow"], "stable_index": 1, "width": 2, "chance_percent": 30},
+    "ice": {"kind": "glint", "palette": ["cyan", "bright_cyan", "bright_white"], "stable_index": 1, "width": 1, "chance_percent": 25},
+    "magic": {"kind": "pulse", "palette": ["magenta", "bright_magenta"], "step_every": 2},
+    "snow": {"kind": "solid", "palette": ["bright_white"]},
+    "blood": {"kind": "solid", "palette": ["red"]},
+    "remains": {"kind": "solid", "palette": ["bright_white"]},
+    "toxic": {"kind": "solid", "palette": ["bright_green"]}
+  },
+  "dictionaries": {
+    "scenery": {
+      "forest": "foliage", "forests": "foliage", "tree": "foliage", "trees": "foliage", "moss": "foliage", "vine": "foliage", "vines": "foliage", "grass": "foliage", "foliage": "foliage", "jungle": "foliage", "jungles": "foliage", "fern": "foliage", "ferns": "foliage", "undergrowth": "foliage", "shrub": "foliage", "shrubs": "foliage", "bush": "foliage", "bushes": "foliage",
+      "water": "water_flow", "waters": "water_flow", "river": "water_flow", "rivers": "water_flow", "stream": "water_flow", "streams": "water_flow", "ocean": "wide_wave", "sea": "wide_wave", "lake": "wide_wave", "waterfall": "water_flow", "waterfalls": "water_flow",
+      "fire": "fire", "fires": "fire", "flame": "fire", "flames": "fire", "lava": "fire", "magma": "fire", "embers": "fire",
+      "ice": "ice", "icy": "ice", "frost": "ice", "frozen": "ice",
+      "snow": "snow", "snowy": "snow",
+      "blood": "blood", "bloody": "blood", "bleeding": "blood",
+      "bone": "remains", "bones": "remains", "skull": "remains", "skulls": "remains", "skeleton": "remains", "skeletons": "remains",
+      "magic": "magic", "magical": "magic", "arcane": "magic", "rune": "magic", "runes": "magic", "portal": "magic", "portals": "magic",
+      "poison": "toxic", "poisonous": "toxic", "venom": "toxic", "venomous": "toxic", "acid": "toxic", "acidic": "toxic"
+    }
+  },
+  "profiles": {
+    "scenery": {"policy": "animated", "dictionary": "scenery"}
+  },
+  "channels": {
+    "room.description": "scenery"
+  }
+}

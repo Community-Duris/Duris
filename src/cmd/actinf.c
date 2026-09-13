@@ -26,6 +26,7 @@ using namespace std;
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/output_profiles.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -3158,7 +3159,14 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 			if (!(brief_mode || (keyword_no == 8) || (vis_mode == 3)))
 			{
 				if (world[room_no].description)
-					send_to_char(world[room_no].description, ch);
+				{
+					auto profile = resolve_output_profile(
+						output_profile_registry().snapshot(),
+						OutputChannel::RoomDescription,
+						OutputPolicy::Animated);
+					send_to_char(world[room_no].description, ch,
+						     profile.context);
+				}
 
 				display_room_auras(ch, room_no);
 			}
