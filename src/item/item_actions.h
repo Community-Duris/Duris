@@ -119,6 +119,10 @@ class item_action_adapter
 	virtual ~item_action_adapter() = default;
 	// Read-only permission/eligibility checks, both at admission and completion.
 	virtual bool validate(const item_action_context &) const noexcept = 0;
+	// Additional captured targets in a typed invocation (for example a scroll's
+	// object target). These predicates are read-only and contain identities only.
+	virtual bool references_character(uint64_t) const noexcept { return false; }
+	virtual bool references_object(uint64_t) const noexcept { return false; }
 	// Atomic, synchronous resource operation AFTER scheduler acceptance. Rejected
 	// means no cost/cooldown was changed. No gameplay callbacks or transitions here.
 	virtual item_action_consumption commit(const item_action_context &) const noexcept = 0;
@@ -151,9 +155,17 @@ uint64_t item_actions_definition_revision(uint32_t ability_id);
 item_action_start start_item_action(uint32_t ability_id, P_char actor, P_char target, P_obj source);
 item_action_start start_selected_item_action(uint32_t ability_id, P_char actor, P_char target,
 					     P_obj source, const item_action_selection &);
+// A typed invocation owns immutable adapter-specific targets/arguments. It uses
+// the same validation, scheduler, caps, cost and cancellation lifecycle without
+// retaining a global registration per activation. Disable(id)/reload still cancel
+// it. The caller supplies a reviewed definition/configuration revision.
+item_action_start start_item_action_instance(const item_action_definition &,
+					     std::unique_ptr<item_action_adapter>, P_char actor,
+					     P_char target, P_obj source);
 bool item_action_active(P_char actor);
 bool abort_item_action(P_char actor);
 size_t item_actions_pending();
+bool item_action_pending(uint64_t action_id);
 
 // Call before a real room departure, extraction, source transfer or unequip.
 // Both actor and original-target departures cancel; returning cannot revive it.

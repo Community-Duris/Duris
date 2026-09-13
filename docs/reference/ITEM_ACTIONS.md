@@ -3,8 +3,8 @@
 This is the default-off shared runtime for [#291](https://github.com/Community-Duris/Duris/issues/291),
 the first workstream in [#290](https://github.com/Community-Duris/Duris/issues/290).
 The core registers no gameplay abilities by itself. Optional
-[weapon adapters](WEAPON_ACTIONS.md) and [artifact mana](ARTIFACT_MANA.md) use it;
-device activation, Studio integration, and further artifact migrations are
+[weapon adapters](WEAPON_ACTIONS.md), [device activation](DEVICE_ACTIONS.md), and
+[artifact mana](ARTIFACT_MANA.md) use it; Studio integration and further artifact migrations are
 separate workstreams.
 
 ## Routing and admission
@@ -39,6 +39,13 @@ override. Typed effects may capture an original-target/self policy and bounded
 adapter data; they do not retain pointers. An optional presentation-only
 `progress` callback uses the same owned scheduler payload and monotonic floor.
 See [weapon pilots](WEAPON_ACTIONS.md) for the first production adapters.
+
+Typed devices can use `start_item_action_instance` to own a reviewed definition
+and immutable invocation adapter without keeping a registration per activation.
+It has the same lifecycle and bounds. Extra captured character/object targets
+participate in departure cancellation through read-only identity predicates.
+`item_action_pending(token)` lets a native adapter stop its own multi-callback
+loop if an earlier callback cancels the action. See [devices](DEVICE_ACTIONS.md).
 
 ## Lifecycle and adapter responsibilities
 

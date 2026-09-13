@@ -11,6 +11,7 @@
 #include "world/world_singletons.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
+#include "item/device_actions.h"
 #include "persistence/persistence_log.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1927,6 +1928,7 @@ resume_game_loop:
 
 		item_creation_grant_prepare_pulse();
 		artifact_mana_pulse();
+		device_actions_pulse();
 
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))
