@@ -1,6 +1,7 @@
 #pragma once
 
 #include "net/output_style.h"
+#include "net/output_preference_state.h"
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -40,7 +41,7 @@ enum class OutputProfileChoice
 	Animated
 };
 
-// Plain recipient-owned preferences; persistence and commands belong to #283.
+// Validated view of recipient-owned preferences; all names come from the catalogs.
 class OutputProfilePreferences
 {
     public:
@@ -48,9 +49,15 @@ class OutputProfilePreferences
 	bool set(OutputChannel channel, OutputProfileChoice choice);
 	bool reset(OutputChannel channel);
 	OutputProfileChoice get(OutputChannel channel) const;
+	bool set_color(OutputChannel channel, int attr);
+	int color(OutputChannel channel) const;
+	void reset_all();
+	OutputPreferenceState state() const;
+	static OutputProfilePreferences from_state(const OutputPreferenceState &state);
 
     private:
 	std::array<OutputProfileChoice, OUTPUT_PROFILE_CHANNEL_COUNT> choices_{};
+	std::array<int, OUTPUT_PROFILE_CHANNEL_COUNT> colors_{};
 };
 
 struct ResolvedOutputProfile;

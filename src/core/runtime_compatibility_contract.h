@@ -57,19 +57,19 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"42666971b3eda32f4f817b27c090e62e1c28761e611caab1acb9f61f75b56887";
+	"571644bc6f0b0bcd85ece8483f933e30f79ce9452f1ce47ae138e074c79dfa1c";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"a5b56f03da1de88f06f918a289c37472e354e3eeff72d7ab5fafcc9bdf520ed4";
+	"ad7e0f12dd656e54aee18050a86ee59ae39a89b72fe218cf566b7938b23ffc6a";
 /* Includes the six telemetry stores introduced by migration 0014.
  * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0014_telemetry_storage";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 14;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0015_output_preferences";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 15;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"bb931077ed8e6cd2b62b01ce9316285289195c3b95c4194e2324d35a66b46d01";
+	"2e41b6592ad9c96523215d8356d8d324b78388752f12cfa8b532387af5474bba";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"4dfdf3169cadebe256e63c9363b8cadc4b0473e2ddce8edf249a0892cd78bb88";
+	"b910b48bb23e5fb923c4b725f2879453a6244325e2bd47f9eb50bcac283b6f1b";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"e88b82a14d76060557521849d1f46ddce9f326e0f259d8e0a126bce9411a2626";
+	"ddcb5fcb58927b40f39b76ce00eb4332c7abe45d219e2b795d07f2259f94fe62";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

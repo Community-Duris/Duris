@@ -167,6 +167,7 @@ query_result apply_status(MYSQL *connection, const player_snapshot &snapshot)
 {
 	std::ostringstream sql;
 	sql << "UPDATE player_data SET last_room=" << snapshot.room_vnum << ",last_save=NOW()";
+	sql << ",output_preferences=" << quote(connection, snapshot.output_preferences);
 	for (const player_snapshot_integer &row : snapshot.status_integers)
 	{
 		if (row.field == player_status_field::epics ||

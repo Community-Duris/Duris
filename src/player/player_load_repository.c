@@ -258,6 +258,7 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 		append(column);
 	for (const char *column : QUEST_COLUMNS)
 		append(column);
+	append("output_preferences");
 	if (request.pid > 0)
 		sql << " FROM player_data WHERE pid=" << request.pid << " LIMIT 1";
 	else
@@ -329,6 +330,7 @@ bool load_status(MYSQL *connection, const player_load_request &request, player_l
 		condition = static_cast<int32_t>(signed_value(row[column++]));
 	for (int32_t &quest : result->snapshot.quest_values)
 		quest = static_cast<int32_t>(signed_value(row[column++]));
+	result->snapshot.output_preferences = row[column] ? row[column] : "";
 	result->domains.wallet = {
 		unsigned_value(row[9 + 32]),
 		unsigned_value(row[9 + 33]),

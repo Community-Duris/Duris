@@ -26,7 +26,7 @@ using namespace std;
 #include "cmd/information_cache.h"
 #include "core/structs.h"
 #include "net/comm.h"
-#include "net/output_profiles.h"
+#include "player/output_preferences.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -3160,9 +3160,8 @@ void new_look(P_char ch, const char *argument, int cmd, int room_no)
 			{
 				if (world[room_no].description)
 				{
-					auto profile = resolve_output_profile(
-						output_profile_registry().snapshot(),
-						OutputChannel::RoomDescription,
+					auto profile = player_output_profile(
+						ch, OutputChannel::RoomDescription,
 						OutputPolicy::Animated);
 					send_to_char(world[room_no].description, ch,
 						     profile.context);
