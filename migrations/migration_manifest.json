@@ -310,11 +310,21 @@
       "verify_checksum": "6d37acd001d32ba637d5da441c0ec476d50d5170c9c893061ad0c7fc235453b1"
     },
     {
-      "id": "0014_artifact_mana",
+      "id": "0014_telemetry_storage",
       "sequence": 14,
+      "description": "Add isolated typed telemetry facts and projections and rollup stores",
+      "apply": "immutable/0014_telemetry_storage.sql",
+      "verify": "immutable/0014_telemetry_storage.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "bb931077ed8e6cd2b62b01ce9316285289195c3b95c4194e2324d35a66b46d01",
+      "verify_checksum": "4dfdf3169cadebe256e63c9363b8cadc4b0473e2ddce8edf249a0892cd78bb88"
+    },
+    {
+      "id": "0015_artifact_mana",
+      "sequence": 15,
       "description": "Persist physical artifact mana independently of owner snapshots",
-      "apply": "immutable/0014_artifact_mana.sql",
-      "verify": "immutable/0014_artifact_mana.sh",
+      "apply": "immutable/0015_artifact_mana.sql",
+      "verify": "immutable/0015_artifact_mana.sh",
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "1618e55aacccb7147aa0ae61d3a46dc9e09cef655562ade66ba9a7253872f75a",
       "verify_checksum": "181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376"
