@@ -527,10 +527,12 @@ bool load_bank(MYSQL *connection, const player_load_request &request, player_loa
 
 bool load_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::collector)
+		return owner.id != 0 && owner.context_id == 0;
 	return owner.id != 0;
 }
 

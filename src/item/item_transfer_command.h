@@ -40,6 +40,7 @@ enum class item_owner_type : uint8_t
 	system,
 	destruction,
 	shopkeeper,
+	collector,
 };
 
 enum class item_transfer_reason : uint16_t
@@ -62,6 +63,9 @@ enum class item_transfer_reason : uint16_t
 	auction_claim,
 	shop_buy,
 	shop_sell,
+	collector_collect,
+	collector_buyback,
+	collector_expire,
 };
 
 enum class item_custody_state : uint8_t
@@ -142,6 +146,7 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 				   uint64_t *root_item_uid, uint64_t *parent_item_uid);
 uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id);
 uint64_t item_shopkeeper_owner_id(uint32_t shop_id);
+uint64_t item_collector_owner_id(uint64_t listing_id);
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key);
 bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded);

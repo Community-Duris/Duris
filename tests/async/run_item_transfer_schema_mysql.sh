@@ -13,6 +13,9 @@ export MYSQL_PWD="$DB_PASSWD"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B)
 "${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/item_ownership_ledger.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/shopkeeper_item_owner.sql"
+"${MYSQL[@]}" "$DB_NAME" < "$ROOT/migrations/collector_item_owner.sql"
+DB_NAME="$DB_NAME" "$ROOT/migrations/verify_collector_item_owner.sh"
 DB_NAME="$DB_NAME" "$ROOT/migrations/verify_item_ownership_schema.sh"
 export ITEM_TRANSFER_TEST_DB_NAME="$DB_NAME"
 mkdir -p "$ROOT/bin/tests"

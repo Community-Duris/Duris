@@ -222,6 +222,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::room;
 	case item_owner_type::shopkeeper:
 		return critical_entity_type::shopkeeper;
+	case item_owner_type::collector:
+		return critical_entity_type::collector;
 	default:
 		return critical_entity_type::system;
 	}
@@ -229,7 +231,33 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 
 bool valid_reason(item_transfer_reason reason)
 {
-	return reason > item_transfer_reason::unknown && reason <= item_transfer_reason::shop_sell;
+	switch (reason)
+	{
+	case item_transfer_reason::synthetic:
+	case item_transfer_reason::creation:
+	case item_transfer_reason::destruction:
+	case item_transfer_reason::operator_repair:
+	case item_transfer_reason::player_get:
+	case item_transfer_reason::player_drop:
+	case item_transfer_reason::player_put:
+	case item_transfer_reason::player_give:
+	case item_transfer_reason::corpse_create:
+	case item_transfer_reason::corpse_restore:
+	case item_transfer_reason::corpse_loot:
+	case item_transfer_reason::locker_deposit:
+	case item_transfer_reason::locker_withdraw:
+	case item_transfer_reason::auction_list:
+	case item_transfer_reason::auction_claim:
+	case item_transfer_reason::shop_buy:
+	case item_transfer_reason::shop_sell:
+		return true;
+	case item_transfer_reason::collector_collect:
+	case item_transfer_reason::collector_buyback:
+	case item_transfer_reason::collector_expire:
+	case item_transfer_reason::unknown:
+		return false;
+	}
+	return false;
 }
 
 const item_transfer_entry *find_payload_item(const item_transfer_payload &payload,
@@ -282,7 +310,9 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
 	    (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION &&
 	     payload.item_count > ITEM_TRANSFER_LEGACY_MAX_ITEMS) ||
-	    payload.item_blob_size > payload.item_blob.size())
+	    payload.item_blob_size > payload.item_blob.size() ||
+	    payload.from_owner.type == item_owner_type::collector ||
+	    payload.to_owner.type == item_owner_type::collector)
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
@@ -500,10 +530,12 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::collector)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::collector)
+		return owner.id != 0 && owner.context_id == 0;
 	return owner.id != 0;
 }
 
@@ -523,6 +555,11 @@ uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id)
 uint64_t item_shopkeeper_owner_id(uint32_t shop_id)
 {
 	return static_cast<uint64_t>(shop_id) + 1;
+}
+
+uint64_t item_collector_owner_id(uint64_t listing_id)
+{
+	return listing_id;
 }
 
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key)

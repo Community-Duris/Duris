@@ -48,6 +48,16 @@ not proof of a committed item transfer or wallet debit.** Operation-ID replay,
 atomicity, payload preservation, privacy at command dispatch, and real custody
 must be implemented by the service and repositories below.
 
+The ownership contract now reserves append-only owner type 10 for collector
+listings and maps it to a dedicated critical-command fence key. SQL checks,
+fresh bootstrap, player recovery validation, and the ownership audit lookup all
+recognize that namespace. The legacy shopkeeper widening step remains monotonic
+through type 10, so a later full migration rerun cannot narrow live collector
+rows. The generic item-transfer command deliberately rejects collector owners
+and collector-only ledger reasons: admitting them there would update ownership
+metadata without atomically updating the source object store and catalog. Only
+the dedicated collector transaction described below may cross that boundary.
+
 ## Remaining integration
 
 1. Extend the committed death transfer with versioned eligibility records and
@@ -59,11 +69,10 @@ must be implemented by the service and repositories below.
    resurrection, character deletion, quarantine, and season reset. Preserve
    candidates through corpse decay and environmental movement. Returning an item
    must not remove its earlier cancellation.
-3. Define a collector namespace under system custody. Currently
-   `item_owner_identity_valid()` permits only `{system, 0, 0}`, and the item
-   transfer codec rejects transfers *to* system custody. The SQL repository,
-   flatfile repository, and runtime cache also interpret transfers *from* system
-   custody as creation. All must distinguish storage from creation together.
+3. Implement a versioned collector critical command and specialized SQL,
+   flatfile, and runtime transactions for the reserved collector namespace. The
+   generic item-transfer path must remain closed to collector custody because it
+   cannot commit the source object store and collector catalog together.
 4. Wire the versioned catalog records into complete per-item payload storage,
    additive verified SQL migrations, flatfile authority images, and equivalent
    operation-ID replay.
@@ -102,6 +111,14 @@ stale revisions, beneficiary checks, funds/capacity failures, terminal conflicts
 arithmetic overflow, pause/resume, strict catalog validation, and bounded indexed
 leased scheduling without head-of-line starvation. They are not repository or
 in-game tests.
+
+Run `python3 tests/async/test_item_transfer_version_compatibility.py` for the
+collector ownership/fence codec boundary. Run
+`tests/async/run_collector_item_owner_schema_mysql.sh` against its default
+MariaDB image and again with `COLLECTOR_OWNER_DB_IMAGE=mysql:8.0`; the isolated
+upgrade test proves type-9 preservation, type-10 admission across all three
+ownership authorities, type-11 rejection, exact rerun behavior, and protection
+against a later shopkeeper-migration narrowing pass.
 
 Before this PR can leave draft, implement and execute the full #336 journey on
 both backends with shortened timers: actual player death, partial loot, forced

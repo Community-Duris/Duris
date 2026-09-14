@@ -45,6 +45,16 @@ void put_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value)
 
 int main()
 {
+	const item_owner_identity collector = { item_owner_type::collector,
+						  item_collector_owner_id(987), 0 };
+	assert(item_collector_owner_id(0) == 0);
+	assert(item_owner_identity_valid(collector));
+	assert(!item_owner_identity_valid({ item_owner_type::collector, 0, 0 }));
+	assert(!item_owner_identity_valid({ item_owner_type::collector, 987, 1 }));
+	critical_entity_key collector_key = {};
+	assert(item_owner_key(collector, &collector_key));
+	assert(collector_key.type == critical_entity_type::collector && collector_key.id == 987);
+
 	item_transfer_payload payload = {};
 	payload.from_owner = { item_owner_type::shopkeeper, item_shopkeeper_owner_id(7), 0 };
 	payload.to_owner = { item_owner_type::player, 42, 0 };
@@ -60,6 +70,24 @@ int main()
 	payload.item_blob[0] = 0x12;
 	payload.item_blob[1] = 0x34;
 	payload.item_blob[2] = 0x56;
+
+	auto collector_transfer = payload;
+	collector_transfer.from_owner = collector;
+	collector_transfer.reason = item_transfer_reason::collector_buyback;
+	critical_command rejected_collector = {};
+	assert(!item_transfer_command_build(&rejected_collector, operation(), collector_transfer,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	collector_transfer.reason = item_transfer_reason::shop_buy;
+	assert(!item_transfer_command_build(&rejected_collector, operation(), collector_transfer,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
+	collector_transfer = payload;
+	collector_transfer.to_owner = collector;
+	collector_transfer.reason = item_transfer_reason::collector_collect;
+	assert(!item_transfer_command_build(&rejected_collector, operation(), collector_transfer,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive));
 
 	critical_command command = {};
 	assert(item_transfer_command_build(&command, operation(), payload,

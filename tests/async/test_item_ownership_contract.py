@@ -20,16 +20,27 @@ class ItemOwnershipContractTests(unittest.TestCase):
             self.assertIn(token, bootstrap)
         self.assertIn("item_ownership_ledger.sql", runner)
         self.assertIn("shopkeeper_item_owner.sql", runner)
+        self.assertIn("collector_item_owner.sql", runner)
+        self.assertIn("verify_collector_item_owner.sh", runner)
+        self.assertIn("run_collector_item_owner_schema_mysql.sh", (ROOT / "Makefile").read_text())
         self.assertLess(
             runner.index('"$SCRIPT_DIR/item_ownership_ledger.sql"'),
             runner.index('"$SCRIPT_DIR/artifact_guild_outcome.sql"'),
             "item_current_owner must exist before artifact_domain_state adds its foreign key",
         )
         shopkeeper_owner = (ROOT / "migrations/shopkeeper_item_owner.sql").read_text()
-        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 9)"), 3)
+        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 3)
+        self.assertIn("can never narrow", shopkeeper_owner)
+        collector_owner = (ROOT / "migrations/collector_item_owner.sql").read_text()
+        self.assertEqual(collector_owner.count("CHECK (owner_type BETWEEN 1 AND 10)"), 6)
+        self.assertEqual(bootstrap.count("owner_type` between 1 and 10"), 3)
         for script in ("baseline_item_ownership.sh", "reconcile_item_ownership.sh",
-                       "verify_item_ownership_schema.sh"):
+                       "verify_item_ownership_schema.sh", "verify_collector_item_owner.sh"):
             self.assertTrue((ROOT / "migrations" / script).stat().st_mode & 0o111)
+        self.assertTrue(
+            (ROOT / "tests/async/run_collector_item_owner_schema_mysql.sh").stat().st_mode
+            & 0o111
+        )
 
         baseline = (ROOT / "migrations/baseline_item_ownership.sh").read_text()
         tainted = baseline[
@@ -53,11 +64,16 @@ class ItemOwnershipContractTests(unittest.TestCase):
         self.assertIn("ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES", header)
         self.assertIn("item_corpse_metadata", header)
         for owner in ("player", "container", "room", "corpse", "locker", "auction",
-                      "system", "destruction", "shopkeeper"):
+                      "system", "destruction", "shopkeeper", "collector"):
             self.assertIn(owner, header)
         self.assertIn("expected_item_revision", header)
         self.assertIn("shop_buy", header)
         self.assertIn("shop_sell", header)
+        self.assertIn("collector_collect", header)
+        self.assertIn("collector_buyback", header)
+        self.assertIn("collector_expire", header)
+        self.assertIn("payload.from_owner.type == item_owner_type::collector", implementation)
+        self.assertIn("payload.to_owner.type == item_owner_type::collector", implementation)
         self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION", implementation)
         self.assertIn("ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION", implementation)
         self.assertIn("critical_entity_key_less", implementation)
