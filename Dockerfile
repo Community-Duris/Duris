@@ -80,6 +80,8 @@ RUN install -d -o duris -g duris -m 0700 \
 
 USER duris
 
+ENV COPYOVER_STATE_FILE=/var/lib/duris/copyover.dat
+
 EXPOSE 4000 4001 4050
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=30 \
