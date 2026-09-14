@@ -121,6 +121,10 @@ def reach_race(client):
 def creation_help_and_back(client, server):
     reach_race(client)
     reply(client, "?", RACE_MENU)
+    reply(client, "x", "Press return to go back to the race selection menu.")
+    reply(client, "", RACE_MENU)
+    reply(client, "y", "Press Return and choose your race with care...")
+    reply(client, "", RACE_MENU)
     # Uppercase is advertised as help, not an unavailable race selection.
     help_output = reply(client, "H", "[Press Return or Enter to return to the Race Menu]")
     require("not currently available" not in help_output, "race help rejected as a selection")
@@ -128,9 +132,11 @@ def creation_help_and_back(client, server):
     reply(client, "h", "Male or Female")
     reply(client, "z", RACE_MENU)
     # Mindflayers have no sex choice: their class menu promises a return to race.
-    reply(client, "Illithid", "Class Selection")
-    client.expect(RACE_MENU)
-    reply(client, "z", RACE_MENU)
+    for race in ("Illithid", "Planetbound Illithid"):
+        reply(client, race, "Class Selection")
+        client.expect("z) Return to previous menu (selecting your race).")
+        client.expect(RACE_MENU)
+        reply(client, "z", RACE_MENU)
     reply(client, "h", "Male or Female")
     reply(client, "m", "H (for Hardcore), N (for Normal)")
     reply(client, "n", "Class Selection")
@@ -193,6 +199,25 @@ def keep_confirmation(client, server):
     client.expect(MENU)
 
 
+def quit_confirmation(client, server):
+    reach_race(client)
+    finish_character_choices(client)
+    reply(client, "q", "Come back again real soon.")
+    client.socket.settimeout(5)
+    while client.socket.recv(4096):
+        pass
+    other = MudClient(server.plain_port)
+    try:
+        enter_account_name(other)
+        other.expect("Please enter your password:")
+        reply(other, OLD_PASSWORD, "PRESS RETURN")
+        reply(other, "", MENU)
+        reply(other, "1", "Account currently doesn't have any characters (0/")
+        other.expect(MENU)
+    finally:
+        other.close()
+
+
 def normal_after_hardcore(client, server):
     reach_race(client)
     reply(client, "h", "Male or Female")
@@ -248,6 +273,7 @@ SCENARIOS = (
     ("name-policy rejection", lambda c, s: character_name_retry(c, s, policy=True)),
     ("creation help and back navigation", creation_help_and_back),
     ("selection retries and final discard", keep_confirmation),
+    ("final quit flushes its farewell without saving a character", quit_confirmation),
     ("Hardcore correction, world entry, save/restart and relog", normal_after_hardcore),
 )
 

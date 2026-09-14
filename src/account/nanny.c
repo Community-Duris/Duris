@@ -3861,7 +3861,7 @@ void select_keepchar(P_desc d, char *arg)
 		break;
 	case 'q':
 		SEND_TO_Q("\r\n\r\nCome back again real soon.\r\n", d);
-		close_socket(d);
+		STATE(d) = CON_FLUSH;
 		break;
 	case 'y':
 		SEND_TO_Q("\r\n\r\nWelcome to Duris, Land of Bloodlust!\r\n\r\n", d);
