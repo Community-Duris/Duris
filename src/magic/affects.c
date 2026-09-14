@@ -3855,11 +3855,13 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 				}
 				if (Wall && (speed > 43 || (Wall->value[2] / 2 < 10)))
 				{
-					act("You slam into $p, shattering it upon impact, and only marginally slowing your fall...",
-					    FALSE, ch, Wall, 0, TO_CHAR);
-					act("$n falls from above, slamming into and shattering $p, before continuing to fall...",
-					    FALSE, ch, Wall, 0, TO_ROOM);
-					damage(ch, ch, dam, TYPE_UNDEFINED);
+					act("You slam into $p!", FALSE, ch, Wall, 0, TO_CHAR);
+					act("$n falls from above and slams into $p!", FALSE, ch,
+					    Wall, 0, TO_ROOM);
+					// Match ordinary landing: death owns corpse placement and
+					// extraction. The dead actor cannot dispel or fall again.
+					if (damage(ch, ch, dam, TYPE_UNDEFINED))
+						return TRUE;
 					spell_dispel_magic(70, ch, NULL, SPELL_TYPE_SPELL, 0, Wall);
 					speed /= 2;
 					add_event(event_falling_char, 0, ch, NULL, NULL, 0, &speed,
