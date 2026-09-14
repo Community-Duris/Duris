@@ -338,6 +338,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "1618e55aacccb7147aa0ae61d3a46dc9e09cef655562ade66ba9a7253872f75a",
       "verify_checksum": "181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376"
+    },
+    {
+      "id": "0017_telemetry_rollup_support",
+      "sequence": 17,
+      "description": "Add replay-safe session and cohort rollup support stores",
+      "apply": "immutable/0017_telemetry_rollup_support.sql",
+      "verify": "immutable/0017_telemetry_rollup_support.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "63205926b00ecadc1fe4044e90f9889ad71b36b6b52cb130d84e93b59083ebd6",
+      "verify_checksum": "02fd34c8c728e9411fcc5fc3c0a93b716a9cdbbf1c584c5a430d4ed9ed3401c0"
     }
   ]
 }

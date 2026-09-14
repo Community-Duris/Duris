@@ -27,6 +27,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0014_telemetry_storage.sql",
     ROOT / "migrations" / "immutable" / "0012_epic_stone_claim.sql",
     ROOT / "migrations" / "immutable" / "0016_artifact_mana.sql",
+    ROOT / "migrations" / "immutable" / "0017_telemetry_rollup_support.sql",
 )
 
 ROOT_FIELDS = {
