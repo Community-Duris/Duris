@@ -3,6 +3,7 @@
 #include "world/world_singletons.h"
 #include "persistence/copyover.h"
 #include "world/world_recovery_codec.h"
+#include "world/generated_npc_state.h"
 #include "world/graph.h"
 #include "persistence/persistence_mode.h"
 #include <cassert>
@@ -55,6 +56,18 @@ bool sql_save_shopkeeper(P_char, int)
 }
 
 void logit(const char *, const char *, ...) {}
+char *str_dup(const char *text)
+{
+	return strdup(text);
+}
+void str_free(const char *text)
+{
+	free(const_cast<char *>(text));
+}
+char affect_total(P_char, int)
+{
+	std::abort();
+}
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
 	std::abort();
@@ -301,10 +314,6 @@ void do_dismount(P_char rider, char *, int)
 	mounts.erase(rider);
 }
 
-bool legacy_summon_prototype(int)
-{
-	return false;
-}
 affected_type *affect_to_char(P_char, affected_type *)
 {
 	return nullptr;

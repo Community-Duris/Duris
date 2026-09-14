@@ -166,7 +166,7 @@ int main(int argc, char **argv)
                 "-I", str(SRC), str(SRC / "redis_connection.c"),
                 str(SRC / "redis_floor_store.c"),
                 str(SRC / "redis_command_observability.c"),
-                str(SRC / "world_recovery_codec.c"), str(source), "-lhiredis",
+                str(SRC / "world_recovery_codec.c"), str(SRC / "generated_npc_state.c"), str(SRC / "pet_restore_state.c"), str(source), "-lhiredis",
                 "-lhiredis_ssl", "-lssl", "-lcrypto", "-pthread", "-o", str(binary),
             ],
             check=True,

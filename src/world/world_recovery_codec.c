@@ -1,6 +1,7 @@
 #include "world/world_recovery_codec.h"
 
 #include "persistence/copyover.h"
+#include "world/generated_npc_state.h"
 
 #include <climits>
 #include <cstring>
@@ -114,12 +115,21 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 	if (mob.num_affects < 0 || mob.num_carrying != 0 ||
 	    static_cast<size_t>(mob.num_affects) >
 		    (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(mob)) / sizeof(copyover_affect) ||
-	    native_size !=
+	    native_size <
 		    sizeof(mob) + static_cast<size_t>(mob.num_affects) * sizeof(copyover_affect))
 		return false;
-	const size_t encoded_size = MOB_WIRE_FIXED_BYTES +
-				    static_cast<size_t>(mob.num_affects) * AFFECT_WIRE_BYTES +
-				    (mob.transport.origin ? TRANSPORT_WIRE_BYTES : 0);
+	const size_t base_native =
+		sizeof(mob) + static_cast<size_t>(mob.num_affects) * sizeof(copyover_affect);
+	const size_t extension_size = native_size - base_native;
+	std::string generated;
+	if (extension_size &&
+	    !generated_npc_extension_decode(
+		    mob.vnum, reinterpret_cast<const char *>(native_data + base_native),
+		    extension_size, &generated))
+		return false;
+	const size_t encoded_size =
+		MOB_WIRE_FIXED_BYTES + static_cast<size_t>(mob.num_affects) * AFFECT_WIRE_BYTES +
+		(mob.transport.origin ? TRANSPORT_WIRE_BYTES : 0) + extension_size;
 	if (encoded_size > output_capacity)
 		return false;
 	size_t offset = 0;
@@ -196,6 +206,11 @@ bool encode_mob(const unsigned char *native_data, size_t native_size, unsigned c
 		memcpy(output + offset, mob.transport.rider, sizeof(mob.transport.rider));
 		offset += sizeof(mob.transport.rider);
 	}
+	if (extension_size)
+	{
+		memcpy(output + offset, native_data + base_native, extension_size);
+		offset += extension_size;
+	}
 	*output_size = offset;
 	return offset == encoded_size;
 }
@@ -208,20 +223,30 @@ bool mob_native_size(const unsigned char *wire_data, size_t wire_size, size_t *n
 	const uint32_t carrying_count = get_u32(wire_data + 274);
 	const size_t base_size =
 		MOB_WIRE_FIXED_BYTES + static_cast<size_t>(affect_count) * AFFECT_WIRE_BYTES;
-	const bool has_transport = wire_size == base_size + TRANSPORT_WIRE_BYTES;
-	if (has_transport && (memcmp(wire_data + base_size, "TRN1", 4) != 0 ||
-			      !memchr(wire_data + base_size + 20, '\0', 50)))
-		return false;
-	if (!memchr(wire_data + 48, '\0', 50) || carrying_count ||
+	if (base_size > wire_size || !memchr(wire_data + 48, '\0', 50) || carrying_count ||
 	    affect_count > (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(copyover_mob)) /
-				   sizeof(copyover_affect) ||
-	    (wire_size != base_size && !has_transport))
+				   sizeof(copyover_affect))
+		return false;
+	size_t extension_offset = base_size;
+	if (wire_size - extension_offset >= 4 && !memcmp(wire_data + extension_offset, "TRN1", 4))
+	{
+		if (wire_size - extension_offset < TRANSPORT_WIRE_BYTES ||
+		    !memchr(wire_data + extension_offset + 20, '\0', 50))
+			return false;
+		extension_offset += TRANSPORT_WIRE_BYTES;
+	}
+	const size_t generated_size = wire_size - extension_offset;
+	std::string generated;
+	if (generated_size && !generated_npc_extension_decode(
+				      get_i32(wire_data),
+				      reinterpret_cast<const char *>(wire_data + extension_offset),
+				      generated_size, &generated))
 		return false;
 	for (size_t index = 0; index < MOB_EQUIPMENT_COUNT; ++index)
 		if (get_i32(wire_data + 102 + index * 4) > 0)
 			return false;
-	*native_size =
-		sizeof(copyover_mob) + static_cast<size_t>(affect_count) * sizeof(copyover_affect);
+	*native_size = sizeof(copyover_mob) +
+		       static_cast<size_t>(affect_count) * sizeof(copyover_affect) + generated_size;
 	return *native_size <= WORLD_RECOVERY_MAX_RECORD_BYTES;
 }
 
@@ -305,7 +330,7 @@ bool decode_mob(const unsigned char *wire_data, size_t wire_size,
 			       static_cast<size_t>(index) * sizeof(affect),
 		       &affect, sizeof(affect));
 	}
-	if (offset < wire_size)
+	if (wire_size - offset >= 4 && !memcmp(wire_data + offset, "TRN1", 4))
 	{
 		offset += 4; // validated TRN1 marker
 		int *fields[] = { &mob.transport.origin, &mob.transport.destination,
@@ -318,6 +343,14 @@ bool decode_mob(const unsigned char *wire_data, size_t wire_size,
 		memcpy(mob.transport.rider, wire_data + offset, sizeof(mob.transport.rider));
 		offset += sizeof(mob.transport.rider);
 		memcpy(native_record->data(), &mob, sizeof(mob));
+	}
+	if (offset < wire_size)
+	{
+		const size_t native_offset = sizeof(mob) + static_cast<size_t>(mob.num_affects) *
+								   sizeof(copyover_affect);
+		memcpy(native_record->data() + native_offset, wire_data + offset,
+		       wire_size - offset);
+		offset = wire_size;
 	}
 	return offset == wire_size;
 }
