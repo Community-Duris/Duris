@@ -157,6 +157,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_command.o \
 				 economy/collector_codec.o \
 				 economy/collector_policy.o \
+				 economy/collector_repository.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \

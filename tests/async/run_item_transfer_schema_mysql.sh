@@ -34,6 +34,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/item/item_uid_allocator.c src/flatfile/flatfile_item_uid_allocator.c src/flatfile/flatfile_store.c \
     src/persistence/persistence_mode.c \
     src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
+    src/economy/collector_command.c src/economy/collector_codec.c \
+    src/economy/collector_policy.c src/economy/collector_repository.c \
     src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"
 "$ROOT/bin/tests/item_transfer_mysql_harness"

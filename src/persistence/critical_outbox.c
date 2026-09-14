@@ -459,8 +459,10 @@ critical_outbox_test_destination(const critical_outbox_record &record, void *con
 				  record.event_type == CRITICAL_OUTBOX_COIN_RECEIPT_EVENT &&
 				  record.payload_version == 1 &&
 				  record.payload.size() == CRITICAL_OUTBOX_COIN_RECEIPT_BYTES;
+	const bool collector_record = record.destination == 11 && record.event_type == 1 &&
+				      record.payload_version == 1 && record.payload.size() == 272;
 	return test_record || epic_record || currency_record || item_record || auction_record ||
-			       coin_receipt ?
+			       coin_receipt || collector_record ?
 		       critical_outbox_delivery_result::delivered :
 		       critical_outbox_delivery_result::terminal_failure;
 }

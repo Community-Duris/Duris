@@ -3397,19 +3397,19 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 		"weight, cost, timer, extra_flags, "
 		"value0, value1, value2, value3, value4, value5, value6, value7, "
 		"name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		"item_material"
+		"item_material, obj_uid"
 		") VALUES ("
 		"%d, %d, %d, %s, "
 		"%d, %d, %ld, %lu, "
 		"%d, %d, %d, %d, %d, %d, %d, %d, "
 		"%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
-		"%s"
+		"%s, %lu"
 		")",
 		pet_id, vnum, equip_slot, container_str, obj->weight, obj->cost,
 		(long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
 		obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
 		obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, material_str);
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, material_str, obj->obj_uid);
 
 	if (esc_name)
 		free(esc_name);
@@ -8620,19 +8620,19 @@ static int sql_save_saved_item_recursive(const char *item_key, int room_vnum, P_
 		"weight, cost, timer, extra_flags, "
 		"value0, value1, value2, value3, value4, value5, value6, value7, "
 		"name, short_descr, description, action_descr, wear_flags, item_type, bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		"item_material"
+		"item_material, obj_uid"
 		") VALUES ("
 		"'%s', %d, %d, %s, 1, "
 		"%d, %d, %ld, %lu, "
 		"%d, %d, %d, %d, %d, %d, %d, %d, "
 		"%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
-		"%s"
+		"%s, %lu"
 		")",
 		esc_key ? esc_key : "", room_vnum, vnum, container_str, obj->weight, obj->cost,
 		(long)obj->timer[0], (unsigned long)obj->extra_flags, obj->value[0], obj->value[1],
 		obj->value[2], obj->value[3], obj->value[4], obj->value[5], obj->value[6],
 		obj->value[7], name_str, short_str, desc_str, action_str, wear_str, type_str,
-		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, material_str);
+		bv1_str, bv2_str, bv3_str, bv4_str, bv5_str, material_str, obj->obj_uid);
 
 	if (esc_key)
 		free(esc_key);
