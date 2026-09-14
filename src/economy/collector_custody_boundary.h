@@ -3,6 +3,7 @@
 
 #include "economy/collector_policy.h"
 #include "item/item_transfer_command.h"
+#include "persistence/corpse_lifecycle_command.h"
 
 #include <cstdint>
 #include <limits>
@@ -44,5 +45,46 @@ inline uint32_t collector_item_transfer_actor_pid(const item_transfer_payload &p
 				       0;
 	return actor <= std::numeric_limits<uint32_t>::max() ? static_cast<uint32_t>(actor) : 0;
 }
+
+// A corpse disappearing is not, by itself, proof that its contents were
+// claimed.  Decay/release into a room only relocates environmental custody.
+// Resurrection and a raised follower hand every durable item to a player
+// aggregate, while destruction is terminal.  A corpse decaying inside a
+// player-owned container is likewise the first durable player boundary for
+// any candidate that survived acquisition of the outer corpse.
+inline collector::reason
+collector_corpse_lifecycle_boundary_reason(const corpse_lifecycle_payload &payload)
+{
+	switch (payload.action)
+	{
+	case corpse_lifecycle_action::destroy:
+		return collector::reason::destroyed;
+	case corpse_lifecycle_action::resurrect:
+	case corpse_lifecycle_action::raise_follower:
+		return collector::reason::claimed;
+	case corpse_lifecycle_action::release_nested:
+		return payload.destination_player_pid ? collector::reason::claimed :
+							   collector::reason::none;
+	case corpse_lifecycle_action::upsert:
+	case corpse_lifecycle_action::remove:
+	case corpse_lifecycle_action::release:
+		return collector::reason::none;
+	}
+	return collector::reason::none;
+}
+
+inline uint32_t
+collector_corpse_lifecycle_actor_pid(const corpse_lifecycle_payload &payload)
+{
+	return collector_corpse_lifecycle_boundary_reason(payload) == collector::reason::claimed ?
+		       payload.destination_player_pid :
+		       0;
+}
+
+struct collector_custody_boundary_item
+{
+	uint64_t item_uid = 0;
+	uint64_t post_item_revision = 0;
+};
 
 #endif

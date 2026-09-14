@@ -27,6 +27,7 @@
 #include "combat/arena.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_catalog_cache.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "combat/ctf.h"
@@ -3549,6 +3550,8 @@ bool publish_corpse_wallet(P_char character, const corpse_lifecycle_result &resu
 void publish_corpse_release(bool committed, const corpse_lifecycle_result &result,
 			    unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
+	if (committed && result.collector_catalog_changed)
+		collector_catalog_cache_invalidate();
 	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	corpse_unmaking_context unmaking_context = {};
 	const auto unmaking = corpse_unmakings.find(key);
@@ -3797,6 +3800,8 @@ void fail_corpse_raise(uint64_t key, const char *reason)
 void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 			  unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
+	if (committed && result.collector_catalog_changed)
+		collector_catalog_cache_invalidate();
 	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
@@ -3928,6 +3933,8 @@ void publish_corpse_resurrection_item(P_char actor, bool committed, const item_t
 void publish_corpse_resurrection(bool committed, const corpse_lifecycle_result &result,
 				 unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
+	if (committed && result.collector_catalog_changed)
+		collector_catalog_cache_invalidate();
 	const uint64_t key = item_corpse_owner_id(payload.owner_pid, payload.save_id);
 	auto found = corpse_resurrections.find(key);
 	if (found == corpse_resurrections.end())
@@ -4075,6 +4082,8 @@ void discard_corpse_release_money(P_obj container)
 void publish_corpse_nested_release(bool committed, const corpse_lifecycle_result &result,
 				   unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
+	if (committed && result.collector_catalog_changed)
+		collector_catalog_cache_invalidate();
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	if (!committed)
 	{
@@ -4216,6 +4225,8 @@ bool submit_corpse_destruction(P_obj corpse);
 void publish_corpse_destruction(bool committed, const corpse_lifecycle_result &result,
 				unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
+	if (committed && result.collector_catalog_changed)
+		collector_catalog_cache_invalidate();
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	if (!committed)
 	{

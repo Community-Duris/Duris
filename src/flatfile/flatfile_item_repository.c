@@ -1551,6 +1551,14 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	    !ensure_owner(&catalog, destination_owner) ||
 	    (resurrect && !ensure_owner(&catalog, old_room_owner)))
 		return flatfile_item_repository_result::invalid;
+	try
+	{
+		mutation->collector_items.reserve(expected_items.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
 	if (release_nested)
 	{
 		const auto *parent = find_item(&catalog, payload.target_parent_item_uid);
@@ -1594,6 +1602,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 		if (destroy)
 			item.state = item_custody_state::destroyed;
 		++item.item_revision;
+		mutation->collector_items.push_back({ item.item_uid, item.item_revision });
 		mutation->max_item_revision =
 			std::max(mutation->max_item_revision, item.item_revision);
 	}

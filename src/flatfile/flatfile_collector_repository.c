@@ -985,6 +985,78 @@ flatfile_collector_repository_result flatfile_collector_prepare_item_boundary(
 	return flatfile_collector_repository_result::ok;
 }
 
+flatfile_collector_repository_result flatfile_collector_prepare_corpse_boundary(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload,
+	const std::vector<collector_custody_boundary_item> &items,
+	flatfile_collector_enrollment_mutation *mutation, unsigned int *result_code,
+	std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !result_code ||
+	    !std::is_sorted(items.begin(), items.end(), [](const auto &left, const auto &right)
+			   { return left.item_uid < right.item_uid; }))
+		return flatfile_collector_repository_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	for (size_t index = 0; index < items.size(); ++index)
+		if (!items[index].item_uid || !items[index].post_item_revision ||
+		    (index && items[index - 1].item_uid == items[index].item_uid))
+			return flatfile_collector_repository_result::invalid;
+
+	const collector::reason reason = collector_corpse_lifecycle_boundary_reason(payload);
+	if (reason == collector::reason::none || items.empty())
+		return flatfile_collector_repository_result::unchanged;
+
+	collector_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_collector_repository_result::not_found)
+		return flatfile_collector_repository_result::unchanged;
+	if (loaded != flatfile_collector_repository_result::ok)
+		return loaded;
+
+	size_t cancelled_count = 0;
+	for (listing_state &listing : catalog.listings)
+	{
+		if (listing.entry.status != collector::state::candidate)
+			continue;
+		const auto item = std::lower_bound(
+			items.begin(), items.end(), listing.entry.uid,
+			[](const collector_custody_boundary_item &entry, uint64_t uid)
+			{ return entry.item_uid < uid; });
+		if (item == items.end() || item->item_uid != listing.entry.uid)
+			continue;
+		if (item->post_item_revision < listing.entry.item_revision)
+		{
+			*result_code = ESTALE;
+			return flatfile_collector_repository_result::ok;
+		}
+		const collector::outcome outcome =
+			collector::cancel(&listing.entry, listing.entry.revision, reason);
+		if (outcome != collector::outcome::applied)
+		{
+			*result_code = policy_code(outcome);
+			return flatfile_collector_repository_result::ok;
+		}
+		listing.entry.item_revision = item->post_item_revision;
+		++cancelled_count;
+	}
+	if (!cancelled_count)
+		return flatfile_collector_repository_result::unchanged;
+	if (catalog.catalog_revision == UINT64_MAX || catalog.file_revision == UINT64_MAX)
+	{
+		*result_code = ERANGE;
+		return flatfile_collector_repository_result::ok;
+	}
+	++catalog.catalog_revision;
+	++catalog.file_revision;
+	mutation->after_image.filename = catalog_filename;
+	if (!encode_catalog(catalog, &mutation->after_image.bytes))
+		return flatfile_collector_repository_result::invalid;
+	mutation->catalog_revision = catalog.catalog_revision;
+	mutation->cancelled = cancelled_count;
+	return flatfile_collector_repository_result::ok;
+}
+
 namespace
 {
 bool command_digest(const critical_command &command,

@@ -69,6 +69,7 @@ struct corpse_lifecycle_result
 	uint64_t max_item_revision = 0;
 	uint32_t item_count = 0;
 	std::array<int32_t, 4> wallet = {};
+	bool collector_catalog_changed = false;
 };
 
 bool corpse_lifecycle_command_encode_payload(const corpse_lifecycle_payload &payload,

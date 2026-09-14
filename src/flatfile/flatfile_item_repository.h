@@ -2,6 +2,7 @@
 #define DURIS_FLATFILE_ITEM_REPOSITORY_H
 
 #include "economy/auction_command.h"
+#include "economy/collector_custody_boundary.h"
 #include "flatfile/flatfile_authority_transaction.h"
 #include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_world_item_repository.h"
@@ -72,6 +73,7 @@ struct flatfile_item_corpse_release_mutation
 	uint64_t player_owner_revision = 0;
 	uint64_t max_item_revision = 0;
 	uint64_t item_count = 0;
+	std::vector<collector_custody_boundary_item> collector_items;
 };
 
 struct collector_command_payload;

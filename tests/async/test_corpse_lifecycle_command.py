@@ -152,11 +152,18 @@ int main()
 						       &decoded));
 	corpse_lifecycle_result destroy_result = release_result;
 	destroy_result.action = corpse_lifecycle_action::destroy;
+	destroy_result.collector_catalog_changed = true;
 	assert(corpse_lifecycle_command_encode_result(destroy_result, &encoded_result));
 	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
 						      &decoded_result));
 	assert(decoded_result.action == corpse_lifecycle_action::destroy &&
-	       decoded_result.corpse_owner_revision == 5 && decoded_result.item_count == 2);
+	       decoded_result.corpse_owner_revision == 5 && decoded_result.item_count == 2 &&
+	       decoded_result.collector_catalog_changed);
+	auto malformed_collector_flag = encoded_result;
+	malformed_collector_flag[9] = 2;
+	assert(!corpse_lifecycle_command_decode_result(malformed_collector_flag.data(),
+						       malformed_collector_flag.size(),
+						       &decoded_result));
 	corpse_lifecycle_payload resurrect = {};
 	resurrect.action = corpse_lifecycle_action::resurrect;
 	resurrect.owner_pid = 42;
@@ -202,12 +209,13 @@ int main()
 	resurrect_result.max_item_revision = 13;
 	resurrect_result.item_count = 2;
 	resurrect_result.wallet = { 1, 2, 3, 4 };
+	resurrect_result.collector_catalog_changed = true;
 	assert(corpse_lifecycle_command_encode_result(resurrect_result, &encoded_result));
 	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
 						      &decoded_result));
 	assert(decoded_result.action == corpse_lifecycle_action::resurrect &&
 	       decoded_result.player_owner_revision == 10 && decoded_result.wallet_revision == 12 &&
-	       decoded_result.wallet[3] == 4);
+	       decoded_result.wallet[3] == 4 && decoded_result.collector_catalog_changed);
 	corpse_lifecycle_payload raise = resurrect;
 	raise.action = corpse_lifecycle_action::raise_follower;
 	raise.expected_room_revision = 0;
@@ -239,7 +247,8 @@ int main()
 					      &decoded_result));
 	assert(decoded_result.action == corpse_lifecycle_action::raise_follower &&
 	       decoded_result.room_owner_revision == 0 &&
-	       decoded_result.player_owner_revision == 10 && decoded_result.wallet[0] == 1);
+	       decoded_result.player_owner_revision == 10 && decoded_result.wallet[0] == 1 &&
+	       decoded_result.collector_catalog_changed);
 	corpse_lifecycle_payload nested = release;
 	nested.action = corpse_lifecycle_action::release_nested;
 	nested.target_root_item_uid = 100;
@@ -261,6 +270,10 @@ int main()
 	corpse_lifecycle_result nested_result = release_result;
 	nested_result.action = corpse_lifecycle_action::release_nested;
 	assert(corpse_lifecycle_command_encode_result(nested_result, &encoded_result));
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
+						      &decoded_result));
+	assert(decoded_result.action == corpse_lifecycle_action::release_nested &&
+	       !decoded_result.collector_catalog_changed);
 	nested.destination_player_pid = 77;
 	nested.expected_room_revision = 0;
 	nested.expected_player_revision = 9;
@@ -274,7 +287,12 @@ int main()
 	nested_result.player_owner_revision = 10;
 	nested_result.wallet_revision = 12;
 	nested_result.wallet = { 5, 6, 7, 8 };
+	nested_result.collector_catalog_changed = true;
 	assert(corpse_lifecycle_command_encode_result(nested_result, &encoded_result));
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
+						      &decoded_result));
+	assert(decoded_result.action == corpse_lifecycle_action::release_nested &&
+	       decoded_result.collector_catalog_changed);
 	release.money[0] = 1;
 	assert(!corpse_lifecycle_command_build(&command, operation(11), release,
 					       critical_source_site::command,
