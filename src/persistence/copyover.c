@@ -106,8 +106,7 @@ bool copyover_has_durable_shopkeepers()
 	copyover_header header = {};
 	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
 			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
-			     (header.version == COPYOVER_VERSION || header.version == 13 ||
-			      header.version == 12);
+			     (header.version == COPYOVER_VERSION || header.version == 13);
 	fclose(file);
 	return current;
 }

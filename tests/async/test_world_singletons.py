@@ -35,6 +35,9 @@ assert loop.index('redis_world_recovery_boot_clear();') < loop.index('initialize
 assert loop.index('copyover_recover(') < loop.index('reconcile_shopkeepers(')
 copyover = (ROOT / 'src/persistence/copyover.c').read_text()
 assert 'header.version != 12' in copyover
+durable_shopkeepers = copyover[copyover.index('bool copyover_has_durable_shopkeepers()'):copyover.index('int is_copyover_boot(void)')]
+assert 'header.version == 13' in durable_shopkeepers
+assert 'header.version == 12' not in durable_shopkeepers
 assert 'offsetof(copyover_mob, transport)' in copyover
 assert copyover.count('transport_capture(mob, &entry.transport);') == 2
 assert copyover.count('transport_restore(mob, mob_entry.transport);') == 2
