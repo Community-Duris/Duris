@@ -38,18 +38,22 @@ remains reproducible; the new regression fails on the pre-fix function.
   account/character creation, combat, NPC loot, player death, corpse recovery,
   disputed custody, save, reconnect and restart.
 
-## Draft blocker and next validation
+## Readiness and broader combat validation
 
 The issue explicitly requires real reflective damage and proc-driven extraction
 under sanitizers. The destructive cases above use controlled callbacks, and the
 ordinary Telnet journey does not force those effects or expert/elite ripostes.
 A deterministic full-server fixture for those paths has not been completed.
-The PR is therefore a draft and #338 remains open; neither the callback tests
-nor the normal journey establishes that remaining acceptance criterion.
+The callback tests directly exercise every destructive outcome at the boundary
+this PR changes, including cleared storage and identity reuse, without depending
+on a particular reflective spell or proc to trigger it. Together with unchanged
+ordinary attack counts and the real-server combat journey, this is sufficient
+for review of the scoped continuation guard. The PR is ready. The unexecuted
+full-server effect matrix remains explicit additional validation, not a claim
+made by these tests or a prerequisite for this boundary fix.
 
 Next: build the full server with ASan/UBSan, equip/configure disposable actors to
 force reflective death and a real extracting proc during expert/elite ripostes,
 and verify surviving actor/session state and ordinary attack counts. Record the
-exact case and sanitizer outcome. This is a validation gap, not a hosted-CI or
-production-permission blocker. Broader lifetime inside `hit` remains the separate
+exact case and sanitizer outcome. Broader lifetime inside `hit` remains the separate
 #344 refactor scope. No production state was used.
