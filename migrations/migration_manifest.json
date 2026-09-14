@@ -338,6 +338,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "1618e55aacccb7147aa0ae61d3a46dc9e09cef655562ade66ba9a7253872f75a",
       "verify_checksum": "181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376"
+    },
+    {
+      "id": "0017_collector_catalog",
+      "sequence": 17,
+      "description": "Add durable Collector of Antiquities catalog custody and audit state",
+      "apply": "immutable/0017_collector_catalog.sql",
+      "verify": "immutable/0017_collector_catalog.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "495fbd3af270eca4c644d2fc2098c57d5562734e1e47f6cbf27b3ea5669dc525",
+      "verify_checksum": "235c992cf697890957fb6f49ddf36acfdbb8a77903ad552ee0280d109b32a075"
     }
   ]
 }

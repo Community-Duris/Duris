@@ -1951,6 +1951,82 @@ CREATE TABLE `item_ownership_ledger` (
   CONSTRAINT `item_ownership_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `collector_catalog_state` (
+  `state_id` tinyint unsigned NOT NULL, `catalog_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `next_listing` bigint unsigned NOT NULL DEFAULT '1',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`state_id`),
+  CONSTRAINT `chk_collector_catalog_singleton` CHECK ((`state_id` = 1)),
+  CONSTRAINT `chk_collector_catalog_next_listing` CHECK ((`next_listing` > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `collector_catalog_state` (`state_id`,`catalog_revision`,`next_listing`) VALUES (1,0,1);
+CREATE TABLE `collector_deaths` (
+  `death_operation_id` binary(16) NOT NULL, `beneficiary_pid` int unsigned NOT NULL,
+  `death_time` bigint unsigned NOT NULL, `hint_state` tinyint unsigned NOT NULL DEFAULT '0',
+  `hint_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`death_operation_id`),
+  KEY `idx_collector_death_beneficiary` (`beneficiary_pid`,`death_time`),
+  CONSTRAINT `chk_collector_death_beneficiary` CHECK ((`beneficiary_pid` > 0)),
+  CONSTRAINT `chk_collector_death_time` CHECK ((`death_time` > 0)),
+  CONSTRAINT `chk_collector_hint_state` CHECK ((`hint_state` between 0 and 2)),
+  CONSTRAINT `collector_death_operation_fk` FOREIGN KEY (`death_operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `collector_listings` (
+  `listing_id` bigint unsigned NOT NULL, `death_operation_id` binary(16) NOT NULL,
+  `beneficiary_pid` int unsigned NOT NULL, `item_uid` bigint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL, `holding_paused` tinyint unsigned NOT NULL DEFAULT '0',
+  `due_at` bigint unsigned DEFAULT NULL, `listing_revision` bigint unsigned NOT NULL,
+  `item_revision` bigint unsigned NOT NULL, `price_value` bigint unsigned NOT NULL DEFAULT '0',
+  `record_blob` varbinary(154) NOT NULL, `item_blob` mediumblob DEFAULT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`listing_id`), UNIQUE KEY `uq_collector_death_item` (`death_operation_id`,`item_uid`),
+  KEY `idx_collector_item_history` (`item_uid`,`listing_id`),
+  KEY `idx_collector_beneficiary` (`beneficiary_pid`,`status`,`listing_id`),
+  KEY `idx_collector_due` (`status`,`holding_paused`,`due_at`,`listing_id`),
+  CONSTRAINT `chk_collector_listing_id` CHECK ((`listing_id` > 0)),
+  CONSTRAINT `chk_collector_listing_beneficiary` CHECK ((`beneficiary_pid` > 0)),
+  CONSTRAINT `chk_collector_listing_item` CHECK ((`item_uid` > 0)),
+  CONSTRAINT `chk_collector_listing_status` CHECK ((`status` between 1 and 6)),
+  CONSTRAINT `chk_collector_listing_paused` CHECK ((`holding_paused` between 0 and 1)),
+  CONSTRAINT `chk_collector_listing_revision` CHECK ((`listing_revision` > 0)),
+  CONSTRAINT `chk_collector_listing_item_revision` CHECK ((`item_revision` > 0)),
+  CONSTRAINT `chk_collector_record_size` CHECK ((octet_length(`record_blob`) = 154)),
+  CONSTRAINT `chk_collector_item_blob_size` CHECK (((`item_blob` is null) or (octet_length(`item_blob`) between 1 and 131072))),
+  CONSTRAINT `collector_listing_death_fk` FOREIGN KEY (`death_operation_id`) REFERENCES `collector_deaths` (`death_operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `collector_ledger` (
+  `operation_id` binary(16) NOT NULL, `listing_id` bigint unsigned NOT NULL,
+  `action` tinyint unsigned NOT NULL, `catalog_revision` bigint unsigned NOT NULL,
+  `listing_revision` bigint unsigned NOT NULL, `actor_pid` int unsigned NOT NULL DEFAULT '0',
+  `item_uid` bigint unsigned NOT NULL, `value_delta` bigint NOT NULL DEFAULT '0',
+  `closed_reason` tinyint unsigned NOT NULL DEFAULT '0', `source_site` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_collector_ledger_listing` (`listing_id`,`listing_revision`),
+  KEY `idx_collector_ledger_actor` (`actor_pid`,`created_at`),
+  KEY `idx_collector_ledger_item` (`item_uid`,`created_at`),
+  CONSTRAINT `chk_collector_ledger_listing` CHECK ((`listing_id` > 0)),
+  CONSTRAINT `chk_collector_ledger_action` CHECK ((`action` between 1 and 7)),
+  CONSTRAINT `chk_collector_ledger_catalog_revision` CHECK ((`catalog_revision` > 0)),
+  CONSTRAINT `chk_collector_ledger_listing_revision` CHECK ((`listing_revision` > 0)),
+  CONSTRAINT `chk_collector_ledger_item` CHECK ((`item_uid` > 0)),
+  CONSTRAINT `chk_collector_ledger_reason` CHECK ((`closed_reason` between 0 and 7)),
+  CONSTRAINT `collector_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `collector_reconciliation_quarantine` (
+  `quarantine_id` bigint unsigned NOT NULL AUTO_INCREMENT, `listing_id` bigint unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL DEFAULT '0', `conflict_code` smallint unsigned NOT NULL,
+  `evidence` varchar(255) NOT NULL, `detected_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `repaired_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`quarantine_id`),
+  UNIQUE KEY `uq_collector_quarantine` (`listing_id`,`item_uid`,`conflict_code`),
+  KEY `idx_collector_quarantine_open` (`repaired_at`,`listing_id`),
+  CONSTRAINT `chk_collector_quarantine_listing` CHECK ((`listing_id` > 0)),
+  CONSTRAINT `chk_collector_quarantine_conflict` CHECK ((`conflict_code` > 0)),
+  CONSTRAINT `chk_collector_quarantine_evidence` CHECK ((char_length(`evidence`) > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `auction_item_custody` (
   `auction_id` int unsigned NOT NULL, `slot` smallint unsigned NOT NULL,
   `item_uid` bigint unsigned NOT NULL, `item_revision` bigint unsigned NOT NULL,
