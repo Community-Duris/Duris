@@ -338,6 +338,25 @@ void coin_failure_matrix()
 	       item_revision);
 	assert((pile_amount(pile) == coins{ 300, 0, 0, 0 }));
 
+	// A death-style full-wallet conversion captured before another wallet
+	// publication must not debit the new balance or create its stale coin pile.
+	critical_command conflicted_wallet = make_put(700, 300, 700);
+	execute("UPDATE player_data SET copper=701,wallet_revision=wallet_revision+1 WHERE pid=" +
+		pid_text);
+	applied = critical_command_repository_apply(connection, conflicted_wallet);
+	assert(applied.outcome == critical_apply_outcome::terminal_failure &&
+	       applied.error_code == ESTALE);
+	assert(critical_command_repository_apply(connection, conflicted_wallet).error_code ==
+	       ESTALE);
+	assert(scalar("SELECT copper FROM player_data WHERE pid=" + pid_text) == 701);
+	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + pid_text) ==
+	       ledger_count);
+	assert((pile_amount(pile) == coins{ 300, 0, 0, 0 }));
+	// Restore only the synthetic concurrent credit for the remaining existing
+	// crash-window matrix. Its builders read the new authoritative revision.
+	execute("UPDATE player_data SET copper=700,wallet_revision=wallet_revision+1 WHERE pid=" +
+		pid_text);
+
 	critical_command fault = make_put(700, 300, 50);
 	execute("CREATE TRIGGER coin_injected_failure BEFORE UPDATE ON item_current_owner FOR EACH ROW "
 		"SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected coin write failure'");
