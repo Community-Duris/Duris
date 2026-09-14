@@ -27,7 +27,7 @@ save and reconnect after a process restart. The local run passed all 15 cycles.
 Local development builds passed for flatfile and MariaDB with warnings treated
 as errors. The formatter check passed for `src/world/new_events.c`.
 
-## Remaining blocker
+## Incident attribution and readiness
 
 The original report was an intermittent full-world crash in room 402003 after
 purging an apprentice and running `zresetfull`. No original core/ASan trace has
@@ -35,5 +35,7 @@ attributed that crash to this confirmed iterator defect. The synthetic live
 journey uses the small test world and the destructive follower scenario uses
 controlled extraction. A full-world sanitizer journey reproducing the original
 sequence, with a real summoned master/follower chain, remains necessary before
-claiming that all of #229 is resolved. Keep the PR draft and the issue open for
-that attribution and validation. No production player state was used.
+claiming that all of #229 is resolved. That attribution does not block reviewing
+this independently reproduced and tested iterator fix. The PR is ready; #229
+remains open until the historical crash is attributed or its investigation is
+otherwise concluded. No production player state was used for these tests.
