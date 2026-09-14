@@ -138,6 +138,8 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/alliances.o \
 				 mob/automatic_rules.o \
 				 magic/affects.o \
+				 world/falling.o \
+				 world/falling_policy.o \
 				 combat/arena.o \
 				 guild/artifact.o \
 				 guild/artifact_cache_codec.o \

@@ -2362,8 +2362,6 @@ bool NewSaves(P_char, int, int);
 bool cast_common(P_char, char *);
 bool cast_common_generic(P_char, int);
 bool circle_follow(P_char, P_char);
-void event_falling_char(P_char ch, P_char victim, P_obj obj, void *data);
-bool falling_char(P_char, const int, bool caller_is_event);
 void event_falling_obj(P_char ch, P_char victim, P_obj obj, void *data);
 bool falling_obj(P_obj, int, bool caller_is_event);
 bool saves_spell(P_char, int);
