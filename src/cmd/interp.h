@@ -17,6 +17,7 @@
 #define LOCK_LEVEL BIT_4
 
 const char *input_command_label(const char *input);
+int ordered_command_number(const char *input);
 
 extern unsigned int game_locked;
 extern unsigned int game_locked_players;

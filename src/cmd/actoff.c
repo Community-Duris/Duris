@@ -40,6 +40,7 @@
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
+#include "cmd/divine_refusal_policy.h"
 #include "core/utils.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -50,6 +51,7 @@
 #include "combat/guard.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "item/item_actions.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "magic/spells.h"
@@ -71,6 +73,7 @@ extern int innate_abilities[];
 extern int class_innates[][5];
 extern const int rev_dir[];
 extern Skill skills[];
+extern unsigned long long ne_event_tick;
 extern void kick_messages(P_char, P_char, bool, struct damage_messages *);
 extern P_char misfire_check(P_char ch, P_char spell_target, int flag);
 extern void event_mob_mundane(P_char, P_char, P_obj, void *);
@@ -2033,12 +2036,101 @@ void do_circle(P_char ch, char *argument, int cmd)
 */
 #define CH_INROOM_SIZE 256
 
+static divine_refusal_config current_divine_refusal_config()
+{
+	return divine_refusal_make_config(
+		get_property("pets.divine_refusal.enabled", 0.0, false),
+		get_property("pets.divine_refusal.summoner_only", 1.0, false),
+		get_property("pets.divine_refusal.percent", 10.0, false),
+		get_property("pets.divine_refusal.retry_lock_seconds", 4.0, false), WAIT_SEC);
+}
+
+static bool divine_refusal_eligible(P_char master, P_char pet, const divine_refusal_config &config)
+{
+	return master && pet && IS_PC(master) && IS_ALIVE(master) && IS_NPC(pet) &&
+	       GET_MASTER(pet) == master && IS_AFFECTED(pet, AFF_CHARM) &&
+	       GET_CLASS(pet, CLASS_CLERIC) &&
+	       (!config.summoner_only || GET_CLASS(master, CLASS_SUMMONER));
+}
+
+static bool divine_refusal_order_candidate(P_char master, const divine_refusal_config &config,
+					   int cmd)
+{
+	return config.enabled && config.percent > 0 && config.lock_pulses > 0 && master &&
+	       IS_PC(master) && IS_ALIVE(master) &&
+	       (!config.summoner_only || GET_CLASS(master, CLASS_SUMMONER)) && cmd > CMD_NONE &&
+	       cmd < MAX_CMD && cmd != CMD_ABORT && cmd != CMD_FLEE;
+}
+
+static bool divine_refusal_command_blocked(P_char pet, int cmd)
+{
+	return (item_action_active(pet) || IS_AFFECTED2(pet, AFF2_CASTING)) &&
+	       !cmd_allowed_while_casting(pet, cmd);
+}
+
+static void show_new_divine_refusal(P_char master, P_char pet)
+{
+	const bool pet_can_speak = !is_silent(pet, false) && CAN_SPEAK(pet);
+	const bool master_can_hear =
+		master->specials.z_cord == pet->specials.z_cord &&
+		(IS_TRUSTED(master) ||
+		 (!IS_ROOM(master->in_room, ROOM_SILENT) && !IS_AFFECTED4(master, AFF4_DEAF)));
+
+	if (pet_can_speak)
+	{
+		act("$n says 'My deity has warned me against completing that action.'", TRUE, pet,
+		    0, master, TO_NOTVICT | ACT_SILENCEABLE);
+		if (master_can_hear)
+			act("$N says 'My deity has warned me against completing that action.'",
+			    FALSE, master, 0, pet, TO_CHAR | ACT_SILENCEABLE);
+		else
+			act("$N refuses your order with a solemn shake of $S head.", FALSE, master,
+			    0, pet, TO_CHAR);
+	}
+	else
+	{
+		act("$n refuses the order with a solemn shake of $s head.", TRUE, pet, 0, master,
+		    TO_NOTVICT);
+		act("$N refuses your order with a solemn shake of $S head.", FALSE, master, 0, pet,
+		    TO_CHAR);
+	}
+}
+
+static bool divine_refusal_blocks_order(P_char master, P_char pet,
+					const divine_refusal_config &config, int cmd,
+					bool *new_refusal)
+{
+	if (new_refusal)
+		*new_refusal = false;
+
+	const bool recognized = cmd > CMD_NONE && cmd < MAX_CMD;
+	const bool exempt = cmd == CMD_ABORT || cmd == CMD_FLEE;
+	const bool blocked = recognized && divine_refusal_command_blocked(pet, cmd);
+	const divine_refusal_outcome outcome = divine_refusal_decide(
+		config, divine_refusal_eligible(master, pet, config), recognized, exempt, blocked,
+		ne_event_tick, &pet->specials.divine_refusal_until_pulse, number);
+
+	if (outcome == divine_refusal_outcome::refused_new)
+	{
+		show_new_divine_refusal(master, pet);
+		if (new_refusal)
+			*new_refusal = true;
+		return true;
+	}
+	if (outcome == divine_refusal_outcome::refused_active)
+	{
+		act("$N is still refusing that order.", FALSE, master, 0, pet, TO_CHAR);
+		return true;
+	}
+	return false;
+}
+
 void do_order(P_char ch, char *argument, int /*comd*/)
 {
 	char name[MAX_INPUT_LENGTH], message[MAX_INPUT_LENGTH];
 	char cmd[MAX_INPUT_LENGTH], temp[MAX_INPUT_LENGTH], lowcmd[MAX_INPUT_LENGTH];
 	char buf[256];
-	bool found = FALSE, l_delay = FALSE;
+	bool found = FALSE, l_delay = FALSE, acknowledged = FALSE, refused = FALSE;
 	int i, len, org_cord, numb_ch = 0;
 	P_char victim, ch_inroom[CH_INROOM_SIZE], tmp_ch;
 	P_char k = NULL;
@@ -2144,6 +2236,10 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 		}
 
 		/*    ch_inroom[i] = NULL;*/
+		const divine_refusal_config refusal_config = current_divine_refusal_config();
+		const int refusal_cmd = ordered_command_number(message);
+		const bool refusal_can_apply =
+			divine_refusal_order_candidate(ch, refusal_config, refusal_cmd);
 
 		if (victim)
 		{
@@ -2180,6 +2276,13 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 			{
 				if (CAN_ACT(victim))
 				{
+					bool new_refusal = false;
+					if (divine_refusal_blocks_order(ch, victim, refusal_config,
+									refusal_cmd, &new_refusal))
+					{
+						CharWait(ch, new_refusal ? PULSE_VIOLENCE : 2);
+						return;
+					}
 					send_to_char("Ok.\n", ch);
 					SET_BIT(ch->specials.affected_by5, AFF5_ORDERING);
 					command_interpreter(victim, message);
@@ -2231,17 +2334,50 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 						*/
 								if (!found)
 								{
-									send_to_char("Ok.\n", ch);
 									found = TRUE;
+									if (!refusal_can_apply)
+									{
+										send_to_char(
+											"Ok.\n",
+											ch);
+										acknowledged = TRUE;
+									}
 								}
 								if (!CAN_ACT(k) || IS_IMMOBILE(k))
 								{
+									if (!acknowledged)
+									{
+										send_to_char(
+											"Ok.\n",
+											ch);
+										acknowledged = TRUE;
+									}
 									act("$N seems a bit busy at the moment, try later.",
 									    FALSE, ch, 0, k,
 									    TO_CHAR);
 								}
 								else
 								{
+									bool new_refusal = false;
+									if (divine_refusal_blocks_order(
+										    ch, k,
+										    refusal_config,
+										    refusal_cmd,
+										    &new_refusal))
+									{
+										refused = TRUE;
+										if (new_refusal)
+											l_delay =
+												TRUE;
+										continue;
+									}
+									if (!acknowledged)
+									{
+										send_to_char(
+											"Ok.\n",
+											ch);
+										acknowledged = TRUE;
+									}
 									/*
 									                  snprintf(buf, MAX_STRING_LENGTH, "$n orders you to '%s'", message);
 									*/
@@ -2284,6 +2420,10 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 				send_to_char("None here are loyal subjects of yours!\n", ch);
 			else
 			{
+				// Preserve the legacy acknowledgement for groups where every loyal
+				// follower was busy. An all-refusal group must not say "Ok".
+				if (!acknowledged && !refused)
+					send_to_char("Ok.\n", ch);
 				if (l_delay)
 					CharWait(ch, PULSE_VIOLENCE);
 				else
