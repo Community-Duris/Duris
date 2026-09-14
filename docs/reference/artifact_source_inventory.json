@@ -3586,7 +3586,7 @@
     {
       "vnum": 67246,
       "source": "areas/obj/unique.obj",
-      "line": 704,
+      "line": 702,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -3615,7 +3615,7 @@
     {
       "vnum": 67247,
       "source": "areas/obj/unique.obj",
-      "line": 717,
+      "line": 715,
       "name": "a shimmering golden Ttken",
       "keywords": "token token unique",
       "type": 8,
@@ -3644,7 +3644,7 @@
     {
       "vnum": 67248,
       "source": "areas/obj/unique.obj",
-      "line": 730,
+      "line": 728,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -3673,7 +3673,7 @@
     {
       "vnum": 67249,
       "source": "areas/obj/unique.obj",
-      "line": 743,
+      "line": 741,
       "name": "the dirk of vigor",
       "keywords": "dirk vigor unique",
       "type": 5,
@@ -3703,7 +3703,7 @@
     {
       "vnum": 67250,
       "source": "areas/obj/unique.obj",
-      "line": 761,
+      "line": 759,
       "name": "a gilded Songbird charm",
       "keywords": "songbird charm gilded unique",
       "type": 9,
@@ -3732,7 +3732,7 @@
     {
       "vnum": 67251,
       "source": "areas/obj/unique.obj",
-      "line": 788,
+      "line": 786,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -3761,7 +3761,7 @@
     {
       "vnum": 67252,
       "source": "areas/obj/unique.obj",
-      "line": 801,
+      "line": 799,
       "name": "a frost-covered braided necklace",
       "keywords": "necklace braided frost ice unique",
       "type": 11,
@@ -3790,7 +3790,7 @@
     {
       "vnum": 67253,
       "source": "areas/obj/unique.obj",
-      "line": 818,
+      "line": 816,
       "name": "the instrument of lyrical mastery",
       "keywords": "instrument lyrical mastery box unique",
       "type": 32,
@@ -3819,7 +3819,7 @@
     {
       "vnum": 67254,
       "source": "areas/obj/unique.obj",
-      "line": 840,
+      "line": 838,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -3848,7 +3848,7 @@
     {
       "vnum": 67255,
       "source": "areas/obj/unique.obj",
-      "line": 853,
+      "line": 851,
       "name": "a set of gartham hide sleeves",
       "keywords": "sleeves gartham unique",
       "type": 9,
@@ -3877,7 +3877,7 @@
     {
       "vnum": 67256,
       "source": "areas/obj/unique.obj",
-      "line": 871,
+      "line": 869,
       "name": "the glittering cloak of the sprite queen, Faelarae",
       "keywords": "cloak unique",
       "type": 9,
@@ -3906,7 +3906,7 @@
     {
       "vnum": 67257,
       "source": "areas/obj/unique.obj",
-      "line": 891,
+      "line": 889,
       "name": "the sacred totem of 'Minthka'",
       "keywords": "totem sacred minthka unique",
       "type": 34,
@@ -3935,7 +3935,7 @@
     {
       "vnum": 67258,
       "source": "areas/obj/unique.obj",
-      "line": 911,
+      "line": 909,
       "name": "a cold saber called 'icicle'",
       "keywords": "saber unique icicle sword",
       "type": 5,
@@ -3965,7 +3965,7 @@
     {
       "vnum": 67259,
       "source": "areas/obj/unique.obj",
-      "line": 940,
+      "line": 938,
       "name": "some fingerless gloves of su-monster skin",
       "keywords": "gloves unique fingerless su monster su-monster skin",
       "type": 9,
@@ -3994,7 +3994,7 @@
     {
       "vnum": 67260,
       "source": "areas/obj/unique.obj",
-      "line": 952,
+      "line": 950,
       "name": "a glowing wagon splinter",
       "keywords": "splinter wagon unique",
       "type": 11,
@@ -4024,7 +4024,7 @@
     {
       "vnum": 67261,
       "source": "areas/obj/unique.obj",
-      "line": 962,
+      "line": 960,
       "name": "some spiked crabshell armor",
       "keywords": "armor crabshell unique",
       "type": 9,
@@ -4053,7 +4053,7 @@
     {
       "vnum": 67262,
       "source": "areas/obj/unique.obj",
-      "line": 974,
+      "line": 972,
       "name": "the wondrous mace of the Sea",
       "keywords": "mace wonderous watery unique",
       "type": 5,
@@ -4084,7 +4084,7 @@
     {
       "vnum": 67263,
       "source": "areas/obj/unique.obj",
-      "line": 986,
+      "line": 984,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -4113,7 +4113,7 @@
     {
       "vnum": 67264,
       "source": "areas/obj/unique.obj",
-      "line": 999,
+      "line": 997,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -4142,7 +4142,7 @@
     {
       "vnum": 67265,
       "source": "areas/obj/unique.obj",
-      "line": 1012,
+      "line": 1010,
       "name": "a raven skull ring",
       "keywords": "ring skull raven unique",
       "type": 11,
@@ -4171,7 +4171,7 @@
     {
       "vnum": 67266,
       "source": "areas/obj/unique.obj",
-      "line": 1034,
+      "line": 1032,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -4200,7 +4200,7 @@
     {
       "vnum": 67267,
       "source": "areas/obj/unique.obj",
-      "line": 1047,
+      "line": 1045,
       "name": "a tormented zarbon face, twisted in agony",
       "keywords": "face zarbon twisted tormented unique",
       "type": 11,
@@ -4229,7 +4229,7 @@
     {
       "vnum": 67268,
       "source": "areas/obj/unique.obj",
-      "line": 1059,
+      "line": 1057,
       "name": "an umbilical cord from a pregnant duergar",
       "keywords": "cord umbilical pregnant unique",
       "type": 11,
@@ -4258,7 +4258,7 @@
     {
       "vnum": 67269,
       "source": "areas/obj/unique.obj",
-      "line": 1076,
+      "line": 1074,
       "name": "the severed tentacle of a carrion crawler",
       "keywords": "unique tentacle earring severed",
       "type": 9,
@@ -4287,7 +4287,7 @@
     {
       "vnum": 67270,
       "source": "areas/obj/unique.obj",
-      "line": 1095,
+      "line": 1093,
       "name": "a bracelet of poisonous snake scales",
       "keywords": "bracelet snake scales poisonous unique",
       "type": 11,
@@ -4316,7 +4316,7 @@
     {
       "vnum": 67271,
       "source": "areas/obj/unique.obj",
-      "line": 1107,
+      "line": 1105,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -4345,7 +4345,7 @@
     {
       "vnum": 67272,
       "source": "areas/obj/unique.obj",
-      "line": 1120,
+      "line": 1118,
       "name": "the terrifying visage of the great wraith Dranum",
       "keywords": "visage face dranum unique",
       "type": 9,
@@ -4375,7 +4375,7 @@
     {
       "vnum": 67273,
       "source": "areas/obj/unique.obj",
-      "line": 1136,
+      "line": 1134,
       "name": "the wailing face of a drow banshee",
       "keywords": "face wailing drow banshee unique",
       "type": 11,
@@ -4404,7 +4404,7 @@
     {
       "vnum": 67274,
       "source": "areas/obj/unique.obj",
-      "line": 1155,
+      "line": 1153,
       "name": "the blackened staff of Netheril",
       "keywords": "staff blackened netheril",
       "type": 5,
@@ -4435,7 +4435,7 @@
     {
       "vnum": 67275,
       "source": "areas/obj/unique.obj",
-      "line": 1188,
+      "line": 1186,
       "name": "a petrified roper corpse",
       "keywords": "corpse roper petrified unique",
       "type": 5,
@@ -4465,7 +4465,7 @@
     {
       "vnum": 67276,
       "source": "areas/obj/unique.obj",
-      "line": 1200,
+      "line": 1198,
       "name": "a sword of the whirlwinds",
       "keywords": "sword whirl whirlwinds winds unique",
       "type": 5,
@@ -4496,7 +4496,7 @@
     {
       "vnum": 67277,
       "source": "areas/obj/unique.obj",
-      "line": 1214,
+      "line": 1212,
       "name": "a shimmering golden token",
       "keywords": "token token unique",
       "type": 8,
@@ -4525,7 +4525,7 @@
     {
       "vnum": 67280,
       "source": "areas/obj/unique.obj",
-      "line": 1265,
+      "line": 1263,
       "name": "a death ring of Tezcatlipoca",
       "keywords": "death ring tezcatlipoca unique",
       "type": 9,
@@ -4555,7 +4555,7 @@
     {
       "vnum": 67281,
       "source": "areas/obj/unique.obj",
-      "line": 1289,
+      "line": 1287,
       "name": "the cloak of the stalker",
       "keywords": "cloak stalker unique",
       "type": 11,
@@ -4585,7 +4585,7 @@
     {
       "vnum": 67283,
       "source": "areas/obj/unique.obj",
-      "line": 1319,
+      "line": 1317,
       "name": "Obe's portable force field",
       "keywords": "obe force field portable",
       "type": 8,
@@ -4705,7 +4705,7 @@
     {
       "vnum": 87612,
       "source": "areas/obj/juiblex.obj",
-      "line": 1646,
+      "line": 1644,
       "name": "Doombringer, the sword of chaos",
       "keywords": "doombringer sword chaos",
       "type": 5,
