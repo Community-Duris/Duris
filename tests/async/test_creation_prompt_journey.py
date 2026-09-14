@@ -133,7 +133,8 @@ def creation_help_and_back(client, server):
     reply(client, "z", RACE_MENU)
     # Mindflayers have no sex choice: their class menu promises a return to race.
     for race in ("Illithid", "Planetbound Illithid"):
-        reply(client, race, "Class Selection")
+        reply(client, race, "H (for Hardcore), N (for Normal)")
+        reply(client, "n", "Class Selection")
         client.expect("z) Return to previous menu (selecting your race).")
         client.expect(RACE_MENU)
         reply(client, "z", RACE_MENU)
@@ -146,6 +147,53 @@ def creation_help_and_back(client, server):
     client.expect(RACE_MENU)
     reply(client, "z", "Male or Female")
     reply(client, "f", "H (for Hardcore), N (for Normal)")
+
+
+def invitation_rejection(client, server, *, invited=False):
+    create_account(client, OLD_PASSWORD)
+    start_character(client)
+    # The isolated fixture's Tyrus creation path grants administrator access,
+    # allowing the real invitation-mode command without changing the binary.
+    reply(client, "Tyrus", "Is this correct?")
+    reply(client, "y", "meet these criteria?")
+    reply(client, "y", RACE_MENU)
+    finish_character_choices(client)
+    reply(client, "y", "PRESS RETURN")
+    reply(client, "", "<>")
+    response = reply(client, "invite on", "<>")
+    require("Huh?" not in response, f"invitation command unavailable: {response}")
+    if invited:
+        # Invitation records use the legacy directory in this private runtime.
+        invitation = server.run_root / "Players/Invited/t/taverek"
+        invitation.parent.mkdir(parents=True)
+        reply(client, "invite Taverek", "Invited.")
+        client.expect("<>")
+        require(invitation.is_file(), "invitation command did not save its record")
+    reply(client, "quit", "ACCOUNT MENU")
+    client.expect(MENU)
+    start_character(client)
+    reply(client, "Taverek", "Is this correct?")
+    reply(client, "y", "meet these criteria?")
+    reply(client, "y", RACE_MENU)
+    if invited:
+        reply(client, "d", "Male or Female")
+        return
+    reply(client, "d", "only those players that have been invited")
+    client.expect(RACE_MENU)
+    reply(client, "h", "Male or Female")
+
+
+def invitation_allowed(client, server):
+    invitation_rejection(client, server, invited=True)
+
+
+def sexless_chaos_menu(client, server):
+    reach_race(client)
+    for race in ("Illithid", "Planetbound Illithid"):
+        output = reply(client, race, "Class Selection")
+        require("Hardcore" not in output, "Chaos offered disabled Hardcore mode")
+        client.expect(RACE_MENU)
+        reply(client, "z", RACE_MENU)
 
 
 def finish_character_choices(client, *, exercise_retries=False, choose_hardcore=False):
@@ -272,6 +320,9 @@ SCENARIOS = (
     ("character-name rejection", character_name_retry),
     ("name-policy rejection", lambda c, s: character_name_retry(c, s, policy=True)),
     ("creation help and back navigation", creation_help_and_back),
+    ("invitation-only race rejection", invitation_rejection),
+    ("invited evil-race creation", invitation_allowed),
+    ("sexless race creation with Hardcore disabled in Chaos", sexless_chaos_menu),
     ("selection retries and final discard", keep_confirmation),
     ("final quit flushes its farewell without saving a character", quit_confirmation),
     ("Hardcore correction, world entry, save/restart and relog", normal_after_hardcore),
@@ -281,7 +332,11 @@ SCENARIOS = (
 def run_journeys(binary):
     failures = []
     for name, scenario in SCENARIOS:
-        environment = {"CREATION_ALL_RACES": "TRUE"} if scenario is creation_help_and_back else None
+        environment = {"CREATION_ALL_RACES": "TRUE"} if scenario in (
+            creation_help_and_back, invitation_rejection, invitation_allowed,
+            sexless_chaos_menu) else None
+        if scenario is sexless_chaos_menu:
+            environment["CHAOS_MUD"] = "TRUE"
         with IsolatedServer(binary, environment) as server:
             client = MudClient(server.plain_port)
             try:

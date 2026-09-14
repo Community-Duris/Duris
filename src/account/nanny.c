@@ -2994,10 +2994,35 @@ void select_hardcore(P_desc d, char *arg)
 	display_classtable(d);
 	STATE(d) = CON_GET_CLASS;
 }
-void select_sex(P_desc d, char *arg)
+static void prompt_hardcore_or_class(P_desc d)
 {
 	char hardcore_message[MAX_STRING_LENGTH];
 
+	if (hardcore_config_get()->creation_enabled &&
+	    !(chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos) &&
+	    (!hardcore_config_get()->creation_veterans_only || !IS_NEWBIE(d->character)))
+	{
+		snprintf(
+			hardcore_message, sizeof(hardcore_message),
+			"\r\n\r\nDo you want to play hardcore? Hardcore char can only die %d time%s, then it's gone for ever.\r\n",
+			hardcore_config_get()->death_max_count,
+			hardcore_config_get()->death_max_count == 1 ? "" : "s");
+		SEND_TO_Q(hardcore_message, d);
+		SEND_TO_Q(
+			"Only recommended for &+Yvery&n experience player who are looking for a new challange.\r\n",
+			d);
+		SEND_TO_Q("Please select either H (for Hardcore), N (for Normal)", d);
+		STATE(d) = CON_HARDCORE;
+	}
+	else
+	{
+		display_classtable(d);
+		STATE(d) = CON_GET_CLASS;
+	}
+}
+
+void select_sex(P_desc d, char *arg)
+{
 	/* skip whitespaces */
 	for (; isspace(*arg); arg++)
 		;
@@ -3026,30 +3051,7 @@ void select_sex(P_desc d, char *arg)
 		return;
 	}
 
-	if (hardcore_config_get()->creation_enabled &&
-	    !(chaos_mud_enabled() && hardcore_config_get()->disable_in_chaos) &&
-	    (!hardcore_config_get()->creation_veterans_only || !IS_NEWBIE(d->character)))
-	{
-		snprintf(
-			hardcore_message, sizeof(hardcore_message),
-			"\r\n\r\nDo you want to play hardcore? Hardcore char can only die %d time%s, then it's gone for ever.\r\n",
-			hardcore_config_get()->death_max_count,
-			hardcore_config_get()->death_max_count == 1 ? "" : "s");
-		SEND_TO_Q(hardcore_message, d);
-		SEND_TO_Q(
-			"Only recommended for &+Yvery&n experience player who are looking for a new challange.\r\n",
-			d);
-		SEND_TO_Q("Please select either H (for Hardcore), N (for Normal)", d);
-		STATE(d) = CON_HARDCORE;
-	}
-	else
-	{
-		display_classtable(d);
-		STATE(d) = CON_GET_CLASS;
-	}
-	// re-enabling hardcore - drannak
-	/*   display_classtable(d);
-	   STATE(d) = CON_GET_CLASS;*/
+	prompt_hardcore_or_class(d);
 }
 
 static void display_available_races(P_desc d)
@@ -3290,7 +3292,8 @@ void select_race(P_desc d, char *arg)
 
 	// not anymore, it's sex/class baby
 
-	if (invitemode && EVIL_RACE(d->character) && !is_invited(GET_NAME(d->character)))
+	if (invitemode && OLD_RACE_EVIL(GET_RACE(d->character), GET_ALIGNMENT(d->character)) &&
+	    !is_invited(GET_NAME(d->character)))
 	{
 		SEND_TO_Q(
 			"\r\nSorry, but only those players that have been invited can roll evil characters.\r\n\r\n",
@@ -3299,6 +3302,7 @@ void select_race(P_desc d, char *arg)
 		// since STATE is not changed, player should be forced back into race selection
 
 		GET_RACE(d->character) = RACE_NONE;
+		display_available_races(d);
 	}
 	else if ((GET_RACE(d->character) != RACE_ILLITHID) &&
 		 (GET_RACE(d->character) != RACE_PILLITHID))
@@ -3309,9 +3313,7 @@ void select_race(P_desc d, char *arg)
 	else
 	{
 		d->character->player.sex = SEX_NEUTRAL;
-
-		display_classtable(d);
-		STATE(d) = CON_GET_CLASS;
+		prompt_hardcore_or_class(d);
 	}
 }
 
