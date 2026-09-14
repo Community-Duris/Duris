@@ -4077,7 +4077,20 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 	double skl;
 	bool npcepicriposte = FALSE;
 
-	if (!IS_ALIVE(victim) || !IS_ALIVE(ch))
+	if (!char_in_list(ch) || !char_in_list(victim) || !IS_ALIVE(victim) || !IS_ALIVE(ch))
+		return FALSE;
+
+	const uint64_t actor_id = ch->runtime_id, target_id = victim->runtime_id;
+	const int original_room = ch->in_room, original_height = ch->specials.z_cord;
+	const auto participants_valid = [&]()
+	{
+		return find_character_by_runtime_id(actor_id) == ch &&
+		       find_character_by_runtime_id(target_id) == victim && IS_ALIVE(ch) &&
+		       IS_ALIVE(victim) && ch->in_room == original_room &&
+		       victim->in_room == original_room && ch->specials.z_cord == original_height &&
+		       victim->specials.z_cord == original_height;
+	};
+	if (!participants_valid())
 		return FALSE;
 
 	// Innate two daggers is static at 5%.
@@ -4090,9 +4103,12 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 		act("You brandish your offhand dagger, intercepting $N's blow, and countering his attack!",
 		    TRUE, ch, 0, victim, TO_CHAR);
 
+		P_obj secondary = ch->equipment[SECONDARY_WEAPON];
+		const uint64_t secondary_uid = secondary ? secondary->obj_uid : 0;
 		hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-		if (char_in_list(victim) && char_in_list(ch))
-			hit(ch, victim, ch->equipment[SECONDARY_WEAPON]);
+		if (participants_valid() && ch->equipment[SECONDARY_WEAPON] == secondary &&
+		    (!secondary || secondary->obj_uid == secondary_uid))
+			hit(ch, victim, secondary);
 		return TRUE;
 	}
 
@@ -4160,14 +4176,22 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 	if (randomnumber > skl)
 		return FALSE;
 
+	int weapon_slot = PRIMARY_WEAPON;
 	if (ch->equipment[FOURTH_WEAPON] && !number(0, 4))
-		wpn = ch->equipment[FOURTH_WEAPON];
+		weapon_slot = FOURTH_WEAPON;
 	else if (ch->equipment[THIRD_WEAPON] && !number(0, 3))
-		wpn = ch->equipment[THIRD_WEAPON];
+		weapon_slot = THIRD_WEAPON;
 	else if (ch->equipment[SECONDARY_WEAPON] && !number(0, 2))
-		wpn = ch->equipment[SECONDARY_WEAPON];
-	else
-		wpn = ch->equipment[PRIMARY_WEAPON];
+		weapon_slot = SECONDARY_WEAPON;
+	wpn = ch->equipment[weapon_slot];
+	const uint64_t weapon_uid = wpn ? wpn->obj_uid : 0;
+	const auto continuation_valid = [&]()
+	{
+		// Check the live slot before reading a possibly extracted weapon. UIDs
+		// also reject a different object reusing the same pooled address.
+		return participants_valid() && ch->equipment[weapon_slot] == wpn &&
+		       (!wpn || wpn->obj_uid == weapon_uid);
+	};
 
 	if (expertriposte > number(1, 500) && GET_OPPONENT(ch) == victim)
 	{
@@ -4178,7 +4202,9 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 
 		hit(ch, victim, wpn);
 
-		if (expertriposte > number(1, 500) && IS_ALIVE(ch) && IS_ALIVE(victim))
+		if (!continuation_valid())
+			return TRUE;
+		if (expertriposte > number(1, 500))
 			hit(ch, victim, wpn);
 	}
 	else if ((npcepicriposte == TRUE) && !number(0, 4) && GET_OPPONENT(ch) == victim)
@@ -4190,7 +4216,9 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 
 		hit(ch, victim, wpn);
 
-		if (!number(0, 1) && IS_ALIVE(ch) && IS_ALIVE(victim))
+		if (!continuation_valid())
+			return TRUE;
+		if (!number(0, 1))
 			hit(ch, victim, wpn);
 	}
 	else
@@ -4201,16 +4229,21 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 		act("You deflect $N's blow and strike back at $M!", TRUE, ch, 0, victim, TO_CHAR);
 	}
 
+	if (!continuation_valid())
+		return TRUE;
 	hit(ch, victim, wpn);
 
-	if (char_in_list(ch) && char_in_list(victim) && GET_CLASS(ch, CLASS_BERSERKER))
+	if (!continuation_valid())
+		return TRUE;
+	if (GET_CLASS(ch, CLASS_BERSERKER))
 	{
 		if (affected_by_spell(ch, SKILL_BERSERK))
 			hit(ch, victim, wpn);
 	} // new zerker stuff
 
-	if (char_in_list(ch) && char_in_list(victim) &&
-	    (skl = GET_CHAR_SKILL(ch, SKILL_FOLLOWUP_RIPOSTE)) > 0)
+	if (!continuation_valid())
+		return TRUE;
+	if ((skl = GET_CHAR_SKILL(ch, SKILL_FOLLOWUP_RIPOSTE)) > 0)
 	{
 		notch_skill(ch, SKILL_FOLLOWUP_RIPOSTE, get_property("skill.notch.defensive", 17));
 
@@ -4229,7 +4262,8 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 							     ch->specials.damage_mod,
 						     SKILL_FOLLOWUP_RIPOSTE);
 
-				if (!victim_dead && skl / 3 > number(0, 100))
+				if (!victim_dead && continuation_valid() &&
+				    skl / 3 > number(0, 100))
 				{
 					act("As $N staggers back $n follows-up with a well-placed kick.",
 					    TRUE, ch, 0, victim, TO_NOTVICT);
@@ -4254,7 +4288,7 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 						     ch->specials.damage_mod,
 					     SKILL_FOLLOWUP_RIPOSTE);
 
-			if (!victim_dead && skl / 3 > number(0, 100))
+			if (!victim_dead && continuation_valid() && skl / 3 > number(0, 100))
 			{
 				act("...then steps forward and brutally slams $s head into $N's face.",
 				    TRUE, ch, 0, victim, TO_NOTVICT);
@@ -7124,6 +7158,10 @@ int required_weapon_skill(P_obj wpn)
 	 */
 bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 {
+	// Death teardown can clear player storage. Check before any skill lookup.
+	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
+		return FALSE;
+
 	P_char tch, mount, gvict;
 	int msg, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
 	double dam;

@@ -2068,17 +2068,27 @@ void ne_init_events(void)
 
 void zone_purge(int zone_number)
 {
-	P_char vict, next_v;
+	P_char vict;
 	P_obj obj, next_o;
 	struct zone_data to_purge = zone_table[zone_number];
 	int k;
 
 	for (k = to_purge.real_bottom; k != NOWHERE && k <= to_purge.real_top; k++)
 	{
-		for (vict = world[k].people; vict; vict = next_v)
+		// Extraction can also kill pets later in this room's list. Keep identities,
+		// not next_in_room pointers, across that recursive teardown.
+		std::vector<uint64_t> character_ids;
+		for (vict = world[k].people; vict; vict = vict->next_in_room)
 		{
-			next_v = vict->next_in_room;
 			if (IS_NPC(vict) && !IS_MORPH(vict))
+				character_ids.push_back(vict->runtime_id);
+		}
+		for (const uint64_t runtime_id : character_ids)
+		{
+			for (vict = world[k].people; vict; vict = vict->next_in_room)
+				if (vict->runtime_id == runtime_id)
+					break;
+			if (vict && IS_NPC(vict) && !IS_MORPH(vict))
 			{
 				extract_char(vict);
 				vict = NULL;

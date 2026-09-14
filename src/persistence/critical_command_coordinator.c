@@ -693,7 +693,11 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		const bool retryable =
 			completion.outcome == critical_apply_outcome::retryable_failure ||
 			completion.outcome == critical_apply_outcome::ambiguous_commit;
-		if (!retryable && published >= capacity)
+		// Exhausted retries need a final notification just like other outcomes.
+		// Retain the result until it can be published, before changing its state.
+		const bool will_retry = retryable &&
+					found->second->attempt <= CRITICAL_COORDINATOR_MAX_RETRIES;
+		if (!will_retry && published >= capacity)
 			break;
 		raw_results.pop_front();
 		result_available.notify_one();
@@ -704,7 +708,7 @@ size_t critical_command_coordinator_pulse(critical_completion *completions, size
 		{
 			if (completion.outcome == critical_apply_outcome::ambiguous_commit)
 				++health.ambiguous;
-			if (state.attempt <= CRITICAL_COORDINATOR_MAX_RETRIES)
+			if (will_retry)
 			{
 				++state.attempt;
 				state.queued_at_usec = now_usec();

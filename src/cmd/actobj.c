@@ -205,6 +205,9 @@ struct bulk_get_state
 	bool failed;
 	bool corpse;
 	std::vector<std::string> rejections;
+	std::string corpse_name = {};
+	std::vector<std::string> haul = {};
+	bool announced = false;
 };
 
 struct drop_movement_context
@@ -362,12 +365,75 @@ std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
 std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
 std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
 
+static bulk_get_state *corpse_bulk_get(P_char actor, uint64_t container_uid)
+{
+	if (!actor)
+		return NULL;
+	auto found = bulk_gets.find(static_cast<uint32_t>(GET_PID(actor)));
+	return found != bulk_gets.end() && found->second.container_uid == container_uid &&
+			       !found->second.corpse_name.empty() ?
+		       &found->second :
+		       NULL;
+}
+
+static void announce_corpse_bulk_get(P_char actor, bulk_get_state &state, P_obj container)
+{
+	if (state.announced || state.corpse_name.empty())
+		return;
+	state.announced = true;
+	const std::string line = "You begin pulling things from " + state.corpse_name + ".\r\n";
+	send_to_char(line.c_str(), actor);
+	if (container && actor->in_room == state.room)
+		act("$n begins pulling things from $p.", TRUE, actor, container, 0, TO_ROOM);
+}
+
 P_obj find_live_item_uid(uint64_t item_uid)
 {
 	for (P_obj object = object_list; object; object = object->next)
 		if (object->obj_uid == item_uid)
 			return object;
 	return NULL;
+}
+
+static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showit, bool slip)
+{
+	obj_from_obj(o_obj);
+
+#if USE_SPACE
+	s_obj->space -= GET_OBJ_SPACE(o_obj);
+#endif
+
+	bulk_get_state *haul = item_get_ack_publication ? corpse_bulk_get(ch, s_obj->obj_uid) :
+							  NULL;
+	const uint64_t picked_uid = o_obj->obj_uid;
+	const std::string picked_name =
+		haul && o_obj->short_description ? o_obj->short_description : "";
+	if (!haul && OBJ_CARRIED_BY(s_obj, ch))
+	{
+		act("You get $p from $P.", 0, ch, o_obj, s_obj, TO_CHAR);
+		if (showit && !slip)
+			act("$n gets $p from $s $Q.", 1, ch, o_obj, s_obj, TO_ROOM);
+	}
+	else if (!haul)
+	{
+		act("You get $p from $P.", 0, ch, o_obj, s_obj, TO_CHAR);
+		if (showit && !slip)
+			act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
+	}
+	obj_to_char(o_obj, ch);
+	if (haul)
+	{
+		P_obj delivered = find_live_item_uid(picked_uid);
+		if (delivered && OBJ_CARRIED_BY(delivered, ch))
+			haul->haul.push_back(picked_name);
+		else
+		{
+			haul->failed = true;
+			item_get_rejected = true;
+			haul->rejections.emplace_back(
+				"An accepted item could not be delivered to your inventory.\r\n");
+		}
+	}
 }
 
 P_char find_live_player_pid(uint32_t pid)
@@ -875,7 +941,16 @@ publish_after_ack:
 		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, showit);
 		item_get_rejected = !item_get_deferred;
 		if (item_get_rejected)
-			send_to_char("The coin transfer could not start; nothing changed.\r\n", ch);
+		{
+			bulk_get_state *haul = s_obj ? corpse_bulk_get(ch, s_obj->obj_uid) : NULL;
+			if (haul)
+				haul->rejections.emplace_back(
+					"The coin transfer could not start; nothing changed.\r\n");
+			else
+				send_to_char(
+					"The coin transfer could not start; nothing changed.\r\n",
+					ch);
+		}
 		return;
 	}
 
@@ -1083,25 +1158,7 @@ publish_after_ack:
 			return;
 		}
 
-		obj_from_obj(o_obj);
-
-#if USE_SPACE
-		s_obj->space -= GET_OBJ_SPACE(o_obj);
-#endif
-
-		if (OBJ_CARRIED_BY(s_obj, ch))
-		{
-			act("You get $p from $P.", 0, ch, o_obj, s_obj, TO_CHAR);
-			if (showit && !slip)
-				act("$n gets $p from $s $Q.", 1, ch, o_obj, s_obj, TO_ROOM);
-		}
-		else
-		{
-			act("You get $p from $P.", 0, ch, o_obj, s_obj, TO_CHAR);
-			if (showit && !slip)
-				act("$n gets $p from $P.", 1, ch, o_obj, s_obj, TO_ROOM);
-		}
-		obj_to_char(o_obj, ch);
+		publish_container_get(ch, o_obj, s_obj, showit, slip);
 	}
 	else
 	{
@@ -1234,7 +1291,9 @@ static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_ob
 				      obj_index[o_obj->R_num].virtual_number,
 				      s_obj->action_description);
 
-				act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
+				if (!item_get_ack_publication ||
+				    !corpse_bulk_get(ch, s_obj->obj_uid))
+					act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 			}
 		}
 	}
@@ -1267,7 +1326,8 @@ static void do_get_log_container_artifact_pickup(P_char ch, P_char hood, P_obj o
 	logit(LOG_CORPSE, "%s %s: %s [%d] (ARTIFACT) from %s", GET_NAME(ch),
 	      (hood == ch) ? "" : GET_NAME(hood), o_obj->name,
 	      obj_index[o_obj->R_num].virtual_number, s_obj->action_description);
-	act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
+	if (!item_get_ack_publication || !corpse_bulk_get(ch, s_obj->obj_uid))
+		act("$n gets $P from $p.", 0, ch, s_obj, o_obj, TO_ROOM);
 }
 
 static P_obj do_get_obj_in_equipment_vis(P_char ch, char *name)
@@ -1646,7 +1706,17 @@ static bool bulk_get_source_available(P_char actor, const bulk_get_state &state,
 
 static void report_bulk_get(P_char actor, const bulk_get_state &state)
 {
-	if (state.total > 1)
+	if (state.announced && !state.corpse_name.empty())
+	{
+		const std::string line =
+			"You finish sorting your haul from " + state.corpse_name + ".\r\nHaul:\r\n";
+		send_to_char(line.c_str(), actor);
+		if (state.haul.empty())
+			send_to_char("  Nothing acquired.\r\n", actor);
+		for (const std::string &item : state.haul)
+			send_to_char(("  " + item + "\r\n").c_str(), actor);
+	}
+	else if (state.total > 1)
 	{
 		char summary[MAX_STRING_LENGTH];
 		snprintf(summary, sizeof(summary), "You got %d items.\r\n", state.total);
@@ -1672,6 +1742,37 @@ static void finish_bulk_get(P_char actor, uint32_t actor_pid)
 	report_bulk_get(actor, completed);
 }
 
+static void fail_bulk_get(P_char actor, uint32_t actor_pid, const char *message)
+{
+	auto found = bulk_gets.find(actor_pid);
+	if (found == bulk_gets.end())
+		return;
+	found->second.failed = true;
+	found->second.rejections.emplace_back(message);
+	finish_bulk_get(actor, actor_pid);
+}
+
+static void reject_bulk_get_admission(P_char actor, uint32_t actor_pid, item_movement_reject reason)
+{
+	auto found = bulk_gets.find(actor_pid);
+	if (found == bulk_gets.end())
+		return;
+	if (found->second.corpse_name.empty())
+	{
+		report_batch_movement_reject(actor, reason, "get", "Nothing was taken.\r\n");
+		bulk_gets.erase(found);
+		return;
+	}
+	found->second.rejections.emplace_back("Nothing was taken.\r\n");
+	fail_bulk_get(actor, actor_pid,
+		      item_movement_reject_is_transient(reason) ?
+			      "Something is busy right now; try again in a moment.\r\n" :
+			      "An item's ownership records disagree with where it is; "
+			      "staff must reconcile it first.\r\n");
+	logit(LOG_FILE, "item_movement: command=get outcome=%s actor=%s scope=batch",
+	      item_movement_reject_name(reason), J_NAME(actor));
+}
+
 static P_obj resolve_synchronous_get_item(const synchronous_get_item &selected,
 					  const bulk_get_state &state, P_obj container)
 {
@@ -1693,6 +1794,10 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 	if (!bulk_get_source_available(actor, state, container))
 	{
 		state.failed = true;
+		if (!state.synchronous_items.empty())
+			state.rejections.emplace_back(
+				"The remaining contents were left in the source; it is no longer "
+				"within reach.\r\n");
 		state.synchronous_items.clear();
 		return true;
 	}
@@ -1709,6 +1814,7 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 		}
 		if (selected.scrap)
 		{
+			announce_corpse_bulk_get(actor, state, container);
 			MakeScrap(actor, object);
 			++state.total;
 			continue;
@@ -1722,9 +1828,14 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 			do_get_finalize_room_item(actor, object, found_item, state.total);
 		item_get_ack_publication = false;
 		if (item_get_deferred)
+		{
+			announce_corpse_bulk_get(actor, state, container);
 			return false;
+		}
 		if (item_get_rejected)
 			state.failed = true;
+		else
+			announce_corpse_bulk_get(actor, state, container);
 	}
 	return true;
 }
@@ -1737,21 +1848,32 @@ static void bulk_get_completion(P_char actor, bool committed, const item_transfe
 	const bool context_valid = encoded && encoded_size == sizeof(context);
 	if (context_valid)
 		memcpy(&context, encoded, sizeof(context));
-	if (!actor || !context_valid)
+	if (!context_valid)
 		return;
+	if (!actor)
+	{
+		bulk_gets.erase(context.actor_pid);
+		return;
+	}
 	auto found = bulk_gets.find(context.actor_pid);
 	if (found == bulk_gets.end() || context.actor_pid != static_cast<uint32_t>(GET_PID(actor)))
 		return;
 	bulk_get_state &state = found->second;
 	if (!committed)
 	{
-		send_to_char("Nothing was taken; the ownership move did not commit.\r\n", actor);
-		bulk_gets.erase(found);
+		fail_bulk_get(actor, context.actor_pid,
+			      "Nothing was taken; the ownership move did not commit.\r\n");
 		return;
 	}
 
 	P_obj container = state.container_uid ? find_live_item_uid(state.container_uid) : NULL;
-	bool source_matches = bulk_get_source_available(actor, state, container);
+	// The accepted forest is already durably owned by the player. Movement of
+	// the player cannot undo that transfer; retain the original source topology
+	// check without demanding that the player remain in the source room.
+	bool source_matches =
+		!state.container_uid ||
+		(container && ((OBJ_ROOM(container) && container->loc.room == state.room) ||
+			       OBJ_CARRIED_BY(container, actor) || OBJ_WORN_BY(container, actor)));
 	std::vector<P_obj> roots;
 	try
 	{
@@ -1770,12 +1892,11 @@ static void bulk_get_completion(P_char actor, bool committed, const item_transfe
 	}
 	if (!source_matches)
 	{
-		send_to_char(
-			"The committed item batch could not be published; staff have been alerted.\r\n",
-			actor);
 		persistence_alert(AVATAR, "item_movement", "get_batch_publish", "none", "none",
 				  "stale_live_topology", "actor_pid=%u", context.actor_pid);
-		bulk_gets.erase(found);
+		fail_bulk_get(actor, context.actor_pid,
+			      "The committed item batch could not be published; staff have "
+			      "been alerted.\r\n");
 		return;
 	}
 	if (container && state.corpse && result.corpse_revision &&
@@ -1807,18 +1928,23 @@ static void bulk_get_adoption_completion(P_char actor, bool committed, const ite
 					 unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
 	bulk_movement_context context = {};
-	if (encoded && encoded_size == sizeof(context))
-		memcpy(&context, encoded, sizeof(context));
-	if (!actor || context.actor_pid != static_cast<uint32_t>(GET_PID(actor)))
+	if (!encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	if (!actor)
+	{
+		bulk_gets.erase(context.actor_pid);
+		return;
+	}
+	if (context.actor_pid != static_cast<uint32_t>(GET_PID(actor)))
 		return;
 	auto found = bulk_gets.find(context.actor_pid);
 	if (found == bulk_gets.end())
 		return;
 	if (!committed)
 	{
-		send_to_char("Nothing was taken; the stock item adoption did not commit.\r\n",
-			     actor);
-		bulk_gets.erase(found);
+		fail_bulk_get(actor, context.actor_pid,
+			      "Nothing was taken; the stock item adoption did not commit.\r\n");
 		return;
 	}
 	continue_bulk_get(actor, context.actor_pid);
@@ -1834,8 +1960,8 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 	P_obj container = state.container_uid ? find_live_item_uid(state.container_uid) : NULL;
 	if (!bulk_get_source_available(actor, state, container))
 	{
-		send_to_char("Nothing was taken; the source is no longer available.\r\n", actor);
-		bulk_gets.erase(found);
+		fail_bulk_get(actor, actor_pid,
+			      "Nothing was taken; the source is no longer available.\r\n");
 		return;
 	}
 	std::vector<P_obj> roots;
@@ -1847,10 +1973,9 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 			P_obj root = find_live_item_uid(item_uid);
 			if (!bulk_get_source_matches(state, container, root))
 			{
-				send_to_char(
-					"Nothing was taken; an item is no longer in the source.\r\n",
-					actor);
-				bulk_gets.erase(found);
+				fail_bulk_get(
+					actor, actor_pid,
+					"Nothing was taken; an item is no longer in the source.\r\n");
 				return;
 			}
 			roots.push_back(root);
@@ -1858,9 +1983,8 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 	}
 	catch (const std::bad_alloc &)
 	{
-		send_to_char("You can't collect everything right now; please try again.\r\n",
-			     actor);
-		bulk_gets.erase(found);
+		fail_bulk_get(actor, actor_pid,
+			      "You can't collect everything right now; please try again.\r\n");
 		return;
 	}
 
@@ -1872,9 +1996,8 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 		{
 			if (item_owner_identity_equal(runtime.owner, state.source))
 				continue;
-			report_batch_movement_reject(actor, item_movement_reject::owner_mismatch,
-						     "get", "Nothing was taken.\r\n");
-			bulk_gets.erase(found);
+			reject_bulk_get_admission(actor, actor_pid,
+						  item_movement_reject::owner_mismatch);
 			return;
 		}
 
@@ -1884,10 +2007,10 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 			    static_cast<int64_t>(root->obj_uid), bulk_get_adoption_completion,
 			    &context, sizeof(context), state.corpse ? container : NULL, &reject))
 		{
-			report_batch_movement_reject(actor, reject, "get",
-						     "Nothing was taken.\r\n");
-			bulk_gets.erase(found);
+			reject_bulk_get_admission(actor, actor_pid, reject);
 		}
+		else
+			announce_corpse_bulk_get(actor, state, container);
 		return;
 	}
 
@@ -1899,9 +2022,10 @@ static void continue_bulk_get(P_char actor, uint32_t actor_pid)
 		    state.reason, static_cast<int64_t>(roots.front()->obj_uid), bulk_get_completion,
 		    &context, sizeof(context), state.corpse ? container : NULL, &reject))
 	{
-		report_batch_movement_reject(actor, reject, "get", "Nothing was taken.\r\n");
-		bulk_gets.erase(found);
+		reject_bulk_get_admission(actor, actor_pid, reject);
 	}
+	else
+		announce_corpse_bulk_get(actor, state, container);
 }
 
 /** Snapshot rejection text now; rejected objects can disappear before publication. */
@@ -2021,6 +2145,10 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 				 {} };
 	try
 	{
+		if (container && GET_ITEM_TYPE(container) == ITEM_CORPSE)
+			state.corpse_name = container->short_description ?
+						    container->short_description :
+						    "the corpse";
 		const bool container_local = container && (OBJ_CARRIED_BY(container, actor) ||
 							   OBJ_WORN_BY(container, actor));
 		int carried_count = IS_CARRYING_N(actor);
@@ -3824,6 +3952,7 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 		return false;
 	}
 	P_obj container = find_live_item_uid(context.container_uid);
+	bulk_get_state *haul = context.bulk ? corpse_bulk_get(actor, context.container_uid) : NULL;
 	if (actor)
 	{
 		if (committed)
@@ -3837,12 +3966,25 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 				partial = partial || payload.source.after[index] != 0;
 			}
 			char line[MAX_STRING_LENGTH];
-			snprintf(line, sizeof(line), "You get %s.\r\n",
-				 coins_to_string(got[3], got[2], got[1], got[0], "&+y"));
-			send_to_char(line, actor);
+			const std::string coins =
+				coins_to_string(got[3], got[2], got[1], got[0], "&+y");
+			if (haul)
+				haul->haul.push_back(coins);
+			else
+			{
+				snprintf(line, sizeof(line), "You get %s.\r\n", coins.c_str());
+				send_to_char(line, actor);
+			}
 			if (partial)
-				send_to_char("You couldn't carry all the coins.\r\n", actor);
-			if (context.showit)
+			{
+				if (haul)
+					haul->rejections.emplace_back(
+						"You couldn't carry all the coins.\r\n");
+				else
+					send_to_char("You couldn't carry all the coins.\r\n",
+						     actor);
+			}
+			if (context.showit && !haul)
 			{
 				if (container)
 					act("$n gets some coins from $P.", TRUE, actor, 0,
@@ -3858,6 +4000,9 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 				// The item phase saved the old pile; persist its new amount/removal.
 				writeCorpse(container);
 		}
+		else if (haul)
+			haul->rejections.emplace_back(
+				"The coin transfer did not commit; nothing changed.\r\n");
 		else
 			send_to_char("The coin transfer did not commit; nothing changed.\r\n",
 				     actor);

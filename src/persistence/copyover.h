@@ -9,9 +9,10 @@
 #include "core/structs.h" // for P_char, P_desc, etc
 #include "world/transport.h"
 
-#define COPYOVER_FILE "copyover.dat"
+const char *copyover_state_file();
+#define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 13 // transport route and rider state; reads version 12 too
+#define COPYOVER_VERSION 14 // generated NPC state; reads versions 12 and 13 too
 
 // copyover file header
 struct copyover_header

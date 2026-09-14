@@ -298,6 +298,8 @@ COIN_GET = (ACTOBJ[ACTOBJ.index("struct synchronous_get_item"):ACTOBJ.index("str
             + ACTOBJ[ACTOBJ.index("struct coin_pickup_context"):ACTOBJ.index("static bool coin_get_completion(")]
             + r'''
 static std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
+static bulk_get_state *corpse_bulk_get(P_char, uint64_t) { return NULL; }
+static void announce_corpse_bulk_get(P_char, bulk_get_state &, P_obj) {}
 static bool item_get_ack_publication = false, item_get_deferred = false, item_get_rejected = false;
 static int bulk_total = 0;
 static bool submit_coin_get(P_char, P_obj, P_obj, int);

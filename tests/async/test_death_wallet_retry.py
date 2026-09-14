@@ -64,6 +64,7 @@ enum class persistence_severity { info, alert };
 template<class... T> void persistence_report(T...) {}
 template<class... T> void persistence_alert(T...) {}
 bool items_busy = false, currency_busy = false, wallet_admitted = false;
+bool terminal_ok = true, disposition_ok = true;
 int wallet_attempts = 0, item_submissions = 0, dispositions = 0;
 int terminal_saves = 0, releases = 0, schedules = 0, last_delay = 0;
 object corpse_object, coin_object;
@@ -75,8 +76,12 @@ void death_custody_wait_reset(P_char) {}
 P_obj corpse_live_item(uint64_t) { return &corpse_object; }
 bool money_to_inventory(P_char) { ++wallet_attempts; return wallet_admitted; }
 bool submit_next_corpse_item(P_char, P_obj) { ++item_submissions; return true; }
-bool save_disputed_death_disposition(P_char, uint64_t) { ++dispositions; return true; }
-bool persistence_save_character_terminal(P_char, int) { ++terminal_saves; return true; }
+bool save_disputed_death_disposition(P_char ch, uint64_t) {
+    assert(ch->cash[0] == 0); ++dispositions; return disposition_ok;
+}
+bool persistence_save_character_terminal(P_char ch, int) {
+    assert(ch->cash[0] == 0); ++terminal_saves; return terminal_ok;
+}
 void release_after_terminal_death(P_char, const char *) { ++releases; }
 struct death_extract_retry_context { int delay; uint64_t corpse_uid; };
 void schedule_death_extract_retry(P_char, uint64_t, int delay) { ++schedules; last_delay = delay; }
@@ -127,7 +132,46 @@ int main() {
     event_death_extract_retry(&ch, nullptr, nullptr, &context);
     assert(dispositions == 1 && releases == 2 && item_submissions == 1);
     assert(!corpse_transfer_disputed(&ch));
+    // A conflicting conversion leaves a nonzero wallet after its fence drops.
+    // The retry must use the currently published balance; no terminal path may
+    // capture the stale attempted amount. Revision enforcement is covered by
+    // the real currency repository tests, not by this controlled adapter.
+    note_corpse_transfer_dispute(&ch);
+    ch.cash[0] = 9;
+    currency_busy = true;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(wallet_attempts == 4 && dispositions == 1 && releases == 2);
+    currency_busy = false;
+    wallet_admitted = false;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(wallet_attempts == 5 && ch.cash[0] == 9 && dispositions == 1 && releases == 2);
+    ch.cash[0] = 12; // New authority publication before the next admission.
+    wallet_admitted = true;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(wallet_attempts == 6 && ch.cash[0] == 12 && dispositions == 1 && releases == 2);
+    currency_busy = true;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(wallet_attempts == 6 && dispositions == 1 && releases == 2);
+    currency_busy = false;
+    ch.cash[0] = 0; // Successful authority acknowledgement published the zero.
+    disposition_ok = false;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(dispositions == 2 && releases == 2 && corpse_transfer_disputed(&ch));
+    assert(last_delay == 8 && wallet_attempts == 6);
+    disposition_ok = true;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(dispositions == 3 && releases == 3 && !corpse_transfer_disputed(&ch));
+    // An ordinary terminal save failure also retains the dead character, and
+    // retrying that save does not convert the already-cleared wallet again.
+    ch.carrying = nullptr;
+    terminal_ok = false;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(terminal_saves == 2 && releases == 3 && wallet_attempts == 6 && last_delay == 8);
+    terminal_ok = true;
+    event_death_extract_retry(&ch, nullptr, nullptr, &context);
+    assert(terminal_saves == 3 && releases == 4 && wallet_attempts == 6);
     std::puts("PASS: deferred wallet admission, fenced publication, normal corpse handoff, and true dispute preservation");
+    std::puts("PASS: conflicting balance publication, failed disposition, failed terminal save, and retries retain zero-wallet ordering");
 }
 '''.replace('__TRACKER__', tracker).replace('__PENDING__', pending).replace('__ADMISSION__', admission).replace('__RETRY__', retry)
 with tempfile.TemporaryDirectory(prefix="death-wallet-retry-") as temporary:

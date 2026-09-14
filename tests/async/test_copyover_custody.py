@@ -88,6 +88,7 @@ bool persistence_save_character_terminal(P_char, int) { std::abort(); }
 bool persistence_save_character_terminal_database_acknowledged(P_char, int) { std::abort(); }
 int websocket_send_text(P_desc, const char *) { std::abort(); }
 int compress_end(P_desc, int) { std::abort(); }
+void write_to_q(const char *, txt_q *, int) { std::abort(); }
 uint64_t persistence_observability_now_usec() { std::abort(); }
 uint64_t player_load_pipeline_next_request_id() { std::abort(); }
 bool player_load_pipeline_wait(player_load_request, player_load_result *, uint64_t) { std::abort(); }
@@ -109,6 +110,7 @@ P_char read_mobile(int, int) { std::abort(); }
 int setup_pet(P_char, P_char, int, int) { std::abort(); }
 void add_follower(P_char, P_char) { std::abort(); }
 affected_type *affect_to_char(P_char, affected_type *) { std::abort(); }
+char affect_total(P_char, int) { std::abort(); }
 void equip_char(P_char, P_obj, int, int) { std::abort(); }
 void obj_to_char(P_obj, P_char) { std::abort(); }
 
@@ -236,7 +238,7 @@ with tempfile.TemporaryDirectory(prefix="duris-copyover-custody-") as temp:
     subprocess.run(common + ["-Dexecl=fixture_execl", "-c", "src/persistence/copyover.c",
                             "-o", str(temp / "copyover.o")], cwd=ROOT, check=True)
     subprocess.run(common + [str(source), str(temp / "copyover.o"),
-                   "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c",
+                   "src/world/world_recovery_pipeline.c", "src/world/world_recovery_codec.c", "src/world/generated_npc_state.c", "src/world/generated_npc_runtime.c",
                    "src/player/pet_restore_state.c",
                             "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
                             "src/redis/redis_command_observability.c", "-Wl,--gc-sections",

@@ -149,6 +149,8 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_key_registry.o \
 				 redis/redis_namespace.o \
 				 world/world_recovery_codec.o \
+				 world/generated_npc_state.o \
+				 world/generated_npc_runtime.o \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \

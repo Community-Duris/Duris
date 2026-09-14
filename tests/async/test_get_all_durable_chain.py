@@ -101,7 +101,7 @@ ok &= check(
     "failed adoption leaves the complete live batch at its source",
     "if (!committed)" in adoption_completion
     and "Nothing was taken" in adoption_completion
-    and "bulk_gets.erase(found)" in adoption_completion
+    and "fail_bulk_get(actor, context.actor_pid" in adoption_completion
     and "finish_bulk_get_after_commit" not in adoption_completion
     and "do_get_finalize" not in adoption_completion,
 )
