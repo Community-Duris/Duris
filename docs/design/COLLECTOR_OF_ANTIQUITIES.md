@@ -48,6 +48,21 @@ not proof of a committed item transfer or wallet debit.** Operation-ID replay,
 atomicity, payload preservation, privacy at command dispatch, and real custody
 must be implemented by the service and repositories below.
 
+`src/economy/collector_command.{h,c}` defines the version-one critical-command
+boundary for collection, activation, purchase, expiry, cancellation, pause, and
+resume. Collection commands fence the complete current corpse or room root even
+though only the selected item enters collector custody. This gives repositories
+enough evidence to reject an incomplete root, detach a bag without taking its
+excluded or later-added contents, and deterministically repair the topology that
+remains. Purchase separately carries the listing revision, wallet and bank
+revisions, collector and player owner revisions, and exact item revision; a
+collision between the player wallet key and player-owner key never discards the
+second revision because it remains in the versioned payload for repository
+validation. Successful fixed-size results contain the complete canonical record
+for due-queue publication and remain well below the coordinator's result limit.
+The command is not submitted by runtime code yet, and both repositories remain
+closed to it until their atomic custody/catalog implementations land.
+
 The ownership contract now reserves append-only owner type 10 for collector
 listings and maps it to a dedicated critical-command fence key. SQL checks,
 fresh bootstrap, player recovery validation, and the ownership audit lookup all
@@ -69,10 +84,10 @@ the dedicated collector transaction described below may cross that boundary.
    resurrection, character deletion, quarantine, and season reset. Preserve
    candidates through corpse decay and environmental movement. Returning an item
    must not remove its earlier cancellation.
-3. Implement a versioned collector critical command and specialized SQL,
-   flatfile, and runtime transactions for the reserved collector namespace. The
-   generic item-transfer path must remain closed to collector custody because it
-   cannot commit the source object store and collector catalog together.
+3. Implement specialized SQL, flatfile, and runtime transactions for the
+   versioned collector command and reserved collector namespace. The generic
+   item-transfer path must remain closed to collector custody because it cannot
+   commit the source object store and collector catalog together.
 4. Wire the versioned catalog records into complete per-item payload storage,
    additive verified SQL migrations, flatfile authority images, and equivalent
    operation-ID replay.
@@ -111,6 +126,12 @@ stale revisions, beneficiary checks, funds/capacity failures, terminal conflicts
 arithmetic overflow, pause/resume, strict catalog validation, and bounded indexed
 leased scheduling without head-of-line starvation. They are not repository or
 in-game tests.
+
+Run `python3 tests/async/test_collector_command.py` for command/result round trips,
+canonical fence reconstruction, malformed topology rejection, distinct wallet
+and owner revision evidence, metadata-only transitions, held-item cancellation,
+and the maximum 3,000-row source-root boundary. It proves the transaction input
+contract, not a durable collector mutation.
 
 Run `python3 tests/async/test_item_transfer_version_compatibility.py` for the
 collector ownership/fence codec boundary. Run

@@ -60,6 +60,7 @@ enum class critical_command_type : uint16_t
 	shop_trade,
 	corpse_lifecycle,
 	coin_transfer,
+	collector,
 };
 
 enum class critical_source_site : uint16_t
