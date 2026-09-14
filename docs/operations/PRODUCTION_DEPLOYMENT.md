@@ -1,160 +1,138 @@
 # Production deployment tracker
 
-Last verified: 2026-08-30 18:28 UTC
+Last verified: 2026-09-14 23:11 UTC
 
 ## Objective
 
-Run DurisMUD as a persistent production service for `newduris.com`, backed by an
-account-local MariaDB installation. Use ports that were confirmed free before
-binding, keep secrets out of the repository, and verify public connectivity,
-TLS, persistence, backups, restart recovery, and boot recovery.
+Run DurisMUD and the DurisWeb website as persistent production services for
+`newduris.com`. Services must recover from any exit on their own, and an
+off-host check must alert when they do not.
 
 This file intentionally records no passwords, API tokens, tunnel tokens, or
-private keys. Those remain in owner-controlled ignored files.
+private keys. Those remain in owner-controlled ignored files. The earlier
+`duris.sbs` deployment is not tracked here; its setup record is in this file's
+Git history.
 
 ## Production topology
 
-| Component | Endpoint or location | State |
+| Component | Endpoint or location | Notes |
 | --- | --- | --- |
-| Checkout | `/home/duris/duris` | Deployed from `master` |
-| MariaDB | `127.0.0.1:3307` | Active, account-local |
-| Database | `duris`, user `duris_prod@127.0.0.1` | 173 tables; runtime contract valid |
-| Plain telnet | `74.208.126.44:7777` | Listening locally; optional unencrypted ingress remains blocked by Plesk |
-| TLS telnet | `mud.newduris.com:4001` | Public and playable with a trusted certificate |
-| WebSocket/health origin | `127.0.0.1:4050` | Healthy; intentionally loopback-only |
-| Public WebSocket/health | `https://ws.newduris.com` / `wss://ws.newduris.com` | Live through Cloudflare Tunnel |
-| Raw-MUD DNS | `mud.newduris.com` | DNS-only A record to the server |
-| TLS certificate | `mud.newduris.com` | Let's Encrypt; expires 2026-11-28 |
-| Tunnel | `duris-production` (`aec07955-bcc1-4faa-9588-f28d45edc474`) | Healthy, four edge connections |
+| Host | `178.156.165.10` | Ubuntu 24.04, systemd 255; services run as `duris` |
+| MUD checkout | `/home/duris/duris` | Deployed from `master` |
+| MUD service | `duris-mud-production.service` | System unit running `scripts/cycle_mud.sh --production` |
+| Database | `mysql.service`, `127.0.0.1:3306`, schema `duris_game_prod` | MySQL 8.0; `PERSISTENCE_MODE=mariadb-primary` |
+| MUD Redis | `redis-server.service`, `127.0.0.1:6379` | Namespace `duris:production:default` |
+| Plain telnet | `mud.newduris.com:7777` | DNS-only A record to the host |
+| TLS telnet | `mud.newduris.com:7778` | Let's Encrypt; expires 2026-12-05 |
+| MUD WebSocket/health origin | `127.0.0.1:4050` | Loopback-only |
+| Public MUD WebSocket/health | `wss://mud.newduris.com`, `https://mud.newduris.com/health` | Nginx TLS proxy to the origin |
+| Website checkout | `/home/duris/website` | `Community-Duris/DurisWebApp`, deployed from `master` |
+| Website application | `durisweb-production.service`, `127.0.0.1:3001` | Private cache `durisweb-redis.service` on `127.0.0.1:6380` |
+| Website tunnel | `durisweb-cloudflared.service`, tunnel `5b7d0472-7d5b-4c6e-8aa3-cd550e2bdb60` | `www.newduris.com` routes to the application; `newduris.com` routes to Nginx port 80, which redirects to `www` and passes `/health` through |
+| Tunnel readiness | `http://127.0.0.1:20243/ready` | Loopback-only |
+| Watchdog | `durisweb-watchdog.timer` | Runs `/usr/local/sbin/durisweb-watchdog` every minute |
 
-## Implemented
+The `newduris.com` zone and website tunnel belong to a different Cloudflare
+account from `duris.sbs`. API work for them uses the credentials in
+`/home/duris/.config/durisweb/deployment.env`, not a workstation `.env`.
 
-- [x] Clone the repository into the project root.
-- [x] Install MariaDB as an account-local service without replacing the host's
-  system database service.
-- [x] Select free loopback database port 3307 and restrict it to
-  `127.0.0.1`.
-- [x] Create the production schema and loopback-only production database user.
-- [x] Bootstrap and verify all 173 runtime tables and four immutable migrations.
-- [x] Import 2,155 help pages and all three `mud_info` records.
-- [x] Copy `.env.example` to ignored `.env`, add production database and network
-  values, retain the supplied Cloudflare values, and enforce mode `0600`.
-- [x] Configure MariaDB-primary persistence and owner-only journal directories.
-- [x] Build the production server and full world with account-local build/runtime
-  dependencies under `/home/duris/.local/opt/duris-deps`.
-- [x] Add explicit development and production build profiles, isolate their
-  object trees, remove `TEST_MUD` from production, and make the production
-  launcher reject an unstamped or development-profile binary.
-- [x] Confirm ports 7777, 7778, and 4050 were unused immediately before the
-  initial start. Later confirm port 4001 was locally free and publicly allowed
-  before assigning it as the independent production TLS port.
-- [x] Issue and install a trusted Let's Encrypt certificate for
-  `mud.newduris.com` using Cloudflare DNS validation.
-- [x] Install and verify an account-level certificate renewal timer and a full
-  staging renewal dry run. Add and exercise a deploy hook that restarts the
-  game only after Certbot successfully deploys a renewed certificate.
-- [x] Install persistent user services for MariaDB and DurisMUD.
-- [x] Enable user lingering so the account services start at boot and survive
-  logout.
-- [x] Promote the stamped `mariadb/production` binary with a controlled
-  game-service restart; verify a new runtime PID, listener recovery, healthy
-  persistence, the expected build ID, and no `TEST_MUD` marker.
-- [x] Verify pre-boot compressed database backups under `db/Backup`.
-- [x] Install checksum-verified `cloudflared` 2026.8.2 account-locally.
-- [x] Create a remotely managed Cloudflare Tunnel and proxied
-  `ws.newduris.com` route to the loopback WebSocket/health origin.
-- [x] Verify public `GET /health` through Cloudflare returns
-  `{"status":"healthy","persistence":"ready"}`.
-- [x] Verify a public WSS upgrade through Cloudflare returns HTTP 101 and the
-  game greeting `Welcome to NewDuris MUD!`.
-- [x] Add `DURIS_TLS_PORT` so production TLS can use an independently selected
-  port without moving the plain listener. Deploy port 4001 after proving it was
-  unused locally and reachable through the existing Plesk policy.
-- [x] Verify secure telnet on `mud.newduris.com:4001` from five independent
-  external regions, negotiate TLS 1.3 with hostname validation, and reach the
-  live account prompt.
-- [x] Verify all 350 repository tests pass in 292.08 seconds after repairing
-  three brittle or environment-sensitive test harnesses and adding the TLS-port
-  contract; formatting and focused production build/service checks also pass.
+## Availability safeguards
+
+On 2026-09-10 the website tunnel exited cleanly after losing every edge
+connection. Its unit restarted only on failure, so `newduris.com` served
+Cloudflare error 1033 until the connector was started by hand on 2026-09-14.
+Later that day, a maintenance stop and start of the website application stopped
+the tunnel again, because the tunnel was bound to the application, and the site
+was down for another 40 minutes.
+
+- The website application, cache, and tunnel restart after any exit other than
+  configuration refusal, with no start rate limit, and the tunnel is no longer
+  bound to the application. DurisWeb `docs/deployment.md` ("Keep the site
+  available") describes the policy.
+- `durisweb-watchdog.timer` starts any stopped website unit or Nginx. It
+  restarts the tunnel after three failed readiness or public-health checks and
+  the application after three failed local-health checks, at most once per unit
+  every ten minutes.
+- `nginx`, `mysql`, and `redis-server` have
+  `/etc/systemd/system/<unit>.service.d/10-availability.conf` overrides that set
+  `Restart=always`, `RestartSec=5s`, and `StartLimitIntervalSec=0`.
+- `duris-mud-production.service` uses `Restart=always` with no start rate limit
+  (`deploy/systemd/duris-mud-production.service.in`).
+- The `production uptime` workflow probes `https://newduris.com/health` and
+  `https://mud.newduris.com/health` every ten minutes from GitHub-hosted runners.
+  A failed run notifies through GitHub.
+- A Cloudflare Tunnel Health Alert emails the Cloudflare account owner when the
+  website tunnel goes down.
+
+Fault tests on 2026-09-14 at 23:10 UTC confirmed the behavior. Stopping and
+starting only the application left the tunnel running, with 2 seconds of
+gateway errors. A clean tunnel exit restarted by itself within 6 seconds. An
+explicitly stopped tunnel was started by a watchdog run.
+
+## Planned maintenance
+
+Pause the watchdog before deliberately stopping a website unit, Nginx, or the
+tunnel. The watchdog ignores a pause older than four hours.
+
+```bash
+sudo touch /var/lib/durisweb-watchdog/pause
+# Maintenance...
+sudo systemctl start durisweb-redis durisweb-production durisweb-cloudflared
+sudo rm /var/lib/durisweb-watchdog/pause
+```
+
+Stopping only the MUD does not require a pause. Before ending maintenance, run
+the public health checks below.
 
 ## Service and configuration locations
 
-- MariaDB configuration:
-  `/home/duris/.config/duris-mariadb/my.cnf`
-- MariaDB data:
-  `/home/duris/.local/share/duris-mariadb`
-- MariaDB runtime state/socket:
-  `/home/duris/.local/state/duris-mariadb`
-- MariaDB service:
-  `/home/duris/.config/systemd/user/duris-mariadb.service`
-- Game service:
-  `/home/duris/.config/systemd/user/duris-mud-production.service`
-- Cloudflare connector service:
-  `/home/duris/.config/systemd/user/duris-cloudflared.service`
-- Cloudflare connector launcher:
-  `/home/duris/.local/libexec/duris-cloudflared`
-- Certificate renewal service/timer:
-  `/home/duris/.config/systemd/user/duris-certbot-renew.service` and
-  `/home/duris/.config/systemd/user/duris-certbot-renew.timer`
-- Certificate deployment hook:
-  `/home/duris/.local/libexec/duris-certbot-deploy`
-- Certificate storage:
-  `/home/duris/.config/letsencrypt`
-- Runtime certificate links:
-  `/home/duris/duris/duris.crt` and `/home/duris/duris/duris.key`
-- Production secrets and connection values:
-  `/home/duris/duris/.env` (ignored, mode `0600`)
-
-## Optional follow-up work
-
-- [ ] If unencrypted public telnet is desired in addition to the deployed TLS
-  and WSS transports, allow inbound TCP 7777 in the root-owned Plesk firewall.
-  It is not required for secure production access.
-- [ ] Decide whether `newduris.com` should host a browser client or landing page.
-  The game WebSocket is publicly available at `wss://ws.newduris.com`, but this
-  repository does not contain a deployable browser frontend.
+- Website deployment input: `/home/duris/.config/durisweb/deployment.env`
+  (mode `0600`)
+- Rendered website units: `/home/duris/.local/share/durisweb/rendered`,
+  installed as root-owned copies under `/etc/systemd/system`
+- Watchdog executable: `/usr/local/sbin/durisweb-watchdog`, a root-owned copy of
+  the website checkout's `deploy/scripts/durisweb-watchdog`; reinstall it when
+  that script changes
+- Watchdog state and pause file: `/var/lib/durisweb-watchdog`
+- MUD service unit: `/etc/systemd/system/duris-mud-production.service`, installed
+  by `scripts/install-production-service.sh`
+- MUD secrets and connection values: `/home/duris/duris/.env` (mode `0600`)
+- MUD TLS certificate: `/home/duris/duris/duris.crt` and `duris.key`, linked to
+  `/var/lib/duris-mud/tls/` and refreshed by the Certbot deploy hook
+  `/etc/letsencrypt/renewal-hooks/deploy/duris-mud`
+- Pre-boot database backups: `/home/duris/duris/db/Backup`
 
 ## Verification commands
 
-Run these without printing `.env`:
+Run these on the host without printing `.env`:
 
 ```bash
-systemctl --user is-active \
-  duris-mariadb.service \
-  duris-mud-production.service \
-  duris-cloudflared.service
-
-./scripts/cycle_mud.sh --production --check-config
-./migrations/verify_runtime_compatibility.sh
-./scripts/healthcheck.sh
-curl --fail --silent --show-error https://ws.newduris.com/health
+systemctl is-active duris-mud-production mysql redis-server nginx \
+  durisweb-redis durisweb-production durisweb-cloudflared durisweb-watchdog.timer
+systemctl list-timers durisweb-watchdog.timer
+journalctl -u durisweb-watchdog.service --since -1h
+curl --fail --silent --show-error http://127.0.0.1:20243/ready
+curl --fail --silent --show-error https://newduris.com/health
+curl --fail --silent --show-error https://mud.newduris.com/health
 
 openssl s_client \
-  -connect mud.newduris.com:4001 \
+  -connect mud.newduris.com:7778 \
   -servername mud.newduris.com \
   -verify_hostname mud.newduris.com \
   -verify_return_error </dev/null
 ```
 
-Expected health payload:
-
-```json
-{"status":"healthy","persistence":"ready"}
-```
+The website health response must report `"status":"ok"` and
+`"service":"durisweb-backend"` with `ok` database and cache checks. The MUD
+health response must be `{"status":"healthy","persistence":"ready"}`.
 
 ## Security invariants
 
-- MariaDB and WebSocket origins remain loopback-only.
-- Production database credentials and Cloudflare credentials remain only in
-  `.env`; this document and tracked files contain no secret values.
-- The MariaDB account is limited to the `duris` schema and loopback source.
-- The production launcher accepts only a stamped MariaDB/production build, and
-  the active binary contains no development-only `TEST_MUD` behavior.
-- The TLS private key and `.env` are owner-controlled with mode `0600`.
-- The certificate renewal deploy hook is owner-controlled with mode `0700` and
-  restarts the game only after a successful certificate deployment.
-- The public WebSocket origin allow-list remains restricted to
-  `https://newduris.com` and `https://www.newduris.com`.
-- The Cloudflare connector retrieves its tunnel token at startup, removes the
-  account API credentials from its environment before executing `cloudflared`,
-  and exposes metrics only on verified-free loopback port 20242.
+- MySQL, both Redis instances, the website application, the MUD WebSocket
+  origin, and tunnel metrics listen only on loopback.
+- Credentials remain only in the mode-`0600` environment files above; this
+  document and tracked files contain no secret values.
+- The root-run watchdog executes a root-owned copy, never a script in a checkout
+  the service account can modify.
+- The MUD WebSocket origin allow-list is restricted to `https://newduris.com`
+  and `https://www.newduris.com`.
