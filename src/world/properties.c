@@ -14,6 +14,7 @@
 #include "item/studio_abilities.h"
 #include "item/native_artifact_actions.h"
 #include "world/difficulty.h"
+#include "telemetry/telemetry_config_reload.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "net/ws_handlers.h"
@@ -164,6 +165,8 @@ void apply_properties()
 	hitroll_cap = get_property("damage.hitrollCap", 75);
 	errand_notch = get_property("epic.errandStep", 500);
 	update_misfire_properties();
+	// Observe effective values only after all cached property consumers update.
+	telemetry_config_reload_notify();
 }
 
 int parse_property(struct property *property, char *buf)
