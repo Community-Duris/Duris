@@ -17,7 +17,7 @@ fails the double-extraction assertion; the candidate passes all four cases.
 Combat-reference cleanup in this test belongs to the extraction adapter, so it
 does not establish the correctness of production `stop_fighting` by itself.
 
-Run `python3 tests/async/run_zone_purge_journey.py --server /absolute/path/dms` for
+Run `python3 tests/async/run_zone_purge_journey.py /absolute/path/dms` for
 the real flatfile Telnet journey. It creates two disposable accounts, promotes
 only their offline synthetic snapshots, and verifies 15 cycles of a mortal
 fighting Raoul, an immortal purging the opponent, the mortal's combat reference
