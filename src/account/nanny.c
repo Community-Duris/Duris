@@ -2978,6 +2978,7 @@ void select_hardcore(P_desc d, char *arg)
 		break;
 	case 'N':
 	case 'n':
+		REMOVE_BIT(d->character->specials.act2, PLR2_HARDCORE_CHAR);
 		break;
 	case 'z':
 	case 'Z':
@@ -3277,6 +3278,7 @@ void select_race(P_desc d, char *arg)
 	if (*Gbuf)
 	{
 		do_help(d->character, Gbuf, -4);
+		SEND_TO_Q("\r\n[Press Return or Enter to return to the Race Menu]", d);
 		return;
 	}
 	else if (GET_RACE(d->character) == RACE_NONE)
@@ -3413,7 +3415,7 @@ void select_bonus(P_desc d, char *arg)
 			SEND_TO_Q("\r\nEnter stat for fourth bonus:  ", d);
 			break;
 		case CON_BONUS5:
-			SEND_TO_Q("\r\nEnter stat for fifth bonus:  ", d);
+			SEND_TO_Q("\r\nEnter stat for fourth bonus:  ", d);
 			break;
 		}
 		return;
@@ -3515,8 +3517,20 @@ void select_class(P_desc d, char *arg)
 		}
 		else if (tolower(*arg) == 'z')
 		{
-			SEND_TO_Q("\r\nIs your character Male or Female (Z for race)? (M/F/Z) ", d);
-			STATE(d) = CON_GET_SEX;
+			if (GET_RACE(d->character) == RACE_ILLITHID ||
+			    GET_RACE(d->character) == RACE_PILLITHID)
+			{
+				display_available_races(d);
+				STATE(d) = CON_GET_RACE;
+			}
+			else
+			{
+				SEND_TO_Q(
+					"\r\nIs your character Male or Female (Z for race)? (M/F/Z) ",
+					d);
+				STATE(d) = CON_GET_SEX;
+			}
+			return;
 		}
 		else
 			continue;
@@ -3534,6 +3548,7 @@ void select_class(P_desc d, char *arg)
 	if (*Gbuf)
 	{
 		do_help(d->character, Gbuf, -4);
+		SEND_TO_Q("\r\n[Press Return or Enter to return to the Class Menu]", d);
 		return;
 	}
 	else if (d->character->player.m_class == CLASS_NONE)
@@ -3546,6 +3561,7 @@ void select_class(P_desc d, char *arg)
 		    5)
 	{
 		SEND_TO_Q("\r\nThis is not an allowed class for your race!", d);
+		display_classtable(d);
 		return;
 	}
 	/* Krov: We do alignment/hometown choice after class now, _then_
@@ -3677,7 +3693,7 @@ void display_classtable(P_desc d)
 	strcat(buf, "\r\n");
 	SEND_TO_Q(buf, d);
 
-	if (GET_RACE(d->character) == RACE_ILLITHID)
+	if (GET_RACE(d->character) == RACE_ILLITHID || GET_RACE(d->character) == RACE_PILLITHID)
 		SEND_TO_Q("\r\nz) Return to previous menu (selecting your race).", d);
 	else
 		SEND_TO_Q("\r\nz) Return to previous prompt (selecting your sex).", d);
@@ -3848,9 +3864,12 @@ void select_keepchar(P_desc d, char *arg)
 		close_socket(d);
 		break;
 	case 'y':
-	default:
 		SEND_TO_Q("\r\n\r\nWelcome to Duris, Land of Bloodlust!\r\n\r\n", d);
 		STATE(d) = CON_RMOTD;
+		break;
+	default:
+		SEND_TO_Q("\r\nPlease select Y (keep), N (discard), or Q (quit).\r\n", d);
+		SEND_TO_Q(keepchar, d);
 		break;
 	}
 }
@@ -4748,15 +4767,15 @@ void nanny(P_desc d, char *arg)
 		{
 			if (*arg == 'n' || *arg == 'N')
 			{
-				SEND_TO_Q(
-					"\r\nOk, what IS it, then? Type 'generate' for name generator.",
-					d);
 				FREE(d->character->player.name);
 				d->character->player.name = 0;
 #ifndef USE_ACCOUNT
+				SEND_TO_Q(
+					"\r\nOk, what IS it, then? Type 'generate' for name generator.",
+					d);
 				STATE(d) = CON_NAME;
 #else
-				STATE(d) = CON_ACCT_NEW_CHAR;
+				account_new_char(d, NULL);
 #endif
 			}
 			else
@@ -4790,12 +4809,16 @@ void nanny(P_desc d, char *arg)
 		{
 			if (*arg == 'n' || *arg == 'N')
 			{
+				FREE(d->character->player.name);
+				d->character->player.name = 0;
+#ifndef USE_ACCOUNT
 				SEND_TO_Q(
 					"Resetting...\r\n\r\nBy what name do you wish to be known? Type 'generate' to get to name generator.",
 					d);
-				FREE(d->character->player.name);
-				d->character->player.name = 0;
 				STATE(d) = CON_NAME;
+#else
+				account_new_char(d, NULL);
+#endif
 			}
 			else
 			{
