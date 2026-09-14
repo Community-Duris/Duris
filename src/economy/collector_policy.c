@@ -188,6 +188,8 @@ outcome cancel(record *entry, uint64_t expected_revision, reason why)
 		return outcome::overflow;
 	entry->status = state::cancelled;
 	entry->closed_reason = why;
+	entry->holding_paused = false;
+	entry->paused_at = 0;
 	if (held)
 		++entry->item_revision;
 	++entry->revision;

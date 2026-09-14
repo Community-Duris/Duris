@@ -280,6 +280,42 @@ std::vector<uint64_t> collector_runtime_lease_due(uint64_t now, size_t limit, ui
 	}
 }
 
+bool collector_runtime_pause_mismatches(bool should_pause, uint64_t after_listing,
+					size_t scan_limit, size_t result_limit,
+					std::vector<collector::record> *entries,
+					uint64_t *next_after_listing, bool *reached_end)
+{
+	if (!scan_limit || !result_limit || !entries || !next_after_listing || !reached_end)
+		return false;
+	std::vector<collector::record> candidate;
+	auto current = after_listing ? records.upper_bound(after_listing) : records.begin();
+	size_t scanned = 0;
+	uint64_t cursor = after_listing;
+	try
+	{
+		candidate.reserve(std::min(scan_limit, result_limit));
+		while (current != records.end() && scanned < scan_limit &&
+		       candidate.size() < result_limit)
+		{
+			cursor = current->first;
+			const collector::record &entry = current->second;
+			++current;
+			++scanned;
+			if (entry.status == collector::state::available &&
+			    entry.holding_paused != should_pause)
+				candidate.push_back(entry);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*reached_end = current == records.end();
+	*next_after_listing = *reached_end ? 0 : cursor;
+	*entries = std::move(candidate);
+	return true;
+}
+
 uint64_t collector_runtime_catalog_revision(void)
 {
 	return catalog_revision;

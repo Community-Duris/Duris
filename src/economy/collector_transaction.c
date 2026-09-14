@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <mutex>
+#include <memory>
 #include <new>
 #include <string>
 #include <unordered_map>
@@ -20,7 +21,7 @@ namespace
 struct pending_collector
 {
 	uint32_t actor_pid = 0;
-	collector_command_payload payload = {};
+	std::unique_ptr<collector_command_payload> payload;
 	collector_completion_fn completion = nullptr;
 	bool completion_ready = false;
 	critical_completion completed = {};
@@ -57,6 +58,15 @@ bool player_pending(uint32_t pid)
 			   [pid](const auto &entry) { return entry.second.actor_pid == pid; });
 }
 
+bool listing_pending(uint64_t listing)
+{
+	return listing && std::any_of(pending.begin(), pending.end(),
+				      [listing](const auto &entry) {
+					      return entry.second.payload &&
+						     entry.second.payload->listing == listing;
+				      });
+}
+
 bool publishes_authority(const collector_command_payload &payload)
 {
 	return payload.action == collector_action::collect ||
@@ -68,6 +78,12 @@ bool publishes_authority(const collector_command_payload &payload)
 bool publish(std::unordered_map<std::string, pending_collector>::iterator found, P_char character)
 {
 	pending_collector &entry = found->second;
+	if (!entry.payload)
+	{
+		pending.erase(found);
+		return false;
+	}
+	const collector_command_payload &submitted_payload = *entry.payload;
 	collector_command_result result = {};
 	const bool decoded = collector_command_decode_result(entry.completed.result_payload.data(),
 							     entry.completed.result_size, &result);
@@ -81,21 +97,21 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 		publication_error = entry.completed.error_code ? entry.completed.error_code :
 								 EBADMSG;
 	if (published && committed &&
-	    (!result.record_present || result.action != entry.payload.action))
+	    (!result.record_present || result.action != submitted_payload.action))
 	{
 		published = false;
 		publication_error = EBADMSG;
 	}
-	if (published && committed && publishes_authority(entry.payload) &&
-	    !item_ownership_runtime_apply_collector(entry.payload, result))
+	if (published && committed && publishes_authority(submitted_payload) &&
+	    !item_ownership_runtime_apply_collector(submitted_payload, result))
 	{
 		published = false;
 		publication_error = ESTALE;
 	}
-	if (published && committed && entry.payload.action == collector_action::purchase &&
+	if (published && committed && submitted_payload.action == collector_action::purchase &&
 	    (!character ||
 	     !currency_transaction_publish_balances(
-		     character, entry.payload.account_name.data(), entry.payload.racewar,
+		     character, submitted_payload.account_name.data(), submitted_payload.racewar,
 		     result.wallet, result.bank, result.wallet_revision, result.bank_revision)))
 	{
 		published = false;
@@ -108,11 +124,11 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 	}
 
 	const auto completion = entry.completion;
-	const collector_command_payload payload = entry.payload;
+	std::unique_ptr<collector_command_payload> payload = std::move(entry.payload);
 	pending.erase(found);
 	if (completion)
 		completion(character, durable_commit, decoded ? result : collector_command_result{},
-			   publication_error, payload);
+			   publication_error, *payload);
 	return committed && published;
 }
 
@@ -120,7 +136,7 @@ bool submit(P_char character, const critical_operation_id &operation_id,
 	    const collector_command_payload &payload, collector_completion_fn completion,
 	    critical_source_site source, critical_deadline_class deadline)
 {
-	if (pending.size() >= COLLECTOR_PENDING_MAX ||
+	if (pending.size() >= COLLECTOR_PENDING_MAX || listing_pending(payload.listing) ||
 	    critical_operation_id_is_zero(operation_id) ||
 	    (payload.actor_pid && (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
 				   static_cast<uint32_t>(GET_PID(character)) != payload.actor_pid ||
@@ -133,9 +149,13 @@ bool submit(P_char character, const critical_operation_id &operation_id,
 	try
 	{
 		key = operation_key(operation_id);
-		const auto inserted = pending.emplace(
-			key,
-			pending_collector{ payload.actor_pid, payload, completion, false, {} });
+		auto payload_copy = std::make_unique<collector_command_payload>(payload);
+		const auto inserted =
+			pending.emplace(key, pending_collector{ payload.actor_pid,
+								std::move(payload_copy),
+								completion,
+								false,
+								{} });
 		if (!inserted.second)
 			return false;
 	}
@@ -237,6 +257,11 @@ bool collector_transaction_player_busy(P_char character)
 {
 	return character && !IS_NPC(character) && GET_PID(character) > 0 &&
 	       player_pending(static_cast<uint32_t>(GET_PID(character)));
+}
+
+bool collector_transaction_listing_busy(uint64_t listing)
+{
+	return listing_pending(listing);
 }
 
 critical_outbox_delivery_result

@@ -21,6 +21,8 @@ constexpr size_t registered_count = AUCTION_HOUSE_REGISTERED_ROOM_COUNT;
 std::array<room_data, registered_count + 1> rooms = {};
 std::array<index_data, 1> indexes = {};
 bool cache_ready = false;
+bool config_enabled = true;
+uint64_t config_revision = 1;
 uint64_t catalog_revision = 0;
 size_t available_count = 0;
 int missing_room_index = -1;
@@ -90,6 +92,16 @@ extern const int top_of_world = static_cast<int>(registered_count);
 bool collector_catalog_cache_ready()
 {
 	return cache_ready;
+}
+
+bool collector_config_enabled()
+{
+	return config_enabled;
+}
+
+uint64_t collector_config_revision()
+{
+	return config_revision;
 }
 
 uint64_t collector_runtime_catalog_revision()
@@ -273,6 +285,16 @@ int main()
 	assert(!unprotected->only.npc->aggro3_flags);
 	assert(stopped_fights == 1);
 	assert(stopped_followers == 1);
+
+	config_enabled = false;
+	++config_revision;
+	collector_presence_pulse();
+	assert(live_collectors() == 0);
+	assert(!collector_presence_health_copy().desired);
+	config_enabled = true;
+	++config_revision;
+	collector_presence_pulse();
+	assert(live_collectors() == registered_count);
 
 	missing_room_index = 3;
 	++catalog_revision;

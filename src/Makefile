@@ -161,8 +161,10 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_command.o \
 				 economy/collector_codec.o \
 				 economy/collector_policy.o \
+				 economy/collector_config.o \
 				 economy/collector_catalog_source.o \
 				 economy/collector_catalog_cache.o \
+				 economy/collector_maintenance.o \
 				 economy/collector_listing_pipeline.o \
 				 economy/collector_purchase_preparation.o \
 				 economy/collector_runtime.o \

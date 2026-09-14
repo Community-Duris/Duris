@@ -121,6 +121,7 @@
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
+#include "economy/collector_maintenance.h"
 #include "economy/collector_presence.h"
 #include "economy/collector_service.h"
 #include "economy/collector_transaction.h"
@@ -975,6 +976,7 @@ void run_the_game(int port, int sslport)
 	redis_cleanup();
 	player_load_pipeline_shutdown();
 	collector_listing_pipeline_shutdown();
+	collector_maintenance_shutdown();
 	collector_presence_shutdown();
 	collector_catalog_cache_shutdown();
 	information_cache_shutdown();
@@ -2012,6 +2014,7 @@ resume_game_loop:
 			information_cache_pulse();
 			help_cache_pulse();
 			collector_catalog_cache_pulse();
+			collector_maintenance_pulse();
 			collector_presence_pulse();
 			collector_service_pulse();
 			account_recovery_pulse();

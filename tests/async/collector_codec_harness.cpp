@@ -141,6 +141,7 @@ int main()
 	assert(pause(&quarantined, quarantined.revision, quarantined.available_at + 20) ==
 	       outcome::applied);
 	assert(cancel(&quarantined, quarantined.revision, reason::quarantined) == outcome::applied);
+	assert(!quarantined.holding_paused && !quarantined.paused_at);
 	states.push_back(quarantined);
 	for (const auto &entry : states)
 		assert(valid_record(entry));

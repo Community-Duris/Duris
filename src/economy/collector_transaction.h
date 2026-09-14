@@ -34,6 +34,10 @@ bool collector_transaction_submit_background_identified(const critical_operation
 void collector_transaction_handle_completions(const critical_completion *completions, size_t count);
 void collector_transaction_player_ready(P_char character);
 bool collector_transaction_player_busy(P_char character);
+// A listing may have at most one command between durable submission and
+// game-thread publication. This also protects due work from ephemeral lease
+// loss when a periodic authoritative cache snapshot rebuilds the runtime.
+bool collector_transaction_listing_busy(uint64_t listing);
 critical_outbox_delivery_result
 collector_transaction_outbox_delivery(const critical_outbox_record &record, void *context);
 void collector_transaction_publish_outbox(void);

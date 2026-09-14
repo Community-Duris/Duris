@@ -23,6 +23,13 @@ bool collector_runtime_snapshot(collector::catalog *catalog);
 bool collector_runtime_available_for(uint32_t beneficiary, size_t limit,
 				     std::vector<collector::record> *entries);
 std::vector<uint64_t> collector_runtime_lease_due(uint64_t now, size_t limit, uint64_t lease_until);
+// Bounded map walk used to converge feature-wide pause/resume state without a
+// full catalog copy on the game thread. Pass after_listing=0 to start a pass;
+// next_after_listing becomes zero and reached_end is true at the end.
+bool collector_runtime_pause_mismatches(bool should_pause, uint64_t after_listing,
+					size_t scan_limit, size_t result_limit,
+					std::vector<collector::record> *entries,
+					uint64_t *next_after_listing, bool *reached_end);
 uint64_t collector_runtime_catalog_revision(void);
 uint64_t collector_runtime_next_listing(void);
 size_t collector_runtime_size(void);

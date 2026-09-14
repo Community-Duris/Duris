@@ -5,6 +5,7 @@
 #include "core/utils.h"
 #include "economy/auction_room_registry.h"
 #include "economy/collector_catalog_cache.h"
+#include "economy/collector_config.h"
 #include "economy/collector_runtime.h"
 #include "world/vnum.mob.h"
 
@@ -28,6 +29,7 @@ int collector_rnum = -1;
 clock_type::time_point next_reconcile = {};
 uint64_t observed_catalog_revision = std::numeric_limits<uint64_t>::max();
 size_t observed_available_count = std::numeric_limits<size_t>::max();
+uint64_t observed_config_revision = std::numeric_limits<uint64_t>::max();
 bool observed_ready = false;
 collector_presence_health health = {};
 
@@ -39,8 +41,8 @@ int collector_special(P_char collector, P_char, int, char *)
 
 bool presence_desired()
 {
-	return health.initialized && collector_catalog_cache_ready() &&
-	       collector_runtime_available_count() > 0;
+	return health.initialized && collector_config_enabled() &&
+	       collector_catalog_cache_ready() && collector_runtime_available_count() > 0;
 }
 
 void protect(P_char collector)
@@ -187,6 +189,7 @@ bool collector_presence_init(void)
 	health.initialized = true;
 	observed_catalog_revision = std::numeric_limits<uint64_t>::max();
 	observed_available_count = std::numeric_limits<size_t>::max();
+	observed_config_revision = std::numeric_limits<uint64_t>::max();
 	observed_ready = false;
 	next_reconcile = {};
 	return true;
@@ -199,14 +202,16 @@ void collector_presence_pulse(void)
 	const bool ready = collector_catalog_cache_ready();
 	const uint64_t revision = collector_runtime_catalog_revision();
 	const size_t available = collector_runtime_available_count();
+	const uint64_t config_revision = collector_config_revision();
 	const auto now = clock_type::now();
 	if (ready != observed_ready || revision != observed_catalog_revision ||
-	    available != observed_available_count || next_reconcile == clock_type::time_point{} ||
-	    now >= next_reconcile)
+	    available != observed_available_count || config_revision != observed_config_revision ||
+	    next_reconcile == clock_type::time_point{} || now >= next_reconcile)
 	{
 		observed_ready = ready;
 		observed_catalog_revision = revision;
 		observed_available_count = available;
+		observed_config_revision = config_revision;
 		reconcile();
 	}
 }
@@ -228,6 +233,7 @@ void collector_presence_shutdown(void)
 	next_reconcile = {};
 	observed_catalog_revision = std::numeric_limits<uint64_t>::max();
 	observed_available_count = std::numeric_limits<size_t>::max();
+	observed_config_revision = std::numeric_limits<uint64_t>::max();
 	observed_ready = false;
 	health = {};
 }

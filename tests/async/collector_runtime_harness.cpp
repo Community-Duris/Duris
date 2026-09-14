@@ -82,15 +82,39 @@ int main()
 	assert(collector_runtime_available_for(42, 20, &visible) && visible.size() == 1 &&
 	       visible[0].listing == 4);
 	assert(collector_runtime_available_for(43, 20, &visible) && visible.empty());
+	std::vector<collector::record> pause_entries;
+	uint64_t pause_cursor = 0;
+	bool pause_end = false;
+	assert(collector_runtime_pause_mismatches(true, 0, 1, 1, &pause_entries, &pause_cursor,
+						  &pause_end));
+	assert(pause_entries.size() == 1 && pause_entries[0].listing == 4 && !pause_end &&
+	       pause_cursor == 4);
+	assert(collector_runtime_pause_mismatches(true, pause_cursor, 1, 1, &pause_entries,
+						  &pause_cursor, &pause_end));
+	assert(pause_entries.empty() && pause_end && pause_cursor == 0);
+
+	auto paused_entry = first;
+	assert(collector::pause(&paused_entry, paused_entry.revision,
+				paused_entry.available_at + 5) == collector::outcome::applied);
+	assert(collector_runtime_publish(result(collector_action::pause, 12, paused_entry)));
+	assert(collector_runtime_available_count() == 0);
+	assert(collector_runtime_pause_mismatches(false, 0, 8, 8, &pause_entries, &pause_cursor,
+						  &pause_end));
+	assert(pause_entries.size() == 1 && pause_entries[0].listing == 4 && pause_end);
+	assert(collector::resume(&paused_entry, paused_entry.revision,
+				 paused_entry.paused_at + 5) == collector::outcome::applied);
+	assert(collector_runtime_publish(result(collector_action::resume, 13, paused_entry)));
+	assert(collector_runtime_available_count() == 1);
+	first = paused_entry;
 
 	auto purchased_entry = first;
 	assert(collector::purchase(&purchased_entry, purchased_entry.revision, 42,
 				   purchased_entry.price_value, true,
 				   purchased_entry.available_at) == collector::outcome::applied);
-	auto purchased = result(collector_action::purchase, 13, purchased_entry);
+	auto purchased = result(collector_action::purchase, 14, purchased_entry);
 	assert(collector_runtime_publish(purchased));
 	assert(collector_runtime_available_count() == 0 &&
-	       collector_runtime_catalog_revision() == 13);
+	       collector_runtime_catalog_revision() == 14);
 	// A delayed earlier outbox event is delivered idempotently without
 	// regressing the listing that has already advanced.
 	assert(collector_runtime_publish(activated));
@@ -104,7 +128,7 @@ int main()
 	assert(collector::collect(&third, third.revision, 1, 1, true, 50, third.collect_at) ==
 	       collector::outcome::applied);
 	assert(collector_runtime_publish(result(collector_action::collect, 12, third)));
-	assert(collector_runtime_size() == 3 && collector_runtime_catalog_revision() == 13 &&
+	assert(collector_runtime_size() == 3 && collector_runtime_catalog_revision() == 14 &&
 	       collector_runtime_next_listing() == 13);
 
 	collector::catalog snapshot;

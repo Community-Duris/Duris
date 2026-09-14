@@ -21,6 +21,7 @@ def main() -> None:
     assert "collector_presence_shutdown();" in comm
     service = (ROOT / "src/economy/collector_service.c").read_text()
     assert "collector_presence_room_active(character->in_room)" in service
+    assert "collector_config_enabled()" in (ROOT / "src/economy/collector_presence.c").read_text()
 
     guarded_sources = {
         "src/cmd/actoff.c": 1,

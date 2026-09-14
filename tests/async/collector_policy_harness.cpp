@@ -129,10 +129,12 @@ int main()
 	{
 		auto entry = saleable();
 		const auto item_revision = entry.item_revision;
-		assert(cancel(&entry, 3, why) == outcome::applied);
+		assert(pause(&entry, entry.revision, entry.available_at + 1) == outcome::applied);
+		assert(cancel(&entry, entry.revision, why) == outcome::applied);
 		assert(entry.closed_reason == why && entry.status == state::cancelled &&
-		       entry.item_revision == item_revision + 1);
-		assert(purchase(&entry, 4, 42, maximum, true, entry.available_at) ==
+		       entry.item_revision == item_revision + 1 && !entry.holding_paused &&
+		       !entry.paused_at);
+		assert(purchase(&entry, 5, 42, maximum, true, entry.available_at) ==
 		       outcome::conflict);
 	}
 	auto cancelled_collected = candidate();
