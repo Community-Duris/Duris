@@ -340,6 +340,19 @@ static void test_abort_and_unrelated_wait() {
 }
 
 static void test_config_and_reload() {
+    {
+        scene s;
+        properties["itemActions.mana.enabled"] = 1;
+        update_item_action_properties();
+        assert(s.start() == item_action_start::scheduled);
+        properties["itemActions.mana.enabled"] = 0;
+        update_item_action_properties();
+        assert(!item_actions_pending() && s.report.spent == 1);
+        properties["itemActions.mana.enabled"] = 1;
+        update_item_action_properties();
+        advance();
+        assert(!s.report.effects && s.report.finishes == 1 && s.report.spent == 1);
+    }
     for (float value : {0.0f, -1.0f, 0.5f, 2.0f,
                        std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN()}) {
         scene s;
@@ -488,6 +501,67 @@ static void test_carry_self_reload_and_rearm_rejection() {
     }
 }
 
+static uint64_t metric(item_action_metric value) {
+    return item_actions_telemetry_snapshot().counters[static_cast<size_t>(value)];
+}
+static uint64_t cancelled(item_action_cancel_reason value) {
+    return item_actions_telemetry_snapshot().cancelled[static_cast<size_t>(value)];
+}
+static void observe() {
+    properties["itemActions.telemetry.enabled"]=1; update_item_action_properties();
+}
+static void test_bounded_telemetry() {
+    { scene s; s.start(); advance(); assert(!metric(item_action_metric::selected)); }
+    { scene s; observe();
+      assert(s.start()==item_action_start::scheduled);
+      assert(s.start()==item_action_start::suppressed);
+      auto snapshot=item_actions_telemetry_snapshot(); assert(snapshot.pending==1 && snapshot.peak_pending==1);
+      advance(); assert(metric(item_action_metric::selected)==2 && metric(item_action_metric::started)==1);
+      assert(metric(item_action_metric::busy)==1 && metric(item_action_metric::completed)==1);
+      assert(metric(item_action_metric::effects_invoked)==1 && item_actions_telemetry_snapshot().callbacks>=1); }
+    for(int reason=0;reason<8;++reason) {
+        scene s(true); observe(); s.start();
+        item_action_cancel_reason expected;
+        switch(reason) {
+        case 0: depart(s.actor); expected=item_action_cancel_reason::actor_departure; break;
+        case 1: depart(s.target); expected=item_action_cancel_reason::target_departure; break;
+        case 2: item_actions_source_leaving(s.source); expected=item_action_cancel_reason::source_departure; break;
+        case 3: item_actions_disable(1); expected=item_action_cancel_reason::definition_change; break;
+        case 4: item_actions_reload(); expected=item_action_cancel_reason::reload; break;
+        case 5: abort_item_action(s.actor); expected=item_action_cancel_reason::abort; break;
+        case 6: s.report.permitted=false; expected=item_action_cancel_reason::invalid_context; break;
+        default: properties["itemActions.enabled"]=0; update_item_action_properties();
+                 expected=item_action_cancel_reason::configuration_change;
+        }
+        advance(); assert(cancelled(expected)==1 && !item_actions_pending());
+        assert(metric(item_action_metric::completed)==0 && !s.report.effects);
+    }
+    { scene s; observe(); s.report.reject_cost=true; s.start();
+      assert(metric(item_action_metric::consumption_rejected)==1 && !metric(item_action_metric::started)); }
+    { scene s; observe(); const auto sequence=ne_event_sequence; ne_event_sequence=ULLONG_MAX;
+      s.start(); ne_event_sequence=sequence;
+      assert(metric(item_action_metric::scheduling_rejected)==1 && !metric(item_action_metric::started)); }
+    { scene s; observe(); s.start(); const auto sequence=ne_event_sequence; ne_event_sequence=ULLONG_MAX;
+      advance(5,false); ne_event_sequence=sequence;
+      assert(cancelled(item_action_cancel_reason::scheduling_rejected)==1); }
+    { scene s(false,2); observe(); s.report.mutation=1; s.start(); advance();
+      assert(metric(item_action_metric::partial)==1 && metric(item_action_metric::effect_failures)==1);
+      assert(metric(item_action_metric::effects_invoked)==1 && cancelled(item_action_cancel_reason::target_departure)==1); }
+    { scene s(false,1); observe(); s.report.mutation=1; s.start(); advance();
+      assert(metric(item_action_metric::completed)==1 && !metric(item_action_metric::effect_failures));
+      assert(!metric(item_action_metric::partial) && !cancelled(item_action_cancel_reason::target_departure));
+      assert(metric(item_action_metric::effects_invoked)==1 && s.report.finishes==1); }
+    { scene s; s.start(); observe(); assert(item_actions_pending()==1); advance();
+      assert(s.report.effects==1); // Merely enabling observation must not cancel work.
+      telemetry.counters[static_cast<size_t>(item_action_metric::selected)]=UINT64_MAX;
+      item_actions_note(item_action_metric::selected); assert(metric(item_action_metric::selected)==UINT64_MAX);
+      for(float value:{0.0f,1.5f,std::numeric_limits<float>::quiet_NaN()}) {
+          properties["itemActions.telemetry.enabled"]=value; update_item_action_properties();
+          item_actions_note(item_action_metric::selected); assert(!item_actions_telemetry_enabled());
+          assert(!metric(item_action_metric::selected));
+      } }
+}
+
 int main() {
     nevent_bind_game_thread();
     ne_dead_event_pool = &test_pool;
@@ -503,6 +577,7 @@ int main() {
     test_selected_effects_and_progress();
     test_effect_transitions();
     test_carry_self_reload_and_rearm_rejection();
+    test_bounded_telemetry();
     std::puts("Item actions: scheduler, identities, costs, cancellation, timing and effect lifetime passed");
 }
 '''

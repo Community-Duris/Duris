@@ -30,6 +30,10 @@ time_t fake_time(time_t *) { return test_wall; }
 #include "item/artifact_mana.c"
 #undef time
 #undef clock_gettime
+static std::array<unsigned,static_cast<size_t>(item_action_metric::count)> observed{};
+bool item_actions_telemetry_enabled() { return true; }
+void item_actions_note(item_action_metric metric) { ++observed[static_cast<size_t>(metric)]; }
+void item_actions_dump_telemetry(P_char) { output+="operator metrics"; }
 
 P_obj object_list = nullptr;
 index_data indexes[2] = {};
@@ -71,6 +75,9 @@ int main(int argc, char **argv) {
     }
     assert(artifact_mana_inspect(&source, record) && record.reserve == 0);
     test_wall = 200;
+    assert(!artifact_mana_debit(&source, 101, true, 1));
+    assert(observed[static_cast<size_t>(item_action_metric::insufficient_mana)]==1);
+    assert(observed[static_cast<size_t>(item_action_metric::mana_unavailable)]>=1);
     assert(artifact_mana_debit(&source, 30, true, 1));
     assert(artifact_mana_inspect(&source, record) && record.reserve == 70);
     char blade[] = "blade";
@@ -78,6 +85,10 @@ int main(int argc, char **argv) {
     assert(output.find("0.070") == std::string::npos); // another holder cannot inspect
     output.clear(); do_itemmana(&owner, blade, 0);
     assert(output.find("0.070 / 1.000") != std::string::npos);
+    char metrics[]="metrics"; output.clear(); do_itemmana(&owner,metrics,0);
+    assert(output.find("operator metrics")==std::string::npos);
+    owner.player.level=MAXLVLMORTAL+1; output.clear(); do_itemmana(&owner,metrics,0);
+    assert(output=="operator metrics"); owner.player.level=0;
     // Moving custody and slot does not touch the authoritative pool.
     owner.carrying = nullptr; stranger.equipment[0] = &source;
     output.clear(); do_itemmana(&stranger, blade, 0);

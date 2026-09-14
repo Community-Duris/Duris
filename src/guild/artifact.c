@@ -1339,8 +1339,9 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 			return;
 		}
 		locType = IS_NPC(owner) ? ARTIFACT_ON_NPC : ARTIFACT_ON_PC;
-		// GET_ID returns -2 if owner is not alive.
-		location = GET_ID(owner);
+		// Death unequips items before the durable corpse handoff. Keep the
+		// persistent owner identity while that transfer still owns the item.
+		location = IS_NPC(owner) ? GET_VNUM(owner) : GET_PID(owner);
 	}
 	else if (OBJ_ROOM(obj1))
 	{

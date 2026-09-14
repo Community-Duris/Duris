@@ -174,6 +174,51 @@ bool abort_item_action(P_char actor);
 size_t item_actions_pending();
 bool item_action_pending(uint64_t action_id);
 
+// Fixed process counters; game thread only. No UID, vnum, player or target labels.
+enum class item_action_metric : size_t
+{
+	selected,
+	started,
+	completed,
+	partial,
+	busy,
+	invalid,
+	scheduling_rejected,
+	consumption_rejected,
+	insufficient_mana,
+	mana_unavailable,
+	effects_invoked,
+	effect_failures,
+	count
+};
+enum class item_action_cancel_reason : size_t
+{
+	runtime_cleanup,
+	invalid_context,
+	clock_failure,
+	actor_departure,
+	target_departure,
+	source_departure,
+	definition_change,
+	configuration_change,
+	reload,
+	abort,
+	scheduling_rejected,
+	count
+};
+struct item_action_telemetry
+{
+	bool enabled = false;
+	std::array<uint64_t, static_cast<size_t>(item_action_metric::count)> counters{};
+	std::array<uint64_t, static_cast<size_t>(item_action_cancel_reason::count)> cancelled{};
+	size_t pending = 0, peak_pending = 0;
+	uint64_t callbacks = 0, callback_total_us = 0, callback_max_us = 0, invalid_clock = 0;
+};
+bool item_actions_telemetry_enabled();
+item_action_telemetry item_actions_telemetry_snapshot();
+void item_actions_note(item_action_metric);
+void item_actions_dump_telemetry(P_char); // Trusted operators only.
+
 // Call before a real room departure, extraction, source transfer or unequip.
 // Both actor and original-target departures cancel; returning cannot revive it.
 void item_actions_character_leaving(P_char);

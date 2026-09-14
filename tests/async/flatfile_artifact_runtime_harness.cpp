@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 
 void artifact_update_sql(int vnum, bool owned, int location_type, int location, time_t timer,
 			 int type);
+void artifact_update_sql(P_obj artifact, char owned, time_t timer);
 
 namespace
 {
@@ -227,6 +228,24 @@ int main(int argc, char **argv)
 		"boot restoration did not load exactly the owned ground and NPC artifacts");
 
 	const fs::path authority = root / "domains/artifact_catalog";
+	// The corpse transaction still expects player custody during death's
+	// unequip-to-inventory step. GET_ID returns -2 for this dead character.
+	char_data dying = {};
+	pc_only_data dying_pc = {};
+	dying.only.pc = &dying_pc;
+	dying_pc.pid = 77;
+	dying.specials.position = STAT_DEAD;
+	obj_data held = {};
+	held.R_num = 0;
+	held.extra_flags = ITEM_ARTIFACT;
+	held.loc_p = LOC_CARRIED;
+	held.loc.carrying = &dying;
+	artifact_update_sql(&held, 'Y', 7000);
+	require(flatfile_artifact_get(state_root, 701, &stored, &error) ==
+				flatfile_artifact_result::ok &&
+			stored.location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			stored.location == 77,
+		"death inventory update lost the persistent artifact owner before corpse transfer");
 	std::fstream corrupt(authority, std::ios::in | std::ios::out | std::ios::binary);
 	require(corrupt.good(), "could not open artifact authority for corruption test");
 	corrupt.seekg(-1, std::ios::end);

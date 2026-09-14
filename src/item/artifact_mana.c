@@ -1,4 +1,5 @@
 #include "item/artifact_mana.h"
+#include "item/item_actions.h"
 
 #include "core/prototypes.h"
 #include "core/utils.h"
@@ -106,9 +107,25 @@ bool artifact_mana_debit(P_obj source, uint64_t cost, bool passive, uint64_t tok
 	const time_t wall = time(nullptr);
 	try
 	{
-		return profile && wall >= 0 &&
-		       service().debit(source->obj_uid, *profile, uint64_t(wall), monotonic_ms(),
-				       cost, passive, token);
+		const uint64_t mono = monotonic_ms();
+		const bool paid = profile && wall >= 0 &&
+				  service().debit(source->obj_uid, *profile, uint64_t(wall), mono,
+						  cost, passive, token);
+		if (!paid && item_actions_telemetry_enabled())
+		{
+			artifact_mana_record record;
+			const bool readable = profile && wall >= 0 && runtime &&
+					      runtime->spending_ready(source->obj_uid, mono) &&
+					      runtime->inspect(source->obj_uid, *profile,
+							       uint64_t(wall), mono, record);
+			const bool insufficient =
+				readable &&
+				(cost > record.reserve ||
+				 (passive && record.reserve - cost < profile->passive_floor));
+			item_actions_note(insufficient ? item_action_metric::insufficient_mana :
+							 item_action_metric::mana_unavailable);
+		}
+		return paid;
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -148,6 +165,11 @@ void do_itemmana(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH] = {};
 	one_argument(argument, name);
+	if (!strcmp(name, "metrics") && IS_TRUSTED(ch))
+	{
+		item_actions_dump_telemetry(ch);
+		return;
+	}
 	if (!*name)
 	{
 		send_to_char("Inspect which carried or equipped item's mana?\r\n", ch);
