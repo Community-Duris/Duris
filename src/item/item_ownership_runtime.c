@@ -1,5 +1,7 @@
 #include "item/item_ownership_runtime.h"
 
+#include "economy/collector_command.h"
+
 #include <algorithm>
 #include <limits>
 #include <new>
@@ -211,7 +213,7 @@ bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_ent
 			const item_ownership_runtime_entry &entry = batch[index];
 			if (!entry.item_uid || !entry.root_item_uid ||
 			    !item_owner_identity_valid(entry.owner) ||
-			    entry.state != item_custody_state::active || entry.vnum < 0 ||
+			    entry.state == item_custody_state::absent || entry.vnum < 0 ||
 			    !item_uids.insert(entry.item_uid).second)
 				return false;
 			const auto incoming_owner = incoming_owners.find(entry.owner);
@@ -420,6 +422,181 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	owner_revisions[payload.from_owner] = result.from_owner_revision;
 	owner_revisions[payload.to_owner] = result.to_owner_revision;
 	return true;
+}
+
+namespace
+{
+const item_transfer_entry *collector_payload_item(const collector_command_payload &payload,
+						  uint64_t item_uid)
+{
+	auto found = std::lower_bound(payload.items.begin(),
+				      payload.items.begin() + payload.item_count, item_uid,
+				      [](const item_transfer_entry &entry, uint64_t sought)
+				      { return entry.item_uid < sought; });
+	return found != payload.items.begin() + payload.item_count && found->item_uid == item_uid ?
+		       &*found :
+		       nullptr;
+}
+
+uint64_t collector_root_after_detach(const collector_command_payload &payload,
+				     const item_transfer_entry &item)
+{
+	if (payload.items[0].root_item_uid != payload.selected_item_uid ||
+	    item.item_uid == payload.selected_item_uid)
+		return item.item_uid == payload.selected_item_uid ? item.item_uid :
+								    item.root_item_uid;
+	const item_transfer_entry *cursor = &item;
+	for (size_t depth = 0; depth <= payload.item_count; ++depth)
+	{
+		if (cursor->parent_item_uid == payload.selected_item_uid)
+			return cursor->item_uid;
+		cursor = collector_payload_item(payload, cursor->parent_item_uid);
+		if (!cursor)
+			return 0;
+	}
+	return 0;
+}
+
+bool collector_runtime_entry_matches(const item_ownership_runtime_entry &left,
+				     const item_ownership_runtime_entry &right)
+{
+	return left.item_uid == right.item_uid && left.root_item_uid == right.root_item_uid &&
+	       left.parent_item_uid == right.parent_item_uid &&
+	       item_owner_identity_equal(left.owner, right.owner) &&
+	       left.item_revision == right.item_revision && left.vnum == right.vnum &&
+	       left.state == right.state;
+}
+
+bool collector_publish_authority(const collector_command_payload &payload,
+				 const collector_command_result &result,
+				 std::vector<item_ownership_runtime_entry> desired)
+{
+	if (result.from_owner_revision != payload.expected_from_owner_revision + 1 ||
+	    result.to_owner_revision != payload.expected_to_owner_revision + 1)
+		return false;
+	uint64_t from_revision = 0, to_revision = 0;
+	if (!item_ownership_runtime_owner_revision(payload.from_owner, &from_revision) ||
+	    !item_ownership_runtime_owner_revision(payload.to_owner, &to_revision) ||
+	    from_revision < payload.expected_from_owner_revision ||
+	    to_revision < payload.expected_to_owner_revision)
+		return false;
+	const uint64_t published_from_revision =
+		std::max(from_revision, result.from_owner_revision);
+	const uint64_t published_to_revision = std::max(to_revision, result.to_owner_revision);
+
+	std::vector<item_ownership_runtime_entry> changes;
+	try
+	{
+		changes.reserve(desired.size());
+		for (item_ownership_runtime_entry &target : desired)
+		{
+			item_ownership_runtime_entry current = {};
+			const item_transfer_entry *expected =
+				collector_payload_item(payload, target.item_uid);
+			if (!expected ||
+			    !item_ownership_runtime_lookup(target.item_uid, &current) ||
+			    current.item_revision < expected->expected_item_revision)
+				return false;
+			if (current.item_revision == expected->expected_item_revision)
+			{
+				if (current.root_item_uid != expected->root_item_uid ||
+				    current.parent_item_uid != expected->parent_item_uid ||
+				    !item_owner_identity_equal(current.owner, payload.from_owner) ||
+				    current.vnum != expected->vnum ||
+				    current.state != expected->expected_state)
+					return false;
+				target.owner_revision = item_owner_identity_equal(
+								target.owner, payload.from_owner) ?
+								published_from_revision :
+								published_to_revision;
+				changes.push_back(target);
+				continue;
+			}
+			if (current.item_revision == target.item_revision)
+			{
+				if (!collector_runtime_entry_matches(current, target))
+					return false;
+				continue;
+			}
+			// A later committed custody operation is authoritative. An old
+			// completion may finish publication without rolling it back.
+			if (current.item_revision < target.item_revision)
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!changes.empty() &&
+	    !item_ownership_runtime_hydrate_many_atomic(changes.data(), changes.size()))
+		return false;
+	return item_ownership_runtime_hydrate_owner(payload.from_owner, published_from_revision) &&
+	       item_ownership_runtime_hydrate_owner(payload.to_owner, published_to_revision);
+}
+}
+
+bool item_ownership_runtime_apply_collector(const collector_command_payload &payload,
+					    const collector_command_result &result)
+{
+	if (result.action != payload.action || !result.record_present ||
+	    result.entry.listing != payload.listing)
+		return false;
+	const bool collection = payload.action == collector_action::collect;
+	const bool held = payload.action == collector_action::purchase ||
+			  payload.action == collector_action::expire ||
+			  (payload.action == collector_action::cancel && payload.item_count);
+	if (!collection && !held)
+		return !payload.item_count && !result.from_owner_revision &&
+		       !result.to_owner_revision;
+	if (!payload.item_count || payload.item_count > payload.items.size() ||
+	    result.entry.uid != payload.selected_item_uid)
+		return false;
+	const item_transfer_entry *selected =
+		collector_payload_item(payload, payload.selected_item_uid);
+	if (!selected)
+		return false;
+	std::vector<item_ownership_runtime_entry> desired;
+	try
+	{
+		desired.reserve(collection ? payload.item_count : 1);
+		for (size_t index = 0; index < payload.item_count; ++index)
+		{
+			const item_transfer_entry &item = payload.items[index];
+			if (item.expected_item_revision == std::numeric_limits<uint64_t>::max())
+				return false;
+			if (collection && item.item_uid != payload.selected_item_uid)
+			{
+				const uint64_t root = collector_root_after_detach(payload, item);
+				const uint64_t parent = item.parent_item_uid ==
+									payload.selected_item_uid ?
+								selected->parent_item_uid :
+								item.parent_item_uid;
+				if (!root)
+					return false;
+				desired.push_back({ item.item_uid, root, parent, payload.from_owner,
+						    item.expected_item_revision + 1,
+						    result.from_owner_revision, item.vnum,
+						    item_custody_state::active });
+				continue;
+			}
+			if (!collection && item.item_uid != payload.selected_item_uid)
+				return false;
+			desired.push_back({ item.item_uid, item.item_uid, 0, payload.to_owner,
+					    item.expected_item_revision + 1,
+					    result.to_owner_revision, item.vnum,
+					    payload.target_state });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (held && desired.size() != 1)
+		return false;
+	if (result.entry.item_revision != selected->expected_item_revision + 1)
+		return false;
+	return collector_publish_authority(payload, result, std::move(desired));
 }
 
 static bool item_ownership_runtime_apply_corpse_disposition(

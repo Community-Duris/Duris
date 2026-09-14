@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 HARNESS = r'''
 #include "item/item_ownership_runtime.h"
+#include "economy/collector_command.h"
 
 #include <cassert>
 
@@ -345,6 +346,135 @@ int main()
 	       owner_revision == 4);
 	assert(item_ownership_runtime_owner_revision(nested_room, &owner_revision) &&
 	       owner_revision == 6);
+
+	item_ownership_runtime_reset();
+	const item_owner_identity collector_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(90, 60), 0
+	};
+	const item_owner_identity collector = {
+		item_owner_type::collector, item_collector_owner_id(77), 0
+	};
+	const item_ownership_runtime_entry collector_source[] = {
+		{ 800, 800, 0, collector_corpse, 1, 9, 70, item_custody_state::active },
+		{ 801, 800, 800, collector_corpse, 2, 9, 71, item_custody_state::active },
+		{ 802, 800, 801, collector_corpse, 3, 9, 72, item_custody_state::active },
+		{ 803, 800, 800, collector_corpse, 4, 9, 73, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(collector_source, 4));
+	assert(item_ownership_runtime_hydrate_owner(collector, 0));
+	collector_command_payload collect = {};
+	collect.action = collector_action::collect;
+	collect.listing = 77;
+	collect.selected_item_uid = 801;
+	collect.from_owner = collector_corpse;
+	collect.to_owner = collector;
+	collect.expected_from_owner_revision = 9;
+	collect.expected_to_owner_revision = 0;
+	collect.target_state = item_custody_state::active;
+	collect.item_count = 4;
+	collect.items[0] = { 800, 800, 0, 1, 70, item_custody_state::active };
+	collect.items[1] = { 801, 800, 800, 2, 71, item_custody_state::active };
+	collect.items[2] = { 802, 800, 801, 3, 72, item_custody_state::active };
+	collect.items[3] = { 803, 800, 800, 4, 73, item_custody_state::active };
+	collector_command_result collected = {};
+	collected.action = collector_action::collect;
+	collected.record_present = true;
+	collected.from_owner_revision = 10;
+	collected.to_owner_revision = 1;
+	collected.entry.listing = 77;
+	collected.entry.uid = 801;
+	collected.entry.item_revision = 3;
+	assert(item_ownership_runtime_apply_collector(collect, collected));
+	assert(item_ownership_runtime_apply_collector(collect, collected));
+	assert(item_ownership_runtime_lookup(800, &absent) && absent.root_item_uid == 800 &&
+	       absent.parent_item_uid == 0 && absent.item_revision == 2 &&
+	       item_owner_identity_equal(absent.owner, collector_corpse));
+	assert(item_ownership_runtime_lookup(801, &absent) && absent.root_item_uid == 801 &&
+	       absent.parent_item_uid == 0 && absent.item_revision == 3 &&
+	       item_owner_identity_equal(absent.owner, collector));
+	assert(item_ownership_runtime_lookup(802, &absent) && absent.root_item_uid == 800 &&
+	       absent.parent_item_uid == 800 && absent.item_revision == 4 &&
+	       item_owner_identity_equal(absent.owner, collector_corpse));
+	assert(item_ownership_runtime_lookup(803, &absent) && absent.root_item_uid == 800 &&
+	       absent.parent_item_uid == 800 && absent.item_revision == 5);
+
+	const item_owner_identity collector_destruction = { item_owner_type::destruction, 0, 0 };
+	assert(item_ownership_runtime_hydrate_owner(collector_destruction, 0));
+	collector_command_payload expire = {};
+	expire.action = collector_action::expire;
+	expire.listing = 77;
+	expire.selected_item_uid = 801;
+	expire.from_owner = collector;
+	expire.to_owner = collector_destruction;
+	expire.expected_from_owner_revision = 1;
+	expire.expected_to_owner_revision = 0;
+	expire.target_state = item_custody_state::destroyed;
+	expire.item_count = 1;
+	expire.items[0] = { 801, 801, 0, 3, 71, item_custody_state::active };
+	collector_command_result expired = {};
+	expired.action = collector_action::expire;
+	expired.record_present = true;
+	expired.from_owner_revision = 2;
+	expired.to_owner_revision = 1;
+	expired.entry.listing = 77;
+	expired.entry.uid = 801;
+	expired.entry.item_revision = 4;
+	assert(item_ownership_runtime_apply_collector(expire, expired));
+	assert(item_ownership_runtime_apply_collector(expire, expired));
+	assert(item_ownership_runtime_lookup(801, &absent) &&
+	       item_owner_identity_equal(absent.owner, collector_destruction) &&
+	       absent.state == item_custody_state::destroyed && absent.item_revision == 4);
+
+	// Collecting a root turns each direct child subtree into its own root. The
+	// source root does not need to be the smallest UID in the sorted command.
+	item_ownership_runtime_reset();
+	const item_owner_identity root_corpse = {
+		item_owner_type::corpse, item_corpse_owner_id(91, 61), 0
+	};
+	const item_owner_identity root_collector = {
+		item_owner_type::collector, item_collector_owner_id(78), 0
+	};
+	const item_ownership_runtime_entry root_source[] = {
+		{ 901, 905, 905, root_corpse, 5, 12, 81, item_custody_state::active },
+		{ 902, 905, 901, root_corpse, 6, 12, 82, item_custody_state::active },
+		{ 903, 905, 905, root_corpse, 7, 12, 83, item_custody_state::active },
+		{ 905, 905, 0, root_corpse, 8, 12, 85, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_batch(root_source, 4));
+	assert(item_ownership_runtime_hydrate_owner(root_collector, 0));
+	collector_command_payload collect_root = {};
+	collect_root.action = collector_action::collect;
+	collect_root.listing = 78;
+	collect_root.selected_item_uid = 905;
+	collect_root.from_owner = root_corpse;
+	collect_root.to_owner = root_collector;
+	collect_root.expected_from_owner_revision = 12;
+	collect_root.expected_to_owner_revision = 0;
+	collect_root.target_state = item_custody_state::active;
+	collect_root.item_count = 4;
+	collect_root.items[0] = { 901, 905, 905, 5, 81, item_custody_state::active };
+	collect_root.items[1] = { 902, 905, 901, 6, 82, item_custody_state::active };
+	collect_root.items[2] = { 903, 905, 905, 7, 83, item_custody_state::active };
+	collect_root.items[3] = { 905, 905, 0, 8, 85, item_custody_state::active };
+	collector_command_result root_collected = {};
+	root_collected.action = collector_action::collect;
+	root_collected.record_present = true;
+	root_collected.from_owner_revision = 13;
+	root_collected.to_owner_revision = 1;
+	root_collected.entry.listing = 78;
+	root_collected.entry.uid = 905;
+	root_collected.entry.item_revision = 9;
+	assert(item_ownership_runtime_apply_collector(collect_root, root_collected));
+	assert(item_ownership_runtime_lookup(901, &absent) && absent.root_item_uid == 901 &&
+	       !absent.parent_item_uid && absent.item_revision == 6 &&
+	       item_owner_identity_equal(absent.owner, root_corpse));
+	assert(item_ownership_runtime_lookup(902, &absent) && absent.root_item_uid == 901 &&
+	       absent.parent_item_uid == 901 && absent.item_revision == 7);
+	assert(item_ownership_runtime_lookup(903, &absent) && absent.root_item_uid == 903 &&
+	       !absent.parent_item_uid && absent.item_revision == 8);
+	assert(item_ownership_runtime_lookup(905, &absent) && absent.root_item_uid == 905 &&
+	       !absent.parent_item_uid && absent.item_revision == 9 &&
+	       item_owner_identity_equal(absent.owner, root_collector));
 
 	item_ownership_runtime_reset();
 	const item_owner_identity deleted_player = { item_owner_type::player, 80, 0 };

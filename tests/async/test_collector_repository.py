@@ -37,12 +37,14 @@ class CollectorRepositoryTest(unittest.TestCase):
 
     def test_generic_journal_dispatches_and_publishes_collector_atomically(self) -> None:
         source = (SRC / "critical_command_repository.c").read_text()
+        contract = (SRC / "collector_command.h").read_text()
         branch = source[source.index("if (collector_command)") :]
         self.assertIn("collector_repository_execute", branch)
         self.assertIn("collector_command_encode_result", branch)
         self.assertLess(branch.index("insert_outbox"), branch.index("finish_inbox"))
         self.assertLess(branch.index("finish_inbox"), branch.index('execute(connection, "COMMIT")'))
-        self.assertIn("OUTBOX_DESTINATION_COLLECTOR = 11", source)
+        self.assertIn("COLLECTOR_OUTBOX_DESTINATION = 11", contract)
+        self.assertIn("COLLECTOR_OUTBOX_DESTINATION", source)
 
     def test_purchase_reason_and_exact_room_uid_are_registered(self) -> None:
         currency = (SRC / "currency_command.h").read_text()

@@ -119,6 +119,7 @@
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "economy/auction_transaction.h"
+#include "economy/collector_transaction.h"
 #include "combat/combat_outcome_transaction.h"
 #include "guild/artifact_guild_transaction.h"
 #include "economy/boon_reward_transaction.h"
@@ -262,6 +263,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	item_movement_transaction_handle_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
+	collector_transaction_handle_completions(completions, count);
 	combat_outcome_transaction_handle_completions(completions, count);
 	artifact_guild_transaction_handle_completions(completions, count);
 	boon_reward_transaction_handle_completions(completions, count);
@@ -281,6 +283,8 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return boon_reward_transaction_outbox_delivery(record, context);
 	if (record.destination == 9)
 		return zone_touch_transaction_outbox_delivery(record, context);
+	if (record.destination == COLLECTOR_OUTBOX_DESTINATION)
+		return collector_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
 #endif
@@ -1158,8 +1162,11 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 		return get_from_q(queue, dest);
 	return get_pending_transaction_cmd_from_q(
 		queue, dest,
-		item_movement_transaction_player_busy(character) || bulk_get_player_busy(character),
-		currency_transaction_player_busy(character));
+		item_movement_transaction_player_busy(character) ||
+			bulk_get_player_busy(character) ||
+			collector_transaction_player_busy(character),
+		currency_transaction_player_busy(character) ||
+			collector_transaction_player_busy(character));
 }
 
 /** Select the restricted queue throughout ordinary casting or active item use. */
@@ -1946,6 +1953,7 @@ resume_game_loop:
 			critical_gameplay_handle_completions(critical_completions,
 							     critical_completion_count);
 			auction_transaction_publish_outbox();
+			collector_transaction_publish_outbox();
 			combat_outcome_transaction_publish_outbox();
 			artifact_guild_transaction_publish_outbox();
 			for (size_t index = 0; index < critical_completion_count; ++index)
@@ -3877,7 +3885,8 @@ int process_output(P_desc t)
 	// Pager and string-editor prompts remain available while unrelated work is in flight.
 	bool defer_prompt = t->prompt_mode && realChar && !t->showstr_count && !t->str &&
 			    (item_movement_transaction_player_busy(realChar) ||
-			     currency_transaction_player_busy(realChar));
+			     currency_transaction_player_busy(realChar) ||
+			     collector_transaction_player_busy(realChar));
 	if (defer_prompt)
 		output_prompt_mode = FALSE;
 

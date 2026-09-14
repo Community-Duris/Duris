@@ -56,8 +56,6 @@ constexpr uint16_t OUTBOX_DESTINATION_BOON_REWARD = 8;
 constexpr uint16_t OUTBOX_EVENT_BOON_REWARD_MUTATED = 1;
 constexpr uint16_t OUTBOX_DESTINATION_ZONE_TOUCH = 9;
 constexpr uint16_t OUTBOX_EVENT_ZONE_TOUCH_MUTATED = 1;
-constexpr uint16_t OUTBOX_DESTINATION_COLLECTOR = 11;
-constexpr uint16_t OUTBOX_EVENT_COLLECTOR_MUTATED = 1;
 thread_local unsigned int last_statement_error = 0;
 
 struct stored_operation
@@ -446,8 +444,8 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 	}
 	else if (command.type == critical_command_type::collector)
 	{
-		destination = OUTBOX_DESTINATION_COLLECTOR;
-		event_type = OUTBOX_EVENT_COLLECTOR_MUTATED;
+		destination = COLLECTOR_OUTBOX_DESTINATION;
+		event_type = COLLECTOR_OUTBOX_EVENT_MUTATED;
 	}
 	unsigned long operation_length = command.operation_id.bytes.size(),
 		      payload_length = payload_size;
