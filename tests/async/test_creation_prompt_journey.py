@@ -9,6 +9,7 @@ provides the real socket client and server lifecycle, not mocked nanny handlers.
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 
 from test_account_recovery_journey import (
     ACCOUNT, OLD_PASSWORD, EMAIL, IsolatedServer, MudClient,
@@ -26,6 +27,27 @@ KEEP = "Do you want to keep this character? (Y/N/Q)"
 def reply(client, answer, prompt):
     client.send(answer)
     return client.expect(prompt, timeout=5)
+
+
+def require_prompt_framed(client, prompt, timeout=3):
+    """Require Telnet IAC GA straight after the last copy of an unterminated prompt.
+
+    Line-buffering clients show a prompt with no newline only once GA arrives, so
+    a prompt queued without it looks to the player as if nothing happened.
+    """
+    needle = prompt.encode("ascii")
+    deadline = time.monotonic() + timeout
+    while True:
+        wire = bytes(client.transcript)
+        rest = wire[wire.rfind(needle) + len(needle):]
+        # Echo negotiation is written directly, so only GA should follow the text.
+        while rest[:3] in (b"\xff\xfb\x01", b"\xff\xfc\x01"):
+            rest = rest[3:]
+        if rest.startswith(b"\xff\xf9"):
+            return
+        require(time.monotonic() < deadline,
+                f"{prompt!r} was not followed by Telnet GA; next bytes: {rest[:12].hex(' ') or 'none'}")
+        client._receive()
 
 
 def enter_email(client):
@@ -58,13 +80,19 @@ def password_and_summary_retry(client, server):
     enter_email(client)
     reply(client, EMAIL, "is this correct?")
     reply(client, "y", PASSWORD_PROMPT)
+    # Control: this prompt is queued while handling input, which always framed it.
+    require_prompt_framed(client, PASSWORD_PROMPT)
     for invalid in ("", "    ", "abc", "alllowercase"):
         reply(client, invalid, PASSWORD_PROMPT)
+    # The prompts below are queued when the password worker finishes, not on input.
     reply(client, OLD_PASSWORD, CONFIRM_PASSWORD)
+    require_prompt_framed(client, CONFIRM_PASSWORD)
     reply(client, "Different9!", "Passwords do not match!")
     client.expect(PASSWORD_PROMPT)
+    require_prompt_framed(client, PASSWORD_PROMPT)
     reply(client, OLD_PASSWORD, CONFIRM_PASSWORD)
     reply(client, OLD_PASSWORD, "Is this information correct?")
+    require_prompt_framed(client, "Is this information correct?  (Y/N) ")
     reply(client, "?", "Is this information correct?")
     reply(client, "n", "Please enter your account name: ")
     # Starting over must not have saved the abandoned registration.
@@ -79,7 +107,9 @@ def password_and_summary_retry(client, server):
     # The same confirmation handler also serves account-menu password changes.
     reply(client, "6", PASSWORD_PROMPT)
     reply(client, OLD_PASSWORD, CONFIRM_PASSWORD)
+    require_prompt_framed(client, CONFIRM_PASSWORD)
     reply(client, OLD_PASSWORD, MENU)
+    require_prompt_framed(client, MENU)
     wire = bytes(client.transcript)
     require(OLD_PASSWORD.encode() not in wire, "password was echoed to the player")
     require(b"\xff\xfb\x01" in wire, "password input never disabled Telnet echo")
@@ -259,6 +289,8 @@ def quit_confirmation(client, server):
         enter_account_name(other)
         other.expect("Please enter your password:")
         reply(other, OLD_PASSWORD, "PRESS RETURN")
+        # Login password checks finish on the worker too.
+        require_prompt_framed(other, "PRESS RETURN: ")
         reply(other, "", MENU)
         reply(other, "1", "Account currently doesn't have any characters (0/")
         other.expect(MENU)
@@ -298,6 +330,8 @@ def normal_after_hardcore(client, server):
         enter_account_name(other)
         other.expect("Please enter your password:")
         reply(other, OLD_PASSWORD, "PRESS RETURN")
+        # Login password checks finish on the worker too.
+        require_prompt_framed(other, "PRESS RETURN: ")
         reply(other, "", MENU)
         reply(other, "1", "Taverek")
         reply(other, "1", "(Y/N)")

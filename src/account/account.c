@@ -646,6 +646,8 @@ bool account_login_password_pulse(P_desc d)
 		return true;
 	password_login_release(d->login_password_job);
 	d->login_password_job = nullptr;
+	// As in password_async_pulse(): the result's prompt arrives without input.
+	d->prompt_mode = TRUE;
 	if (d->login_password_websocket)
 		ws_finish_login(d, valid);
 	else
