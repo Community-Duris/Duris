@@ -41,6 +41,7 @@ static int rider_damage = 0, deaths = 0, stuns = 0, unlinks = 0;
 static int post_death_dispels = 0, post_death_schedules = 0;
 static bool climbing = false, lethal = false, leave_veto = false;
 static bool remove_on_leave = false, reject_entry = false, relocate_on_entry = false;
+static bool relocate_actor_on_stun = false, relocate_rider_on_damage = false;
 static nevent_schedule_status schedule_status = nevent_schedule_status::scheduled;
 static char random_trace[32] = {};
 static int random_calls = 0;
@@ -82,7 +83,10 @@ int number(int low, int high) {
 int STAT_INDEX(int) { return 20; }
 bool check_castle_walls(int, int) { return false; }
 bool notch_skill(P_char, int, float) { return false; }
-void Stun(P_char, P_char, int, bool) { ++stuns; }
+void Stun(P_char victim, P_char, int, bool) {
+    ++stuns;
+    if (relocate_actor_on_stun && victim == &person) victim->in_room = 2;
+}
 void KnockOut(P_char, int) {}
 void update_pos(P_char) {}
 void char_from_room(P_char ch) {
@@ -97,7 +101,7 @@ void char_from_room(P_char ch) {
     ch->in_room = NOWHERE;
 }
 bool char_to_room(P_char ch, int room, int) {
-    if (reject_entry) return false;
+    if (reject_entry && room == 1) return false;
     ch->in_room = relocate_on_entry ? 2 : room;
     return true;
 }
@@ -106,6 +110,10 @@ bool damage(P_char, P_char victim, double amount, int) {
     assert(IS_ALIVE(victim));
     if (victim == &rider) rider_damage = int(amount); else applied_damage = int(amount);
     GET_HIT(victim) -= int(amount);
+    if (relocate_rider_on_damage && victim == &rider) {
+        victim->in_room = 2;
+        return false;
+    }
     if (lethal || GET_HIT(victim) <= 0) {
         ++deaths;
         SET_POS(victim, STAT_DEAD);
@@ -148,6 +156,7 @@ static void reset() {
     post_death_dispels = post_death_schedules = 0;
     climbing = lethal = leave_veto = remove_on_leave = false;
     reject_entry = relocate_on_entry = false;
+    relocate_actor_on_stun = relocate_rider_on_damage = false;
     schedule_status = nevent_schedule_status::scheduled;
     character_removal_generation = 0;
     memset(random_trace, 0, sizeof random_trace); random_calls = 0;
@@ -190,6 +199,9 @@ int main() {
     assert(applied_damage == 85);
     reset(); safe_skill = 100; person.curr_stats.Agi = 200; falling_step(&person, 1);
     assert(applied_damage == 1);
+    reset(); person.points.max_hit = 0;
+    assert(falling_step(&person, 43) == falling_step_result::landed);
+    assert(applied_damage == 2 && stuns == 1);
     reset(); person.points.hit = 100;
     assert(falling_step(&person, 43) == falling_step_result::actor_removed);
     assert(deaths == 1 && stuns == 0);
@@ -210,6 +222,15 @@ int main() {
         assert(GET_HIT(&person) == 1000 - expected && GET_HIT(&rider) == 1000 - expected);
         assert(unlinks == 1);
     }
+    reset(); has_rider = true; relocate_actor_on_stun = true;
+    assert(falling_step(&person, 43) == falling_step_result::relocated);
+    assert(person.in_room == 2 && rider.in_room == 0 && rider_damage == 0 && unlinks == 1);
+    reset(); has_rider = true; relocate_rider_on_damage = true;
+    assert(falling_step(&person, 43) == falling_step_result::landed);
+    assert(person.in_room == 0 && rider.in_room == 2 && rider_damage > 0 && unlinks == 1);
+    reset(); has_rider = true; lethal = true;
+    assert(falling_step(&person, 43) == falling_step_result::landed);
+    assert(deaths == 1 && !rider_listed && unlinks == 1);
 
     for (int learned : {-10, 0, 1, 2, 50, 99, 100, 150}) {
         int caught = 0;
@@ -261,7 +282,10 @@ int main() {
     assert(person.in_room == 0 && schedule_attempts == 0);
     reset(); ledge(); reject_entry = true;
     assert(falling_step(&person, 1) == falling_step_result::movement_rejected);
-    assert(person.in_room == NOWHERE && schedule_attempts == 0);
+    assert(person.in_room == 0 && schedule_attempts == 0);
+    reset(); downward.to_room = NOWHERE; rooms[0].dir_option[DIR_DOWN] = &downward;
+    assert(falling_step(&person, 1) == falling_step_result::landed);
+    assert(person.in_room == 0 && applied_damage > 0 && schedule_attempts == 0);
     reset(); ledge(); remove_on_leave = true;
     assert(falling_step(&person, 1) == falling_step_result::actor_removed);
     assert(schedule_attempts == 0 && !person_listed);

@@ -65,6 +65,13 @@ int falling_impact_damage(int max_hit, int speed, int agility, int impact_roll, 
 	return damage;
 }
 
+int falling_injury_percent(int damage, int max_hit)
+{
+	if (max_hit <= 0)
+		return 100;
+	return static_cast<int>((100LL * damage) / max_hit);
+}
+
 bool falling_breaks_floor(int speed, int wall_strength)
 {
 	return speed > 43 || wall_strength / 2 < 10;

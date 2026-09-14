@@ -64,15 +64,16 @@ falling_injury_result apply_falling_injury(P_char victim, int amount, bool allow
 	if (victim->in_room != expected_room)
 		return falling_injury_result::relocated;
 
+	const int injury_percent = falling_injury_percent(amount, GET_MAX_HIT(victim));
 	SET_POS(victim, number(0, 2) + GET_STAT(victim));
 	const std::uint64_t stun_removal_before = character_removal_generation;
-	Stun(victim, victim, (100 * amount / GET_MAX_HIT(victim)), FALSE);
+	Stun(victim, victim, injury_percent, FALSE);
 	if (!character_survived(victim, stun_removal_before))
 		return falling_injury_result::removed;
 	if (victim->in_room != expected_room)
 		return falling_injury_result::relocated;
 
-	if (number(1, (100 * amount / GET_MAX_HIT(victim))) >
+	if (number(1, injury_percent) >
 	    number(STAT_INDEX(GET_C_CON(victim)) / 2, STAT_INDEX(GET_C_CON(victim)) * 3))
 	{
 		const std::uint64_t knockout_removal_before = character_removal_generation;
@@ -199,7 +200,8 @@ falling_step_result falling_step(P_char ch, int speed)
 	bool completed_vertical_descent = false;
 
 	const auto *source_down = world[source_room].dir_option[DIR_DOWN];
-	const bool open_down = source_down && !IS_SET(source_down->exit_info, EX_CLOSED) &&
+	const bool open_down = source_down && source_down->to_room != NOWHERE &&
+			       !IS_SET(source_down->exit_info, EX_CLOSED) &&
 			       !IS_SET(source_down->exit_info, EX_BREAKABLE);
 	const falling_route route = falling_choose_route(ch->specials.z_cord > 0, open_down);
 
@@ -241,6 +243,17 @@ falling_step_result falling_step(P_char ch, int speed)
 		{
 			logit(LOG_DEBUG, "Falling movement failed while entering room %d.",
 			      new_room);
+			if (ch->in_room == NOWHERE)
+			{
+				removal_before = character_removal_generation;
+				const bool restored = char_to_room(ch, source_room, -2);
+				if (!character_survived(ch, removal_before))
+					return falling_step_result::actor_removed;
+				if (!restored || ch->in_room != source_room)
+					logit(LOG_DEBUG,
+					      "Falling movement could not restore rejected actor to room %d.",
+					      source_room);
+			}
 			return falling_step_result::movement_rejected;
 		}
 		new_room = ch->in_room;
@@ -317,17 +330,6 @@ falling_step_result falling_step(P_char ch, int speed)
 				wall->value[2] /= 2;
 		}
 
-		if (impact_damage <= 0)
-		{
-			send_to_char("You land deftly on your feet, nice jump!\n", ch);
-			notch_skill(ch, SKILL_SAFE_FALL, 33.33);
-			const falling_step_result look = checked_look(ch, impact_room, -2);
-			if (look != falling_step_result::continued)
-				return look;
-			act("$n drops in from above, landing neatly.", TRUE, ch, 0, 0, TO_ROOM);
-			return falling_step_result::landed;
-		}
-
 		if (IS_WATER_ROOM(impact_room))
 		{
 			send_to_char("With a splash, you plunge into the waters!\n", ch);
@@ -346,6 +348,9 @@ falling_step_result falling_step(P_char ch, int speed)
 		P_char rider = get_linking_char(ch, LNK_RIDING);
 		if (rider && (!char_in_list(rider) || !IS_ALIVE(rider)))
 			rider = NULL;
+		const bool rider_at_impact = rider && rider->in_room == impact_room;
+		if (rider)
+			unlink_char(rider, ch, LNK_RIDING);
 
 		const falling_injury_result actor_injury = apply_falling_injury(
 			ch, impact_damage, allow_lethal_damage && !rider, impact_room);
@@ -354,9 +359,9 @@ falling_step_result falling_step(P_char ch, int speed)
 		if (actor_injury == falling_injury_result::relocated)
 			return falling_step_result::relocated;
 
-		if (rider && (!char_in_list(rider) || !IS_ALIVE(rider)))
+		if (rider_at_impact && (!char_in_list(rider) || !IS_ALIVE(rider)))
 			rider = NULL;
-		if (rider && ch->in_room == rider->in_room)
+		if (rider_at_impact && rider && ch->in_room == rider->in_room)
 		{
 			send_to_char("You land with stunning force!\n", rider);
 			send_to_char("Your rider suffers a similar fate!\n", ch);
@@ -374,7 +379,6 @@ falling_step_result falling_step(P_char ch, int speed)
 				return falling_step_result::actor_removed;
 			if (ch->in_room != impact_room)
 				return falling_step_result::relocated;
-			unlink_char(rider, ch, LNK_RIDING);
 		}
 
 		return falling_step_result::landed;

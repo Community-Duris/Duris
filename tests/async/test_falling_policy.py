@@ -54,6 +54,11 @@ int main() {
     assert(falling_impact_damage(1000, 1, 200, 100, 100, 1) == 1);
     assert(falling_impact_damage(1000, 43, 101, 100, 100, 100) == 171);
 
+    assert(falling_injury_percent(171, 1000) == 17);
+    assert(falling_injury_percent(1, 1000) == 0);
+    assert(falling_injury_percent(2, 0) == 100);
+    assert(falling_injury_percent(2, -1) == 100);
+
     assert(!falling_breaks_floor(43, 20));
     assert(falling_breaks_floor(44, 20));
     assert(falling_breaks_floor(1, 10));
