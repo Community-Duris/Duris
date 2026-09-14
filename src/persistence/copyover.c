@@ -74,6 +74,12 @@ extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
 
+const char *copyover_state_file()
+{
+	const char *path = getenv("COPYOVER_STATE_FILE");
+	return path && *path ? path : "copyover.dat";
+}
+
 namespace
 {
 struct copyover_worker_resume_guard
@@ -136,7 +142,7 @@ static void notify_copyover_failure(const char *message)
 	{
 		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character)
 		{
-			raw_write_to_fd(d->descriptor, message);
+			SEND_TO_Q(message, d);
 		}
 	}
 }
@@ -491,7 +497,8 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	int room, dir;
 	int num_descs, num_mobs, num_objs, num_rooms;
 	char exec_buf[256];
-	const char *copyover_tmp = COPYOVER_FILE ".tmp";
+	const std::string copyover_tmp_path = std::string(COPYOVER_FILE) + ".tmp";
+	const char *copyover_tmp = copyover_tmp_path.c_str();
 
 	if (item_creation_grant_batches_pending())
 	{
