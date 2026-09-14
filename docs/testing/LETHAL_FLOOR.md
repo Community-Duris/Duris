@@ -22,17 +22,20 @@ sets the other's HP; the staff player casts a real wall of ice down across the
 test shaft. Three falling steps reach the required speed above 43. The real
 movement, impact, spell dispel, wall removal, final landing and player save pass.
 
-The `lethal` variant verifies the actual death and observes the intact ice floor
-and corpse in the impact room. It currently fails the expected account-menu
-release: the corpse operation reports `rejected_preserved error=74`, then
-`death_disposition_failed outcome=2 wallet=0` repeats while the dead character
-remains held. The same failure occurs on an independently rebuilt unchanged
-master baseline, which also prints the old false shattering message. This is a
-concrete integration blocker, not evidence that this guard introduces the stall.
-The fixture's elevated offline level/HP and synthetic state may contribute;
-attribution of the corpse rejection remains unresolved. Do not waive this test
-or claim the full lethal journey passed. Its assertion stays in the manual
-journey so the blocker is reproducible.
+The `lethal` variant verifies death, the intact floor and corpse in the impact
+room, account-menu release, re-entry, real corpse looting, save, restart and
+retained recovered item IDs/death count. Normal carry limits apply: the fixture
+recovers 11 of its 27 starting items and verifies their exact identities. Minimal
+mode deliberately skips corpse restoration at startup, so the live journey
+loots before restart; production corpse-restore tests cover catalog loading.
+
+The earlier account-menu release failure (`rejected_preserved error=74`) occurred
+on both candidate and independently rebuilt unchanged master. It was traced to
+first-corpse creation before a world-item catalog exists, now tracked by #359.
+Dropping loot before dying had hidden this defect in other combat journeys.
+The first-corpse fix passes independently, and the combined local build supplies
+it to this journey. This PR is stacked on that fix so its reviewed diff remains
+the lethal-continuation change. No production DB copy is required.
 
 Both local backend builds and formatting passed. An initial baseline comparison
 was invalidated by restored source mtimes allowing cached candidate objects; it
@@ -40,11 +43,12 @@ was replaced by a baseline rebuild that explicitly touched all runtime units
 changed in this sweep. Exact PR rebuilds use that same rule. No production state
 was accessed. GitHub CI is not the blocker.
 
-## Draft disposition
+## Disposition
 
 The downstream death guards contain the originally observed continuation under
-the tested callbacks, and the impact narration was inaccurate. The narrow guard
-and text correction are ready for review, but #342 stays open and this PR stays
-draft until the real lethal custody/release failure is attributed and resolved,
-corpse contents/restart are verified, and full-server NPC/mount/rider sanitizer
-coverage is completed. No original memory-safety incident has been established.
+the tested callbacks, and the impact narration was inaccurate. The scoped guard
+and text correction are ready for review after local lethal/nonlethal journeys
+and both backend builds. PC/NPC and mount callback cases run under ASan/UBSan;
+a full-server NPC/mount/rider destruction matrix remains additional world-hazard
+coverage rather than a prerequisite for this caller-level policy correction.
+No original memory-safety incident has been established or claimed fixed.

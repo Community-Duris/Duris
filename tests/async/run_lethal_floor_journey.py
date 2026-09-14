@@ -4,6 +4,7 @@
 Usage: python3 tests/async/run_lethal_floor_journey.py /absolute/server lethal|nonlethal
 Uses only synthetic accounts, offline fixture snapshots and a private mini world.
 """
+import json
 import os
 from pathlib import Path
 import re
@@ -30,7 +31,7 @@ int main(int argc, char **argv) {
         assert(flatfile_player_snapshot_read(root,pid,&snapshot,&error) == flatfile_player_load_result::ok);
         for (auto &field : snapshot.status_integers) {
             if (field.field == player_status_field::level || field.field == player_status_field::highest_level)
-                field.signed_value = field.unsigned_value = pid == 1 ? 62 : 50;
+                field.signed_value = field.unsigned_value = pid == 1 ? 62 : 1;
             if (field.field == player_status_field::base_hit) field.signed_value = field.unsigned_value = 200000;
             if (field.field == player_status_field::hit_difference) field.signed_value = field.unsigned_value = (pid == 2 && std::string(argv[2]) == "lethal") ? 199000 : 0;
         }
@@ -164,11 +165,15 @@ S
                 assert process.poll() is None and time.monotonic() < deadline, 'boot failed'
                 time.sleep(0.1)
 
-        def reconnect_player():
+        def reconnect_player(expected_room='The Regression Arena'):
             original = journey.ACCOUNT, journey.CHARACTER
             journey.ACCOUNT, journey.CHARACTER = 'Purgeacct', 'Purgemortal'
-            try: return journey.reconnect_character(port)
+            try: return journey.reconnect_character(port, expected_room=expected_room)
             finally: journey.ACCOUNT, journey.CHARACTER = original
+
+        def inspect_player():
+            return json.loads(subprocess.check_output(
+                [str(journey.INSPECTOR), str(state), 'inspect', '2'], text=True))
 
         try:
             boot()
@@ -187,6 +192,8 @@ S
             admin.send("cast 'wall of ice' down")
             admin.expect('a huge block of ice forms', timeout=30)
             drain(admin); drain(player)
+            before_death = inspect_player()
+            assert not (state / 'domains/world_item_catalog').exists(), 'fixture hid first-corpse initialization'
             player.send('east'); player.expect('You rediscover the law of gravity')
             player.expect('You slam into', timeout=30)
             if mode == 'lethal':
@@ -214,6 +221,38 @@ S
             else:
                 assert 'huge block of solid ice' not in room.lower(), room
             assert process.poll() is None
+            if mode == 'lethal':
+                after_death = inspect_player()
+                assert after_death['death_count'] == before_death['death_count'] + 1
+                assert not after_death['player_items'], after_death
+                original_uids = set(before_death['snapshot_uids'])
+                assert original_uids, 'fixture must carry real starting equipment'
+                admin.send('look in purgemortal'); contents = drain(admin, 1)
+                print('corpse contents before restart: ' + contents, flush=True)
+                assert 'does not seem to be here' not in contents.lower(), contents
+                player.close()
+                player = reconnect_player()
+                admin.send('transfer purgemortal'); drain(admin); drain(player)
+                player.send('get all purgemortal'); player.expect('You get', timeout=30)
+                time.sleep(2)
+                player.send('save'); player.expect('Save complete for Purgemortal.', timeout=30)
+                recovered = inspect_player()
+                recovered_uids = set(recovered['snapshot_uids'])
+                # Ordinary carry limits can stop a bulk haul. Every recovered
+                # item must be from the original corpse, with its identity intact.
+                assert recovered_uids and recovered_uids.issubset(original_uids), recovered
+                assert recovered['death_count'] == after_death['death_count']
+                print(f'recovered {len(recovered_uids)} of {len(original_uids)} original items within normal carry limits', flush=True)
+                # Minimal mode deliberately skips restoreCorpses at startup.
+                # Recover through real commands first, then verify the saved items
+                # and death count through actual process restart and re-entry.
+                stop(); boot()
+                player = reconnect_player(expected_room='The Breakable Floor')
+                player.send('save'); player.expect('Save complete for Purgemortal.', timeout=30)
+                restarted = inspect_player()
+                assert restarted['snapshot_uids'] == recovered['snapshot_uids'], restarted
+                assert restarted['death_count'] == recovered['death_count']
+                print('lethal: re-entry, exact recovered-item identities, restart and player save passed', flush=True)
             print(mode + ': actual wall spell, fall impact, floor/corpse placement and live command checks passed', flush=True)
         except Exception:
             print((runtime / 'server.out').read_text(errors='replace')[-6000:])
