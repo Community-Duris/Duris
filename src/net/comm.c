@@ -120,6 +120,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
+#include "economy/collector_listing_pipeline.h"
 #include "economy/collector_transaction.h"
 #include "combat/combat_outcome_transaction.h"
 #include "guild/artifact_guild_transaction.h"
@@ -917,6 +918,9 @@ void run_the_game(int port, int sslport)
 	if (!collector_catalog_cache_refresh())
 		logit(LOG_STATUS,
 		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
+	if (!collector_listing_pipeline_init())
+		logit(LOG_STATUS,
+		      "Collector listing pipeline unavailable; collector commands fail closed.");
 	if (!locker_identify_init(critical_journal_directory))
 		logit(LOG_STATUS,
 		      "Locker identification unavailable: receipt storage could not initialize.");
@@ -965,6 +969,7 @@ void run_the_game(int port, int sslport)
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
+	collector_listing_pipeline_shutdown();
 	collector_catalog_cache_shutdown();
 	information_cache_shutdown();
 	help_cache_shutdown();

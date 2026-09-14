@@ -54,35 +54,96 @@ bool same_record(const collector::record &left, const collector::record &right)
 	       collector::record_encode(right, &right_bytes) == collector::codec_result::ok &&
 	       left_bytes == right_bytes;
 }
-}
 
-bool collector_runtime_rebuild(const collector::catalog &catalog)
+struct catalog_projection
 {
-	if (!collector::valid_catalog(catalog))
+	std::map<uint64_t, collector::record> records;
+	collector::due_queue due;
+	size_t available = 0;
+};
+
+bool build_projection(const collector::catalog &catalog, catalog_projection *projection)
+{
+	if (!projection || !collector::valid_catalog(catalog))
 		return false;
-	std::map<uint64_t, collector::record> candidate_records;
-	collector::due_queue candidate_due;
-	size_t candidate_available = 0;
 	try
 	{
 		for (const collector::record &entry : catalog.records)
 		{
-			if (!candidate_records.emplace(entry.listing, entry).second ||
-			    !candidate_due.update(entry))
+			if (!projection->records.emplace(entry.listing, entry).second ||
+			    !projection->due.update(entry))
 				return false;
 			if (available(entry))
-				++candidate_available;
+				++projection->available;
 		}
 	}
 	catch (const std::bad_alloc &)
 	{
 		return false;
 	}
-	records = std::move(candidate_records);
-	due = std::move(candidate_due);
+	return true;
+}
+
+void install_projection(const collector::catalog &catalog, catalog_projection *projection) noexcept
+{
+	records.swap(projection->records);
+	due.swap(projection->due);
 	catalog_revision = catalog.revision;
 	next_listing = catalog.next_listing;
-	available_count = candidate_available;
+	available_count = projection->available;
+	projection->available = 0;
+}
+
+bool held_projection_matches(const catalog_projection &projection,
+			     const item_ownership_runtime_entry *held_items, size_t held_count)
+{
+	if (!held_items && held_count)
+		return false;
+	size_t expected = 0;
+	for (const auto &[listing, entry] : projection.records)
+	{
+		(void)listing;
+		if (entry.status == collector::state::collected ||
+		    entry.status == collector::state::available)
+			++expected;
+	}
+	if (expected != held_count)
+		return false;
+	for (size_t index = 0; index < held_count; ++index)
+	{
+		const item_ownership_runtime_entry &held = held_items[index];
+		const auto found = projection.records.find(held.owner.id);
+		if (held.owner.type != item_owner_type::collector || held.owner.context_id ||
+		    found == projection.records.end() || found->second.listing != held.owner.id ||
+		    found->second.uid != held.item_uid ||
+		    found->second.item_revision != held.item_revision ||
+		    (found->second.status != collector::state::collected &&
+		     found->second.status != collector::state::available))
+			return false;
+	}
+	return true;
+}
+} // namespace
+
+bool collector_runtime_rebuild(const collector::catalog &catalog)
+{
+	catalog_projection projection;
+	if (!build_projection(catalog, &projection))
+		return false;
+	install_projection(catalog, &projection);
+	return true;
+}
+
+bool collector_runtime_rebuild_authoritative(const collector::catalog &catalog,
+					     const item_ownership_runtime_entry *held_items,
+					     size_t held_count)
+{
+	catalog_projection projection;
+	if (!build_projection(catalog, &projection) ||
+	    !held_projection_matches(projection, held_items, held_count) ||
+	    !item_ownership_runtime_reconcile_collector(held_items, held_count))
+		return false;
+	install_projection(catalog, &projection);
 	return true;
 }
 

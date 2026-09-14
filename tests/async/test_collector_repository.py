@@ -37,12 +37,26 @@ class CollectorRepositoryTest(unittest.TestCase):
 
     def test_restart_catalog_read_is_bounded_streamed_and_validated(self) -> None:
         source = (SRC / "collector_repository.c").read_text()
-        read = source[source.index("bool collector_repository_read_catalog") :
-                      source.index("bool collector_repository_execute")]
+        read = source[source.index("bool collector_repository_read_bootstrap") :
+                      source.index("bool collector_repository_read_catalog")]
         self.assertIn("mysql_use_result", read)
         self.assertIn("LIMIT 262145", read)
         self.assertIn("projection_matches", read)
         self.assertIn("collector::valid_catalog", read)
+        self.assertIn("item_current_owner", read)
+        self.assertIn("item_owner_revision", read)
+        self.assertIn("held_items", read)
+        self.assertNotIn("FOR UPDATE", read)
+
+    def test_listing_detail_read_is_bounded_and_nonlocking(self) -> None:
+        source = (SRC / "collector_repository.c").read_text()
+        loader = source[source.index("bool load_listing") : source.index("bool owner_less")]
+        read = source[source.index("bool collector_repository_read_listing") :
+                      source.index("bool collector_repository_execute")]
+        self.assertIn("OCTET_LENGTH(item_blob)", loader)
+        self.assertIn("LEFT(HEX(item_blob),262146)", loader)
+        self.assertIn('for_update ? " FOR UPDATE" : ""', loader)
+        self.assertIn("load_listing(connection, listing, false", read)
         self.assertNotIn("FOR UPDATE", read)
 
     def test_generic_journal_dispatches_and_publishes_collector_atomically(self) -> None:

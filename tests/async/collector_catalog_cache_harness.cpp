@@ -40,11 +40,11 @@ bool stale_observed()
 }
 }
 
-bool collector_catalog_source_load(collector::catalog &catalog, std::string &)
+bool collector_catalog_source_load(collector_bootstrap_snapshot &snapshot, std::string &)
 {
 	++loads;
-	catalog.revision = source_revision.load();
-	catalog.next_listing = 1;
+	snapshot.catalog.revision = source_revision.load();
+	snapshot.catalog.next_listing = 1;
 	return true;
 }
 
@@ -53,9 +53,13 @@ uint64_t collector_runtime_catalog_revision(void)
 	return runtime_revision.load();
 }
 
-bool collector_runtime_rebuild(const collector::catalog &catalog)
+bool collector_runtime_rebuild_authoritative(const collector::catalog &catalog,
+					     const item_ownership_runtime_entry *held_items,
+					     size_t held_count)
 {
 	assert(catalog.next_listing == 1 && catalog.records.empty());
+	(void)held_items;
+	assert(held_count == 0);
 	++rebuilds;
 	runtime_revision = catalog.revision;
 	return true;

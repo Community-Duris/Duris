@@ -297,6 +297,9 @@ int main()
 	assert(collector_repository_read_catalog(database, &empty_catalog));
 	assert(empty_catalog.revision == 0 && empty_catalog.next_listing == 20000 &&
 	       empty_catalog.records.empty());
+	collector_bootstrap_snapshot empty_bootstrap;
+	assert(collector_repository_read_bootstrap(database, &empty_bootstrap));
+	assert(empty_bootstrap.catalog.records.empty() && empty_bootstrap.held_items.empty());
 
 	// Collect a container shell from the middle of a corpse tree. Its direct child remains
 	// in the corpse, reparented to the shell's parent, and only the shell's own weight leaves.
@@ -405,6 +408,47 @@ int main()
 	entry = result.entry;
 	assert(entry.status == collector::state::available && entry.revision == 3 &&
 	       entry.available_at == entry.sale_at && entry.expires_at > entry.available_at);
+	collector_bootstrap_snapshot held_bootstrap;
+	assert(collector_repository_read_bootstrap(database, &held_bootstrap));
+	assert(held_bootstrap.catalog.revision == result.catalog_revision &&
+	       held_bootstrap.held_items.size() == 1);
+	const item_ownership_runtime_entry &held_runtime = held_bootstrap.held_items[0];
+	assert(held_runtime.item_uid == ITEM_UID && held_runtime.root_item_uid == ITEM_UID &&
+	       !held_runtime.parent_item_uid && held_runtime.item_revision == entry.item_revision &&
+	       held_runtime.owner_revision == 1 && held_runtime.vnum == 1002 &&
+	       item_owner_identity_equal(held_runtime.owner, collector));
+	collector_bootstrap_snapshot preserved_bootstrap = held_bootstrap;
+	execute("UPDATE item_current_owner SET owner_id=" + std::to_string(LISTING + 1) +
+		" WHERE item_uid=" + std::to_string(ITEM_UID));
+	errno = 0;
+	assert(!collector_repository_read_bootstrap(database, &held_bootstrap) && errno == EBADMSG);
+	assert(held_bootstrap.catalog.revision == preserved_bootstrap.catalog.revision &&
+	       held_bootstrap.held_items.size() == 1 &&
+	       held_bootstrap.held_items[0].owner.id == LISTING);
+	execute("UPDATE item_current_owner SET owner_id=" + std::to_string(LISTING) +
+		" WHERE item_uid=" + std::to_string(ITEM_UID));
+	collector_listing_detail listing_detail;
+	bool listing_found = false;
+	assert(collector_repository_read_listing(database, LISTING, &listing_detail,
+						 &listing_found));
+	assert(listing_found && listing_detail.entry.listing == LISTING &&
+	       listing_detail.entry.revision == entry.revision && listing_detail.item_blob == blob);
+	collector_listing_detail missing_detail = listing_detail;
+	missing_detail.entry.listing = 999999;
+	listing_found = true;
+	assert(collector_repository_read_listing(database, 19999, &missing_detail, &listing_found));
+	assert(!listing_found && missing_detail.entry.listing == 999999);
+	execute("UPDATE collector_listings SET item_blob=NULL WHERE listing_id=" +
+		std::to_string(LISTING));
+	listing_found = true;
+	errno = 0;
+	assert(!collector_repository_read_listing(database, LISTING, &missing_detail,
+						  &listing_found) &&
+	       errno == EBADMSG);
+	assert(listing_found && missing_detail.entry.listing == 999999);
+	execute("UPDATE collector_listings SET item_blob=UNHEX('" +
+		hex_bytes(blob.data(), blob.size()) +
+		"') WHERE listing_id=" + std::to_string(LISTING));
 
 	// Purchase debits carried currency, advances both revision fences, persists the exact
 	// recoverable item row, and transfers custody to the permanent beneficiary.

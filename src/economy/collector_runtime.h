@@ -2,6 +2,7 @@
 #define DURIS_COLLECTOR_RUNTIME_H
 
 #include "economy/collector_command.h"
+#include "item/item_ownership_runtime.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -10,6 +11,12 @@
 // Game-thread projection of the durable collector catalog. Persistence workers
 // rebuild it at boot; committed completions and outbox delivery advance it.
 bool collector_runtime_rebuild(const collector::catalog &catalog);
+// Installs a restart/reconciliation snapshot only after both its catalog and
+// exact collector-held custody projection validate. Publication is game-thread
+// only and does not expose a half-applied pair.
+bool collector_runtime_rebuild_authoritative(const collector::catalog &catalog,
+					     const item_ownership_runtime_entry *held_items,
+					     size_t held_count);
 bool collector_runtime_publish(const collector_command_result &result);
 bool collector_runtime_find(uint64_t listing, collector::record *entry);
 bool collector_runtime_snapshot(collector::catalog *catalog);

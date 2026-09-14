@@ -6,6 +6,23 @@
 
 namespace
 {
+size_t authority_publications = 0;
+std::vector<item_ownership_runtime_entry> published_authority;
+}
+
+bool item_ownership_runtime_reconcile_collector(const item_ownership_runtime_entry *batch,
+						size_t count)
+{
+	++authority_publications;
+	if (count)
+		published_authority.assign(batch, batch + count);
+	else
+		published_authority.clear();
+	return true;
+}
+
+namespace
+{
 constexpr char death_one[] = "11111111111111111111111111111111";
 constexpr char death_two[] = "22222222222222222222222222222222";
 
@@ -101,6 +118,26 @@ int main()
 	invalid.next_listing = 12;
 	assert(!collector_runtime_rebuild(invalid));
 	assert(collector_runtime_find(4, &found) && found.status == collector::state::purchased);
+	const item_ownership_runtime_entry held = {
+		third.uid,
+		third.uid,
+		0,
+		{ item_owner_type::collector, third.listing, 0 },
+		third.item_revision,
+		1,
+		9012,
+		item_custody_state::active,
+	};
+	assert(!collector_runtime_rebuild_authoritative(snapshot, nullptr, 0));
+	assert(authority_publications == 0);
+	auto mismatched = held;
+	mismatched.item_uid++;
+	mismatched.root_item_uid++;
+	assert(!collector_runtime_rebuild_authoritative(snapshot, &mismatched, 1));
+	assert(authority_publications == 0);
+	assert(collector_runtime_rebuild_authoritative(snapshot, &held, 1));
+	assert(authority_publications == 1 && published_authority.size() == 1 &&
+	       published_authority[0].item_uid == third.uid);
 
 	collector_runtime_reset();
 	assert(collector_runtime_size() == 0 && collector_runtime_catalog_revision() == 0 &&

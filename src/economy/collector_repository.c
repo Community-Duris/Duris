@@ -28,11 +28,7 @@ struct catalog_state
 	uint64_t next_listing = 0;
 };
 
-struct listing_state
-{
-	collector::record entry;
-	std::vector<uint8_t> item_blob;
-};
+using listing_state = collector_listing_detail;
 
 struct authority_item
 {
@@ -220,28 +216,34 @@ bool projection_matches(const collector::record &entry, uint64_t beneficiary, ui
 	       !strcasecmp(entry.death_operation.data(), death_hex);
 }
 
-bool load_listing(MYSQL *connection, uint64_t listing, listing_state *state,
+bool load_listing(MYSQL *connection, uint64_t listing, bool for_update, listing_state *state,
 		  unsigned int *result_code)
 {
-	if (!state || !result_code ||
-	    !execute(connection,
-		     "SELECT HEX(death_operation_id),beneficiary_pid,item_uid,status,"
-		     "holding_paused,due_at,due_at IS NULL,listing_revision,item_revision,"
-		     "price_value,HEX(record_blob),HEX(item_blob) FROM collector_listings "
-		     "WHERE listing_id=" +
-			     std::to_string(listing) + " FOR UPDATE"))
+	const std::string query =
+		"SELECT HEX(death_operation_id),beneficiary_pid,item_uid,status,"
+		"holding_paused,due_at,due_at IS NULL,listing_revision,item_revision,"
+		"price_value,HEX(record_blob),OCTET_LENGTH(item_blob),"
+		"LEFT(HEX(item_blob),262146) FROM collector_listings WHERE listing_id=" +
+		std::to_string(listing) + (for_update ? " FOR UPDATE" : "");
+	if (!state || !result_code || !execute(connection, query))
 		return false;
 	MYSQL_RES *rows = mysql_store_result(connection);
-	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
+	if (!rows)
+	{
+		const unsigned int error = mysql_errno(connection);
+		errno = static_cast<int>(error ? error : EIO);
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(rows);
 	if (!row)
 	{
-		if (rows)
-			mysql_free_result(rows);
+		mysql_free_result(rows);
 		*result_code = ENOENT;
 		return true;
 	}
 	uint64_t beneficiary = 0, item_uid = 0, status = 0, paused = 0, due = 0,
-		 listing_revision = 0, item_revision = 0, price = 0, due_is_null = 0;
+		 listing_revision = 0, item_revision = 0, price = 0, due_is_null = 0,
+		 item_blob_size = 0;
 	std::vector<uint8_t> record_blob;
 	std::vector<uint8_t> item_blob;
 	const bool parsed =
@@ -251,18 +253,23 @@ bool load_listing(MYSQL *connection, uint64_t listing, listing_state *state,
 		parse_u64(row[6], &due_is_null) && due_is_null <= 1 &&
 		parse_u64(row[7], &listing_revision) && parse_u64(row[8], &item_revision) &&
 		parse_u64(row[9], &price) && hex_decode(row[10], &record_blob) &&
-		(!row[11] || hex_decode(row[11], &item_blob));
+		((!row[11] && !row[12]) ||
+		 (row[11] && row[12] && parse_u64(row[11], &item_blob_size) &&
+		  item_blob_size <= COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES &&
+		  strlen(row[12]) == item_blob_size * 2 && hex_decode(row[12], &item_blob)));
 	collector::record entry;
 	const bool decoded = parsed &&
 			     collector::record_decode(record_blob.data(), record_blob.size(),
 						      &entry) == collector::codec_result::ok;
+	const bool held = decoded && (entry.status == collector::state::collected ||
+				      entry.status == collector::state::available);
 	const bool valid = decoded && entry.listing == listing && paused <= 1 &&
 			   item_blob.size() <= COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES &&
+			   (!held || !item_blob.empty()) &&
 			   projection_matches(entry, beneficiary, item_uid, status, paused,
 					      due_is_null != 0, due, listing_revision,
 					      item_revision, price, row[0]);
-	if (rows)
-		mysql_free_result(rows);
+	mysql_free_result(rows);
 	if (!valid)
 	{
 		*result_code = EBADMSG;
@@ -1180,18 +1187,26 @@ bool persist_listing(MYSQL *connection, const critical_command &command,
 }
 } // namespace
 
-bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *catalog)
+bool collector_repository_read_bootstrap(MYSQL *connection, collector_bootstrap_snapshot *snapshot)
 {
 	static_assert(collector::catalog_max_records == 262144,
 		      "update the bounded collector catalog query when its limit changes");
+	static_assert(static_cast<unsigned int>(item_owner_type::collector) == 10,
+		      "update the collector bootstrap ownership predicate");
 	static const char QUERY[] =
 		"SELECT s.catalog_revision,s.next_listing,l.listing_id,"
 		"HEX(l.death_operation_id),l.beneficiary_pid,l.item_uid,l.status,"
 		"l.holding_paused,l.due_at,l.due_at IS NULL,l.listing_revision,"
-		"l.item_revision,l.price_value,l.record_blob "
-		"FROM collector_catalog_state s LEFT JOIN collector_listings l ON TRUE "
+		"l.item_revision,l.price_value,l.record_blob,o.item_uid,o.root_item_uid,"
+		"o.parent_item_uid,o.owner_type,o.owner_id,o.owner_context_id,o.item_revision,"
+		"o.vnum,o.state,r.revision,h.held_count FROM collector_catalog_state s "
+		"CROSS JOIN (SELECT COUNT(*) held_count FROM item_current_owner WHERE owner_type=10) h "
+		"LEFT JOIN collector_listings l ON TRUE LEFT JOIN item_current_owner o "
+		"ON o.item_uid=l.item_uid AND o.owner_type=10 LEFT JOIN item_owner_revision r "
+		"ON r.owner_type=o.owner_type AND r.owner_id=o.owner_id "
+		"AND r.owner_context_id=o.owner_context_id "
 		"WHERE s.state_id=1 ORDER BY l.listing_id LIMIT 262145";
-	if (!connection || !catalog)
+	if (!connection || !snapshot)
 	{
 		errno = EINVAL;
 		return false;
@@ -1205,9 +1220,11 @@ bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *ca
 		errno = static_cast<int>(error ? error : EIO);
 		return false;
 	}
-	collector::catalog candidate;
+	collector_bootstrap_snapshot candidate;
 	bool saw_catalog = false;
 	bool saw_empty_projection = false;
+	bool saw_held_count = false;
+	uint64_t held_count = 0;
 	bool valid = true;
 	int failure = EBADMSG;
 	try
@@ -1215,26 +1232,43 @@ bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *ca
 		while (MYSQL_ROW row = mysql_fetch_row(rows))
 		{
 			const unsigned long *lengths = mysql_fetch_lengths(rows);
-			uint64_t row_revision = 0, row_next_listing = 0;
+			uint64_t row_revision = 0, row_next_listing = 0, row_held_count = 0;
 			if (!lengths || !parse_u64(row[0], &row_revision) ||
 			    !parse_u64(row[1], &row_next_listing) || !row_next_listing ||
-			    (saw_catalog && (row_revision != candidate.revision ||
-					     row_next_listing != candidate.next_listing)))
+			    !parse_u64(row[24], &row_held_count) ||
+			    row_held_count > collector::catalog_max_records ||
+			    (saw_catalog && (row_revision != candidate.catalog.revision ||
+					     row_next_listing != candidate.catalog.next_listing)) ||
+			    (saw_held_count && row_held_count != held_count))
 			{
 				valid = false;
+				if (row_held_count > collector::catalog_max_records)
+					failure = E2BIG;
 				break;
 			}
 			if (!saw_catalog)
 			{
-				candidate.revision = row_revision;
-				candidate.next_listing = row_next_listing;
+				candidate.catalog.revision = row_revision;
+				candidate.catalog.next_listing = row_next_listing;
 				saw_catalog = true;
+			}
+			if (!saw_held_count)
+			{
+				held_count = row_held_count;
+				saw_held_count = true;
+				candidate.held_items.reserve(static_cast<size_t>(held_count));
 			}
 			if (!row[2])
 			{
-				if (saw_empty_projection || !candidate.records.empty() || row[3] ||
-				    row[4] || row[5] || row[6] || row[7] || row[8] || row[10] ||
-				    row[11] || row[12] || row[13])
+				bool unexpected = saw_empty_projection ||
+						  !candidate.catalog.records.empty();
+				for (size_t index = 3; index <= 8; ++index)
+					unexpected = unexpected || row[index];
+				for (size_t index = 10; index <= 23; ++index)
+					unexpected = unexpected || row[index];
+				uint64_t due_is_null = 0;
+				if (unexpected || !parse_u64(row[9], &due_is_null) ||
+				    due_is_null != 1)
 				{
 					valid = false;
 					break;
@@ -1243,7 +1277,7 @@ bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *ca
 				continue;
 			}
 			if (saw_empty_projection ||
-			    candidate.records.size() >= collector::catalog_max_records)
+			    candidate.catalog.records.size() >= collector::catalog_max_records)
 			{
 				valid = false;
 				failure = E2BIG;
@@ -1273,7 +1307,64 @@ bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *ca
 				valid = false;
 				break;
 			}
-			candidate.records.push_back(entry);
+			const bool should_be_held = entry.status == collector::state::collected ||
+						    entry.status == collector::state::available;
+			const bool authority_present = row[14] != nullptr;
+			if (should_be_held != authority_present)
+			{
+				valid = false;
+				break;
+			}
+			if (authority_present)
+			{
+				uint64_t authority_uid = 0, root_uid = 0, owner_type = 0,
+					 owner_id = 0, owner_context = 0, authority_revision = 0,
+					 custody_state = 0, owner_revision = 0;
+				int64_t vnum = 0;
+				if (!row[15] || row[16] || !row[17] || !row[18] || !row[19] ||
+				    !row[20] || !row[21] || !row[22] || !row[23] ||
+				    !parse_u64(row[14], &authority_uid) ||
+				    !parse_u64(row[15], &root_uid) ||
+				    !parse_u64(row[17], &owner_type) ||
+				    !parse_u64(row[18], &owner_id) ||
+				    !parse_u64(row[19], &owner_context) ||
+				    !parse_u64(row[20], &authority_revision) ||
+				    !parse_i64(row[21], &vnum) ||
+				    !parse_u64(row[22], &custody_state) ||
+				    !parse_u64(row[23], &owner_revision) ||
+				    authority_uid != entry.uid || root_uid != entry.uid ||
+				    owner_type !=
+					    static_cast<uint64_t>(item_owner_type::collector) ||
+				    owner_id != item_collector_owner_id(entry.listing) ||
+				    owner_context || authority_revision != entry.item_revision ||
+				    vnum <= 0 || vnum > INT32_MAX ||
+				    custody_state !=
+					    static_cast<uint64_t>(item_custody_state::active) ||
+				    !owner_revision)
+				{
+					valid = false;
+					break;
+				}
+				candidate.held_items.push_back(
+					{ authority_uid,
+					  root_uid,
+					  0,
+					  { item_owner_type::collector, owner_id, 0 },
+					  authority_revision,
+					  owner_revision,
+					  static_cast<int32_t>(vnum),
+					  item_custody_state::active });
+			}
+			else
+				for (size_t index = 14; index <= 23; ++index)
+					if (row[index])
+					{
+						valid = false;
+						break;
+					}
+			if (!valid)
+				break;
+			candidate.catalog.records.push_back(entry);
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -1288,12 +1379,55 @@ bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *ca
 		errno = static_cast<int>(read_error);
 		return false;
 	}
-	if (!valid || !saw_catalog || !collector::valid_catalog(candidate))
+	if (!valid || !saw_catalog || !saw_held_count ||
+	    candidate.held_items.size() != held_count ||
+	    !collector::valid_catalog(candidate.catalog))
 	{
 		errno = failure;
 		return false;
 	}
-	*catalog = std::move(candidate);
+	*snapshot = std::move(candidate);
+	return true;
+}
+
+bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *catalog)
+{
+	if (!connection || !catalog)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	collector_bootstrap_snapshot snapshot;
+	if (!collector_repository_read_bootstrap(connection, &snapshot))
+		return false;
+	*catalog = std::move(snapshot.catalog);
+	return true;
+}
+
+bool collector_repository_read_listing(MYSQL *connection, uint64_t listing,
+				       collector_listing_detail *detail, bool *found)
+{
+	if (!connection || !listing || !detail || !found)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	listing_state candidate;
+	unsigned int result_code = 0;
+	if (!load_listing(connection, listing, false, &candidate, &result_code))
+		return false;
+	if (result_code == ENOENT)
+	{
+		*found = false;
+		return true;
+	}
+	if (result_code)
+	{
+		errno = static_cast<int>(result_code);
+		return false;
+	}
+	*detail = std::move(candidate);
+	*found = true;
 	return true;
 }
 
@@ -1316,7 +1450,7 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 	catalog_state catalog;
 	listing_state listing;
 	if (!load_catalog(connection, &catalog) ||
-	    !load_listing(connection, payload.listing, &listing, result_code))
+	    !load_listing(connection, payload.listing, true, &listing, result_code))
 		return false;
 	if (*result_code)
 		return true;

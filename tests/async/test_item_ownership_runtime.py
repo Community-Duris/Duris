@@ -476,6 +476,47 @@ int main()
 	       !absent.parent_item_uid && absent.item_revision == 9 &&
 	       item_owner_identity_equal(absent.owner, root_collector));
 
+	// Reconciliation atomically replaces only the collector domain. It removes
+	// orphaned prior listings, advances retained authority, and preserves every
+	// unrelated owner.
+	item_ownership_runtime_reset();
+	const item_owner_identity reconcile_player = { item_owner_type::player, 7000, 0 };
+	const item_owner_identity old_collector_one = { item_owner_type::collector, 91, 0 };
+	const item_owner_identity old_collector_two = { item_owner_type::collector, 92, 0 };
+	const item_ownership_runtime_entry before_reconcile[] = {
+		{ 800, 800, 0, reconcile_player, 4, 6, 1800, item_custody_state::active },
+		{ 801, 801, 0, old_collector_one, 2, 3, 1801, item_custody_state::active },
+		{ 802, 802, 0, old_collector_two, 5, 7, 1802, item_custody_state::active },
+	};
+	assert(item_ownership_runtime_hydrate_many_atomic(before_reconcile, 3));
+	const item_ownership_runtime_entry reconciled[] = {
+		{ 801, 801, 0, old_collector_one, 3, 4, 1801, item_custody_state::active },
+		{ 803, 803, 0, { item_owner_type::collector, 93, 0 }, 1, 1, 1803,
+		  item_custody_state::active },
+	};
+	assert(item_ownership_runtime_reconcile_collector(reconciled, 2));
+	assert(item_ownership_runtime_lookup(800, &absent) &&
+	       item_owner_identity_equal(absent.owner, reconcile_player));
+	assert(item_ownership_runtime_lookup(801, &absent) && absent.item_revision == 3 &&
+	       absent.owner_revision == 4);
+	assert(!item_ownership_runtime_lookup(802, &absent));
+	assert(item_ownership_runtime_lookup(803, &absent) && absent.vnum == 1803);
+	const item_ownership_runtime_entry duplicate_owner[] = {
+		reconciled[0],
+		{ 804, 804, 0, old_collector_one, 1, 4, 1804, item_custody_state::active },
+	};
+	assert(!item_ownership_runtime_reconcile_collector(duplicate_owner, 2));
+	assert(item_ownership_runtime_lookup(803, &absent));
+	const item_ownership_runtime_entry stale_collector = {
+		801, 801, 0, old_collector_one, 2, 3, 1801, item_custody_state::active
+	};
+	assert(!item_ownership_runtime_reconcile_collector(&stale_collector, 1));
+	assert(item_ownership_runtime_lookup(801, &absent) && absent.item_revision == 3);
+	assert(item_ownership_runtime_reconcile_collector(nullptr, 0));
+	assert(!item_ownership_runtime_lookup(801, &absent));
+	assert(!item_ownership_runtime_lookup(803, &absent));
+	assert(item_ownership_runtime_lookup(800, &absent));
+
 	item_ownership_runtime_reset();
 	const item_owner_identity deleted_player = { item_owner_type::player, 80, 0 };
 	const item_owner_identity deleted_corpse = {

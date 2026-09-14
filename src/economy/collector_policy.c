@@ -392,4 +392,10 @@ std::vector<uint64_t> due_queue::lease_due(uint64_t now, size_t limit, uint64_t 
 	}
 	return result;
 }
+
+void due_queue::swap(due_queue &other) noexcept
+{
+	by_deadline.swap(other.by_deadline);
+	by_listing.swap(other.by_listing);
+}
 }

@@ -113,6 +113,7 @@ class due_queue
 	bool update(const record &entry);
 	void erase(uint64_t listing);
 	std::vector<uint64_t> lease_due(uint64_t now, size_t limit, uint64_t lease_until);
+	void swap(due_queue &other) noexcept;
 	size_t size() const { return by_listing.size(); }
 
     private:
