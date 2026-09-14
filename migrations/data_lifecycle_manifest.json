@@ -5958,6 +5958,64 @@
       "dependencies": []
     },
     {
+      "id": "database:telemetry_rollup_session",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_session",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_subject_id_and_pid",
+      "technical_purpose": "Best effort observational telemetry; backup and restore preserve scoped replay identities; retention and subject processing await policy",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:telemetry_cohort_member",
+      "kind": "database_table",
+      "locator": "telemetry_cohort_member",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_configuration_or_aggregate",
+      "technical_purpose": "Best effort observational telemetry; backup and restore preserve scoped replay identities; retention and subject processing await policy",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "aggregate",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
       "id": "database:artifact_mana",
       "kind": "database_table",
       "locator": "artifact_mana",

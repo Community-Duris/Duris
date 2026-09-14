@@ -8,7 +8,7 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 185;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 187;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','account_bound_rewards',"
 	"'account_characters','account_erasure_evidence','account_erasure_requests','account_erasure_stores',"
@@ -52,24 +52,25 @@ constexpr const char *RUNTIME_TABLE_SQL_LIST =
 	"'ship_crew','ship_slots','ships','shop_trophy',"
 	"'shopkeeper_affects','shopkeeper_item_affects','shopkeeper_item_extra_descr','shopkeeper_items',"
 	"'shopkeepers','siege_item_affects','siege_item_extra_descr','siege_items',"
-	"'statistics','telemetry_cohort_day','telemetry_config','telemetry_interval',"
-	"'telemetry_player_day','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
+	"'statistics','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_interval',"
+	"'telemetry_player_day','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','towns','world_quest_accomplished',"
 	"'zone_touch_outcome','zone_touch_outcome_participant','zone_touches','zone_trophy',"
 	"'zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"f9774eee3efd7de6005df1f346709e41706bec9cf778a0e4eb56f55e0a2a7ed2";
+	"d510994ece950142af8af048d8351a792bd6fb8a076d796611cf23a45a96e083";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"2bac9ff10acd295c6bec8ba5a88163ea71fbc1982a992c99898a54d98277c2d8";
-/* Includes the six telemetry stores introduced by migration 0014.
- * Metadata fingerprints are measured on MySQL 8 and MariaDB 10.11. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0016_artifact_mana";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 16;
+	"edd78e5ef64c0f6ec86e3d9675a213263aad68219d61b6024c42546472212eea";
+/* Includes the six telemetry stores introduced by migration 0014 and the two
+ * rollup support stores introduced by migration 0017. Metadata fingerprints are
+ * measured on MySQL 8 and MariaDB 10.11. */
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0017_telemetry_rollup_support";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 17;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"1618e55aacccb7147aa0ae61d3a46dc9e09cef655562ade66ba9a7253872f75a";
+	"63205926b00ecadc1fe4044e90f9889ad71b36b6b52cb130d84e93b59083ebd6";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376";
+	"02fd34c8c728e9411fcc5fc3c0a93b716a9cdbbf1c584c5a430d4ed9ed3401c0";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"487f3d9ee4b5113fe8d7e67165ca311b466c9b6b66b30dd2516a263edc7b840f";
+	"45ecdb402dc59ecb4248d7a8e4d9c8e534b4b8b89b17aeb62e79f5fea46176c5";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";

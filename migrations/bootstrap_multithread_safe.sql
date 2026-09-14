@@ -2346,4 +2346,68 @@ CREATE TABLE IF NOT EXISTS epic_stone_claim (
         ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Replay-safe rollup projections keep checkpoint totals separate from coverage.
+CREATE TABLE IF NOT EXISTS `telemetry_rollup_session` (
+  `definition_version` int unsigned NOT NULL,
+  `generation` bigint unsigned NOT NULL,
+  `environment_id` bigint unsigned NOT NULL,
+  `season_id` bigint unsigned NOT NULL,
+  `session_boot_id` bigint unsigned NOT NULL,
+  `session_process_id` bigint unsigned NOT NULL,
+  `session_seq` bigint unsigned NOT NULL,
+  `subject_id` bigint unsigned NOT NULL,
+  `pid` int NOT NULL,
+  `latest_checkpoint_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `connected_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `active_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `idle_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `unknown_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `resident_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `linkdead_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `covered_connected_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `covered_active_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `covered_idle_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `covered_unknown_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `covered_resident_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `covered_linkdead_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `attributable_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `observed_intervals` bigint unsigned NOT NULL DEFAULT '0',
+  `entered` tinyint unsigned NOT NULL DEFAULT '0',
+  `exited` tinyint unsigned NOT NULL DEFAULT '0',
+  `end_reason` tinyint unsigned NOT NULL DEFAULT '0',
+  `quality_flags` int unsigned NOT NULL DEFAULT '0',
+  `input_watermark` bigint unsigned NOT NULL DEFAULT '0',
+  `provisional` tinyint unsigned NOT NULL DEFAULT '1',
+  PRIMARY KEY (`definition_version`,`generation`,`environment_id`,`season_id`,`session_boot_id`,`session_process_id`,`session_seq`),
+  KEY `idx_rollup_session_subject` (`definition_version`,`generation`,`environment_id`,`season_id`,`subject_id`,`session_boot_id`,`session_process_id`,`session_seq`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `telemetry_cohort_member` (
+  `definition_version` int unsigned NOT NULL,
+  `generation` bigint unsigned NOT NULL,
+  `environment_id` bigint unsigned NOT NULL,
+  `season_id` bigint unsigned NOT NULL,
+  `utc_day` date NOT NULL,
+  `level_band` smallint unsigned NOT NULL,
+  `class_id` smallint unsigned NOT NULL,
+  `race_id` smallint unsigned NOT NULL,
+  `faction_id` smallint unsigned NOT NULL,
+  `zone_vnum` int NOT NULL,
+  `config_id` bigint unsigned NOT NULL,
+  `category` tinyint unsigned NOT NULL,
+  `membership_kind` tinyint unsigned NOT NULL,
+  `subject_id` bigint unsigned NOT NULL,
+  `session_boot_id` bigint unsigned NOT NULL,
+  `session_process_id` bigint unsigned NOT NULL,
+  `session_seq` bigint unsigned NOT NULL,
+  `duration_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `attributable_usec` bigint unsigned NOT NULL DEFAULT '0',
+  `observed_intervals` bigint unsigned NOT NULL DEFAULT '0',
+  `quality_flags` int unsigned NOT NULL DEFAULT '0',
+  `input_watermark` bigint unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`definition_version`,`generation`,`environment_id`,`season_id`,`utc_day`,`level_band`,`class_id`,`race_id`,`faction_id`,`zone_vnum`,`config_id`,`category`,`subject_id`,`session_boot_id`,`session_process_id`,`session_seq`),
+  CONSTRAINT `chk_telemetry_cohort_member_kind` CHECK ((`membership_kind` = 1 AND `session_boot_id` = 0 AND `session_process_id` = 0 AND `session_seq` = 0) OR (`membership_kind` = 2 AND `session_boot_id` <> 0 AND `session_process_id` <> 0 AND `session_seq` <> 0)),
+  CONSTRAINT `chk_telemetry_cohort_member_subject` CHECK (`subject_id` <> 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
