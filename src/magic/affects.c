@@ -3720,7 +3720,7 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		}
 		// If they have climb, they get a max 50% chance not to start falling.
 		if (affected_by_spell(ch, SKILL_CLIMB) &&
-		    number(1, 100) > GET_CHAR_SKILL(ch, SKILL_CLIMB) / 2)
+		    number(1, 100) <= MAX(0, MIN(100, GET_CHAR_SKILL(ch, SKILL_CLIMB))) / 2)
 		{
 			send_to_char("You start to slip, but catch yourself.\n", ch);
 			return FALSE;
@@ -3837,7 +3837,8 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 
 		if (GET_CHAR_SKILL(ch, SKILL_SAFE_FALL))
 			if (GET_CHAR_SKILL(ch, SKILL_SAFE_FALL) > number(1, 101))
-				dam <<= 1;
+				// Halve the impact, rounding down; the pre-skill minimum gives 1.
+				dam /= 2;
 
 		if (world[ch->in_room].dir_option[DIR_DOWN])
 		{
