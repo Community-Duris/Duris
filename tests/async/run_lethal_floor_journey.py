@@ -209,8 +209,8 @@ S
             print(mode + ' floor room: ' + room, flush=True)
             if mode == 'lethal':
                 assert 'huge block of solid ice' in room.lower(), room
-                assert 'corpse' in room.lower() and 'Purgemortal' in room, room
-                assert 'Purgemortal is' not in room, room
+                assert 'corpse of a Human' in room, room
+                assert 'quite dead' not in room, room
             else:
                 assert 'huge block of solid ice' not in room.lower(), room
             assert process.poll() is None
