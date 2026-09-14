@@ -1,6 +1,7 @@
 #include "world/world_recovery_pipeline.h"
 
 #include "persistence/copyover.h"
+#include "world/generated_npc_state.h"
 #include "world/db.h"
 #include "item/item_ownership_runtime.h"
 #include "core/prototypes.h"
@@ -448,6 +449,18 @@ int write_mob_record(P_char mob, char *buffer, size_t maximum)
 		saved.bitvector5 = affect->bitvector5;
 		memcpy(buffer + offset, &saved, sizeof(saved));
 		offset += sizeof(saved);
+	}
+	std::string generated, extension;
+	// Preserve the world snapshot's existing no-currency replay policy.
+	if (!generated_npc_capture(mob, &generated, false))
+		return -1;
+	if (!generated.empty())
+	{
+		if (!generated_npc_extension_encode(entry.vnum, generated, &extension) ||
+		    extension.size() > maximum - offset)
+			return -1;
+		memcpy(buffer + offset, extension.data(), extension.size());
+		offset += extension.size();
 	}
 	return static_cast<int>(offset);
 }

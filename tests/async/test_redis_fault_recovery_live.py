@@ -281,7 +281,7 @@ def main() -> None:
                 str(SRC / "redis_connection.c"),
                 str(SRC / "redis_command_observability.c"),
                 str(SRC / "redis_floor_store.c"),
-                str(SRC / "world_recovery_codec.c"),
+                str(SRC / "world_recovery_codec.c"), str(SRC / "generated_npc_state.c"), str(SRC / "pet_restore_state.c"),
                 str(floor_source),
                 "-lhiredis",
                 "-lhiredis_ssl",

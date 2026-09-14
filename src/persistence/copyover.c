@@ -11,6 +11,7 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "persistence/copyover.h"
+#include "world/generated_npc_state.h"
 #include "item/item_movement_transaction.h"
 #include "sql/sql_player.h"
 #include "player/pet_restore_state.h"
@@ -99,7 +100,8 @@ bool copyover_has_durable_shopkeepers()
 	copyover_header header = {};
 	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
 			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
-			     header.version == COPYOVER_VERSION;
+			     (header.version == COPYOVER_VERSION || header.version == 13 ||
+			      header.version == 12);
 	fclose(file);
 	return current;
 }
@@ -264,6 +266,33 @@ static int write_mob_entry(FILE *fp, P_char mob)
 	transport_capture(mob, &entry.transport);
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
+}
+
+static bool write_generated_npc_state(FILE *fp, P_char mob)
+{
+	std::string generated, extension;
+	return generated_npc_capture(mob, &generated) &&
+	       generated_npc_extension_encode(mob_index[GET_RNUM(mob)].virtual_number, generated,
+					      &extension) &&
+	       fwrite(extension.data(), extension.size(), 1, fp) == 1;
+}
+
+static bool read_generated_npc_state(FILE *fp, int vnum, std::string *generated)
+{
+	char header[GENERATED_NPC_EXTENSION_HEADER_BYTES];
+	if (fread(header, sizeof(header), 1, fp) != 1 || memcmp(header, "GNP1", 4))
+		return false;
+	uint32_t length = 0;
+	for (size_t i = 0; i < 4; ++i)
+		length |= static_cast<uint32_t>(static_cast<unsigned char>(header[4 + i]))
+			  << (i * 8);
+	if (length > GENERATED_NPC_STATE_WALLET_BYTES + PET_RESTORE_STATE_MAX_BYTES)
+		return false;
+	std::string extension(header, sizeof(header));
+	extension.resize(sizeof(header) + length);
+	if (length && fread(extension.data() + sizeof(header), length, 1, fp) != 1)
+		return false;
+	return generated_npc_extension_decode(vnum, extension.data(), extension.size(), generated);
 }
 
 static int write_mob_affects(FILE *fp, P_char mob)
@@ -677,7 +706,7 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		    !ch->only.npc->summoned_instance)
 		{
 			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) ||
-			    !write_mob_inventory(fp, ch))
+			    !write_mob_inventory(fp, ch) || !write_generated_npc_state(fp, ch))
 			{
 				logit(LOG_STATUS, "copyover: failed to write mob entry for %s",
 				      GET_NAME(ch));
@@ -934,7 +963,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// read and verify header
 	if (fread(&header, sizeof(header), 1, fp) != 1 ||
 	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
-	    (header.version != COPYOVER_VERSION && header.version != 12))
+	    (header.version != COPYOVER_VERSION && header.version != 13 && header.version != 12))
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
 		goto copyover_recover_fail;
@@ -1120,6 +1149,15 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				inv_entries[c] = inv_entry;
 		}
 
+		std::string generated;
+		if (header.version >= 14 &&
+		    !read_generated_npc_state(fp, mob_entry.vnum, &generated))
+			goto copyover_recover_fail;
+		if (generated.empty() && generated_npc_vnum(mob_entry.vnum))
+			logit(LOG_STATUS,
+			      "generated NPC recovery review: legacy state missing vnum=%d id=%d room=%d; lost identity cannot be reconstructed",
+			      mob_entry.vnum, mob_entry.idnum, mob_entry.room);
+
 		int mob_rnum = real_mobile(mob_entry.vnum);
 		if (mob_rnum < 0)
 			continue;
@@ -1145,6 +1183,12 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			logit(LOG_STATUS, "copyover: mob has null only.npc for vnum %d at mob %d",
 			      mob_entry.vnum, i);
 			continue;
+		}
+
+		if (!generated_npc_apply(mob, generated))
+		{
+			extract_char(mob);
+			goto copyover_recover_fail;
 		}
 
 		// restore idnum first
@@ -1214,6 +1258,17 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 					obj_to_char(obj, mob);
 				}
 			}
+		}
+
+		if (!generated.empty())
+		{
+			affect_total(mob, FALSE);
+			GET_MAX_HIT(mob) = mob_entry.max_hit;
+			GET_HIT(mob) = mob_entry.hit;
+			GET_MAX_MANA(mob) = mob_entry.max_mana;
+			GET_MANA(mob) = mob_entry.mana;
+			GET_MAX_VITALITY(mob) = mob_entry.max_vitality;
+			GET_VITALITY(mob) = mob_entry.vitality;
 		}
 
 		// stash fighting info for later
@@ -1515,6 +1570,17 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 		offset += sizeof(inv_entry);
 	}
 
+	std::string generated, extension;
+	if (!generated_npc_capture(mob, &generated))
+		return -1;
+	if (!generated.empty())
+	{
+		if (!generated_npc_extension_encode(entry.vnum, generated, &extension) ||
+		    extension.size() > max_len - offset)
+			return -1;
+		memcpy(buf + offset, extension.data(), extension.size());
+		offset += extension.size();
+	}
 	return (int)offset;
 }
 
@@ -1569,6 +1635,11 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 	int rnum;
 	P_char mob;
 
+	if (!bytes_read)
+		return NULL;
+	*bytes_read = 0;
+	if (!buf)
+		return NULL;
 	if (len < sizeof(mob_entry))
 	{
 		*bytes_read = 0;
@@ -1577,6 +1648,24 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 
 	memcpy(&mob_entry, buf + offset, sizeof(mob_entry));
 	offset += sizeof(mob_entry);
+
+	if (mob_entry.num_affects < 0 || mob_entry.num_carrying < 0 ||
+	    static_cast<size_t>(mob_entry.num_affects) > (len - offset) / sizeof(aff_entry))
+		return NULL;
+	const size_t affects_end =
+		offset + static_cast<size_t>(mob_entry.num_affects) * sizeof(aff_entry);
+	if (static_cast<size_t>(mob_entry.num_carrying) > (len - affects_end) / sizeof(inv_entry))
+		return NULL;
+	const size_t base_size =
+		affects_end + static_cast<size_t>(mob_entry.num_carrying) * sizeof(inv_entry);
+	std::string generated;
+	if (len > base_size && !generated_npc_extension_decode(mob_entry.vnum, buf + base_size,
+							       len - base_size, &generated))
+		return NULL;
+	if (generated.empty() && generated_npc_vnum(mob_entry.vnum))
+		logit(LOG_STATUS,
+		      "generated NPC recovery review: legacy state missing vnum=%d id=%d room=%d; lost identity cannot be reconstructed",
+		      mob_entry.vnum, mob_entry.idnum, mob_entry.room);
 
 	int mob_rnum = real_mobile(mob_entry.vnum);
 	if (mob_rnum < 0)
@@ -1610,6 +1699,11 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 		return NULL;
 	}
 
+	if (!generated_npc_apply(mob, generated))
+	{
+		extract_char(mob);
+		return NULL;
+	}
 	GET_IDNUM(mob) = mob_entry.idnum;
 	char_to_room(mob, rnum, FALSE);
 	GET_HIT(mob) = mob_entry.hit;
@@ -1695,7 +1789,19 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 				sizeof(mob->specials.copyover_fighting_name));
 	}
 
-	*bytes_read = offset;
+	// Applying affects and equipment recalculates derived maxima. Restore the
+	// captured resource deficit only after the generated base has been applied.
+	if (!generated.empty())
+	{
+		affect_total(mob, FALSE);
+		GET_MAX_HIT(mob) = mob_entry.max_hit;
+		GET_HIT(mob) = mob_entry.hit;
+		GET_MAX_MANA(mob) = mob_entry.max_mana;
+		GET_MANA(mob) = mob_entry.mana;
+		GET_MAX_VITALITY(mob) = mob_entry.max_vitality;
+		GET_VITALITY(mob) = mob_entry.vitality;
+	}
+	*bytes_read = len;
 	return mob;
 }
 

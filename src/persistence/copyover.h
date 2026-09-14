@@ -11,7 +11,7 @@
 
 #define COPYOVER_FILE "copyover.dat"
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 13 // transport route and rider state; reads version 12 too
+#define COPYOVER_VERSION 14 // generated NPC state; reads versions 12 and 13 too
 
 // copyover file header
 struct copyover_header
