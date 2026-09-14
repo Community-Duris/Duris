@@ -154,13 +154,17 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \
+				 economy/auction_room_registry.o \
 				 economy/collector_command.o \
 				 economy/collector_codec.o \
 				 economy/collector_policy.o \
 				 economy/collector_catalog_source.o \
 				 economy/collector_catalog_cache.o \
 				 economy/collector_listing_pipeline.o \
+				 economy/collector_purchase_preparation.o \
 				 economy/collector_runtime.o \
+				 economy/collector_presence.o \
+				 economy/collector_service.o \
 				 economy/collector_transaction.o \
 				 economy/collector_repository.o \
 				 classes/bard.o \

@@ -65,6 +65,7 @@
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_presence.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
@@ -4479,6 +4480,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Just making sure.
 	if (!ch || !victim)
 		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	if (messages == NULL)
 	{
@@ -5033,6 +5036,8 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	// Reject all other faiths MWD25
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
@@ -5339,6 +5344,8 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	if (messages == NULL)
 	{
@@ -6001,6 +6008,8 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 	}
 
 	if (!victim)
+		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
 
 	if (ch && victim) // Just making sure.
@@ -8130,6 +8139,8 @@ void set_fighting(P_char ch, P_char vict)
 {
 	P_char victim = vict;
 	char Gbuf[10];
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return;
 
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
 	    !SanityCheck(victim, "set_fighting - victim"))

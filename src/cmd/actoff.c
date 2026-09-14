@@ -50,6 +50,7 @@
 #include "combat/guard.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
+#include "economy/collector_presence.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "magic/spells.h"
@@ -622,6 +623,8 @@ P_char ParseTarget(P_char ch, char *argument)
 
 bool should_not_kill(P_char ch, P_char victim)
 {
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return TRUE;
 	if ((ch->in_room == NOWHERE) || (victim->in_room == NOWHERE))
 		return TRUE;
 

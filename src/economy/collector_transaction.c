@@ -116,19 +116,18 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 	return committed && published;
 }
 
-bool submit(P_char character, const collector_command_payload &payload,
-	    collector_completion_fn completion, critical_source_site source,
-	    critical_deadline_class deadline)
+bool submit(P_char character, const critical_operation_id &operation_id,
+	    const collector_command_payload &payload, collector_completion_fn completion,
+	    critical_source_site source, critical_deadline_class deadline)
 {
 	if (pending.size() >= COLLECTOR_PENDING_MAX ||
+	    critical_operation_id_is_zero(operation_id) ||
 	    (payload.actor_pid && (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
 				   static_cast<uint32_t>(GET_PID(character)) != payload.actor_pid ||
 				   player_pending(payload.actor_pid))))
 		return false;
-	critical_operation_id operation_id = {};
 	critical_command command = {};
-	if (!critical_operation_id_generate(&operation_id) ||
-	    !collector_command_build(&command, operation_id, payload, source, deadline))
+	if (!collector_command_build(&command, operation_id, payload, source, deadline))
 		return false;
 	std::string key;
 	try
@@ -159,15 +158,37 @@ bool collector_transaction_submit(P_char character, const collector_command_payl
 				  collector_completion_fn completion,
 				  critical_deadline_class deadline)
 {
-	return payload.actor_pid &&
-	       submit(character, payload, completion, critical_source_site::command, deadline);
+	critical_operation_id operation_id = {};
+	return critical_operation_id_generate(&operation_id) &&
+	       collector_transaction_submit_identified(character, operation_id, payload, completion,
+						       deadline);
+}
+
+bool collector_transaction_submit_identified(P_char character,
+					     const critical_operation_id &operation_id,
+					     const collector_command_payload &payload,
+					     collector_completion_fn completion,
+					     critical_deadline_class deadline)
+{
+	return payload.actor_pid && submit(character, operation_id, payload, completion,
+					   critical_source_site::command, deadline);
 }
 
 bool collector_transaction_submit_background(const collector_command_payload &payload,
 					     collector_completion_fn completion)
 {
+	critical_operation_id operation_id = {};
+	return critical_operation_id_generate(&operation_id) &&
+	       collector_transaction_submit_background_identified(operation_id, payload,
+								  completion);
+}
+
+bool collector_transaction_submit_background_identified(const critical_operation_id &operation_id,
+							const collector_command_payload &payload,
+							collector_completion_fn completion)
+{
 	return !payload.actor_pid &&
-	       submit(nullptr, payload, completion, critical_source_site::zone_event,
+	       submit(nullptr, operation_id, payload, completion, critical_source_site::zone_event,
 		      critical_deadline_class::background);
 }
 

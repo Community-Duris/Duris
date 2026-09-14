@@ -121,6 +121,8 @@
 #include "economy/auction_transaction.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
+#include "economy/collector_presence.h"
+#include "economy/collector_service.h"
 #include "economy/collector_transaction.h"
 #include "combat/combat_outcome_transaction.h"
 #include "guild/artifact_guild_transaction.h"
@@ -727,6 +729,9 @@ void run_the_game(int port, int sslport)
 	}
 
 	boot_db(mini_mode);
+	if (!mini_mode && !collector_presence_init())
+		logit(LOG_STATUS,
+		      "Collector presence unavailable; collector commands fail closed.");
 
 	// game_up_message(port);
 	init_astral_clock(); // fix the map sight distances
@@ -970,6 +975,7 @@ void run_the_game(int port, int sslport)
 	redis_cleanup();
 	player_load_pipeline_shutdown();
 	collector_listing_pipeline_shutdown();
+	collector_presence_shutdown();
 	collector_catalog_cache_shutdown();
 	information_cache_shutdown();
 	help_cache_shutdown();
@@ -1174,9 +1180,11 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 		queue, dest,
 		item_movement_transaction_player_busy(character) ||
 			bulk_get_player_busy(character) ||
-			collector_transaction_player_busy(character),
+			collector_transaction_player_busy(character) ||
+			collector_service_player_busy(character),
 		currency_transaction_player_busy(character) ||
-			collector_transaction_player_busy(character));
+			collector_transaction_player_busy(character) ||
+			collector_service_player_busy(character));
 }
 
 /** Select the restricted queue throughout ordinary casting or active item use. */
@@ -2004,6 +2012,8 @@ resume_game_loop:
 			information_cache_pulse();
 			help_cache_pulse();
 			collector_catalog_cache_pulse();
+			collector_presence_pulse();
+			collector_service_pulse();
 			account_recovery_pulse();
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
@@ -3897,7 +3907,8 @@ int process_output(P_desc t)
 	bool defer_prompt = t->prompt_mode && realChar && !t->showstr_count && !t->str &&
 			    (item_movement_transaction_player_busy(realChar) ||
 			     currency_transaction_player_busy(realChar) ||
-			     collector_transaction_player_busy(realChar));
+			     collector_transaction_player_busy(realChar) ||
+			     collector_service_player_busy(realChar));
 	if (defer_prompt)
 		output_prompt_mode = FALSE;
 

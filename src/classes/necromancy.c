@@ -6,6 +6,7 @@
 #include "core/files.h"
 #include "core/utils.h"
 #include "classes/necromancy.h"
+#include "economy/collector_presence.h"
 #include "player/pet_restore_runtime.h"
 #include <ctime>
 #include <algorithm>
@@ -196,6 +197,8 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	struct affected_type af;
 	P_obj globe;
 	string name;
+	if (collector_presence_is_npc(mob))
+		return -1;
 
 	memset(&af, 0, sizeof(af));
 	if (!IS_SET(flag, PET_NOORDER))

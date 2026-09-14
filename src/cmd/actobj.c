@@ -33,6 +33,7 @@
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -5746,6 +5747,13 @@ void do_give(P_char ch, char *argument, int cmd)
 			send_to_char("To who?\r\n", ch);
 			return;
 		}
+		if (collector_presence_is_npc(vict))
+		{
+			send_to_char("The collector accepts payment only through an antiquity "
+				     "purchase.\r\n",
+				     ch);
+			return;
+		}
 
 		if (racewar(ch, vict))
 		{
@@ -5809,6 +5817,11 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (!(vict = get_char_room_vis(ch, vict_name)))
 	{
 		send_to_char("No one by that name around here.\r\n", ch);
+		return;
+	}
+	if (collector_presence_is_npc(vict))
+	{
+		send_to_char("The collector cannot accept physical items.\r\n", ch);
 		return;
 	}
 	if (IS_NPC(ch) && !IS_SET(obj->wear_flags, ITEM_TAKE))

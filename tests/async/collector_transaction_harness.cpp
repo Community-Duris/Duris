@@ -227,7 +227,14 @@ int main()
 	auto available = available_record();
 	auto purchase = purchase_payload(available);
 	auto purchased = purchase_result(available);
-	assert(collector_transaction_submit(&character, purchase, completed));
+	critical_operation_id purchase_operation = {};
+	purchase_operation.bytes[0] = 0xa5;
+	critical_operation_id zero_operation = {};
+	assert(!collector_transaction_submit_identified(&character, zero_operation, purchase,
+							completed));
+	assert(collector_transaction_submit_identified(&character, purchase_operation, purchase,
+						       completed));
+	assert(critical_operation_id_equal(submitted_command.operation_id, purchase_operation));
 	assert(collector_transaction_player_busy(&character));
 	assert(!collector_transaction_submit(&character, purchase, completed));
 	auto purchase_completion = completion(purchased);

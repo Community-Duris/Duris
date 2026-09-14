@@ -29,6 +29,7 @@
 #include "world/map.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "economy/collector_presence.h"
 #include "economy/nexus_stones.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
@@ -6749,6 +6750,8 @@ void MobStartFight(P_char ch, P_char vict)
 		logit(LOG_EXIT, "MobStartFight called in mobact.c with no ch");
 		return;
 	}
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(vict))
+		return;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict))
 	{

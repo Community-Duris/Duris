@@ -26,6 +26,7 @@
 #include "world/graph.h"
 #include "combat/grapple.h"
 #include "combat/guard.h"
+#include "economy/collector_presence.h"
 #include "guild/guildhall.h"
 #include "combat/justice.h"
 #include "core/mm.h"
@@ -708,6 +709,8 @@ void petrestore(P_char ch, char *id)
 
 void add_follower(P_char ch, P_char leader)
 {
+	if (collector_presence_is_npc(ch))
+		return;
 	struct follow_type *k;
 
 	if (!(ch && leader))
