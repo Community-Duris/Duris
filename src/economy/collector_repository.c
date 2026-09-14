@@ -1180,6 +1180,123 @@ bool persist_listing(MYSQL *connection, const critical_command &command,
 }
 } // namespace
 
+bool collector_repository_read_catalog(MYSQL *connection, collector::catalog *catalog)
+{
+	static_assert(collector::catalog_max_records == 262144,
+		      "update the bounded collector catalog query when its limit changes");
+	static const char QUERY[] =
+		"SELECT s.catalog_revision,s.next_listing,l.listing_id,"
+		"HEX(l.death_operation_id),l.beneficiary_pid,l.item_uid,l.status,"
+		"l.holding_paused,l.due_at,l.due_at IS NULL,l.listing_revision,"
+		"l.item_revision,l.price_value,l.record_blob "
+		"FROM collector_catalog_state s LEFT JOIN collector_listings l ON TRUE "
+		"WHERE s.state_id=1 ORDER BY l.listing_id LIMIT 262145";
+	if (!connection || !catalog)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (!execute(connection, QUERY))
+		return false;
+	MYSQL_RES *rows = mysql_use_result(connection);
+	if (!rows)
+	{
+		const unsigned int error = mysql_errno(connection);
+		errno = static_cast<int>(error ? error : EIO);
+		return false;
+	}
+	collector::catalog candidate;
+	bool saw_catalog = false;
+	bool saw_empty_projection = false;
+	bool valid = true;
+	int failure = EBADMSG;
+	try
+	{
+		while (MYSQL_ROW row = mysql_fetch_row(rows))
+		{
+			const unsigned long *lengths = mysql_fetch_lengths(rows);
+			uint64_t row_revision = 0, row_next_listing = 0;
+			if (!lengths || !parse_u64(row[0], &row_revision) ||
+			    !parse_u64(row[1], &row_next_listing) || !row_next_listing ||
+			    (saw_catalog && (row_revision != candidate.revision ||
+					     row_next_listing != candidate.next_listing)))
+			{
+				valid = false;
+				break;
+			}
+			if (!saw_catalog)
+			{
+				candidate.revision = row_revision;
+				candidate.next_listing = row_next_listing;
+				saw_catalog = true;
+			}
+			if (!row[2])
+			{
+				if (saw_empty_projection || !candidate.records.empty() || row[3] ||
+				    row[4] || row[5] || row[6] || row[7] || row[8] || row[10] ||
+				    row[11] || row[12] || row[13])
+				{
+					valid = false;
+					break;
+				}
+				saw_empty_projection = true;
+				continue;
+			}
+			if (saw_empty_projection ||
+			    candidate.records.size() >= collector::catalog_max_records)
+			{
+				valid = false;
+				failure = E2BIG;
+				break;
+			}
+			uint64_t listing = 0, beneficiary = 0, item_uid = 0, status = 0, paused = 0,
+				 due = 0, due_is_null = 0, listing_revision = 0, item_revision = 0,
+				 price = 0;
+			collector::record entry;
+			const bool parsed =
+				row[3] && parse_u64(row[2], &listing) &&
+				parse_u64(row[4], &beneficiary) && parse_u64(row[5], &item_uid) &&
+				parse_u64(row[6], &status) && parse_u64(row[7], &paused) &&
+				(!row[8] || parse_u64(row[8], &due)) &&
+				parse_u64(row[9], &due_is_null) && due_is_null <= 1 &&
+				parse_u64(row[10], &listing_revision) &&
+				parse_u64(row[11], &item_revision) && parse_u64(row[12], &price) &&
+				row[13] && lengths[13] == collector::encoded_record_bytes &&
+				collector::record_decode(reinterpret_cast<const uint8_t *>(row[13]),
+							 lengths[13],
+							 &entry) == collector::codec_result::ok;
+			if (!parsed || entry.listing != listing || paused > 1 ||
+			    !projection_matches(entry, beneficiary, item_uid, status, paused,
+						due_is_null != 0, due, listing_revision,
+						item_revision, price, row[3]))
+			{
+				valid = false;
+				break;
+			}
+			candidate.records.push_back(entry);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		valid = false;
+		failure = ENOMEM;
+	}
+	const unsigned int read_error = mysql_errno(connection);
+	mysql_free_result(rows);
+	if (read_error)
+	{
+		errno = static_cast<int>(read_error);
+		return false;
+	}
+	if (!valid || !saw_catalog || !collector::valid_catalog(candidate))
+	{
+		errno = failure;
+		return false;
+	}
+	*catalog = std::move(candidate);
+	return true;
+}
+
 bool collector_repository_execute(MYSQL *connection, const critical_command &command,
 				  collector_command_result *result, unsigned int *result_code,
 				  bool *mutation_applied)

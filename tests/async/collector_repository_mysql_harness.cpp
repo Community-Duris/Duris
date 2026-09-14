@@ -293,6 +293,10 @@ int main()
 		"bank_platinum) VALUES('" +
 		std::string(ACCOUNT_NAME) + "',1,0,0,0,0)");
 	execute("UPDATE collector_catalog_state SET next_listing=20000 WHERE state_id=1");
+	collector::catalog empty_catalog;
+	assert(collector_repository_read_catalog(database, &empty_catalog));
+	assert(empty_catalog.revision == 0 && empty_catalog.next_listing == 20000 &&
+	       empty_catalog.records.empty());
 
 	// Collect a container shell from the middle of a corpse tree. Its direct child remains
 	// in the corpse, reparented to the shell's parent, and only the shell's own weight leaves.
@@ -541,6 +545,27 @@ int main()
 	assert(scalar("SELECT COUNT(*) FROM collector_ledger") == 8);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE destination=11 AND event_type=1") ==
 	       8);
+
+	// Restart bootstrap observes one canonical catalog snapshot and leaves the
+	// caller's prior snapshot untouched if a fixed-width record is corrupted.
+	collector::catalog catalog;
+	assert(collector_repository_read_catalog(database, &catalog));
+	assert(catalog.revision == 8 && catalog.next_listing == 20000 &&
+	       catalog.records.size() == 4);
+	assert(catalog.records[0].listing == LISTING &&
+	       catalog.records[0].status == collector::state::purchased);
+	assert(catalog.records[1].listing == EXPIRE_LISTING &&
+	       catalog.records[1].status == collector::state::expired);
+	assert(catalog.records[2].listing == CLAIM_LISTING &&
+	       catalog.records[2].closed_reason == collector::reason::claimed);
+	assert(catalog.records[3].listing == QUARANTINE_LISTING &&
+	       catalog.records[3].closed_reason == collector::reason::quarantined);
+	execute("UPDATE collector_listings SET record_blob=REPEAT(CHAR(0),154) WHERE listing_id=" +
+		std::to_string(QUARANTINE_LISTING));
+	errno = 0;
+	assert(!collector_repository_read_catalog(database, &catalog) && errno == EBADMSG);
+	assert(catalog.revision == 8 && catalog.records.size() == 4 &&
+	       catalog.records.back().listing == QUARANTINE_LISTING);
 	mysql_close(database);
 	return 0;
 }

@@ -119,6 +119,7 @@
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "economy/auction_transaction.h"
+#include "economy/collector_catalog_cache.h"
 #include "economy/collector_transaction.h"
 #include "combat/combat_outcome_transaction.h"
 #include "guild/artifact_guild_transaction.h"
@@ -913,6 +914,9 @@ void run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
+	if (!collector_catalog_cache_refresh())
+		logit(LOG_STATUS,
+		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
 	if (!locker_identify_init(critical_journal_directory))
 		logit(LOG_STATUS,
 		      "Locker identification unavailable: receipt storage could not initialize.");
@@ -961,6 +965,7 @@ void run_the_game(int port, int sslport)
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
+	collector_catalog_cache_shutdown();
 	information_cache_shutdown();
 	help_cache_shutdown();
 	account_recovery_shutdown();
@@ -1993,6 +1998,7 @@ resume_game_loop:
 			}
 			information_cache_pulse();
 			help_cache_pulse();
+			collector_catalog_cache_pulse();
 			account_recovery_pulse();
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",

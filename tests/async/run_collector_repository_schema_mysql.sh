@@ -19,7 +19,8 @@ docker run -d --name "$NAME" -p 127.0.0.1::3306 \
 mapping="$(docker port "$NAME" 3306/tcp)"
 export ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
-export DB_NAME=collector_repository_test COLLECTOR_TEST_DB_NAME="$DB_NAME"
+export DB_NAME=collector_repository_test
+export COLLECTOR_TEST_DB_NAME="$DB_NAME"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then
 	MYSQL_SSL=(--ssl-mode=PREFERRED)
 else
