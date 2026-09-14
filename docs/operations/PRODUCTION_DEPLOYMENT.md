@@ -4,7 +4,7 @@ Last verified: 2026-08-30 18:28 UTC
 
 ## Objective
 
-Run DurisMUD as a persistent production service for `duris.sbs`, backed by an
+Run DurisMUD as a persistent production service for `newduris.com`, backed by an
 account-local MariaDB installation. Use ports that were confirmed free before
 binding, keep secrets out of the repository, and verify public connectivity,
 TLS, persistence, backups, restart recovery, and boot recovery.
@@ -20,11 +20,11 @@ private keys. Those remain in owner-controlled ignored files.
 | MariaDB | `127.0.0.1:3307` | Active, account-local |
 | Database | `duris`, user `duris_prod@127.0.0.1` | 173 tables; runtime contract valid |
 | Plain telnet | `74.208.126.44:7777` | Listening locally; optional unencrypted ingress remains blocked by Plesk |
-| TLS telnet | `mud.duris.sbs:4001` | Public and playable with a trusted certificate |
+| TLS telnet | `mud.newduris.com:4001` | Public and playable with a trusted certificate |
 | WebSocket/health origin | `127.0.0.1:4050` | Healthy; intentionally loopback-only |
-| Public WebSocket/health | `https://ws.duris.sbs` / `wss://ws.duris.sbs` | Live through Cloudflare Tunnel |
-| Raw-MUD DNS | `mud.duris.sbs` | DNS-only A record to the server |
-| TLS certificate | `mud.duris.sbs` | Let's Encrypt; expires 2026-11-28 |
+| Public WebSocket/health | `https://ws.newduris.com` / `wss://ws.newduris.com` | Live through Cloudflare Tunnel |
+| Raw-MUD DNS | `mud.newduris.com` | DNS-only A record to the server |
+| TLS certificate | `mud.newduris.com` | Let's Encrypt; expires 2026-11-28 |
 | Tunnel | `duris-production` (`aec07955-bcc1-4faa-9588-f28d45edc474`) | Healthy, four edge connections |
 
 ## Implemented
@@ -49,7 +49,7 @@ private keys. Those remain in owner-controlled ignored files.
   initial start. Later confirm port 4001 was locally free and publicly allowed
   before assigning it as the independent production TLS port.
 - [x] Issue and install a trusted Let's Encrypt certificate for
-  `mud.duris.sbs` using Cloudflare DNS validation.
+  `mud.newduris.com` using Cloudflare DNS validation.
 - [x] Install and verify an account-level certificate renewal timer and a full
   staging renewal dry run. Add and exercise a deploy hook that restarts the
   game only after Certbot successfully deploys a renewed certificate.
@@ -62,7 +62,7 @@ private keys. Those remain in owner-controlled ignored files.
 - [x] Verify pre-boot compressed database backups under `db/Backup`.
 - [x] Install checksum-verified `cloudflared` 2026.8.2 account-locally.
 - [x] Create a remotely managed Cloudflare Tunnel and proxied
-  `ws.duris.sbs` route to the loopback WebSocket/health origin.
+  `ws.newduris.com` route to the loopback WebSocket/health origin.
 - [x] Verify public `GET /health` through Cloudflare returns
   `{"status":"healthy","persistence":"ready"}`.
 - [x] Verify a public WSS upgrade through Cloudflare returns HTTP 101 and the
@@ -70,7 +70,7 @@ private keys. Those remain in owner-controlled ignored files.
 - [x] Add `DURIS_TLS_PORT` so production TLS can use an independently selected
   port without moving the plain listener. Deploy port 4001 after proving it was
   unused locally and reachable through the existing Plesk policy.
-- [x] Verify secure telnet on `mud.duris.sbs:4001` from five independent
+- [x] Verify secure telnet on `mud.newduris.com:4001` from five independent
   external regions, negotiate TLS 1.3 with hostname validation, and reach the
   live account prompt.
 - [x] Verify all 350 repository tests pass in 292.08 seconds after repairing
@@ -110,8 +110,8 @@ private keys. Those remain in owner-controlled ignored files.
 - [ ] If unencrypted public telnet is desired in addition to the deployed TLS
   and WSS transports, allow inbound TCP 7777 in the root-owned Plesk firewall.
   It is not required for secure production access.
-- [ ] Decide whether `duris.sbs` should host a browser client or landing page.
-  The game WebSocket is publicly available at `wss://ws.duris.sbs`, but this
+- [ ] Decide whether `newduris.com` should host a browser client or landing page.
+  The game WebSocket is publicly available at `wss://ws.newduris.com`, but this
   repository does not contain a deployable browser frontend.
 
 ## Verification commands
@@ -127,12 +127,12 @@ systemctl --user is-active \
 ./scripts/cycle_mud.sh --production --check-config
 ./migrations/verify_runtime_compatibility.sh
 ./scripts/healthcheck.sh
-curl --fail --silent --show-error https://ws.duris.sbs/health
+curl --fail --silent --show-error https://ws.newduris.com/health
 
 openssl s_client \
-  -connect mud.duris.sbs:4001 \
-  -servername mud.duris.sbs \
-  -verify_hostname mud.duris.sbs \
+  -connect mud.newduris.com:4001 \
+  -servername mud.newduris.com \
+  -verify_hostname mud.newduris.com \
   -verify_return_error </dev/null
 ```
 
@@ -154,7 +154,7 @@ Expected health payload:
 - The certificate renewal deploy hook is owner-controlled with mode `0700` and
   restarts the game only after a successful certificate deployment.
 - The public WebSocket origin allow-list remains restricted to
-  `https://duris.sbs` and `https://www.duris.sbs`.
+  `https://newduris.com` and `https://www.newduris.com`.
 - The Cloudflare connector retrieves its tunnel token at startup, removes the
   account API credentials from its environment before executing `cloudflared`,
   and exposes metrics only on verified-free loopback port 20242.
