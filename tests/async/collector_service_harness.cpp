@@ -209,8 +209,10 @@ collector_listing_pipeline_submit(const collector_listing_request &request)
 	return collector_listing_submit_outcome::accepted;
 }
 
-size_t collector_listing_pipeline_pulse(collector_listing_result *results, size_t capacity)
+size_t collector_listing_pipeline_pulse_for(collector_listing_consumer consumer,
+					    collector_listing_result *results, size_t capacity)
 {
+	assert(consumer == collector_listing_consumer::player);
 	if (!result_ready || !results || !capacity)
 		return 0;
 	results[0] = std::move(queued_result);

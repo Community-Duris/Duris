@@ -39,12 +39,11 @@ bool has_capacity(const collector_purchase_actor_snapshot &actor, const player_i
 }
 }
 
-collector_purchase_prepare_outcome
-collector_purchase_prepare(const collector::record &runtime_entry,
-			   const collector_listing_detail &detail,
-			   const item_ownership_runtime_entry &held_item,
-			   const collector_purchase_actor_snapshot &actor,
-			   collector_command_payload *payload, player_item_snapshot *decoded_item)
+collector_purchase_prepare_outcome collector_purchase_prepare(
+	const collector::record &runtime_entry, const collector_listing_detail &detail,
+	const item_ownership_runtime_entry &held_item,
+	const collector_purchase_actor_snapshot &actor,
+	std::unique_ptr<collector_command_payload> *payload, player_item_snapshot *decoded_item)
 {
 	if (!payload || !decoded_item || !actor.pid || actor.racewar > 4 || !actor.observed_at ||
 	    !valid_account_name(actor.account_name))
@@ -82,30 +81,38 @@ collector_purchase_prepare(const collector::record &runtime_entry,
 	if (!has_capacity(actor, item))
 		return collector_purchase_prepare_outcome::capacity;
 
-	collector_command_payload candidate = {};
-	candidate.action = collector_action::purchase;
-	candidate.target_state = item_custody_state::active;
-	candidate.capacity_admitted = true;
-	candidate.listing = runtime_entry.listing;
-	candidate.expected_listing_revision = runtime_entry.revision;
-	candidate.observed_at = actor.observed_at;
-	candidate.actor_pid = actor.pid;
-	candidate.racewar = actor.racewar;
-	candidate.account_name = actor.account_name;
-	candidate.expected_wallet_revision = actor.wallet_revision;
-	candidate.expected_bank_revision = actor.bank_revision;
-	candidate.from_owner = expected_collector;
-	candidate.to_owner = { item_owner_type::player, actor.pid, 0 };
-	candidate.expected_from_owner_revision = held_item.owner_revision;
-	candidate.expected_to_owner_revision = actor.item_owner_revision;
-	candidate.selected_item_uid = runtime_entry.uid;
-	candidate.item_count = 1;
-	candidate.items[0] = {
+	std::unique_ptr<collector_command_payload> candidate;
+	try
+	{
+		candidate = std::make_unique<collector_command_payload>();
+	}
+	catch (const std::bad_alloc &)
+	{
+		return collector_purchase_prepare_outcome::allocation_failure;
+	}
+	candidate->action = collector_action::purchase;
+	candidate->target_state = item_custody_state::active;
+	candidate->capacity_admitted = true;
+	candidate->listing = runtime_entry.listing;
+	candidate->expected_listing_revision = runtime_entry.revision;
+	candidate->observed_at = actor.observed_at;
+	candidate->actor_pid = actor.pid;
+	candidate->racewar = actor.racewar;
+	candidate->account_name = actor.account_name;
+	candidate->expected_wallet_revision = actor.wallet_revision;
+	candidate->expected_bank_revision = actor.bank_revision;
+	candidate->from_owner = expected_collector;
+	candidate->to_owner = { item_owner_type::player, actor.pid, 0 };
+	candidate->expected_from_owner_revision = held_item.owner_revision;
+	candidate->expected_to_owner_revision = actor.item_owner_revision;
+	candidate->selected_item_uid = runtime_entry.uid;
+	candidate->item_count = 1;
+	candidate->items[0] = {
 		held_item.item_uid,	 held_item.root_item_uid, held_item.parent_item_uid,
 		held_item.item_revision, held_item.vnum,	  held_item.state
 	};
-	candidate.item_blob_size = static_cast<uint32_t>(detail.item_blob.size());
-	std::copy(detail.item_blob.begin(), detail.item_blob.end(), candidate.item_blob.begin());
+	candidate->item_blob_size = static_cast<uint32_t>(detail.item_blob.size());
+	std::copy(detail.item_blob.begin(), detail.item_blob.end(), candidate->item_blob.begin());
 	*payload = std::move(candidate);
 	*decoded_item = std::move(item);
 	return collector_purchase_prepare_outcome::prepared;

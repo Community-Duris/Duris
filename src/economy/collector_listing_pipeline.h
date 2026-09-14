@@ -27,10 +27,17 @@ enum class collector_listing_submit_outcome : uint8_t
 	unavailable,
 };
 
+enum class collector_listing_consumer : uint8_t
+{
+	player,
+	maintenance,
+};
+
 struct collector_listing_request
 {
 	uint64_t request_id = 0;
 	uint64_t listing = 0;
+	collector_listing_consumer consumer = collector_listing_consumer::player;
 };
 
 struct collector_listing_result
@@ -40,6 +47,7 @@ struct collector_listing_result
 	collector_listing_outcome outcome = collector_listing_outcome::retryable_failure;
 	unsigned int error_code = 0;
 	collector_listing_detail detail;
+	collector_listing_consumer consumer = collector_listing_consumer::player;
 };
 
 struct collector_listing_pipeline_health
@@ -69,6 +77,8 @@ collector_listing_submit_outcome
 collector_listing_pipeline_submit(const collector_listing_request &request);
 bool collector_listing_pipeline_cancel(uint64_t request_id);
 size_t collector_listing_pipeline_pulse(collector_listing_result *results, size_t capacity);
+size_t collector_listing_pipeline_pulse_for(collector_listing_consumer consumer,
+					    collector_listing_result *results, size_t capacity);
 void collector_listing_pipeline_shutdown(void);
 collector_listing_pipeline_health collector_listing_pipeline_health_copy(void);
 void collector_listing_pipeline_reset_for_tests(void);

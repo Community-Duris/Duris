@@ -85,26 +85,28 @@ int main()
 	auto detail = valid_detail(entry);
 	auto actor = valid_actor(entry);
 	auto held = valid_held(entry);
-	collector_command_payload payload;
-	payload.listing = 999;
+	std::unique_ptr<collector_command_payload> payload;
 	player_item_snapshot item;
 	item.object_uid = 999;
 	assert(collector_purchase_prepare(entry, detail, held, actor, &payload, &item) ==
 	       collector_purchase_prepare_outcome::prepared);
-	assert(payload.action == collector_action::purchase && payload.listing == entry.listing &&
-	       payload.expected_listing_revision == entry.revision &&
-	       payload.observed_at == actor.observed_at && payload.actor_pid == actor.pid &&
-	       payload.expected_wallet_revision == actor.wallet_revision &&
-	       payload.expected_bank_revision == actor.bank_revision &&
-	       payload.expected_from_owner_revision == held.owner_revision &&
-	       payload.expected_to_owner_revision == actor.item_owner_revision &&
-	       payload.selected_item_uid == entry.uid && payload.item_count == 1 &&
-	       payload.items[0].item_uid == entry.uid &&
-	       payload.items[0].expected_item_revision == entry.item_revision &&
-	       payload.item_blob_size == detail.item_blob.size() && item.object_uid == entry.uid &&
+	assert(payload && payload->action == collector_action::purchase &&
+	       payload->listing == entry.listing &&
+	       payload->expected_listing_revision == entry.revision &&
+	       payload->observed_at == actor.observed_at && payload->actor_pid == actor.pid &&
+	       payload->expected_wallet_revision == actor.wallet_revision &&
+	       payload->expected_bank_revision == actor.bank_revision &&
+	       payload->expected_from_owner_revision == held.owner_revision &&
+	       payload->expected_to_owner_revision == actor.item_owner_revision &&
+	       payload->selected_item_uid == entry.uid && payload->item_count == 1 &&
+	       payload->items[0].item_uid == entry.uid &&
+	       payload->items[0].expected_item_revision == entry.item_revision &&
+	       payload->item_blob_size == detail.item_blob.size() && item.object_uid == entry.uid &&
 	       item.short_description == "an old blade");
 
-	const auto unchanged_payload = payload;
+	const collector_command_payload *const unchanged_payload = payload.get();
+	const uint64_t unchanged_listing = payload->listing;
+	const uint32_t unchanged_blob_size = payload->item_blob_size;
 	const auto unchanged_item = item;
 	auto rejected = [&](collector_purchase_prepare_outcome expected,
 			    const collector::record &runtime, const collector_listing_detail &read,
@@ -113,8 +115,9 @@ int main()
 	{
 		assert(collector_purchase_prepare(runtime, read, ownership, buyer, &payload,
 						  &item) == expected);
-		assert(payload.listing == unchanged_payload.listing &&
-		       payload.item_blob_size == unchanged_payload.item_blob_size &&
+		assert(payload.get() == unchanged_payload &&
+		       payload->listing == unchanged_listing &&
+		       payload->item_blob_size == unchanged_blob_size &&
 		       item.object_uid == unchanged_item.object_uid &&
 		       item.short_description == unchanged_item.short_description);
 	};

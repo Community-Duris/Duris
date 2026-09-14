@@ -1,5 +1,6 @@
 #include "economy/collector_transaction.h"
 
+#include "economy/collector_collection_preparation.h"
 #include "economy/collector_runtime.h"
 #include "economy/currency_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -102,8 +103,21 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 		published = false;
 		publication_error = EBADMSG;
 	}
+	P_obj collected_item = nullptr;
+	if (published && committed && submitted_payload.action == collector_action::collect &&
+	    !collector_collection_live_matches(submitted_payload, &collected_item))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
 	if (published && committed && publishes_authority(submitted_payload) &&
 	    !item_ownership_runtime_apply_collector(submitted_payload, result))
+	{
+		published = false;
+		publication_error = ESTALE;
+	}
+	if (published && committed && submitted_payload.action == collector_action::collect &&
+	    !collector_collection_detach_live(collected_item))
 	{
 		published = false;
 		publication_error = ESTALE;

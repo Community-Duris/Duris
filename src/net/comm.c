@@ -975,8 +975,8 @@ void run_the_game(int port, int sslport)
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
-	collector_listing_pipeline_shutdown();
 	collector_maintenance_shutdown();
+	collector_listing_pipeline_shutdown();
 	collector_presence_shutdown();
 	collector_catalog_cache_shutdown();
 	information_cache_shutdown();

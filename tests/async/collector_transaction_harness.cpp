@@ -1,4 +1,5 @@
 #include "economy/collector_transaction.h"
+#include "economy/collector_collection_preparation.h"
 #include "economy/collector_runtime.h"
 #include "economy/currency_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -24,6 +25,8 @@ size_t runtime_publications = 0;
 size_t outbox_publications = 0;
 size_t outbox_resumes = 0;
 size_t passthrough_deliveries = 0;
+size_t live_collection_validations = 0;
+size_t live_collection_detaches = 0;
 bool completion_called = false;
 bool completion_committed = false;
 bool ownership_publication_succeeds = true;
@@ -188,6 +191,21 @@ bool item_ownership_runtime_apply_collector(const collector_command_payload &pay
 	return ownership_publication_succeeds;
 }
 
+bool collector_collection_live_matches(const collector_command_payload &payload, P_obj *selected)
+{
+	assert(payload.action == collector_action::collect && selected);
+	++live_collection_validations;
+	*selected = reinterpret_cast<P_obj>(static_cast<uintptr_t>(payload.selected_item_uid));
+	return true;
+}
+
+bool collector_collection_detach_live(P_obj selected)
+{
+	assert(selected);
+	++live_collection_detaches;
+	return true;
+}
+
 bool collector_runtime_publish(const collector_command_result &result)
 {
 	assert(result.record_present);
@@ -277,7 +295,8 @@ int main()
 	collector_transaction_handle_completions(&collect_completion, 1);
 	assert(completion_called && completion_committed &&
 	       completion_action == collector_action::collect && ownership_publications == 2 &&
-	       runtime_publications == 2 && wallet_publications == 1);
+	       runtime_publications == 2 && wallet_publications == 1 &&
+	       live_collection_validations == 1 && live_collection_detaches == 1);
 	assert(!collector_transaction_listing_busy(candidate.listing));
 
 	// Once durable authority commits, a local cache failure must never be
@@ -299,7 +318,8 @@ int main()
 	collector_transaction_handle_completions(&recovery_completion, 1);
 	assert(completion_called && completion_committed && completion_error == ESTALE &&
 	       completion_action == collector_action::collect && ownership_publications == 3 &&
-	       runtime_publications == 2);
+	       runtime_publications == 2 && live_collection_validations == 2 &&
+	       live_collection_detaches == 1);
 	ownership_publication_succeeds = true;
 
 	completion_called = completion_committed = false;

@@ -21,6 +21,16 @@ struct collector_maintenance_health
 	uint64_t publication_failures = 0;
 	uint64_t recovery_refreshes = 0;
 	uint64_t scan_failures = 0;
+	uint64_t due_passes = 0;
+	uint64_t due_leased = 0;
+	uint64_t due_stale = 0;
+	uint64_t collection_submissions = 0;
+	uint64_t candidate_cancellations = 0;
+	uint64_t activation_submissions = 0;
+	uint64_t expiry_reads = 0;
+	uint64_t expiry_results = 0;
+	uint64_t expiry_submissions = 0;
+	uint64_t pending_expiry_reads = 0;
 };
 
 // Game-thread-only bounded reconciliation. When the feature is disabled it

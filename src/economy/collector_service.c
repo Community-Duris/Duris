@@ -25,6 +25,7 @@
 #include <cstring>
 #include <ctime>
 #include <limits>
+#include <memory>
 #include <new>
 #include <string>
 #include <unordered_map>
@@ -463,7 +464,7 @@ void handle_found(P_char character, const pending_detail &request,
 			     character);
 		return;
 	}
-	collector_command_payload payload;
+	std::unique_ptr<collector_command_payload> payload;
 	player_item_snapshot item;
 	const collector_purchase_prepare_outcome prepared = collector_purchase_prepare(
 		runtime_entry, detail, held_item, actor, &payload, &item);
@@ -472,8 +473,8 @@ void handle_found(P_char character, const pending_detail &request,
 		report_prepare_failure(character, prepared);
 		return;
 	}
-	if (!collector_transaction_submit_identified(character, request.operation_id, payload,
-						     purchase_completed))
+	if (!payload || !collector_transaction_submit_identified(character, request.operation_id,
+								 *payload, purchase_completed))
 	{
 		++health.rejected_purchases;
 		send_to_char("The collector could not queue that purchase; nothing changed.\r\n",
@@ -563,8 +564,8 @@ void collector_service_command(P_char character, char *arguments, int command)
 void collector_service_pulse(void)
 {
 	collector_listing_result results[COLLECTOR_LISTING_MAX_COMPLETIONS] = {};
-	const size_t count =
-		collector_listing_pipeline_pulse(results, COLLECTOR_LISTING_MAX_COMPLETIONS);
+	const size_t count = collector_listing_pipeline_pulse_for(
+		collector_listing_consumer::player, results, COLLECTOR_LISTING_MAX_COMPLETIONS);
 	for (size_t index = 0; index < count; ++index)
 		handle_detail_result(std::move(results[index]));
 }

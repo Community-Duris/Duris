@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
 struct collector_purchase_actor_snapshot
 {
@@ -55,11 +56,10 @@ collector_listing_decode_item(const collector::record &runtime_entry,
 // Converts one immutable detail read into the fully fenced command sent to the
 // durable coordinator. Inputs contain no live pointers, and outputs have a
 // strong guarantee: a rejected preparation leaves them unchanged.
-collector_purchase_prepare_outcome
-collector_purchase_prepare(const collector::record &runtime_entry,
-			   const collector_listing_detail &detail,
-			   const item_ownership_runtime_entry &held_item,
-			   const collector_purchase_actor_snapshot &actor,
-			   collector_command_payload *payload, player_item_snapshot *decoded_item);
+collector_purchase_prepare_outcome collector_purchase_prepare(
+	const collector::record &runtime_entry, const collector_listing_detail &detail,
+	const item_ownership_runtime_entry &held_item,
+	const collector_purchase_actor_snapshot &actor,
+	std::unique_ptr<collector_command_payload> *payload, player_item_snapshot *decoded_item);
 
 #endif

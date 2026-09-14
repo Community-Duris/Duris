@@ -74,6 +74,16 @@ collector_listing_result execute(const collector_listing_request &request, void 
 			 static_cast<collector_listing_outcome>(255),
 			 0,
 			 { candidate(request.listing), {} } };
+	if (request.listing == 7)
+	{
+		collector_listing_result result = { request.request_id,
+						    request.listing,
+						    collector_listing_outcome::found,
+						    0,
+						    { candidate(request.listing), {} } };
+		result.consumer = request.consumer;
+		return result;
+	}
 	return { request.request_id,
 		 request.listing,
 		 collector_listing_outcome::found,
@@ -135,6 +145,31 @@ int main()
 	assert(basics[5].outcome == collector_listing_outcome::invalid_data &&
 	       basics[5].error_code == EBADMSG);
 
+	const uint64_t player_id = collector_listing_pipeline_next_request_id();
+	const uint64_t maintenance_id = collector_listing_pipeline_next_request_id();
+	assert(collector_listing_pipeline_submit(
+		       { player_id, 7, collector_listing_consumer::player }) ==
+	       collector_listing_submit_outcome::accepted);
+	assert(collector_listing_pipeline_submit(
+		       { maintenance_id, 7, collector_listing_consumer::maintenance }) ==
+	       collector_listing_submit_outcome::accepted);
+	collector_listing_result routed = {};
+	const auto route_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	while (!collector_listing_pipeline_pulse_for(collector_listing_consumer::maintenance,
+						     &routed, 1) &&
+	       std::chrono::steady_clock::now() < route_deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(routed.request_id == maintenance_id &&
+	       routed.consumer == collector_listing_consumer::maintenance);
+	assert(collector_listing_pipeline_pulse_for(collector_listing_consumer::maintenance,
+						    &routed, 1) == 0);
+	while (!collector_listing_pipeline_pulse_for(collector_listing_consumer::player, &routed,
+						     1) &&
+	       std::chrono::steady_clock::now() < route_deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(routed.request_id == player_id &&
+	       routed.consumer == collector_listing_consumer::player);
+
 	state.blocked_listing = 1000;
 	state.entered = false;
 	state.released = false;
@@ -181,8 +216,8 @@ int main()
 	const collector_listing_pipeline_health health = collector_listing_pipeline_health_copy();
 	assert(health.running && !health.stop_pending && health.queued == 0 &&
 	       health.inflight == 0 && health.completions == 0 &&
-	       health.high_water == COLLECTOR_LISTING_MAX_PENDING && health.submitted == 71 &&
-	       health.delivered == 71 && health.cancelled == 1 && health.not_found == 1 &&
+	       health.high_water == COLLECTOR_LISTING_MAX_PENDING && health.submitted == 73 &&
+	       health.delivered == 73 && health.cancelled == 1 && health.not_found == 1 &&
 	       health.retryable_failures == 1 && health.invalid_data == 3);
 	collector_listing_pipeline_shutdown();
 	assert(!collector_listing_pipeline_health_copy().running);

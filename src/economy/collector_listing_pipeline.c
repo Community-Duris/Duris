@@ -41,6 +41,7 @@ collector_listing_result execute_selected(const collector_listing_request &reque
 	collector_listing_result result;
 	result.request_id = request.request_id;
 	result.listing = request.listing;
+	result.consumer = request.consumer;
 	bool found = false;
 	std::string error;
 	if (collector_listing_source_load(request.listing, result.detail, found, result.error_code,
@@ -75,6 +76,17 @@ bool known_outcome(collector_listing_outcome outcome)
 	case collector_listing_outcome::retryable_failure:
 	case collector_listing_outcome::invalid_data:
 	case collector_listing_outcome::cancelled:
+		return true;
+	}
+	return false;
+}
+
+bool known_consumer(collector_listing_consumer consumer)
+{
+	switch (consumer)
+	{
+	case collector_listing_consumer::player:
+	case collector_listing_consumer::maintenance:
 		return true;
 	}
 	return false;
@@ -127,6 +139,7 @@ void worker_main()
 		collector_listing_result result;
 		result.request_id = request.request_id;
 		result.listing = request.listing;
+		result.consumer = request.consumer;
 		{
 			std::lock_guard<std::mutex> lock(pipeline_mutex);
 			if (cancelled_ids.count(request.request_id))
@@ -148,10 +161,13 @@ void worker_main()
 				result.error_code = EFAULT;
 			}
 		const bool identity_mismatch = result.request_id != request.request_id ||
-					       result.listing != request.listing;
+					       result.listing != request.listing ||
+					       result.consumer != request.consumer;
 		result.request_id = request.request_id;
 		result.listing = request.listing;
-		if (identity_mismatch || !known_outcome(result.outcome) ||
+		result.consumer = request.consumer;
+		if (identity_mismatch || !known_consumer(request.consumer) ||
+		    !known_outcome(result.outcome) ||
 		    (result.outcome == collector_listing_outcome::found &&
 		     (result.error_code || !valid_found_detail(request, result))))
 		{
@@ -220,7 +236,7 @@ uint64_t collector_listing_pipeline_next_request_id(void)
 collector_listing_submit_outcome
 collector_listing_pipeline_submit(const collector_listing_request &request)
 {
-	if (!request.request_id || !request.listing)
+	if (!request.request_id || !request.listing || !known_consumer(request.consumer))
 		return collector_listing_submit_outcome::invalid;
 	std::lock_guard<std::mutex> lock(pipeline_mutex);
 	if (!health.running || stop_requested || !execute_callback)
@@ -277,6 +293,31 @@ size_t collector_listing_pipeline_pulse(collector_listing_result *results, size_
 		active_ids.erase(results[count].request_id);
 		cancelled_ids.erase(results[count].request_id);
 		completions.pop_front();
+		++health.delivered;
+		++count;
+	}
+	refresh_health_locked();
+	return count;
+}
+
+size_t collector_listing_pipeline_pulse_for(collector_listing_consumer consumer,
+					    collector_listing_result *results, size_t capacity)
+{
+	if (!known_consumer(consumer) || !results || !capacity)
+		return 0;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	size_t count = 0;
+	for (auto current = completions.begin(); current != completions.end() && count < capacity;)
+	{
+		if (current->consumer != consumer)
+		{
+			++current;
+			continue;
+		}
+		results[count] = std::move(*current);
+		active_ids.erase(results[count].request_id);
+		cancelled_ids.erase(results[count].request_id);
+		current = completions.erase(current);
 		++health.delivered;
 		++count;
 	}
