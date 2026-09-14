@@ -17,9 +17,7 @@ bool add(uint64_t left, uint64_t right, uint64_t *sum)
 
 outcome check(const record *entry, uint64_t expected, state required)
 {
-	if (!entry || entry->version != record_version || !entry->listing || !entry->uid ||
-	    !entry->beneficiary || !valid_rules(entry->policy) ||
-	    entry->status < state::candidate || entry->status > state::expired)
+	if (!entry || !valid_record(*entry))
 		return outcome::invalid;
 	if (entry->revision != expected || entry->status != required)
 		return outcome::conflict;
@@ -38,6 +36,57 @@ bool valid_rules(const rules &policy)
 bool terminal(state status)
 {
 	return status == state::purchased || status == state::cancelled || status == state::expired;
+}
+
+bool valid_record(const record &entry)
+{
+	uint64_t collect_at = 0, sale_at = 0;
+	if (entry.version != record_version || !entry.listing || !entry.beneficiary || !entry.uid ||
+	    !entry.item_revision || !entry.revision || !entry.policy.enabled ||
+	    !valid_rules(entry.policy) || entry.death_operation.size() != 32 ||
+	    entry.death_operation.find_first_not_of("0123456789abcdef") != std::string::npos ||
+	    entry.death_operation.find_first_not_of('0') == std::string::npos ||
+	    !add(entry.death_time, entry.policy.collection_delay, &collect_at) ||
+	    !add(entry.death_time, entry.policy.sale_delay, &sale_at) ||
+	    entry.collect_at != collect_at || entry.sale_at != sale_at ||
+	    entry.status < state::candidate || entry.status > state::expired ||
+	    entry.closed_reason < reason::none || entry.closed_reason > reason::holding_elapsed ||
+	    (entry.price_value && entry.price_value < entry.policy.minimum_value))
+		return false;
+	const bool available = entry.available_at != 0;
+	const bool availability_valid =
+		available && entry.price_value && entry.available_at >= entry.sale_at &&
+		entry.expires_at >= entry.available_at &&
+		entry.expires_at - entry.available_at >= entry.policy.holding_duration &&
+		(entry.holding_paused ? entry.paused_at >= entry.available_at : !entry.paused_at);
+	const bool before_availability = !entry.available_at && !entry.expires_at &&
+					 !entry.holding_paused && !entry.paused_at;
+	switch (entry.status)
+	{
+	case state::candidate:
+		return !entry.price_value && before_availability &&
+		       entry.closed_reason == reason::none;
+	case state::collected:
+		return entry.price_value && before_availability &&
+		       entry.closed_reason == reason::none;
+	case state::available:
+		return availability_valid && entry.closed_reason == reason::none;
+	case state::purchased:
+		return availability_valid && !entry.holding_paused &&
+		       entry.closed_reason == reason::none;
+	case state::cancelled:
+		if (entry.closed_reason <= reason::none ||
+		    entry.closed_reason >= reason::holding_elapsed)
+			return false;
+		if (entry.closed_reason == reason::claimed)
+			return !entry.price_value && before_availability;
+		return entry.price_value ? (available ? availability_valid : before_availability) :
+					   before_availability;
+	case state::expired:
+		return availability_valid && !entry.holding_paused &&
+		       entry.closed_reason == reason::holding_elapsed;
+	}
+	return false;
 }
 
 outcome price(int64_t base_value, const rules &policy, uint64_t *value)
@@ -67,8 +116,8 @@ outcome enroll(uint64_t listing, const std::string &death_operation, uint32_t be
 {
 	if (!result || !listing || death_operation.size() != 32 ||
 	    death_operation.find_first_not_of("0123456789abcdef") != std::string::npos ||
-	    death_operation == std::string(32, '0') || !beneficiary || !uid || !item_revision ||
-	    !policy.enabled || !valid_rules(policy))
+	    death_operation.find_first_not_of('0') == std::string::npos || !beneficiary || !uid ||
+	    !item_revision || !policy.enabled || !valid_rules(policy))
 		return outcome::invalid;
 	record candidate;
 	if (!add(death_time, policy.collection_delay, &candidate.collect_at) ||
@@ -215,7 +264,7 @@ outcome resume(record *entry, uint64_t expected_revision, uint64_t now)
 
 bool due_queue::update(const record &entry)
 {
-	if (!entry.listing || entry.version != record_version)
+	if (!valid_record(entry))
 		return false;
 	uint64_t deadline = 0;
 	switch (entry.status)

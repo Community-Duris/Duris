@@ -154,6 +154,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \
+				 economy/collector_codec.o \
 				 economy/collector_policy.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \

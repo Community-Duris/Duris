@@ -147,6 +147,9 @@ int main()
 	assert(queue.update(entry) && queue.size() == 100000);
 	assert(purchase(&entry, 5, 42, 150, true, entry.available_at + 1) == outcome::applied);
 	assert(queue.update(entry) && queue.size() == 99999);
+	auto malformed = candidate(100001, 100001);
+	malformed.collect_at++;
+	assert(!valid_record(malformed) && !queue.update(malformed) && queue.size() == 99999);
 	std::cout
 		<< "collector policy: timing, custody conflicts, privacy, prices, pause, terminal "
 		   "states and bounded 100000-item scheduling passed\n";

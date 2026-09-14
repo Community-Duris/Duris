@@ -30,6 +30,15 @@ due work leaves it scheduled for retry. Commit publication replaces its deadline
 or removes a closed listing. The queue can be reconstructed from current records;
 it is not itself a durable store.
 
+`src/economy/collector_codec.{h,c}` now defines the canonical version-one
+collector catalog metadata image: a revisioned catalog, monotonic next-listing
+cursor, strictly ordered records, fixed-width little-endian fields, and packed
+death operation IDs. Encoding and decoding validate the defined
+state/timing/pause/reason invariants, reject unknown versions and noncanonical
+input without partially publishing output, and cap catalogs at 262,144 records.
+This establishes a shared persistence boundary; object payloads and both backend
+repositories remain unwired.
+
 These functions mutate a proposed record only. **A successful policy decision is
 not proof of a committed item transfer or wallet debit.** Operation-ID replay,
 atomicity, payload preservation, privacy at command dispatch, and real custody
@@ -51,8 +60,9 @@ must be implemented by the service and repositories below.
    transfer codec rejects transfers *to* system custody. The SQL repository,
    flatfile repository, and runtime cache also interpret transfers *from* system
    custody as creation. All must distinguish storage from creation together.
-4. Add complete per-item payload storage, additive verified SQL migrations,
-   versioned flatfile authority images, and equivalent operation-ID replay.
+4. Wire the versioned catalog records into complete per-item payload storage,
+   additive verified SQL migrations, flatfile authority images, and equivalent
+   operation-ID replay.
    Collection must atomically recheck containment, detach eligible entries, leave
    excluded/added contents at source, update source payloads, and retain exactly
    one authoritative item location. Purchase must atomically debit the carried
@@ -80,11 +90,13 @@ collection race.
 
 ## Validation and promotion gate
 
-Run `python3 tests/async/test_collector_policy.py` for executable policy tests.
-They cover boundary times, delayed activation, independent cancellation,
-repeated-death records, stale revisions, beneficiary checks, funds/capacity
-failures, terminal conflicts, arithmetic overflow, pause/resume, and bounded
-scheduling of 100,000 records. They are not repository or in-game tests.
+Run `python3 tests/async/test_collector_policy.py` for executable policy tests and
+`python3 tests/async/test_collector_codec.py` for canonical codec, corruption,
+round-trip, and 100,000-record rebuild coverage. Together they cover boundary
+times, delayed activation, independent cancellation, repeated-death records,
+stale revisions, beneficiary checks, funds/capacity failures, terminal conflicts,
+arithmetic overflow, pause/resume, strict catalog validation, and bounded indexed
+scheduling. They are not repository or in-game tests.
 
 Before this PR can leave draft, implement and execute the full #336 journey on
 both backends with shortened timers: actual player death, partial loot, forced

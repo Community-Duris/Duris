@@ -79,6 +79,7 @@ enum class outcome
 };
 
 bool valid_rules(const rules &policy);
+bool valid_record(const record &entry);
 bool terminal(state status);
 // All monetary values use copper, like obj_data::cost and auction transactions.
 outcome price(int64_t base_value, const rules &policy, uint64_t *value);
