@@ -596,6 +596,40 @@ bool update_coin_payload(MYSQL *connection, const item_transfer_payload &payload
 }
 } // namespace
 
+bool item_transfer_repository_ensure_owner(MYSQL *connection,
+					   const item_owner_identity &owner)
+{
+	if (!connection || !item_owner_identity_valid(owner))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return ensure_owner(connection, owner);
+}
+
+bool item_transfer_repository_lock_owner(MYSQL *connection, const item_owner_identity &owner,
+					 uint64_t *revision)
+{
+	if (!connection || !revision || !item_owner_identity_valid(owner))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return lock_owner(connection, owner, revision);
+}
+
+bool item_transfer_repository_advance_owner(MYSQL *connection,
+					    const item_owner_identity &owner,
+					    uint64_t prior_revision)
+{
+	if (!connection || !item_owner_identity_valid(owner) || prior_revision == UINT64_MAX)
+	{
+		errno = prior_revision == UINT64_MAX ? ERANGE : EINVAL;
+		return false;
+	}
+	return update_owner_revision(connection, owner, prior_revision);
+}
+
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,
 				      bool *mutation_applied)

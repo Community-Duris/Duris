@@ -28,6 +28,13 @@ static bool resurrection_completed = false;
 static bool raise_completed = false;
 static bool nested_completed = false;
 
+bool redis_invalidate_artifact_cache(void)
+{
+	return true;
+}
+
+void critical_outbox_resume(void) {}
+
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
 	submitted.push_back(std::move(command));

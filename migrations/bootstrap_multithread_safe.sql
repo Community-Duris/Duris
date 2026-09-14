@@ -405,6 +405,7 @@ CREATE TABLE `corpses` (
   `id` int NOT NULL AUTO_INCREMENT,
   `player_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `save_id` bigint NOT NULL,
+  `corpse_revision` bigint unsigned NOT NULL DEFAULT '1',
   `room_vnum` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `short_descr` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -420,8 +421,18 @@ CREATE TABLE `corpses` (
   `value7` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_player_saveid` (`player_name`,`save_id`),
-  KEY `idx_player_name` (`player_name`)
+  KEY `idx_player_name` (`player_name`),
+  KEY `idx_corpse_owner_save` (`value3`,`save_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `corpse_catalog_state` (
+  `state_id` tinyint unsigned NOT NULL,
+  `catalog_revision` bigint unsigned NOT NULL DEFAULT '1',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`state_id`),
+  CONSTRAINT `chk_corpse_catalog_revision` CHECK (`catalog_revision` > 0),
+  CONSTRAINT `chk_corpse_catalog_singleton` CHECK (`state_id` = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `corpse_catalog_state` (`state_id`,`catalog_revision`) VALUES (1,1);
 CREATE TABLE `ctf_data` (
   `id` int NOT NULL AUTO_INCREMENT,
   `time` timestamp NULL DEFAULT NULL,

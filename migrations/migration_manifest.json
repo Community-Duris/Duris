@@ -348,6 +348,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "495fbd3af270eca4c644d2fc2098c57d5562734e1e47f6cbf27b3ea5669dc525",
       "verify_checksum": "235c992cf697890957fb6f49ddf36acfdbb8a77903ad552ee0280d109b32a075"
+    },
+    {
+      "id": "0018_corpse_lifecycle_authority",
+      "sequence": 18,
+      "description": "Add revision authority for atomic corpse lifecycle disposal",
+      "apply": "immutable/0018_corpse_lifecycle_authority.sql",
+      "verify": "immutable/0018_corpse_lifecycle_authority.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "8ac72d8fa55b2c676f0f3c6e51f640292ffa7a3cb932f598e3a35922c9d343d5",
+      "verify_checksum": "17a3c0f826c8048f34e02cd5856e2ade5d748b262557e5a9a7536039dbb3b82b"
     }
   ]
 }

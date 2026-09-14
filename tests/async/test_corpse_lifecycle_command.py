@@ -11,6 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 HARNESS = r'''
 #include "persistence/corpse_lifecycle_command.h"
 
+#include <algorithm>
 #include <cassert>
 
 static critical_operation_id operation(uint8_t seed)
@@ -206,6 +207,7 @@ int main()
 	resurrect_result.room_owner_revision = 8;
 	resurrect_result.player_owner_revision = 10;
 	resurrect_result.wallet_revision = 12;
+	resurrect_result.bank_revision = 14;
 	resurrect_result.max_item_revision = 13;
 	resurrect_result.item_count = 2;
 	resurrect_result.wallet = { 1, 2, 3, 4 };
@@ -215,7 +217,13 @@ int main()
 						      &decoded_result));
 	assert(decoded_result.action == corpse_lifecycle_action::resurrect &&
 	       decoded_result.player_owner_revision == 10 && decoded_result.wallet_revision == 12 &&
-	       decoded_result.wallet[3] == 4 && decoded_result.collector_catalog_changed);
+	       decoded_result.bank_revision == 14 && decoded_result.wallet[3] == 4 &&
+	       decoded_result.collector_catalog_changed);
+	std::array<uint8_t, CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES> bankless_result = {};
+	std::copy_n(encoded_result.begin(), bankless_result.size(), bankless_result.begin());
+	assert(corpse_lifecycle_command_decode_result(bankless_result.data(),
+						      bankless_result.size(), &decoded_result));
+	assert(decoded_result.wallet_revision == 12 && decoded_result.bank_revision == 0);
 	corpse_lifecycle_payload raise = resurrect;
 	raise.action = corpse_lifecycle_action::raise_follower;
 	raise.expected_room_revision = 0;

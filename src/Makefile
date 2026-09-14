@@ -317,6 +317,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_world_item_repository.o \
 				 flatfile/flatfile_world_quest_history.o \
 				 persistence/corpse_lifecycle_transaction.o \
+				 persistence/corpse_lifecycle_repository.o \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \

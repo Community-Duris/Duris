@@ -290,6 +290,8 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return zone_touch_transaction_outbox_delivery(record, context);
 	if (record.destination == COLLECTOR_OUTBOX_DESTINATION)
 		return collector_transaction_outbox_delivery(record, context);
+	if (record.destination == CORPSE_LIFECYCLE_OUTBOX_DESTINATION)
+		return corpse_lifecycle_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
 #endif
@@ -1973,6 +1975,7 @@ resume_game_loop:
 			critical_gameplay_handle_completions(critical_completions,
 							     critical_completion_count);
 			auction_transaction_publish_outbox();
+			corpse_lifecycle_transaction_publish_outbox();
 			collector_transaction_publish_outbox();
 			combat_outcome_transaction_publish_outbox();
 			artifact_guild_transaction_publish_outbox();
