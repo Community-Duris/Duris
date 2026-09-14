@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -50,6 +51,9 @@ struct payment_context
 	critical_operation_id operation;
 };
 std::unordered_map<uint32_t, std::unique_ptr<request>> requests;
+// Copyover can admit every online player before any read completes. Keep only
+// player IDs for overflow recovery; resolve the current session when a slot opens.
+std::unordered_set<uint32_t> deferred_replays;
 std::string receipt_directory;
 int receipt_lock = -1;
 bool enabled = false;
@@ -134,7 +138,8 @@ void enqueue(P_char ch, std::optional<locker_receipt> candidate, bool requested 
 		existing->second->requested = true;
 		return;
 	}
-	if (!enabled || requests.size() >= maximum_pending || existing != requests.end())
+	if (!enabled || existing != requests.end() ||
+	    (requests.size() >= maximum_pending && (candidate || requested)))
 	{
 		if (candidate || requested)
 			send_to_char("The locker clerk is busy. Please try again shortly.\r\n", ch);
@@ -142,6 +147,11 @@ void enqueue(P_char ch, std::optional<locker_receipt> candidate, bool requested 
 	}
 	try
 	{
+		if (requests.size() >= maximum_pending)
+		{
+			deferred_replays.insert(pid);
+			return;
+		}
 		auto entry = std::make_unique<request>();
 		entry->candidate = std::move(candidate);
 		entry->requested = requested;
@@ -154,6 +164,7 @@ void enqueue(P_char ch, std::optional<locker_receipt> candidate, bool requested 
 										    &result.value);
 					       return result;
 				       });
+		deferred_replays.erase(pid);
 	}
 	catch (...)
 	{
@@ -192,6 +203,7 @@ void locker_identify_shutdown()
 			entry->io.wait();
 	}
 	requests.clear();
+	deferred_replays.clear();
 	flatfile_lock_release(receipt_lock);
 	receipt_lock = -1;
 }
@@ -350,6 +362,18 @@ void locker_identify_pulse()
 			}
 		}
 		++it;
+	}
+	// Limit both new I/O and disconnected-player cleanup per pulse. Repeated
+	// login/reconnect notifications share one deferred entry for each player ID.
+	for (size_t n = 0;
+	     n < maximum_pending && requests.size() < maximum_pending && !deferred_replays.empty();
+	     ++n)
+	{
+		const uint32_t pid = *deferred_replays.begin();
+		deferred_replays.erase(pid);
+		P_char ch = find_player_by_pid(pid);
+		if (ch && ch->desc && ch->desc->connected == CON_PLAYING)
+			enqueue(ch, std::nullopt);
 	}
 }
 

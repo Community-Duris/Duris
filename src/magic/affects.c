@@ -3720,7 +3720,7 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 		}
 		// If they have climb, they get a max 50% chance not to start falling.
 		if (affected_by_spell(ch, SKILL_CLIMB) &&
-		    number(1, 100) > GET_CHAR_SKILL(ch, SKILL_CLIMB) / 2)
+		    number(1, 100) <= MAX(0, MIN(100, GET_CHAR_SKILL(ch, SKILL_CLIMB))) / 2)
 		{
 			send_to_char("You start to slip, but catch yourself.\n", ch);
 			return FALSE;
@@ -3837,7 +3837,8 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 
 		if (GET_CHAR_SKILL(ch, SKILL_SAFE_FALL))
 			if (GET_CHAR_SKILL(ch, SKILL_SAFE_FALL) > number(1, 101))
-				dam <<= 1;
+				// Halve the impact, rounding down; the pre-skill minimum gives 1.
+				dam /= 2;
 
 		if (world[ch->in_room].dir_option[DIR_DOWN])
 		{
@@ -3854,11 +3855,13 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 				}
 				if (Wall && (speed > 43 || (Wall->value[2] / 2 < 10)))
 				{
-					act("You slam into $p, shattering it upon impact, and only marginally slowing your fall...",
-					    FALSE, ch, Wall, 0, TO_CHAR);
-					act("$n falls from above, slamming into and shattering $p, before continuing to fall...",
-					    FALSE, ch, Wall, 0, TO_ROOM);
-					damage(ch, ch, dam, TYPE_UNDEFINED);
+					act("You slam into $p!", FALSE, ch, Wall, 0, TO_CHAR);
+					act("$n falls from above and slams into $p!", FALSE, ch,
+					    Wall, 0, TO_ROOM);
+					// Match ordinary landing: death owns corpse placement and
+					// extraction. The dead actor cannot dispel or fall again.
+					if (damage(ch, ch, dam, TYPE_UNDEFINED))
+						return TRUE;
 					spell_dispel_magic(70, ch, NULL, SPELL_TYPE_SPELL, 0, Wall);
 					speed /= 2;
 					add_event(event_falling_char, 0, ch, NULL, NULL, 0, &speed,
