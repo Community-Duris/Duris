@@ -5770,7 +5770,7 @@ _room_msg~
 &n$n's $q &+Yexplodes &+Rwith a massive &n&+cshockwave&+R!
 ~
 A
-58 -1
+32 2
 A
 31 5
 #83456
@@ -5800,7 +5800,7 @@ _victim_msg~
 &n$n's $q &+Wexplodes in a painfully-blinding blast of light, smiting you!
 ~
 A
-57 -1
+34 2
 A
 35 5
 #83457
@@ -7678,9 +7678,9 @@ righteous platinum platinum-plated plated shield berronar truesilver _noquest_~
 1 3 4 200 5 0 0 0
 15 284553 100 0 0 128 0
 A
-57 -1
+34 2
 A
-58 -1
+36 2
 #83555
 rotting ram carcass~
 &+ya rotting &+Yram &+rcarcass&N~
