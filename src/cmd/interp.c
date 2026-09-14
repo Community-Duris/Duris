@@ -1235,7 +1235,15 @@ bool cmd_allowed_while_casting(P_char ch, int cmd)
 		(item_action_active(ch) || PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)));
 }
 
-static bool is_retired_command_spelling(const char *word, uint length);
+static bool is_retired_command_spelling(const char *word, uint length)
+{
+	static const char *const spellings[] = { "add", "deploy", NULL };
+
+	for (int i = 0; spellings[i]; ++i)
+		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
+			return true;
+	return false;
+}
 
 /** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
@@ -1462,16 +1470,6 @@ void do_confirm(P_char ch, bool yes)
 
 	ch->desc->confirm_state = CONFIRM_DONE;
 	command_interpreter(ch, ch->desc->last_command);
-}
-
-static bool is_retired_command_spelling(const char *word, uint length)
-{
-	static const char *const spellings[] = { "add", "deploy", NULL };
-
-	for (int i = 0; spellings[i]; ++i)
-		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
-			return true;
-	return false;
 }
 
 /*
