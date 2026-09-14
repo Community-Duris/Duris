@@ -102,9 +102,8 @@ int main(int argc, char **argv)
 	const fs::path root = fs::path(argv[1]) / "lifecycle";
 	prepare_root(root);
 	std::string error;
-	require(flatfile_world_item_establish(root.string(), {}, {}, &error) ==
-			flatfile_world_item_result::ok,
-		"could not establish empty world item authority: " + error);
+	require(!fs::exists(root / "domains/world_item_catalog"),
+		"first corpse fixture unexpectedly has a world catalog");
 	auto create_payload = upsert(0);
 	auto create = command(1, create_payload);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
