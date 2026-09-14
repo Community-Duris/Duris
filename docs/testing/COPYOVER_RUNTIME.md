@@ -43,7 +43,7 @@ ASan/UBSan custody save/exec/recover test, actual Telnet/TLS/MCCP sender fault
 tests and formatter passed. No production files, clients or credentials were
 used.
 
-## Remaining deployment validation
+## Scope of readiness and additional deployment coverage
 
 The original full-world Docker/TinTin post-success disconnect was not reproduced
 by these current-server journeys. Do not attribute that separate symptom to an
@@ -51,6 +51,9 @@ unproven account or descriptor change. The tests use a minimal world in the
 local build container and explicitly reproduce the reported UID/cwd ownership;
 they do not boot the complete release image. The production failure helper is
 tested with separate TLS/WebSocket descriptor queues, but full TLS and WebSocket
-player sessions across failed/successful copyover remain unverified. Keep the PR
-draft for that release-image/client matrix and retain #230 for the remaining
-deployment symptom. CI status is not the blocker.
+player sessions across failed/successful copyover remain unverified. These are
+additional integration coverage, not blockers for the two demonstrated defects
+in #230: the unwritable path and raw output corrupting MCCP. The actual non-root
+runtime and original-socket MCCP failure/retry/exec journeys establish that scoped
+fix, together with separate production transport tests. The PR is ready for
+review. It does not claim to fix an unattributed post-success disconnect.
