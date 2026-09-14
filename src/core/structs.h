@@ -1413,6 +1413,9 @@ struct char_special_data
 	// Absolute pulse (ne_event_tick) by which a CharWait() gate must be gone.
 	//   Runtime only; never saved.  See CharWait() and the command gate in comm.c.
 	unsigned long long wait_until_pulse;
+	// Per-live-NPC anti-retry deadline for the optional divine order-refusal gate.
+	// Runtime only; extraction/recreation and restart deliberately reset it.
+	unsigned long long divine_refusal_until_pulse;
 	P_char arrest_by;
 	char undead_spell_slots[MAX_CIRCLE + 1];
 

@@ -1235,6 +1235,8 @@ bool cmd_allowed_while_casting(P_char ch, int cmd)
 		(item_action_active(ch) || PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)));
 }
 
+static bool is_retired_command_spelling(const char *word, uint length);
+
 /** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
  * a different authoritative view, so item moves and synchronous consumers must
@@ -1325,6 +1327,29 @@ static int input_command_number(const char *input)
 	}
 	word[len] = '\0';
 
+	return old_search_block(word, 0, len, command, 2);
+}
+
+/** Resolve an ordered command exactly as the interpreter will dispatch it. */
+int ordered_command_number(const char *input)
+{
+	char word[MAX_INPUT_LENGTH];
+	uint begin = 0;
+	uint len = 0;
+
+	if (!input)
+		return CMD_NONE;
+	while (input[begin] == ' ')
+		begin++;
+	while (input[begin + len] > ' ' && len < sizeof(word) - 1)
+	{
+		word[len] = LOWER(input[begin + len]);
+		len++;
+	}
+	word[len] = '\0';
+
+	if (len == 0 || is_retired_command_spelling(word, len))
+		return CMD_NONE;
 	return old_search_block(word, 0, len, command, 2);
 }
 

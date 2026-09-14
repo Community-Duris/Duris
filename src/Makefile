@@ -128,6 +128,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actnew.o \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
+				 cmd/divine_refusal_policy.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
