@@ -17,6 +17,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/falling.h"
 #include "cmd/interp.h"
 #include "kingdom/kingdom.h"
 #include "core/utils.h"
@@ -1599,8 +1600,9 @@ void command_interpreter(P_char ch, char *argument)
 
 	if (world[ch->in_room].chance_fall && number(1, 100) <= world[ch->in_room].chance_fall)
 	{
-		// Starting speed 0, and do not kill.
-		if (falling_char(ch, 0, FALSE))
+		const falling_start_result falling = falling_start(ch);
+		if (falling == falling_start_result::scheduled ||
+		    falling == falling_start_result::schedule_rejected)
 		{
 			return;
 		}
