@@ -1,9 +1,13 @@
 #ifndef DURIS_COLLECTOR_POLICY_H
 #define DURIS_COLLECTOR_POLICY_H
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <map>
-#include <string>
+#include <set>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 // Policy decisions only. Callers must commit the resulting record together with
@@ -11,6 +15,8 @@
 namespace collector
 {
 constexpr uint16_t record_version = 1;
+constexpr size_t death_operation_hex_size = 32;
+using death_operation_id = std::array<char, death_operation_hex_size + 1>;
 
 enum class state : uint8_t
 {
@@ -48,7 +54,7 @@ struct record
 {
 	uint16_t version = record_version;
 	uint64_t listing = 0;
-	std::string death_operation;
+	death_operation_id death_operation = {};
 	uint32_t beneficiary = 0;
 	uint64_t uid = 0;
 	uint64_t death_time = 0;
@@ -83,7 +89,7 @@ bool valid_record(const record &entry);
 bool terminal(state status);
 // All monetary values use copper, like obj_data::cost and auction transactions.
 outcome price(int64_t base_value, const rules &policy, uint64_t *value);
-outcome enroll(uint64_t listing, const std::string &death_operation, uint32_t beneficiary,
+outcome enroll(uint64_t listing, std::string_view death_operation, uint32_t beneficiary,
 	       uint64_t uid, uint64_t item_revision, uint64_t death_time, const rules &policy,
 	       record *result);
 outcome cancel(record *entry, uint64_t expected_revision, reason why);
@@ -97,18 +103,20 @@ outcome expire(record *entry, uint64_t expected_revision, uint64_t now);
 outcome pause(record *entry, uint64_t expected_revision, uint64_t now);
 outcome resume(record *entry, uint64_t expected_revision, uint64_t now);
 
-// Bounded indexed scheduling. Successful commit publications replace the index
-// entry; a failed attempt leaves it due. No scan of historical ownership is used.
+// Bounded indexed scheduling. Leased work is moved to lease_until so a failed
+// batch cannot starve later deadlines. Successful commit publication replaces or
+// removes its entry; failure leaves the lease to expire. Leases are deliberately
+// ephemeral and disappear when the queue is rebuilt from durable records.
 class due_queue
 {
     public:
 	bool update(const record &entry);
 	void erase(uint64_t listing);
-	std::vector<uint64_t> due(uint64_t now, size_t limit) const;
+	std::vector<uint64_t> lease_due(uint64_t now, size_t limit, uint64_t lease_until);
 	size_t size() const { return by_listing.size(); }
 
     private:
-	std::map<std::pair<uint64_t, uint64_t>, bool> by_deadline;
+	std::set<std::pair<uint64_t, uint64_t>> by_deadline;
 	std::map<uint64_t, uint64_t> by_listing;
 };
 }

@@ -62,10 +62,8 @@ int hexadecimal(unsigned char value)
 }
 
 bool put_operation(std::array<uint8_t, encoded_record_bytes> *output, size_t *offset,
-		   const std::string &operation)
+		   const death_operation_id &operation)
 {
-	if (operation.size() != 32)
-		return false;
 	for (size_t byte = 0; byte < 16; ++byte)
 	{
 		const int high = hexadecimal(operation[byte * 2]);
@@ -76,22 +74,20 @@ bool put_operation(std::array<uint8_t, encoded_record_bytes> *output, size_t *of
 	return true;
 }
 
-bool get_operation(reader *input, std::string *operation)
+bool get_operation(reader *input, death_operation_id *operation)
 {
 	if (!input || !operation)
 		return false;
 	constexpr char hexadecimal_digits[] = "0123456789abcdef";
-	std::string decoded;
-	decoded.reserve(32);
 	for (size_t byte = 0; byte < 16; ++byte)
 	{
 		uint8_t value = 0;
 		if (!input->get(&value))
 			return false;
-		decoded.push_back(hexadecimal_digits[value >> 4]);
-		decoded.push_back(hexadecimal_digits[value & 0xf]);
+		(*operation)[byte * 2] = hexadecimal_digits[value >> 4];
+		(*operation)[byte * 2 + 1] = hexadecimal_digits[value & 0xf];
 	}
-	*operation = std::move(decoded);
+	(*operation)[death_operation_hex_size] = '\0';
 	return true;
 }
 
@@ -157,44 +153,35 @@ codec_result record_decode(const uint8_t *encoded, size_t size, record *entry)
 		return codec_result::invalid;
 	if (!encoded || size != encoded_record_bytes)
 		return codec_result::malformed;
-	try
-	{
-		reader input{ encoded, encoded + size };
-		record candidate;
-		uint8_t paused = 0, enabled = 0, status = 0, closed_reason = 0;
-		if (!input.get(&candidate.version))
-			return codec_result::malformed;
-		if (candidate.version != record_version)
-			return codec_result::unsupported_version;
-		if (!input.get(&candidate.listing) ||
-		    !get_operation(&input, &candidate.death_operation) ||
-		    !input.get(&candidate.beneficiary) || !input.get(&candidate.uid) ||
-		    !input.get(&candidate.death_time) || !input.get(&candidate.collect_at) ||
-		    !input.get(&candidate.sale_at) || !input.get(&candidate.available_at) ||
-		    !input.get(&candidate.expires_at) || !input.get(&paused) || paused > 1 ||
-		    !input.get(&candidate.paused_at) || !input.get(&candidate.revision) ||
-		    !input.get(&candidate.item_revision) || !input.get(&candidate.price_value) ||
-		    !input.get(&enabled) || enabled > 1 ||
-		    !input.get(&candidate.policy.collection_delay) ||
-		    !input.get(&candidate.policy.sale_delay) ||
-		    !input.get(&candidate.policy.holding_duration) ||
-		    !input.get(&candidate.policy.price_percent) ||
-		    !input.get(&candidate.policy.minimum_value) || !input.get(&status) ||
-		    !input.get(&closed_reason) || input.cursor != input.end)
-			return codec_result::malformed;
-		candidate.holding_paused = paused != 0;
-		candidate.policy.enabled = enabled != 0;
-		candidate.status = static_cast<state>(status);
-		candidate.closed_reason = static_cast<reason>(closed_reason);
-		if (!valid_record(candidate))
-			return codec_result::invalid;
-		*entry = std::move(candidate);
-		return codec_result::ok;
-	}
-	catch (const std::bad_alloc &)
-	{
-		return codec_result::allocation_failure;
-	}
+	reader input{ encoded, encoded + size };
+	record candidate;
+	uint8_t paused = 0, enabled = 0, status = 0, closed_reason = 0;
+	if (!input.get(&candidate.version))
+		return codec_result::malformed;
+	if (candidate.version != record_version)
+		return codec_result::unsupported_version;
+	if (!input.get(&candidate.listing) || !get_operation(&input, &candidate.death_operation) ||
+	    !input.get(&candidate.beneficiary) || !input.get(&candidate.uid) ||
+	    !input.get(&candidate.death_time) || !input.get(&candidate.collect_at) ||
+	    !input.get(&candidate.sale_at) || !input.get(&candidate.available_at) ||
+	    !input.get(&candidate.expires_at) || !input.get(&paused) || paused > 1 ||
+	    !input.get(&candidate.paused_at) || !input.get(&candidate.revision) ||
+	    !input.get(&candidate.item_revision) || !input.get(&candidate.price_value) ||
+	    !input.get(&enabled) || enabled > 1 || !input.get(&candidate.policy.collection_delay) ||
+	    !input.get(&candidate.policy.sale_delay) ||
+	    !input.get(&candidate.policy.holding_duration) ||
+	    !input.get(&candidate.policy.price_percent) ||
+	    !input.get(&candidate.policy.minimum_value) || !input.get(&status) ||
+	    !input.get(&closed_reason) || input.cursor != input.end)
+		return codec_result::malformed;
+	candidate.holding_paused = paused != 0;
+	candidate.policy.enabled = enabled != 0;
+	candidate.status = static_cast<state>(status);
+	candidate.closed_reason = static_cast<reason>(closed_reason);
+	if (!valid_record(candidate))
+		return codec_result::invalid;
+	*entry = candidate;
+	return codec_result::ok;
 }
 
 codec_result catalog_encode(const catalog &value, std::vector<uint8_t> *encoded)

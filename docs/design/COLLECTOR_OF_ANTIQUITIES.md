@@ -23,12 +23,16 @@ active, unclaimed current custody. Activation starts the holding period at
 actual activation, including late processing. Purchase checks beneficiary,
 capacity, funds, and expiry. Terminal records cannot reactivate; a later death
 must use a new listing and death operation. Paused listings cannot be bought
-or expired, and resumption preserves their remaining holding time.
+or expired, overdue listings cannot enter pause, and resumption preserves their
+remaining holding time. Cancelling an item already held by the collector advances
+its item revision so the eventual transaction cannot reuse stale custody state.
 
-The indexed due queue returns at most the caller's requested batch size. Reading
-due work leaves it scheduled for retry. Commit publication replaces its deadline
-or removes a closed listing. The queue can be reconstructed from current records;
-it is not itself a durable store.
+The indexed due queue leases at most the caller's requested batch size until an
+explicit retry time. This keeps a repeatedly failing deadline from occupying the
+head of every batch while preserving automatic retry after the lease. Commit
+publication replaces its deadline or removes a closed listing. The queue and its
+ephemeral leases can be reconstructed from current records; neither is a durable
+store.
 
 `src/economy/collector_codec.{h,c}` now defines the canonical version-one
 collector catalog metadata image: a revisioned catalog, monotonic next-listing
@@ -96,7 +100,8 @@ round-trip, and 100,000-record rebuild coverage. Together they cover boundary
 times, delayed activation, independent cancellation, repeated-death records,
 stale revisions, beneficiary checks, funds/capacity failures, terminal conflicts,
 arithmetic overflow, pause/resume, strict catalog validation, and bounded indexed
-scheduling. They are not repository or in-game tests.
+leased scheduling without head-of-line starvation. They are not repository or
+in-game tests.
 
 Before this PR can leave draft, implement and execute the full #336 journey on
 both backends with shortened timers: actual player death, partial loot, forced

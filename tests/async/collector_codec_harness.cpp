@@ -111,6 +111,10 @@ int main()
 			   [](uint8_t byte) { return byte == 0x5a; }));
 	due_queue rejected;
 	assert(!rejected.update(invalid) && rejected.size() == 0);
+	invalid = base;
+	invalid.death_operation[death_operation_hex_size] = 'x';
+	assert(!valid_record(invalid) &&
+	       record_encode(invalid, &deterministic) == codec_result::invalid);
 
 	std::vector<record> states;
 	states.push_back(base);
@@ -217,7 +221,7 @@ int main()
 	due_queue rebuilt;
 	for (const auto &entry : large_decoded.records)
 		assert(rebuilt.update(entry));
-	const auto first_batch = rebuilt.due(44200, 64);
+	const auto first_batch = rebuilt.lease_due(44200, 64, 44230);
 	assert(rebuilt.size() == 100000 && first_batch.size() == 64 && first_batch.front() == 1 &&
 	       first_batch.back() == 64);
 

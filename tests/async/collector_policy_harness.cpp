@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <type_traits>
 
 using namespace collector;
 
@@ -29,6 +30,7 @@ record saleable()
 
 int main()
 {
+	static_assert(std::is_trivially_copyable_v<record>);
 	const auto maximum = std::numeric_limits<uint64_t>::max();
 	rules defaults;
 	assert(!defaults.enabled && defaults.collection_delay == 43200 &&
@@ -58,6 +60,7 @@ int main()
 	auto sword = candidate();
 	auto shield = candidate(2, 102);
 	assert(cancel(&sword, 1, reason::claimed) == outcome::applied);
+	assert(sword.item_revision == 5);
 	assert(collect(&sword, 2, 5, 5, true, 75, sword.collect_at) == outcome::conflict);
 	assert(cancel(&sword, 2, reason::claimed) == outcome::conflict);
 	assert(shield.status == state::candidate && shield.revision == 1);
@@ -110,37 +113,59 @@ int main()
 	assert(expire(&paused, 5, paused.expires_at - 1) == outcome::not_due);
 	assert(expire(&paused, 5, paused.expires_at) == outcome::applied);
 
-	// Disabling after an expiry deadline must not resurrect the listing.
+	// An overdue listing must remain due for expiry instead of leaving the queue.
 	paused = saleable();
-	assert(pause(&paused, 3, paused.expires_at + 1) == outcome::applied);
-	const auto resume_time = paused.paused_at + 86400;
-	assert(resume(&paused, 4, resume_time) == outcome::applied);
-	assert(purchase(&paused, 5, 42, 150, true, resume_time) == outcome::conflict);
-	assert(expire(&paused, 5, resume_time) == outcome::applied);
+	assert(pause(&paused, 3, paused.expires_at) == outcome::conflict);
+	assert(pause(&paused, 3, paused.expires_at + 1) == outcome::conflict);
+	assert(!paused.holding_paused && paused.revision == 3);
+	assert(expire(&paused, 3, paused.expires_at) == outcome::applied);
+
+	auto invalid_reason = candidate();
+	assert(cancel(&invalid_reason, 1, reason::holding_elapsed) == outcome::invalid);
+	assert(cancel(&invalid_reason, 1, static_cast<reason>(255)) == outcome::invalid);
 
 	for (auto why : { reason::destroyed, reason::quarantined, reason::excluded,
 			  reason::character_deleted, reason::season_reset })
 	{
 		auto entry = saleable();
+		const auto item_revision = entry.item_revision;
 		assert(cancel(&entry, 3, why) == outcome::applied);
-		assert(entry.closed_reason == why && entry.status == state::cancelled);
+		assert(entry.closed_reason == why && entry.status == state::cancelled &&
+		       entry.item_revision == item_revision + 1);
 		assert(purchase(&entry, 4, 42, maximum, true, entry.available_at) ==
 		       outcome::conflict);
 	}
+	auto cancelled_collected = candidate();
+	assert(collect(&cancelled_collected, 1, 5, 5, true, 75, cancelled_collected.collect_at) ==
+	       outcome::applied);
+	assert(cancel(&cancelled_collected, 2, reason::destroyed) == outcome::applied &&
+	       cancelled_collected.item_revision == 7);
+	auto cancellation_overflow = saleable();
+	cancellation_overflow.item_revision = maximum;
+	assert(cancel(&cancellation_overflow, 3, reason::destroyed) == outcome::overflow &&
+	       cancellation_overflow.status == state::available);
 
 	due_queue queue;
 	for (uint64_t index = 1; index <= 100000; ++index)
 		assert(queue.update(candidate(index, index)));
 	assert(queue.size() == 100000);
-	assert(queue.due(44199, 64).empty());
-	assert(queue.due(maximum, 0).empty());
-	const auto batch = queue.due(44200, 64);
+	assert(queue.lease_due(44199, 64, 44230).empty());
+	assert(queue.lease_due(maximum, 0, maximum).empty());
+	assert(queue.lease_due(44200, 64, 44200).empty());
+	const auto batch = queue.lease_due(44200, 64, 44230);
 	assert(batch.size() == 64 && batch.front() == 1 && batch.back() == 64);
-	// Reading work never drops it. Retry sees the same stable listings.
-	assert(batch == queue.due(44200, 64));
+
+	due_queue fairness;
+	for (uint64_t index = 1; index <= 3; ++index)
+		assert(fairness.update(candidate(index, index)));
+	assert(fairness.lease_due(44200, 1, 44230).front() == 1);
+	assert(fairness.lease_due(44200, 1, 44230).front() == 2);
+	assert(fairness.lease_due(44200, 1, 44230).front() == 3);
+	assert(fairness.lease_due(44229, 1, 44260).empty());
+	assert(fairness.lease_due(44230, 1, 44260).front() == 1);
 	auto entry = saleable();
 	assert(queue.update(entry));
-	assert(queue.size() == 100000 && queue.due(44200, 1).front() == 2);
+	assert(queue.size() == 100000 && queue.lease_due(44200, 1, 44230).front() == 65);
 	assert(pause(&entry, 3, entry.available_at) == outcome::applied);
 	assert(queue.update(entry) && queue.size() == 99999);
 	assert(resume(&entry, 4, entry.available_at + 1) == outcome::applied);
@@ -152,5 +177,5 @@ int main()
 	assert(!valid_record(malformed) && !queue.update(malformed) && queue.size() == 99999);
 	std::cout
 		<< "collector policy: timing, custody conflicts, privacy, prices, pause, terminal "
-		   "states and bounded 100000-item scheduling passed\n";
+		   "states and leased 100000-item scheduling passed\n";
 }
