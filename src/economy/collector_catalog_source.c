@@ -3,7 +3,10 @@
 #include <cerrno>
 #include <utility>
 
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+#include "flatfile/flatfile_collector_repository.h"
+#include "persistence/persistence_mode.h"
+#else
 #include "economy/collector_repository.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_thread_init.h"
@@ -14,9 +17,15 @@
 bool collector_catalog_source_load(collector_bootstrap_snapshot &snapshot, std::string &error)
 {
 #ifdef __NO_MYSQL__
-	(void)snapshot;
-	error = "flat-file collector authority is not available";
-	return false;
+	const char *root = persistence_mode_flatfile_root();
+	if (!root || !*root)
+	{
+		error = "flat-file collector authority root is unavailable";
+		return false;
+	}
+	const auto loaded =
+		flatfile_collector_repository_read_bootstrap(root, &snapshot, &error);
+	return loaded == flatfile_collector_repository_result::ok;
 #else
 	if (sql_worker_thread_init() != 0)
 	{
@@ -59,10 +68,24 @@ bool collector_listing_source_load(uint64_t listing, collector_listing_detail &d
 		return false;
 	}
 #ifdef __NO_MYSQL__
-	(void)detail;
-	(void)found;
-	error_code = ENOTSUP;
-	error = "flat-file collector authority is not available";
+	const char *root = persistence_mode_flatfile_root();
+	if (!root || !*root)
+	{
+		error_code = ENOENT;
+		error = "flat-file collector authority root is unavailable";
+		return false;
+	}
+	const auto loaded = flatfile_collector_repository_read_listing(
+		root, listing, &detail, &found, &error);
+	if (loaded == flatfile_collector_repository_result::ok)
+	{
+		error_code = 0;
+		error.clear();
+		return true;
+	}
+	error_code = loaded == flatfile_collector_repository_result::io_error ? EIO : EILSEQ;
+	if (error.empty())
+		error = "flat-file collector listing read failed";
 	return false;
 #else
 	if (sql_worker_thread_init() != 0)

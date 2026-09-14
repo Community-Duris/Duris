@@ -121,7 +121,7 @@ bool refresh_counts(MYSQL *connection)
 bool fetch_batch(MYSQL *connection, std::vector<critical_outbox_record> *records)
 {
 	static const char SQL[] =
-		"SELECT outbox_id,destination,event_type,payload_version,attempt_count,payload "
+		"SELECT outbox_id,operation_id,destination,event_type,payload_version,attempt_count,payload "
 		"FROM critical_outbox WHERE status=0 AND next_attempt_at<=CURRENT_TIMESTAMP(6) "
 		"ORDER BY next_attempt_at,outbox_id LIMIT 64";
 	if (!records || !execute(connection, SQL))
@@ -138,26 +138,29 @@ bool fetch_batch(MYSQL *connection, std::vector<critical_outbox_record> *records
 			unsigned long *lengths = mysql_fetch_lengths(result);
 			uint64_t id = 0, destination = 0, event_type = 0, payload_version = 0,
 				 attempt = 0;
-			if (!lengths || !parse_u64(row[0], &id) ||
-			    !parse_u64(row[1], &destination) || !parse_u64(row[2], &event_type) ||
-			    !parse_u64(row[3], &payload_version) || !parse_u64(row[4], &attempt) ||
-			    !row[5] || lengths[5] > CRITICAL_OUTBOX_RECORD_MAX_BYTES ||
-			    lengths[5] > CRITICAL_OUTBOX_QUEUE_MAX_BYTES - bytes)
+			if (!lengths || !parse_u64(row[0], &id) || !row[1] ||
+			    lengths[1] != CRITICAL_COMMAND_ID_BYTES ||
+			    !parse_u64(row[2], &destination) || !parse_u64(row[3], &event_type) ||
+			    !parse_u64(row[4], &payload_version) || !parse_u64(row[5], &attempt) ||
+			    !row[6] || lengths[6] > CRITICAL_OUTBOX_RECORD_MAX_BYTES ||
+			    lengths[6] > CRITICAL_OUTBOX_QUEUE_MAX_BYTES - bytes)
 			{
 				mysql_free_result(result);
 				return false;
 			}
 			critical_outbox_record record = {
 				.outbox_id = id,
+				.operation_id = {},
 				.destination = static_cast<uint16_t>(destination),
 				.event_type = static_cast<uint16_t>(event_type),
 				.payload_version = static_cast<uint16_t>(payload_version),
 				.attempt = static_cast<unsigned int>(attempt),
 				.payload = {}
 			};
-			record.payload.assign(reinterpret_cast<uint8_t *>(row[5]),
-					      reinterpret_cast<uint8_t *>(row[5]) + lengths[5]);
-			bytes += lengths[5];
+			memcpy(record.operation_id.bytes.data(), row[1], CRITICAL_COMMAND_ID_BYTES);
+			record.payload.assign(reinterpret_cast<uint8_t *>(row[6]),
+					      reinterpret_cast<uint8_t *>(row[6]) + lengths[6]);
+			bytes += lengths[6];
 			records->push_back(std::move(record));
 		}
 	}

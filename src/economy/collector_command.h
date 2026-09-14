@@ -12,7 +12,8 @@
 #include <vector>
 
 constexpr uint16_t COLLECTOR_COMMAND_PAYLOAD_VERSION = 1;
-constexpr uint8_t COLLECTOR_COMMAND_RESULT_VERSION = 1;
+constexpr uint8_t COLLECTOR_COMMAND_RESULT_VERSION = 2;
+constexpr uint8_t COLLECTOR_COMMAND_PREVIOUS_RESULT_VERSION = 1;
 constexpr size_t COLLECTOR_COMMAND_MAX_ITEMS = ITEM_TRANSFER_MAX_ITEMS;
 constexpr size_t COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES = ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES;
 constexpr size_t COLLECTOR_COMMAND_RESULT_BYTES = 272;
@@ -75,6 +76,7 @@ struct collector_command_result
 	currency_vector bank = {};
 	uint64_t wallet_revision = 0;
 	uint64_t bank_revision = 0;
+	uint32_t materialized_item_id = 0;
 	collector::record entry = {};
 };
 

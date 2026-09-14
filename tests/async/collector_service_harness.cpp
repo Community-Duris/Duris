@@ -44,6 +44,8 @@ bool player_online = true;
 bool pipeline_accepts = true;
 bool transaction_accepts = true;
 bool materialization_succeeds = true;
+bool item_movement_busy = false;
+bool bulk_get_busy = false;
 bool result_ready = false;
 std::vector<std::string> output_messages;
 
@@ -255,6 +257,16 @@ bool collector_transaction_player_busy(P_char)
 	return false;
 }
 
+bool item_movement_transaction_player_busy(P_char target)
+{
+	return target == &character && item_movement_busy;
+}
+
+bool bulk_get_player_busy(P_char target)
+{
+	return target == &character && bulk_get_busy;
+}
+
 bool currency_transaction_can_submit(P_char target)
 {
 	return target == &character;
@@ -300,6 +312,7 @@ bool player_load_item_graph_materialize_for_owner(
 	assert(target == &character && items.size() == 1 && identities.size() == 1 &&
 	       items[0].object_uid == runtime_entry.uid &&
 	       identities[0].item_uid == runtime_entry.uid &&
+	       identities[0].database_id == 123 &&
 	       owner.type == item_owner_type::player && owner.id == 42 && owner_revision == 21 &&
 	       !hydrate_ownership && complete_snapshot_state && metrics);
 	++materializations;
@@ -370,6 +383,30 @@ int main()
 
 	clear_messages();
 	char buy[] = "buy 77";
+	const uint64_t request_before_busy = request_cursor;
+	item_movement_busy = true;
+	collector_service_command(&character, buy, CMD_COLLECTOR);
+	assert(request_cursor == request_before_busy && !collector_service_player_busy(&character) &&
+	       saw("Another transaction"));
+	item_movement_busy = false;
+	clear_messages();
+	bulk_get_busy = true;
+	collector_service_command(&character, buy, CMD_COLLECTOR);
+	assert(request_cursor == request_before_busy && !collector_service_player_busy(&character) &&
+	       saw("Another transaction"));
+	bulk_get_busy = false;
+
+	// A movement can start while the detail worker is reading. The completion gate
+	// must reject that race before it snapshots currency, capacity, or ownership.
+	clear_messages();
+	collector_service_command(&character, buy, CMD_COLLECTOR);
+	assert(collector_service_player_busy(&character));
+	item_movement_busy = true;
+	complete_detail();
+	assert(transaction_submissions == 0 && saw("Another transaction"));
+	item_movement_busy = false;
+
+	clear_messages();
 	collector_service_command(&character, buy, CMD_COLLECTOR);
 	assert(collector_service_player_busy(&character) && saw("begins verifying"));
 	const uint8_t expected_operation = operation_cursor - 1;
@@ -386,6 +423,7 @@ int main()
 	committed.action = collector_action::purchase;
 	committed.record_present = true;
 	committed.to_owner_revision = 21;
+	committed.materialized_item_id = 123;
 	committed.entry = runtime_entry;
 	assert(collector::purchase(
 		       &committed.entry, committed.entry.revision, 42, committed.entry.price_value,
@@ -432,6 +470,15 @@ int main()
 	cache_ready = true;
 
 	clear_messages();
+	const collector_service_health before_unknown = collector_service_health_copy();
+	char unknown[] = "inspect 999999";
+	collector_service_command(&character, unknown, CMD_COLLECTOR);
+	const collector_service_health after_unknown = collector_service_health_copy();
+	assert(saw("not available to you") &&
+	       after_unknown.submitted_details == before_unknown.submitted_details &&
+	       after_unknown.rejected_details == before_unknown.rejected_details + 1);
+
+	clear_messages();
 	pipeline_accepts = false;
 	collector_service_command(&character, inspect, CMD_COLLECTOR);
 	assert(saw("records are busy"));
@@ -448,8 +495,8 @@ int main()
 	assert(materializations == 2 && alerts == 2 && saw("safely recorded"));
 
 	const collector_service_health snapshot = collector_service_health_copy();
-	assert(snapshot.pending_details == 0 && snapshot.submitted_details == 6 &&
-	       snapshot.completed_details == 6 && snapshot.rejected_details == 2 &&
+	assert(snapshot.pending_details == 0 && snapshot.submitted_details == 7 &&
+	       snapshot.completed_details == 7 && snapshot.rejected_details == 3 &&
 	       snapshot.submitted_purchases == 1 && snapshot.committed_purchases == 2 &&
 	       snapshot.materialization_failures == 1);
 	collector_service_reset_for_tests();

@@ -78,7 +78,7 @@ bool connection_error(unsigned int error)
 
 bool retryable_error(unsigned int error)
 {
-	return connection_error(error) || error == 1205 || error == 1213;
+	return connection_error(error) || error == EAGAIN || error == 1205 || error == 1213;
 }
 
 critical_apply_result failure(unsigned int error)
@@ -386,17 +386,57 @@ void encode_u64(std::array<uint8_t, 16> *output, size_t offset, uint64_t value)
 		(*output)[offset + byte] = static_cast<uint8_t>(value >> (byte * 8));
 }
 
-bool insert_outbox(MYSQL *connection, const critical_command &command, const uint8_t *payload,
-		   size_t payload_size)
+bool insert_outbox_event(MYSQL *connection, const critical_operation_id &operation_id,
+			 uint16_t event_index, uint16_t destination, uint16_t event_type,
+			 uint16_t payload_version, const uint8_t *payload, size_t payload_size)
 {
 	static const char SQL[] =
 		"INSERT INTO critical_outbox(operation_id,event_index,destination,event_type,"
-		"payload_version,payload) VALUES(?,0,?,?,1,?)";
+		"payload_version,payload) VALUES(?,?,?,?,?,?)";
+	if (!event_type || !payload_version || (!payload && payload_size))
+	{
+		errno = EINVAL;
+		return false;
+	}
 	MYSQL_STMT *statement = nullptr;
 	if (!prepare(&statement, connection, SQL))
 		return false;
+	unsigned long operation_length = operation_id.bytes.size(), payload_length = payload_size;
+	MYSQL_BIND bindings[6] = {};
+	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[0].buffer = const_cast<uint8_t *>(operation_id.bytes.data());
+	bindings[0].buffer_length = operation_length;
+	bindings[0].length = &operation_length;
+	bindings[1].buffer_type = MYSQL_TYPE_SHORT;
+	bindings[1].buffer = &event_index;
+	bindings[1].is_unsigned = true;
+	bindings[2].buffer_type = MYSQL_TYPE_SHORT;
+	bindings[2].buffer = &destination;
+	bindings[2].is_unsigned = true;
+	bindings[3].buffer_type = MYSQL_TYPE_SHORT;
+	bindings[3].buffer = &event_type;
+	bindings[3].is_unsigned = true;
+	bindings[4].buffer_type = MYSQL_TYPE_SHORT;
+	bindings[4].buffer = &payload_version;
+	bindings[4].is_unsigned = true;
+	bindings[5].buffer_type = MYSQL_TYPE_BLOB;
+	bindings[5].buffer = const_cast<uint8_t *>(payload);
+	bindings[5].buffer_length = payload_length;
+	bindings[5].length = &payload_length;
+	const bool ok = mysql_stmt_bind_param(statement, bindings) == 0 &&
+			mysql_stmt_execute(statement) == 0;
+	if (!ok)
+		last_statement_error = mysql_stmt_errno(statement);
+	mysql_stmt_close(statement);
+	return ok;
+}
+
+bool insert_outbox(MYSQL *connection, const critical_command &command, const uint8_t *payload,
+		   size_t payload_size)
+{
 	uint16_t destination = OUTBOX_DESTINATION_TEST;
 	uint16_t event_type = OUTBOX_EVENT_TEST_MUTATED;
+	uint16_t payload_version = 1;
 	if (command.type == critical_command_type::coin_transfer)
 	{
 		destination = CRITICAL_OUTBOX_COIN_RECEIPT_DESTINATION;
@@ -446,30 +486,10 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 	{
 		destination = COLLECTOR_OUTBOX_DESTINATION;
 		event_type = COLLECTOR_OUTBOX_EVENT_MUTATED;
+		payload_version = COLLECTOR_COMMAND_RESULT_VERSION;
 	}
-	unsigned long operation_length = command.operation_id.bytes.size(),
-		      payload_length = payload_size;
-	MYSQL_BIND bindings[4] = {};
-	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
-	bindings[0].buffer = const_cast<uint8_t *>(command.operation_id.bytes.data());
-	bindings[0].buffer_length = operation_length;
-	bindings[0].length = &operation_length;
-	bindings[1].buffer_type = MYSQL_TYPE_SHORT;
-	bindings[1].buffer = &destination;
-	bindings[1].is_unsigned = true;
-	bindings[2].buffer_type = MYSQL_TYPE_SHORT;
-	bindings[2].buffer = &event_type;
-	bindings[2].is_unsigned = true;
-	bindings[3].buffer_type = MYSQL_TYPE_BLOB;
-	bindings[3].buffer = const_cast<uint8_t *>(payload);
-	bindings[3].buffer_length = payload_length;
-	bindings[3].length = &payload_length;
-	const bool ok = mysql_stmt_bind_param(statement, bindings) == 0 &&
-			mysql_stmt_execute(statement) == 0;
-	if (!ok)
-		last_statement_error = mysql_stmt_errno(statement);
-	mysql_stmt_close(statement);
-	return ok;
+	return insert_outbox_event(connection, command.operation_id, 0, destination, event_type,
+				   payload_version, payload, payload_size);
 }
 
 bool finish_inbox(MYSQL *connection, const critical_command &command, uint64_t revision,
@@ -1254,11 +1274,42 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	}
 	if (item_command)
 	{
-		item_transfer_result item_result = {};
+		collector_enrollment_repository_plan enrollment;
+		collector_item_boundary_repository_plan boundary;
+		item_transfer_result item_result = { item_transfer_result_root(item_payload),
+						     item_payload.item_count, 0, 0, 0, 0 };
+		std::vector<collector_command_result> collector_events;
+		uint64_t collector_revision = 0;
 		unsigned int result_code = 0;
 		bool mutation_applied = false;
-		if (!item_transfer_repository_execute(connection, command, &item_result,
-						      &result_code, &mutation_applied))
+		bool repository_ok = collector_repository_prepare_death_enrollment(
+			connection, item_payload, &enrollment, &result_code);
+		if (repository_ok && !result_code)
+			repository_ok = collector_repository_prepare_item_boundary(
+				connection, item_payload, &boundary, &result_code);
+		if (repository_ok && !result_code)
+			repository_ok = item_transfer_repository_execute(
+				connection, command, &item_result, &result_code, &mutation_applied);
+		if (repository_ok && !result_code && mutation_applied &&
+		    !boundary.entries.empty())
+		{
+			repository_ok = collector_repository_apply_item_boundary(
+				connection, command, boundary, &collector_revision,
+				&collector_events);
+			item_result.collector_catalog_changed = repository_ok;
+		}
+		if (repository_ok && !result_code && mutation_applied && enrollment.active)
+		{
+			if (!boundary.entries.empty())
+				enrollment.catalog_revision = collector_revision;
+			repository_ok = collector_repository_apply_death_enrollment(
+				connection, command, item_payload, item_result, enrollment);
+			if (repository_ok && (!enrollment.death_exists || !enrollment.new_items.empty()))
+				item_result.collector_catalog_changed = true;
+			if (repository_ok && !enrollment.new_items.empty())
+				collector_revision = enrollment.catalog_revision + 1;
+		}
+		if (!repository_ok)
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
@@ -1266,12 +1317,27 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			return failure(error);
 		}
 		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> result_payload = {};
-		const uint64_t durable_revision =
+		uint64_t durable_revision =
 			std::max({ item_result.from_owner_revision, item_result.to_owner_revision,
 				   item_result.max_item_revision });
-		if (!item_transfer_command_encode_result(item_result, &result_payload) ||
-		    (mutation_applied && !insert_outbox(connection, command, result_payload.data(),
-							result_payload.size())) ||
+		durable_revision = std::max(durable_revision, collector_revision);
+		bool outbox_ok = item_transfer_command_encode_result(item_result, &result_payload);
+		if (outbox_ok && mutation_applied)
+			outbox_ok = insert_outbox(connection, command, result_payload.data(),
+						  result_payload.size());
+		for (size_t index = 0; outbox_ok && index < collector_events.size(); ++index)
+		{
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+			outbox_ok = collector_command_encode_result(collector_events[index], &encoded) &&
+				    insert_outbox_event(
+					    connection, command.operation_id,
+					    static_cast<uint16_t>(index + 1),
+					    COLLECTOR_OUTBOX_DESTINATION,
+					    COLLECTOR_OUTBOX_EVENT_MUTATED,
+					    COLLECTOR_COMMAND_RESULT_VERSION, encoded.data(),
+					    encoded.size());
+		}
+		if (!outbox_ok ||
 		    !finish_inbox(connection, command, durable_revision, result_code,
 				  result_payload.data(), result_payload.size()))
 		{

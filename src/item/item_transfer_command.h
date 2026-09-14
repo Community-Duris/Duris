@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 6;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 7;
+constexpr uint16_t ITEM_TRANSFER_BATCH_PAYLOAD_VERSION = 6;
 constexpr uint16_t ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5;
 constexpr uint16_t ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4;
 constexpr uint16_t ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3;
@@ -63,6 +64,7 @@ enum class item_transfer_reason : uint16_t
 	auction_claim,
 	shop_buy,
 	shop_sell,
+	mobile_claim,
 	collector_collect,
 	collector_buyback,
 	collector_expire,
@@ -106,6 +108,28 @@ struct item_corpse_metadata
 	std::string keywords;
 };
 
+// A player-death corpse handoff may carry a collector-intake sidecar. The
+// sidecar is committed in the same authority transaction as the custody move;
+// its eligible UIDs are an exact, sorted subset of this command's item rows.
+struct item_collector_death_policy
+{
+	uint64_t collection_delay = 0;
+	uint64_t sale_delay = 0;
+	uint64_t holding_duration = 0;
+	uint64_t price_percent = 0;
+	uint64_t minimum_value = 0;
+};
+
+struct item_collector_death_enrollment
+{
+	bool present = false;
+	critical_operation_id death_operation = {};
+	uint32_t beneficiary_pid = 0;
+	uint64_t death_time = 0;
+	item_collector_death_policy policy = {};
+	std::vector<uint64_t> eligible_item_uids;
+};
+
 struct item_transfer_payload
 {
 	item_owner_identity from_owner;
@@ -124,6 +148,7 @@ struct item_transfer_payload
 	uint32_t item_blob_size;
 	std::array<uint8_t, ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES> item_blob;
 	item_corpse_metadata corpse;
+	item_collector_death_enrollment collector;
 };
 
 struct item_transfer_result
@@ -134,6 +159,10 @@ struct item_transfer_result
 	uint64_t to_owner_revision;
 	uint64_t max_item_revision;
 	uint64_t corpse_revision;
+	// Set only when the same durable authority commit also changed collector
+	// metadata. The game thread uses this replay-safe flag to invalidate its
+	// asynchronous collector projection after the item result is published.
+	bool collector_catalog_changed = false;
 };
 
 bool item_owner_identity_valid(const item_owner_identity &owner);

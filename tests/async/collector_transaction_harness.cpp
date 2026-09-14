@@ -29,6 +29,7 @@ size_t live_collection_validations = 0;
 size_t live_collection_detaches = 0;
 bool completion_called = false;
 bool completion_committed = false;
+P_char completion_character = nullptr;
 bool ownership_publication_succeeds = true;
 unsigned int completion_error = 0;
 collector_action completion_action = collector_action::unknown;
@@ -152,9 +153,11 @@ critical_completion completion(const collector_command_result &result,
 void completed(P_char completed_character, bool committed, const collector_command_result &result,
 	       unsigned int error_code, const collector_command_payload &payload)
 {
-	assert(completed_character == (payload.actor_pid ? &character : nullptr));
+	assert(!completed_character ||
+	       (payload.actor_pid && completed_character == &character));
 	completion_called = true;
 	completion_committed = committed;
+	completion_character = completed_character;
 	completion_error = error_code;
 	completion_action = result.action;
 }
@@ -259,13 +262,14 @@ int main()
 	auto purchase_completion = completion(purchased);
 	player_online = false;
 	collector_transaction_handle_completions(&purchase_completion, 1);
-	assert(collector_transaction_player_busy(&character) && !completion_called &&
-	       !wallet_publications && !ownership_publications && !runtime_publications);
+	assert(!collector_transaction_player_busy(&character) && completion_called &&
+	       completion_committed && !completion_character && !wallet_publications &&
+	       ownership_publications == 1 && runtime_publications == 1);
 	player_online = true;
 	collector_transaction_player_ready(&character);
 	assert(!collector_transaction_player_busy(&character) && completion_called &&
 	       completion_committed && completion_error == 0 &&
-	       completion_action == collector_action::purchase && wallet_publications == 1 &&
+	       completion_action == collector_action::purchase && !wallet_publications &&
 	       ownership_publications == 1 && runtime_publications == 1);
 	assert(!collector_transaction_listing_busy(available.listing));
 
@@ -277,7 +281,7 @@ int main()
 		completion(rejected, critical_apply_outcome::terminal_failure, EAGAIN);
 	collector_transaction_handle_completions(&rejected_completion, 1);
 	assert(completion_called && !completion_committed && completion_error == EAGAIN &&
-	       wallet_publications == 1 && ownership_publications == 1 &&
+	       !wallet_publications && ownership_publications == 1 &&
 	       runtime_publications == 1);
 
 	completion_called = completion_committed = false;
@@ -288,16 +292,20 @@ int main()
 	       collector::outcome::applied);
 	auto collect = collect_payload(candidate);
 	auto collected = collect_result(candidate);
+	assert(!collector_transaction_item_busy(candidate.uid));
 	assert(collector_transaction_submit_background(collect, completed));
 	assert(collector_transaction_listing_busy(candidate.listing));
+	assert(collector_transaction_item_busy(candidate.uid));
+	assert(!collector_transaction_item_busy(candidate.uid + 1));
 	assert(!collector_transaction_submit_background(collect, completed));
 	auto collect_completion = completion(collected);
 	collector_transaction_handle_completions(&collect_completion, 1);
 	assert(completion_called && completion_committed &&
 	       completion_action == collector_action::collect && ownership_publications == 2 &&
-	       runtime_publications == 2 && wallet_publications == 1 &&
+	       runtime_publications == 2 && !wallet_publications &&
 	       live_collection_validations == 1 && live_collection_detaches == 1);
 	assert(!collector_transaction_listing_busy(candidate.listing));
+	assert(!collector_transaction_item_busy(candidate.uid));
 
 	// Once durable authority commits, a local cache failure must never be
 	// reported as a rejected custody or wallet operation.
@@ -341,10 +349,49 @@ int main()
 	       completion_action == collector_action::unknown && ownership_publications == 3 &&
 	       runtime_publications == 2);
 
+	// If the transactional outbox wins the race against the coordinator completion,
+	// publication must reuse the retained request so custody and the live graph are
+	// converged before the durable outbox row is acknowledged.
+	completion_called = completion_committed = false;
+	auto outbox_candidate = candidate;
+	outbox_candidate.listing = 91;
+	outbox_candidate.uid = 205;
+	auto outbox_collect = collect_payload(outbox_candidate);
+	outbox_collect.listing = 91;
+	outbox_collect.to_owner = { item_owner_type::collector, item_collector_owner_id(91), 0 };
+	outbox_collect.selected_item_uid = 205;
+	outbox_collect.items[0].item_uid = 205;
+	outbox_collect.items[0].root_item_uid = 205;
+	auto outbox_collected = collect_result(outbox_candidate);
+	assert(collector_transaction_submit_background(outbox_collect, completed));
+	assert(collector_transaction_item_busy(205));
+	std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> outbox_encoded = {};
+	assert(collector_command_encode_result(outbox_collected, &outbox_encoded));
+	critical_outbox_record pending_record = {};
+	pending_record.outbox_id = 98;
+	pending_record.operation_id = submitted_command.operation_id;
+	pending_record.destination = COLLECTOR_OUTBOX_DESTINATION;
+	pending_record.event_type = COLLECTOR_OUTBOX_EVENT_MUTATED;
+	pending_record.payload_version = COLLECTOR_COMMAND_RESULT_VERSION;
+	pending_record.payload.assign(outbox_encoded.begin(), outbox_encoded.end());
+	assert(collector_transaction_outbox_delivery(pending_record, nullptr) ==
+	       critical_outbox_delivery_result::retryable_failure);
+	collector_transaction_publish_outbox();
+	assert(completion_called && completion_committed && completion_error == 0 &&
+	       completion_action == collector_action::collect && ownership_publications == 4 &&
+	       runtime_publications == 3 && live_collection_validations == 3 &&
+	       live_collection_detaches == 2 && !collector_transaction_item_busy(205));
+	assert(!outbox_publications && outbox_resumes == 1);
+	assert(collector_transaction_outbox_delivery(pending_record, nullptr) ==
+	       critical_outbox_delivery_result::delivered);
+
+	// After a restart there is no retained request. The durable authority is loaded
+	// by its owning repositories; the outbox still refreshes the catalog exactly once.
 	std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
 	assert(collector_command_encode_result(collected, &encoded));
-	critical_outbox_record record;
+	critical_outbox_record record = {};
 	record.outbox_id = 99;
+	record.operation_id.bytes[0] = 0x99;
 	record.destination = COLLECTOR_OUTBOX_DESTINATION;
 	record.event_type = COLLECTOR_OUTBOX_EVENT_MUTATED;
 	record.payload_version = COLLECTOR_COMMAND_RESULT_VERSION;
@@ -352,7 +399,7 @@ int main()
 	assert(collector_transaction_outbox_delivery(record, nullptr) ==
 	       critical_outbox_delivery_result::retryable_failure);
 	collector_transaction_publish_outbox();
-	assert(outbox_publications == 1 && outbox_resumes == 1);
+	assert(outbox_publications == 1 && outbox_resumes == 2);
 	assert(collector_transaction_outbox_delivery(record, nullptr) ==
 	       critical_outbox_delivery_result::delivered);
 	record.event_type++;
@@ -364,5 +411,5 @@ int main()
 	       passthrough_deliveries == 1);
 
 	collector_transaction_reset_for_tests();
-	assert(submit_count == 5);
+	assert(submit_count == 6);
 }

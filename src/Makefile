@@ -162,6 +162,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_codec.o \
 				 economy/collector_policy.o \
 				 economy/collector_config.o \
+				 economy/collector_death_enrollment.o \
 				 economy/collector_catalog_source.o \
 				 economy/collector_catalog_cache.o \
 				 economy/collector_maintenance.o \
@@ -286,6 +287,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_player_snapshot_file.o \
 				 flatfile/flatfile_item_uid_allocator.o \
 				 flatfile/flatfile_item_repository.o \
+				 flatfile/flatfile_collector_repository.o \
 				 flatfile/flatfile_artifact_repository.o \
 				 flatfile/flatfile_corpse_repository.o \
 				 flatfile/flatfile_corpse_ownership.o \

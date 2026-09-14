@@ -2,6 +2,9 @@
 
 #include "item/item_ownership_runtime.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_catalog_cache.h"
+#include "economy/collector_death_enrollment.h"
+#include "economy/collector_transaction.h"
 #include "classes/necromancy.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_snapshot_capture.h"
@@ -30,6 +33,7 @@ namespace
 struct pending_movement
 {
 	uint32_t actor_pid;
+	uint64_t actor_runtime_id;
 	item_transfer_payload payload;
 	item_owner_identity requested_to_owner;
 	uint64_t requested_target_parent_uid;
@@ -45,6 +49,7 @@ struct pending_movement
 	bool publication_failed;
 	bool creation_batch;
 	bool registry_applied;
+	bool collector_invalidated;
 	critical_completion completed;
 };
 
@@ -160,6 +165,14 @@ bool coin_movement_pending(P_obj object)
 	return currency_transaction_coin_item_busy(object->obj_uid) ||
 	       (item_ownership_runtime_lookup(object->obj_uid, &runtime) &&
 		currency_transaction_coin_item_busy(runtime.root_item_uid));
+}
+
+bool coordinator_item_fenced(P_obj object)
+{
+	return object && object->obj_uid &&
+	       (collector_transaction_item_busy(object->obj_uid) ||
+		critical_command_coordinator_is_fenced(
+			{ critical_entity_type::item, object->obj_uid }, nullptr));
 }
 
 bool capture(P_obj object, uint64_t root_uid, uint64_t parent_uid,
@@ -315,6 +328,16 @@ P_char find_live_player(uint32_t pid)
 {
 	for (P_char character = character_list; character; character = character->next)
 		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid))
+			return character;
+	return NULL;
+}
+
+P_char find_live_mobile(uint64_t runtime_id)
+{
+	if (!runtime_id)
+		return NULL;
+	for (P_char character = character_list; character; character = character->next)
+		if (IS_NPC(character) && character->runtime_id == runtime_id)
 			return character;
 	return NULL;
 }
@@ -1014,6 +1037,11 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
+	if (committed && result.collector_catalog_changed && !entry.collector_invalidated)
+	{
+		collector_catalog_cache_invalidate();
+		entry.collector_invalidated = true;
+	}
 	const bool corpse_batch = entry.payload.multi_root &&
 				  entry.payload.reason == item_transfer_reason::corpse_create;
 	if (committed && corpse_batch && !corpse_batch_live_ready(actor, entry))
@@ -1210,7 +1238,12 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	*reject = item_movement_reject::none;
 	const bool corpse_transfer = reason == item_transfer_reason::corpse_create ||
 				     reason == item_transfer_reason::corpse_loot;
-	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !root || !root->obj_uid ||
+	const bool player_actor = actor && IS_PC(actor) && GET_PID(actor) > 0;
+	const bool mobile_actor =
+		actor && IS_NPC(actor) && actor->runtime_id &&
+		reason == item_transfer_reason::mobile_claim && !target_container && !corpse_context &&
+		item_owner_identity_equal(from_owner, to_owner);
+	if ((!player_actor && !mobile_actor) || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
 	    corpse_transfer != (corpse_context != NULL))
 		return reject_with(reject, item_movement_reject::invalid_request);
@@ -1222,7 +1255,13 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	const bool adopted = item_ownership_runtime_lookup(root->obj_uid, &runtime);
 	const item_owner_identity effective_from = adopted ? from_owner : system_owner_identity;
 	const item_owner_identity effective_to = adopted ? to_owner : from_owner;
-	if (movement_conflicts(effective_from, effective_to) || coin_movement_pending(root) ||
+	// A mobile claim is evidence about an already-authoritative item. Treating an
+	// absent item as creation would erase that evidence and could leave a collector
+	// candidate live after the mobile received it.
+	if (mobile_actor && !adopted)
+		return reject_with(reject, item_movement_reject::owner_mismatch);
+	if (movement_conflicts(effective_from, effective_to) || coordinator_item_fenced(root) ||
+	    coordinator_item_fenced(target_container) || coin_movement_pending(root) ||
 	    coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
 	if ((adopted && !item_owner_identity_equal(runtime.owner, from_owner)) ||
@@ -1270,7 +1309,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.items = {},
 		.item_blob_size = 0,
 		.item_blob = {},
-		.corpse = {}
+		.corpse = {},
+		.collector = {}
 	};
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
@@ -1291,12 +1331,15 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	critical_operation_id operation_id = {};
 	critical_command command = {};
 	if (!critical_operation_id_generate(&operation_id) ||
+	    !collector_death_enrollment_attach(actor, corpse_context, operation_id, snapshots,
+					       &payload) ||
 	    !item_transfer_command_build(&command, operation_id, payload,
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
 	pending_movement entry = {
-		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
+		.actor_pid = player_actor ? static_cast<uint32_t>(GET_PID(actor)) : 0,
+		.actor_runtime_id = actor->runtime_id,
 		.payload = payload,
 		.requested_to_owner = to_owner,
 		.requested_target_parent_uid = target_container ? target_container->obj_uid : 0,
@@ -1312,6 +1355,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.publication_failed = false,
 		.creation_batch = false,
 		.registry_applied = false,
+		.collector_invalidated = false,
 		.completed = {}
 	};
 	if (context_size)
@@ -1329,6 +1373,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
+		collector_death_enrollment_note_submitted(corpse_context, payload);
 		++health.submission_failures;
 		*reject = coordinator_reject_reason(submitted);
 		account_health();
@@ -1344,6 +1389,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		++health.submission_failures;
 		return reject_with(reject, coordinator_reject_reason(submitted));
 	}
+	collector_death_enrollment_note_submitted(corpse_context, payload);
 	++health.submitted;
 	account_health();
 	return true;
@@ -1374,7 +1420,8 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
-	if (movement_conflicts(from_owner, to_owner) || coin_movement_pending(target_container))
+	if (movement_conflicts(from_owner, to_owner) ||
+	    coordinator_item_fenced(target_container) || coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
@@ -1408,7 +1455,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 			item_ownership_runtime_entry runtime = {};
 			if (!root || !root->obj_uid)
 				return reject_with(reject, item_movement_reject::owner_mismatch);
-			if (coin_movement_pending(root))
+			if (coordinator_item_fenced(root) || coin_movement_pending(root))
 				return reject_with(reject, item_movement_reject::pending_conflict);
 			if (creation)
 			{
@@ -1473,7 +1520,8 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		.items = {},
 		.item_blob_size = 0,
 		.item_blob = {},
-		.corpse = {}
+		.corpse = {},
+		.collector = {}
 	};
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
@@ -1492,12 +1540,15 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 	critical_operation_id operation_id = {};
 	critical_command command = {};
 	if (!critical_operation_id_generate(&operation_id) ||
+	    !collector_death_enrollment_attach(actor, corpse_context, operation_id, snapshots,
+					       &payload) ||
 	    !item_transfer_command_build(&command, operation_id, payload,
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
 		return reject_with(reject, item_movement_reject::command_build_failure);
 	pending_movement entry = {
 		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
+		.actor_runtime_id = actor->runtime_id,
 		.payload = payload,
 		.requested_to_owner = to_owner,
 		.requested_target_parent_uid = target_container ? target_container->obj_uid : 0,
@@ -1513,6 +1564,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		.publication_failed = false,
 		.creation_batch = creation,
 		.registry_applied = false,
+		.collector_invalidated = false,
 		.completed = {}
 	};
 	if (context_size)
@@ -1530,6 +1582,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
+		collector_death_enrollment_note_submitted(corpse_context, payload);
 		++health.submission_failures;
 		*reject = coordinator_reject_reason(submitted);
 		account_health();
@@ -1545,6 +1598,7 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		++health.submission_failures;
 		return reject_with(reject, coordinator_reject_reason(submitted));
 	}
+	collector_death_enrollment_note_submitted(corpse_context, payload);
 	++health.submitted;
 	account_health();
 	return true;
@@ -1853,8 +1907,28 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			continue;
 		found->second.completed = completions[index];
 		found->second.completion_ready = true;
-		if (P_char actor = find_live_player(found->second.actor_pid))
-			publish(found, actor);
+		item_transfer_result result = {};
+		if (!found->second.collector_invalidated &&
+		    (completions[index].outcome == critical_apply_outcome::applied ||
+		     completions[index].outcome == critical_apply_outcome::already_applied) &&
+		    item_transfer_command_decode_result(completions[index].result_payload.data(),
+						completions[index].result_size, &result) &&
+		    result.collector_catalog_changed)
+		{
+			collector_catalog_cache_invalidate();
+			found->second.collector_invalidated = true;
+		}
+		if (found->second.actor_pid)
+		{
+			if (P_char actor = find_live_player(found->second.actor_pid))
+				publish(found, actor);
+		}
+		else if (found->second.actor_runtime_id)
+			// A vanished mobile cannot receive the live object, but the committed
+			// boundary must still advance the authority projection and release its
+			// fence. Publishing with a null actor deliberately skips the callback's
+			// live move.
+			publish(found, find_live_mobile(found->second.actor_runtime_id));
 	}
 	pump_creation_grants();
 	account_health();

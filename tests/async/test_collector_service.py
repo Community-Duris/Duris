@@ -16,6 +16,12 @@ def main() -> None:
     assert "CMD_Y(CMD_COLLECTOR" in interpreter
     assert "collector_service_pulse();" in comm
     assert comm.count("collector_service_player_busy") >= 3
+    service = (ROOT / "src/economy/collector_service.c").read_text()
+    assert "item_movement_transaction_player_busy" in service
+    assert "bulk_get_player_busy" in service
+    assert service.index("collector_runtime_find(listing") < service.index(
+        "collector_listing_pipeline_next_request_id()"
+    )
 
     output = ROOT / "bin" / "tests"
     output.mkdir(parents=True, exist_ok=True)

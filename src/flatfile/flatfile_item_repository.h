@@ -7,6 +7,7 @@
 #include "flatfile/flatfile_world_item_repository.h"
 #include "persistence/critical_command_coordinator.h"
 #include "item/item_transfer_command.h"
+#include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_command.h"
 
 #include <cstdint>
@@ -73,6 +74,15 @@ struct flatfile_item_corpse_release_mutation
 	uint64_t item_count = 0;
 };
 
+struct collector_command_payload;
+struct flatfile_item_collector_mutation
+{
+	flatfile_authority_after_image after_image;
+	uint64_t from_owner_revision = 0;
+	uint64_t to_owner_revision = 0;
+	uint64_t item_revision = 0;
+};
+
 flatfile_item_repository_result flatfile_item_repository_load_owner(
 	const std::string &root, const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
@@ -84,6 +94,9 @@ flatfile_item_repository_result flatfile_item_repository_load_coins_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const std::vector<uint64_t> &uids, std::vector<flatfile_item_ownership_record> *coins,
 	std::string *error);
+flatfile_item_repository_result flatfile_item_repository_list_collector_items_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	std::vector<item_ownership_runtime_entry> *items, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_list_active_player_items(
 	const std::string &root, std::vector<flatfile_item_ownership_record> *items,
 	std::string *error);
@@ -100,6 +113,10 @@ flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfe
 flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const shop_trade_payload &payload, flatfile_item_shop_trade_mutation *mutation,
+	unsigned int *result_code, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_prepare_collector_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const collector_command_payload &payload, flatfile_item_collector_mutation *mutation,
 	unsigned int *result_code, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 	const std::string &root, const flatfile_authority_lock &lock,

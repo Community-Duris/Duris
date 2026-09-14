@@ -39,7 +39,8 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
         self.assertIn("OCTET_LENGTH(record_blob) = 154", migration)
         self.assertNotIn("record_blob BINARY(154)", migration)
         self.assertIn("collector_listing_death_fk", migration)
-        self.assertIn("collector_ledger_operation_fk", migration)
+        self.assertNotIn("collector_ledger_operation_fk", migration)
+        self.assertIn("PRIMARY KEY (operation_id,listing_id)", migration)
 
     def test_verifier_and_disposable_dual_engine_wrapper_are_wired(self) -> None:
         verifier = VERIFIER.read_text()

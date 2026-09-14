@@ -92,7 +92,8 @@ static critical_outbox_delivery_result deliver(const critical_outbox_record &rec
 {
 	auto &state = *static_cast<delivery_state *>(raw);
 	assert(record.outbox_id && record.destination == 1 && record.event_type == 1 &&
-	       record.payload_version == 1 && record.payload.size() == 16);
+	       record.payload_version == 1 && record.payload.size() == 16 &&
+	       record.operation_id.bytes[15] >= 1 && record.operation_id.bytes[15] <= 3);
 	++state.calls;
 	if (state.terminal)
 		return critical_outbox_delivery_result::terminal_failure;

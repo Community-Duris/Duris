@@ -150,10 +150,11 @@ collector::record candidate(uint64_t listing, uint64_t uid, uint64_t item_revisi
 			    critical_operation_id *death)
 {
 	*death = operation();
-	seed_death(*death);
+	const uint64_t death_time = DEATH_TIME + listing;
+	seed_death(*death, death_time);
 	collector::record entry;
 	assert(collector::enroll(listing, operation_hex(*death), PLAYER_PID, uid, item_revision,
-				 DEATH_TIME, rules(), &entry) == collector::outcome::applied);
+				 death_time, rules(), &entry) == collector::outcome::applied);
 	return entry;
 }
 
@@ -194,6 +195,206 @@ std::vector<uint8_t> encode_item(const player_item_snapshot &item)
 	       player_snapshot_codec_result::ok);
 	assert(!encoded.empty() && encoded.size() <= COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES);
 	return encoded;
+}
+
+std::vector<uint8_t> encode_items(const std::vector<player_item_snapshot> &items)
+{
+	std::vector<uint8_t> encoded;
+	assert(player_item_snapshot_list_encode(items, &encoded) ==
+	       player_snapshot_codec_result::ok);
+	assert(!encoded.empty() && encoded.size() <= ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES);
+	return encoded;
+}
+
+item_corpse_metadata corpse_metadata(uint32_t save_id)
+{
+	item_corpse_metadata corpse;
+	corpse.present = true;
+	corpse.room_vnum = 3001;
+	corpse.weight = 10;
+	corpse.actor_racewar = 1;
+	corpse.values[3] = static_cast<int32_t>(PLAYER_PID);
+	corpse.values[5] = 1;
+	corpse.values[6] = static_cast<int32_t>(save_id);
+	corpse.owner_name = PLAYER_NAME;
+	corpse.short_description = "the corpse of CollectorHarness";
+	corpse.description = "The corpse of CollectorHarness is lying here.";
+	corpse.keywords = "corpse collectorharness _pcorpse_";
+	return corpse;
+}
+
+uint64_t owner_revision(const item_owner_identity &owner);
+
+critical_command death_transfer(uint32_t save_id, uint64_t eligible_uid,
+				uint64_t excluded_uid, uint64_t item_revision)
+{
+	const item_owner_identity source = { item_owner_type::player, PLAYER_PID, 0 };
+	item_transfer_payload payload = {};
+	payload.from_owner = source;
+	payload.to_owner = { item_owner_type::corpse,
+			     item_corpse_owner_id(PLAYER_PID, save_id), 0 };
+	payload.reason = item_transfer_reason::corpse_create;
+	payload.reason_id = save_id;
+	payload.expected_from_revision = owner_revision(source);
+	payload.expected_to_revision = owner_revision(payload.to_owner);
+	payload.multi_root = true;
+	payload.item_count = 2;
+	payload.items[0] = { eligible_uid, eligible_uid, 0, item_revision, 1701,
+			     item_custody_state::active };
+	payload.items[1] = { excluded_uid, excluded_uid, 0, item_revision, 1702,
+			     item_custody_state::active };
+	player_item_snapshot eligible = item_snapshot(eligible_uid, 1701);
+	player_item_snapshot excluded = item_snapshot(excluded_uid, 1702);
+	excluded.name = "unique collector harness relic";
+	const std::vector<uint8_t> blob = encode_items({ eligible, excluded });
+	payload.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	payload.corpse = corpse_metadata(save_id);
+	payload.collector.present = true;
+	payload.collector.beneficiary_pid = PLAYER_PID;
+	payload.collector.death_time = save_id;
+	payload.collector.policy = { 10, 20, 30, 250, 7 };
+	payload.collector.eligible_item_uids = { eligible_uid };
+	critical_command command = {};
+	const critical_operation_id id = operation();
+	payload.collector.death_operation = id;
+	assert(item_transfer_command_build(&command, id, payload,
+					   critical_source_site::combat,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	assert(critical_command_valid(command));
+	return command;
+}
+
+critical_command corpse_loot_transfer(uint32_t save_id, uint64_t uid, int32_t vnum,
+				      uint64_t item_revision)
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::corpse,
+			       item_corpse_owner_id(PLAYER_PID, save_id), 0 };
+	payload.to_owner = { item_owner_type::player, PLAYER_PID, 0 };
+	payload.reason = item_transfer_reason::corpse_loot;
+	payload.reason_id = save_id;
+	payload.expected_from_revision = owner_revision(payload.from_owner);
+	payload.expected_to_revision = owner_revision(payload.to_owner);
+	payload.selected_item_uid = uid;
+	payload.item_count = 1;
+	payload.items[0] = { uid, uid, 0, item_revision, vnum,
+			     item_custody_state::active };
+	payload.corpse = corpse_metadata(save_id);
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, operation(), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	assert(critical_command_valid(command));
+	return command;
+}
+
+critical_command tree_death_transfer(uint32_t save_id, uint64_t root_uid, uint64_t child_uid,
+				     uint64_t item_revision)
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::player, PLAYER_PID, 0 };
+	payload.to_owner = { item_owner_type::corpse,
+			     item_corpse_owner_id(PLAYER_PID, save_id), 0 };
+	payload.reason = item_transfer_reason::corpse_create;
+	payload.reason_id = save_id;
+	payload.expected_from_revision = owner_revision(payload.from_owner);
+	payload.expected_to_revision = owner_revision(payload.to_owner);
+	payload.selected_item_uid = root_uid;
+	payload.target_root_item_uid = root_uid;
+	payload.item_count = 2;
+	payload.items[0] = { root_uid, root_uid, 0, item_revision, 1711,
+			     item_custody_state::active };
+	payload.items[1] = { child_uid, root_uid, root_uid, item_revision, 1712,
+			     item_custody_state::active };
+	player_item_snapshot root = item_snapshot(root_uid, 1711);
+	root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	player_item_snapshot child = item_snapshot(child_uid, 1712);
+	child.parent_index = 0;
+	const std::vector<uint8_t> blob = encode_items({ root, child });
+	payload.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	payload.corpse = corpse_metadata(save_id);
+	payload.collector.present = true;
+	payload.collector.beneficiary_pid = PLAYER_PID;
+	payload.collector.death_time = save_id;
+	payload.collector.policy = { 10, 20, 30, 250, 7 };
+	payload.collector.eligible_item_uids = { root_uid, child_uid };
+	critical_command command = {};
+	const critical_operation_id id = operation();
+	payload.collector.death_operation = id;
+	assert(item_transfer_command_build(&command, id, payload,
+					   critical_source_site::combat,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	return command;
+}
+
+critical_command tree_corpse_loot_transfer(uint32_t save_id, uint64_t root_uid,
+					   uint64_t child_uid, uint64_t item_revision)
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::corpse,
+			       item_corpse_owner_id(PLAYER_PID, save_id), 0 };
+	payload.to_owner = { item_owner_type::player, PLAYER_PID, 0 };
+	payload.reason = item_transfer_reason::corpse_loot;
+	payload.reason_id = save_id;
+	payload.expected_from_revision = owner_revision(payload.from_owner);
+	payload.expected_to_revision = owner_revision(payload.to_owner);
+	payload.selected_item_uid = root_uid;
+	payload.item_count = 2;
+	payload.items[0] = { root_uid, root_uid, 0, item_revision, 1711,
+			     item_custody_state::active };
+	payload.items[1] = { child_uid, root_uid, root_uid, item_revision, 1712,
+			     item_custody_state::active };
+	player_item_snapshot root = item_snapshot(root_uid, 1711);
+	root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	player_item_snapshot child = item_snapshot(child_uid, 1712);
+	child.parent_index = 0;
+	const std::vector<uint8_t> blob = encode_items({ root, child });
+	payload.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	payload.corpse = corpse_metadata(save_id);
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, operation(), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	return command;
+}
+
+critical_command tree_mobile_claim_transfer(uint32_t save_id, uint64_t root_uid,
+					    uint64_t child_uid, uint64_t item_revision)
+{
+	item_transfer_payload payload = {};
+	payload.from_owner = { item_owner_type::corpse,
+			       item_corpse_owner_id(PLAYER_PID, save_id), 0 };
+	payload.to_owner = payload.from_owner;
+	payload.reason = item_transfer_reason::mobile_claim;
+	payload.reason_id = PLAYER_PID;
+	payload.expected_from_revision = owner_revision(payload.from_owner);
+	payload.expected_to_revision = payload.expected_from_revision;
+	payload.selected_item_uid = root_uid;
+	payload.item_count = 2;
+	payload.items[0] = { root_uid, root_uid, 0, item_revision, 1711,
+			     item_custody_state::active };
+	payload.items[1] = { child_uid, root_uid, root_uid, item_revision, 1712,
+			     item_custody_state::active };
+	player_item_snapshot root = item_snapshot(root_uid, 1711);
+	root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	player_item_snapshot child = item_snapshot(child_uid, 1712);
+	child.parent_index = 0;
+	const std::vector<uint8_t> blob = encode_items({ root, child });
+	payload.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	critical_command command = {};
+	assert(item_transfer_command_build(&command, operation(), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	return command;
 }
 
 uint64_t owner_revision(const item_owner_identity &owner)
@@ -299,7 +500,328 @@ int main()
 	       empty_catalog.records.empty());
 	collector_bootstrap_snapshot empty_bootstrap;
 	assert(collector_repository_read_bootstrap(database, &empty_bootstrap));
-	assert(empty_bootstrap.catalog.records.empty() && empty_bootstrap.held_items.empty());
+	assert(empty_bootstrap.catalog.records.empty() && empty_bootstrap.held_items.empty() &&
+	       empty_bootstrap.deaths.empty());
+
+	// Collector audit history is durable authority in its own right and must not pin
+	// generic command receipts forever. Removing a pruned receipt leaves both the death
+	// policy and collector ledger evidence intact.
+	const critical_operation_id prunable_history = operation();
+	const std::string prunable_history_hex = operation_hex(prunable_history);
+	seed_death(prunable_history, DEATH_TIME - 1);
+	execute("INSERT INTO collector_ledger(operation_id,listing_id,action,catalog_revision,"
+		"listing_revision,actor_pid,item_uid,value_delta,closed_reason,source_site) "
+		"VALUES(UNHEX('" +
+		prunable_history_hex + "'),19999,1,1,1,0,900999999,0,0,1)");
+	execute("DELETE FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		prunable_history_hex + "')");
+	assert(scalar("SELECT COUNT(*) FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		      prunable_history_hex + "')") == 1);
+	assert(scalar("SELECT COUNT(*) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		      prunable_history_hex + "')") == 1);
+	execute("DELETE FROM collector_ledger WHERE operation_id=UNHEX('" + prunable_history_hex +
+		"')");
+	execute("DELETE FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		prunable_history_hex + "')");
+
+	// Death candidates are a sidecar on the authoritative corpse handoff. One
+	// transaction moves both items, enrolls only the eligible immutable snapshot,
+	// and freezes policy on the death for later batches.
+	constexpr uint32_t ENROLL_SAVE_ID = 1700000100;
+	constexpr uint64_t ENROLL_UID = 901000001, EXCLUDED_UID = 901000002;
+	const item_owner_identity player_owner = { item_owner_type::player, PLAYER_PID, 0 };
+	seed_authority(ENROLL_UID, 1701, player_owner, 4);
+	seed_authority(EXCLUDED_UID, 1702, player_owner, 4);
+	const critical_command enrollment =
+		death_transfer(ENROLL_SAVE_ID, ENROLL_UID, EXCLUDED_UID, 4);
+	critical_apply_result item_applied =
+		critical_command_repository_apply(database, enrollment);
+	assert(item_applied.outcome == critical_apply_outcome::applied &&
+	       item_applied.error_code == 0);
+	item_transfer_result transfer_result = {};
+	assert(item_transfer_command_decode_result(item_applied.result_payload.data(),
+					   item_applied.result_size, &transfer_result));
+	assert(transfer_result.item_count == 2 && transfer_result.max_item_revision == 5 &&
+	       transfer_result.collector_catalog_changed);
+	assert(scalar("SELECT COUNT(*) FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		      operation_hex(enrollment.operation_id) + "')") == 1);
+	assert(text("SELECT CONCAT(beneficiary_pid,':',death_time,':',collection_delay,':',"
+		    "sale_delay,':',holding_duration,':',price_percent,':',minimum_value) "
+		    "FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		    operation_hex(enrollment.operation_id) + "')") ==
+	       "2147000801:1700000100:10:20:30:250:7");
+	assert(text("SELECT CONCAT(listing_id,':',beneficiary_pid,':',item_uid,':',status,':',"
+		    "due_at,':',listing_revision,':',item_revision) FROM collector_listings "
+		    "WHERE death_operation_id=UNHEX('" + operation_hex(enrollment.operation_id) +
+		    "')") == "20000:2147000801:901000001:1:1700000110:1:5");
+	assert(text("SELECT GROUP_CONCAT(CONCAT(item_uid,':',owner_type,':',owner_id,':',"
+		    "item_revision) ORDER BY item_uid) FROM item_current_owner WHERE item_uid IN (" +
+		    std::to_string(ENROLL_UID) + "," + std::to_string(EXCLUDED_UID) + ")") ==
+	       std::to_string(ENROLL_UID) + ":4:" +
+		       std::to_string(item_corpse_owner_id(PLAYER_PID, ENROLL_SAVE_ID)) + ":5," +
+		       std::to_string(EXCLUDED_UID) + ":4:" +
+		       std::to_string(item_corpse_owner_id(PLAYER_PID, ENROLL_SAVE_ID)) + ":5");
+	collector::catalog enrolled_catalog;
+	assert(collector_repository_read_catalog(database, &enrolled_catalog));
+	assert(enrolled_catalog.revision == 1 && enrolled_catalog.next_listing == 20001 &&
+	       enrolled_catalog.records.size() == 1 &&
+	       enrolled_catalog.records[0].uid == ENROLL_UID &&
+	       enrolled_catalog.records[0].policy.collection_delay == 10 &&
+	       enrolled_catalog.records[0].policy.price_percent == 250);
+	collector_bootstrap_snapshot enrolled_bootstrap;
+	assert(collector_repository_read_bootstrap(database, &enrolled_bootstrap));
+	assert(enrolled_bootstrap.deaths.size() == 1);
+	const collector_death_snapshot &enrolled_death = enrolled_bootstrap.deaths[0];
+	assert(operation_hex(enrolled_death.operation_id) == operation_hex(enrollment.operation_id) &&
+	       enrolled_death.beneficiary_pid == PLAYER_PID &&
+	       enrolled_death.death_time == ENROLL_SAVE_ID &&
+	       enrolled_death.policy.collection_delay == 10 &&
+	       enrolled_death.policy.sale_delay == 20 &&
+	       enrolled_death.policy.holding_duration == 30 &&
+	       enrolled_death.policy.price_percent == 250 &&
+	       enrolled_death.policy.minimum_value == 7 && enrolled_death.hint_state == 0 &&
+	       enrolled_death.hint_revision == 0);
+	assert(critical_command_repository_apply(database, enrollment).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT COUNT(*) FROM collector_listings WHERE death_operation_id=UNHEX('" +
+		      operation_hex(enrollment.operation_id) + "')") == 1);
+
+	// A successful player acquisition closes the candidate in the same custody
+	// transaction. The item result invalidates flat-file/runtime projections and
+	// SQL emits a separate versioned collector event beside ownership event zero.
+	const critical_command loot =
+		corpse_loot_transfer(ENROLL_SAVE_ID, ENROLL_UID, 1701, 5);
+	item_applied = critical_command_repository_apply(database, loot);
+	assert(item_applied.outcome == critical_apply_outcome::applied &&
+	       item_applied.error_code == 0);
+	assert(item_transfer_command_decode_result(item_applied.result_payload.data(),
+					   item_applied.result_size, &transfer_result));
+	assert(transfer_result.max_item_revision == 6 &&
+	       transfer_result.collector_catalog_changed);
+	assert(text("SELECT CONCAT(status,':',listing_revision,':',item_revision,':',"
+		    "HEX(SUBSTRING(record_blob,154,1))) FROM collector_listings WHERE item_uid=" +
+		    std::to_string(ENROLL_UID)) == "5:2:6:01");
+	assert(text("SELECT CONCAT(action,':',catalog_revision,':',listing_revision,':',"
+		    "actor_pid,':',closed_reason) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		    operation_hex(loot.operation_id) + "')") == "5:2:2:2147000801:1");
+	assert(text("SELECT GROUP_CONCAT(CONCAT(event_index,':',destination,':',event_type,':',"
+		    "payload_version) ORDER BY event_index) FROM critical_outbox WHERE "
+		    "operation_id=UNHEX('" + operation_hex(loot.operation_id) + "')") ==
+	       "0:4:1:1,1:11:1:2");
+	assert(critical_command_repository_apply(database, loot).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT COUNT(*) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(loot.operation_id) + "')") == 1);
+
+	// One container acquisition closes every eligible row in its subtree. A
+	// composite ledger key and increasing outbox event indices preserve both
+	// cancellations under the parent item operation.
+	constexpr uint32_t TREE_SAVE_ID = 1700000150, TREE_REDEATH_SAVE_ID = 1700000151;
+	constexpr uint64_t TREE_ROOT_UID = 901100001, TREE_CHILD_UID = 901100002;
+	seed_authority(TREE_ROOT_UID, 1711, player_owner, 4);
+	seed_authority(TREE_CHILD_UID, 1712, player_owner, 4);
+	execute("UPDATE item_current_owner SET root_item_uid=" +
+		std::to_string(TREE_ROOT_UID) + ",parent_item_uid=" +
+		std::to_string(TREE_ROOT_UID) + " WHERE item_uid=" +
+		std::to_string(TREE_CHILD_UID));
+	const critical_command tree_death =
+		tree_death_transfer(TREE_SAVE_ID, TREE_ROOT_UID, TREE_CHILD_UID, 4);
+	item_applied = critical_command_repository_apply(database, tree_death);
+	const bool tree_death_decoded = item_transfer_command_decode_result(
+		item_applied.result_payload.data(), item_applied.result_size, &transfer_result);
+	if (item_applied.outcome != critical_apply_outcome::applied || !tree_death_decoded ||
+	    !transfer_result.collector_catalog_changed)
+		fprintf(stderr, "tree death outcome=%u error=%u decoded=%u changed=%u mysql=%u %s\n",
+			static_cast<unsigned int>(item_applied.outcome), item_applied.error_code,
+			tree_death_decoded ? 1U : 0U,
+			transfer_result.collector_catalog_changed ? 1U : 0U,
+			mysql_errno(database), mysql_error(database));
+	assert(item_applied.outcome == critical_apply_outcome::applied && tree_death_decoded &&
+	       transfer_result.collector_catalog_changed);
+	const critical_command tree_loot =
+		tree_corpse_loot_transfer(TREE_SAVE_ID, TREE_ROOT_UID, TREE_CHILD_UID, 5);
+	execute("CREATE TRIGGER fail_collector_boundary BEFORE INSERT ON collector_ledger "
+		"FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='forced boundary failure'");
+	item_applied = critical_command_repository_apply(database, tree_loot);
+	assert(item_applied.outcome == critical_apply_outcome::terminal_failure &&
+	       item_applied.error_code != 0);
+	execute("DROP TRIGGER fail_collector_boundary");
+	assert(scalar("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+		      std::to_string(TREE_ROOT_UID) + "," + std::to_string(TREE_CHILD_UID) +
+		      ") AND owner_type=4 AND item_revision=5") == 2);
+	assert(scalar("SELECT COUNT(*) FROM collector_listings WHERE item_uid IN (" +
+		      std::to_string(TREE_ROOT_UID) + "," + std::to_string(TREE_CHILD_UID) +
+		      ") AND status=1 AND listing_revision=1") == 2);
+	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_loot.operation_id) + "')") == 0);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_loot.operation_id) + "')") == 0);
+	item_applied = critical_command_repository_apply(database, tree_loot);
+	assert(item_applied.outcome == critical_apply_outcome::applied &&
+	       item_transfer_command_decode_result(item_applied.result_payload.data(),
+					   item_applied.result_size, &transfer_result) &&
+	       transfer_result.collector_catalog_changed && transfer_result.item_count == 2 &&
+	       transfer_result.max_item_revision == 6);
+	assert(scalar("SELECT COUNT(*) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_loot.operation_id) + "') AND action=5 AND "
+		      "closed_reason=1") == 2);
+	assert(text("SELECT GROUP_CONCAT(CONCAT(event_index,':',destination,':',payload_version) "
+		    "ORDER BY event_index) FROM critical_outbox WHERE operation_id=UNHEX('" +
+		    operation_hex(tree_loot.operation_id) + "')") ==
+	       "0:4:1,1:11:2,2:11:2");
+	assert(scalar("SELECT COUNT(*) FROM collector_listings WHERE item_uid IN (" +
+		      std::to_string(TREE_ROOT_UID) + "," + std::to_string(TREE_CHILD_UID) +
+		      ") AND status=5 AND item_revision=6") == 2);
+	assert(critical_command_repository_apply(database, tree_loot).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT COUNT(*) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_loot.operation_id) + "')") == 2);
+
+	const critical_command tree_redeath = tree_death_transfer(
+		TREE_REDEATH_SAVE_ID, TREE_ROOT_UID, TREE_CHILD_UID, 6);
+	item_applied = critical_command_repository_apply(database, tree_redeath);
+	assert(item_applied.outcome == critical_apply_outcome::applied &&
+	       item_transfer_command_decode_result(item_applied.result_payload.data(),
+					   item_applied.result_size, &transfer_result) &&
+	       transfer_result.collector_catalog_changed && transfer_result.max_item_revision == 7);
+	assert(text("SELECT GROUP_CONCAT(status ORDER BY listing_id) FROM collector_listings "
+		    "WHERE item_uid=" + std::to_string(TREE_CHILD_UID)) == "5,1");
+	assert(scalar("SELECT COUNT(DISTINCT death_operation_id) FROM collector_listings WHERE "
+		      "item_uid=" + std::to_string(TREE_CHILD_UID)) == 2);
+
+	// Mob/pet inventory intentionally retains the corpse aggregate, but an
+	// explicit same-owner mobile_claim is still an acquisition boundary. It must
+	// advance the complete subtree once and cancel only the new death's candidates
+	// in the same transaction, including rollback and replay behavior.
+	const critical_command tree_mobile_claim = tree_mobile_claim_transfer(
+		TREE_REDEATH_SAVE_ID, TREE_ROOT_UID, TREE_CHILD_UID, 7);
+	item_transfer_payload tree_mobile_payload = {};
+	assert(item_transfer_command_decode_payload(tree_mobile_claim, &tree_mobile_payload));
+	execute("CREATE TRIGGER fail_collector_boundary BEFORE INSERT ON collector_ledger "
+		"FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='forced mobile boundary failure'");
+	item_applied = critical_command_repository_apply(database, tree_mobile_claim);
+	assert(item_applied.outcome == critical_apply_outcome::terminal_failure &&
+	       item_applied.error_code != 0);
+	execute("DROP TRIGGER fail_collector_boundary");
+	assert(scalar("SELECT COUNT(*) FROM item_current_owner WHERE item_uid IN (" +
+		      std::to_string(TREE_ROOT_UID) + "," + std::to_string(TREE_CHILD_UID) +
+		      ") AND owner_type=4 AND owner_id=" +
+		      std::to_string(item_corpse_owner_id(PLAYER_PID, TREE_REDEATH_SAVE_ID)) +
+		      " AND item_revision=7") == 2);
+	assert(scalar("SELECT COUNT(*) FROM collector_listings WHERE death_operation_id=UNHEX('" +
+		      operation_hex(tree_redeath.operation_id) +
+		      "') AND status=1 AND listing_revision=1") == 2);
+	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_mobile_claim.operation_id) + "')") == 0);
+	item_applied = critical_command_repository_apply(database, tree_mobile_claim);
+	assert(item_applied.outcome == critical_apply_outcome::applied &&
+	       item_transfer_command_decode_result(item_applied.result_payload.data(),
+					   item_applied.result_size, &transfer_result) &&
+	       transfer_result.collector_catalog_changed && transfer_result.item_count == 2 &&
+	       transfer_result.max_item_revision == 8 &&
+	       transfer_result.from_owner_revision ==
+		       tree_mobile_payload.expected_from_revision + 1 &&
+	       transfer_result.to_owner_revision == transfer_result.from_owner_revision);
+	assert(scalar("SELECT COUNT(*) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_mobile_claim.operation_id) +
+		      "') AND action=5 AND actor_pid=" + std::to_string(PLAYER_PID) +
+		      " AND closed_reason=1") == 2);
+	assert(text("SELECT GROUP_CONCAT(CONCAT(event_index,':',destination,':',payload_version) "
+		    "ORDER BY event_index) FROM critical_outbox WHERE operation_id=UNHEX('" +
+		    operation_hex(tree_mobile_claim.operation_id) + "')") ==
+	       "0:4:1,1:11:2,2:11:2");
+	assert(scalar("SELECT COUNT(*) FROM collector_listings WHERE death_operation_id=UNHEX('" +
+		      operation_hex(tree_redeath.operation_id) +
+		      "') AND status=5 AND item_revision=8") == 2);
+	assert(critical_command_repository_apply(database, tree_mobile_claim).outcome ==
+	       critical_apply_outcome::already_applied);
+	assert(scalar("SELECT COUNT(*) FROM collector_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(tree_mobile_claim.operation_id) + "')") == 2);
+
+	// A repository failure after the custody write must roll back the item rows,
+	// death, listing, ownership ledger, outbox, and operation receipt together.
+	constexpr uint32_t ROLLBACK_SAVE_ID = 1700000200;
+	constexpr uint64_t ROLLBACK_UID = 902000001, ROLLBACK_EXCLUDED_UID = 902000002;
+	seed_authority(ROLLBACK_UID, 1701, player_owner, 7);
+	seed_authority(ROLLBACK_EXCLUDED_UID, 1702, player_owner, 7);
+	const critical_command rollback_enrollment =
+		death_transfer(ROLLBACK_SAVE_ID, ROLLBACK_UID, ROLLBACK_EXCLUDED_UID, 7);
+	execute("CREATE TRIGGER fail_collector_enrollment BEFORE INSERT ON collector_listings "
+		"FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='forced enrollment failure'");
+	item_applied = critical_command_repository_apply(database, rollback_enrollment);
+	assert(item_applied.outcome == critical_apply_outcome::terminal_failure &&
+	       item_applied.error_code != 0);
+	execute("DROP TRIGGER fail_collector_enrollment");
+	assert(text("SELECT GROUP_CONCAT(CONCAT(item_uid,':',owner_type,':',owner_id,':',"
+		    "item_revision) ORDER BY item_uid) FROM item_current_owner WHERE item_uid IN (" +
+		    std::to_string(ROLLBACK_UID) + "," +
+		    std::to_string(ROLLBACK_EXCLUDED_UID) + ")") ==
+	       "902000001:1:2147000801:7,902000002:1:2147000801:7");
+	assert(scalar("SELECT COUNT(*) FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		      operation_hex(rollback_enrollment.operation_id) + "')") == 0);
+	assert(scalar("SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		      operation_hex(rollback_enrollment.operation_id) + "')") == 0);
+	assert(scalar("SELECT COUNT(*) FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+		      operation_hex(rollback_enrollment.operation_id) + "')") == 0);
+
+	// Remove the isolated intake fixtures so the existing lifecycle matrix keeps
+	// its intentionally simple catalog revision baseline.
+	execute("DELETE FROM critical_outbox WHERE operation_id=UNHEX('" +
+		operation_hex(enrollment.operation_id) + "')");
+	execute("DELETE FROM critical_outbox WHERE operation_id=UNHEX('" +
+		operation_hex(loot.operation_id) + "')");
+	for (const critical_command *fixture :
+	     { &tree_death, &tree_loot, &tree_redeath, &tree_mobile_claim })
+		execute("DELETE FROM critical_outbox WHERE operation_id=UNHEX('" +
+			operation_hex(fixture->operation_id) + "')");
+	execute("DELETE FROM collector_ledger WHERE operation_id=UNHEX('" +
+		operation_hex(loot.operation_id) + "')");
+	execute("DELETE FROM collector_ledger WHERE operation_id=UNHEX('" +
+		operation_hex(tree_loot.operation_id) + "')");
+	execute("DELETE FROM collector_ledger WHERE operation_id=UNHEX('" +
+		operation_hex(tree_mobile_claim.operation_id) + "')");
+	execute("DELETE FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+		operation_hex(enrollment.operation_id) + "')");
+	execute("DELETE FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+		operation_hex(loot.operation_id) + "')");
+	for (const critical_command *fixture :
+	     { &tree_death, &tree_loot, &tree_redeath, &tree_mobile_claim })
+		execute("DELETE FROM item_ownership_ledger WHERE operation_id=UNHEX('" +
+			operation_hex(fixture->operation_id) + "')");
+	execute("DELETE FROM collector_listings WHERE death_operation_id=UNHEX('" +
+		operation_hex(enrollment.operation_id) + "')");
+	execute("DELETE FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		operation_hex(enrollment.operation_id) + "')");
+	execute("DELETE FROM collector_listings WHERE death_operation_id IN (UNHEX('" +
+		operation_hex(tree_death.operation_id) + "'),UNHEX('" +
+		operation_hex(tree_redeath.operation_id) + "'))");
+	execute("DELETE FROM collector_deaths WHERE death_operation_id IN (UNHEX('" +
+		operation_hex(tree_death.operation_id) + "'),UNHEX('" +
+		operation_hex(tree_redeath.operation_id) + "'))");
+	execute("DELETE FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		operation_hex(enrollment.operation_id) + "')");
+	execute("DELETE FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		operation_hex(loot.operation_id) + "')");
+	for (const critical_command *fixture :
+	     { &tree_death, &tree_loot, &tree_redeath, &tree_mobile_claim })
+		execute("DELETE FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+			operation_hex(fixture->operation_id) + "')");
+	execute("DELETE FROM item_current_owner WHERE item_uid IN (" +
+		std::to_string(ENROLL_UID) + "," + std::to_string(EXCLUDED_UID) + "," +
+		std::to_string(ROLLBACK_UID) + "," +
+		std::to_string(ROLLBACK_EXCLUDED_UID) + ")");
+	execute("DELETE FROM item_current_owner WHERE item_uid=" +
+		std::to_string(TREE_CHILD_UID));
+	execute("DELETE FROM item_current_owner WHERE item_uid=" +
+		std::to_string(TREE_ROOT_UID));
+	execute("DELETE FROM item_owner_revision WHERE owner_type IN (1,4) AND owner_id IN (" +
+		std::to_string(PLAYER_PID) + "," +
+		std::to_string(item_corpse_owner_id(PLAYER_PID, ENROLL_SAVE_ID)) + "," +
+		std::to_string(item_corpse_owner_id(PLAYER_PID, TREE_SAVE_ID)) + "," +
+		std::to_string(item_corpse_owner_id(PLAYER_PID, TREE_REDEATH_SAVE_ID)) + "," +
+		std::to_string(item_corpse_owner_id(PLAYER_PID, ROLLBACK_SAVE_ID)) + ")");
+	execute("UPDATE collector_catalog_state SET catalog_revision=0,next_listing=20000 "
+		"WHERE state_id=1");
 
 	// Collect a container shell from the middle of a corpse tree. Its direct child remains
 	// in the corpse, reparented to the shell's parent, and only the shell's own weight leaves.
@@ -477,7 +999,7 @@ int main()
 	result = apply(purchase_command);
 	entry = result.entry;
 	assert(entry.status == collector::state::purchased && entry.revision == 4 &&
-	       entry.item_revision == 7);
+	       entry.item_revision == 7 && result.materialized_item_id != 0);
 	assert(text("SELECT CONCAT(copper,':',silver,':',gold,':',platinum,':',wallet_revision) "
 		    "FROM player_data WHERE pid=" +
 		    std::to_string(PLAYER_PID)) == "0:0:5:0:1");
@@ -486,6 +1008,9 @@ int main()
 	assert(text("SELECT CONCAT(vnum,':',weight,':',cost,':',value2,':',item_condition) FROM "
 		    "player_items WHERE obj_uid=" +
 		    std::to_string(ITEM_UID)) == "1002:5:250:7:77");
+	const uint64_t materialized_item_id =
+		scalar("SELECT id FROM player_items WHERE obj_uid=" + std::to_string(ITEM_UID));
+	assert(materialized_item_id == result.materialized_item_id);
 	assert(scalar("SELECT COUNT(*) FROM player_item_affects a JOIN player_items i ON "
 		      "i.id=a.item_id WHERE i.obj_uid=" +
 		      std::to_string(ITEM_UID) + " AND a.location=1 AND a.modifier=7") == 1);
@@ -495,8 +1020,9 @@ int main()
 	assert(scalar("SELECT reason_type FROM currency_ledger WHERE operation_id=UNHEX('" +
 		      operation_hex(purchase_command.operation_id) + "')") ==
 	       static_cast<unsigned int>(currency_reason_type::collector_purchase));
-	assert(critical_command_repository_apply(database, purchase_command).outcome ==
-	       critical_apply_outcome::already_applied);
+	const collector_command_result replayed_purchase =
+		apply(purchase_command, critical_apply_outcome::already_applied);
+	assert(replayed_purchase.materialized_item_id == materialized_item_id);
 
 	// Pause/resume extends the holding interval, and early expiry cannot mutate custody.
 	constexpr uint64_t EXPIRE_LISTING = 7002, EXPIRE_UID = 920000001;

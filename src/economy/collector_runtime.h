@@ -2,6 +2,7 @@
 #define DURIS_COLLECTOR_RUNTIME_H
 
 #include "economy/collector_command.h"
+#include "economy/collector_storage.h"
 #include "item/item_ownership_runtime.h"
 
 #include <cstddef>
@@ -16,9 +17,13 @@ bool collector_runtime_rebuild(const collector::catalog &catalog);
 // only and does not expose a half-applied pair.
 bool collector_runtime_rebuild_authoritative(const collector::catalog &catalog,
 					     const item_ownership_runtime_entry *held_items,
-					     size_t held_count);
+					     size_t held_count,
+					     const collector_death_snapshot *deaths = nullptr,
+					     size_t death_count = 0);
 bool collector_runtime_publish(const collector_command_result &result);
 bool collector_runtime_find(uint64_t listing, collector::record *entry);
+bool collector_runtime_find_death(uint32_t beneficiary_pid, uint64_t death_time,
+				  collector_death_snapshot *death);
 bool collector_runtime_snapshot(collector::catalog *catalog);
 bool collector_runtime_available_for(uint32_t beneficiary, size_t limit,
 				     std::vector<collector::record> *entries);

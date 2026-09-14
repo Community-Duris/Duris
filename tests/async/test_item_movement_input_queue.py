@@ -122,13 +122,14 @@ PRELUDE = r'''
 #define CMD_THROW 37
 #define CMD_THROWPOTION 38
 #define CMD_USE 39
+#define CMD_COLLECTOR 40
 
 static const char *command[] = {
 	"get", "take", "drop", "put", "give", "wear", "wield", "grab", "hold",
 	"remove", "open", "close", "empty", "junk", "donate", "sacrifice", "buy",
 	"sell", "look", "score", "equipment", "inventory", "fire", "apply", "bandage",
 	"drink", "eat", "fill", "pour", "quaff", "recite", "reload", "salvage", "sip",
-	"smoke", "taste", "throw", "throwpotion", "use", "\n"
+	"smoke", "taste", "throw", "throwpotion", "use", "collector", "\n"
 };
 
 P_obj object_list = NULL;
@@ -151,10 +152,38 @@ static obj_data recovered_grant_first = {};
 static obj_data recovered_grant_second = {};
 static critical_command submitted_command = {};
 static uint64_t pending_coin_uid = 0;
+static uint64_t fenced_item_uid = 0;
+static uint64_t collector_pending_uid = 0;
+static unsigned collector_invalidations = 0;
 bool currency_transaction_coin_item_busy(uint64_t uid)
 {
 	return uid && uid == pending_coin_uid;
 }
+
+bool collector_transaction_player_busy(P_char)
+{
+	return false;
+}
+
+bool collector_transaction_item_busy(uint64_t uid)
+{
+	return uid && uid == collector_pending_uid;
+}
+
+bool collector_service_player_busy(P_char)
+{
+	return false;
+}
+
+bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_id &,
+				       const std::vector<player_item_snapshot> &,
+				       item_transfer_payload *)
+{
+	return true;
+}
+
+void collector_death_enrollment_note_submitted(P_obj, const item_transfer_payload &) {}
+void collector_catalog_cache_invalidate(void) { ++collector_invalidations; }
 
 void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
@@ -211,6 +240,12 @@ critical_submit_result critical_command_coordinator_submit(critical_command queu
 	command_submitted = true;
 	submitted_command = std::move(queued);
 	return critical_submit_result::accepted;
+}
+
+bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
+					     critical_operation_id *)
+{
+	return key.type == critical_entity_type::item && key.id == fenced_item_uid;
 }
 
 void command_interpreter(P_char character, char *input);
@@ -286,6 +321,8 @@ static int wear_successes = 0;
 static int wield_dispatches = 0;
 static int fire_dispatches = 0;
 static int stale_completion_callbacks = 0;
+static int mobile_publications = 0;
+static int vanished_mobile_callbacks = 0;
 static P_obj fixture_backpack = NULL;
 
 static void held_bulk_get_completion(P_char actor, bool committed,
@@ -347,6 +384,37 @@ static void stale_registry_completion(P_char, bool, const item_transfer_result &
 				      const uint8_t *, size_t)
 {
 	++stale_completion_callbacks;
+}
+
+static void held_mobile_get_completion(P_char actor, bool committed,
+				       const item_transfer_result &result,
+				       unsigned int error_code, const uint8_t *encoded,
+				       size_t encoded_size)
+{
+	assert(committed && error_code == 0 && result.item_count == 1);
+	assert(encoded && encoded_size == sizeof(uint64_t));
+	uint64_t item_uid = 0;
+	memcpy(&item_uid, encoded, sizeof(item_uid));
+	item_ownership_runtime_entry ownership = {};
+	assert(item_ownership_runtime_lookup(item_uid, &ownership));
+	assert(ownership.owner.type == item_owner_type::room);
+	assert(ownership.item_revision == 2);
+	if (!actor)
+	{
+		++vanished_mobile_callbacks;
+		return;
+	}
+	P_obj object = NULL;
+	for (P_obj candidate = object_list; candidate; candidate = candidate->next)
+		if (candidate->obj_uid == item_uid)
+			object = candidate;
+	assert(object && OBJ_ROOM(object));
+	object->loc_p = LOC_CARRIED;
+	object->loc.carrying = actor;
+	object->next_content = actor->carrying;
+	actor->carrying = object;
+	world[0].contents = NULL;
+	++mobile_publications;
 }
 
 static int carried_count(P_char actor)
@@ -509,6 +577,33 @@ int main()
 	// A committed coin change may still await live placement. Guard just its
 	// affected tree before capturing either a single move or a bulk move.
 	item_movement_reject reject = item_movement_reject::none;
+	// Collector collection and other custody commands hold coordinator item
+	// fences until their live publication has completed.
+	fenced_item_uid = first_roast.obj_uid;
+	assert(!item_movement_transaction_submit(
+		&actor, &first_roast, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	assert(!item_movement_transaction_submit_batch(
+		&actor, roots, 2, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	fenced_item_uid = backpack.obj_uid;
+	assert(!item_movement_transaction_submit(
+		&actor, &first_roast, &backpack, room_owner, player_owner,
+		item_transfer_reason::player_put, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	fenced_item_uid = 0;
+	collector_pending_uid = first_roast.obj_uid;
+	assert(!item_movement_transaction_submit(
+		&actor, &first_roast, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, first_roast.obj_uid,
+		held_bulk_get_completion, NULL, 0, NULL, &reject));
+	assert(reject == item_movement_reject::pending_conflict && !command_submitted);
+	collector_pending_uid = 0;
 	pending_coin_uid = first_roast.obj_uid;
 	assert(!item_movement_transaction_submit(
 		&actor, &first_roast, NULL, room_owner, player_owner,
@@ -590,7 +685,7 @@ int main()
 
 	/* Release the captured production command through the real item-movement
 	   completion handler. Registry publication precedes the bulk-get callback. */
-	item_transfer_result result = { 100, 2, 4, 8, 2, 0 };
+	item_transfer_result result = { 100, 2, 4, 8, 2, 0, true };
 	critical_completion completion = {};
 	completion.operation_id = submitted_command.operation_id;
 	completion.outcome = critical_apply_outcome::applied;
@@ -603,11 +698,13 @@ int main()
 	character_list = NULL;
 	item_movement_transaction_handle_completions(&completion, 1);
 	assert(publication_count == 0);
+	assert(collector_invalidations == 1);
 	assert(item_movement_transaction_health_copy().retained_offline == 1);
 	assert(item_movement_transaction_player_busy(&actor));
 	character_list = &actor;
 	item_movement_transaction_player_ready(&actor);
 	assert(publication_count == 1);
+	assert(collector_invalidations == 1);
 	item_movement_transaction_player_ready(&actor);
 	assert(publication_count == 1);
 	assert(item_movement_transaction_health_copy().retained_offline == 0);
@@ -778,6 +875,104 @@ int main()
 	item_movement_transaction_reset_for_tests();
 	assert(!item_movement_transaction_player_busy(&actor));
 
+	/* NPC and pet pickup is a same-owner durable claim: no live handoff occurs
+	   before commit, the item/owner revisions advance once, and collector cache
+	   invalidation is replay-safe. A vanished mobile still publishes authority
+	   and releases the pending operation without receiving the live object. */
+	item_ownership_runtime_reset();
+	command_submitted = false;
+	submitted_command = {};
+	char_data mobile = {};
+	SET_BIT(mobile.specials.act, ACT_ISNPC);
+	mobile.runtime_id = 9001;
+	mobile.in_room = 0;
+	character_list = &mobile;
+	obj_data mobile_loot = {};
+	mobile_loot.obj_uid = 105;
+	mobile_loot.R_num = 3;
+	mobile_loot.loc_p = LOC_ROOM;
+	mobile_loot.loc.room = 0;
+	object_list = &mobile_loot;
+	world[0].contents = &mobile_loot;
+	assert(!item_movement_transaction_submit(
+		&mobile, &mobile_loot, NULL, room_owner, room_owner,
+		item_transfer_reason::mobile_claim, 0, held_mobile_get_completion,
+		&mobile_loot.obj_uid, sizeof(mobile_loot.obj_uid), NULL, &reject));
+	assert(reject == item_movement_reject::owner_mismatch && !command_submitted);
+	const item_ownership_runtime_entry mobile_entry = {
+		105, 105, 0, room_owner, 1, 3, 103, item_custody_state::active
+	};
+	assert(item_ownership_runtime_hydrate(mobile_entry));
+	assert(!item_movement_transaction_submit(
+		&mobile, &mobile_loot, NULL, room_owner, room_owner,
+		item_transfer_reason::player_get, 0, held_mobile_get_completion,
+		&mobile_loot.obj_uid, sizeof(mobile_loot.obj_uid), NULL, &reject));
+	assert(reject == item_movement_reject::invalid_request && !command_submitted);
+	assert(item_movement_transaction_submit(
+		&mobile, &mobile_loot, NULL, room_owner, room_owner,
+		item_transfer_reason::mobile_claim, 0, held_mobile_get_completion,
+		&mobile_loot.obj_uid, sizeof(mobile_loot.obj_uid), NULL, &reject));
+	assert(command_submitted && OBJ_ROOM(&mobile_loot));
+	item_transfer_payload mobile_payload = {};
+	assert(item_transfer_command_decode_payload(submitted_command, &mobile_payload));
+	assert(mobile_payload.reason == item_transfer_reason::mobile_claim);
+	assert(item_owner_identity_equal(mobile_payload.from_owner, room_owner));
+	assert(item_owner_identity_equal(mobile_payload.to_owner, room_owner));
+	item_transfer_result mobile_result = {105, 1, 4, 4, 2, 0, true};
+	critical_completion mobile_completion = {};
+	mobile_completion.operation_id = submitted_command.operation_id;
+	mobile_completion.outcome = critical_apply_outcome::applied;
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> mobile_encoded = {};
+	assert(item_transfer_command_encode_result(mobile_result, &mobile_encoded));
+	mobile_completion.result_size = mobile_encoded.size();
+	std::copy(mobile_encoded.begin(), mobile_encoded.end(),
+		  mobile_completion.result_payload.begin());
+	const unsigned invalidations_before_mobile = collector_invalidations;
+	command_submitted = false;
+	item_movement_transaction_handle_completions(&mobile_completion, 1);
+	item_movement_transaction_handle_completions(&mobile_completion, 1);
+	assert(mobile_publications == 1 && OBJ_CARRIED_BY(&mobile_loot, &mobile));
+	assert(collector_invalidations == invalidations_before_mobile + 1);
+	assert(item_movement_transaction_health_copy().pending == 0);
+	item_ownership_runtime_entry mobile_after = {};
+	assert(item_ownership_runtime_lookup(105, &mobile_after));
+	assert(mobile_after.item_revision == 2 && mobile_after.owner_revision == 4);
+
+	item_movement_transaction_reset_for_tests();
+	item_ownership_runtime_reset();
+	command_submitted = false;
+	submitted_command = {};
+	mobile.carrying = NULL;
+	obj_data abandoned_loot = {};
+	abandoned_loot.obj_uid = 106;
+	abandoned_loot.R_num = 3;
+	abandoned_loot.loc_p = LOC_ROOM;
+	abandoned_loot.loc.room = 0;
+	object_list = &abandoned_loot;
+	world[0].contents = &abandoned_loot;
+	assert(item_ownership_runtime_hydrate(
+		{106, 106, 0, room_owner, 1, 9, 103, item_custody_state::active}));
+	assert(item_movement_transaction_submit(
+		&mobile, &abandoned_loot, NULL, room_owner, room_owner,
+		item_transfer_reason::mobile_claim, 0, held_mobile_get_completion,
+		&abandoned_loot.obj_uid, sizeof(abandoned_loot.obj_uid), NULL, &reject));
+	mobile_result = {106, 1, 10, 10, 2, 0, true};
+	mobile_completion = {};
+	mobile_completion.operation_id = submitted_command.operation_id;
+	mobile_completion.outcome = critical_apply_outcome::applied;
+	mobile_encoded = {};
+	assert(item_transfer_command_encode_result(mobile_result, &mobile_encoded));
+	mobile_completion.result_size = mobile_encoded.size();
+	std::copy(mobile_encoded.begin(), mobile_encoded.end(),
+		  mobile_completion.result_payload.begin());
+	character_list = NULL;
+	command_submitted = false;
+	item_movement_transaction_handle_completions(&mobile_completion, 1);
+	assert(vanished_mobile_callbacks == 1 && OBJ_ROOM(&abandoned_loot));
+	assert(item_movement_transaction_health_copy().pending == 0);
+	assert(item_ownership_runtime_lookup(106, &mobile_after));
+	assert(mobile_after.item_revision == 2 && mobile_after.owner_revision == 10);
+	character_list = &actor;
 
     // CHAOS pre-entry multi-root admission stages every root before any command.
     // All fixtures below are in-memory; no persistence service is connected.

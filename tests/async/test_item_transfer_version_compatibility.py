@@ -214,6 +214,76 @@ int main()
 	uint64_t target_root = 0, target_parent = 1;
 	assert(item_transfer_target_topology(decoded, 200, &target_root, &target_parent));
 	assert(target_root == 200 && target_parent == 0);
+
+	// Version 6 batch commands remain replayable: v7 adds one trailing collector
+	// context length, which is absent from the older wire contract.
+	auto version_six = command;
+	version_six.payload_version = ITEM_TRANSFER_BATCH_PAYLOAD_VERSION;
+	version_six.payload.resize(version_six.payload.size() - sizeof(uint32_t));
+	assert(item_transfer_command_decode_payload(version_six, &decoded));
+	assert(decoded.multi_root && decoded.item_count == 2 && !decoded.collector.present);
+
+	item_transfer_payload death = {};
+	death.from_owner = { item_owner_type::player, 42, 0 };
+	death.to_owner = { item_owner_type::corpse, item_corpse_owner_id(42, 1700000000), 0 };
+	death.reason = item_transfer_reason::corpse_create;
+	death.reason_id = 1700000000;
+	death.expected_from_revision = 9;
+	death.expected_to_revision = 0;
+	death.multi_root = true;
+	death.item_count = 2;
+	death.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	death.items[1] = { 200, 200, 0, 6, 501, item_custody_state::active };
+	death.corpse.present = true;
+	death.corpse.room_vnum = 500;
+	death.corpse.weight = 90;
+	death.corpse.actor_racewar = 1;
+	death.corpse.values[3] = 42;
+	death.corpse.values[5] = 1;
+	death.corpse.values[6] = 1700000000;
+	death.corpse.owner_name = "Hero";
+	death.corpse.short_description = "the corpse of Hero";
+	death.corpse.description = "The corpse of Hero is lying here.";
+	death.corpse.keywords = "hero corpse _pcorpse_";
+	death.collector.present = true;
+	death.collector.death_operation = operation();
+	death.collector.beneficiary_pid = 42;
+	death.collector.death_time = 1700000000;
+	death.collector.policy = { 10, 20, 30, 200, 100 };
+	death.collector.eligible_item_uids = { 100, 200 };
+	assert(item_transfer_command_build(&command, death.collector.death_operation, death,
+					   critical_source_site::combat,
+					   critical_deadline_class::interactive));
+	command.accepted_at_usec = 4;
+	assert(critical_command_valid(command));
+	assert(command.keys.size() == 5 && command.expected_revisions.size() == 5);
+	const auto collector_fence = std::find_if(
+		command.expected_revisions.begin(), command.expected_revisions.end(),
+		[](const critical_expected_revision &revision) {
+			return revision.key.type == critical_entity_type::collector &&
+			       revision.key.id == UINT64_MAX;
+		});
+	assert(collector_fence != command.expected_revisions.end() &&
+	       collector_fence->revision == 0);
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.collector.present &&
+	       critical_operation_id_equal(decoded.collector.death_operation,
+					   death.collector.death_operation) &&
+	       decoded.collector.beneficiary_pid == 42 &&
+	       decoded.collector.death_time == 1700000000 &&
+	       decoded.collector.policy.sale_delay == 20 &&
+	       decoded.collector.eligible_item_uids ==
+		       std::vector<uint64_t>({ 100, 200 }));
+	auto invalid_death = death;
+	invalid_death.collector.eligible_item_uids = { 200, 100 };
+	assert(!item_transfer_command_build(&command, operation(), invalid_death,
+					    critical_source_site::combat,
+					    critical_deadline_class::interactive));
+	invalid_death = death;
+	invalid_death.collector.eligible_item_uids = { 999 };
+	assert(!item_transfer_command_build(&command, operation(), invalid_death,
+					    critical_source_site::combat,
+					    critical_deadline_class::interactive));
 	return 0;
 }
 '''
@@ -221,7 +291,7 @@ int main()
 assert (
     "command.payload.size() < item_section_size + sizeof(uint32_t)"
     in COMMAND_SOURCE
-), "v4-v6 item blob length reads must be bounds-checked"
+), "v4-v7 item blob length reads must be bounds-checked"
 
 
 with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_dir:
@@ -251,4 +321,4 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
     )
     subprocess.run([str(binary)], check=True)
 
-print("[PASS] item-transfer compatibility, corpse context, and v6 multi-root payloads")
+print("[PASS] item-transfer v2-v7 compatibility, corpse and collector contexts")

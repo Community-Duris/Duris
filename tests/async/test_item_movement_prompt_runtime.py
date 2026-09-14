@@ -52,6 +52,14 @@ static uint64_t busy_coin_uid;
 static bool currency_busy;
 bool currency_transaction_coin_item_busy(uint64_t uid) { return uid && uid == busy_coin_uid; }
 bool currency_transaction_player_busy(P_char) { return currency_busy; }
+bool collector_transaction_player_busy(P_char) { return false; }
+bool collector_transaction_item_busy(uint64_t) { return false; }
+bool collector_service_player_busy(P_char) { return false; }
+bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_id &,
+                                       const std::vector<player_item_snapshot> &,
+                                       item_transfer_payload *) { return true; }
+void collector_death_enrollment_note_submitted(P_obj, const item_transfer_payload &) {}
+void collector_catalog_cache_invalidate(void) {}
 void extract_obj(P_obj, int) {}
 void obj_from_char(P_obj) {}
 void obj_to_char(P_obj, P_char) {}
@@ -64,6 +72,10 @@ critical_submit_result critical_command_coordinator_submit(critical_command comm
 {
     submitted = std::move(command);
     return critical_submit_result::accepted;
+}
+bool critical_command_coordinator_is_fenced(const critical_entity_key &, critical_operation_id *)
+{
+    return false;
 }
 static void publish(P_char actor, bool committed, const item_transfer_result &, unsigned,
                     const uint8_t *, size_t)

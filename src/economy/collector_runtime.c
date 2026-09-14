@@ -5,11 +5,13 @@
 #include <limits>
 #include <map>
 #include <new>
+#include <set>
 #include <utility>
 
 namespace
 {
 std::map<uint64_t, collector::record> records;
+std::map<std::pair<uint32_t, uint64_t>, collector_death_snapshot> deaths_by_identity;
 collector::due_queue due;
 uint64_t catalog_revision = 0;
 uint64_t next_listing = 1;
@@ -58,6 +60,7 @@ bool same_record(const collector::record &left, const collector::record &right)
 struct catalog_projection
 {
 	std::map<uint64_t, collector::record> records;
+	std::map<std::pair<uint32_t, uint64_t>, collector_death_snapshot> deaths;
 	collector::due_queue due;
 	size_t available = 0;
 };
@@ -73,6 +76,14 @@ bool build_projection(const collector::catalog &catalog, catalog_projection *pro
 			if (!projection->records.emplace(entry.listing, entry).second ||
 			    !projection->due.update(entry))
 				return false;
+			const auto previous = records.find(entry.listing);
+			uint64_t previous_deadline = 0, rebuilt_deadline = 0;
+			if (previous != records.end() && same_record(previous->second, entry) &&
+			    due.deadline(entry.listing, &previous_deadline) &&
+			    projection->due.deadline(entry.listing, &rebuilt_deadline) &&
+			    previous_deadline > rebuilt_deadline &&
+			    !projection->due.defer(entry.listing, previous_deadline))
+				return false;
 			if (available(entry))
 				++projection->available;
 		}
@@ -87,11 +98,43 @@ bool build_projection(const collector::catalog &catalog, catalog_projection *pro
 void install_projection(const collector::catalog &catalog, catalog_projection *projection) noexcept
 {
 	records.swap(projection->records);
+	deaths_by_identity.swap(projection->deaths);
 	due.swap(projection->due);
 	catalog_revision = catalog.revision;
 	next_listing = catalog.next_listing;
 	available_count = projection->available;
 	projection->available = 0;
+}
+
+bool build_death_projection(const collector_death_snapshot *deaths, size_t death_count,
+			    catalog_projection *projection)
+{
+	if (!projection || (!deaths && death_count) || death_count > collector::catalog_max_records)
+		return false;
+	std::set<std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES>> operation_ids;
+	try
+	{
+		for (size_t index = 0; index < death_count; ++index)
+		{
+			const collector_death_snapshot &death = deaths[index];
+			if (std::all_of(death.operation_id.bytes.begin(),
+					death.operation_id.bytes.end(),
+					[](uint8_t value) { return value == 0; }) ||
+			    !death.beneficiary_pid || !death.death_time || !death.policy.enabled ||
+			    !collector::valid_rules(death.policy) || death.hint_state > 2 ||
+			    !operation_ids.insert(death.operation_id.bytes).second ||
+			    !projection->deaths
+				     .emplace(std::make_pair(death.beneficiary_pid, death.death_time),
+					      death)
+				     .second)
+				return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
 }
 
 bool held_projection_matches(const catalog_projection &projection,
@@ -136,10 +179,13 @@ bool collector_runtime_rebuild(const collector::catalog &catalog)
 
 bool collector_runtime_rebuild_authoritative(const collector::catalog &catalog,
 					     const item_ownership_runtime_entry *held_items,
-					     size_t held_count)
+					     size_t held_count,
+					     const collector_death_snapshot *deaths,
+					     size_t death_count)
 {
 	catalog_projection projection;
 	if (!build_projection(catalog, &projection) ||
+	    !build_death_projection(deaths, death_count, &projection) ||
 	    !held_projection_matches(projection, held_items, held_count) ||
 	    !item_ownership_runtime_reconcile_collector(held_items, held_count))
 		return false;
@@ -211,6 +257,18 @@ bool collector_runtime_find(uint64_t listing, collector::record *entry)
 	if (found == records.end())
 		return false;
 	*entry = found->second;
+	return true;
+}
+
+bool collector_runtime_find_death(uint32_t beneficiary_pid, uint64_t death_time,
+				  collector_death_snapshot *death)
+{
+	if (!beneficiary_pid || !death_time || !death)
+		return false;
+	const auto found = deaths_by_identity.find({ beneficiary_pid, death_time });
+	if (found == deaths_by_identity.end())
+		return false;
+	*death = found->second;
 	return true;
 }
 
@@ -339,6 +397,7 @@ size_t collector_runtime_available_count(void)
 void collector_runtime_reset(void)
 {
 	records.clear();
+	deaths_by_identity.clear();
 	due = {};
 	catalog_revision = 0;
 	next_listing = 1;

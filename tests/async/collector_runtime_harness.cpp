@@ -63,6 +63,11 @@ int main()
 	       collector_runtime_catalog_revision() == 9 && collector_runtime_next_listing() == 9);
 	auto due = collector_runtime_lease_due(first.collect_at, 1, first.collect_at + 60);
 	assert(due.size() == 1 && due[0] == 4);
+	// A periodic byte-identical bootstrap must not erase an active worker lease.
+	assert(collector_runtime_rebuild(initial));
+	assert(collector_runtime_lease_due(first.collect_at, 1, first.collect_at + 120).empty());
+	due = collector_runtime_lease_due(first.collect_at + 60, 1, first.collect_at + 120);
+	assert(due.size() == 1 && due[0] == 4);
 
 	assert(collector::collect(&first, first.revision, 1, 1, true, 75, first.collect_at) ==
 	       collector::outcome::applied);

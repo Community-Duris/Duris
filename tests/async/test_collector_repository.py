@@ -35,11 +35,12 @@ class CollectorRepositoryTest(unittest.TestCase):
         self.assertIn("payload.listing >= catalog.next_listing", source)
         self.assertIn("mysql_affected_rows(connection) != 1", source)
 
-    def test_restart_catalog_read_is_bounded_streamed_and_validated(self) -> None:
+    def test_restart_catalog_read_is_bounded_buffered_and_validated(self) -> None:
         source = (SRC / "collector_repository.c").read_text()
         read = source[source.index("bool collector_repository_read_bootstrap") :
                       source.index("bool collector_repository_read_catalog")]
-        self.assertIn("mysql_use_result", read)
+        self.assertIn("mysql_store_result", read)
+        self.assertNotIn("mysql_use_result", read)
         self.assertIn("LIMIT 262145", read)
         self.assertIn("projection_matches", read)
         self.assertIn("collector::valid_catalog", read)

@@ -302,6 +302,31 @@ int main()
 					       &decoded_result) &&
 	       !decoded_result.record_present);
 
+	collector_command_result purchased;
+	purchased.action = collector_action::purchase;
+	purchased.record_present = true;
+	purchased.catalog_revision = 13;
+	purchased.materialized_item_id = 987;
+	purchased.entry = paused_record();
+	assert(collector::resume(&purchased.entry, purchased.entry.revision,
+				 purchased.entry.paused_at + 1) == collector::outcome::applied);
+	assert(collector::purchase(&purchased.entry, purchased.entry.revision, 42,
+				   purchased.entry.price_value, true,
+				   purchased.entry.available_at + 1) == collector::outcome::applied);
+	assert(collector_command_encode_result(purchased, &encoded_result));
+	assert(collector_command_decode_result(encoded_result.data(), encoded_result.size(),
+					       &decoded_result) &&
+	       decoded_result.materialized_item_id == 987);
+	// Version-one results used the final six bytes as zero padding. They remain
+	// replayable and simply have no immediate SQL materialization identity.
+	auto previous_result = encoded_result;
+	previous_result[1] = COLLECTOR_COMMAND_PREVIOUS_RESULT_VERSION;
+	for (size_t offset = 266; offset < previous_result.size(); ++offset)
+		previous_result[offset] = 0;
+	assert(collector_command_decode_result(previous_result.data(), previous_result.size(),
+					       &decoded_result) &&
+	       decoded_result.materialized_item_id == 0);
+
 	std::cout << "collector command: versioned payloads, disjoint revisions, complete-root "
 		     "fences, and canonical results passed\n";
 }

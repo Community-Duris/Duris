@@ -1962,16 +1962,26 @@ CREATE TABLE `collector_catalog_state` (
 INSERT INTO `collector_catalog_state` (`state_id`,`catalog_revision`,`next_listing`) VALUES (1,0,1);
 CREATE TABLE `collector_deaths` (
   `death_operation_id` binary(16) NOT NULL, `beneficiary_pid` int unsigned NOT NULL,
-  `death_time` bigint unsigned NOT NULL, `hint_state` tinyint unsigned NOT NULL DEFAULT '0',
+  `death_time` bigint unsigned NOT NULL,
+  `collection_delay` bigint unsigned NOT NULL DEFAULT '43200',
+  `sale_delay` bigint unsigned NOT NULL DEFAULT '86400',
+  `holding_duration` bigint unsigned NOT NULL DEFAULT '604800',
+  `price_percent` bigint unsigned NOT NULL DEFAULT '200',
+  `minimum_value` bigint unsigned NOT NULL DEFAULT '100',
+  `hint_state` tinyint unsigned NOT NULL DEFAULT '0',
   `hint_revision` bigint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`death_operation_id`),
-  KEY `idx_collector_death_beneficiary` (`beneficiary_pid`,`death_time`),
+  UNIQUE KEY `uq_collector_death_identity` (`beneficiary_pid`,`death_time`),
   CONSTRAINT `chk_collector_death_beneficiary` CHECK ((`beneficiary_pid` > 0)),
   CONSTRAINT `chk_collector_death_time` CHECK ((`death_time` > 0)),
-  CONSTRAINT `chk_collector_hint_state` CHECK ((`hint_state` between 0 and 2)),
-  CONSTRAINT `collector_death_operation_fk` FOREIGN KEY (`death_operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+  CONSTRAINT `chk_collector_death_collection_delay` CHECK ((`collection_delay` > 0)),
+  CONSTRAINT `chk_collector_death_sale_delay` CHECK ((`sale_delay` >= `collection_delay`)),
+  CONSTRAINT `chk_collector_death_holding_duration` CHECK ((`holding_duration` > 0)),
+  CONSTRAINT `chk_collector_death_price_percent` CHECK ((`price_percent` > 0)),
+  CONSTRAINT `chk_collector_death_minimum_value` CHECK ((`minimum_value` > 0)),
+  CONSTRAINT `chk_collector_hint_state` CHECK ((`hint_state` between 0 and 2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `collector_listings` (
   `listing_id` bigint unsigned NOT NULL, `death_operation_id` binary(16) NOT NULL,
@@ -2004,7 +2014,7 @@ CREATE TABLE `collector_ledger` (
   `item_uid` bigint unsigned NOT NULL, `value_delta` bigint NOT NULL DEFAULT '0',
   `closed_reason` tinyint unsigned NOT NULL DEFAULT '0', `source_site` smallint unsigned NOT NULL,
   `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  PRIMARY KEY (`operation_id`), KEY `idx_collector_ledger_listing` (`listing_id`,`listing_revision`),
+  PRIMARY KEY (`operation_id`,`listing_id`), KEY `idx_collector_ledger_listing` (`listing_id`,`listing_revision`),
   KEY `idx_collector_ledger_actor` (`actor_pid`,`created_at`),
   KEY `idx_collector_ledger_item` (`item_uid`,`created_at`),
   CONSTRAINT `chk_collector_ledger_listing` CHECK ((`listing_id` > 0)),
@@ -2012,8 +2022,7 @@ CREATE TABLE `collector_ledger` (
   CONSTRAINT `chk_collector_ledger_catalog_revision` CHECK ((`catalog_revision` > 0)),
   CONSTRAINT `chk_collector_ledger_listing_revision` CHECK ((`listing_revision` > 0)),
   CONSTRAINT `chk_collector_ledger_item` CHECK ((`item_uid` > 0)),
-  CONSTRAINT `chk_collector_ledger_reason` CHECK ((`closed_reason` between 0 and 7)),
-  CONSTRAINT `collector_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+  CONSTRAINT `chk_collector_ledger_reason` CHECK ((`closed_reason` between 0 and 7))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `collector_reconciliation_quarantine` (
   `quarantine_id` bigint unsigned NOT NULL AUTO_INCREMENT, `listing_id` bigint unsigned NOT NULL,

@@ -21,6 +21,7 @@ size_t applied_held_items = 0;
 uint64_t stale_snapshots = 0;
 uint64_t publication_failures = 0;
 bool ready = false;
+bool invalidated = false;
 
 void schedule_after(std::chrono::steady_clock::duration interval)
 {
@@ -42,8 +43,9 @@ void publish_completed_generation()
 		schedule_after(STALE_RETRY_INTERVAL);
 		return;
 	}
-	if (!collector_runtime_rebuild_authoritative(snapshot->catalog, snapshot->held_items.data(),
-						     snapshot->held_items.size()))
+	if (!collector_runtime_rebuild_authoritative(
+		    snapshot->catalog, snapshot->held_items.data(), snapshot->held_items.size(),
+		    snapshot->deaths.data(), snapshot->deaths.size()))
 	{
 		++publication_failures;
 		applied_generation = generation;
@@ -64,10 +66,23 @@ bool collector_catalog_cache_refresh(void)
 	return requested;
 }
 
+void collector_catalog_cache_invalidate(void)
+{
+	// A request started here necessarily reads after the authority commit that
+	// produced the completion. A busy cache may still be finishing an older
+	// snapshot; retain the latch so pulse starts a subsequent read.
+	if (!cache.busy() && collector_catalog_cache_refresh())
+		invalidated = false;
+	else
+		invalidated = true;
+}
+
 void collector_catalog_cache_pulse(void)
 {
 	cache.poll();
 	publish_completed_generation();
+	if (invalidated && !cache.busy() && collector_catalog_cache_refresh())
+		invalidated = false;
 	const auto now = clock_type::now();
 	if (next_refresh == clock_type::time_point{})
 		next_refresh = now + REFRESH_INTERVAL;
@@ -85,6 +100,7 @@ void collector_catalog_cache_shutdown(void)
 	stale_snapshots = 0;
 	publication_failures = 0;
 	ready = false;
+	invalidated = false;
 }
 
 bool collector_catalog_cache_ready(void)

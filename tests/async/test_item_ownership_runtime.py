@@ -17,15 +17,19 @@ HARNESS = r'''
 
 int main()
 {
-	const item_transfer_result extended = { 100, 1, 11, 1, 6, 7 };
+	const item_transfer_result extended = { 100, 1, 11, 1, 6, 7, true };
 	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
 	assert(item_transfer_command_encode_result(extended, &encoded));
 	item_transfer_result decoded = {};
 	assert(item_transfer_command_decode_result(encoded.data(), encoded.size(), &decoded));
-	assert(decoded.corpse_revision == 7);
+	assert(decoded.corpse_revision == 7 && decoded.collector_catalog_changed);
+	encoded[10] = 2;
+	assert(!item_transfer_command_decode_result(encoded.data(), encoded.size(), &decoded));
+	encoded[10] = 0;
 	assert(item_transfer_command_decode_result(encoded.data(),
 					   ITEM_TRANSFER_LEGACY_RESULT_BYTES, &decoded));
-	assert(decoded.corpse_revision == 0 && decoded.max_item_revision == 6);
+	assert(decoded.corpse_revision == 0 && decoded.max_item_revision == 6 &&
+	       !decoded.collector_catalog_changed);
 	item_ownership_runtime_reset();
 	{
 		const item_owner_identity batch_player = { item_owner_type::player, 900, 0 };

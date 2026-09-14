@@ -8,6 +8,7 @@
 #include "core/utils.h"
 
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <mutex>
 #include <memory>
@@ -39,8 +40,16 @@ enum class outbox_publication_state : uint8_t
 
 struct pending_outbox_publication
 {
+	critical_operation_id operation_id = {};
 	collector_command_result result = {};
 	outbox_publication_state state = outbox_publication_state::queued;
+};
+
+struct outbox_publication_work
+{
+	uint64_t outbox_id = 0;
+	critical_operation_id operation_id = {};
+	collector_command_result result = {};
 };
 
 std::mutex outbox_mutex;
@@ -123,10 +132,10 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 		publication_error = ESTALE;
 	}
 	if (published && committed && submitted_payload.action == collector_action::purchase &&
-	    (!character ||
-	     !currency_transaction_publish_balances(
+	    character &&
+	    !currency_transaction_publish_balances(
 		     character, submitted_payload.account_name.data(), submitted_payload.racewar,
-		     result.wallet, result.bank, result.wallet_revision, result.bank_revision)))
+		     result.wallet, result.bank, result.wallet_revision, result.bank_revision))
 	{
 		published = false;
 		publication_error = ESTALE;
@@ -249,8 +258,7 @@ void collector_transaction_handle_completions(const critical_completion *complet
 		P_char character = found->second.actor_pid ?
 					   find_player_by_pid(found->second.actor_pid) :
 					   nullptr;
-		if (!found->second.actor_pid || character)
-			publish(found, character);
+		publish(found, character);
 	}
 }
 
@@ -278,6 +286,24 @@ bool collector_transaction_listing_busy(uint64_t listing)
 	return listing_pending(listing);
 }
 
+bool collector_transaction_item_busy(uint64_t item_uid)
+{
+	if (!item_uid)
+		return false;
+	return std::any_of(pending.begin(), pending.end(),
+			   [item_uid](const auto &entry)
+			   {
+				   if (!entry.second.payload ||
+				       entry.second.payload->action != collector_action::collect)
+					   return false;
+				   const collector_command_payload &payload = *entry.second.payload;
+				   return std::any_of(payload.items.begin(),
+						      payload.items.begin() + payload.item_count,
+						      [item_uid](const item_transfer_entry &item)
+						      { return item.item_uid == item_uid; });
+			   });
+}
+
 critical_outbox_delivery_result
 collector_transaction_outbox_delivery(const critical_outbox_record &record, void *context)
 {
@@ -285,7 +311,9 @@ collector_transaction_outbox_delivery(const critical_outbox_record &record, void
 		return critical_outbox_test_destination(record, context);
 	collector_command_result result = {};
 	if (record.event_type != COLLECTOR_OUTBOX_EVENT_MUTATED ||
-	    record.payload_version != COLLECTOR_COMMAND_RESULT_VERSION ||
+	    critical_operation_id_is_zero(record.operation_id) ||
+	    (record.payload_version != COLLECTOR_COMMAND_RESULT_VERSION &&
+	     record.payload_version != COLLECTOR_COMMAND_PREVIOUS_RESULT_VERSION) ||
 	    !collector_command_decode_result(record.payload.data(), record.payload.size(),
 					     &result) ||
 	    !result.record_present)
@@ -307,7 +335,8 @@ collector_transaction_outbox_delivery(const critical_outbox_record &record, void
 			return critical_outbox_delivery_result::retryable_failure;
 		outbox_publications.emplace(
 			record.outbox_id,
-			pending_outbox_publication{ result, outbox_publication_state::queued });
+			pending_outbox_publication{ record.operation_id, result,
+						    outbox_publication_state::queued });
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -318,7 +347,7 @@ collector_transaction_outbox_delivery(const critical_outbox_record &record, void
 
 void collector_transaction_publish_outbox(void)
 {
-	std::vector<std::pair<uint64_t, collector_command_result>> work;
+	std::vector<outbox_publication_work> work;
 	{
 		std::lock_guard<std::mutex> lock(outbox_mutex);
 		try
@@ -331,7 +360,8 @@ void collector_transaction_publish_outbox(void)
 				if (publication.state == outbox_publication_state::queued)
 				{
 					publication.state = outbox_publication_state::publishing;
-					work.emplace_back(outbox_id, publication.result);
+					work.push_back(
+						{ outbox_id, publication.operation_id, publication.result });
 				}
 			}
 		}
@@ -347,11 +377,43 @@ void collector_transaction_publish_outbox(void)
 		}
 	}
 	bool published_any = false;
-	for (const auto &[outbox_id, result] : work)
+	for (const outbox_publication_work &entry : work)
 	{
-		const bool published = collector_publish_committed_event(result, outbox_id);
+		bool published = false;
+		std::string key;
+		try
+		{
+			key = operation_key(entry.operation_id);
+		}
+		catch (const std::bad_alloc &)
+		{
+			key.clear();
+		}
+		auto pending_found = key.empty() ? pending.end() : pending.find(key);
+		if (pending_found != pending.end())
+		{
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+			if (collector_command_encode_result(entry.result, &encoded))
+			{
+				pending_found->second.completed = {};
+				pending_found->second.completed.operation_id = entry.operation_id;
+				pending_found->second.completed.outcome =
+					critical_apply_outcome::already_applied;
+				pending_found->second.completed.result_size = encoded.size();
+				std::copy(encoded.begin(), encoded.end(),
+					  pending_found->second.completed.result_payload.begin());
+				pending_found->second.completion_ready = true;
+				P_char character = pending_found->second.actor_pid ?
+							   find_player_by_pid(
+								   pending_found->second.actor_pid) :
+							   nullptr;
+				published = publish(pending_found, character);
+			}
+		}
+		else
+			published = collector_publish_committed_event(entry.result, entry.outbox_id);
 		std::lock_guard<std::mutex> lock(outbox_mutex);
-		auto found = outbox_publications.find(outbox_id);
+		auto found = outbox_publications.find(entry.outbox_id);
 		if (found != outbox_publications.end())
 			found->second.state = published ? outbox_publication_state::published :
 							  outbox_publication_state::queued;

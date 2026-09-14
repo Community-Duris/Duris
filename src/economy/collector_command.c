@@ -10,6 +10,8 @@
 namespace
 {
 constexpr size_t COLLECTOR_RESULT_RECORD_OFFSET = 112;
+constexpr size_t COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET =
+	COLLECTOR_RESULT_RECORD_OFFSET + collector::encoded_record_bytes;
 
 template <typename T> void append_le(std::vector<uint8_t> *output, T value)
 {
@@ -38,11 +40,25 @@ void put_u64(uint8_t *output, uint64_t value)
 		output[byte] = static_cast<uint8_t>(value >> (byte * 8));
 }
 
+void put_u32(uint8_t *output, uint32_t value)
+{
+	for (size_t byte = 0; byte < sizeof(value); ++byte)
+		output[byte] = static_cast<uint8_t>(value >> (byte * 8));
+}
+
 uint64_t get_u64(const uint8_t *input)
 {
 	uint64_t value = 0;
 	for (size_t byte = 0; byte < sizeof(value); ++byte)
 		value |= static_cast<uint64_t>(input[byte]) << (byte * 8);
+	return value;
+}
+
+uint32_t get_u32(const uint8_t *input)
+{
+	uint32_t value = 0;
+	for (size_t byte = 0; byte < sizeof(value); ++byte)
+		value |= static_cast<uint32_t>(input[byte]) << (byte * 8);
 	return value;
 }
 
@@ -342,7 +358,9 @@ bool valid_result(const collector_command_result &result)
 	if (!valid_action(result.action) ||
 	    (result.record_present &&
 	     (!result.catalog_revision || !collector::valid_record(result.entry) ||
-	      !result_state_matches(result))))
+	      !result_state_matches(result))) ||
+	    (result.materialized_item_id &&
+	     (!result.record_present || result.action != collector_action::purchase)))
 		return false;
 	for (int64_t amount : result.wallet.amount)
 		if (amount < 0)
@@ -498,6 +516,8 @@ bool collector_command_encode_result(const collector_command_result &result,
 		std::copy(record.begin(), record.end(),
 			  encoded->begin() + COLLECTOR_RESULT_RECORD_OFFSET);
 	}
+	put_u32(encoded->data() + COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET,
+		result.materialized_item_id);
 	return true;
 }
 
@@ -505,7 +525,9 @@ bool collector_command_decode_result(const uint8_t *encoded, size_t encoded_size
 				     collector_command_result *result)
 {
 	if (!encoded || encoded_size != COLLECTOR_COMMAND_RESULT_BYTES || !result ||
-	    encoded[1] != COLLECTOR_COMMAND_RESULT_VERSION || encoded[2] > 1 || encoded[3] ||
+	    (encoded[1] != COLLECTOR_COMMAND_RESULT_VERSION &&
+	     encoded[1] != COLLECTOR_COMMAND_PREVIOUS_RESULT_VERSION) ||
+	    encoded[2] > 1 || encoded[3] ||
 	    encoded[4] || encoded[5] || encoded[6] || encoded[7])
 		return false;
 	*result = {};
@@ -536,7 +558,13 @@ bool collector_command_decode_result(const uint8_t *encoded, size_t encoded_size
 		     ++offset)
 			if (encoded[offset])
 				return false;
-	for (size_t offset = COLLECTOR_RESULT_RECORD_OFFSET + collector::encoded_record_bytes;
+	if (encoded[1] == COLLECTOR_COMMAND_RESULT_VERSION)
+		result->materialized_item_id =
+			get_u32(encoded + COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET);
+	for (size_t offset = COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET +
+				     (encoded[1] == COLLECTOR_COMMAND_RESULT_VERSION ?
+					      sizeof(uint32_t) :
+					      0);
 	     offset < encoded_size; ++offset)
 		if (encoded[offset])
 			return false;

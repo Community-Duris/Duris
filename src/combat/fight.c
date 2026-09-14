@@ -65,6 +65,8 @@
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_catalog_cache.h"
+#include "economy/collector_death_enrollment.h"
 #include "economy/collector_presence.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
@@ -1560,6 +1562,8 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 	else
 	{
 		writeCorpse(corpse);
+		(void)collector_catalog_cache_refresh();
+		collector_death_enrollment_end(corpse);
 		wake_death_extract_retry(character);
 	}
 }
@@ -1589,7 +1593,22 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 	if (roots.empty())
 	{
 		writeCorpse(corpse);
+		collector_death_enrollment_end(corpse);
 		return true;
+	}
+	const collector_death_enrollment_resume_result collector_resume =
+		collector_death_enrollment_resume(character, corpse);
+	if (collector_resume == collector_death_enrollment_resume_result::invalid)
+	{
+		note_corpse_transfer_dispute(character);
+		return false;
+	}
+	if (collector_resume == collector_death_enrollment_resume_result::unavailable)
+	{
+		persistence_report(persistence_severity::info, AVATAR, "collector", "death",
+				   "none", "none", "death_enrollment_waiting_for_catalog",
+				   "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		return false;
 	}
 	const item_owner_identity destination = {
 		item_owner_type::corpse,
@@ -1874,6 +1893,7 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	if (corpse && IS_PC(ch))
 	{
+		collector_death_enrollment_begin(ch, corpse);
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
 								  PLAYER_COMPONENT_EQUIPMENT |
 								  PLAYER_COMPONENT_INVENTORY);
@@ -2806,6 +2826,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 			return;
 		}
 		clear_corpse_transfer_dispute(ch);
+		collector_death_enrollment_end(corpse);
 		release_after_terminal_death(ch, "death_disposition_completed");
 		return;
 	}

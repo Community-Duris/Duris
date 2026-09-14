@@ -20,6 +20,7 @@ namespace
 {
 collector_feature_config config;
 bool cache_ready = false;
+bool scan_succeeds = true;
 std::vector<collector::record> records;
 std::set<uint64_t> busy;
 std::vector<collector_action> submitted_actions;
@@ -54,6 +55,8 @@ bool collector_runtime_pause_mismatches(bool should_pause, uint64_t after_listin
 					uint64_t *next_after_listing, bool *reached_end)
 {
 	assert(entries && next_after_listing && reached_end && scan_limit && result_limit);
+	if (!scan_succeeds)
+		return false;
 	entries->clear();
 	auto current = std::find_if(records.begin(), records.end(), [&](const auto &entry)
 				    { return entry.listing > after_listing; });
@@ -383,4 +386,38 @@ int main()
 	assert(!health.rejected && !health.submit_failures && !health.scan_failures);
 	collector_maintenance_shutdown();
 	assert(!collector_maintenance_health_copy().ready);
+
+	// A projection read failure backs off for the configured interval instead of
+	// retrying on every game pulse.
+	scan_succeeds = false;
+	config.revision = 4;
+	collector_maintenance_pulse();
+	assert(!collector_maintenance_health_copy().reconciling &&
+	       collector_maintenance_health_copy().scan_failures == 1);
+	collector_maintenance_pulse();
+	assert(collector_maintenance_health_copy().scan_failures == 1);
+
+	// Merely observing a mismatch is not progress. A permanently busy listing ends
+	// this pass and is retried at the next audit rather than spinning immediately.
+	collector_maintenance_shutdown();
+	scan_succeeds = true;
+	records.clear();
+	busy.clear();
+	collector::record blocked = {};
+	blocked.listing = 99;
+	blocked.status = collector::state::available;
+	blocked.available_at = now - 1;
+	blocked.expires_at = now + 1000;
+	blocked.revision = 1;
+	records.push_back(blocked);
+	busy.insert(blocked.listing);
+	config.policy.enabled = false;
+	config.enabled_changed_at = now;
+	config.revision = 5;
+	collector_maintenance_pulse();
+	assert(!collector_maintenance_health_copy().reconciling &&
+	       collector_maintenance_health_copy().listing_busy == 1);
+	collector_maintenance_pulse();
+	assert(collector_maintenance_health_copy().listing_busy == 1);
+	collector_maintenance_shutdown();
 }

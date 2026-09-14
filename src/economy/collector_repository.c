@@ -1,5 +1,7 @@
 #include "economy/collector_repository.h"
 
+#include "economy/collector_custody_boundary.h"
+#include "economy/collector_eligibility.h"
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
@@ -12,6 +14,7 @@
 #include <limits>
 #include <mysql.h>
 #include <new>
+#include <set>
 #include <sstream>
 #include <string>
 #include <strings.h>
@@ -164,6 +167,80 @@ bool hex_decode(const char *encoded, std::vector<uint8_t> *bytes)
 std::string operation_hex(const critical_operation_id &operation)
 {
 	return hex_encode(operation.bytes.data(), operation.bytes.size());
+}
+
+bool candidate_listing_ids(MYSQL *connection, const item_transfer_payload &payload,
+			   bool for_update, bool limit_one, std::vector<uint64_t> *listings)
+{
+	if (!connection || !listings || !payload.item_count)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	std::string query =
+		"SELECT listing_id,item_uid FROM collector_listings FORCE INDEX "
+		"(idx_collector_item_history) WHERE item_uid IN (";
+	for (size_t index = 0; index < payload.item_count; ++index)
+		query += (index ? "," : "") + std::to_string(payload.items[index].item_uid);
+	query += ") AND status=" +
+		 std::to_string(static_cast<unsigned int>(collector::state::candidate)) +
+		 " ORDER BY item_uid,listing_id";
+	if (limit_one)
+		query += " LIMIT 1";
+	if (for_update)
+		query += " FOR UPDATE";
+	if (!execute(connection, query))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	std::vector<uint64_t> candidate;
+	try
+	{
+		candidate.reserve(static_cast<size_t>(mysql_num_rows(rows)));
+		MYSQL_ROW row = nullptr;
+		while ((row = mysql_fetch_row(rows)) != nullptr)
+		{
+			uint64_t listing = 0, uid = 0;
+			if (!parse_u64(row[0], &listing) || !parse_u64(row[1], &uid) || !listing ||
+			    !uid)
+			{
+				mysql_free_result(rows);
+				errno = EBADMSG;
+				return false;
+			}
+			const auto item = std::lower_bound(
+				payload.items.begin(), payload.items.begin() + payload.item_count, uid,
+				[](const item_transfer_entry &entry, uint64_t sought)
+				{ return entry.item_uid < sought; });
+			if (item == payload.items.begin() + payload.item_count || item->item_uid != uid)
+			{
+				mysql_free_result(rows);
+				errno = EBADMSG;
+				return false;
+			}
+			candidate.push_back(listing);
+		}
+		std::sort(candidate.begin(), candidate.end());
+		if (std::adjacent_find(candidate.begin(), candidate.end()) != candidate.end())
+		{
+			mysql_free_result(rows);
+			errno = EBADMSG;
+			return false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		mysql_free_result(rows);
+		errno = ENOMEM;
+		return false;
+	}
+	mysql_free_result(rows);
+	*listings = std::move(candidate);
+	return true;
 }
 
 uint64_t record_due_at(const collector::record &entry)
@@ -1013,8 +1090,14 @@ std::string optional_string(MYSQL *connection, const player_item_snapshot &item,
 }
 
 bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snapshot &item,
-			unsigned int *result_code)
+			uint32_t *database_id, unsigned int *result_code)
 {
+	if (!database_id)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*database_id = 0;
 	if (!execute(connection, "SELECT id FROM player_items WHERE obj_uid=" +
 					 std::to_string(item.object_uid) + " FOR UPDATE"))
 		return false;
@@ -1049,8 +1132,12 @@ bool insert_player_item(MYSQL *connection, uint32_t pid, const player_item_snaps
 	if (!execute(connection, sql.str()))
 		return false;
 	const uint64_t item_id = mysql_insert_id(connection);
-	if (!item_id)
+	if (!item_id || item_id > INT_MAX)
+	{
+		errno = ERANGE;
 		return false;
+	}
+	*database_id = static_cast<uint32_t>(item_id);
 	std::unordered_set<uint64_t> affect_keys;
 	for (const auto &affect : item.affects)
 		if (affect[0] || affect[1])
@@ -1187,6 +1274,434 @@ bool persist_listing(MYSQL *connection, const critical_command &command,
 }
 } // namespace
 
+bool collector_repository_prepare_item_boundary(
+	MYSQL *connection, const item_transfer_payload &payload,
+	collector_item_boundary_repository_plan *plan, unsigned int *result_code)
+{
+	if (!connection || !plan || !result_code)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*plan = {};
+	*result_code = 0;
+	const collector::reason reason = collector_item_transfer_boundary_reason(payload);
+	if (reason == collector::reason::none)
+		return true;
+
+	// The first read avoids serializing the overwhelmingly common movement that
+	// has no collector candidate. The second read is a current locking read on
+	// the item-history index. An empty range lock prevents a concurrent death
+	// enrollment from inserting a candidate until this transfer commits. If a
+	// candidate appeared between reads, retry so the next attempt can follow the
+	// normal catalog->listing lock order without an inversion.
+	std::vector<uint64_t> observed;
+	if (!candidate_listing_ids(connection, payload, false, true, &observed))
+		return false;
+	catalog_state catalog;
+	if (!observed.empty() && !load_catalog(connection, &catalog))
+		return false;
+	std::vector<uint64_t> listings;
+	if (!candidate_listing_ids(connection, payload, true, false, &listings))
+		return false;
+	if (observed.empty() && !listings.empty())
+	{
+		errno = EAGAIN;
+		return false;
+	}
+	if (listings.empty())
+		return true;
+	if (observed.empty())
+	{
+		errno = EAGAIN;
+		return false;
+	}
+
+	try
+	{
+		plan->entries.reserve(listings.size());
+		for (uint64_t listing : listings)
+		{
+			collector_listing_detail prior;
+			unsigned int listing_code = 0;
+			if (!load_listing(connection, listing, true, &prior, &listing_code))
+				return false;
+			if (listing_code)
+			{
+				*result_code = listing_code;
+				return true;
+			}
+			if (payload.collector.present &&
+			    !strcasecmp(prior.entry.death_operation.data(),
+					operation_hex(payload.collector.death_operation).c_str()))
+				continue;
+			const auto item = std::lower_bound(
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				prior.entry.uid,
+				[](const item_transfer_entry &entry, uint64_t uid)
+				{ return entry.item_uid < uid; });
+			if (item == payload.items.begin() + payload.item_count ||
+			    item->item_uid != prior.entry.uid)
+			{
+				*result_code = EBADMSG;
+				return true;
+			}
+			uint64_t post_item_revision = 0;
+			if (item->expected_state == item_custody_state::absent)
+			{
+				if (item->expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION)
+				{
+					*result_code = EBADMSG;
+					return true;
+				}
+				post_item_revision = 1;
+			}
+			else
+			{
+				if (item->expected_item_revision == UINT64_MAX)
+				{
+					*result_code = ERANGE;
+					return true;
+				}
+				post_item_revision = item->expected_item_revision + 1;
+			}
+			if (post_item_revision < prior.entry.item_revision)
+			{
+				*result_code = ESTALE;
+				return true;
+			}
+			collector::record cancelled = prior.entry;
+			const collector::outcome outcome =
+				collector::cancel(&cancelled, prior.entry.revision, reason);
+			if (outcome != collector::outcome::applied)
+			{
+				*result_code = outcome_code(outcome);
+				return true;
+			}
+			cancelled.item_revision = post_item_revision;
+			plan->entries.push_back({ std::move(prior), cancelled });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	if (plan->entries.empty())
+		return true;
+	if (catalog.revision > UINT64_MAX - plan->entries.size())
+	{
+		*result_code = ERANGE;
+		plan->entries.clear();
+		return true;
+	}
+	plan->reason = reason;
+	plan->actor_pid = collector_item_transfer_actor_pid(payload);
+	plan->catalog_revision = catalog.revision;
+	return true;
+}
+
+bool collector_repository_apply_item_boundary(
+	MYSQL *connection, const critical_command &command,
+	const collector_item_boundary_repository_plan &plan, uint64_t *catalog_revision,
+	std::vector<collector_command_result> *events)
+{
+	if (!connection || !catalog_revision || !events ||
+	    (plan.entries.empty() ? plan.reason != collector::reason::none :
+				      plan.reason == collector::reason::none))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*catalog_revision = 0;
+	events->clear();
+	if (plan.entries.empty())
+		return true;
+	try
+	{
+		events->reserve(plan.entries.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	uint64_t revision = plan.catalog_revision;
+	for (const auto &change : plan.entries)
+	{
+		collector_command_payload payload = {};
+		payload.action = collector_action::cancel;
+		payload.cancel_reason = plan.reason;
+		payload.listing = change.prior.entry.listing;
+		payload.expected_listing_revision = change.prior.entry.revision;
+		payload.actor_pid = plan.actor_pid;
+		uint64_t next_revision = 0;
+		if (!persist_listing(connection, command, payload, change.cancelled,
+				     change.prior.item_blob, revision, &next_revision))
+			return false;
+		collector_command_result result = {};
+		result.action = collector_action::cancel;
+		result.record_present = true;
+		result.catalog_revision = next_revision;
+		result.entry = change.cancelled;
+		events->push_back(result);
+		revision = next_revision;
+	}
+	*catalog_revision = revision;
+	return true;
+}
+
+bool collector_repository_prepare_death_enrollment(
+	MYSQL *connection, const item_transfer_payload &payload,
+	collector_enrollment_repository_plan *plan, unsigned int *result_code)
+{
+	if (!connection || !plan || !result_code)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	*plan = {};
+	*result_code = 0;
+	if (!payload.collector.present)
+		return true;
+
+	std::vector<player_item_snapshot> snapshots;
+	std::vector<uint64_t> eligible;
+	if (!payload.item_blob_size ||
+	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &snapshots) != player_snapshot_codec_result::ok ||
+	    snapshots.size() != payload.item_count)
+	{
+		*result_code = EBADMSG;
+		return true;
+	}
+	try
+	{
+		eligible.reserve(snapshots.size());
+		for (const player_item_snapshot &snapshot : snapshots)
+			if (collector_death_item_snapshot_eligible(snapshot))
+				eligible.push_back(snapshot.object_uid);
+		std::sort(eligible.begin(), eligible.end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	if (eligible != payload.collector.eligible_item_uids)
+	{
+		*result_code = EBADMSG;
+		return true;
+	}
+
+	catalog_state catalog;
+	if (!load_catalog(connection, &catalog))
+		return false;
+	const std::string death_hex = operation_hex(payload.collector.death_operation);
+	const std::string death_query =
+		"SELECT beneficiary_pid,death_time,collection_delay,sale_delay,holding_duration,"
+		"price_percent,minimum_value FROM collector_deaths WHERE death_operation_id=UNHEX('" +
+		death_hex + "') FOR UPDATE";
+	if (!execute(connection, death_query))
+		return false;
+	MYSQL_RES *rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(rows);
+	collector::rules policy;
+	policy.enabled = true;
+	bool death_valid = true;
+	if (row)
+	{
+		uint64_t beneficiary = 0, death_time = 0;
+		death_valid = mysql_num_rows(rows) == 1 && parse_u64(row[0], &beneficiary) &&
+			      parse_u64(row[1], &death_time) &&
+			      parse_u64(row[2], &policy.collection_delay) &&
+			      parse_u64(row[3], &policy.sale_delay) &&
+			      parse_u64(row[4], &policy.holding_duration) &&
+			      parse_u64(row[5], &policy.price_percent) &&
+			      parse_u64(row[6], &policy.minimum_value) &&
+			      beneficiary == payload.collector.beneficiary_pid &&
+			      death_time == payload.collector.death_time &&
+			      collector::valid_rules(policy);
+		plan->death_exists = true;
+	}
+	else
+	{
+		policy.collection_delay = payload.collector.policy.collection_delay;
+		policy.sale_delay = payload.collector.policy.sale_delay;
+		policy.holding_duration = payload.collector.policy.holding_duration;
+		policy.price_percent = payload.collector.policy.price_percent;
+		policy.minimum_value = payload.collector.policy.minimum_value;
+		death_valid = collector::valid_rules(policy);
+	}
+	mysql_free_result(rows);
+	if (!death_valid)
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+
+	const std::string existing_query =
+		"SELECT item_uid FROM collector_listings WHERE death_operation_id=UNHEX('" +
+		death_hex + "') ORDER BY item_uid FOR UPDATE";
+	if (!execute(connection, existing_query))
+		return false;
+	rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	std::vector<uint64_t> existing;
+	try
+	{
+		existing.reserve(mysql_num_rows(rows));
+		while ((row = mysql_fetch_row(rows)) != nullptr)
+		{
+			uint64_t uid = 0;
+			if (!parse_u64(row[0], &uid) || !uid ||
+			    (!existing.empty() && existing.back() >= uid))
+			{
+				mysql_free_result(rows);
+				*result_code = EBADMSG;
+				return true;
+			}
+			existing.push_back(uid);
+		}
+		plan->new_items.reserve(eligible.size());
+		for (uint64_t uid : eligible)
+		{
+			if (std::binary_search(existing.begin(), existing.end(), uid))
+				continue;
+			const auto item = std::lower_bound(
+				payload.items.begin(), payload.items.begin() + payload.item_count, uid,
+				[](const item_transfer_entry &entry, uint64_t sought)
+				{ return entry.item_uid < sought; });
+			if (item == payload.items.begin() + payload.item_count || item->item_uid != uid)
+			{
+				mysql_free_result(rows);
+				*result_code = EBADMSG;
+				return true;
+			}
+			plan->new_items.push_back(*item);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		mysql_free_result(rows);
+		errno = ENOMEM;
+		return false;
+	}
+	mysql_free_result(rows);
+	if ((!plan->new_items.empty() && catalog.revision == UINT64_MAX) ||
+	    catalog.next_listing > UINT64_MAX - plan->new_items.size() ||
+	    catalog.next_listing - 1 > collector::catalog_max_records - plan->new_items.size())
+	{
+		*result_code = ENOSPC;
+		return true;
+	}
+	plan->active = true;
+	plan->catalog_revision = catalog.revision;
+	plan->next_listing = catalog.next_listing;
+	plan->policy = policy;
+	return true;
+}
+
+bool collector_repository_apply_death_enrollment(
+	MYSQL *connection, const critical_command &command, const item_transfer_payload &payload,
+	const item_transfer_result &transfer, const collector_enrollment_repository_plan &plan)
+{
+	if (!connection || !plan.active || !payload.collector.present ||
+	    transfer.item_count != payload.item_count ||
+	    (!plan.death_exists &&
+	     !critical_operation_id_equal(command.operation_id,
+					  payload.collector.death_operation)))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const std::string death_hex = operation_hex(payload.collector.death_operation);
+	if (!plan.death_exists &&
+	    !execute(connection,
+		     "INSERT INTO collector_deaths(death_operation_id,beneficiary_pid,death_time,"
+		     "collection_delay,sale_delay,holding_duration,price_percent,minimum_value) "
+		     "VALUES(UNHEX('" +
+			     death_hex + "')," +
+			     std::to_string(payload.collector.beneficiary_pid) + "," +
+			     std::to_string(payload.collector.death_time) + "," +
+			     std::to_string(plan.policy.collection_delay) + "," +
+			     std::to_string(plan.policy.sale_delay) + "," +
+			     std::to_string(plan.policy.holding_duration) + "," +
+			     std::to_string(plan.policy.price_percent) + "," +
+			     std::to_string(plan.policy.minimum_value) + ")"))
+		return false;
+
+	char death_operation[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+	if (!critical_operation_id_to_hex(payload.collector.death_operation, death_operation,
+					  sizeof(death_operation)))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	for (size_t index = 0; index < plan.new_items.size(); ++index)
+	{
+		const item_transfer_entry &item = plan.new_items[index];
+		if (item.expected_item_revision == UINT64_MAX &&
+		    item.expected_state != item_custody_state::absent)
+		{
+			errno = EINVAL;
+			return false;
+		}
+		const uint64_t item_revision =
+			item.expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ?
+				1 :
+				item.expected_item_revision + 1;
+		collector::record entry;
+		const uint64_t listing = plan.next_listing + index;
+		if (collector::enroll(listing, death_operation,
+				      payload.collector.beneficiary_pid, item.item_uid,
+				      item_revision, payload.collector.death_time, plan.policy,
+				      &entry) != collector::outcome::applied)
+		{
+			errno = ERANGE;
+			return false;
+		}
+		std::array<uint8_t, collector::encoded_record_bytes> encoded = {};
+		if (collector::record_encode(entry, &encoded) != collector::codec_result::ok ||
+		    !execute(connection,
+			     "INSERT INTO collector_listings(listing_id,death_operation_id,"
+			     "beneficiary_pid,item_uid,status,holding_paused,due_at,"
+			     "listing_revision,item_revision,price_value,record_blob,item_blob) "
+			     "VALUES(" +
+				     std::to_string(entry.listing) + ",UNHEX('" + death_hex +
+				     "')," + std::to_string(entry.beneficiary) + "," +
+				     std::to_string(entry.uid) + "," +
+				     std::to_string(static_cast<unsigned int>(entry.status)) +
+				     ",0," + std::to_string(entry.collect_at) + "," +
+				     std::to_string(entry.revision) + "," +
+				     std::to_string(entry.item_revision) + ",0,UNHEX('" +
+				     hex_encode(encoded.data(), encoded.size()) + "'),NULL)"))
+			return false;
+	}
+	if (plan.new_items.empty())
+		return true;
+	if (plan.catalog_revision == UINT64_MAX ||
+	    !execute(connection,
+		     "UPDATE collector_catalog_state SET catalog_revision=" +
+			     std::to_string(plan.catalog_revision + 1) + ",next_listing=" +
+			     std::to_string(plan.next_listing + plan.new_items.size()) +
+			     " WHERE state_id=1 AND catalog_revision=" +
+			     std::to_string(plan.catalog_revision) + " AND next_listing=" +
+			     std::to_string(plan.next_listing)) ||
+	    mysql_affected_rows(connection) != 1)
+		return false;
+	return true;
+}
+
 bool collector_repository_read_bootstrap(MYSQL *connection, collector_bootstrap_snapshot *snapshot)
 {
 	static_assert(collector::catalog_max_records == 262144,
@@ -1206,6 +1721,11 @@ bool collector_repository_read_bootstrap(MYSQL *connection, collector_bootstrap_
 		"ON r.owner_type=o.owner_type AND r.owner_id=o.owner_id "
 		"AND r.owner_context_id=o.owner_context_id "
 		"WHERE s.state_id=1 ORDER BY l.listing_id LIMIT 262145";
+	static const char DEATH_QUERY[] =
+		"SELECT HEX(death_operation_id),beneficiary_pid,death_time,collection_delay,"
+		"sale_delay,holding_duration,price_percent,minimum_value,hint_state,hint_revision "
+		"FROM collector_deaths ORDER BY beneficiary_pid,death_time,death_operation_id "
+		"LIMIT 262145";
 	if (!connection || !snapshot)
 	{
 		errno = EINVAL;
@@ -1213,7 +1733,9 @@ bool collector_repository_read_bootstrap(MYSQL *connection, collector_bootstrap_
 	}
 	if (!execute(connection, QUERY))
 		return false;
-	MYSQL_RES *rows = mysql_use_result(connection);
+	// This bounded result is buffered deliberately. A validation failure can stop
+	// parsing early without returning a pooled connection with unread wire data.
+	MYSQL_RES *rows = mysql_store_result(connection);
 	if (!rows)
 	{
 		const unsigned int error = mysql_errno(connection);
@@ -1382,6 +1904,72 @@ bool collector_repository_read_bootstrap(MYSQL *connection, collector_bootstrap_
 	if (!valid || !saw_catalog || !saw_held_count ||
 	    candidate.held_items.size() != held_count ||
 	    !collector::valid_catalog(candidate.catalog))
+	{
+		errno = failure;
+		return false;
+	}
+	if (!execute(connection, DEATH_QUERY))
+		return false;
+	rows = mysql_store_result(connection);
+	if (!rows)
+	{
+		const unsigned int error = mysql_errno(connection);
+		errno = static_cast<int>(error ? error : EIO);
+		return false;
+	}
+	valid = mysql_num_rows(rows) <= collector::catalog_max_records;
+	failure = valid ? EBADMSG : E2BIG;
+	std::set<std::pair<uint32_t, uint64_t>> death_identities;
+	MYSQL_ROW row = nullptr;
+	try
+	{
+		candidate.deaths.reserve(static_cast<size_t>(mysql_num_rows(rows)));
+		while (valid && (row = mysql_fetch_row(rows)) != nullptr)
+		{
+			const unsigned long *lengths = mysql_fetch_lengths(rows);
+			uint64_t beneficiary = 0, death_time = 0, hint_state = 0,
+				 hint_revision = 0;
+			collector_death_snapshot death;
+			death.policy.enabled = true;
+			if (!lengths || !row[0] || lengths[0] != CRITICAL_COMMAND_ID_HEX_SIZE - 1 ||
+			    !critical_operation_id_from_hex(row[0], &death.operation_id) ||
+			    !parse_u64(row[1], &beneficiary) || beneficiary > UINT32_MAX ||
+			    !parse_u64(row[2], &death_time) ||
+			    !parse_u64(row[3], &death.policy.collection_delay) ||
+			    !parse_u64(row[4], &death.policy.sale_delay) ||
+			    !parse_u64(row[5], &death.policy.holding_duration) ||
+			    !parse_u64(row[6], &death.policy.price_percent) ||
+			    !parse_u64(row[7], &death.policy.minimum_value) ||
+			    !parse_u64(row[8], &hint_state) || hint_state > 2 ||
+			    !parse_u64(row[9], &hint_revision) || !beneficiary || !death_time ||
+			    !collector::valid_rules(death.policy) ||
+			    !death_identities
+				     .emplace(static_cast<uint32_t>(beneficiary), death_time)
+				     .second)
+			{
+				valid = false;
+				break;
+			}
+			death.beneficiary_pid = static_cast<uint32_t>(beneficiary);
+			death.death_time = death_time;
+			death.hint_state = static_cast<uint8_t>(hint_state);
+			death.hint_revision = hint_revision;
+			candidate.deaths.push_back(death);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		valid = false;
+		failure = ENOMEM;
+	}
+	const unsigned int death_read_error = mysql_errno(connection);
+	mysql_free_result(rows);
+	if (death_read_error)
+	{
+		errno = static_cast<int>(death_read_error);
+		return false;
+	}
+	if (!valid)
 	{
 		errno = failure;
 		return false;
@@ -1604,7 +2192,7 @@ bool collector_repository_execute(MYSQL *connection, const critical_command &com
 		if (payload.action == collector_action::purchase)
 		{
 			if (!insert_player_item(connection, payload.actor_pid, exact_item,
-						result_code))
+						&result->materialized_item_id, result_code))
 				return false;
 			if (*result_code)
 				return true;

@@ -105,12 +105,14 @@ outcome resume(record *entry, uint64_t expected_revision, uint64_t now);
 
 // Bounded indexed scheduling. Leased work is moved to lease_until so a failed
 // batch cannot starve later deadlines. Successful commit publication replaces or
-// removes its entry; failure leaves the lease to expire. Leases are deliberately
-// ephemeral and disappear when the queue is rebuilt from durable records.
+// removes its entry; failure leaves the lease to expire. Runtime projection
+// rebuilds preserve a later deadline for byte-identical records.
 class due_queue
 {
     public:
 	bool update(const record &entry);
+	bool deadline(uint64_t listing, uint64_t *value) const;
+	bool defer(uint64_t listing, uint64_t deadline);
 	void erase(uint64_t listing);
 	std::vector<uint64_t> lease_due(uint64_t now, size_t limit, uint64_t lease_until);
 	void swap(due_queue &other) noexcept;

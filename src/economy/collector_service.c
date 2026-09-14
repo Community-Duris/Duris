@@ -12,6 +12,7 @@
 #include "economy/collector_runtime.h"
 #include "economy/collector_transaction.h"
 #include "economy/currency_transaction.h"
+#include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "player/player_load_items.h"
 #include "player/player_snapshot_codec.h"
@@ -64,6 +65,14 @@ bool player_has_pending_detail(uint32_t pid, bool purchases_only)
 					  (!purchases_only ||
 					   entry.second.intent == detail_intent::purchase);
 			   });
+}
+
+bool purchase_transaction_busy(P_char character)
+{
+	return currency_transaction_player_busy(character) ||
+	       collector_transaction_player_busy(character) ||
+	       item_movement_transaction_player_busy(character) || bulk_get_player_busy(character) ||
+	       !currency_transaction_can_submit(character);
 }
 
 bool parse_listing(const char *text, uint64_t *listing)
@@ -188,9 +197,23 @@ void show_list(P_char character)
 bool submit_detail(P_char character, uint64_t listing, detail_intent intent)
 {
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
+	collector::record runtime_entry;
+	if (!collector_runtime_find(listing, &runtime_entry) ||
+	    runtime_entry.status != collector::state::available || runtime_entry.holding_paused ||
+	    runtime_entry.beneficiary != pid)
+	{
+		++health.rejected_details;
+		send_to_char("That antiquity is not available to you.\r\n", character);
+		return false;
+	}
 	if (player_has_pending_detail(pid, false))
 	{
 		send_to_char("The collector is already checking a record for you.\r\n", character);
+		return false;
+	}
+	if (intent == detail_intent::purchase && purchase_transaction_busy(character))
+	{
+		send_to_char("Another transaction is still being settled for you.\r\n", character);
 		return false;
 	}
 	critical_operation_id operation_id = {};
@@ -336,15 +359,33 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 	    items[0].vnum != payload.items[0].vnum)
 		return false;
 	const item_owner_identity owner = { item_owner_type::player, payload.actor_pid, 0 };
+#ifdef __NO_MYSQL__
+	constexpr uint32_t database_id = 1;
+#else
+	const uint32_t database_id = result.materialized_item_id;
+	if (!database_id)
+		return false;
+#endif
 	std::vector<player_load_item_identity> identities = {
-		{ 1, 0, 1, PLAYER_LOAD_ITEM_OVERRIDE_ALL, result.entry.uid, result.entry.uid, 0,
+		{ database_id, 0, 1, PLAYER_LOAD_ITEM_OVERRIDE_ALL, result.entry.uid,
+		  result.entry.uid, 0,
 		  owner, result.entry.item_revision, result.to_owner_revision,
 		  item_custody_state::active }
 	};
 	player_load_item_materialize_metrics metrics = {};
-	return player_load_item_graph_materialize_for_owner(character, items, identities, owner,
-							    result.to_owner_revision, false, true,
-							    &metrics);
+	if (!player_load_item_graph_materialize_for_owner(character, items, identities, owner,
+						  result.to_owner_revision, false, true,
+						  &metrics))
+		return false;
+#ifdef __NO_MYSQL__
+	P_obj materialized = find_live_item(result.entry.uid);
+	if (!materialized || !OBJ_CARRIED_BY(materialized, character))
+		return false;
+	// Flat-file player snapshots allocate their own per-snapshot row identities.
+	// Never let this temporary graph identity masquerade as a SQL row ID.
+	materialized->db_item_id = 0;
+#endif
+	return true;
 }
 
 void purchase_completed(P_char character, bool committed, const collector_command_result &result,
@@ -447,9 +488,7 @@ void handle_found(P_char character, const pending_detail &request,
 		show_inspection(character, runtime_entry, item);
 		return;
 	}
-	if (currency_transaction_player_busy(character) ||
-	    collector_transaction_player_busy(character) ||
-	    !currency_transaction_can_submit(character))
+	if (purchase_transaction_busy(character))
 	{
 		send_to_char("Another transaction is still being settled for you.\r\n", character);
 		return;

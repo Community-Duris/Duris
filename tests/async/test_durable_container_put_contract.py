@@ -66,7 +66,13 @@ def run_copied_script(script_name, env_text, *, arguments=(), repair_body=None,
         binary = root / "bin"
         migrations.mkdir()
         binary.mkdir()
-        shutil.copy2(ROOT / "migrations" / script_name, migrations / script_name)
+        copied_script = migrations / script_name
+        shutil.copy2(ROOT / "migrations" / script_name, copied_script)
+        # Worktrees created on Windows can present CRLF even though the script is
+        # executed by a Linux CI/container harness. Rewriting the disposable copy
+        # through text mode keeps the shebang executable without touching the
+        # production script under test.
+        write_executable(copied_script, copied_script.read_text())
         if repair_body is not None:
             write_executable(migrations / "repair_item_nesting.sh", repair_body)
         (root / ".env").write_text(env_text)

@@ -1,7 +1,51 @@
 #include "economy/collector_policy.h"
 
+#include "economy/collector_eligibility.h"
+#include "core/defines.h"
+
 #include <algorithm>
+#include <cctype>
 #include <limits>
+
+namespace
+{
+bool collector_keyword(std::string_view names, std::string_view sought)
+{
+	size_t offset = 0;
+	while (offset < names.size())
+	{
+		while (offset < names.size() && names[offset] == ' ')
+			++offset;
+		const size_t begin = offset;
+		while (offset < names.size() && names[offset] != ' ')
+			++offset;
+		if (offset - begin != sought.size())
+			continue;
+		bool matches = true;
+		for (size_t index = 0; index < sought.size(); ++index)
+			if (std::tolower(static_cast<unsigned char>(names[begin + index])) !=
+			    std::tolower(static_cast<unsigned char>(sought[index])))
+			{
+				matches = false;
+				break;
+			}
+		if (matches)
+			return true;
+	}
+	return false;
+}
+}
+
+bool collector_death_item_snapshot_eligible(const player_item_snapshot &item)
+{
+	return item.object_uid && item.vnum > 0 && item.type != ITEM_MONEY &&
+	       item.type != ITEM_CORPSE && !(item.extra_flags & ITEM_ARTIFACT) &&
+	       !(collector_keyword(item.name, "unique") &&
+		 !collector_keyword(item.name, "powerunique")) &&
+	       !(item.extra_flags & ITEM_TRANSIENT) && !(item.extra_flags & ITEM_NORENT) &&
+	       !(item.extra_flags & ITEM_NOSELL) && !(item.extra2_flags & ITEM2_ACCOUNT_BOUND) &&
+	       (item.wear_flags & ITEM_TAKE);
+}
 
 namespace collector
 {
@@ -356,6 +400,41 @@ bool due_queue::update(const record &entry)
 	{
 		by_deadline.erase({ deadline, entry.listing });
 		throw;
+	}
+	return true;
+}
+
+bool due_queue::deadline(uint64_t listing, uint64_t *value) const
+{
+	if (!listing || !value)
+		return false;
+	const auto found = by_listing.find(listing);
+	if (found == by_listing.end())
+		return false;
+	*value = found->second;
+	return true;
+}
+
+bool due_queue::defer(uint64_t listing, uint64_t deadline)
+{
+	if (!listing || !deadline)
+		return false;
+	auto previous = by_listing.find(listing);
+	if (previous == by_listing.end())
+		return false;
+	if (deadline <= previous->second)
+		return true;
+	try
+	{
+		const auto inserted = by_deadline.emplace(deadline, listing);
+		if (!inserted.second)
+			return false;
+		by_deadline.erase({ previous->second, listing });
+		previous->second = deadline;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
 	}
 	return true;
 }

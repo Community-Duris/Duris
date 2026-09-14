@@ -17,7 +17,8 @@ fi
 docker run -d --name "$NAME" -p 127.0.0.1::3306 \
 	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
-export ENVIRONMENT=test DB_HOST=127.0.0.1 DB_PORT="${mapping##*:}"
+export ENVIRONMENT=test DB_HOST="${COLLECTOR_REPOSITORY_DB_HOST:-127.0.0.1}" \
+	DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
 export DB_NAME=collector_repository_test
 export COLLECTOR_TEST_DB_NAME="$DB_NAME"

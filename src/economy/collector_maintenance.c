@@ -372,6 +372,9 @@ void reconcile_chunk(const collector_feature_config &config)
 		    config.maintenance_batch_limit, &entries, &next_cursor, &reached_end))
 	{
 		++health.scan_failures;
+		health.reconciling = false;
+		next_audit =
+			clock_type::now() + std::chrono::seconds(config.maintenance_interval_seconds);
 		return;
 	}
 	health.selected += entries.size();
@@ -384,8 +387,8 @@ void reconcile_chunk(const collector_feature_config &config)
 			++health.ineligible;
 			continue;
 		}
-		cycle_changed = true;
-		submit_transition(entry, !config.policy.enabled, observed_at);
+		if (submit_transition(entry, !config.policy.enabled, observed_at))
+			cycle_changed = true;
 	}
 	scan_cursor = next_cursor;
 	if (!reached_end)

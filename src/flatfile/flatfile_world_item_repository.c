@@ -4,6 +4,7 @@
 #include "flatfile/flatfile_store.h"
 #include "player/player_snapshot_codec.h"
 #include "economy/coin_transfer_command.h"
+#include "economy/collector_command.h"
 
 #include <algorithm>
 #include <array>
@@ -259,7 +260,7 @@ bool valid_catalog(const world_item_catalog &catalog)
 			    saved.items.empty() ||
 			    (index && !saved_item_less(catalog.saved_items[index - 1], saved)) ||
 			    !item_keys.insert(saved.item_key).second ||
-			    !valid_item_list(saved.items, true, &item_uids))
+			    !valid_item_list(saved.items, false, &item_uids))
 				return false;
 		}
 		for (size_t index = 0; index < catalog.rooms.size(); ++index)
@@ -1280,6 +1281,303 @@ flatfile_world_item_result flatfile_world_item_prepare_room_transfer(
 		return flatfile_world_item_result::invalid;
 	mutation->after_image = { catalog_filename, std::move(encoded) };
 	mutation->room_revision = room->revision;
+	return flatfile_world_item_result::ok;
+}
+
+namespace
+{
+uint64_t collector_snapshot_parent(const std::vector<player_item_snapshot> &items, size_t index)
+{
+	if (index >= items.size())
+		return 0;
+	const int32_t parent = items[index].parent_index;
+	return parent == PLAYER_SNAPSHOT_NO_PARENT || parent < 0 ||
+		       static_cast<size_t>(parent) >= index ?
+		       0 :
+		       items[static_cast<size_t>(parent)].object_uid;
+}
+
+uint64_t collector_snapshot_root(const std::vector<player_item_snapshot> &items, size_t index)
+{
+	if (index >= items.size())
+		return 0;
+	for (size_t depth = 0; depth <= items.size(); ++depth)
+	{
+		const int32_t parent = items[index].parent_index;
+		if (parent == PLAYER_SNAPSHOT_NO_PARENT)
+			return items[index].object_uid;
+		if (parent < 0 || static_cast<size_t>(parent) >= index)
+			return 0;
+		index = static_cast<size_t>(parent);
+	}
+	return 0;
+}
+
+bool collector_detach_snapshot(std::vector<player_item_snapshot> *items,
+			       const collector_command_payload &payload,
+			       const player_item_snapshot &exact, unsigned int *result_code)
+{
+	if (!items || !result_code)
+		return false;
+	auto selected = std::find_if(items->begin(), items->end(), [&](const auto &item)
+				     { return item.object_uid == payload.selected_item_uid; });
+	if (selected == items->end())
+	{
+		*result_code = ENOENT;
+		return true;
+	}
+	const size_t selected_index = static_cast<size_t>(selected - items->begin());
+	const uint64_t root_uid = collector_snapshot_root(*items, selected_index);
+	if (!root_uid || root_uid != payload.items[0].root_item_uid)
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	std::vector<size_t> tree;
+	try
+	{
+		for (size_t index = 0; index < items->size(); ++index)
+			if (collector_snapshot_root(*items, index) == root_uid)
+				tree.push_back(index);
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	if (tree.size() != payload.item_count)
+	{
+		*result_code = EMSGSIZE;
+		return true;
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const item_transfer_entry &expected = payload.items[index];
+		auto actual = std::find_if(tree.begin(), tree.end(), [&](size_t position)
+					   { return (*items)[position].object_uid ==
+						    expected.item_uid; });
+		if (actual == tree.end())
+		{
+			*result_code = ESTALE;
+			return true;
+		}
+		const player_item_snapshot &snapshot = (*items)[*actual];
+		if (snapshot.vnum != expected.vnum ||
+		    collector_snapshot_parent(*items, *actual) != expected.parent_item_uid)
+		{
+			*result_code = ESTALE;
+			return true;
+		}
+	}
+	if (selected->vnum != exact.vnum || selected->cost != exact.cost ||
+	    selected->condition != exact.condition)
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	int64_t child_weight = 0;
+	for (size_t index = 0; index < items->size(); ++index)
+		if ((*items)[index].parent_index == static_cast<int32_t>(selected_index))
+		{
+			if ((*items)[index].weight < 0 ||
+			    child_weight > INT64_MAX - (*items)[index].weight)
+			{
+				*result_code = ERANGE;
+				return true;
+			}
+			child_weight += (*items)[index].weight;
+		}
+	if (selected->weight < child_weight || exact.weight != selected->weight - child_weight)
+	{
+		*result_code = ESTALE;
+		return true;
+	}
+	const int64_t own_weight = exact.weight;
+	int32_t ancestor = selected->parent_index;
+	for (size_t depth = 0; ancestor != PLAYER_SNAPSHOT_NO_PARENT; ++depth)
+	{
+		if (depth >= items->size() || ancestor < 0 ||
+		    static_cast<size_t>(ancestor) >= selected_index ||
+		    (*items)[static_cast<size_t>(ancestor)].weight < own_weight)
+		{
+			*result_code = EBADMSG;
+			return true;
+		}
+		auto &parent = (*items)[static_cast<size_t>(ancestor)];
+		parent.weight -= static_cast<int32_t>(own_weight);
+		ancestor = parent.parent_index;
+	}
+	const uint64_t selected_parent = collector_snapshot_parent(*items, selected_index);
+	std::vector<uint64_t> parents;
+	std::vector<player_item_snapshot> remaining;
+	try
+	{
+		parents.reserve(items->size() - 1);
+		remaining.reserve(items->size() - 1);
+		for (size_t index = 0; index < items->size(); ++index)
+		{
+			if (index == selected_index)
+				continue;
+			uint64_t parent = collector_snapshot_parent(*items, index);
+			if (parent == payload.selected_item_uid)
+				parent = selected_parent;
+			parents.push_back(parent);
+			remaining.push_back(std::move((*items)[index]));
+		}
+		for (size_t index = 0; index < remaining.size(); ++index)
+		{
+			if (!parents[index])
+			{
+				remaining[index].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				continue;
+			}
+			auto parent = std::find_if(
+				remaining.begin(), remaining.begin() + static_cast<ptrdiff_t>(index),
+				[&](const auto &candidate)
+				{ return candidate.object_uid == parents[index]; });
+			if (parent == remaining.begin() + static_cast<ptrdiff_t>(index))
+			{
+				*result_code = EBADMSG;
+				return true;
+			}
+			remaining[index].parent_index =
+				static_cast<int32_t>(parent - remaining.begin());
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	*items = std::move(remaining);
+	return true;
+}
+} // namespace
+
+flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const collector_command_payload &payload, flatfile_collector_world_mutation *mutation,
+	unsigned int *result_code, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !result_code ||
+	    payload.action != collector_action::collect || !payload.item_count ||
+	    !payload.item_blob_size || payload.from_owner.context_id ||
+	    (payload.from_owner.type != item_owner_type::corpse &&
+	     payload.from_owner.type != item_owner_type::room))
+		return flatfile_world_item_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	std::vector<player_item_snapshot> decoded;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &decoded) != player_snapshot_codec_result::ok ||
+	    decoded.size() != 1 || decoded[0].object_uid != payload.selected_item_uid ||
+	    decoded[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+	    decoded[0].equipment_slot != 0)
+	{
+		*result_code = EBADMSG;
+		return flatfile_world_item_result::ok;
+	}
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_world_item_result::not_found)
+	{
+		if (payload.from_owner.type == item_owner_type::room)
+			return flatfile_world_item_result::unchanged;
+		*result_code = ENOENT;
+		return flatfile_world_item_result::ok;
+	}
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	if (catalog.revision == UINT64_MAX)
+	{
+		*result_code = ERANGE;
+		return flatfile_world_item_result::ok;
+	}
+	std::vector<player_item_snapshot> *items = nullptr;
+	uint64_t *aggregate_revision = nullptr;
+	bool erase_saved = false;
+	if (payload.from_owner.type == item_owner_type::corpse)
+	{
+		const uint32_t owner_pid = static_cast<uint32_t>(payload.from_owner.id >> 32);
+		const uint32_t save_id = static_cast<uint32_t>(payload.from_owner.id);
+		flatfile_corpse_record key = {};
+		key.owner_pid = owner_pid;
+		key.save_id = save_id;
+		auto corpse =
+			std::lower_bound(catalog.corpses.begin(), catalog.corpses.end(), key,
+					 corpse_less);
+		if (!owner_pid || !save_id || corpse == catalog.corpses.end() ||
+		    corpse->owner_pid != owner_pid || corpse->save_id != save_id)
+		{
+			*result_code = ENOENT;
+			return flatfile_world_item_result::ok;
+		}
+		items = &corpse->items;
+		aggregate_revision = &corpse->revision;
+	}
+	else
+	{
+		if (!payload.from_owner.id || payload.from_owner.id > INT32_MAX)
+			return flatfile_world_item_result::invalid;
+		const int32_t room_vnum = static_cast<int32_t>(payload.from_owner.id);
+		size_t matches = 0;
+		for (auto &saved : catalog.saved_items)
+			if (saved.room_vnum == room_vnum &&
+			    std::any_of(saved.items.begin(), saved.items.end(), [&](const auto &item) {
+				    return item.object_uid == payload.selected_item_uid;
+			    }))
+			{
+				items = &saved.items;
+				aggregate_revision = &saved.revision;
+				erase_saved = true;
+				++matches;
+			}
+		flatfile_room_item_record key = {};
+		key.room_vnum = room_vnum;
+		auto room = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), key,
+					     room_less);
+		if (room != catalog.rooms.end() && room->room_vnum == room_vnum &&
+		    std::any_of(room->items.begin(), room->items.end(), [&](const auto &item) {
+			    return item.object_uid == payload.selected_item_uid;
+		    }))
+		{
+			items = &room->items;
+			aggregate_revision = &room->revision;
+			erase_saved = false;
+			++matches;
+		}
+		if (!matches)
+			return flatfile_world_item_result::unchanged;
+		if (matches != 1)
+		{
+			*result_code = EBADMSG;
+			return flatfile_world_item_result::ok;
+		}
+	}
+	if (!items || !aggregate_revision || *aggregate_revision == UINT64_MAX)
+	{
+		*result_code = ERANGE;
+		return flatfile_world_item_result::ok;
+	}
+	if (!collector_detach_snapshot(items, payload, decoded[0], result_code))
+		return errno == ENOMEM ? flatfile_world_item_result::io_error :
+					 flatfile_world_item_result::invalid;
+	if (*result_code)
+		return flatfile_world_item_result::ok;
+	++*aggregate_revision;
+	if (erase_saved && items->empty())
+	{
+		auto empty = std::find_if(catalog.saved_items.begin(), catalog.saved_items.end(),
+					  [&](const auto &saved) { return &saved.items == items; });
+		if (empty == catalog.saved_items.end())
+			return flatfile_world_item_result::invalid;
+		catalog.saved_items.erase(empty);
+	}
+	++catalog.revision;
+	mutation->after_image.filename = catalog_filename;
+	if (!encode_catalog(catalog, &mutation->after_image.bytes))
+		return flatfile_world_item_result::invalid;
+	mutation->changed = true;
 	return flatfile_world_item_result::ok;
 }
 

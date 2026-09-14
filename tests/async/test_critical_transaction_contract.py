@@ -61,6 +61,8 @@ assert "CRITICAL_OUTBOX_BATCH_MAX = 64" in (SRC / "critical_outbox.h").read_text
 assert "CRITICAL_OUTBOX_RECORD_MAX_BYTES = 65535" in (SRC / "critical_outbox.h").read_text()
 assert "CRITICAL_OUTBOX_MAX_ATTEMPTS = 8" in (SRC / "critical_outbox.h").read_text()
 assert "ORDER BY next_attempt_at,outbox_id LIMIT 64" in OUTBOX
+assert "SELECT outbox_id,operation_id,destination" in OUTBOX
+assert "record.operation_id.bytes.data()" in OUTBOX
 assert "critical_outbox_delivery_dedupe" in OUTBOX
 assert "dead_lettered_at" in OUTBOX
 assert "critical_outbox_reconcile" in OUTBOX
@@ -87,7 +89,13 @@ extern "C" void sql_pool_release(struct st_mysql *) {}
 extern "C" struct st_mysql *sql_pool_replace_connection(struct st_mysql *) { return nullptr; }
 int main()
 {
-    critical_outbox_record valid = {1, 1, 1, 1, 0, std::vector<uint8_t>(16)};
+    critical_outbox_record valid = {};
+    valid.outbox_id = 1;
+    valid.operation_id.bytes[0] = 1;
+    valid.destination = 1;
+    valid.event_type = 1;
+    valid.payload_version = 1;
+    valid.payload.resize(16);
     assert(critical_outbox_test_destination(valid, nullptr) ==
            critical_outbox_delivery_result::delivered);
     valid.payload.push_back(0);

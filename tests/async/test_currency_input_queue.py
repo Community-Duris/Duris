@@ -111,10 +111,11 @@ PRELUDE = r'''
 #define CMD_LOOK 8
 #define CMD_SAY 9
 #define CMD_GET 10
+#define CMD_COLLECTOR 11
 
 static const char *command[] = {
 	"drop", "put", "give", "deposit", "withdraw", "inventory", "score", "look",
-	"say", "get", "\n"
+	"say", "get", "collector", "\n"
 };
 
 P_char character_list = NULL;
@@ -177,6 +178,16 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &,
 bool item_movement_transaction_player_busy(P_char)
 {
 	return item_pending;
+}
+
+bool collector_transaction_player_busy(P_char)
+{
+	return false;
+}
+
+bool collector_service_player_busy(P_char)
+{
+	return false;
 }
 
 bool bulk_get_player_busy(P_char) { return false; }
