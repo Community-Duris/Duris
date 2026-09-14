@@ -1129,28 +1129,23 @@ int chant_mastery_bonus(P_char ch, int dura)
 	}
 	else
 	{
-		CharWait(ch, dura);
 		return dura;
 	}
 
 	if (chant_bonus == 3)
 	{
-		CharWait(ch, 1);
 		return 1;
 	}
 	else if (chant_bonus == 2)
 	{
-		CharWait(ch, dura >> 1);
 		return 1;
 	}
 	else if (chant_bonus == 1)
 	{
-		CharWait(ch, dura * 0.8);
 		return (int)(dura * 0.6);
 	}
 	else
 	{
-		CharWait(ch, dura);
 		return (int)(dura * 0.8);
 	}
 }

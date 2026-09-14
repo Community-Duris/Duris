@@ -132,7 +132,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
-				 net/ansi.o net/chat_presentation.o \
+				 net/ansi.o net/casting_pulse_policy.o net/chat_presentation.o \
 				 net/output_style.o \
 				 net/output_profiles.o \
 				 specs/specs.ailvio.o \

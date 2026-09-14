@@ -12,6 +12,7 @@
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
+#include "net/casting_pulse_policy.h"
 #include "world/db.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -2023,6 +2024,25 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 	return FALSE;
 }
 
+static casting_pulse_config current_casting_pulse_config()
+{
+	return casting_pulse_make_config(
+		get_property("spellcast.quickChant.durationMultiplier",
+			     CASTING_PULSE_DEFAULT_QUICK_MULTIPLIER),
+		get_property("spellcast.quickChant.tankSuccessPercent",
+			     CASTING_PULSE_DEFAULT_TANK_SUCCESS_PERCENT),
+		get_property("spellcast.quickChant.skillBasePercent",
+			     CASTING_PULSE_DEFAULT_SKILL_BASE_PERCENT),
+		get_property("spellcast.quickChant.skillPercentPerPoint",
+			     CASTING_PULSE_DEFAULT_SKILL_PERCENT_PER_POINT),
+		get_property("spellcast.maxCircleAbort.basePercent",
+			     CASTING_PULSE_DEFAULT_ABORT_BASE_PERCENT),
+		get_property("spellcast.maxCircleAbort.agilityReductionPerPoint",
+			     CASTING_PULSE_DEFAULT_ABORT_AGILITY_REDUCTION),
+		get_property("spellcast.maxCircleAbort.capPercent",
+			     CASTING_PULSE_DEFAULT_ABORT_CAP_PERCENT));
+}
+
 extern void DelayCommune(P_char ch, int delay);
 
 void do_will(P_char ch, char *argument, int /*cmd*/)
@@ -2449,7 +2469,6 @@ void do_cast(P_char ch, char *argument, int cmd)
 	dura = (SpellCastTime(ch, spl));
 	if (GET_CHAR_SKILL(ch, SKILL_CHANT_MASTERY))
 	{
-		// This function calls CharWait appropriately
 		dura = chant_mastery_bonus(ch, dura);
 	}
 	else if (GET_CHAR_SKILL(ch, SKILL_TOTEMIC_MASTERY) > number(50, 200) && hasTotem(ch, spl))
@@ -2459,33 +2478,21 @@ void do_cast(P_char ch, char *argument, int cmd)
 		act("&+y$n &+ygrasps his totem tightly, and begins communing with the &+wspirits&+y.&n",
 		    TRUE, ch, 0, 0, TO_ROOM);
 		dura = (int)(dura * .75);
-		CharWait(ch, dura);
 	}
 	else if (OUTSIDE(ch) && GET_CHAR_SKILL(ch, SKILL_NATURES_SANCTITY) > number(1, 100))
 	{
 		send_to_char("&+GThe power of nature flows into you, hastening your incantation.\n",
 			     ch);
 		dura = (int)(dura * .75);
-		CharWait(ch, dura);
 	}
 	else if (OUTSIDE(ch) && GET_CHAR_SKILL(ch, SKILL_NATURES_RUIN) > number(1, 100))
 	{
 		send_to_char("&+yYou drain power from nature, hastening your incantation.\n", ch);
 		dura = (int)(dura * .75);
-		CharWait(ch, dura);
-	}
-	else if (GET_CLASS(ch, CLASS_DRUID) && !IS_MULTICLASS_PC(ch))
-	{
-		CharWait(ch, (dura >> 1) + 6);
 	}
 	else if (affected_by_spell(ch, SKILL_BERSERK))
 	{
 		dura = (int)(dura * get_property("spell.berserk.casting.starMod", 1.500));
-		CharWait(ch, dura);
-	}
-	else
-	{
-		CharWait(ch, dura);
 	}
 
 	SpellCastShow(ch, spl);
@@ -2511,26 +2518,55 @@ void do_cast(P_char ch, char *argument, int cmd)
 	// Why were Psi's set to instacast?? This must've been really old code.
 	// It only showed up when caster/psi multi was played, making a psi
 	//  secondary trigger on the code in do_cast instead of do_will.
+	const casting_pulse_config pulse_config = current_casting_pulse_config();
+	bool quick_chant_attempted = false;
+	bool quick_chant_succeeded = false;
 	if (IS_TRUSTED(ch) || IS_SET(skills[spl].targets, TAR_INSTACAST))
 	{
 		dura = 1;
 	}
 	else if ((GET_CLASS(ch, CLASS_DRUID) && !IS_MULTICLASS_PC(ch)) ||
-		 (GET_CLASS(ch, CLASS_BLIGHTER) && !IS_MULTICLASS_PC(ch)) ||
-		 ((!is_tank || number(0, 1)) &&
-		  (IS_NPC(ch) || IS_SET(ch->specials.act2, PLR2_QUICKCHANT)) &&
-		  (notch_skill(ch, SKILL_QUICK_CHANT, get_property("skill.notch.quickChant", 2.5)) ||
-		   (GET_CHAR_SKILL(ch, SKILL_QUICK_CHANT) > number(1, 100)))))
+		 (GET_CLASS(ch, CLASS_BLIGHTER) && !IS_MULTICLASS_PC(ch)))
 	{
-		dura >>= 1;
+		quick_chant_succeeded = true;
 	}
+	else if (IS_NPC(ch) || IS_SET(ch->specials.act2, PLR2_QUICKCHANT))
+	{
+		quick_chant_attempted = true;
+		const bool tank_gate_succeeded =
+			!is_tank || casting_pulse_percent_roll(pulse_config.tank_success_percent,
+							       number(1, CASTING_PULSE_ROLL_SCALE));
+		if (tank_gate_succeeded)
+		{
+			quick_chant_succeeded =
+				notch_skill(ch, SKILL_QUICK_CHANT,
+					    get_property("skill.notch.quickChant", 2.5)) ||
+				casting_pulse_percent_roll(
+					casting_pulse_quick_chant_percent(
+						pulse_config,
+						GET_CHAR_SKILL(ch, SKILL_QUICK_CHANT)),
+					number(1, CASTING_PULSE_ROLL_SCALE));
+		}
+	}
+	const casting_pulse_timing timing =
+		casting_pulse_timing_for(pulse_config, dura, quick_chant_succeeded);
+	dura = timing.landing_beats;
+	CharWait(ch, timing.command_gate_beats);
+	if (quick_chant_attempted && !quick_chant_succeeded && IS_PC(ch))
+		send_to_char(
+			"&+yYour quick chant falters, and the spell keeps its full rhythm.&n\n",
+			ch);
 
 	tmp_spl.timeleft = dura;
 	// if( IS_PC(ch) ) debug( "Final cast time: %d.", tmp_spl.timeleft );
+	const float max_circle_abort_percent =
+		casting_pulse_max_circle_abort_percent(pulse_config, GET_C_AGI(ch));
 	if (get_spell_circle(ch, tmp_spl.spell) == get_max_circle(ch) &&
-	    number(0, 100) > GET_C_AGI(ch) / 2 + 50)
+	    max_circle_abort_percent > 0.0f &&
+	    casting_pulse_percent_roll(max_circle_abort_percent,
+				       number(1, CASTING_PULSE_ROLL_SCALE)))
 	{
-		add_event(event_abort_spell, number(0, 9) * dura / 10, ch, 0, 0, 0, 0, 0);
+		add_event(event_abort_spell, MAX(1, number(0, 9) * dura / 10), ch, 0, 0, 0, 0, 0);
 	}
 
 	dura = BOUNDED(1, dura, 4);
