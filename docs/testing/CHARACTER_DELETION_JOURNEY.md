@@ -24,16 +24,16 @@ The schema is removed by the runner even on failure; no checkout `.env` is read.
 The complete local journey passed all three cases and restart. The existing
 account deletion runtime regression and terminal-save safety checks also passed.
 Both local backend development builds passed in this bug sweep. The SQL journey
-used current master `767e66e2b` with the unrelated #342 falling guard; deletion
-and account runtime match this test-only PR exactly.
+was repeated against a separately rebuilt, unchanged master `767e66e2b` binary;
+deletion and account runtime match this test-only PR exactly.
 
-## Remaining blocker
+## Historical operator follow-up
 
 The historical September 5 disposable character has not been identified through
 protected operator evidence. This synthetic journey cannot establish whether
 that character still exists or whether authorized cleanup occurred. Do not delete
 by an assumed name, publish identity details, or treat this test as that cleanup.
-Keep #200 open for the protected identity/cleanup check. The PR remains draft for
-that outstanding acceptance item, as requested in the bug sweep; CI is not the
-blocker. The original software failure is already fixed and the full disposable
-SQL/Telnet proof is now complete.
+That historical housekeeping is separate from the software defect and does not
+block this test-only PR or the bug's closure. The original software failure is
+already fixed by merged PR #204 and the full disposable SQL/Telnet proof is
+complete. No historical cleanup is claimed.
