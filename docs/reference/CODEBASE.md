@@ -363,3 +363,21 @@ epic points (not PvP) in `prepare_epic_award()`; artefact feeding in
 `artifact_feed_seconds()`; bartender quests in the bartender fee, both backends'
 `sql_world_quest_can_do_another()` (never fewer than one a day) and the kill count in
 `createQuest()`.
+
+## Racial pulse
+
+Each race's action rates live in `lib/duris.properties`. `spellcast.pulse.racial.<Race>`
+multiplies every spell's cast time; `damage.pulse.racial.<Race>` is the base melee round in
+beats, to which `damage.pulse.class.all` and the class's `damage.pulse.class.<Class>` are
+added in `affects.c`. Lower is faster in both. `src/world/racial_pulse.c` adds the `pulse`
+command: gods list the rates with `pulse` or `pulse list all`; Forgers use
+`pulse adjust <cast|melee> <race> <value>`, where the value is absolute and must have exactly
+three decimals, and `pulse save`. Like the difficulty dials it routes through
+`properties set`, so a change applies at once (melee by re-totalling every character of that
+race) and stays in memory until saved.
+
+Gear does not grant faster pulse. Every player-obtainable object that carried a negative
+`APPLY_COMBAT_PULSE` or `APPLY_SPELL_PULSE` carries a racial-maximum stat instead, worth at
+least as much in `rate_object()`, and the shaman spirit totem gives wisdom. Mob-only objects
+(no-show or untakeable procs) keep theirs, as do spells and skills such as berserk and the
+reaver buffs.
