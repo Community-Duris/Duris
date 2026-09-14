@@ -17,6 +17,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/falling.h"
 #include "cmd/interp.h"
 #include "kingdom/kingdom.h"
 #include "core/utils.h"
@@ -1236,6 +1237,16 @@ bool cmd_allowed_while_casting(P_char ch, int cmd)
 		(item_action_active(ch) || PLR3_FLAGGED(ch, PLR3_ABORT_CASTING)));
 }
 
+static bool is_retired_command_spelling(const char *word, uint length)
+{
+	static const char *const spellings[] = { "add", "deploy", NULL };
+
+	for (int i = 0; spellings[i]; ++i)
+		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
+			return true;
+	return false;
+}
+
 /** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
  * a different authoritative view, so item moves and synchronous consumers must
@@ -1328,6 +1339,29 @@ static int input_command_number(const char *input)
 	}
 	word[len] = '\0';
 
+	return old_search_block(word, 0, len, command, 2);
+}
+
+/** Resolve an ordered command exactly as the interpreter will dispatch it. */
+int ordered_command_number(const char *input)
+{
+	char word[MAX_INPUT_LENGTH];
+	uint begin = 0;
+	uint len = 0;
+
+	if (!input)
+		return CMD_NONE;
+	while (input[begin] == ' ')
+		begin++;
+	while (input[begin + len] > ' ' && len < sizeof(word) - 1)
+	{
+		word[len] = LOWER(input[begin + len]);
+		len++;
+	}
+	word[len] = '\0';
+
+	if (len == 0 || is_retired_command_spelling(word, len))
+		return CMD_NONE;
 	return old_search_block(word, 0, len, command, 2);
 }
 
@@ -1440,16 +1474,6 @@ void do_confirm(P_char ch, bool yes)
 
 	ch->desc->confirm_state = CONFIRM_DONE;
 	command_interpreter(ch, ch->desc->last_command);
-}
-
-static bool is_retired_command_spelling(const char *word, uint length)
-{
-	static const char *const spellings[] = { "add", "deploy", NULL };
-
-	for (int i = 0; spellings[i]; ++i)
-		if (strlen(spellings[i]) == length && !strncmp(word, spellings[i], length))
-			return true;
-	return false;
 }
 
 /*
@@ -1603,8 +1627,9 @@ void command_interpreter(P_char ch, char *argument)
 
 	if (world[ch->in_room].chance_fall && number(1, 100) <= world[ch->in_room].chance_fall)
 	{
-		// Starting speed 0, and do not kill.
-		if (falling_char(ch, 0, FALSE))
+		const falling_start_result falling = falling_start(ch);
+		if (falling == falling_start_result::scheduled ||
+		    falling == falling_start_result::schedule_rejected)
 		{
 			return;
 		}

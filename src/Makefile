@@ -128,6 +128,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actnew.o \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
+				 cmd/divine_refusal_policy.o \
 				 cmd/actoth.o cmd/color_command.o \
 				 cmd/actset.o \
 				 cmd/actwiz.o \
@@ -138,6 +139,8 @@ OBJS =  $(SHIP_OBJS) \
 				 guild/alliances.o \
 				 mob/automatic_rules.o \
 				 magic/affects.o \
+				 world/falling.o \
+				 world/falling_policy.o \
 				 combat/arena.o \
 				 guild/artifact.o \
 				 guild/artifact_cache_codec.o \

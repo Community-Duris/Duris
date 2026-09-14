@@ -14,6 +14,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "world/falling.h"
 #include "core/files.h"
 #include "cmd/interp.h"
 #include "core/utils.h"
@@ -1509,8 +1510,10 @@ bool char_to_room(P_char ch, int room, int dir)
 	{
 		if (char_falling(ch))
 		{
-			// FALSE -> can't kill char, FALSE -> This is not an event.
-			if (falling_char(ch, FALSE, FALSE))
+			const falling_start_result falling = falling_start(ch);
+			if (falling == falling_start_result::schedule_rejected)
+				return FALSE;
+			if (falling == falling_start_result::scheduled)
 			{
 				if (ch->in_room != room)
 				{

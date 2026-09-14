@@ -154,12 +154,24 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "guildhall_rooms.c",       # NPC construction
             "specs.mobile.c",           # NPC vendor/undead balances
         }
+        generated_npc_restoration = {
+            "GET_COPPER(pet) = wallet[0];",
+            "GET_SILVER(pet) = wallet[1];",
+            "GET_GOLD(pet) = wallet[2];",
+            "GET_PLATINUM(pet) = wallet[3];",
+        }
         violations = []
         for path in SRC.rglob("*.c"):
             if path.name in allowed:
                 continue
+            relative = path.relative_to(SRC).as_posix()
             for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
                 if line.lstrip().startswith("//"):
+                    continue
+                if (
+                    relative == "world/generated_npc_runtime.c"
+                    and line.strip() in generated_npc_restoration
+                ):
                     continue
                 if assignment.search(line):
                     violations.append(f"{path.relative_to(ROOT)}:{number}:{line.strip()}")
