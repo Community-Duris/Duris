@@ -71,6 +71,7 @@ struct char_data
 	int in_room = 0;
 	P_char master = nullptr;
 	P_char next_in_room = nullptr;
+	P_char relocate_on_command = nullptr;
 	int handler_calls = 0;
 	int resource_uses = 0;
 	bool ordering_seen = false;
@@ -182,7 +183,7 @@ static float get_property(const char *name, float fallback, bool)
 static int number(int minimum, int maximum)
 {
 	assert(minimum == 1);
-	assert(maximum == 100);
+	assert(maximum == DIVINE_REFUSAL_ROLL_SCALE);
 	assert(next_roll < rolls.size());
 	++roll_calls;
 	return rolls[next_roll++];
@@ -290,6 +291,8 @@ static void command_interpreter(P_char ch, char *input)
 	ch->ordering_seen = ch->master && IS_SET(ch->master->specials.affected_by5, AFF5_ORDERING);
 	if (ch->become_busy_on_command)
 		ch->can_act = false;
+	if (ch->relocate_on_command)
+		ch->relocate_on_command->in_room = 1;
 	if (ch->extract_on_command)
 		ch->live = false;
 }
@@ -497,7 +500,7 @@ static void test_expiry_rerolls_and_success_is_not_banked()
 	setting_enabled = 1.0f;
 	setting_percent = 50.0f;
 	ne_event_tick = 116;
-	prepare_rolls({ 99, 99 });
+	prepare_rolls({ 9900, 9900 });
 	char_data master = make_master();
 	char_data pet = make_pet("priest");
 	pet.master = &master;
@@ -696,7 +699,7 @@ static void test_mixed_and_all_refused_groups()
 	reset_runtime();
 	setting_enabled = 1.0f;
 	setting_percent = 50.0f;
-	prepare_rolls({ 1, 99 });
+	prepare_rolls({ 1, 9900 });
 	char_data master = make_master();
 	char_data refusing = make_pet("refusing");
 	char_data warrior = make_pet("warrior", false);
@@ -728,6 +731,25 @@ static void test_mixed_and_all_refused_groups()
 	assert(count_output("None here are loyal") == 0);
 	assert(count_public_output("My deity has warned me") == 2);
 	expect_wait(&master, PULSE_VIOLENCE);
+
+	// A refusal plus a busy follower has no successful acknowledgement.
+	reset_runtime();
+	setting_enabled = 1.0f;
+	setting_percent = 100.0f;
+	prepare_rolls({ 1 });
+	master = make_master();
+	first = make_pet("busy");
+	second = make_pet("refusing");
+	first.master = second.master = &master;
+	first.can_act = false;
+	place({ &master, &first, &second });
+	issue_order(&master, "followers attack goblin");
+	assert(roll_calls == 1);
+	assert(first.handler_calls == 0 && second.handler_calls == 0);
+	assert(count_output("busy at the moment") == 1);
+	assert(count_output("Ok.") == 0);
+	assert(count_public_output("My deity has warned me") == 1);
+	expect_wait(&master, PULSE_VIOLENCE);
 }
 
 static void test_group_snapshot_survives_pet_extraction()
@@ -743,6 +765,33 @@ static void test_group_snapshot_survives_pet_extraction()
 	assert(first.handler_calls == 1 && second.handler_calls == 1);
 	assert(!first.live && second.live);
 	expect_wait(&master, PULSE_VIOLENCE);
+}
+
+static void test_group_snapshot_rechecks_room_after_relocation()
+{
+	reset_runtime();
+	char_data master = make_master();
+	char_data first = make_pet("first");
+	char_data relocated = make_pet("relocated");
+	first.master = relocated.master = &master;
+	first.relocate_on_command = &relocated;
+	place({ &master, &first, &relocated });
+	issue_order(&master, "followers attack goblin");
+	assert(first.handler_calls == 1);
+	assert(relocated.in_room == 1 && relocated.handler_calls == 0);
+	expect_wait(&master, 2);
+
+	reset_runtime();
+	master = make_master();
+	first = make_pet("first");
+	char_data left_behind = make_pet("left-behind");
+	first.master = left_behind.master = &master;
+	first.relocate_on_command = &master;
+	place({ &master, &first, &left_behind });
+	issue_order(&master, "followers attack goblin");
+	assert(first.handler_calls == 1);
+	assert(master.in_room == 1 && left_behind.handler_calls == 0);
+	expect_wait(&master, 2);
 }
 
 static void test_deadline_follows_instance_and_reset_clears_it()
@@ -879,6 +928,7 @@ int main()
 	test_actor_pet_and_locality_filters();
 	test_mixed_and_all_refused_groups();
 	test_group_snapshot_survives_pet_extraction();
+	test_group_snapshot_rechecks_room_after_relocation();
 	test_deadline_follows_instance_and_reset_clears_it();
 	test_extraction_cannot_leak_to_reused_address();
 	test_output_falls_back_to_nonverbal_safely();

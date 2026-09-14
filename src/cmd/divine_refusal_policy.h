@@ -2,13 +2,14 @@
 #define DURIS_DIVINE_REFUSAL_POLICY_H
 
 constexpr int DIVINE_REFUSAL_MAX_LOCK_SECONDS = 60;
+constexpr int DIVINE_REFUSAL_ROLL_SCALE = 10000;
 using divine_refusal_tick = unsigned long long;
 
 struct divine_refusal_config
 {
 	bool enabled = false;
 	bool summoner_only = true;
-	int percent = 0;
+	float percent = 0.0f;
 	divine_refusal_tick lock_pulses = 0;
 };
 

@@ -2317,7 +2317,8 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 
 				if (k && ch)
 				{
-					if (k->specials.z_cord == org_cord)
+					if (k->in_room == ch->in_room &&
+					    k->specials.z_cord == org_cord)
 					{
 						if (GET_MASTER(k) == ch)
 						{
@@ -2345,13 +2346,6 @@ void do_order(P_char ch, char *argument, int /*comd*/)
 								}
 								if (!CAN_ACT(k) || IS_IMMOBILE(k))
 								{
-									if (!acknowledged)
-									{
-										send_to_char(
-											"Ok.\n",
-											ch);
-										acknowledged = TRUE;
-									}
 									act("$N seems a bit busy at the moment, try later.",
 									    FALSE, ch, 0, k,
 									    TO_CHAR);

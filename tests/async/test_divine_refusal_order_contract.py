@@ -19,8 +19,17 @@ assert "unsigned long long divine_refusal_until_pulse;" in structs
 assert "int ordered_command_number(const char *input);" in interp_h
 assert "static int input_command_number(const char *input)" in interp
 parser = extract_function("interp.c", "int ordered_command_number(")
-assert contains(parser, "return input_command_number(input);")
+assert contains(parser, "return old_search_block(word, 0, len, command, 2);")
+assert "input_command_number(input)" not in parser
 assert contains(parser, "is_retired_command_spelling(word, len)")
+
+policy = source("divine_refusal_policy.c").read_text(encoding="utf-8")
+policy_header = source("divine_refusal_policy.h").read_text(encoding="utf-8")
+assert "float percent = 0.0f;" in policy_header
+assert "DIVINE_REFUSAL_ROLL_SCALE" in policy
+assert "static_cast<int>(bounded_percent)" not in policy
+policy_decision = extract_function("divine_refusal_policy.c", "divine_refusal_outcome divine_refusal_decide(")
+assert before(policy_decision, "command_blocked", "*refusal_until > now")
 
 for setting in (
     "pets.divine_refusal.enabled=0",
@@ -73,14 +82,15 @@ assert before(named, "divine_refusal_blocks_order(", "AFF5_ORDERING")
 assert contains(named, "CharWait(ch, new_refusal ? PULSE_VIOLENCE : 2);")
 
 assert before(followers, "GET_MASTER(k) == ch", "divine_refusal_blocks_order(")
+assert before(followers, "k->in_room == ch->in_room", "GET_MASTER(k) == ch")
 assert before(followers, "IS_AFFECTED(k, AFF_CHARM)", "divine_refusal_blocks_order(")
 assert before(followers, "if (!refusal_can_apply)", "!CAN_ACT(k) || IS_IMMOBILE(k)")
 assert before(followers, "!CAN_ACT(k) || IS_IMMOBILE(k)",
               "divine_refusal_blocks_order(")
 busy = followers[index(followers, "if (!CAN_ACT(k) || IS_IMMOBILE(k))"):
                  index(followers, "else", index(followers, "if (!CAN_ACT(k) || IS_IMMOBILE(k))"))]
-assert before(busy, 'send_to_char("Ok.\\n", ch)',
-              'act("$N seems a bit busy at the moment, try later."')
+assert 'send_to_char("Ok.\\n", ch)' not in busy
+assert contains(busy, 'act("$N seems a bit busy at the moment, try later."')
 assert before(followers, "divine_refusal_blocks_order(", "AFF5_ORDERING")
 assert contains(followers, "if (new_refusal) l_delay = TRUE;")
 assert contains(followers, 'if (!acknowledged && !refused) send_to_char("Ok.\\n", ch);')

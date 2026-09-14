@@ -13,10 +13,7 @@ divine_refusal_config divine_refusal_make_config(float enabled, float summoner_o
 	config.summoner_only = !std::isfinite(summoner_only) || summoner_only >= 0.5f;
 
 	if (std::isfinite(percent))
-	{
-		const float bounded_percent = std::clamp(percent, 0.0f, 100.0f);
-		config.percent = static_cast<int>(bounded_percent);
-	}
+		config.percent = std::clamp(percent, 0.0f, 100.0f);
 
 	if (!config.enabled)
 		return config;
@@ -47,7 +44,9 @@ divine_refusal_outcome divine_refusal_decide(const divine_refusal_config &config
 	if (*refusal_until > now)
 		return divine_refusal_outcome::refused_active;
 
-	if (roll(1, 100) > config.percent)
+	const float refusal_threshold =
+		config.percent * (static_cast<float>(DIVINE_REFUSAL_ROLL_SCALE) / 100.0f);
+	if (static_cast<float>(roll(1, DIVINE_REFUSAL_ROLL_SCALE)) > refusal_threshold)
 	{
 		*refusal_until = 0;
 		return divine_refusal_outcome::allowed;

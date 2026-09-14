@@ -1350,7 +1350,7 @@ int ordered_command_number(const char *input)
 
 	if (len == 0 || is_retired_command_spelling(word, len))
 		return CMD_NONE;
-	return input_command_number(input);
+	return old_search_block(word, 0, len, command, 2);
 }
 
 /** Only table-owned names cross the diagnostic boundary. Unknown input is never retained. */

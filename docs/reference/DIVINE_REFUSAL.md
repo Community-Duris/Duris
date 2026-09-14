@@ -14,7 +14,7 @@ the normal `properties reload` command.
 | --- | ---: | ---: | --- |
 | `pets.divine_refusal.enabled` | 0 | off/on at 0.5 | Master switch. Missing or non-finite values preserve legacy behavior. |
 | `pets.divine_refusal.summoner_only` | 1 | off/on at 0.5 | When enabled, only a PC with the summoner class can receive refusals. Non-finite values fail closed to summoner-only. |
-| `pets.divine_refusal.percent` | 10 | 0–100 | Chance per eligible dispatch attempt outside an active refusal window. Zero consumes no random draw. |
+| `pets.divine_refusal.percent` | 10 | 0–100 | Chance per eligible dispatch attempt outside an active refusal window. Fractional values are retained with 0.01-percentage-point roll granularity; zero consumes no random draw. |
 | `pets.divine_refusal.retry_lock_seconds` | 4 | greater than 0, capped at 60 | Per-live-NPC refusal window. Invalid non-positive or non-finite values disable the gate. |
 
 `abort` and `flee` are always exempt. Blank or unknown commands and commands the

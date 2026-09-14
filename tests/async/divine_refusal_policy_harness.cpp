@@ -7,12 +7,12 @@
 namespace
 {
 int draws = 0;
-int next_roll = 100;
+int next_roll = DIVINE_REFUSAL_ROLL_SCALE;
 
 int controlled_roll(int minimum, int maximum)
 {
 	assert(minimum == 1);
-	assert(maximum == 100);
+	assert(maximum == DIVINE_REFUSAL_ROLL_SCALE);
 	++draws;
 	return next_roll;
 }
@@ -44,6 +44,7 @@ int main()
 	expect_bypass_without_draw(enabled, false, true, false, false);
 	expect_bypass_without_draw(enabled, true, false, false, false);
 	expect_bypass_without_draw(enabled, true, true, true, false);
+	// The issue requires the ordinary casting/item gate even during an active lock.
 	expect_bypass_without_draw(enabled, true, true, false, true);
 
 	const divine_refusal_config zero = divine_refusal_make_config(1.0f, 1.0f, 0.0f, 4.0f, 4);
@@ -63,6 +64,9 @@ int main()
 	const divine_refusal_config negative_percent =
 		divine_refusal_make_config(1.0f, 1.0f, -20.0f, 4.0f, 4);
 	assert(negative_percent.percent == 0);
+	const divine_refusal_config fractional_percent =
+		divine_refusal_make_config(1.0f, 1.0f, 0.8f, 4.0f, 4);
+	assert(std::fabs(fractional_percent.percent - 0.8f) < 0.0001f);
 	const divine_refusal_config bounded =
 		divine_refusal_make_config(1.0f, 0.0f, 120.0f, 600.0f, 4);
 	assert(!bounded.summoner_only);
@@ -84,7 +88,7 @@ int main()
 	assert(deadline == 116);
 
 	// Changing the command/target while the window is active cannot reroll or extend it.
-	next_roll = 100;
+	next_roll = DIVINE_REFUSAL_ROLL_SCALE;
 	assert(divine_refusal_decide(enabled, true, true, false, false, 115, &deadline,
 				     controlled_roll) == divine_refusal_outcome::refused_active);
 	assert(draws == 1);
@@ -97,7 +101,7 @@ int main()
 	assert(deadline == 0);
 
 	// An allowed command cannot bank acceptance for the next command.
-	next_roll = 100;
+	next_roll = DIVINE_REFUSAL_ROLL_SCALE;
 	assert(divine_refusal_decide(enabled, true, true, false, false, 200, &deadline,
 				     controlled_roll) == divine_refusal_outcome::allowed);
 	next_roll = 1;
@@ -120,10 +124,23 @@ int main()
 	// 100 percent still performs exactly one draw, then refuses.
 	deadline = 0;
 	draws = 0;
-	next_roll = 100;
+	next_roll = DIVINE_REFUSAL_ROLL_SCALE;
 	assert(divine_refusal_decide(bounded, true, true, false, false, 300, &deadline,
 				     controlled_roll) == divine_refusal_outcome::refused_new);
 	assert(draws == 1);
+
+	// Fractional percentages retain sub-one-percent precision (0.8% = 80/10000).
+	deadline = 0;
+	draws = 0;
+	next_roll = 80;
+	assert(divine_refusal_decide(fractional_percent, true, true, false, false, 400, &deadline,
+				     controlled_roll) == divine_refusal_outcome::refused_new);
+	assert(draws == 1);
+	deadline = 0;
+	next_roll = 81;
+	assert(divine_refusal_decide(fractional_percent, true, true, false, false, 401, &deadline,
+				     controlled_roll) == divine_refusal_outcome::allowed);
+	assert(draws == 2);
 
 	// Saturating addition cannot wrap a deadline into the past.
 	deadline = 0;
