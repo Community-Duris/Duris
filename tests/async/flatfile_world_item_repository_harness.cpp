@@ -200,9 +200,8 @@ int main(int argc, char **argv)
 
 	const fs::path transfer_root = fs::path(argv[1]) / "transfer";
 	prepare_root(transfer_root);
-	require(flatfile_world_item_establish(transfer_root.string(), {}, {}, &error) ==
-			flatfile_world_item_result::ok,
-		"empty world item authority establishment failed");
+	require(!fs::exists(transfer_root / "domains/world_item_catalog"),
+		"first item-bearing corpse fixture unexpectedly has a world catalog");
 	item_transfer_payload transfer = {};
 	transfer.from_owner = { item_owner_type::player, 9, 0 };
 	transfer.to_owner = { item_owner_type::corpse, item_corpse_owner_id(9, 33), 0 };
@@ -236,6 +235,22 @@ int main(int argc, char **argv)
 		flatfile_authority_lock lock;
 		require(lock.acquire(transfer_root.string(), &error),
 			"could not acquire corpse creation authority");
+		auto missing_update = transfer;
+		missing_update.expected_to_revision = 1;
+		require(flatfile_world_item_prepare_corpse_transfer(
+				transfer_root.string(), lock, missing_update, &transfer_mutation,
+				&error) == flatfile_world_item_result::not_found,
+			"missing corpse update initialized a catalog");
+		auto missing_loot = transfer;
+		missing_loot.from_owner = transfer.to_owner;
+		missing_loot.to_owner = transfer.from_owner;
+		missing_loot.reason = item_transfer_reason::corpse_loot;
+		require(flatfile_world_item_prepare_corpse_transfer(
+				transfer_root.string(), lock, missing_loot, &transfer_mutation,
+				&error) == flatfile_world_item_result::not_found,
+			"missing corpse loot initialized a catalog");
+		require(!fs::exists(transfer_root / "domains/world_item_catalog"),
+			"rejected corpse operation wrote a catalog");
 		require(flatfile_world_item_prepare_corpse_transfer(
 				transfer_root.string(), lock, transfer, &transfer_mutation,
 				&error) == flatfile_world_item_result::ok &&
@@ -372,6 +387,17 @@ int main(int argc, char **argv)
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 			flatfile_world_item_result::invalid,
 		"corrupt world item authority was exposed");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error), "could not lock corrupt catalog");
+		transfer.from_owner = { item_owner_type::player, 9, 0 };
+		transfer.to_owner = { item_owner_type::corpse, item_corpse_owner_id(9, 33), 0 };
+		transfer.reason = item_transfer_reason::corpse_create;
+		require(flatfile_world_item_prepare_corpse_transfer(root.string(), lock, transfer,
+								    &transfer_mutation, &error) ==
+				flatfile_world_item_result::invalid,
+			"new corpse creation replaced a corrupt catalog");
+	}
 	std::cout << "flat-file world item repository passed\n";
 	return 0;
 }

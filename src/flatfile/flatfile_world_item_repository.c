@@ -899,7 +899,10 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
 	*mutation = {};
 	world_item_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_world_item_result::ok)
+	if (loaded == flatfile_world_item_result::not_found &&
+	    payload.action == corpse_lifecycle_action::upsert && !payload.expected_corpse_revision)
+		catalog = {};
+	else if (loaded != flatfile_world_item_result::ok)
 		return loaded;
 	flatfile_corpse_record key = {};
 	key.owner_pid = payload.owner_pid;
@@ -1017,7 +1020,10 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 		return flatfile_world_item_result::invalid;
 	world_item_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
-	if (loaded != flatfile_world_item_result::ok)
+	if (loaded == flatfile_world_item_result::not_found && create &&
+	    !payload.expected_to_revision)
+		catalog = {};
+	else if (loaded != flatfile_world_item_result::ok)
 		return loaded;
 	flatfile_corpse_record key = {};
 	key.owner_pid = owner_pid;
