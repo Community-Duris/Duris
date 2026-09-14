@@ -19,7 +19,7 @@ def create_quest_character(client: MudClient) -> None:
     client.send("y")
     client.expect("enter your password")
     client.send("Qz7!mN4@")
-    client.expect("verify your password")
+    client.expect("Please re-enter the same password to confirm:  ")
     client.send("Qz7!mN4@")
     client.expect("information correct?")
     client.send("y")
@@ -55,10 +55,7 @@ def create_quest_character(client: MudClient) -> None:
     client.send("n")
     client.expect("keep this character")
     client.send("y")
-    client.expect("PRESS RETURN to read Duris rules")
-    client.send("")
-    client.expect("official and legal response")
-    client.send("y")
+    # Keeping the character now proceeds directly to the MOTD and world entry.
     client.expect("PRESS RETURN")
     client.send("")
     client.expect_any((

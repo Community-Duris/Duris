@@ -843,6 +843,7 @@ void verify_account_name(P_desc d, char *arg)
 		SEND_TO_Q("Ok, what then?\r\n", d);
 		d->account = free_account(d->account);
 		STATE(d) = CON_GET_ACCT_NAME;
+		SEND_TO_Q("Account Name: ", d);
 		return;
 	}
 	else
@@ -926,6 +927,7 @@ void verify_new_account_email(P_desc d, char *arg)
 		FREE(d->account->acct_email);
 		d->account->acct_email = NULL;
 		STATE(d) = CON_GET_NEW_ACCT_EMAIL;
+		get_new_account_email(d, NULL);
 		return;
 	}
 	else
@@ -991,7 +993,7 @@ void verify_new_account_password(P_desc d, char *arg)
 	if (!arg)
 	{
 		echo_on(d);
-		SEND_TO_Q("Please verify your password:  ", d);
+		SEND_TO_Q("Please re-enter the same password to confirm:  ", d);
 		echo_off(d);
 		return;
 	}
@@ -2340,8 +2342,8 @@ void account_new_char_name(P_desc d, char *arg)
 
 	if (_parse_name(arg, tmp_name))
 	{
-		SEND_TO_Q("Illegal account name, please try another.\r\n", d);
-		SEND_TO_Q("Account Name: ", d);
+		SEND_TO_Q("Illegal character name, please try another.\r\n", d);
+		account_new_char(d, NULL);
 		return;
 	}
 
