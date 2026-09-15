@@ -786,7 +786,8 @@ bool valid_guildhalls(const guildhall_catalog &catalog)
 				return false;
 			for (const auto &room : guildhall.rooms)
 				if (room.room_id <= 0 || room.vnum <= 0 || room.type < 0 ||
-				    room.type > 10 || !valid_guildhall_room_name(room.name) ||
+				    room.type >= FLATFILE_GUILDHALL_ROOM_TYPE_COUNT ||
+				    !valid_guildhall_room_name(room.name) ||
 				    !room_ids.insert(room.room_id).second ||
 				    !room_vnums.insert(room.vnum).second)
 					return false;

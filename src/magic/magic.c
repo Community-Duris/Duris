@@ -37,6 +37,7 @@
 #include "core/mm.h"
 #include "classes/necromancy.h"
 #include "item/objmisc.h"
+#include "kingdom/kingdom_store_piece.h"
 #include "world/outposts.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -22231,7 +22232,15 @@ void remove_soulbind(P_char ch)
 	// find any instance of their soulbound item and remove it
 	for (obj = object_list; obj; obj = obj->next)
 	{
-		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && isname(GET_NAME(ch), obj->name))
+		/* Guild-store gear is bound by player id, not by name
+		 * (kingdom/kingdom_store_piece.h), and its keywords are ordinary
+		 * words: matching them against a name here would destroy every
+		 * store piece, whoever bought it, whose keywords include this
+		 * character's name. It is never this spell's to remove, and
+		 * kingdom_store_bound() knows it by its binding token as well as
+		 * by its vnum. */
+		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_bound(obj) &&
+		    isname(GET_NAME(ch), obj->name))
 		{
 			extract_obj(obj);
 		}

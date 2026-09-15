@@ -1983,6 +1983,634 @@ def test_review_fixes_from_the_second_round_hold() -> None:
           "a mine pass announces itself once, and only when it placed something")
 
 
+# --------------------------------------------------------------------- *
+# The works and the guild store (ruled 2026-09-15)
+# --------------------------------------------------------------------- *
+
+
+def _craft_code() -> str:
+    """kingdom_craft.c with its comments blanked out."""
+    return strip_comments(read("src/kingdom/kingdom_craft.c"))
+
+
+def _store_buy_code() -> str:
+    """kingdom_store_buy()'s body, comments blanked out, or "" if absent."""
+    body = function_bodies(
+        read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+void\s+kingdom_store_buy\s*\("
+    )
+    return strip_comments(body[0]) if len(body) == 1 else ""
+
+
+def _block_after(code: str, head: str) -> str:
+    """The brace-matched block that follows the first `head` in `code`, or ""."""
+    at = code.find(head)
+    start = code.find("{", at) if at >= 0 else -1
+    if start < 0:
+        return ""
+    depth = 0
+    for index in range(start, len(code)):
+        if code[index] == "{":
+            depth += 1
+        elif code[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return code[start : index + 1]
+    return ""
+
+
+def _refused_grant_block(buy: str) -> str:
+    """The brace-matched block kingdom_store_buy() runs when the ownership
+    coordinator refuses the grant: the one place material may be put back,
+    because it undoes a purchase that could not be delivered."""
+    return _block_after(buy, "if (!item_creation_grant_submit_to_player(")
+
+
+def _unpaid_material_block(buy: str) -> str:
+    """The block kingdom_store_buy() runs if kingdom_resource_spend() refuses
+    a bill it was just seen to cover: the purchase stops there."""
+    return _block_after(buy, "if (wants_material && !kingdom_resource_spend(")
+
+
+def test_store_spends_only_through_kingdom_resource_spend() -> None:
+    """The store draws realm material through the store's one way out and
+    never moves a counter itself, and it never deposits: resources are
+    spendable on kingdom benefits and turn into nothing else."""
+    code = _craft_code()
+    check(
+        re.search(r"\bkingdom_resource_spend\s*\(", code) is not None,
+        "the guild store draws material through kingdom_resource_spend()",
+    )
+    writes = re.findall(r"\bresources\s*\[[^\]]*\]\s*(?:[-+*/]?=(?!=)|--|\+\+)", code)
+    check(not writes, "kingdom_craft.c never writes a realm resource counter itself", f"{writes}")
+    # The one deposit is the refused grant putting back what that purchase
+    # drew: a reversal of a purchase that was never delivered, not a way in.
+    refused = _refused_grant_block(_store_buy_code())
+    deposits = len(re.findall(r"\bkingdom_resource_deposit\s*\(", code))
+    check(
+        deposits >= 1
+        and deposits == len(re.findall(r"\bkingdom_resource_deposit\s*\(", refused)),
+        "kingdom_craft.c deposits into a realm's stores only to reverse a purchase whose "
+        "grant was refused",
+        f"{deposits} deposit call(s) in the file",
+    )
+
+
+def test_store_checks_material_before_coin_and_pays_before_spending() -> None:
+    """Nothing refunds, so the order is the safety: delivery is asked first,
+    material is CHECKED before coin (the module's ruling), the coin is taken
+    before the material is spent (SUB_MONEY can refuse; the spend cannot by
+    then), and the piece is granted last."""
+    body = function_bodies(
+        read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+void\s+kingdom_store_buy\s*\("
+    )
+    check(len(body) == 1, "kingdom_store_buy is defined once", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    busy = code.find("item_movement_transaction_player_busy(")
+    carry = code.find("CAN_CARRY_OBJ(")
+    material = code.find("kingdom_craft_stores_cover(")
+    coin_check = code.find("GET_MONEY(ch)")
+    coin_take = code.find("SUB_MONEY(")
+    spend = code.find("kingdom_resource_spend(")
+    grant = code.find("item_creation_grant_submit_to_player(")
+    check(
+        -1 < busy < material and -1 < carry < material,
+        "a buy asks whether the piece can be delivered before anything is checked or taken",
+        f"busy {busy}, carry {carry}, material {material}",
+    )
+    check(
+        -1 < material < coin_check < coin_take < spend < grant,
+        "material is checked before coin, the coin is taken before the material is spent, "
+        "and the piece is granted last",
+        f"material {material}, coin check {coin_check}, coin {coin_take}, spend {spend}, "
+        f"grant {grant}",
+    )
+
+
+def test_store_gear_carries_no_effects_and_is_bound() -> None:
+    """Store gear has NO effect flags (ruled 2026-09-15), is soulbound to its
+    buyer by player id, cannot be sold to a shop or salvaged, and carries no
+    proc."""
+    code = _craft_code()
+    sets = re.findall(r"SET_BIT\(\s*obj->bitvector\w*|obj->bitvector\w*\s*\|=", code)
+    check(
+        not sets,
+        "kingdom_craft.c never sets an affect-mask bit, so store gear carries no effect flags",
+        f"{sets}",
+    )
+    make = function_bodies(
+        read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+P_obj\s+kingdom_craft_make\s*\("
+    )
+    check(len(make) == 1, "kingdom_craft_make is defined once", f"{len(make)}")
+    if not make:
+        return
+    body = strip_comments(make[0])
+    # Zeroed outright, so an edit to the blank prototype cannot carry an
+    # effect flag onto store gear either.
+    for mask in ("bitvector", "bitvector2", "bitvector3", "bitvector4", "bitvector5"):
+        check(
+            re.search(r"obj->" + mask + r"\s*=\s*0\s*;", body) is not None,
+            f"kingdom_craft_make() zeroes obj->{mask}",
+        )
+    for field, flag in (
+        ("extra_flags", "ITEM_NOSELL"),
+        ("extra2_flags", "ITEM2_SOULBIND"),
+        ("extra2_flags", "ITEM2_CRAFTED"),
+        ("extra2_flags", "ITEM2_STOREITEM"),
+    ):
+        check(
+            re.search(r"SET_BIT\(\s*obj->" + field + r"\s*,\s*" + flag + r"\s*\)", body)
+            is not None,
+            f"store gear is stamped {flag}",
+        )
+    check(
+        "kingdom_craft_bind_token(GET_PID(buyer)" in body and "set_keywords(" in body,
+        "the buyer's player-id token goes into the keywords the store's soulbind check reads",
+    )
+    check(re.search(r"obj->cost\s*=\s*0\s*;", body) is not None, "store gear is worth nothing")
+    check(
+        re.search(r"obj->value\[\s*[4-7]\s*\]\s*=", body) is None,
+        "no proc value (value[4..7]) is ever written on store gear",
+    )
+
+
+def test_store_item_level_never_above_the_buyer() -> None:
+    """A level 10 must not be able to buy level-56 gear: every piece is made
+    at the buyer's OWN level, capped at 56, and nothing else sets it."""
+    math_text = read("src/kingdom/kingdom_craft_math.h")
+    check(
+        re.search(r"constexpr\s+int\s+KINGDOM_CRAFT_TOP_LEVEL\s*=\s*56\s*;", strip_comments(math_text))
+        is not None,
+        "the store's level ceiling is 56",
+    )
+    level = function_bodies(math_text, r"\bconstexpr\s+int\s+kingdom_craft_item_level\s*\(")
+    check(
+        len(level) == 1 and "KINGDOM_CRAFT_TOP_LEVEL" in level[0],
+        "kingdom_craft_item_level() caps at the ceiling",
+    )
+    seam = function_bodies(read("src/kingdom/kingdom_craft.c"), r"\bbool\s+kingdom_store_command\s*\(")
+    check(
+        len(seam) == 1 and "kingdom_craft_item_level(GET_LEVEL(ch))" in seam[0],
+        "the store makes every piece at the buyer's own level, capped",
+    )
+    code = _craft_code()
+    check(
+        code.count("GET_LEVEL(") == 1,
+        "kingdom_craft.c reads a level in exactly one place, so the buyer's level is the only "
+        "source of an item's level",
+        f"GET_LEVEL( appears {code.count('GET_LEVEL(')} times",
+    )
+
+
+def test_store_platinum_is_destroyed_not_banked() -> None:
+    """The platinum a member pays for store gear is DESTROYED (ruled
+    2026-09-15): it comes out of the buyer's purse and into no treasury."""
+    code = _craft_code()
+    check(
+        re.search(r"\bSUB_MONEY\s*\(\s*ch\b", code) is not None,
+        "the buyer's own purse pays for store gear",
+    )
+    for token in (
+        "->deposit(",
+        "add_money",
+        "sub_copper",
+        "sub_money(",
+        "kingdom_persist_payment",
+        "kingdom_pay_from_treasury",
+    ):
+        check(
+            token not in code,
+            f"kingdom_craft.c never calls {token} -- store platinum is credited to no treasury",
+        )
+    # Coin goes back only to the BUYER, and only where a purchase is undone:
+    # a refused grant, or a material draw that failed after the coin was taken.
+    buy = _store_buy_code()
+    undoing = _refused_grant_block(buy) + _unpaid_material_block(buy)
+    credits = re.findall(r"\bADD_MONEY\s*\(", code)
+    to_buyer = re.findall(r"\bADD_MONEY\s*\(\s*ch\s*,", undoing)
+    check(
+        len(credits) == 2 and len(to_buyer) == 2,
+        "the only coin credits in kingdom_craft.c return the buyer's own platinum where a "
+        "purchase is undone (a refused grant, a failed material draw)",
+        f"{len(credits)} ADD_MONEY call(s) in the file, {len(to_buyer)} to the buyer where "
+        "a purchase is undone",
+    )
+
+
+def test_store_unpaid_material_stops_the_purchase() -> None:
+    """kingdom_resource_spend() cannot refuse a bill checked a few lines
+    earlier in today's single-threaded loop, but if it ever did the piece must
+    not go out unpaid for: the purchase stops, the piece is discarded and the
+    buyer's platinum goes back. Nothing was drawn, so nothing is deposited."""
+    buy = _store_buy_code()
+    block = _unpaid_material_block(buy)
+    check(block != "", "kingdom_store_buy() stops a purchase whose material draw fails")
+    check(
+        re.search(r"\bextract_obj\s*\(\s*obj\b", block) is not None,
+        "a failed material draw discards the piece",
+    )
+    check(
+        re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", block) is not None,
+        "a failed material draw returns the buyer's platinum",
+    )
+    check(
+        re.search(r"\breturn\s*;", block) is not None
+        and "item_creation_grant_submit_to_player" not in block,
+        "a failed material draw returns before any grant",
+    )
+    check("kingdom_resource_deposit" not in block, "a failed material draw deposits nothing")
+    draw = buy.find("if (wants_material && !kingdom_resource_spend(")
+    grant = buy.find("if (!item_creation_grant_submit_to_player(")
+    check(-1 < draw < grant, "the material draw is settled before the grant", f"draw {draw}, grant {grant}")
+
+
+def test_store_writes_the_realm_after_a_sale_and_a_reversal() -> None:
+    """A sale's coin is durable through its own currency transaction the
+    moment it moves, so the realm's material must not wait for the next flush:
+    a crash in between would bring the realm back holding material it spent on
+    a piece the buyer keeps. kingdom_store_buy() writes the realm after a sale
+    and after a refused grant puts the material back, through
+    kingdom_persist_realm(), which keeps the pending rule."""
+    buy = _store_buy_code()
+    refused = _refused_grant_block(buy)
+    write = r"\bkingdom_persist_realm\s*\(\s*realm\s*\)"
+    check(
+        re.search(write, refused) is not None,
+        "a refused grant writes the realm once its material is back",
+    )
+    after = buy[buy.find(refused) + len(refused) :] if refused else ""
+    check(re.search(write, after) is not None, "a sale writes the realm once the grant is accepted")
+    check(
+        re.search(
+            r"\bbool\s+kingdom_persist_realm\s*\(\s*kingdom_realm\s*&",
+            strip_comments(read("src/kingdom/kingdom_internal.h")),
+        )
+        is not None,
+        "kingdom_persist_realm() is declared in kingdom_internal.h for the store",
+    )
+    check(
+        re.search(
+            r"\bstatic\s+bool\s+kingdom_persist_realm\b",
+            strip_comments(read("src/kingdom/kingdom_claim.c")),
+        )
+        is None,
+        "kingdom_persist_realm() is no longer file-static",
+    )
+
+
+def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
+    """A store piece's keywords are ordinary words, so the legacy soulbind
+    test -- is the wearer's NAME one of the keywords? -- would let a character
+    named "Steel" or "Kingdom" wear another's piece, and remove_soulbind()
+    would let one destroy every such piece. Store gear is bound to the buyer's
+    PLAYER ID through a token no name can equal; the wear check asks store
+    pieces for that token only; every other soulbound item keeps the name
+    test."""
+    bind = strip_comments(read("src/kingdom/kingdom_craft_bind.h"))
+    check(
+        '#define KINGDOM_CRAFT_BIND_PREFIX "kingdom-bound-"' in bind
+        and re.search(
+            r"std::string\(\s*KINGDOM_CRAFT_BIND_PREFIX\s*\)\s*\+\s*std::to_string\(\s*pid\s*\)", bind
+        )
+        is not None,
+        "the binding token is 'kingdom-bound-<player id>'",
+    )
+    # A bounded snprintf() into the caller's buffer is fatal under this build's
+    # -Wformat-truncation=2 even with its return value checked; the token is
+    # built as a std::string and copied once it is known to fit.
+    check(
+        "snprintf" not in bind,
+        "the binding token is built without snprintf(), which -Wformat-truncation=2 refuses",
+    )
+    parse = function_bodies(read("src/account/nanny.c"), r"\bbool\s+_parse_name\s*\(")
+    check(
+        len(parse) == 1 and "!isalpha(arg[i])" in parse[0],
+        "character names are letters only, so no name can equal the token",
+    )
+    piece = read("src/kingdom/kingdom_store_piece.h")
+    is_piece = function_bodies(piece, r"\binline\s+bool\s+kingdom_store_piece\s*\(")
+    check(
+        len(is_piece) == 1
+        and "VOBJ_KINGDOM_CRAFT_BLANK" in is_piece[0]
+        and "ITEM2_" not in strip_comments(is_piece[0]),
+        "a store piece is known by its blank's vnum alone, not by a flag other items carry",
+    )
+    bound = function_bodies(piece, r"\binline\s+bool\s+kingdom_store_bound\s*\(")
+    bound_code = strip_comments(bound[0]) if bound else ""
+    check(
+        "kingdom_store_piece(obj)" in bound_code
+        and "kingdom_craft_keywords_carry_bind(obj->name)" in bound_code,
+        "the binding governs a store piece by vnum OR by a token in its keywords, so an "
+        "unresolved object index never drops a piece to the name test",
+    )
+    carry = function_bodies(bind, r"\binline\s+bool\s+kingdom_craft_keywords_carry_bind\s*\(")
+    check(
+        len(carry) == 1 and "KINGDOM_CRAFT_BIND_PREFIX" in carry[0],
+        "carrying a token is having a word that begins with the binding prefix",
+    )
+    owner = function_bodies(piece, r"\binline\s+bool\s+kingdom_store_piece_owner\s*\(")
+    owner_code = strip_comments(owner[0]) if owner else ""
+    check(
+        "GET_PID(ch)" in owner_code
+        and "kingdom_craft_keywords_bind(" in owner_code
+        and "kingdom_store_bound(obj)" in owner_code,
+        "owning a store piece is having the player id in its token",
+    )
+    check(
+        owner_code != "" and "GET_NAME" not in owner_code and "isname" not in owner_code,
+        "owning a store piece never reads a name",
+    )
+    wear = function_bodies(read("src/cmd/actobj.c"), r"\bstatic\s+bool\s+can_equip_soulbound_item\s*\(")
+    wear_code = strip_comments(wear[0]) if wear else ""
+    routed = re.search(
+        r"kingdom_store_bound\(\s*object\s*\)\s*\?\s*kingdom_store_piece_owner\(\s*actor\s*,\s*object\s*\)",
+        wear_code,
+    )
+    legacy = wear_code.find("isname(GET_NAME(actor), object->name)")
+    check(
+        routed is not None and -1 < routed.start() < legacy,
+        "the wear check sends store pieces to the player-id test ahead of the legacy name test, "
+        "which every other soulbound item still gets",
+    )
+    remove = function_bodies(read("src/magic/magic.c"), r"\bvoid\s+remove_soulbind\s*\(")
+    check(
+        len(remove) == 1 and "!kingdom_store_bound(obj)" in strip_comments(remove[0]),
+        "remove_soulbind() never touches a store piece",
+    )
+    make = function_bodies(
+        read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+P_obj\s+kingdom_craft_make\s*\("
+    )
+    check(
+        len(make) == 1 and "kingdom_craft_bind_token(GET_PID(buyer)" in strip_comments(make[0]),
+        "every store piece is stamped with its buyer's player-id token",
+    )
+
+
+def test_store_gear_is_made_of_real_material_with_no_material_floor() -> None:
+    """Store armour was once MAT_UNDEFINED to dodge apply_ac()'s material
+    floor, which also took away its material for everything else that reads
+    it. It is real steel, cloth, leather or silver now, and apply_ac() drops
+    the floor for store pieces alone, known by their blank's vnum."""
+    code = _craft_code()
+    check("MAT_UNDEFINED" not in code, "no store piece is made of MAT_UNDEFINED")
+    catalogue = code[code.find("kingdom_craft_catalogue[]") :]
+    for keyword, material in (
+        ("breastplate", "MAT_STEEL"),
+        ("helm", "MAT_STEEL"),
+        ("vambraces", "MAT_STEEL"),
+        ("greaves", "MAT_STEEL"),
+        ("boots", "MAT_STEEL"),
+        ("gauntlets", "MAT_STEEL"),
+        ("shield", "MAT_STEEL"),
+        ("cloak", "MAT_CLOTH"),
+        ("robe", "MAT_CLOTH"),
+        ("hood", "MAT_CLOTH"),
+        ("belt", "MAT_LEATHER"),
+        ("gloves", "MAT_LEATHER"),
+        ("ring", "MAT_SILVER"),
+        ("bracelet", "MAT_SILVER"),
+        ("necklace", "MAT_SILVER"),
+    ):
+        row = re.search(r'\{\s*"' + keyword + r'",(.*?)\},', catalogue, re.S)
+        check(
+            row is not None and material in row.group(1),
+            f"the store's {keyword} is made of {material}",
+            row.group(1).strip() if row else "no row",
+        )
+    ac = function_bodies(read("src/magic/affects.c"), r"\bint\s+apply_ac\s*\(")
+    ac_code = strip_comments(ac[0]) if ac else ""
+    floor = ac_code.find("if (kingdom_store_piece(ch->equipment[eq_pos]))")
+    zeroed = ac_code.find("value = 0;", floor) if floor >= 0 else -1
+    shield = ac_code.find("value = MAX(value, ch->equipment[eq_pos]->value[3])")
+    armour = ac_code.find("value = MAX(value, ch->equipment[eq_pos]->value[0])")
+    check(
+        -1 < floor < zeroed < shield and zeroed < armour,
+        "apply_ac() drops the material floor for store pieces before it takes the piece's own AC",
+        f"floor {floor}, zeroed {zeroed}, shield {shield}, armour {armour}",
+    )
+    check(
+        "ITEM2_STOREITEM" not in ac_code,
+        "the AC rule keys on store pieces themselves, not on a flag other items carry",
+    )
+
+
+def test_workshop_rollback_removes_the_room_by_identity() -> None:
+    """When the hall cannot be saved, construct_workshop_room() puts memory
+    back to match storage: the new room removed by identity rather than by
+    trusting it is last, any live world exit between the two rooms taken down,
+    the hall's exit reset and the vnum's ROOM_GUILD mark cleared."""
+    body = function_bodies(read("src/guild/guildhall_cmds.c"), r"\bbool\s+construct_workshop_room\s*\(")
+    check(len(body) == 1, "construct_workshop_room is defined once", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    undo = _block_after(code, "if (!gh->save())")
+    check("pop_back(" not in code, "the rollback never trusts the new room to be the last")
+    check(
+        re.search(
+            r"std::remove\(\s*gh->rooms\.begin\(\)\s*,\s*gh->rooms\.end\(\)\s*,\s*room\s*\)", undo
+        )
+        is not None,
+        "the rollback removes the new room by identity",
+    )
+    check(
+        re.search(r"disconnect_rooms\(\s*from_room->vnum\s*,\s*vnum\s*\)", undo) is not None,
+        "the rollback takes down any live world exit between the two rooms",
+    )
+    check(
+        "from_room->exits[dir] = -1" in undo and "ROOM_GUILD" in undo and "delete room" in undo,
+        "the rollback resets the hall's exit, clears ROOM_GUILD and frees the room",
+    )
+
+
+def test_store_refused_grant_restores_coin_and_material() -> None:
+    """The ownership coordinator can refuse a grant for reasons the buyer
+    cannot cause or check first (a saturated queue, an overloaded
+    coordinator). By then the coin is taken and the material drawn, so the
+    refusal must put both back and discard the piece -- "check first so
+    nothing needs refunding" cannot cover it. And a currency transaction still
+    in flight is asked about before the piece is made, so SUB_MONEY is
+    unlikely to refuse once it exists."""
+    buy = _store_buy_code()
+    refused = _refused_grant_block(buy)
+    check(refused != "", "kingdom_store_buy() has a refused-grant block")
+    check(
+        re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", refused) is not None,
+        "a refused grant re-credits the buyer's platinum",
+    )
+    check(
+        re.search(r"\bkingdom_resource_deposit\s*\(\s*realm\s*,", refused) is not None,
+        "a refused grant returns the material to the realm's stores",
+    )
+    check(
+        re.search(r"\bextract_obj\s*\(\s*obj\b", refused) is not None,
+        "a refused grant discards the piece, which is still the store's to discard",
+    )
+    coin_take = buy.find("SUB_MONEY(")
+    spend = buy.find("kingdom_resource_spend(")
+    grant = buy.find("if (!item_creation_grant_submit_to_player(")
+    check(
+        -1 < coin_take < grant and -1 < spend < grant,
+        "the reversal follows the charge it reverses",
+        f"coin {coin_take}, spend {spend}, grant {grant}",
+    )
+    busy = buy.find("currency_transaction_player_busy(")
+    make = buy.find("kingdom_craft_make(")
+    check(
+        -1 < busy < make,
+        "a currency transaction in flight is asked about before the piece is made",
+        f"busy {busy}, make {make}",
+    )
+
+
+def test_flatfile_room_type_bound_is_the_guildhall_count() -> None:
+    """A flat-file guildhall catalogue carrying one room the validator refuses
+    is invalid as a whole, and that is a fatal boot error. The validator's
+    bound must therefore BE the guildhall room-type count."""
+    header = strip_comments(read("src/flatfile/flatfile_association_repository.h"))
+    bound = re.search(r"FLATFILE_GUILDHALL_ROOM_TYPE_COUNT\s*=\s*(\d+)\s*;", header)
+    types = re.search(r"#define\s+GH_ROOM_NUM_TYPES\s+(\d+)", strip_comments(read("src/guild/guildhall.h")))
+    check(
+        bound is not None and types is not None and bound.group(1) == types.group(1),
+        "the flat-file room-type bound equals GH_ROOM_NUM_TYPES",
+        f"bound={bound.group(1) if bound else None} types={types.group(1) if types else None}",
+    )
+    repository = strip_comments(read("src/flatfile/flatfile_association_repository.c"))
+    check(
+        "room.type >= FLATFILE_GUILDHALL_ROOM_TYPE_COUNT" in repository
+        and re.search(r"room\.type\s*>\s*\d", repository) is None,
+        "valid_guildhalls() bounds room types by the shared constant, not a literal",
+    )
+    check(
+        re.search(
+            r"static_assert\(\s*GH_ROOM_NUM_TYPES\s*==\s*FLATFILE_GUILDHALL_ROOM_TYPE_COUNT",
+            strip_comments(read("src/guild/guildhall_db.c")),
+        )
+        is not None,
+        "guildhall_db.c static_asserts the two counts equal",
+    )
+
+
+def test_workshop_rooms_come_from_one_factory_for_both_backends() -> None:
+    """There were two type-to-class switches, one per backend; a type known
+    to one would have loaded as a generic room on the other."""
+    db = read("src/guild/guildhall_db.c")
+    factory = function_bodies(db, r"\bGuildhallRoom\s*\*\s*make_guildhall_room\s*\(")
+    check(len(factory) == 1, "make_guildhall_room() is defined once", f"{len(factory)}")
+    if factory:
+        for room_type in (
+            "GH_ROOM_TYPE_FORGE",
+            "GH_ROOM_TYPE_LOOM",
+            "GH_ROOM_TYPE_JEWELLER",
+            "GH_ROOM_TYPE_GUILDSTORE",
+        ):
+            check(room_type in factory[0], f"the room factory builds {room_type}")
+    check(
+        strip_comments(db).count("new EntranceRoom(") == 1,
+        "no second type-to-class switch survives in guildhall_db.c",
+    )
+    loader = function_bodies(db, r"\bvoid\s+load_guildhall_rooms\s*\(\s*Guildhall\s*\*")
+    check(
+        len(loader) == 1 and "make_guildhall_room(" in loader[0],
+        "the MariaDB room loader builds through the shared factory",
+    )
+    flat = function_bodies(db, r"\bvoid\s+materialize_guildhall_room\s*\(")
+    check(
+        len(flat) == 1 and "make_guildhall_room(" in flat[0],
+        "the flat-file room loader builds through the shared factory",
+    )
+
+
+def test_workshop_room_deinit_undoes_its_own_init() -> None:
+    """Every older room type's deinit() calls GuildhallRoom::init(); the
+    workshops must not copy that, and must take down what they put up."""
+    body = function_bodies(read("src/guild/guildhall_rooms.c"), r"\bbool\s+WorkshopRoom::deinit\s*\(")
+    check(len(body) == 1, "WorkshopRoom::deinit is defined once", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    check(
+        "GuildhallRoom::deinit()" in code and "GuildhallRoom::init()" not in code,
+        "WorkshopRoom::deinit() calls the base deinit, never init",
+    )
+    check(
+        "str_free(" in code and "extract_obj(" in code and "guildhall_store_room" in code,
+        "WorkshopRoom::deinit() frees its description copy, extracts its prop and unbinds "
+        "the store proc",
+    )
+
+
+def test_kingdom_build_pays_first_and_credits_back_a_room_that_fails() -> None:
+    """Ruled 2026-09-15: the works are paid from the TREASURY. The charge is
+    taken first -- sub_copper() checks and debits as one step, in memory --
+    and then the room is built. A room that cannot be raised has its charge
+    credited straight back and the pair written, so a room never stands
+    unpaid for and coin is never kept for a room that does not stand."""
+    body = function_bodies(read("src/kingdom/kingdom_claim.c"), r"\bvoid\s+kingdom_build_work\s*\(")
+    check(len(body) == 1, "kingdom_build_work is defined once", f"{len(body)}")
+    if not body:
+        return
+    code = strip_comments(body[0])
+    gate = code.find("kingdom_actor_guild(")
+    pay = code.find("kingdom_pay_from_treasury(")
+    build = code.find("if (!construct_workshop_room(")
+    failed = _block_after(code, "if (!construct_workshop_room(")
+    end = code.find(failed) + len(failed) if failed else -1
+    persist = code.find("kingdom_persist_paid_change(", end) if end >= 0 else -1
+    check(
+        -1 < gate < pay < build < persist,
+        "kingdom build: the leader gate, the treasury charged, the room built, then the pair "
+        "persisted",
+        f"gate {gate}, pay {pay}, build {build}, persist {persist}",
+    )
+    check(
+        "add_copper(price)" in failed
+        and "kingdom_persist_paid_change(" in failed
+        and re.search(r"\breturn\s*;", failed) is not None,
+        "a room that cannot be raised has its charge credited back and the pair written",
+    )
+    check(
+        re.search(r"\bdurable\s*=\s*credited\s*&&\s*kingdom_persist_paid_change\(", failed)
+        is not None,
+        "the credit-back pair is written only when the credit went through, never published "
+        "as 'BUILD CREDITED' after a refused credit",
+    )
+    check(
+        "BUILD UNPAID" not in code and "get_treasury_copper" not in code,
+        "no path keeps a room the treasury did not pay for",
+    )
+    check(
+        "SUB_MONEY(" not in code and "GET_MONEY(" not in code,
+        "kingdom build is paid from the guild treasury, never from a purse",
+    )
+    credit = function_bodies(read("src/guild/assocs.c"), r"\bbool\s+Guild::add_copper\s*\(")
+    credit_code = strip_comments(credit[0]) if credit else ""
+    check(
+        credit_code != "" and "save(" not in credit_code,
+        "Guild::add_copper() never saves: the caller writes the guild with the rest of its change",
+    )
+    check(
+        -1 < credit_code.find("denom_cap") < credit_code.find("platinum +="),
+        "Guild::add_copper() checks every coin counter before it moves one",
+    )
+
+
+def test_store_room_proc_routes_only_list_and_buy() -> None:
+    """The guild-store room hands `list` and `buy` to the kingdom seam and
+    lets every other command through."""
+    body = function_bodies(read("src/guild/guildhall_procs.c"), r"\bint\s+guildhall_store_room\s*\(")
+    code = strip_comments(body[0]) if body else ""
+    check(
+        "CMD_LIST" in code and "CMD_BUY" in code and "kingdom_store_command(" in code,
+        "the guild-store room proc routes list and buy to kingdom_store_command()",
+    )
+    check(
+        "funct = guildhall_store_room" in strip_comments(read("src/guild/guildhall_rooms.c")),
+        "the guild-store room binds the proc",
+    )
+
+
 for _name, _fn in sorted(globals().items()):
     if _name.startswith("test_") and callable(_fn):
         _fn()
