@@ -2735,6 +2735,8 @@ build it. Everything is saved through a crash, though, so fear not.
   Two realms may not even touch, so a hall may not be raised within 10 map
   squares of the seat of an existing realm. Where kingdoms have not been
   enabled none of this is checked and placement is unchanged. See KINGDOM.
+  A kingdom's forge, loom, jeweller and guild store are not built with
+  construct at all but with 'kingdom build', from the guild treasury.
 
 &+Yconstruct room <exit dir> <door|nodoor> [door keyword]&n
   Cost: 1k
@@ -7523,6 +7525,8 @@ will not fit on, the realm goes DORMANT: it keeps its claims on paper but
 holds no ground, is charged no upkeep, loses its guards, and can neither
 claim nor abandon until a main hall of its guild stands on its seat again.
 Building the hall is also stricter in that case - see CONSTRUCT and KINGDOM.
+A kingdom's main hall may also raise a forge, a loom, a jeweller and a guild
+store, each a room of its own, with 'kingdom build'; see KINGDOM.
 None of this applies where kingdoms have not been enabled.
 
 ===========================================================================
@@ -8738,6 +8742,21 @@ its claims on paper but holds no ground at all: it is charged no upkeep, its
 guards go home, and it can neither claim nor abandon until a main hall of
 its guild stands on its seat once more. Delete the guild and the realm is
 deleted with it; there is nothing to inherit.
+
+The Works and the Guild Store
+---------------------------------------------------------------------------
+A kingdom's main hall may raise a forge, a loom, a jeweller and a guild
+store, one of each, with 'kingdom build <forge|loom|jeweller|store>
+<direction>' - 20,000 platinum apiece as shipped, from the guild treasury,
+and the store only once a workshop stands. In the store, 'list' shows what
+the hall's workshops make and 'buy <item> [variant]' buys one, as in 'buy
+ring health'. Every piece is made for the BUYER'S level, to a ceiling of 56,
+so a level 10 cannot buy level-56 work. It is paid for twice: in platinum,
+which is destroyed rather than banked, and in the realm's resources, so a
+realm that is short of material sells nothing. Store gear is soulbound to
+its buyer, no shop will buy it, and it carries no magical effects. Only
+full members of the guild may buy, and the store is shut while the realm is
+dormant or in arrears. 'help kingdoms' has the full rules and prices.
 
 Guards and the Champion
 ---------------------------------------------------------------------------
