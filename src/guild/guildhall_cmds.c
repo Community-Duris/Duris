@@ -1298,6 +1298,81 @@ bool construct_new_guildhall_room(int id, int from_vnum, int dir)
 	return gh->reload();
 }
 
+/* Build a kingdom workshop or the guild store: a NEW room of `type` off
+ * from_vnum in `dir`, the way construct_new_guildhall_room() builds a generic
+ * one. Unlike that function it leaves nothing behind when it fails before the
+ * room is durable -- no phantom room in the hall, no exit pointing at it, no
+ * vnum left marked ROOM_GUILD -- because its one caller (`kingdom build`)
+ * charges the treasury only after this answers true and must be able to
+ * trust a false.
+ *
+ * True means the room is SAVED. A reload that then fails is logged rather than
+ * reported: the room is in storage and stands from the next reload or boot, so
+ * a caller that declined to charge for it would be giving it away. */
+bool construct_workshop_room(int id, int from_vnum, int dir, int type)
+{
+	if (!from_vnum || dir < 0 || dir >= NUM_EXITS || !real_room0(from_vnum) ||
+	    type <= GH_ROOM_TYPE_GENERIC || type >= GH_ROOM_NUM_TYPES)
+	{
+		return FALSE;
+	}
+
+	Guildhall *gh = Guildhall::find_by_id(id);
+
+	if (!gh || !gh->can_add_room())
+	{
+		return FALSE;
+	}
+
+	GuildhallRoom *from_room = gh->find_room_by_vnum(from_vnum);
+
+	if (!from_room || from_room->has_exit(dir) ||
+	    world[real_room0(from_room->vnum)].dir_option[dir])
+	{
+		return FALSE;
+	}
+
+	const int vnum = next_guildhall_room_vnum();
+
+	if (vnum < 0)
+	{
+		return FALSE;
+	}
+
+	GuildhallRoom *room = make_guildhall_room(type);
+	room->id = next_guildhall_room_id();
+	room->type = type;
+	room->vnum = vnum;
+	room->exits[rev_dir[dir]] = from_room->vnum;
+	gh->add_room(room);
+
+	from_room->exits[dir] = room->vnum;
+
+	if (!gh->save())
+	{
+		/* Storage still holds the hall as it was, so put memory back to
+		 * match: add_room() pushed the new room last, and
+		 * next_guildhall_room_vnum() marked its vnum ROOM_GUILD. */
+		logit(LOG_GUILDHALLS,
+		      "construct_workshop_room(): couldn't save guildhall %d; room undone", gh->id);
+		from_room->exits[dir] = -1;
+		gh->rooms.pop_back();
+		delete room;
+		REMOVE_BIT(world[real_room0(vnum)].room_flags, ROOM_GUILD);
+		return FALSE;
+	}
+
+	if (!gh->reload())
+	{
+		logit(LOG_GUILDHALLS,
+		      "construct_workshop_room(): guildhall %d saved its new room %d but did not "
+		      "reload",
+		      gh->id, vnum);
+	}
+
+	return TRUE;
+}
+
 bool construct_golem(Guildhall *gh, int slot, int type)
 {
 	if (!gh || !gh->entrance_room)

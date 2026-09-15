@@ -473,8 +473,75 @@ bool CargoRoom::init()
 }
 
 //
+// Kingdom workshops and the guild store
+//
+
+bool WorkshopRoom::init()
+{
+	if (!GuildhallRoom::init())
+		return FALSE;
+
+	/* GuildhallRoom::init() took the NAME from the template; the description
+	 * is new, since no other guildhall room has one. It is a COPY owned by
+	 * this object, so nothing that later frees or replaces the room's
+	 * description can reach the template's own string. */
+	const int template_rnum = real_room(this->template_vnum);
+
+	if (template_rnum >= 0 && world[template_rnum].description)
+	{
+		this->plain_description = this->room->description;
+		this->workshop_description = str_dup(world[template_rnum].description);
+		this->room->description = this->workshop_description;
+	}
+
+	if ((this->prop = read_object(this->prop_vnum, VIRTUAL)))
+		obj_to_room(this->prop, real_room0(this->vnum));
+
+	return TRUE;
+}
+
 //
 //
+//
+
+bool WorkshopRoom::deinit()
+{
+	if (this->prop)
+	{
+		/* An immortal may have purged the prop since init(), so extract it
+		 * only if it still stands here as the object it was. */
+		const int rnum = real_room0(this->vnum);
+		const int prop_rnum = real_object(this->prop_vnum);
+
+		for (P_obj obj = world[rnum].contents; obj; obj = obj->next_content)
+		{
+			if (obj == this->prop && obj->R_num == prop_rnum)
+			{
+				extract_obj(obj);
+				break;
+			}
+		}
+		this->prop = NULL;
+	}
+
+	if (this->room && this->workshop_description)
+	{
+		/* Hand the room its own description back only while ours is still
+		 * the one on it; anything that replaced it owns what it put there. */
+		if (this->room->description == this->workshop_description)
+		{
+			this->room->description = this->plain_description;
+			str_free(this->workshop_description);
+		}
+		this->workshop_description = NULL;
+		this->plain_description = NULL;
+	}
+
+	/* The base DEINIT, not init(): every older room type below calls
+	 * GuildhallRoom::init() from its deinit(), which re-flags the room and
+	 * dups its name again on the way out. */
+	return GuildhallRoom::deinit();
+}
 
 bool EntranceRoom::deinit()
 {

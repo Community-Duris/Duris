@@ -95,6 +95,25 @@ bool capture_guildhall(const Guildhall *guildhall, flatfile_guildhall_record *re
 	return true;
 }
 
+void materialize_guildhall_room(const flatfile_guildhall_room_record &record, Guildhall *guildhall)
+{
+	GuildhallRoom *room = make_guildhall_room(record.type);
+	room->id = record.room_id;
+	room->vnum = record.vnum;
+	room->name = record.name;
+	room->type = record.type;
+	for (size_t index = 0; index < record.values.size(); ++index)
+		room->value[index] = record.values[index];
+	for (size_t index = 0; index < record.exits.size(); ++index)
+		room->exits[index] = record.exits[index];
+	guildhall->add_room(room);
+}
+} // namespace
+#endif
+
+/* The one room factory (declared in guildhall_db.h). There used to be two
+ * copies of this switch, one per backend, and a room type added to one and not
+ * the other would have loaded as a plain generic room on that backend alone. */
 GuildhallRoom *make_guildhall_room(int type)
 {
 	switch (type)
@@ -119,26 +138,18 @@ GuildhallRoom *make_guildhall_room(int type)
 		return new LibraryRoom();
 	case GH_ROOM_TYPE_CARGO:
 		return new CargoRoom();
+	case GH_ROOM_TYPE_FORGE:
+		return new WorkshopRoom(GH_ROOM_TEMPLATE_FORGE, GH_FORGE_ANVIL_VNUM);
+	case GH_ROOM_TYPE_LOOM:
+		return new WorkshopRoom(GH_ROOM_TEMPLATE_LOOM, GH_LOOM_VNUM);
+	case GH_ROOM_TYPE_JEWELLER:
+		return new WorkshopRoom(GH_ROOM_TEMPLATE_JEWELLER, GH_JEWELLER_BENCH_VNUM);
+	case GH_ROOM_TYPE_GUILDSTORE:
+		return new WorkshopRoom(GH_ROOM_TEMPLATE_GUILDSTORE, GH_STORE_COUNTER_VNUM);
 	default:
 		return new GuildhallRoom();
 	}
 }
-
-void materialize_guildhall_room(const flatfile_guildhall_room_record &record, Guildhall *guildhall)
-{
-	GuildhallRoom *room = make_guildhall_room(record.type);
-	room->id = record.room_id;
-	room->vnum = record.vnum;
-	room->name = record.name;
-	room->type = record.type;
-	for (size_t index = 0; index < record.values.size(); ++index)
-		room->value[index] = record.values[index];
-	for (size_t index = 0; index < record.exits.size(); ++index)
-		room->exits[index] = record.exits[index];
-	guildhall->add_room(room);
-}
-} // namespace
-#endif
 
 int next_guildhall_id()
 {
@@ -463,43 +474,7 @@ void load_guildhall_rooms(Guildhall *guildhall)
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
-		GuildhallRoom *room = NULL;
-
-		switch (atoi(row[4]))
-		{
-		case GH_ROOM_TYPE_ENTRANCE:
-			room = new EntranceRoom();
-			break;
-		case GH_ROOM_TYPE_INN:
-			room = new InnRoom();
-			break;
-		case GH_ROOM_TYPE_HEARTSTONE:
-			room = new HeartstoneRoom();
-			break;
-		case GH_ROOM_TYPE_PORTAL:
-			room = new PortalRoom();
-			break;
-		case GH_ROOM_TYPE_WINDOW:
-			room = new WindowRoom();
-			break;
-		case GH_ROOM_TYPE_HEAL:
-			room = new HealRoom();
-			break;
-		case GH_ROOM_TYPE_BANK:
-			room = new BankRoom();
-			break;
-		case GH_ROOM_TYPE_TOWN_PORTAL:
-			room = new TownPortalRoom();
-			break;
-		case GH_ROOM_TYPE_LIBRARY:
-			room = new LibraryRoom();
-			break;
-		case GH_ROOM_TYPE_CARGO:
-			room = new CargoRoom();
-			break;
-		default:
-			room = new GuildhallRoom();
-		}
+		GuildhallRoom *room = make_guildhall_room(atoi(row[4]));
 
 		if (!room)
 		{

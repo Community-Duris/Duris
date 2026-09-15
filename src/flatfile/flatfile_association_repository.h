@@ -16,7 +16,7 @@ constexpr size_t FLATFILE_GUILDHALL_EXIT_COUNT = 10;
  * that it does: the validator refuses a catalogue carrying any room outside the
  * range, and a refused catalogue is a fatal boot error, so a room type added on
  * one side and not the other has to stop the build rather than the server. */
-constexpr int32_t FLATFILE_GUILDHALL_ROOM_TYPE_COUNT = 11;
+constexpr int32_t FLATFILE_GUILDHALL_ROOM_TYPE_COUNT = 15;
 
 struct flatfile_association_member_record
 {
