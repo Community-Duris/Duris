@@ -66,6 +66,11 @@
 extern struct time_info_data time_info;
 extern P_desc descriptor_list;
 
+static bool is_normal_movement_command(int cmd)
+{
+	return (cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE);
+}
+
 static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
 {
 	if (cmd == CMD_SAY || cmd == CMD_SAY2 || cmd == CMD_GSHOUT || cmd == CMD_TELL ||
@@ -82,7 +87,7 @@ static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
 	    cmd == CMD_EXAMINE || cmd == CMD_FORAGE || cmd == CMD_GROUP)
 		return telemetry_runtime_evidence_kind::interaction;
 
-	if ((cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE))
+	if (is_normal_movement_command(cmd))
 		return telemetry_runtime_evidence_kind::movement;
 
 	/* IS_AGG_CMD includes cast/use/recite, which are interaction evidence above. */
@@ -1820,8 +1825,11 @@ void command_interpreter(P_char ch, char *argument)
 					break;
 				}
 			if (IS_FIGHTING(ch) && !cmd_info[cmd].in_battle)
-				send_to_char("Sorry, you aren't allowed to do that in combat.\r\n",
-					     ch);
+				send_to_char(
+					is_normal_movement_command(cmd) ?
+						"You cannot move normally while fighting; use 'flee' to escape.\r\n" :
+						"Sorry, you aren't allowed to do that in combat.\r\n",
+					ch);
 			return;
 		}
 		else

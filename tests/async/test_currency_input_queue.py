@@ -24,6 +24,20 @@ def extract(source: Path, signature: str) -> str:
     raise AssertionError(f"unbalanced braces reading {signature}")
 
 
+def extract_last(source: str, signature: str) -> str:
+    """Return the last complete C/C++ function beginning at ``signature``."""
+    start = source.rindex(signature)
+    depth = 0
+    for index in range(start, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:index + 1]
+    raise AssertionError(f"unbalanced braces reading {signature}")
+
+
 COMM_PATH = SRC / "comm.c"
 INTERP_PATH = SRC / "interp.c"
 CURRENCY_PATH = SRC / "currency_transaction.c"
@@ -302,7 +316,8 @@ static bulk_get_state *corpse_bulk_get(P_char, uint64_t) { return NULL; }
 static void announce_corpse_bulk_get(P_char, bulk_get_state &, P_obj) {}
 static bool item_get_ack_publication = false, item_get_deferred = false, item_get_rejected = false;
 static int bulk_total = 0;
-static bool submit_coin_get(P_char, P_obj, P_obj, int);
+static bool submit_coin_get(P_char, P_obj, P_obj, int,
+    const coin_get_submission_options * = nullptr);
 void act(const char *, int, P_char, P_obj, void *, int) {}
 /* stub — not the real formatter; production is src/core/utility.c coins_to_string. */
 char *coins_to_string(int, int, int, int, const char *)
@@ -327,9 +342,9 @@ bool bulk_get_source_matches(const bulk_get_state &, P_obj container, P_obj mone
 { return money && OBJ_INSIDE(money) && money->loc.inside == container; }
 void MakeScrap(P_char, P_obj) { abort(); }
 void do_get_finalize_container_success(P_char actor, P_char, P_obj container, P_obj money,
-    int &, bool &, bool, const char *)
+    int &, bool &, bool, const char *, const coin_get_submission_options *options)
 {
-    item_get_deferred = submit_coin_get(actor, money, container, 1);
+    item_get_deferred = submit_coin_get(actor, money, container, 1, options);
     item_get_rejected = !item_get_deferred;
 }
 void do_get_finalize_room_item(P_char, P_obj, bool &, int &) { abort(); }
@@ -340,6 +355,7 @@ void finish_bulk_get(P_char, uint32_t pid)
 }
 '''
             + extract(SRC / "actobj.c", "static bool bulk_get_source_available(")
+            + extract(SRC / "actobj.c", "static bool bulk_get_corpse_source_available(")
             + extract(SRC / "actobj.c", "static bool finish_bulk_get_after_commit(")
             + extract(SRC / "actobj.c", "static bool coin_get_completion(")
             + ACTOBJ[ACTOBJ.index("struct coin_admission_context"):
@@ -365,7 +381,8 @@ bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
 }
 '''
             + extract(SRC / "actobj.c", "static void coin_admission_completion(")
-            + extract(SRC / "actobj.c", "static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit)\n{"))
+            + extract_last(ACTOBJ,
+                           "static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,"))
 
 DRIVER = r'''
 static void push(struct txt_q *queue, const char *text)
@@ -1027,7 +1044,89 @@ int main()
 	assert(submission_count == before_leaving && bulk_gets.empty() && bulk_total == 0);
 	assert(bag.contains && bag.contains->value[0] == 35);
 	extract_obj(bag.contains, false);
-    // Death conversion preserves every denomination and creates custody only on commit.
+
+	// A stationary corpse admission must retain the originally selected amount
+	// even if the live untracked pile grows before its ownership acknowledgement.
+	actor.in_room = 0;
+	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
+	obj_data admission_corpse = {};
+	admission_corpse.obj_uid = 880;
+	admission_corpse.type = ITEM_CORPSE;
+	admission_corpse.loc_p = LOC_ROOM;
+	admission_corpse.loc.room = 0;
+	live_items.push_back(&admission_corpse);
+	assert(item_ownership_runtime_owner_revision(room_owner, &owner_revision));
+	assert(item_ownership_runtime_hydrate({admission_corpse.obj_uid, admission_corpse.obj_uid,
+		0, room_owner, 1, owner_revision, VOBJ_COINS, item_custody_state::active}));
+	P_obj admission_coins = create_money(12, 0, 0, 0);
+	obj_to_obj(admission_coins, &admission_corpse);
+	coin_get_submission_options stationary_selection = {};
+	stationary_selection.has_amount_limit = true;
+	stationary_selection.amount_limit[0] = 5;
+	stationary_selection.source = room_owner;
+	stationary_selection.source_room = 0;
+	assert(submit_coin_get(&actor, admission_coins, &admission_corpse, 1,
+		&stationary_selection));
+	assert(item_pending && GET_COPPER(&actor) == 0);
+	admission_coins->value[0] = 20;
+	assert(item_ownership_runtime_owner_revision(room_owner, &owner_revision));
+	assert(item_ownership_runtime_hydrate({admission_coins->obj_uid, admission_corpse.obj_uid,
+		admission_corpse.obj_uid, room_owner, 1, owner_revision, VOBJ_COINS,
+		item_custody_state::active}));
+	item_pending = false;
+	admission_callback(&actor, true, {}, 0,
+		reinterpret_cast<const uint8_t *>(&admission_context), sizeof(admission_context));
+	coin_transfer_payload stationary_payload;
+	assert(coin_transfer_command_decode_payload(submitted_command, &stationary_payload));
+	assert(stationary_payload.source.before[0] == 20 && stationary_payload.source.after[0] == 15);
+	pile_ack(true);
+	assert(GET_COPPER(&actor) == 5 && admission_coins->value[0] == 15);
+	extract_obj(admission_coins, false);
+
+	// A corpse haul retains the selected denomination boundary after flee.  The
+	// live pile has 12 copper, but this accepted request selected only 5; the
+	// continuation must not re-read and credit coins added after selection.
+	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
+	obj_data remote_corpse = {};
+	remote_corpse.obj_uid = 901;
+	remote_corpse.type = ITEM_CORPSE;
+	remote_corpse.loc_p = LOC_ROOM;
+	remote_corpse.loc.room = 0;
+	live_items.push_back(&remote_corpse);
+	uint64_t remote_owner_revision;
+	assert(item_ownership_runtime_owner_revision(room_owner, &remote_owner_revision));
+	assert(item_ownership_runtime_hydrate({remote_corpse.obj_uid, remote_corpse.obj_uid,
+		0, room_owner, 1, remote_owner_revision, VOBJ_COINS, item_custody_state::active}));
+	P_obj remote_corpse_coins = create_money(12, 0, 0, 0);
+	obj_to_obj(remote_corpse_coins, &remote_corpse);
+	assert(item_ownership_runtime_hydrate({remote_corpse_coins->obj_uid,
+		remote_corpse.obj_uid, remote_corpse.obj_uid, room_owner, 1, remote_owner_revision,
+		VOBJ_COINS, item_custody_state::active}));
+	bulk_get_state remote_batch = {};
+	remote_batch.container_uid = remote_corpse.obj_uid;
+	remote_batch.room = 0;
+	remote_batch.corpse = true;
+	remote_batch.corpse_name = "the corpse";
+	remote_batch.announced = true;
+	remote_batch.source = room_owner;
+	bulk_gets.emplace(42, remote_batch);
+	actor.in_room = 1;
+	coin_get_submission_options selected_coins = {};
+	selected_coins.has_amount_limit = true;
+	selected_coins.allow_source_move = true;
+	selected_coins.amount_limit[0] = 5;
+	selected_coins.source = room_owner;
+	selected_coins.source_room = 0;
+	assert(submit_coin_get(&actor, remote_corpse_coins, &remote_corpse, 1,
+		&selected_coins));
+	coin_transfer_payload remote_payload;
+	assert(coin_transfer_command_decode_payload(submitted_command, &remote_payload));
+	assert(remote_payload.source.before[0] == 12 && remote_payload.source.after[0] == 7);
+	pile_ack(true);
+	assert(remote_corpse.contains == remote_corpse_coins && remote_corpse_coins->value[0] == 7);
+	assert(GET_COPPER(&actor) == 5 && bulk_gets.empty());
+	extract_obj(remote_corpse_coins, false);
+	// Death conversion preserves every denomination and creates custody only on commit.
     // The submit/completion adapter is real; the acknowledgement is an explicit fixture.
     GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = INT32_MAX;
     const auto wallet_revision_before = actor.only.pc->wallet_revision;
