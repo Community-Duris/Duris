@@ -65,8 +65,16 @@ function initAtlas(D) {
       D.specs.variants,
     ).length.toLocaleString();
   }
+  const nMulti = D.multi ? Object.keys(D.multi.builds || {}).length : 0;
+  if (nMulti) $("facts-multi").textContent = nMulti.toLocaleString();
+  else $("facts-multi").closest("div").hidden = true;
   $("foot-gen").textContent =
-    "Model run " + D.meta.generated + " · " + D.meta.combos + " combinations.";
+    "Model run " +
+    D.meta.generated +
+    " · " +
+    D.meta.combos +
+    " combinations" +
+    (nMulti ? " · " + nMulti + " multiclass builds." : ".");
 
   /* ---------- colour ---------- */
   const isDark = () => true;
@@ -265,10 +273,12 @@ function initAtlas(D) {
   const prettySpec = (sp) =>
     sp === "BASE"
       ? "Unspecialised"
-      : String(sp)
-          .toLowerCase()
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (ch) => ch.toUpperCase());
+      : sp === "MULTI"
+        ? "Multiclass"
+        : String(sp)
+            .toLowerCase()
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (ch) => ch.toUpperCase());
   /* What a build changes, in one line; the summaries for unspecialised start with the word itself. */
   const aboutText = (cl, sp) => {
     const a = ((SP && SP.about) || {})[cl + "|" + sp];
@@ -1242,7 +1252,7 @@ function initAtlas(D) {
     if (!cols.length) return;
     const name = (vk) => {
       const [r, c, sp] = vk.split("|");
-      return `${esc(RN(r))} ${esc(c)} <span style="color:var(--muted)">${esc(prettySpec(sp))}</span>`;
+      return `${esc(RN(r))} ${esc(c.replace("/", " / "))} <span style="color:var(--muted)">${esc(prettySpec(sp))}</span>`;
     };
     const cellOf = (e) =>
       e
@@ -1261,10 +1271,72 @@ function initAtlas(D) {
     $("builds-panel").hidden = false;
   }
 
+  /* ---------- multiclass (Human/Orc primary/secondary builds) ---------- */
+  /* Which class's gear kit each tier uses ("primary"/"secondary" per tier), or a plain label. */
+  function kitText(bk, pair) {
+    const kit = ((D.multi && D.multi.kits) || {})[bk];
+    if (!kit || typeof kit !== "object") return String(kit || "");
+    const [pri, sec] = pair.split("/");
+    return TIERS.filter((t) => kit[t])
+      .map(
+        (t) =>
+          `${TL[t]}: ${kit[t] === "primary" ? pri : kit[t] === "secondary" ? sec : kit[t]}`,
+      )
+      .join(" · ");
+  }
+  function renderMulti() {
+    const MU = D.multi;
+    if (!MU) return;
+    $("multi").hidden = false;
+    const meta = MU.meta || {};
+    $("multi-intro").textContent =
+      meta.summary ||
+      "Humans and Orcs can take a second class. Each multiclass build is scored against every other build, single-class and multiclass alike, and compared with the same race's best single-class build.";
+    const points = [
+      ["21|basic", "L21 Basic"],
+      ["31|basic", "L31 Basic"],
+      ["46|good", "L46 Good"],
+      ["50|good", "L50 Good"],
+      ["56|endgame", "L56 End-game"],
+    ].filter(([ck]) => Object.values(MU.builds).some((cells) => cells[ck]));
+    const at56 = (bk) => ((MU.builds[bk] || {})["56|endgame"] || [])[0] || 0;
+    const keys = Object.keys(MU.builds).sort((a, b) => at56(b) - at56(a));
+    const vs = (MU.vs_single || {})["56|endgame"] || {};
+    const ratio = (a, b) => (a > 0 && b > 0 ? a / b : null);
+    const pill = (v) =>
+      v == null
+        ? "–"
+        : `<span class="pill" style="${cellStyle(divColor(v))}">${fIdx(v)}</span>`;
+    const change = (r) =>
+      r == null
+        ? "–"
+        : `<span class="${r >= 1 ? "up" : "down"}">${r >= 1 ? "▲" : "▼"} ${fMult(r)}</span>`;
+    let h = `<thead><tr><th>Race</th><th>Primary / secondary</th><th>Gear kit</th>${points.map(([, l]) => `<th class="num">${l}</th>`).join("")}<th class="num">vs same race, same primary, L56</th><th class="num">vs race's best single class, L56</th></tr></thead><tbody>`;
+    keys.forEach((bk) => {
+      const [race, pair] = bk.split("|");
+      const v = vs[bk];
+      h +=
+        `<tr><td>${esc(RN(race))}</td><td class="spec-name">${esc(pair.replace("/", " / "))}</td><td class="spec-about">${esc(kitText(bk, pair))}</td>` +
+        points
+          .map(
+            ([ck]) =>
+              `<td class="num">${pill(((MU.builds[bk] || {})[ck] || [])[0])}</td>`,
+          )
+          .join("") +
+        `<td class="num">${change(v ? ratio(v[0], v[1]) : null)}</td><td class="num">${change(v ? ratio(v[0], v[2]) : null)}</td></tr>`;
+    });
+    $("multi-table").innerHTML = h + "</tbody>";
+    const better = keys.filter((bk) => vs[bk] && vs[bk][0] > vs[bk][2]).length;
+    $("multi-note").textContent =
+      `${keys.length} multiclass builds, ordered by their level-56 end-game index. At that level ${better} of them beat their race's best single-class build.` +
+      (meta.levels_note ? " " + meta.levels_note : "");
+  }
+
   function renderAll() {
     renderAtlas();
     renderSpecs();
     renderBuilds();
+    renderMulti();
     renderStanding();
     renderMovers();
     renderFactorSummary();
