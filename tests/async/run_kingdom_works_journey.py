@@ -11,14 +11,24 @@ conjures are refused by the currency path.
 
 The journey founds a guild with Tyrus as leader, finds a legal realm seat with
 `kingdom prospect`, raises a main hall there and converts the guild to a
-kingdom. It funds the treasury, is refused a store before any workshop and a
-second forge, builds a forge and a store (checking the treasury paid for both),
-harvests mineral and wood into the realm, then in the store lists and buys a
-helm. It checks the helm was made at level 56 (Tyrus is above the cap) with
-the level-56 armour class and hit points, that it is NOSELL, SOULBIND, CRAFTED
-and STOREITEM with Tyrus's name in its keywords, that the realm's stores fell
-by exactly the bill, and that Tyrus's platinum fell by the price while the
-treasury did not rise.
+kingdom. With too little in the treasury it is refused a forge, and checks
+that nothing was built and nothing charged. It funds the treasury, is refused
+a store before any workshop and a second forge, and builds a forge and a store
+(checking the treasury paid for both). Before any harvest the store refuses a
+purchase the realm's stores cannot supply, taking nothing. It harvests mineral
+and wood into the realm, then in the store lists and buys a pair of
+vambraces. It checks they were made at level 56 (Tyrus is above the cap) with
+the level-56 armour class and strength, that they are NOSELL, SOULBIND,
+CRAFTED and STOREITEM carrying Tyrus's binding token, that the realm's stores
+fell by exactly the bill, and that Tyrus's platinum fell by the price while
+the treasury did not rise.
+
+Then the binding. Tyrus wears the piece, takes it off, puts it in a bag (a
+soulbound piece cannot be given or dropped, but the bag it is in can) and
+leaves the bag for two characters on other accounts: one NAMED "Vambraces",
+a word on the piece that the old name-based soulbind test let through, and
+one with an ordinary name. Each takes the piece out of the bag and is refused
+it when they try to wear it.
 
 The journey's own copy of lib/kingdom.cfg sets the build costs to 1,000
 platinum and the material scale to a quarter, so the realm needs a minute of
@@ -55,6 +65,16 @@ STATION_COST_P = 1000
 STORE_COST_P = 1000
 RESOURCE_PERMILLE = 250
 PRICE_PERMILLE = 1000
+SHORT_TREASURY_P = 500  # less than a workshop costs
+
+PIECE = "vambraces"  # weight 1.0: the same bill as a helm
+PIECE_SHORT = "steel vambraces"
+BAG_VNUM = 390  # "a small leather bag", a plain container
+# Characters who try to wear Tyrus's piece. "Vambraces" is a word on the piece
+# and no mob's keyword, so character creation allows it -- the name the old
+# name-based soulbind test would have let through.
+OTHERS = (("Worksthief", "thief@example.invalid", "Vambraces"),
+          ("Workspeer", "peer@example.invalid", "Quillomen"))
 
 
 def require(condition: bool, message: str) -> None:
@@ -72,16 +92,16 @@ def expected_bill(weight_tenths: int, level: int) -> tuple[int, int, int]:
     return platinum, primary, units - primary
 
 
-def create_god(client: journey.MudClient) -> None:
+def create_account(client: journey.MudClient, account: str, email: str) -> None:
     entry, _ = client.expect_any(("term type", "account name"), timeout=60)
     if entry == "term type":
         client.send("9")
         client.expect("account name")
-    client.send(ACCOUNT)
+    client.send(account)
     client.expect("is this correct?")
     client.send("y")
     client.expect("email address")
-    client.send(EMAIL)
+    client.send(email)
     client.expect("is this correct?")
     client.send("y")
     client.expect("enter your password")
@@ -92,10 +112,20 @@ def create_god(client: journey.MudClient) -> None:
     client.send("y")
     client.expect("PRESS RETURN")
     client.send("")
+
+
+def create_god(client: journey.MudClient) -> None:
+    """Tyrus: character creation makes that name an OVERLORD."""
+    create_account(client, ACCOUNT, EMAIL)
+    create_character(client, CHARACTER)
+
+
+def create_character(client: journey.MudClient, name: str) -> None:
+    """A human warrior named `name`, from the account menu into the game."""
     client.expect("Please select an option")
     client.send("2")
     client.expect("Enter your new name")
-    client.send(CHARACTER)
+    client.send(name)
     client.expect("Is this correct?")
     client.send("y")
     client.expect("meet these criteria?")
@@ -242,6 +272,23 @@ def find_seat(client: journey.MudClient) -> int:
     raise AssertionError(f"no legal realm seat within {12 * 6} squares of {SURFACE_START}")
 
 
+def refused_the_piece(other: journey.MudClient, name: str) -> None:
+    """`name` takes Tyrus's piece out of the bag at their feet, is refused it
+    when they try to wear it, and puts it back and drops the bag."""
+    command(other, "get bag", "")
+    command(other, f"get {PIECE} bag", "")
+    wait_for(lambda: plain(command(other, "inventory", "")), lambda text: PIECE_SHORT in text,
+             f"{name} never got the piece out of the bag")
+    reply = plain(command(other, f"wear {PIECE}", ""))
+    require("bound to someone" in reply, f"{name} was not refused Tyrus's piece:\n{reply}")
+    worn = plain(command(other, "equipment", ""))
+    require(PIECE_SHORT not in worn, f"{name} is wearing Tyrus's piece:\n{worn}")
+    command(other, f"put {PIECE} bag", "")
+    wait_for(lambda: plain(command(other, "inventory", "")), lambda text: PIECE_SHORT not in text,
+             f"{name} never put the piece back")
+    command(other, "drop bag", "")
+
+
 def enter_hall(client: journey.MudClient) -> str:
     text = plain(command(client, "enter guildhall", ""))
     if "High-Arched Foyer" not in text:
@@ -304,6 +351,7 @@ def run(binary: pathlib.Path) -> None:
                                        cwd=run_root, env=environment, text=True,
                                        stdout=output, stderr=subprocess.STDOUT)
             client = None
+            others: list[journey.MudClient] = []
             try:
                 deadline = time.monotonic() + 900
                 while time.monotonic() < deadline and "Entering game loop." not in output_path.read_text(errors="replace"):
@@ -344,9 +392,23 @@ def run(binary: pathlib.Path) -> None:
                 command(client, f"goto {seat}", "")
                 enter_hall(client)
                 command(client, "load obj 3097", "")
-                command(client, "kingdom deposit 3000 platinum", "")
+
+                # A build the treasury cannot pay for builds nothing and takes nothing.
+                command(client, f"kingdom deposit {SHORT_TREASURY_P} platinum", "")
+                short = wait_for(lambda: treasury_platinum(client), lambda t: t >= SHORT_TREASURY_P,
+                                 "the first deposit never reached the treasury")
+                require(short < STATION_COST_P, f"treasury {short}p already pays for a forge")
+                reply = plain(command(client, "kingdom build forge east", "forge"))
+                require("cannot pay" in reply, f"an unaffordable forge was not refused:\n{reply}")
+                require(treasury_platinum(client) == short, "a refused build moved the treasury")
+                status = plain(command(client, "kingdom status", "Resources"))
+                require("Works      : none" in status, f"a refused build left works behind:\n{status}")
+                require("The Forge" not in plain(command(client, "east", "")),
+                        "a refused build left a room east of the foyer")
+
+                command(client, f"kingdom deposit {3000 - short} platinum", "")
                 treasury = wait_for(lambda: treasury_platinum(client), lambda t: t >= 3000, "the deposit never reached the treasury")
-                print(f"purse {purse}p, treasury {treasury}p", flush=True)
+                print(f"purse {purse}p, treasury {treasury}p; an unaffordable forge was refused", flush=True)
 
                 # The build: refusals first, then a forge and a store, each paid for.
                 reply = plain(command(client, "kingdom build store west", "store"))
@@ -369,6 +431,19 @@ def run(binary: pathlib.Path) -> None:
                 require("The Forge" in forge and "blackened fieldstone" in forge, f"forge room:\n{forge}")
                 command(client, "west", "")
                 print(f"forge and store built; treasury {treasury}p -> {after_builds}p", flush=True)
+
+                # A purchase the realm's stores cannot supply takes nothing.
+                empty = resources(client)
+                purse_empty = purse_platinum(client)
+                command(client, "west", "")
+                reply = plain(command(client, f"buy {PIECE}", "harvested"))
+                require("cannot supply it" in reply, f"a purchase without material was not refused:\n{reply}")
+                require(resources(client) == empty, "a refused purchase moved the realm's stores")
+                require(purse_platinum(client) == purse_empty, "a refused purchase took platinum")
+                require(PIECE_SHORT not in plain(command(client, "inventory", "")),
+                        "a refused purchase made a piece")
+                command(client, "east", "")
+                print("a purchase the realm's stores could not supply was refused", flush=True)
 
                 # Material for a level-56 helm (weight 1.0) at the journey's scale.
                 # Nodes are never worked on ground a realm holds, and the seat
@@ -402,21 +477,30 @@ def run(binary: pathlib.Path) -> None:
                         f"a forge-only store lists another workshop's work:\n{listing}")
                 reply = plain(command(client, "buy ring health", "ring"))
                 require("make no 'ring'" in reply, f"a ring was sold without a jeweller:\n{reply}")
-                reply = plain(command(client, "buy helm", "platinum"))
-                require(f"You pay {price} platinum" in reply, f"buy helm:\n{reply}")
+                piece = re.search(rf"^\s*{PIECE}\s+(\d+) platinum\s+(\d+) mineral, (\d+) wood", listing, re.M)
+                require(piece is not None and (int(piece.group(1)), int(piece.group(2)), int(piece.group(3)))
+                        == (price, mineral_bill, wood_bill),
+                        f"{PIECE} line wanted {price}p {mineral_bill} mineral {wood_bill} wood:\n{listing}")
+                reply = plain(command(client, f"buy {PIECE}", "platinum"))
+                require(f"You pay {price} platinum" in reply, f"buy {PIECE}:\n{reply}")
                 wait_for(lambda: plain(command(client, "inventory", "")),
-                         lambda text: "steel helm" in text, "the helm never arrived")
+                         lambda text: PIECE_SHORT in text, "the vambraces never arrived")
 
                 # The piece itself.
-                stat = plain(command(client, "stat obj helm", "Extra2", timeout=30))
+                stat = plain(command(client, f"stat obj {PIECE}", "Extra2", timeout=30))
                 for flag in ("SOULBIND", "CRAFTED", "STOREITEM"):
-                    require(flag in stat, f"helm is not {flag}:\n{stat}")
-                require("NOSELL" in stat, f"helm is not NOSELL:\n{stat}")
-                require(re.search(r"AC-apply:\s*10\b", stat) is not None, f"level-56 helm AC is not 10:\n{stat}")
-                require(re.search(r"Affects:\s*\S+\s+By\s+8\b", stat) is not None, f"level-56 helm HP is not +8:\n{stat}")
-                require("tyrus" in stat.lower(), f"helm keywords lack the buyer:\n{stat}")
+                    require(flag in stat, f"the vambraces are not {flag}:\n{stat}")
+                require("NOSELL" in stat, f"the vambraces are not NOSELL:\n{stat}")
+                require(re.search(r"AC-apply:\s*10\b", stat) is not None, f"level-56 vambraces AC is not 10:\n{stat}")
+                require(re.search(r"Affects:\s*\S+\s+By\s+2\b", stat) is not None,
+                        f"level-56 vambraces strength is not +2:\n{stat}")
+                require("tyrus" in stat.lower(), f"the keywords lack the buyer's name:\n{stat}")
+                require("kingdom-bound-" in stat, f"the keywords lack the binding token:\n{stat}")
+                material = re.search(r"Material[^\n]*", stat)
+                if material:
+                    require("steel" in material.group(0).lower(), f"the vambraces are not steel:\n{stat}")
                 for effect in ("HASTE", "SANCTUARY", "FIRESHIELD"):
-                    require(effect not in stat, f"helm carries {effect}:\n{stat}")
+                    require(effect not in stat, f"the vambraces carry {effect}:\n{stat}")
 
                 # What it cost: the realm's material, the buyer's coin, and nothing to the treasury.
                 after = resources(client)
@@ -428,9 +512,38 @@ def run(binary: pathlib.Path) -> None:
                                        "the purse never paid")
                 require(purse_after == purse_before - price, f"purse {purse_before}p -> {purse_after}p, price {price}p")
                 require(treasury_platinum(client) == treasury_before, "the treasury moved on a store purchase")
-                print(f"bought a level-56 helm: {price}p destroyed, {mineral_bill} mineral + {wood_bill} wood "
+                print(f"bought level-56 vambraces: {price}p destroyed, {mineral_bill} mineral + {wood_bill} wood "
                       f"drawn; purse {purse_before}p -> {purse_after}p; treasury unchanged at {treasury_before}p",
                       flush=True)
+
+                # The buyer may wear it.
+                command(client, f"wear {PIECE}", "")
+                worn = plain(command(client, "equipment", ""))
+                require(PIECE_SHORT in worn, f"the buyer could not wear the piece:\n{worn}")
+                command(client, f"remove {PIECE}", "")
+                wait_for(lambda: plain(command(client, "inventory", "")),
+                         lambda text: PIECE_SHORT in text, "the piece never came off")
+
+                # Nobody else may, whatever they are called. The bag is the
+                # route a looter or a trade would take: a soulbound piece
+                # cannot be given or dropped, but the bag it is in can.
+                command(client, "goto 58449", "")
+                command(client, f"load obj {BAG_VNUM}", "")
+                command(client, f"put {PIECE} bag", "")
+                wait_for(lambda: plain(command(client, "inventory", "")),
+                         lambda text: PIECE_SHORT not in text, "the piece never went into the bag")
+                command(client, "drop bag", "")
+                for account, email, name in OTHERS:
+                    other = journey.MudClient(plain_port)
+                    others.append(other)
+                    create_account(other, account, email)
+                    create_character(other, name)
+                    command(client, f"transfer {name.lower()}", "")
+                    refused_the_piece(other, name)
+                    print(f"{name} could not wear Tyrus's piece", flush=True)
+                for other in others:
+                    other.close()
+                others.clear()
 
                 client.send("quit")
                 client.expect_any(("ACCOUNT MENU", "Goodbye", "account menu"), timeout=30)
@@ -440,14 +553,22 @@ def run(binary: pathlib.Path) -> None:
                 process.wait(timeout=60)
                 log = output_path.read_text(errors="replace")
                 require("FATAL:" not in log and "assert:" not in log, "server logged a fatal or assertion")
-                print("[PASS] kingdom works journey: realm, builds and refusals, harvest, list, buy, "
-                      "level-56 stats, flags, binding, material draw, destroyed platinum", flush=True)
+                print("[PASS] kingdom works journey: realm, builds and refusals (an unaffordable forge "
+                      "among them), a purchase refused for material, harvest, list, buy, level-56 stats, "
+                      "flags, binding to the buyer alone (a keyword-named character refused), material "
+                      "draw, destroyed platinum", flush=True)
             except Exception as error:
                 transcript = bytes(client.transcript).decode("utf-8", errors="replace") if client else ""
+                other_tail = ""
+                if others:
+                    other_text = bytes(others[-1].transcript).decode("utf-8", errors="replace")
+                    other_tail = f"\n--- other character's transcript tail ---\n{plain(other_text)[-3000:]}"
                 raise AssertionError(f"{error}\n--- transcript tail ---\n{plain(transcript)[-6000:]}"
-                                     f"\n--- server output ---\n"
+                                     f"{other_tail}\n--- server output ---\n"
                                      + output_path.read_text(errors="replace")[-6000:]) from error
             finally:
+                for other in others:
+                    other.close()
                 if client is not None:
                     client.close()
                 if process.poll() is None:
