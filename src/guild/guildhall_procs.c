@@ -15,6 +15,7 @@
 #include "guild/alliances.h"
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
+#include "kingdom/kingdom.h"
 #include "ships/ships.h"
 #include "world/specs.prototypes.h"
 #include "item/storage_lockers.h"
@@ -365,6 +366,21 @@ int guildhall_bank_room(int room, P_char ch, int cmd, char *arg)
 	}
 
 	return guild_locker_room_hook(room, ch, cmd, arg);
+}
+
+/* The kingdom guild store (GH_ROOM_TYPE_GUILDSTORE). `list` and `buy` belong
+ * to the kingdom module, which owns the catalogue, the prices and every rule
+ * about who may buy; this proc only routes the two commands there. Everything
+ * else typed in the room passes through untouched. */
+int guildhall_store_room(int room, P_char ch, int cmd, char *arg)
+{
+	if (!ch || IS_NPC(ch))
+		return FALSE;
+
+	if (cmd != CMD_LIST && cmd != CMD_BUY)
+		return FALSE;
+
+	return kingdom_store_command(ch, world[room].number, cmd == CMD_BUY, arg) ? TRUE : FALSE;
 }
 
 int guildhall_cargo_board(P_obj obj, P_char ch, int cmd, char *arg)

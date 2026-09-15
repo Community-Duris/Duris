@@ -147,6 +147,8 @@ int guildhall_window_room(int room, P_char ch, int cmd, char *arg);
 int guildhall_window(P_obj obj, P_char ch, int cmd, char *arg);
 int guildhall_heartstone(P_obj obj, P_char ch, int cmd, char *arg);
 int guildhall_bank_room(int room, P_char ch, int cmd, char *arg);
+/* The kingdom guild store: hands `list` and `buy` to the kingdom module. */
+int guildhall_store_room(int room, P_char ch, int cmd, char *arg);
 int guildhall_cargo_board(P_obj obj, P_char ch, int cmd, char *arg);
 
 /* Build a kingdom workshop or the guild store as a NEW room of `type` off

@@ -497,6 +497,10 @@ bool WorkshopRoom::init()
 	if ((this->prop = read_object(this->prop_vnum, VIRTUAL)))
 		obj_to_room(this->prop, real_room0(this->vnum));
 
+	/* The store answers `list` and `buy`; the three workshops need no proc. */
+	if (this->type == GH_ROOM_TYPE_GUILDSTORE)
+		this->room->funct = guildhall_store_room;
+
 	return TRUE;
 }
 
@@ -506,6 +510,11 @@ bool WorkshopRoom::init()
 
 bool WorkshopRoom::deinit()
 {
+	/* Only our own proc: a room handed back to the pool must not keep
+	 * selling, and must not lose a proc something else put there. */
+	if (this->room && this->room->funct == guildhall_store_room)
+		this->room->funct = NULL;
+
 	if (this->prop)
 	{
 		/* An immortal may have purged the prop since init(), so extract it

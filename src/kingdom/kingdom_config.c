@@ -34,6 +34,8 @@
  *      kingdom.min.entrance.distance       squares    (default 5)
  *      kingdom.station.cost                coin       (default 20000000)
  *      kingdom.store.cost                  coin       (default 20000000)
+ *      kingdom.craft.price.permille        per mille  (default 1000)
+ *      kingdom.craft.resource.permille     per mille  (default 1000)
  *
  *  Values are range-checked but NOT judged against the live world: whether a
  *  cost or a distance is sensible for this map is an operator decision. The
@@ -108,6 +110,11 @@
 /* What a workshop or the guild store may cost in copper. The same ceiling as a
  * guard's, so no one purchase outprices another by a typo; 0 makes it free. */
 #define KINGDOM_WORKS_COST_MAX 100000000L
+
+/* The guild store's scales, per mille. Ten times the design is the ceiling: a
+ * level-56 two-hander then asks 1,160 platinum, still well inside the int
+ * SUB_MONEY takes, and 0 (free) is a deliberate setting, not a typo. */
+#define KINGDOM_CRAFT_PERMILLE_MAX 10000
 
 /* ------------------------------------------------------------------ *
  * The global
@@ -250,6 +257,10 @@ static bool kingdom_apply_value(const char *key, const char *value)
 	KCFG_INT("kingdom.min.entrance.distance", min_entrance_distance, 0, KINGDOM_DISTANCE_MAX)
 	KCFG_LONG("kingdom.station.cost", station_cost, 0L, KINGDOM_WORKS_COST_MAX)
 	KCFG_LONG("kingdom.store.cost", store_cost, 0L, KINGDOM_WORKS_COST_MAX)
+	KCFG_INT("kingdom.craft.price.permille", craft_price_permille, 0,
+		 KINGDOM_CRAFT_PERMILLE_MAX)
+	KCFG_INT("kingdom.craft.resource.permille", craft_resource_permille, 0,
+		 KINGDOM_CRAFT_PERMILLE_MAX)
 
 #undef KCFG_BOOL
 #undef KCFG_INT
@@ -357,8 +368,11 @@ void kingdom_config_load(void)
 	      kingdom_cfg.guards_per_squares, kingdom_cfg.guard_cost_base,
 	      kingdom_cfg.guard_cost_max, kingdom_cfg.min_hometown_distance,
 	      kingdom_cfg.min_entrance_distance);
-	logit(LOG_KINGDOM, "Works: a workshop costs %ld copper, the guild store %ld.",
-	      kingdom_cfg.station_cost, kingdom_cfg.store_cost);
+	logit(LOG_KINGDOM,
+	      "Works: a workshop costs %ld copper, the guild store %ld; store prices x%d/1000, "
+	      "store material x%d/1000.",
+	      kingdom_cfg.station_cost, kingdom_cfg.store_cost, kingdom_cfg.craft_price_permille,
+	      kingdom_cfg.craft_resource_permille);
 	logit(LOG_STATUS, "Kingdom config loaded from %s; kingdoms %s.", KINGDOM_CONFIG_FILE,
 	      kingdom_cfg.enabled ? "ENABLED" : "disabled");
 }

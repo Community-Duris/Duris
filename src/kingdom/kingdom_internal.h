@@ -291,6 +291,12 @@ struct kingdom_config
 	 * treasury like every other kingdom purchase and never from a purse. */
 	long station_cost = 20000000;
 	long store_cost = 20000000;
+	/* The guild store's two scales on the approved curve, PER MILLE: 1000 is
+	 * the curve as designed, 2000 doubles it, 0 makes it free. The formulas
+	 * themselves, and what the scales multiply, are written out in
+	 * kingdom_craft_math.h. */
+	int craft_price_permille = 1000;
+	int craft_resource_permille = 1000;
 };
 extern kingdom_config kingdom_cfg;
 void kingdom_config_load(void);
