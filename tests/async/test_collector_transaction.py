@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def main() -> None:
+    transaction = (ROOT / "src/economy/collector_transaction.c").read_text()
+    assert "player_recovery_item_loaded" in transaction
+    assert "replaying the callback" in transaction
     output = ROOT / "bin" / "tests"
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="collector-transaction-", dir=output) as directory:

@@ -52,6 +52,7 @@
 #include "net/ws_handlers.h"
 #include "core/safe_format.h"
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -3405,6 +3406,55 @@ std::unordered_map<uint64_t, corpse_compaction_context> corpse_compactions;
 std::unordered_map<uint64_t, corpse_resurrection_context> corpse_resurrections;
 std::unordered_map<uint64_t, corpse_raise_context> corpse_raises;
 
+// A committed raise can outlive the live corpse or the caster's current room.
+// If the validated live item graph cannot be attached to an online caster,
+// fail closed on that player's save until a fresh player snapshot has been
+// loaded.  Keep this side-channel allocation-free so the recovery path still
+// protects durable rows when the process is under memory pressure.
+constexpr size_t CORPSE_RAISE_SAVE_FENCE_MAX = 256;
+std::array<uint32_t, CORPSE_RAISE_SAVE_FENCE_MAX> corpse_raise_save_fences = {};
+bool corpse_raise_save_fence_overflow = false;
+
+void discard_corpse_release_money(P_obj container);
+
+void fence_corpse_raise_player(uint32_t pid)
+{
+	if (!pid || corpse_raise_save_fence_overflow)
+		return;
+	for (uint32_t &fenced_pid : corpse_raise_save_fences)
+		if (fenced_pid == pid)
+			return;
+	for (uint32_t &fenced_pid : corpse_raise_save_fences)
+	{
+		if (fenced_pid)
+			continue;
+		fenced_pid = pid;
+		return;
+	}
+	// Exhaustion must remain fail-closed.  A process restart or a fresh
+	// deployment clears the in-memory fence after the durable snapshot is read.
+	corpse_raise_save_fence_overflow = true;
+}
+
+bool corpse_raise_player_is_fenced(uint32_t pid)
+{
+	if (!pid)
+		return false;
+	if (corpse_raise_save_fence_overflow)
+		return true;
+	return std::find(corpse_raise_save_fences.begin(), corpse_raise_save_fences.end(), pid) !=
+	       corpse_raise_save_fences.end();
+}
+
+void clear_corpse_raise_player_fence(uint32_t pid)
+{
+	if (!pid || corpse_raise_save_fence_overflow)
+		return;
+	for (uint32_t &fenced_pid : corpse_raise_save_fences)
+		if (fenced_pid == pid)
+			fenced_pid = 0;
+}
+
 class corpse_release_side_effect_guard
 {
     public:
@@ -3811,13 +3861,39 @@ void fail_corpse_raise(uint64_t key, const char *reason)
 		extract_char(follower);
 }
 
-void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower, const char *reason)
+bool recover_corpse_raise_items(P_obj corpse, P_char caster)
+{
+	if (!corpse || !caster)
+		return false;
+	// The wallet transaction already consumed corpse currency.  Never move a
+	// second live copy of money into the player while recovering the item graph.
+	discard_corpse_release_money(corpse);
+	while (corpse->contains)
+	{
+		P_obj item = corpse->contains;
+		obj_from_obj(item);
+		if (GET_ITEM_TYPE(item) == ITEM_MONEY)
+			extract_obj(item);
+		else
+		{
+			discard_corpse_release_money(item);
+			obj_to_char_at_end(item, caster);
+		}
+	}
+	return true;
+}
+
+void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
+				    bool transfer_live_items, const char *reason)
 {
 	auto found = corpse_raises.find(key);
 	if (found == corpse_raises.end())
 		return;
 	const corpse_raise_context context = found->second;
 	corpse_raises.erase(found);
+	P_char caster = find_live_character(context.caster, context.caster_runtime_id);
+	const bool live_items_recovered = transfer_live_items && caster &&
+					  recover_corpse_raise_items(corpse, caster);
 	// The durable transaction has already moved the item rows to the caster.
 	// Never leave a stale live corpse behind for a later loot/raise attempt.  A
 	// false `gone_for_good` is important here: the durable item rows, especially
@@ -3829,12 +3905,22 @@ void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower,
 	}
 	if (follower)
 		extract_char(follower);
+	if (caster && !live_items_recovered)
+		fence_corpse_raise_player(static_cast<uint32_t>(GET_PID(caster)));
 	persistence_alert(AVATAR, "corpse", "durable_raise", "none", "none",
 			  reason ? reason : "committed_live_recovery", "corpse_key=%llu", key);
-	if (P_char caster = find_live_character(context.caster, context.caster_runtime_id))
+	if (caster)
+	{
+		const bool save_fenced =
+			corpse_raise_player_is_fenced(static_cast<uint32_t>(GET_PID(caster)));
 		send_to_char(
-			"The raising committed, but its live effects needed recovery. The corpse and minion were removed; the recovered equipment remains in your durable inventory.\r\n",
+			live_items_recovered ?
+				"The raising committed, but its live effects needed recovery. The corpse and minion were removed; the recovered equipment remains with you and in your durable inventory.\r\n" :
+				(save_fenced ?
+					 "The raising committed, but its live effects needed recovery. The corpse and minion were removed; saving is paused until a fresh login verifies the recovered equipment.\r\n" :
+					 "The raising committed, but its live effects needed recovery. The corpse and minion were removed; the recovered equipment remains in your durable inventory.\r\n"),
 			caster);
+	}
 }
 
 void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
@@ -3857,29 +3943,33 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	P_char follower = find_live_character(context.follower, context.follower_runtime_id);
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	int corpse_room = NOWHERE;
-	const bool source_valid = corpse && corpse_release_room(corpse, &corpse_room) &&
-				  world[corpse_room].number == payload.room_vnum &&
-				  validate_corpse_release_items(corpse, result);
+	const bool source_items_valid = corpse && validate_corpse_release_items(corpse, result);
+	const bool source_valid = source_items_valid && corpse_release_room(corpse, &corpse_room) &&
+				  world[corpse_room].number == payload.room_vnum;
 	if (!item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
 						       payload.destination_player_pid, result))
 	{
-		recover_committed_corpse_raise(key, corpse, follower, "raise_runtime_recovery");
+		recover_committed_corpse_raise(key, corpse, follower, false,
+					       "raise_runtime_recovery");
 		return;
 	}
 	if (!source_valid)
 	{
-		recover_committed_corpse_raise(key, corpse, follower, "raise_live_topology_stale");
+		recover_committed_corpse_raise(key, corpse, follower, source_items_valid,
+					       "raise_live_topology_stale");
 		return;
 	}
 	if (!caster || !follower || caster->in_room <= NOWHERE || caster->in_room > top_of_world ||
 	    world[caster->in_room].number != payload.room_vnum || follower->in_room != NOWHERE)
 	{
-		recover_committed_corpse_raise(key, corpse, follower, "raise_live_topology_stale");
+		recover_committed_corpse_raise(key, corpse, follower, source_items_valid,
+					       "raise_live_topology_stale");
 		return;
 	}
 	if (!publish_corpse_wallet(caster, result))
 	{
-		recover_committed_corpse_raise(key, corpse, follower, "raise_wallet_invalid");
+		recover_committed_corpse_raise(key, corpse, follower, source_items_valid,
+					       "raise_wallet_invalid");
 		return;
 	}
 	corpse_raises.erase(found);
@@ -4334,6 +4424,22 @@ bool durable_corpse_lifecycle_enabled()
 	       mode == PERSISTENCE_MODE_FLATFILE_PRIMARY;
 }
 } // namespace
+
+bool corpse_raise_player_save_fenced(P_char character)
+{
+	return character && !IS_NPC(character) && GET_PID(character) > 0 &&
+	       corpse_raise_player_is_fenced(static_cast<uint32_t>(GET_PID(character)));
+}
+
+void corpse_raise_player_ready(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return;
+	// enter_game calls this only after player_items has been hydrated.  Clearing
+	// here lets the next save serialize that authoritative live snapshot instead
+	// of overwriting a committed raise with an incomplete in-memory graph.
+	clear_corpse_raise_player_fence(static_cast<uint32_t>(GET_PID(character)));
+}
 
 bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower,
 				    corpse_raise_kind kind, int level, int variant, bool globe,

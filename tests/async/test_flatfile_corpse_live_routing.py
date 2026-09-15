@@ -209,6 +209,11 @@ assert "corpse_raise_exceeds_carry_capacity" in raise_completion
 assert "The recovered equipment leaves you overburdened" in raise_completion
 assert "obj_to_char_at_end(item, caster)" in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
+assert "source_items_valid" in raise_publication
+assert "recover_corpse_raise_items" in HANDLER
+assert "fence_corpse_raise_player" in HANDLER
+assert "corpse_raise_player_save_fenced" in FILES
+assert "corpse_raise_player_ready" in HANDLER
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),

@@ -163,6 +163,8 @@ void completed(P_char completed_character, bool committed, const collector_comma
 }
 }
 
+P_obj object_list = nullptr;
+
 critical_submit_result critical_command_coordinator_submit(critical_command command)
 {
 	submitted_command = std::move(command);

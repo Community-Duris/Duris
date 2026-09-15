@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+extern P_obj object_list;
+
 namespace
 {
 struct pending_collector
@@ -76,6 +78,20 @@ std::string operation_key(const critical_operation_id &operation_id)
 {
 	return std::string(reinterpret_cast<const char *>(operation_id.bytes.data()),
 			   operation_id.bytes.size());
+}
+
+bool player_recovery_item_loaded(const completed_player_recovery &recovery, P_char character)
+{
+	if (!character || !recovery.payload || !recovery.result.entry.uid)
+		return false;
+	for (P_obj object = object_list; object; object = object->next)
+	{
+		if (object->obj_uid != recovery.result.entry.uid)
+			continue;
+		if (OBJ_CARRIED_BY(object, character) || OBJ_WORN_BY(object, character))
+			return true;
+	}
+	return false;
 }
 
 bool player_pending(uint32_t pid)
@@ -326,6 +342,15 @@ void collector_transaction_player_ready(P_char character)
 		auto current = found++;
 		if (current->second.actor_pid != static_cast<uint32_t>(GET_PID(character)))
 			continue;
+		// enter_game hydrates player_items before this hook.  If the committed
+		// UID is already attached to this player's live graph, the durable row is
+		// the cold-login recovery; replaying the callback would attempt to
+		// materialize a second copy.
+		if (player_recovery_item_loaded(current->second, character))
+		{
+			player_recoveries.erase(current);
+			continue;
+		}
 		completed_player_recovery recovery = std::move(current->second);
 		player_recoveries.erase(current);
 		if (recovery.completion && recovery.payload)

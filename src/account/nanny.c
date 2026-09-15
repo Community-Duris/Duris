@@ -40,6 +40,7 @@
 #include "item/item_ownership_runtime.h"
 #include "economy/shop_trade_transaction.h"
 #include "economy/auction_transaction.h"
+#include "economy/collector_service.h"
 #include "economy/collector_transaction.h"
 #include "economy/boon_reward_transaction.h"
 #include "core/files.h"
@@ -68,6 +69,7 @@
 #include "persistence/persistence_checkpoint.h"
 #include "world/vnum.obj.h"
 #include "world/vnum.room.h"
+#include "world/handler.h"
 #include "net/ws_handlers.h"
 #include "core/safe_format.h"
 
@@ -1810,6 +1812,8 @@ void enter_game(P_desc d)
 	shop_trade_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
 	collector_transaction_player_ready(ch);
+	collector_service_player_ready(ch);
+	corpse_raise_player_ready(ch);
 	boon_reward_transaction_player_ready(ch);
 	if (!writeCharacter(ch, 1, NOWHERE))
 	{
@@ -2441,6 +2445,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	shop_trade_transaction_player_ready(tmp_ch);
 	auction_transaction_player_ready(tmp_ch);
 	collector_transaction_player_ready(tmp_ch);
+	collector_service_player_ready(tmp_ch);
 	boon_reward_transaction_player_ready(tmp_ch);
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);
 	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
