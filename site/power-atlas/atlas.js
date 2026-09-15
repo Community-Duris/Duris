@@ -1273,17 +1273,22 @@ function initAtlas(D) {
   }
 
   /* ---------- multiclass (Human/Orc primary/secondary builds) ---------- */
-  /* Which class's gear kit each tier uses ("primary"/"secondary" per tier), or a plain label. */
-  function kitText(bk, pair) {
-    const kit = ((D.multi && D.multi.kits) || {})[bk];
-    if (!kit || typeof kit !== "object") return String(kit || "");
-    const [pri, sec] = pair.split("/");
-    return TIERS.filter((t) => kit[t])
-      .map(
-        (t) =>
-          `${TL[t]}: ${kit[t] === "primary" ? pri : kit[t] === "secondary" ? sec : kit[t]}`,
-      )
-      .join(" · ");
+  /* A build wears the primary or the secondary class's kit, chosen per tier
+   * ({basic: "primary", ...}). Name the class and group the tiers:
+   * "Ethermancer (basic, good), Shaman (end-game)". */
+  function kitText(kit, pair) {
+    if (!kit) return "";
+    if (typeof kit === "string") return kit;
+    const [pri, sec] = (pair || "").split("/");
+    const name = (k) =>
+      (k === "primary" ? pri : k === "secondary" ? sec : k) || k;
+    const groups = new Map();
+    TIERS.filter((t) => kit[t]).forEach((t) => {
+      const n = name(kit[t]);
+      groups.set(n, [...(groups.get(n) || []), (TL[t] || t).toLowerCase()]);
+    });
+    if (groups.size === 1) return `${[...groups.keys()][0]} (all)`;
+    return [...groups].map(([n, ts]) => `${n} (${ts.join(", ")})`).join(", ");
   }
   function renderMulti() {
     const MU = D.multi;
@@ -1312,12 +1317,12 @@ function initAtlas(D) {
       r == null
         ? "–"
         : `<span class="${r >= 1 ? "up" : "down"}">${r >= 1 ? "▲" : "▼"} ${fMult(r)}</span>`;
-    let h = `<thead><tr><th>Race</th><th>Primary / secondary</th><th>Gear kit</th>${points.map(([, l]) => `<th class="num">${l}</th>`).join("")}<th class="num">vs same race, same primary, L56</th><th class="num">vs race's best single class, L56</th></tr></thead><tbody>`;
+    let h = `<thead><tr><th>Race</th><th>Primary / secondary</th><th>Gear kit</th>${points.map(([, l]) => `<th class="num">${l}</th>`).join("")}<th class="num" title="Against the same race's best single-class build of the primary class, level 56 end-game">vs primary<br>alone, L56</th><th class="num" title="Against the same race's best single-class build of any class, level 56 end-game">vs race's<br>best, L56</th></tr></thead><tbody>`;
     keys.forEach((bk) => {
       const [race, pair] = bk.split("|");
       const v = vs[bk];
       h +=
-        `<tr><td>${esc(RN(race))}</td><td class="spec-name">${esc(pair.replace("/", " / "))}</td><td class="spec-about">${esc(kitText(bk, pair))}</td>` +
+        `<tr><td>${esc(RN(race))}</td><td class="spec-name">${esc(pair.replace("/", " / "))}</td><td class="spec-about kit">${esc(kitText((MU.kits || {})[bk], pair))}</td>` +
         points
           .map(
             ([ck]) =>
