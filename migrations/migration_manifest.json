@@ -346,8 +346,8 @@
       "apply": "immutable/0017_collector_catalog.sql",
       "verify": "immutable/0017_collector_catalog.sh",
       "compatibility": "mysql8-mariadb10",
-      "apply_checksum": "495fbd3af270eca4c644d2fc2098c57d5562734e1e47f6cbf27b3ea5669dc525",
-      "verify_checksum": "235c992cf697890957fb6f49ddf36acfdbb8a77903ad552ee0280d109b32a075"
+      "apply_checksum": "fa97f8f4a0b1f99851bd325eb5e7741d35eac3d1e2b99cd6fbb123cfffc80148",
+      "verify_checksum": "78a0e6af522ba5909c3e3acbe053ce500276f574d4799f0259528f6c19474902"
     }
   ]
 }
