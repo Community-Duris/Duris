@@ -2069,7 +2069,7 @@ bool money_to_inventory(P_char ch)
 	}
 	if (!value)
 		return true;
-	if (IS_PC(ch) && !currency_transaction_can_submit(ch))
+	if (IS_PC(ch) && !currency_transaction_can_submit_nonrebasable(ch))
 		return false;
 	P_obj money = create_money(cash[0], cash[1], cash[2], cash[3]);
 	if (!money)

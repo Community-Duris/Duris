@@ -188,6 +188,28 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         self.assertIn("currency_transaction_player_ready", nanny)
         self.assertIn("critical_command_coordinator_is_fenced", transaction)
 
+    def test_unresolved_publication_is_explicit_and_operator_visible(self):
+        header = (SRC / "economy/currency_transaction.h").read_text()
+        transaction = (SRC / "economy/currency_transaction.c").read_text()
+        world_status = (SRC / "cmd/actinf.c").read_text()
+        for state in (
+            "awaiting_completion",
+            "waiting_for_player",
+            "retrying_callback",
+            "blocked_receipt",
+        ):
+            self.assertIn(state, transaction)
+        self.assertIn("currency_transaction_can_submit_nonrebasable", header)
+        self.assertNotIn("currency_transaction_can_submit(P_char", header)
+        for metric in (
+            "currency_transactions",
+            "retained_offline",
+            "publication_blocked",
+            "publication_retrying",
+            "publication_abandoned",
+        ):
+            self.assertIn(metric, world_status)
+
 
 if __name__ == "__main__":
     unittest.main()

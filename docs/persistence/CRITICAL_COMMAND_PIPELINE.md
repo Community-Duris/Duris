@@ -114,6 +114,56 @@ only non-transactional in-memory assignments. Focused validation is
 `python3 tests/async/test_epic_transaction_contract.py` and, on a guarded development
 database, `tests/async/run_epic_transaction_schema_mysql.sh`.
 
+## Currency receipt and live-publication boundary
+
+The currency adapter gives every in-process continuation an explicit publication
+state: awaiting coordinator completion, ready, waiting for its player, retrying a
+bounded coin callback, or blocked on an unresolved receipt. It retains the
+original operation ID and continuation when a receipt is ambiguous,
+retry-exhausted, or acknowledges a commit whose result or live balances cannot
+be validated. These states are **not** terminal rejection; they must not trigger
+a failure/refund callback. A blocked entry is not scanned again on every pulse.
+It emits one operation-ID-bearing diagnostic and sleeps until the coordinator
+delivers another exact receipt. See [issue #380](https://github.com/Community-Duris/Duris/issues/380).
+
+Coordinator completion and live publication have different lifetimes. A
+non-rebasable debit must respect the domain's player/account busy state even
+after the coordinator releases its execution fence. Rebasable rewards may queue
+behind ordinary in-flight work because they do not read the live balance, but
+stop for an affected player/account once publication is blocked. This prevents
+a single unresolved receipt from filling the global `CURRENCY_PENDING_MAX`
+table. Unrelated accounts retain their existing admission behavior.
+Successful publication, or a known terminal rejection, removes the completed
+pending entry before invoking its continuation. An extracted node owns callback
+context across re-entrant submissions; no pending-map iterator survives that
+callback.
+
+A corrected exact receipt can finish a retained operation once without issuing a
+new debit/credit. This is not automatic reconciliation tooling: an unresolved
+receipt can continue to fence dependent gameplay until the original result is
+recovered or the underlying fault is repaired. The fence deliberately includes
+every online character for the same account and racewar: those characters share
+one bank row, so a timeout or per-character bypass could spend an unpublished
+balance. Do not clear the pending operation, add a timeout, or create a replacement
+operation ID to conceal the fault. This in-process retention does not claim that
+callback context becomes durable across restart; durable continuation ownership
+belongs to the larger persistence refactor.
+
+`world persistence` reports `currency_transactions` pending, retained-offline,
+blocked-publication, callback-retry, outcome, malformed, submission-failure, and
+abandoned-publication counts. Blocked, malformed, failed-submission, or abandoned
+states make that line degraded; it exposes no account, player, or operation ID.
+
+`python3 tests/async/test_currency_completion_retention.py` links the actual
+adapter and codecs with controlled coordinator/live endpoints under ASan/UBSan
+in both build modes. It covers malformed/ambiguous receipts, range validation,
+offline re-entry, corrected/duplicate delivery, payload-free known rejection,
+account/racewar guards, re-entrant callback chaining/rehashing, normal rebasable
+admission, and blocked-publication admission.
+`test_currency_input_queue.py` additionally covers real command-selection and coin
+publication adapters. These tests do not by themselves prove SQL/flatfile storage
+or complete player-journey parity.
+
 ## Physical coin custody
 
 `coin_transfer_command` and the currency coordinator commit wallet and physical

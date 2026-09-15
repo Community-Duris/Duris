@@ -12,6 +12,9 @@
 constexpr size_t CURRENCY_PENDING_MAX = 1024;
 constexpr size_t CURRENCY_PENDING_CONTEXT_MAX_BYTES = 64;
 
+// A final notification: false means an explicit terminal rejection, never an
+// ambiguous outcome or failure to publish an acknowledged commit. Unresolved
+// receipts retain this same continuation and block non-rebasable admission.
 using currency_completion_fn = void (*)(P_char character, bool committed,
 					const currency_command_result &result,
 					unsigned int error_code, const uint8_t *context,
@@ -31,6 +34,8 @@ struct currency_transaction_health
 {
 	uint64_t pending;
 	uint64_t retained_offline;
+	uint64_t publication_blocked;
+	uint64_t publication_retrying;
 	uint64_t submitted;
 	uint64_t committed;
 	uint64_t rejected;
@@ -39,7 +44,9 @@ struct currency_transaction_health
 	uint64_t publication_abandoned;
 };
 
-bool currency_transaction_can_submit(P_char character);
+// Guard for commands built from the character's current wallet or bank view:
+// valid identity/capacity, no coordinator fence, and no unpublished predecessor.
+bool currency_transaction_can_submit_nonrebasable(P_char character);
 bool currency_transaction_player_busy(P_char character);
 bool currency_transaction_coin_item_busy(uint64_t item_uid);
 bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
