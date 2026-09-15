@@ -64,6 +64,24 @@ size_t job_bytes(const std::shared_ptr<cache_job> &job)
 	return job && job->value ? job->value->size() : 0;
 }
 
+bool cache_entry_expired(const local_cache_entry &entry, std::chrono::steady_clock::time_point now)
+{
+	return entry.expires != std::chrono::steady_clock::time_point{} && now >= entry.expires;
+}
+
+void prune_expired_locked()
+{
+	const auto now = std::chrono::steady_clock::now();
+	for (auto iterator = local_cache.begin(); iterator != local_cache.end();)
+	{
+		if (cache_entry_expired(iterator->second, now))
+			iterator = local_cache.erase(iterator);
+		else
+			++iterator;
+	}
+	health.local_entries = local_cache.size();
+}
+
 redisContext *connect_bounded()
 {
 	return redis_connection_open(configured_connection);
@@ -307,8 +325,7 @@ std::shared_ptr<const std::string> local_value(const char *key)
 	auto found = local_cache.find(owned_key);
 	if (found == local_cache.end())
 		return {};
-	if (found->second.expires != std::chrono::steady_clock::time_point{} &&
-	    std::chrono::steady_clock::now() >= found->second.expires)
+	if (cache_entry_expired(found->second, std::chrono::steady_clock::now()))
 	{
 		local_cache.erase(found);
 		health.local_entries = local_cache.size();
@@ -368,6 +385,7 @@ bool redis_cache_store_set(const char *key, const char *value, int ttl_seconds)
 		std::lock_guard<std::mutex> lock(store_mutex);
 		if (!health.initialized || !accepting)
 			return false;
+		prune_expired_locked();
 		auto found = local_cache.find(job->key);
 		if (found == local_cache.end() && local_cache.size() >= REDIS_CACHE_LOCAL_CAPACITY)
 		{
@@ -405,6 +423,7 @@ bool redis_cache_store_seed(const char *key, const char *value, int ttl_seconds)
 		std::lock_guard<std::mutex> lock(store_mutex);
 		if (!health.initialized || !accepting)
 			return false;
+		prune_expired_locked();
 		auto found = local_cache.find(owned_key);
 		if (found == local_cache.end() && local_cache.size() >= REDIS_CACHE_LOCAL_CAPACITY)
 			return false;

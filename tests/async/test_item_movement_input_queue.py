@@ -41,6 +41,7 @@ for command in (
     "CMD_EAT", "CMD_FILL", "CMD_POUR", "CMD_QUAFF", "CMD_RECITE",
     "CMD_RELOAD", "CMD_SALVAGE", "CMD_SIP", "CMD_SMOKE", "CMD_TASTE",
     "CMD_THROW", "CMD_THROWPOTION", "CMD_USE",
+    "CMD_ASK",
 ):
     assert command in DEPENDS
 
@@ -122,13 +123,14 @@ PRELUDE = r'''
 #define CMD_THROW 37
 #define CMD_THROWPOTION 38
 #define CMD_USE 39
+#define CMD_ASK 40
 
 static const char *command[] = {
 	"get", "take", "drop", "put", "give", "wear", "wield", "grab", "hold",
 	"remove", "open", "close", "empty", "junk", "donate", "sacrifice", "buy",
 	"sell", "look", "score", "equipment", "inventory", "fire", "apply", "bandage",
 	"drink", "eat", "fill", "pour", "quaff", "recite", "reload", "salvage", "sip",
-	"smoke", "taste", "throw", "throwpotion", "use", "\n"
+	"smoke", "taste", "throw", "throwpotion", "use", "ask", "\n"
 };
 
 P_obj object_list = NULL;
@@ -565,6 +567,7 @@ int main()
 	assert(!input_allowed_while_item_moving("recite scroll"));
 	assert(!input_allowed_while_item_moving("reload bow arrow"));
 	assert(!input_allowed_while_item_moving("use wand target"));
+	assert(!input_allowed_while_item_moving("ask bartender abandon"));
 	assert(input_allowed_while_item_moving("score"));
 	assert(input_allowed_while_item_moving("look"));
 	assert(input_allowed_while_item_moving("say still here"));
