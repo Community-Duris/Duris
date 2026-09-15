@@ -195,12 +195,14 @@ void kingdom_works_describe(unsigned built, char *out, size_t out_len)
  *
  * AC AND MATERIAL. apply_ac() (magic/affects.c) gives worn armour the GREATER
  * of a figure derived from its material and slot and the AC the object
- * carries -- value[0] on armour, value[3] on a shield. A real material would
- * therefore hand a level-10 buyer level-56 armour class through the floor it
- * puts under that figure (steel on the body alone is 24). Every piece that
- * carries AC is therefore made of MAT_UNDEFINED, whose floor is zero, so the
- * level-scaled AC below is exactly what the buyer gets. Weapons keep their
- * material: armour class is not computed from a weapon.
+ * carries -- value[0] on armour, value[3] on a shield. For ordinary armour
+ * that figure is a floor; under store gear it would be the wrong one, handing
+ * a level-10 buyer level-56 armour class (steel on the body alone is 24). So
+ * apply_ac() drops the figure for store pieces alone -- known by their blank's
+ * vnum, kingdom_store_piece.h -- and the level-scaled AC below is exactly
+ * what the buyer gets. Every piece is made of its REAL material -- steel from
+ * the forge, cloth or leather from the loom, silver from the jeweller -- so
+ * everything else that reads a material treats it as what it is.
  */
 
 /* One stat line: an APPLY_* location and its value on a level-56 piece. */
@@ -305,41 +307,41 @@ static const kingdom_craft_item kingdom_craft_catalogue[] = {
 	  20, WEAPON_STAFF, true, 0, KCRAFT_WEAPON_LINES(4), KCRAFT_ONE_WAY, MAT_HARDWOOD, 8 },
 	{ "breastplate", "steel breastplate", false, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR,
 	  ITEM_WEAR_BODY, 15, 0, false, 25, KCRAFT_LINE(APPLY_HIT, 15), KCRAFT_ONE_WAY,
-	  MAT_UNDEFINED, 25 },
+	  MAT_STEEL, 25 },
 	{ "helm", "steel helm", false, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_HEAD, 10, 0,
-	  false, 10, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_UNDEFINED, 6 },
+	  false, 10, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_STEEL, 6 },
 	{ "vambraces", "steel vambraces", true, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_ARMS,
-	  10, 0, false, 10, KCRAFT_LINE(APPLY_STR, 2), KCRAFT_ONE_WAY, MAT_UNDEFINED, 5 },
+	  10, 0, false, 10, KCRAFT_LINE(APPLY_STR, 2), KCRAFT_ONE_WAY, MAT_STEEL, 5 },
 	{ "greaves", "steel greaves", true, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_LEGS, 10, 0,
-	  false, 10, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_UNDEFINED, 8 },
+	  false, 10, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_STEEL, 8 },
 	{ "boots", "steel-shod boots", true, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_FEET, 10,
-	  0, false, 8, KCRAFT_LINE(APPLY_AGI, 2), KCRAFT_ONE_WAY, MAT_UNDEFINED, 5 },
+	  0, false, 8, KCRAFT_LINE(APPLY_AGI, 2), KCRAFT_ONE_WAY, MAT_STEEL, 5 },
 	{ "gauntlets", "steel gauntlets", true, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_HANDS,
-	  10, 0, false, 8, KCRAFT_LINE(APPLY_HITROLL, 2), KCRAFT_ONE_WAY, MAT_UNDEFINED, 4 },
+	  10, 0, false, 8, KCRAFT_LINE(APPLY_HITROLL, 2), KCRAFT_ONE_WAY, MAT_STEEL, 4 },
 	{ "shield", "steel shield", false, GH_ROOM_TYPE_FORGE, KCRAFT_SHIELD, ITEM_WEAR_SHIELD, 12,
-	  0, false, 15, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_UNDEFINED, 12 },
+	  0, false, 15, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_STEEL, 12 },
 
 	/* The loom: cloth and leather. */
 	{ "cloak", "woollen cloak", false, GH_ROOM_TYPE_LOOM, KCRAFT_ARMOR, ITEM_WEAR_ABOUT, 10, 0,
-	  false, 8, KCRAFT_LINE(APPLY_HIT, 10), KCRAFT_ONE_WAY, MAT_UNDEFINED, 3 },
+	  false, 8, KCRAFT_LINE(APPLY_HIT, 10), KCRAFT_ONE_WAY, MAT_CLOTH, 3 },
 	{ "belt", "leather belt", false, GH_ROOM_TYPE_LOOM, KCRAFT_ARMOR, ITEM_WEAR_WAIST, 10, 0,
-	  false, 5, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_belt_forms), MAT_UNDEFINED, 1 },
+	  false, 5, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_belt_forms), MAT_LEATHER, 1 },
 	{ "robe", "woven robe", false, GH_ROOM_TYPE_LOOM, KCRAFT_ARMOR, ITEM_WEAR_BODY, 15, 0,
-	  false, 15, KCRAFT_LINE(APPLY_MANA, 20), KCRAFT_ONE_WAY, MAT_UNDEFINED, 4 },
+	  false, 15, KCRAFT_LINE(APPLY_MANA, 20), KCRAFT_ONE_WAY, MAT_CLOTH, 4 },
 	{ "hood", "woven hood", false, GH_ROOM_TYPE_LOOM, KCRAFT_ARMOR, ITEM_WEAR_HEAD, 10, 0,
-	  false, 6, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_hood_forms), MAT_UNDEFINED, 1 },
+	  false, 6, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_hood_forms), MAT_CLOTH, 1 },
 	{ "gloves", "leather gloves", true, GH_ROOM_TYPE_LOOM, KCRAFT_ARMOR, ITEM_WEAR_HANDS, 10, 0,
-	  false, 5, KCRAFT_LINE(APPLY_DEX, 2), KCRAFT_ONE_WAY, MAT_UNDEFINED, 1 },
+	  false, 5, KCRAFT_LINE(APPLY_DEX, 2), KCRAFT_ONE_WAY, MAT_LEATHER, 1 },
 
 	/* The jeweller. A ring carries no armour class, so it is worn, not armour. */
 	{ "ring", "silver ring", false, GH_ROOM_TYPE_JEWELLER, KCRAFT_WORN, ITEM_WEAR_FINGER, 8, 0,
-	  false, 0, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_ring_forms), MAT_UNDEFINED, 1 },
+	  false, 0, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_ring_forms), MAT_SILVER, 1 },
 	{ "bracelet", "silver bracelet", false, GH_ROOM_TYPE_JEWELLER, KCRAFT_ARMOR,
 	  ITEM_WEAR_WRIST, 8, 0, false, 4, KCRAFT_NO_LINES,
-	  KCRAFT_FORMS(kingdom_craft_bracelet_forms), MAT_UNDEFINED, 1 },
+	  KCRAFT_FORMS(kingdom_craft_bracelet_forms), MAT_SILVER, 1 },
 	{ "necklace", "silver necklace", false, GH_ROOM_TYPE_JEWELLER, KCRAFT_ARMOR, ITEM_WEAR_NECK,
 	  8, 0, false, 4, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_necklace_forms),
-	  MAT_UNDEFINED, 1 },
+	  MAT_SILVER, 1 },
 };
 
 #undef KCRAFT_FORMS
