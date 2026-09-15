@@ -3871,7 +3871,8 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 		recover_committed_corpse_raise(key, corpse, follower, "raise_live_topology_stale");
 		return;
 	}
-	if (!caster || !follower || caster->in_room <= NOWHERE || follower->in_room != NOWHERE)
+	if (!caster || !follower || caster->in_room <= NOWHERE || caster->in_room > top_of_world ||
+	    world[caster->in_room].number != payload.room_vnum || follower->in_room != NOWHERE)
 	{
 		recover_committed_corpse_raise(key, corpse, follower, "raise_live_topology_stale");
 		return;
