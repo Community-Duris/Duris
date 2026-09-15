@@ -52,6 +52,7 @@
 #include "net/ws_handlers.h"
 #include "core/safe_format.h"
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
