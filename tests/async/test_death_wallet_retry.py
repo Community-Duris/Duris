@@ -76,6 +76,7 @@ void death_custody_wait_reset(P_char) {}
 P_obj corpse_live_item(uint64_t) { return &corpse_object; }
 bool money_to_inventory(P_char) { ++wallet_attempts; return wallet_admitted; }
 bool submit_next_corpse_item(P_char, P_obj) { ++item_submissions; return true; }
+void collector_death_enrollment_end(P_obj) {}
 bool save_disputed_death_disposition(P_char ch, uint64_t) {
     assert(ch->cash[0] == 0); ++dispositions; return disposition_ok;
 }
