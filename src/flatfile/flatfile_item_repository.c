@@ -1405,6 +1405,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 
 flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::vector<uint64_t> &custody_uids,
 	flatfile_authority_operation *operation, std::string *error)
 {
 	if (!operation || !pid || !lock.matches(root))
@@ -1418,16 +1419,29 @@ flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantin
 	owner_state *owner = find_owner(&catalog, player);
 	if (!owner)
 		return flatfile_item_repository_result::not_found;
+	std::unordered_set<uint64_t> retained;
+	try
+	{
+		retained.reserve(custody_uids.size());
+		for (uint64_t uid : custody_uids)
+			if (uid)
+				retained.insert(uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
 	bool changed = false;
 	for (auto &item : catalog.items)
 	{
 		if (item.state != item_custody_state::active ||
-		    !item_owner_identity_equal(item.owner, player))
+		    !item_owner_identity_equal(item.owner, player) ||
+		    !retained.contains(item.item_uid))
 			continue;
 		if (item.item_revision == UINT64_MAX)
 			return flatfile_item_repository_result::invalid;
-		// Keep identity, parentage and payload, including durable-only children
-		// which caused a refused subtree count. Ownership is not reassigned.
+		// Keep identity, parentage and payload for the captured death graph.
+		// Live player-owned objects outside that graph remain active and usable.
 		item.state = item_custody_state::quarantined;
 		++item.item_revision;
 		changed = true;
