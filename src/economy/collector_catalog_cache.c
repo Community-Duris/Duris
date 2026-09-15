@@ -71,6 +71,9 @@ void collector_catalog_cache_invalidate(void)
 	// A request started here necessarily reads after the authority commit that
 	// produced the completion. A busy cache may still be finishing an older
 	// snapshot; retain the latch so pulse starts a subsequent read.
+	// Do not admit collector commands against the pre-commit ownership
+	// projection while that authoritative snapshot is being installed.
+	ready = false;
 	if (!cache.busy() && collector_catalog_cache_refresh())
 		invalidated = false;
 	else

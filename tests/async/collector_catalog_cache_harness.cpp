@@ -117,6 +117,7 @@ int main()
 	assert(load_entered);
 	source_revision = 12;
 	collector_catalog_cache_invalidate();
+	assert(!collector_catalog_cache_ready());
 	block_load = false;
 	release_load = true;
 	assert(wait_until(revision_twelve_ready));

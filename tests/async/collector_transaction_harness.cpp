@@ -24,6 +24,7 @@ size_t ownership_publications = 0;
 size_t runtime_publications = 0;
 size_t outbox_publications = 0;
 size_t outbox_resumes = 0;
+size_t catalog_invalidations = 0;
 size_t passthrough_deliveries = 0;
 size_t live_collection_validations = 0;
 size_t live_collection_detaches = 0;
@@ -223,6 +224,11 @@ bool collector_publish_committed_event(const collector_command_result &result,
 	return true;
 }
 
+void collector_catalog_cache_invalidate(void)
+{
+	++catalog_invalidations;
+}
+
 critical_outbox_delivery_result critical_outbox_test_destination(const critical_outbox_record &,
 								 void *)
 {
@@ -261,15 +267,15 @@ int main()
 	auto purchase_completion = completion(purchased);
 	player_online = false;
 	collector_transaction_handle_completions(&purchase_completion, 1);
-	assert(!collector_transaction_player_busy(&character) && completion_called &&
-	       completion_committed && !completion_character && !wallet_publications &&
-	       ownership_publications == 1 && runtime_publications == 1);
+	assert(collector_transaction_player_busy(&character) && !completion_called &&
+	       !wallet_publications && ownership_publications == 0 && runtime_publications == 0);
 	player_online = true;
 	collector_transaction_player_ready(&character);
 	assert(!collector_transaction_player_busy(&character) && completion_called &&
-	       completion_committed && completion_error == 0 &&
-	       completion_action == collector_action::purchase && !wallet_publications &&
-	       ownership_publications == 1 && runtime_publications == 1);
+	       completion_committed && completion_character == &character &&
+	       completion_error == 0 && completion_action == collector_action::purchase &&
+	       wallet_publications == 1 && ownership_publications == 1 &&
+	       runtime_publications == 1);
 	assert(!collector_transaction_listing_busy(available.listing));
 
 	completion_called = completion_committed = false;
@@ -280,7 +286,7 @@ int main()
 		completion(rejected, critical_apply_outcome::terminal_failure, EAGAIN);
 	collector_transaction_handle_completions(&rejected_completion, 1);
 	assert(completion_called && !completion_committed && completion_error == EAGAIN &&
-	       !wallet_publications && ownership_publications == 1 && runtime_publications == 1);
+	       wallet_publications == 1 && ownership_publications == 1 && runtime_publications == 1);
 
 	completion_called = completion_committed = false;
 	collector::rules policy;
@@ -300,7 +306,7 @@ int main()
 	collector_transaction_handle_completions(&collect_completion, 1);
 	assert(completion_called && completion_committed &&
 	       completion_action == collector_action::collect && ownership_publications == 2 &&
-	       runtime_publications == 2 && !wallet_publications &&
+	       runtime_publications == 2 && wallet_publications == 1 &&
 	       live_collection_validations == 1 && live_collection_detaches == 1);
 	assert(!collector_transaction_listing_busy(candidate.listing));
 	assert(!collector_transaction_item_busy(candidate.uid));
@@ -324,7 +330,8 @@ int main()
 	collector_transaction_handle_completions(&recovery_completion, 1);
 	assert(completion_called && completion_committed && completion_error == ESTALE &&
 	       completion_action == collector_action::collect && ownership_publications == 3 &&
-	       runtime_publications == 2 && live_collection_validations == 2 &&
+	       runtime_publications == 2 && wallet_publications == 1 &&
+	       live_collection_validations == 2 &&
 	       live_collection_detaches == 1);
 	ownership_publication_succeeds = true;
 
@@ -345,7 +352,7 @@ int main()
 	collector_transaction_handle_completions(&malformed_completion, 1);
 	assert(completion_called && completion_committed && completion_error == EBADMSG &&
 	       completion_action == collector_action::unknown && ownership_publications == 3 &&
-	       runtime_publications == 2);
+	       runtime_publications == 2 && wallet_publications == 1);
 
 	// If the transactional outbox wins the race against the coordinator completion,
 	// publication must reuse the retained request so custody and the live graph are
@@ -377,7 +384,8 @@ int main()
 	collector_transaction_publish_outbox();
 	assert(completion_called && completion_committed && completion_error == 0 &&
 	       completion_action == collector_action::collect && ownership_publications == 4 &&
-	       runtime_publications == 3 && live_collection_validations == 3 &&
+	       runtime_publications == 3 && wallet_publications == 1 &&
+	       live_collection_validations == 3 &&
 	       live_collection_detaches == 2 && !collector_transaction_item_busy(205));
 	assert(!outbox_publications && outbox_resumes == 1);
 	assert(collector_transaction_outbox_delivery(pending_record, nullptr) ==
@@ -397,7 +405,7 @@ int main()
 	assert(collector_transaction_outbox_delivery(record, nullptr) ==
 	       critical_outbox_delivery_result::retryable_failure);
 	collector_transaction_publish_outbox();
-	assert(outbox_publications == 1 && outbox_resumes == 2);
+	assert(outbox_publications == 1 && catalog_invalidations == 1 && outbox_resumes == 2);
 	assert(collector_transaction_outbox_delivery(record, nullptr) ==
 	       critical_outbox_delivery_result::delivered);
 	record.event_type++;

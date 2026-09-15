@@ -1,5 +1,5 @@
-#ifndef CURRENCY_TRANSACTION_H
-#define CURRENCY_TRANSACTION_H
+#ifndef DURIS_ECONOMY_CURRENCY_TRANSACTION_H
+#define DURIS_ECONOMY_CURRENCY_TRANSACTION_H
 
 #include "persistence/critical_command_coordinator.h"
 #include "economy/currency_command.h"

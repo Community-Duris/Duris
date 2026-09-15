@@ -7665,7 +7665,7 @@ bool sql_save_corpse(P_obj corpse)
 		sql_rollback();
 		return false;
 	}
-	MYSQL_RES *revision_rows = db_query(revision_query);
+	MYSQL_RES *revision_rows = db_query("%s", revision_query);
 	if (!revision_rows)
 	{
 		free(esc_name);
@@ -7841,7 +7841,7 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 		esc_name, save_id);
 	if (query_length < 0 || (size_t)query_length >= sizeof(query))
 		return fail();
-	MYSQL_RES *identity_rows = db_query(query);
+	MYSQL_RES *identity_rows = db_query("%s", query);
 	if (!identity_rows)
 		return fail();
 	MYSQL_ROW identity_row = mysql_fetch_row(identity_rows);

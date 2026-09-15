@@ -1557,6 +1557,11 @@ flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
 		*result_code = ERANGE;
 		return flatfile_world_item_result::ok;
 	}
+	if (*aggregate_revision != payload.expected_from_owner_revision)
+	{
+		*result_code = ESTALE;
+		return flatfile_world_item_result::ok;
+	}
 	if (!collector_detach_snapshot(items, payload, decoded[0], result_code))
 		return errno == ENOMEM ? flatfile_world_item_result::io_error :
 					 flatfile_world_item_result::invalid;

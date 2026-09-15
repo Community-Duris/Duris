@@ -316,11 +316,11 @@ int main()
 	available_count = 0;
 	++catalog_revision;
 	collector_presence_pulse();
-	assert(live_collectors() == 0);
-	assert(!collector_presence_room_active(0));
+	assert(live_collectors() == registered_count);
+	assert(collector_presence_room_active(0));
 	health = collector_presence_health_copy();
-	assert(!health.desired);
-	assert(health.active_rooms == 0);
+	assert(health.desired);
+	assert(health.active_rooms == registered_count);
 
 	collector_presence_shutdown();
 	assert(indexes[0].func.mob == nullptr);

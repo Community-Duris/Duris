@@ -1,6 +1,7 @@
 #include "economy/collector_transaction.h"
 
 #include "economy/collector_collection_preparation.h"
+#include "economy/collector_catalog_cache.h"
 #include "economy/collector_runtime.h"
 #include "economy/currency_transaction.h"
 #include "item/item_ownership_runtime.h"
@@ -258,7 +259,12 @@ void collector_transaction_handle_completions(const critical_completion *complet
 		P_char character = found->second.actor_pid ?
 					   find_player_by_pid(found->second.actor_pid) :
 					   nullptr;
-		publish(found, character);
+		// Durable completion may race with a disconnect.  Keep the request and
+		// its item fence until the owning player is present again; publishing a
+		// player purchase with a null character would advance custody while
+		// dropping the wallet update and the callback.
+		if (!found->second.actor_pid || character)
+			publish(found, character);
 	}
 }
 
@@ -408,12 +414,20 @@ void collector_transaction_publish_outbox(void)
 						find_player_by_pid(
 							pending_found->second.actor_pid) :
 						nullptr;
-				published = publish(pending_found, character);
+				if (!pending_found->second.actor_pid || character)
+					published = publish(pending_found, character);
 			}
 		}
 		else
+		{
 			published =
 				collector_publish_committed_event(entry.result, entry.outbox_id);
+			if (published)
+				// A restarted process has no retained item payload.  The durable
+				// catalog and held-item projection are the recovery source of truth;
+				// force the cache to reconcile them before exposing the next command.
+				collector_catalog_cache_invalidate();
+		}
 		std::lock_guard<std::mutex> lock(outbox_mutex);
 		auto found = outbox_publications.find(entry.outbox_id);
 		if (found != outbox_publications.end())

@@ -41,8 +41,11 @@ int collector_special(P_char collector, P_char, int, char *)
 
 bool presence_desired()
 {
-	return health.initialized && collector_config_enabled() &&
-	       collector_catalog_cache_ready() && collector_runtime_available_count() > 0;
+	// Keep the protected service present whenever the feature has a ready
+	// catalog.  An empty catalog is a valid player-visible state: it lets
+	// `collector list` explain that nothing is being held instead of making the
+	// service disappear and reporting that the room is unavailable.
+	return health.initialized && collector_config_enabled() && collector_catalog_cache_ready();
 }
 
 void protect(P_char collector)

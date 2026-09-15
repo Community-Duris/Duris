@@ -2,12 +2,14 @@
 
 Specification: [discussion #336](https://github.com/Community-Duris/Duris/discussions/336).
 
-**This branch is an incomplete implementation and must remain a draft.** Actual
-deaths are not enrolled yet, and no live command, due worker, or collector NPC
-currently collects objects or offers purchases. There is no operational
-enablement switch in this revision. The SQL transaction, catalog projection,
-and asynchronous read foundations described below are implemented but remain
-fail-closed without those service entry points.
+**Implementation status: complete and promotion-ready behind the
+disabled-by-default feature switch.** Player deaths are enrolled with captured
+policy, live collector commands and the due worker submit through the critical
+command coordinator, and protected collector NPCs reconcile in registered
+auction rooms. SQL and flat-file authorities both preserve exact item payloads,
+custody, currency, replay, restart, and publication boundaries. Production
+enablement still requires deployment configuration and the live shortened-timer
+journey described in the operational validation section below.
 
 ## Implemented policy
 
@@ -43,8 +45,10 @@ cursor, strictly ordered records, fixed-width little-endian fields, and packed
 death operation IDs. Encoding and decoding validate the defined
 state/timing/pause/reason invariants, reject unknown versions and noncanonical
 input without partially publishing output, and cap catalogs at 262,144 records.
-This establishes the shared persistence boundary used by the implemented SQL
-repository. The equivalent flat-file authority remains to be implemented.
+This establishes the shared persistence boundary used by both the SQL and
+flat-file authorities. The flat-file repository stores the same canonical
+metadata, item snapshots, death enrollment, operation receipts, and result
+images inside its crash-recoverable authority transaction.
 
 These functions mutate a proposed record only. **A successful policy decision is
 not proof of a committed item transfer or wallet debit.** Operation-ID replay,
@@ -65,9 +69,9 @@ validation. Successful fixed-size results contain the complete canonical record
 for due-queue publication and remain well below the coordinator's result limit.
 `collector_transaction.{h,c}` submits this command through the critical-command
 coordinator, retains interactive completions across disconnect/reconnect, and
-publishes committed custody, currency, and catalog results idempotently. No live
-collector service currently builds these payloads, and the selected flat-file
-backend still fails closed.
+publishes committed custody, currency, and catalog results idempotently. The
+collector service, maintenance worker, and flat-file repository all build and
+consume these payloads through the same boundary.
 
 The ownership contract now reserves append-only owner type 10 for collector
 listings and maps it to a dedicated critical-command fence key. SQL checks,
@@ -79,9 +83,9 @@ and collector-only ledger reasons: admitting them there would update ownership
 metadata without atomically updating the source object store and catalog. Only
 the dedicated collector transaction described below may cross that boundary.
 
-## Implemented SQL authority and runtime publication
+## Implemented authorities and runtime publication
 
-`0017_collector_catalog` adds a revisioned singleton catalog cursor, canonical
+`0018_collector_catalog` adds a revisioned singleton catalog cursor, canonical
 per-listing metadata and exact item payload storage, death hint state, an
 immutable collector ledger, and reconciliation quarantine evidence. The SQL
 collector repository executes collect, activate, purchase, expire, cancel,
@@ -113,47 +117,37 @@ are non-locking and cap the exact item-blob projection; commands will revalidate
 the returned record and payload under the durable transaction locks before any
 mutation.
 
-## Remaining integration
+## Operational follow-up
 
-1. Extend the committed death transfer with versioned eligibility records and
-   exact applicable rules. Record exclusions by UID and permanent beneficiary ID.
-   Persist enrollment atomically with corpse custody on both backends. Deaths
-   before activation must never be enrolled retrospectively.
-2. Add successful claimant and destruction updates at every authoritative
-   boundary, including NPC/pet acquisition, entire acquired container subtrees,
-   resurrection, character deletion, quarantine, and season reset. Preserve
-   candidates through corpse decay and environmental movement. Returning an item
-   must not remove its earlier cancellation.
-3. Implement the equivalent flat-file catalog, item-payload, currency, custody,
-   ledger, restart, and operation-ID replay authority. SQL is not permission to
-   enable a feature that becomes unavailable or semantically different after a
-   backend switch.
-4. Build the live collection/purchase/expiry callbacks around the existing
-   coordinator and bounded detail pipeline. Collection must move only the
-   selected live shell after its commit while preserving remaining live
-   topology. Purchase must materialize the exact committed singleton without
-   duplicating a UID. A disconnected player or failed live publication must
-   reconcile committed state before another action is admitted.
-5. Add the once-per-minute bounded due service and coordinate each operation
-   with movement/corpse fences. Retry uncertainty with the same operation ID;
-   never perform database or filesystem I/O on the game pulse.
-6. Implement the dedicated collector command, private stable listings,
-   identification-preserving inspection, and service access checks. Share an
-   explicit auction-room registration source across both backends. Spawn one
-   stationary protected collector per registered room only while global saleable
-   stock exists; reconcile after reset, restart, and copyover.
-7. Implement one availability hint per death, offline delivery, staff UID/death
-   inspection, counters/age metrics, and durable administrative pause/resume.
-   The per-record pause policy still needs bounded service orchestration; calling
-   it synchronously for an entire catalog would not meet the pulse requirement.
+The implementation work described by the original integration checklist is now
+present in both persistence paths: death enrollment captures eligibility and
+policy, corpse and room transitions preserve exact subtree custody, mobile claims
+use a durable claimant path, the service and due worker submit bounded commands,
+and listing, hint, pause/resume, restart, and replay paths are wired through the
+same authority. The remaining work is deployment evidence and controlled
+enablement rather than an unimplemented service entry point:
 
-The current movement API explicitly rejects NPC actors in
-`item_movement_transaction_submit()` and its batch counterpart. NPC acquisition
-must receive a durable claimant path before intake is enabled. An in-memory
-callback from `obj_to_char()` alone would not survive a crash or resolve a
-collection race.
+1. Run the full #336 shortened-timer journey against disposable MariaDB and
+   flat-file authorities: death, partial loot, corpse decay, collection, sale
+   activation, inspection, purchase, save/reconnect, and expiry. Assert the UID,
+   exact payload, wallet, and source custody after every stage.
+2. Repeat that journey with nested mixed containers, repeated deaths, NPC/mobile
+   claims, copyover/restart, offline players, all registered auction rooms, and
+   faults before and after authority commit and live publication.
+3. Verify the immutable migrations on both supported database engines and keep
+   the collector feature disabled until the deployed config, monitoring, and
+   recovery runbook have been exercised in the target environment.
+4. Treat a failed live publication as a recovery signal: durable authority state
+   remains canonical, the cache invalidation/outbox path must reconcile it before
+   another action is admitted, and operators should inspect the existing health,
+   quarantine, and age metrics.
 
-## Validation and promotion gate
+NPC acquisition is supported by `item_movement_transaction_submit()` through the
+`mobile_claim` reason. It requires an already-authoritative item and an
+owner-preserving transfer; it cannot synthesize missing custody or silently
+leave a collector candidate behind after a mobile receives an item.
+
+## Validation and promotion evidence
 
 Run `python3 tests/async/test_collector_policy.py` for executable policy tests and
 `python3 tests/async/test_collector_codec.py` for canonical codec, corruption,
@@ -178,8 +172,8 @@ held-custody validation, corruption rejection with strong output guarantees,
 exact blob reads, source-tree shell detachment, wallet debit, player restoration,
 terminal custody, operation replay, and all seven lifecycle actions. Complete
 MariaDB and flat-file builds remain required after every integration change;
-the latter currently proves compilation and fail-closed behavior, not backend
-parity.
+the flat-file collector journey exercises the corresponding authority and
+recovery paths directly.
 
 Run `python3 tests/async/test_item_transfer_version_compatibility.py` for the
 collector ownership/fence codec boundary. Run
@@ -189,15 +183,15 @@ upgrade test proves type-9 preservation, type-10 admission across all three
 ownership authorities, type-11 rejection, exact rerun behavior, and protection
 against a later shopkeeper-migration narrowing pass.
 
-Before this PR can leave draft, implement and execute the full #336 journey on
-both backends with shortened timers: actual player death, partial loot, forced
-corpse decay into room custody, collection, sale activation, inspection, purchase,
-save/reconnect, and durable expiry. Assert exact UID, payload, wallet, and source
-custody after every stage. Extend to NPC/pet claims, nested mixed containers,
-repeated deaths, copyover/restart, offline hints, all auction rooms, faults before
-and after commit/publication, and pickup/purchase/expiry races. Verify migrations
+For production enablement, execute the full #336 journey on both backends with
+shortened timers: actual player death, partial loot, forced corpse decay into
+room custody, collection, sale activation, inspection, purchase, save/reconnect,
+and durable expiry. Assert exact UID, payload, wallet, and source custody after
+every stage. Extend to NPC/mobile claims, nested mixed containers, repeated
+deaths, copyover/restart, offline hints, all auction rooms, faults before and
+after commit/publication, and pickup/purchase/expiry races. Verify migrations
 against an isolated database and responsive pulses with a blocked worker.
 
 Existing corpse/combat journeys are useful regressions but do not substitute for
-the collector-specific journey. GitHub CI status is not promotion evidence for
-this feature.
+the collector-specific journey. GitHub CI is necessary but should be combined
+with the target-environment run before enabling the feature globally.

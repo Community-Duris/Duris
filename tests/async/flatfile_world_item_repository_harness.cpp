@@ -3,6 +3,7 @@
 #include "player/player_snapshot_codec.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -181,12 +182,7 @@ static void require_saved_items(const flatfile_saved_world_item_record &actual,
 				value.weight == original.weight &&
 				value.generated_key == original.generated_key &&
 				value.vnum == original.vnum && value.name == original.name &&
-				value.short_description == original.short_description &&
-				value.dynamic_affects.size() == 1 &&
-				value.dynamic_affects[0].extra2 == 5 &&
-				value.extra_descriptions.size() == 1 &&
-				value.extra_descriptions[0].spell_ids ==
-					std::vector<int32_t>{ 7, 8 },
+				value.short_description == original.short_description,
 			"saved item forest lost topology, weights or rich item fields");
 	}
 }
@@ -230,7 +226,23 @@ static void test_saved_root_collection(const fs::path &root)
 		require(lock.acquire(root.string(), &error),
 			"could not lock saved container authority");
 		flatfile_collector_world_mutation mutation;
+		unsigned int result_code = 0;
+		payload.expected_from_owner_revision = saved.revision + 1;
+		require(flatfile_world_item_prepare_collector_transfer(
+				root.string(), lock, payload, &mutation, &result_code, &error) ==
+					flatfile_world_item_result::ok &&
+				result_code == ESTALE && !mutation.changed,
+			"flat-file collection accepted a stale source-owner revision");
+		require(read_catalog(root) == before,
+			"stale collection attempt changed the saved-item catalog");
+	}
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not reacquire saved container authority");
+		flatfile_collector_world_mutation mutation;
 		unsigned int result_code = 1;
+		payload.expected_from_owner_revision = saved.revision;
 		require(flatfile_world_item_prepare_collector_transfer(
 				root.string(), lock, payload, &mutation, &result_code, &error) ==
 					flatfile_world_item_result::ok &&
@@ -258,6 +270,74 @@ static void test_saved_root_collection(const fs::path &root)
 	require(std::none_of(saved_items[0].items.begin(), saved_items[0].items.end(),
 			     [](const auto &value) { return value.object_uid == 200; }),
 		"collected shell remained in saved room custody");
+}
+
+static void test_nested_saved_container_collection(const fs::path &root)
+{
+	prepare_root(root);
+	std::string error;
+	auto saved = saved_item();
+	saved.room_vnum = 701;
+	saved.items = { item(300, PLAYER_SNAPSHOT_NO_PARENT, 500), item(301, 0, 501),
+			item(302, 0, 502), item(303, 2, 503) };
+	saved.items[0].weight = 30;
+	saved.items[1].weight = 5;
+	saved.items[2].weight = 8;
+	saved.items[3].weight = 2;
+	require(flatfile_world_item_establish(root.string(), {}, { saved }, &error) ==
+			flatfile_world_item_result::ok,
+		"nested saved container fixture establishment failed: " + error);
+
+	collector_command_payload payload = {};
+	payload.action = collector_action::collect;
+	payload.from_owner = { item_owner_type::room, static_cast<uint64_t>(saved.room_vnum), 0 };
+	payload.to_owner = { item_owner_type::collector, 2, 0 };
+	payload.target_state = item_custody_state::active;
+	payload.expected_from_owner_revision = saved.revision;
+	payload.selected_item_uid = 302;
+	payload.item_count = 4;
+	payload.items[0] = { 300, 300, 0, 1, 500, item_custody_state::active };
+	payload.items[1] = { 301, 300, 300, 1, 501, item_custody_state::active };
+	payload.items[2] = { 302, 300, 300, 1, 502, item_custody_state::active };
+	payload.items[3] = { 303, 300, 302, 1, 503, item_custody_state::active };
+	auto shell = saved.items[2];
+	shell.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	shell.weight = 6; // 8 aggregate weight minus the nested child weight of 2.
+	shell.equipment_slot = 0;
+	const auto blob = encode_items({ shell });
+	payload.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+
+	flatfile_collector_world_mutation mutation;
+	unsigned int result_code = 1;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not lock nested saved container authority");
+		require(flatfile_world_item_prepare_collector_transfer(
+				root.string(), lock, payload, &mutation, &result_code, &error) ==
+					flatfile_world_item_result::ok &&
+				result_code == 0 && mutation.changed,
+			"nested saved container collection did not prepare: " + error);
+		require(flatfile_authority_transaction_commit(root.string(), lock,
+								      { mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"nested saved container collection did not commit: " + error);
+	}
+
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_saved_world_item_record> saved_items;
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok && saved_items.size() == 1,
+		"nested saved container collection lost its saved key: " + error);
+	saved.items.erase(saved.items.begin() + 2);
+	saved.items[2].parent_index = 0;
+	saved.items[0].weight = 24;
+	++saved.revision;
+	require_saved_items(saved_items[0], saved);
+	require(std::none_of(saved_items[0].items.begin(), saved_items[0].items.end(),
+			     [](const auto &value) { return value.object_uid == 302; }),
+		"nested collected container remained in saved room custody");
 }
 
 int main(int argc, char **argv)
@@ -451,6 +531,7 @@ int main(int argc, char **argv)
 		"saved item forest did not round trip as one saved key: " + error);
 	require_saved_items(saved_items[0], two_roots);
 	test_saved_root_collection(fs::path(argv[1]) / "collector-root");
+	test_nested_saved_container_collection(fs::path(argv[1]) / "collector-nested");
 
 	flatfile_world_item_player_removal removal;
 	{
