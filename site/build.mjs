@@ -108,6 +108,32 @@ md.renderer.rules.table_open = (...args) =>
   `<div class="table-scroll" role="region" aria-label="Scrollable table" tabindex="0">${renderTableOpen ? renderTableOpen(...args) : "<table>"}`;
 md.renderer.rules.table_close = () => "</table></div>";
 
+// Publish the tracked standalone diagrams without changing their artwork or styles.
+const diagrams = await Promise.all(
+  [...tracked]
+    .filter((source) => /^docs\/diagrams\/.+\.html$/.test(source))
+    .sort()
+    .map(async (source) => {
+      const html = await readFile(path.join(root, source), "utf8");
+      const title = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
+      const description = html.match(/<desc\b[^>]*>([\s\S]*?)<\/desc>/i)?.[1];
+      if (!title || !description)
+        throw new Error(
+          `Diagram needs a heading and accessible description: ${source}`,
+        );
+      const text = (value) =>
+        md.utils.unescapeAll(value.replace(/<[^>]+>/g, "")).trim();
+      const url = `${base}${encoded(source.slice("docs/".length))}`;
+      routes.set(source, url);
+      return {
+        source,
+        url,
+        title: text(title),
+        description: text(description),
+      };
+    }),
+);
+
 function renderDoc(text, source) {
   const env = { source };
   const tokens = md.parse(text, env);
@@ -194,7 +220,7 @@ await build({
   logLevel: "warning",
 });
 
-const index = `<main id="main"><section class="hero"><img class="hero-art" src="${base}assets/citadel.webp" alt="A warm-lit stone citadel above a misty lake and an ancient arched bridge" width="1942" height="809" fetchpriority="high"><div class="hero-copy"><h1>A world worth<br>understanding.</h1><p>Explore the code, systems, and craft behind DurisMUD.</p><a class="button" href="#documentation">Explore documentation ${external}</a></div></section><section class="explore" id="explore" aria-labelledby="explore-title"><h2 id="explore-title">Explore the project</h2><div class="categories"><a href="#documentation"><span class="category-number">01 /</span><div><h3>Documentation</h3><p>Guides to the world behind the game.</p></div>${arrow}</a><a href="${github}"><span class="category-number">02 /</span><div><h3>Source code</h3><p>The engine, tools, and world data.</p></div>${arrow}</a><a href="${github}/pulls"><span class="category-number">03 /</span><div><h3>Development</h3><p>Follow changes and contribute.</p></div>${arrow}</a></div></section><section class="library" id="documentation" aria-labelledby="library-title"><div class="library-heading"><div><h2 id="library-title">The documentation library</h2><p>Find your way in. Then go deeper.</p></div><form class="search-form" role="search" hidden><label class="search-field">${search}<span class="sr-only">Search documentation</span><input type="search" name="q" id="search" placeholder="Search documentation" autocomplete="off"></label></form></div><div class="filters" role="group" aria-label="Filter guides" hidden>${["All guides", ...groups].map((group, i) => `<button type="button" data-filter="${group}" aria-pressed="${i === 0}">${group}</button>`).join("")}</div><p class="search-status sr-only" role="status" aria-live="polite"></p><div class="guide-list">${catalog.map(guideRow).join("")}</div><div class="empty-state" hidden><h3>No guides found</h3><p>Try a different search or browse all guides.</p><button type="button" class="button" id="clear-search">Clear search & filters</button></div><a class="complete-index" href="${routes.get("docs/README_docs.md")}">Open the complete repository index ${arrow}</a></section></main>`;
+const index = `<main id="main"><section class="hero"><img class="hero-art" src="${base}assets/citadel.webp" alt="A warm-lit stone citadel above a misty lake and an ancient arched bridge" width="1942" height="809" fetchpriority="high"><div class="hero-copy"><h1>A world worth<br>understanding.</h1><p>Explore the code, systems, and craft behind DurisMUD.</p><a class="button" href="#documentation">Explore documentation ${external}</a></div></section><section class="explore" id="explore" aria-labelledby="explore-title"><h2 id="explore-title">Explore the project</h2><div class="categories"><a href="#documentation"><span class="category-number">01 /</span><div><h3>Documentation</h3><p>Guides to the world behind the game.</p></div>${arrow}</a><a href="${base}diagrams/"><span class="category-number">02 /</span><div><h3>Diagrams</h3><p>See how the systems fit together.</p></div>${arrow}</a><a href="${github}"><span class="category-number">03 /</span><div><h3>Source code</h3><p>The engine, tools, and world data.</p></div>${arrow}</a><a href="${github}/pulls"><span class="category-number">04 /</span><div><h3>Development</h3><p>Follow changes and contribute.</p></div>${arrow}</a></div></section><section class="library" id="documentation" aria-labelledby="library-title"><div class="library-heading"><div><h2 id="library-title">The documentation library</h2><p>Find your way in. Then go deeper.</p></div><form class="search-form" role="search" hidden><label class="search-field">${search}<span class="sr-only">Search documentation</span><input type="search" name="q" id="search" placeholder="Search documentation" autocomplete="off"></label></form></div><div class="filters" role="group" aria-label="Filter guides" hidden>${["All guides", ...groups].map((group, i) => `<button type="button" data-filter="${group}" aria-pressed="${i === 0}">${group}</button>`).join("")}</div><p class="search-status sr-only" role="status" aria-live="polite"></p><div class="guide-list">${catalog.map(guideRow).join("")}</div><div class="empty-state" hidden><h3>No guides found</h3><p>Try a different search or browse all guides.</p><button type="button" class="button" id="clear-search">Clear search & filters</button></div><a class="complete-index" href="${routes.get("docs/README_docs.md")}">Open the complete repository index ${arrow}</a></section></main>`;
 await writeFile(
   path.join(out, "index.html"),
   layout(
@@ -202,6 +228,24 @@ await writeFile(
     "Explore the code, systems, and craft behind DurisMUD. Browse guides for developers, operators, and world builders.",
     base,
     index,
+  ),
+);
+
+const diagramsRoute = `${base}diagrams/`;
+await mkdir(path.join(out, "diagrams"), { recursive: true });
+for (const diagram of diagrams) {
+  const destination = path.join(out, diagram.source.slice("docs/".length));
+  await mkdir(path.dirname(destination), { recursive: true });
+  await cp(path.join(root, diagram.source), destination);
+}
+const gallery = `<main id="main" class="diagram-gallery"><div class="breadcrumb"><a href="${base}#explore">Explore the project</a><span>/</span><span>Diagrams</span></div><header class="doc-heading"><h1>Diagrams</h1><p>A closer look at the systems behind the world.</p></header><nav class="diagram-jump" aria-label="Choose a diagram">${diagrams.map((diagram, i) => `<a href="#diagram-${i + 1}">${esc(diagram.title)} ${arrow}</a>`).join("")}</nav>${diagrams.map((diagram, i) => `<section class="diagram-entry" aria-labelledby="diagram-${i + 1}"><h2 id="diagram-${i + 1}">${esc(diagram.title)}</h2><p>${esc(diagram.description)}</p><div class="source-links"><a href="${diagram.url}" target="_blank" rel="noopener">Open full size ${external}<span class="sr-only"> (opens in a new tab)</span></a><a href="${github}/blob/${revision}/${encoded(diagram.source)}">View source ${external}</a></div><iframe class="diagram-frame" src="${diagram.url}" title="${esc(diagram.title)} diagram" loading="lazy" sandbox="allow-same-origin"></iframe><p class="diagram-hint">Scroll sideways to explore larger diagrams.</p></section>`).join("")}<a class="complete-index" href="${base}#explore">${arrow} Back to the project</a></main>`;
+await writeFile(
+  path.join(out, "diagrams/index.html"),
+  layout(
+    "Diagrams",
+    "Explore the DurisMUD server architecture and database model directly from the repository diagrams.",
+    diagramsRoute,
+    gallery,
   ),
 );
 
@@ -237,12 +281,18 @@ await writeFile(
 );
 await writeFile(
   path.join(out, "build-info.json"),
-  JSON.stringify({ repository, revision, base, guides: catalog.length }),
+  JSON.stringify({
+    repository,
+    revision,
+    base,
+    guides: catalog.length,
+    diagrams: diagrams.length,
+  }),
 );
 await writeFile(path.join(out, ".nojekyll"), "");
 await writeFile(
   path.join(out, "sitemap.xml"),
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[base, ...routes.values()].map((url) => `<url><loc>${origin}${url}</loc></url>`).join("")}</urlset>`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[base, diagramsRoute, ...routes.values()].map((url) => `<url><loc>${origin}${url}</loc></url>`).join("")}</urlset>`,
 );
 await writeFile(
   path.join(out, "404.html"),
@@ -254,5 +304,5 @@ await writeFile(
   ),
 );
 console.log(
-  `Built ${catalog.length} guides from repository Markdown in ${path.relative(root, out)}`,
+  `Built ${catalog.length} guides and ${diagrams.length} diagrams from the repository in ${path.relative(root, out)}`,
 );

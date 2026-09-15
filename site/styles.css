@@ -225,29 +225,29 @@ p {
 }
 .categories {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .categories > a {
   display: flex;
   align-items: flex-start;
-  gap: 19px;
-  padding: 0 30px 0 0;
+  gap: 12px;
+  padding: 0 20px 0 0;
   min-width: 0;
 }
 .categories > a + a {
   border-left: 1px solid var(--line);
-  padding-left: 32px;
+  padding-left: 20px;
 }
 .categories > a > .icon {
   margin: 12px 0 0 auto;
 }
 .category-number {
-  font: 400 25px/1.45 var(--serif);
+  font: 400 22px/1.45 var(--serif);
   color: var(--gold);
   white-space: nowrap;
 }
 .categories h3 {
-  font: 400 31px/1.25 var(--serif);
+  font: 400 28px/1.25 var(--serif);
   white-space: nowrap;
 }
 .categories p {
@@ -763,6 +763,49 @@ p {
   margin: 22px 0 30px;
   color: var(--muted);
 }
+.diagram-gallery {
+  padding: 44px var(--gutter) 60px;
+}
+.diagram-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  padding-bottom: 12px;
+  color: var(--muted);
+}
+.diagram-jump a {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.diagram-entry {
+  margin: 32px 0 56px;
+}
+.diagram-entry h2 {
+  font: 400 40px/1.15 var(--serif);
+  scroll-margin-top: 24px;
+}
+.diagram-entry > p {
+  max-width: 920px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.diagram-entry .source-links {
+  margin: 20px 0 24px;
+}
+.diagram-frame {
+  display: block;
+  width: 100%;
+  height: clamp(860px, 64vw, 960px);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #f4ecd9;
+}
+.diagram-entry .diagram-hint {
+  font-size: 12px;
+}
 @media (min-width: 1700px) {
   body {
     max-width: 1700px;
@@ -773,12 +816,20 @@ p {
   }
 }
 @media (max-width: 1150px) {
+  .categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 24px;
+  }
   .categories > a {
     gap: 12px;
     padding-right: 18px;
   }
   .categories > a + a {
     padding-left: 18px;
+  }
+  .categories > a:nth-child(odd) {
+    border-left: 0;
+    padding-left: 0;
   }
   .categories h3 {
     font-size: 27px;

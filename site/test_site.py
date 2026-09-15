@@ -21,6 +21,7 @@ class Page(HTMLParser):
         self.ids = []
         self.h1_count = 0
         self.text = []
+        self.frames = []
         self.feed(content)
 
     def handle_starttag(self, tag, attrs):
@@ -29,6 +30,8 @@ class Page(HTMLParser):
             self.ids.append(attrs["id"])
         if tag == "h1":
             self.h1_count += 1
+        if tag == "iframe":
+            self.frames.append(attrs)
         for attribute in ("href", "src"):
             if attribute in attrs:
                 self.links.append(attrs[attribute])
@@ -41,12 +44,13 @@ class PagesTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.catalog = json.loads((ROOT / "site/catalog.json").read_text())
+        cls.diagrams = sorted((ROOT / "docs/diagrams").rglob("*.html"))
         cls.pages = {
             file: Page(file.read_text()) for file in OUTPUT.rglob("*.html")
         }
 
     def test_all_curated_guides_are_published(self):
-        self.assertEqual(len(self.pages), len(self.catalog) + 2)
+        self.assertEqual(len(self.pages), len(self.catalog) + len(self.diagrams) + 3)
         for doc in self.catalog:
             page = OUTPUT / "docs" / doc["slug"] / "index.html"
             self.assertIn(page, self.pages)
@@ -102,6 +106,35 @@ class PagesTests(unittest.TestCase):
         self.assertIn('<table>', html)
         self.assertIn('make test-all', ''.join(self.pages[OUTPUT / 'docs/quick-start/index.html'].text))
         self.assertIn('class="code-block"', html)
+
+    def test_diagrams_category_embeds_every_original_without_changes(self):
+        self.assertIn(f"{BASE}diagrams/", self.pages[OUTPUT / "index.html"].links)
+        gallery = self.pages[OUTPUT / "diagrams/index.html"]
+        self.assertEqual(len(gallery.frames), len(self.diagrams))
+        for source in self.diagrams:
+            relative = source.relative_to(ROOT / "docs")
+            url = f"{BASE}{relative.as_posix()}"
+            frame = next(frame for frame in gallery.frames if frame["src"] == url)
+            self.assertTrue(frame["title"])
+            self.assertEqual(frame["sandbox"], "allow-same-origin")
+            self.assertIn(url, gallery.links)
+            self.assertEqual((OUTPUT / relative).read_bytes(), source.read_bytes())
+
+    def test_document_diagram_links_stay_on_the_website(self):
+        architecture = self.pages[OUTPUT / "docs/architecture/index.html"]
+        self.assertIn(f"{BASE}diagrams/duris-server-architecture.html", architecture.links)
+        index = self.pages[OUTPUT / "docs/documentation-index/index.html"]
+        for name in ("duris-server-architecture.html", "duris-database-model.html"):
+            self.assertIn(f"{BASE}diagrams/{name}", index.links)
+
+    def test_diagrams_are_in_sitemap_and_build_metadata(self):
+        metadata = json.loads((OUTPUT / "build-info.json").read_text())
+        self.assertEqual(metadata["diagrams"], len(self.diagrams))
+        sitemap = (OUTPUT / "sitemap.xml").read_text()
+        self.assertIn(f"{BASE}diagrams/</loc>", sitemap)
+        for source in self.diagrams:
+            relative = source.relative_to(ROOT / "docs").as_posix()
+            self.assertIn(f"{BASE}{relative}</loc>", sitemap)
 
     def test_artifact_contains_only_site_outputs(self):
         for file in OUTPUT.rglob("*"):

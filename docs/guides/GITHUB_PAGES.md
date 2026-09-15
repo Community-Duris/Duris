@@ -23,6 +23,20 @@ the **View source** action open the exact Git revision used to build the site.
 the browser against an index produced from the same Markdown files; search and
 category choices can be shared through the URL.
 
+## Diagrams
+
+The [Diagrams gallery](https://community-duris.github.io/Duris/diagrams/) displays
+the standalone HTML diagrams tracked under `docs/diagrams/`. The build discovers
+these files automatically, reads each diagram's heading and SVG description for
+the gallery, and publishes the original HTML unchanged. Each diagram has an
+embedded view, a full-size view, and a link to its source revision on GitHub.
+Documentation links to these files open the published diagrams.
+
+To add a diagram, commit its standalone `.html` file under `docs/diagrams/` with
+an `<h1>` title and an SVG `<desc>` description. Changes publish through the same
+GitHub Actions workflow. Embedded views isolate the original styles and disable
+scripts; their full-size pages retain the original document behavior.
+
 ## Build and verify locally
 
 Use Node.js 24 or later and Python 3:
@@ -57,9 +71,11 @@ and `id-token: write`. Pull requests build and test without deploying. Action
 versions are pinned to commits, and npm dependencies are locked and checked by
 Dependabot. The uploaded artifact contains only the generated site.
 
-There are no runtime API credentials or GitHub API requests. Fonts, artwork,
-scripts, styles, and diagram code are hosted with the site. The initial page
-loads only its small interaction script; diagram dependencies load on demand.
+There are no runtime API credentials or GitHub API requests. The project hub's
+fonts, artwork, scripts, styles, and Mermaid code are hosted with the site. The
+initial page loads only its small interaction script; Mermaid dependencies load
+on demand. Standalone HTML diagrams retain their original Google Fonts stylesheet
+and system-font fallbacks.
 
 The builder derives the project base path and Pages origin from
 `GITHUB_REPOSITORY`, defaulting to `Community-Duris/Duris`. `SITE_BASE_PATH`
