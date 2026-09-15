@@ -134,8 +134,8 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 	if (published && committed && submitted_payload.action == collector_action::purchase &&
 	    character &&
 	    !currency_transaction_publish_balances(
-		     character, submitted_payload.account_name.data(), submitted_payload.racewar,
-		     result.wallet, result.bank, result.wallet_revision, result.bank_revision))
+		    character, submitted_payload.account_name.data(), submitted_payload.racewar,
+		    result.wallet, result.bank, result.wallet_revision, result.bank_revision))
 	{
 		published = false;
 		publication_error = ESTALE;
@@ -360,8 +360,8 @@ void collector_transaction_publish_outbox(void)
 				if (publication.state == outbox_publication_state::queued)
 				{
 					publication.state = outbox_publication_state::publishing;
-					work.push_back(
-						{ outbox_id, publication.operation_id, publication.result });
+					work.push_back({ outbox_id, publication.operation_id,
+							 publication.result });
 				}
 			}
 		}
@@ -403,15 +403,17 @@ void collector_transaction_publish_outbox(void)
 				std::copy(encoded.begin(), encoded.end(),
 					  pending_found->second.completed.result_payload.begin());
 				pending_found->second.completion_ready = true;
-				P_char character = pending_found->second.actor_pid ?
-							   find_player_by_pid(
-								   pending_found->second.actor_pid) :
-							   nullptr;
+				P_char character =
+					pending_found->second.actor_pid ?
+						find_player_by_pid(
+							pending_found->second.actor_pid) :
+						nullptr;
 				published = publish(pending_found, character);
 			}
 		}
 		else
-			published = collector_publish_committed_event(entry.result, entry.outbox_id);
+			published =
+				collector_publish_committed_event(entry.result, entry.outbox_id);
 		std::lock_guard<std::mutex> lock(outbox_mutex);
 		auto found = outbox_publications.find(entry.outbox_id);
 		if (found != outbox_publications.end())

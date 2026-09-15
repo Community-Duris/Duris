@@ -641,7 +641,7 @@ corpse_lifecycle_transaction_outbox_delivery(const critical_outbox_record &recor
 		return critical_outbox_delivery_result::terminal_failure;
 	corpse_lifecycle_result result = {};
 	if (!corpse_lifecycle_command_decode_result(record.payload.data(), record.payload.size(),
-						   &result))
+						    &result))
 		return critical_outbox_delivery_result::terminal_failure;
 	std::lock_guard<std::mutex> lock(outbox_mutex);
 	const auto found = outbox_publications.find(record.outbox_id);

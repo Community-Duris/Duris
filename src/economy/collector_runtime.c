@@ -124,7 +124,8 @@ bool build_death_projection(const collector_death_snapshot *deaths, size_t death
 			    !collector::valid_rules(death.policy) || death.hint_state > 2 ||
 			    !operation_ids.insert(death.operation_id.bytes).second ||
 			    !projection->deaths
-				     .emplace(std::make_pair(death.beneficiary_pid, death.death_time),
+				     .emplace(std::make_pair(death.beneficiary_pid,
+							     death.death_time),
 					      death)
 				     .second)
 				return false;

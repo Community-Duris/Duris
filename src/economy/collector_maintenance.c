@@ -373,8 +373,8 @@ void reconcile_chunk(const collector_feature_config &config)
 	{
 		++health.scan_failures;
 		health.reconciling = false;
-		next_audit =
-			clock_type::now() + std::chrono::seconds(config.maintenance_interval_seconds);
+		next_audit = clock_type::now() +
+			     std::chrono::seconds(config.maintenance_interval_seconds);
 		return;
 	}
 	health.selected += entries.size();

@@ -470,12 +470,12 @@ critical_outbox_test_destination(const critical_outbox_record &record, void *con
 				      record.payload_version == COLLECTOR_COMMAND_RESULT_VERSION &&
 				      record.payload.size() == COLLECTOR_COMMAND_RESULT_BYTES;
 	corpse_lifecycle_result corpse_result = {};
-	const bool corpse_record =
-		record.destination == CORPSE_LIFECYCLE_OUTBOX_DESTINATION &&
-		record.event_type == CORPSE_LIFECYCLE_OUTBOX_EVENT_MUTATED &&
-		record.payload_version == CORPSE_LIFECYCLE_RESULT_VERSION &&
-		corpse_lifecycle_command_decode_result(record.payload.data(), record.payload.size(),
-						       &corpse_result);
+	const bool corpse_record = record.destination == CORPSE_LIFECYCLE_OUTBOX_DESTINATION &&
+				   record.event_type == CORPSE_LIFECYCLE_OUTBOX_EVENT_MUTATED &&
+				   record.payload_version == CORPSE_LIFECYCLE_RESULT_VERSION &&
+				   corpse_lifecycle_command_decode_result(record.payload.data(),
+									  record.payload.size(),
+									  &corpse_result);
 	return test_record || epic_record || currency_record || item_record || auction_record ||
 			       coin_receipt || collector_record || corpse_record ?
 		       critical_outbox_delivery_result::delivered :

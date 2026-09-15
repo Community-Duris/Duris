@@ -420,9 +420,9 @@ bool valid_collector_context(const item_transfer_payload &payload, uint16_t payl
 			       collector.eligible_item_uids.end()) !=
 		    collector.eligible_item_uids.end())
 		return false;
-	return std::all_of(collector.eligible_item_uids.begin(),
-			   collector.eligible_item_uids.end(),
-			   [&](uint64_t uid) { return find_payload_item(payload, uid) != nullptr; });
+	return std::all_of(collector.eligible_item_uids.begin(), collector.eligible_item_uids.end(),
+			   [&](uint64_t uid)
+			   { return find_payload_item(payload, uid) != nullptr; });
 }
 
 bool target_topology_for(const item_transfer_payload &payload, uint64_t item_uid,
@@ -509,8 +509,7 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 		const bool creation_batch = creation &&
 					    payload.reason == item_transfer_reason::creation;
 		if (payload_version < ITEM_TRANSFER_BATCH_PAYLOAD_VERSION ||
-		    payload.selected_item_uid ||
-		    (!creation_batch && !batch_reason) ||
+		    payload.selected_item_uid || (!creation_batch && !batch_reason) ||
 		    (creation_batch &&
 		     (payload.to_owner.type != item_owner_type::player ||
 		      payload.target_root_item_uid || payload.target_parent_item_uid)) ||
@@ -757,7 +756,7 @@ bool populate_command_entities(critical_command *command, const item_transfer_pa
 	if (payload.collector.present)
 	{
 		const critical_entity_key catalog_key = { critical_entity_type::collector,
-						  COLLECTOR_CATALOG_KEY };
+							  COLLECTOR_CATALOG_KEY };
 		command->keys.push_back(catalog_key);
 		// The SQL repository takes the current catalog row lock before any item
 		// lock; zero is a serialization key, not an optimistic catalog fence.
@@ -942,11 +941,11 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 				const uint32_t collector_size =
 					get_u32(command.payload.data() + corpse_end);
 				if (collector_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
-				    command.payload.size() != corpse_end + sizeof(uint32_t) +
-							      collector_size ||
-				    !decode_collector_context(
-					    command.payload.data() + corpse_end + sizeof(uint32_t),
-					    collector_size, &payload->collector))
+				    command.payload.size() !=
+					    corpse_end + sizeof(uint32_t) + collector_size ||
+				    !decode_collector_context(command.payload.data() + corpse_end +
+								      sizeof(uint32_t),
+							      collector_size, &payload->collector))
 					return false;
 			}
 		}

@@ -310,9 +310,9 @@ int main()
 	purchased.entry = paused_record();
 	assert(collector::resume(&purchased.entry, purchased.entry.revision,
 				 purchased.entry.paused_at + 1) == collector::outcome::applied);
-	assert(collector::purchase(&purchased.entry, purchased.entry.revision, 42,
-				   purchased.entry.price_value, true,
-				   purchased.entry.available_at + 1) == collector::outcome::applied);
+	assert(collector::purchase(
+		       &purchased.entry, purchased.entry.revision, 42, purchased.entry.price_value,
+		       true, purchased.entry.available_at + 1) == collector::outcome::applied);
 	assert(collector_command_encode_result(purchased, &encoded_result));
 	assert(collector_command_decode_result(encoded_result.data(), encoded_result.size(),
 					       &decoded_result) &&

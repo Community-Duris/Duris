@@ -527,8 +527,7 @@ bool collector_command_decode_result(const uint8_t *encoded, size_t encoded_size
 	if (!encoded || encoded_size != COLLECTOR_COMMAND_RESULT_BYTES || !result ||
 	    (encoded[1] != COLLECTOR_COMMAND_RESULT_VERSION &&
 	     encoded[1] != COLLECTOR_COMMAND_PREVIOUS_RESULT_VERSION) ||
-	    encoded[2] > 1 || encoded[3] ||
-	    encoded[4] || encoded[5] || encoded[6] || encoded[7])
+	    encoded[2] > 1 || encoded[3] || encoded[4] || encoded[5] || encoded[6] || encoded[7])
 		return false;
 	*result = {};
 	result->action = static_cast<collector_action>(encoded[0]);
@@ -561,10 +560,9 @@ bool collector_command_decode_result(const uint8_t *encoded, size_t encoded_size
 	if (encoded[1] == COLLECTOR_COMMAND_RESULT_VERSION)
 		result->materialized_item_id =
 			get_u32(encoded + COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET);
-	for (size_t offset = COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET +
-				     (encoded[1] == COLLECTOR_COMMAND_RESULT_VERSION ?
-					      sizeof(uint32_t) :
-					      0);
+	for (size_t offset =
+		     COLLECTOR_RESULT_MATERIALIZED_ITEM_OFFSET +
+		     (encoded[1] == COLLECTOR_COMMAND_RESULT_VERSION ? sizeof(uint32_t) : 0);
 	     offset < encoded_size; ++offset)
 		if (encoded[offset])
 			return false;

@@ -596,8 +596,7 @@ bool update_coin_payload(MYSQL *connection, const item_transfer_payload &payload
 }
 } // namespace
 
-bool item_transfer_repository_ensure_owner(MYSQL *connection,
-					   const item_owner_identity &owner)
+bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_identity &owner)
 {
 	if (!connection || !item_owner_identity_valid(owner))
 	{
@@ -618,8 +617,7 @@ bool item_transfer_repository_lock_owner(MYSQL *connection, const item_owner_ide
 	return lock_owner(connection, owner, revision);
 }
 
-bool item_transfer_repository_advance_owner(MYSQL *connection,
-					    const item_owner_identity &owner,
+bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_identity &owner,
 					    uint64_t prior_revision)
 {
 	if (!connection || !item_owner_identity_valid(owner) || prior_revision == UINT64_MAX)

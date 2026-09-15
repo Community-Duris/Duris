@@ -1292,7 +1292,7 @@ uint64_t collector_snapshot_parent(const std::vector<player_item_snapshot> &item
 		return 0;
 	const int32_t parent = items[index].parent_index;
 	return parent == PLAYER_SNAPSHOT_NO_PARENT || parent < 0 ||
-		       static_cast<size_t>(parent) >= index ?
+			       static_cast<size_t>(parent) >= index ?
 		       0 :
 		       items[static_cast<size_t>(parent)].object_uid;
 }
@@ -1353,9 +1353,9 @@ bool collector_detach_snapshot(std::vector<player_item_snapshot> *items,
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const item_transfer_entry &expected = payload.items[index];
-		auto actual = std::find_if(tree.begin(), tree.end(), [&](size_t position)
-					   { return (*items)[position].object_uid ==
-						    expected.item_uid; });
+		auto actual = std::find_if(
+			tree.begin(), tree.end(), [&](size_t position)
+			{ return (*items)[position].object_uid == expected.item_uid; });
 		if (actual == tree.end())
 		{
 			*result_code = ESTALE;
@@ -1431,10 +1431,11 @@ bool collector_detach_snapshot(std::vector<player_item_snapshot> *items,
 				remaining[index].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 				continue;
 			}
-			auto parent = std::find_if(
-				remaining.begin(), remaining.begin() + static_cast<ptrdiff_t>(index),
-				[&](const auto &candidate)
-				{ return candidate.object_uid == parents[index]; });
+			auto parent =
+				std::find_if(remaining.begin(),
+					     remaining.begin() + static_cast<ptrdiff_t>(index),
+					     [&](const auto &candidate)
+					     { return candidate.object_uid == parents[index]; });
 			if (parent == remaining.begin() + static_cast<ptrdiff_t>(index))
 			{
 				*result_code = EBADMSG;
@@ -1471,8 +1472,7 @@ flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &decoded) != player_snapshot_codec_result::ok ||
 	    decoded.size() != 1 || decoded[0].object_uid != payload.selected_item_uid ||
-	    decoded[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
-	    decoded[0].equipment_slot != 0)
+	    decoded[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT || decoded[0].equipment_slot != 0)
 	{
 		*result_code = EBADMSG;
 		return flatfile_world_item_result::ok;
@@ -1503,9 +1503,8 @@ flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
 		flatfile_corpse_record key = {};
 		key.owner_pid = owner_pid;
 		key.save_id = save_id;
-		auto corpse =
-			std::lower_bound(catalog.corpses.begin(), catalog.corpses.end(), key,
-					 corpse_less);
+		auto corpse = std::lower_bound(catalog.corpses.begin(), catalog.corpses.end(), key,
+					       corpse_less);
 		if (!owner_pid || !save_id || corpse == catalog.corpses.end() ||
 		    corpse->owner_pid != owner_pid || corpse->save_id != save_id)
 		{
@@ -1523,9 +1522,9 @@ flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
 		size_t matches = 0;
 		for (auto &saved : catalog.saved_items)
 			if (saved.room_vnum == room_vnum &&
-			    std::any_of(saved.items.begin(), saved.items.end(), [&](const auto &item) {
-				    return item.object_uid == payload.selected_item_uid;
-			    }))
+			    std::any_of(saved.items.begin(), saved.items.end(),
+					[&](const auto &item)
+					{ return item.object_uid == payload.selected_item_uid; }))
 			{
 				items = &saved.items;
 				aggregate_revision = &saved.revision;
@@ -1537,9 +1536,8 @@ flatfile_world_item_result flatfile_world_item_prepare_collector_transfer(
 		auto room = std::lower_bound(catalog.rooms.begin(), catalog.rooms.end(), key,
 					     room_less);
 		if (room != catalog.rooms.end() && room->room_vnum == room_vnum &&
-		    std::any_of(room->items.begin(), room->items.end(), [&](const auto &item) {
-			    return item.object_uid == payload.selected_item_uid;
-		    }))
+		    std::any_of(room->items.begin(), room->items.end(), [&](const auto &item)
+				{ return item.object_uid == payload.selected_item_uid; }))
 		{
 			items = &room->items;
 			aggregate_revision = &room->revision;

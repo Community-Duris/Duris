@@ -3552,10 +3552,10 @@ bool publish_corpse_wallet(P_char character, const corpse_lifecycle_result &resu
 		currency_vector bank = {};
 		bank.amount = { GET_BALANCE_COPPER(character), GET_BALANCE_SILVER(character),
 				GET_BALANCE_GOLD(character), GET_BALANCE_PLATINUM(character) };
-		return account_name &&
-		       currency_transaction_publish_balances(
-			       character, account_name, static_cast<uint8_t>(GET_RACEWAR(character)),
-			       wallet, bank, result.wallet_revision, result.bank_revision);
+		return account_name && currency_transaction_publish_balances(
+					       character, account_name,
+					       static_cast<uint8_t>(GET_RACEWAR(character)), wallet,
+					       bank, result.wallet_revision, result.bank_revision);
 	}
 	return currency_transaction_publish_wallet(character, wallet, result.wallet_revision);
 }
@@ -3691,9 +3691,9 @@ void publish_corpse_release(bool committed, const corpse_lifecycle_result &resul
 		    !complete_corpse_wall_of_bones(caster, corpse, wall_context.level,
 						   wall_context.exit_dir))
 		{
-			persistence_alert(AVATAR, "corpse", "durable_wall_of_bones", "none",
-					  "none", "effect_failed", "save_id=%u room=%d",
-					  payload.save_id, payload.room_vnum);
+			persistence_alert(AVATAR, "corpse", "durable_wall_of_bones", "none", "none",
+					  "effect_failed", "save_id=%u room=%d", payload.save_id,
+					  payload.room_vnum);
 			if (caster)
 			{
 				send_to_char("Something prevents you from making a wall there.\r\n",
@@ -4302,8 +4302,8 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 				    corpse_raise_kind kind, int level, int variant, bool globe,
 				    const char *message)
 {
-	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster ||
-	    !follower || IS_NPC(caster) || !caster->only.pc || !IS_NPC(follower) ||
+	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster || !follower ||
+	    IS_NPC(caster) || !caster->only.pc || !IS_NPC(follower) ||
 	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
 	int corpse_room = NOWHERE;
@@ -4366,9 +4366,8 @@ bool persistence_defer_corpse_raise(P_obj corpse, P_char caster, P_char follower
 
 bool persistence_defer_corpse_resurrection(P_obj corpse, P_char caster, P_char target, bool lesser)
 {
-	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster ||
-	    !target || corpse->type != ITEM_CORPSE ||
-	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+	if (!durable_corpse_lifecycle_enabled() || !corpse || !caster || !target ||
+	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
 	int corpse_room = NOWHERE;
 	if (IS_NPC(target) || GET_PID(target) <= 0 || !target->only.pc ||
@@ -4410,8 +4409,8 @@ bool persistence_defer_corpse_resurrection(P_obj corpse, P_char caster, P_char t
 
 bool persistence_defer_corpse_room_release(P_obj corpse)
 {
-	if (!durable_corpse_lifecycle_enabled() || !corpse ||
-	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
 	if (corpse->value[CORPSE_PID] > 0 && corpse->value[CORPSE_SAVEID] > 0 &&
 	    corpse_lifecycle_transaction_busy(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
@@ -4571,8 +4570,8 @@ bool persistence_defer_corpse_compaction(P_obj corpse, P_char caster)
 
 bool persistence_defer_corpse_destruction(P_obj corpse)
 {
-	if (!durable_corpse_lifecycle_enabled() || !corpse ||
-	    corpse->type != ITEM_CORPSE || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+	if (!durable_corpse_lifecycle_enabled() || !corpse || corpse->type != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return false;
 	if (!submit_corpse_destruction(corpse))
 		persistence_alert(AVATAR, "corpse", "durable_destroy", "none", "none",

@@ -169,17 +169,16 @@ std::string operation_hex(const critical_operation_id &operation)
 	return hex_encode(operation.bytes.data(), operation.bytes.size());
 }
 
-bool candidate_listing_ids(MYSQL *connection, const item_transfer_payload &payload,
-			   bool for_update, bool limit_one, std::vector<uint64_t> *listings)
+bool candidate_listing_ids(MYSQL *connection, const item_transfer_payload &payload, bool for_update,
+			   bool limit_one, std::vector<uint64_t> *listings)
 {
 	if (!connection || !listings || !payload.item_count)
 	{
 		errno = EINVAL;
 		return false;
 	}
-	std::string query =
-		"SELECT listing_id,item_uid FROM collector_listings FORCE INDEX "
-		"(idx_collector_item_history) WHERE item_uid IN (";
+	std::string query = "SELECT listing_id,item_uid FROM collector_listings FORCE INDEX "
+			    "(idx_collector_item_history) WHERE item_uid IN (";
 	for (size_t index = 0; index < payload.item_count; ++index)
 		query += (index ? "," : "") + std::to_string(payload.items[index].item_uid);
 	query += ") AND status=" +
@@ -213,10 +212,11 @@ bool candidate_listing_ids(MYSQL *connection, const item_transfer_payload &paylo
 				return false;
 			}
 			const auto item = std::lower_bound(
-				payload.items.begin(), payload.items.begin() + payload.item_count, uid,
-				[](const item_transfer_entry &entry, uint64_t sought)
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				uid, [](const item_transfer_entry &entry, uint64_t sought)
 				{ return entry.item_uid < sought; });
-			if (item == payload.items.begin() + payload.item_count || item->item_uid != uid)
+			if (item == payload.items.begin() + payload.item_count ||
+			    item->item_uid != uid)
 			{
 				mysql_free_result(rows);
 				errno = EBADMSG;
@@ -1274,9 +1274,10 @@ bool persist_listing(MYSQL *connection, const critical_command &command,
 }
 } // namespace
 
-bool collector_repository_prepare_item_boundary(
-	MYSQL *connection, const item_transfer_payload &payload,
-	collector_item_boundary_repository_plan *plan, unsigned int *result_code)
+bool collector_repository_prepare_item_boundary(MYSQL *connection,
+						const item_transfer_payload &payload,
+						collector_item_boundary_repository_plan *plan,
+						unsigned int *result_code)
 {
 	if (!connection || !plan || !result_code)
 	{
@@ -1337,8 +1338,7 @@ bool collector_repository_prepare_item_boundary(
 				continue;
 			const auto item = std::lower_bound(
 				payload.items.begin(), payload.items.begin() + payload.item_count,
-				prior.entry.uid,
-				[](const item_transfer_entry &entry, uint64_t uid)
+				prior.entry.uid, [](const item_transfer_entry &entry, uint64_t uid)
 				{ return entry.item_uid < uid; });
 			if (item == payload.items.begin() + payload.item_count ||
 			    item->item_uid != prior.entry.uid)
@@ -1401,14 +1401,14 @@ bool collector_repository_prepare_item_boundary(
 	return true;
 }
 
-bool collector_repository_apply_item_boundary(
-	MYSQL *connection, const critical_command &command,
-	const collector_item_boundary_repository_plan &plan, uint64_t *catalog_revision,
-	std::vector<collector_command_result> *events)
+bool collector_repository_apply_item_boundary(MYSQL *connection, const critical_command &command,
+					      const collector_item_boundary_repository_plan &plan,
+					      uint64_t *catalog_revision,
+					      std::vector<collector_command_result> *events)
 {
 	if (!connection || !catalog_revision || !events ||
 	    (plan.entries.empty() ? plan.reason != collector::reason::none :
-				      plan.reason == collector::reason::none))
+				    plan.reason == collector::reason::none))
 	{
 		errno = EINVAL;
 		return false;
@@ -1451,9 +1451,10 @@ bool collector_repository_apply_item_boundary(
 	return true;
 }
 
-bool collector_repository_prepare_death_enrollment(
-	MYSQL *connection, const item_transfer_payload &payload,
-	collector_enrollment_repository_plan *plan, unsigned int *result_code)
+bool collector_repository_prepare_death_enrollment(MYSQL *connection,
+						   const item_transfer_payload &payload,
+						   collector_enrollment_repository_plan *plan,
+						   unsigned int *result_code)
 {
 	if (!connection || !plan || !result_code)
 	{
@@ -1578,10 +1579,11 @@ bool collector_repository_prepare_death_enrollment(
 			if (std::binary_search(existing.begin(), existing.end(), uid))
 				continue;
 			const auto item = std::lower_bound(
-				payload.items.begin(), payload.items.begin() + payload.item_count, uid,
-				[](const item_transfer_entry &entry, uint64_t sought)
+				payload.items.begin(), payload.items.begin() + payload.item_count,
+				uid, [](const item_transfer_entry &entry, uint64_t sought)
 				{ return entry.item_uid < sought; });
-			if (item == payload.items.begin() + payload.item_count || item->item_uid != uid)
+			if (item == payload.items.begin() + payload.item_count ||
+			    item->item_uid != uid)
 			{
 				mysql_free_result(rows);
 				*result_code = EBADMSG;
@@ -1611,15 +1613,15 @@ bool collector_repository_prepare_death_enrollment(
 	return true;
 }
 
-bool collector_repository_apply_death_enrollment(
-	MYSQL *connection, const critical_command &command, const item_transfer_payload &payload,
-	const item_transfer_result &transfer, const collector_enrollment_repository_plan &plan)
+bool collector_repository_apply_death_enrollment(MYSQL *connection, const critical_command &command,
+						 const item_transfer_payload &payload,
+						 const item_transfer_result &transfer,
+						 const collector_enrollment_repository_plan &plan)
 {
 	if (!connection || !plan.active || !payload.collector.present ||
 	    transfer.item_count != payload.item_count ||
 	    (!plan.death_exists &&
-	     !critical_operation_id_equal(command.operation_id,
-					  payload.collector.death_operation)))
+	     !critical_operation_id_equal(command.operation_id, payload.collector.death_operation)))
 	{
 		errno = EINVAL;
 		return false;
@@ -1630,9 +1632,8 @@ bool collector_repository_apply_death_enrollment(
 		     "INSERT INTO collector_deaths(death_operation_id,beneficiary_pid,death_time,"
 		     "collection_delay,sale_delay,holding_duration,price_percent,minimum_value) "
 		     "VALUES(UNHEX('" +
-			     death_hex + "')," +
-			     std::to_string(payload.collector.beneficiary_pid) + "," +
-			     std::to_string(payload.collector.death_time) + "," +
+			     death_hex + "')," + std::to_string(payload.collector.beneficiary_pid) +
+			     "," + std::to_string(payload.collector.death_time) + "," +
 			     std::to_string(plan.policy.collection_delay) + "," +
 			     std::to_string(plan.policy.sale_delay) + "," +
 			     std::to_string(plan.policy.holding_duration) + "," +
@@ -1656,16 +1657,15 @@ bool collector_repository_apply_death_enrollment(
 			errno = EINVAL;
 			return false;
 		}
-		const uint64_t item_revision =
-			item.expected_item_revision == ITEM_TRANSFER_ABSENT_REVISION ?
-				1 :
-				item.expected_item_revision + 1;
+		const uint64_t item_revision = item.expected_item_revision ==
+							       ITEM_TRANSFER_ABSENT_REVISION ?
+						       1 :
+						       item.expected_item_revision + 1;
 		collector::record entry;
 		const uint64_t listing = plan.next_listing + index;
-		if (collector::enroll(listing, death_operation,
-				      payload.collector.beneficiary_pid, item.item_uid,
-				      item_revision, payload.collector.death_time, plan.policy,
-				      &entry) != collector::outcome::applied)
+		if (collector::enroll(listing, death_operation, payload.collector.beneficiary_pid,
+				      item.item_uid, item_revision, payload.collector.death_time,
+				      plan.policy, &entry) != collector::outcome::applied)
 		{
 			errno = ERANGE;
 			return false;
@@ -1695,8 +1695,8 @@ bool collector_repository_apply_death_enrollment(
 			     std::to_string(plan.catalog_revision + 1) + ",next_listing=" +
 			     std::to_string(plan.next_listing + plan.new_items.size()) +
 			     " WHERE state_id=1 AND catalog_revision=" +
-			     std::to_string(plan.catalog_revision) + " AND next_listing=" +
-			     std::to_string(plan.next_listing)) ||
+			     std::to_string(plan.catalog_revision) +
+			     " AND next_listing=" + std::to_string(plan.next_listing)) ||
 	    mysql_affected_rows(connection) != 1)
 		return false;
 	return true;
@@ -1927,8 +1927,7 @@ bool collector_repository_read_bootstrap(MYSQL *connection, collector_bootstrap_
 		while (valid && (row = mysql_fetch_row(rows)) != nullptr)
 		{
 			const unsigned long *lengths = mysql_fetch_lengths(rows);
-			uint64_t beneficiary = 0, death_time = 0, hint_state = 0,
-				 hint_revision = 0;
+			uint64_t beneficiary = 0, death_time = 0, hint_state = 0, hint_revision = 0;
 			collector_death_snapshot death;
 			death.policy.enabled = true;
 			if (!lengths || !row[0] || lengths[0] != CRITICAL_COMMAND_ID_HEX_SIZE - 1 ||

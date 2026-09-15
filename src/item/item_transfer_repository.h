@@ -15,12 +15,10 @@ bool item_transfer_repository_execute_coin(MYSQL *connection, const critical_com
 					   bool *mutation_applied);
 // Transaction-scoped owner primitives used by compound authority commands.
 // Callers must acquire every participating owner in canonical identity order.
-bool item_transfer_repository_ensure_owner(MYSQL *connection,
-					   const item_owner_identity &owner);
+bool item_transfer_repository_ensure_owner(MYSQL *connection, const item_owner_identity &owner);
 bool item_transfer_repository_lock_owner(MYSQL *connection, const item_owner_identity &owner,
 					 uint64_t *revision);
-bool item_transfer_repository_advance_owner(MYSQL *connection,
-					    const item_owner_identity &owner,
+bool item_transfer_repository_advance_owner(MYSQL *connection, const item_owner_identity &owner,
 					    uint64_t prior_revision);
 bool item_transfer_repository_destroy_owners(MYSQL *connection, const item_owner_identity *owners,
 					     size_t owner_count);

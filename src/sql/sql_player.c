@@ -7719,19 +7719,19 @@ bool sql_save_corpse(P_obj corpse)
 	}
 
 	char ins_query[8192];
-	int query_length =
-		 snprintf(ins_query, sizeof(ins_query),
-			 "INSERT INTO corpses ("
-			 "player_name, save_id, corpse_revision, room_vnum, short_descr, description, name, weight, "
-			 "value0, value1, value2, value3, value4, value5, value7"
-			 ") VALUES ("
-			 "'%s', %d, %llu, %d, '%s', '%s', '%s', %d, "
-			 "%d, %d, %d, %d, %d, %d, %d"
-			 ")",
-			 esc_name, save_id, (unsigned long long)corpse_revision, room_vnum, esc_sdesc,
-			 esc_desc, esc_keywords,
-			 corpse->weight, corpse->value[0], corpse->value[1], corpse->value[2],
-			 corpse->value[3], corpse->value[4], corpse->value[5], corpse->value[7]);
+	int query_length = snprintf(
+		ins_query, sizeof(ins_query),
+		"INSERT INTO corpses ("
+		"player_name, save_id, corpse_revision, room_vnum, short_descr, description, name, weight, "
+		"value0, value1, value2, value3, value4, value5, value7"
+		") VALUES ("
+		"'%s', %d, %llu, %d, '%s', '%s', '%s', %d, "
+		"%d, %d, %d, %d, %d, %d, %d"
+		")",
+		esc_name, save_id, (unsigned long long)corpse_revision, room_vnum, esc_sdesc,
+		esc_desc, esc_keywords, corpse->weight, corpse->value[0], corpse->value[1],
+		corpse->value[2], corpse->value[3], corpse->value[4], corpse->value[5],
+		corpse->value[7]);
 	free(esc_name);
 	free(esc_sdesc);
 	free(esc_desc);
@@ -7767,10 +7767,10 @@ bool sql_save_corpse(P_obj corpse)
 	}
 
 	char catalog_update[256];
-	snprintf(catalog_update, sizeof(catalog_update),
-		 "UPDATE corpse_catalog_state SET catalog_revision=%llu WHERE state_id=1 AND catalog_revision=%llu",
-		 (unsigned long long)(catalog_revision + 1),
-		 (unsigned long long)catalog_revision);
+	snprintf(
+		catalog_update, sizeof(catalog_update),
+		"UPDATE corpse_catalog_state SET catalog_revision=%llu WHERE state_id=1 AND catalog_revision=%llu",
+		(unsigned long long)(catalog_revision + 1), (unsigned long long)catalog_revision);
 	if (!sql_run_query(catalog_update) || mysql_affected_rows(DB) != 1)
 	{
 		logit(LOG_DEBUG, "sql_save_corpse: component=catalog outcome=update_failure");
@@ -7866,18 +7866,19 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 
 	if (corpse_found)
 	{
-		const int delete_length = snprintf(
-			query, sizeof(query),
-			"DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name,
-			save_id);
+		const int delete_length =
+			snprintf(query, sizeof(query),
+				 "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d",
+				 esc_name, save_id);
 		if (delete_length < 0 || (size_t)delete_length >= sizeof(query) ||
 		    !sql_run_query(query) || mysql_affected_rows(DB) != 1)
 			return fail();
 		char catalog_update[256];
-		snprintf(catalog_update, sizeof(catalog_update),
-			 "UPDATE corpse_catalog_state SET catalog_revision=%llu WHERE state_id=1 AND catalog_revision=%llu",
-			 (unsigned long long)(catalog_revision + 1),
-			 (unsigned long long)catalog_revision);
+		snprintf(
+			catalog_update, sizeof(catalog_update),
+			"UPDATE corpse_catalog_state SET catalog_revision=%llu WHERE state_id=1 AND catalog_revision=%llu",
+			(unsigned long long)(catalog_revision + 1),
+			(unsigned long long)catalog_revision);
 		if (!sql_run_query(catalog_update) || mysql_affected_rows(DB) != 1)
 			return fail();
 	}
@@ -7888,7 +7889,7 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 			return fail();
 		if (corpse_found)
 			corpse_lifecycle_transaction_forget(owner_pid,
-						    static_cast<uint32_t>(save_id));
+							    static_cast<uint32_t>(save_id));
 	}
 	free(esc_name);
 	return true;
@@ -8144,7 +8145,8 @@ bool sql_load_all_corpses(void)
 
 			const char *player_name =
 				row[CORPSE_COL_PLAYER_NAME] ? row[CORPSE_COL_PLAYER_NAME] : "";
-			const unsigned long parsed_save_id = strtoul(row[CORPSE_COL_SAVE_ID], NULL, 10);
+			const unsigned long parsed_save_id =
+				strtoul(row[CORPSE_COL_SAVE_ID], NULL, 10);
 			const unsigned long parsed_owner_pid =
 				strtoul(row[CORPSE_COL_OWNER_PID], NULL, 10);
 			cur_corpse_revision = strtoull(row[CORPSE_COL_REVISION], NULL, 10);
@@ -8398,7 +8400,7 @@ bool sql_load_all_corpses(void)
 			o->loc.inside = cur_corpse;
 		}
 		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
-						  cur_corpse_revision))
+							  cur_corpse_revision))
 		{
 			extract_obj(cur_corpse, FALSE);
 			cur_corpse = NULL;
@@ -8411,7 +8413,7 @@ bool sql_load_all_corpses(void)
 	else if (cur_corpse)
 	{
 		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
-						  cur_corpse_revision))
+							  cur_corpse_revision))
 		{
 			extract_obj(cur_corpse, FALSE);
 			cur_corpse = NULL;

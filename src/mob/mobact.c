@@ -7083,8 +7083,8 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 	if (obj_index[obj->R_num].virtual_number == 101) /* Dont wear the helm of ooc! */
 		return;
 	item_ownership_runtime_entry ownership = {};
-	const bool authoritative =
-		obj->obj_uid && item_ownership_runtime_lookup(obj->obj_uid, &ownership);
+	const bool authoritative = obj->obj_uid &&
+				   item_ownership_runtime_lookup(obj->obj_uid, &ownership);
 
 	/*
 	 * Keep containers around, for our mobs 'collections'..
@@ -8070,8 +8070,8 @@ void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*
 						P_obj expected = obj;
 						const uint64_t expected_uid = obj->obj_uid;
 						get(ch, obj, best_obj, FALSE);
-						P_obj received =
-							find_scavenged_object(expected, expected_uid);
+						P_obj received = find_scavenged_object(
+							expected, expected_uid);
 						if (!received || !OBJ_CARRIED_BY(received, ch))
 							continue; // obj is notake, or too heavy
 						act("$n gets some stuff from $p.", FALSE, ch,

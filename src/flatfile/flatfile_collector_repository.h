@@ -32,9 +32,10 @@ struct flatfile_collector_enrollment_mutation
 
 flatfile_collector_repository_result flatfile_collector_repository_read_bootstrap(
 	const std::string &root, collector_bootstrap_snapshot *snapshot, std::string *error);
-flatfile_collector_repository_result flatfile_collector_repository_read_listing(
-	const std::string &root, uint64_t listing, collector_listing_detail *detail, bool *found,
-	std::string *error);
+flatfile_collector_repository_result
+flatfile_collector_repository_read_listing(const std::string &root, uint64_t listing,
+					   collector_listing_detail *detail, bool *found,
+					   std::string *error);
 
 // Called while the item repository owns the shared authority lock. The returned
 // catalog image must be committed with the already-prepared corpse/item images.
@@ -64,6 +65,6 @@ flatfile_collector_repository_result flatfile_collector_prepare_corpse_boundary(
 	std::string *error);
 
 critical_apply_result flatfile_collector_repository_apply(const std::string &root,
-							   const critical_command &command);
+							  const critical_command &command);
 
 #endif

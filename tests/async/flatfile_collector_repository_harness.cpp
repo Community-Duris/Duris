@@ -53,8 +53,8 @@ static critical_command collector_command(const collector_command_payload &paylo
 {
 	critical_command command = {};
 	require(collector_command_build(&command, operation(discriminator), payload,
-					 critical_source_site::zone_event,
-					 critical_deadline_class::background),
+					critical_source_site::zone_event,
+					critical_deadline_class::background),
 		"could not build collector authority command");
 	command.accepted_at_usec = discriminator;
 	return command;
@@ -94,7 +94,7 @@ static std::vector<uint8_t> encode(const std::vector<player_item_snapshot> &item
 {
 	std::vector<uint8_t> blob;
 	require(player_item_snapshot_list_encode(items, &blob) ==
-			player_snapshot_codec_result::ok &&
+				player_snapshot_codec_result::ok &&
 			!blob.empty() && blob.size() <= ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES,
 		"could not encode collector item snapshots");
 	return blob;
@@ -118,13 +118,12 @@ static flatfile_player_domain_record player(uint32_t pid, const char *account)
 	return record;
 }
 
-static collector_listing_detail listing(const std::string &root, uint64_t id,
-					std::string *error)
+static collector_listing_detail listing(const std::string &root, uint64_t id, std::string *error)
 {
 	collector_listing_detail detail;
 	bool found = false;
 	require(flatfile_collector_repository_read_listing(root, id, &detail, &found, error) ==
-			flatfile_collector_repository_result::ok &&
+				flatfile_collector_repository_result::ok &&
 			found,
 		"collector listing was not readable: " + *error);
 	return detail;
@@ -145,10 +144,11 @@ static uint64_t owner_revision(const std::string &root, const item_owner_identit
 	return revision;
 }
 
-static collector_command_payload collect_payload(
-	const std::string &root, const collector::record &record,
-	const item_owner_identity &corpse, const player_item_snapshot &selected, uint64_t now,
-	std::string *error)
+static collector_command_payload collect_payload(const std::string &root,
+						 const collector::record &record,
+						 const item_owner_identity &corpse,
+						 const player_item_snapshot &selected, uint64_t now,
+						 std::string *error)
 {
 	std::vector<flatfile_item_ownership_record> items;
 	const uint64_t corpse_revision = owner_revision(root, corpse, &items, error);
@@ -159,28 +159,26 @@ static collector_command_payload collect_payload(
 	payload.expected_listing_revision = record.revision;
 	payload.observed_at = now;
 	payload.from_owner = corpse;
-	payload.to_owner = { item_owner_type::collector,
-			     item_collector_owner_id(record.listing), 0 };
+	payload.to_owner = { item_owner_type::collector, item_collector_owner_id(record.listing),
+			     0 };
 	payload.expected_from_owner_revision = corpse_revision;
 	std::vector<flatfile_item_ownership_record> held;
 	payload.expected_to_owner_revision = owner_revision(root, payload.to_owner, &held, error);
 	payload.selected_item_uid = record.uid;
 	for (const auto &item : items)
 		if (item.root_item_uid == 100)
-			payload.items[payload.item_count++] = { item.item_uid,
-							item.root_item_uid,
-							item.parent_item_uid,
-							item.item_revision,
-							item.vnum,
-							item.state };
+			payload.items[payload.item_count++] = {
+				item.item_uid,	    item.root_item_uid, item.parent_item_uid,
+				item.item_revision, item.vnum,		item.state
+			};
 	const std::vector<uint8_t> blob = singleton(selected);
 	payload.item_blob_size = static_cast<uint32_t>(blob.size());
 	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
 	return payload;
 }
 
-static collector_command_payload metadata(collector_action action,
-					  const collector::record &record, uint64_t now)
+static collector_command_payload metadata(collector_action action, const collector::record &record,
+					  uint64_t now)
 {
 	collector_command_payload payload = {};
 	payload.action = action;
@@ -190,10 +188,11 @@ static collector_command_payload metadata(collector_action action,
 	return payload;
 }
 
-static collector_command_payload held_payload(
-	const std::string &root, collector_action action, const collector_listing_detail &detail,
-	const item_owner_identity &destination, item_custody_state target, uint64_t now,
-	std::string *error)
+static collector_command_payload held_payload(const std::string &root, collector_action action,
+					      const collector_listing_detail &detail,
+					      const item_owner_identity &destination,
+					      item_custody_state target, uint64_t now,
+					      std::string *error)
 {
 	collector_command_payload payload = {};
 	payload.action = action;
@@ -205,7 +204,8 @@ static collector_command_payload held_payload(
 			       item_collector_owner_id(detail.entry.listing), 0 };
 	payload.to_owner = destination;
 	std::vector<flatfile_item_ownership_record> held;
-	payload.expected_from_owner_revision = owner_revision(root, payload.from_owner, &held, error);
+	payload.expected_from_owner_revision =
+		owner_revision(root, payload.from_owner, &held, error);
 	std::vector<flatfile_item_ownership_record> destination_items;
 	payload.expected_to_owner_revision =
 		owner_revision(root, destination, &destination_items, error);
@@ -213,9 +213,8 @@ static collector_command_payload held_payload(
 		"collector held custody did not match listing");
 	payload.selected_item_uid = detail.entry.uid;
 	payload.item_count = 1;
-	payload.items[0] = { held[0].item_uid, held[0].root_item_uid,
-			     held[0].parent_item_uid, held[0].item_revision, held[0].vnum,
-			     held[0].state };
+	payload.items[0] = { held[0].item_uid,	    held[0].root_item_uid, held[0].parent_item_uid,
+			     held[0].item_revision, held[0].vnum,	   held[0].state };
 	payload.item_blob_size = static_cast<uint32_t>(detail.item_blob.size());
 	std::copy(detail.item_blob.begin(), detail.item_blob.end(), payload.item_blob.begin());
 	return payload;
@@ -239,9 +238,8 @@ int main(int argc, char **argv)
 		"could not establish empty artifact authority: " + error);
 
 	const item_owner_identity player_owner = { item_owner_type::player, 42, 0 };
-	const item_owner_identity corpse_owner = {
-		item_owner_type::corpse, item_corpse_owner_id(42, 1000), 0
-	};
+	const item_owner_identity corpse_owner = { item_owner_type::corpse,
+						   item_corpse_owner_id(42, 1000), 0 };
 	const std::vector<player_item_snapshot> snapshots = {
 		snapshot(100, 2100, PLAYER_SNAPSHOT_NO_PARENT, 30, 10, false),
 		snapshot(101, 2101, 0, 5, 500, true),
@@ -252,8 +250,7 @@ int main(int argc, char **argv)
 	for (size_t index = 0; index < snapshots.size(); ++index)
 		baseline.push_back({ snapshots[index].object_uid, 100,
 				     index ? UINT64_C(100) : UINT64_C(0), player_owner, 1,
-				     snapshots[index].vnum,
-				     item_custody_state::active });
+				     snapshots[index].vnum, item_custody_state::active });
 	require(flatfile_item_repository_establish_owner(root_path, player_owner, baseline,
 							 &error) ==
 			flatfile_item_baseline_result::applied,
@@ -270,9 +267,12 @@ int main(int argc, char **argv)
 	death.target_root_item_uid = 100;
 	death.item_count = static_cast<uint16_t>(snapshots.size());
 	for (size_t index = 0; index < snapshots.size(); ++index)
-		death.items[index] = { snapshots[index].object_uid, 100,
-				       index ? UINT64_C(100) : UINT64_C(0), 1,
-				       snapshots[index].vnum, item_custody_state::active };
+		death.items[index] = { snapshots[index].object_uid,
+				       100,
+				       index ? UINT64_C(100) : UINT64_C(0),
+				       1,
+				       snapshots[index].vnum,
+				       item_custody_state::active };
 	const std::vector<uint8_t> death_blob = encode(snapshots);
 	death.item_blob_size = static_cast<uint32_t>(death_blob.size());
 	std::copy(death_blob.begin(), death_blob.end(), death.item_blob.begin());
@@ -296,7 +296,8 @@ int main(int argc, char **argv)
 	const critical_command death_handoff = item_command(death, 1);
 	{
 		flatfile_authority_lock lock;
-		require(lock.acquire(root_path, &error), "could not acquire enrollment preflight lock");
+		require(lock.acquire(root_path, &error),
+			"could not acquire enrollment preflight lock");
 		flatfile_collector_enrollment_mutation mutation;
 		unsigned int result_code = 0;
 		const item_transfer_result transfer = { 100, 4, 2, 1, 2, 1 };
@@ -319,7 +320,8 @@ int main(int argc, char **argv)
 		require(artifact == flatfile_artifact_result::ok ||
 				artifact == flatfile_artifact_result::unchanged,
 			"death artifact preflight failed (result " +
-				std::to_string(static_cast<unsigned int>(artifact)) + "): " + error);
+				std::to_string(static_cast<unsigned int>(artifact)) +
+				"): " + error);
 		flatfile_shop_trade_materialization_mutation materialization;
 		const auto materialized = flatfile_item_transfer_materialization_prepare(
 			root_path, lock, operation(1), death, &materialization, &error);
@@ -327,24 +329,23 @@ int main(int argc, char **argv)
 				materialized ==
 					flatfile_shop_trade_materialization_result::unchanged,
 			"death materialization preflight failed (result " +
-				std::to_string(static_cast<unsigned int>(materialized)) + "): " +
-				error);
+				std::to_string(static_cast<unsigned int>(materialized)) +
+				"): " + error);
 	}
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
-	critical_apply_result applied =
-		flatfile_item_repository_apply(root_path, death_handoff);
+	critical_apply_result applied = flatfile_item_repository_apply(root_path, death_handoff);
 	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
 	require(applied.outcome == critical_apply_outcome::retryable_failure &&
 			fs::exists(root / "domains" / ".critical-authority-transaction"),
 		"interrupted death enrollment did not preserve authority intent (outcome " +
 			std::to_string(static_cast<unsigned int>(applied.outcome)) + ", error " +
 			std::to_string(applied.error_code) + ", journal " +
-			std::to_string(fs::exists(root / "domains" /
-						 ".critical-authority-transaction")) +
+			std::to_string(
+				fs::exists(root / "domains" / ".critical-authority-transaction")) +
 			")");
 	collector_bootstrap_snapshot bootstrap;
 	require(flatfile_collector_repository_read_bootstrap(root_path, &bootstrap, &error) ==
-			flatfile_collector_repository_result::ok &&
+				flatfile_collector_repository_result::ok &&
 			bootstrap.catalog.revision == 1 && bootstrap.catalog.next_listing == 4 &&
 			bootstrap.catalog.records.size() == 3 && bootstrap.held_items.empty() &&
 			!fs::exists(root / "domains" / ".critical-authority-transaction"),
@@ -355,7 +356,7 @@ int main(int argc, char **argv)
 	std::vector<flatfile_corpse_record> corpses;
 	std::vector<flatfile_saved_world_item_record> saved;
 	require(flatfile_world_item_list(root_path, &corpses, &saved, &error) ==
-			flatfile_world_item_result::ok &&
+				flatfile_world_item_result::ok &&
 			corpses.size() == 1 && corpses[0].items.size() == 4,
 		"death enrollment did not recover the corpse image");
 
@@ -375,7 +376,7 @@ int main(int argc, char **argv)
 			collector_result(applied).entry.revision == collected_first.entry.revision,
 		"collector collection replay changed its result");
 	require(flatfile_world_item_list(root_path, &corpses, &saved, &error) ==
-			flatfile_world_item_result::ok &&
+				flatfile_world_item_result::ok &&
 			corpses[0].items.size() == 3 && corpses[0].items[0].weight == 25 &&
 			corpses[0].items[1].object_uid == 102 &&
 			corpses[0].items[1].parent_index == 0,
@@ -385,12 +386,12 @@ int main(int argc, char **argv)
 	collector_command_payload collect_second =
 		collect_payload(root_path, second.entry, corpse_owner, snapshots[2], 1010, &error);
 	applied = flatfile_collector_repository_apply(root_path,
-						       collector_command(collect_second, 3));
+						      collector_command(collect_second, 3));
 	require(applied.outcome == critical_apply_outcome::applied &&
 			collector_result(applied).entry.item_revision == 4,
 		"second candidate did not tolerate unrelated root revision advancement");
 	require(flatfile_world_item_list(root_path, &corpses, &saved, &error) ==
-			flatfile_world_item_result::ok &&
+				flatfile_world_item_result::ok &&
 			corpses[0].items.size() == 2 && corpses[0].items[0].weight == 19 &&
 			corpses[0].items[1].object_uid == 103,
 		"second shell collection damaged retained corpse contents");
@@ -406,11 +407,11 @@ int main(int argc, char **argv)
 	claim.to_owner = player_owner;
 	claim.reason = item_transfer_reason::corpse_loot;
 	claim.reason_id = 1000;
-	claim.expected_from_revision = owner_revision(root_path, corpse_owner, &claim_items,
-						      &error);
+	claim.expected_from_revision =
+		owner_revision(root_path, corpse_owner, &claim_items, &error);
 	std::vector<flatfile_item_ownership_record> current_player_items;
-	claim.expected_to_revision = owner_revision(root_path, player_owner,
-						    &current_player_items, &error);
+	claim.expected_to_revision =
+		owner_revision(root_path, player_owner, &current_player_items, &error);
 	claim.selected_item_uid = 100;
 	claim.item_count = static_cast<uint16_t>(claim_items.size());
 	for (size_t index = 0; index < claim_items.size(); ++index)
@@ -418,7 +419,8 @@ int main(int argc, char **argv)
 				       claim_items[index].root_item_uid,
 				       claim_items[index].parent_item_uid,
 				       claim_items[index].item_revision,
-				       claim_items[index].vnum, claim_items[index].state };
+				       claim_items[index].vnum,
+				       claim_items[index].state };
 	player_item_snapshot claimed_root = snapshots[0];
 	claimed_root.weight = 19;
 	const std::vector<player_item_snapshot> claimed_snapshots = { claimed_root, snapshots[3] };
@@ -432,10 +434,12 @@ int main(int argc, char **argv)
 		require(lock.acquire(root_path, &error), "could not acquire claim preflight lock");
 		flatfile_collector_enrollment_mutation mutation;
 		unsigned int result_code = 0;
-		const item_transfer_result transfer = {
-			100, claim.item_count, claim.expected_from_revision + 1,
-			claim.expected_to_revision + 1, 5, 0
-		};
+		const item_transfer_result transfer = { 100,
+							claim.item_count,
+							claim.expected_from_revision + 1,
+							claim.expected_to_revision + 1,
+							5,
+							0 };
 		const auto prepared = flatfile_collector_prepare_item_boundary(
 			root_path, lock, claim, transfer, &mutation, &result_code, &error);
 		require(prepared == flatfile_collector_repository_result::ok && !result_code &&
@@ -461,10 +465,11 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::already_applied && claim_decoded &&
 			claim_result.collector_catalog_changed,
 		"container acquisition did not atomically invalidate the collector catalog "
-		"(outcome " + std::to_string(static_cast<unsigned int>(applied.outcome)) +
-		", error " + std::to_string(applied.error_code) + ", decoded " +
-		std::to_string(claim_decoded) + ", changed " +
-		std::to_string(claim_result.collector_catalog_changed) + ")");
+		"(outcome " +
+			std::to_string(static_cast<unsigned int>(applied.outcome)) + ", error " +
+			std::to_string(applied.error_code) + ", decoded " +
+			std::to_string(claim_decoded) + ", changed " +
+			std::to_string(claim_result.collector_catalog_changed) + ")");
 	require(third.entry.status == collector::state::cancelled &&
 			third.entry.closed_reason == collector::reason::claimed &&
 			third.entry.item_revision == claim_result.max_item_revision,
@@ -472,26 +477,25 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root_path, claim_command);
 	require(applied.outcome == critical_apply_outcome::already_applied &&
 			item_transfer_command_decode_result(applied.result_payload.data(),
-						    applied.result_size, &claim_result) &&
+							    applied.result_size, &claim_result) &&
 			claim_result.collector_catalog_changed,
 		"container acquisition replay lost its collector invalidation receipt");
 
 	// The same durable UID may become eligible on a later death. The old record
 	// stays terminal while a distinct death/listing is enrolled.
-	const item_owner_identity second_corpse_owner = {
-		item_owner_type::corpse, item_corpse_owner_id(42, 1001), 0
-	};
+	const item_owner_identity second_corpse_owner = { item_owner_type::corpse,
+							  item_corpse_owner_id(42, 1001), 0 };
 	std::vector<flatfile_item_ownership_record> redeath_items;
 	item_transfer_payload redeath = {};
 	redeath.from_owner = player_owner;
 	redeath.to_owner = second_corpse_owner;
 	redeath.reason = item_transfer_reason::corpse_create;
 	redeath.reason_id = 1001;
-	redeath.expected_from_revision = owner_revision(root_path, player_owner, &redeath_items,
-							&error);
+	redeath.expected_from_revision =
+		owner_revision(root_path, player_owner, &redeath_items, &error);
 	std::vector<flatfile_item_ownership_record> second_corpse_items;
-	redeath.expected_to_revision = owner_revision(root_path, second_corpse_owner,
-						      &second_corpse_items, &error);
+	redeath.expected_to_revision =
+		owner_revision(root_path, second_corpse_owner, &second_corpse_items, &error);
 	redeath.selected_item_uid = 100;
 	redeath.target_root_item_uid = 100;
 	redeath.item_count = static_cast<uint16_t>(redeath_items.size());
@@ -500,7 +504,8 @@ int main(int argc, char **argv)
 					 redeath_items[index].root_item_uid,
 					 redeath_items[index].parent_item_uid,
 					 redeath_items[index].item_revision,
-					 redeath_items[index].vnum, redeath_items[index].state };
+					 redeath_items[index].vnum,
+					 redeath_items[index].state };
 	redeath.item_blob_size = static_cast<uint32_t>(claim_blob.size());
 	std::copy(claim_blob.begin(), claim_blob.end(), redeath.item_blob.begin());
 	redeath.corpse = death.corpse;
@@ -516,7 +521,7 @@ int main(int argc, char **argv)
 	item_transfer_result redeath_result = {};
 	require(applied.outcome == critical_apply_outcome::applied &&
 			item_transfer_command_decode_result(applied.result_payload.data(),
-						    applied.result_size, &redeath_result) &&
+							    applied.result_size, &redeath_result) &&
 			redeath_result.collector_catalog_changed,
 		"later death did not enroll the reused durable UID");
 	const collector_listing_detail repeated = listing(root_path, 4, &error);
@@ -542,11 +547,12 @@ int main(int argc, char **argv)
 	mobile_claim.selected_item_uid = 100;
 	mobile_claim.item_count = static_cast<uint16_t>(mobile_items.size());
 	for (size_t index = 0; index < mobile_items.size(); ++index)
-		mobile_claim.items[index] = {
-			mobile_items[index].item_uid, mobile_items[index].root_item_uid,
-			mobile_items[index].parent_item_uid, mobile_items[index].item_revision,
-			mobile_items[index].vnum, mobile_items[index].state
-		};
+		mobile_claim.items[index] = { mobile_items[index].item_uid,
+					      mobile_items[index].root_item_uid,
+					      mobile_items[index].parent_item_uid,
+					      mobile_items[index].item_revision,
+					      mobile_items[index].vnum,
+					      mobile_items[index].state };
 	mobile_claim.item_blob_size = static_cast<uint32_t>(claim_blob.size());
 	std::copy(claim_blob.begin(), claim_blob.end(), mobile_claim.item_blob.begin());
 	const critical_command mobile_claim_command = item_command(mobile_claim, 42);
@@ -554,8 +560,8 @@ int main(int argc, char **argv)
 	item_transfer_result mobile_claim_result = {};
 	require(applied.outcome == critical_apply_outcome::applied &&
 			item_transfer_command_decode_result(applied.result_payload.data(),
-						    applied.result_size,
-						    &mobile_claim_result) &&
+							    applied.result_size,
+							    &mobile_claim_result) &&
 			mobile_claim_result.collector_catalog_changed &&
 			mobile_claim_result.from_owner_revision ==
 				mobile_claim.expected_from_revision + 1 &&
@@ -571,27 +577,28 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root_path, mobile_claim_command);
 	require(applied.outcome == critical_apply_outcome::already_applied &&
 			item_transfer_command_decode_result(applied.result_payload.data(),
-						    applied.result_size,
-						    &mobile_claim_result) &&
+							    applied.result_size,
+							    &mobile_claim_result) &&
 			mobile_claim_result.collector_catalog_changed,
 		"mobile acquisition replay lost its collector invalidation receipt");
 
 	first = listing(root_path, 1, &error);
 	applied = flatfile_collector_repository_apply(
-		root_path, collector_command(metadata(collector_action::activate, first.entry, 1020),
-					     5));
+		root_path,
+		collector_command(metadata(collector_action::activate, first.entry, 1020), 5));
 	require(applied.outcome == critical_apply_outcome::applied &&
 			collector_result(applied).entry.status == collector::state::available,
 		"first listing did not activate");
 	second = listing(root_path, 2, &error);
 	applied = flatfile_collector_repository_apply(
-		root_path, collector_command(metadata(collector_action::activate, second.entry, 1020),
-					     6));
+		root_path,
+		collector_command(metadata(collector_action::activate, second.entry, 1020), 6));
 	require(applied.outcome == critical_apply_outcome::applied,
 		"second listing did not activate");
 	second = listing(root_path, 2, &error);
 	applied = flatfile_collector_repository_apply(
-		root_path, collector_command(metadata(collector_action::pause, second.entry, 1030), 7));
+		root_path,
+		collector_command(metadata(collector_action::pause, second.entry, 1030), 7));
 	require(applied.outcome == critical_apply_outcome::applied &&
 			collector_result(applied).entry.holding_paused,
 		"available listing did not pause");
@@ -605,12 +612,12 @@ int main(int argc, char **argv)
 
 	flatfile_player_domain_record beneficiary;
 	require(flatfile_player_domain_load(root_path, 42, "beneficiary", 1, &beneficiary,
-						  &error) == flatfile_player_domain_result::ok,
+					    &error) == flatfile_player_domain_result::ok,
 		"could not read beneficiary wallet");
 	first = listing(root_path, 1, &error);
-	collector_command_payload purchase = held_payload(
-		root_path, collector_action::purchase, first, player_owner,
-		item_custody_state::active, 1021, &error);
+	collector_command_payload purchase = held_payload(root_path, collector_action::purchase,
+							  first, player_owner,
+							  item_custody_state::active, 1021, &error);
 	purchase.actor_pid = 42;
 	purchase.racewar = 1;
 	purchase.capacity_admitted = true;
@@ -627,9 +634,9 @@ int main(int argc, char **argv)
 
 	second = listing(root_path, 2, &error);
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
-	collector_command_payload expire = held_payload(
-		root_path, collector_action::expire, second, destruction,
-		item_custody_state::destroyed, 1130, &error);
+	collector_command_payload expire = held_payload(root_path, collector_action::expire, second,
+							destruction, item_custody_state::destroyed,
+							1130, &error);
 	applied = flatfile_collector_repository_apply(root_path, collector_command(expire, 10));
 	const collector_command_result expired = collector_result(applied);
 	require(applied.outcome == critical_apply_outcome::applied &&
@@ -638,7 +645,7 @@ int main(int argc, char **argv)
 		"elapsed held listing did not expire");
 
 	require(flatfile_collector_repository_read_bootstrap(root_path, &bootstrap, &error) ==
-			flatfile_collector_repository_result::ok &&
+				flatfile_collector_repository_result::ok &&
 			bootstrap.catalog.revision == 12 && bootstrap.catalog.records.size() == 4 &&
 			bootstrap.held_items.empty(),
 		"terminal collector catalog did not reconcile exact held custody: " + error);

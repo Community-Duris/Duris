@@ -311,8 +311,7 @@ bool player_load_item_graph_materialize_for_owner(
 {
 	assert(target == &character && items.size() == 1 && identities.size() == 1 &&
 	       items[0].object_uid == runtime_entry.uid &&
-	       identities[0].item_uid == runtime_entry.uid &&
-	       identities[0].database_id == 123 &&
+	       identities[0].item_uid == runtime_entry.uid && identities[0].database_id == 123 &&
 	       owner.type == item_owner_type::player && owner.id == 42 && owner_revision == 21 &&
 	       !hydrate_ownership && complete_snapshot_state && metrics);
 	++materializations;
@@ -386,14 +385,14 @@ int main()
 	const uint64_t request_before_busy = request_cursor;
 	item_movement_busy = true;
 	collector_service_command(&character, buy, CMD_COLLECTOR);
-	assert(request_cursor == request_before_busy && !collector_service_player_busy(&character) &&
-	       saw("Another transaction"));
+	assert(request_cursor == request_before_busy &&
+	       !collector_service_player_busy(&character) && saw("Another transaction"));
 	item_movement_busy = false;
 	clear_messages();
 	bulk_get_busy = true;
 	collector_service_command(&character, buy, CMD_COLLECTOR);
-	assert(request_cursor == request_before_busy && !collector_service_player_busy(&character) &&
-	       saw("Another transaction"));
+	assert(request_cursor == request_before_busy &&
+	       !collector_service_player_busy(&character) && saw("Another transaction"));
 	bulk_get_busy = false;
 
 	// A movement can start while the detail worker is reading. The completion gate

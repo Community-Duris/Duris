@@ -971,8 +971,7 @@ bool currency_repository_execute(MYSQL *connection, const critical_command &comm
 				 currency_command_result *result, unsigned int *result_code,
 				 bool *mutation_applied)
 {
-	return execute_currency_state(connection, command, result, result_code,
-				      mutation_applied);
+	return execute_currency_state(connection, command, result, result_code, mutation_applied);
 }
 
 critical_apply_result critical_command_repository_apply(MYSQL *connection,
@@ -1010,8 +1009,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool audit_command = session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !coin_command &&
-	     !corpse_command && !item_command && !auction_command && !collector_command && !combat_command &&
-	     !artifact_guild_command && !boon_command && !zone_command && !audit_command) ||
+	     !corpse_command && !item_command && !auction_command && !collector_command &&
+	     !combat_command && !artifact_guild_command && !boon_command && !zone_command &&
+	     !audit_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1299,9 +1299,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		uint64_t collector_revision = 0;
 		unsigned int result_code = 0;
 		bool mutation_applied = false;
-		if (!corpse_lifecycle_repository_execute(
-			    connection, command, &corpse_result, &result_code, &mutation_applied,
-			    &collector_revision, &collector_events))
+		if (!corpse_lifecycle_repository_execute(connection, command, &corpse_result,
+							 &result_code, &mutation_applied,
+							 &collector_revision, &collector_events))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
@@ -1316,12 +1316,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				{ corpse_result.corpse_revision, corpse_result.catalog_revision,
 				  corpse_result.corpse_owner_revision,
 				  corpse_result.room_owner_revision,
-				  corpse_result.player_owner_revision, corpse_result.wallet_revision,
-				  corpse_result.bank_revision, corpse_result.max_item_revision,
-				  collector_revision });
-		bool outbox_ok = result_code ||
-				 corpse_lifecycle_command_encode_result(corpse_result,
-								 &result_payload);
+				  corpse_result.player_owner_revision,
+				  corpse_result.wallet_revision, corpse_result.bank_revision,
+				  corpse_result.max_item_revision, collector_revision });
+		bool outbox_ok =
+			result_code ||
+			corpse_lifecycle_command_encode_result(corpse_result, &result_payload);
 		if (outbox_ok && mutation_applied)
 			outbox_ok = insert_outbox(connection, command, result_payload.data(),
 						  result_payload.size());
@@ -1330,17 +1330,15 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
 			outbox_ok = collector_command_encode_result(collector_events[index],
 								    &encoded) &&
-				    insert_outbox_event(
-					    connection, command.operation_id,
-					    static_cast<uint16_t>(index + 1),
-					    COLLECTOR_OUTBOX_DESTINATION,
-					    COLLECTOR_OUTBOX_EVENT_MUTATED,
-					    COLLECTOR_COMMAND_RESULT_VERSION, encoded.data(),
-					    encoded.size());
+				    insert_outbox_event(connection, command.operation_id,
+							static_cast<uint16_t>(index + 1),
+							COLLECTOR_OUTBOX_DESTINATION,
+							COLLECTOR_OUTBOX_EVENT_MUTATED,
+							COLLECTOR_COMMAND_RESULT_VERSION,
+							encoded.data(), encoded.size());
 		}
-		if (!outbox_ok ||
-		    !finish_inbox(connection, command, durable_revision, result_code,
-				  result_payload.data(), result_size))
+		if (!outbox_ok || !finish_inbox(connection, command, durable_revision, result_code,
+						result_payload.data(), result_size))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
@@ -1357,22 +1355,21 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 					 failure(error).outcome,
 				 durable_revision, error };
 		}
-		critical_apply_result applied = {
-			result_code ? critical_apply_outcome::terminal_failure :
-				      critical_apply_outcome::applied,
-			durable_revision, result_code
-		};
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  durable_revision, result_code };
 		applied.result_size = static_cast<uint16_t>(result_size);
-		std::copy_n(result_payload.begin(), result_size,
-			    applied.result_payload.begin());
+		std::copy_n(result_payload.begin(), result_size, applied.result_payload.begin());
 		return applied;
 	}
 	if (item_command)
 	{
 		collector_enrollment_repository_plan enrollment;
 		collector_item_boundary_repository_plan boundary;
-		item_transfer_result item_result = { item_transfer_result_root(item_payload),
-						     item_payload.item_count, 0, 0, 0, 0 };
+		item_transfer_result item_result = {
+			item_transfer_result_root(item_payload), item_payload.item_count, 0, 0, 0, 0
+		};
 		std::vector<collector_command_result> collector_events;
 		uint64_t collector_revision = 0;
 		unsigned int result_code = 0;
@@ -1385,8 +1382,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		if (repository_ok && !result_code)
 			repository_ok = item_transfer_repository_execute(
 				connection, command, &item_result, &result_code, &mutation_applied);
-		if (repository_ok && !result_code && mutation_applied &&
-		    !boundary.entries.empty())
+		if (repository_ok && !result_code && mutation_applied && !boundary.entries.empty())
 		{
 			repository_ok = collector_repository_apply_item_boundary(
 				connection, command, boundary, &collector_revision,
@@ -1399,7 +1395,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				enrollment.catalog_revision = collector_revision;
 			repository_ok = collector_repository_apply_death_enrollment(
 				connection, command, item_payload, item_result, enrollment);
-			if (repository_ok && (!enrollment.death_exists || !enrollment.new_items.empty()))
+			if (repository_ok &&
+			    (!enrollment.death_exists || !enrollment.new_items.empty()))
 				item_result.collector_catalog_changed = true;
 			if (repository_ok && !enrollment.new_items.empty())
 				collector_revision = enrollment.catalog_revision + 1;
@@ -1423,18 +1420,17 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		for (size_t index = 0; outbox_ok && index < collector_events.size(); ++index)
 		{
 			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
-			outbox_ok = collector_command_encode_result(collector_events[index], &encoded) &&
-				    insert_outbox_event(
-					    connection, command.operation_id,
-					    static_cast<uint16_t>(index + 1),
-					    COLLECTOR_OUTBOX_DESTINATION,
-					    COLLECTOR_OUTBOX_EVENT_MUTATED,
-					    COLLECTOR_COMMAND_RESULT_VERSION, encoded.data(),
-					    encoded.size());
+			outbox_ok = collector_command_encode_result(collector_events[index],
+								    &encoded) &&
+				    insert_outbox_event(connection, command.operation_id,
+							static_cast<uint16_t>(index + 1),
+							COLLECTOR_OUTBOX_DESTINATION,
+							COLLECTOR_OUTBOX_EVENT_MUTATED,
+							COLLECTOR_COMMAND_RESULT_VERSION,
+							encoded.data(), encoded.size());
 		}
-		if (!outbox_ok ||
-		    !finish_inbox(connection, command, durable_revision, result_code,
-				  result_payload.data(), result_payload.size()))
+		if (!outbox_ok || !finish_inbox(connection, command, durable_revision, result_code,
+						result_payload.data(), result_payload.size()))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;

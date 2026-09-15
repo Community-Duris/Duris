@@ -101,8 +101,7 @@ static player_item_snapshot release_item(uint64_t uid, int32_t parent, int32_t v
 	return value;
 }
 
-static void seed_collector_candidate(const std::string &root,
-				     const flatfile_corpse_record &corpse,
+static void seed_collector_candidate(const std::string &root, const flatfile_corpse_record &corpse,
 				     uint8_t operation_seed, std::string *error)
 {
 	require(corpse.items.size() == 2 && corpse.items[0].object_uid == 900 &&
@@ -129,18 +128,19 @@ static void seed_collector_candidate(const std::string &root,
 	death.item_count = static_cast<uint16_t>(snapshots.size());
 	for (size_t index = 0; index < snapshots.size(); ++index)
 	{
-		const uint64_t parent = snapshots[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
-						UINT64_C(0) :
-						snapshots[static_cast<size_t>(
-							snapshots[index].parent_index)]
-							.object_uid;
-		death.items[index] = { snapshots[index].object_uid, snapshots[0].object_uid,
-				       parent, 0, snapshots[index].vnum,
-				       item_custody_state::active };
+		const uint64_t parent =
+			snapshots[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				UINT64_C(0) :
+				snapshots[static_cast<size_t>(snapshots[index].parent_index)]
+					.object_uid;
+		death.items[index] = {
+			snapshots[index].object_uid, snapshots[0].object_uid,	parent, 0,
+			snapshots[index].vnum,	     item_custody_state::active
+		};
 	}
 	std::vector<uint8_t> blob;
 	require(player_item_snapshot_list_encode(snapshots, &blob) ==
-			player_snapshot_codec_result::ok &&
+				player_snapshot_codec_result::ok &&
 			!blob.empty() && blob.size() <= death.item_blob.size(),
 		"could not encode collector corpse fixture");
 	death.item_blob_size = static_cast<uint32_t>(blob.size());
@@ -170,7 +170,8 @@ static void seed_collector_candidate(const std::string &root,
 		"could not seed collector corpse candidate: " + *error + " (result " +
 			std::to_string(static_cast<unsigned int>(prepared)) + ", code " +
 			std::to_string(result_code) + ")");
-	require(flatfile_authority_transaction_commit(root, lock, { mutation.after_image }, error) ==
+	require(flatfile_authority_transaction_commit(root, lock, { mutation.after_image },
+						      error) ==
 			flatfile_authority_transaction_result::ok,
 		"could not commit collector corpse candidate: " + *error);
 }
@@ -181,7 +182,7 @@ static void require_collector_listing(const std::string &root, collector::state 
 {
 	collector_bootstrap_snapshot bootstrap;
 	require(flatfile_collector_repository_read_bootstrap(root, &bootstrap, error) ==
-			flatfile_collector_repository_result::ok &&
+				flatfile_collector_repository_result::ok &&
 			bootstrap.catalog.revision == catalog_revision &&
 			bootstrap.catalog.records.size() == 1,
 		"collector corpse catalog was not readable exactly: " + *error);
@@ -855,7 +856,7 @@ int main(int argc, char **argv)
 	applied = flatfile_corpse_repository_apply(nested_room_root.string(), nested_room_command);
 	require(applied.outcome == critical_apply_outcome::already_applied &&
 			corpse_lifecycle_command_decode_result(applied.result_payload.data(),
-						       applied.result_size, &result) &&
+							       applied.result_size, &result) &&
 			result.action == corpse_lifecycle_action::release_nested &&
 			result.room_owner_revision == 2 && result.item_count == 2 &&
 			!result.collector_catalog_changed,

@@ -203,18 +203,16 @@ bool valid_result(const corpse_lifecycle_result &result)
 		return false;
 	if (result.action == corpse_lifecycle_action::upsert)
 		return !result.collector_catalog_changed && result.corpse_revision &&
-		       !result.corpse_owner_revision &&
-		       !result.room_owner_revision && !result.player_owner_revision &&
-		       !result.wallet_revision && !result.bank_revision && !result.max_item_revision &&
-		       !result.item_count &&
+		       !result.corpse_owner_revision && !result.room_owner_revision &&
+		       !result.player_owner_revision && !result.wallet_revision &&
+		       !result.bank_revision && !result.max_item_revision && !result.item_count &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action == corpse_lifecycle_action::remove)
 		return !result.collector_catalog_changed && !result.corpse_revision &&
-		       !result.corpse_owner_revision &&
-		       !result.room_owner_revision && !result.player_owner_revision &&
-		       !result.wallet_revision && !result.bank_revision && !result.max_item_revision &&
-		       !result.item_count &&
+		       !result.corpse_owner_revision && !result.room_owner_revision &&
+		       !result.player_owner_revision && !result.wallet_revision &&
+		       !result.bank_revision && !result.max_item_revision && !result.item_count &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	const bool item_result = (!result.item_count && !result.max_item_revision) ||
@@ -248,8 +246,8 @@ bool valid_result(const corpse_lifecycle_result &result)
 	    !result.corpse_owner_revision || !item_result)
 		return false;
 	const bool room = !result.collector_catalog_changed && result.room_owner_revision &&
-			  !result.player_owner_revision &&
-			  !result.wallet_revision && !result.bank_revision &&
+			  !result.player_owner_revision && !result.wallet_revision &&
+			  !result.bank_revision &&
 			  std::all_of(result.wallet.begin(), result.wallet.end(),
 				      [](int32_t value) { return value == 0; });
 	const bool player = !result.room_owner_revision && result.player_owner_revision &&
