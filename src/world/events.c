@@ -243,7 +243,7 @@ void event_hit_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 			die(ch, ch);
 			return;
 		}
-		if (GET_HIT(ch) > GET_MAX_HIT(ch))
+		if (regen_value_int > 0 && GET_HIT(ch) > GET_MAX_HIT(ch))
 			GET_HIT(ch) = GET_MAX_HIT(ch);
 		state.accumulated -= (float)regen_value_int;
 		gmcp_char_vitals(ch);
