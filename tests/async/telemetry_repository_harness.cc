@@ -27,10 +27,11 @@ persistence_mode persistence_mode_get(void)
 	return mode;
 }
 
-static telemetry_repository_config repository_config()
+static telemetry_repository_config repository_config(telemetry_producer_id fresh_producer = {})
 {
-	return { telemetry_storage_backend::sql, 0U, TELEMETRY_SCHEMA_VERSION,
-		 TELEMETRY_BATCH_MAX_RECORDS_PROPOSAL, TELEMETRY_BATCH_MAX_BYTES_PROPOSAL };
+	return { telemetry_storage_backend::sql,     0U,
+		 TELEMETRY_SCHEMA_VERSION,	     TELEMETRY_BATCH_MAX_RECORDS_PROPOSAL,
+		 TELEMETRY_BATCH_MAX_BYTES_PROPOSAL, fresh_producer };
 }
 
 #ifdef __NO_MYSQL__
@@ -41,6 +42,11 @@ int main()
 	auto config = repository_config();
 	config.schema_version = 0;
 	CHECK(telemetry_repository_init(config) == telemetry_repository_outcome::invalid_config);
+	config = repository_config();
+	config.fresh_producer = { 1U, 0U };
+	CHECK(!telemetry_repository_config_is_bounded(config));
+	config.fresh_producer = { 1U, 2U };
+	CHECK(telemetry_repository_config_is_bounded(config));
 	config = repository_config();
 	CHECK(telemetry_repository_init(config) == telemetry_repository_outcome::flatfile_disabled);
 	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::disabled);
@@ -320,10 +326,23 @@ static void config_and_scope_tests()
 	expect_one(config, telemetry_apply_outcome::rejected_invalid);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_config") == 0U);
 	seed_config();
-	case_name = "conflicting configuration identity";
+	case_name = "same configuration content after process restart";
 	config = normal_interval_configs[0];
-	config.header.key.record_seq += 100;
+	config.header.key.producer.boot_id++;
+	config.header.occurrence_utc_usec++;
 	config.payload.configuration.config.effective_utc_usec++;
+	config.payload.configuration.config.revision++;
+	expect_one(config, telemetry_apply_outcome::applied);
+	expect_one(config, telemetry_apply_outcome::duplicate_identical);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_config") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
+	case_name = "same replay key still requires exact publication metadata";
+	config.payload.configuration.config.effective_utc_usec++;
+	expect_one(config, telemetry_apply_outcome::duplicate_conflict);
+	case_name = "different content under same configuration id still conflicts";
+	config = changed_interval_usec_config;
+	config.payload.configuration.config.config_id =
+		normal_interval_configs[0].payload.configuration.config.config_id;
 	expect_one(config, telemetry_apply_outcome::duplicate_conflict);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_config") == 1U);
 	for (int change = 0; change < 4; ++change)
@@ -603,6 +622,52 @@ static void startup_fencing_tests()
 	      telemetry_repository_outcome::ready);
 }
 
+static void fresh_producer_tests()
+{
+	case_name = "existing producer is refused for a new repository lifetime";
+	reset_fixture();
+	seed_config();
+	const auto existing = interval_record();
+	const auto reused = existing.header.key.producer;
+	expect_one(existing, telemetry_apply_outcome::applied);
+	shutdown_fixture();
+	CHECK(telemetry_repository_init(repository_config(reused)) ==
+	      telemetry_repository_outcome::unavailable);
+	CHECK(telemetry_repository_health_copy().state == telemetry_health_state::degraded);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
+
+	// A joined owner shutdown resets freshness state, so a different producer
+	// can claim the next repository lifetime while old facts remain durable.
+	shutdown_fixture();
+	auto fresh = reused;
+	++fresh.boot_id;
+	CHECK(telemetry_repository_init(repository_config(fresh)) ==
+	      telemetry_repository_outcome::ready);
+	case_name = "fresh producer is accepted and mismatched records are rejected";
+	auto fresh_config = normal_interval_configs[0];
+	fresh_config.header.key.producer = fresh;
+	expect_one(fresh_config, telemetry_apply_outcome::applied);
+	auto fresh_interval = existing;
+	fresh_interval.header.key.producer = fresh;
+	expect_one(fresh_interval, telemetry_apply_outcome::applied);
+	auto mismatched = existing;
+	mismatched.header.key.record_seq += 1000;
+	expect_one(mismatched, telemetry_apply_outcome::rejected_invalid);
+
+	case_name = "same lifetime reconnect retains ambiguous replay";
+	auto replay = fresh_interval;
+	replay.header.key.record_seq += 1000;
+	fault = fault_kind::commit_lost_committed;
+	const auto ambiguous = telemetry_repository_apply(&replay, 1U);
+	CHECK(ambiguous.outcome == telemetry_batch_outcome::commit_ambiguous);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 5U);
+	const auto reconciled = telemetry_repository_apply(&replay, 1U);
+	CHECK(reconciled.outcome == telemetry_batch_outcome::committed);
+	CHECK(reconciled.applied_count == 0U && reconciled.duplicate_count == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 5U);
+	shutdown_fixture();
+}
+
 static void bounds_and_lifecycle_tests()
 {
 	case_name = "process-wide zero-scope gap";
@@ -750,6 +815,7 @@ int main(int argc, char **argv)
 	checkpoint_tests();
 	fault_tests();
 	startup_fencing_tests();
+	fresh_producer_tests();
 	bounds_and_lifecycle_tests();
 	shutdown_fixture();
 	mysql_close(observer);

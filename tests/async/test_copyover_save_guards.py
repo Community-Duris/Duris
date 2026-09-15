@@ -14,8 +14,15 @@ body = copyover[copyover.index("bool copyover_save("):copyover.index(
     "static P_char copyover_load_player", copyover.index("bool copyover_save(")
 )]
 recover = copyover[copyover.index("static P_char copyover_load_player"):]
-descriptor_capture = copyover[copyover.index("static int write_desc_entry("):
-                              copyover.index("static int write_mob_entry(")]
+# Compile the descriptor writer itself, not unrelated helpers inserted before
+# write_mob_entry (telemetry wire helpers have their own executable regression).
+descriptor_start = copyover.index("static int write_desc_entry(")
+descriptor_end = copyover.index("{", descriptor_start) + 1
+depth = 1
+while depth:
+    depth += (copyover[descriptor_end] == "{") - (copyover[descriptor_end] == "}")
+    descriptor_end += 1
+descriptor_capture = copyover[descriptor_start:descriptor_end]
 save = body.index("persistence_save_character_terminal")
 flush = body.index("persistence_flush_all_character_saves")
 drain = body.index("player_save_pipeline_drain")

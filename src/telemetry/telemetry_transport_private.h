@@ -52,6 +52,9 @@ void telemetry_transport_unbind_for_tests(void);
 telemetry_transport_outcome telemetry_transport_quiesce_for_tests(void);
 telemetry_transport_outcome telemetry_transport_resume_for_tests(void);
 
+/* Lifetime owner hook: call only after the transport worker has joined. */
+void telemetry_transport_repository_shutdown_for_owner(void);
+
 /* Producer-only cumulative rejection metadata. These are failed admissions,
  * not proof of durable loss: an unadmitted value may still be retried. Zero
  * bounds mean noncontiguous/unknown; never infer a missing inclusive span.

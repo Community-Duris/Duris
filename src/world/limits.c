@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "world/difficulty.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1676,6 +1677,8 @@ void point_update(void)
 			if (!IS_SET(i->specials.act, PLR_AFK))
 			{
 				SET_BIT(i->specials.act, PLR_AFK);
+				if (i->desc && i->desc->connected == CON_PLAYING)
+					(void)telemetry_runtime_game_context(i, i->desc);
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 				if (affected_by_spell(i, TAG_CTF))
 				{

@@ -503,7 +503,14 @@ OBJS =  $(SHIP_OBJS) \
 				 net/gmcp.o \
 				 net/ttype.o \
 				 account/wiz_newchar.o \
-				 world/zcheck.o
+				 world/zcheck.o \
+				 telemetry/telemetry_activity.o \
+				 telemetry/telemetry_config.o \
+				 telemetry/telemetry_repository.o \
+				 telemetry/telemetry_runtime.o \
+				 telemetry/telemetry_session.o \
+				 telemetry/telemetry_transport.o \
+				 telemetry/telemetry_queue.o
 
 
 # Name lists (no paths) for pfile-related objs

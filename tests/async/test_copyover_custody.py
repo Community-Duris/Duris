@@ -52,8 +52,19 @@ HARNESS = r'''
 #include "player/player_load_pipeline.h"
 #include "player/player_load_materialize.h"
 #include "core/mm.h"
+#include "telemetry/telemetry_runtime.h"
 #include <unistd.h>
 #include <cstdarg>
+
+// This no-player custody fixture must never enter gameplay telemetry adapters.
+// Its clock is unavailable, so the telemetry durability barrier is not entered.
+bool telemetry_runtime_now(telemetry_monotonic_usec *, telemetry_utc_usec *) noexcept
+{ return false; }
+telemetry_runtime_outcome telemetry_runtime_flush_for_copyover(telemetry_monotonic_usec)
+{ std::abort(); }
+telemetry_handoff_result telemetry_runtime_game_handoff_copy(P_char) { std::abort(); }
+telemetry_capture_result telemetry_runtime_game_session_resume(
+    P_char, P_desc, const telemetry_session_handoff *) { std::abort(); }
 
 P_desc descriptor_list = nullptr;
 int RUNNING_PORT = 4000, mini_mode = 1, _copyover = 0, used_descs = 0;
@@ -178,6 +189,11 @@ int main(int argc, char **argv)
     // all newly materialized objects must be rolled back atomically.
     FILE *file = std::fopen(COPYOVER_FILE, "rb"); assert(file);
     assert(std::fseek(file, sizeof(copyover_header) + 3 * sizeof(int), SEEK_SET) == 0);
+    // Version 15 has a framed telemetry block even with zero descriptors.
+    struct { char magic[4]; uint32_t version; uint32_t count; } telemetry_header{};
+    assert(std::fread(&telemetry_header, sizeof(telemetry_header), 1, file) == 1);
+    assert(std::memcmp(telemetry_header.magic, "TLMY", 4) == 0);
+    assert(telemetry_header.version == 1 && telemetry_header.count == 0);
     uint32_t size = 0;
     assert(std::fread(&size, sizeof(size), 1, file) == 1);
     assert(size <= WORLD_RECOVERY_MAX_RECORD_BYTES);

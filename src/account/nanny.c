@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "account/newbie_kit_plan.h"
 #include "world/object_template.h"
 #include "account/creation_availability_config.h"
@@ -1933,6 +1934,15 @@ void enter_game(P_desc d)
 	{
 		do_summon_book(ch, writable_arg(""), 0);
 	}
+
+	/* enter_game has several callers (account, legacy menu, and websocket).
+	 * Only the caller that has moved the descriptor to CON_PLAYING may open a
+	 * gameplay session; the legacy menu completes that transition below. */
+	if (STATE(d) == CON_PLAYING)
+	{
+		(void)telemetry_runtime_game_enter(ch, d);
+		(void)telemetry_runtime_game_context(ch, d);
+	}
 }
 
 void select_terminal(P_desc d, const char *arg)
@@ -2418,6 +2428,9 @@ void reconnect(P_desc d, P_char tmp_ch)
 	tmp_ch->only.pc->last_ip = ip2ul(d->host);
 	tmp_ch->specials.timer = 0;
 	STATE(d) = CON_PLAYING;
+	(void)telemetry_runtime_game_connection_transition(
+		tmp_ch, d, telemetry_connection_transition_kind::attached);
+	(void)telemetry_runtime_game_context(tmp_ch, d);
 	epic_transaction_player_ready(tmp_ch);
 	zone_touch_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
@@ -2860,6 +2873,8 @@ void select_main_menu(P_desc d, char *arg)
 		}
 		enter_game(d);
 		STATE(d) = CON_PLAYING;
+		(void)telemetry_runtime_game_enter(d->character, d);
+		(void)telemetry_runtime_game_context(d->character, d);
 		d->prompt_mode = !item_creation_grant_blocks_commands(d->character);
 		break;
 	case '2': /* read background story */
