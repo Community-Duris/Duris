@@ -1,5 +1,6 @@
 """Check the generated Pages artifact, including every local link and anchor."""
 
+import hashlib
 import json
 import os
 import re
@@ -50,7 +51,7 @@ class PagesTests(unittest.TestCase):
         }
 
     def test_all_curated_guides_are_published(self):
-        self.assertEqual(len(self.pages), len(self.catalog) + len(self.diagrams) + 3)
+        self.assertEqual(len(self.pages), len(self.catalog) + len(self.diagrams) + 4)
         for doc in self.catalog:
             page = OUTPUT / "docs" / doc["slug"] / "index.html"
             self.assertIn(page, self.pages)
@@ -141,6 +142,35 @@ class PagesTests(unittest.TestCase):
             self.assertFalse(file.is_symlink(), file)
             self.assertNotIn(file.name, {".env", ".env.docker", "AGENTS.md", "package-lock.json"})
             self.assertFalse(re.search(r"\.(?:sql|key|log|pem)$", file.name), file)
+
+    def test_power_atlas_is_discoverable_and_publishes_its_runtime(self):
+        url = f"{BASE}power-atlas/"
+        self.assertIn(url, self.pages[OUTPUT / "index.html"].links)
+        self.assertIn(f"{url}</loc>", (OUTPUT / "sitemap.xml").read_text())
+        page = self.pages[OUTPUT / "power-atlas/index.html"]
+        for section in ("summary", "atlas", "standing", "specs", "gaps", "factors",
+                        "halfling", "globes", "pvp", "method", "cell-details"):
+            self.assertIn(section, page.ids)
+        self.assertIn(f"{BASE}assets/atlas.js", page.links)
+        self.assertIn(f"{BASE}assets/atlas.css", page.links)
+        self.assertIn("data.json", page.links)
+        self.assertTrue(any("/tree/f3b66b07ffba8443f3f47f976fa920b46bd88384" in link for link in page.links))
+        self.assertIn("Historical model snapshot", "".join(page.text))
+
+    def test_power_atlas_preserves_the_supplied_model_snapshot(self):
+        source = (ROOT / "site/power-atlas/data.json").read_bytes()
+        published = (OUTPUT / "power-atlas/data.json").read_bytes()
+        self.assertEqual(published, source)
+        self.assertEqual(hashlib.sha256(published).hexdigest(),
+                         "648eaeac660fade77274a9eea2261f575aff0de7e8a57c7d47cf2e2389c92765")
+        data = json.loads(published)
+        self.assertEqual(len(data["combos"]), 192)
+        self.assertEqual(len(data["specs"]["variants"]), 711)
+        self.assertEqual(data["meta"]["levels"], [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 50, 51, 56])
+        for combination in data["combos"].values():
+            for level in data["meta"]["levels"]:
+                for tier in data["meta"]["tiers"]:
+                    self.assertEqual(len(combination["d"][f"{level}|{tier}"]), 16)
 
 
 if __name__ == "__main__":

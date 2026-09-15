@@ -37,6 +37,29 @@ an `<h1>` title and an SVG `<desc>` description. Changes publish through the sam
 GitHub Actions workflow. Embedded views isolate the original styles and disable
 scripts; their full-size pages retain the original document behavior.
 
+## Power Atlas
+
+The [Power Atlas](https://community-duris.github.io/Duris/power-atlas/) publishes
+the supplied combat-model report as an interactive page. `site/power-atlas/`
+contains its report content, styles, interaction code, and unchanged JSON snapshot.
+The snapshot covers 192 race/class combinations, 711 builds, 13 report levels,
+and three gear tiers. Its model source revision is `f3b66b07f`; publishing the
+website does not regenerate the model or repeat its reported engine checks.
+
+Level, gear, metric, and specialisation settings are stored in the page URL.
+**Copy atlas view link** shares those settings. Original `#L=…&tier=…` links
+remain supported. Tables scroll within the page; clicking, tapping, or pressing
+Enter on an atlas cell opens its full breakdown. Escape closes the details.
+The findings and methodology are readable without JavaScript, and the complete
+snapshot can be downloaded. Only the atlas page fetches the model data.
+
+The artifact tests pin the imported snapshot's SHA-256 and verify its dimensions,
+route, source revision, and local assets. A future model refresh must update the
+snapshot, report, source revision, and matching tests together. Do not edit model
+values while changing presentation. Browser checks should cover all report
+levels, gear selection, metric and specialisation views, shared URLs, cell details,
+clipboard behavior, mobile scrolling, and a failed snapshot download.
+
 ## Build and verify locally
 
 Use Node.js 24 or later and Python 3:

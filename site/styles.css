@@ -225,9 +225,11 @@ p {
 }
 .categories {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  row-gap: 26px;
 }
 .categories > a {
+  grid-column: span 2;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -237,6 +239,13 @@ p {
 .categories > a + a {
   border-left: 1px solid var(--line);
   padding-left: 20px;
+}
+.categories > a:nth-child(n + 4) {
+  grid-column: span 3;
+}
+.categories > a:nth-child(4) {
+  border-left: 0;
+  padding-left: 0;
 }
 .categories > a > .icon {
   margin: 12px 0 0 auto;
@@ -826,6 +835,12 @@ p {
   }
   .categories > a + a {
     padding-left: 18px;
+  }
+  .categories > a:nth-child(n) {
+    grid-column: auto;
+  }
+  .categories > a:nth-child(4) {
+    border-left: 1px solid var(--line);
   }
   .categories > a:nth-child(odd) {
     border-left: 0;

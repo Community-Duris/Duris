@@ -166,8 +166,15 @@ function header() {
 function footer() {
   return `<footer class="site-footer"><a href="${base}">DurisMUD</a><a href="${github}/tree/${revision}">Built from the repository. ${external}</a></footer>`;
 }
-function layout(title, description, route, content, reader = false) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><title>${esc(title)} · DurisMUD</title><meta name="description" content="${esc(description)}"><meta name="theme-color" content="#101b19"><link rel="canonical" href="${origin}${route}"><meta property="og:title" content="${esc(title)} · DurisMUD"><meta property="og:description" content="${esc(description)}"><meta property="og:type" content="website"><meta property="og:url" content="${origin}${route}"><meta property="og:image" content="${origin}${base}assets/citadel.webp"><link rel="icon" href="${base}assets/favicon.svg" type="image/svg+xml"><link rel="preload" href="${base}assets/fonts/cormorant-garamond-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="${base}assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="${base}assets/site.css"><script type="module" src="${base}assets/app.js"></script></head><body data-base="${base}" class="${reader ? "reader" : "home"}">${header()}${content}${footer()}</body></html>`;
+function layout(
+  title,
+  description,
+  route,
+  content,
+  reader = false,
+  extraHead = "",
+) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><title>${esc(title)} · DurisMUD</title><meta name="description" content="${esc(description)}"><meta name="theme-color" content="#101b19"><link rel="canonical" href="${origin}${route}"><meta property="og:title" content="${esc(title)} · DurisMUD"><meta property="og:description" content="${esc(description)}"><meta property="og:type" content="website"><meta property="og:url" content="${origin}${route}"><meta property="og:image" content="${origin}${base}assets/citadel.webp"><link rel="icon" href="${base}assets/favicon.svg" type="image/svg+xml"><link rel="preload" href="${base}assets/fonts/cormorant-garamond-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="${base}assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="${base}assets/site.css"><script type="module" src="${base}assets/app.js"></script>${extraHead}</head><body data-base="${base}" class="${reader ? "reader" : "home"}">${header()}${content}${footer()}</body></html>`;
 }
 function guideRow(doc) {
   return `<a class="guide-row" data-slug="${doc.slug}" data-group="${doc.group}" href="${routes.get(doc.source)}"><span class="guide-group">${doc.group}</span><h3>${esc(doc.title)} ${arrow}</h3><p>${esc(doc.description)}</p></a>`;
@@ -210,7 +217,10 @@ for (const [font, weights] of [
   }
 }
 await build({
-  entryPoints: [path.join(here, "app.js")],
+  entryPoints: {
+    app: path.join(here, "app.js"),
+    atlas: path.join(here, "power-atlas/atlas.js"),
+  },
   outdir: path.join(out, "assets"),
   bundle: true,
   minify: true,
@@ -220,7 +230,7 @@ await build({
   logLevel: "warning",
 });
 
-const index = `<main id="main"><section class="hero"><img class="hero-art" src="${base}assets/citadel.webp" alt="A warm-lit stone citadel above a misty lake and an ancient arched bridge" width="1942" height="809" fetchpriority="high"><div class="hero-copy"><h1>A world worth<br>understanding.</h1><p>Explore the code, systems, and craft behind DurisMUD.</p><a class="button" href="#documentation">Explore documentation ${external}</a></div></section><section class="explore" id="explore" aria-labelledby="explore-title"><h2 id="explore-title">Explore the project</h2><div class="categories"><a href="#documentation"><span class="category-number">01 /</span><div><h3>Documentation</h3><p>Guides to the world behind the game.</p></div>${arrow}</a><a href="${base}diagrams/"><span class="category-number">02 /</span><div><h3>Diagrams</h3><p>See how the systems fit together.</p></div>${arrow}</a><a href="${github}"><span class="category-number">03 /</span><div><h3>Source code</h3><p>The engine, tools, and world data.</p></div>${arrow}</a><a href="${github}/pulls"><span class="category-number">04 /</span><div><h3>Development</h3><p>Follow changes and contribute.</p></div>${arrow}</a></div></section><section class="library" id="documentation" aria-labelledby="library-title"><div class="library-heading"><div><h2 id="library-title">The documentation library</h2><p>Find your way in. Then go deeper.</p></div><form class="search-form" role="search" hidden><label class="search-field">${search}<span class="sr-only">Search documentation</span><input type="search" name="q" id="search" placeholder="Search documentation" autocomplete="off"></label></form></div><div class="filters" role="group" aria-label="Filter guides" hidden>${["All guides", ...groups].map((group, i) => `<button type="button" data-filter="${group}" aria-pressed="${i === 0}">${group}</button>`).join("")}</div><p class="search-status sr-only" role="status" aria-live="polite"></p><div class="guide-list">${catalog.map(guideRow).join("")}</div><div class="empty-state" hidden><h3>No guides found</h3><p>Try a different search or browse all guides.</p><button type="button" class="button" id="clear-search">Clear search & filters</button></div><a class="complete-index" href="${routes.get("docs/README_docs.md")}">Open the complete repository index ${arrow}</a></section></main>`;
+const index = `<main id="main"><section class="hero"><img class="hero-art" src="${base}assets/citadel.webp" alt="A warm-lit stone citadel above a misty lake and an ancient arched bridge" width="1942" height="809" fetchpriority="high"><div class="hero-copy"><h1>A world worth<br>understanding.</h1><p>Explore the code, systems, and craft behind DurisMUD.</p><a class="button" href="#documentation">Explore documentation ${external}</a></div></section><section class="explore" id="explore" aria-labelledby="explore-title"><h2 id="explore-title">Explore the project</h2><div class="categories"><a href="#documentation"><span class="category-number">01 /</span><div><h3>Documentation</h3><p>Guides to the world behind the game.</p></div>${arrow}</a><a href="${base}diagrams/"><span class="category-number">02 /</span><div><h3>Diagrams</h3><p>See how the systems fit together.</p></div>${arrow}</a><a href="${base}power-atlas/"><span class="category-number">03 /</span><div><h3>Power Atlas</h3><p>Compare races, classes, and builds.</p></div>${arrow}</a><a href="${github}"><span class="category-number">04 /</span><div><h3>Source code</h3><p>The engine, tools, and world data.</p></div>${arrow}</a><a href="${github}/pulls"><span class="category-number">05 /</span><div><h3>Development</h3><p>Follow changes and contribute.</p></div>${arrow}</a></div></section><section class="library" id="documentation" aria-labelledby="library-title"><div class="library-heading"><div><h2 id="library-title">The documentation library</h2><p>Find your way in. Then go deeper.</p></div><form class="search-form" role="search" hidden><label class="search-field">${search}<span class="sr-only">Search documentation</span><input type="search" name="q" id="search" placeholder="Search documentation" autocomplete="off"></label></form></div><div class="filters" role="group" aria-label="Filter guides" hidden>${["All guides", ...groups].map((group, i) => `<button type="button" data-filter="${group}" aria-pressed="${i === 0}">${group}</button>`).join("")}</div><p class="search-status sr-only" role="status" aria-live="polite"></p><div class="guide-list">${catalog.map(guideRow).join("")}</div><div class="empty-state" hidden><h3>No guides found</h3><p>Try a different search or browse all guides.</p><button type="button" class="button" id="clear-search">Clear search & filters</button></div><a class="complete-index" href="${routes.get("docs/README_docs.md")}">Open the complete repository index ${arrow}</a></section></main>`;
 await writeFile(
   path.join(out, "index.html"),
   layout(
@@ -246,6 +256,32 @@ await writeFile(
     "Explore the DurisMUD server architecture and database model directly from the repository diagrams.",
     diagramsRoute,
     gallery,
+  ),
+);
+
+// The supplied report is a historical snapshot, independent of the site build revision.
+const atlasRoute = `${base}power-atlas/`;
+await mkdir(path.join(out, "power-atlas"), { recursive: true });
+await cp(
+  path.join(here, "power-atlas/data.json"),
+  path.join(out, "power-atlas/data.json"),
+);
+await cp(
+  path.join(here, "power-atlas/atlas.css"),
+  path.join(out, "assets/atlas.css"),
+);
+const atlasContent = (
+  await readFile(path.join(here, "power-atlas/content.html"), "utf8")
+).replaceAll("{{BASE}}", base);
+await writeFile(
+  path.join(out, "power-atlas/index.html"),
+  layout(
+    "Power Atlas",
+    "Compare 192 Duris race and class combinations and 711 builds across 13 report levels and three gear tiers in an interactive combat model snapshot.",
+    atlasRoute,
+    atlasContent,
+    false,
+    `<link rel="stylesheet" href="${base}assets/atlas.css"><script type="module" src="${base}assets/atlas.js"></script>`,
   ),
 );
 
@@ -287,12 +323,17 @@ await writeFile(
     base,
     guides: catalog.length,
     diagrams: diagrams.length,
+    powerAtlas: {
+      sourceRevision: "f3b66b07ffba8443f3f47f976fa920b46bd88384",
+      combinations: 192,
+      builds: 711,
+    },
   }),
 );
 await writeFile(path.join(out, ".nojekyll"), "");
 await writeFile(
   path.join(out, "sitemap.xml"),
-  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[base, diagramsRoute, ...routes.values()].map((url) => `<url><loc>${origin}${url}</loc></url>`).join("")}</urlset>`,
+  `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[base, diagramsRoute, atlasRoute, ...routes.values()].map((url) => `<url><loc>${origin}${url}</loc></url>`).join("")}</urlset>`,
 );
 await writeFile(
   path.join(out, "404.html"),
