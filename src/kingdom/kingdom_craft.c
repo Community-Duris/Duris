@@ -750,7 +750,8 @@ static void kingdom_store_list(P_char ch, const kingdom_realm &realm, P_Guild gu
  * buy
  * ------------------------------------------------------------------ */
 
-/* `buy <item> [form]`. THE ORDER IS THE SAFETY, because nothing here refunds:
+/* `buy <item> [form]`. THE ORDER IS THE SAFETY -- check first, so nothing
+ * needs refunding:
  *
  *   1. what, and which form                      -- refuse, nothing made
  *   2. the piece is made, and delivery is asked:  -- refuse, piece discarded
@@ -761,8 +762,11 @@ static void kingdom_store_list(P_char ch, const kingdom_realm &realm, P_Guild gu
  *   5. the coin is taken -- DESTROYED, credited to no treasury
  *   6. the material is spent through kingdom_resource_spend(), the store's
  *      one way out, which cannot refuse now: it was checked in 3 and nothing
- *      has run since
- *   7. the piece is granted
+ *      has run since. If it ever did, the purchase stops and the coin goes
+ *      back, rather than a piece going out unpaid for
+ *   7. the piece is granted; a refusal here (transient, and impossible to
+ *      check first) undoes the purchase: coin and material both go back
+ *   8. the realm's record is written, not left to the next flush
  *
  * The coin goes before the material, as in a claim, because SUB_MONEY() can
  * refuse (a currency transaction still in flight for the buyer) and a realm
@@ -906,15 +910,27 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 
 	/* 6. The material, through the store's only way out. */
 	const bool wants_material = kingdom_craft_bill_wants_material(bill);
-	const bool drawn = wants_material && kingdom_resource_spend(realm, bill.costs);
 
-	if (wants_material && !drawn)
+	if (wants_material && !kingdom_resource_spend(realm, bill.costs))
 	{
-		/* Unreachable: checked in 3 and nothing has run since. */
+		/* Unreachable in today's single-threaded loop -- the bill was checked
+		 * in 3 and nothing has run since -- but a store must never hand over a
+		 * piece the realm did not pay for, so the purchase stops here all the
+		 * same: the piece is discarded and the buyer's platinum, taken in 5,
+		 * goes back. No material moved, so there is none to return. */
+		extract_obj(obj, FALSE);
+		if (price > 0)
+			ADD_MONEY(ch, static_cast<int>(price));
+		send_to_char(
+			"The realm's stores could not supply it after all, so nothing has been "
+			"taken. Try again in a moment.\r\n",
+			ch);
 		logit(LOG_KINGDOM,
-		      "STORE: realm %d (assoc %d) refused a bill it had just been seen to cover "
-		      "(%s, level %d).",
-		      realm.realm_id, realm.assoc_id, item->keyword, level);
+		      "STORE ABORTED: realm %d (assoc %d) refused a bill it had just been seen to "
+		      "cover (%s, level %d); %s's %ld platinum went back and nothing was made.",
+		      realm.realm_id, realm.assoc_id, item->keyword, level, GET_NAME(ch),
+		      bill.platinum);
+		return;
 	}
 
 	/* 7. The grant. Copy what the messages need first: once the grant is
@@ -941,13 +957,17 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 		extract_obj(obj, FALSE);
 		if (price > 0)
 			ADD_MONEY(ch, static_cast<int>(price));
-		if (drawn)
+		if (wants_material)
 		{
 			for (int res = 0; res < KRES_MAX; res++)
 			{
 				if (bill.costs[res] > 0)
 					kingdom_resource_deposit(realm, res, bill.costs[res]);
 			}
+			/* Written now rather than left to the flush, like the draw it
+			 * undoes (below): the realm's record should hold its material
+			 * back as promptly as the buyer's purse holds its coin. */
+			kingdom_persist_realm(realm);
 		}
 		send_to_char(
 			"The workshops could not hand the piece over just now, so nothing has "
@@ -958,10 +978,20 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 		      "STORE REVERSED: %s (assoc %d) was refused the grant of %s at level %d; %ld "
 		      "platinum and %ld mineral, %ld wood, %ld fibre, %ld water put back.",
 		      GET_NAME(ch), realm.assoc_id, shown.c_str(), level, bill.platinum,
-		      drawn ? bill.costs[KRES_MINERAL] : 0L, drawn ? bill.costs[KRES_WOOD] : 0L,
-		      drawn ? bill.costs[KRES_FIBRE] : 0L, drawn ? bill.costs[KRES_WATER] : 0L);
+		      bill.costs[KRES_MINERAL], bill.costs[KRES_WOOD], bill.costs[KRES_FIBRE],
+		      bill.costs[KRES_WATER]);
 		return;
 	}
+
+	/* 8. The draw is written at once instead of waiting for the next flush.
+	 * The buyer's platinum is durable through its own currency transaction;
+	 * without this a crash before the flush would bring the realm back with
+	 * material it had already spent on a piece the buyer keeps. The write is
+	 * the realm's alone -- no treasury moved -- and kingdom_persist_realm()
+	 * keeps the pending rule: a realm with a paired payment still pending is
+	 * left dirty for that retry, not published alone. */
+	if (wants_material)
+		kingdom_persist_realm(realm);
 
 	send_to_char_f(ch,
 		       "You pay &+W%ld&n platinum, and your realm's workshops make you %s&n.\r\n",

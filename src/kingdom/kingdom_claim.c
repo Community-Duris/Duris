@@ -346,8 +346,10 @@ static void kingdom_refresh_index(const kingdom_realm &realm)
 	kingdom_reindex_realm(realm);
 }
 
-/* Persist a realm whose state changed WITHOUT any coin moving -- abandon is
- * the one such path here. Money-bearing paths must not use this: they go
+/* Persist a realm whose state changed WITHOUT any TREASURY moving -- abandon
+ * here, and a guild-store purchase or its reversal (kingdom_craft.c), whose
+ * platinum comes from a member's purse and goes nowhere, so no guild record
+ * changes with it. Paths that move a treasury must not use this: they go
  * through kingdom_persist_payment(), which writes the guild alongside.
  *
  * THE PENDING RULE, which every kingdom_db_save_realm() caller outside
@@ -365,7 +367,7 @@ static void kingdom_refresh_index(const kingdom_realm &realm)
  * True when the record is on disk. False -- held for a pending payment, or a
  * write that failed -- leaves the realm dirty and logs everything needed to
  * reconstruct the write by hand. */
-static bool kingdom_persist_realm(kingdom_realm &realm)
+bool kingdom_persist_realm(kingdom_realm &realm)
 {
 	realm.dirty = true;
 

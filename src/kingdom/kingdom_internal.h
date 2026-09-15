@@ -377,6 +377,13 @@ long kingdom_ring_cost(int ring);
 bool kingdom_convert_guild(struct char_data *ch);
 bool kingdom_claim_next(struct char_data *ch);
 bool kingdom_abandon_last(struct char_data *ch);
+/* Write a realm whose record changed while no TREASURY moved: an abandon, or
+ * a guild-store purchase or its reversal, whose platinum comes from a
+ * member's purse and goes nowhere. Keeps the pending rule -- a realm with a
+ * paired payment still pending is left dirty for kingdom_upkeep_retry_pending()
+ * and never published alone. True when the record is on disk; false has been
+ * logged and leaves the realm dirty for the next flush. */
+bool kingdom_persist_realm(kingdom_realm &realm);
 
 /* --- kingdom_upkeep.c : the periodic charge and the arrears ladder --- */
 long kingdom_upkeep_due(const kingdom_realm &realm);
