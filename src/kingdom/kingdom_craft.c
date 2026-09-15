@@ -35,6 +35,7 @@
 #include "core/config.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "economy/currency_transaction.h"
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
 #include "item/item_movement_transaction.h"
@@ -586,6 +587,15 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 		obj->affected[i].modifier = 0;
 	}
 
+	/* No effect flags, whatever the blank carries (ruled 2026-09-15). Zeroed
+	 * outright rather than trusted to the prototype, so an edit to #48018 can
+	 * never carry an affect onto store gear. */
+	obj->bitvector = 0;
+	obj->bitvector2 = 0;
+	obj->bitvector3 = 0;
+	obj->bitvector4 = 0;
+	obj->bitvector5 = 0;
+
 	const int ac = kingdom_craft_scaled_stat(item.ac_top, level);
 
 	switch (item.kind)
@@ -824,10 +834,14 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 	}
 
 	/* 2. Delivery. A grant already in flight for this buyer would make the
-	 * new one wait on it or be refused, so ask before anything is made. */
-	if (item_movement_transaction_player_busy(ch))
+	 * new one wait on it or be refused, and a currency transaction in flight
+	 * would make SUB_MONEY() refuse, so ask about both before anything is
+	 * made. */
+	if (item_movement_transaction_player_busy(ch) || currency_transaction_player_busy(ch))
 	{
-		send_to_char("You are still receiving something; try again in a moment.\r\n", ch);
+		send_to_char("You are still settling or receiving something; try again in a "
+			     "moment.\r\n",
+			     ch);
 		return;
 	}
 
@@ -891,7 +905,10 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 	}
 
 	/* 6. The material, through the store's only way out. */
-	if (kingdom_craft_bill_wants_material(bill) && !kingdom_resource_spend(realm, bill.costs))
+	const bool wants_material = kingdom_craft_bill_wants_material(bill);
+	const bool drawn = wants_material && kingdom_resource_spend(realm, bill.costs);
+
+	if (wants_material && !drawn)
 	{
 		/* Unreachable: checked in 3 and nothing has run since. */
 		logit(LOG_KINGDOM,
@@ -907,14 +924,42 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 
 	if (!item_creation_grant_submit_to_player(ch, obj, ch))
 	{
+		/* THE ONE REVERSAL. The coordinator refuses a grant only for reasons
+		 * the buyer can neither cause nor check first -- a saturated queue, a
+		 * failed allocation, an unavailable or overloaded coordinator
+		 * (item_movement_reject_is_transient(), item/item_movement_transaction.c)
+		 * -- and by now the coin is taken and the material drawn. The module's
+		 * "nothing refunds" means check first so nothing needs refunding; this
+		 * cannot be checked first, so the purchase is undone instead.
+		 *
+		 * The piece is still ours to discard, since the grant refused it. The
+		 * buyer's own platinum goes back to the buyer. And the material goes
+		 * back to the store it came from: that is the reversal of this
+		 * purchase's own draw, not a withdrawal -- nothing enters the store that
+		 * did not leave it a moment ago -- so the non-withdrawable ruling
+		 * stands. */
 		extract_obj(obj, FALSE);
-		send_to_char("The ownership authority refused the piece, so it was not made. What "
-			     "you paid is on record; please petition.\r\n",
-			     ch);
+		if (price > 0)
+			ADD_MONEY(ch, static_cast<int>(price));
+		if (drawn)
+		{
+			for (int res = 0; res < KRES_MAX; res++)
+			{
+				if (bill.costs[res] > 0)
+					kingdom_resource_deposit(realm, res, bill.costs[res]);
+			}
+		}
+		send_to_char(
+			"The workshops could not hand the piece over just now, so nothing has "
+			"been taken: your platinum and the realm's material are back where they "
+			"were. Try again in a moment.\r\n",
+			ch);
 		logit(LOG_KINGDOM,
-		      "STORE UNDELIVERED: %s (assoc %d) paid %ld platinum and material for %s at "
-		      "level %d; the grant was refused.",
-		      GET_NAME(ch), realm.assoc_id, bill.platinum, shown.c_str(), level);
+		      "STORE REVERSED: %s (assoc %d) was refused the grant of %s at level %d; %ld "
+		      "platinum and %ld mineral, %ld wood, %ld fibre, %ld water put back.",
+		      GET_NAME(ch), realm.assoc_id, shown.c_str(), level, bill.platinum,
+		      drawn ? bill.costs[KRES_MINERAL] : 0L, drawn ? bill.costs[KRES_WOOD] : 0L,
+		      drawn ? bill.costs[KRES_FIBRE] : 0L, drawn ? bill.costs[KRES_WATER] : 0L);
 		return;
 	}
 

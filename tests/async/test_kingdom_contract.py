@@ -1993,6 +1993,33 @@ def _craft_code() -> str:
     return strip_comments(read("src/kingdom/kingdom_craft.c"))
 
 
+def _store_buy_code() -> str:
+    """kingdom_store_buy()'s body, comments blanked out, or "" if absent."""
+    body = function_bodies(
+        read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+void\s+kingdom_store_buy\s*\("
+    )
+    return strip_comments(body[0]) if len(body) == 1 else ""
+
+
+def _refused_grant_block(buy: str) -> str:
+    """The brace-matched block kingdom_store_buy() runs when the ownership
+    coordinator refuses the grant: the one place coin and material may be
+    put back, because it undoes a purchase that could not be delivered."""
+    head = buy.find("if (!item_creation_grant_submit_to_player(")
+    start = buy.find("{", head) if head >= 0 else -1
+    if start < 0:
+        return ""
+    depth = 0
+    for index in range(start, len(buy)):
+        if buy[index] == "{":
+            depth += 1
+        elif buy[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return buy[start : index + 1]
+    return ""
+
+
 def test_store_spends_only_through_kingdom_resource_spend() -> None:
     """The store draws realm material through the store's one way out and
     never moves a counter itself, and it never deposits: resources are
@@ -2004,9 +2031,16 @@ def test_store_spends_only_through_kingdom_resource_spend() -> None:
     )
     writes = re.findall(r"\bresources\s*\[[^\]]*\]\s*(?:[-+*/]?=(?!=)|--|\+\+)", code)
     check(not writes, "kingdom_craft.c never writes a realm resource counter itself", f"{writes}")
+    # The one deposit is the refused grant putting back what that purchase
+    # drew: a reversal of a purchase that was never delivered, not a way in.
+    refused = _refused_grant_block(_store_buy_code())
+    deposits = len(re.findall(r"\bkingdom_resource_deposit\s*\(", code))
     check(
-        "kingdom_resource_deposit" not in code,
-        "kingdom_craft.c never deposits into a realm's stores",
+        deposits >= 1
+        and deposits == len(re.findall(r"\bkingdom_resource_deposit\s*\(", refused)),
+        "kingdom_craft.c deposits into a realm's stores only to reverse a purchase whose "
+        "grant was refused",
+        f"{deposits} deposit call(s) in the file",
     )
 
 
@@ -2047,9 +2081,11 @@ def test_store_gear_carries_no_effects_and_is_bound() -> None:
     """Store gear has NO effect flags (ruled 2026-09-15), is soulbound to its
     buyer by name, cannot be sold to a shop or salvaged, and carries no proc."""
     code = _craft_code()
+    sets = re.findall(r"SET_BIT\(\s*obj->bitvector\w*|obj->bitvector\w*\s*\|=", code)
     check(
-        "bitvector" not in code,
-        "kingdom_craft.c writes no affect mask, so store gear carries no effect flags",
+        not sets,
+        "kingdom_craft.c never sets an affect-mask bit, so store gear carries no effect flags",
+        f"{sets}",
     )
     make = function_bodies(
         read("src/kingdom/kingdom_craft.c"), r"\bstatic\s+P_obj\s+kingdom_craft_make\s*\("
@@ -2058,6 +2094,13 @@ def test_store_gear_carries_no_effects_and_is_bound() -> None:
     if not make:
         return
     body = strip_comments(make[0])
+    # Zeroed outright, so an edit to the blank prototype cannot carry an
+    # effect flag onto store gear either.
+    for mask in ("bitvector", "bitvector2", "bitvector3", "bitvector4", "bitvector5"):
+        check(
+            re.search(r"obj->" + mask + r"\s*=\s*0\s*;", body) is not None,
+            f"kingdom_craft_make() zeroes obj->{mask}",
+        )
     for field, flag in (
         ("extra_flags", "ITEM_NOSELL"),
         ("extra2_flags", "ITEM2_SOULBIND"),
@@ -2117,9 +2160,8 @@ def test_store_platinum_is_destroyed_not_banked() -> None:
         "the buyer's own purse pays for store gear",
     )
     for token in (
-        "deposit(",
+        "->deposit(",
         "add_money",
-        "ADD_MONEY(",
         "sub_copper",
         "sub_money(",
         "kingdom_persist_payment",
@@ -2129,6 +2171,55 @@ def test_store_platinum_is_destroyed_not_banked() -> None:
             token not in code,
             f"kingdom_craft.c never calls {token} -- store platinum is credited to no treasury",
         )
+    # Coin goes back only to the BUYER, and only when the grant was refused.
+    refused = _refused_grant_block(_store_buy_code())
+    credits = re.findall(r"\bADD_MONEY\s*\(", code)
+    check(
+        len(credits) == 1 and re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", refused) is not None,
+        "the only coin credit in kingdom_craft.c returns the buyer's own platinum when the "
+        "grant is refused",
+        f"{len(credits)} ADD_MONEY call(s)",
+    )
+
+
+def test_store_refused_grant_restores_coin_and_material() -> None:
+    """The ownership coordinator can refuse a grant for reasons the buyer
+    cannot cause or check first (a saturated queue, an overloaded
+    coordinator). By then the coin is taken and the material drawn, so the
+    refusal must put both back and discard the piece -- "check first so
+    nothing needs refunding" cannot cover it. And a currency transaction still
+    in flight is asked about before the piece is made, so SUB_MONEY is
+    unlikely to refuse once it exists."""
+    buy = _store_buy_code()
+    refused = _refused_grant_block(buy)
+    check(refused != "", "kingdom_store_buy() has a refused-grant block")
+    check(
+        re.search(r"\bADD_MONEY\s*\(\s*ch\s*,", refused) is not None,
+        "a refused grant re-credits the buyer's platinum",
+    )
+    check(
+        re.search(r"\bkingdom_resource_deposit\s*\(\s*realm\s*,", refused) is not None,
+        "a refused grant returns the material to the realm's stores",
+    )
+    check(
+        re.search(r"\bextract_obj\s*\(\s*obj\b", refused) is not None,
+        "a refused grant discards the piece, which is still the store's to discard",
+    )
+    coin_take = buy.find("SUB_MONEY(")
+    spend = buy.find("kingdom_resource_spend(")
+    grant = buy.find("if (!item_creation_grant_submit_to_player(")
+    check(
+        -1 < coin_take < grant and -1 < spend < grant,
+        "the reversal follows the charge it reverses",
+        f"coin {coin_take}, spend {spend}, grant {grant}",
+    )
+    busy = buy.find("currency_transaction_player_busy(")
+    make = buy.find("kingdom_craft_make(")
+    check(
+        -1 < busy < make,
+        "a currency transaction in flight is asked about before the piece is made",
+        f"busy {busy}, make {make}",
+    )
 
 
 def test_flatfile_room_type_bound_is_the_guildhall_count() -> None:
