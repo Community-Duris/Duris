@@ -9137,7 +9137,8 @@ void stop_fighting(P_char ch)
 			logit(LOG_EXIT, "%s not found in combat_list stop_fighting()",
 			      GET_NAME(ch));
 		}
-		tmp->specials.next_fighting = ch->specials.next_fighting;
+		else
+			tmp->specials.next_fighting = ch->specials.next_fighting;
 	}
 
 	ch->specials.next_fighting = NULL;
