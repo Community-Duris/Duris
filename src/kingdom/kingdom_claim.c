@@ -68,6 +68,8 @@
 /* Not declared in any header the engine exports; kingdom_geometry.c takes the
  * same extern for the same reason. */
 extern struct room_data *world;
+/* core/common.c; like `world`, declared by each file that names a direction. */
+extern const char *dirs[];
 
 /* ------------------------------------------------------------------ *
  * Prices
@@ -856,6 +858,186 @@ bool kingdom_claim_next(P_char ch)
 	}
 
 	return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * The works
+ * ------------------------------------------------------------------ */
+
+/* `kingdom build <forge|loom|jeweller|store> <direction>`. Raises one of the
+ * realm's works as a NEW room of its main hall, opening off the leader's room
+ * in <direction>, and charges the guild treasury for it. Ruled 2026-09-15:
+ * 20,000 platinum each, the room included, from the treasury like every
+ * other kingdom purchase. One of each per hall, the store only once a
+ * workshop stands, the main hall only.
+ *
+ * BUILD, THEN CHARGE -- the mirror of a claim, and for the same reason.
+ * Nothing in this module refunds, so whatever can fail must happen before the
+ * coin moves. For a claim that is the material check; here it is the room,
+ * which can fail to save. So the treasury is only READ first, the room is
+ * built, and the coin is taken once construct_workshop_room() has said the
+ * room is durable. Its false leaves the hall exactly as it was and costs
+ * nothing, so there is never anything to hand back. */
+void kingdom_build_work(P_char ch, char *rest)
+{
+	P_Guild guild = kingdom_actor_guild(ch);
+
+	if (!guild)
+	{
+		return;
+	}
+
+	kingdom_realm *realm = kingdom_actor_realm(ch, guild);
+
+	if (!realm)
+	{
+		return;
+	}
+
+	char what[MAX_INPUT_LENGTH];
+	char where[MAX_INPUT_LENGTH];
+
+	rest = one_argument(rest, what);
+	one_argument(rest, where);
+
+	const int type = kingdom_works_type_by_name(what);
+
+	if (!type)
+	{
+		std::string say = "Build what? '&+Wkingdom build <forge|loom|jeweller|store> "
+				  "<direction>&n'.\r\n";
+
+		/* kingdom_price_string() is a static buffer: one per statement. */
+		say += "A workshop costs ";
+		say += kingdom_price_string(kingdom_cfg.station_cost);
+		say += " and the guild store ";
+		say += kingdom_price_string(kingdom_cfg.store_cost);
+		say += ", from the guild treasury.\r\n";
+		send_to_char(say.c_str(), ch);
+		return;
+	}
+
+	const char *name = kingdom_works_name(type);
+
+	/* Refused while upkeep is owed, for the same reason as a claim: a realm
+	 * whose guards have gone home for want of coin cannot be spending its
+	 * treasury on new rooms. A realm that owes nothing is let through. */
+	if (realm->arrears != KARR_CURRENT && kingdom_upkeep_due(*realm) > 0)
+	{
+		send_to_char("Your realm owes upkeep. Settle the debt before building.\r\n", ch);
+		return;
+	}
+
+	/* kingdom_actor_realm() resolved the anchor, which means a main hall of
+	 * this guild stands on the seat; the actor must be standing in it. */
+	Guildhall *hall = kingdom_main_hall(realm->assoc_id);
+	const int from_vnum = world[ch->in_room].number;
+	GuildhallRoom *here = Guildhall::find_room_by_vnum(from_vnum);
+
+	if (!hall || !here || here->guildhall != hall)
+	{
+		send_to_char("Stand inside your guild's main hall to build its works.\r\n", ch);
+		return;
+	}
+
+	if (kingdom_works_hall_has(hall, type))
+	{
+		send_to_char_f(ch, "Your hall already has a %s; it may have only one.\r\n", name);
+		return;
+	}
+
+	if (type == GH_ROOM_TYPE_GUILDSTORE && !kingdom_works_hall_has(hall, GH_ROOM_TYPE_FORGE) &&
+	    !kingdom_works_hall_has(hall, GH_ROOM_TYPE_LOOM) &&
+	    !kingdom_works_hall_has(hall, GH_ROOM_TYPE_JEWELLER))
+	{
+		send_to_char("A store needs something to sell. Build a forge, a loom or a jeweller "
+			     "first.\r\n",
+			     ch);
+		return;
+	}
+
+	const int dir = where[0] ? dir_from_keyword(where) : -1;
+
+	if (dir < 0 || dir >= NUM_EXITS)
+	{
+		send_to_char_f(ch,
+			       "Name the way the new room should open, as in '&+Wkingdom build %s "
+			       "north&n'.\r\n",
+			       name);
+		return;
+	}
+
+	if (here->has_exit(dir) || world[ch->in_room].dir_option[dir])
+	{
+		send_to_char_f(ch, "There is already a way %s from here.\r\n", dirs[dir]);
+		return;
+	}
+
+	if (!hall->can_add_room())
+	{
+		send_to_char("Your guildhall has reached its room limit.\r\n", ch);
+		return;
+	}
+
+	const long price = type == GH_ROOM_TYPE_GUILDSTORE ? kingdom_cfg.store_cost :
+							     kingdom_cfg.station_cost;
+
+	if (price > 0 && guild->get_treasury_copper() < price)
+	{
+		send_to_char_f(ch, "Your guild treasury cannot pay the %s a %s costs.\r\n",
+			       kingdom_price_string(price), name);
+		return;
+	}
+
+	/* Everything is validated and the treasury can pay. Build first. */
+	if (!construct_workshop_room(hall->id, from_vnum, dir, type))
+	{
+		send_to_char("The builders could not raise it, and nothing has been charged. "
+			     "Please petition.\r\n",
+			     ch);
+		logit(LOG_KINGDOM, "BUILD FAILED: %s (assoc %d) could not raise a %s off vnum %d.",
+		      guild->get_name().c_str(), realm->assoc_id, name, from_vnum);
+		return;
+	}
+
+	/* `here` is gone now: construct_workshop_room() reloaded the hall, which
+	 * deletes and recreates every GuildhallRoom it holds. Nothing below may
+	 * touch it. */
+	bool paid = true;
+
+	if (price > 0 && !kingdom_pay_from_treasury(guild, price))
+	{
+		/* Unreachable: the balance was read above and nothing has run since
+		 * that could spend it. Said loudly rather than assumed. */
+		paid = false;
+		logit(LOG_KINGDOM,
+		      "BUILD UNPAID: %s (assoc %d) raised a %s that the treasury then refused %ld "
+		      "copper for.",
+		      guild->get_name().c_str(), realm->assoc_id, name, price);
+	}
+
+	/* The room is durable already (construct_workshop_room() saved the hall);
+	 * this makes the treasury's side durable, through the same paired write
+	 * every other treasury verb in this file uses. */
+	const bool durable = kingdom_persist_paid_change(guild, *realm, "BUILD");
+
+	send_to_char_f(ch,
+		       "Builders raise your realm's %s %s of here, and the treasury pays %s.\r\n",
+		       name, dirs[dir], kingdom_price_string(paid ? price : 0));
+
+	if (!durable)
+	{
+		kingdom_tell_record_pending(ch);
+	}
+
+	char told[MAX_INPUT_LENGTH];
+
+	snprintf(told, sizeof(told), "The realm raises a %s in the guildhall.", name);
+	send_to_guild(guild, "The Royal Builder", told);
+
+	logit(LOG_KINGDOM, "BUILD: %s (assoc %d) raised a %s off vnum %d for %ld copper%s.",
+	      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, paid ? price : 0L,
+	      durable ? "" : " (record pending)");
 }
 
 /* ------------------------------------------------------------------ *

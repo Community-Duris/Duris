@@ -32,6 +32,8 @@
  *      kingdom.guard.cost.max              coin       (default 20000000)
  *      kingdom.min.hometown.distance       squares    (default 5)
  *      kingdom.min.entrance.distance       squares    (default 5)
+ *      kingdom.station.cost                coin       (default 20000000)
+ *      kingdom.store.cost                  coin       (default 20000000)
  *
  *  Values are range-checked but NOT judged against the live world: whether a
  *  cost or a distance is sensible for this map is an operator decision. The
@@ -102,6 +104,10 @@
 /* Map squares. 0 disables the matching proximity test; the ceiling is wider
  * than the widest map zone, so an operator can also refuse every site. */
 #define KINGDOM_DISTANCE_MAX 1000
+
+/* What a workshop or the guild store may cost in copper. The same ceiling as a
+ * guard's, so no one purchase outprices another by a typo; 0 makes it free. */
+#define KINGDOM_WORKS_COST_MAX 100000000L
 
 /* ------------------------------------------------------------------ *
  * The global
@@ -242,6 +248,8 @@ static bool kingdom_apply_value(const char *key, const char *value)
 		 KINGDOM_GUARD_DENOM_MAX)
 	KCFG_INT("kingdom.min.hometown.distance", min_hometown_distance, 0, KINGDOM_DISTANCE_MAX)
 	KCFG_INT("kingdom.min.entrance.distance", min_entrance_distance, 0, KINGDOM_DISTANCE_MAX)
+	KCFG_LONG("kingdom.station.cost", station_cost, 0L, KINGDOM_WORKS_COST_MAX)
+	KCFG_LONG("kingdom.store.cost", store_cost, 0L, KINGDOM_WORKS_COST_MAX)
 
 #undef KCFG_BOOL
 #undef KCFG_INT
@@ -349,6 +357,8 @@ void kingdom_config_load(void)
 	      kingdom_cfg.guards_per_squares, kingdom_cfg.guard_cost_base,
 	      kingdom_cfg.guard_cost_max, kingdom_cfg.min_hometown_distance,
 	      kingdom_cfg.min_entrance_distance);
+	logit(LOG_KINGDOM, "Works: a workshop costs %ld copper, the guild store %ld.",
+	      kingdom_cfg.station_cost, kingdom_cfg.store_cost);
 	logit(LOG_STATUS, "Kingdom config loaded from %s; kingdoms %s.", KINGDOM_CONFIG_FILE,
 	      kingdom_cfg.enabled ? "ENABLED" : "disabled");
 }

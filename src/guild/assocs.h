@@ -244,6 +244,14 @@ class Guild
 	void add_points_from_epics(P_char ch, int epics, int epic_type);
 
 	unsigned long get_construction() { return construction; }
+	/* The whole treasury valued in copper: the figure sub_copper() tests.
+	 * For a caller that must know a charge will be met BEFORE doing what it
+	 * pays for, rather than taking the coin first (kingdom build). */
+	long long get_treasury_copper() const
+	{
+		return static_cast<long long>(copper) + 10LL * silver + 100LL * gold +
+		       1000LL * platinum;
+	}
 	void publish_outcome_totals(unsigned long new_prestige, unsigned long new_construction)
 	{
 		prestige = new_prestige;
