@@ -38,11 +38,10 @@ inline uint32_t collector_item_transfer_actor_pid(const item_transfer_payload &p
 	if (payload.reason == item_transfer_reason::mobile_claim && payload.reason_id > 0 &&
 	    static_cast<uint64_t>(payload.reason_id) <= std::numeric_limits<uint32_t>::max())
 		return static_cast<uint32_t>(payload.reason_id);
-	const uint64_t actor = payload.to_owner.type == item_owner_type::player ?
-				       payload.to_owner.id :
-			       payload.from_owner.type == item_owner_type::player ?
-				       payload.from_owner.id :
-				       0;
+	const uint64_t actor =
+		payload.to_owner.type == item_owner_type::player   ? payload.to_owner.id :
+		payload.from_owner.type == item_owner_type::player ? payload.from_owner.id :
+								     0;
 	return actor <= std::numeric_limits<uint32_t>::max() ? static_cast<uint32_t>(actor) : 0;
 }
 
@@ -64,7 +63,7 @@ collector_corpse_lifecycle_boundary_reason(const corpse_lifecycle_payload &paylo
 		return collector::reason::claimed;
 	case corpse_lifecycle_action::release_nested:
 		return payload.destination_player_pid ? collector::reason::claimed :
-							   collector::reason::none;
+							collector::reason::none;
 	case corpse_lifecycle_action::upsert:
 	case corpse_lifecycle_action::remove:
 	case corpse_lifecycle_action::release:
@@ -73,8 +72,7 @@ collector_corpse_lifecycle_boundary_reason(const corpse_lifecycle_payload &paylo
 	return collector::reason::none;
 }
 
-inline uint32_t
-collector_corpse_lifecycle_actor_pid(const corpse_lifecycle_payload &payload)
+inline uint32_t collector_corpse_lifecycle_actor_pid(const corpse_lifecycle_payload &payload)
 {
 	return collector_corpse_lifecycle_boundary_reason(payload) == collector::reason::claimed ?
 		       payload.destination_player_pid :

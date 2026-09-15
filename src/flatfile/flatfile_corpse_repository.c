@@ -444,20 +444,20 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 			&collector_mutation, &collector_result_code, &error);
 		if (collector_prepared != flatfile_collector_repository_result::ok &&
 		    collector_prepared != flatfile_collector_repository_result::unchanged)
-			return {
-				collector_prepared == flatfile_collector_repository_result::io_error ?
-					critical_apply_outcome::retryable_failure :
-					critical_apply_outcome::terminal_failure,
-				catalog.revision,
-				static_cast<unsigned int>(
-					collector_prepared ==
-							flatfile_collector_repository_result::io_error ?
-						EIO :
-						EILSEQ)
-			};
-		include_collector_mutation =
-			collector_prepared == flatfile_collector_repository_result::ok &&
-			!collector_mutation.after_image.bytes.empty();
+			return { collector_prepared ==
+						 flatfile_collector_repository_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 collector_prepared ==
+							 flatfile_collector_repository_result::
+								 io_error ?
+						 EIO :
+						 EILSEQ) };
+		include_collector_mutation = collector_prepared ==
+						     flatfile_collector_repository_result::ok &&
+					     !collector_mutation.after_image.bytes.empty();
 	}
 	bool include_resurrection_wallet = false;
 	bool include_resurrection_materialization = false;
@@ -519,9 +519,8 @@ critical_apply_result flatfile_corpse_repository_apply(const std::string &root,
 	corpse_operation operation = {};
 	operation.operation_id = command.operation_id;
 	operation.command_digest = digest;
-	operation.result_code = prepared == flatfile_world_item_result::ok ?
-					collector_result_code :
-					result_code(prepared);
+	operation.result_code = prepared == flatfile_world_item_result::ok ? collector_result_code :
+									     result_code(prepared);
 	operation.durable_revision =
 		prepared == flatfile_world_item_result::ok ?
 			(disposes_custody ? release.catalog_revision : mutation.catalog_revision) :

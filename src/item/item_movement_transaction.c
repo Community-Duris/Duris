@@ -1239,10 +1239,10 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	const bool corpse_transfer = reason == item_transfer_reason::corpse_create ||
 				     reason == item_transfer_reason::corpse_loot;
 	const bool player_actor = actor && IS_PC(actor) && GET_PID(actor) > 0;
-	const bool mobile_actor =
-		actor && IS_NPC(actor) && actor->runtime_id &&
-		reason == item_transfer_reason::mobile_claim && !target_container && !corpse_context &&
-		item_owner_identity_equal(from_owner, to_owner);
+	const bool mobile_actor = actor && IS_NPC(actor) && actor->runtime_id &&
+				  reason == item_transfer_reason::mobile_claim &&
+				  !target_container && !corpse_context &&
+				  item_owner_identity_equal(from_owner, to_owner);
 	if ((!player_actor && !mobile_actor) || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
 	    corpse_transfer != (corpse_context != NULL))
@@ -1420,8 +1420,8 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		return reject_with(reject, item_movement_reject::invalid_request);
 	if (pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
 		return reject_with(reject, item_movement_reject::queue_saturated);
-	if (movement_conflicts(from_owner, to_owner) ||
-	    coordinator_item_fenced(target_container) || coin_movement_pending(target_container))
+	if (movement_conflicts(from_owner, to_owner) || coordinator_item_fenced(target_container) ||
+	    coin_movement_pending(target_container))
 		return reject_with(reject, item_movement_reject::pending_conflict);
 	item_ownership_runtime_entry target_runtime = {};
 	uint64_t from_revision = 0, to_revision = 0;
@@ -1912,7 +1912,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 		    (completions[index].outcome == critical_apply_outcome::applied ||
 		     completions[index].outcome == critical_apply_outcome::already_applied) &&
 		    item_transfer_command_decode_result(completions[index].result_payload.data(),
-						completions[index].result_size, &result) &&
+							completions[index].result_size, &result) &&
 		    result.collector_catalog_changed)
 		{
 			collector_catalog_cache_invalidate();

@@ -153,8 +153,7 @@ critical_completion completion(const collector_command_result &result,
 void completed(P_char completed_character, bool committed, const collector_command_result &result,
 	       unsigned int error_code, const collector_command_payload &payload)
 {
-	assert(!completed_character ||
-	       (payload.actor_pid && completed_character == &character));
+	assert(!completed_character || (payload.actor_pid && completed_character == &character));
 	completion_called = true;
 	completion_committed = committed;
 	completion_character = completed_character;
@@ -281,8 +280,7 @@ int main()
 		completion(rejected, critical_apply_outcome::terminal_failure, EAGAIN);
 	collector_transaction_handle_completions(&rejected_completion, 1);
 	assert(completion_called && !completion_committed && completion_error == EAGAIN &&
-	       !wallet_publications && ownership_publications == 1 &&
-	       runtime_publications == 1);
+	       !wallet_publications && ownership_publications == 1 && runtime_publications == 1);
 
 	completion_called = completion_committed = false;
 	collector::rules policy;

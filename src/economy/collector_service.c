@@ -71,8 +71,8 @@ bool purchase_transaction_busy(P_char character)
 {
 	return currency_transaction_player_busy(character) ||
 	       collector_transaction_player_busy(character) ||
-	       item_movement_transaction_player_busy(character) || bulk_get_player_busy(character) ||
-	       !currency_transaction_can_submit(character);
+	       item_movement_transaction_player_busy(character) ||
+	       bulk_get_player_busy(character) || !currency_transaction_can_submit(character);
 }
 
 bool parse_listing(const char *text, uint64_t *listing)
@@ -368,14 +368,13 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 #endif
 	std::vector<player_load_item_identity> identities = {
 		{ database_id, 0, 1, PLAYER_LOAD_ITEM_OVERRIDE_ALL, result.entry.uid,
-		  result.entry.uid, 0,
-		  owner, result.entry.item_revision, result.to_owner_revision,
+		  result.entry.uid, 0, owner, result.entry.item_revision, result.to_owner_revision,
 		  item_custody_state::active }
 	};
 	player_load_item_materialize_metrics metrics = {};
 	if (!player_load_item_graph_materialize_for_owner(character, items, identities, owner,
-						  result.to_owner_revision, false, true,
-						  &metrics))
+							  result.to_owner_revision, false, true,
+							  &metrics))
 		return false;
 #ifdef __NO_MYSQL__
 	P_obj materialized = find_live_item(result.entry.uid);

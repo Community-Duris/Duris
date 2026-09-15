@@ -572,8 +572,7 @@ bool room_transfer(const item_transfer_payload &payload)
 bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t payload_version)
 {
 	const bool mobile_claim = payload.reason == item_transfer_reason::mobile_claim &&
-				  item_owner_identity_equal(payload.from_owner,
-							    payload.to_owner) &&
+				  item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
 				  !payload.multi_root && !payload.target_parent_item_uid;
 	return (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
@@ -937,8 +936,9 @@ flatfile_item_repository_result flatfile_item_repository_list_collector_items_lo
 			if (!owner)
 				return flatfile_item_repository_result::invalid;
 			selected.push_back({ entry.item_uid, entry.root_item_uid,
-					     entry.parent_item_uid, entry.owner, entry.item_revision,
-					     owner->revision, entry.vnum, entry.state });
+					     entry.parent_item_uid, entry.owner,
+					     entry.item_revision, owner->revision, entry.vnum,
+					     entry.state });
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -1059,10 +1059,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_collector_trans
 					break;
 				}
 				auto parent = std::find_if(
-					source.begin(), source.end(), [&](const auto *candidate) {
-						return candidate->item_uid ==
-						       cursor->parent_item_uid;
-					});
+					source.begin(), source.end(), [&](const auto *candidate)
+					{ return candidate->item_uid == cursor->parent_item_uid; });
 				if (parent == source.end())
 				{
 					new_root = 0;
@@ -2009,7 +2007,7 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 				 static_cast<unsigned int>(
 					 artifacts == flatfile_artifact_result::io_error ?
 						 EIO :
-										       EILSEQ) };
+						 EILSEQ) };
 	}
 	flatfile_collector_enrollment_mutation collector_mutation;
 	bool include_collector_mutation = false;
@@ -2028,9 +2026,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 					 prepared == flatfile_collector_repository_result::io_error ?
 						 EIO :
 						 EILSEQ) };
-		include_collector_mutation =
-			prepared == flatfile_collector_repository_result::ok &&
-			!collector_mutation.after_image.bytes.empty();
+		include_collector_mutation = prepared == flatfile_collector_repository_result::ok &&
+					     !collector_mutation.after_image.bytes.empty();
 		if (result_code)
 		{
 			try

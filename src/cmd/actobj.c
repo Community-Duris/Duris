@@ -953,10 +953,10 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		if (item_ownership_runtime_lookup(o_obj->obj_uid, &runtime))
 		{
 			item_owner_identity source = {};
-			const get_movement_context context = {
-				o_obj->obj_uid, s_obj ? s_obj->obj_uid : 0,
-				s_obj ? NOWHERE : o_obj->loc.room, showit
-			};
+			const get_movement_context context = { o_obj->obj_uid,
+							       s_obj ? s_obj->obj_uid : 0,
+							       s_obj ? NOWHERE : o_obj->loc.room,
+							       showit };
 			if (!get_item_source_owner(ch, o_obj, s_obj, &source))
 			{
 				report_movement_reject(ch, item_movement_reject::owner_mismatch,
@@ -965,7 +965,8 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			}
 			P_char master = GET_MASTER(ch);
 			const int64_t claimant_pid =
-				master && IS_PC(master) && GET_PID(master) > 0 ? GET_PID(master) : 0;
+				master && IS_PC(master) && GET_PID(master) > 0 ? GET_PID(master) :
+										 0;
 			item_movement_reject reject = item_movement_reject::owner_mismatch;
 			if (!item_movement_transaction_submit(
 				    ch, o_obj, NULL, source, source,

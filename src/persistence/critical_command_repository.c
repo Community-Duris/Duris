@@ -1276,8 +1276,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	{
 		collector_enrollment_repository_plan enrollment;
 		collector_item_boundary_repository_plan boundary;
-		item_transfer_result item_result = { item_transfer_result_root(item_payload),
-						     item_payload.item_count, 0, 0, 0, 0 };
+		item_transfer_result item_result = {
+			item_transfer_result_root(item_payload), item_payload.item_count, 0, 0, 0, 0
+		};
 		std::vector<collector_command_result> collector_events;
 		uint64_t collector_revision = 0;
 		unsigned int result_code = 0;
@@ -1290,8 +1291,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		if (repository_ok && !result_code)
 			repository_ok = item_transfer_repository_execute(
 				connection, command, &item_result, &result_code, &mutation_applied);
-		if (repository_ok && !result_code && mutation_applied &&
-		    !boundary.entries.empty())
+		if (repository_ok && !result_code && mutation_applied && !boundary.entries.empty())
 		{
 			repository_ok = collector_repository_apply_item_boundary(
 				connection, command, boundary, &collector_revision,
@@ -1304,7 +1304,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 				enrollment.catalog_revision = collector_revision;
 			repository_ok = collector_repository_apply_death_enrollment(
 				connection, command, item_payload, item_result, enrollment);
-			if (repository_ok && (!enrollment.death_exists || !enrollment.new_items.empty()))
+			if (repository_ok &&
+			    (!enrollment.death_exists || !enrollment.new_items.empty()))
 				item_result.collector_catalog_changed = true;
 			if (repository_ok && !enrollment.new_items.empty())
 				collector_revision = enrollment.catalog_revision + 1;
@@ -1328,18 +1329,17 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		for (size_t index = 0; outbox_ok && index < collector_events.size(); ++index)
 		{
 			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
-			outbox_ok = collector_command_encode_result(collector_events[index], &encoded) &&
-				    insert_outbox_event(
-					    connection, command.operation_id,
-					    static_cast<uint16_t>(index + 1),
-					    COLLECTOR_OUTBOX_DESTINATION,
-					    COLLECTOR_OUTBOX_EVENT_MUTATED,
-					    COLLECTOR_COMMAND_RESULT_VERSION, encoded.data(),
-					    encoded.size());
+			outbox_ok = collector_command_encode_result(collector_events[index],
+								    &encoded) &&
+				    insert_outbox_event(connection, command.operation_id,
+							static_cast<uint16_t>(index + 1),
+							COLLECTOR_OUTBOX_DESTINATION,
+							COLLECTOR_OUTBOX_EVENT_MUTATED,
+							COLLECTOR_COMMAND_RESULT_VERSION,
+							encoded.data(), encoded.size());
 		}
-		if (!outbox_ok ||
-		    !finish_inbox(connection, command, durable_revision, result_code,
-				  result_payload.data(), result_payload.size()))
+		if (!outbox_ok || !finish_inbox(connection, command, durable_revision, result_code,
+						result_payload.data(), result_payload.size()))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;

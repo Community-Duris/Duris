@@ -203,16 +203,16 @@ bool valid_result(const corpse_lifecycle_result &result)
 		return false;
 	if (result.action == corpse_lifecycle_action::upsert)
 		return !result.collector_catalog_changed && result.corpse_revision &&
-		       !result.corpse_owner_revision &&
-		       !result.room_owner_revision && !result.player_owner_revision &&
-		       !result.wallet_revision && !result.max_item_revision && !result.item_count &&
+		       !result.corpse_owner_revision && !result.room_owner_revision &&
+		       !result.player_owner_revision && !result.wallet_revision &&
+		       !result.max_item_revision && !result.item_count &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action == corpse_lifecycle_action::remove)
 		return !result.collector_catalog_changed && !result.corpse_revision &&
-		       !result.corpse_owner_revision &&
-		       !result.room_owner_revision && !result.player_owner_revision &&
-		       !result.wallet_revision && !result.max_item_revision && !result.item_count &&
+		       !result.corpse_owner_revision && !result.room_owner_revision &&
+		       !result.player_owner_revision && !result.wallet_revision &&
+		       !result.max_item_revision && !result.item_count &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	const bool item_result = (!result.item_count && !result.max_item_revision) ||
@@ -245,8 +245,7 @@ bool valid_result(const corpse_lifecycle_result &result)
 	    !result.corpse_owner_revision || !item_result)
 		return false;
 	const bool room = !result.collector_catalog_changed && result.room_owner_revision &&
-			  !result.player_owner_revision &&
-			  !result.wallet_revision &&
+			  !result.player_owner_revision && !result.wallet_revision &&
 			  std::all_of(result.wallet.begin(), result.wallet.end(),
 				      [](int32_t value) { return value == 0; });
 	const bool player = !result.room_owner_revision && result.player_owner_revision &&
@@ -440,8 +439,8 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 		return false;
 	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES && encoded[9] > 1)
 		return false;
-	for (size_t index = encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES ? 10 : 9;
-	     index < 16; ++index)
+	for (size_t index = encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES ? 10 : 9; index < 16;
+	     ++index)
 		if (encoded[index])
 			return false;
 	for (size_t index = 60;
@@ -452,8 +451,8 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 	result->owner_pid = get_number<uint32_t>(encoded);
 	result->save_id = get_number<uint32_t>(encoded + 4);
 	result->action = static_cast<corpse_lifecycle_action>(encoded[8]);
-	result->collector_catalog_changed =
-		encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES && encoded[9] != 0;
+	result->collector_catalog_changed = encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES &&
+					    encoded[9] != 0;
 	result->corpse_revision = get_number<uint64_t>(encoded + 16);
 	result->catalog_revision = get_number<uint64_t>(encoded + 24);
 	if (encoded_size >= CORPSE_LIFECYCLE_PREVIOUS_RESULT_BYTES)

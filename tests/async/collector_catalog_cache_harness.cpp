@@ -111,8 +111,7 @@ int main()
 	load_entered = false;
 	release_load = false;
 	assert(collector_catalog_cache_refresh());
-	const auto entered_deadline =
-		std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	const auto entered_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 	while (!load_entered && std::chrono::steady_clock::now() < entered_deadline)
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	assert(load_entered);

@@ -23,8 +23,7 @@ bool collector_catalog_source_load(collector_bootstrap_snapshot &snapshot, std::
 		error = "flat-file collector authority root is unavailable";
 		return false;
 	}
-	const auto loaded =
-		flatfile_collector_repository_read_bootstrap(root, &snapshot, &error);
+	const auto loaded = flatfile_collector_repository_read_bootstrap(root, &snapshot, &error);
 	return loaded == flatfile_collector_repository_result::ok;
 #else
 	if (sql_worker_thread_init() != 0)
@@ -75,8 +74,8 @@ bool collector_listing_source_load(uint64_t listing, collector_listing_detail &d
 		error = "flat-file collector authority root is unavailable";
 		return false;
 	}
-	const auto loaded = flatfile_collector_repository_read_listing(
-		root, listing, &detail, &found, &error);
+	const auto loaded =
+		flatfile_collector_repository_read_listing(root, listing, &detail, &found, &error);
 	if (loaded == flatfile_collector_repository_result::ok)
 	{
 		error_code = 0;

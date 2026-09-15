@@ -38,8 +38,7 @@ player_item_snapshot item(uint64_t uid)
 	return value;
 }
 
-item_transfer_payload transfer(uint32_t save_id,
-			       const std::vector<player_item_snapshot> &snapshots)
+item_transfer_payload transfer(uint32_t save_id, const std::vector<player_item_snapshot> &snapshots)
 {
 	item_transfer_payload payload = {};
 	payload.from_owner = { item_owner_type::player, 42, 0 };
@@ -48,12 +47,10 @@ item_transfer_payload transfer(uint32_t save_id,
 	payload.multi_root = true;
 	payload.item_count = static_cast<uint16_t>(snapshots.size());
 	for (size_t index = 0; index < snapshots.size(); ++index)
-		payload.items[index] = { snapshots[index].object_uid,
-					 snapshots[index].object_uid,
-					 0,
-					 1,
-					 snapshots[index].vnum,
-					 item_custody_state::active };
+		payload.items[index] = {
+			snapshots[index].object_uid, snapshots[index].object_uid, 0, 1,
+			snapshots[index].vnum,	     item_custody_state::active
+		};
 	return payload;
 }
 }
@@ -76,8 +73,7 @@ bool collector_catalog_cache_ready(void)
 bool collector_runtime_find_death(uint32_t beneficiary_pid, uint64_t death_time,
 				  collector_death_snapshot *death)
 {
-	if (!death || !durable_death_present ||
-	    durable_death.beneficiary_pid != beneficiary_pid ||
+	if (!death || !durable_death_present || durable_death.beneficiary_pid != beneficiary_pid ||
 	    durable_death.death_time != death_time)
 		return false;
 	*death = durable_death;
