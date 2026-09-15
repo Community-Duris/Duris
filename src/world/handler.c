@@ -3919,7 +3919,7 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	}
 	if (!publish_corpse_wallet(caster, result))
 	{
-		recover_committed_corpse_raise(key, corpse, follower, source_items_valid, true,
+		recover_committed_corpse_raise(key, corpse, follower, source_items_valid, false,
 					       "raise_wallet_invalid");
 		return;
 	}

@@ -213,9 +213,13 @@ assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 assert "source_items_valid" in raise_publication
 assert "recover_corpse_raise_items" in HANDLER
 assert "CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE" in HANDLER
+assert "recover_committed_corpse_raise(key, corpse, follower, source_items_valid, false" in \
+       raise_publication
 assert "corpse_raise_player_save_fenced" in FILES
 assert "corpse_raise_player_ready" in HANDLER
 assert "corpse_raise_player_ready(tmp_ch, false)" in NANNY
+assert "collector_service_player_save_fenced(tmp_ch)" in NANNY
+assert "extract_char_after_terminal_save(tmp_ch)" in NANNY
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),

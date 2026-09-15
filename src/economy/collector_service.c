@@ -399,6 +399,18 @@ P_obj find_live_item(uint64_t uid)
 	return nullptr;
 }
 
+bool live_item_belongs_to_player(P_obj object, P_char character)
+{
+	if (!object || !character)
+		return false;
+	P_obj outer = object;
+	size_t depth = 0;
+	while (outer && OBJ_INSIDE(outer) && outer->loc.inside && depth++ < 4096)
+		outer = outer->loc.inside;
+	return outer && depth < 4096 &&
+	       (OBJ_CARRIED_BY(outer, character) || OBJ_WORN_BY(outer, character));
+}
+
 bool materialize_purchase(P_char character, const collector_command_result &result,
 			  const collector_command_payload &payload)
 {
@@ -409,7 +421,7 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 	    !result.to_owner_revision)
 		return false;
 	if (P_obj existing = find_live_item(result.entry.uid))
-		return OBJ_CARRIED_BY(existing, character);
+		return live_item_belongs_to_player(existing, character);
 	std::vector<player_item_snapshot> items;
 	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
 					     &items) != player_snapshot_codec_result::ok ||
@@ -473,7 +485,6 @@ bool queue_purchase_fallback(const collector_command_result &result,
 	{
 		return false;
 	}
-	return false;
 }
 
 bool queue_purchase_recovery(const collector_command_result &result,
@@ -861,6 +872,11 @@ void collector_service_player_ready(P_char character, bool inventory_reloaded)
 		REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_FENCE);
 		REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_RELOAD);
 	}
+}
+
+bool collector_service_player_save_fenced(P_char character)
+{
+	return player_has_purchase_save_fence(character);
 }
 
 bool collector_service_recover_player(P_char character)

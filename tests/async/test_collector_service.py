@@ -23,7 +23,10 @@ def main() -> None:
     assert "purchase_fallback_recoveries" in service
     assert "CHAR_RFLAG_COLLECTOR_SAVE_FENCE" in service
     assert "CHAR_RFLAG_COLLECTOR_SAVE_RELOAD" in service
+    assert "live_item_belongs_to_player" in service
+    assert "OBJ_WORN_BY" in service
     assert "collector_service_player_ready" in service
+    assert "collector_service_player_save_fenced" in service
     assert service.index("collector_runtime_find(listing") < service.index(
         "collector_listing_pipeline_next_request_id()"
     )

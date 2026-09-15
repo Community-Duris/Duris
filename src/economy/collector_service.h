@@ -26,6 +26,7 @@ void collector_service_pulse(void);
 // A reconnect may retry retained payloads, but only a cold load may clear the
 // per-character fence left when no payload survived.
 void collector_service_player_ready(P_char character, bool inventory_reloaded);
+bool collector_service_player_save_fenced(P_char character);
 // Retry committed purchase materialization before a character is serialized.
 // A false result means the save must remain deferred so player_items cannot be
 // overwritten without the durable purchase in the live graph.
