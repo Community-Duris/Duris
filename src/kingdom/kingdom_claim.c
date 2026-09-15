@@ -1003,9 +1003,16 @@ void kingdom_build_work(P_char ch, char *rest)
 		/* The hall is exactly as it was -- construct_workshop_room() leaves
 		 * nothing behind when it says false -- so the charge goes straight
 		 * back, and the pair is written so the guild's record holds what the
-		 * treasury holds. */
+		 * treasury holds.
+		 *
+		 * add_copper() refuses only when a coin counter would overflow (a
+		 * treasury already near UINT_MAX platinum). Then there is no credit
+		 * to record, so the paired write is skipped rather than published
+		 * under "BUILD CREDITED", and the log names the sum to restore by
+		 * hand. */
 		const bool credited = price <= 0 || guild->add_copper(price);
-		const bool durable = kingdom_persist_paid_change(guild, *realm, "BUILD CREDITED");
+		const bool durable =
+			credited && kingdom_persist_paid_change(guild, *realm, "BUILD CREDITED");
 
 		send_to_char(credited ?
 				     "The builders could not raise it, and nothing has been "
@@ -1013,14 +1020,15 @@ void kingdom_build_work(P_char ch, char *rest)
 				     "The builders could not raise it, and the treasury could not "
 				     "be credited back. Please petition.\r\n",
 			     ch);
-		if (!durable)
+		if (credited && !durable)
 		{
 			kingdom_tell_record_pending(ch);
 		}
 		logit(LOG_KINGDOM,
 		      "BUILD FAILED: %s (assoc %d) could not raise a %s off vnum %d; %ld copper %s.",
 		      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, price,
-		      credited ? "credited back" : "COULD NOT BE CREDITED BACK");
+		      credited ? "credited back" :
+				 "COULD NOT BE CREDITED BACK (coin counter full); restore it by hand");
 		return;
 	}
 

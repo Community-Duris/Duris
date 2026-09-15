@@ -22236,8 +22236,10 @@ void remove_soulbind(P_char ch)
 		 * (kingdom/kingdom_store_piece.h), and its keywords are ordinary
 		 * words: matching them against a name here would destroy every
 		 * store piece, whoever bought it, whose keywords include this
-		 * character's name. It is never this spell's to remove. */
-		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_piece(obj) &&
+		 * character's name. It is never this spell's to remove, and
+		 * kingdom_store_bound() knows it by its binding token as well as
+		 * by its vnum. */
+		if (IS_SET((obj)->extra2_flags, ITEM2_SOULBIND) && !kingdom_store_bound(obj) &&
 		    isname(GET_NAME(ch), obj->name))
 		{
 			extract_obj(obj);

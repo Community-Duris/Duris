@@ -84,4 +84,22 @@ inline bool kingdom_craft_keywords_bind(const char *keywords, long pid)
 	return false;
 }
 
+/* True when `keywords` carry ANY binding token: a word that begins with the
+ * prefix, whatever follows it. This recognises store gear by its token alone,
+ * failing closed: any such object is judged by kingdom_craft_keywords_bind()
+ * and never by the legacy name test. */
+inline bool kingdom_craft_keywords_carry_bind(const char *keywords)
+{
+	if (!keywords)
+		return false;
+
+	for (const char *at = std::strstr(keywords, KINGDOM_CRAFT_BIND_PREFIX); at;
+	     at = std::strstr(at + 1, KINGDOM_CRAFT_BIND_PREFIX))
+	{
+		if (at == keywords || at[-1] == ' ')
+			return true;
+	}
+	return false;
+}
+
 #endif /* _KINGDOM_CRAFT_BIND_H_ */

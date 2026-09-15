@@ -2296,10 +2296,25 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
         and "ITEM2_" not in strip_comments(is_piece[0]),
         "a store piece is known by its blank's vnum alone, not by a flag other items carry",
     )
+    bound = function_bodies(piece, r"\binline\s+bool\s+kingdom_store_bound\s*\(")
+    bound_code = strip_comments(bound[0]) if bound else ""
+    check(
+        "kingdom_store_piece(obj)" in bound_code
+        and "kingdom_craft_keywords_carry_bind(obj->name)" in bound_code,
+        "the binding governs a store piece by vnum OR by a token in its keywords, so an "
+        "unresolved object index never drops a piece to the name test",
+    )
+    carry = function_bodies(bind, r"\binline\s+bool\s+kingdom_craft_keywords_carry_bind\s*\(")
+    check(
+        len(carry) == 1 and "KINGDOM_CRAFT_BIND_PREFIX" in carry[0],
+        "carrying a token is having a word that begins with the binding prefix",
+    )
     owner = function_bodies(piece, r"\binline\s+bool\s+kingdom_store_piece_owner\s*\(")
     owner_code = strip_comments(owner[0]) if owner else ""
     check(
-        "GET_PID(ch)" in owner_code and "kingdom_craft_keywords_bind(" in owner_code,
+        "GET_PID(ch)" in owner_code
+        and "kingdom_craft_keywords_bind(" in owner_code
+        and "kingdom_store_bound(obj)" in owner_code,
         "owning a store piece is having the player id in its token",
     )
     check(
@@ -2309,7 +2324,7 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
     wear = function_bodies(read("src/cmd/actobj.c"), r"\bstatic\s+bool\s+can_equip_soulbound_item\s*\(")
     wear_code = strip_comments(wear[0]) if wear else ""
     routed = re.search(
-        r"kingdom_store_piece\(\s*object\s*\)\s*\?\s*kingdom_store_piece_owner\(\s*actor\s*,\s*object\s*\)",
+        r"kingdom_store_bound\(\s*object\s*\)\s*\?\s*kingdom_store_piece_owner\(\s*actor\s*,\s*object\s*\)",
         wear_code,
     )
     legacy = wear_code.find("isname(GET_NAME(actor), object->name)")
@@ -2320,7 +2335,7 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
     )
     remove = function_bodies(read("src/magic/magic.c"), r"\bvoid\s+remove_soulbind\s*\(")
     check(
-        len(remove) == 1 and "!kingdom_store_piece(obj)" in strip_comments(remove[0]),
+        len(remove) == 1 and "!kingdom_store_bound(obj)" in strip_comments(remove[0]),
         "remove_soulbind() never touches a store piece",
     )
     make = function_bodies(
@@ -2554,6 +2569,12 @@ def test_kingdom_build_pays_first_and_credits_back_a_room_that_fails() -> None:
         and "kingdom_persist_paid_change(" in failed
         and re.search(r"\breturn\s*;", failed) is not None,
         "a room that cannot be raised has its charge credited back and the pair written",
+    )
+    check(
+        re.search(r"\bdurable\s*=\s*credited\s*&&\s*kingdom_persist_paid_change\(", failed)
+        is not None,
+        "the credit-back pair is written only when the credit went through, never published "
+        "as 'BUILD CREDITED' after a refused credit",
     )
     check(
         "BUILD UNPAID" not in code and "get_treasury_copper" not in code,

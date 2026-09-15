@@ -131,6 +131,19 @@ int main()
 	expect(kingdom_craft_keywords_bind(nullptr, 1042), 0, "no keywords bind nobody");
 	expect(kingdom_craft_keywords_bind(keys, 0), 0, "pid 0 binds nothing");
 
+	// Carrying a token at all -- whoever it names -- is what keeps a piece off
+	// the legacy name test even when its object index is unresolved.
+	expect(kingdom_craft_keywords_carry_bind(keys), 1, "a piece's keywords carry a token");
+	expect(kingdom_craft_keywords_carry_bind("kingdom-bound-1042"), 1,
+	       "a token alone is carried");
+	expect(kingdom_craft_keywords_carry_bind("steel kingdom-bound-7 kingdom"), 1,
+	       "a token mid-list is carried");
+	expect(kingdom_craft_keywords_carry_bind("steel vambraces kingdom tyrus"), 0,
+	       "plain words, 'kingdom' among them, carry no token");
+	expect(kingdom_craft_keywords_carry_bind("xkingdom-bound-1042"), 0,
+	       "the prefix glued to a word is not a token");
+	expect(kingdom_craft_keywords_carry_bind(nullptr), 0, "no keywords carry no token");
+
 	if (failures)
 	{
 		std::printf("%d kingdom craft arithmetic check(s) failed\n", failures);

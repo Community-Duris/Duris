@@ -38,14 +38,26 @@ inline bool kingdom_store_piece(const struct obj_data *obj)
 	       obj_index[obj->R_num].virtual_number == VOBJ_KINGDOM_CRAFT_BLANK;
 }
 
+/* True for gear the store's binding governs: a store piece by vnum, OR any
+ * object whose keywords carry a binding token. The second arm fails closed:
+ * a piece whose object index were unresolved (R_num < 0) would fail the vnum
+ * test, and would otherwise fall through to the legacy name test that a
+ * character named "Kingdom" or "Steel" passes. The armour-class floor
+ * (magic/affects.c) keeps the vnum test alone, since it describes the blank
+ * object the piece was read from. */
+inline bool kingdom_store_bound(const struct obj_data *obj)
+{
+	return kingdom_store_piece(obj) || (obj && kingdom_craft_keywords_carry_bind(obj->name));
+}
+
 /* True when `ch` is the character who bought store piece `obj`: a player
  * whose PLAYER ID is the one in the piece's binding token
  * (kingdom_craft_bind.h). Never a name test -- a store piece's keywords are
  * ordinary words a character could be named after -- and never true for a
- * mob, an unsaved character or anything that is not a store piece. */
+ * mob, an unsaved character or anything the binding does not govern. */
 inline bool kingdom_store_piece_owner(struct char_data *ch, const struct obj_data *obj)
 {
-	return ch && IS_PC(ch) && GET_PID(ch) > 0 && kingdom_store_piece(obj) &&
+	return ch && IS_PC(ch) && GET_PID(ch) > 0 && kingdom_store_bound(obj) &&
 	       kingdom_craft_keywords_bind(obj->name, GET_PID(ch));
 }
 
