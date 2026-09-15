@@ -752,6 +752,7 @@ void unspecialize(P_char ch, P_obj obj)
 	if (!IS_SPECIALIZED(ch))
 	{
 		send_to_char("You pray to the &+bWater Goddess&n but you get no response.", ch);
+		return;
 	}
 	if (GET_EPIC_POINTS(ch) < 10)
 	{

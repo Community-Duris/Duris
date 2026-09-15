@@ -2858,6 +2858,13 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	release_after_terminal_death(ch, "death_recovery_completed");
 }
 
+static long lich_death_residual_experience(long experience, int level)
+{
+	const double percentage = static_cast<double>(new_exp_table[level]) /
+				  static_cast<double>(new_exp_table[level + 1]);
+	return MAX(1L, static_cast<long>(experience * percentage));
+}
+
 void die(P_char ch, P_char killer)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -3055,12 +3062,9 @@ void die(P_char ch, P_char killer)
 		if (IS_PC(ch) && (GET_RACE(ch) == RACE_LICH))
 		{
 			long tmp = loss = GET_EXP(ch);
-			float percentage =
-				new_exp_table[GET_LEVEL(ch)] / new_exp_table[GET_LEVEL(ch) + 1];
 			lose_level(ch);
 			// This is complicated because 10M exp at 51 is not the same as 10M exp at 50/52/etc.
-			tmp = tmp * percentage;
-			GET_EXP(ch) = MAX(1, tmp);
+			GET_EXP(ch) = lich_death_residual_experience(tmp, GET_LEVEL(ch));
 			// Amount of exp lost is all exp to lose level + the portion lost into the level below.
 			loss += new_exp_table[GET_LEVEL(ch)] - GET_EXP(ch);
 			loss *= -1;

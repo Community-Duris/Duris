@@ -310,7 +310,8 @@ parts = [prelude, take('struct synchronous_get_item')+';', take('struct bulk_get
          'static std::unordered_map<uint32_t,bulk_get_state> bulk_gets;',
          take('static bulk_get_state *corpse_bulk_get('),
          take('static void announce_corpse_bulk_get('), take('static void publish_container_get('), finalizers]
-for name in ['static bool bulk_get_source_matches(', 'static bool bulk_get_source_available(',
+for name in ['static bool bulk_get_source_matches(', 'static bool bulk_get_source_for_roots(',
+             'static bool bulk_get_source_available(',
              'static bool bulk_get_corpse_source_available(',
              'static void report_bulk_get(', 'static void finish_bulk_get(', 'static void fail_bulk_get(',
              'static void reject_bulk_get_admission(', 'static P_obj resolve_synchronous_get_item(',

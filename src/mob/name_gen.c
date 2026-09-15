@@ -58,7 +58,8 @@ int get_name(char return_namn[256], int SEX, uint64_t id)
 	memset(slut, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
 	memset(namn, 0, NAME_LENGTH);
 
-	SEX = number(0, 9);
+	if (SEX < 0 || SEX > 9)
+		SEX = number(0, 9);
 	switch (SEX)
 	{
 	case 0:

@@ -1612,7 +1612,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 
 flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
-	flatfile_authority_operation *operation, std::string *error)
+	const std::vector<uint64_t> &custody_uids, flatfile_authority_operation *operation,
+	std::string *error)
 {
 	if (!operation || !pid || !lock.matches(root))
 		return flatfile_item_repository_result::invalid;
@@ -1625,16 +1626,38 @@ flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantin
 	owner_state *owner = find_owner(&catalog, player);
 	if (!owner)
 		return flatfile_item_repository_result::not_found;
+	std::unordered_set<uint64_t> retained;
+	std::unordered_set<uint64_t> retained_roots;
+	try
+	{
+		retained.reserve(custody_uids.size());
+		retained_roots.reserve(custody_uids.size());
+		for (uint64_t uid : custody_uids)
+			if (uid)
+				retained.insert(uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+	for (const auto &item : catalog.items)
+		if (item.state == item_custody_state::active &&
+		    item_owner_identity_equal(item.owner, player) &&
+		    retained.contains(item.item_uid))
+			retained_roots.insert(item.root_item_uid);
 	bool changed = false;
 	for (auto &item : catalog.items)
 	{
 		if (item.state != item_custody_state::active ||
-		    !item_owner_identity_equal(item.owner, player))
+		    !item_owner_identity_equal(item.owner, player) ||
+		    (!retained.contains(item.item_uid) &&
+		     !retained_roots.contains(item.root_item_uid)))
 			continue;
 		if (item.item_revision == UINT64_MAX)
 			return flatfile_item_repository_result::invalid;
-		// Keep identity, parentage and payload, including durable-only children
-		// which caused a refused subtree count. Ownership is not reassigned.
+		// Keep identity, parentage and payload for the captured death graph and
+		// any additional authoritative rows attached to one of its roots. Live
+		// player-owned objects under unrelated roots remain active and usable.
 		item.state = item_custody_state::quarantined;
 		++item.item_revision;
 		changed = true;

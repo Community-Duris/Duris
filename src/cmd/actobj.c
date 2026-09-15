@@ -1767,6 +1767,44 @@ static bool bulk_get_source_matches(const bulk_get_state &state, P_obj container
 				      (OBJ_ROOM(object) && object->loc.room == state.room));
 }
 
+/*
+ * A pet can leave a player-owned item on the floor without publishing a room
+ * transfer.  When that item is selected together with ordinary room stock,
+ * the first object in the list must not make the batch's source authoritative
+ * by accident.  Prefer one owner already recorded by the runtime catalog and
+ * reject a genuinely mixed-owner batch; unregistered stock can then be adopted
+ * into that same source before the atomic player transfer.
+ */
+static bool bulk_get_source_for_roots(P_char actor, P_obj container,
+				      const std::vector<P_obj> &roots, item_owner_identity *source)
+{
+	if (!actor || !source || roots.empty())
+		return false;
+	item_owner_identity runtime_source = {};
+	bool has_runtime_source = false;
+	for (P_obj root : roots)
+	{
+		if (!root)
+			return false;
+		item_ownership_runtime_entry runtime = {};
+		if (!item_ownership_runtime_lookup(root->obj_uid, &runtime))
+			continue;
+		if (!has_runtime_source)
+		{
+			runtime_source = runtime.owner;
+			has_runtime_source = true;
+		}
+		else if (!item_owner_identity_equal(runtime_source, runtime.owner))
+			return false;
+	}
+	if (has_runtime_source)
+	{
+		*source = runtime_source;
+		return item_owner_identity_valid(*source);
+	}
+	return get_item_source_owner(actor, roots.front(), container, source);
+}
+
 static bool bulk_get_source_available(P_char actor, const bulk_get_state &state, P_obj container)
 {
 	if (!actor || (!container && state.container_uid) ||
@@ -2356,10 +2394,11 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 		return;
 	}
 	item_owner_identity source = {};
-	if (!roots.front() || !get_item_source_owner(actor, roots.front(), container, &source))
+	if (!bulk_get_source_for_roots(actor, container, roots, &source))
 	{
-		send_to_char("Nothing was taken; an item lacks authoritative ownership.\r\n",
-			     actor);
+		send_to_char(
+			"Nothing was taken; the selected items have conflicting or missing ownership records.\r\n",
+			actor);
 		return;
 	}
 	state.source = source;
@@ -6066,6 +6105,25 @@ void do_give(P_char ch, char *argument, int cmd)
 		send_to_char("That would just be unethical now wouldn't it?\r\n", ch);
 		wizlog(56, "%s tried to give %s to %s.", ch->player.name, obj->short_description,
 		       vict->player.name);
+		return;
+	}
+	/*
+	 * NPC and pet inventories do not have a durable custody owner.  A normal
+	 * player command must not move a ledger-owned item into that live-only
+	 * graph: dismissal, charm expiry, purge, and NPC death would otherwise
+	 * leave the player row pointing at an object the authority never moved.
+	 * Internal quest/spec procedures use their private command values and keep
+	 * their existing consume/sink behavior until those paths get an explicit
+	 * durable boundary of their own.
+	 */
+	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) && uses_generic_item_ownership(obj))
+	{
+		send_to_char(
+			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",
+			ch);
+		logit(LOG_FILE,
+		      "item_movement: command=give outcome=npc_custody_unsupported actor=%s uid=%llu vnum=%d",
+		      J_NAME(ch), (unsigned long long)obj->obj_uid, OBJ_VNUM(obj));
 		return;
 	}
 	if (IS_PC(ch) && IS_PC(vict) && ch != vict && uses_generic_item_ownership(obj))

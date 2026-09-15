@@ -227,8 +227,10 @@ struct player_trophy_snapshot
 };
 
 // Stored with the post-death terminal snapshot, outside active inventory. The
-// corpse tree includes every captured asset; custody also retains observations
-// of disputed rows that have no captured payload. Absence is recorded explicitly.
+// corpse tree includes every captured asset; custody records ownership evidence
+// for that captured graph, including an explicit absent row when its runtime
+// catalog entry is missing. Live observations outside the captured graph are
+// intentionally not retained as death custody.
 struct player_death_custody_snapshot
 {
 	item_transfer_entry item;
