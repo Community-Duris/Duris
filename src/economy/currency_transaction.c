@@ -33,6 +33,7 @@ struct pending_currency
 	coin_completion_fn coin_completion = nullptr;
 	bool coin_wallets_published = false;
 	unsigned int publication_attempts = 0;
+	bool publication_block_reported = false; // Diagnostic suppression, not transaction state.
 };
 
 std::unordered_map<std::string, pending_currency> pending;
@@ -141,46 +142,66 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	return true;
 }
 
+bool retain_unresolved_publication(pending_currency &entry, const char *reason, bool malformed)
+{
+	if (!entry.publication_block_reported)
+	{
+		entry.publication_block_reported = true;
+		if (malformed)
+			++health.malformed_completions;
+		persistence_alert(AVATAR, "currency", "publication", "none", "none",
+				  "publication_blocked", "outcome=%u error=%u reason=%s",
+				  static_cast<unsigned int>(entry.completed.outcome),
+				  entry.completed.error_code, reason);
+	}
+	return false;
+}
+
 bool publish(std::unordered_map<std::string, pending_currency>::iterator found, P_char character)
 {
 	pending_currency &entry = found->second;
+	const critical_completion &completion = entry.completed;
+	const bool committed = completion.outcome == critical_apply_outcome::applied ||
+			       completion.outcome == critical_apply_outcome::already_applied;
+	// Retry exhaustion ends automatic execution, not the transaction's uncertainty.
+	// Keep the original identity and continuation until an exact final receipt arrives.
+	if (!committed && completion.outcome != critical_apply_outcome::terminal_failure)
+		return retain_unresolved_publication(entry, "unresolved_outcome", false);
 	if (entry.coin)
 		return publish_coin(found, character);
-	const critical_completion &completion = entry.completed;
 	currency_command_result result = {};
+	unsigned int error_code = completion.error_code;
 	if (!currency_command_decode_result(completion.result_payload.data(),
 					    completion.result_size, &result))
 	{
+		if (committed)
+			return retain_unresolved_publication(entry, "invalid_result", true);
+		// A known rejection can have no balance payload (for example validation failure).
+		result = {};
 		++health.malformed_completions;
-		if (entry.completion)
-			entry.completion(character, false, {}, completion.error_code,
-					 entry.context.data(), entry.context_size);
-		++health.rejected;
-		pending.erase(found);
-		return false;
 	}
-	const bool committed = completion.outcome == critical_apply_outcome::applied ||
-			       completion.outcome == critical_apply_outcome::already_applied;
-	if (!currency_transaction_publish_balances(character, entry.account_name.data(),
-						   entry.racewar, result.wallet, result.bank,
-						   result.wallet_revision, result.bank_revision))
+	else if (!currency_transaction_publish_balances(
+			 character, entry.account_name.data(), entry.racewar, result.wallet,
+			 result.bank, result.wallet_revision, result.bank_revision))
 	{
+		if (committed)
+			return retain_unresolved_publication(entry, "invalid_live_balances", true);
 		++health.malformed_completions;
-		if (entry.completion)
-			entry.completion(character, false, {}, ERANGE, entry.context.data(),
-					 entry.context_size);
-		++health.rejected;
-		pending.erase(found);
-		return false;
+		result = {};
+		if (!error_code)
+			error_code = ERANGE;
 	}
-	if (entry.completion)
-		entry.completion(character, committed, result, completion.error_code,
-				 entry.context.data(), entry.context_size);
+	// The callback may submit/rehash pending or tear down the character. Own its
+	// context independently and release this publication guard before calling it.
+	auto node = pending.extract(found);
+	const auto &finished = node.mapped();
 	if (committed)
 		++health.committed;
 	else
 		++health.rejected;
-	pending.erase(found);
+	if (finished.completion)
+		finished.completion(character, committed, result, error_code,
+				    finished.context.data(), finished.context_size);
 	return true;
 }
 
@@ -304,7 +325,7 @@ bool currency_transaction_publish_wallet(P_char character, const currency_vector
 bool currency_transaction_can_submit(P_char character)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
-	    pending.size() >= CURRENCY_PENDING_MAX)
+	    pending.size() >= CURRENCY_PENDING_MAX || currency_transaction_player_busy(character))
 		return false;
 #ifdef __NO_MYSQL__
 	// A failed first save/hydration must not submit zero or partial revisions.
@@ -427,7 +448,7 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 				      coin_completion_fn completion, const void *context,
 				      size_t context_size)
 {
-	if (!currency_transaction_can_submit(actor) || currency_transaction_player_busy(actor) ||
+	if (!currency_transaction_can_submit(actor) ||
 	    context_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES || (context_size && !context))
 		return false;
 	critical_operation_id id;
@@ -569,6 +590,11 @@ bool currency_transaction_submit_prepared(P_char character, const critical_comma
 	if (existing != pending.end())
 		return true;
 	if (pending.size() >= CURRENCY_PENDING_MAX)
+		return false;
+	// A database receipt can release coordinator fences while live publication is
+	// still unresolved. Do not build a new debit from that stale wallet/bank view.
+	if (!currency_command_is_rebasable_reward(payload) &&
+	    currency_transaction_player_busy(character))
 		return false;
 	if (!currency_command_is_rebasable_reward(payload))
 		for (const auto &entity : command.keys)

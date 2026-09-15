@@ -12,6 +12,9 @@
 constexpr size_t CURRENCY_PENDING_MAX = 1024;
 constexpr size_t CURRENCY_PENDING_CONTEXT_MAX_BYTES = 64;
 
+// A final notification: false means an explicit terminal rejection, never an
+// ambiguous outcome or failure to publish an acknowledged commit. Unresolved
+// receipts retain this same continuation and block non-rebasable admission.
 using currency_completion_fn = void (*)(P_char character, bool committed,
 					const currency_command_result &result,
 					unsigned int error_code, const uint8_t *context,

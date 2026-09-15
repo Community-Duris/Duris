@@ -114,6 +114,40 @@ only non-transactional in-memory assignments. Focused validation is
 `python3 tests/async/test_epic_transaction_contract.py` and, on a guarded development
 database, `tests/async/run_epic_transaction_schema_mysql.sh`.
 
+## Currency receipt and live-publication boundary
+
+The currency adapter retains the original operation ID and continuation when a
+receipt is ambiguous, retry-exhausted, or acknowledges a commit whose result or
+live balances cannot be validated. These states are **not** terminal rejection;
+they must not trigger a failure/refund callback. Pending entries remain bounded
+by `CURRENCY_PENDING_MAX`, and an unresolved entry emits at most one diagnostic
+instead of logging on every publication pulse. See [issue #380](https://github.com/Community-Duris/Duris/issues/380).
+
+Coordinator completion and live publication have different lifetimes. A
+non-rebasable debit must respect the domain's player/account busy state even
+after the coordinator releases its execution fence. Intentional rebasable
+rewards and unrelated accounts retain their existing admission behavior.
+Successful publication, or a known terminal rejection, removes the completed
+pending entry before invoking its continuation. An extracted node owns callback
+context across re-entrant submissions; no pending-map iterator survives that
+callback.
+
+A corrected exact receipt can finish a retained operation once without issuing a
+new debit/credit. This is not automatic reconciliation tooling: an unresolved
+receipt can continue to fence dependent gameplay until the original result is
+recovered or the underlying fault is repaired. Do not clear the pending operation
+or create a replacement operation ID to conceal the fault. This in-process
+retention does not claim that callback context becomes durable across restart.
+
+`python3 tests/async/test_currency_completion_retention.py` links the actual
+adapter and codecs with controlled coordinator/live endpoints under ASan/UBSan
+in both build modes. It covers malformed/ambiguous receipts, range validation,
+offline re-entry, corrected/duplicate delivery, known rejection, account guards,
+re-entrant callback chaining/rehashing, rebasable rewards, and bounded admission.
+`test_currency_input_queue.py` additionally covers real command-selection and coin
+publication adapters. These tests do not by themselves prove SQL/flatfile storage
+or complete player-journey parity.
+
 ## Physical coin custody
 
 `coin_transfer_command` and the currency coordinator commit wallet and physical
