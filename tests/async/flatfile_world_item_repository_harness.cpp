@@ -1,3 +1,4 @@
+#include "economy/collector_command.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "player/player_snapshot_codec.h"
 
@@ -145,6 +146,118 @@ static flatfile_saved_world_item_record saved_item()
 	value.revision = 3;
 	value.items = { item(200, PLAYER_SNAPSHOT_NO_PARENT, 400), item(201, 0, 401) };
 	return value;
+}
+
+static std::vector<uint8_t> encode_items(const std::vector<player_item_snapshot> &items)
+{
+	std::vector<uint8_t> bytes;
+	require(player_item_snapshot_list_encode(items, &bytes) == player_snapshot_codec_result::ok,
+		"could not encode saved item fixture");
+	return bytes;
+}
+
+static std::vector<uint8_t> read_catalog(const fs::path &root)
+{
+	std::ifstream input(root / "domains/world_item_catalog", std::ios::binary);
+	require(input.good(), "could not read persisted world item catalog");
+	return { std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>() };
+}
+
+static void require_saved_items(const flatfile_saved_world_item_record &actual,
+				const flatfile_saved_world_item_record &expected)
+{
+	require(actual.item_key == expected.item_key && actual.room_vnum == expected.room_vnum &&
+			actual.revision == expected.revision &&
+			actual.items.size() == expected.items.size(),
+		"saved item forest lost its key, room, revision or members");
+	require(encode_items(actual.items) == encode_items(expected.items),
+		"saved item forest changed serialized payload fields");
+	for (size_t index = 0; index < expected.items.size(); ++index)
+	{
+		const auto &value = actual.items[index];
+		const auto &original = expected.items[index];
+		require(value.object_uid == original.object_uid &&
+				value.parent_index == original.parent_index &&
+				value.weight == original.weight &&
+				value.generated_key == original.generated_key &&
+				value.vnum == original.vnum && value.name == original.name &&
+				value.short_description == original.short_description &&
+				value.dynamic_affects.size() == 1 &&
+				value.dynamic_affects[0].extra2 == 5 &&
+				value.extra_descriptions.size() == 1 &&
+				value.extra_descriptions[0].spell_ids ==
+					std::vector<int32_t>{ 7, 8 },
+			"saved item forest lost topology, weights or rich item fields");
+	}
+}
+
+static void test_saved_root_collection(const fs::path &root)
+{
+	prepare_root(root);
+	std::string error;
+	auto saved = saved_item();
+	saved.items = { item(200, PLAYER_SNAPSHOT_NO_PARENT, 400), item(201, 0, 401),
+			item(202, 0, 402), item(203, 2, 403) };
+	saved.items[0].weight = 30;
+	saved.items[1].weight = 5;
+	saved.items[2].weight = 6;
+	saved.items[3].weight = 2;
+	require(flatfile_world_item_establish(root.string(), {}, { saved }, &error) ==
+			flatfile_world_item_result::ok,
+		"saved container collection fixture establishment failed: " + error);
+	const auto before = read_catalog(root);
+	collector_command_payload payload = {};
+	payload.action = collector_action::collect;
+	payload.from_owner = { item_owner_type::room, static_cast<uint64_t>(saved.room_vnum), 0 };
+	payload.to_owner = { item_owner_type::collector, 1, 0 };
+	payload.target_state = item_custody_state::active;
+	payload.expected_from_owner_revision = saved.revision;
+	payload.selected_item_uid = 200;
+	payload.item_count = 4;
+	payload.items[0] = { 200, 200, 0, 1, 400, item_custody_state::active };
+	payload.items[1] = { 201, 200, 200, 1, 401, item_custody_state::active };
+	payload.items[2] = { 202, 200, 200, 1, 402, item_custody_state::active };
+	payload.items[3] = { 203, 200, 202, 1, 403, item_custody_state::active };
+	auto shell = saved.items[0];
+	shell.weight = 19; // Direct child aggregate weights stay with the saved contents.
+	shell.equipment_slot = 0;
+	const auto blob = encode_items({ shell });
+	require(blob.size() <= payload.item_blob.size(), "collector shell fixture exceeds payload");
+	payload.item_blob_size = static_cast<uint32_t>(blob.size());
+	std::copy(blob.begin(), blob.end(), payload.item_blob.begin());
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not lock saved container authority");
+		flatfile_collector_world_mutation mutation;
+		unsigned int result_code = 1;
+		require(flatfile_world_item_prepare_collector_transfer(
+				root.string(), lock, payload, &mutation, &result_code, &error) ==
+					flatfile_world_item_result::ok &&
+				result_code == 0 && mutation.changed,
+			"saved root collection did not prepare a forest after-image: " + error);
+		require(read_catalog(root) == before,
+			"preparing collection published before commit");
+		require(flatfile_authority_transaction_commit(root.string(), lock,
+							      { mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"saved root collection did not commit: " + error);
+	}
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_saved_world_item_record> saved_items;
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty() && saved_items.size() == 1,
+		"saved root collection did not retain exactly one saved key: " + error);
+	saved.items.erase(saved.items.begin());
+	saved.items[0].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	saved.items[1].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	saved.items[2].parent_index = 1;
+	++saved.revision;
+	require_saved_items(saved_items[0], saved);
+	require(std::none_of(saved_items[0].items.begin(), saved_items[0].items.end(),
+			     [](const auto &value) { return value.object_uid == 200; }),
+		"collected shell remained in saved room custody");
 }
 
 int main(int argc, char **argv)
@@ -318,19 +431,26 @@ int main(int argc, char **argv)
 	require(flatfile_world_item_establish(invalid_root.string(), { first, duplicate_corpse },
 					      {}, &error) == flatfile_world_item_result::invalid,
 		"duplicate corpse owner/save identity was accepted");
+	auto empty_forest = saved;
+	empty_forest.items.clear();
+	require(flatfile_world_item_establish(invalid_root.string(), {}, { empty_forest },
+					      &error) == flatfile_world_item_result::invalid,
+		"empty saved item forest was accepted");
+	const fs::path forest_root = fs::path(argv[1]) / "forest";
+	prepare_root(forest_root);
 	auto two_roots = saved;
 	two_roots.items[1].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-	require(flatfile_world_item_establish(invalid_root.string(), {}, { two_roots }, &error) ==
+	require(flatfile_world_item_establish(forest_root.string(), {}, { two_roots }, &error) ==
 			flatfile_world_item_result::ok,
-		"saved item key with multiple roots was rejected: " + error);
+		"saved item forest establishment failed: " + error);
 	corpses.clear();
 	saved_items.clear();
-	require(flatfile_world_item_list(invalid_root.string(), &corpses, &saved_items, &error) ==
+	require(flatfile_world_item_list(forest_root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&
-			saved_items.size() == 1 && saved_items[0].items.size() == 2 &&
-			saved_items[0].items[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
-			saved_items[0].items[1].parent_index == PLAYER_SNAPSHOT_NO_PARENT,
-		"saved item key did not round trip multiple collector-addressable roots");
+			corpses.empty() && saved_items.size() == 1,
+		"saved item forest did not round trip as one saved key: " + error);
+	require_saved_items(saved_items[0], two_roots);
+	test_saved_root_collection(fs::path(argv[1]) / "collector-root");
 
 	flatfile_world_item_player_removal removal;
 	{

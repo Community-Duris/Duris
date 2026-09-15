@@ -82,6 +82,8 @@ def read_item_ownership(state_root: pathlib.Path) -> dict[int, list[dict[str, in
     require(version == 4 and revision > 0, "flatfile item ownership header is invalid")
     require(payload_size == len(data) - header_size, "flatfile item ownership size is invalid")
     payload = data[header_size:]
+    # Version 4 adds collector_catalog_changed only to operation rows. Owner
+    # and item layouts are unchanged; this reader stops before that ledger.
     owner_count, item_count, _ = struct.unpack_from("<III", payload)
     offset = struct.calcsize("<III") + owner_count * struct.calcsize("<BQQQ")
     item_format = "<QQQBQQQiB"
