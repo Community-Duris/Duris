@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -4853,6 +4854,14 @@ void extract_char_after_terminal_save(P_char ch)
 		return;
 	}
 
+	if (ch->telemetry_session_sequence != 0U)
+	{
+		(void)telemetry_runtime_game_session_exit(
+			ch, ch->desc && ch->desc->connected == CON_PLAYING ? ch->desc : nullptr,
+			ch->desc && ch->desc->connected == CON_PLAYING ?
+				telemetry_session_end_reason::logout :
+				telemetry_session_end_reason::disconnect);
+	}
 	SET_BIT(ch->runtime_flags, CHAR_RFLAG_TERMINAL_ITEMS_SAVED);
 	extract_char(ch);
 }

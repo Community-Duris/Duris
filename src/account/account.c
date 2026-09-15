@@ -5,6 +5,7 @@
 
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "cmd/interp.h"
@@ -2131,6 +2132,9 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 			// sql_update_playerIP(ch);  // Deprecated function
 			ch->specials.timer = 0;
 			STATE(d) = CON_PLAYING;
+			(void)telemetry_runtime_game_connection_transition(
+				ch, d, telemetry_connection_transition_kind::attached);
+			(void)telemetry_runtime_game_context(ch, d);
 
 			logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character),
 			      d->host);

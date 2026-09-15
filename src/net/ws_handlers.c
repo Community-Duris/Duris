@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "account/creation_availability_config.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -1341,6 +1342,9 @@ void ws_finish_login(struct descriptor_data *d, int password_valid)
 			d->character = online_char;
 			online_char->desc = d;
 			d->connected = CON_PLAYING;
+			(void)telemetry_runtime_game_connection_transition(
+				online_char, d, telemetry_connection_transition_kind::attached);
+			(void)telemetry_runtime_game_context(online_char, d);
 
 			statuslog(56, "WebSocket: Reconnected %s to character %s from %s", tmp_name,
 				  GET_NAME(d->character), d->host);

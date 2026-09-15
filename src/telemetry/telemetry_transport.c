@@ -58,6 +58,9 @@ std::atomic<bool> RESTART_ALLOWED{ false };
 std::atomic<bool> SHUTDOWN_REQUESTED{ false };
 std::atomic<std::uint64_t> ADMISSION_STATE{ 0U };
 std::atomic<bool> REPOSITORY_READY{ false };
+/* Set only after init reports an owned writer.  DB-down/disabled paths must
+ * not synchronously call a borrowed shutdown callback that has no live writer. */
+std::atomic<bool> REPOSITORY_STARTED{ false };
 std::uint32_t REPOSITORY_RETRY_ATTEMPTS = 0U;
 telemetry_monotonic_usec REPOSITORY_RETRY_NOT_BEFORE = 0U;
 
@@ -468,6 +471,7 @@ bool ensure_repository(telemetry_monotonic_usec now) noexcept
 	if (outcome == telemetry_repository_outcome::ready ||
 	    outcome == telemetry_repository_outcome::already_ready)
 	{
+		REPOSITORY_STARTED.store(true, std::memory_order_release);
 		REPOSITORY_READY.store(true, std::memory_order_release);
 		REPOSITORY_RETRY_ATTEMPTS = 0U;
 		REPOSITORY_RETRY_NOT_BEFORE = 0U;
@@ -1058,8 +1062,9 @@ telemetry_transport_outcome telemetry_transport_init(telemetry_transport_config 
 	LAST_ADMITTED_KEY = {};
 	LOSS = {};
 	LOSS_RANGE_UNKNOWN = false;
-	REPOSITORY_SETTINGS = { config.backend, 0U, config.schema_version, config.max_batch_records,
-				config.max_batch_bytes };
+	REPOSITORY_SETTINGS = { config.backend,		0U,
+				config.schema_version,	config.max_batch_records,
+				config.max_batch_bytes, config.fresh_producer };
 	telemetry_queue_private::initialize(&QUEUE, config.queue_capacity, config.control_reserve);
 	reset_inflight();
 	reset_health(config);
@@ -1067,6 +1072,7 @@ telemetry_transport_outcome telemetry_transport_init(telemetry_transport_config 
 	RESTART_ALLOWED.store(false, std::memory_order_release);
 	SHUTDOWN_REQUESTED.store(false, std::memory_order_release);
 	REPOSITORY_READY.store(false, std::memory_order_release);
+	REPOSITORY_STARTED.store(false, std::memory_order_release);
 
 	if (config.backend == telemetry_storage_backend::flatfile_disabled)
 	{
@@ -1269,6 +1275,18 @@ void telemetry_transport_shutdown(void)
 	set_health_state(telemetry_health_state::stopping);
 	SHUTDOWN_REQUESTED.store(true, std::memory_order_release);
 	finalize_shutdown();
+}
+
+void telemetry_transport_repository_shutdown_for_owner(void)
+{
+	bool started = true;
+	if (!REPOSITORY_STARTED.compare_exchange_strong(started, false, std::memory_order_acq_rel,
+							std::memory_order_acquire))
+		return;
+	if (REPOSITORY.request_stop != nullptr)
+		(void)REPOSITORY.request_stop(REPOSITORY.context);
+	if (REPOSITORY.shutdown != nullptr)
+		REPOSITORY.shutdown(REPOSITORY.context);
 }
 
 telemetry_transport_loss_snapshot telemetry_transport_loss_copy_for_producer(void)
