@@ -2837,7 +2837,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 static long lich_death_residual_experience(long experience, int level)
 {
 	const double percentage = static_cast<double>(new_exp_table[level]) /
-					  static_cast<double>(new_exp_table[level + 1]);
+				  static_cast<double>(new_exp_table[level + 1]);
 	return MAX(1L, static_cast<long>(experience * percentage));
 }
 
