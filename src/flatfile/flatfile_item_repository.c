@@ -1405,8 +1405,8 @@ flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
 
 flatfile_item_repository_result flatfile_item_repository_prepare_death_quarantine(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
-	const std::vector<uint64_t> &custody_uids,
-	flatfile_authority_operation *operation, std::string *error)
+	const std::vector<uint64_t> &custody_uids, flatfile_authority_operation *operation,
+	std::string *error)
 {
 	if (!operation || !pid || !lock.matches(root))
 		return flatfile_item_repository_result::invalid;

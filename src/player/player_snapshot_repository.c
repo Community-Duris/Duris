@@ -596,7 +596,7 @@ query_result apply_death(MYSQL *connection, const player_snapshot &snapshot)
 	result = execute(connection,
 			 "UPDATE item_owner_revision SET revision=revision+1 WHERE " + owner +
 				 " AND EXISTS (SELECT 1 FROM item_current_owner WHERE " + owner +
-					 " AND state=" + active + death_custody + ")");
+				 " AND state=" + active + death_custody + ")");
 	if (result.ok)
 		result = execute(
 			connection,

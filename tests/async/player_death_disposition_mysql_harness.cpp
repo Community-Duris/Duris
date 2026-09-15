@@ -223,7 +223,7 @@ int main()
 			decoded.death->corpse[3].object_uid == 202 &&
 			decoded.death->wallet_before == std::array<int32_t, 4>{ 11, 12, 13, 14 } &&
 			decoded.death->custody.size() == 3 && decoded.items.empty(),
-			"the stored death payload lost the refused corpse contents");
+		"the stored death payload lost the refused corpse contents");
 
 	// Replay must not repeat the death, and must not duplicate the record.
 	applied = player_snapshot_repository_apply(connection, death);

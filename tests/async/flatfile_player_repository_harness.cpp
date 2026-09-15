@@ -958,8 +958,8 @@ int main(int argc, char **argv)
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 42, 0 }, &replay_owner_revision,
 			&active_after_death, &error) == flatfile_item_repository_result::ok &&
-			replay_owner_revision == quarantine_revision && active_after_death.size() == 1 &&
-			active_after_death[0].item_uid == 102 &&
+			replay_owner_revision == quarantine_revision &&
+			active_after_death.size() == 1 && active_after_death[0].item_uid == 102 &&
 			active_after_death[0].state == item_custody_state::active,
 		"death replay repeated quarantine or changed live active custody");
 	require(flatfile_player_snapshot_apply(root.string(), make_full(14), &error).outcome ==

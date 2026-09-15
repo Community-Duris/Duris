@@ -1729,8 +1729,7 @@ static bool bulk_get_source_matches(const bulk_get_state &state, P_obj container
  * into that same source before the atomic player transfer.
  */
 static bool bulk_get_source_for_roots(P_char actor, P_obj container,
-				      const std::vector<P_obj> &roots,
-				      item_owner_identity *source)
+				      const std::vector<P_obj> &roots, item_owner_identity *source)
 {
 	if (!actor || !source || roots.empty())
 		return false;
@@ -2352,7 +2351,7 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 	{
 		send_to_char(
 			"Nothing was taken; the selected items have conflicting or missing ownership records.\r\n",
-			     actor);
+			actor);
 		return;
 	}
 	state.source = source;
@@ -6058,8 +6057,7 @@ void do_give(P_char ch, char *argument, int cmd)
 	 * their existing consume/sink behavior until those paths get an explicit
 	 * durable boundary of their own.
 	 */
-	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) &&
-	    uses_generic_item_ownership(obj))
+	if (cmd == CMD_GIVE && IS_PC(ch) && IS_NPC(vict) && uses_generic_item_ownership(obj))
 	{
 		send_to_char(
 			"That item cannot be given to a pet or mob because its custody cannot be saved yet.\r\n",
