@@ -267,15 +267,16 @@ int main()
 	auto purchase_completion = completion(purchased);
 	player_online = false;
 	collector_transaction_handle_completions(&purchase_completion, 1);
-	assert(collector_transaction_player_busy(&character) && !completion_called &&
-	       !wallet_publications && ownership_publications == 0 && runtime_publications == 0);
+	assert(!collector_transaction_player_busy(&character) && completion_called &&
+	       completion_committed && completion_character == nullptr && !wallet_publications &&
+	       ownership_publications == 1 && runtime_publications == 1 && completion_error == 0 &&
+	       completion_action == collector_action::purchase);
 	player_online = true;
 	collector_transaction_player_ready(&character);
 	assert(!collector_transaction_player_busy(&character) && completion_called &&
-	       completion_committed && completion_character == &character &&
-	       completion_error == 0 && completion_action == collector_action::purchase &&
-	       wallet_publications == 1 && ownership_publications == 1 &&
-	       runtime_publications == 1);
+	       completion_committed && completion_character == nullptr && completion_error == 0 &&
+	       completion_action == collector_action::purchase && wallet_publications == 0 &&
+	       ownership_publications == 1 && runtime_publications == 1);
 	assert(!collector_transaction_listing_busy(available.listing));
 
 	completion_called = completion_committed = false;
@@ -286,7 +287,7 @@ int main()
 		completion(rejected, critical_apply_outcome::terminal_failure, EAGAIN);
 	collector_transaction_handle_completions(&rejected_completion, 1);
 	assert(completion_called && !completion_committed && completion_error == EAGAIN &&
-	       wallet_publications == 1 && ownership_publications == 1 &&
+	       wallet_publications == 0 && ownership_publications == 1 &&
 	       runtime_publications == 1);
 
 	completion_called = completion_committed = false;
@@ -307,7 +308,7 @@ int main()
 	collector_transaction_handle_completions(&collect_completion, 1);
 	assert(completion_called && completion_committed &&
 	       completion_action == collector_action::collect && ownership_publications == 2 &&
-	       runtime_publications == 2 && wallet_publications == 1 &&
+	       runtime_publications == 2 && wallet_publications == 0 &&
 	       live_collection_validations == 1 && live_collection_detaches == 1);
 	assert(!collector_transaction_listing_busy(candidate.listing));
 	assert(!collector_transaction_item_busy(candidate.uid));
@@ -331,7 +332,7 @@ int main()
 	collector_transaction_handle_completions(&recovery_completion, 1);
 	assert(completion_called && completion_committed && completion_error == ESTALE &&
 	       completion_action == collector_action::collect && ownership_publications == 3 &&
-	       runtime_publications == 2 && wallet_publications == 1 &&
+	       runtime_publications == 2 && wallet_publications == 0 &&
 	       live_collection_validations == 2 && live_collection_detaches == 1);
 	ownership_publication_succeeds = true;
 
@@ -352,7 +353,7 @@ int main()
 	collector_transaction_handle_completions(&malformed_completion, 1);
 	assert(completion_called && completion_committed && completion_error == EBADMSG &&
 	       completion_action == collector_action::unknown && ownership_publications == 3 &&
-	       runtime_publications == 2 && wallet_publications == 1);
+	       runtime_publications == 2 && wallet_publications == 0);
 
 	// If the transactional outbox wins the race against the coordinator completion,
 	// publication must reuse the retained request so custody and the live graph are
@@ -384,7 +385,7 @@ int main()
 	collector_transaction_publish_outbox();
 	assert(completion_called && completion_committed && completion_error == 0 &&
 	       completion_action == collector_action::collect && ownership_publications == 4 &&
-	       runtime_publications == 3 && wallet_publications == 1 &&
+	       runtime_publications == 3 && wallet_publications == 0 &&
 	       live_collection_validations == 3 && live_collection_detaches == 2 &&
 	       !collector_transaction_item_busy(205));
 	assert(!outbox_publications && outbox_resumes == 1);

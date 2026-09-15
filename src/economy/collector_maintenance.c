@@ -28,6 +28,7 @@ clock_type::time_point next_audit = {};
 clock_type::time_point next_due_audit = {};
 uint64_t observed_config_revision = std::numeric_limits<uint64_t>::max();
 bool observed_ready = false;
+bool initial_ready_reconciliation = true;
 uint64_t scan_cursor = 0;
 bool cycle_changed = false;
 collector_maintenance_health health = {};
@@ -411,13 +412,19 @@ void collector_maintenance_pulse(void)
 	const bool ready = collector_catalog_cache_ready();
 	const bool config_changed = config.revision != observed_config_revision;
 	const bool became_ready = ready && !observed_ready;
+	const bool initial_ready = became_ready && initial_ready_reconciliation;
 	observed_config_revision = config.revision;
 	observed_ready = ready;
+	if (ready)
+		initial_ready_reconciliation = false;
 	health.ready = ready;
 	health.enabled = config.policy.enabled;
 	health.config_revision = config.revision;
 	drain_expiry_details(config, ready);
-	if (config_changed || became_ready)
+	// The first ready edge starts the initial audit.  Later ready edges are
+	// expected after catalog-cache invalidation and must resume normal scheduling
+	// without resetting an in-progress/next-due audit back to listing zero.
+	if (config_changed || initial_ready)
 	{
 		start_reconciliation();
 		next_due_audit = {};
@@ -439,6 +446,7 @@ void collector_maintenance_shutdown(void)
 	next_due_audit = {};
 	observed_config_revision = std::numeric_limits<uint64_t>::max();
 	observed_ready = false;
+	initial_ready_reconciliation = true;
 	scan_cursor = 0;
 	cycle_changed = false;
 	for (const auto &[request_id, listing] : pending_expiry_reads)

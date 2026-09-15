@@ -203,6 +203,7 @@ assert "publish_corpse_wallet" in raise_publication
 assert "publish_corpse_wallet" in resurrection_publication
 assert "publish_corpse_wallet" in nested_publication
 assert "discard_nested_money" in raise_completion
+assert "obj_to_char_at_end(item, caster)" in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 
 for release_caller, first_mutation in (

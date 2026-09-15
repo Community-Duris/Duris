@@ -384,6 +384,15 @@ int main()
 	       !health.pending_expiry_reads);
 	assert(health.ineligible > 0);
 	assert(!health.rejected && !health.submit_failures && !health.scan_failures);
+	// Cache invalidation is a normal publication event.  Its ready edge must not
+	// restart a completed maintenance audit from the first listing.
+	const size_t passes_before_cache_refresh = health.passes;
+	cache_ready = false;
+	collector_maintenance_pulse();
+	cache_ready = true;
+	collector_maintenance_pulse();
+	assert(!collector_maintenance_health_copy().reconciling &&
+	       collector_maintenance_health_copy().passes == passes_before_cache_refresh);
 	collector_maintenance_shutdown();
 	assert(!collector_maintenance_health_copy().ready);
 

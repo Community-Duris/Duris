@@ -218,7 +218,10 @@ int main()
 	assert(indexes[0].func.mob != nullptr);
 	assert(collector_presence_health_copy().initialized);
 	collector_presence_pulse();
-	assert(live_collectors() == 0);
+	// Service presence survives the cache's initial loading window; commands
+	// remain separately gated on cache_ready and report unavailable records.
+	assert(live_collectors() == registered_count);
+	assert(collector_presence_health_copy().desired);
 
 	cache_ready = true;
 	available_count = 1;

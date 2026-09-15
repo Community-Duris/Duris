@@ -141,6 +141,11 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 		published = false;
 		publication_error = ESTALE;
 	}
+	// The repository has already durably applied the wallet and item rows.  A
+	// purchase may therefore be published without a live character: custody and
+	// catalog state must stop fencing the listing, while the player's in-memory
+	// wallet and notification are naturally refreshed on the next login.  The
+	// completion callback intentionally accepts nullptr for this recovery path.
 	if (published && committed && !collector_runtime_publish(result))
 	{
 		published = false;
@@ -259,12 +264,11 @@ void collector_transaction_handle_completions(const critical_completion *complet
 		P_char character = found->second.actor_pid ?
 					   find_player_by_pid(found->second.actor_pid) :
 					   nullptr;
-		// Durable completion may race with a disconnect.  Keep the request and
-		// its item fence until the owning player is present again; publishing a
-		// player purchase with a null character would advance custody while
-		// dropping the wallet update and the callback.
-		if (!found->second.actor_pid || character)
-			publish(found, character);
+		// Durable completion may race with a disconnect.  Publish the durable
+		// custody/catalog transition immediately even when the character is no
+		// longer live; the in-memory wallet and player-facing callback are guarded
+		// by `character` inside publish() and will be recovered by the next login.
+		publish(found, character);
 	}
 }
 
@@ -414,8 +418,11 @@ void collector_transaction_publish_outbox(void)
 						find_player_by_pid(
 							pending_found->second.actor_pid) :
 						nullptr;
-				if (!pending_found->second.actor_pid || character)
-					published = publish(pending_found, character);
+				// The durable purchase result is sufficient to converge custody and
+				// catalog state after a disconnect.  `publish()` skips live-wallet
+				// synchronization when character is null and the next login reloads
+				// that already-committed balance/item state.
+				published = publish(pending_found, character);
 			}
 		}
 		else

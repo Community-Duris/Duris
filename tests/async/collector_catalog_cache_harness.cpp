@@ -14,6 +14,7 @@ std::atomic<uint64_t> source_revision = 0;
 std::atomic<uint64_t> runtime_revision = 0;
 std::atomic<unsigned int> loads = 0;
 std::atomic<unsigned int> rebuilds = 0;
+std::atomic<bool> rebuild_succeeds = true;
 std::atomic<bool> block_load = false;
 std::atomic<bool> load_entered = false;
 std::atomic<bool> release_load = false;
@@ -45,6 +46,19 @@ bool stale_observed()
 bool revision_twelve_ready()
 {
 	return !collector_catalog_cache_busy() && runtime_revision == 12;
+}
+
+bool publication_failure_observed()
+{
+	const std::string status = collector_catalog_cache_status();
+	return !collector_catalog_cache_busy() &&
+	       status.find("publication failures ") != std::string::npos && runtime_revision == 12;
+}
+
+bool revision_thirteen_ready()
+{
+	return !collector_catalog_cache_busy() && runtime_revision == 13 &&
+	       collector_catalog_cache_ready();
 }
 }
 
@@ -80,6 +94,8 @@ bool collector_runtime_rebuild_authoritative(const collector::catalog &catalog,
 	(void)deaths;
 	assert(death_count == 0);
 	++rebuilds;
+	if (!rebuild_succeeds)
+		return false;
 	runtime_revision = catalog.revision;
 	return true;
 }
@@ -122,6 +138,19 @@ int main()
 	release_load = true;
 	assert(wait_until(revision_twelve_ready));
 	assert(loads == 5 && rebuilds == 4 && runtime_revision == 12);
+
+	// A transient runtime publication failure retains the last good projection
+	// for a normal refresh but retries promptly instead of waiting for the
+	// ordinary five-minute refresh.  An invalidation still keeps commands gated
+	// until a replacement projection is published.
+	source_revision = 13;
+	rebuild_succeeds = false;
+	assert(collector_catalog_cache_refresh());
+	assert(wait_until(publication_failure_observed));
+	const unsigned int failed_rebuilds = rebuilds.load();
+	rebuild_succeeds = true;
+	assert(wait_until(revision_thirteen_ready));
+	assert(rebuilds == failed_rebuilds + 1);
 
 	collector_catalog_cache_shutdown();
 	assert(!collector_catalog_cache_ready() && !collector_catalog_cache_busy());

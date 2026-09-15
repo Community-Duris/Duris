@@ -41,11 +41,13 @@ int collector_special(P_char collector, P_char, int, char *)
 
 bool presence_desired()
 {
-	// Keep the protected service present whenever the feature has a ready
-	// catalog.  An empty catalog is a valid player-visible state: it lets
-	// `collector list` explain that nothing is being held instead of making the
-	// service disappear and reporting that the room is unavailable.
-	return health.initialized && collector_config_enabled() && collector_catalog_cache_ready();
+	// Presence is a feature/configuration concern, not a cache-readiness
+	// concern.  A catalog mutation temporarily invalidates the cache; removing
+	// every protected service NPC during that short window makes the service
+	// disappear mud-wide and turns a normal refresh into a room outage.  Commands
+	// still gate on collector_catalog_cache_ready() and report that records are
+	// unavailable until the authoritative projection is ready.
+	return health.initialized && collector_config_enabled();
 }
 
 void protect(P_char collector)

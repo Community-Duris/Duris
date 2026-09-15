@@ -1362,10 +1362,13 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		else
 		{
 			discard_nested_money(item);
-			if (hostile)
-				obj_to_char_at_end(item, caster);
-			else
-				obj_to_char(item, follower);
+			// The durable raise transaction records these rows in the caster's
+			// player custody domain.  A live follower is not a durable item owner;
+			// placing the same rows in its inventory would let the next caster save
+			// delete them from player_items (or restore them twice after a crash).
+			// Keep the recovered equipment with the player until mobile-owned
+			// persistence exists.  Hostile raises already used this route.
+			obj_to_char_at_end(item, caster);
 		}
 	}
 

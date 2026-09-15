@@ -49,6 +49,10 @@ void publish_completed_generation()
 	{
 		++publication_failures;
 		applied_generation = generation;
+		// An invalidation has already dropped `ready`; a periodic refresh may
+		// retain the last good runtime.  In either case retry promptly instead of
+		// waiting for the ordinary five-minute refresh.
+		schedule_after(STALE_RETRY_INTERVAL);
 		return;
 	}
 	applied_generation = generation;

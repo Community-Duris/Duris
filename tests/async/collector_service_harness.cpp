@@ -6,6 +6,7 @@
 #include "economy/auction_room_registry.h"
 #include "economy/collector_listing_pipeline.h"
 #include "economy/collector_transaction.h"
+#include "persistence/persistence_mode.h"
 #include "player/player_load_items.h"
 #include "player/player_snapshot_codec.h"
 
@@ -169,6 +170,11 @@ const char *get_account_name_safe(P_char target)
 bool collector_catalog_cache_ready()
 {
 	return cache_ready;
+}
+
+persistence_mode persistence_mode_get()
+{
+	return PERSISTENCE_MODE_MARIADB_PRIMARY;
 }
 
 bool collector_presence_room_active(int room_rnum)
