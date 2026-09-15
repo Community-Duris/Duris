@@ -10,7 +10,7 @@ tables.
 | --- | --- |
 | `telemetry_interval` | Immutable tagged facts of all five record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. |
 | `telemetry_session` | Latest absolute checkpoint totals plus observed enter/exit flags and quality. Scoped primary key includes environment/season and original session identity; a second global session identity unique key prevents a changed scope from creating a second projection. Writer owns insertion/update. |
-| `telemetry_config` | Immutable `(environment_id,config_id)` and the complete typed effective snapshot, including its SHA-256 fingerprint and publication metadata. Writer owns insertion; publication reuse must match all typed content. |
+| `telemetry_config` | Immutable `(environment_id,config_id)` and the complete typed effective snapshot, including its SHA-256 fingerprint and publication metadata. Writer owns insertion; publication reuse must match semantic content, excluding process-local revision and effective time. |
 | `telemetry_player_day` | Rollup definition/generation/environment/season/UTC-day/subject/session contribution. The six duration counters, attributable coverage and watermark remain separate from raw session totals. |
 | `telemetry_cohort_day` | Rollup definition/generation/environment/season/day/level band/primary class/race/faction/zone/config/category sums and counts. |
 | `telemetry_rollup_state` | Definition/generation/environment/season committed input watermark, publication state, occurrence coverage and rebuild range. |
@@ -106,6 +106,16 @@ and two-second InnoDB lock wait. These are connector options, not a proven end-t
 shutdown deadline. Budget one additional ingest connection; external reports and
 rollups share at most one additional separately budgeted connection.
 
+The private writer uses MariaDB's socket accessor or Oracle MySQL's public
+`MYSQL::net.fd`, matching the selected client library. It preserves descriptor
+flags and adds `FD_CLOEXEC` before
+the factory returns it. Failure to read or set those flags closes and refuses the
+connection. Successful exec closes the old writer socket and releases its advisory
+lock; failed exec leaves the original connection usable. Player sockets and the
+gameplay SQL connection retain their existing ownership. For an initial upgrade
+from a binary with an active inheritable telemetry socket, use an ordinary process
+restart: the new factory cannot retroactively mark the old process's open socket.
+
 The private handle obtains a nonblocking, database-scoped advisory ingest lock.
 Another writer cannot claim readiness while that handle retains the lock. Losing
 the connection requires reacquiring ownership before retry. This also prevents a
@@ -127,6 +137,13 @@ metadata; native padding and inactive union bytes are ignored. Incoming
 configuration materialization recomputes the contract SHA-256. Referencing facts
 must match the configuration's captured environment, season and classifier/policy
 versions. Configuration facts and their materialization share a transaction.
+
+Shared `(environment_id,config_id)` reuse compares semantic content and preserves
+the first materialized snapshot. A new producer may publish that same content
+with a different local revision or effective time; each publication remains a
+separate fact with its original metadata. Changed metadata under the same fact
+key still conflicts, as does changed semantic content under a shared config ID.
+
 Session subject/PID/environment/season are immutable across copyover. Checkpoints
 are absolute counters, never additive. Newer revisions cannot decrease any bucket;
 any previously observed revision with different totals conflicts, including one
@@ -173,20 +190,27 @@ For a caller-provisioned **disposable loopback** MariaDB fixture with the test
 schema `duris_telemetry_test`, the explicitly guarded repository suite resets that
 schema's telemetry tables and consumes all ten shared golden fixtures through the
 actual repository API. It also tests mixed rejections, field/padding replay,
-checkpoint history, configuration/scope validation, immutable batch retries, five
+checkpoint history, restart configuration reuse and immutable publication replay,
+configuration/scope validation, immutable batch retries, five
 transaction fault modes, ownership lock contention, startup recovery, disabled
 behavior, stop requests and concurrent cached health:
 
 ```sh
 TELEMETRY_REPOSITORY_DISPOSABLE=1 python3 tests/async/test_telemetry_repository.py --sql-fixture
+# MYSQL_CONFIG may select a separate Oracle or MariaDB client installation.
 TELEMETRY_REPOSITORY_DISPOSABLE=1 python3 tests/async/test_telemetry_connection.py
 ```
 
-The connection test executes the actual shared factory and its real session
-initialization, with a link-time credential-selection spy that checks the selected
+The service-free `test_telemetry_cloexec.py` covers descriptor flag preservation
+and fail-closed setup. The connection test executes the actual shared factory and
+its real session initialization, with a link-time credential-selection spy that checks the selected
 role before using the fixture's existing passwordless root account. It does not
-create users or change grants and is not proof of provisioned ingest-role
-permissions or remote TLS operation. The repository fault tests similarly use
+create users or change grants. It also holds a real advisory lock across a failed
+exec, then checks socket closure and lock reacquisition after a successful exec.
+This is factory-level process coverage. Full player lifecycle coverage lives in
+`tests/async/run_telemetry_player_journey.py`, integrated by #384. Neither the
+factory test nor its credential spy proves provisioned ingest-role permissions
+or remote TLS operation. The repository fault tests similarly use
 controlled connector failures; real network teardown and representative load
 qualification remain L/#272. No live game, production migration, load generation,
 or production activation was performed.

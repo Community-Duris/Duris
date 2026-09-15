@@ -6,6 +6,16 @@
  * requires an explicitly provisioned least-privilege ingest credential pair. */
 #ifndef __NO_MYSQL__
 #include <mysql.h>
+// MariaDB exposes its PVIO socket through an accessor. Oracle's public client
+// structure exposes the connection descriptor directly instead.
+inline int sql_telemetry_socket(MYSQL *connection)
+{
+#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)
+	return static_cast<int>(mysql_get_socket(connection));
+#else
+	return static_cast<int>(connection->net.fd);
+#endif
+}
 MYSQL *sql_open_telemetry_connection(void);
 #endif
 

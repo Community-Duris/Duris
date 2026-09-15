@@ -12,7 +12,7 @@
 const char *copyover_state_file();
 #define COPYOVER_FILE copyover_state_file()
 #define COPYOVER_MAGIC "COPY"
-#define COPYOVER_VERSION 14 // generated NPC state; reads versions 12 and 13 too
+#define COPYOVER_VERSION 15 // telemetry session handoff; reads versions 12-14 too
 
 // copyover file header
 struct copyover_header

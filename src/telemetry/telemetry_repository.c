@@ -31,6 +31,9 @@ std::atomic<bool> stop_requested{ false };
 telemetry_repository_config settings{};
 bool initialized = false;
 bool restart_allowed = false; // guarded by health_mutex
+#ifndef __NO_MYSQL__
+bool freshness_verified = false; // survives connection reconnects; reset after join
+#endif
 
 void saturating_add(std::uint64_t &value, std::uint64_t amount)
 {
@@ -117,6 +120,32 @@ bool open_connection()
 	{
 		disconnect();
 		return false;
+	}
+}
+
+enum class fresh_producer_check : std::uint8_t
+{
+	clear,
+	collision,
+	unavailable,
+};
+
+fresh_producer_check check_fresh_producer()
+{
+	if (telemetry_producer_id_is_zero(settings.fresh_producer))
+		return fresh_producer_check::clear;
+	try
+	{
+		auto existing =
+			query("SELECT 1 FROM telemetry_interval WHERE boot_id=" +
+			      std::to_string(settings.fresh_producer.boot_id) + " AND process_id=" +
+			      std::to_string(settings.fresh_producer.process_id) + " LIMIT 1");
+		return mysql_fetch_row(existing.get()) ? fresh_producer_check::collision :
+							 fresh_producer_check::clear;
+	}
+	catch (...)
+	{
+		return fresh_producer_check::unavailable;
 	}
 }
 
@@ -462,9 +491,17 @@ std::uint64_t unsigned_cell(const char *value)
 	return number;
 }
 
+bool record_producer_matches_fresh_identity(const telemetry_record &record)
+{
+	const auto &fresh = settings.fresh_producer;
+	return telemetry_producer_id_is_zero(fresh) ||
+	       (record.header.key.producer.boot_id == fresh.boot_id &&
+		record.header.key.producer.process_id == fresh.process_id);
+}
+
 telemetry_apply_outcome apply_record(const telemetry_record &record)
 {
-	if (!telemetry_record_is_valid(record))
+	if (!record_producer_matches_fresh_identity(record) || !telemetry_record_is_valid(record))
 		return telemetry_apply_outcome::rejected_invalid;
 	const auto values = record_fields(record);
 	const fields replay(values.begin(), values.begin() + 3);
@@ -481,11 +518,18 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 			return telemetry_apply_outcome::rejected_invalid;
 		const auto columns = config_fields(config, false);
 		const fields key(columns.begin(), columns.begin() + 2);
-		auto existing = query("SELECT " + names(columns, true) +
+		// config_id identifies semantic content across producers. Publication
+		// time and local revision belong to each immutable configuration fact,
+		// not to the shared content identity. Retain the first projection row.
+		fields identity_columns;
+		for (const auto &column : columns)
+			if (column.first != "revision" && column.first != "effective_utc_usec")
+				identity_columns.push_back(column);
+		auto existing = query("SELECT " + names(identity_columns, true) +
 				      " FROM telemetry_config WHERE " + where(key) + " FOR UPDATE");
 		if (auto row = mysql_fetch_row(existing.get()))
 		{
-			if (!equal_row(row, columns))
+			if (!equal_row(row, identity_columns))
 				return telemetry_apply_outcome::duplicate_conflict;
 		}
 		else
@@ -732,7 +776,18 @@ telemetry_repository_outcome telemetry_repository_init(telemetry_repository_conf
 #ifndef __NO_MYSQL__
 	mysql_thread_guard thread;
 	const bool opened = thread.ready && open_connection();
-	initialized = opened;
+	bool usable = opened;
+	if (opened && !freshness_verified)
+	{
+		if (check_fresh_producer() != fresh_producer_check::clear)
+		{
+			disconnect();
+			usable = false;
+		}
+		else
+			freshness_verified = true;
+	}
+	initialized = usable;
 	pending_count = 0;
 	std::lock_guard<std::mutex> lock(health_mutex);
 	if (stop_requested.load())
@@ -740,8 +795,8 @@ telemetry_repository_outcome telemetry_repository_init(telemetry_repository_conf
 		health.state = telemetry_health_state::stopping;
 		return telemetry_repository_outcome::stopping;
 	}
-	health.state = opened ? telemetry_health_state::healthy : telemetry_health_state::degraded;
-	return opened ? telemetry_repository_outcome::ready :
+	health.state = usable ? telemetry_health_state::healthy : telemetry_health_state::degraded;
+	return usable ? telemetry_repository_outcome::ready :
 			telemetry_repository_outcome::unavailable;
 #endif
 }
@@ -883,6 +938,7 @@ void telemetry_repository_shutdown(void)
 	disconnect();
 	pending_count = 0;
 	pending = {};
+	freshness_verified = false;
 #endif
 	initialized = false;
 	stop_requested.store(true);
