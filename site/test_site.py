@@ -177,10 +177,13 @@ class PagesTests(unittest.TestCase):
         published = (OUTPUT / "power-atlas/data.json").read_bytes()
         self.assertEqual(published, source)
         self.assertEqual(hashlib.sha256(published).hexdigest(),
-                         "{{TBD:sha256 of the multiclass snapshot}}")
+                         "3516c60376d5cf90c0d08a1c24af074844ebc1d06702e6987cf13e4b4553b98c")
         data = json.loads(published)
         self.assertEqual(len(data["combos"]), 192)
-        self.assertEqual(len(data["specs"]["variants"]), 711)
+        # 711 single-class builds plus the 56 multiclass builds ("Race|Primary/Secondary|MULTI").
+        variants = data["specs"]["variants"]
+        self.assertEqual(len(variants), 767)
+        self.assertEqual(sum(not key.endswith("|MULTI") for key in variants), 711)
         self.assertEqual(data["meta"]["levels"], [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 50, 51, 56])
         for combination in data["combos"].values():
             for level in data["meta"]["levels"]:
@@ -192,6 +195,8 @@ class PagesTests(unittest.TestCase):
         multi = data["multi"]
         self.assertEqual(len(multi["builds"]), 56)
         self.assertEqual({key.split("|")[0] for key in multi["builds"]}, {"Human", "Orc"})
+        self.assertEqual({key.rsplit("|", 1)[0] for key in variants if key.endswith("|MULTI")},
+                         set(multi["builds"]))
         for key, cells in multi["builds"].items():
             primary, secondary = key.split("|")[1].split("/")
             self.assertIn(primary, data["classes"])

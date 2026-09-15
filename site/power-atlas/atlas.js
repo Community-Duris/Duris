@@ -61,9 +61,10 @@ function initAtlas(D) {
   $("gen").textContent = D.meta.generated;
   if (D.meta.field === "full" && D.specs) {
     $("facts-n-label").textContent = "Builds from L31";
-    $("facts-n").textContent = Object.keys(
-      D.specs.variants,
-    ).length.toLocaleString();
+    /* Single-class builds only; the multiclass builds have their own fact. */
+    $("facts-n").textContent = Object.keys(D.specs.variants)
+      .filter((vk) => !vk.endsWith("|MULTI"))
+      .length.toLocaleString();
   }
   const nMulti = D.multi ? Object.keys(D.multi.builds || {}).length : 0;
   if (nMulti) $("facts-multi").textContent = nMulti.toLocaleString();
@@ -193,7 +194,7 @@ function initAtlas(D) {
       f: F.win,
       kind: "win",
       fmt: (v) => (v == null ? "–" : Math.round(v * 100) + "%"),
-      note: "Share of the opponent-build matchups this combination wins: {{TBD:192+56}} at report levels 1–26, {{TBD:711+56}} from level 31.",
+      note: "Share of the opponent-build matchups this combination wins: 248 at report levels 1–26, 767 from level 31.",
     },
     pve: {
       label: "PvE kill rate",
@@ -1356,7 +1357,10 @@ function initAtlas(D) {
   }
   if (params.get("follow") === "1") st.follow = true;
   if (Object.hasOwn(MET, params.get("met"))) st.met = params.get("met");
-  if (Object.hasOwn(SPECS_BY_CLASS, params.get("spec")))
+  if (
+    Object.hasOwn(SPECS_BY_CLASS, params.get("spec")) &&
+    D.classes.includes(params.get("spec"))
+  )
     st.focus = params.get("spec");
   metricSel.value = st.met;
   $("follow").checked = st.follow;
