@@ -72,7 +72,8 @@ bool purchase_transaction_busy(P_char character)
 	return currency_transaction_player_busy(character) ||
 	       collector_transaction_player_busy(character) ||
 	       item_movement_transaction_player_busy(character) ||
-	       bulk_get_player_busy(character) || !currency_transaction_can_submit(character);
+	       bulk_get_player_busy(character) ||
+	       !currency_transaction_can_submit_nonrebasable(character);
 }
 
 bool parse_listing(const char *text, uint64_t *listing)

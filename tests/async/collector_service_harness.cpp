@@ -267,7 +267,7 @@ bool bulk_get_player_busy(P_char target)
 	return target == &character && bulk_get_busy;
 }
 
-bool currency_transaction_can_submit(P_char target)
+bool currency_transaction_can_submit_nonrebasable(P_char target)
 {
 	return target == &character;
 }

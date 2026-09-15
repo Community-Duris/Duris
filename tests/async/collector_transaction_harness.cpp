@@ -286,7 +286,8 @@ int main()
 		completion(rejected, critical_apply_outcome::terminal_failure, EAGAIN);
 	collector_transaction_handle_completions(&rejected_completion, 1);
 	assert(completion_called && !completion_committed && completion_error == EAGAIN &&
-	       wallet_publications == 1 && ownership_publications == 1 && runtime_publications == 1);
+	       wallet_publications == 1 && ownership_publications == 1 &&
+	       runtime_publications == 1);
 
 	completion_called = completion_committed = false;
 	collector::rules policy;
@@ -331,8 +332,7 @@ int main()
 	assert(completion_called && completion_committed && completion_error == ESTALE &&
 	       completion_action == collector_action::collect && ownership_publications == 3 &&
 	       runtime_publications == 2 && wallet_publications == 1 &&
-	       live_collection_validations == 2 &&
-	       live_collection_detaches == 1);
+	       live_collection_validations == 2 && live_collection_detaches == 1);
 	ownership_publication_succeeds = true;
 
 	completion_called = completion_committed = false;
@@ -385,8 +385,8 @@ int main()
 	assert(completion_called && completion_committed && completion_error == 0 &&
 	       completion_action == collector_action::collect && ownership_publications == 4 &&
 	       runtime_publications == 3 && wallet_publications == 1 &&
-	       live_collection_validations == 3 &&
-	       live_collection_detaches == 2 && !collector_transaction_item_busy(205));
+	       live_collection_validations == 3 && live_collection_detaches == 2 &&
+	       !collector_transaction_item_busy(205));
 	assert(!outbox_publications && outbox_resumes == 1);
 	assert(collector_transaction_outbox_delivery(pending_record, nullptr) ==
 	       critical_outbox_delivery_result::delivered);

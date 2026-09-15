@@ -320,7 +320,7 @@ static void test_nested_saved_container_collection(const fs::path &root)
 				result_code == 0 && mutation.changed,
 			"nested saved container collection did not prepare: " + error);
 		require(flatfile_authority_transaction_commit(root.string(), lock,
-								      { mutation.after_image }, &error) ==
+							      { mutation.after_image }, &error) ==
 				flatfile_authority_transaction_result::ok,
 			"nested saved container collection did not commit: " + error);
 	}
@@ -328,7 +328,8 @@ static void test_nested_saved_container_collection(const fs::path &root)
 	std::vector<flatfile_corpse_record> corpses;
 	std::vector<flatfile_saved_world_item_record> saved_items;
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
-				flatfile_world_item_result::ok && saved_items.size() == 1,
+				flatfile_world_item_result::ok &&
+			saved_items.size() == 1,
 		"nested saved container collection lost its saved key: " + error);
 	saved.items.erase(saved.items.begin() + 2);
 	saved.items[2].parent_index = 0;
