@@ -1,10 +1,14 @@
 // Executes the guild store's arithmetic (src/kingdom/kingdom_craft_math.h)
 // against the worked examples in the approved design, so a change to a
-// formula that moves a published price fails here rather than in play.
+// formula that moves a published price fails here rather than in play. It
+// also executes the store's binding token (src/kingdom/kingdom_craft_bind.h),
+// the one thing that decides who may wear a store piece.
 
+#include "kingdom/kingdom_craft_bind.h"
 #include "kingdom/kingdom_craft_math.h"
 
 #include <cstdio>
+#include <cstring>
 
 static int failures = 0;
 
@@ -96,6 +100,33 @@ int main()
 			      row.two ? "2H" : "1H");
 		expect(got.size, row.size, what);
 	}
+
+	// The binding token: the buyer's player id, as a whole word no character
+	// name can equal. A near miss must never bind.
+	char token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
+	expect(kingdom_craft_bind_token(1042, token, sizeof(token)), 1, "token for pid 1042 is written");
+	expect(std::strcmp(token, "kingdom-bound-1042") == 0, 1, "the token reads kingdom-bound-1042");
+	expect(kingdom_craft_bind_token(0, token, sizeof(token)), 0, "no token for pid 0");
+	expect(token[0] == '\0', 1, "a refused token leaves the buffer empty");
+	expect(kingdom_craft_bind_token(-3, token, sizeof(token)), 0, "no token for a negative pid");
+	char tiny[8];
+	expect(kingdom_craft_bind_token(1042, tiny, sizeof(tiny)), 0, "no token cut short");
+	expect(tiny[0] == '\0', 1, "a token cut short leaves nothing behind");
+
+	const char *keys = "steel vambraces vambraces kingdom Tyrus kingdom-bound-1042";
+	expect(kingdom_craft_keywords_bind(keys, 1042), 1, "the buyer's own id binds");
+	expect(kingdom_craft_keywords_bind(keys, 104), 0, "a prefix of the id does not bind");
+	expect(kingdom_craft_keywords_bind(keys, 10420), 0, "a longer id does not bind");
+	expect(kingdom_craft_keywords_bind("kingdom-bound-10420", 1042), 0,
+	       "the token inside a longer one does not bind");
+	expect(kingdom_craft_keywords_bind("xkingdom-bound-1042", 1042), 0,
+	       "the token glued to a word does not bind");
+	expect(kingdom_craft_keywords_bind("kingdom-bound-1042 steel", 1042), 1,
+	       "the token first in the list binds");
+	expect(kingdom_craft_keywords_bind("steel vambraces kingdom tyrus", 1042), 0,
+	       "keywords without a token bind nobody");
+	expect(kingdom_craft_keywords_bind(nullptr, 1042), 0, "no keywords bind nobody");
+	expect(kingdom_craft_keywords_bind(keys, 0), 0, "pid 0 binds nothing");
 
 	if (failures)
 	{
