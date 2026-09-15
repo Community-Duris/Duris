@@ -38,6 +38,8 @@ namespace
 {
 static_assert(GH_ROOM_NUM_VALUES == FLATFILE_GUILDHALL_VALUE_COUNT);
 static_assert(NUM_EXITS == FLATFILE_GUILDHALL_EXIT_COUNT);
+static_assert(GH_ROOM_NUM_TYPES == FLATFILE_GUILDHALL_ROOM_TYPE_COUNT,
+	      "the flat-file validator must accept every guildhall room type");
 
 bool flat_result_succeeded(flatfile_association_result result)
 {

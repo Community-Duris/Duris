@@ -11,6 +11,12 @@
 constexpr size_t FLATFILE_ASSOCIATION_RANK_COUNT = 8;
 constexpr size_t FLATFILE_GUILDHALL_VALUE_COUNT = 8;
 constexpr size_t FLATFILE_GUILDHALL_EXIT_COUNT = 10;
+/* Guildhall room types run 0 .. FLATFILE_GUILDHALL_ROOM_TYPE_COUNT - 1. This must
+ * equal GH_ROOM_NUM_TYPES (guild/guildhall.h), and guildhall_db.c static_asserts
+ * that it does: the validator refuses a catalogue carrying any room outside the
+ * range, and a refused catalogue is a fatal boot error, so a room type added on
+ * one side and not the other has to stop the build rather than the server. */
+constexpr int32_t FLATFILE_GUILDHALL_ROOM_TYPE_COUNT = 11;
 
 struct flatfile_association_member_record
 {
