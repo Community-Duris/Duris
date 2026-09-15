@@ -1011,8 +1011,8 @@ void kingdom_build_work(P_char ch, char *rest)
 		 * under "BUILD CREDITED", and the log names the sum to restore by
 		 * hand. */
 		const bool credited = price <= 0 || guild->add_copper(price);
-		const bool durable =
-			credited && kingdom_persist_paid_change(guild, *realm, "BUILD CREDITED");
+		const bool durable = credited &&
+				     kingdom_persist_paid_change(guild, *realm, "BUILD CREDITED");
 
 		send_to_char(credited ?
 				     "The builders could not raise it, and nothing has been "
@@ -1027,8 +1027,9 @@ void kingdom_build_work(P_char ch, char *rest)
 		logit(LOG_KINGDOM,
 		      "BUILD FAILED: %s (assoc %d) could not raise a %s off vnum %d; %ld copper %s.",
 		      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, price,
-		      credited ? "credited back" :
-				 "COULD NOT BE CREDITED BACK (coin counter full); restore it by hand");
+		      credited ?
+			      "credited back" :
+			      "COULD NOT BE CREDITED BACK (coin counter full); restore it by hand");
 		return;
 	}
 
