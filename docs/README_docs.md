@@ -107,6 +107,8 @@ Kept when the `.spec_system/` tracking tree was retired.
 ## Decisions and diagrams
 
 - [Architecture decision template](adr/0000-template.md)
+- [Refactor investigations #343-#347](adr/0001-refactor-investigation-343-347.md): alternatives,
+  chosen ownership boundaries, performance risks, dependencies, and migration/test gates.
 - [Server architecture diagram](diagrams/duris-server-architecture.html) and
   [database model](diagrams/duris-database-model.html)
 
