@@ -69,7 +69,7 @@ def generate():
         lines += [record_expr(r) + "," for r in fixture["records"]]
         lines += ["};"]
     normal_config = next(f for f in fixtures if f["fixture_id"] == "normal_interval")["configurations"][0]
-    for index, field in enumerate(("environment_id", "season_id")):
+    for index, field in enumerate(("environment_id", "season_id", "interval_usec")):
         config = copy.deepcopy(normal_config)
         config[field] += 1
         config["config_id"] += 1000 + index

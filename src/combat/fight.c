@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/output_style.h"
 #include "item/item_actions.h"
 #include "item/weapon_actions.h"
@@ -8159,6 +8160,13 @@ void StopMercifulAttackers(P_char ch)
 	}
 }
 
+static void telemetry_combat_context_changed(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->desc || ch->desc->connected != CON_PLAYING)
+		return;
+	(void)telemetry_runtime_game_context(ch, ch->desc);
+}
+
 /* start one char fighting another (yes, it is horrible, I know... ) */
 void set_fighting(P_char ch, P_char vict)
 {
@@ -8267,6 +8275,7 @@ void set_fighting(P_char ch, P_char vict)
 	GET_OPPONENT(ch) = victim;
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
+	telemetry_combat_context_changed(ch);
 
 	if (ch->in_room >= 0)
 		gmcp_mark_room_dirty(ch->in_room);
@@ -9164,11 +9173,13 @@ void stop_fighting(P_char ch)
 			logit(LOG_EXIT, "%s not found in combat_list stop_fighting()",
 			      GET_NAME(ch));
 		}
-		tmp->specials.next_fighting = ch->specials.next_fighting;
+		else
+			tmp->specials.next_fighting = ch->specials.next_fighting;
 	}
 
 	ch->specials.next_fighting = NULL;
 	GET_OPPONENT(ch) = NULL;
+	telemetry_combat_context_changed(ch);
 
 	if (affected_by_spell(ch, SPELL_CEGILUNE_BLADE))
 	{

@@ -11,6 +11,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "item/item_actions.h"
 #include "item/artifact_mana.h"
 #include "core/structs.h"
@@ -65,6 +66,48 @@
  */
 extern struct time_info_data time_info;
 extern P_desc descriptor_list;
+
+static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
+{
+	if (cmd == CMD_SAY || cmd == CMD_SAY2 || cmd == CMD_GSHOUT || cmd == CMD_TELL ||
+	    cmd == CMD_WHISPER || cmd == CMD_EMOTE || cmd == CMD_EMOTE2 || cmd == CMD_GSAY ||
+	    cmd == CMD_SHOUT || cmd == CMD_NCHAT || cmd == CMD_CHANNEL)
+		return telemetry_runtime_evidence_kind::communication;
+
+	if (cmd == CMD_CAST || cmd == CMD_USE || cmd == CMD_RECITE || cmd == CMD_QUAFF ||
+	    cmd == CMD_GET || cmd == CMD_TAKE || cmd == CMD_DROP || cmd == CMD_PUT ||
+	    cmd == CMD_GIVE || cmd == CMD_WEAR || cmd == CMD_WIELD || cmd == CMD_REMOVE ||
+	    cmd == CMD_OPEN || cmd == CMD_CLOSE || cmd == CMD_LOCK || cmd == CMD_UNLOCK ||
+	    cmd == CMD_DRINK || cmd == CMD_EAT || cmd == CMD_READ || cmd == CMD_POUR ||
+	    cmd == CMD_GRAB || cmd == CMD_PICK || cmd == CMD_STEAL || cmd == CMD_OFFER ||
+	    cmd == CMD_EXAMINE || cmd == CMD_FORAGE || cmd == CMD_GROUP)
+		return telemetry_runtime_evidence_kind::interaction;
+
+	if ((cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE))
+		return telemetry_runtime_evidence_kind::movement;
+
+	/* IS_AGG_CMD includes cast/use/recite, which are interaction evidence above. */
+	if (IS_AGG_CMD(cmd) && cmd != CMD_CAST && cmd != CMD_USE && cmd != CMD_RECITE)
+		return telemetry_runtime_evidence_kind::combat_participation;
+
+	return telemetry_runtime_evidence_kind::player_action;
+}
+
+static void telemetry_record_recognized_command(P_char source, P_char executor, int cmd)
+{
+	if (!source || !executor || !IS_PC(executor))
+		return;
+	P_desc descriptor = source->desc ? source->desc : executor->desc;
+	if (!descriptor || descriptor->connected != CON_PLAYING || descriptor->str ||
+	    descriptor->showstr_count || cmd == CMD_QUIT || cmd == CMD_RENT || cmd == CMD_CAMP)
+		return;
+	const telemetry_runtime_evidence_kind kind = telemetry_command_evidence_kind(cmd);
+	/* Movement is captured after char_to_room succeeds so a blocked exit does
+	 * not create a second activity observation. */
+	if (kind == telemetry_runtime_evidence_kind::movement)
+		return;
+	(void)telemetry_runtime_game_evidence(executor, descriptor, kind);
+}
 
 extern char debug_mode;
 extern int hometown[];
@@ -1590,6 +1633,8 @@ void command_interpreter(P_char ch, char *argument)
 	if (IS_PC(ch) && IS_SET(ch->specials.act, PLR_AFK))
 	{
 		REMOVE_BIT(ch->specials.act, PLR_AFK);
+		if (ch->desc && ch->desc->connected == CON_PLAYING)
+			(void)telemetry_runtime_game_context(ch, ch->desc);
 	}
 
 	/* The casting gate must run before anything with a side effect: comm.c now
@@ -2137,6 +2182,15 @@ void command_interpreter(P_char ch, char *argument)
 			{
 				return;
 			}
+
+			/* Record only a recognized command that survived parser, state,
+			 * permission, special-proc, and item-teleport gates.  The old comm.c
+			 * hook ran before pager/editor handling and treated rejected input as
+			 * player activity. */
+			if (cmd_info[cmd].req_confirm != 1 ||
+			    (exec_char->desc && (exec_char->desc->confirm_state == CONFIRM_DONE ||
+						 !strcmp(argument + begin + look_at, "confirm"))))
+				telemetry_record_recognized_command(ch, exec_char, cmd);
 
 			// Execute the bloody thing!!!
 			if ((cmd_info[cmd].req_confirm == 1) &&

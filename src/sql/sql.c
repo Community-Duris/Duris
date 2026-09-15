@@ -1126,7 +1126,15 @@ MYSQL *sql_open_telemetry_connection(void)
 	/* No credential fallback or alternate target; never consult DB/sql_pool. */
 	MYSQL *conn = sql_open_verified_connection(0, getenv("TELEMETRY_DB_USER"),
 						   getenv("TELEMETRY_DB_PASSWD"), 2U);
-	if (conn && !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
+	if (!conn)
+		return NULL;
+	// Copyover exec must release this producer's advisory writer lock. An
+	// inherited SQL socket would keep the old connection (and lock) alive,
+	// preventing the replacement telemetry worker from opening its writer.
+	const int fd = sql_telemetry_socket(conn);
+	const int flags = fcntl(fd, F_GETFD);
+	if (flags < 0 || fcntl(fd, F_SETFD, flags | FD_CLOEXEC) < 0 ||
+	    !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
 	{
 		mysql_close(conn);
 		return NULL;
