@@ -1,0 +1,198 @@
+[
+  {
+    "slug": "quick-start",
+    "source": "README.md",
+    "title": "Quick start",
+    "group": "Getting started",
+    "description": "Set up your first local world."
+  },
+  {
+    "slug": "architecture",
+    "source": "docs/reference/ARCHITECTURE.md",
+    "title": "Architecture",
+    "group": "Engineering",
+    "description": "Understand the server and its systems."
+  },
+  {
+    "slug": "building",
+    "source": "docs/guides/BUILDING.md",
+    "title": "Building & testing",
+    "group": "Getting started",
+    "description": "Compile, test, and contribute with confidence."
+  },
+  {
+    "slug": "world-building",
+    "source": "docs/content/AREA_OBJECT_FORMAT.md",
+    "title": "World building",
+    "group": "World building",
+    "description": "Explore the area object format and its extensions."
+  },
+  {
+    "slug": "testing",
+    "source": "docs/guides/TESTING.md",
+    "title": "Testing",
+    "group": "Getting started",
+    "description": "Run focused regressions and the full verification gates."
+  },
+  {
+    "slug": "conventions",
+    "source": "docs/guides/CONVENTIONS.md",
+    "title": "Conventions",
+    "group": "Getting started",
+    "description": "Find your footing in the repository and its workflow."
+  },
+  {
+    "slug": "formatting",
+    "source": "docs/guides/formatting.md",
+    "title": "Code style",
+    "group": "Getting started",
+    "description": "Format changed lines and set up your editor."
+  },
+  {
+    "slug": "versioning",
+    "source": "docs/guides/VERSIONING.md",
+    "title": "Versioning",
+    "group": "Getting started",
+    "description": "Understand versions, releases, and compatibility."
+  },
+  {
+    "slug": "codebase",
+    "source": "docs/reference/CODEBASE.md",
+    "title": "Codebase",
+    "group": "Engineering",
+    "description": "Navigate the server, one module at a time."
+  },
+  {
+    "slug": "database",
+    "source": "docs/reference/DATABASE.md",
+    "title": "Database",
+    "group": "Engineering",
+    "description": "Explore durable state, schema, and typed persistence."
+  },
+  {
+    "slug": "events",
+    "source": "docs/reference/EVENTS.md",
+    "title": "Event scheduler",
+    "group": "Engineering",
+    "description": "Follow deferred work through the timer wheel."
+  },
+  {
+    "slug": "player-saves",
+    "source": "docs/persistence/PLAYER_SAVE_PIPELINE.md",
+    "title": "Player saves",
+    "group": "Engineering",
+    "description": "Trace revisioned checkpoints from request to completion."
+  },
+  {
+    "slug": "critical-commands",
+    "source": "docs/persistence/CRITICAL_COMMAND_PIPELINE.md",
+    "title": "Critical commands",
+    "group": "Engineering",
+    "description": "Understand transactions, journals, replay, and fences."
+  },
+  {
+    "slug": "world-recovery",
+    "source": "docs/persistence/WORLD_RECOVERY_PIPELINE.md",
+    "title": "World recovery",
+    "group": "Engineering",
+    "description": "Learn how immutable world generations are recovered."
+  },
+  {
+    "slug": "migrations",
+    "source": "docs/persistence/IMMUTABLE_MIGRATIONS.md",
+    "title": "Database migrations",
+    "group": "Engineering",
+    "description": "Work with checksummed, ordered schema changes."
+  },
+  {
+    "slug": "durisweb",
+    "source": "docs/reference/api/durisweb.md",
+    "title": "DurisWeb integration",
+    "group": "Engineering",
+    "description": "Connect through the transport and authentication contracts."
+  },
+  {
+    "slug": "health",
+    "source": "docs/reference/api/health.md",
+    "title": "Health API",
+    "group": "Engineering",
+    "description": "Inspect process and database-pool readiness."
+  },
+  {
+    "slug": "docker",
+    "source": "docs/operations/DOCKER.md",
+    "title": "Docker",
+    "group": "Operations",
+    "description": "Run a complete local world with Docker Compose."
+  },
+  {
+    "slug": "configuration",
+    "source": "docs/operations/CONFIGURATION.md",
+    "title": "Configuration",
+    "group": "Operations",
+    "description": "Configure listeners, persistence, Redis, and diagnostics."
+  },
+  {
+    "slug": "runbook",
+    "source": "docs/operations/RUNBOOK.md",
+    "title": "Runbook",
+    "group": "Operations",
+    "description": "Start, maintain, and recover a running server."
+  },
+  {
+    "slug": "backups",
+    "source": "docs/operations/BACKUPS.md",
+    "title": "Backups & recovery",
+    "group": "Operations",
+    "description": "Understand backup destinations and recovery procedures."
+  },
+  {
+    "slug": "help-system",
+    "source": "docs/content/HELP_SYSTEM.md",
+    "title": "Help system",
+    "group": "World building",
+    "description": "Create, import, and render in-game help."
+  },
+  {
+    "slug": "help-style",
+    "source": "docs/content/HELP_STYLE_GUIDE.md",
+    "title": "Help style guide",
+    "group": "World building",
+    "description": "Write clear, consistent help entries for players."
+  },
+  {
+    "slug": "studio-procs",
+    "source": "docs/content/STUDIOPROC.md",
+    "title": "Studio procs",
+    "group": "World building",
+    "description": "Explore the design of custom world behaviors."
+  },
+  {
+    "slug": "chaos-mode",
+    "source": "docs/reference/CHAOS_MODE.md",
+    "title": "Chaos mode",
+    "group": "World building",
+    "description": "Understand character grants, equipment, and craft pouches."
+  },
+  {
+    "slug": "colorization",
+    "source": "docs/guides/WORLD_COLORIZATION.md",
+    "title": "World colorization",
+    "group": "World building",
+    "description": "Bring world descriptions to life with semantic color."
+  },
+  {
+    "slug": "documentation-index",
+    "source": "docs/README_docs.md",
+    "title": "Complete documentation index",
+    "group": "Getting started",
+    "description": "Browse every reference, contract, and legacy document."
+  },
+  {
+    "slug": "project-website",
+    "source": "docs/guides/GITHUB_PAGES.md",
+    "title": "Project website",
+    "group": "Getting started",
+    "description": "Maintain the guide library and publish with GitHub Pages."
+  }
+]
