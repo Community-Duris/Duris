@@ -19,9 +19,10 @@ def main() -> None:
     service = (ROOT / "src/economy/collector_service.c").read_text()
     assert "item_movement_transaction_player_busy" in service
     assert "bulk_get_player_busy" in service
-    assert "COLLECTOR_PURCHASE_SAVE_FENCE_MAX" in service
-    assert "remember_purchase_save_fence" in service
-    assert "purchase_save_fence_overflow" in service
+    assert "COLLECTOR_PURCHASE_FALLBACK_MAX" in service
+    assert "purchase_fallback_recoveries" in service
+    assert "CHAR_RFLAG_COLLECTOR_SAVE_FENCE" in service
+    assert "CHAR_RFLAG_COLLECTOR_SAVE_RELOAD" in service
     assert "collector_service_player_ready" in service
     assert service.index("collector_runtime_find(listing") < service.index(
         "collector_listing_pipeline_next_request_id()"

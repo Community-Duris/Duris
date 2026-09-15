@@ -13,6 +13,8 @@ def main() -> None:
     transaction = (ROOT / "src/economy/collector_transaction.c").read_text()
     assert "player_recovery_item_loaded" in transaction
     assert "replaying the callback" in transaction
+    assert "OBJ_INSIDE" in transaction
+    assert "depth++ < 4096" in transaction
     output = ROOT / "bin" / "tests"
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="collector-transaction-", dir=output) as directory:

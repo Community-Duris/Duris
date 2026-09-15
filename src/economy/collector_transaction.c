@@ -88,7 +88,12 @@ bool player_recovery_item_loaded(const completed_player_recovery &recovery, P_ch
 	{
 		if (object->obj_uid != recovery.result.entry.uid)
 			continue;
-		if (OBJ_CARRIED_BY(object, character) || OBJ_WORN_BY(object, character))
+		P_obj outer = object;
+		size_t depth = 0;
+		while (outer && OBJ_INSIDE(outer) && outer->loc.inside && depth++ < 4096)
+			outer = outer->loc.inside;
+		if (outer && depth < 4096 &&
+		    (OBJ_CARRIED_BY(outer, character) || OBJ_WORN_BY(outer, character)))
 			return true;
 	}
 	return false;

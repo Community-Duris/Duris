@@ -86,6 +86,11 @@ typedef unsigned int uint;
 #define CHAR_RFLAG_NO_DB_BASELINE BIT_3
 /* terminal save owns the items; extraction must only free their memory copies */
 #define CHAR_RFLAG_TERMINAL_ITEMS_SAVED BIT_4
+/* a committed recovery still needs a complete player snapshot before saving */
+#define CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE BIT_5
+#define CHAR_RFLAG_COLLECTOR_SAVE_FENCE BIT_6
+/* no in-memory purchase payload survived; only a cold player load can clear it */
+#define CHAR_RFLAG_COLLECTOR_SAVE_RELOAD BIT_7
 
 /* object runtime flags (not saved to db) */
 #define OBJ_RFLAG_DIRTY_CONTAINER BIT_1

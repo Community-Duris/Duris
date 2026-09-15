@@ -10,7 +10,8 @@ FILES = (SRC / "files.c").read_text()
 COMM = (SRC / "comm.c").read_text()
 FIGHT = (SRC / "fight.c").read_text()
 ACTOBJ = (SRC / "actobj.c").read_text()
-HANDLER = (SRC / "handler.c").read_text()
+HANDLER = (SRC / "world/handler.c").read_text()
+NANNY = (SRC / "account/nanny.c").read_text()
 MOBILE_SPECS = (SRC / "specs.mobile.c").read_text()
 UNDERMOUNTAIN_SPECS = (SRC / "specs.undermountain.c").read_text()
 VERZANAN_SPECS = (SRC / "specs.verzanan.c").read_text()
@@ -211,9 +212,10 @@ assert "obj_to_char_at_end(item, caster)" in raise_completion
 assert "writeCharacter(caster, RENT_CRASH" in raise_completion
 assert "source_items_valid" in raise_publication
 assert "recover_corpse_raise_items" in HANDLER
-assert "fence_corpse_raise_player" in HANDLER
+assert "CHAR_RFLAG_CORPSE_RAISE_SAVE_FENCE" in HANDLER
 assert "corpse_raise_player_save_fenced" in FILES
 assert "corpse_raise_player_ready" in HANDLER
+assert "corpse_raise_player_ready(tmp_ch, false)" in NANNY
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),

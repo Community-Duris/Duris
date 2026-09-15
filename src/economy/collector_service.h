@@ -23,9 +23,9 @@ struct collector_service_health
 void collector_service_command(P_char character, char *arguments, int command);
 void collector_service_pulse(void);
 // Reconcile a player-load/reconnect after the inventory graph is hydrated.
-// A bounded fallback save fence is cleared only when its committed UID is
-// actually present in that player's live carrying/equipment graph.
-void collector_service_player_ready(P_char character);
+// A reconnect may retry retained payloads, but only a cold load may clear the
+// per-character fence left when no payload survived.
+void collector_service_player_ready(P_char character, bool inventory_reloaded);
 // Retry committed purchase materialization before a character is serialized.
 // A false result means the save must remain deferred so player_items cannot be
 // overwritten without the durable purchase in the live graph.

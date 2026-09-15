@@ -65,39 +65,19 @@ struct pending_purchase_recovery
 
 std::unordered_map<uint64_t, pending_purchase_recovery> purchase_recoveries;
 constexpr size_t COLLECTOR_PURCHASE_RECOVERY_MAX = 128;
-
-struct purchase_save_fence
-{
-	uint32_t actor_pid = 0;
-	uint64_t item_uid = 0;
-};
-
-// If the bounded retry table is exhausted, retain an allocation-free fence so
-// a committed purchase cannot be overwritten by the next player save.  A zero
-// item UID is a fail-closed wildcard for malformed committed payloads.
-constexpr size_t COLLECTOR_PURCHASE_SAVE_FENCE_MAX = 256;
-std::array<purchase_save_fence, COLLECTOR_PURCHASE_SAVE_FENCE_MAX> purchase_save_fences = {};
-bool purchase_save_fence_overflow = false;
+// Keep a second bounded retry path for the rare case where the keyed map is
+// full.  The per-character runtime fence below still protects the player if
+// even this payload-retaining array is exhausted.
+constexpr size_t COLLECTOR_PURCHASE_FALLBACK_MAX = 256;
+std::array<pending_purchase_recovery, COLLECTOR_PURCHASE_FALLBACK_MAX>
+	purchase_fallback_recoveries = {};
 collector_service_health health = {};
 
-void remember_purchase_save_fence(uint32_t actor_pid, uint64_t item_uid)
+void clear_purchase_recovery_slot(pending_purchase_recovery &recovery)
 {
-	if (!actor_pid || purchase_save_fence_overflow)
-		return;
-	for (const purchase_save_fence &fence : purchase_save_fences)
-		if (fence.actor_pid == actor_pid &&
-		    (!fence.item_uid || !item_uid || fence.item_uid == item_uid))
-			return;
-	for (purchase_save_fence &fence : purchase_save_fences)
-	{
-		if (fence.actor_pid)
-			continue;
-		fence = { actor_pid, item_uid };
-		return;
-	}
-	// Never turn a durable commit into a writable, incomplete snapshot merely
-	// because the in-memory fail-closed table is full.
-	purchase_save_fence_overflow = true;
+	recovery.payload.reset();
+	recovery.actor_pid = 0;
+	recovery.result = {};
 }
 
 bool player_has_pending_detail(uint32_t pid, bool purchases_only)
@@ -118,15 +98,28 @@ bool player_has_purchase_recovery(uint32_t pid)
 			   [pid](const auto &entry) { return entry.second.actor_pid == pid; });
 }
 
-bool player_has_purchase_save_fence(uint32_t pid)
+bool player_has_fallback_purchase_recovery(uint32_t pid)
 {
-	if (!pid)
-		return false;
-	if (purchase_save_fence_overflow)
-		return true;
-	return std::any_of(purchase_save_fences.begin(), purchase_save_fences.end(),
-			   [pid](const purchase_save_fence &fence)
-			   { return fence.actor_pid == pid; });
+	return pid &&
+	       std::any_of(purchase_fallback_recoveries.begin(), purchase_fallback_recoveries.end(),
+			   [pid](const pending_purchase_recovery &recovery)
+			   { return recovery.actor_pid == pid; });
+}
+
+bool player_has_purchase_save_fence(P_char character)
+{
+	return character && IS_PC(character) && GET_PID(character) > 0 &&
+	       IS_SET(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_FENCE);
+}
+
+void clear_purchase_save_fence_if_recovered(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
+	    IS_SET(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_RELOAD))
+		return;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
+	if (!player_has_purchase_recovery(pid) && !player_has_fallback_purchase_recovery(pid))
+		REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_FENCE);
 }
 
 bool purchase_transaction_busy(P_char character)
@@ -137,7 +130,7 @@ bool purchase_transaction_busy(P_char character)
 	       bulk_get_player_busy(character) ||
 	       (character && GET_PID(character) > 0 &&
 		(player_has_purchase_recovery(static_cast<uint32_t>(GET_PID(character))) ||
-		 player_has_purchase_save_fence(static_cast<uint32_t>(GET_PID(character))))) ||
+		 player_has_purchase_save_fence(character))) ||
 	       !currency_transaction_can_submit_nonrebasable(character);
 }
 
@@ -457,6 +450,32 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 	return true;
 }
 
+bool queue_purchase_fallback(const collector_command_result &result,
+			     const collector_command_payload &payload)
+{
+	if (!payload.actor_pid)
+		return false;
+	auto available = std::find_if(purchase_fallback_recoveries.begin(),
+				      purchase_fallback_recoveries.end(),
+				      [](const pending_purchase_recovery &recovery)
+				      { return !recovery.actor_pid; });
+	if (available == purchase_fallback_recoveries.end())
+		return false;
+	try
+	{
+		auto retained_payload = std::make_unique<collector_command_payload>(payload);
+		available->actor_pid = payload.actor_pid;
+		available->payload = std::move(retained_payload);
+		available->result = result;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return false;
+}
+
 bool queue_purchase_recovery(const collector_command_result &result,
 			     const collector_command_payload &payload)
 {
@@ -464,26 +483,26 @@ bool queue_purchase_recovery(const collector_command_result &result,
 								  payload.listing;
 	if (!payload.actor_pid)
 		return false;
-	if (!recovery_key || (purchase_recoveries.size() >= COLLECTOR_PURCHASE_RECOVERY_MAX &&
-			      purchase_recoveries.find(recovery_key) == purchase_recoveries.end()))
+	if (recovery_key && (purchase_recoveries.size() < COLLECTOR_PURCHASE_RECOVERY_MAX ||
+			     purchase_recoveries.find(recovery_key) != purchase_recoveries.end()))
 	{
-		remember_purchase_save_fence(payload.actor_pid, recovery_key);
-		return false;
+		try
+		{
+			auto retained_payload =
+				std::make_unique<collector_command_payload>(payload);
+			purchase_recoveries.insert_or_assign(
+				recovery_key,
+				pending_purchase_recovery{ payload.actor_pid,
+							   std::move(retained_payload), result });
+			return true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			// A second bounded payload path below still gives the online buyer a
+			// retryable recovery instead of relying only on a save fence.
+		}
 	}
-	try
-	{
-		auto retained_payload = std::make_unique<collector_command_payload>(payload);
-		purchase_recoveries.insert_or_assign(
-			recovery_key,
-			pending_purchase_recovery{ payload.actor_pid, std::move(retained_payload),
-						   result });
-		return true;
-	}
-	catch (const std::bad_alloc &)
-	{
-		remember_purchase_save_fence(payload.actor_pid, recovery_key);
-		return false;
-	}
+	return queue_purchase_fallback(result, payload);
 }
 
 bool recover_purchase_for_player(P_char character)
@@ -508,9 +527,29 @@ bool recover_purchase_for_player(P_char character)
 			"Your committed collector purchase is now available in your inventory.\r\n",
 			character);
 		purchase_recoveries.erase(current);
+		clear_purchase_save_fence_if_recovered(character);
 	}
-	if (player_has_purchase_save_fence(pid))
+	for (pending_purchase_recovery &recovery : purchase_fallback_recoveries)
+	{
+		if (recovery.actor_pid != pid)
+			continue;
+		if (!recovery.payload ||
+		    !materialize_purchase(character, recovery.result, *recovery.payload))
+		{
+			complete = false;
+			continue;
+		}
+		send_to_char(
+			"Your committed collector purchase is now available in your inventory.\r\n",
+			character);
+		clear_purchase_recovery_slot(recovery);
+	}
+	const bool fallback_recovery_pending = player_has_fallback_purchase_recovery(pid);
+	if (fallback_recovery_pending ||
+	    IS_SET(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_RELOAD))
 		complete = false;
+	if (!fallback_recovery_pending)
+		clear_purchase_save_fence_if_recovered(character);
 	return complete;
 }
 
@@ -547,6 +586,16 @@ void purchase_completed(P_char character, bool committed, const collector_comman
 				  "live_materialization_failed", "listing=%" PRIu64 " uid=%" PRIu64,
 				  payload.listing, payload.selected_item_uid);
 		const bool retry_queued = queue_purchase_recovery(result, payload);
+		if (!retry_queued)
+		{
+			SET_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_FENCE);
+			SET_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_RELOAD);
+		}
+		else
+		{
+			SET_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_FENCE);
+			REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_RELOAD);
+		}
 		send_to_char(
 			retry_queued ?
 				"Your purchase committed, but live restoration is still pending. The item remains safely recorded; this session will not be saved until restoration succeeds.\r\n" :
@@ -742,6 +791,21 @@ void collector_service_pulse(void)
 			"Your committed collector purchase is now available in your inventory.\r\n",
 			character);
 		purchase_recoveries.erase(current);
+		clear_purchase_save_fence_if_recovered(character);
+	}
+	for (pending_purchase_recovery &recovery : purchase_fallback_recoveries)
+	{
+		if (!recovery.actor_pid)
+			continue;
+		P_char character = find_player_by_pid(recovery.actor_pid);
+		if (!character || !recovery.payload ||
+		    !materialize_purchase(character, recovery.result, *recovery.payload))
+			continue;
+		send_to_char(
+			"Your committed collector purchase is now available in your inventory.\r\n",
+			character);
+		clear_purchase_recovery_slot(recovery);
+		clear_purchase_save_fence_if_recovered(character);
 	}
 	collector_listing_result results[COLLECTOR_LISTING_MAX_COMPLETIONS] = {};
 	const size_t count = collector_listing_pipeline_pulse_for(
@@ -755,7 +819,7 @@ bool collector_service_player_busy(P_char character)
 	return character && IS_PC(character) && GET_PID(character) > 0 &&
 	       (player_has_pending_detail(static_cast<uint32_t>(GET_PID(character)), true) ||
 		player_has_purchase_recovery(static_cast<uint32_t>(GET_PID(character))) ||
-		player_has_purchase_save_fence(static_cast<uint32_t>(GET_PID(character))));
+		player_has_purchase_save_fence(character));
 }
 
 collector_service_health collector_service_health_copy(void)
@@ -774,33 +838,32 @@ void collector_service_reset_for_tests(void)
 	}
 	pending_details.clear();
 	purchase_recoveries.clear();
-	purchase_save_fences.fill({});
-	purchase_save_fence_overflow = false;
+	for (pending_purchase_recovery &recovery : purchase_fallback_recoveries)
+		clear_purchase_recovery_slot(recovery);
 	health = {};
 }
 
-void collector_service_player_ready(P_char character)
+void collector_service_player_ready(P_char character, bool inventory_reloaded)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
 		return;
 	// A payload-backed retry can be resolved immediately after the normal item
-	// load.  The fixed fence below covers only the case where even that payload
-	// could not be retained in memory.
+	// load.  The per-character reload bit covers only the case where even the
+	// bounded payload paths could not retain a recovery.
 	(void)recover_purchase_for_player(character);
-	if (purchase_save_fence_overflow)
-		return;
+	// A cold login has just hydrated the authoritative player_items snapshot.
+	// A reconnect only reuses the existing graph, so clearing the fence there
+	// would re-open the exact save race this guard is meant to prevent.
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
-	for (purchase_save_fence &fence : purchase_save_fences)
+	if (inventory_reloaded && !player_has_purchase_recovery(pid) &&
+	    !player_has_fallback_purchase_recovery(pid))
 	{
-		if (fence.actor_pid != pid || !fence.item_uid)
-			continue;
-		P_obj item = find_live_item(fence.item_uid);
-		if (item && (OBJ_CARRIED_BY(item, character) || OBJ_WORN_BY(item, character)))
-			fence = {};
+		REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_FENCE);
+		REMOVE_BIT(character->runtime_flags, CHAR_RFLAG_COLLECTOR_SAVE_RELOAD);
 	}
 }
 
 bool collector_service_recover_player(P_char character)
 {
-	return recover_purchase_for_player(character);
+	return recover_purchase_for_player(character) && !player_has_purchase_save_fence(character);
 }
