@@ -91,6 +91,12 @@ player_snapshot make_death(player_revision_t revision)
 	refused.vnum = 501;
 	death.corpse.push_back(refused);
 
+	player_item_snapshot captured_child = {};
+	captured_child.parent_index = 0;
+	captured_child.object_uid = 203;
+	captured_child.vnum = 501;
+	death.corpse.push_back(captured_child);
+
 	player_item_snapshot wallet = {};
 	wallet.parent_index = 0;
 	wallet.object_uid = death.wallet_pile_uid;
@@ -101,6 +107,9 @@ player_snapshot make_death(player_revision_t revision)
 	death.corpse.push_back(wallet);
 
 	death.custody.push_back({ { 201, 201, 0, 3, 501, item_custody_state::active },
+				  { item_owner_type::player, PROBE_PID, 0 },
+				  5 });
+	death.custody.push_back({ { 203, 201, 201, 1, 501, item_custody_state::active },
 				  { item_owner_type::player, PROBE_PID, 0 },
 				  5 });
 	death.custody.push_back(
@@ -156,7 +165,7 @@ int main()
 		"INSERT INTO item_owner_revision (owner_type,owner_id,revision) VALUES (1,1,5),(1,2,7)");
 	execute(connection,
 		"INSERT INTO item_current_owner (item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,item_revision,vnum,state) VALUES "
-		"(201,201,NULL,1,1,3,501,1),(203,201,201,1,1,1,501,1),(204,204,NULL,1,2,9,501,1),(205,205,NULL,2,9001,6,501,1)");
+		"(201,201,NULL,1,1,3,501,1),(203,201,201,1,1,1,501,1),(204,204,NULL,1,2,9,501,1),(205,205,NULL,2,9001,6,501,1),(206,206,NULL,1,1,8,501,1),(207,201,201,1,1,1,501,1)");
 
 	const player_snapshot death = make_death(5);
 	player_save_apply_result applied = player_snapshot_repository_apply(connection, death);
@@ -172,8 +181,8 @@ int main()
 		"the death did not advance the durable player revision");
 	require(scalar(connection,
 		       "SELECT GROUP_CONCAT(CONCAT_WS(':',item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_id,item_revision,state) ORDER BY item_uid) FROM item_current_owner") ==
-			"201:201:0:1:4:3,203:201:201:1:2:3,204:204:0:2:9:1,205:205:0:9001:6:1",
-		"death quarantine lost custody identity, missed a durable child, or changed another owner");
+			"201:201:0:1:4:3,203:201:201:1:2:3,204:204:0:2:9:1,205:205:0:9001:6:1,206:206:0:1:8:1,207:201:201:1:2:3",
+		"death quarantine lost captured custody identity, preserved a live world item, or changed another owner");
 	require(scalar(connection,
 		       "SELECT revision FROM item_owner_revision WHERE owner_type=1 AND owner_id=1") ==
 			"6",
@@ -189,7 +198,7 @@ int main()
 		       "SELECT GROUP_CONCAT(CONCAT_WS(':',item_uid,root_item_uid,item_revision,"
 		       "vnum,state,owner_type,owner_id,owner_revision) ORDER BY item_uid) FROM "
 		       "player_death_custody WHERE pid=1 AND save_revision=5") ==
-			"201:201:3:501:1:1:1:5,202:202:18446744073709551615:3:0:0:0:0",
+			"201:201:3:501:1:1:1:5,202:202:18446744073709551615:3:0:0:0:0,203:201:1:501:1:1:5",
 		"the death disposition lost its disputed custody evidence");
 
 	// The record decodes back to the same corpse topology, UIDs and wallet.
@@ -207,12 +216,13 @@ int main()
 			decoded.death.has_value(),
 		"the stored death payload did not decode");
 	mysql_free_result(payload_rows);
-	require(decoded.death->corpse.size() == 3 && decoded.death->corpse[0].object_uid == 200 &&
+	require(decoded.death->corpse.size() == 4 && decoded.death->corpse[0].object_uid == 200 &&
 			decoded.death->corpse[0].values[CORPSE_SAVEID] == 9001 &&
 			decoded.death->corpse[1].object_uid == 201 &&
-			decoded.death->corpse[2].object_uid == 202 &&
+			decoded.death->corpse[2].object_uid == 203 &&
+			decoded.death->corpse[3].object_uid == 202 &&
 			decoded.death->wallet_before == std::array<int32_t, 4>{ 11, 12, 13, 14 } &&
-			decoded.death->custody.size() == 2 && decoded.items.empty(),
+			decoded.death->custody.size() == 3 && decoded.items.empty(),
 		"the stored death payload lost the refused corpse contents");
 
 	// Replay must not repeat the death, and must not duplicate the record.
