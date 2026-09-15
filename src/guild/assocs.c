@@ -470,10 +470,10 @@ bool Guild::add_copper(long amount)
 		return TRUE;
 	}
 
-	write_transaction_to_ledger("System", "refunded",
-				    coins_to_string(static_cast<int>(add_p), static_cast<int>(add_g),
-						    static_cast<int>(add_s), static_cast<int>(add_c),
-						    "&+y"));
+	write_transaction_to_ledger(
+		"System", "refunded",
+		coins_to_string(static_cast<int>(add_p), static_cast<int>(add_g),
+				static_cast<int>(add_s), static_cast<int>(add_c), "&+y"));
 	return TRUE;
 }
 

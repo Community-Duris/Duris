@@ -1007,10 +1007,11 @@ void kingdom_build_work(P_char ch, char *rest)
 		const bool credited = price <= 0 || guild->add_copper(price);
 		const bool durable = kingdom_persist_paid_change(guild, *realm, "BUILD CREDITED");
 
-		send_to_char(credited ? "The builders could not raise it, and nothing has been "
-					"charged. Please petition.\r\n" :
-					"The builders could not raise it, and the treasury could not "
-					"be credited back. Please petition.\r\n",
+		send_to_char(credited ?
+				     "The builders could not raise it, and nothing has been "
+				     "charged. Please petition.\r\n" :
+				     "The builders could not raise it, and the treasury could not "
+				     "be credited back. Please petition.\r\n",
 			     ch);
 		if (!durable)
 		{

@@ -104,11 +104,14 @@ int main()
 	// The binding token: the buyer's player id, as a whole word no character
 	// name can equal. A near miss must never bind.
 	char token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
-	expect(kingdom_craft_bind_token(1042, token, sizeof(token)), 1, "token for pid 1042 is written");
-	expect(std::strcmp(token, "kingdom-bound-1042") == 0, 1, "the token reads kingdom-bound-1042");
+	expect(kingdom_craft_bind_token(1042, token, sizeof(token)), 1,
+	       "token for pid 1042 is written");
+	expect(std::strcmp(token, "kingdom-bound-1042") == 0, 1,
+	       "the token reads kingdom-bound-1042");
 	expect(kingdom_craft_bind_token(0, token, sizeof(token)), 0, "no token for pid 0");
 	expect(token[0] == '\0', 1, "a refused token leaves the buffer empty");
-	expect(kingdom_craft_bind_token(-3, token, sizeof(token)), 0, "no token for a negative pid");
+	expect(kingdom_craft_bind_token(-3, token, sizeof(token)), 0,
+	       "no token for a negative pid");
 	char tiny[8];
 	expect(kingdom_craft_bind_token(1042, tiny, sizeof(tiny)), 0, "no token cut short");
 	expect(tiny[0] == '\0', 1, "a token cut short leaves nothing behind");

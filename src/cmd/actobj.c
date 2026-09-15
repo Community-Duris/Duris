@@ -167,8 +167,9 @@ static bool can_equip_soulbound_item(P_char actor, P_obj object, bool show_rejec
 	 * item keeps that test unchanged. */
 	const bool owns_item = IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND) ?
 				       account_bound_reward_owner(actor, object) :
-			       kingdom_store_piece(object) ? kingdom_store_piece_owner(actor, object) :
-							     isname(GET_NAME(actor), object->name);
+			       kingdom_store_piece(object) ?
+				       kingdom_store_piece_owner(actor, object) :
+				       isname(GET_NAME(actor), object->name);
 	if (!owns_item && show_rejection)
 		send_to_char(
 			"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",

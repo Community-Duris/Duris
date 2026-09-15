@@ -306,8 +306,8 @@ static const kingdom_craft_item kingdom_craft_catalogue[] = {
 	{ "quarterstaff", "ash quarterstaff", false, GH_ROOM_TYPE_FORGE, KCRAFT_WEAPON, ITEM_WIELD,
 	  20, WEAPON_STAFF, true, 0, KCRAFT_WEAPON_LINES(4), KCRAFT_ONE_WAY, MAT_HARDWOOD, 8 },
 	{ "breastplate", "steel breastplate", false, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR,
-	  ITEM_WEAR_BODY, 15, 0, false, 25, KCRAFT_LINE(APPLY_HIT, 15), KCRAFT_ONE_WAY,
-	  MAT_STEEL, 25 },
+	  ITEM_WEAR_BODY, 15, 0, false, 25, KCRAFT_LINE(APPLY_HIT, 15), KCRAFT_ONE_WAY, MAT_STEEL,
+	  25 },
 	{ "helm", "steel helm", false, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_HEAD, 10, 0,
 	  false, 10, KCRAFT_LINE(APPLY_HIT, 8), KCRAFT_ONE_WAY, MAT_STEEL, 6 },
 	{ "vambraces", "steel vambraces", true, GH_ROOM_TYPE_FORGE, KCRAFT_ARMOR, ITEM_WEAR_ARMS,
@@ -340,8 +340,8 @@ static const kingdom_craft_item kingdom_craft_catalogue[] = {
 	  ITEM_WEAR_WRIST, 8, 0, false, 4, KCRAFT_NO_LINES,
 	  KCRAFT_FORMS(kingdom_craft_bracelet_forms), MAT_SILVER, 1 },
 	{ "necklace", "silver necklace", false, GH_ROOM_TYPE_JEWELLER, KCRAFT_ARMOR, ITEM_WEAR_NECK,
-	  8, 0, false, 4, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_necklace_forms),
-	  MAT_SILVER, 1 },
+	  8, 0, false, 4, KCRAFT_NO_LINES, KCRAFT_FORMS(kingdom_craft_necklace_forms), MAT_SILVER,
+	  1 },
 };
 
 #undef KCRAFT_FORMS
