@@ -21,6 +21,8 @@ static const char *expected_password = "fixture_ingest_only";
 static bool fail_after_connect = false;
 static bool fail_next_new = false;
 static unsigned int closes = 0;
+static constexpr unsigned int LOCK_ATTEMPTS = 10;
+static constexpr unsigned int LOCK_WAIT_SECONDS = 1;
 extern "C" void *__real__Znwm(std::size_t);
 extern "C" void *__wrap__Znwm(std::size_t size)
 {
@@ -78,14 +80,24 @@ static void env(const char *key, const char *value)
 }
 static void acquire_lock(MYSQL *conn, const char *name)
 {
-	char sql[160];
-	assert(std::snprintf(sql, sizeof(sql), "SELECT GET_LOCK('%s',2)", name) > 0);
-	assert(mysql_real_query(conn, sql, std::strlen(sql)) == 0);
-	MYSQL_RES *result = mysql_store_result(conn);
-	assert(result);
-	MYSQL_ROW row = mysql_fetch_row(result);
-	assert(row && row[0] && std::strcmp(row[0], "1") == 0);
-	mysql_free_result(result);
+	// Closing an inherited socket is asynchronous from the server's point of
+	// view. Retry the lock acquisition within a bounded ten-second deadline so
+	// CI load does not turn normal disconnect latency into a flaky assertion.
+	for (unsigned int attempt = 0; attempt < LOCK_ATTEMPTS; ++attempt)
+	{
+		char sql[160];
+		assert(std::snprintf(sql, sizeof(sql), "SELECT GET_LOCK('%s',%u)", name,
+				     LOCK_WAIT_SECONDS) > 0);
+		assert(mysql_real_query(conn, sql, std::strlen(sql)) == 0);
+		MYSQL_RES *result = mysql_store_result(conn);
+		assert(result);
+		MYSQL_ROW row = mysql_fetch_row(result);
+		const bool acquired = row && row[0] && std::strcmp(row[0], "1") == 0;
+		mysql_free_result(result);
+		if (acquired)
+			return;
+	}
+	assert(false && "timed out acquiring telemetry advisory lock");
 }
 static void exec_releases_socket_and_lock(const char *executable)
 {
