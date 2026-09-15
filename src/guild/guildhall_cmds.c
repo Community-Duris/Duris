@@ -13,6 +13,7 @@
 #include "core/utils.h"
 #include <math.h>
 #include <string.h>
+#include <algorithm>
 #include "guild/assocs.h"
 #include "guild/guildhall.h"
 #include "kingdom/kingdom.h"
@@ -1351,12 +1352,23 @@ bool construct_workshop_room(int id, int from_vnum, int dir, int type)
 	if (!gh->save())
 	{
 		/* Storage still holds the hall as it was, so put memory back to
-		 * match: add_room() pushed the new room last, and
-		 * next_guildhall_room_vnum() marked its vnum ROOM_GUILD. */
+		 * match, in all three places the new room reached:
+		 *
+		 *   - the hall's own exit table and room list. The room is taken out
+		 *     BY IDENTITY, not by position: nothing promises it is still the
+		 *     last entry once save() has run.
+		 *   - the live world's exits. Nothing on this path connects them --
+		 *     that is GuildhallRoom::init()'s work at the reload a failed
+		 *     save never reaches -- but an exit left in world[] would outlive
+		 *     the room it leads to, so any between the two rooms comes down.
+		 *   - the ROOM_GUILD mark next_guildhall_room_vnum() put on the vnum.
+		 */
 		logit(LOG_GUILDHALLS,
 		      "construct_workshop_room(): couldn't save guildhall %d; room undone", gh->id);
 		from_room->exits[dir] = -1;
-		gh->rooms.pop_back();
+		gh->rooms.erase(std::remove(gh->rooms.begin(), gh->rooms.end(), room),
+				gh->rooms.end());
+		disconnect_rooms(from_room->vnum, vnum);
 		delete room;
 		REMOVE_BIT(world[real_room0(vnum)].room_flags, ROOM_GUILD);
 		return FALSE;
