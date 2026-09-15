@@ -29,6 +29,7 @@
 #include "world/map.h"
 #include "classes/necromancy.h"
 #include "economy/nexus_stones.h"
+#include "economy/currency_transaction.h"
 #include "combat/range.h"
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
@@ -10821,6 +10822,171 @@ int fooquest_mob(P_char ch, P_char pl, int cmd, char *arg)
 
 int get_map_room(int zone_id);
 
+enum class world_quest_payment_action : uint8_t
+{
+	abandon,
+	map,
+	quest,
+};
+
+struct world_quest_payment_context
+{
+	world_quest_payment_action action;
+	int32_t fee;
+	int32_t giver_vnum;
+};
+
+static_assert(sizeof(world_quest_payment_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
+
+static void world_quest_report_creation_failure(P_char pl, quest_creation_failure failure)
+{
+	if (!pl)
+		return;
+
+	if (failure == QUEST_CREATION_NO_ELIGIBLE_ZONE)
+	{
+		send_to_char(
+			"Hmm, I can't find an eligible quest zone for you right now. Try one of my colleagues around the world.\r\n",
+			pl);
+	}
+	else if (failure == QUEST_CREATION_NO_ELIGIBLE_TARGET)
+	{
+		send_to_char(
+			"Hmm, I found quest zones, but no suitable quest target is available right now. Try one of my colleagues around the world.\r\n",
+			pl);
+	}
+	else if (GET_LEVEL(pl) >= MAXLVLMORTAL)
+	{
+		send_to_char(
+			"Hmm, I can't find a suitable quest for someone of your experience right now. Try one of my colleagues around the world.\r\n",
+			pl);
+	}
+	else
+	{
+		send_to_char(
+			"Hmm, I'm unable to help you right now, try one of my colleagues around the world, or grab a few levels and come back.\r\n",
+			pl);
+	}
+}
+
+static void world_quest_refund_payment(P_char pl, int fee)
+{
+	if (!pl || fee <= 0)
+		return;
+
+	send_to_char("\r\n&=LWYou get your money back.\r\n", pl);
+	ADD_MONEY(pl, fee);
+}
+
+static void world_quest_payment_committed(P_char pl, bool committed,
+					   const currency_command_result & /*result*/,
+					   unsigned int error_code, const uint8_t *raw_context,
+					   size_t context_size)
+{
+	world_quest_payment_context payment = {};
+	if (!pl || !pl->only.pc || !raw_context || context_size != sizeof(payment))
+	{
+		logit(LOG_WIZ,
+		      "World quest payment callback lost its player or context (committed=%d error=%u)",
+		      committed, error_code);
+		if (pl && !committed)
+			send_to_char(
+				"Your world-quest payment was rejected; your quest was not changed.\r\n",
+				pl);
+		return;
+	}
+	memcpy(&payment, raw_context, sizeof(payment));
+	if (payment.fee <= 0 || payment.giver_vnum <= 0 ||
+	    (payment.action != world_quest_payment_action::abandon &&
+	     payment.action != world_quest_payment_action::map &&
+	     payment.action != world_quest_payment_action::quest))
+	{
+		logit(LOG_WIZ,
+		      "World quest payment callback received invalid context for pid %d (committed=%d error=%u)",
+		      GET_PID(pl), committed, error_code);
+		if (!committed)
+			send_to_char(
+				"Your world-quest payment was rejected; your quest was not changed.\r\n",
+				pl);
+		return;
+	}
+
+	if (!committed)
+	{
+		logit(LOG_DEBUG, "World quest payment rejected for pid %d (error %u)", GET_PID(pl),
+		      error_code);
+		send_to_char(
+			"Your world-quest payment could not be completed; your quest was not changed.\r\n",
+			pl);
+		return;
+	}
+
+	switch (payment.action)
+	{
+	case world_quest_payment_action::abandon:
+		if (!pl->only.pc->quest_active || pl->only.pc->quest_accomplished)
+		{
+			send_to_char(
+				"Your quest changed before the payment settled, so the charge is being returned.\r\n",
+				pl);
+			world_quest_refund_payment(pl, payment.fee);
+			return;
+		}
+		send_to_char("You hand over the money.\r\n", pl);
+		send_to_char("You no longer have a task.\r\n", pl);
+		// Make it so pl doesn't get the same quest again; once you fail, you fail.
+		// This also makes the quest count as one of today's quests.
+		if (pl->only.pc->quest_type == FIND_AND_KILL &&
+		    pl->only.pc->quest_kill_how_many > 0)
+			sql_world_quest_finished(pl, 0);
+		resetQuest(pl);
+		gmcp_quest_status(pl);
+		return;
+
+	case world_quest_payment_action::map:
+		if (pl->only.pc->quest_active != 1 || pl->only.pc->quest_map_bought == 1)
+		{
+			send_to_char(
+				"Your quest changed before the payment settled, so the charge is being returned.\r\n",
+				pl);
+			world_quest_refund_payment(pl, payment.fee);
+			return;
+		}
+		send_to_char("You hand over the money.\r\n", pl);
+		send_to_char("Take a quick peek at this note:\r\n", pl);
+		quest_buy_map(pl);
+		return;
+
+	case world_quest_payment_action::quest:
+		// A quest may have completed or another command may have changed the
+		// state while the debit was in flight.  Never charge for a stale request.
+		if (pl->only.pc->quest_active || pl->only.pc->quest_accomplished ||
+		    sql_world_quest_can_do_another(pl) < 1)
+		{
+			send_to_char(
+				"Your quest state changed before the payment settled, so the charge is being returned.\r\n",
+				pl);
+			world_quest_refund_payment(pl, payment.fee);
+			return;
+		}
+
+		quest_creation_failure failure = QUEST_CREATION_NO_FAILURE;
+		if (createQuestForGiverVnum(pl, payment.giver_vnum, &failure))
+		{
+			send_to_char("You hand over the money.\r\n", pl);
+			do_quest(pl, writable_arg(""), 0);
+			send_to_char("Remember, you can always type 'quest' to see your current quest.\r\n",
+				     pl);
+			gmcp_quest_status(pl);
+			return;
+		}
+
+		world_quest_report_creation_failure(pl, failure);
+		world_quest_refund_payment(pl, payment.fee);
+		return;
+	}
+}
+
 int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
@@ -10910,19 +11076,18 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 				return (TRUE);
 			}
 
-			SUB_MONEY(pl, temp, 0);
-			send_to_char("You hand over the money.\r\n", pl);
-
-			send_to_char("You no longer have a task.\r\n", pl);
-			// Make it so pl doesn't get the same quest again; once you fail, you fail.
-			//   This also makes quest count as one of "today's quests."
-			if (pl->only.pc->quest_type == FIND_AND_KILL &&
-			    pl->only.pc->quest_kill_how_many > 0)
+			const world_quest_payment_context payment = {
+				world_quest_payment_action::abandon, temp, GET_VNUM(ch)};
+			if (!currency_transaction_submit_wallet_value(
+				    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
+				    GET_VNUM(ch), critical_source_site::command,
+				    critical_deadline_class::interactive, world_quest_payment_committed,
+				    &payment, sizeof(payment)))
 			{
-				sql_world_quest_finished(pl, 0);
+				send_to_char(
+					"The bartender's payment service is busy; your quest was not changed. Please try again.\r\n",
+					pl);
 			}
-			resetQuest(pl);
-			gmcp_quest_status(pl);
 			return TRUE;
 		}
 
@@ -10942,6 +11107,13 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 				mobsay(ch, "Sorry, but I don't have any maps to that zone.");
 				return TRUE;
 			}
+			if (pl->only.pc->quest_map_bought == 1)
+			{
+				send_to_char(
+					"Your memory is bad, you dont have to pay me for this, you can just type 'quest'.\r\n",
+					pl);
+				return TRUE;
+			}
 
 			temp = 10 * GET_LEVEL(pl);
 
@@ -10959,10 +11131,18 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 				return (TRUE);
 			}
 
-			SUB_MONEY(pl, temp, 0);
-			send_to_char("You hand over the money.\r\n", pl);
-			mobsay(ch, "Take a quick peek at this note:");
-			quest_buy_map(pl);
+			const world_quest_payment_context payment = {
+				world_quest_payment_action::map, temp, GET_VNUM(ch)};
+			if (!currency_transaction_submit_wallet_value(
+				    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
+				    GET_VNUM(ch), critical_source_site::command,
+				    critical_deadline_class::interactive, world_quest_payment_committed,
+				    &payment, sizeof(payment)))
+			{
+				send_to_char(
+					"The bartender's payment service is busy; your map was not changed. Please try again.\r\n",
+					pl);
+			}
 			return TRUE;
 		}
 
@@ -11035,37 +11215,18 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			return (TRUE);
 		}
 
-		SUB_MONEY(pl, temp, 0);
-		send_to_char("You hand over the money.\r\n", pl);
-
-		quest_creation_failure failure = QUEST_CREATION_NO_FAILURE;
-		if (createQuest(pl, ch, &failure))
+		const world_quest_payment_context payment = {
+			world_quest_payment_action::quest, temp, GET_VNUM(ch)};
+		if (!currency_transaction_submit_wallet_value(
+			    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
+			    GET_VNUM(ch), critical_source_site::command,
+			    critical_deadline_class::interactive, world_quest_payment_committed,
+			    &payment, sizeof(payment)))
 		{
-			do_quest(pl, writable_arg(""), 0);
-			mobsay(ch,
-			       "Remember, you can always type 'quest' to see your current quest.");
-			gmcp_quest_status(pl);
-			return TRUE;
+			send_to_char(
+				"The bartender's payment service is busy; your quest was not changed. Please try again.\r\n",
+				pl);
 		}
-
-		if (failure == QUEST_CREATION_NO_ELIGIBLE_ZONE)
-		{
-			mobsay(ch,
-			       "Hmm, I can't find an eligible quest zone for you right now. Try one of my colleagues around the world.");
-		}
-		else if (failure == QUEST_CREATION_NO_ELIGIBLE_TARGET)
-		{
-			mobsay(ch,
-			       "Hmm, I found quest zones, but no suitable quest target is available right now. Try one of my colleagues around the world.");
-		}
-		else if (GET_LEVEL(pl) >= MAXLVLMORTAL)
-			mobsay(ch,
-			       "Hmm, I can't find a suitable quest for someone of your experience right now. Try one of my colleagues around the world.");
-		else
-			mobsay(ch,
-			       "Hmm, I'm unable to help you right now, try one of my colleagues around the world, or grab a few levels and come back.");
-		send_to_char("\r\n&=LWYou get your money back.\r\n", pl);
-		ADD_MONEY(pl, temp);
 		return TRUE;
 	}
 

@@ -761,9 +761,11 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 		ch);
 }
 
-// Attempts to create a quest for ch (a PC), given by giver (a NPC).
+// Attempts to create a quest for ch (a PC), given by the persisted giver vnum.
+// The caller has already validated any live NPC.  Keeping only the vnum here
+// lets an asynchronous payment callback continue after that NPC leaves the room.
 // Returns TRUE if successful, and FALSE if failed.
-bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
+bool createQuestForGiverVnum(P_char ch, int giver_vnum, quest_creation_failure *failure)
 {
 	int quest_zone = -1;
 	int quest_mob = -1;
@@ -775,8 +777,8 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 	if (failure)
 		*failure = QUEST_CREATION_NO_FAILURE;
 
-	// Fail if missing an arg, or ch not a PC, or giver not an NPC or God.
-	if (!giver || !ch || IS_NPC(ch) || (IS_PC(giver) && !IS_TRUSTED(giver)))
+	// Fail if missing an arg, the player is not a PC, or the persisted giver is invalid.
+	if (!ch || IS_NPC(ch) || giver_vnum <= 0)
 	{
 		if (failure)
 			*failure = QUEST_CREATION_INVALID_ACTOR;
@@ -889,7 +891,7 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 	ch->only.pc->quest_accomplished = 0;
 	ch->only.pc->quest_started = time(NULL);
 	ch->only.pc->quest_zone_number = zone_table[quest_zone].number;
-	ch->only.pc->quest_giver = GET_VNUM(giver);
+	ch->only.pc->quest_giver = giver_vnum;
 	ch->only.pc->quest_level = GET_LEVEL(ch);
 	ch->only.pc->quest_receiver = GET_PID(ch);
 	ch->only.pc->quest_kill_how_many = 0;
@@ -899,6 +901,19 @@ bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
 	      mob_index[rnum].virtual_number);
 
 	return TRUE;
+}
+
+// Synchronous callers still pass a live giver.  Validate it before reducing
+// the identity to the stable vnum used by deferred continuations.
+bool createQuest(P_char ch, P_char giver, quest_creation_failure *failure)
+{
+	if (!giver || !ch || IS_NPC(ch) || (IS_PC(giver) && !IS_TRUSTED(giver)))
+	{
+		if (failure)
+			*failure = QUEST_CREATION_INVALID_ACTOR;
+		return FALSE;
+	}
+	return createQuestForGiverVnum(ch, GET_VNUM(giver), failure);
 }
 
 void show_map_at(P_char ch, int room)

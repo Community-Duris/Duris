@@ -310,9 +310,14 @@ def perform_quest_journey(binary: pathlib.Path, backend: str, state_root: pathli
             require("The Great Realm of Duris" not in transcript_after_first,
                     "explicitly denied zone was assigned")
 
-            client.send("ask bartender abandon confirm")
+            # Deliberately type the paid abandon and the next paid quest before
+            # either response is read.  This is the real-client version of the
+            # regression: the second command must remain behind the first
+            # wallet debit instead of observing the pre-abandon quest state.
+            client.socket.sendall(
+                b"ask bartender abandon confirm\nask bartender quest\n"
+            )
             client.expect("You no longer have a task.", timeout=30)
-            client.send("ask bartender quest")
             second_result, _ = client.expect_any(("Go kill ", "Go ask "), timeout=30)
             transcript_after_second = bytes(client.transcript).decode("utf-8", errors="replace")
             require("Unable to find" not in transcript_after_second,
