@@ -26,6 +26,7 @@ state_start = source.index("struct bulk_get_state\n")
 state_end = source.index("\n};", state_start) + 3
 
 prelude = r'''
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -41,6 +42,7 @@ prelude = r'''
 #define LOWEST_MAT_VNUM 1000
 #define HIGHEST_MAT_VNUM 2000
 #define ITEM_MONEY 1
+#define CURRENCY_DENOMINATION_COUNT 4
 #define ITEM2_ACCOUNT_BOUND 1
 #define ITEM2_NOLOOT 2
 #define IS_PC(ch) ((ch)->pc)
@@ -67,10 +69,12 @@ struct char_data { int pid = 42; bool pc = true; int count_limit = 3;
     int weight_limit = 10; const char *name = "a horse"; };
 using P_char = char_data *;
 struct obj_data { const char *name = "dagger"; const char *short_description = "a dagger";
-    int weight = 1; int condition = 1; int type = 0; int flags = 0;
+    int weight = 1; int condition = 1; int type = 0; int flags = 0; int value[8] = {};
     uint64_t obj_uid = 1; P_char hitched_to = nullptr; };
 using P_obj = obj_data *;
-struct synchronous_get_item { uint64_t item_uid; P_obj object; bool scrap; };
+struct synchronous_get_item { uint64_t item_uid; P_obj object; bool scrap;
+    std::array<int32_t, CURRENCY_DENOMINATION_COUNT> coin_amount = {};
+    bool coin_amount_valid = false; };
 struct item_owner_identity {};
 enum class item_transfer_reason { unknown };
 static std::string output;

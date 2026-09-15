@@ -31,6 +31,7 @@ HARNESS = r'''
 #include <vector>
 
 #define MAX_STRING_LENGTH 65536
+#define CURRENCY_DENOMINATION_COUNT 4
 #define TRUE 1
 #define TO_ROOM 0
 #define ITEM_CORPSE 24

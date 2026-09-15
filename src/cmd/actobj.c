@@ -191,6 +191,8 @@ struct synchronous_get_item
 	uint64_t item_uid;
 	P_obj object;
 	bool scrap;
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> coin_amount = {};
+	bool coin_amount_valid = false;
 };
 
 struct bulk_get_state
@@ -209,6 +211,21 @@ struct bulk_get_state
 	std::string corpse_name = {};
 	std::vector<std::string> haul = {};
 	bool announced = false;
+	/* True for either NPC or player corpses.  `corpse` remains the player
+	 * corpse lifecycle flag used by the persistence protocol. */
+	bool corpse_source = false;
+};
+
+/* A selected corpse coin pile may cross an asynchronous item admission and
+ * currency transaction.  Keep the original selection and authority with the
+ * request instead of re-reading an unconstrained pile after the actor moves. */
+struct coin_get_submission_options
+{
+	bool has_amount_limit = false;
+	bool allow_source_move = false;
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> amount_limit = {};
+	item_owner_identity source = {};
+	int32_t source_room = 0;
 };
 
 struct drop_movement_context
@@ -359,7 +376,8 @@ struct bulk_put_state
 bool item_get_ack_publication = false;
 bool item_get_deferred = false;
 bool item_get_rejected = false;
-static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit);
+static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,
+			    const coin_get_submission_options *options = NULL);
 bool item_put_ack_publication = false;
 bool item_put_deferred = false;
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
@@ -435,6 +453,16 @@ static void publish_container_get(P_char ch, P_obj o_obj, P_obj s_obj, int showi
 				"An accepted item could not be delivered to your inventory.\r\n");
 		}
 	}
+}
+
+static void report_coin_get_rejection(P_char actor, P_obj container)
+{
+	bulk_get_state *haul = container ? corpse_bulk_get(actor, container->obj_uid) : NULL;
+	if (haul)
+		haul->rejections.emplace_back(
+			"The coin transfer could not start; nothing changed.\r\n");
+	else
+		send_to_char("The coin transfer could not start; nothing changed.\r\n", actor);
 }
 
 P_char find_live_player_pid(uint32_t pid)
@@ -988,16 +1016,7 @@ publish_after_ack:
 		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, showit);
 		item_get_rejected = !item_get_deferred;
 		if (item_get_rejected)
-		{
-			bulk_get_state *haul = s_obj ? corpse_bulk_get(ch, s_obj->obj_uid) : NULL;
-			if (haul)
-				haul->rejections.emplace_back(
-					"The coin transfer could not start; nothing changed.\r\n");
-			else
-				send_to_char(
-					"The coin transfer could not start; nothing changed.\r\n",
-					ch);
-		}
+			report_coin_get_rejection(ch, s_obj);
 		return;
 	}
 
@@ -1296,9 +1315,10 @@ static void do_get_reject_fighting_bags(P_char ch, bool &fail);
 static void do_get_reject_container_not_takeable(P_char ch, P_obj s_obj, P_obj o_obj,
 						 const char *tag, int carried, int carry_w,
 						 int cap_w, bool &fail);
-static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj,
-					      int &total, bool &found, bool corpse_flag,
-					      const char *post_tag)
+static void
+do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
+				  bool &found, bool corpse_flag, const char *post_tag,
+				  const coin_get_submission_options *coin_options = NULL)
 {
 	if ((GET_ITEM_TYPE(o_obj) == ITEM_CORPSE) && IS_SET(o_obj->value[1], PC_CORPSE))
 	{
@@ -1348,6 +1368,14 @@ static void do_get_finalize_container_success(P_char ch, P_char hood, P_obj s_ob
 	if (!IS_TRUSTED(ch) && corpse_flag)
 	{
 		CharWait(ch, PULSE_VIOLENCE);
+	}
+	if (coin_options && o_obj && GET_ITEM_TYPE(o_obj) == ITEM_MONEY)
+	{
+		item_get_deferred = submit_coin_get(ch, o_obj, s_obj, TRUE, coin_options);
+		item_get_rejected = !item_get_deferred;
+		if (item_get_rejected)
+			report_coin_get_rejection(ch, s_obj);
+		return;
 	}
 
 	do_get_finalize_container_item(ch, s_obj, o_obj, total, found, post_tag);
@@ -1751,12 +1779,27 @@ static bool bulk_get_source_available(P_char actor, const bulk_get_state &state,
 	return container_local || (OBJ_ROOM(container) && container->loc.room == actor->in_room);
 }
 
+/* A corpse remains a valid continuation source only while the exact corpse
+ * object is still on the original room floor.  This permits an already
+ * accepted coin admission to finish after flee, without granting remote
+ * access to an arbitrary moved container. */
+static bool bulk_get_corpse_source_available(const bulk_get_state &state, P_obj container)
+{
+	return state.corpse_source && state.container_uid && container &&
+	       container->obj_uid == state.container_uid &&
+	       GET_ITEM_TYPE(container) == ITEM_CORPSE && OBJ_ROOM(container) &&
+	       container->loc.room == state.room;
+}
+
 static void report_bulk_get(P_char actor, const bulk_get_state &state)
 {
 	if (state.announced && !state.corpse_name.empty())
 	{
+		const bool incomplete = state.failed || !state.rejections.empty();
 		const std::string line =
-			"You finish sorting your haul from " + state.corpse_name + ".\r\nHaul:\r\n";
+			"You finish sorting your haul from " + state.corpse_name +
+			(incomplete ? ".\r\nSome contents were not acquired.\r\nHaul:\r\n" :
+				      ".\r\nHaul:\r\n");
 		send_to_char(line.c_str(), actor);
 		if (state.haul.empty())
 			send_to_char("  Nothing acquired.\r\n", actor);
@@ -1836,9 +1879,16 @@ static P_obj resolve_synchronous_get_item(const synchronous_get_item &selected,
 
 static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_obj container)
 {
+	if (state.synchronous_items.empty())
+		return true;
+
 	// Each deferred coin pickup is a new transfer. Recheck its source after the
-	// previous acknowledgement; the actor may have walked away in the meantime.
-	if (!bulk_get_source_available(actor, state, container))
+	// previous acknowledgement. An accepted corpse remains eligible for the
+	// selected coin piles after flee, but only while that exact corpse stays in
+	// its original room; ordinary containers still require actor proximity.
+	const bool source_available = bulk_get_source_available(actor, state, container);
+	const bool stable_corpse = bulk_get_corpse_source_available(state, container);
+	if (!source_available && !stable_corpse)
 	{
 		state.failed = true;
 		if (!state.synchronous_items.empty())
@@ -1854,9 +1904,20 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 		const synchronous_get_item selected = state.synchronous_items.front();
 		state.synchronous_items.erase(state.synchronous_items.begin());
 		P_obj object = resolve_synchronous_get_item(selected, state, container);
-		if (!bulk_get_source_matches(state, container, object))
+		const bool selected_coin_in_stable_corpse =
+			!source_available && stable_corpse && selected.coin_amount_valid &&
+			object && GET_ITEM_TYPE(object) == ITEM_MONEY && OBJ_INSIDE(object) &&
+			object->loc.inside == container;
+		const bool source_matches =
+			source_available ? bulk_get_source_matches(state, container, object) :
+					   selected_coin_in_stable_corpse;
+		if (!source_matches)
 		{
 			state.failed = true;
+			state.rejections.emplace_back(
+				selected.coin_amount_valid ?
+					"A selected coin pile was no longer available; it was not taken.\r\n" :
+					"A selected item was no longer available; it was not taken.\r\n");
 			continue;
 		}
 		if (selected.scrap)
@@ -1866,11 +1927,26 @@ static bool finish_bulk_get_after_commit(P_char actor, bulk_get_state &state, P_
 			++state.total;
 			continue;
 		}
+		coin_get_submission_options coin_options = {};
+		const coin_get_submission_options *options = NULL;
+		if (GET_ITEM_TYPE(object) == ITEM_MONEY)
+		{
+			coin_options.has_amount_limit = selected.coin_amount_valid;
+			coin_options.amount_limit = selected.coin_amount;
+			coin_options.allow_source_move = state.corpse_source && stable_corpse;
+			coin_options.source_room = state.room;
+			if (item_owner_identity_valid(state.source))
+			{
+				coin_options.source = state.source;
+			}
+			options = &coin_options;
+		}
 		item_get_ack_publication = true;
 		if (container)
 			do_get_finalize_container_success(actor, actor, container, object,
 							  state.total, found_item, state.corpse,
-							  "GETDBG[get-container-bulk-post]");
+							  "GETDBG[get-container-bulk-post]",
+							  options);
 		else
 			do_get_finalize_room_item(actor, object, found_item, state.total);
 		item_get_ack_publication = false;
@@ -2151,7 +2227,15 @@ static bool select_bulk_get_item(P_char actor, P_obj container, P_obj object, co
 	if (uses_generic_item_ownership(object) && !scrap)
 		state.durable_items.push_back(object->obj_uid);
 	else
-		state.synchronous_items.push_back({ object->obj_uid, object, scrap });
+	{
+		std::array<int32_t, CURRENCY_DENOMINATION_COUNT> coin_amount = {};
+		const bool coin_amount_valid = !scrap && GET_ITEM_TYPE(object) == ITEM_MONEY;
+		if (coin_amount_valid)
+			for (size_t index = 0; index < coin_amount.size(); ++index)
+				coin_amount[index] = object->value[index];
+		state.synchronous_items.push_back(
+			{ object->obj_uid, object, scrap, coin_amount, coin_amount_valid });
+	}
 	if (!scrap && GET_ITEM_TYPE(object) != ITEM_MONEY)
 	{
 		++carried_count;
@@ -2190,6 +2274,7 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 				 false,
 				 corpse,
 				 {} };
+	state.corpse_source = container && GET_ITEM_TYPE(container) == ITEM_CORPSE;
 	try
 	{
 		if (container && GET_ITEM_TYPE(container) == ITEM_CORPSE)
@@ -2219,8 +2304,29 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 			     actor);
 		return;
 	}
+	if (container && !container->obj_uid)
+	{
+		send_to_char("That container lacks authoritative ownership.\r\n", actor);
+		return;
+	}
 	if (state.durable_items.empty())
 	{
+		for (const synchronous_get_item &selected : state.synchronous_items)
+		{
+			if (!selected.coin_amount_valid || !selected.object)
+				continue;
+			item_owner_identity source = {};
+			if (get_item_source_owner(actor, selected.object, container, &source))
+			{
+				state.source = source;
+				state.reason = source.type == item_owner_type::locker ?
+						       item_transfer_reason::locker_withdraw :
+					       container && state.corpse_source ?
+						       item_transfer_reason::corpse_loot :
+						       item_transfer_reason::player_get;
+				break;
+			}
+		}
 		try
 		{
 			auto [found, inserted] = bulk_gets.emplace(actor_pid, std::move(state));
@@ -2236,12 +2342,6 @@ static void start_bulk_get(P_char actor, P_obj container, const char *filter, bo
 		}
 		return;
 	}
-	if (container && !container->obj_uid)
-	{
-		send_to_char("That container lacks authoritative ownership.\r\n", actor);
-		return;
-	}
-
 	std::vector<P_obj> roots;
 	try
 	{
@@ -3976,7 +4076,12 @@ struct coin_pickup_context
 	uint32_t actor_pid;
 	int32_t showit;
 	bool bulk;
+	bool has_amount_limit = false;
+	bool allow_source_move = false;
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> amount_limit = {};
 };
+
+static_assert(sizeof(coin_pickup_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
 
 static bool coin_get_completion(P_char actor, bool committed, const coin_transfer_payload &payload,
 				const coin_transfer_result &result, unsigned int error_code,
@@ -4025,8 +4130,11 @@ static bool coin_get_completion(P_char actor, bool committed, const coin_transfe
 			if (partial)
 			{
 				if (haul)
+				{
+					haul->failed = true;
 					haul->rejections.emplace_back(
 						"You couldn't carry all the coins.\r\n");
+				}
 				else
 					send_to_char("You couldn't carry all the coins.\r\n",
 						     actor);
@@ -4118,15 +4226,34 @@ static void coin_admission_completion(P_char actor, bool committed, const item_t
 		!item_ownership_runtime_lookup(container->obj_uid, &container_custody) ||
 		(container_custody.state == item_custody_state::active &&
 		 item_owner_identity_equal(container_custody.owner, context.source));
-	const bool source_matches = actor && outer && outer->obj_uid == context.outer_uid &&
-				    outer->loc_p == context.outer_location &&
-				    (OBJ_IN_ROOM(outer, context.room) ||
-				     OBJ_CARRIED_BY(outer, actor) || OBJ_WORN_BY(outer, actor)) &&
-				    container_matches &&
-				    get_item_source_owner(actor, money, container, &source) &&
-				    item_owner_identity_equal(source, context.source);
-	if (committed && actor && actor->in_room == context.room && location_matches &&
-	    source_matches && submit_coin_get(actor, money, container, context.pickup.showit))
+	const bool outer_matches = actor && outer && outer->obj_uid == context.outer_uid &&
+				   outer->loc_p == context.outer_location &&
+				   (OBJ_IN_ROOM(outer, context.room) ||
+				    OBJ_CARRIED_BY(outer, actor) || OBJ_WORN_BY(outer, actor));
+	const bool stable_corpse = context.pickup.allow_source_move && container &&
+				   GET_ITEM_TYPE(container) == ITEM_CORPSE &&
+				   OBJ_IN_ROOM(container, context.room) && outer == container;
+	bool source_matches = outer_matches && container_matches;
+	if (source_matches)
+	{
+		if (get_item_source_owner(actor, money, container, &source))
+			source_matches = item_owner_identity_equal(source, context.source);
+		else
+			source_matches = stable_corpse &&
+					 context.source.type == item_owner_type::room &&
+					 context.source.id ==
+						 static_cast<uint64_t>(world[context.room].number);
+	}
+	coin_get_submission_options options = {};
+	options.has_amount_limit = context.pickup.has_amount_limit;
+	options.allow_source_move = context.pickup.allow_source_move;
+	options.amount_limit = context.pickup.amount_limit;
+	options.source = context.source;
+	options.source_room = context.room;
+	const bool actor_at_source = actor && actor->in_room == context.room;
+	if (committed && actor && location_matches && source_matches &&
+	    (actor_at_source || stable_corpse) &&
+	    submit_coin_get(actor, money, container, context.pickup.showit, &options))
 		return;
 	// Admission never credits the wallet. A failed or stale continuation leaves
 	// the durable pile available to a later pickup, and terminates a bulk get.
@@ -4135,13 +4262,17 @@ static void coin_admission_completion(P_char actor, bool committed, const item_t
 				  sizeof(context.pickup));
 }
 
-static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit)
+static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,
+			    const coin_get_submission_options *options)
 {
 	if (!actor || !IS_PC(actor) || !money || money->type != ITEM_MONEY ||
 	    item_movement_transaction_player_busy(actor))
 		return false;
-	item_owner_identity source;
-	if (!get_item_source_owner(actor, money, container, &source))
+	item_owner_identity source = {};
+	const bool requested_source = options && item_owner_identity_valid(options->source);
+	if (requested_source)
+		source = options->source;
+	else if (!get_item_source_owner(actor, money, container, &source))
 		return false;
 	item_ownership_runtime_entry current;
 	if (!item_ownership_runtime_lookup(money->obj_uid, &current))
@@ -4162,31 +4293,49 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 		P_obj outer = coin_admission_outer(money);
 		if (!outer)
 			return false;
-		const coin_admission_context context = {
-			money->obj_uid,
-			{ container ? container->obj_uid : 0, static_cast<uint32_t>(GET_PID(actor)),
-			  showit, bulk_gets.find(GET_PID(actor)) != bulk_gets.end() },
-			actor->in_room,
-			source,
-			outer->obj_uid,
-			outer->loc_p
-		};
+		coin_admission_context context = {};
+		context.item_uid = money->obj_uid;
+		context.pickup.container_uid = container ? container->obj_uid : 0;
+		context.pickup.actor_pid = static_cast<uint32_t>(GET_PID(actor));
+		context.pickup.showit = showit;
+		context.pickup.bulk = bulk_gets.find(GET_PID(actor)) != bulk_gets.end();
+		if (options)
+		{
+			context.pickup.has_amount_limit = options->has_amount_limit;
+			context.pickup.allow_source_move = options->allow_source_move;
+			context.pickup.amount_limit = options->amount_limit;
+		}
+		context.room = options && options->allow_source_move ? options->source_room :
+								       actor->in_room;
+		context.source = source;
+		context.outer_uid = outer->obj_uid;
+		context.outer_location = outer->loc_p;
 		return item_movement_transaction_submit(actor, money, parent, source, source,
 							item_transfer_reason::player_get,
 							money->obj_uid, coin_admission_completion,
 							&context, sizeof(context));
 	}
+	if (requested_source && !item_owner_identity_equal(current.owner, source))
+		return false;
 	P_obj parent = current.parent_item_uid ? find_live_item_uid(current.parent_item_uid) : NULL;
 	if (current.parent_item_uid && !parent)
 		return false;
 	const std::array<int32_t, 4> wallet = { GET_COPPER(actor), GET_SILVER(actor),
 						GET_GOLD(actor), GET_PLATINUM(actor) };
 	std::array<int32_t, 4> remainder;
+	std::array<int32_t, CURRENCY_DENOMINATION_COUNT> eligible;
 	for (size_t index = 0; index < 4; ++index)
 	{
 		if (money->value[index] < 0 || wallet[index] < 0)
 			return false;
 		remainder[index] = money->value[index];
+		eligible[index] = remainder[index];
+		if (options && options->has_amount_limit)
+		{
+			if (options->amount_limit[index] < 0)
+				return false;
+			eligible[index] = std::min(eligible[index], options->amount_limit[index]);
+		}
 	}
 	// Pick whole coins, preserving each denomination left in the pile. Credits
 	// still use the normal change-making rules. At each denomination choose the
@@ -4195,7 +4344,7 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 	constexpr int64_t denominations[] = { 1, 10, 100, 1000 };
 	for (size_t index = remainder.size(); index-- > 0;)
 	{
-		int64_t available = value + denominations[index] * remainder[index];
+		int64_t available = value + denominations[index] * eligible[index];
 		int64_t fitting = 0;
 		for (size_t digit = wallet.size(); digit-- > 0;)
 		{
@@ -4214,10 +4363,17 @@ static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int show
 	try
 	{
 		coin_transfer_payload payload;
-		const coin_pickup_context context = { container ? container->obj_uid : 0,
-						      static_cast<uint32_t>(GET_PID(actor)), showit,
-						      bulk_gets.find(GET_PID(actor)) !=
-							      bulk_gets.end() };
+		coin_pickup_context context = {};
+		context.container_uid = container ? container->obj_uid : 0;
+		context.actor_pid = static_cast<uint32_t>(GET_PID(actor));
+		context.showit = showit;
+		context.bulk = bulk_gets.find(GET_PID(actor)) != bulk_gets.end();
+		if (options)
+		{
+			context.has_amount_limit = options->has_amount_limit;
+			context.allow_source_move = options->allow_source_move;
+			context.amount_limit = options->amount_limit;
+		}
 		return prepare_coin_pile(money, source, parent, false, remainder,
 					 &payload.source) &&
 		       currency_transaction_coin_wallet(actor, value, &payload.destination) &&

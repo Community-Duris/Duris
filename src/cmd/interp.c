@@ -67,6 +67,11 @@
 extern struct time_info_data time_info;
 extern P_desc descriptor_list;
 
+static bool is_normal_movement_command(int cmd)
+{
+	return (cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE);
+}
+
 static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
 {
 	if (cmd == CMD_SAY || cmd == CMD_SAY2 || cmd == CMD_GSHOUT || cmd == CMD_TELL ||
@@ -83,7 +88,7 @@ static telemetry_runtime_evidence_kind telemetry_command_evidence_kind(int cmd)
 	    cmd == CMD_EXAMINE || cmd == CMD_FORAGE || cmd == CMD_GROUP)
 		return telemetry_runtime_evidence_kind::interaction;
 
-	if ((cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE))
+	if (is_normal_movement_command(cmd))
 		return telemetry_runtime_evidence_kind::movement;
 
 	/* IS_AGG_CMD includes cast/use/recite, which are interaction evidence above. */
@@ -1293,7 +1298,8 @@ static bool is_retired_command_spelling(const char *word, uint length)
 /** Commands whose result depends on the player's live inventory or equipment.
  * A pending ownership transaction has already committed or is about to commit
  * a different authoritative view, so item moves and synchronous consumers must
- * wait for its publication. */
+ * wait for its publication.  A few special commands are included when their
+ * next step can submit a currency transaction from that item state. */
 bool cmd_depends_on_item_movement(int cmd)
 {
 	switch (cmd)
@@ -1331,6 +1337,7 @@ bool cmd_depends_on_item_movement(int cmd)
 	case CMD_JUNK:
 	case CMD_DONATE:
 	case CMD_SACRIFICE:
+	case CMD_ASK:
 	case CMD_BUY:
 	case CMD_SELL:
 	case CMD_EQUIPMENT:
@@ -1342,9 +1349,16 @@ bool cmd_depends_on_item_movement(int cmd)
 	}
 }
 
-/** Commands that may submit a non-rebasable wallet or bank debit.  Preserve
- * typed input until an earlier currency operation publishes the authoritative
- * balance instead of consuming it on the transient player/account fence. */
+/** Commands that may read or mutate the live wallet or bank.  Preserve typed
+ * input until an earlier currency operation publishes the authoritative
+ * balance instead of consuming it on the transient player/account fence.
+ *
+ * This is deliberately an explicit list of paid entry points audited against
+ * the command specials and their helpers.  SAY/TELL remain independent for
+ * ordinary communication; the stateful blackjack SAY actions are handled by
+ * input_is_currency_dependent_speech() and confirmation handling below.
+ * GUILDHALL, TRAIN, and EPIC use non-wallet currencies or only display
+ * information and therefore stay out of this wallet fence. */
 bool cmd_depends_on_currency_transaction(int cmd)
 {
 	switch (cmd)
@@ -1356,6 +1370,31 @@ bool cmd_depends_on_currency_transaction(int cmd)
 	case CMD_DEPOSIT:
 	case CMD_WITHDRAW:
 	case CMD_COLLECTOR:
+	case CMD_ASK:
+	case CMD_BUY:
+	case CMD_SELL:
+	case CMD_OFFER:
+	case CMD_RENT:
+	case CMD_PRAY:
+	case CMD_EXCHANGE:
+	case CMD_SPLIT:
+	case CMD_RELOAD:
+	case CMD_REPAIR:
+	case CMD_SUMMON:
+	case CMD_MAIL:
+	case CMD_HOME:
+	case CMD_AUCTION:
+	case CMD_CONSTRUCT:
+	case CMD_ENTER:
+	case CMD_EQUIPMENT:
+	case CMD_STAT:
+	case CMD_HIRE:
+	case CMD_FORGE:
+	case CMD_REFINE:
+	case CMD_ENHANCE:
+	case CMD_PRACTICE:
+	case CMD_PRACTISE:
+	case CMD_ENCHANT:
 		return true;
 	default:
 		return false;
@@ -1383,6 +1422,44 @@ static int input_command_number(const char *input)
 	word[len] = '\0';
 
 	return old_search_block(word, 0, len, command, 2);
+}
+
+/** Return whether a speech line is a stateful blackjack continuation of OFFER. */
+static bool input_is_currency_dependent_speech(const char *input)
+{
+	const int cmd = input_command_number(input);
+	if (cmd != CMD_SAY && cmd != CMD_SAY2)
+		return false;
+
+	const char *cursor = input;
+	while (*cursor == ' ')
+		++cursor;
+	while (*cursor > ' ')
+		++cursor;
+	while (*cursor == ' ')
+		++cursor;
+
+	char action[MAX_INPUT_LENGTH];
+	uint length = 0;
+	while (length < sizeof(action) - 1 && cursor[length] > ' ')
+	{
+		action[length] = LOWER(cursor[length]);
+		++length;
+	}
+	action[length] = '\0';
+
+	return !strcmp(action, "deal") || !strcmp(action, "stay") ||
+	       !strcmp(action, "fold") || !strcmp(action, "hit");
+}
+
+/** A pending "yes" can confirm a paid command before command parsing. */
+static bool input_is_currency_dependent_confirmation(const char *input)
+{
+	if (!input)
+		return false;
+	while (*input == ' ')
+		++input;
+	return LOWER(*input) == 'y';
 }
 
 /** Resolve an ordered command exactly as the interpreter will dispatch it. */
@@ -1444,7 +1521,9 @@ bool input_allowed_while_currency_pending(const char *input)
 	if (!input)
 		return FALSE;
 
-	return !cmd_depends_on_currency_transaction(input_command_number(input));
+	return !cmd_depends_on_currency_transaction(input_command_number(input)) &&
+	       !input_is_currency_dependent_speech(input) &&
+	       !input_is_currency_dependent_confirmation(input);
 }
 
 /** Apply both selective gates when item and currency publication overlap. */
@@ -1824,8 +1903,11 @@ void command_interpreter(P_char ch, char *argument)
 					break;
 				}
 			if (IS_FIGHTING(ch) && !cmd_info[cmd].in_battle)
-				send_to_char("Sorry, you aren't allowed to do that in combat.\r\n",
-					     ch);
+				send_to_char(
+					is_normal_movement_command(cmd) ?
+						"You cannot move normally while fighting; use 'flee' to escape.\r\n" :
+						"Sorry, you aren't allowed to do that in combat.\r\n",
+					ch);
 			return;
 		}
 		else

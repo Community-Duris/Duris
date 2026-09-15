@@ -128,22 +128,21 @@ def run(binary):
                     actor.send('south'); actor.expect('The Regression Arena')
                     return final
 
-                # First missing-stock acknowledgement only adopts the banana at
-                # its source; departure prevents a new ownership transfer.
+                # The first missing-stock acknowledgement only adopts the banana
+                # at its source; departure prevents a new ownership transfer.
                 first=held_departure('stock adoption')
                 assert 'Nothing acquired.' in first and 'no longer available' in first,first
                 assert sql(f'SELECT COUNT(*) FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND vnum=15')=='0'
-                second=held_departure('equipment transfer')
-                assert 'a banana' in second and 'remaining contents' in second,second
+                assert sql('SELECT COUNT(*) FROM item_current_owner WHERE owner_type=3 AND owner_id=22800 AND vnum=15 AND state=1')=='1'
+                # The next attempt moves the tracked banana and the initially
+                # untracked NPC coin pile. Both must complete from the exact
+                # corpse after the actor flees.
+                second=held_departure('equipment and coin transfer')
+                assert 'a banana' in second and '3s' in second,second
+                assert 'Some contents were not acquired.' not in second,second
                 assert sql(f'SELECT COUNT(*) FROM item_current_owner WHERE owner_type=1 AND owner_id={pid} AND vnum=15 AND state=1')=='1'
-                actor.send('inventory'); actor.expect('a banana')
-                before_wallet=sql(f'SELECT copper,silver,gold,platinum FROM player_data WHERE pid={pid}')
-                third=held_departure('coin adoption')
-                assert 'Nothing acquired.' in third,third
-                assert sql(f'SELECT copper,silver,gold,platinum FROM player_data WHERE pid={pid}')==before_wallet
-                fourth=held_departure('coin transfer')
-                assert '3s' in fourth and 'Nothing acquired' not in fourth,fourth
                 assert sql(f'SELECT copper,silver,gold,platinum FROM player_data WHERE pid={pid}')=='0\t3\t0\t0'
+                actor.send('inventory'); actor.expect('a banana')
                 actor.send('save'); actor.expect('Save complete for Taverek.',timeout=30)
                 actor.close(); clients.remove(actor)
                 # Reconnect to the same live player, verify inventory and save.
@@ -158,9 +157,8 @@ def run(binary):
                 actor=journey.reconnect_character(port); clients.append(actor)
                 actor.send('look'); actor.expect('The corpse of a Human is lying here.')
                 pc_items=held_departure('player corpse equipment','Taverek','the corpse of Taverek')
-                assert 'a banana' in pc_items and 'remaining contents' in pc_items,pc_items
-                pc_coins=held_departure('player corpse coins','Taverek','the corpse of Taverek')
-                assert '3s' in pc_coins,pc_coins
+                assert 'a banana' in pc_items and '3s' in pc_items,pc_items
+                assert 'Some contents were not acquired.' not in pc_items,pc_items
                 actor.send('save'); actor.expect('Save complete for Taverek.',timeout=30)
                 assert sql(f'SELECT copper,silver,gold,platinum FROM player_data WHERE pid={pid}')=='0\t3\t0\t0'
                 print('PASS: actual three-player NPC/player corpse held SQL adoption/item/coin movement, observers, durable custody, wallet and reconnect',flush=True)

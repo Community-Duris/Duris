@@ -3,8 +3,8 @@
 
 Requires the explicitly disposable loopback MariaDB/MySQL fixture and g++.
 Acquires process-unique advisory locks, opens/closes connections, and forks/execs
-this harness. No tables or persisted rows are changed. Lock reacquisition waits
-up to two seconds for server-side disconnect processing.
+this harness. No tables or persisted rows are changed. Lock reacquisition retries
+within a bounded ten-second deadline for server-side disconnect processing.
 """
 import os
 from pathlib import Path

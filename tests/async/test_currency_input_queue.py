@@ -24,6 +24,20 @@ def extract(source: Path, signature: str) -> str:
     raise AssertionError(f"unbalanced braces reading {signature}")
 
 
+def extract_last(source: str, signature: str) -> str:
+    """Return the last complete C/C++ function beginning at ``signature``."""
+    start = source.rindex(signature)
+    depth = 0
+    for index in range(start, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:index + 1]
+    raise AssertionError(f"unbalanced braces reading {signature}")
+
+
 COMM_PATH = SRC / "comm.c"
 INTERP_PATH = SRC / "interp.c"
 CURRENCY_PATH = SRC / "currency_transaction.c"
@@ -33,7 +47,14 @@ CURRENCY = CURRENCY_PATH.read_text(encoding="utf-8", errors="replace")
 BANK_PUBLICATION = extract(SRC / "utility.c", "void publish_account_bank_balances_revision(")
 DEPENDS = extract(INTERP_PATH, "bool cmd_depends_on_currency_transaction(int cmd)")
 
-for command in ("CMD_GET", "CMD_DROP", "CMD_PUT", "CMD_GIVE", "CMD_DEPOSIT", "CMD_WITHDRAW"):
+for command in (
+    "CMD_GET", "CMD_DROP", "CMD_PUT", "CMD_GIVE", "CMD_DEPOSIT", "CMD_WITHDRAW",
+    "CMD_ASK", "CMD_BUY", "CMD_SELL", "CMD_OFFER", "CMD_RENT", "CMD_PRAY",
+    "CMD_EXCHANGE", "CMD_SPLIT", "CMD_RELOAD", "CMD_REPAIR", "CMD_SUMMON",
+    "CMD_MAIL", "CMD_HOME", "CMD_AUCTION", "CMD_CONSTRUCT", "CMD_ENTER",
+    "CMD_EQUIPMENT", "CMD_STAT", "CMD_HIRE", "CMD_FORGE", "CMD_REFINE",
+    "CMD_ENHANCE", "CMD_PRACTICE", "CMD_PRACTISE", "CMD_ENCHANT",
+):
     assert command in DEPENDS
 assert "currency_transaction_player_busy(character)" in COMM
 assert "currency_transaction_player_busy(P_char character)" in CURRENCY
@@ -42,6 +63,10 @@ assert "int get_pending_transaction_cmd_from_q(struct txt_q *, char *, bool, boo
 
 SEARCH = extract(INTERP_PATH, "int old_search_block(const char *argument")
 COMMAND_NUMBER = extract(INTERP_PATH, "static int input_command_number(const char *input)")
+SPEECH = extract(INTERP_PATH, "static bool input_is_currency_dependent_speech(const char *input)")
+CONFIRMATION = extract(
+    INTERP_PATH, "static bool input_is_currency_dependent_confirmation(const char *input)"
+)
 ALLOWED = extract(INTERP_PATH, "bool input_allowed_while_currency_pending(const char *input)")
 COMBINED_ALLOWED = extract(
     INTERP_PATH, "bool input_allowed_while_item_and_currency_pending(const char *input)"
@@ -112,10 +137,42 @@ PRELUDE = r'''
 #define CMD_SAY 9
 #define CMD_GET 10
 #define CMD_COLLECTOR 11
+#define CMD_ASK 12
+#define CMD_BUY 13
+#define CMD_SELL 14
+#define CMD_OFFER 15
+#define CMD_RENT 16
+#define CMD_PRAY 17
+#define CMD_EXCHANGE 18
+#define CMD_SPLIT 19
+#define CMD_RELOAD 20
+#define CMD_REPAIR 21
+#define CMD_SUMMON 22
+#define CMD_MAIL 23
+#define CMD_HOME 24
+#define CMD_AUCTION 25
+#define CMD_CONSTRUCT 26
+#define CMD_ENTER 27
+#define CMD_EQUIPMENT 28
+#define CMD_STAT 29
+#define CMD_HIRE 30
+#define CMD_FORGE 31
+#define CMD_REFINE 32
+#define CMD_ENHANCE 33
+#define CMD_SAY2 34
+#define CMD_TELL 35
+#define CMD_PRACTICE 36
+#define CMD_PRACTISE 37
+#define CMD_ENCHANT 38
 
 static const char *command[] = {
 	"drop", "put", "give", "deposit", "withdraw", "inventory", "score", "look",
-	"say", "get", "collector", "\n"
+	"say", "get", "collector", "ask", "buy", "sell", "offer", "rent", "pray",
+	"exchange", "split", "reload", "repair", "summon", "mail", "home", "auction",
+	"construct", "enter", "equipment", "stat", "hire", "forge", "refine", "enhance",
+	"'", "tell",
+	"practice", "practise", "enchant",
+	"\n"
 };
 
 P_char character_list = NULL;
@@ -194,7 +251,10 @@ bool bulk_get_player_busy(P_char) { return false; }
 
 bool input_allowed_while_item_moving(const char *input)
 {
-	return input && strcmp(input, "inventory");
+	if (!input)
+		return false;
+	return strcmp(input, "inventory") && strncmp(input, "get ", 4) &&
+	       strncmp(input, "ask ", 4);
 }
 
 void command_interpreter(P_char character, char *input);
@@ -313,7 +373,8 @@ static bulk_get_state *corpse_bulk_get(P_char, uint64_t) { return NULL; }
 static void announce_corpse_bulk_get(P_char, bulk_get_state &, P_obj) {}
 static bool item_get_ack_publication = false, item_get_deferred = false, item_get_rejected = false;
 static int bulk_total = 0;
-static bool submit_coin_get(P_char, P_obj, P_obj, int);
+static bool submit_coin_get(P_char, P_obj, P_obj, int,
+    const coin_get_submission_options * = nullptr);
 void act(const char *, int, P_char, P_obj, void *, int) {}
 /* stub — not the real formatter; production is src/core/utility.c coins_to_string. */
 char *coins_to_string(int, int, int, int, const char *)
@@ -338,9 +399,9 @@ bool bulk_get_source_matches(const bulk_get_state &, P_obj container, P_obj mone
 { return money && OBJ_INSIDE(money) && money->loc.inside == container; }
 void MakeScrap(P_char, P_obj) { abort(); }
 void do_get_finalize_container_success(P_char actor, P_char, P_obj container, P_obj money,
-    int &, bool &, bool, const char *)
+    int &, bool &, bool, const char *, const coin_get_submission_options *options)
 {
-    item_get_deferred = submit_coin_get(actor, money, container, 1);
+    item_get_deferred = submit_coin_get(actor, money, container, 1, options);
     item_get_rejected = !item_get_deferred;
 }
 void do_get_finalize_room_item(P_char, P_obj, bool &, int &) { abort(); }
@@ -351,6 +412,7 @@ void finish_bulk_get(P_char, uint32_t pid)
 }
 '''
             + extract(SRC / "actobj.c", "static bool bulk_get_source_available(")
+            + extract(SRC / "actobj.c", "static bool bulk_get_corpse_source_available(")
             + extract(SRC / "actobj.c", "static bool finish_bulk_get_after_commit(")
             + extract(SRC / "actobj.c", "static bool coin_get_completion(")
             + ACTOBJ[ACTOBJ.index("struct coin_admission_context"):
@@ -376,7 +438,8 @@ bool item_movement_transaction_submit(P_char, P_obj, P_obj parent,
 }
 '''
             + extract(SRC / "actobj.c", "static void coin_admission_completion(")
-            + extract(SRC / "actobj.c", "static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit)\n{"))
+            + extract_last(ACTOBJ,
+                           "static bool submit_coin_get(P_char actor, P_obj money, P_obj container, int showit,"))
 
 DRIVER = r'''
 static void push(struct txt_q *queue, const char *text)
@@ -426,6 +489,8 @@ static int drop_dispatches = 0;
 static int give_dispatches = 0;
 static int deposit_dispatches = 0;
 static int withdraw_dispatches = 0;
+static int get_dispatches = 0;
+static int ask_dispatches = 0;
 static int final_invalid_reasons = 0;
 static int transient_rejections = 0;
 
@@ -439,6 +504,24 @@ static void held_reward_completion(P_char actor, bool committed,
 	++completion_count;
 }
 
+static void publish_wallet(P_char actor, int copper, int platinum, uint64_t revision)
+{
+	assert(actor);
+	currency_command_result result = {};
+	result.wallet.amount = {copper, 0, 0, platinum};
+	result.wallet_revision = revision;
+	result.bank_revision = revision;
+	std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> encoded = {};
+	assert(currency_command_encode_result(result, &encoded));
+	critical_completion completion = {};
+	completion.operation_id = submitted_command.operation_id;
+	completion.outcome = critical_apply_outcome::applied;
+	completion.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), completion.result_payload.begin());
+	coordinator_fenced = false;
+	currency_transaction_handle_completions(&completion, 1);
+}
+
 void command_interpreter(P_char actor, char *input)
 {
 	assert(actor && input);
@@ -447,12 +530,38 @@ void command_interpreter(P_char actor, char *input)
 		++score_dispatches;
 		return;
 	}
+	if (!strcmp(input, "get coins satchel"))
+	{
+		assert(!currency_transaction_player_busy(actor));
+		++get_dispatches;
+		return;
+	}
+	if (!strcmp(input, "ask bartender abandon"))
+	{
+		assert(!currency_transaction_player_busy(actor));
+		++ask_dispatches;
+		assert(currency_transaction_submit_wallet_value(
+			actor, -1, currency_reason_type::wallet_spend, ask_dispatches,
+			critical_source_site::command, critical_deadline_class::interactive, nullptr,
+			nullptr, 0));
+		return;
+	}
+	if (!strcmp(input, "ask bartender quest"))
+	{
+		assert(!currency_transaction_player_busy(actor));
+		++ask_dispatches;
+		assert(currency_transaction_submit_wallet_value(
+			actor, -1, currency_reason_type::wallet_spend, ask_dispatches,
+			critical_source_site::command, critical_deadline_class::interactive, nullptr,
+			nullptr, 0));
+		return;
+	}
 	if (currency_transaction_player_busy(actor))
 	{
 		++transient_rejections;
 		return;
 	}
-	assert(GET_PLATINUM(actor) == 1 && actor->only.pc->wallet_revision == 2);
+	assert(GET_PLATINUM(actor) >= 1 && actor->only.pc->wallet_revision >= 2);
 	if (!strcmp(input, "put all.coins satchel"))
 		++put_dispatches;
 	else if (!strcmp(input, "drop all.coins"))
@@ -550,6 +659,35 @@ int main()
 	assert(input_allowed_while_currency_pending("score"));
 	assert(input_allowed_while_currency_pending("look"));
 	assert(input_allowed_while_currency_pending("say waiting"));
+	assert(input_allowed_while_currency_pending("tell bartender info"));
+	assert(!input_allowed_while_currency_pending("ask bartender abandon"));
+	assert(!input_allowed_while_currency_pending("buy sword"));
+	assert(!input_allowed_while_currency_pending("sell sword"));
+	assert(!input_allowed_while_currency_pending("offer 1 gold"));
+	assert(!input_allowed_while_currency_pending("rent room"));
+	assert(!input_allowed_while_currency_pending("pray items"));
+	assert(!input_allowed_while_currency_pending("exchange gold"));
+	assert(!input_allowed_while_currency_pending("enter locker"));
+	assert(!input_allowed_while_currency_pending("equipment"));
+	assert(!input_allowed_while_currency_pending("stat chest"));
+	assert(!input_allowed_while_currency_pending("auction bid"));
+	assert(!input_allowed_while_currency_pending("construct hall"));
+	assert(!input_allowed_while_currency_pending("forge sword"));
+	assert(!input_allowed_while_currency_pending("refine ore"));
+	assert(!input_allowed_while_currency_pending("enhance sword"));
+	assert(!input_allowed_while_currency_pending("practice sword"));
+	assert(!input_allowed_while_currency_pending("practise sword"));
+	assert(!input_allowed_while_currency_pending("enchant sword 'bless'"));
+	assert(!input_allowed_while_currency_pending("split 1 gold"));
+	assert(!input_allowed_while_currency_pending("hire crew"));
+	assert(!input_allowed_while_currency_pending("say deal"));
+	assert(!input_allowed_while_currency_pending("say stay"));
+	assert(!input_allowed_while_currency_pending("say fold"));
+	assert(!input_allowed_while_currency_pending("say hit"));
+	assert(!input_allowed_while_currency_pending("' deal"));
+	assert(!input_allowed_while_currency_pending("yes"));
+	assert(!input_allowed_while_currency_pending("  Yconfirm"));
+	assert(input_allowed_while_currency_pending("no"));
 	assert(!input_allowed_while_currency_pending(NULL));
 
 	char dest[MAX_INPUT_LENGTH];
@@ -603,6 +741,43 @@ int main()
 	assert(completion_count == 1);
 	assert(!currency_transaction_player_busy(&actor));
 	assert(GET_COPPER(&actor) == 5 && GET_PLATINUM(&actor) == 1);
+
+	/* An item completion must keep a following ASK behind the GET.  Once the
+	 * item gate opens, a held currency publication must keep both ASK lines in
+	 * FIFO until the first debit commits; the second ASK may then submit only
+	 * after the first callback has finished. */
+	struct txt_q ordered_specials = {};
+	item_pending = true;
+	push(&ordered_specials, "get coins satchel");
+	push(&ordered_specials, "ask bartender abandon");
+	assert(!get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	item_pending = false;
+	assert(get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	expect_text(dest, "get coins satchel");
+	dispatch_playing_command(&actor, dest);
+	assert(get_dispatches == 1);
+	assert(currency_transaction_submit_wallet_value(
+		&actor, 1, currency_reason_type::wallet_reward, 200,
+		critical_source_site::command, critical_deadline_class::interactive, nullptr, nullptr,
+		0));
+	push(&ordered_specials, "ask bartender quest");
+	assert(!get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	publish_wallet(&actor, 5, 1, 3);
+	assert(!currency_transaction_player_busy(&actor));
+	assert(get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	expect_text(dest, "ask bartender abandon");
+	dispatch_playing_command(&actor, dest);
+	assert(ask_dispatches == 1 && currency_transaction_player_busy(&actor));
+	assert(!get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	publish_wallet(&actor, 4, 1, 4);
+	assert(get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	expect_text(dest, "ask bartender quest");
+	dispatch_playing_command(&actor, dest);
+	assert(ask_dispatches == 2 && currency_transaction_player_busy(&actor));
+	publish_wallet(&actor, 3, 1, 5);
+	assert(!currency_transaction_player_busy(&actor));
+	assert(!get_playing_cmd_from_q(&actor, &ordered_specials, dest));
+	assert(ordered_specials.head == NULL && ordered_specials.tail == NULL);
 
 	const char *expected[] = {
 		"put all.coins satchel", "drop all.coins", "give 1 platinum friend",
@@ -1038,7 +1213,89 @@ int main()
 	assert(submission_count == before_leaving && bulk_gets.empty() && bulk_total == 0);
 	assert(bag.contains && bag.contains->value[0] == 35);
 	extract_obj(bag.contains, false);
-    // Death conversion preserves every denomination and creates custody only on commit.
+
+	// A stationary corpse admission must retain the originally selected amount
+	// even if the live untracked pile grows before its ownership acknowledgement.
+	actor.in_room = 0;
+	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
+	obj_data admission_corpse = {};
+	admission_corpse.obj_uid = 880;
+	admission_corpse.type = ITEM_CORPSE;
+	admission_corpse.loc_p = LOC_ROOM;
+	admission_corpse.loc.room = 0;
+	live_items.push_back(&admission_corpse);
+	assert(item_ownership_runtime_owner_revision(room_owner, &owner_revision));
+	assert(item_ownership_runtime_hydrate({admission_corpse.obj_uid, admission_corpse.obj_uid,
+		0, room_owner, 1, owner_revision, VOBJ_COINS, item_custody_state::active}));
+	P_obj admission_coins = create_money(12, 0, 0, 0);
+	obj_to_obj(admission_coins, &admission_corpse);
+	coin_get_submission_options stationary_selection = {};
+	stationary_selection.has_amount_limit = true;
+	stationary_selection.amount_limit[0] = 5;
+	stationary_selection.source = room_owner;
+	stationary_selection.source_room = 0;
+	assert(submit_coin_get(&actor, admission_coins, &admission_corpse, 1,
+		&stationary_selection));
+	assert(item_pending && GET_COPPER(&actor) == 0);
+	admission_coins->value[0] = 20;
+	assert(item_ownership_runtime_owner_revision(room_owner, &owner_revision));
+	assert(item_ownership_runtime_hydrate({admission_coins->obj_uid, admission_corpse.obj_uid,
+		admission_corpse.obj_uid, room_owner, 1, owner_revision, VOBJ_COINS,
+		item_custody_state::active}));
+	item_pending = false;
+	admission_callback(&actor, true, {}, 0,
+		reinterpret_cast<const uint8_t *>(&admission_context), sizeof(admission_context));
+	coin_transfer_payload stationary_payload;
+	assert(coin_transfer_command_decode_payload(submitted_command, &stationary_payload));
+	assert(stationary_payload.source.before[0] == 20 && stationary_payload.source.after[0] == 15);
+	pile_ack(true);
+	assert(GET_COPPER(&actor) == 5 && admission_coins->value[0] == 15);
+	extract_obj(admission_coins, false);
+
+	// A corpse haul retains the selected denomination boundary after flee.  The
+	// live pile has 12 copper, but this accepted request selected only 5; the
+	// continuation must not re-read and credit coins added after selection.
+	GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = 0;
+	obj_data remote_corpse = {};
+	remote_corpse.obj_uid = 901;
+	remote_corpse.type = ITEM_CORPSE;
+	remote_corpse.loc_p = LOC_ROOM;
+	remote_corpse.loc.room = 0;
+	live_items.push_back(&remote_corpse);
+	uint64_t remote_owner_revision;
+	assert(item_ownership_runtime_owner_revision(room_owner, &remote_owner_revision));
+	assert(item_ownership_runtime_hydrate({remote_corpse.obj_uid, remote_corpse.obj_uid,
+		0, room_owner, 1, remote_owner_revision, VOBJ_COINS, item_custody_state::active}));
+	P_obj remote_corpse_coins = create_money(12, 0, 0, 0);
+	obj_to_obj(remote_corpse_coins, &remote_corpse);
+	assert(item_ownership_runtime_hydrate({remote_corpse_coins->obj_uid,
+		remote_corpse.obj_uid, remote_corpse.obj_uid, room_owner, 1, remote_owner_revision,
+		VOBJ_COINS, item_custody_state::active}));
+	bulk_get_state remote_batch = {};
+	remote_batch.container_uid = remote_corpse.obj_uid;
+	remote_batch.room = 0;
+	remote_batch.corpse = true;
+	remote_batch.corpse_name = "the corpse";
+	remote_batch.announced = true;
+	remote_batch.source = room_owner;
+	bulk_gets.emplace(42, remote_batch);
+	actor.in_room = 1;
+	coin_get_submission_options selected_coins = {};
+	selected_coins.has_amount_limit = true;
+	selected_coins.allow_source_move = true;
+	selected_coins.amount_limit[0] = 5;
+	selected_coins.source = room_owner;
+	selected_coins.source_room = 0;
+	assert(submit_coin_get(&actor, remote_corpse_coins, &remote_corpse, 1,
+		&selected_coins));
+	coin_transfer_payload remote_payload;
+	assert(coin_transfer_command_decode_payload(submitted_command, &remote_payload));
+	assert(remote_payload.source.before[0] == 12 && remote_payload.source.after[0] == 7);
+	pile_ack(true);
+	assert(remote_corpse.contains == remote_corpse_coins && remote_corpse_coins->value[0] == 7);
+	assert(GET_COPPER(&actor) == 5 && bulk_gets.empty());
+	extract_obj(remote_corpse_coins, false);
+	// Death conversion preserves every denomination and creates custody only on commit.
     // The submit/completion adapter is real; the acknowledgement is an explicit fixture.
     GET_COPPER(&actor) = GET_SILVER(&actor) = GET_GOLD(&actor) = GET_PLATINUM(&actor) = INT32_MAX;
     const auto wallet_revision_before = actor.only.pc->wallet_revision;
@@ -1153,6 +1410,8 @@ def main(flatfile: bool = False) -> int:
         extract(SRC / "handler.c", "bool money_to_inventory("),
         SEARCH,
         COMMAND_NUMBER,
+        SPEECH,
+        CONFIRMATION,
         DEPENDS,
         ALLOWED,
         COMBINED_ALLOWED,
