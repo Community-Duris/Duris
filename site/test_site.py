@@ -148,7 +148,7 @@ class PagesTests(unittest.TestCase):
         self.assertIn(url, self.pages[OUTPUT / "index.html"].links)
         self.assertIn(f"{url}</loc>", (OUTPUT / "sitemap.xml").read_text())
         page = self.pages[OUTPUT / "power-atlas/index.html"]
-        for section in ("summary", "atlas", "standing", "specs", "gaps", "factors",
+        for section in ("summary", "atlas", "standing", "specs", "multi", "gaps", "factors",
                         "halfling", "globes", "pvp", "method", "cell-details"):
             self.assertIn(section, page.ids)
         self.assertIn(f"{BASE}assets/atlas.js", page.links)
@@ -157,20 +157,56 @@ class PagesTests(unittest.TestCase):
         self.assertTrue(any("/tree/f3b66b07ffba8443f3f47f976fa920b46bd88384" in link for link in page.links))
         self.assertIn("Historical model snapshot", "".join(page.text))
 
+    def test_power_atlas_renders_the_multiclass_section(self):
+        page = self.pages[OUTPUT / "power-atlas/index.html"]
+        for element in ("h-multi", "multi-intro", "multi-table", "multi-note", "facts-multi"):
+            self.assertIn(element, page.ids)
+        self.assertIn("#multi", page.links)
+        self.assertIn("What multiclassing buys", "".join(page.text))
+        # The section is filled in by the bundled script once the snapshot loads.
+        script = (OUTPUT / "assets/atlas.js").read_text()
+        for hook in ("multi-intro", "multi-table", "multi-note", "vs_single"):
+            self.assertIn(hook, script)
+        # Copy that waits on a model run is marked {{TBD:...}} and must never be published.
+        html = (OUTPUT / "power-atlas/index.html").read_text()
+        self.assertNotIn("{{TBD", html)
+        self.assertNotIn("{{TBD", script)
+
     def test_power_atlas_preserves_the_supplied_model_snapshot(self):
         source = (ROOT / "site/power-atlas/data.json").read_bytes()
         published = (OUTPUT / "power-atlas/data.json").read_bytes()
         self.assertEqual(published, source)
         self.assertEqual(hashlib.sha256(published).hexdigest(),
-                         "648eaeac660fade77274a9eea2261f575aff0de7e8a57c7d47cf2e2389c92765")
+                         "3516c60376d5cf90c0d08a1c24af074844ebc1d06702e6987cf13e4b4553b98c")
         data = json.loads(published)
         self.assertEqual(len(data["combos"]), 192)
-        self.assertEqual(len(data["specs"]["variants"]), 711)
+        # 711 single-class builds plus the 56 multiclass builds ("Race|Primary/Secondary|MULTI").
+        variants = data["specs"]["variants"]
+        self.assertEqual(len(variants), 767)
+        self.assertEqual(sum(not key.endswith("|MULTI") for key in variants), 711)
         self.assertEqual(data["meta"]["levels"], [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 50, 51, 56])
         for combination in data["combos"].values():
             for level in data["meta"]["levels"]:
                 for tier in data["meta"]["tiers"]:
                     self.assertEqual(len(combination["d"][f"{level}|{tier}"]), 16)
+
+        # Multiclass: Human and Orc primary/secondary builds, scored at every level and tier.
+        self.assertIs(data["meta"]["multiclass"], True)
+        multi = data["multi"]
+        self.assertEqual(len(multi["builds"]), 56)
+        self.assertEqual({key.split("|")[0] for key in multi["builds"]}, {"Human", "Orc"})
+        self.assertEqual({key.rsplit("|", 1)[0] for key in variants if key.endswith("|MULTI")},
+                         set(multi["builds"]))
+        for key, cells in multi["builds"].items():
+            primary, secondary = key.split("|")[1].split("/")
+            self.assertIn(primary, data["classes"])
+            self.assertIn(secondary, data["classes"])
+            self.assertNotEqual(primary, secondary)
+            self.assertIn(key, multi["kits"])
+            self.assertEqual(len(multi["vs_single"]["56|endgame"][key]), 3)
+            for level in data["meta"]["levels"]:
+                for tier in data["meta"]["tiers"]:
+                    self.assertIsNotNone(cells[f"{level}|{tier}"][0])
 
 
 if __name__ == "__main__":

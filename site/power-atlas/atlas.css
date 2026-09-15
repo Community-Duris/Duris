@@ -413,6 +413,9 @@
     color: var(--ink-2);
     font-size: 12.5px;
   }
+  .plain .kit {
+    min-width: 11em;
+  }
   .plain .step {
     font-family: var(--mono);
     white-space: nowrap;
