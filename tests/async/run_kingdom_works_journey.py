@@ -23,12 +23,13 @@ CRAFTED and STOREITEM carrying Tyrus's binding token, that the realm's stores
 fell by exactly the bill, and that Tyrus's platinum fell by the price while
 the treasury did not rise.
 
-Then the binding. Tyrus wears the piece, takes it off, puts it in a bag (a
-soulbound piece cannot be given or dropped, but the bag it is in can) and
-leaves the bag for two characters on other accounts: one NAMED "Vambraces",
-a word on the piece that the old name-based soulbind test let through, and
-one with an ordinary name. Each takes the piece out of the bag and is refused
-it when they try to wear it.
+Then the binding. Tyrus wears the piece, takes it off, puts it in a basket (a
+soulbound piece cannot be given or dropped, but what it is in can) and leaves
+the basket for two characters on other accounts: one NAMED "Vambraces", a
+word on the piece that the old name-based soulbind test let through, and one
+with an ordinary name. Each sheds its starter kit (a new character starts
+over its carrying limit), takes the piece out of the basket and is refused it
+when they try to wear it.
 
 The journey's own copy of lib/kingdom.cfg sets the build costs to 1,000
 platinum and the material scale to a quarter, so the realm needs a minute of
@@ -69,7 +70,11 @@ SHORT_TREASURY_P = 500  # less than a workshop costs
 
 PIECE = "vambraces"  # weight 1.0: the same bill as a helm
 PIECE_SHORT = "steel vambraces"
-BAG_VNUM = 390  # "a small leather bag", a plain container
+# "a small woven basket": an open container whose keyword no starter kit
+# carries. A new character's kit includes "a small leather bag", so a bag
+# would be ambiguous -- `get vambraces bag` looks in the kit's own bag.
+BASKET_VNUM = 387
+BASKET = "basket"
 # Characters who try to wear Tyrus's piece. "Vambraces" is a word on the piece
 # and no mob's keyword, so character creation allows it -- the name the old
 # name-based soulbind test would have let through.
@@ -273,20 +278,45 @@ def find_seat(client: journey.MudClient) -> int:
 
 
 def refused_the_piece(other: journey.MudClient, name: str) -> None:
-    """`name` takes Tyrus's piece out of the bag at their feet, is refused it
-    when they try to wear it, and puts it back and drops the bag."""
-    command(other, "get bag", "")
-    command(other, f"get {PIECE} bag", "")
-    wait_for(lambda: plain(command(other, "inventory", "")), lambda text: PIECE_SHORT in text,
-             f"{name} never got the piece out of the bag")
-    reply = plain(command(other, f"wear {PIECE}", ""))
+    """`name` takes Tyrus's piece out of the basket at their feet, is refused
+    it when they try to wear it, and puts it back.
+
+    A new character starts over its carrying limit -- the starter kit is 28
+    items against a limit of 11 -- and can pick up nothing until it sheds
+    some, so the kit goes on the floor first. The kit arrives through the item
+    coordinator, so an early `drop all` can find it still in flight; the drop
+    is repeated until the load is under the limit, and every reply is kept for
+    the failure message.
+
+    Every step waits for words of its own. A new character is sent output of
+    its own accord -- the kit arriving, a kit item crumbling -- each with a
+    prompt, and a step that waited only for the next prompt could return
+    before its own reply and read the one meant for the next step."""
+
+    def inventory() -> str:
+        return plain(command(other, "inventory", "You are carrying"))
+
+    replies = []
+    for _ in range(10):
+        carrying = re.search(r"You are carrying: \((\d+)/(\d+)\)", inventory())
+        if carrying and int(carrying.group(1)) < int(carrying.group(2)):
+            break
+        replies.append(plain(command(other, "drop all", "")))
+        time.sleep(1)
+    else:
+        raise AssertionError(f"{name} never got under the carrying limit; last drops:\n"
+                             + "\n----\n".join(reply[-800:] for reply in replies[-3:]))
+    got = plain(command(other, f"get {PIECE} {BASKET}", ""))
+    wait_for(inventory, lambda text: PIECE_SHORT in text,
+             f"{name} never got the piece out of the {BASKET} (the get said: {got[-400:]!r})")
+    # Either the refusal or the piece's own name, which a successful wear
+    # would print; the require then says which it was.
+    _, reply = command_any(other, f"wear {PIECE}", ("bound to someone", PIECE_SHORT))
+    reply = plain(reply)
     require("bound to someone" in reply, f"{name} was not refused Tyrus's piece:\n{reply}")
-    worn = plain(command(other, "equipment", ""))
-    require(PIECE_SHORT not in worn, f"{name} is wearing Tyrus's piece:\n{worn}")
-    command(other, f"put {PIECE} bag", "")
-    wait_for(lambda: plain(command(other, "inventory", "")), lambda text: PIECE_SHORT not in text,
-             f"{name} never put the piece back")
-    command(other, "drop bag", "")
+    require(PIECE_SHORT in inventory(), f"{name} no longer holds the piece after the refusal")
+    command(other, f"put {PIECE} {BASKET}", "")
+    wait_for(inventory, lambda text: PIECE_SHORT not in text, f"{name} never put the piece back")
 
 
 def enter_hall(client: journey.MudClient) -> str:
@@ -524,15 +554,16 @@ def run(binary: pathlib.Path) -> None:
                 wait_for(lambda: plain(command(client, "inventory", "")),
                          lambda text: PIECE_SHORT in text, "the piece never came off")
 
-                # Nobody else may, whatever they are called. The bag is the
-                # route a looter or a trade would take: a soulbound piece
-                # cannot be given or dropped, but the bag it is in can.
+                # Nobody else may, whatever they are called. A container is
+                # the route a looter or a trade would take: a soulbound piece
+                # cannot be given or dropped, but what it is in can.
                 command(client, "goto 58449", "")
-                command(client, f"load obj {BAG_VNUM}", "")
-                command(client, f"put {PIECE} bag", "")
+                command(client, f"load obj {BASKET_VNUM}", "")
+                command(client, f"put {PIECE} {BASKET}", "")
                 wait_for(lambda: plain(command(client, "inventory", "")),
-                         lambda text: PIECE_SHORT not in text, "the piece never went into the bag")
-                command(client, "drop bag", "")
+                         lambda text: PIECE_SHORT not in text,
+                         f"the piece never went into the {BASKET}")
+                command(client, f"drop {BASKET}", "")
                 for account, email, name in OTHERS:
                     other = journey.MudClient(plain_port)
                     others.append(other)
