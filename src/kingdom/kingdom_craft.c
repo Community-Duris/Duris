@@ -511,9 +511,11 @@ static const kingdom_craft_variant *kingdom_craft_find_form(const kingdom_craft_
 	return matches == 1 ? found : NULL;
 }
 
-/* "health, accuracy, focus or faith" into `out`. */
-static void kingdom_craft_forms_text(const kingdom_craft_item &item, const char *last_joiner,
-				     char *out, size_t out_len)
+/* A piece's forms into `out`, `joiner` between them and `last_joiner` before
+ * the last: (", ", " or ") gives "health, accuracy, focus or faith" and
+ * ("/", "/") gives "health/accuracy/focus/faith". */
+static void kingdom_craft_forms_text(const kingdom_craft_item &item, const char *joiner,
+				     const char *last_joiner, char *out, size_t out_len)
 {
 	out[0] = '\0';
 	for (int i = 0; i < item.variant_count; i++)
@@ -521,7 +523,7 @@ static void kingdom_craft_forms_text(const kingdom_craft_item &item, const char 
 		checked_appendf(out, out_len, "%s%s",
 				i == 0			    ? "" :
 				i == item.variant_count - 1 ? last_joiner :
-							      ", ",
+							      joiner,
 				item.variants[i].name);
 	}
 }
@@ -718,12 +720,7 @@ static void kingdom_store_list(P_char ch, const kingdom_realm &realm, P_Guild gu
 		char forms[96];
 
 		kingdom_craft_bill_text(bill, material, sizeof(material));
-		kingdom_craft_forms_text(item, "/", forms, sizeof(forms));
-		for (char *p = forms; *p; p++)
-		{
-			if (*p == ',')
-				*p = '/';
-		}
+		kingdom_craft_forms_text(item, "/", "/", forms, sizeof(forms));
 
 		APPENDF(out, "  &+W%-13s&n %5ld platinum  %-24s %s%s\r\n", item.keyword,
 			bill.platinum, material, forms,
@@ -804,7 +801,7 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 		{
 			char forms[96];
 
-			kingdom_craft_forms_text(*item, " or ", forms, sizeof(forms));
+			kingdom_craft_forms_text(*item, ", ", " or ", forms, sizeof(forms));
 			send_to_char_f(ch, "A %s is made %s. As in '&+Wbuy %s %s&n'.\r\n",
 				       item->keyword, forms, item->keyword, item->variants[0].name);
 			return;
