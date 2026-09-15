@@ -406,6 +406,9 @@ the root [`VERSION`](VERSION) file.
 
 ## Documentation
 
+Browse the [project website and documentation library](https://community-duris.github.io/Duris/)
+for searchable guides with source links, code highlighting, and diagrams.
+
 | Guide | Covers |
 | --- | --- |
 | [Architecture](docs/reference/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery. |

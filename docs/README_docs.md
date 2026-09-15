@@ -1,5 +1,8 @@
 # Documentation Index
 
+Read the selected guides in the [project documentation library](https://community-duris.github.io/Duris/#documentation).
+See [Project website](guides/GITHUB_PAGES.md) for publishing and local development.
+
 Setup and first boot live in the root [README](../README.md); its Quick start is the
 onboarding path. This directory holds the verified development, architecture,
 operations, database, and builder references.
