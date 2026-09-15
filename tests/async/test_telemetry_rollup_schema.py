@@ -182,7 +182,8 @@ class TelemetryRollupSchemaTest(unittest.TestCase):
 
     def test_registered_manifest_and_computed_inventories(self) -> None:
         migration = json.loads(MIGRATIONS.read_text())
-        item = migration["migrations"][-1]
+        item = next(entry for entry in migration["migrations"]
+                    if entry["id"] == "0017_telemetry_rollup_support")
         self.assertEqual(item["id"], "0017_telemetry_rollup_support")
         self.assertEqual(item["sequence"], 17)
         self.assertEqual(
@@ -200,11 +201,12 @@ class TelemetryRollupSchemaTest(unittest.TestCase):
         self.assertEqual(len(expected_tables), runtime["current_table_count"])
         self.assertEqual(runtime_tables, sorted(expected_tables))
         self.assertTrue(TABLES <= expected_tables)
-        self.assertEqual(runtime["current_table_count"], 187)
-        self.assertEqual(runtime["migration_head"]["id"], item["id"])
-        self.assertEqual(runtime["migration_head"]["sequence"], item["sequence"])
-        self.assertEqual(runtime["migration_head"]["apply_checksum"], item["apply_checksum"])
-        self.assertEqual(runtime["migration_head"]["verify_checksum"], item["verify_checksum"])
+        self.assertEqual(runtime["current_table_count"], 193)
+        head = migration["migrations"][-1]
+        self.assertEqual(runtime["migration_head"]["id"], head["id"])
+        self.assertEqual(runtime["migration_head"]["sequence"], head["sequence"])
+        self.assertEqual(runtime["migration_head"]["apply_checksum"], head["apply_checksum"])
+        self.assertEqual(runtime["migration_head"]["verify_checksum"], head["verify_checksum"])
 
         lifecycle_manifest = json.loads(LIFECYCLE.read_text())
         entries = {entry["locator"]: entry for entry in lifecycle_manifest["entries"]

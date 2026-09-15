@@ -66,6 +66,9 @@
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/corpse_lifecycle_transaction.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_catalog_cache.h"
+#include "economy/collector_death_enrollment.h"
+#include "economy/collector_presence.h"
 #include "player/player_save_pipeline.h"
 #include "persistence/persistence_observability.h"
 #include "item/item_movement_transaction.h"
@@ -1560,6 +1563,8 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 	else
 	{
 		writeCorpse(corpse);
+		(void)collector_catalog_cache_refresh();
+		collector_death_enrollment_end(corpse);
 		wake_death_extract_retry(character);
 	}
 }
@@ -1589,7 +1594,22 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 	if (roots.empty())
 	{
 		writeCorpse(corpse);
+		collector_death_enrollment_end(corpse);
 		return true;
+	}
+	const collector_death_enrollment_resume_result collector_resume =
+		collector_death_enrollment_resume(character, corpse);
+	if (collector_resume == collector_death_enrollment_resume_result::invalid)
+	{
+		note_corpse_transfer_dispute(character);
+		return false;
+	}
+	if (collector_resume == collector_death_enrollment_resume_result::unavailable)
+	{
+		persistence_report(persistence_severity::info, AVATAR, "collector", "death", "none",
+				   "none", "death_enrollment_waiting_for_catalog", "save_id=%d",
+				   corpse->value[CORPSE_SAVEID]);
+		return false;
 	}
 	const item_owner_identity destination = {
 		item_owner_type::corpse,
@@ -1874,6 +1894,7 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	if (corpse && IS_PC(ch))
 	{
+		collector_death_enrollment_begin(ch, corpse);
 		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
 								  PLAYER_COMPONENT_EQUIPMENT |
 								  PLAYER_COMPONENT_INVENTORY);
@@ -2806,6 +2827,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 			return;
 		}
 		clear_corpse_transfer_dispute(ch);
+		collector_death_enrollment_end(corpse);
 		release_after_terminal_death(ch, "death_disposition_completed");
 		return;
 	}
@@ -2831,6 +2853,8 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
+	// Terminal publication must release intake even when no corpse-item handoff ever ran.
+	collector_death_enrollment_end(corpse);
 	release_after_terminal_death(ch, "death_recovery_completed");
 }
 
@@ -3459,6 +3483,8 @@ void die(P_char ch, P_char killer)
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
+		if (!CHAR_IN_ARENA(ch))
+			collector_death_enrollment_end(death_corpse);
 		GET_HIT(ch) = 1;
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	}
@@ -4484,6 +4510,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	// Just making sure.
 	if (!ch || !victim)
 		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	if (messages == NULL)
 	{
@@ -5038,6 +5066,8 @@ int check_shields(P_char ch, P_char victim, int dam, int flags)
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	// Reject all other faiths MWD25
 	if (IS_AFFECTED5(ch, AFF5_JUDICIUM_FIDEI))
@@ -5344,6 +5374,8 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return 0;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return DAM_NONEDEAD;
 
 	if (messages == NULL)
 	{
@@ -6006,6 +6038,8 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 	}
 
 	if (!victim)
+		return DAM_NONEDEAD;
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
 		return DAM_NONEDEAD;
 
 	if (ch && victim) // Just making sure.
@@ -8142,6 +8176,8 @@ void set_fighting(P_char ch, P_char vict)
 {
 	P_char victim = vict;
 	char Gbuf[10];
+	if (collector_presence_is_npc(ch) || collector_presence_is_npc(victim))
+		return;
 
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
 	    !SanityCheck(victim, "set_fighting - victim"))

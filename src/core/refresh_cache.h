@@ -78,6 +78,7 @@ template <class T> class refresh_cache
 	}
 	const T *get() const { return current.get(); }
 	bool busy() const { return pending.valid(); }
+	unsigned long generation_value() const { return generation; }
 	std::string status() const
 	{
 		return std::string(current ? "ready" : "unavailable") + ", generation " +

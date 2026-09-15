@@ -33,6 +33,7 @@
 #include "economy/tradeskill.h"
 #include "economy/crafting.h"
 #include "economy/currency_transaction.h"
+#include "economy/collector_presence.h"
 #include "world/vnum.obj.h"
 #include "combat/chaos_materials.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -515,6 +516,15 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 	item_get_ack_publication = true;
 	get(actor, object, container, context.showit);
 	item_get_ack_publication = false;
+	if (IS_NPC(actor))
+	{
+		// Mob scavenging used to evaluate equipment immediately after the live
+		// pickup. A durable claim publishes later, so do the same work only after
+		// the object is demonstrably in this still-live mobile's inventory.
+		P_obj claimed = find_live_item_uid(context.item_uid);
+		if (claimed && OBJ_CARRIED_BY(claimed, actor))
+			CheckEqWorthUsing(actor, claimed);
+	}
 }
 
 void publish_player_drop(P_char actor, P_obj object, int room, bool floor_hint, bool quiet)
@@ -960,6 +970,43 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		}
 		item_get_deferred = true;
 		return;
+	}
+	if (IS_NPC(ch) && uses_generic_item_ownership(o_obj))
+	{
+		// Mob and pet inventories do not have a persistent owner aggregate. Keep
+		// the item's existing room/corpse authority, but commit an explicit claim
+		// boundary before publishing the live handoff. That durable reason cancels
+		// the selected container subtree without making later drops re-eligible.
+		item_ownership_runtime_entry runtime = {};
+		if (item_ownership_runtime_lookup(o_obj->obj_uid, &runtime))
+		{
+			item_owner_identity source = {};
+			const get_movement_context context = { o_obj->obj_uid,
+							       s_obj ? s_obj->obj_uid : 0,
+							       s_obj ? NOWHERE : o_obj->loc.room,
+							       showit };
+			if (!get_item_source_owner(ch, o_obj, s_obj, &source))
+			{
+				report_movement_reject(ch, item_movement_reject::owner_mismatch,
+						       "mobile_get", o_obj);
+				return;
+			}
+			P_char master = GET_MASTER(ch);
+			const int64_t claimant_pid =
+				master && IS_PC(master) && GET_PID(master) > 0 ? GET_PID(master) :
+										 0;
+			item_movement_reject reject = item_movement_reject::owner_mismatch;
+			if (!item_movement_transaction_submit(
+				    ch, o_obj, NULL, source, source,
+				    item_transfer_reason::mobile_claim, claimant_pid,
+				    item_get_completion, &context, sizeof(context), NULL, &reject))
+			{
+				report_movement_reject(ch, reject, "mobile_get", o_obj);
+				return;
+			}
+			item_get_deferred = true;
+			return;
+		}
 	}
 
 publish_after_ack:
@@ -5902,6 +5949,13 @@ void do_give(P_char ch, char *argument, int cmd)
 			send_to_char("To who?\r\n", ch);
 			return;
 		}
+		if (collector_presence_is_npc(vict))
+		{
+			send_to_char("The collector accepts payment only through an antiquity "
+				     "purchase.\r\n",
+				     ch);
+			return;
+		}
 
 		if (racewar(ch, vict))
 		{
@@ -5965,6 +6019,11 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (!(vict = get_char_room_vis(ch, vict_name)))
 	{
 		send_to_char("No one by that name around here.\r\n", ch);
+		return;
+	}
+	if (collector_presence_is_npc(vict))
+	{
+		send_to_char("The collector cannot accept physical items.\r\n", ch);
 		return;
 	}
 	if (IS_NPC(ch) && !IS_SET(obj->wear_flags, ITEM_TAKE))

@@ -136,39 +136,41 @@ PRELUDE = r'''
 #define CMD_LOOK 8
 #define CMD_SAY 9
 #define CMD_GET 10
-#define CMD_ASK 11
-#define CMD_BUY 12
-#define CMD_SELL 13
-#define CMD_OFFER 14
-#define CMD_RENT 15
-#define CMD_PRAY 16
-#define CMD_EXCHANGE 17
-#define CMD_SPLIT 18
-#define CMD_RELOAD 19
-#define CMD_REPAIR 20
-#define CMD_SUMMON 21
-#define CMD_MAIL 22
-#define CMD_HOME 23
-#define CMD_AUCTION 24
-#define CMD_CONSTRUCT 25
-#define CMD_ENTER 26
-#define CMD_EQUIPMENT 27
-#define CMD_STAT 28
-#define CMD_HIRE 29
-#define CMD_FORGE 30
-#define CMD_REFINE 31
-#define CMD_ENHANCE 32
-#define CMD_SAY2 33
-#define CMD_TELL 34
-#define CMD_PRACTICE 35
-#define CMD_PRACTISE 36
-#define CMD_ENCHANT 37
+#define CMD_COLLECTOR 11
+#define CMD_ASK 12
+#define CMD_BUY 13
+#define CMD_SELL 14
+#define CMD_OFFER 15
+#define CMD_RENT 16
+#define CMD_PRAY 17
+#define CMD_EXCHANGE 18
+#define CMD_SPLIT 19
+#define CMD_RELOAD 20
+#define CMD_REPAIR 21
+#define CMD_SUMMON 22
+#define CMD_MAIL 23
+#define CMD_HOME 24
+#define CMD_AUCTION 25
+#define CMD_CONSTRUCT 26
+#define CMD_ENTER 27
+#define CMD_EQUIPMENT 28
+#define CMD_STAT 29
+#define CMD_HIRE 30
+#define CMD_FORGE 31
+#define CMD_REFINE 32
+#define CMD_ENHANCE 33
+#define CMD_SAY2 34
+#define CMD_TELL 35
+#define CMD_PRACTICE 36
+#define CMD_PRACTISE 37
+#define CMD_ENCHANT 38
 
 static const char *command[] = {
 	"drop", "put", "give", "deposit", "withdraw", "inventory", "score", "look",
-	"say", "get", "ask", "buy", "sell", "offer", "rent", "pray", "exchange",
-	"split", "reload", "repair", "summon", "mail", "home", "auction", "construct",
-	"enter", "equipment", "stat", "hire", "forge", "refine", "enhance", "'", "tell",
+	"say", "get", "collector", "ask", "buy", "sell", "offer", "rent", "pray",
+	"exchange", "split", "reload", "repair", "summon", "mail", "home", "auction",
+	"construct", "enter", "equipment", "stat", "hire", "forge", "refine", "enhance",
+	"'", "tell",
 	"practice", "practise", "enchant",
 	"\n"
 };
@@ -233,6 +235,16 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &,
 bool item_movement_transaction_player_busy(P_char)
 {
 	return item_pending;
+}
+
+bool collector_transaction_player_busy(P_char)
+{
+	return false;
+}
+
+bool collector_service_player_busy(P_char)
+{
+	return false;
 }
 
 bool bulk_get_player_busy(P_char) { return false; }

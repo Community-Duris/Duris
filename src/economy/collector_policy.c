@@ -1,0 +1,482 @@
+#include "economy/collector_policy.h"
+
+#include "economy/collector_eligibility.h"
+#include "core/defines.h"
+
+#include <algorithm>
+#include <cctype>
+#include <limits>
+
+namespace
+{
+bool collector_keyword(std::string_view names, std::string_view sought)
+{
+	size_t offset = 0;
+	while (offset < names.size())
+	{
+		while (offset < names.size() && names[offset] == ' ')
+			++offset;
+		const size_t begin = offset;
+		while (offset < names.size() && names[offset] != ' ')
+			++offset;
+		if (offset - begin != sought.size())
+			continue;
+		bool matches = true;
+		for (size_t index = 0; index < sought.size(); ++index)
+			if (std::tolower(static_cast<unsigned char>(names[begin + index])) !=
+			    std::tolower(static_cast<unsigned char>(sought[index])))
+			{
+				matches = false;
+				break;
+			}
+		if (matches)
+			return true;
+	}
+	return false;
+}
+}
+
+bool collector_death_item_snapshot_eligible(const player_item_snapshot &item)
+{
+	return item.object_uid && item.vnum > 0 && item.type != ITEM_MONEY &&
+	       item.type != ITEM_CORPSE && !(item.extra_flags & ITEM_ARTIFACT) &&
+	       !(collector_keyword(item.name, "unique") &&
+		 !collector_keyword(item.name, "powerunique")) &&
+	       !(item.extra_flags & ITEM_TRANSIENT) && !(item.extra_flags & ITEM_NORENT) &&
+	       !(item.extra_flags & ITEM_NOSELL) && !(item.extra2_flags & ITEM2_ACCOUNT_BOUND) &&
+	       (item.wear_flags & ITEM_TAKE);
+}
+
+namespace collector
+{
+namespace
+{
+bool add(uint64_t left, uint64_t right, uint64_t *sum)
+{
+	if (right > std::numeric_limits<uint64_t>::max() - left)
+		return false;
+	*sum = left + right;
+	return true;
+}
+
+bool hexadecimal(char value)
+{
+	return (value >= '0' && value <= '9') || (value >= 'a' && value <= 'f');
+}
+
+bool valid_death_operation(std::string_view operation)
+{
+	return operation.size() == death_operation_hex_size &&
+	       std::all_of(operation.begin(), operation.end(), hexadecimal) &&
+	       std::any_of(operation.begin(), operation.end(),
+			   [](char value) { return value != '0'; });
+}
+
+bool valid_death_operation(const death_operation_id &operation)
+{
+	return operation[death_operation_hex_size] == '\0' &&
+	       valid_death_operation(std::string_view(operation.data(), death_operation_hex_size));
+}
+
+bool cancellation_reason(reason why)
+{
+	switch (why)
+	{
+	case reason::claimed:
+	case reason::destroyed:
+	case reason::quarantined:
+	case reason::excluded:
+	case reason::character_deleted:
+	case reason::season_reset:
+		return true;
+	case reason::none:
+	case reason::holding_elapsed:
+		return false;
+	}
+	return false;
+}
+
+bool valid_reason(reason why)
+{
+	return why == reason::none || cancellation_reason(why) || why == reason::holding_elapsed;
+}
+
+outcome check(const record *entry, uint64_t expected, state required)
+{
+	if (!entry || !valid_record(*entry))
+		return outcome::invalid;
+	if (entry->revision != expected || entry->status != required)
+		return outcome::conflict;
+	if (entry->revision == std::numeric_limits<uint64_t>::max())
+		return outcome::overflow;
+	return outcome::applied;
+}
+}
+
+bool valid_rules(const rules &policy)
+{
+	return policy.collection_delay && policy.sale_delay >= policy.collection_delay &&
+	       policy.holding_duration && policy.price_percent && policy.minimum_value;
+}
+
+bool terminal(state status)
+{
+	return status == state::purchased || status == state::cancelled || status == state::expired;
+}
+
+bool valid_record(const record &entry)
+{
+	uint64_t collect_at = 0, sale_at = 0;
+	if (entry.version != record_version || !entry.listing || !entry.beneficiary || !entry.uid ||
+	    !entry.item_revision || !entry.revision || !entry.policy.enabled ||
+	    !valid_rules(entry.policy) || !valid_death_operation(entry.death_operation) ||
+	    !add(entry.death_time, entry.policy.collection_delay, &collect_at) ||
+	    !add(entry.death_time, entry.policy.sale_delay, &sale_at) ||
+	    entry.collect_at != collect_at || entry.sale_at != sale_at ||
+	    entry.status < state::candidate || entry.status > state::expired ||
+	    !valid_reason(entry.closed_reason) ||
+	    (entry.price_value && entry.price_value < entry.policy.minimum_value))
+		return false;
+	const bool available = entry.available_at != 0;
+	const bool availability_valid =
+		available && entry.price_value && entry.available_at >= entry.sale_at &&
+		entry.expires_at >= entry.available_at &&
+		entry.expires_at - entry.available_at >= entry.policy.holding_duration &&
+		(entry.holding_paused ? entry.paused_at >= entry.available_at : !entry.paused_at);
+	const bool before_availability = !entry.available_at && !entry.expires_at &&
+					 !entry.holding_paused && !entry.paused_at;
+	switch (entry.status)
+	{
+	case state::candidate:
+		return !entry.price_value && before_availability &&
+		       entry.closed_reason == reason::none;
+	case state::collected:
+		return entry.price_value && before_availability &&
+		       entry.closed_reason == reason::none;
+	case state::available:
+		return availability_valid && entry.closed_reason == reason::none;
+	case state::purchased:
+		return availability_valid && !entry.holding_paused &&
+		       entry.closed_reason == reason::none;
+	case state::cancelled:
+		if (!cancellation_reason(entry.closed_reason))
+			return false;
+		if (entry.closed_reason == reason::claimed)
+			return !entry.price_value && before_availability;
+		return entry.price_value ? (available ? availability_valid : before_availability) :
+					   before_availability;
+	case state::expired:
+		return availability_valid && !entry.holding_paused &&
+		       entry.closed_reason == reason::holding_elapsed;
+	}
+	return false;
+}
+
+outcome price(int64_t base_value, const rules &policy, uint64_t *value)
+{
+	if (!value || !valid_rules(policy))
+		return outcome::invalid;
+	// Negative/zero recorded values receive the minimum fee. Divide before
+	// multiplying, then round fractional copper upward without overflowing.
+	const uint64_t base = base_value > 0 ? static_cast<uint64_t>(base_value) : 0;
+	const uint64_t whole = policy.price_percent / 100;
+	const uint64_t remainder = policy.price_percent % 100;
+	const uint64_t maximum = std::numeric_limits<uint64_t>::max();
+	if (whole && base > maximum / whole)
+		return outcome::overflow;
+	uint64_t result = 0;
+	const uint64_t fractional =
+		(base / 100) * remainder + ((base % 100) * remainder + 99) / 100;
+	if (!add(base * whole, fractional, &result))
+		return outcome::overflow;
+	*value = std::max(result, policy.minimum_value);
+	return outcome::applied;
+}
+
+outcome enroll(uint64_t listing, std::string_view death_operation, uint32_t beneficiary,
+	       uint64_t uid, uint64_t item_revision, uint64_t death_time, const rules &policy,
+	       record *result)
+{
+	if (!result || !listing || !valid_death_operation(death_operation) || !beneficiary ||
+	    !uid || !item_revision || !policy.enabled || !valid_rules(policy))
+		return outcome::invalid;
+	record candidate;
+	if (!add(death_time, policy.collection_delay, &candidate.collect_at) ||
+	    !add(death_time, policy.sale_delay, &candidate.sale_at))
+		return outcome::overflow;
+	candidate.listing = listing;
+	std::copy(death_operation.begin(), death_operation.end(),
+		  candidate.death_operation.begin());
+	candidate.beneficiary = beneficiary;
+	candidate.uid = uid;
+	candidate.item_revision = item_revision;
+	candidate.death_time = death_time;
+	candidate.revision = 1;
+	candidate.policy = policy;
+	*result = candidate;
+	return outcome::applied;
+}
+
+outcome cancel(record *entry, uint64_t expected_revision, reason why)
+{
+	if (!entry || !cancellation_reason(why))
+		return outcome::invalid;
+	const auto checked = check(entry, expected_revision, entry->status);
+	if (checked != outcome::applied)
+		return checked;
+	if (terminal(entry->status) ||
+	    (why == reason::claimed && entry->status != state::candidate))
+		return outcome::conflict;
+	const bool held = entry->status == state::collected || entry->status == state::available;
+	if (held && entry->item_revision == std::numeric_limits<uint64_t>::max())
+		return outcome::overflow;
+	entry->status = state::cancelled;
+	entry->closed_reason = why;
+	entry->holding_paused = false;
+	entry->paused_at = 0;
+	if (held)
+		++entry->item_revision;
+	++entry->revision;
+	return outcome::applied;
+}
+
+outcome collect(record *entry, uint64_t expected_revision, uint64_t expected_item_revision,
+		uint64_t current_item_revision, bool active_unclaimed, int64_t current_base_value,
+		uint64_t now)
+{
+	const auto checked = check(entry, expected_revision, state::candidate);
+	if (checked != outcome::applied)
+		return checked;
+	if (now < entry->collect_at)
+		return outcome::not_due;
+	if (!active_unclaimed || !current_item_revision ||
+	    expected_item_revision != current_item_revision ||
+	    current_item_revision < entry->item_revision)
+		return outcome::conflict;
+	if (current_item_revision == std::numeric_limits<uint64_t>::max())
+		return outcome::overflow;
+	uint64_t gold = 0;
+	const auto priced = price(current_base_value, entry->policy, &gold);
+	if (priced != outcome::applied)
+		return priced;
+	entry->price_value = gold;
+	entry->item_revision = current_item_revision + 1;
+	entry->status = state::collected;
+	++entry->revision;
+	return outcome::applied;
+}
+
+outcome activate(record *entry, uint64_t expected_revision, uint64_t now)
+{
+	const auto checked = check(entry, expected_revision, state::collected);
+	if (checked != outcome::applied)
+		return checked;
+	if (now < entry->sale_at)
+		return outcome::not_due;
+	uint64_t expiry = 0;
+	if (!add(now, entry->policy.holding_duration, &expiry))
+		return outcome::overflow;
+	entry->available_at = now;
+	entry->expires_at = expiry;
+	entry->status = state::available;
+	++entry->revision;
+	return outcome::applied;
+}
+
+outcome purchase(record *entry, uint64_t expected_revision, uint32_t actor, uint64_t carried_value,
+		 bool has_capacity, uint64_t now)
+{
+	const auto checked = check(entry, expected_revision, state::available);
+	if (checked != outcome::applied)
+		return checked;
+	if (!actor || actor != entry->beneficiary)
+		return outcome::forbidden;
+	if (entry->holding_paused || now < entry->available_at || now >= entry->expires_at)
+		return outcome::conflict;
+	if (!has_capacity)
+		return outcome::capacity;
+	if (carried_value < entry->price_value)
+		return outcome::insufficient_funds;
+	if (entry->item_revision == std::numeric_limits<uint64_t>::max())
+		return outcome::overflow;
+	entry->status = state::purchased;
+	++entry->item_revision;
+	++entry->revision;
+	return outcome::applied;
+}
+
+outcome expire(record *entry, uint64_t expected_revision, uint64_t now)
+{
+	const auto checked = check(entry, expected_revision, state::available);
+	if (checked != outcome::applied)
+		return checked;
+	if (entry->holding_paused || now < entry->expires_at)
+		return outcome::not_due;
+	if (entry->item_revision == std::numeric_limits<uint64_t>::max())
+		return outcome::overflow;
+	entry->status = state::expired;
+	entry->closed_reason = reason::holding_elapsed;
+	++entry->item_revision;
+	++entry->revision;
+	return outcome::applied;
+}
+
+outcome pause(record *entry, uint64_t expected_revision, uint64_t now)
+{
+	const auto checked = check(entry, expected_revision, state::available);
+	if (checked != outcome::applied)
+		return checked;
+	if (entry->holding_paused || now < entry->available_at || now >= entry->expires_at)
+		return outcome::conflict;
+	entry->holding_paused = true;
+	entry->paused_at = now;
+	++entry->revision;
+	return outcome::applied;
+}
+
+outcome resume(record *entry, uint64_t expected_revision, uint64_t now)
+{
+	const auto checked = check(entry, expected_revision, state::available);
+	if (checked != outcome::applied)
+		return checked;
+	if (!entry->holding_paused || now < entry->paused_at)
+		return outcome::conflict;
+	uint64_t expiry = 0;
+	if (!add(entry->expires_at, now - entry->paused_at, &expiry))
+		return outcome::overflow;
+	entry->expires_at = expiry;
+	entry->holding_paused = false;
+	entry->paused_at = 0;
+	++entry->revision;
+	return outcome::applied;
+}
+
+bool due_queue::update(const record &entry)
+{
+	if (!valid_record(entry))
+		return false;
+	uint64_t deadline = 0;
+	switch (entry.status)
+	{
+	case state::candidate:
+		deadline = entry.collect_at;
+		break;
+	case state::collected:
+		deadline = entry.sale_at;
+		break;
+	case state::available:
+		if (entry.holding_paused)
+		{
+			erase(entry.listing);
+			return true;
+		}
+		deadline = entry.expires_at;
+		break;
+	case state::purchased:
+	case state::cancelled:
+	case state::expired:
+		erase(entry.listing);
+		return true;
+	default:
+		return false;
+	}
+	// Insert before erasing the old deadline so allocation failure leaves the
+	// existing work scheduled. The listing map must be restored on failure.
+	const auto previous = by_listing.find(entry.listing);
+	if (previous != by_listing.end() && previous->second == deadline)
+		return true;
+	by_deadline.emplace(deadline, entry.listing);
+	try
+	{
+		if (previous == by_listing.end())
+			by_listing.emplace(entry.listing, deadline);
+		else
+		{
+			by_deadline.erase({ previous->second, entry.listing });
+			previous->second = deadline;
+		}
+	}
+	catch (...)
+	{
+		by_deadline.erase({ deadline, entry.listing });
+		throw;
+	}
+	return true;
+}
+
+bool due_queue::deadline(uint64_t listing, uint64_t *value) const
+{
+	if (!listing || !value)
+		return false;
+	const auto found = by_listing.find(listing);
+	if (found == by_listing.end())
+		return false;
+	*value = found->second;
+	return true;
+}
+
+bool due_queue::defer(uint64_t listing, uint64_t deadline)
+{
+	if (!listing || !deadline)
+		return false;
+	auto previous = by_listing.find(listing);
+	if (previous == by_listing.end())
+		return false;
+	if (deadline <= previous->second)
+		return true;
+	try
+	{
+		const auto inserted = by_deadline.emplace(deadline, listing);
+		if (!inserted.second)
+			return false;
+		by_deadline.erase({ previous->second, listing });
+		previous->second = deadline;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+void due_queue::erase(uint64_t listing)
+{
+	const auto found = by_listing.find(listing);
+	if (found == by_listing.end())
+		return;
+	by_deadline.erase({ found->second, listing });
+	by_listing.erase(found);
+}
+
+std::vector<uint64_t> due_queue::lease_due(uint64_t now, size_t limit, uint64_t lease_until)
+{
+	std::vector<uint64_t> result;
+	if (!limit || lease_until <= now)
+		return result;
+	result.reserve(std::min(limit, by_deadline.size()));
+	for (auto it = by_deadline.begin();
+	     it != by_deadline.end() && it->first <= now && result.size() < limit; ++it)
+		result.push_back(it->second);
+	// Selection completes before mutation, so allocation failure leaves every
+	// deadline untouched. Node handles then move keys without allocating.
+	for (uint64_t listing : result)
+	{
+		const auto found = by_listing.find(listing);
+		if (found == by_listing.end())
+			continue;
+		auto node = by_deadline.extract({ found->second, listing });
+		if (node.empty())
+			continue;
+		node.value().first = lease_until;
+		by_deadline.insert(std::move(node));
+		found->second = lease_until;
+	}
+	return result;
+}
+
+void due_queue::swap(due_queue &other) noexcept
+{
+	by_deadline.swap(other.by_deadline);
+	by_listing.swap(other.by_listing);
+}
+}

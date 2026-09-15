@@ -120,6 +120,12 @@
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "economy/auction_transaction.h"
+#include "economy/collector_catalog_cache.h"
+#include "economy/collector_listing_pipeline.h"
+#include "economy/collector_maintenance.h"
+#include "economy/collector_presence.h"
+#include "economy/collector_service.h"
+#include "economy/collector_transaction.h"
 #include "combat/combat_outcome_transaction.h"
 #include "guild/artifact_guild_transaction.h"
 #include "economy/boon_reward_transaction.h"
@@ -263,6 +269,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	item_movement_transaction_handle_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
+	collector_transaction_handle_completions(completions, count);
 	combat_outcome_transaction_handle_completions(completions, count);
 	artifact_guild_transaction_handle_completions(completions, count);
 	boon_reward_transaction_handle_completions(completions, count);
@@ -282,6 +289,10 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return boon_reward_transaction_outbox_delivery(record, context);
 	if (record.destination == 9)
 		return zone_touch_transaction_outbox_delivery(record, context);
+	if (record.destination == COLLECTOR_OUTBOX_DESTINATION)
+		return collector_transaction_outbox_delivery(record, context);
+	if (record.destination == CORPSE_LIFECYCLE_OUTBOX_DESTINATION)
+		return corpse_lifecycle_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
 #endif
@@ -739,6 +750,9 @@ void run_the_game(int port, int sslport)
 	}
 
 	boot_db(mini_mode);
+	if (!mini_mode && !collector_presence_init())
+		logit(LOG_STATUS,
+		      "Collector presence unavailable; collector commands fail closed.");
 
 	// game_up_message(port);
 	init_astral_clock(); // fix the map sight distances
@@ -927,6 +941,12 @@ void run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
+	if (!collector_catalog_cache_refresh())
+		logit(LOG_STATUS,
+		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
+	if (!collector_listing_pipeline_init())
+		logit(LOG_STATUS,
+		      "Collector listing pipeline unavailable; collector commands fail closed.");
 	if (!locker_identify_init(critical_journal_directory))
 		logit(LOG_STATUS,
 		      "Locker identification unavailable: receipt storage could not initialize.");
@@ -975,6 +995,10 @@ void run_the_game(int port, int sslport)
 	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
+	collector_maintenance_shutdown();
+	collector_listing_pipeline_shutdown();
+	collector_presence_shutdown();
+	collector_catalog_cache_shutdown();
 	information_cache_shutdown();
 	help_cache_shutdown();
 	account_recovery_shutdown();
@@ -1176,8 +1200,13 @@ static int get_playing_cmd_from_q(P_char character, struct txt_q *queue, char *d
 		return get_from_q(queue, dest);
 	return get_pending_transaction_cmd_from_q(
 		queue, dest,
-		item_movement_transaction_player_busy(character) || bulk_get_player_busy(character),
-		currency_transaction_player_busy(character));
+		item_movement_transaction_player_busy(character) ||
+			bulk_get_player_busy(character) ||
+			collector_transaction_player_busy(character) ||
+			collector_service_player_busy(character),
+		currency_transaction_player_busy(character) ||
+			collector_transaction_player_busy(character) ||
+			collector_service_player_busy(character));
 }
 
 /** Select the restricted queue throughout ordinary casting or active item use. */
@@ -1976,6 +2005,8 @@ resume_game_loop:
 			critical_gameplay_handle_completions(critical_completions,
 							     critical_completion_count);
 			auction_transaction_publish_outbox();
+			corpse_lifecycle_transaction_publish_outbox();
+			collector_transaction_publish_outbox();
 			combat_outcome_transaction_publish_outbox();
 			artifact_guild_transaction_publish_outbox();
 			for (size_t index = 0; index < critical_completion_count; ++index)
@@ -2015,6 +2046,10 @@ resume_game_loop:
 			}
 			information_cache_pulse();
 			help_cache_pulse();
+			collector_catalog_cache_pulse();
+			collector_maintenance_pulse();
+			collector_presence_pulse();
+			collector_service_pulse();
 			account_recovery_pulse();
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
@@ -3918,7 +3953,9 @@ int process_output(P_desc t)
 	// Pager and string-editor prompts remain available while unrelated work is in flight.
 	bool defer_prompt = t->prompt_mode && realChar && !t->showstr_count && !t->str &&
 			    (item_movement_transaction_player_busy(realChar) ||
-			     currency_transaction_player_busy(realChar));
+			     currency_transaction_player_busy(realChar) ||
+			     collector_transaction_player_busy(realChar) ||
+			     collector_service_player_busy(realChar));
 	if (defer_prompt)
 		output_prompt_mode = FALSE;
 

@@ -142,7 +142,8 @@ int main(int argc, char **argv)
     }
 
     critical_command codec = make_command(
-        7, {{critical_entity_type::item, 9}, {critical_entity_type::player, 2}});
+        7, {{critical_entity_type::item, 9}, {critical_entity_type::player, 2},
+            {critical_entity_type::collector, 87}});
     codec.accepted_at_usec = 1700000000000000ULL;
     codec.expected_revisions = {{{critical_entity_type::item, 9}, 3}};
     assert(critical_command_normalize(&codec));
@@ -153,6 +154,8 @@ int main(int argc, char **argv)
     assert(critical_command_decode(encoded.data(), encoded.size(), &decoded) ==
            critical_command_codec_result::ok);
     assert(critical_command_equal(codec, decoded));
+    assert(decoded.keys.back().type == critical_entity_type::collector &&
+           decoded.keys.back().id == 87);
     auto truncated = encoded;
     truncated.pop_back();
     assert(critical_command_decode(truncated.data(), truncated.size(), &decoded) ==

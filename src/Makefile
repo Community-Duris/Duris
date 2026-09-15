@@ -157,6 +157,24 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_donation_worker.o \
 				 guild/assocs.o \
 				 economy/auction_houses.o \
+				 economy/auction_room_registry.o \
+				 economy/collector_command.o \
+				 economy/collector_codec.o \
+				 economy/collector_policy.o \
+				 economy/collector_config.o \
+				 economy/collector_death_enrollment.o \
+				 economy/collector_catalog_source.o \
+				 economy/collector_catalog_cache.o \
+				 economy/collector_maintenance.o \
+				 economy/collector_listing_pipeline.o \
+				 economy/collector_collection_preparation.o \
+				 economy/collector_purchase_preparation.o \
+				 economy/collector_expiry_preparation.o \
+				 economy/collector_runtime.o \
+				 economy/collector_presence.o \
+				 economy/collector_service.o \
+				 economy/collector_transaction.o \
+				 economy/collector_repository.o \
 				 classes/bard.o \
 				 magic/beh_magic.o \
          magic/blispells.o \
@@ -269,6 +287,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_player_snapshot_file.o \
 				 flatfile/flatfile_item_uid_allocator.o \
 				 flatfile/flatfile_item_repository.o \
+				 flatfile/flatfile_collector_repository.o \
 				 flatfile/flatfile_artifact_repository.o \
 				 flatfile/flatfile_corpse_repository.o \
 				 flatfile/flatfile_corpse_ownership.o \
@@ -298,6 +317,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_world_item_repository.o \
 				 flatfile/flatfile_world_quest_history.o \
 				 persistence/corpse_lifecycle_transaction.o \
+				 persistence/corpse_lifecycle_repository.o \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \

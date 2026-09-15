@@ -3,6 +3,7 @@
 
 #include "persistence/corpse_lifecycle_command.h"
 #include "persistence/critical_command_coordinator.h"
+#include "persistence/critical_outbox.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -43,6 +44,9 @@ bool corpse_lifecycle_transaction_forget(uint32_t owner_pid, uint32_t save_id);
 void corpse_lifecycle_transaction_pulse(void);
 void corpse_lifecycle_transaction_handle_completions(const critical_completion *completions,
 						     size_t count);
+critical_outbox_delivery_result
+corpse_lifecycle_transaction_outbox_delivery(const critical_outbox_record &record, void *context);
+void corpse_lifecycle_transaction_publish_outbox(void);
 bool corpse_lifecycle_transaction_busy(uint32_t owner_pid, uint32_t save_id);
 corpse_lifecycle_transaction_health corpse_lifecycle_transaction_health_copy(void);
 void corpse_lifecycle_transaction_reset_for_tests(void);
