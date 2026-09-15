@@ -144,6 +144,7 @@ SQL_SOURCES = [
     "economy/coin_transfer_command.c", "player/player_snapshot_codec.c",
     "economy/collector_command.c", "economy/collector_codec.c",
     "economy/collector_policy.c", "economy/collector_repository.c",
+    "persistence/corpse_lifecycle_command.c", "persistence/corpse_lifecycle_repository.c",
     "persistence/critical_command_repository.c",
 ]
 

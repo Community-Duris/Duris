@@ -219,7 +219,7 @@ def add_death_conflict(state_root: pathlib.Path, parent_uid: int) -> int:
         data = bytearray(path.read_bytes())
         require(data[:8] == b"DUROWN\0\0", "custody fixture magic changed")
         version, size, _ = struct.unpack_from("<IIQ", data, 8)
-        require(version == 3 and size == len(data) - 56, "custody fixture format changed")
+        require(version == 4 and size == len(data) - 56, "custody fixture format changed")
         require(hashlib.sha256(data[56:]).digest() == data[24:56], "invalid custody fixture")
         owners, items, _ = struct.unpack_from("<III", data, 56)
         at = 68 + owners * 25

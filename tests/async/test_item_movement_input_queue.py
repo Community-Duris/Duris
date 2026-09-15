@@ -66,6 +66,19 @@ GET_PLAYING = extract(
 DISPATCH_PLAYING = extract(
     COMM_PATH, "static void dispatch_playing_command(P_char character, char *input)"
 )
+CHECK_EQ_WORTH_USING = extract(
+    SRC / "mobact.c", "void CheckEqWorthUsing(P_char ch, P_obj obj)"
+)
+# Authoritative scavenged roots still get the normal equipment evaluation. The
+# later guard only blocks an unjournaled reparent into an already-carried bag.
+equip_check = CHECK_EQ_WORTH_USING.index("if (IsBetterObject(ch, obj, 0))")
+authoritative_root_guard = CHECK_EQ_WORTH_USING.index(
+    "if (authoritative)", equip_check
+)
+container_reparent = CHECK_EQ_WORTH_USING.index(
+    "for (ob = ch->carrying; ob; ob = ob2)", authoritative_root_guard
+)
+assert equip_check < authoritative_root_guard < container_reparent
 
 PRELUDE = r'''
 #include "core/utils.h"
@@ -182,7 +195,7 @@ bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_i
 	return true;
 }
 
-void collector_death_enrollment_note_submitted(P_obj, const item_transfer_payload &) {}
+void collector_death_enrollment_note_committed(P_obj, const item_transfer_payload &) {}
 void collector_catalog_cache_invalidate(void) { ++collector_invalidations; }
 
 void logit(const char *, const char *, ...) {}
@@ -973,6 +986,19 @@ int main()
 	assert(item_ownership_runtime_lookup(106, &mobile_after));
 	assert(mobile_after.item_revision == 2 && mobile_after.owner_revision == 10);
 	character_list = &actor;
+	// A vanished scavenger never becomes an aggregate owner: the durable claim
+	// advances the room revision in place, so the same live object remains
+	// immediately available to a player under that new revision.
+	assert(item_ownership_runtime_hydrate(
+		{107, 107, 0, player_owner, 1, 3, 103, item_custody_state::active}));
+	assert(item_movement_transaction_submit(
+		&actor, &abandoned_loot, NULL, room_owner, player_owner,
+		item_transfer_reason::player_get, 0, NULL, NULL, 0, NULL, &reject));
+	item_transfer_payload abandoned_player_get = {};
+	assert(item_transfer_command_decode_payload(submitted_command, &abandoned_player_get));
+	assert(item_owner_identity_equal(abandoned_player_get.from_owner, room_owner) &&
+	       item_owner_identity_equal(abandoned_player_get.to_owner, player_owner) &&
+	       abandoned_player_get.expected_from_revision == 10);
 
     // CHAOS pre-entry multi-root admission stages every root before any command.
     // All fixtures below are in-memory; no persistence service is connected.

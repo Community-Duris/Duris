@@ -321,8 +321,16 @@ int main(int argc, char **argv)
 	auto two_roots = saved;
 	two_roots.items[1].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
 	require(flatfile_world_item_establish(invalid_root.string(), {}, { two_roots }, &error) ==
-			flatfile_world_item_result::invalid,
-		"saved item key with multiple roots was accepted");
+			flatfile_world_item_result::ok,
+		"saved item key with multiple roots was rejected: " + error);
+	corpses.clear();
+	saved_items.clear();
+	require(flatfile_world_item_list(invalid_root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			saved_items.size() == 1 && saved_items[0].items.size() == 2 &&
+			saved_items[0].items[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			saved_items[0].items[1].parent_index == PLAYER_SNAPSHOT_NO_PARENT,
+		"saved item key did not round trip multiple collector-addressable roots");
 
 	flatfile_world_item_player_removal removal;
 	{

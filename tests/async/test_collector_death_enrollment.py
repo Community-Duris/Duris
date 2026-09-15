@@ -9,7 +9,34 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def function_body(text: str, signature: str) -> str:
+    """Return one function from its signature through its closing brace."""
+    start = text.index(signature)
+    opening = text.index("{", start)
+    depth = 0
+    for position in range(opening, len(text)):
+        if text[position] == "{":
+            depth += 1
+        elif text[position] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:position + 1]
+    raise AssertionError(f"unterminated function: {signature}")
+
+
 def main() -> None:
+    movement = (ROOT / "src/item/item_movement_transaction.c").read_text(
+        encoding="utf-8", errors="replace"
+    )
+    publish = function_body(
+        movement,
+        "void publish(std::unordered_map<std::string, pending_movement>::iterator found,",
+    )
+    assert "collector_death_enrollment_note_submitted" not in movement
+    assert publish.index("item_ownership_runtime_apply(entry.payload, result)") < publish.index(
+        "collector_death_enrollment_note_committed(corpse, entry.payload);"
+    )
+
     output = ROOT / "bin" / "tests"
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="collector-death-enrollment-", dir=output) as directory:

@@ -18,7 +18,9 @@ def main() -> None:
     assert "collector_listing_source_load" in pipeline_source
     assert "collector_repository_read_listing" in selected_source
     assert "sql_pool_acquire" in selected_source
-    assert "flat-file collector authority is not available" in selected_source
+    assert "flatfile_collector_repository_read_bootstrap" in selected_source
+    assert "flatfile_collector_repository_read_listing" in selected_source
+    assert "flat-file collector authority root is unavailable" in selected_source
     assert "collector_listing_pipeline_init()" in comm_source
     assert "collector_listing_pipeline_shutdown()" in comm_source
     assert "P_char" not in (ROOT / "src/economy/collector_listing_pipeline.h").read_text()

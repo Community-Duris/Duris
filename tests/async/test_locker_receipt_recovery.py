@@ -25,6 +25,8 @@ SQL = ['src/item/item_transfer_command.c', 'src/item/item_transfer_repository.c'
        'src/account/session_audit_repository.c', 'src/economy/coin_transfer_command.c',
        'src/economy/collector_command.c', 'src/economy/collector_codec.c',
        'src/economy/collector_policy.c', 'src/economy/collector_repository.c',
+       'src/persistence/corpse_lifecycle_command.c',
+       'src/persistence/corpse_lifecycle_repository.c',
        'src/player/player_snapshot_codec.c', 'src/player/player_load_repository.c',
        'src/player/player_load_topology.c', 'src/persistence/persistence_observability.c',
        'src/persistence/critical_command_repository.c']

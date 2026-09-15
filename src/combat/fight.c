@@ -1605,9 +1605,9 @@ bool submit_next_corpse_item(P_char character, P_obj corpse)
 	}
 	if (collector_resume == collector_death_enrollment_resume_result::unavailable)
 	{
-		persistence_report(persistence_severity::info, AVATAR, "collector", "death",
-				   "none", "none", "death_enrollment_waiting_for_catalog",
-				   "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		persistence_report(persistence_severity::info, AVATAR, "collector", "death", "none",
+				   "none", "death_enrollment_waiting_for_catalog", "save_id=%d",
+				   corpse->value[CORPSE_SAVEID]);
 		return false;
 	}
 	const item_owner_identity destination = {
@@ -2852,6 +2852,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
+	collector_death_enrollment_end(corpse);
 	release_after_terminal_death(ch, "death_recovery_completed");
 }
 
@@ -3476,6 +3477,8 @@ void die(P_char ch, P_char killer)
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
+		if (!CHAR_IN_ARENA(ch))
+			collector_death_enrollment_end(death_corpse);
 		GET_HIT(ch) = 1;
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	}

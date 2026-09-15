@@ -4,9 +4,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
-NAME="duris-collector-repository-$$-$RANDOM"
-PASSWORD="collector-repository-$$-$RANDOM"
-IMAGE="${COLLECTOR_REPOSITORY_DB_IMAGE:-mariadb:10.11}"
+NAME="duris-corpse-lifecycle-repository-$$-$RANDOM"
+PASSWORD="corpse-lifecycle-repository-$$-$RANDOM"
+IMAGE="${CORPSE_LIFECYCLE_REPOSITORY_DB_IMAGE:-mariadb:10.11}"
 cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
 trap cleanup EXIT HUP INT TERM
 if [[ "$IMAGE" == mariadb:* ]]; then
@@ -17,11 +17,11 @@ fi
 docker run -d --name "$NAME" -p 127.0.0.1::3306 \
 	-e "$PASSWORD_ENV=$PASSWORD" "$IMAGE" >/dev/null
 mapping="$(docker port "$NAME" 3306/tcp)"
-export ENVIRONMENT=test DB_HOST="${COLLECTOR_REPOSITORY_DB_HOST:-127.0.0.1}" \
+export ENVIRONMENT=test DB_HOST="${CORPSE_LIFECYCLE_REPOSITORY_DB_HOST:-127.0.0.1}" \
 	DB_PORT="${mapping##*:}"
 export DB_USER=root DB_PASSWD="$PASSWORD" MYSQL_PWD="$PASSWORD"
-export DB_NAME=collector_repository_test
-export COLLECTOR_TEST_DB_NAME="$DB_NAME"
+export DB_NAME=corpse_lifecycle_repository_test
+export CORPSE_LIFECYCLE_TEST_DB_NAME="$DB_NAME"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then
 	MYSQL_SSL=(--ssl-mode=PREFERRED)
 else
@@ -48,8 +48,9 @@ done
 mkdir -p "$ROOT/bin/tests"
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
-g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
-	"${MYSQL_CFLAGS[@]}" tests/async/collector_repository_mysql_harness.cpp \
+g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread \
+	-DCORPSE_LIFECYCLE_REPOSITORY_TRACE_SQL -Isrc \
+	"${MYSQL_CFLAGS[@]}" tests/async/corpse_lifecycle_repository_mysql_harness.cpp \
 	src/persistence/critical_command.c src/world/epic_command.c \
 	src/economy/currency_command.c src/item/item_transfer_command.c \
 	src/item/item_transfer_repository.c src/economy/auction_command.c \
@@ -63,9 +64,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
 	src/economy/collector_codec.c src/economy/collector_policy.c \
 	src/economy/collector_repository.c src/persistence/corpse_lifecycle_command.c \
 	src/persistence/corpse_lifecycle_repository.c \
-	src/persistence/critical_command_repository.c \
-	"${MYSQL_LIBS[@]}" -lcrypto \
-	-o "$ROOT/bin/tests/collector_repository_mysql_harness"
-"$ROOT/bin/tests/collector_repository_mysql_harness"
-printf 'collector custody, catalog, currency, replay, and lifecycle transactions (%s): ok\n' \
+	src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
+	-o "$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
+"$ROOT/bin/tests/corpse_lifecycle_repository_mysql_harness"
+printf 'corpse lifecycle authority, materialization, collector, currency, artifact, replay, and rollback transactions (%s): ok\n' \
 	"$IMAGE"

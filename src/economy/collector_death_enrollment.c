@@ -32,8 +32,7 @@ uint64_t death_key(P_char character, P_obj corpse)
 	if (!character || !corpse || !IS_PC(character) || GET_PID(character) <= 0 ||
 	    GET_ITEM_TYPE(corpse) != ITEM_CORPSE ||
 	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE) ||
-	    corpse->value[CORPSE_PID] != GET_PID(character) ||
-	    corpse->value[CORPSE_SAVEID] <= 0)
+	    corpse->value[CORPSE_PID] != GET_PID(character) || corpse->value[CORPSE_SAVEID] <= 0)
 		return 0;
 	return item_corpse_owner_id(static_cast<uint32_t>(GET_PID(character)),
 				    static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
@@ -42,8 +41,8 @@ uint64_t death_key(P_char character, P_obj corpse)
 uint64_t death_key(P_obj corpse)
 {
 	if (!corpse || GET_ITEM_TYPE(corpse) != ITEM_CORPSE ||
-	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE) ||
-	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE) || corpse->value[CORPSE_PID] <= 0 ||
+	    corpse->value[CORPSE_SAVEID] <= 0)
 		return 0;
 	return item_corpse_owner_id(static_cast<uint32_t>(corpse->value[CORPSE_PID]),
 				    static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]));
@@ -73,10 +72,10 @@ void collector_death_enrollment_begin(P_char character, P_obj corpse)
 	}
 	try
 	{
-		pending[key] = {
-			static_cast<uint32_t>(GET_PID(character)),
-			static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]), config->policy, {}
-		};
+		pending[key] = { static_cast<uint32_t>(GET_PID(character)),
+				 static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]),
+				 config->policy,
+				 {} };
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -93,8 +92,8 @@ void collector_death_enrollment_end(P_obj corpse)
 		pending.erase(key);
 }
 
-collector_death_enrollment_resume_result
-collector_death_enrollment_resume(P_char character, P_obj corpse)
+collector_death_enrollment_resume_result collector_death_enrollment_resume(P_char character,
+									   P_obj corpse)
 {
 	const uint64_t key = death_key(character, corpse);
 	if (!key)
@@ -130,9 +129,10 @@ collector_death_enrollment_resume(P_char character, P_obj corpse)
 	return collector_death_enrollment_resume_result::ready;
 }
 
-bool collector_death_enrollment_attach(
-	P_char character, P_obj corpse, const critical_operation_id &proposed_operation,
-	const std::vector<player_item_snapshot> &snapshots, item_transfer_payload *payload)
+bool collector_death_enrollment_attach(P_char character, P_obj corpse,
+				       const critical_operation_id &proposed_operation,
+				       const std::vector<player_item_snapshot> &snapshots,
+				       item_transfer_payload *payload)
 {
 	if (!payload || payload->reason != item_transfer_reason::corpse_create)
 		return true;
@@ -161,8 +161,8 @@ bool collector_death_enrollment_attach(
 		for (const player_item_snapshot &snapshot : snapshots)
 		{
 			const auto authority = std::lower_bound(
-				payload->items.begin(), payload->items.begin() + payload->item_count,
-				snapshot.object_uid,
+				payload->items.begin(),
+				payload->items.begin() + payload->item_count, snapshot.object_uid,
 				[](const item_transfer_entry &item, uint64_t uid)
 				{ return item.item_uid < uid; });
 			if (authority == payload->items.begin() + payload->item_count ||
@@ -183,9 +183,9 @@ bool collector_death_enrollment_attach(
 		return false;
 	}
 	enrollment.present = true;
-	enrollment.death_operation =
-		critical_operation_id_is_zero(death.death_operation) ? proposed_operation :
-								      death.death_operation;
+	enrollment.death_operation = critical_operation_id_is_zero(death.death_operation) ?
+					     proposed_operation :
+					     death.death_operation;
 	enrollment.beneficiary_pid = death.beneficiary_pid;
 	enrollment.death_time = death.corpse_save_id;
 	enrollment.policy = captured_policy(death.policy);
@@ -193,8 +193,7 @@ bool collector_death_enrollment_attach(
 	return true;
 }
 
-void collector_death_enrollment_note_submitted(P_obj corpse,
-					       const item_transfer_payload &payload)
+void collector_death_enrollment_note_committed(P_obj corpse, const item_transfer_payload &payload)
 {
 	if (!corpse || !payload.collector.present)
 		return;

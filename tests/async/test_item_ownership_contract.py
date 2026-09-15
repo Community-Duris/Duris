@@ -56,7 +56,7 @@ class ItemOwnershipContractTests(unittest.TestCase):
         self.assertIn("ITEM_TRANSFER_LEGACY_MAX_ITEMS = 12", header)
         self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 3000", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
-        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 6", header)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 7", header)
         self.assertIn("ITEM_TRANSFER_CORPSE_PAYLOAD_VERSION = 5", header)
         self.assertIn("ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4", header)
         self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3", header)

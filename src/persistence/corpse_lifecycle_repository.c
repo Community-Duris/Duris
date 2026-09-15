@@ -11,6 +11,9 @@
 #include <cerrno>
 #include <climits>
 #include <cstdint>
+#ifdef CORPSE_LIFECYCLE_REPOSITORY_TRACE_SQL
+#include <cstdio>
+#endif
 #include <cstdlib>
 #include <cstring>
 #include <limits>
@@ -29,6 +32,9 @@ constexpr uint8_t artifact_not_in_game = 1;
 constexpr uint8_t artifact_on_player = 3;
 constexpr uint8_t artifact_on_ground = 4;
 constexpr uint8_t artifact_on_corpse = 5;
+constexpr size_t corpse_pid_value_index = 3;
+constexpr size_t corpse_racewar_value_index = 5;
+constexpr size_t corpse_save_id_value_index = 6;
 
 struct corpse_identity
 {
@@ -90,6 +96,10 @@ bool execute(MYSQL *connection, const std::string &sql)
 {
 	if (mysql_real_query(connection, sql.data(), sql.size()) == 0)
 		return true;
+#ifdef CORPSE_LIFECYCLE_REPOSITORY_TRACE_SQL
+	fprintf(stderr, "corpse lifecycle repository SQL failed: %u %s\n%s\n",
+		mysql_errno(connection), mysql_error(connection), sql.c_str());
+#endif
 	errno = static_cast<int>(mysql_errno(connection));
 	return false;
 }
@@ -173,9 +183,8 @@ const physical_item *find_physical(const std::vector<physical_item> &items, uint
 	return found == items.end() ? nullptr : &*found;
 }
 
-bool load_physical_items(MYSQL *connection, uint32_t corpse_id,
-			 std::vector<physical_item> *items, std::array<int32_t, 4> *money,
-			 unsigned int *result_code)
+bool load_physical_items(MYSQL *connection, uint32_t corpse_id, std::vector<physical_item> *items,
+			 std::array<int32_t, 4> *money, unsigned int *result_code)
 {
 	if (!execute(connection,
 		     "SELECT id,COALESCE(container_id,0),vnum,weight,extra_flags,value0,value1,"
@@ -258,7 +267,8 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id,
 		{
 			if (!ids.insert(item.id).second || item.parent_id == item.id ||
 			    (item.parent_id && !find_physical(*items, item.parent_id)) ||
-			    (!item.skipped && (!item.item_uid || !uids.insert(item.item_uid).second)))
+			    (!item.skipped &&
+			     (!item.item_uid || !uids.insert(item.item_uid).second)))
 			{
 				*result_code = EILSEQ;
 				return true;
@@ -322,21 +332,22 @@ bool load_physical_items(MYSQL *connection, uint32_t corpse_id,
 		for (size_t depth = 0; parent && depth <= items->size(); ++depth)
 		{
 			parent->adjusted_weight -= skipped.weight;
-			if (parent->adjusted_weight < INT32_MIN || parent->adjusted_weight > INT32_MAX)
+			if (parent->adjusted_weight < INT32_MIN ||
+			    parent->adjusted_weight > INT32_MAX)
 			{
 				*result_code = ERANGE;
 				return true;
 			}
-			parent = parent->parent_id ? find_physical(items, parent->parent_id) : nullptr;
+			parent = parent->parent_id ? find_physical(items, parent->parent_id) :
+						     nullptr;
 		}
 	}
 	return true;
 }
 
 bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
-			    std::vector<physical_item> *physical,
-			    item_transfer_payload *transfer, bool for_update,
-			    unsigned int *result_code)
+			    std::vector<physical_item> *physical, item_transfer_payload *transfer,
+			    bool for_update, unsigned int *result_code)
 {
 	std::vector<item_transfer_entry> entries;
 	try
@@ -388,9 +399,9 @@ bool build_transfer_entries(MYSQL *connection, uint64_t corpse_owner_id,
 		    !parse_u64(row[1], &root) || !parse_u64(row[2], &parent) ||
 		    !parse_u64(row[3], &revision) || !parse_i32(row[4], &vnum) ||
 		    !parse_u64(row[5], &state) || uid != entries[index].item_uid ||
-		    root != entries[index].root_item_uid || parent != entries[index].parent_item_uid ||
-		    vnum != entries[index].vnum || state != static_cast<uint8_t>(item_custody_state::active) ||
-		    !revision)
+		    root != entries[index].root_item_uid ||
+		    parent != entries[index].parent_item_uid || vnum != entries[index].vnum ||
+		    state != static_cast<uint8_t>(item_custody_state::active) || !revision)
 		{
 			mysql_free_result(rows);
 			*result_code = ESTALE;
@@ -428,8 +439,9 @@ bool load_corpse_identity(MYSQL *connection, const corpse_lifecycle_payload &pay
 			  uint64_t *catalog_revision, corpse_identity *identity,
 			  unsigned int *result_code)
 {
-	if (!execute(connection,
-		     "SELECT catalog_revision FROM corpse_catalog_state WHERE state_id=1 FOR UPDATE"))
+	if (!execute(
+		    connection,
+		    "SELECT catalog_revision FROM corpse_catalog_state WHERE state_id=1 FOR UPDATE"))
 		return false;
 	MYSQL_RES *rows = mysql_store_result(connection);
 	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
@@ -452,8 +464,8 @@ bool load_corpse_identity(MYSQL *connection, const corpse_lifecycle_payload &pay
 	const std::string query =
 		"SELECT id,player_name,corpse_revision,room_vnum,COALESCE(value3,0) FROM corpses "
 		"WHERE value3=" +
-		std::to_string(payload.owner_pid) + " AND save_id=" +
-		std::to_string(payload.save_id) + " FOR UPDATE";
+		std::to_string(payload.owner_pid) +
+		" AND save_id=" + std::to_string(payload.save_id) + " FOR UPDATE";
 	if (!execute(connection, query))
 		return false;
 	rows = mysql_store_result(connection);
@@ -473,8 +485,9 @@ bool load_corpse_identity(MYSQL *connection, const corpse_lifecycle_payload &pay
 	const unsigned long *lengths = mysql_fetch_lengths(rows);
 	const bool parsed = lengths && parse_u32(row[0], &identity->id) && identity->id && row[1] &&
 			    lengths[1] <= CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES &&
-			    strlen(row[1]) == lengths[1] && parse_u64(row[2], &identity->revision) &&
-			    identity->revision && parse_i32(row[3], &identity->room_vnum) &&
+			    strlen(row[1]) == lengths[1] &&
+			    parse_u64(row[2], &identity->revision) && identity->revision &&
+			    parse_i32(row[3], &identity->room_vnum) &&
 			    parse_u32(row[4], &stored_owner);
 	if (parsed)
 		identity->player_name.assign(row[1], lengths[1]);
@@ -507,7 +520,7 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 	{
 	case corpse_lifecycle_action::release:
 		transfer->to_owner = { item_owner_type::room,
-					       static_cast<uint64_t>(payload.room_vnum), 0 };
+				       static_cast<uint64_t>(payload.room_vnum), 0 };
 		transfer->reason = item_transfer_reason::player_drop;
 		transfer->expected_to_revision = payload.expected_room_revision;
 		break;
@@ -520,7 +533,8 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 		transfer->to_owner = { item_owner_type::player, payload.destination_player_pid, 0 };
 		transfer->reason = item_transfer_reason::corpse_loot;
 		transfer->expected_to_revision = payload.expected_player_revision;
-		*old_room = { item_owner_type::room, static_cast<uint64_t>(payload.old_room_vnum), 0 };
+		*old_room = { item_owner_type::room, static_cast<uint64_t>(payload.old_room_vnum),
+			      0 };
 		break;
 	case corpse_lifecycle_action::raise_follower:
 		transfer->to_owner = { item_owner_type::player, payload.destination_player_pid, 0 };
@@ -528,26 +542,41 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 		transfer->expected_to_revision = payload.expected_player_revision;
 		break;
 	case corpse_lifecycle_action::release_nested:
-		transfer->to_owner = payload.destination_player_pid ?
-			item_owner_identity{ item_owner_type::player,
-					     payload.destination_player_pid, 0 } :
-			item_owner_identity{ item_owner_type::room,
-					     static_cast<uint64_t>(payload.room_vnum), 0 };
+		transfer->to_owner =
+			payload.destination_player_pid ?
+				item_owner_identity{ item_owner_type::player,
+						     payload.destination_player_pid, 0 } :
+				item_owner_identity{ item_owner_type::room,
+						     static_cast<uint64_t>(payload.room_vnum), 0 };
 		transfer->reason = payload.destination_player_pid ?
 					   item_transfer_reason::corpse_loot :
 					   item_transfer_reason::player_drop;
 		transfer->expected_to_revision = payload.destination_player_pid ?
-						 payload.expected_player_revision :
-						 payload.expected_room_revision;
+							 payload.expected_player_revision :
+							 payload.expected_room_revision;
 		transfer->target_root_item_uid = payload.target_root_item_uid;
 		transfer->target_parent_item_uid = payload.target_parent_item_uid;
-		transfer->expected_target_parent_revision =
-			payload.expected_target_parent_revision;
+		transfer->expected_target_parent_revision = payload.expected_target_parent_revision;
 		break;
 	case corpse_lifecycle_action::upsert:
 	case corpse_lifecycle_action::remove:
 		*result_code = EOPNOTSUPP;
 		return true;
+	}
+	// Current item-transfer commands require a self-identifying corpse context
+	// for every corpse-to-player custody boundary.  The lifecycle command only
+	// needs the identity fields here; materialization remains owned by this
+	// repository and the item repository never mutates the legacy corpse rows.
+	if (transfer->reason == item_transfer_reason::corpse_loot)
+	{
+		transfer->corpse.present = true;
+		transfer->corpse.room_vnum = payload.room_vnum;
+		transfer->corpse.values[corpse_pid_value_index] =
+			static_cast<int32_t>(payload.owner_pid);
+		transfer->corpse.values[corpse_racewar_value_index] = 0;
+		transfer->corpse.values[corpse_save_id_value_index] =
+			static_cast<int32_t>(payload.save_id);
+		transfer->corpse.owner_name = payload.owner_name;
 	}
 	if (!item_owner_identity_valid(transfer->from_owner) ||
 	    !item_owner_identity_valid(transfer->to_owner) ||
@@ -562,8 +591,7 @@ bool prepare_transfer(const corpse_lifecycle_payload &payload, uint64_t corpse_o
 bool prepare_physical_destination(MYSQL *connection, const corpse_lifecycle_payload &payload,
 				  const item_transfer_payload &transfer,
 				  const std::vector<physical_item> &items,
-				  uint32_t *external_parent_id,
-				  unsigned int *result_code)
+				  uint32_t *external_parent_id, unsigned int *result_code)
 {
 	*external_parent_id = 0;
 	if (transfer.to_owner.type == item_owner_type::destruction)
@@ -578,7 +606,7 @@ bool prepare_physical_destination(MYSQL *connection, const corpse_lifecycle_payl
 						  "player_items" :
 						  "saved_items";
 		if (!execute(connection, "SELECT obj_uid FROM " + table + " WHERE obj_uid IN (" +
-						uids + ") FOR UPDATE"))
+						 uids + ") FOR UPDATE"))
 			return false;
 		MYSQL_RES *rows = mysql_store_result(connection);
 		if (!rows)
@@ -596,21 +624,20 @@ bool prepare_physical_destination(MYSQL *connection, const corpse_lifecycle_payl
 	}
 	if (!payload.target_parent_item_uid)
 		return true;
-	const std::string table = transfer.to_owner.type == item_owner_type::player ?
-					  "player_items" :
-					  "saved_items";
+	const std::string table =
+		transfer.to_owner.type == item_owner_type::player ? "player_items" : "saved_items";
 	const std::string owner_clause =
 		transfer.to_owner.type == item_owner_type::player ?
 			"pid=" + std::to_string(payload.destination_player_pid) :
 			"room_vnum=" + std::to_string(payload.room_vnum);
-	if (!execute(connection, "SELECT id FROM " + table + " WHERE " + owner_clause +
-				     " AND obj_uid=" +
-				     std::to_string(payload.target_parent_item_uid) + " FOR UPDATE"))
+	if (!execute(connection,
+		     "SELECT id FROM " + table + " WHERE " + owner_clause + " AND obj_uid=" +
+			     std::to_string(payload.target_parent_item_uid) + " FOR UPDATE"))
 		return false;
 	MYSQL_RES *rows = mysql_store_result(connection);
 	MYSQL_ROW row = rows ? mysql_fetch_row(rows) : nullptr;
-	const bool ok = row && mysql_num_rows(rows) == 1 &&
-			parse_u32(row[0], external_parent_id) && *external_parent_id;
+	const bool ok = row && mysql_num_rows(rows) == 1 && parse_u32(row[0], external_parent_id) &&
+			*external_parent_id;
 	if (rows)
 		mysql_free_result(rows);
 	if (!ok)
@@ -660,7 +687,8 @@ bool prepare_artifacts(MYSQL *connection, const corpse_lifecycle_payload &payloa
 				row && mysql_num_rows(rows) == 1 && parse_u64(row[0], &revision) &&
 				revision != UINT64_MAX && parse_i64(row[1], &bind_owner) &&
 				bind_owner >= INT32_MIN && bind_owner <= INT32_MAX &&
-				parse_i64(row[2], &bind_timer) && parse_u64(row[3], &item_uid_null) &&
+				parse_i64(row[2], &bind_timer) &&
+				parse_u64(row[3], &item_uid_null) &&
 				parse_u64(row[4], &stored_uid) &&
 				parse_u64(row[5], &item_revision_null) &&
 				parse_u64(row[6], &stored_item_revision) && row[7] &&
@@ -682,8 +710,9 @@ bool prepare_artifacts(MYSQL *connection, const corpse_lifecycle_payload &payloa
 				*result_code = ESTALE;
 				return true;
 			}
-			artifacts->push_back({ item.vnum, item.item_uid, item.item_revision, revision,
-					       static_cast<int32_t>(bind_owner), bind_timer });
+			artifacts->push_back({ item.vnum, item.item_uid, item.item_revision,
+					       revision, static_cast<int32_t>(bind_owner),
+					       bind_timer });
 		}
 	}
 	catch (const std::bad_alloc &)
@@ -772,9 +801,9 @@ bool prepare_wallet(MYSQL *connection, const corpse_lifecycle_payload &payload,
 	const size_t account_length = strnlen(plan->account_name.data(), plan->account_name.size());
 	if (!escape_text(connection, plan->account_name.data(), account_length, &escaped_account))
 		return false;
-	if (!execute(connection,
-		     "INSERT IGNORE INTO account_banks(account_name,racewar) VALUES('" +
-			     escaped_account + "'," + std::to_string(plan->racewar) + ")") ||
+	if (!execute(connection, "INSERT IGNORE INTO account_banks(account_name,racewar) VALUES('" +
+					 escaped_account + "'," + std::to_string(plan->racewar) +
+					 ")") ||
 	    !execute(connection,
 		     "SELECT id,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision "
 		     "FROM account_banks WHERE account_name='" +
@@ -820,8 +849,7 @@ bool prepare_wallet(MYSQL *connection, const corpse_lifecycle_payload &payload,
 	return true;
 }
 
-owner_lock *find_owner_lock(std::vector<owner_lock> *locks,
-			    const item_owner_identity &owner)
+owner_lock *find_owner_lock(std::vector<owner_lock> *locks, const item_owner_identity &owner)
 {
 	const auto found = std::find_if(locks->begin(), locks->end(), [&](const owner_lock &entry)
 					{ return item_owner_identity_equal(entry.owner, owner); });
@@ -830,8 +858,8 @@ owner_lock *find_owner_lock(std::vector<owner_lock> *locks,
 
 bool lock_transfer_owners(MYSQL *connection, item_transfer_payload *transfer,
 			  const item_owner_identity &old_room,
-			  const corpse_lifecycle_payload &payload,
-			  std::vector<owner_lock> *locks, unsigned int *result_code)
+			  const corpse_lifecycle_payload &payload, std::vector<owner_lock> *locks,
+			  unsigned int *result_code)
 {
 	try
 	{
@@ -840,12 +868,14 @@ bool lock_transfer_owners(MYSQL *connection, item_transfer_payload *transfer,
 		locks->push_back({ transfer->to_owner, 0 });
 		if (old_room.type != item_owner_type::unknown)
 			locks->push_back({ old_room, 0 });
-		std::sort(locks->begin(), locks->end(), [](const owner_lock &left, const owner_lock &right)
+		std::sort(locks->begin(), locks->end(),
+			  [](const owner_lock &left, const owner_lock &right)
 			  { return owner_less(left.owner, right.owner); });
-		if (std::adjacent_find(locks->begin(), locks->end(), [](const owner_lock &left,
-								 const owner_lock &right) {
-			    return item_owner_identity_equal(left.owner, right.owner);
-			}) != locks->end())
+		if (std::adjacent_find(locks->begin(), locks->end(),
+				       [](const owner_lock &left, const owner_lock &right) {
+					       return item_owner_identity_equal(left.owner,
+										right.owner);
+				       }) != locks->end())
 		{
 			*result_code = EINVAL;
 			return true;
@@ -911,7 +941,7 @@ bool apply_wallet(MYSQL *connection, const critical_command &command, const wall
 	wallet_command.accepted_at_usec = command.accepted_at_usec;
 	bool mutation = false;
 	if (!currency_repository_execute(connection, wallet_command, currency, result_code,
-					  &mutation))
+					 &mutation))
 		return false;
 	if (*result_code)
 		return true;
@@ -940,10 +970,11 @@ bool apply_artifacts(MYSQL *connection, const corpse_lifecycle_payload &payload,
 			     payload.destination_player_pid);
 	const uint8_t owned = destroyed ? 0 : 1;
 	const uint8_t location_type = destroyed ? artifact_not_in_game :
-				      player ? artifact_on_player : artifact_on_ground;
+				      player	? artifact_on_player :
+						  artifact_on_ground;
 	const int32_t location = destroyed ? -1 :
-				 player ? static_cast<int32_t>(payload.destination_player_pid) :
-					  payload.room_vnum;
+				 player	   ? static_cast<int32_t>(payload.destination_player_pid) :
+					     payload.room_vnum;
 	for (const artifact_state &artifact : artifacts)
 	{
 		const int32_t bind_owner = destroyed ? -1 : artifact.bind_owner_pid;
@@ -960,11 +991,10 @@ bool apply_artifacts(MYSQL *connection, const corpse_lifecycle_payload &payload,
 				     ",bind_owner_pid=" + std::to_string(bind_owner) +
 				     ",bind_timer_epoch=" + std::to_string(bind_timer) +
 				     ",item_uid=" + std::to_string(artifact.item_uid) +
-				     ",item_revision=" +
-				     std::to_string(artifact.item_revision + 1) + ",revision=" +
-				     std::to_string(artifact.domain_revision + 1) + " WHERE vnum=" +
-				     std::to_string(artifact.vnum) + " AND revision=" +
-				     std::to_string(artifact.domain_revision)) ||
+				     ",item_revision=" + std::to_string(artifact.item_revision + 1) +
+				     ",revision=" + std::to_string(artifact.domain_revision + 1) +
+				     " WHERE vnum=" + std::to_string(artifact.vnum) +
+				     " AND revision=" + std::to_string(artifact.domain_revision)) ||
 		    mysql_affected_rows(connection) != 1 ||
 		    !execute(connection,
 			     "UPDATE artifacts SET owned='" + std::string(owned ? "Y" : "N") +
@@ -972,15 +1002,14 @@ bool apply_artifacts(MYSQL *connection, const corpse_lifecycle_payload &payload,
 				     ",location=" + std::to_string(location) +
 				     ",lastUpdate=CURRENT_TIMESTAMP(6) WHERE vnum=" +
 				     std::to_string(artifact.vnum) + " AND owned='Y' AND locType=" +
-				     std::to_string(artifact_on_corpse) + " AND location=" +
-				     std::to_string(payload.owner_pid)) ||
+				     std::to_string(artifact_on_corpse) +
+				     " AND location=" + std::to_string(payload.owner_pid)) ||
 		    mysql_affected_rows(connection) != 1 ||
-		    !execute(connection,
-			     "UPDATE artifacts_mortal SET owned='" +
-				     std::string(owned ? "Y" : "N") + ",locType=" +
-				     std::to_string(location_type) + ",location=" +
-				     std::to_string(location) + " WHERE vnum=" +
-				     std::to_string(artifact.vnum)))
+		    !execute(connection, "UPDATE artifacts_mortal SET owned='" +
+						 std::string(owned ? "Y" : "N") +
+						 "',locType=" + std::to_string(location_type) +
+						 ",location=" + std::to_string(location) +
+						 " WHERE vnum=" + std::to_string(artifact.vnum)))
 			return false;
 		if (destroyed &&
 		    !execute(connection,
@@ -997,13 +1026,12 @@ bool copy_related_rows(MYSQL *connection, bool player, uint32_t source_id, uint3
 	const std::string affects = player ? "player_item_affects" : "saved_item_affects";
 	const std::string extra = player ? "player_item_extra_descr" : "saved_item_extra_descr";
 	return execute(connection,
-		       "INSERT INTO " + affects +
-			       "(item_id,location,modifier) SELECT " + std::to_string(target_id) +
+		       "INSERT INTO " + affects + "(item_id,location,modifier) SELECT " +
+			       std::to_string(target_id) +
 			       ",location,modifier FROM corpse_item_affects WHERE item_id=" +
 			       std::to_string(source_id)) &&
 	       execute(connection,
-		       "INSERT INTO " + extra +
-			       "(item_id,keyword,description) SELECT " +
+		       "INSERT INTO " + extra + "(item_id,keyword,description) SELECT " +
 			       std::to_string(target_id) +
 			       ",keyword,description FROM corpse_item_extra_descr WHERE item_id=" +
 			       std::to_string(source_id));
@@ -1054,37 +1082,35 @@ bool materialize_items(MYSQL *connection, const critical_command &command,
 			std::string sql;
 			if (player)
 			{
-				sql =
-					"INSERT INTO player_items(pid,vnum,equip_slot,container_id,quantity,"
-					"weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
-					"value2,value3,value4,value5,value6,value7,name,short_descr,description,"
-					"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
-					"obj_uid,item_condition,item_material) SELECT " +
-					std::to_string(payload.destination_player_pid) + ",vnum,0," +
-					parent + ",quantity," + std::to_string(item.adjusted_weight) +
-					",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
-					"value3,value4,value5,value6,value7,name,short_descr,description,"
-					"action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
-					"obj_uid,item_condition,item_material FROM corpse_items WHERE id=" +
-					std::to_string(item.id);
+				sql = "INSERT INTO player_items(pid,vnum,equip_slot,container_id,quantity,"
+				      "weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
+				      "value2,value3,value4,value5,value6,value7,name,short_descr,description,"
+				      "action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
+				      "obj_uid,item_condition,item_material) SELECT " +
+				      std::to_string(payload.destination_player_pid) + ",vnum,0," +
+				      parent + ",quantity," + std::to_string(item.adjusted_weight) +
+				      ",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
+				      "value3,value4,value5,value6,value7,name,short_descr,description,"
+				      "action_descr,bitvector1,bitvector2,bitvector3,bitvector4,bitvector5,"
+				      "obj_uid,item_condition,item_material FROM corpse_items WHERE id=" +
+				      std::to_string(item.id);
 			}
 			else
 			{
 				const std::string key =
 					"corpse-" + operation + "-" + std::to_string(item.id);
-				sql =
-					"INSERT INTO saved_items(item_key,room_vnum,vnum,container_id,quantity,"
-					"weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
-					"value2,value3,value4,value5,value6,value7,name,short_descr,description,"
-					"action_descr,obj_uid,item_material,bitvector1,bitvector2,bitvector3,"
-					"bitvector4,bitvector5) SELECT '" +
-					key + "'," + std::to_string(payload.room_vnum) + ",vnum," +
-					parent + ",quantity," + std::to_string(item.adjusted_weight) +
-					",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
-					"value3,value4,value5,value6,value7,name,short_descr,description,"
-					"action_descr,obj_uid,item_material,bitvector1,bitvector2,bitvector3,"
-					"bitvector4,bitvector5 FROM corpse_items WHERE id=" +
-					std::to_string(item.id);
+				sql = "INSERT INTO saved_items(item_key,room_vnum,vnum,container_id,quantity,"
+				      "weight,cost,timer,extra_flags,wear_flags,item_type,value0,value1,"
+				      "value2,value3,value4,value5,value6,value7,name,short_descr,description,"
+				      "action_descr,obj_uid,item_material,bitvector1,bitvector2,bitvector3,"
+				      "bitvector4,bitvector5) SELECT '" +
+				      key + "'," + std::to_string(payload.room_vnum) + ",vnum," +
+				      parent + ",quantity," + std::to_string(item.adjusted_weight) +
+				      ",cost,timer,extra_flags,wear_flags,item_type,value0,value1,value2,"
+				      "value3,value4,value5,value6,value7,name,short_descr,description,"
+				      "action_descr,obj_uid,item_material,bitvector1,bitvector2,bitvector3,"
+				      "bitvector4,bitvector5 FROM corpse_items WHERE id=" +
+				      std::to_string(item.id);
 			}
 			if (!execute(connection, sql) || mysql_affected_rows(connection) != 1)
 				return false;
@@ -1117,7 +1143,7 @@ bool advance_empty_transfer(MYSQL *connection, const item_transfer_payload &tran
 	if (!source || !destination ||
 	    !item_transfer_repository_advance_owner(connection, source->owner, source->revision) ||
 	    !item_transfer_repository_advance_owner(connection, destination->owner,
-						   destination->revision))
+						    destination->revision))
 		return false;
 	*result = { 0, 0, source->revision + 1, destination->revision + 1, 0, 0 };
 	return true;
@@ -1129,26 +1155,24 @@ bool rollback_domain(MYSQL *connection)
 	       execute(connection, "RELEASE SAVEPOINT corpse_lifecycle_domain");
 }
 
-bool finish_corpse(MYSQL *connection, const corpse_identity &identity,
-		   uint64_t catalog_revision)
+bool finish_corpse(MYSQL *connection, const corpse_identity &identity, uint64_t catalog_revision)
 {
 	return execute(connection,
 		       "DELETE FROM corpses WHERE id=" + std::to_string(identity.id) +
 			       " AND corpse_revision=" + std::to_string(identity.revision)) &&
 	       mysql_affected_rows(connection) == 1 &&
-	       execute(connection,
-		       "UPDATE corpse_catalog_state SET catalog_revision=" +
-			       std::to_string(catalog_revision + 1) +
-			       " WHERE state_id=1 AND catalog_revision=" +
-			       std::to_string(catalog_revision)) &&
+	       execute(connection, "UPDATE corpse_catalog_state SET catalog_revision=" +
+					   std::to_string(catalog_revision + 1) +
+					   " WHERE state_id=1 AND catalog_revision=" +
+					   std::to_string(catalog_revision)) &&
 	       mysql_affected_rows(connection) == 1;
 }
 } // namespace
 
-bool corpse_lifecycle_repository_execute(
-	MYSQL *connection, const critical_command &command, corpse_lifecycle_result *result,
-	unsigned int *result_code, bool *mutation_applied, uint64_t *collector_revision,
-	std::vector<collector_command_result> *collector_events)
+bool corpse_lifecycle_repository_execute(MYSQL *connection, const critical_command &command,
+					 corpse_lifecycle_result *result, unsigned int *result_code,
+					 bool *mutation_applied, uint64_t *collector_revision,
+					 std::vector<collector_command_result> *collector_events)
 {
 	if (!connection || !result || !result_code || !mutation_applied || !collector_revision ||
 	    !collector_events)
@@ -1195,9 +1219,8 @@ bool corpse_lifecycle_repository_execute(
 		return true;
 
 	collector_item_boundary_repository_plan collector_plan;
-	if (transfer.item_count &&
-	    !collector_repository_prepare_item_boundary(connection, transfer, &collector_plan,
-						       result_code))
+	if (transfer.item_count && !collector_repository_prepare_item_boundary(
+					   connection, transfer, &collector_plan, result_code))
 		return false;
 	if (*result_code)
 		return true;
@@ -1238,7 +1261,7 @@ bool corpse_lifecycle_repository_execute(
 	{
 		critical_command item_command = {};
 		if (!item_transfer_command_build(&item_command, command.operation_id, transfer,
-					 command.source_site, command.deadline_class))
+						 command.source_site, command.deadline_class))
 		{
 			errno = EINVAL;
 			return false;
@@ -1263,15 +1286,15 @@ bool corpse_lifecycle_repository_execute(
 	if (old_room.type != item_owner_type::unknown)
 	{
 		owner_lock *room = find_owner_lock(&owners, old_room);
-		if (!room ||
-		    !item_transfer_repository_advance_owner(connection, room->owner, room->revision))
+		if (!room || !item_transfer_repository_advance_owner(connection, room->owner,
+								     room->revision))
 			return false;
 		room_owner_revision = room->revision + 1;
 	}
 
 	if (!collector_plan.entries.empty() &&
 	    !collector_repository_apply_item_boundary(connection, command, collector_plan,
-						     collector_revision, collector_events))
+						      collector_revision, collector_events))
 		return false;
 	currency_command_result currency = {};
 	if (!apply_wallet(connection, command, wallet, &currency, result_code))

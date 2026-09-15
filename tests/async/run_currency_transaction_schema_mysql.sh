@@ -68,6 +68,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/economy/coin_transfer_command.c src/player/player_snapshot_codec.c \
     src/economy/collector_command.c src/economy/collector_codec.c \
     src/economy/collector_policy.c src/economy/collector_repository.c \
+    src/persistence/corpse_lifecycle_command.c src/persistence/corpse_lifecycle_repository.c \
     src/player/player_load_repository.c src/player/player_load_topology.c src/persistence/persistence_observability.c \
     src/persistence/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
