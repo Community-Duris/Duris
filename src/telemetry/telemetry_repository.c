@@ -481,11 +481,19 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 			return telemetry_apply_outcome::rejected_invalid;
 		const auto columns = config_fields(config, false);
 		const fields key(columns.begin(), columns.begin() + 2);
-		auto existing = query("SELECT " + names(columns, true) +
+		// A shared config ID identifies content, not a producer's publication.
+		// Keep local ordering/time in each immutable fact and the first projection.
+		auto semantic = columns;
+		std::erase_if(semantic,
+			      [](const auto &field) {
+				      return field.first == "revision" ||
+					     field.first == "effective_utc_usec";
+			      });
+		auto existing = query("SELECT " + names(semantic, true) +
 				      " FROM telemetry_config WHERE " + where(key) + " FOR UPDATE");
 		if (auto row = mysql_fetch_row(existing.get()))
 		{
-			if (!equal_row(row, columns))
+			if (!equal_row(row, semantic))
 				return telemetry_apply_outcome::duplicate_conflict;
 		}
 		else

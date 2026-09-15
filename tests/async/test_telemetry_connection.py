@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Guarded real-factory test with credential-selection spy; never changes grants."""
+"""Guarded real SQL factory and POSIX exec regression; never changes grants.
+
+Requires the explicitly disposable loopback MariaDB/MySQL fixture and g++.
+Acquires process-unique advisory locks, opens/closes connections, and forks/execs
+this harness. No tables or persisted rows are changed. Lock reacquisition waits
+up to two seconds for server-side disconnect processing.
+"""
 import os
 from pathlib import Path
 import shlex
@@ -23,4 +29,4 @@ with tempfile.TemporaryDirectory(prefix="telemetry-connection-") as directory:
                     "-Wl,--gc-sections", "-Wl,--wrap=mysql_real_connect",
                     "-Wl,--wrap=mysql_close", "-Wl,--wrap=_Znwm", *libs,
                     "-o", exe], cwd=ROOT, check=True)
-    subprocess.run([exe], cwd=ROOT, check=True)
+    subprocess.run([exe], cwd=ROOT, check=True, timeout=30)

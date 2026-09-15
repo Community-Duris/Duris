@@ -320,12 +320,49 @@ static void config_and_scope_tests()
 	expect_one(config, telemetry_apply_outcome::rejected_invalid);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_config") == 0U);
 	seed_config();
-	case_name = "conflicting configuration identity";
+	case_name = "same configuration content after process restart";
+	shutdown_fixture();
+	CHECK(telemetry_repository_init(repository_config()) ==
+	      telemetry_repository_outcome::ready);
 	config = normal_interval_configs[0];
-	config.header.key.record_seq += 100;
+	config.header.key.producer.boot_id++;
+	config.header.key.producer.process_id++;
+	config.header.occurrence_utc_usec++;
 	config.payload.configuration.config.effective_utc_usec++;
-	expect_one(config, telemetry_apply_outcome::duplicate_conflict);
+	config.payload.configuration.config.revision++;
+	expect_one(config, telemetry_apply_outcome::applied);
+	expect_one(config, telemetry_apply_outcome::duplicate_identical);
 	CHECK(scalar("SELECT COUNT(*) FROM telemetry_config") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
+	CHECK(scalar("SELECT COUNT(DISTINCT config_revision) FROM telemetry_interval") == 2U);
+	CHECK(scalar("SELECT COUNT(DISTINCT effective_utc_usec) FROM telemetry_interval") == 2U);
+	CHECK(scalar("SELECT revision FROM telemetry_config") ==
+	      normal_interval_configs[0].payload.configuration.config.revision);
+	CHECK(scalar("SELECT effective_utc_usec FROM telemetry_config") ==
+	      static_cast<unsigned long long>(
+		      normal_interval_configs[0].payload.configuration.config.effective_utc_usec));
+
+	case_name = "publication metadata remains immutable under the same record key";
+	auto changed_publication = config;
+	changed_publication.payload.configuration.config.revision++;
+	expect_one(changed_publication, telemetry_apply_outcome::duplicate_conflict);
+	changed_publication = config;
+	changed_publication.payload.configuration.config.effective_utc_usec++;
+	expect_one(changed_publication, telemetry_apply_outcome::duplicate_conflict);
+	changed_publication = config;
+	changed_publication.header.occurrence_utc_usec++;
+	expect_one(changed_publication, telemetry_apply_outcome::duplicate_conflict);
+
+	case_name = "different semantic content under shared config identity";
+	auto conflicting_content = changed_season_id_config;
+	conflicting_content.payload.configuration.config.config_id =
+		config.payload.configuration.config.config_id;
+	expect_one(conflicting_content, telemetry_apply_outcome::duplicate_conflict);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_config") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval") == 2U);
+	// Both producers' exact original facts remain replayable.
+	expect_one(normal_interval_configs[0], telemetry_apply_outcome::duplicate_identical);
+	expect_one(config, telemetry_apply_outcome::duplicate_identical);
 	for (int change = 0; change < 4; ++change)
 	{
 		case_name = "config version or scope mismatch";

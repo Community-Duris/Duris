@@ -1,10 +1,16 @@
 #include "sql/sql_telemetry_connection.h"
 #include <cassert>
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <string>
 #include <new>
 #include <cstddef>
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 int RUNNING_PORT = 7777;
 void logit(const char *, const char *, ...) {}
@@ -51,6 +57,14 @@ extern "C" MYSQL *__wrap_mysql_real_connect(MYSQL *conn, const char *host, const
 	// real ingest-role authentication/grant coverage.
 	MYSQL *connected =
 		__real_mysql_real_connect(conn, host, "root", "", database, port, socket, flags);
+	if (connected)
+	{
+		// Start with an inheritable socket even if this client library protects
+		// its sockets itself; the telemetry factory must enforce the contract.
+		int fd = static_cast<int>(mysql_get_socket(connected));
+		int flags = fcntl(fd, F_GETFD);
+		assert(flags >= 0 && fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) == 0);
+	}
 	if (connected && fail_after_connect)
 	{
 		fail_after_connect = false;
@@ -62,10 +76,70 @@ static void env(const char *key, const char *value)
 {
 	assert(setenv(key, value, 1) == 0);
 }
-int main()
+static void acquire_lock(MYSQL *conn, const char *name)
+{
+	char sql[160];
+	assert(std::snprintf(sql, sizeof(sql), "SELECT GET_LOCK('%s',2)", name) > 0);
+	assert(mysql_real_query(conn, sql, std::strlen(sql)) == 0);
+	MYSQL_RES *result = mysql_store_result(conn);
+	assert(result);
+	MYSQL_ROW row = mysql_fetch_row(result);
+	assert(row && row[0] && std::strcmp(row[0], "1") == 0);
+	mysql_free_result(result);
+}
+static void exec_releases_socket_and_lock(const char *executable)
+{
+	pid_t child = fork();
+	assert(child >= 0);
+	if (child == 0)
+	{
+		MYSQL *conn = sql_open_telemetry_connection();
+		assert(conn);
+		char lock[80], socket[24];
+		std::snprintf(lock, sizeof(lock), "telemetry_copyover_fixture_%ld",
+			      static_cast<long>(getpid()));
+		std::snprintf(socket, sizeof(socket), "%d",
+			      static_cast<int>(mysql_get_socket(conn)));
+		acquire_lock(conn, lock);
+		// A failed exec must leave both this connection and its lock intact.
+		std::string missing = std::string(executable) + ".missing";
+		errno = 0;
+		assert(execl(missing.c_str(), missing.c_str(), nullptr) == -1 && errno == ENOENT);
+		int flags = fcntl(static_cast<int>(mysql_get_socket(conn)), F_GETFD);
+		assert(flags >= 0 && (flags & FD_CLOEXEC) != 0);
+		char query[160];
+		std::snprintf(query, sizeof(query), "SELECT IS_USED_LOCK('%s')=CONNECTION_ID()",
+			      lock);
+		assert(mysql_real_query(conn, query, std::strlen(query)) == 0);
+		MYSQL_RES *result = mysql_store_result(conn);
+		assert(result);
+		MYSQL_ROW row = mysql_fetch_row(result);
+		assert(row && row[0] && std::strcmp(row[0], "1") == 0);
+		mysql_free_result(result);
+		// Exec owns the only client handle. There is deliberately no close or
+		// RELEASE_LOCK: COM_QUIT would hide a leaked inherited descriptor.
+		execl(executable, executable, "--after-exec", socket, lock, nullptr);
+		_exit(127);
+	}
+	int status = 0;
+	assert(waitpid(child, &status, 0) == child);
+	assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+}
+int main(int argc, char **argv)
 {
 	assert(getenv("TELEMETRY_REPOSITORY_DISPOSABLE") &&
 	       std::strcmp(getenv("TELEMETRY_REPOSITORY_DISPOSABLE"), "1") == 0);
+	if (argc == 4 && std::strcmp(argv[1], "--after-exec") == 0)
+	{
+		// Inspect before opening anything that might reuse the descriptor.
+		errno = 0;
+		assert(fcntl(std::atoi(argv[2]), F_GETFD) == -1 && errno == EBADF);
+		MYSQL *conn = sql_open_telemetry_connection();
+		assert(conn);
+		acquire_lock(conn, argv[3]);
+		mysql_close(conn);
+		return 0;
+	}
 	env("ENVIRONMENT", "local");
 	env("DB_HOST", "127.0.0.1");
 	env("DB_USER", "fixture_game");
@@ -89,6 +163,8 @@ int main()
 	RUNNING_PORT = 7777;
 	MYSQL *conn = sql_open_telemetry_connection();
 	assert(conn && calls == 1);
+	int descriptor_flags = fcntl(static_cast<int>(mysql_get_socket(conn)), F_GETFD);
+	assert(descriptor_flags >= 0 && (descriptor_flags & FD_CLOEXEC) != 0);
 	unsigned int timeout = 0;
 	assert(mysql_get_option(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) == 0 && timeout == 2);
 	assert(mysql_get_option(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) == 0 && timeout == 2);
@@ -115,7 +191,8 @@ int main()
 	fail_after_connect = true;
 	conn = sql_open_telemetry_connection();
 	assert(conn == nullptr && !fail_next_new && closes == closes_before + 1);
+	exec_releases_socket_and_lock(argv[0]);
 	std::cout
 		<< "verified factory: fail-closed credential selection, target/role rejection, "
-		   "real UTC/strict/charset/deadline initialization and allocation cleanup PASS (credential I/O spy)\n";
+		   "real UTC/strict/charset/deadline initialization, allocation cleanup, failed-exec continuity, exec socket closure and advisory lock release PASS (credential I/O spy)\n";
 }

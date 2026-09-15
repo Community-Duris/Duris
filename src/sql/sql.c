@@ -1126,6 +1126,18 @@ MYSQL *sql_open_telemetry_connection(void)
 	/* No credential fallback or alternate target; never consult DB/sql_pool. */
 	MYSQL *conn = sql_open_verified_connection(0, getenv("TELEMETRY_DB_USER"),
 						   getenv("TELEMETRY_DB_PASSWD"), 2U);
+	if (conn)
+	{
+		// Copyover must release this private writer's socket and advisory lock.
+		// Failed exec leaves the connection usable by the original process.
+		const int socket = mysql_get_socket(conn);
+		const int flags = fcntl(socket, F_GETFD);
+		if (flags == -1 || fcntl(socket, F_SETFD, flags | FD_CLOEXEC) == -1)
+		{
+			mysql_close(conn);
+			return NULL;
+		}
+	}
 	if (conn && !sql_connection_execute(conn, "SET SESSION innodb_lock_wait_timeout=2"))
 	{
 		mysql_close(conn);
