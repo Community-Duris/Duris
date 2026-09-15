@@ -132,7 +132,7 @@ def test_reward_grant_rejection_does_not_publish_a_stale_object() -> None:
 def test_quests_are_unshareable_by_default() -> None:
     limit = extract_function("world_quest.c", "static int world_quest_share_limit(")
     assert '"world.quest.share.max", 0.000' in limit
-    create = extract_function("world_quest.c", "bool createQuest(")
+    create = extract_function("world_quest.c", "bool createQuestForGiverVnum(")
     assert "quest_shares_left = world_quest_share_limit();" in create
     assert "quest_shares_left = 4;" not in create
     quest = extract_function("world_quest.c", "void do_quest(")

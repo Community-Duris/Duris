@@ -114,15 +114,14 @@ void setup(int zone_count, int mobs_per_zone, int level, int instances) {
 }
 int main() {
     pc_data pc;
-    character player, giver;
+    character player;
     player.only.pc = &pc;
-    giver.npc = true;
     quest_creation_failure failure;
 
     // At level 56 there is only one quest type. Skip completed A and issue B.
     setup(1, 2, 56, 2);
     fresh_target = 1001;
-    assert(createQuest(&player, &giver, &failure));
+    assert(createQuestForGiverVnum(&player, 16553, &failure));
     assert((history_reads == vector<int>{1000, 1001}));
     assert(pc.quest_active == 1 && pc.quest_mob_vnum == 1001);
     assert(pc.quest_type == FIND_AND_KILL && failure == QUEST_CREATION_NO_FAILURE);
@@ -132,7 +131,7 @@ int main() {
     player.level = 30;
     setup(1, 2, 30, 1);
     fresh_target = 1001;
-    assert(createQuest(&player, &giver, &failure));
+    assert(createQuestForGiverVnum(&player, 16553, &failure));
     assert((history_reads == vector<int>{1000, 1001}));
     assert(probe_reads == history_reads);
     assert(pc.quest_type == FIND_AND_ASK && pc.quest_mob_vnum == 1001);
@@ -140,7 +139,7 @@ int main() {
     // All duplicates: stop after each distinct target, preserving existing state.
     const pc_data before = pc;
     setup(1, 2, 30, 1);
-    assert(!createQuest(&player, &giver, &failure));
+    assert(!createQuestForGiverVnum(&player, 16553, &failure));
     assert((history_reads == vector<int>{1000, 1001}));
     assert(pc == before && failure == QUEST_CREATION_NO_ELIGIBLE_TARGET);
 
@@ -148,7 +147,7 @@ int main() {
     setup(1, 2, 30, 1);
     error_target = 1000;
     fresh_target = 1001;
-    assert(!createQuest(&player, &giver, &failure));
+    assert(!createQuestForGiverVnum(&player, 16553, &failure));
     assert((history_reads == vector<int>{1000}));
     assert(pc == before && failure == QUEST_CREATION_NO_ELIGIBLE_TARGET);
 
@@ -157,13 +156,13 @@ int main() {
     for (int zone_count : {1, 4}) {
         setup(zone_count, 64 / zone_count, 56, 2);
         fresh_target = 1000 + WORLD_QUEST_MAX_HISTORY_CHECKS;
-        assert(!createQuest(&player, &giver, &failure));
+        assert(!createQuestForGiverVnum(&player, 16553, &failure));
         assert(history_reads.size() == WORLD_QUEST_MAX_HISTORY_CHECKS);
         assert(pc == before);
     }
     player.level = 30;
     setup(4, 16, 30, 1);
-    assert(!createQuest(&player, &giver, &failure));
+    assert(!createQuestForGiverVnum(&player, 16553, &failure));
     assert(probe_reads.size() <= WORLD_QUEST_MAX_TARGET_PROBES);
     assert(history_reads.size() <= WORLD_QUEST_MAX_HISTORY_CHECKS);
     assert(pc == before);
@@ -172,7 +171,7 @@ int main() {
     player.level = 56;
     setup(1, WORLD_QUEST_MAX_HISTORY_CHECKS, 56, 2);
     fresh_target = 999 + WORLD_QUEST_MAX_HISTORY_CHECKS;
-    assert(createQuest(&player, &giver, &failure));
+    assert(createQuestForGiverVnum(&player, 16553, &failure));
     assert(history_reads.size() == WORLD_QUEST_MAX_HISTORY_CHECKS);
     assert(pc.quest_mob_vnum == fresh_target);
     // Quests are unshareable by default: a granted quest carries no shares.
@@ -187,7 +186,7 @@ def main() -> None:
         + extract_function("world/world_quest_policy.c", "int select_cached_mob(")
         + ADAPTER
         + extract_function("world_quest.c", "static int world_quest_share_limit(")
-        + extract_function("world_quest.c", "bool createQuest(")
+        + extract_function("world_quest.c", "bool createQuestForGiverVnum(")
         + SCENARIOS
     )
     build_root = ROOT / "bin/tests"
