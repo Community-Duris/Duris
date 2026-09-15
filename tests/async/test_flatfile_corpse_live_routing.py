@@ -11,7 +11,7 @@ COMM = (SRC / "comm.c").read_text()
 FIGHT = (SRC / "fight.c").read_text()
 ACTOBJ = (SRC / "actobj.c").read_text()
 HANDLER = (SRC / "world/handler.c").read_text()
-NANNY = (SRC / "account/nanny.c").read_text()
+ACCOUNT = (SRC / "account/account.c").read_text()
 MOBILE_SPECS = (SRC / "specs.mobile.c").read_text()
 UNDERMOUNTAIN_SPECS = (SRC / "specs.undermountain.c").read_text()
 VERZANAN_SPECS = (SRC / "specs.verzanan.c").read_text()
@@ -217,9 +217,15 @@ assert "recover_committed_corpse_raise(key, corpse, follower, source_items_valid
        raise_publication
 assert "corpse_raise_player_save_fenced" in FILES
 assert "corpse_raise_player_ready" in HANDLER
-assert "corpse_raise_player_ready(tmp_ch, false)" in NANNY
-assert "collector_service_player_save_fenced(tmp_ch)" in NANNY
-assert "extract_char_after_terminal_save(tmp_ch)" in NANNY
+assert "collector_transaction_player_ready(character);" in ACCOUNT
+assert "collector_service_player_ready(character, false);" in ACCOUNT
+assert "corpse_raise_player_ready(character, false);" in ACCOUNT
+assert "collector_service_player_save_fenced(character)" in ACCOUNT
+assert "corpse_raise_player_save_fenced(character)" in ACCOUNT
+assert "extract_char_after_terminal_save(character);" in ACCOUNT
+assert ACCOUNT.index("collector_service_player_save_fenced(character)") < ACCOUNT.index(
+    "collector_transaction_player_ready(character);")
+assert "prepare_account_reconnect(ch, d)" in ACCOUNT
 
 for release_caller, first_mutation in (
         (devour, "obj_from_obj(temp)"),
