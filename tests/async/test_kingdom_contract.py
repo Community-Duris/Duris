@@ -2270,8 +2270,18 @@ def test_store_binding_is_the_buyers_player_id_not_a_name() -> None:
     bind = strip_comments(read("src/kingdom/kingdom_craft_bind.h"))
     check(
         '#define KINGDOM_CRAFT_BIND_PREFIX "kingdom-bound-"' in bind
-        and re.search(r'KINGDOM_CRAFT_BIND_PREFIX\s*"%ld"', bind) is not None,
+        and re.search(
+            r"std::string\(\s*KINGDOM_CRAFT_BIND_PREFIX\s*\)\s*\+\s*std::to_string\(\s*pid\s*\)", bind
+        )
+        is not None,
         "the binding token is 'kingdom-bound-<player id>'",
+    )
+    # A bounded snprintf() into the caller's buffer is fatal under this build's
+    # -Wformat-truncation=2 even with its return value checked; the token is
+    # built as a std::string and copied once it is known to fit.
+    check(
+        "snprintf" not in bind,
+        "the binding token is built without snprintf(), which -Wformat-truncation=2 refuses",
     )
     parse = function_bodies(read("src/account/nanny.c"), r"\bbool\s+_parse_name\s*\(")
     check(

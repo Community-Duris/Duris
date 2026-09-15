@@ -27,8 +27,8 @@
 #define _KINGDOM_CRAFT_BIND_H_
 
 #include <cstddef>
-#include <cstdio>
 #include <cstring>
+#include <string>
 
 #define KINGDOM_CRAFT_BIND_PREFIX "kingdom-bound-"
 
@@ -37,7 +37,12 @@ constexpr size_t KINGDOM_CRAFT_BIND_TOKEN_LEN = 40;
 
 /* Write the token for player id `pid` into `out`. False, with `out` left
  * empty, when `pid` is not a real player id (zero or negative) or `out` is
- * too small to hold the whole token. */
+ * too small to hold the whole token.
+ *
+ * Built as a std::string and copied only once it is known to fit, rather
+ * than through snprintf(): under -Wformat-truncation=2 GCC flags a bounded
+ * snprintf into a caller's buffer whenever truncation is possible at all,
+ * even with the return value checked, and that is fatal in this build. */
 inline bool kingdom_craft_bind_token(long pid, char *out, size_t out_len)
 {
 	if (!out || out_len == 0)
@@ -46,13 +51,11 @@ inline bool kingdom_craft_bind_token(long pid, char *out, size_t out_len)
 	if (pid <= 0)
 		return false;
 
-	const int written = std::snprintf(out, out_len, KINGDOM_CRAFT_BIND_PREFIX "%ld", pid);
+	const std::string token = std::string(KINGDOM_CRAFT_BIND_PREFIX) + std::to_string(pid);
 
-	if (written <= 0 || static_cast<size_t>(written) >= out_len)
-	{
-		out[0] = '\0';
+	if (token.size() >= out_len)
 		return false;
-	}
+	std::memcpy(out, token.c_str(), token.size() + 1);
 	return true;
 }
 
