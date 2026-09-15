@@ -32,6 +32,7 @@
 #include "combat/justice.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "economy/collector_service.h"
 #include "player/player_save_pipeline.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
@@ -1687,6 +1688,12 @@ int writeCharacter(P_char ch, int type, int room)
 				    type == RENT_CAMPED || type == RENT_DEATH ||
 				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
 				    type == RENT_FIGHTARTI);
+	if (!is_locker_char && GET_PID(ch) > 0 && !collector_service_recover_player(ch))
+	{
+		persistence_alert(AVATAR, "collector", "player", "redacted", "purchase_publish",
+				  "save_deferred", "live_materialization_pending=1");
+		return 0;
+	}
 
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&

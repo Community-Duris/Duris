@@ -30,7 +30,22 @@ struct pending_collector
 	critical_completion completed = {};
 };
 
+struct completed_player_recovery
+{
+	uint32_t actor_pid = 0;
+	std::unique_ptr<collector_command_payload> payload;
+	collector_command_result result = {};
+	collector_completion_fn completion = nullptr;
+};
+
 std::unordered_map<std::string, pending_collector> pending;
+// A committed purchase must not remain in `pending`: that map is the live
+// admission fence for listings and players.  Keep a bounded, non-blocking
+// recovery handoff for a buyer that disappeared before the game-thread
+// callback.  The durable purchase row remains the source of truth if this
+// process restarts before the player returns.
+std::unordered_map<std::string, completed_player_recovery> player_recoveries;
+constexpr size_t COLLECTOR_PLAYER_RECOVERY_MAX = 128;
 
 enum class outbox_publication_state : uint8_t
 {
@@ -154,8 +169,31 @@ bool publish(std::unordered_map<std::string, pending_collector>::iterator found,
 
 	const auto completion = entry.completion;
 	std::unique_ptr<collector_command_payload> payload = std::move(entry.payload);
+	bool completion_deferred = false;
+	if (committed && decoded && submitted_payload.action == collector_action::purchase &&
+	    !character && completion && player_recoveries.size() < COLLECTOR_PLAYER_RECOVERY_MAX)
+	{
+		// Retain the payload until the buyer is ready.  This closes the reconnect
+		// gap where a live body is reused without a fresh player-item load.
+		try
+		{
+			auto recovery_payload =
+				std::make_unique<collector_command_payload>(*payload);
+			const std::string key = operation_key(entry.completed.operation_id);
+			const auto inserted = player_recoveries.emplace(
+				key, completed_player_recovery{ submitted_payload.actor_pid,
+								std::move(recovery_payload), result,
+								completion });
+			completion_deferred = inserted.second;
+		}
+		catch (const std::bad_alloc &)
+		{
+			// The callback below still reports the durable commit.  A subsequent
+			// normal login can recover the item from the authoritative row.
+		}
+	}
 	pending.erase(found);
-	if (completion)
+	if (completion && !completion_deferred)
 		completion(character, durable_commit, decoded ? result : collector_command_result{},
 			   publication_error, *payload);
 	return committed && published;
@@ -282,6 +320,16 @@ void collector_transaction_player_ready(P_char character)
 		if (current->second.actor_pid == static_cast<uint32_t>(GET_PID(character)) &&
 		    current->second.completion_ready)
 			publish(current, character);
+	}
+	for (auto found = player_recoveries.begin(); found != player_recoveries.end();)
+	{
+		auto current = found++;
+		if (current->second.actor_pid != static_cast<uint32_t>(GET_PID(character)))
+			continue;
+		completed_player_recovery recovery = std::move(current->second);
+		player_recoveries.erase(current);
+		if (recovery.completion && recovery.payload)
+			recovery.completion(character, true, recovery.result, 0, *recovery.payload);
 	}
 }
 
@@ -449,6 +497,7 @@ void collector_transaction_publish_outbox(void)
 void collector_transaction_reset_for_tests(void)
 {
 	pending.clear();
+	player_recoveries.clear();
 	std::lock_guard<std::mutex> lock(outbox_mutex);
 	outbox_publications.clear();
 }

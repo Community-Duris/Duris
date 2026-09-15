@@ -267,16 +267,16 @@ int main()
 	auto purchase_completion = completion(purchased);
 	player_online = false;
 	collector_transaction_handle_completions(&purchase_completion, 1);
-	assert(!collector_transaction_player_busy(&character) && completion_called &&
-	       completion_committed && completion_character == nullptr && !wallet_publications &&
-	       ownership_publications == 1 && runtime_publications == 1 && completion_error == 0 &&
-	       completion_action == collector_action::purchase);
+	assert(!collector_transaction_player_busy(&character) && !completion_called &&
+	       !wallet_publications && ownership_publications == 1 && runtime_publications == 1 &&
+	       completion_error == 0 && completion_action == collector_action::unknown);
 	player_online = true;
 	collector_transaction_player_ready(&character);
 	assert(!collector_transaction_player_busy(&character) && completion_called &&
-	       completion_committed && completion_character == nullptr && completion_error == 0 &&
-	       completion_action == collector_action::purchase && wallet_publications == 0 &&
-	       ownership_publications == 1 && runtime_publications == 1);
+	       completion_committed && completion_character == &character &&
+	       completion_error == 0 && completion_action == collector_action::purchase &&
+	       wallet_publications == 0 && ownership_publications == 1 &&
+	       runtime_publications == 1);
 	assert(!collector_transaction_listing_busy(available.listing));
 
 	completion_called = completion_committed = false;

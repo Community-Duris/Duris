@@ -22,6 +22,10 @@ struct collector_service_health
 
 void collector_service_command(P_char character, char *arguments, int command);
 void collector_service_pulse(void);
+// Retry committed purchase materialization before a character is serialized.
+// A false result means the save must remain deferred so player_items cannot be
+// overwritten without the durable purchase in the live graph.
+bool collector_service_recover_player(P_char character);
 bool collector_service_player_busy(P_char character);
 collector_service_health collector_service_health_copy(void);
 void collector_service_reset_for_tests(void);

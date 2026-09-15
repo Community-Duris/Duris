@@ -498,6 +498,10 @@ int main()
 	clear_messages();
 	submitted_completion(&character, true, committed, 0, submitted_payload);
 	assert(materializations == 2 && alerts == 2 && saw("safely recorded"));
+	materialization_succeeds = true;
+	clear_messages();
+	collector_service_pulse();
+	assert(materializations == 3 && saw("now available"));
 
 	const collector_service_health snapshot = collector_service_health_copy();
 	assert(snapshot.pending_details == 0 && snapshot.submitted_details == 7 &&

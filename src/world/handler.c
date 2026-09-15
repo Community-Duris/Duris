@@ -3811,6 +3811,32 @@ void fail_corpse_raise(uint64_t key, const char *reason)
 		extract_char(follower);
 }
 
+void recover_committed_corpse_raise(uint64_t key, P_obj corpse, P_char follower, const char *reason)
+{
+	auto found = corpse_raises.find(key);
+	if (found == corpse_raises.end())
+		return;
+	const corpse_raise_context context = found->second;
+	corpse_raises.erase(found);
+	// The durable transaction has already moved the item rows to the caster.
+	// Never leave a stale live corpse behind for a later loot/raise attempt.  A
+	// false `gone_for_good` is important here: the durable item rows, especially
+	// artifact rows, remain authoritative and must not be retired by cleanup.
+	if (corpse)
+	{
+		corpse_release_side_effect_guard guard;
+		extract_obj(corpse, FALSE);
+	}
+	if (follower)
+		extract_char(follower);
+	persistence_alert(AVATAR, "corpse", "durable_raise", "none", "none",
+			  reason ? reason : "committed_live_recovery", "corpse_key=%llu", key);
+	if (P_char caster = find_live_character(context.caster, context.caster_runtime_id))
+		send_to_char(
+			"The raising committed, but its live effects needed recovery. The corpse and minion were removed; the recovered equipment remains in your durable inventory.\r\n",
+			caster);
+}
+
 void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 			  unsigned int error_code, const corpse_lifecycle_payload &payload)
 {
@@ -3831,19 +3857,28 @@ void publish_corpse_raise(bool committed, const corpse_lifecycle_result &result,
 	P_char follower = find_live_character(context.follower, context.follower_runtime_id);
 	P_obj corpse = find_live_corpse(payload.owner_pid, payload.save_id);
 	int corpse_room = NOWHERE;
-	if (!caster || !follower || !corpse || follower->in_room != NOWHERE ||
-	    !corpse_release_room(corpse, &corpse_room) ||
-	    world[corpse_room].number != payload.room_vnum ||
-	    !validate_corpse_release_items(corpse, result) ||
-	    !item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
+	const bool source_valid = corpse && corpse_release_room(corpse, &corpse_room) &&
+				  world[corpse_room].number == payload.room_vnum &&
+				  validate_corpse_release_items(corpse, result);
+	if (!item_ownership_runtime_apply_corpse_raise(payload.owner_pid, payload.save_id,
 						       payload.destination_player_pid, result))
 	{
-		fail_corpse_raise(key, "raise_live_topology_stale");
+		recover_committed_corpse_raise(key, corpse, follower, "raise_runtime_recovery");
+		return;
+	}
+	if (!source_valid)
+	{
+		recover_committed_corpse_raise(key, corpse, follower, "raise_live_topology_stale");
+		return;
+	}
+	if (!caster || !follower || follower->in_room != NOWHERE)
+	{
+		recover_committed_corpse_raise(key, corpse, follower, "raise_live_topology_stale");
 		return;
 	}
 	if (!publish_corpse_wallet(caster, result))
 	{
-		fail_corpse_raise(key, "raise_wallet_invalid");
+		recover_committed_corpse_raise(key, corpse, follower, "raise_wallet_invalid");
 		return;
 	}
 	corpse_raises.erase(found);

@@ -55,6 +55,16 @@ struct pending_detail
 };
 
 std::unordered_map<uint64_t, pending_detail> pending_details;
+
+struct pending_purchase_recovery
+{
+	uint32_t actor_pid = 0;
+	std::unique_ptr<collector_command_payload> payload;
+	collector_command_result result = {};
+};
+
+std::unordered_map<uint64_t, pending_purchase_recovery> purchase_recoveries;
+constexpr size_t COLLECTOR_PURCHASE_RECOVERY_MAX = 128;
 collector_service_health health = {};
 
 bool player_has_pending_detail(uint32_t pid, bool purchases_only)
@@ -68,12 +78,21 @@ bool player_has_pending_detail(uint32_t pid, bool purchases_only)
 			   });
 }
 
+bool player_has_purchase_recovery(uint32_t pid)
+{
+	return pid &&
+	       std::any_of(purchase_recoveries.begin(), purchase_recoveries.end(),
+			   [pid](const auto &entry) { return entry.second.actor_pid == pid; });
+}
+
 bool purchase_transaction_busy(P_char character)
 {
 	return currency_transaction_player_busy(character) ||
 	       collector_transaction_player_busy(character) ||
 	       item_movement_transaction_player_busy(character) ||
 	       bulk_get_player_busy(character) ||
+	       (character && GET_PID(character) > 0 &&
+		player_has_purchase_recovery(static_cast<uint32_t>(GET_PID(character)))) ||
 	       !currency_transaction_can_submit_nonrebasable(character);
 }
 
@@ -393,6 +412,56 @@ bool materialize_purchase(P_char character, const collector_command_result &resu
 	return true;
 }
 
+bool queue_purchase_recovery(const collector_command_result &result,
+			     const collector_command_payload &payload)
+{
+	const uint64_t recovery_key = payload.selected_item_uid ? payload.selected_item_uid :
+								  payload.listing;
+	if (!recovery_key || !payload.actor_pid ||
+	    (purchase_recoveries.size() >= COLLECTOR_PURCHASE_RECOVERY_MAX &&
+	     purchase_recoveries.find(recovery_key) == purchase_recoveries.end()))
+		return false;
+	try
+	{
+		auto retained_payload = std::make_unique<collector_command_payload>(payload);
+		purchase_recoveries.insert_or_assign(
+			recovery_key,
+			pending_purchase_recovery{ payload.actor_pid, std::move(retained_payload),
+						   result });
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool recover_purchase_for_player(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return true;
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
+	bool complete = true;
+	for (auto found = purchase_recoveries.begin(); found != purchase_recoveries.end();)
+	{
+		auto current = found++;
+		if (current->second.actor_pid != pid)
+			continue;
+		if (!current->second.payload ||
+		    !materialize_purchase(character, current->second.result,
+					  *current->second.payload))
+		{
+			complete = false;
+			continue;
+		}
+		send_to_char(
+			"Your committed collector purchase is now available in your inventory.\r\n",
+			character);
+		purchase_recoveries.erase(current);
+	}
+	return complete;
+}
+
 void purchase_completed(P_char character, bool committed, const collector_command_result &result,
 			unsigned int error_code, const collector_command_payload &payload)
 {
@@ -425,10 +494,12 @@ void purchase_completed(P_char character, bool committed, const collector_comman
 		persistence_alert(AVATAR, "collector", "player", "redacted", "purchase_publish",
 				  "live_materialization_failed", "listing=%" PRIu64 " uid=%" PRIu64,
 				  payload.listing, payload.selected_item_uid);
-		send_to_char("Your purchase committed, but its live restoration needs recovery. "
-			     "The item remains safely recorded and will be restored when you next "
-			     "enter the game.\r\n",
-			     character);
+		const bool retry_queued = queue_purchase_recovery(result, payload);
+		send_to_char(
+			retry_queued ?
+				"Your purchase committed, but live restoration is still pending. The item remains safely recorded; this session will not be saved until restoration succeeds.\r\n" :
+				"Your purchase committed, but its live restoration needs operator recovery. The item remains safely recorded; do not assume it is present in this session.\r\n",
+			character);
 		return;
 	}
 	const std::string price = currency_text(result.entry.price_value);
@@ -607,6 +678,19 @@ void collector_service_command(P_char character, char *arguments, int command)
 
 void collector_service_pulse(void)
 {
+	for (auto found = purchase_recoveries.begin(); found != purchase_recoveries.end();)
+	{
+		auto current = found++;
+		P_char character = find_player_by_pid(current->second.actor_pid);
+		if (!character || !current->second.payload ||
+		    !materialize_purchase(character, current->second.result,
+					  *current->second.payload))
+			continue;
+		send_to_char(
+			"Your committed collector purchase is now available in your inventory.\r\n",
+			character);
+		purchase_recoveries.erase(current);
+	}
 	collector_listing_result results[COLLECTOR_LISTING_MAX_COMPLETIONS] = {};
 	const size_t count = collector_listing_pipeline_pulse_for(
 		collector_listing_consumer::player, results, COLLECTOR_LISTING_MAX_COMPLETIONS);
@@ -617,7 +701,8 @@ void collector_service_pulse(void)
 bool collector_service_player_busy(P_char character)
 {
 	return character && IS_PC(character) && GET_PID(character) > 0 &&
-	       player_has_pending_detail(static_cast<uint32_t>(GET_PID(character)), true);
+	       (player_has_pending_detail(static_cast<uint32_t>(GET_PID(character)), true) ||
+		player_has_purchase_recovery(static_cast<uint32_t>(GET_PID(character))));
 }
 
 collector_service_health collector_service_health_copy(void)
@@ -635,5 +720,11 @@ void collector_service_reset_for_tests(void)
 		collector_listing_pipeline_cancel(request_id);
 	}
 	pending_details.clear();
+	purchase_recoveries.clear();
 	health = {};
+}
+
+bool collector_service_recover_player(P_char character)
+{
+	return recover_purchase_for_player(character);
 }
