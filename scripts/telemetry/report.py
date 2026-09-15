@@ -66,7 +66,6 @@ REPORT_RUNTIME_DEFAULT_S = 30.0
 REPORT_RUNTIME_HARD_MAX = 3_600.0
 REPORT_ROW_BYTE_BOUND = 2_048
 REPORT_MIN_FETCH_ROWS = 2
-REPORT_STATE_SCAN_LIMIT = 4_096
 CACHE_SCHEMA_VERSION = 1
 MICROSECONDS_PER_HOUR = 3_600_000_000
 UINT64_MAX = (1 << 64) - 1
@@ -976,6 +975,14 @@ class _QueryPage:
     source_rows_fetched: int
 
 
+def _enforce_response_budget(response: Mapping[str, Any], request: ReportRequest) -> None:
+    # Include definitions, coverage, summaries, cursors, and expanded identities,
+    # not just estimated source rows. Match the JSON CLI wire representation.
+    encoded = (json.dumps(response, default=_json_default, sort_keys=True) + "\n").encode("utf-8")
+    if len(encoded) > request.max_bytes:
+        raise BoundsExceeded("serialized report including metadata exceeds max_bytes; increase budget or reduce max_rows")
+
+
 class ReportDatabase:
     """One dedicated SELECT-only connection for one report read."""
 
@@ -1055,18 +1062,15 @@ class ReportDatabase:
             statement = (
                 "SELECT " + columns + " FROM telemetry_rollup_state FORCE INDEX (PRIMARY) WHERE "
                 "definition_version=%s AND environment_id=%s AND season_id=%s "
-                "AND publication_status=%s ORDER BY generation DESC LIMIT %s"
+                "AND publication_status=%s ORDER BY generation DESC LIMIT 1"
             )
             parameters = (
                 request.definition_version,
                 request.environment_id,
                 request.season_id,
                 PUBLICATION_PUBLISHED,
-                REPORT_STATE_SCAN_LIMIT + 1,
             )
         rows = self._execute(statement, parameters)
-        if request.generation is None and len(rows) > REPORT_STATE_SCAN_LIMIT:
-            raise BoundsExceeded("published generation state exceeds its bounded scan")
         if not rows:
             raise ReportNotPublished("requested scope has no published generation")
         return rows[0]
@@ -1192,6 +1196,7 @@ class ReportDatabase:
                 "served_from_cache": False,
                 "cache": {"served": False, "status": "fresh_published"},
             }
+            _enforce_response_budget(response, request)
             self._check_deadline()
             return response
         finally:
@@ -1243,9 +1248,13 @@ class ReportCache:
     def read(self, request: ReportRequest, *, namespace: str = "") -> dict[str, Any] | None:
         path = self._path(request, namespace)
         try:
-            with path.open(encoding="utf-8") as stream:
-                body = json.load(stream)
-        except (FileNotFoundError, OSError, json.JSONDecodeError):
+            # The small cache wrapper is outside the emitted-response budget.
+            with path.open("rb") as stream:
+                raw = stream.read(request.max_bytes + 1025)
+            if len(raw) > request.max_bytes + 1024:
+                return None
+            body = json.loads(raw)
+        except (FileNotFoundError, OSError, json.JSONDecodeError, UnicodeDecodeError):
             return None
         if not isinstance(body, dict) or body.get("cache_schema_version") != CACHE_SCHEMA_VERSION:
             return None
@@ -1285,6 +1294,7 @@ class AdministratorReportService:
                 "served": True,
                 "status": "last_published",
             }
+            _enforce_response_budget(cached, request)
             return cached
         if self.cache is not None:
             try:
@@ -1293,6 +1303,7 @@ class AdministratorReportService:
                 # Fresh published output is still valid when the optional cache
                 # filesystem is unavailable.  The response says it was fresh.
                 response["cache"] = {"served": False, "status": "write_failed"}
+        _enforce_response_budget(response, request)
         return response
 
 
@@ -1466,11 +1477,12 @@ def _run_report_worker(payload: Mapping[str, Any]) -> None:
         cache_dir = args.cache_dir or os.environ.get("TELEMETRY_REPORT_CACHE_DIR")
         service = AdministratorReportService(factory, cache=ReportCache(cache_dir) if cache_dir else None)
         response = service.read(request)
-        if args.format == "text":
-            print(render_text(response), flush=True)
-        else:
-            print(json.dumps(response, default=_json_default, sort_keys=True), flush=True)
-    except (ValueError, ReportError) as error:
+        rendered = render_text(response) if args.format == "text" else json.dumps(
+            response, default=_json_default, sort_keys=True)
+        if len((rendered + "\n").encode("utf-8")) > request.max_bytes:
+            raise BoundsExceeded("rendered report exceeds max_bytes")
+        print(rendered, flush=True)
+    except (ValueError, ReportError, BoundsExceeded) as error:
         print(f"telemetry report failed: {error}", file=sys.stderr, flush=True)
         raise SystemExit(2)
     except BaseException as error:
@@ -1527,7 +1539,7 @@ def main(argv: list[str] | None = None) -> int:
             (payload,),
             timeout_s=float(args.max_runtime_s),
         )
-    except (ValueError, ReportError) as error:
+    except (ValueError, ReportError, BoundsExceeded) as error:
         print(f"telemetry report failed: {error}", file=sys.stderr)
         return 2
 

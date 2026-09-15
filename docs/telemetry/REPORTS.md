@@ -126,7 +126,28 @@ returned `next_cursor` to continue. `max-rows`, `max-bytes`, and
 separate killable process, so the CLI parent can terminate a connector/query
 that outlives the requested wall-clock budget. A direct library caller should
 put its call in an equivalent process when a hard wall-clock guarantee is
-required.
+required. Parent and worker deadline failures exit with status 2 and a concise
+message, not an uncaught exception.
+
+`max-rows` bounds returned source rows (or returned groups for `time`/`faction`),
+**not SQL rows examined**. Grouping may read all matching published aggregate
+buckets within the requested definition/generation/environment/season and date
+filters. Database work is bounded by the dedicated connection's
+`max_statement_time` (MariaDB) or `MAX_EXECUTION_TIME` (MySQL), default two
+seconds, independently of the CLI process deadline. Narrow the date/cohort
+scope or use the last-published cache when a grouped query exceeds that budget.
+No fixed rows-examined or production performance guarantee is claimed.
+
+Newest-publication lookup returns only `ORDER BY generation DESC LIMIT 1`;
+it does not materialize old publication history or reject otherwise valid scopes
+because many generations exist. Its scope filtering also uses the database
+statement deadline; the frozen schema is not changed by this report layer.
+
+`max-bytes` includes the complete serialized JSON response and trailing newline:
+definition, summary, coverage, cursor, rows, and return-session identities. Text
+output receives a final byte check too. If metadata plus a page cannot fit, the
+request fails closed; increase the byte budget or reduce `max-rows`. Cache reads
+are length-limited and cached responses are checked again before return.
 
 ## Metrics, units, denominators, and counts
 
@@ -205,6 +226,11 @@ never sum page distinct counts. `count_scope="page_only_not_additive"` marks
 incomplete summaries. Only an untruncated first page has complete population
 counts. Playtime and cohort summaries likewise mark cursor pages incomplete.
 
+Class, race, and level-band are captured cohort dimensions and exact filters on
+`cohort`; they are not separate CLI report names or additive distinct-population
+rollups. Connected idle time is available, but dedicated AFK-only duration cannot
+be distinguished from other idle time in these aggregates and is not invented.
+
 ### Time and faction
 
 `time` groups `telemetry_cohort_day` by UTC day and activity category. Category
@@ -279,8 +305,12 @@ and `tests/async/telemetry_reports_*`. The opt-in real SQL suite uses a new
 network-isolated MariaDB 10.11 or MySQL 8.0 container. It checks the published
 aggregate read, exact filtered keyset pagination, empty/missing scope behavior,
 role denials, scoped query plans, provisional-flag propagation, incomplete
-return populations, and database-bound cache outage behavior. It never mutates
-the shared #268 fixture database.
+return populations, and database-bound cache outage behavior. It also exercises
+all report types with combined date/class/race/level/faction/category filters,
+large grouped fixtures, newest selection across 4,100 published generations,
+complete response byte budgets, actual server-side SQL interruption, and a real
+CLI report blocked behind a disposable table lock (including connection cleanup
+after the deadline). It never mutates the shared #268 fixture database.
 
 Run from the repository root with Docker, a locally installed PyMySQL, and an
 existing Python-capable client container whose network mode is `none`:

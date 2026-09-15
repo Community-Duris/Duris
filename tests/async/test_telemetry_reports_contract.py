@@ -5,6 +5,9 @@ from __future__ import annotations
 from datetime import date
 from dataclasses import replace
 import json
+import io
+from contextlib import redirect_stderr
+from unittest.mock import patch
 import os
 from pathlib import Path
 import sys
@@ -29,6 +32,7 @@ from report import (  # noqa: E402
     _decode_cursor,
     _encode_cursor,
     _run_killable_process,
+    main as report_main,
     report_catalog,
     render_catalog_text,
 )
@@ -247,6 +251,23 @@ class TelemetryReportsContractTest(unittest.TestCase):
         self.assertNotIn('os.environ.get("DB_PASSWD")', source)
         self.assertIn("READ ONLY", source)
         self.assertIn("START TRANSACTION WITH CONSISTENT SNAPSHOT", source)
+
+    def test_cli_deadline_is_a_clean_failure_not_a_traceback(self):
+        with patch("report._run_killable_process", side_effect=BoundsExceeded("test deadline")):
+            with redirect_stderr(io.StringIO()) as errors:
+                status = report_main(["report", "--name", "cohort",
+                                      "--definition-version", "1", "--environment-id", "8", "--season-id", "9"])
+        self.assertEqual(status, 2)
+        self.assertIn("test deadline", errors.getvalue())
+
+    def test_full_json_payload_must_fit_byte_budget(self):
+        request = self.request("cohort", max_bytes=4096)
+        database = _FixedReportDatabase(cohort_rows(), name="cohort")
+        try:
+            response = database.read(request)
+        except BoundsExceeded:
+            return  # Fail-closed if metadata and rows cannot fit.
+        self.assertLessEqual(len((json.dumps(response, sort_keys=True) + "\n").encode()), request.max_bytes)
 
     def test_cli_worker_is_killable(self):
         started = time.monotonic()

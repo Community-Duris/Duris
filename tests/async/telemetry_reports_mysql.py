@@ -12,6 +12,9 @@ from __future__ import annotations
 from datetime import date
 from dataclasses import replace
 import os
+import json
+import subprocess
+import time
 from pathlib import Path
 import re
 import sys
@@ -31,6 +34,8 @@ from report import (  # noqa: E402
     ReportFilters,
     ReportNotPublished,
     ReportDatabaseError,
+    ReportDatabase,
+    BoundsExceeded,
     ReportRequest,
     _build_query,
 )
@@ -344,16 +349,191 @@ class TelemetryReportsMariaDBTest(unittest.TestCase):
         self.assertEqual(pages, 3)
         self.assertEqual({key: len(value) for key, value in recovered.items()}, {1001: 2, 1002: 1})
 
+    def test_newest_publication_does_not_materialize_history(self):
+        self.reset_storage()
+        rows = [state_row(generation=i) for i in range(1, 4101)]
+        columns = tuple(rows[0])
+        with self.admin.cursor() as cursor:
+            cursor.executemany("INSERT INTO telemetry_rollup_state (" + ",".join(columns) +
+                               ") VALUES (" + ",".join(["%s"] * len(columns)) + ")",
+                               [tuple(row[key] for key in columns) for row in rows])
+        database = ReportDatabase(self.factory())
+        executed = []
+        original = database._execute
+        def record(statement, parameters=()):
+            executed.append((statement, parameters))
+            return original(statement, parameters)
+        database._execute = record
+        response = database.read(self.request("cohort", generation=None))
+        self.assertEqual(response["scope"]["generation"], 4100)
+        state_query = next((sql, values) for sql, values in executed if "FROM telemetry_rollup_state" in sql)
+        with self.report.cursor() as cursor:
+            cursor.execute("EXPLAIN " + state_query[0], state_query[1])
+            plan = cursor.fetchall()
+        self.assertTrue(any(row["key"] == "PRIMARY" for row in plan))
+
+    def test_all_report_pages_match_unpaged_filtered_population(self):
+        for name in ("playtime", "cohort", "return", "time", "faction"):
+            filters = [ReportFilters()]
+            filters.append(ReportFilters(subject_id=1001) if name == "playtime" else ReportFilters(
+                date_from=date(2024, 1, 2), date_to=date(2024, 1, 3),
+                level_band=50, class_id=2, race_id=3, faction_id=4, category=2))
+            for filtered in filters:
+                with self.subTest(report=name, filters=filtered):
+                    full = self.service().read(self.request(name, filters=filtered))
+                    request = self.request(name, max_rows=1, filters=filtered)
+                    collected = []
+                    for _ in range(32):
+                        page = self.service().read(request)
+                        collected.extend(page["rows"])
+                        if not page["has_more"]:
+                            break
+                        request = replace(request, after=page["next_cursor"])
+                    else:
+                        self.fail("pagination failed to terminate")
+                    if name == "return":
+                        merged = {}
+                        for row in collected:
+                            merged.setdefault(row["subject_id"], set()).update(map(tuple, row["logical_session_ids"]))
+                        self.assertEqual(merged, {row["subject_id"]: set(map(tuple, row["logical_session_ids"]))
+                                                  for row in full["rows"]})
+                    else:
+                        self.assertEqual(collected, full["rows"])
+
+    def test_grouped_reports_large_filtered_scope(self):
+        rows = []
+        for index in range(2048):
+            row = cohort_rows()[0].copy()
+            row.update(class_id=100 + index)
+            rows.append(row)
+        scope = dict(zip(("definition_version", "generation", "environment_id", "season_id"), TARGET.scope_tuple))
+        values = [{**scope, **row} for row in rows]
+        columns = tuple(values[0])
+        with self.admin.cursor() as cursor:
+            cursor.executemany("INSERT INTO telemetry_cohort_day (" + ",".join(columns) + ") VALUES (" +
+                               ",".join(["%s"] * len(columns)) + ")",
+                               [tuple(row[key] for key in columns) for row in values])
+        for name in ("time", "faction"):
+            request = self.request(name, max_rows=1, filters=ReportFilters(
+                date_from=date(2024, 1, 1), date_to=date(2024, 1, 2)))
+            response = self.service().read(request)
+            self.assertEqual(len(response["rows"]), 1)
+            self.assertFalse(response["has_more"])
+            self.assertEqual(response["summary"]["cohort_bucket_count"], 1 + len(rows))
+            self.assertEqual(response["summary"]["duration_usec"],
+                             cohort_rows()[0]["duration_usec"] + sum(row["duration_usec"] for row in rows))
+            sql, parameters, _ = _build_query(request, TARGET, None, 2)
+            with self.report.cursor() as cursor:
+                cursor.execute("EXPLAIN " + sql, parameters)
+                plan = cursor.fetchone()
+            self.assertEqual(plan["key"], "PRIMARY")
+
+    def test_database_statement_deadline_interrupts_actual_sql(self):
+        factory = self.factory()
+        factory.settings = replace(factory.settings, statement_timeout_s=0.05)
+        connection = factory.connect()
+        try:
+            with connection.cursor() as cursor:
+                started = time.monotonic()
+                with self.assertRaises(pymysql.err.OperationalError) as error:
+                    cursor.execute("SELECT SLEEP(2), faction_id FROM telemetry_cohort_day")
+                self.assertIn(error.exception.args[0], (1969, 3024))
+                self.assertLess(time.monotonic() - started, 1.5)
+        finally:
+            factory.close(connection)
+
+    def test_cli_deadline_kills_real_blocked_report_without_traceback(self):
+        assert self.report_password is not None
+        environment = os.environ.copy()
+        environment.update({
+            "TELEMETRY_REPORT_DB_HOST": self.host,
+            "TELEMETRY_REPORT_DB_PORT": str(self.port),
+            "TELEMETRY_REPORT_DB_DATABASE": self.database,
+            "TELEMETRY_REPORT_DB_USER": self.report_user,
+            "TELEMETRY_REPORT_DB_PASSWORD": self.report_password,
+        })
+        environment.pop("TELEMETRY_REPORT_CACHE_DIR", None)
+        with self.admin.cursor() as cursor:
+            cursor.execute("LOCK TABLES telemetry_rollup_state WRITE")
+            try:
+                started = time.monotonic()
+                result = subprocess.run([
+                    sys.executable, str(ROOT / "scripts/telemetry/report.py"),
+                    "report", "--name", "cohort", "--definition-version", "1",
+                    "--environment-id", "8", "--season-id", "9", "--max-runtime-s", "0.5",
+                ], env=environment, capture_output=True, text=True, timeout=5)
+            finally:
+                cursor.execute("UNLOCK TABLES")
+        self.assertLess(time.monotonic() - started, 4)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("deadline", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertNotIn(self.report_password, result.stderr)
+        # Only the class's preexisting report connection may remain.
+        deadline = time.monotonic() + 4
+        while True:
+            with self.admin.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) AS n FROM information_schema.processlist WHERE user=%s AND id<>%s",
+                               (self.report_user, self.report.thread_id()))
+                remaining = int(cursor.fetchone()["n"])
+            if not remaining or time.monotonic() >= deadline:
+                break
+            time.sleep(0.02)
+        self.assertEqual(remaining, 0, "killed CLI left a report connection behind")
+
+    def test_cli_emits_bounded_json_and_text(self):
+        assert self.report_password is not None
+        environment = os.environ.copy()
+        environment.update({
+            "TELEMETRY_REPORT_DB_HOST": self.host,
+            "TELEMETRY_REPORT_DB_PORT": str(self.port),
+            "TELEMETRY_REPORT_DB_DATABASE": self.database,
+            "TELEMETRY_REPORT_DB_USER": self.report_user,
+            "TELEMETRY_REPORT_DB_PASSWORD": self.report_password,
+        })
+        environment.pop("TELEMETRY_REPORT_CACHE_DIR", None)
+        for output_format in ("json", "text"):
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/telemetry/report.py"),
+                "report", "--name", "return", "--definition-version", "1",
+                "--environment-id", "8", "--season-id", "9",
+                "--max-bytes", "32768", "--format", output_format,
+            ], env=environment, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stderr, "")
+            self.assertLessEqual(len(result.stdout.encode()), 32768)
+            if output_format == "json":
+                response = json.loads(result.stdout)
+                self.assertEqual(response["report"], "return")
+                self.assertEqual(response["summary"]["subject_count"], 2)
+                self.assertEqual(response["summary"]["returning_subject_count"], 1)
+            else:
+                self.assertIn("report: return", result.stdout)
+                self.assertIn("logical_session_ids", result.stdout)
+
+    def test_actual_serialized_budget_includes_report_metadata(self):
+        for name in ("playtime", "cohort", "return", "time", "faction"):
+            for budget in (4096, 32768):
+                with self.subTest(report=name, budget=budget):
+                    try:
+                        response = self.service().read(self.request(name, max_bytes=budget))
+                    except BoundsExceeded:
+                        self.assertEqual(budget, 4096)
+                    else:
+                        self.assertLessEqual(len((json.dumps(response, sort_keys=True) + "\n").encode()), budget)
+
     def test_aggregate_query_plans_use_scoped_indexes(self):
         requests = (
             self.request("cohort", filters=ReportFilters(date_from=date(2024, 1, 2))),
+            self.request("time", filters=ReportFilters(date_from=date(2024, 1, 2))),
+            self.request("faction", filters=ReportFilters(date_from=date(2024, 1, 2))),
             self.request("playtime"),
             self.request("return", filters=ReportFilters(date_from=date(2024, 1, 2))),
         )
-        targets = (TARGET, TARGET, TARGET)
-        expected_keys = ("PRIMARY", "idx_rollup_session_subject", "PRIMARY")
-        for request, target, expected in zip(requests, targets, expected_keys, strict=True):
-            sql, parameters, _order = _build_query(request, target, None, 2)
+        for request in requests:
+            expected = "idx_rollup_session_subject" if request.report_name == "playtime" else "PRIMARY"
+            sql, parameters, _order = _build_query(request, TARGET, None, 2)
             self.assertNotIn("telemetry_interval", sql)
             with self.subTest(report=request.report_name), self.report.cursor() as cursor:
                 cursor.execute("EXPLAIN " + sql, parameters)
