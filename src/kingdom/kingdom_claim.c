@@ -873,13 +873,18 @@ bool kingdom_claim_next(P_char ch)
  * other kingdom purchase. One of each per hall, the store only once a
  * workshop stands, the main hall only.
  *
- * BUILD, THEN CHARGE -- the mirror of a claim, and for the same reason.
- * Nothing in this module refunds, so whatever can fail must happen before the
- * coin moves. For a claim that is the material check; here it is the room,
- * which can fail to save. So the treasury is only READ first, the room is
- * built, and the coin is taken once construct_workshop_room() has said the
- * room is durable. Its false leaves the hall exactly as it was and costs
- * nothing, so there is never anything to hand back. */
+ * PAY, THEN BUILD -- AND PUT THE COIN BACK IF THE ROOM CANNOT BE RAISED.
+ * The treasury is charged first through sub_copper(), which checks and debits
+ * as one step, in memory, writing nothing. Only then is the room built. If
+ * construct_workshop_room() says false, the hall is exactly as it was (it
+ * leaves nothing behind), so the charge is credited straight back with
+ * add_copper() and the pair written: a refused build costs nothing. If it
+ * says true the room is durable, and the guild's debit is made durable with
+ * the realm through the paired write every treasury verb here uses. Either
+ * way a room never stands unpaid for, and coin is never kept for a room that
+ * does not stand. The credit is the undoing of this verb's own charge, not a
+ * refund of anything bought -- the module's "nothing refunds" is about what
+ * a realm buys, which here was never delivered. */
 void kingdom_build_work(P_char ch, char *rest)
 {
 	P_Guild guild = kingdom_actor_guild(ch);
@@ -984,48 +989,52 @@ void kingdom_build_work(P_char ch, char *rest)
 	const long price = type == GH_ROOM_TYPE_GUILDSTORE ? kingdom_cfg.store_cost :
 							     kingdom_cfg.station_cost;
 
-	if (price > 0 && guild->get_treasury_copper() < price)
+	/* Everything is validated. Pay first: sub_copper() checks and debits as
+	 * one step, in memory, and a refusal moves nothing. */
+	if (price > 0 && !kingdom_pay_from_treasury(guild, price))
 	{
 		send_to_char_f(ch, "Your guild treasury cannot pay the %s a %s costs.\r\n",
 			       kingdom_price_string(price), name);
 		return;
 	}
 
-	/* Everything is validated and the treasury can pay. Build first. */
 	if (!construct_workshop_room(hall->id, from_vnum, dir, type))
 	{
-		send_to_char("The builders could not raise it, and nothing has been charged. "
-			     "Please petition.\r\n",
+		/* The hall is exactly as it was -- construct_workshop_room() leaves
+		 * nothing behind when it says false -- so the charge goes straight
+		 * back, and the pair is written so the guild's record holds what the
+		 * treasury holds. */
+		const bool credited = price <= 0 || guild->add_copper(price);
+		const bool durable = kingdom_persist_paid_change(guild, *realm, "BUILD CREDITED");
+
+		send_to_char(credited ? "The builders could not raise it, and nothing has been "
+					"charged. Please petition.\r\n" :
+					"The builders could not raise it, and the treasury could not "
+					"be credited back. Please petition.\r\n",
 			     ch);
-		logit(LOG_KINGDOM, "BUILD FAILED: %s (assoc %d) could not raise a %s off vnum %d.",
-		      guild->get_name().c_str(), realm->assoc_id, name, from_vnum);
+		if (!durable)
+		{
+			kingdom_tell_record_pending(ch);
+		}
+		logit(LOG_KINGDOM,
+		      "BUILD FAILED: %s (assoc %d) could not raise a %s off vnum %d; %ld copper %s.",
+		      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, price,
+		      credited ? "credited back" : "COULD NOT BE CREDITED BACK");
 		return;
 	}
 
 	/* `here` is gone now: construct_workshop_room() reloaded the hall, which
 	 * deletes and recreates every GuildhallRoom it holds. Nothing below may
-	 * touch it. */
-	bool paid = true;
-
-	if (price > 0 && !kingdom_pay_from_treasury(guild, price))
-	{
-		/* Unreachable: the balance was read above and nothing has run since
-		 * that could spend it. Said loudly rather than assumed. */
-		paid = false;
-		logit(LOG_KINGDOM,
-		      "BUILD UNPAID: %s (assoc %d) raised a %s that the treasury then refused %ld "
-		      "copper for.",
-		      guild->get_name().c_str(), realm->assoc_id, name, price);
-	}
-
-	/* The room is durable already (construct_workshop_room() saved the hall);
+	 * touch it.
+	 *
+	 * The room is durable already (construct_workshop_room() saved the hall);
 	 * this makes the treasury's side durable, through the same paired write
 	 * every other treasury verb in this file uses. */
 	const bool durable = kingdom_persist_paid_change(guild, *realm, "BUILD");
 
 	send_to_char_f(ch,
 		       "Builders raise your realm's %s %s of here, and the treasury pays %s.\r\n",
-		       name, dirs[dir], kingdom_price_string(paid ? price : 0));
+		       name, dirs[dir], kingdom_price_string(price));
 
 	if (!durable)
 	{
@@ -1038,7 +1047,7 @@ void kingdom_build_work(P_char ch, char *rest)
 	send_to_guild(guild, "The Royal Builder", told);
 
 	logit(LOG_KINGDOM, "BUILD: %s (assoc %d) raised a %s off vnum %d for %ld copper%s.",
-	      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, paid ? price : 0L,
+	      guild->get_name().c_str(), realm->assoc_id, name, from_vnum, price,
 	      durable ? "" : " (record pending)");
 }
 

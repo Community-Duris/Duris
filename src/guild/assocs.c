@@ -417,6 +417,66 @@ bool Guild::sub_copper(long amount)
 	return TRUE;
 }
 
+/*
+ * Credit `amount` copper to the treasury: the inverse of sub_copper(), for a
+ * charge whose purpose then failed (kingdom build pays before it builds, and
+ * puts the coin back if the room cannot be raised).
+ *
+ * The amount goes in in its canonical decomposition -- platinum, gold,
+ * silver, copper -- and every counter is checked before any moves, so a
+ * refusal changes nothing. Like sub_copper() this does not save; the caller
+ * pairs the guild write with the rest of its change. One ledger line records
+ * the credit, in the same form sub_copper() records a debit.
+ */
+bool Guild::add_copper(long amount)
+{
+	if (amount < 0)
+		return FALSE;
+	if (amount == 0)
+		return TRUE;
+
+	const long long amt = static_cast<long long>(amount);
+	const long long add_p = amt / 1000;
+	const long long add_g = (amt % 1000) / 100;
+	const long long add_s = (amt % 100) / 10;
+	const long long add_c = amt % 10;
+	const long long denom_cap = static_cast<long long>(UINT_MAX);
+
+	if (platinum + add_p > denom_cap || gold + add_g > denom_cap ||
+	    silver + add_s > denom_cap || copper + add_c > denom_cap)
+	{
+		logit(LOG_STATUS,
+		      "Guild %s: add_copper(%ld) would overflow a coin counter; nothing credited.",
+		      name, amount);
+		return FALSE;
+	}
+
+	platinum += static_cast<unsigned int>(add_p);
+	gold += static_cast<unsigned int>(add_g);
+	silver += static_cast<unsigned int>(add_s);
+	copper += static_cast<unsigned int>(add_c);
+
+	if (add_p > static_cast<long long>(INT_MAX))
+	{
+		/* As in sub_copper(): state the exact total rather than clamp it. */
+		char exact[64];
+		const int written = snprintf(exact, sizeof(exact), "&+y%lld copper&n", amt);
+
+		write_transaction_to_ledger("System", "refunded",
+					    (written > 0 &&
+					     static_cast<size_t>(written) < sizeof(exact)) ?
+						    exact :
+						    "&+yan amount too large to render&n");
+		return TRUE;
+	}
+
+	write_transaction_to_ledger("System", "refunded",
+				    coins_to_string(static_cast<int>(add_p), static_cast<int>(add_g),
+						    static_cast<int>(add_s), static_cast<int>(add_c),
+						    "&+y"));
+	return TRUE;
+}
+
 /* A kingdom is a guild that holds a realm. The realm itself lives in the
  * kingdom module; this is just the seam query, so the answer can never go
  * stale against the module's own bookkeeping. */

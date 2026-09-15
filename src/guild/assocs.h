@@ -244,14 +244,6 @@ class Guild
 	void add_points_from_epics(P_char ch, int epics, int epic_type);
 
 	unsigned long get_construction() { return construction; }
-	/* The whole treasury valued in copper: the figure sub_copper() tests.
-	 * For a caller that must know a charge will be met BEFORE doing what it
-	 * pays for, rather than taking the coin first (kingdom build). */
-	long long get_treasury_copper() const
-	{
-		return static_cast<long long>(copper) + 10LL * silver + 100LL * gold +
-		       1000LL * platinum;
-	}
 	void publish_outcome_totals(unsigned long new_prestige, unsigned long new_construction)
 	{
 		prestige = new_prestige;
@@ -324,6 +316,12 @@ class Guild
 	/* Change-making debit in copper. Prefer this for any charge whose size is
 	 * computed rather than authored -- sub_money() cannot make change. */
 	bool sub_copper(long amount);
+	/* Put back exactly what a sub_copper() of the same amount took, when the
+	 * thing it paid for could not be done (kingdom build). Like sub_copper()
+	 * it does NOT save -- the caller persists the guild with the rest of its
+	 * change -- and it ledgers the credit as one line. False, changing
+	 * nothing, if a coin counter would wrap. */
+	bool add_copper(long amount);
 
 	void challenge(P_char member, P_char victim);
 	void deposit(P_char member, int p, int g, int s, int c);
