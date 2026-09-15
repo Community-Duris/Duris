@@ -1,7 +1,9 @@
 #include "player/player_snapshot_repository.h"
 
+#include "core/defines.h"
 #include "persistence/persistence_observability.h"
 #include "player/player_snapshot_codec.h"
+#include "sql/item_extra_descr_codec.h"
 #include "sql/sql_pool.h"
 
 #include <mysql/mysql.h>
@@ -23,6 +25,69 @@ struct query_result
 	bool ok;
 	unsigned int error_code;
 };
+
+query_result canonicalize_snapshot_extra_description(
+	const player_item_extra_description_snapshot &description, std::string *keyword_out,
+	std::string *description_out)
+{
+	if (!keyword_out || !description_out)
+		return { false, EINVAL };
+	if (description.spellbook != (description.keyword == "SPELLBOOK"))
+		return { false, EINVAL };
+	if (description.spellbook && !description.description.empty() &&
+	    !description.spell_ids.empty())
+		return { false, EINVAL };
+
+	*keyword_out = description.keyword;
+	*description_out = description.description;
+	if (!description.spellbook)
+	{
+		if (!description.spell_ids.empty())
+			return { false, EINVAL };
+		return { true, 0 };
+	}
+
+	std::array<char, (MAX_SKILLS + 1) / 8 + 1> spell_bits = {};
+	if (!description.description.empty())
+	{
+		if (sql_decode_stored_spellbook("SPELLBOOK", description.description.c_str(),
+					       spell_bits.data(), spell_bits.size()) !=
+		    sql_spellbook_decode_status::decoded)
+			return { false, EINVAL };
+	}
+	else
+	{
+		std::array<bool, MAX_SKILLS> seen = {};
+		for (int32_t spell : description.spell_ids)
+		{
+			if (spell < 0 || spell >= MAX_SKILLS || seen[spell])
+				return { false, EINVAL };
+			seen[spell] = true;
+			const size_t byte = static_cast<size_t>(spell) / 8;
+			spell_bits[byte] = static_cast<char>(
+				static_cast<unsigned char>(spell_bits[byte]) |
+				static_cast<unsigned char>(1U << (spell % 8)));
+		}
+	}
+
+	const char marker[] = { 3, 1, 3, 0 };
+	char *db_keyword = nullptr;
+	char *db_description = nullptr;
+	if (!sql_encode_item_extra_descr(marker, spell_bits.data(), &db_keyword,
+					 &db_description))
+		return { false, ENOMEM };
+	if (!db_keyword || !db_description)
+	{
+		std::free(db_keyword);
+		std::free(db_description);
+		return { false, ENOMEM };
+	}
+	*keyword_out = db_keyword;
+	*description_out = db_description;
+	std::free(db_keyword);
+	std::free(db_description);
+	return { true, 0 };
+}
 
 query_result execute(MYSQL *connection, const std::string &sql)
 {
@@ -395,32 +460,30 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		for (const auto &description : row.extra_descriptions)
 		{
 			if (description.keyword.empty())
-				continue;
-			std::string encoded_description = description.description;
-			if (description.spellbook)
 			{
-				std::ostringstream encoded;
-				encoded << '[';
-				for (size_t spell_index = 0;
-				     spell_index < description.spell_ids.size(); ++spell_index)
-					encoded << (spell_index ? "," : "")
-						<< description.spell_ids[spell_index];
-				encoded << ']';
-				encoded_description = encoded.str();
+				if (description.spellbook || !description.spell_ids.empty())
+					return { false, EINVAL };
+				continue;
 			}
-			std::string description_key = description.keyword;
+			std::string encoded_keyword;
+			std::string encoded_description;
+			const query_result canonical = canonicalize_snapshot_extra_description(
+				description, &encoded_keyword, &encoded_description);
+			if (!canonical.ok)
+				return canonical;
+			std::string description_key = encoded_keyword;
 			description_key.push_back('\0');
 			description_key += encoded_description;
 			if (!description_keys.insert(std::move(description_key)).second)
 				continue;
 			result = execute(connection,
 					 "INSERT INTO " +
-						 std::string(pet_items ?
-								     "player_pet_item_extra_descr" :
-								     "player_item_extra_descr") +
+					 std::string(pet_items ?
+							     "player_pet_item_extra_descr" :
+							     "player_item_extra_descr") +
 						 " (item_id,keyword,description) VALUES (" +
 						 std::to_string(item_id) + "," +
-						 quote(connection, description.keyword) + "," +
+						 quote(connection, encoded_keyword) + "," +
 						 quote(connection, encoded_description) + ")");
 			if (!result.ok)
 				return result;

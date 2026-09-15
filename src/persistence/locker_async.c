@@ -461,12 +461,36 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 			return 0;
 	}
 
+	const size_t spellbook_bytes = (MAX_SKILLS + 1) / 8 + 1;
+	char spellbook_bits[(MAX_SKILLS + 1) / 8 + 1] = {};
+	static const char spellbook_marker[] = { 3, 1, 3, 0 };
+	for (ed = obj->ex_description; ed; ed = ed->next)
+	{
+		if (!sql_item_extra_descr_is_spellbook_marker(ed->keyword) || !ed->description)
+			continue;
+		for (size_t offset = 0; offset < spellbook_bytes; ++offset)
+			spellbook_bits[offset] = static_cast<char>(
+				static_cast<unsigned char>(spellbook_bits[offset]) |
+				static_cast<unsigned char>(ed->description[offset]));
+	}
+
+	bool spellbook_emitted = false;
 	for (ed = obj->ex_description; ed; ed = ed->next)
 	{
 		char *ek = NULL;
 		char *edesc = NULL;
 		int emitted;
-		if (!sql_encode_item_extra_descr(ed->keyword, ed->description, &ek, &edesc))
+		const char *source_keyword = ed->keyword;
+		const char *source_description = ed->description;
+		if (sql_item_extra_descr_is_spellbook_marker(ed->keyword))
+		{
+			if (spellbook_emitted)
+				continue;
+			spellbook_emitted = true;
+			source_keyword = spellbook_marker;
+			source_description = spellbook_bits;
+		}
+		if (!sql_encode_item_extra_descr(source_keyword, source_description, &ek, &edesc))
 		{
 			free(ek);
 			free(edesc);

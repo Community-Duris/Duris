@@ -63,6 +63,29 @@ int main()
 	require((decoded[1 / 8] & (1 << (1 % 8))) != 0, "decoded spell 1 missing");
 	require((decoded[203 / 8] & (1 << (203 % 8))) != 0, "decoded spell 203 missing");
 	require((decoded[1999 / 8] & (1 << (1999 % 8))) != 0, "decoded highest spell missing");
+	std::memset(decoded, 0, sizeof(decoded));
+	require(sql_decode_stored_spellbook("SPELLBOOK", "[ 7,\n 203 ]", decoded,
+					    sizeof(decoded)) ==
+			sql_spellbook_decode_status::decoded,
+		"whitespace-only spellbook JSON was rejected");
+	require((decoded[7 / 8] & (1 << (7 % 8))) != 0, "whitespace decode spell missing");
+	require((decoded[203 / 8] & (1 << (203 % 8))) != 0,
+		"whitespace decode second spell missing");
+
+	for (const char *malformed :
+	     { "[1,1]", "[-1]", "[1,]", "[1", "[01]", "[2000]", "[1] trailing", "not-json" })
+	{
+		std::memset(decoded, 0x55, sizeof(decoded));
+		require(sql_decode_stored_spellbook("SPELLBOOK", malformed, decoded,
+						    sizeof(decoded)) ==
+				sql_spellbook_decode_status::invalid,
+				"malformed spellbook JSON was accepted");
+		for (char value : decoded)
+			require(value == 0, "malformed spellbook did not clear its output");
+	}
+	require(sql_decode_stored_spellbook("SPELLBOOK", nullptr, decoded, sizeof(decoded)) ==
+			sql_spellbook_decode_status::invalid,
+		"null canonical spellbook description was accepted");
 
 	char short_output = 0x55;
 	require(sql_decode_stored_spellbook("SPELLBOOK", "[1]", &short_output, 1) ==
@@ -94,6 +117,17 @@ int main()
 	require(std::strcmp(keyword, "plain") == 0, "nullable keyword changed");
 	require(description == nullptr, "null description was not preserved");
 	std::free(keyword);
+
+	keyword = nullptr;
+	description = nullptr;
+	require(sql_encode_item_extra_descr(marker, nullptr, &keyword, &description),
+		"null native spellbook encoding failed");
+	require(std::strcmp(keyword, "SPELLBOOK") == 0,
+		"native spellbook keyword was not canonicalized");
+	require(std::strcmp(description, "[]") == 0,
+		"null native spellbook bitmap was not normalized to empty JSON");
+	std::free(keyword);
+	std::free(description);
 
 	std::cout << "item extra-description spellbook codec passed\n";
 	return 0;

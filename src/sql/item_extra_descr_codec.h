@@ -30,7 +30,8 @@ sql_spellbook_decode_status sql_decode_stored_spellbook(const char *keyword,
 // Convert an in-memory item extra description to the canonical escaped SQL
 // representation. Native spellbook descriptions must point to the complete
 // fixed-size bitmap used by extra_descr_data. The caller owns both returned
-// allocations and must free them. A null description remains null. Spellbook
+// allocations and must free them. A null plain description remains null; a
+// null native spellbook bitmap is normalized to an empty JSON array. Spellbook
 // bitsets are encoded as SPELLBOOK plus a JSON array so binary zero bytes never
 // reach string-based SQL escaping.
 bool sql_encode_item_extra_descr(const char *keyword, const char *description, char **db_keyword,
