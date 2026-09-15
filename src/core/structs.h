@@ -1520,6 +1520,10 @@ struct char_data
 	struct char_obj_link_data *obj_linked;
 	unsigned int runtime_flags;
 	uint64_t runtime_id; /* process-local identity; changes whenever storage is reused */
+	/* Telemetry identity is runtime-only and intentionally not persisted. */
+	uint64_t telemetry_session_sequence;
+	uint64_t telemetry_session_producer_boot_id;
+	uint64_t telemetry_session_producer_process_id;
 };
 
 /* ======================================================================== */
@@ -1809,6 +1813,10 @@ struct descriptor_data
 	int chargen_hometown;
 	int chargen_hardcore;
 	int chargen_newbie;
+	/* Telemetry connection identity is runtime-only and zeroed on reuse. */
+	uint64_t telemetry_connection_sequence;
+	uint64_t telemetry_connection_producer_boot_id;
+	uint64_t telemetry_connection_producer_process_id;
 };
 
 /* Almost every construction of this type is a brace-initializer that lists only

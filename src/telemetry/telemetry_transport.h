@@ -43,6 +43,8 @@ struct telemetry_transport_config
 	std::uint16_t reserved2;
 	std::uint32_t max_batch_bytes;
 	telemetry_duration_usec flush_oldest_after_usec;
+	/* Zero preserves generic immutable replay; runtime sets its fresh incarnation. */
+	telemetry_producer_id fresh_producer{};
 };
 
 /* Returned by enqueue; accepted means retained in bounded RAM only. */
@@ -86,6 +88,8 @@ telemetry_transport_config_is_bounded(const telemetry_transport_config &config) 
 {
 	return config.schema_version == TELEMETRY_SCHEMA_VERSION && config.reserved == 0U &&
 	       config.reserved2 == 0U && telemetry_storage_backend_is_valid(config.backend) &&
+	       (telemetry_producer_id_is_zero(config.fresh_producer) ||
+		telemetry_producer_id_is_valid(config.fresh_producer)) &&
 	       config.queue_capacity > 0U &&
 	       config.queue_capacity <= TELEMETRY_QUEUE_CAPACITY_PROPOSAL &&
 	       config.control_reserve > 0U && config.control_reserve < config.queue_capacity &&

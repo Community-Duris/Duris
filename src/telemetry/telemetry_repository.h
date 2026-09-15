@@ -36,6 +36,7 @@ struct telemetry_repository_config
 	std::uint16_t schema_version;
 	std::uint32_t max_batch_records;
 	std::uint32_t max_batch_bytes;
+	telemetry_producer_id fresh_producer{};
 };
 
 struct telemetry_record_apply_result
@@ -74,6 +75,8 @@ telemetry_repository_config_is_bounded(const telemetry_repository_config &config
 {
 	return config.schema_version == TELEMETRY_SCHEMA_VERSION && config.reserved == 0U &&
 	       telemetry_storage_backend_is_valid(config.backend) &&
+	       (telemetry_producer_id_is_zero(config.fresh_producer) ||
+		telemetry_producer_id_is_valid(config.fresh_producer)) &&
 	       config.max_batch_records > 0U &&
 	       config.max_batch_records <= TELEMETRY_BATCH_MAX_RECORDS_PROPOSAL &&
 	       config.max_batch_bytes >= sizeof(telemetry_record) &&

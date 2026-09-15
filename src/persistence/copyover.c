@@ -45,6 +45,9 @@
 #include "persistence/persistence_observability.h"
 #include "redis/redis_world_runtime.h"
 #include "world/world_recovery_pipeline.h"
+#include "telemetry/telemetry_runtime.h"
+#include <new>
+#include <type_traits>
 #include <vector>
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
@@ -96,6 +99,27 @@ struct copyover_worker_resume_guard
 		player_save_pipeline_resume();
 	}
 };
+
+constexpr char TELEMETRY_COPYOVER_MAGIC[4] = { 'T', 'L', 'M', 'Y' };
+constexpr std::uint32_t TELEMETRY_COPYOVER_VERSION = 1U;
+struct telemetry_copyover_header
+{
+	char magic[4];
+	std::uint32_t version;
+	std::uint32_t count;
+};
+
+struct telemetry_copyover_entry
+{
+	int fd;
+	char player_name[50];
+	std::uint8_t handoff_valid;
+	std::uint8_t reserved[3];
+	telemetry_session_handoff handoff;
+};
+
+static_assert(std::is_trivially_copyable_v<telemetry_copyover_header>);
+static_assert(std::is_trivially_copyable_v<telemetry_copyover_entry>);
 } // namespace
 
 bool copyover_has_durable_shopkeepers()
@@ -106,7 +130,8 @@ bool copyover_has_durable_shopkeepers()
 	copyover_header header = {};
 	const bool current = fread(&header, sizeof(header), 1, file) == 1 &&
 			     memcmp(header.magic, COPYOVER_MAGIC, 4) == 0 &&
-			     (header.version == COPYOVER_VERSION || header.version == 13);
+			     (header.version == COPYOVER_VERSION || header.version == 14 ||
+			      header.version == 13);
 	fclose(file);
 	return current;
 }
@@ -206,6 +231,195 @@ static int write_desc_entry(FILE *fp, P_desc d)
 	entry.ttype_terminal[0] = '\0'; // removed
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
+}
+
+static bool copyover_descriptor_is_eligible(P_desc d)
+{
+	return d != nullptr && d->descriptor > 0 && d->connected == CON_PLAYING &&
+	       d->character != nullptr && !d->websocket && !d->sslses;
+}
+
+static bool write_telemetry_copyover_state(FILE *fp, int expected_count)
+{
+	if (fp == nullptr || expected_count < 0 || expected_count > FD_SETSIZE)
+		return false;
+	// Capture the complete batch before a single worker durability barrier.
+	// Allocation/DB failure affects only telemetry, never the world snapshot.
+	std::vector<telemetry_copyover_entry> entries;
+	try
+	{
+		entries.resize(static_cast<std::size_t>(expected_count));
+	}
+	catch (const std::bad_alloc &)
+	{
+		entries.clear();
+	}
+	bool any_handoff = false;
+	int captured = 0;
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		if (!copyover_descriptor_is_eligible(d))
+			continue;
+		if (captured >= expected_count)
+			return false;
+		if (!entries.empty())
+		{
+			auto &entry = entries[static_cast<std::size_t>(captured)];
+			const auto handoff = telemetry_runtime_game_handoff_copy(d->character);
+			if (handoff.outcome == telemetry_runtime_outcome::accepted)
+			{
+				entry.handoff_valid = 1U;
+				entry.handoff = handoff.handoff;
+				any_handoff = true;
+			}
+		}
+		++captured;
+	}
+	if (captured != expected_count)
+		return false;
+	bool durable = false;
+	if (any_handoff)
+	{
+		telemetry_monotonic_usec now = 0U;
+		telemetry_utc_usec utc = 0;
+		if (telemetry_runtime_now(&now, &utc) && now <= UINT64_MAX - 250'000U)
+			durable = telemetry_runtime_flush_for_copyover(now + 250'000U) ==
+				  telemetry_runtime_outcome::accepted;
+		if (!durable)
+			logit(LOG_STATUS,
+			      "copyover: telemetry durability unavailable; recovering as absent");
+	}
+	telemetry_copyover_header header{};
+	memcpy(header.magic, TELEMETRY_COPYOVER_MAGIC, sizeof(header.magic));
+	header.version = TELEMETRY_COPYOVER_VERSION;
+	header.count = static_cast<std::uint32_t>(expected_count);
+	if (fwrite(&header, sizeof(header), 1, fp) != 1)
+		return false;
+	int written = 0;
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		if (!copyover_descriptor_is_eligible(d))
+			continue;
+		if (written >= expected_count)
+			return false;
+		telemetry_copyover_entry entry{};
+		if (durable && !entries.empty())
+			entry = entries[static_cast<std::size_t>(written)];
+		entry.fd = d->descriptor;
+		if (GET_NAME(d->character) != nullptr)
+			strlcpy(entry.player_name, GET_NAME(d->character),
+				sizeof(entry.player_name));
+		if (fwrite(&entry, sizeof(entry), 1, fp) != 1)
+			return false;
+		++written;
+	}
+	return written == expected_count;
+}
+
+static bool read_telemetry_copyover_state(FILE *fp, int expected_count,
+					  std::vector<telemetry_copyover_entry> *entries)
+{
+	if (entries != nullptr)
+		entries->clear();
+	// Accepted game sockets are below FD_SETSIZE. Never allocate from an
+	// unchecked on-disk count, even when both headers contain the same value.
+	if (fp == nullptr || entries == nullptr || expected_count < 0 ||
+	    expected_count > FD_SETSIZE)
+		return false;
+	telemetry_copyover_header header{};
+	if (fread(&header, sizeof(header), 1, fp) != 1 ||
+	    memcmp(header.magic, TELEMETRY_COPYOVER_MAGIC, sizeof(header.magic)) != 0 ||
+	    header.version != TELEMETRY_COPYOVER_VERSION ||
+	    header.count != static_cast<std::uint32_t>(expected_count))
+		return false;
+	bool retain_entries = true;
+	try
+	{
+		entries->reserve(header.count);
+	}
+	catch (const std::bad_alloc &)
+	{
+		// Telemetry memory pressure must not prevent world recovery. Consume
+		// the known framing but resume every recovered session as absent.
+		retain_entries = false;
+	}
+	for (std::uint32_t index = 0; index < header.count; ++index)
+	{
+		telemetry_copyover_entry entry{};
+		if (fread(&entry, sizeof(entry), 1, fp) != 1)
+		{
+			entries->clear();
+			return false; // truncated file: the following world section is unavailable
+		}
+		if (entry.fd <= 0 || entry.fd >= FD_SETSIZE ||
+		    entry.player_name[sizeof(entry.player_name) - 1U] != '\0' ||
+		    entry.handoff_valid > 1U || entry.reserved[0] != 0U ||
+		    entry.reserved[1] != 0U || entry.reserved[2] != 0U)
+			continue; // consume the whole frame; this session resumes as absent
+		if (entry.handoff_valid == 0U)
+		{
+			const telemetry_session_handoff empty{};
+			if (memcmp(&entry.handoff, &empty, sizeof(empty)) != 0)
+				continue;
+		}
+		if (retain_entries)
+			entries->push_back(entry);
+	}
+	return true;
+}
+
+static void
+restore_telemetry_copyover_sessions(const std::vector<telemetry_copyover_entry> *entries)
+{
+	// Recovered descriptors, not optional metadata, own the player population.
+	// Restore each once; missing or ambiguous metadata gets a fresh uncertain
+	// session instead of disappearing from telemetry or borrowing an identity.
+	for (P_desc d = descriptor_list; d; d = d->next)
+	{
+		if (!copyover_descriptor_is_eligible(d))
+			continue;
+		const telemetry_copyover_entry *match = nullptr;
+		bool ambiguous = false;
+		if (entries != nullptr && GET_NAME(d->character) != nullptr)
+		{
+			for (const telemetry_copyover_entry &entry : *entries)
+			{
+				if (entry.fd != d->descriptor ||
+				    strcmp(GET_NAME(d->character), entry.player_name) != 0)
+					continue;
+				if (match != nullptr)
+				{
+					ambiguous = true;
+					break;
+				}
+				match = &entry;
+			}
+		}
+		const telemetry_session_handoff *handoff =
+			!ambiguous && match != nullptr && match->handoff_valid != 0U ?
+				&match->handoff :
+				nullptr;
+		telemetry_capture_result result =
+			telemetry_runtime_game_session_resume(d->character, d, handoff);
+		if (handoff != nullptr &&
+		    (result.outcome == telemetry_runtime_outcome::invalid ||
+		     (result.outcome == telemetry_runtime_outcome::queue_full &&
+		      d->telemetry_connection_sequence == 0U)))
+		{
+			// Failed admission leaves no descriptor identity. Retry as
+			// absent; queue loss AFTER admission retains an ID and must
+			// not be resumed twice.
+			result = telemetry_runtime_game_session_resume(d->character, d, nullptr);
+		}
+		if (result.outcome != telemetry_runtime_outcome::accepted &&
+		    result.outcome != telemetry_runtime_outcome::disabled &&
+		    result.outcome != telemetry_runtime_outcome::flatfile_disabled &&
+		    result.outcome != telemetry_runtime_outcome::not_initialized)
+			logit(LOG_STATUS,
+			      "copyover: telemetry resume failed for fd=%d "
+			      "(outcome=%u)",
+			      d->descriptor, static_cast<unsigned int>(result.outcome));
+	}
 }
 
 static int write_mob_entry(FILE *fp, P_char mob)
@@ -705,6 +919,18 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 	}
 
+	/* The telemetry trailer is optional to telemetry operation, but is part of
+	 * the versioned copyover record.  An unavailable writer produces an absent
+	 * handoff and never vetoes the game-state copyover. */
+	if (!write_telemetry_copyover_state(fp, num_descs))
+	{
+		logit(LOG_STATUS, "copyover: failed to write telemetry session handoff state");
+		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+		fclose(fp);
+		unlink(copyover_tmp);
+		return false;
+	}
+
 	// write mobs (skip linked pets; player-owned pets are saved per descriptor)
 	for (ch = character_list; ch; ch = ch->next)
 	{
@@ -954,6 +1180,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	P_char ch;
 	int i, rnum, save_room;
 	int success = 0;
+	std::vector<telemetry_copyover_entry> telemetry_entries;
 
 	copyover_in_progress = 1;
 
@@ -969,7 +1196,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	// read and verify header
 	if (fread(&header, sizeof(header), 1, fp) != 1 ||
 	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 ||
-	    (header.version != COPYOVER_VERSION && header.version != 13 && header.version != 12))
+	    (header.version != COPYOVER_VERSION && header.version != 14 && header.version != 13 &&
+	     header.version != 12))
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
 		goto copyover_recover_fail;
@@ -1114,6 +1342,23 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		// add to descriptor list
 		d->next = descriptor_list;
 		descriptor_list = d;
+	}
+
+	if (header.version == COPYOVER_VERSION)
+	{
+		if (!read_telemetry_copyover_state(fp, header.num_descriptors, &telemetry_entries))
+		{
+			logit(LOG_STATUS,
+			      "copyover_recover: invalid telemetry session handoff state");
+			goto copyover_recover_fail;
+		}
+		restore_telemetry_copyover_sessions(&telemetry_entries);
+	}
+	else
+	{
+		/* Versions without the trailer have no safe predecessor identity.  The
+		 * runtime resumes each restored player as an explicit absent handoff. */
+		restore_telemetry_copyover_sessions(nullptr);
 	}
 
 	// restore mobs directly from saved data (zones were not reset)

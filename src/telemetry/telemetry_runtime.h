@@ -2,6 +2,7 @@
 #define DURIS_TELEMETRY_RUNTIME_H
 
 #include "telemetry/telemetry_config.h"
+#include "telemetry/telemetry_config_private.h"
 #include "telemetry/telemetry_types.h"
 
 #include <cstdint>
@@ -9,16 +10,25 @@
 
 /*
  * Thread/lifetime contract:
- * - The init caller owns shutdown control and is responsible for starting and
- *   joining the worker OFF the game thread before calling shutdown. Transport
- *   init does not spawn a thread; #265 owns its handle and lifecycle coordinator.
+ * - The runtime initializer starts one private worker.  The lifecycle owner must
+ *   call shutdown off gameplay hooks; shutdown requests stop, performs the
+ *   deadline-bounded stop request.  If the worker does not finish by the
+ *   deadline, shutdown returns stopping and retains every binding and state for
+ *   telemetry_runtime_final_reap().  No worker is detached and no game hook
+ *   joins it.  final_reap joins the worker and only then closes the private
+ *   repository connection; it may block and is an off-game-thread lifecycle
+ *   operation.
  * - Runtime capture, config publication, and enqueue are game-thread bounded
  *   value copies only: no SQL, heap-allocation wait, blocking wait, or worker
  *   join is permitted.  The transport owns a record only after admission.
- * - transport_pulse/drain and repository apply/config are worker-only.  Health
- *   APIs return synchronized cached copies; they do not query SQL on callers.
- * - request_stop is nonblocking.  shutdown is invalid before the worker has
- *   joined; no game-thread path may perform an unbounded join.
+ * - transport_pulse/drain and repository apply/config are worker-only bounded
+ *   operations.  Health APIs return synchronized cached copies; they do not
+ *   query SQL on callers.
+ * - request_stop is nonblocking.  The repository connector must honor the
+ *   worker's cancellation/close contract; a deadline does not preempt a
+ *   connector call that violates that contract.  The timed shutdown request
+ *   never calls repository teardown synchronously; final_reap owns that
+ *   possibly blocking step after the worker is joined.
  */
 enum class telemetry_runtime_outcome : std::uint8_t
 {
@@ -46,6 +56,42 @@ struct telemetry_runtime_options
 {
 	telemetry_config_snapshot config;
 	telemetry_producer_id producer;
+	/* Optional owner-supplied effective-property boundary.  When present, the
+	 * runtime rebuilds the typed snapshot at bootstrap and after the
+	 * post-apply_properties reload notification.  A missing boundary is kept
+	 * for explicit prebuilt test/owner snapshots and never fabricates a
+	 * property version. */
+	telemetry_config_property_capture property_capture;
+	std::uint8_t property_capture_enabled;
+	std::uint8_t reserved[7];
+};
+
+struct char_data;
+struct descriptor_data;
+
+/* Typed, value-only evidence accepted from gameplay hooks.  The enum values
+ * intentionally mirror telemetry_activity_evidence_kind without including the
+ * activity service header here (telemetry_session.h includes this header). */
+enum class telemetry_runtime_evidence_kind : std::uint8_t
+{
+	player_action = 1,
+	movement = 2,
+	interaction = 3,
+	communication = 4,
+	combat_participation = 5,
+	automatic_combat = 6,
+	linkdead = 7,
+};
+
+struct telemetry_runtime_evidence
+{
+	telemetry_session_ref session;
+	telemetry_connection_id connection;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_runtime_evidence_kind kind;
+	std::uint8_t reserved[3];
+	telemetry_quality_mask quality_flags;
 };
 
 /* Session identity is supplied by the owner; runtime does not inspect it. */
@@ -167,6 +213,22 @@ struct telemetry_shutdown_request
 	std::uint8_t reserved[7];
 };
 
+constexpr bool
+telemetry_runtime_evidence_is_valid(const telemetry_runtime_evidence &evidence) noexcept
+{
+	return telemetry_session_ref_is_valid(evidence.session) &&
+	       telemetry_connection_reference_is_valid(evidence.connection) &&
+	       static_cast<std::uint8_t>(evidence.kind) >=
+		       static_cast<std::uint8_t>(telemetry_runtime_evidence_kind::player_action) &&
+	       static_cast<std::uint8_t>(evidence.kind) <=
+		       static_cast<std::uint8_t>(telemetry_runtime_evidence_kind::linkdead) &&
+	       evidence.reserved[0] == 0U && evidence.reserved[1] == 0U &&
+	       evidence.reserved[2] == 0U &&
+	       telemetry_quality_mask_is_valid(evidence.quality_flags) &&
+	       (evidence.kind != telemetry_runtime_evidence_kind::linkdead ||
+		telemetry_connection_id_is_zero(evidence.connection));
+}
+
 constexpr bool telemetry_session_enter_is_valid(const telemetry_session_enter &enter) noexcept
 {
 	return telemetry_session_ref_is_valid(enter.session) &&
@@ -262,19 +324,71 @@ telemetry_shutdown_request_is_valid(const telemetry_shutdown_request &request) n
 }
 
 telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options options);
+/* Default-off bootstrap with independently random nonzero incarnation tokens.
+ * No time/PID fallback on entropy failure. Enabled incarnations cannot reuse a
+ * producer pair after final reap; request new options for a new lifetime. */
+telemetry_runtime_options telemetry_runtime_default_options(void);
+/* Opt-in environment source. Invalid or unsupported values fail closed to the
+ * same disabled options as the default bootstrap. */
+telemetry_runtime_options telemetry_runtime_options_from_environment(void);
+telemetry_producer_id telemetry_runtime_producer_copy(void);
+bool telemetry_runtime_next_connection(telemetry_connection_id *connection) noexcept;
+bool telemetry_runtime_next_session(telemetry_session_id *session) noexcept;
+bool telemetry_runtime_now(telemetry_monotonic_usec *monotonic_usec,
+			   telemetry_utc_usec *utc_usec) noexcept;
+
+/*
+ * Value-only server-boundary adapters.  They keep gameplay hooks free of
+ * session/classifier state-machine construction and never make telemetry
+ * availability a prerequisite for the caller's teardown path.
+ */
+telemetry_capture_result telemetry_runtime_game_enter(struct char_data *character,
+						      struct descriptor_data *descriptor);
+/* Captures current traced dimensions and publishes a bounded context update.
+ * Call after game_enter or copyover resume; no SQL or filesystem work occurs. */
+telemetry_capture_result telemetry_runtime_game_context(struct char_data *character,
+							struct descriptor_data *descriptor);
+/* Copyover adapters preserve the logical session key while allocating a new
+ * connection in the replacement process. A null/zero handoff is an explicit
+ * absent handoff and starts a new session with an unclosed-tail marker. */
+telemetry_handoff_result telemetry_runtime_game_handoff_copy(struct char_data *character);
+telemetry_capture_result
+telemetry_runtime_game_session_resume(struct char_data *character,
+				      struct descriptor_data *descriptor,
+				      const telemetry_session_handoff *handoff);
+telemetry_capture_result
+telemetry_runtime_game_connection_transition(struct char_data *character,
+					     struct descriptor_data *descriptor,
+					     telemetry_connection_transition_kind kind);
+telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *character,
+							     struct descriptor_data *descriptor,
+							     telemetry_session_end_reason reason);
+telemetry_capture_result telemetry_runtime_game_evidence(struct char_data *character,
+							 struct descriptor_data *descriptor,
+							 telemetry_runtime_evidence_kind kind);
+std::uint16_t telemetry_runtime_pulse_slot_count(void) noexcept;
 telemetry_capture_result telemetry_runtime_session_enter(telemetry_session_enter enter);
-/* Game-thread bounded export; only outcome=accepted makes the handoff usable. */
+/* Copyover owner only, after capturing its complete handoff batch while normal
+ * game-loop admissions are paused. Waits at most 250ms for worker durability;
+ * never stops/joins the writer. On failure serialize absent handoffs. Queue
+ * emptiness alone is insufficient: in-flight/rejected records are checked. */
+telemetry_runtime_outcome telemetry_runtime_flush_for_copyover(telemetry_monotonic_usec deadline);
+/* Game-thread bounded export; accepted is a candidate until the batch flush. */
 telemetry_handoff_result telemetry_runtime_session_handoff_copy(telemetry_session_ref session);
-/* Seeds a previously absent runtime session and emits connection_attached, NOT
- * session_entered. It preserves revision/counters/quality, uses the new anchor,
- * and never counts handoff downtime. Do not emit a second attach afterwards. */
+/* Seeds an absent session or carries a valid copyover handoff and emits
+ * connection_attached, NOT session_entered. It preserves revision/counters/
+ * quality, uses the new anchor, never counts handoff downtime, and does not
+ * require a second attach afterwards. */
 telemetry_capture_result telemetry_runtime_session_resume(telemetry_session_resume resume);
 /* Explicit attach/detach on an already initialized session, never logical exit.
  * copyover_resumed is emitted by session_resume; calling this alone cannot seed
  * missing session state and must return invalid for an absent runtime session. */
 telemetry_capture_result
 telemetry_runtime_connection_transition(telemetry_connection_transition transition);
+/* Runtime classifier delivery only: the cut and category totals must match
+ * the owned activity state. Independent elapsed-time producers are rejected. */
 telemetry_capture_result telemetry_runtime_update_counters(telemetry_counter_update update);
+telemetry_capture_result telemetry_runtime_record_evidence(telemetry_runtime_evidence evidence);
 telemetry_capture_result telemetry_runtime_update_context(telemetry_context_update update);
 telemetry_pulse_result telemetry_runtime_pulse(telemetry_pulse_request pulse);
 telemetry_capture_result telemetry_runtime_session_exit(telemetry_session_exit exit);
@@ -284,7 +398,15 @@ telemetry_capture_result telemetry_runtime_session_exit(telemetry_session_exit e
  * capture remains unknown/degraded until a configuration record is accepted.
  */
 telemetry_capture_result telemetry_config_publish(telemetry_config_snapshot config);
+/* Requests stop and waits at most until request.deadline for the worker to
+ * report done. accepted means the worker reached done before that deadline;
+ * the worker remains joinable until final_reap. stopping retains all state. */
 telemetry_runtime_outcome telemetry_runtime_shutdown(telemetry_shutdown_request request);
+/* Mandatory lifecycle completion after shutdown; joins/reaps the worker and
+ * performs repository/transport teardown. This may block on an in-flight
+ * repository callback and must run off gameplay hooks, before global SQL
+ * teardown. Idempotent after completion. */
+telemetry_runtime_outcome telemetry_runtime_final_reap(void);
 telemetry_health_snapshot telemetry_runtime_health_copy(void);
 
 static_assert(std::is_trivially_copyable_v<telemetry_session_handoff>);

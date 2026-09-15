@@ -29,6 +29,7 @@
 
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -52,6 +53,21 @@ void remove_aura_message(P_char ch, P_char commander);
 void add_aura_message(P_char ch, P_char commander);
 
 static bool do_group_add(P_char ch, P_char victim);
+
+/* Observe committed membership changes, including stationary members. The
+ * bounded adapter owns dimensions/classification; no gameplay state is changed. */
+static void telemetry_group_context_changed(struct group_list *group)
+{
+	unsigned visited = 0U;
+	for (struct group_list *member = group; member && visited < 256U;
+	     member = member->next, ++visited)
+	{
+		P_char character = member->ch;
+		if (character && IS_PC(character) && character->desc &&
+		    character->desc->connected == CON_PLAYING)
+			(void)telemetry_runtime_game_context(character, character->desc);
+	}
+}
 
 /*
  * Calculates free slots in back rank, might be negative
@@ -1056,6 +1072,7 @@ bool group_remove_member(P_char ch)
 		if (in_command_aura(gl->ch))
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;
+		(void)telemetry_runtime_game_context(gl->ch, gl->ch->desc);
 		send_to_char("Your group has been disbanded.\n", gl->ch);
 		mm_release(dead_group_pool, gl);
 		gl = NULL;
@@ -1080,6 +1097,8 @@ bool group_remove_member(P_char ch)
 	if (gl && free_back_slots(gl->ch) < 0)
 		fix_group_ranks(gl->ch);
 	update_groupies(ch);
+	(void)telemetry_runtime_game_context(ch, ch->desc);
+	telemetry_group_context_changed(gl);
 	return TRUE;
 }
 
@@ -1276,6 +1295,7 @@ bool group_add_member(P_char leader, P_char member)
 	REMOVE_BIT(member->specials.act2, PLR2_BACK_RANK);
 	if (in_command_aura(member))
 		add_aura_message(member, leader);
+	telemetry_group_context_changed(leader->group);
 	return TRUE;
 }
 

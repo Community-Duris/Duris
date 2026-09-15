@@ -8,6 +8,7 @@
  */
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -56,6 +57,22 @@ extern bool grease_check(P_char);
 extern int get_number_allies_in_room(P_char ch, int room_index);
 extern int get_weight_allies_in_room(P_char ch, int room_index);
 void send_movement_noise(P_char ch, int num);
+
+static void telemetry_gameplay_context_changed(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->desc || ch->desc->connected != CON_PLAYING)
+		return;
+	(void)telemetry_runtime_game_context(ch, ch->desc);
+}
+
+static void telemetry_gameplay_movement(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->desc || ch->desc->connected != CON_PLAYING ||
+	    IS_AFFECTED5(ch, AFF5_FOLLOWING))
+		return;
+	(void)telemetry_runtime_game_evidence(ch, ch->desc,
+					      telemetry_runtime_evidence_kind::movement);
+}
 
 int is_ice(P_char ch, int room)
 {
@@ -1825,6 +1842,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 	{
 		return FALSE;
 	}
+	telemetry_gameplay_context_changed(ch);
+	telemetry_gameplay_movement(ch);
 
 	char_light(ch);
 	room_light(ch->in_room, REAL);
@@ -3858,6 +3877,7 @@ void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 	gmcp_char_vitals(ch);
 	stop_memorizing(ch);
+	telemetry_gameplay_context_changed(ch);
 }
 
 // end do_stand
@@ -3946,6 +3966,7 @@ void do_sit(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 	SET_POS(ch, GET_STAT(ch) + POS_SITTING);
 	gmcp_char_vitals(ch);
+	telemetry_gameplay_context_changed(ch);
 }
 
 void do_kneel(P_char ch, char * /*argument*/, int /*cmd*/)
@@ -4041,6 +4062,7 @@ void do_kneel(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 	SET_POS(ch, GET_STAT(ch) + POS_KNEELING);
 	gmcp_char_vitals(ch);
+	telemetry_gameplay_context_changed(ch);
 }
 
 void do_recline(P_char ch, char * /*argument*/, int /*cmd*/)
@@ -4136,6 +4158,7 @@ void do_recline(P_char ch, char * /*argument*/, int /*cmd*/)
 	SET_POS(ch, GET_STAT(ch) + POS_PRONE);
 	gmcp_char_vitals(ch);
 	stop_memorizing(ch);
+	telemetry_gameplay_context_changed(ch);
 }
 
 void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
@@ -4219,6 +4242,7 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 	StartRegen(ch, regen_resource::vitality);
 	StartRegen(ch, regen_resource::mana);
 	StartRegen(ch, regen_resource::ward);
+	telemetry_gameplay_context_changed(ch);
 }
 
 /*
@@ -4282,6 +4306,7 @@ void do_alert(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 	SET_POS(ch, GET_POS(ch) + STAT_NORMAL);
 	stop_memorizing(ch);
+	telemetry_gameplay_context_changed(ch);
 }
 
 void do_sleep(P_char ch, char * /*argument*/, int /*cmd*/)
@@ -4361,6 +4386,7 @@ void do_sleep(P_char ch, char * /*argument*/, int /*cmd*/)
 	SET_POS(ch, GET_POS(ch) + STAT_SLEEPING);
 	gmcp_char_vitals(ch);
 	stop_memorizing(ch);
+	telemetry_gameplay_context_changed(ch);
 }
 
 void do_wake(P_char ch, char *argument, int /*cmd*/)
@@ -4440,6 +4466,7 @@ void do_wake(P_char ch, char *argument, int /*cmd*/)
 						gmcp_char_vitals(tmp_char);
 						act("You are awakened by $n.", FALSE, ch, 0,
 						    tmp_char, TO_VICT);
+						telemetry_gameplay_context_changed(tmp_char);
 					}
 					else
 					{
@@ -4479,6 +4506,7 @@ void do_wake(P_char ch, char *argument, int /*cmd*/)
 
 				SET_POS(ch, GET_POS(ch) + STAT_RESTING);
 				gmcp_char_vitals(ch);
+				telemetry_gameplay_context_changed(ch);
 			}
 		}
 	}
