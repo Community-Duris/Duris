@@ -1444,8 +1444,8 @@ static bool input_is_currency_dependent_speech(const char *input)
 	}
 	action[length] = '\0';
 
-	return !strcmp(action, "deal") || !strcmp(action, "stay") ||
-	       !strcmp(action, "fold") || !strcmp(action, "hit");
+	return !strcmp(action, "deal") || !strcmp(action, "stay") || !strcmp(action, "fold") ||
+	       !strcmp(action, "hit");
 }
 
 /** A pending "yes" can confirm a paid command before command parsing. */

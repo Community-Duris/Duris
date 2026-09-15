@@ -10879,9 +10879,9 @@ static void world_quest_refund_payment(P_char pl, int fee)
 }
 
 static void world_quest_payment_committed(P_char pl, bool committed,
-					   const currency_command_result & /*result*/,
-					   unsigned int error_code, const uint8_t *raw_context,
-					   size_t context_size)
+					  const currency_command_result & /*result*/,
+					  unsigned int error_code, const uint8_t *raw_context,
+					  size_t context_size)
 {
 	world_quest_payment_context payment = {};
 	if (!pl || !pl->only.pc || !raw_context || context_size != sizeof(payment))
@@ -10975,8 +10975,9 @@ static void world_quest_payment_committed(P_char pl, bool committed,
 		{
 			send_to_char("You hand over the money.\r\n", pl);
 			do_quest(pl, writable_arg(""), 0);
-			send_to_char("Remember, you can always type 'quest' to see your current quest.\r\n",
-				     pl);
+			send_to_char(
+				"Remember, you can always type 'quest' to see your current quest.\r\n",
+				pl);
 			gmcp_quest_status(pl);
 			return;
 		}
@@ -11077,12 +11078,14 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			}
 
 			const world_quest_payment_context payment = {
-				world_quest_payment_action::abandon, temp, GET_VNUM(ch)};
+				world_quest_payment_action::abandon, temp, GET_VNUM(ch)
+			};
 			if (!currency_transaction_submit_wallet_value(
-				    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
-				    GET_VNUM(ch), critical_source_site::command,
-				    critical_deadline_class::interactive, world_quest_payment_committed,
-				    &payment, sizeof(payment)))
+				    pl, -static_cast<int64_t>(temp),
+				    currency_reason_type::wallet_spend, GET_VNUM(ch),
+				    critical_source_site::command,
+				    critical_deadline_class::interactive,
+				    world_quest_payment_committed, &payment, sizeof(payment)))
 			{
 				send_to_char(
 					"The bartender's payment service is busy; your quest was not changed. Please try again.\r\n",
@@ -11132,12 +11135,14 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			}
 
 			const world_quest_payment_context payment = {
-				world_quest_payment_action::map, temp, GET_VNUM(ch)};
+				world_quest_payment_action::map, temp, GET_VNUM(ch)
+			};
 			if (!currency_transaction_submit_wallet_value(
-				    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
-				    GET_VNUM(ch), critical_source_site::command,
-				    critical_deadline_class::interactive, world_quest_payment_committed,
-				    &payment, sizeof(payment)))
+				    pl, -static_cast<int64_t>(temp),
+				    currency_reason_type::wallet_spend, GET_VNUM(ch),
+				    critical_source_site::command,
+				    critical_deadline_class::interactive,
+				    world_quest_payment_committed, &payment, sizeof(payment)))
 			{
 				send_to_char(
 					"The bartender's payment service is busy; your map was not changed. Please try again.\r\n",
@@ -11215,8 +11220,8 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			return (TRUE);
 		}
 
-		const world_quest_payment_context payment = {
-			world_quest_payment_action::quest, temp, GET_VNUM(ch)};
+		const world_quest_payment_context payment = { world_quest_payment_action::quest,
+							      temp, GET_VNUM(ch) };
 		if (!currency_transaction_submit_wallet_value(
 			    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
 			    GET_VNUM(ch), critical_source_site::command,
