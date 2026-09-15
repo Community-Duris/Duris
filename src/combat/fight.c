@@ -2852,6 +2852,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
+	// Terminal publication must release intake even when no corpse-item handoff ever ran.
 	collector_death_enrollment_end(corpse);
 	release_after_terminal_death(ch, "death_recovery_completed");
 }
