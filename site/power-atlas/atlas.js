@@ -193,7 +193,7 @@ function initAtlas(D) {
       f: F.win,
       kind: "win",
       fmt: (v) => (v == null ? "–" : Math.round(v * 100) + "%"),
-      note: "Share of the opponent-build matchups this combination wins: 192 at report levels 1–26, 711 from level 31.",
+      note: "Share of the opponent-build matchups this combination wins: {{TBD:192+56}} at report levels 1–26, {{TBD:711+56}} from level 31.",
     },
     pve: {
       label: "PvE kill rate",
