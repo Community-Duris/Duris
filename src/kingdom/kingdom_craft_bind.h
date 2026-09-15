@@ -1,0 +1,84 @@
+/*
+ *  kingdom_craft_bind.h
+ *  Duris
+ *
+ *  THE BINDING TOKEN on guild-store gear, and nothing else.
+ *
+ *  Store gear is soulbound to the one character who bought it (ruled
+ *  2026-09-15: not to an account, not to an alt, not to a trade partner).
+ *  The engine's legacy soulbind test asks whether the wearer's NAME is one of
+ *  the object's keywords, and a store piece's keywords are ordinary words --
+ *  "steel", "vambraces", "kingdom", "strength" -- so any character named after
+ *  one of them would pass it. A store piece therefore carries a token keyed to
+ *  the buyer's PLAYER ID instead, and the wear check for store pieces
+ *  (kingdom_store_piece.h) looks for that token and nothing else.
+ *
+ *  THE TOKEN is "kingdom-bound-<pid>", as in "kingdom-bound-1042". No
+ *  character name can equal it: names are letters only (_parse_name(),
+ *  account/nanny.c), and the token carries hyphens and digits. A player id
+ *  names one character for good, so a later character who takes a deleted
+ *  buyer's name does not inherit the binding either.
+ *
+ *  Pure string code with no engine dependency, on purpose:
+ *  tests/async/kingdom_craft_math_harness.cpp executes it without a server.
+ */
+
+#ifndef _KINGDOM_CRAFT_BIND_H_
+#define _KINGDOM_CRAFT_BIND_H_
+
+#include <cstddef>
+#include <cstdio>
+#include <cstring>
+
+#define KINGDOM_CRAFT_BIND_PREFIX "kingdom-bound-"
+
+/* Room for the prefix, any long, and the terminator. */
+constexpr size_t KINGDOM_CRAFT_BIND_TOKEN_LEN = 40;
+
+/* Write the token for player id `pid` into `out`. False, with `out` left
+ * empty, when `pid` is not a real player id (zero or negative) or `out` is
+ * too small to hold the whole token. */
+inline bool kingdom_craft_bind_token(long pid, char *out, size_t out_len)
+{
+	if (!out || out_len == 0)
+		return false;
+	out[0] = '\0';
+	if (pid <= 0)
+		return false;
+
+	const int written = std::snprintf(out, out_len, KINGDOM_CRAFT_BIND_PREFIX "%ld", pid);
+
+	if (written <= 0 || static_cast<size_t>(written) >= out_len)
+	{
+		out[0] = '\0';
+		return false;
+	}
+	return true;
+}
+
+/* True when `keywords` carries the token for `pid` as a WHOLE word: that
+ * exact token, with the start of the string or a space before it and the end
+ * of the string or a space after it. The token for id 10 is therefore not
+ * found inside "kingdom-bound-104", and no plain word matches at all. Case is
+ * compared exactly: the writer emits the token in one case only. */
+inline bool kingdom_craft_keywords_bind(const char *keywords, long pid)
+{
+	char token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
+
+	if (!keywords || !kingdom_craft_bind_token(pid, token, sizeof(token)))
+		return false;
+
+	const size_t length = std::strlen(token);
+
+	for (const char *at = std::strstr(keywords, token); at; at = std::strstr(at + 1, token))
+	{
+		const bool starts = at == keywords || at[-1] == ' ';
+		const bool ends = at[length] == '\0' || at[length] == ' ';
+
+		if (starts && ends)
+			return true;
+	}
+	return false;
+}
+
+#endif /* _KINGDOM_CRAFT_BIND_H_ */

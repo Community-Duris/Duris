@@ -40,6 +40,7 @@
 #include "guild/guildhall.h"
 #include "item/item_movement_transaction.h"
 #include "item/objmisc.h"
+#include "kingdom/kingdom_craft_bind.h"
 #include "kingdom/kingdom_craft_math.h"
 #include "net/comm.h"
 
@@ -544,9 +545,11 @@ static void kingdom_craft_forms_text(const kingdom_craft_item &item, const char 
  *
  * STAMPED so it cannot become coin or pass to anyone else: NOSELL (no shop
  * buys it), cost 0 (and none would pay anything for it if one did), SOULBIND
- * with the buyer's name in the keywords (only the buyer may wear it; it
- * cannot be given or dropped), CRAFTED (no giving it to a mob either) and
- * STOREITEM (it cannot be salvaged back into materials). */
+ * with the buyer's player-id token in the keywords (only the character who
+ * bought it may wear it -- see THE BINDING below; it cannot be given or
+ * dropped), CRAFTED (no giving it to a mob either) and STOREITEM (it cannot be
+ * salvaged back into materials). NULL, with nothing left behind, if the blank
+ * will not load or the buyer has no player id to bind it to. */
 static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 				const kingdom_craft_variant *form, int level,
 				const char *realm_name)
@@ -668,10 +671,23 @@ static P_obj kingdom_craft_make(P_char buyer, const kingdom_craft_item &item,
 		keywords += " ";
 		keywords += form->name;
 	}
-	/* THE BINDING. can_equip_soulbound_item() (cmd/actobj.c) lets only a
-	 * character whose NAME is among the keywords wear a soulbound piece. */
+	/* THE BINDING is the buyer's PLAYER ID, written as a token no character
+	 * name can equal (kingdom_craft_bind.h). can_equip_soulbound_item()
+	 * (cmd/actobj.c) asks store pieces for that token instead of running its
+	 * legacy name test, which any character named "Steel" or "Kingdom" would
+	 * pass. The buyer's name goes in as well, but only so the piece reads as
+	 * theirs and answers to it: nothing grants ownership by name. */
+	char bind_token[KINGDOM_CRAFT_BIND_TOKEN_LEN];
+
+	if (!kingdom_craft_bind_token(GET_PID(buyer), bind_token, sizeof(bind_token)))
+	{
+		extract_obj(obj, FALSE);
+		return NULL;
+	}
 	keywords += " kingdom ";
 	keywords += GET_NAME(buyer);
+	keywords += " ";
+	keywords += bind_token;
 
 	std::string long_description = shown;
 
@@ -855,8 +871,10 @@ static void kingdom_store_buy(P_char ch, kingdom_realm &realm, P_Guild guild, un
 	if (!obj)
 	{
 		send_to_char("The workshops cannot make that just now. Please petition.\r\n", ch);
-		logit(LOG_KINGDOM, "STORE: blank %d would not load for %s.",
-		      VOBJ_KINGDOM_CRAFT_BLANK, GET_NAME(ch));
+		logit(LOG_KINGDOM,
+		      "STORE: no %s could be made for %s (blank %d would not load, or no player "
+		      "id to bind it to).",
+		      item->keyword, GET_NAME(ch), VOBJ_KINGDOM_CRAFT_BLANK);
 		return;
 	}
 

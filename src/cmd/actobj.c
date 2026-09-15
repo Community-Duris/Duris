@@ -39,6 +39,7 @@
 #include "item/item_movement_transaction.h"
 #include "item/item_ownership_runtime.h"
 #include "item/storage_lockers.h"
+#include "kingdom/kingdom_store_piece.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_load_items.h"
@@ -153,14 +154,21 @@ static bool uses_generic_item_ownership(P_obj object)
 	       ownership.state == item_custody_state::active;
 }
 
-/** Authorize soulbound equipment by account marker or legacy character-name binding. */
+/** Authorize soulbound equipment by account marker, the guild store's buyer
+ *  binding, or the legacy character-name binding. */
 static bool can_equip_soulbound_item(P_char actor, P_obj object, bool show_rejection)
 {
 	if (!IS_OBJ_STAT2(object, ITEM2_SOULBIND))
 		return true;
+	/* Guild-store gear is bound to the character who bought it by PLAYER ID
+	 * (kingdom/kingdom_store_piece.h), never by name: its keywords are
+	 * ordinary words -- "steel", "kingdom", "strength" -- and a character
+	 * named after one would pass the name test below. Every other soulbound
+	 * item keeps that test unchanged. */
 	const bool owns_item = IS_OBJ_STAT2(object, ITEM2_ACCOUNT_BOUND) ?
 				       account_bound_reward_owner(actor, object) :
-				       isname(GET_NAME(actor), object->name);
+			       kingdom_store_piece(object) ? kingdom_store_piece_owner(actor, object) :
+							     isname(GET_NAME(actor), object->name);
 	if (!owns_item && show_rejection)
 		send_to_char(
 			"&+LThis item is bound to someone elses &+Wsoul&+L, you may not wear it!&n\r\n",
