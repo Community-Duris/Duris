@@ -44,6 +44,7 @@ using namespace std;
 #include "combat/justice.h"
 #include "world/map.h"
 #include "economy/nexus_stones.h"
+#include "economy/currency_transaction.h"
 #include "item/objmisc.h"
 #include "classes/paladins.h"
 #include "persistence/persistence_checkpoint.h"
@@ -4157,6 +4158,8 @@ static void show_world_persistence(P_char ch)
 		critical_command_journal_health_copy();
 	const critical_outbox_health critical_outbox = critical_outbox_health_copy();
 	const epic_transaction_health epic_transactions = epic_transaction_health_copy();
+	const currency_transaction_health currency_transactions =
+		currency_transaction_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	const maintenance_scheduler_health maintenance =
 		maintenance_scheduler_health_copy(ne_event_tick);
@@ -4432,6 +4435,30 @@ static void show_world_persistence(P_char ch)
 		(unsigned long long)critical_outbox.db_failures,
 		(unsigned long long)critical_outbox.high_water_records,
 		(unsigned long long)critical_outbox.high_water_bytes);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "currency_transactions state=%s pending=%llu retained_offline=%llu "
+		 "publication_blocked=%llu publication_retrying=%llu submitted=%llu "
+		 "committed=%llu rejected=%llu submit_failures=%llu malformed=%llu "
+		 "publication_abandoned=%llu\n",
+		 currency_transactions.publication_blocked ||
+				 currency_transactions.publication_abandoned ||
+				 currency_transactions.malformed_completions ||
+				 currency_transactions.submission_failures ?
+			 "degraded" :
+		 currency_transactions.pending ? "pending" :
+						 "ready",
+		 (unsigned long long)currency_transactions.pending,
+		 (unsigned long long)currency_transactions.retained_offline,
+		 (unsigned long long)currency_transactions.publication_blocked,
+		 (unsigned long long)currency_transactions.publication_retrying,
+		 (unsigned long long)currency_transactions.submitted,
+		 (unsigned long long)currency_transactions.committed,
+		 (unsigned long long)currency_transactions.rejected,
+		 (unsigned long long)currency_transactions.submission_failures,
+		 (unsigned long long)currency_transactions.malformed_completions,
+		 (unsigned long long)currency_transactions.publication_abandoned);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

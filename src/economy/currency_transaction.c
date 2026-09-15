@@ -19,6 +19,15 @@
 
 namespace
 {
+enum class currency_publication_state : uint8_t
+{
+	awaiting_completion,
+	ready,
+	waiting_for_player,
+	retrying_callback,
+	blocked_receipt,
+};
+
 struct pending_currency
 {
 	uint32_t pid;
@@ -27,13 +36,13 @@ struct pending_currency
 	currency_completion_fn completion;
 	std::array<uint8_t, CURRENCY_PENDING_CONTEXT_MAX_BYTES> context;
 	size_t context_size;
-	bool completion_ready;
+	currency_publication_state publication_state =
+		currency_publication_state::awaiting_completion;
 	critical_completion completed;
 	std::optional<coin_transfer_payload> coin = std::nullopt;
 	coin_completion_fn coin_completion = nullptr;
 	bool coin_wallets_published = false;
 	unsigned int publication_attempts = 0;
-	bool publication_block_reported = false; // Diagnostic suppression, not transaction state.
 };
 
 std::unordered_map<std::string, pending_currency> pending;
@@ -45,21 +54,46 @@ std::string operation_key(const critical_operation_id &operation_id)
 			   operation_id.bytes.size());
 }
 
+bool same_publication_receipt(const critical_completion &left, const critical_completion &right)
+{
+	// Queue timestamps do not affect publication. Every field that can change the
+	// authoritative outcome or decoded result must match before a replay sleeps.
+	return left.outcome == right.outcome && left.durable_revision == right.durable_revision &&
+	       left.error_code == right.error_code && left.attempt == right.attempt &&
+	       left.result_size == right.result_size && left.result_payload == right.result_payload;
+}
+
+bool retain_unresolved_publication(pending_currency &entry, const char *reason, bool malformed)
+{
+	if (entry.publication_state != currency_publication_state::blocked_receipt)
+	{
+		entry.publication_state = currency_publication_state::blocked_receipt;
+		++health.publication_blocked;
+		if (malformed)
+			++health.malformed_completions;
+		char operation[33];
+		critical_operation_id_to_hex(entry.completed.operation_id, operation,
+					     sizeof(operation));
+		persistence_alert(AVATAR, "currency", "publication", operation, "none",
+				  "publication_blocked", "outcome=%u error=%u reason=%s",
+				  static_cast<unsigned int>(entry.completed.outcome),
+				  entry.completed.error_code, reason);
+	}
+	return false;
+}
+
 bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator found, P_char actor)
 {
 	auto &entry = found->second;
 	const auto &completed = entry.completed;
 	const bool committed = completed.outcome == critical_apply_outcome::applied ||
 			       completed.outcome == critical_apply_outcome::already_applied;
-	coin_transfer_result result;
+	coin_transfer_result result = {};
 	if (committed &&
 	    !coin_transfer_command_decode_result(*entry.coin, completed.result_payload.data(),
 						 completed.result_size, &result))
 	{
-		// An unparseable acknowledgement is not a rejected transaction. Preserve its
-		// identity and do not invoke a failure/refund callback for committed money.
-		++health.malformed_completions;
-		return false;
+		return retain_unresolved_publication(entry, "invalid_coin_result", true);
 	}
 	if (committed && !entry.coin_wallets_published)
 	{
@@ -71,7 +105,8 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 				continue;
 			currency_command_payload wallet;
 			if (!currency_command_decode_payload(endpoints[index]->change, &wallet))
-				return false;
+				return retain_unresolved_publication(entry, "invalid_coin_endpoint",
+								     true);
 			P_char character = find_player_by_pid(wallet.pid);
 			const auto &balances = result.wallets[index];
 			// Offline endpoints load the same committed state on re-entry. They must
@@ -80,7 +115,8 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 						 character, wallet.account_name.data(),
 						 wallet.racewar, balances.wallet, balances.bank,
 						 balances.wallet_revision, balances.bank_revision))
-				return false;
+				return retain_unresolved_publication(
+					entry, "invalid_coin_live_balances", true);
 		}
 		entry.coin_wallets_published = true;
 	}
@@ -105,6 +141,7 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	{
 		if (++finished.publication_attempts < CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS)
 		{
+			finished.publication_state = currency_publication_state::retrying_callback;
 			pending.insert(std::move(node));
 			return false;
 		}
@@ -142,21 +179,6 @@ bool publish_coin(std::unordered_map<std::string, pending_currency>::iterator fo
 	return true;
 }
 
-bool retain_unresolved_publication(pending_currency &entry, const char *reason, bool malformed)
-{
-	if (!entry.publication_block_reported)
-	{
-		entry.publication_block_reported = true;
-		if (malformed)
-			++health.malformed_completions;
-		persistence_alert(AVATAR, "currency", "publication", "none", "none",
-				  "publication_blocked", "outcome=%u error=%u reason=%s",
-				  static_cast<unsigned int>(entry.completed.outcome),
-				  entry.completed.error_code, reason);
-	}
-	return false;
-}
-
 bool publish(std::unordered_map<std::string, pending_currency>::iterator found, P_char character)
 {
 	pending_currency &entry = found->second;
@@ -178,7 +200,8 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 			return retain_unresolved_publication(entry, "invalid_result", true);
 		// A known rejection can have no balance payload (for example validation failure).
 		result = {};
-		++health.malformed_completions;
+		if (completion.result_size)
+			++health.malformed_completions;
 	}
 	else if (!currency_transaction_publish_balances(
 			 character, entry.account_name.data(), entry.racewar, result.wallet,
@@ -215,7 +238,7 @@ bool publish_completed_if_available(const std::string &key,
 	if (found == pending.end())
 		return false;
 	found->second.completed = completion;
-	found->second.completion_ready = true;
+	found->second.publication_state = currency_publication_state::ready;
 	publish(found, character);
 	return true;
 }
@@ -224,11 +247,17 @@ void update_retained_health()
 {
 	health.pending = pending.size();
 	health.retained_offline = 0;
+	health.publication_blocked = 0;
+	health.publication_retrying = 0;
 	for (const auto &[key, entry] : pending)
 	{
 		(void)key;
-		if (entry.completion_ready)
+		if (entry.publication_state == currency_publication_state::waiting_for_player)
 			++health.retained_offline;
+		else if (entry.publication_state == currency_publication_state::blocked_receipt)
+			++health.publication_blocked;
+		else if (entry.publication_state == currency_publication_state::retrying_callback)
+			++health.publication_retrying;
 	}
 }
 
@@ -322,10 +351,10 @@ bool currency_transaction_publish_wallet(P_char character, const currency_vector
 	return true;
 }
 
-bool currency_transaction_can_submit(P_char character)
+static bool currency_transaction_can_admit(P_char character)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
-	    pending.size() >= CURRENCY_PENDING_MAX || currency_transaction_player_busy(character))
+	    pending.size() >= CURRENCY_PENDING_MAX)
 		return false;
 #ifdef __NO_MYSQL__
 	// A failed first save/hydration must not submit zero or partial revisions.
@@ -345,6 +374,56 @@ bool currency_transaction_can_submit(P_char character)
 	       !critical_command_coordinator_is_fenced(account_key, nullptr);
 }
 
+bool currency_transaction_can_submit_nonrebasable(P_char character)
+{
+	return currency_transaction_can_admit(character) &&
+	       !currency_transaction_player_busy(character);
+}
+
+static bool pending_affects_character(const pending_currency &entry, uint32_t pid, uint8_t racewar,
+				      bool account_known, const char *account_name)
+{
+	if (entry.coin && entry.coin_wallets_published)
+		return false;
+	if (entry.coin)
+	{
+		for (const auto *endpoint : { &entry.coin->source, &entry.coin->destination })
+		{
+			currency_command_payload wallet;
+			if (endpoint->change.type == critical_command_type::account_bank &&
+			    currency_command_decode_payload(endpoint->change, &wallet) &&
+			    (wallet.pid == pid ||
+			     (account_known && wallet.racewar == racewar &&
+			      !strcasecmp(wallet.account_name.data(), account_name))))
+				return true;
+		}
+	}
+	return entry.pid == pid || (account_known && entry.racewar == racewar &&
+				    !strcasecmp(entry.account_name.data(), account_name));
+}
+
+static bool currency_transaction_publication_blocked(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
+		return false;
+	// The normal reward path stays O(1). Ownership is scanned only while an
+	// exceptional unresolved publication exists.
+	if (!health.publication_blocked)
+		return false;
+	const char *account_name = get_account_name_safe(character);
+	const bool account_known = account_name && strcmp(account_name, "Unknown");
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
+	const uint8_t racewar = static_cast<uint8_t>(GET_RACEWAR(character));
+	return std::any_of(pending.begin(), pending.end(),
+			   [pid, racewar, account_known, account_name](const auto &item)
+			   {
+				   return item.second.publication_state ==
+						  currency_publication_state::blocked_receipt &&
+					  pending_affects_character(item.second, pid, racewar,
+								    account_known, account_name);
+			   });
+}
+
 bool currency_transaction_player_busy(P_char character)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0)
@@ -353,34 +432,11 @@ bool currency_transaction_player_busy(P_char character)
 	const bool account_known = account_name && strcmp(account_name, "Unknown");
 	const uint32_t pid = static_cast<uint32_t>(GET_PID(character));
 	const uint8_t racewar = static_cast<uint8_t>(GET_RACEWAR(character));
-	return std::any_of(
-		pending.begin(), pending.end(),
-		[pid, racewar, account_known, account_name](const auto &item)
-		{
-			const pending_currency &entry = item.second;
-			if (entry.coin && entry.coin_wallets_published)
-				return false;
-			if (entry.coin)
-			{
-				for (const auto *endpoint :
-				     { &entry.coin->source, &entry.coin->destination })
-				{
-					currency_command_payload wallet;
-					if (endpoint->change.type ==
-						    critical_command_type::account_bank &&
-					    currency_command_decode_payload(endpoint->change,
-									    &wallet) &&
-					    (wallet.pid == pid ||
-					     (account_known && wallet.racewar == racewar &&
-					      !strcasecmp(wallet.account_name.data(),
-							  account_name))))
-						return true;
-				}
-			}
-			return entry.pid == pid ||
-			       (account_known && entry.racewar == racewar &&
-				!strcasecmp(entry.account_name.data(), account_name));
-		});
+	return std::any_of(pending.begin(), pending.end(),
+			   [pid, racewar, account_known, account_name](const auto &item) {
+				   return pending_affects_character(item.second, pid, racewar,
+								    account_known, account_name);
+			   });
 }
 
 bool currency_transaction_coin_item_busy(uint64_t item_uid)
@@ -411,7 +467,7 @@ bool currency_transaction_coin_item_busy(uint64_t item_uid)
 bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
 				      coin_transfer_endpoint *endpoint)
 {
-	if (!endpoint || !currency_transaction_can_submit(character))
+	if (!endpoint || !currency_transaction_can_submit_nonrebasable(character))
 		return false;
 	coin_transfer_endpoint candidate;
 	candidate.before = { GET_COPPER(character), GET_SILVER(character), GET_GOLD(character),
@@ -448,7 +504,7 @@ bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload 
 				      coin_completion_fn completion, const void *context,
 				      size_t context_size)
 {
-	if (!currency_transaction_can_submit(actor) ||
+	if (!currency_transaction_can_submit_nonrebasable(actor) ||
 	    context_size > CURRENCY_PENDING_CONTEXT_MAX_BYTES || (context_size && !context))
 		return false;
 	critical_operation_id id;
@@ -593,10 +649,16 @@ bool currency_transaction_submit_prepared(P_char character, const critical_comma
 		return false;
 	// A database receipt can release coordinator fences while live publication is
 	// still unresolved. Do not build a new debit from that stale wallet/bank view.
-	if (!currency_command_is_rebasable_reward(payload) &&
-	    currency_transaction_player_busy(character))
-		return false;
-	if (!currency_command_is_rebasable_reward(payload))
+	const bool rebasable_reward = currency_command_is_rebasable_reward(payload);
+	if (rebasable_reward)
+	{
+		if (currency_transaction_publication_blocked(character))
+			return false;
+	}
+	else
+	{
+		if (currency_transaction_player_busy(character))
+			return false;
 		for (const auto &entity : command.keys)
 		{
 			critical_operation_id fence = {};
@@ -604,13 +666,15 @@ bool currency_transaction_submit_prepared(P_char character, const critical_comma
 			    !critical_operation_id_equal(fence, operation_id))
 				return false;
 		}
+	}
 	pending_currency entry = { .pid = static_cast<uint32_t>(GET_PID(character)),
 				   .account_name = payload.account_name,
 				   .racewar = payload.racewar,
 				   .completion = completion,
 				   .context = {},
 				   .context_size = context_size,
-				   .completion_ready = false,
+				   .publication_state =
+					   currency_publication_state::awaiting_completion,
 				   .completed = {} };
 	if (context_size)
 		memcpy(entry.context.data(), context, context_size);
@@ -642,7 +706,7 @@ bool currency_transaction_submit_prepared(P_char character, const critical_comma
 	++health.submitted;
 	if (submitted == critical_submit_result::attached)
 		publish_completed_if_available(key, operation_id, character);
-	update_retained_health();
+	health.pending = pending.size();
 	return true;
 }
 
@@ -715,8 +779,7 @@ static bool bank_payment_deltas(P_char character, int64_t value, currency_vector
 bool currency_transaction_prepare_identify(P_char character, int64_t cost,
 					   critical_command *command)
 {
-	if (!command || cost <= 0 || !currency_transaction_can_submit(character) ||
-	    currency_transaction_player_busy(character))
+	if (!command || cost <= 0 || !currency_transaction_can_submit_nonrebasable(character))
 		return false;
 	currency_vector wallet_delta = {}, bank_delta = {};
 	const bool use_bank = GET_MONEY(character) < cost;
@@ -772,15 +835,21 @@ void currency_transaction_handle_completions(const critical_completion *completi
 		auto found = pending.find(operation_key(completions[index].operation_id));
 		if (found == pending.end())
 			continue;
+		if (found->second.publication_state ==
+			    currency_publication_state::blocked_receipt &&
+		    same_publication_receipt(found->second.completed, completions[index]))
+			continue;
 		found->second.completed = completions[index];
-		found->second.completion_ready = true;
+		found->second.publication_state = currency_publication_state::ready;
 	}
 	// Callbacks may submit the next bulk operation, so do not retain map iterators
 	// across them. Coin publication retries once per ordinary coordinator pulse.
 	std::array<critical_operation_id, CURRENCY_PENDING_MAX> ready;
 	size_t ready_count = 0;
 	for (const auto &[key, entry] : pending)
-		if (entry.completion_ready && ready_count < ready.size())
+		if ((entry.publication_state == currency_publication_state::ready ||
+		     entry.publication_state == currency_publication_state::retrying_callback) &&
+		    ready_count < ready.size())
 			memcpy(ready[ready_count++].bytes.data(), key.data(), key.size());
 	for (size_t index = 0; index < ready_count; ++index)
 	{
@@ -790,6 +859,9 @@ void currency_transaction_handle_completions(const critical_completion *completi
 		P_char character = find_player_by_pid(found->second.pid);
 		if (character || found->second.coin)
 			publish(found, character);
+		else
+			found->second.publication_state =
+				currency_publication_state::waiting_for_player;
 	}
 	update_retained_health();
 }
@@ -802,7 +874,10 @@ void currency_transaction_player_ready(P_char character)
 	size_t ready_count = 0;
 	for (const auto &[key, entry] : pending)
 		if (entry.pid == static_cast<uint32_t>(GET_PID(character)) &&
-		    entry.completion_ready && ready_count < ready.size())
+		    (entry.publication_state == currency_publication_state::ready ||
+		     entry.publication_state == currency_publication_state::waiting_for_player ||
+		     entry.publication_state == currency_publication_state::retrying_callback) &&
+		    ready_count < ready.size())
 			memcpy(ready[ready_count++].bytes.data(), key.data(), key.size());
 	for (size_t index = 0; index < ready_count; ++index)
 	{

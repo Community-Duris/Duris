@@ -495,9 +495,9 @@ int main()
 	assert(!currency_transaction_player_busy(NULL));
 	SET_BIT(actor.runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 #ifdef __NO_MYSQL__
-	assert(!currency_transaction_can_submit(&actor));
+	assert(!currency_transaction_can_submit_nonrebasable(&actor));
 #else
-	assert(currency_transaction_can_submit(&actor));
+	assert(currency_transaction_can_submit_nonrebasable(&actor));
 #endif
 	REMOVE_BIT(actor.runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 	critical_command receipt_payment;
@@ -513,7 +513,7 @@ int main()
 		held_reward_completion, NULL, 0));
 	assert(submission_count == 1 && coordinator_fenced);
 	assert(currency_transaction_player_busy(&actor));
-	assert(!currency_transaction_can_submit(&actor));
+	assert(!currency_transaction_can_submit_nonrebasable(&actor));
 	pc_only_data sibling_player = {};
 	sibling_player.pid = 43;
 	char_data sibling = {};
@@ -819,7 +819,8 @@ int main()
 	hidden_container = 900;
 	pile_ack(true);
 	assert(currency_transaction_health_copy().pending == 1 && put_announcements == 2);
-	assert(!currency_transaction_player_busy(&actor) && currency_transaction_can_submit(&actor));
+	assert(!currency_transaction_player_busy(&actor) &&
+	       currency_transaction_can_submit_nonrebasable(&actor));
 	assert(currency_transaction_coin_item_busy(pile_uid) && currency_transaction_coin_item_busy(900));
 	assert(bag.contains->value[0] == 300);
 	hidden_container = 0;

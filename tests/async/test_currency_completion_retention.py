@@ -34,6 +34,7 @@ static critical_command submitted;
 static int submissions = 0, callbacks = 0, alerts = 0, bank_publications = 0;
 static bool callback_committed = false, chain_after_callback = false, rehash_in_callback = false;
 static unsigned int callback_error = 0;
+static std::string last_alert_operation;
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...) { abort(); }
 
@@ -64,8 +65,12 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &, c
 void gmcp_char_vitals(P_char) {}
 void send_to_char(const char *, P_char) {}
 void logit(const char *, const char *, ...) {}
-void persistence_alert(int, const char *, const char *, const char *, const char *, const char *,
-                       const char *, ...) { ++alerts; }
+void persistence_alert(int, const char *, const char *, const char *operation, const char *,
+                       const char *, const char *, ...)
+{
+    ++alerts;
+    last_alert_operation = operation ? operation : "";
+}
 void publish_account_bank_balances_revision(const char *, int, const AccountBankBalances *, uint64_t)
 {
     ++bank_publications;
@@ -144,7 +149,8 @@ int main(int argc, char **argv)
     receipt.outcome = critical_apply_outcome::applied;
     receipt.attempt = CRITICAL_COORDINATOR_MAX_RETRIES + 1;
 
-    if (scenario == "coin_ambiguous" || scenario == "coin_exhausted_retry")
+    if (scenario == "coin_ambiguous" || scenario == "coin_exhausted_retry" ||
+        scenario == "coin_malformed_commit")
     {
         currency_transaction_reset_for_tests();
         pc_only_data recipient_player = {};
@@ -159,12 +165,21 @@ int main(int argc, char **argv)
         assert(currency_transaction_submit_coin(&actor, transfer, coin_completed, nullptr, 0));
         receipt.operation_id = submitted.operation_id;
         receipt.outcome = scenario == "coin_ambiguous" ? critical_apply_outcome::ambiguous_commit :
-                                                       critical_apply_outcome::retryable_failure;
+                          scenario == "coin_exhausted_retry" ?
+                              critical_apply_outcome::retryable_failure :
+                              critical_apply_outcome::applied;
         currency_transaction_handle_completions(&receipt, 1);
-        for (int i = 0; i < 5; ++i) currency_transaction_handle_completions(nullptr, 0);
+        for (int i = 0; i < 5; ++i) currency_transaction_handle_completions(&receipt, 1);
         assert(callbacks == 0 && GET_COPPER(&actor) == 5 && GET_COPPER(&recipient) == 0);
         assert(currency_transaction_player_busy(&actor) && currency_transaction_player_busy(&recipient));
-        assert(currency_transaction_health_copy().pending == 1 && alerts == 1);
+        const auto blocked = currency_transaction_health_copy();
+        assert(blocked.pending == 1 && blocked.publication_blocked == 1 &&
+               blocked.publication_retrying == 0 && alerts == 1);
+        assert(last_alert_operation.size() == 32 && last_alert_operation != "none");
+        assert(blocked.malformed_completions ==
+               static_cast<uint64_t>(scenario == "coin_malformed_commit"));
+        assert(!currency_transaction_can_submit_nonrebasable(&actor));
+        if (scenario == "coin_malformed_commit") return 0;
         receipt.outcome = critical_apply_outcome::terminal_failure;
         receipt.error_code = EACCES;
         currency_transaction_handle_completions(&receipt, 1);
@@ -182,7 +197,9 @@ int main(int argc, char **argv)
         assert(callbacks == 1 && !callback_committed && callback_error == EACCES);
         assert(GET_COPPER(&actor) == 5 && !currency_transaction_player_busy(&actor));
         currency_transaction_handle_completions(&receipt, 1);
-        assert(callbacks == 1 && currency_transaction_health_copy().rejected == 1);
+        const auto rejected = currency_transaction_health_copy();
+        assert(callbacks == 1 && rejected.rejected == 1 &&
+               rejected.malformed_completions == 0 && rejected.publication_blocked == 0);
         return 0;
     }
     if (scenario == "callback_chain" || scenario == "callback_rehash")
@@ -198,9 +215,20 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    if (scenario == "active_rebasable")
+    {
+        // Rewards do not read the stale live balance and may queue behind an
+        // ordinary in-flight operation while its outcome is still unknown.
+        for (int i = 0; i < 10; ++i) assert(submit_reward(&actor, nullptr));
+        const auto active = currency_transaction_health_copy();
+        assert(submissions == 11 && active.pending == 11 && active.publication_blocked == 0);
+        return 0;
+    }
+
     if (scenario == "already_applied")
         receipt.outcome = critical_apply_outcome::already_applied;
-    else if (scenario == "ambiguous" || scenario == "ambiguous_with_payload")
+    else if (scenario == "ambiguous" || scenario == "ambiguous_with_payload" ||
+             scenario == "blocked_rebasable")
         receipt.outcome = critical_apply_outcome::ambiguous_commit;
     else if (scenario == "exhausted_retry")
         receipt.outcome = critical_apply_outcome::retryable_failure;
@@ -209,20 +237,41 @@ int main(int argc, char **argv)
     else if (scenario == "bank_range")
         encode(receipt, 15, -1);
     else
-        assert(scenario == "malformed" || scenario == "offline" || scenario == "bounded_rebasable");
+        assert(scenario == "malformed" || scenario == "offline" ||
+               scenario == "blocked_rebasable");
     if (scenario == "ambiguous_with_payload") encode(receipt);
-    if (scenario == "offline") online = nullptr;
+    if (scenario == "offline")
+    {
+        encode(receipt);
+        online = nullptr;
+    }
     currency_transaction_handle_completions(&receipt, 1);
-    online = &actor;
-    currency_transaction_player_ready(&actor);
+
+    if (scenario == "offline")
+    {
+        const auto retained = currency_transaction_health_copy();
+        assert(callbacks == 0 && retained.pending == 1 && retained.retained_offline == 1);
+        assert(retained.publication_blocked == 0 && retained.publication_retrying == 0);
+        online = &actor;
+        currency_transaction_player_ready(&actor);
+        const auto published = currency_transaction_health_copy();
+        assert(callbacks == 1 && callback_committed && GET_COPPER(&actor) == 15);
+        assert(published.pending == 0 && published.retained_offline == 0);
+        return 0;
+    }
 
     assert(callbacks == 0 && "unresolved receipt must not become a rejected transaction");
     assert(GET_COPPER(&actor) == 5 && player.wallet_revision == 1);
     assert(bank_publications == 0);
-    assert(currency_transaction_health_copy().pending == 1);
-    assert(currency_transaction_health_copy().rejected == 0);
+    const auto blocked = currency_transaction_health_copy();
+    assert(blocked.pending == 1 && blocked.rejected == 0);
+    assert(blocked.retained_offline == 0 && blocked.publication_blocked == 1);
+    assert(blocked.publication_retrying == 0);
+    const bool malformed = scenario == "malformed" || scenario == "already_applied" ||
+                           scenario == "wallet_range" || scenario == "bank_range";
+    assert(blocked.malformed_completions == static_cast<uint64_t>(malformed));
     assert(currency_transaction_player_busy(&actor));
-    assert(!currency_transaction_can_submit(&actor));
+    assert(!currency_transaction_can_submit_nonrebasable(&actor));
     assert(currency_transaction_submit_prepared(&actor, original, completed, nullptr, 0));
     assert(submissions == 1);
     assert(!currency_transaction_submit_wallet_value(
@@ -236,22 +285,24 @@ int main(int argc, char **argv)
     sibling.only.pc = &sibling_player;
     sibling.player.racewar = actor.player.racewar;
     assert(currency_transaction_player_busy(&sibling));
-    assert(!currency_transaction_can_submit(&sibling));
+    assert(!currency_transaction_can_submit_nonrebasable(&sibling));
     assert(!currency_transaction_submit_bank_payment(
         &sibling, 1, currency_reason_type::wallet_spend, 0,
         critical_source_site::command, critical_deadline_class::interactive,
         nullptr, nullptr, 0));
     sibling.player.racewar = 2;
     assert(!currency_transaction_player_busy(&sibling));
-    assert(currency_transaction_can_submit(&sibling));
+    assert(currency_transaction_can_submit_nonrebasable(&sibling));
     for (int i = 0; i < 5; ++i)
-        currency_transaction_handle_completions(nullptr, 0);
-    assert(callbacks == 0 && submissions == 1 && alerts <= 1);
+        currency_transaction_handle_completions(&receipt, 1);
+    assert(callbacks == 0 && submissions == 1 && alerts == 1);
+    assert(last_alert_operation.size() == 32 && last_alert_operation != "none");
 
-    if (scenario == "bounded_rebasable")
+    if (scenario == "blocked_rebasable")
     {
-        // Independent accounts still progress; safe rebasable rewards remain
-        // admissible, but cannot turn retained uncertainty into unbounded work.
+        // Once publication is unresolved, even rebasable rewards for the affected
+        // player/account stop. An unrelated account can still make progress.
+        assert(!submit_reward(&actor, nullptr));
         sibling_player.pid = 45;
         sibling.player.racewar = actor.player.racewar;
         GET_COPPER(&sibling) = 5;
@@ -259,11 +310,8 @@ int main(int argc, char **argv)
             &sibling, -1, currency_reason_type::wallet_spend, 0,
             critical_source_site::command, critical_deadline_class::interactive,
             nullptr, nullptr, 0));
-        for (size_t i = 2; i < CURRENCY_PENDING_MAX; ++i)
-            assert(submit_reward(&actor, nullptr));
-        assert(!submit_reward(&actor, nullptr));
-        assert(submissions == static_cast<int>(CURRENCY_PENDING_MAX));
-        assert(currency_transaction_health_copy().pending == CURRENCY_PENDING_MAX);
+        assert(submissions == 2);
+        assert(currency_transaction_health_copy().pending == 2);
         assert(callbacks == 0);
         return 0;
     }
@@ -289,8 +337,9 @@ def main():
     scenarios = (
         "malformed", "already_applied", "wallet_range", "bank_range", "ambiguous",
         "ambiguous_with_payload", "exhausted_retry", "offline", "rejected",
-        "rejected_without_payload", "callback_chain", "callback_rehash", "bounded_rebasable",
-        "coin_ambiguous", "coin_exhausted_retry",
+        "rejected_without_payload", "callback_chain", "callback_rehash", "active_rebasable",
+        "blocked_rebasable", "coin_ambiguous", "coin_exhausted_retry",
+        "coin_malformed_commit",
     )
     with tempfile.TemporaryDirectory(prefix="currency-retention-") as directory:
         source = Path(directory) / "retention.cpp"
