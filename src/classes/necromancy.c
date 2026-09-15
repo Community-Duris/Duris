@@ -35,6 +35,17 @@ P_obj get_object_from_char(P_char owner, int vnum);
 
 bool isCarved(P_obj corpse);
 
+/* Legacy raise paths do not have a corpse transaction to publish an NPC-side
+ * inventory. A player caster is the durable recipient, so keep recovered
+ * equipment with that player; coins retain their historical pet handling. */
+static void place_raised_item(P_obj object, P_char caster, P_char follower)
+{
+	if (object && caster && IS_PC(caster) && GET_ITEM_TYPE(object) != ITEM_MONEY)
+		obj_to_char(object, caster);
+	else
+		obj_to_char(object, follower);
+}
+
 static bool corpse_trace_enabled(void)
 {
 	static int enabled = -1;
@@ -705,7 +716,7 @@ void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, undead);
+			place_raised_item(obj_in_corpse, ch, undead);
 		}
 	}
 
@@ -1165,7 +1176,7 @@ void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 
@@ -1359,10 +1370,10 @@ void complete_corpse_raise_after_commit(P_char caster, P_char follower, P_obj co
 		else
 		{
 			discard_nested_money(item);
-			if (hostile)
-				obj_to_char_at_end(item, caster);
-			else
-				obj_to_char(item, follower);
+			/* The corpse transaction has already moved durable custody to the
+			 * caster. Never publish the live item into an NPC inventory whose
+			 * custody is not represented by the ledger. */
+			obj_to_char_at_end(item, caster);
 		}
 	}
 
@@ -1662,7 +1673,7 @@ void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 
@@ -1927,7 +1938,7 @@ void create_golem(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 	int timeToDecay = 0;
@@ -2149,7 +2160,7 @@ void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] in
 				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 	int timeToDecay = 0;
@@ -2400,7 +2411,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[mayb
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
-			obj_to_char(obj_in_corpse, mob);
+			place_raised_item(obj_in_corpse, ch, mob);
 		}
 	}
 	int timeToDecay = 0;
