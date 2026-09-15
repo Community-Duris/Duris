@@ -43,6 +43,7 @@
 #include "account/password_hash.h"
 #include "player/player_revision_state.h"
 #include "persistence/persistence_mode.h"
+#include "persistence/corpse_lifecycle_transaction.h"
 #include "item/item_transfer_command.h"
 #include "item/item_transfer_repository.h"
 
@@ -7616,6 +7617,93 @@ bool sql_save_corpse(P_obj corpse)
 		return false;
 	}
 
+	MYSQL_RES *catalog_rows = db_query(
+		"SELECT catalog_revision FROM corpse_catalog_state WHERE state_id=1 FOR UPDATE");
+	if (!catalog_rows)
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		free(esc_keywords);
+		sql_rollback();
+		return false;
+	}
+	MYSQL_ROW catalog_row = mysql_fetch_row(catalog_rows);
+	if (!catalog_row || !catalog_row[0] || mysql_fetch_row(catalog_rows))
+	{
+		mysql_free_result(catalog_rows);
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		free(esc_keywords);
+		sql_rollback();
+		return false;
+	}
+	const uint64_t catalog_revision = strtoull(catalog_row[0], NULL, 10);
+	mysql_free_result(catalog_rows);
+	if (!catalog_revision || catalog_revision == UINT64_MAX)
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		free(esc_keywords);
+		sql_rollback();
+		return false;
+	}
+
+	char revision_query[512];
+	const int revision_query_length = snprintf(
+		revision_query, sizeof(revision_query),
+		"SELECT corpse_revision FROM corpses WHERE player_name='%s' AND save_id=%d FOR UPDATE",
+		esc_name, save_id);
+	if (revision_query_length < 0 || (size_t)revision_query_length >= sizeof(revision_query))
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		free(esc_keywords);
+		sql_rollback();
+		return false;
+	}
+	MYSQL_RES *revision_rows = db_query(revision_query);
+	if (!revision_rows)
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		free(esc_keywords);
+		sql_rollback();
+		return false;
+	}
+	MYSQL_ROW revision_row = mysql_fetch_row(revision_rows);
+	uint64_t corpse_revision = 1;
+	if (revision_row)
+	{
+		if (!revision_row[0] || mysql_fetch_row(revision_rows))
+		{
+			mysql_free_result(revision_rows);
+			free(esc_name);
+			free(esc_sdesc);
+			free(esc_desc);
+			free(esc_keywords);
+			sql_rollback();
+			return false;
+		}
+		corpse_revision = strtoull(revision_row[0], NULL, 10);
+		if (!corpse_revision || corpse_revision == UINT64_MAX)
+		{
+			mysql_free_result(revision_rows);
+			free(esc_name);
+			free(esc_sdesc);
+			free(esc_desc);
+			free(esc_keywords);
+			sql_rollback();
+			return false;
+		}
+		++corpse_revision;
+	}
+	mysql_free_result(revision_rows);
+
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query),
 		 "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name, save_id);
@@ -7631,18 +7719,19 @@ bool sql_save_corpse(P_obj corpse)
 	}
 
 	char ins_query[8192];
-	int query_length =
-		snprintf(ins_query, sizeof(ins_query),
-			 "INSERT INTO corpses ("
-			 "player_name, save_id, room_vnum, short_descr, description, name, weight, "
-			 "value0, value1, value2, value3, value4, value5, value7"
-			 ") VALUES ("
-			 "'%s', %d, %d, '%s', '%s', '%s', %d, "
-			 "%d, %d, %d, %d, %d, %d, %d"
-			 ")",
-			 esc_name, save_id, room_vnum, esc_sdesc, esc_desc, esc_keywords,
-			 corpse->weight, corpse->value[0], corpse->value[1], corpse->value[2],
-			 corpse->value[3], corpse->value[4], corpse->value[5], corpse->value[7]);
+	int query_length = snprintf(
+		ins_query, sizeof(ins_query),
+		"INSERT INTO corpses ("
+		"player_name, save_id, corpse_revision, room_vnum, short_descr, description, name, weight, "
+		"value0, value1, value2, value3, value4, value5, value7"
+		") VALUES ("
+		"'%s', %d, %llu, %d, '%s', '%s', '%s', %d, "
+		"%d, %d, %d, %d, %d, %d, %d"
+		")",
+		esc_name, save_id, (unsigned long long)corpse_revision, room_vnum, esc_sdesc,
+		esc_desc, esc_keywords, corpse->weight, corpse->value[0], corpse->value[1],
+		corpse->value[2], corpse->value[3], corpse->value[4], corpse->value[5],
+		corpse->value[7]);
 	free(esc_name);
 	free(esc_sdesc);
 	free(esc_desc);
@@ -7677,19 +7766,35 @@ bool sql_save_corpse(P_obj corpse)
 		}
 	}
 
+	char catalog_update[256];
+	snprintf(
+		catalog_update, sizeof(catalog_update),
+		"UPDATE corpse_catalog_state SET catalog_revision=%llu WHERE state_id=1 AND catalog_revision=%llu",
+		(unsigned long long)(catalog_revision + 1), (unsigned long long)catalog_revision);
+	if (!sql_run_query(catalog_update) || mysql_affected_rows(DB) != 1)
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: component=catalog outcome=update_failure");
+		sql_rollback();
+		return false;
+	}
+
 	if (!sql_commit())
 	{
 		logit(LOG_DEBUG, "sql_save_corpse: component=commit outcome=failure");
 		sql_rollback();
 		return false;
 	}
+	if (corpse->value[CORPSE_PID] > 0)
+		corpse_lifecycle_transaction_note_item_transfer(
+			static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+			static_cast<uint32_t>(save_id), corpse_revision);
 
 	return true;
 }
 
 bool sql_delete_corpse(const char *player_name, int save_id)
 {
-	if (!player_name || !DB)
+	if (!player_name || !DB || save_id <= 0)
 		return false;
 
 	char *esc_name = sql_escape_string(player_name);
@@ -7706,56 +7811,87 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 		}
 		own_txn = true;
 	}
-
-	// Delete item affects first (child of corpse_items)
-	char cascade_query[512];
-	snprintf(cascade_query, sizeof(cascade_query),
-		 "DELETE FROM corpse_item_affects WHERE item_id IN "
-		 "(SELECT ci.id FROM corpse_items ci JOIN corpses c ON ci.corpse_id = c.id "
-		 "WHERE c.player_name='%s' AND c.save_id=%d)",
-		 esc_name, save_id);
-	if (!sql_run_query(cascade_query))
+	auto fail = [&]()
 	{
 		free(esc_name);
 		if (own_txn)
 			sql_rollback();
 		return false;
-	}
+	};
 
-	// Delete corpse items next
-	snprintf(cascade_query, sizeof(cascade_query),
-		 "DELETE FROM corpse_items WHERE corpse_id IN "
-		 "(SELECT id FROM corpses WHERE player_name='%s' AND save_id=%d)",
-		 esc_name, save_id);
-	if (!sql_run_query(cascade_query))
+	MYSQL_RES *catalog_rows = db_query(
+		"SELECT catalog_revision FROM corpse_catalog_state WHERE state_id=1 FOR UPDATE");
+	if (!catalog_rows)
+		return fail();
+	MYSQL_ROW catalog_row = mysql_fetch_row(catalog_rows);
+	if (!catalog_row || !catalog_row[0] || mysql_fetch_row(catalog_rows))
 	{
-		free(esc_name);
-		if (own_txn)
-			sql_rollback();
-		return false;
+		mysql_free_result(catalog_rows);
+		return fail();
 	}
+	const uint64_t catalog_revision = strtoull(catalog_row[0], NULL, 10);
+	mysql_free_result(catalog_rows);
+	if (!catalog_revision || catalog_revision == UINT64_MAX)
+		return fail();
 
-	// Delete the corpse itself
-	char query[256];
-	snprintf(query, sizeof(query), "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d",
-		 esc_name, save_id);
-	free(esc_name);
-	if (!sql_run_query(query))
+	char query[512];
+	const int query_length = snprintf(
+		query, sizeof(query),
+		"SELECT COALESCE(value3,0) FROM corpses WHERE player_name='%s' AND save_id=%d FOR UPDATE",
+		esc_name, save_id);
+	if (query_length < 0 || (size_t)query_length >= sizeof(query))
+		return fail();
+	MYSQL_RES *identity_rows = db_query(query);
+	if (!identity_rows)
+		return fail();
+	MYSQL_ROW identity_row = mysql_fetch_row(identity_rows);
+	const bool corpse_found = identity_row != NULL;
+	uint32_t owner_pid = 0;
+	if (identity_row)
 	{
-		if (own_txn)
-			sql_rollback();
-		return false;
+		if (!identity_row[0] || mysql_fetch_row(identity_rows))
+		{
+			mysql_free_result(identity_rows);
+			return fail();
+		}
+		const unsigned long parsed_owner = strtoul(identity_row[0], NULL, 10);
+		if (!parsed_owner || parsed_owner > INT32_MAX)
+		{
+			mysql_free_result(identity_rows);
+			return fail();
+		}
+		owner_pid = static_cast<uint32_t>(parsed_owner);
+	}
+	mysql_free_result(identity_rows);
+
+	if (corpse_found)
+	{
+		const int delete_length =
+			snprintf(query, sizeof(query),
+				 "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d",
+				 esc_name, save_id);
+		if (delete_length < 0 || (size_t)delete_length >= sizeof(query) ||
+		    !sql_run_query(query) || mysql_affected_rows(DB) != 1)
+			return fail();
+		char catalog_update[256];
+		snprintf(
+			catalog_update, sizeof(catalog_update),
+			"UPDATE corpse_catalog_state SET catalog_revision=%llu WHERE state_id=1 AND catalog_revision=%llu",
+			(unsigned long long)(catalog_revision + 1),
+			(unsigned long long)catalog_revision);
+		if (!sql_run_query(catalog_update) || mysql_affected_rows(DB) != 1)
+			return fail();
 	}
 
 	if (own_txn)
 	{
 		if (!sql_commit())
-		{
-			sql_rollback();
-			return false;
-		}
+			return fail();
+		if (corpse_found)
+			corpse_lifecycle_transaction_forget(owner_pid,
+							    static_cast<uint32_t>(save_id));
 	}
-
+	free(esc_name);
 	return true;
 }
 
@@ -7769,6 +7905,7 @@ enum corpse_load_column
 	CORPSE_COL_ID,
 	CORPSE_COL_PLAYER_NAME,
 	CORPSE_COL_SAVE_ID,
+	CORPSE_COL_REVISION,
 	CORPSE_COL_ROOM_VNUM,
 	CORPSE_COL_OWNER_PID,
 	CORPSE_COL_ITEM_ID,
@@ -7853,6 +7990,9 @@ bool sql_load_all_corpses(void)
 	int cur_corpse_id = -1;
 	P_obj cur_corpse = NULL;
 	int cur_room = 0;
+	uint32_t cur_owner_pid = 0;
+	uint32_t cur_save_id = 0;
+	uint64_t cur_corpse_revision = 0;
 	uint64_t cur_corpse_owner_id = 0;
 	P_obj obj_map[MAX_CORPSE_ITEMS];
 	int id_map[MAX_CORPSE_ITEMS];
@@ -7868,7 +8008,8 @@ bool sql_load_all_corpses(void)
 
 	// one query gets everything: corpses + items + affects
 	result = db_query(
-		"SELECT c.id, c.player_name, c.save_id, c.room_vnum, COALESCE(pd.pid,0), "
+		"SELECT c.id, c.player_name, c.save_id, c.corpse_revision, c.room_vnum, "
+		"COALESCE(c.value3,0), "
 		"ci.id, COALESCE(ci.container_id, 0), ci.vnum, COALESCE(ci.item_type, 0), "
 		"ci.weight, ci.cost, ci.timer, "
 		"ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
@@ -7880,7 +8021,6 @@ bool sql_load_all_corpses(void)
 		"ci.wear_flags, ci.item_type, ci.item_material, "
 		"ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
 		"FROM corpses c "
-		"LEFT JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name) "
 		"LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
 		"LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
 		"ORDER BY c.id, ci.id, cia.id");
@@ -7969,6 +8109,13 @@ bool sql_load_all_corpses(void)
 					o->loc_p = LOC_INSIDE;
 					o->loc.inside = cur_corpse;
 				}
+				if (!corpse_lifecycle_transaction_hydrate(
+					    cur_owner_pid, cur_save_id, cur_corpse_revision))
+				{
+					extract_obj(cur_corpse, FALSE);
+					cur_corpse = NULL;
+					goto cleanup;
+				}
 				obj_to_room(cur_corpse, cur_room);
 				persistence_refresh_restored_corpse(cur_corpse,
 								    "sql_load_all_corpses");
@@ -7977,6 +8124,13 @@ bool sql_load_all_corpses(void)
 			else if (cur_corpse)
 			{
 				// corpse with no items
+				if (!corpse_lifecycle_transaction_hydrate(
+					    cur_owner_pid, cur_save_id, cur_corpse_revision))
+				{
+					extract_obj(cur_corpse, FALSE);
+					cur_corpse = NULL;
+					goto cleanup;
+				}
 				obj_to_room(cur_corpse, cur_room);
 				persistence_refresh_restored_corpse(cur_corpse,
 								    "sql_load_all_corpses");
@@ -7991,11 +8145,19 @@ bool sql_load_all_corpses(void)
 
 			const char *player_name =
 				row[CORPSE_COL_PLAYER_NAME] ? row[CORPSE_COL_PLAYER_NAME] : "";
-			int save_id = atoi(row[CORPSE_COL_SAVE_ID]);
+			const unsigned long parsed_save_id =
+				strtoul(row[CORPSE_COL_SAVE_ID], NULL, 10);
+			const unsigned long parsed_owner_pid =
+				strtoul(row[CORPSE_COL_OWNER_PID], NULL, 10);
+			cur_corpse_revision = strtoull(row[CORPSE_COL_REVISION], NULL, 10);
+			if (!parsed_save_id || parsed_save_id > INT32_MAX || !parsed_owner_pid ||
+			    parsed_owner_pid > INT32_MAX || !cur_corpse_revision)
+				goto cleanup;
+			int save_id = static_cast<int>(parsed_save_id);
+			cur_save_id = static_cast<uint32_t>(parsed_save_id);
+			cur_owner_pid = static_cast<uint32_t>(parsed_owner_pid);
 			int room_vnum = atoi(row[CORPSE_COL_ROOM_VNUM]);
-			cur_corpse_owner_id = item_corpse_owner_id(
-				static_cast<uint32_t>(strtoul(row[CORPSE_COL_OWNER_PID], NULL, 10)),
-				static_cast<uint32_t>(save_id));
+			cur_corpse_owner_id = item_corpse_owner_id(cur_owner_pid, cur_save_id);
 
 			cur_room = real_room(room_vnum);
 			if (cur_room == NOWHERE)
@@ -8237,12 +8399,26 @@ bool sql_load_all_corpses(void)
 			o->loc_p = LOC_INSIDE;
 			o->loc.inside = cur_corpse;
 		}
+		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
+							  cur_corpse_revision))
+		{
+			extract_obj(cur_corpse, FALSE);
+			cur_corpse = NULL;
+			goto cleanup;
+		}
 		obj_to_room(cur_corpse, cur_room);
 		persistence_refresh_restored_corpse(cur_corpse, "sql_load_all_corpses");
 		loaded++;
 	}
 	else if (cur_corpse)
 	{
+		if (!corpse_lifecycle_transaction_hydrate(cur_owner_pid, cur_save_id,
+							  cur_corpse_revision))
+		{
+			extract_obj(cur_corpse, FALSE);
+			cur_corpse = NULL;
+			goto cleanup;
+		}
 		obj_to_room(cur_corpse, cur_room);
 		persistence_refresh_restored_corpse(cur_corpse, "sql_load_all_corpses");
 		loaded++;

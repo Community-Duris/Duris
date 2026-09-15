@@ -14,6 +14,7 @@
 #include "item/device_actions.h"
 #include "persistence/persistence_log.h"
 #include "core/structs.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "net/output_style.h"
 #include "net/chat_presentation.h"
@@ -290,6 +291,8 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return zone_touch_transaction_outbox_delivery(record, context);
 	if (record.destination == COLLECTOR_OUTBOX_DESTINATION)
 		return collector_transaction_outbox_delivery(record, context);
+	if (record.destination == CORPSE_LIFECYCLE_OUTBOX_DESTINATION)
+		return corpse_lifecycle_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
 #endif
@@ -619,8 +622,25 @@ int main(int argc, char **argv)
 	load_event_names();
 
 	init_cmdlog(); /* init cmd.debug file - DCL */
+	(void)telemetry_runtime_init(telemetry_runtime_options_from_environment());
 
 	run_the_game(port, sslport);
+	telemetry_shutdown_request telemetry_shutdown{};
+	telemetry_shutdown.final_flush = 1U;
+	telemetry_monotonic_usec telemetry_deadline_now = 0U;
+	telemetry_utc_usec telemetry_deadline_utc = TELEMETRY_UTC_UNKNOWN;
+	if (telemetry_runtime_now(&telemetry_deadline_now, &telemetry_deadline_utc))
+	{
+		telemetry_shutdown.deadline_monotonic_usec =
+			telemetry_deadline_now > UINT64_MAX - 2'000'000U ?
+				UINT64_MAX :
+				telemetry_deadline_now + 2'000'000U;
+	}
+	(void)telemetry_runtime_shutdown(telemetry_shutdown);
+	/* Final reap is deliberately mandatory and may block on an in-flight
+	 * repository callback. Keep it before global SQL teardown even when the
+	 * runtime clock could not provide a bounded request deadline. */
+	(void)telemetry_runtime_final_reap();
 	artifact_mana_shutdown();
 	shutdown_mysql();
 	close_cmdlog();
@@ -1952,6 +1972,18 @@ resume_game_loop:
 		const uint64_t ne_events_us =
 			latency_trace_elapsed_us(ne_events_begin_us, loop_monotonic_us());
 		latency_trace_record("ne_events", ne_events_us, loop_tick);
+		telemetry_monotonic_usec telemetry_pulse_now = 0U;
+		telemetry_utc_usec telemetry_pulse_utc = TELEMETRY_UTC_UNKNOWN;
+		if (telemetry_runtime_now(&telemetry_pulse_now, &telemetry_pulse_utc))
+		{
+			const std::uint16_t telemetry_slots = telemetry_runtime_pulse_slot_count();
+			telemetry_pulse_request telemetry_request{};
+			telemetry_request.now_monotonic_usec = telemetry_pulse_now;
+			telemetry_request.occurrence_utc_usec = telemetry_pulse_utc;
+			telemetry_request.slot = static_cast<std::uint16_t>(
+				static_cast<unsigned int>(pulse) % telemetry_slots);
+			(void)telemetry_runtime_pulse(telemetry_request);
+		}
 
 		item_creation_grant_prepare_pulse();
 		artifact_mana_pulse();
@@ -1973,6 +2005,7 @@ resume_game_loop:
 			critical_gameplay_handle_completions(critical_completions,
 							     critical_completion_count);
 			auction_transaction_publish_outbox();
+			corpse_lifecycle_transaction_publish_outbox();
 			collector_transaction_publish_outbox();
 			combat_outcome_transaction_publish_outbox();
 			artifact_guild_transaction_publish_outbox();
@@ -3054,6 +3087,17 @@ void close_socket(struct descriptor_data *d)
 
 	if (d->character)
 	{
+		if (d->connected == CON_PLAYING)
+		{
+			P_char telemetry_character =
+				d->original && IS_PC(d->original) ? d->original : d->character;
+			(void)telemetry_runtime_game_connection_transition(
+				telemetry_character, d,
+				telemetry_connection_transition_kind::detached);
+			(void)telemetry_runtime_game_evidence(
+				telemetry_character, nullptr,
+				telemetry_runtime_evidence_kind::linkdead);
+		}
 		if (d->connected == CON_PLAYING)
 		{
 			sql_disconnectIP(d->character);

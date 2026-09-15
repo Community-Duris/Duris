@@ -58,7 +58,7 @@ bool collector_service_player_busy(P_char) { return false; }
 bool collector_death_enrollment_attach(P_char, P_obj, const critical_operation_id &,
                                        const std::vector<player_item_snapshot> &,
                                        item_transfer_payload *) { return true; }
-void collector_death_enrollment_note_submitted(P_obj, const item_transfer_payload &) {}
+void collector_death_enrollment_note_committed(P_obj, const item_transfer_payload &) {}
 void collector_catalog_cache_invalidate(void) {}
 void extract_obj(P_obj, int) {}
 void obj_from_char(P_obj) {}

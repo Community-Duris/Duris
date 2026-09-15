@@ -2,7 +2,10 @@
 #include "sql/sql_thread_init.h"
 
 #include "economy/currency_command.h"
+#include "economy/currency_repository.h"
 #include "economy/coin_transfer_command.h"
+#include "persistence/corpse_lifecycle_command.h"
+#include "persistence/corpse_lifecycle_repository.h"
 #include "persistence/critical_outbox.h"
 #include "world/epic_command.h"
 #include "economy/auction_command.h"
@@ -488,6 +491,12 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 		event_type = COLLECTOR_OUTBOX_EVENT_MUTATED;
 		payload_version = COLLECTOR_COMMAND_RESULT_VERSION;
 	}
+	else if (command.type == critical_command_type::corpse_lifecycle)
+	{
+		destination = CORPSE_LIFECYCLE_OUTBOX_DESTINATION;
+		event_type = CORPSE_LIFECYCLE_OUTBOX_EVENT_MUTATED;
+		payload_version = CORPSE_LIFECYCLE_RESULT_VERSION;
+	}
 	return insert_outbox_event(connection, command.operation_id, 0, destination, event_type,
 				   payload_version, payload, payload_size);
 }
@@ -958,6 +967,13 @@ bool execute_currency_state(MYSQL *connection, const critical_command &command,
 }
 } // namespace
 
+bool currency_repository_execute(MYSQL *connection, const critical_command &command,
+				 currency_command_result *result, unsigned int *result_code,
+				 bool *mutation_applied)
+{
+	return execute_currency_state(connection, command, result, result_code, mutation_applied);
+}
+
 critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							const critical_command &command)
 {
@@ -973,11 +989,14 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	zone_touch_payload zone_payload = {};
 	session_audit_payload audit_payload = {};
 	coin_transfer_payload coin_payload = {};
+	corpse_lifecycle_payload corpse_payload = {};
 	const bool test_command = command.type == critical_command_type::test &&
 				  command.payload.size() == 8;
 	const bool epic_command = epic_command_decode_payload(command, &epic_payload);
 	const bool currency_command = currency_command_decode_payload(command, &currency_payload);
 	const bool coin_command = coin_transfer_command_decode_payload(command, &coin_payload);
+	const bool corpse_command =
+		corpse_lifecycle_command_decode_payload(command, &corpse_payload);
 	const bool item_command = item_transfer_command_decode_payload(command, &item_payload);
 	const bool auction_command = auction_command_decode_payload(command, &auction_payload);
 	const bool collector_command =
@@ -990,8 +1009,9 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool audit_command = session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !coin_command &&
-	     !item_command && !auction_command && !collector_command && !combat_command &&
-	     !artifact_guild_command && !boon_command && !zone_command && !audit_command) ||
+	     !corpse_command && !item_command && !auction_command && !collector_command &&
+	     !combat_command && !artifact_guild_command && !boon_command && !zone_command &&
+	     !audit_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1270,6 +1290,77 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		applied.result_size = result_payload.size();
 		std::copy(result_payload.begin(), result_payload.end(),
 			  applied.result_payload.begin());
+		return applied;
+	}
+	if (corpse_command)
+	{
+		corpse_lifecycle_result corpse_result = {};
+		std::vector<collector_command_result> collector_events;
+		uint64_t collector_revision = 0;
+		unsigned int result_code = 0;
+		bool mutation_applied = false;
+		if (!corpse_lifecycle_repository_execute(connection, command, &corpse_result,
+							 &result_code, &mutation_applied,
+							 &collector_revision, &collector_events))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error ? error : EIO);
+		}
+		std::array<uint8_t, CORPSE_LIFECYCLE_RESULT_BYTES> result_payload = {};
+		const size_t result_size = result_code ? 0 : result_payload.size();
+		uint64_t durable_revision = 0;
+		if (!result_code)
+			durable_revision = std::max(
+				{ corpse_result.corpse_revision, corpse_result.catalog_revision,
+				  corpse_result.corpse_owner_revision,
+				  corpse_result.room_owner_revision,
+				  corpse_result.player_owner_revision,
+				  corpse_result.wallet_revision, corpse_result.bank_revision,
+				  corpse_result.max_item_revision, collector_revision });
+		bool outbox_ok =
+			result_code ||
+			corpse_lifecycle_command_encode_result(corpse_result, &result_payload);
+		if (outbox_ok && mutation_applied)
+			outbox_ok = insert_outbox(connection, command, result_payload.data(),
+						  result_payload.size());
+		for (size_t index = 0; outbox_ok && index < collector_events.size(); ++index)
+		{
+			std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded = {};
+			outbox_ok = collector_command_encode_result(collector_events[index],
+								    &encoded) &&
+				    insert_outbox_event(connection, command.operation_id,
+							static_cast<uint16_t>(index + 1),
+							COLLECTOR_OUTBOX_DESTINATION,
+							COLLECTOR_OUTBOX_EVENT_MUTATED,
+							COLLECTOR_COMMAND_RESULT_VERSION,
+							encoded.data(), encoded.size());
+		}
+		if (!outbox_ok || !finish_inbox(connection, command, durable_revision, result_code,
+						result_payload.data(), result_size))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error ? error : EIO);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const unsigned int error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 durable_revision, error };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  durable_revision, result_code };
+		applied.result_size = static_cast<uint16_t>(result_size);
+		std::copy_n(result_payload.begin(), result_size, applied.result_payload.begin());
 		return applied;
 	}
 	if (item_command)

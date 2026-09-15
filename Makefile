@@ -174,6 +174,7 @@ test-db:
 	tests/async/run_collector_item_owner_schema_mysql.sh
 	tests/async/run_collector_catalog_schema_mysql.sh
 	tests/async/run_collector_repository_schema_mysql.sh
+	tests/async/run_corpse_lifecycle_repository_schema_mysql.sh
 	tests/async/run_lookup_dataset_mysql.sh
 	tests/async/run_runtime_compatibility_mysql.sh
 	tests/async/run_legacy_migration_mysql.sh

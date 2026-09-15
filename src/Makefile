@@ -317,6 +317,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_world_item_repository.o \
 				 flatfile/flatfile_world_quest_history.o \
 				 persistence/corpse_lifecycle_transaction.o \
+				 persistence/corpse_lifecycle_repository.o \
 				 persistence/critical_command.o \
 				 persistence/critical_command_journal.o \
 				 persistence/critical_command_coordinator.o \
@@ -522,7 +523,14 @@ OBJS =  $(SHIP_OBJS) \
 				 net/gmcp.o \
 				 net/ttype.o \
 				 account/wiz_newchar.o \
-				 world/zcheck.o
+				 world/zcheck.o \
+				 telemetry/telemetry_activity.o \
+				 telemetry/telemetry_config.o \
+				 telemetry/telemetry_repository.o \
+				 telemetry/telemetry_runtime.o \
+				 telemetry/telemetry_session.o \
+				 telemetry/telemetry_transport.o \
+				 telemetry/telemetry_queue.o
 
 
 # Name lists (no paths) for pfile-related objs

@@ -11,6 +11,7 @@
 #define TROPHY
 
 #include "core/prototypes.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/output_style.h"
 #include "item/item_actions.h"
 #include "item/weapon_actions.h"
@@ -2852,7 +2853,7 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 		return;
 	}
 
-	// A death deferred with no inventory never enters the corpse-item chain.
+	// Terminal publication must release intake even when no corpse-item handoff ever ran.
 	collector_death_enrollment_end(corpse);
 	release_after_terminal_death(ch, "death_recovery_completed");
 }
@@ -3478,6 +3479,8 @@ void die(P_char ch, P_char killer)
 						     DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
+		if (!CHAR_IN_ARENA(ch))
+			collector_death_enrollment_end(death_corpse);
 		GET_HIT(ch) = 1;
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	}
@@ -8157,6 +8160,13 @@ void StopMercifulAttackers(P_char ch)
 	}
 }
 
+static void telemetry_combat_context_changed(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->desc || ch->desc->connected != CON_PLAYING)
+		return;
+	(void)telemetry_runtime_game_context(ch, ch->desc);
+}
+
 /* start one char fighting another (yes, it is horrible, I know... ) */
 void set_fighting(P_char ch, P_char vict)
 {
@@ -8265,6 +8275,7 @@ void set_fighting(P_char ch, P_char vict)
 	GET_OPPONENT(ch) = victim;
 	ch->specials.next_fighting = combat_list;
 	combat_list = ch;
+	telemetry_combat_context_changed(ch);
 
 	if (ch->in_room >= 0)
 		gmcp_mark_room_dirty(ch->in_room);
@@ -9162,11 +9173,13 @@ void stop_fighting(P_char ch)
 			logit(LOG_EXIT, "%s not found in combat_list stop_fighting()",
 			      GET_NAME(ch));
 		}
-		tmp->specials.next_fighting = ch->specials.next_fighting;
+		else
+			tmp->specials.next_fighting = ch->specials.next_fighting;
 	}
 
 	ch->specials.next_fighting = NULL;
 	GET_OPPONENT(ch) = NULL;
+	telemetry_combat_context_changed(ch);
 
 	if (affected_by_spell(ch, SPELL_CEGILUNE_BLADE))
 	{

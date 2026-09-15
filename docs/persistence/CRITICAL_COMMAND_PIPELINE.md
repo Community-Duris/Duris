@@ -53,8 +53,12 @@ completion records, 4,096 journal records, a 256 MiB journal, eight retries, and
 
 Copyover and ordinary shutdown quiesce admission and require a three-second drain
 before later persistence gates. Any failed transition resumes admission and leaves the
-live server running. The game loop drains typed completions every two pulses; the pulse
-path performs no database, Redis, or filesystem work.
+live server running. The game loop drains typed completions every two pulses.
+Ordinary result delivery is in-memory, but journal admission and uncertain-journal
+recovery still perform synchronous filesystem work at this baseline. Moving those
+operations off the simulation thread is tracked in
+[issue #341](https://github.com/Community-Duris/Duris/issues/341); helper extraction
+alone does not establish a nonblocking pulse path.
 
 `world persistence` exposes one metadata-only `critical_commands` line: state, queue,
 in-flight and blocked counts, retained bytes, fences, recent completions, high-water

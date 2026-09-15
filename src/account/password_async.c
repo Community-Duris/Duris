@@ -67,6 +67,8 @@ bool password_async_pulse(P_desc d)
 		const bool failed_registration = r->account && r->credential.empty() &&
 						 d->account == r->account;
 		password_async_cancel(d);
+		// Output queued here arrives without input, so ask for prompt framing (IAC GA).
+		d->prompt_mode = TRUE;
 		if (failed_registration)
 		{
 			d->account = free_account(d->account);
@@ -91,6 +93,10 @@ bool password_async_pulse(P_desc d)
 		return true;
 	std::unique_ptr<password_request> completed(r);
 	d->password_request = nullptr;
+	// The completion's prompt is queued without input on this pulse, so nothing else
+	// marks it for IAC GA; line-buffered clients would not show it. Set this before
+	// finish(), which may change the descriptor's state.
+	d->prompt_mode = TRUE;
 	completed->finish(d, valid, hash);
 	free(hash);
 	return true;

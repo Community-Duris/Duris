@@ -1073,6 +1073,13 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
+	if (committed && entry.payload.reason == item_transfer_reason::corpse_create &&
+	    entry.payload.collector.present)
+	{
+		P_obj corpse = entry.requested_corpse_uid ? find_item(entry.requested_corpse_uid) :
+							    NULL;
+		collector_death_enrollment_note_committed(corpse, entry.payload);
+	}
 	if (!entry.creation_batch && entry.completion == creation_grant_completion && committed &&
 	    entry.payload.reason == item_transfer_reason::creation)
 	{
@@ -1373,7 +1380,6 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
-		collector_death_enrollment_note_submitted(corpse_context, payload);
 		++health.submission_failures;
 		*reject = coordinator_reject_reason(submitted);
 		account_health();
@@ -1389,7 +1395,6 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		++health.submission_failures;
 		return reject_with(reject, coordinator_reject_reason(submitted));
 	}
-	collector_death_enrollment_note_submitted(corpse_context, payload);
 	++health.submitted;
 	account_health();
 	return true;
@@ -1582,7 +1587,6 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		critical_command_coordinator_submit(std::move(command));
 	if (submitted == critical_submit_result::journal_uncertain)
 	{
-		collector_death_enrollment_note_submitted(corpse_context, payload);
 		++health.submission_failures;
 		*reject = coordinator_reject_reason(submitted);
 		account_health();
@@ -1598,7 +1602,6 @@ bool item_movement_transaction_submit_batch(P_char actor, P_obj const *roots, si
 		++health.submission_failures;
 		return reject_with(reject, coordinator_reject_reason(submitted));
 	}
-	collector_death_enrollment_note_submitted(corpse_context, payload);
 	++health.submitted;
 	account_health();
 	return true;

@@ -29,6 +29,7 @@
 
 #include "core/prototypes.h"
 #include "core/structs.h"
+#include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
 #include "world/events.h"
 #include "cmd/interp.h"
@@ -52,6 +53,21 @@ void remove_aura_message(P_char ch, P_char commander);
 void add_aura_message(P_char ch, P_char commander);
 
 static bool do_group_add(P_char ch, P_char victim);
+
+/* Observe committed membership changes, including stationary members. The
+ * bounded adapter owns dimensions/classification; no gameplay state is changed. */
+static void telemetry_group_context_changed(struct group_list *group)
+{
+	unsigned visited = 0U;
+	for (struct group_list *member = group; member && visited < 256U;
+	     member = member->next, ++visited)
+	{
+		P_char character = member->ch;
+		if (character && IS_PC(character) && character->desc &&
+		    character->desc->connected == CON_PLAYING)
+			(void)telemetry_runtime_game_context(character, character->desc);
+	}
+}
 
 /*
  * Calculates free slots in back rank, might be negative
@@ -984,14 +1000,26 @@ void remove_aura_message(P_char ch, P_char commander)
 
 bool group_remove_member(P_char ch)
 {
-	struct group_list *gl, *elem;
-
 	/* remove 'ch' from a group.  Deal with removing the group leader,
 	   and deal with what happens when less then 2 people left in the
 	   group. */
 
 	if (!ch->group)
 		return TRUE;
+
+	struct group_list *gl = ch->group, *elem = gl;
+	const bool is_leader = ch == gl->ch;
+	if (!is_leader)
+	{
+		/* Validate membership before changing auras or the group list. */
+		for (elem = gl; elem->next && elem->next->ch != ch; elem = elem->next)
+			;
+		if (!elem->next)
+		{
+			wizlog(60, "GROUP: %s claims to be a member when he isn't!", GET_NAME(ch));
+			return FALSE;
+		}
+	}
 
 	purge_linked_auras(ch);
 
@@ -1000,9 +1028,7 @@ bool group_remove_member(P_char ch)
 	   2) only 2 people in the group now, so remove all members
 	 */
 
-	gl = ch->group;
-
-	if (ch == gl->ch)
+	if (is_leader)
 	{ /* group leader */
 
 		/* move all the group members to point to the new group leader
@@ -1023,39 +1049,23 @@ bool group_remove_member(P_char ch)
 	}
 	else
 	{
-		/* okay.. its not the group leader... lets figure out WHO, by
-		   looping  */
-
-		for (elem = gl; elem; elem = elem->next)
-			if (elem->next->ch == ch)
-				break;
-
-		/* okay.. serious possible problem:  if ch is pointing to a group
-		   list, but they aren't in that list, the below code will catch */
-		if (!elem)
-		{
-			wizlog(60, "GROUP: %s claims to be a member when he isn't!", GET_NAME(ch));
-		}
-		else
-		{
-			/* okay.. elem->next is the element to remove.  don't forget to
-			   shift! */
-			if (in_command_aura(ch))
-				remove_aura_message(ch, ch->group->ch);
-			gl = elem->next; /* this is the one to be removed.. */
-			elem->next = elem->next->next; /* shift! */
-			mm_release(dead_group_pool, gl); /* remove the old */
-			gl = ch->group; /* and reset gl to the group leader */
-		}
+		/* elem->next is the member validated above. */
+		if (in_command_aura(ch))
+			remove_aura_message(ch, ch->group->ch);
+		gl = elem->next;
+		elem->next = gl->next;
+		mm_release(dead_group_pool, gl);
+		gl = ch->group;
 	}
 
 	/* group is too small.. dispand it */
-	if (!gl->next)
+	if (gl && !gl->next)
 	{ /* only 1 person in the group */
 		/* silently disband it */
 		if (in_command_aura(gl->ch))
 			remove_aura_message(gl->ch, gl->ch);
 		gl->ch->group = NULL;
+		(void)telemetry_runtime_game_context(gl->ch, gl->ch->desc);
 		send_to_char("Your group has been disbanded.\n", gl->ch);
 		mm_release(dead_group_pool, gl);
 		gl = NULL;
@@ -1080,6 +1090,8 @@ bool group_remove_member(P_char ch)
 	if (gl && free_back_slots(gl->ch) < 0)
 		fix_group_ranks(gl->ch);
 	update_groupies(ch);
+	(void)telemetry_runtime_game_context(ch, ch->desc);
+	telemetry_group_context_changed(gl);
 	return TRUE;
 }
 
@@ -1276,6 +1288,7 @@ bool group_add_member(P_char leader, P_char member)
 	REMOVE_BIT(member->specials.act2, PLR2_BACK_RANK);
 	if (in_command_aura(member))
 		add_aura_message(member, leader);
+	telemetry_group_context_changed(leader->group);
 	return TRUE;
 }
 

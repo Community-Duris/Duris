@@ -33,12 +33,12 @@ collector_death_enrollment_resume_result collector_death_enrollment_resume(P_cha
 
 // Decorates an actual corpse-create transfer with the eligible items in that
 // exact immutable payload. The proposed operation becomes the death identity
-// only after the coordinator accepts the first decorated command.
+// only after the first decorated command commits and publishes its authority.
 bool collector_death_enrollment_attach(P_char character, P_obj corpse,
 				       const critical_operation_id &proposed_operation,
 				       const std::vector<player_item_snapshot> &snapshots,
 				       item_transfer_payload *payload);
-void collector_death_enrollment_note_submitted(P_obj corpse, const item_transfer_payload &payload);
+void collector_death_enrollment_note_committed(P_obj corpse, const item_transfer_payload &payload);
 
 void collector_death_enrollment_reset_for_tests(void);
 

@@ -340,14 +340,34 @@
       "verify_checksum": "181e9add1fe59a4a15f11868112045487644d02d1da19b5a5404a75781c1e376"
     },
     {
-      "id": "0017_collector_catalog",
+      "id": "0017_telemetry_rollup_support",
       "sequence": 17,
+      "description": "Add replay-safe session and cohort rollup support stores",
+      "apply": "immutable/0017_telemetry_rollup_support.sql",
+      "verify": "immutable/0017_telemetry_rollup_support.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "63205926b00ecadc1fe4044e90f9889ad71b36b6b52cb130d84e93b59083ebd6",
+      "verify_checksum": "02fd34c8c728e9411fcc5fc3c0a93b716a9cdbbf1c584c5a430d4ed9ed3401c0"
+    },
+    {
+      "id": "0018_collector_catalog",
+      "sequence": 18,
       "description": "Add durable Collector of Antiquities catalog custody and audit state",
-      "apply": "immutable/0017_collector_catalog.sql",
-      "verify": "immutable/0017_collector_catalog.sh",
+      "apply": "immutable/0018_collector_catalog.sql",
+      "verify": "immutable/0018_collector_catalog.sh",
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "fa97f8f4a0b1f99851bd325eb5e7741d35eac3d1e2b99cd6fbb123cfffc80148",
       "verify_checksum": "78a0e6af522ba5909c3e3acbe053ce500276f574d4799f0259528f6c19474902"
+    },
+    {
+      "id": "0019_corpse_lifecycle_authority",
+      "sequence": 19,
+      "description": "Add revision authority for atomic corpse lifecycle disposal",
+      "apply": "immutable/0019_corpse_lifecycle_authority.sql",
+      "verify": "immutable/0019_corpse_lifecycle_authority.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "8ac72d8fa55b2c676f0f3c6e51f640292ffa7a3cb932f598e3a35922c9d343d5",
+      "verify_checksum": "17a3c0f826c8048f34e02cd5856e2ade5d748b262557e5a9a7536039dbb3b82b"
     }
   ]
 }

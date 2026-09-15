@@ -193,7 +193,7 @@ bool collector_death_enrollment_attach(P_char character, P_obj corpse,
 	return true;
 }
 
-void collector_death_enrollment_note_submitted(P_obj corpse, const item_transfer_payload &payload)
+void collector_death_enrollment_note_committed(P_obj corpse, const item_transfer_payload &payload)
 {
 	if (!corpse || !payload.collector.present)
 		return;

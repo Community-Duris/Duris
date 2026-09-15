@@ -1032,6 +1032,24 @@ telemetry_session_state_result
 telemetry_session_state_handoff_copy(telemetry_session_state *state, telemetry_session_ref session,
 				     telemetry_session_handoff *handoff) noexcept
 {
+	if (handoff != nullptr)
+		*handoff = {};
+	if (!state_ready(state) || handoff == nullptr || !telemetry_session_ref_is_valid(session))
+		return result_with(telemetry_session_state_outcome::invalid);
+	telemetry_monotonic_usec monotonic_usec = 0U;
+	telemetry_utc_usec utc_usec = TELEMETRY_UTC_UNKNOWN;
+	if (state->clock.now == nullptr ||
+	    !state->clock.now(state->clock.context, &monotonic_usec, &utc_usec))
+		return result_with(telemetry_session_state_outcome::clock_unavailable);
+	return telemetry_session_state_handoff_copy_at(state, session, handoff, monotonic_usec,
+						       utc_usec);
+}
+
+telemetry_session_state_result telemetry_session_state_handoff_copy_at(
+	telemetry_session_state *state, telemetry_session_ref session,
+	telemetry_session_handoff *handoff, telemetry_monotonic_usec now_monotonic_usec,
+	telemetry_utc_usec now_utc_usec) noexcept
+{
 	telemetry_session_state_result result =
 		result_with(telemetry_session_state_outcome::invalid);
 	if (handoff != nullptr)
@@ -1045,11 +1063,6 @@ telemetry_session_state_handoff_copy(telemetry_session_state *state, telemetry_s
 	telemetry_session_slot &slot = state->slots[static_cast<std::size_t>(found)];
 	if (slot.lifecycle == telemetry_session_slot_lifecycle::closed)
 		return result_with(telemetry_session_state_outcome::not_found);
-	telemetry_monotonic_usec now_monotonic_usec = 0U;
-	telemetry_utc_usec now_utc_usec = TELEMETRY_UTC_UNKNOWN;
-	if (state->clock.now == nullptr ||
-	    !state->clock.now(state->clock.context, &now_monotonic_usec, &now_utc_usec))
-		return result_with(telemetry_session_state_outcome::clock_unavailable);
 	telemetry_quality_mask quality = slot.quality_flags;
 	if (!account_elapsed_to(slot, now_monotonic_usec, now_utc_usec, quality))
 		return result;

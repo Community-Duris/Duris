@@ -137,28 +137,39 @@ int main()
 	       payload.collector.policy.collection_delay == 10 &&
 	       payload.collector.policy.sale_delay == 20 &&
 	       payload.collector.eligible_item_uids == std::vector<uint64_t>{ 1 });
-	collector_death_enrollment_note_submitted(&corpse, payload);
 
+	// A submitted command that never commits cannot define the whole death. Its
+	// retry gets a fresh identity so the repository can create the death row.
 	std::vector<player_item_snapshot> next_snapshots = { permitted_unique };
 	item_transfer_payload next = transfer(corpse.value[CORPSE_SAVEID], next_snapshots);
 	assert(collector_death_enrollment_attach(&character, &corpse, operation(2), next_snapshots,
 						 &next));
 	assert(next.collector.present &&
-	       critical_operation_id_equal(next.collector.death_operation,
-					   payload.collector.death_operation));
+	       critical_operation_id_equal(next.collector.death_operation, operation(2)) &&
+	       !critical_operation_id_equal(next.collector.death_operation,
+					    payload.collector.death_operation));
+	collector_death_enrollment_note_committed(&corpse, next);
+
+	// Once a transfer commits, every later chunk reuses that durable death ID.
+	item_transfer_payload after_commit = transfer(corpse.value[CORPSE_SAVEID], next_snapshots);
+	assert(collector_death_enrollment_attach(&character, &corpse, operation(9), next_snapshots,
+						 &after_commit));
+	assert(after_commit.collector.present &&
+	       critical_operation_id_equal(after_commit.collector.death_operation,
+					   next.collector.death_operation));
 
 	// A process restart loses the transient map. Once the authoritative catalog
 	// is ready, the stable corpse identity restores the frozen policy and first
-	// accepted operation instead of treating the remaining batch as a new death.
-	durable_death.operation_id = payload.collector.death_operation;
-	durable_death.beneficiary_pid = payload.collector.beneficiary_pid;
-	durable_death.death_time = payload.collector.death_time;
+	// committed operation instead of treating the remaining batch as a new death.
+	durable_death.operation_id = next.collector.death_operation;
+	durable_death.beneficiary_pid = next.collector.beneficiary_pid;
+	durable_death.death_time = next.collector.death_time;
 	durable_death.policy = config.policy;
-	durable_death.policy.collection_delay = payload.collector.policy.collection_delay;
-	durable_death.policy.sale_delay = payload.collector.policy.sale_delay;
-	durable_death.policy.holding_duration = payload.collector.policy.holding_duration;
-	durable_death.policy.price_percent = payload.collector.policy.price_percent;
-	durable_death.policy.minimum_value = payload.collector.policy.minimum_value;
+	durable_death.policy.collection_delay = next.collector.policy.collection_delay;
+	durable_death.policy.sale_delay = next.collector.policy.sale_delay;
+	durable_death.policy.holding_duration = next.collector.policy.holding_duration;
+	durable_death.policy.price_percent = next.collector.policy.price_percent;
+	durable_death.policy.minimum_value = next.collector.policy.minimum_value;
 	durable_death_present = true;
 	cache_ready = true;
 	collector_death_enrollment_reset_for_tests();
@@ -169,7 +180,7 @@ int main()
 						 &resumed));
 	assert(resumed.collector.present &&
 	       critical_operation_id_equal(resumed.collector.death_operation,
-					   payload.collector.death_operation) &&
+					   next.collector.death_operation) &&
 	       resumed.collector.policy.collection_delay == 10);
 
 	// Disabling is an immediate intake fence, while a death that began disabled

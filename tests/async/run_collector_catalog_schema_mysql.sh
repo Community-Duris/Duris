@@ -23,8 +23,8 @@ done
 [[ "$ready" == 1 ]] || { echo "FAILED: $IMAGE did not accept local connections" >&2; exit 1; }
 
 docker cp "$ROOT/migrations/bootstrap_multithread_safe.sql" "$NAME:/tmp/bootstrap.sql" >/dev/null
-docker cp "$ROOT/migrations/immutable/0017_collector_catalog.sql" "$NAME:/tmp/collector.sql" >/dev/null
-docker cp "$ROOT/migrations/immutable/0017_collector_catalog.sh" "$NAME:/tmp/collector.sh" >/dev/null
+docker cp "$ROOT/migrations/immutable/0018_collector_catalog.sql" "$NAME:/tmp/collector.sql" >/dev/null
+docker cp "$ROOT/migrations/immutable/0018_collector_catalog.sh" "$NAME:/tmp/collector.sh" >/dev/null
 docker exec "$NAME" chmod +x /tmp/collector.sh
 MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -B --raw)
 "${MYSQL[@]}" -e "CREATE DATABASE $FRESH_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE $UPGRADE_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"

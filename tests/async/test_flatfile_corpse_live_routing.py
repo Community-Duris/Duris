@@ -44,6 +44,8 @@ deferred_destruction = body(HANDLER, "bool persistence_defer_corpse_destruction(
                             "void Decay(P_obj obj)")
 deferred_compaction = body(HANDLER, "bool persistence_defer_corpse_compaction(",
                            "bool persistence_defer_corpse_destruction(")
+durable_lifecycle = body(HANDLER, "bool durable_corpse_lifecycle_enabled()",
+                         "} // namespace")
 get_item = body(ACTOBJ, "void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
                 "int fight_in_room")
 put_item = body(ACTOBJ, "bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)",
@@ -102,7 +104,9 @@ assert "corpse_lifecycle_transaction_note_item_transfer" in ACTOBJ
 assert "persistence_defer_corpse_room_release(obj)" in decay
 assert decay.index("persistence_defer_corpse_room_release(obj)") < decay.index(
     "if (OBJ_ROOM(obj))")
-assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in deferred_release
+assert "PERSISTENCE_MODE_MARIADB_PRIMARY" in durable_lifecycle
+assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in durable_lifecycle
+assert "durable_corpse_lifecycle_enabled()" in deferred_release
 assert "corpse_lifecycle_transaction_busy" in deferred_release
 busy_check = deferred_release.index("corpse_lifecycle_transaction_busy")
 busy_return = deferred_release.index("return true;", busy_check)
@@ -134,7 +138,7 @@ assert "corpse_lifecycle_transaction_destroy" in HANDLER
 assert "item_ownership_runtime_apply_corpse_destruction" in destruction_publication
 assert destruction_publication.index("item_ownership_runtime_apply_corpse_destruction") < \
        destruction_publication.index("extract_obj(corpse, TRUE)")
-assert "PERSISTENCE_MODE_FLATFILE_PRIMARY" in deferred_destruction
+assert "durable_corpse_lifecycle_enabled()" in deferred_destruction
 assert "submit_corpse_destruction(corpse)" in deferred_destruction
 assert "persistence_defer_corpse_destruction(corpse)" in very_angry
 assert very_angry.index("persistence_defer_corpse_destruction(corpse)") < \

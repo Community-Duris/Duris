@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Guarded real-factory test with credential-selection spy; never changes grants."""
+"""Guarded real SQL factory and POSIX exec regression; never changes grants.
+
+Requires the explicitly disposable loopback MariaDB/MySQL fixture and g++.
+Acquires process-unique advisory locks, opens/closes connections, and forks/execs
+this harness. No tables or persisted rows are changed. Lock reacquisition waits
+up to two seconds for server-side disconnect processing.
+"""
 import os
 from pathlib import Path
 import shlex
@@ -10,8 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 if os.environ.get("TELEMETRY_REPOSITORY_DISPOSABLE") != "1":
     print("SKIP: real-factory SQL test requires explicitly disposable loopback fixture")
     raise SystemExit(0)
-flags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
-libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True)) + ["-lcrypto"]
+mysql_config = os.environ.get("MYSQL_CONFIG", "mysql_config")
+flags = shlex.split(subprocess.check_output([mysql_config, "--cflags"], text=True))
+libs = shlex.split(subprocess.check_output([mysql_config, "--libs"], text=True)) + ["-lcrypto"]
 with tempfile.TemporaryDirectory(prefix="telemetry-connection-") as directory:
     obj = str(Path(directory) / "sql.o")
     exe = str(Path(directory) / "factory")
@@ -23,4 +30,4 @@ with tempfile.TemporaryDirectory(prefix="telemetry-connection-") as directory:
                     "-Wl,--gc-sections", "-Wl,--wrap=mysql_real_connect",
                     "-Wl,--wrap=mysql_close", "-Wl,--wrap=_Znwm", *libs,
                     "-o", exe], cwd=ROOT, check=True)
-    subprocess.run([exe], cwd=ROOT, check=True)
+    subprocess.run([exe], cwd=ROOT, check=True, timeout=30)

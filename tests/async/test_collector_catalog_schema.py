@@ -11,17 +11,18 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION = ROOT / "migrations/immutable/0017_collector_catalog.sql"
-VERIFIER = ROOT / "migrations/immutable/0017_collector_catalog.sh"
+MIGRATION = ROOT / "migrations/immutable/0018_collector_catalog.sql"
+VERIFIER = ROOT / "migrations/immutable/0018_collector_catalog.sh"
 WRAPPER = ROOT / "tests/async/run_collector_catalog_schema_mysql.sh"
 
 
 class CollectorCatalogSchemaTest(unittest.TestCase):
     def test_immutable_step_is_checksum_sealed_and_registered(self) -> None:
         manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
-        step = manifest["migrations"][-1]
+        step = next(item for item in manifest["migrations"]
+                    if item["id"] == "0018_collector_catalog")
         self.assertEqual((step["id"], step["sequence"]),
-                         ("0017_collector_catalog", 17))
+                         ("0018_collector_catalog", 18))
         self.assertEqual(step["apply_checksum"],
                          hashlib.sha256(MIGRATION.read_bytes()).hexdigest())
         self.assertEqual(step["verify_checksum"],
@@ -66,9 +67,9 @@ class CollectorCatalogSchemaTest(unittest.TestCase):
                       "collector_reconciliation_quarantine"):
             self.assertIn(f"'{table}'", runtime["runtime_table_sql_list"])
             self.assertIn(f"database:{table}", lifecycle_ids)
-        self.assertEqual(runtime["current_table_count"], 190)
+        self.assertEqual(runtime["current_table_count"], 193)
         self.assertEqual(runtime["migration_head"]["id"],
-                         "0017_collector_catalog")
+                         "0019_corpse_lifecycle_authority")
 
 
 if __name__ == "__main__":

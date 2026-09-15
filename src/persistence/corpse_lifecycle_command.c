@@ -205,14 +205,14 @@ bool valid_result(const corpse_lifecycle_result &result)
 		return !result.collector_catalog_changed && result.corpse_revision &&
 		       !result.corpse_owner_revision && !result.room_owner_revision &&
 		       !result.player_owner_revision && !result.wallet_revision &&
-		       !result.max_item_revision && !result.item_count &&
+		       !result.bank_revision && !result.max_item_revision && !result.item_count &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action == corpse_lifecycle_action::remove)
 		return !result.collector_catalog_changed && !result.corpse_revision &&
 		       !result.corpse_owner_revision && !result.room_owner_revision &&
 		       !result.player_owner_revision && !result.wallet_revision &&
-		       !result.max_item_revision && !result.item_count &&
+		       !result.bank_revision && !result.max_item_revision && !result.item_count &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	const bool item_result = (!result.item_count && !result.max_item_revision) ||
@@ -220,13 +220,14 @@ bool valid_result(const corpse_lifecycle_result &result)
 	if (result.action == corpse_lifecycle_action::release)
 		return !result.collector_catalog_changed && !result.corpse_revision &&
 		       result.corpse_owner_revision && result.room_owner_revision &&
-		       !result.player_owner_revision && !result.wallet_revision && item_result &&
+		       !result.player_owner_revision && !result.wallet_revision &&
+		       !result.bank_revision && item_result &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action == corpse_lifecycle_action::destroy)
 		return !result.corpse_revision && result.corpse_owner_revision &&
 		       result.room_owner_revision && !result.player_owner_revision &&
-		       !result.wallet_revision && item_result &&
+		       !result.wallet_revision && !result.bank_revision && item_result &&
 		       std::all_of(result.wallet.begin(), result.wallet.end(),
 				   [](int32_t value) { return value == 0; });
 	if (result.action == corpse_lifecycle_action::resurrect)
@@ -246,6 +247,7 @@ bool valid_result(const corpse_lifecycle_result &result)
 		return false;
 	const bool room = !result.collector_catalog_changed && result.room_owner_revision &&
 			  !result.player_owner_revision && !result.wallet_revision &&
+			  !result.bank_revision &&
 			  std::all_of(result.wallet.begin(), result.wallet.end(),
 				      [](int32_t value) { return value == 0; });
 	const bool player = !result.room_owner_revision && result.player_owner_revision &&
@@ -426,6 +428,7 @@ bool corpse_lifecycle_command_encode_result(
 	for (size_t index = 0; index < result.wallet.size(); ++index)
 		put_number<int32_t>(encoded->data() + 80 + index * sizeof(int32_t),
 				    result.wallet[index]);
+	put_number<uint64_t>(encoded->data() + 96, result.bank_revision);
 	return true;
 }
 
@@ -434,13 +437,14 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 {
 	if (!encoded || !result ||
 	    (encoded_size != CORPSE_LIFECYCLE_RESULT_BYTES &&
+	     encoded_size != CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES &&
 	     encoded_size != CORPSE_LIFECYCLE_PREVIOUS_RESULT_BYTES &&
 	     encoded_size != CORPSE_LIFECYCLE_LEGACY_RESULT_BYTES))
 		return false;
-	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES && encoded[9] > 1)
+	if (encoded_size >= CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES && encoded[9] > 1)
 		return false;
-	for (size_t index = encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES ? 10 : 9; index < 16;
-	     ++index)
+	for (size_t index = encoded_size >= CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES ? 10 : 9;
+	     index < 16; ++index)
 		if (encoded[index])
 			return false;
 	for (size_t index = 60;
@@ -451,8 +455,8 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 	result->owner_pid = get_number<uint32_t>(encoded);
 	result->save_id = get_number<uint32_t>(encoded + 4);
 	result->action = static_cast<corpse_lifecycle_action>(encoded[8]);
-	result->collector_catalog_changed = encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES &&
-					    encoded[9] != 0;
+	result->collector_catalog_changed =
+		encoded_size >= CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES && encoded[9] != 0;
 	result->corpse_revision = get_number<uint64_t>(encoded + 16);
 	result->catalog_revision = get_number<uint64_t>(encoded + 24);
 	if (encoded_size >= CORPSE_LIFECYCLE_PREVIOUS_RESULT_BYTES)
@@ -462,15 +466,17 @@ bool corpse_lifecycle_command_decode_result(const uint8_t *encoded, size_t encod
 		result->max_item_revision = get_number<uint64_t>(encoded + 48);
 		result->item_count = get_number<uint32_t>(encoded + 56);
 	}
-	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES)
+	if (encoded_size >= CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES)
 	{
 		result->player_owner_revision = get_number<uint64_t>(encoded + 64);
 		result->wallet_revision = get_number<uint64_t>(encoded + 72);
 	}
-	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES)
+	if (encoded_size >= CORPSE_LIFECYCLE_BANKLESS_RESULT_BYTES)
 		for (size_t index = 0; index < result->wallet.size(); ++index)
 			result->wallet[index] =
 				get_number<int32_t>(encoded + 80 + index * sizeof(int32_t));
+	if (encoded_size == CORPSE_LIFECYCLE_RESULT_BYTES)
+		result->bank_revision = get_number<uint64_t>(encoded + 96);
 	return valid_result(*result);
 }
 
