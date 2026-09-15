@@ -25,6 +25,7 @@ def extract(signature):
 
 
 PRELUDE = r'''
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -32,12 +33,14 @@ PRELUDE = r'''
 #include <string>
 #include <vector>
 constexpr int ITEM_MONEY = 20, ITEM2_ACCOUNT_BOUND = 1, ITEM2_NOLOOT = 2;
+constexpr size_t CURRENCY_DENOMINATION_COUNT = 4;
 constexpr int LOWEST_MAT_VNUM = 100, HIGHEST_MAT_VNUM = 200;
 constexpr int MAX_STRING_LENGTH = 1024;
 constexpr bool TRUE = true, FALSE = false;
 struct character { int count = 11, cap = 11, weight = 0, max_weight = 100; };
 struct object {
     int type = ITEM_MONEY, vnum = 3, weight = 0, condition = 1;
+    int value[8] = {};
     uint64_t obj_uid = 1;
     const char *name = "coins", *short_description = "coins";
     bool visible = true, takeable = true;
@@ -45,7 +48,9 @@ struct object {
 };
 using P_char = character *;
 using P_obj = object *;
-struct synchronous_item { uint64_t uid; P_obj object; bool scrap; };
+struct synchronous_item { uint64_t uid; P_obj object; bool scrap;
+    std::array<int32_t, CURRENCY_DENOMINATION_COUNT> coin_amount = {};
+    bool coin_amount_valid = false; };
 struct bulk_get_state {
     std::vector<std::string> rejections;
     bool failed = false;
